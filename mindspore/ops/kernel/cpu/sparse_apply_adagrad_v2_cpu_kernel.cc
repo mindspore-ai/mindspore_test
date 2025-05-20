@@ -190,7 +190,7 @@ bool SparseApplyAdagradV2CpuKernelMod::LaunchKernel(const std::vector<kernel::Ke
   for (int64_t index = 0; index < batch_size_; index++) {
     SparseGradient<T> input_sparse_grad({grad, indices, indices_size_});
     const auto lr = lr_;
-    const auto epsilon = lr_;
+    const auto epsilon = epsilon_;
     const auto update_slots = update_slots_;
     const auto unique_sparse_grad = input_sparse_grad;
     const auto var_first_dim_size = var_first_dim_size_;

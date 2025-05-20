@@ -163,3 +163,32 @@ def test_reshard_operator_map_5():
         4: [('Reshape', [1, 2, 4]), ('AllConcat', [4, 6, 2]), ('AllConcat', [0, 4, 0]), ('Reshape', [4, 8])]}
     assert reshard_op_map == reshard_ground_truth, \
         f"rank id is 0, reshard map is not expected. expect {reshard_ground_truth}, but got {reshard_op_map}"
+
+
+def test_reshard_operator_map_6():
+    """
+    Feature: generate mp op map
+    Description: mp2ep2 + op -> mp2
+    Expectation: assert no error.
+    """
+    rank_list = list(range(8))
+    from_layout_1 = ([2, 2, 2], [[0, 2], 1], [8, 8], rank_list)
+    to_layout_1 = ([4, 2], [0, -1], [8, 8], rank_list)
+    from_layout_2 = ([2, 2, 2], [[0, 2], 1], [16, 16], rank_list)
+    to_layout_2 = ([4, 2], [0, -1], [16, 16], rank_list)
+    reshard_op_map_1 = _get_resharding_operator_map(from_layout_1, to_layout_1, 0)
+    reshard_op_map_2 = _get_resharding_operator_map(from_layout_2, to_layout_2, 0)
+    reshard_ground_truth_1 = {
+        2: [('Reshape', [1, 2, 4]), ('AllConcat', [0, 2, 2]), ('AllConcat', [2, 6, 0]), ('Reshape', [4, 8])],
+        6: [('Reshape', [1, 2, 4]), ('AllConcat', [4, 6, 2]), ('AllConcat', [2, 6, 0]), ('Reshape', [4, 8])],
+        0: [('Reshape', [1, 2, 4]), ('AllConcat', [0, 2, 2]), ('AllConcat', [0, 4, 0]), ('Reshape', [4, 8])],
+        4: [('Reshape', [1, 2, 4]), ('AllConcat', [4, 6, 2]), ('AllConcat', [0, 4, 0]), ('Reshape', [4, 8])]}
+    reshard_ground_truth_2 = {
+        2: [('Reshape', [1, 4, 8]), ('AllConcat', [0, 2, 2]), ('AllConcat', [2, 6, 0]), ('Reshape', [8, 16])],
+        6: [('Reshape', [1, 4, 8]), ('AllConcat', [4, 6, 2]), ('AllConcat', [2, 6, 0]), ('Reshape', [8, 16])],
+        0: [('Reshape', [1, 4, 8]), ('AllConcat', [0, 2, 2]), ('AllConcat', [0, 4, 0]), ('Reshape', [8, 16])],
+        4: [('Reshape', [1, 4, 8]), ('AllConcat', [4, 6, 2]), ('AllConcat', [0, 4, 0]), ('Reshape', [8, 16])]}
+    assert reshard_op_map_1 == reshard_ground_truth_1, \
+        f"rank id is 0, reshard map is not expected. expect {reshard_ground_truth_1}, but got {reshard_op_map_1}"
+    assert reshard_op_map_2 == reshard_ground_truth_2, \
+        f"rank id is 0, reshard map is not expected. expect {reshard_ground_truth_2}, but got {reshard_op_map_2}"

@@ -281,10 +281,10 @@ tensor::TensorPtr GetValueByPyObj(const py::object &obj) {
 abstract::AbstractBasePtr GenerateAbstractFromPyObject(const py::object &obj) {
   // This function will be moved to runtime compile pass later.
   py::gil_scoped_acquire gil_acquire;
-  if (tensor::IsTensorPy(obj) || IsStubTensor(obj)) {
-    const auto &tensor = IsStubTensor(obj) ? ConvertStubTensor(obj) : tensor::ConvertToTensor(obj);
+  if (tensor::IsTensorPy(obj)) {
+    const auto &tensor = tensor::ConvertToTensor(obj);
     MS_EXCEPTION_IF_NULL(tensor);
-    MS_LOG(DEBUG) << "tensor:" << tensor->ToString() << " is stub tensor:" << IsStubTensor(obj);
+    MS_LOG(DEBUG) << "tensor:" << tensor->ToString();
     return tensor->ToAbstract();
   }
 

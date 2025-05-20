@@ -391,6 +391,11 @@ Tensor &Tensor::AssignValue(const Tensor &tensor) {
     is_forward_output_ = tensor.is_forward_output_;
     sync_status_ = tensor.sync_status_;
     version_ = tensor.version_;
+    if (this->auto_grad_meta_data() != nullptr && this->auto_grad_meta_data()->input_type() == InputType::kInput) {
+      MS_LOG(EXCEPTION)
+        << "Can not modify tensor id of input tensor from network by assign value, this may caused by slice op, "
+           "please check your code to avoid this error!";
+    }
     if (!is_parameter_) {
       id_ = tensor.id_;
       auto_grad_meta_data_ = tensor.auto_grad_meta_data_;

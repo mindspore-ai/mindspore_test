@@ -25,32 +25,6 @@
 namespace py = pybind11;
 namespace mindspore {
 namespace tensor {
-class PYNATIVE_EXPORT StubTensorConverterImpl {
- public:
-  StubTensorConverterImpl();
-
-  ~StubTensorConverterImpl();
-
-  py::object Convert(const py::object &object) { return converter_(object); }
-
- private:
-  py::object converter_;
-};
-
-class PYNATIVE_EXPORT StubTensorConverter {
- public:
-  static StubTensorConverter &GetInstance();
-  py::object ToPython(const py::object &object);
-  void Clear();
-
- private:
-  StubTensorConverter() = default;
-  ~StubTensorConverter() = default;
-  DISABLE_COPY_AND_ASSIGN(StubTensorConverter);
-
-  std::unique_ptr<StubTensorConverterImpl> impl_;
-};
-
 enum TensorPyboostMethod : int {
   ${tensor_methods}
 };
@@ -65,9 +39,6 @@ class PYNATIVE_EXPORT TensorPyboostMethodRegister {
  private:
   inline static std::unordered_map<TensorPyboostMethod, PyBoostOp> methods_;
 };
-
-inline py::object ToPython(const py::object &object) { return StubTensorConverter::GetInstance().ToPython(object); }
-
 }  // namespace tensor
 }  // namespace mindspore
 

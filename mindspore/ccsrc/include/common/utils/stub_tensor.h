@@ -81,7 +81,7 @@ class COMMON_EXPORT TensorNode : public StubNode {
   py::object GetDtype();
 };
 
-class SequenceNode : public StubNode {
+class COMMON_EXPORT SequenceNode : public StubNode {
  public:
   explicit SequenceNode(size_t size = 0) : elements_(size), is_elements_build_(size > 0) {}
   MS_DECLARE_PARENT(SequenceNode, StubNode);
@@ -142,8 +142,6 @@ class NoneTypeNode : public StubNode {
 COMMON_EXPORT std::pair<py::object, StubNodePtr> MakeTopNode(const TypePtr &type);
 COMMON_EXPORT std::pair<StubNodePtr, bool> MakeStubNode(const AbstractBasePtr &abs);
 COMMON_EXPORT void FlattenStubNode(const StubNodePtr &node, std::vector<StubNodePtr> *flatten_stub_nodes);
-COMMON_EXPORT void RegStubNodes(const py::module *m);
-COMMON_EXPORT py::object StubNodeToPyObject(const StubNodePtr &node);
 }  // namespace stub
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_UTILS_STUB_TENSOR_PY_H_

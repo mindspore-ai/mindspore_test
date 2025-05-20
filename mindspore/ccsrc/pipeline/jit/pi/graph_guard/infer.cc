@@ -427,9 +427,7 @@ static AbstractBasePtrList ChangeAbstractArgList(PrimitivePtr prim, std::vector<
     mindspore::ValuePtr converted = nullptr;
     py::object param_obj = py::reinterpret_borrow<py::object>(args[i]);
     bool is_stub = false;
-    if (IsStubTensor(param_obj)) {
-      is_stub = true;
-    } else if (py::isinstance<mindspore::Monad>(param_obj)) {
+    if (py::isinstance<mindspore::Monad>(param_obj)) {
       *monad_count = *monad_count + 1;
     }
     *has_tensor = HasTensor(param_obj);
@@ -571,61 +569,15 @@ PyObject *InferEngine::InferPrimitive(PyObject *primitive, const std::vector<PyO
   return nullptr;
 }
 
-static ShapeVector GetShapeForStubTensor(PyObject *stubtensor) {
-  ShapeVector shape;
-  auto stub = PyObject_GetAttrString(stubtensor, "stub");
-  if (stub != nullptr && stub != Py_None) {
-    auto ptr = py::cast<mindspore::stub::StubNodePtr>(stub);
-    auto base = ptr->ToAbstract();
-    auto shape_ptr = base->BuildShape()->cast<abstract::ShapePtr>();
-    if (shape_ptr && !shape_ptr->IsDynamic()) {
-      shape = shape_ptr->shape();
-    }
-    Py_DECREF(stub);
-  } else {
-    auto ptr = PyObject_GetAttrString(stubtensor, "tensor");
-    auto tensor_ptr = tensor::ConvertToTensor(ptr);
-    MS_EXCEPTION_IF_NULL(tensor_ptr);
-    shape = tensor_ptr->shape();
-    Py_DECREF(ptr);
-  }
-  return shape;
-}
-
-static TypePtr GetDTypeForStubTensor(PyObject *stubtensor) {
-  TypePtr dtype;
-  auto stub = PyObject_GetAttrString(stubtensor, "stub");
-  if (stub != nullptr && stub != Py_None) {
-    auto ptr = py::cast<mindspore::stub::StubNodePtr>(stub);
-    auto base = ptr->ToAbstract();
-    auto dt = base->BuildType();
-    if (dt->isa<mindspore::TensorType>()) {
-      dtype = dt->cast<std::shared_ptr<mindspore::TensorType>>()->element();
-    } else {
-      dtype = dt;
-    }
-    Py_DECREF(stub);
-  } else {
-    auto ptr = PyObject_GetAttrString(stubtensor, "tensor");
-    auto tensor_ptr = tensor::ConvertToTensor(ptr);
-    MS_EXCEPTION_IF_NULL(tensor_ptr);
-    dtype = tensor_ptr->Dtype();
-    Py_DECREF(ptr);
-  }
-  return dtype;
-}
-
 static PyObject *InferShape(PyObject *, const std::vector<PyObject *> &args) {
   PyObject *arg = args[0];
   ShapeVector shape;
-  if (IsStubTensor(arg)) {
-    shape = GetShapeForStubTensor(arg);
-  } else {
-    auto pyObj = py::cast<py::object>(arg);
-    auto tensor_ptr = tensor::ConvertToTensor(pyObj);
-    MS_EXCEPTION_IF_NULL(tensor_ptr);
-    shape = tensor_ptr->shape();
-  }
+
+  auto pyObj = py::cast<py::object>(arg);
+  auto tensor_ptr = tensor::ConvertToTensor(pyObj);
+  MS_EXCEPTION_IF_NULL(tensor_ptr);
+  shape = tensor_ptr->shape();
+
   PyObject *tuple = PyTuple_New(shape.size());
   for (size_t it = 0; it < shape.size(); ++it) {
     py::int_ ss(shape[it]);
@@ -638,14 +590,10 @@ static PyObject *InferShape(PyObject *, const std::vector<PyObject *> &args) {
 static PyObject *InferDType(PyObject *, const std::vector<PyObject *> &args) {
   PyObject *arg = args[0];
   mindspore::TypePtr dtype;
-  if (IsStubTensor(arg)) {
-    dtype = GetDTypeForStubTensor(arg);
-  } else {
-    auto pyObj = py::cast<py::object>(arg);
-    auto tensor_ptr = tensor::ConvertToTensor(pyObj);
-    MS_EXCEPTION_IF_NULL(tensor_ptr);
-    dtype = tensor_ptr->Dtype();
-  }
+  auto pyObj = py::cast<py::object>(arg);
+  auto tensor_ptr = tensor::ConvertToTensor(pyObj);
+  MS_EXCEPTION_IF_NULL(tensor_ptr);
+  dtype = tensor_ptr->Dtype();
   PyObject *type = nullptr;
   if (g_type2attr.find(dtype->type_id()) != g_type2attr.end()) {
     type = PyObject_GetAttrString(GetMsType(), g_type2attr[dtype->type_id()].c_str());
@@ -659,28 +607,20 @@ static PyObject *InferDType(PyObject *, const std::vector<PyObject *> &args) {
 static PyObject *InferRank(PyObject *, const std::vector<PyObject *> &args) {
   PyObject *arg = args[0];
   ShapeVector shape;
-  if (IsStubTensor(arg)) {
-    shape = GetShapeForStubTensor(arg);
-  } else {
-    auto pyObj = py::cast<py::object>(arg);
-    auto tensor_ptr = tensor::ConvertToTensor(pyObj);
-    MS_EXCEPTION_IF_NULL(tensor_ptr);
-    shape = tensor_ptr->shape();
-  }
+  auto pyObj = py::cast<py::object>(arg);
+  auto tensor_ptr = tensor::ConvertToTensor(pyObj);
+  MS_EXCEPTION_IF_NULL(tensor_ptr);
+  shape = tensor_ptr->shape();
   return PyLong_FromSize_t(shape.size());
 }
 
 static PyObject *InferSize(PyObject *, const std::vector<PyObject *> &args) {
   PyObject *arg = args[0];
   ShapeVector shape;
-  if (IsStubTensor(arg)) {
-    shape = GetShapeForStubTensor(arg);
-  } else {
-    auto pyObj = py::cast<py::object>(arg);
-    auto tensor_ptr = tensor::ConvertToTensor(pyObj);
-    MS_EXCEPTION_IF_NULL(tensor_ptr);
-    shape = tensor_ptr->shape();
-  }
+  auto pyObj = py::cast<py::object>(arg);
+  auto tensor_ptr = tensor::ConvertToTensor(pyObj);
+  MS_EXCEPTION_IF_NULL(tensor_ptr);
+  shape = tensor_ptr->shape();
   size_t elements = 1;
   for (size_t i = 0; i < shape.size(); i++) {
     elements *= size_t(shape[i]);
@@ -784,10 +724,6 @@ bool IsVmapOperationType<true>(PyTypeObject *tp) {
 template <>
 bool IsShardType<true>(PyTypeObject *tp) {
   return IsPybindType<mindspore::prim::Shard, true>(tp);
-}
-template <>
-bool IsStubTensorType<true>(PyTypeObject *tp) {
-  return CheckType("mindspore.common._stub_tensor", "StubTensor", true, tp);
 }
 template <>
 bool IsTensorType<true>(PyTypeObject *tp) {

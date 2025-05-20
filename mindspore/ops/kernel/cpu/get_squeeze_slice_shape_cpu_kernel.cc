@@ -23,6 +23,7 @@
 #include "include/common/thread_pool.h"
 #include "mindspore/ops/op_def/op_name.h"
 #include "mindspore/ops/infer/get_squeeze_slice_shape.h"
+#include "mindspore/ops/ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace kernel {
@@ -108,11 +109,7 @@ std::vector<std::pair<KernelAttr, GetSqueezeSliceShapeCpuKernelMod::GetSqueezeSl
 
 std::vector<KernelAttr> GetSqueezeSliceShapeCpuKernelMod::GetOpSupport() {
   std::vector<KernelAttr> support_list;
-  std::vector<TypeId> data_type_ids = {kNumberTypeFloat16,   kNumberTypeFloat32,   kNumberTypeFloat64, kNumberTypeInt8,
-                                       kNumberTypeInt16,     kNumberTypeInt32,     kNumberTypeInt64,   kNumberTypeUInt8,
-                                       kNumberTypeUInt16,    kNumberTypeUInt32,    kNumberTypeUInt64,  kNumberTypeBool,
-                                       kNumberTypeComplex64, kNumberTypeComplex128};
-  (void)std::transform(data_type_ids.begin(), data_type_ids.end(), std::back_inserter(func_list_),
+  (void)std::transform(ops::all_type_ids.begin(), ops::all_type_ids.end(), std::back_inserter(func_list_),
                        [](TypeId data_type_id) -> std::pair<KernelAttr, GetSqueezeSliceShapeFunc> {
                          return {
                            KernelAttr().AddInputAttr(data_type_id).AddOutputAttr(kObjectTypeTuple, kNumberTypeInt64),

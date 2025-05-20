@@ -184,11 +184,6 @@ class KernelRunner {
   // Auto increment id for actor.
   int64_t actor_id_;
 
-  // The second of pair indicates the output data flag. See constant prefixed with kOutputDataFalg for details.
-  std::vector<std::pair<OpDataUniquePtr<KernelTensor>, size_t>> output_data_;
-  // Record the fusion output index for output data arrow.
-  mindspore::HashMap<DataArrow *, size_t> data_arrow_to_fusion_actor_indexs_;
-
   // Whether use input optimize.
   bool enable_input_optimize_;
 

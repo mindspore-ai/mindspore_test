@@ -66,8 +66,6 @@ bool IsVmapOperationType(PyTypeObject *tp);
 template <bool sub>
 bool IsShardType(PyTypeObject *tp);
 template <bool sub>
-bool IsStubTensorType(PyTypeObject *tp);
-template <bool sub>
 bool IsTensorType(PyTypeObject *tp);
 template <bool sub>
 bool IsCellListType(PyTypeObject *tp);

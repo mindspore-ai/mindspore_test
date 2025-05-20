@@ -75,7 +75,7 @@ void PynativeCallback::FreeInputDeviceAddress(const std::vector<size_t> &indices
 
 void PynativeCallback::FreeOutputDeviceAddress(const std::vector<size_t> &indices) const {
   auto output = GetOutput();
-  if (indices.empty()) {
+  if (indices.empty() || (!(*output)->isa<ValueSequence>() && indices.size() == 1 && indices[0] == 0)) {
     MS_LOG(DEBUG) << "Clear device address for output of " << opname();
     FreeDeviceAddress(output);
     return;

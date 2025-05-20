@@ -110,6 +110,25 @@ class Net3(nn.Cell):
         return out
 
 
+class Net4(nn.Cell):
+    def __init__(self, in_layout, out_layout, self_define_shard=True):
+        super().__init__()
+        self.add = P.Add()
+        self.add.shard(in_strategy=in_layout, out_strategy=out_layout)
+        self.add.add_prim_attr("self_define_shard", self_define_shard)
+        self.concat = P.Concat(axis=1).add_prim_attr("self_define_shard", self_define_shard)
+        self.concat.shard(in_strategy=(in_layout,), out_strategy=out_layout)
+        self.relu = P.ReLU()
+        self.mul = P.Mul()
+
+    def construct(self, x, y, z):
+        out = self.relu(x)
+        out = self.add(out, y)
+        out = self.mul(out, z)
+        out = self.concat([out, out])
+        return out
+
+
 def test_config_layout_for_ops_success():
     """
     Feature: test layout extend
@@ -142,6 +161,25 @@ def test_config_layout_for_parallel_supported_ops_success():
     y = Tensor(np.ones((2, 2)).astype(np.float32))
     z = Tensor(np.ones((2, 2)).astype(np.float32))
     compile_net(net, x, y, z)
+
+
+def test_config_layout_for_concat():
+    """
+    Feature: test layout extend
+    Description: dev_num is 2.
+    Expectation: compile success
+    """
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", device_num=2, global_rank=0)
+    layout = Layout((2, 1), ("dp", "mp"))
+    layout1 = (layout("dp", "mp"), layout("dp", "mp"))
+    layout2 = (layout("dp", "mp"),)
+    net = Net4(layout1, layout2)
+    x = Tensor(np.ones((2, 2)).astype(np.float32))
+    y = Tensor(np.ones((2, 2)).astype(np.float32))
+    z = Tensor(np.ones((2, 2)).astype(np.float32))
+    phase = compile_net(net, x, y, z)
+    validator = ParallelValidator(net, phase)
+    assert validator.check_node_inputs_has('Concat-0', ['MakeTuple-1'])
 
 
 def test_config_layout_for_parallel_supported_ops_failed():

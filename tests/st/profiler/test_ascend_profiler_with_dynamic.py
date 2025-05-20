@@ -41,6 +41,7 @@ class StepMonitor(ms.Callback):
         step_num = cb_params.cur_step_num
         print(f"-------------- Step {step_num} end ----------------")
 
+
 class Net(nn.Cell):
     def __init__(self):
         super(Net, self).__init__()
@@ -62,6 +63,7 @@ def train(net):
     model = ms.train.Model(net, loss, optimizer)
     model.train(1, data)
 
+
 def train_net_with_dynamic_profiler_step(output_path, cfg_path):
     net = Net()
     STEP_NUM = 15
@@ -73,15 +75,20 @@ def train_net_with_dynamic_profiler_step(output_path, cfg_path):
             change_cfg_json(os.path.join(cfg_path, "profiler_config.json"))
         dp.step()
 
+
 def change_cfg_json(json_path):
     with open(json_path, 'r', encoding='utf-8') as file:
         data = json.load(file)
 
     data['start_step'] = 6
     data['stop_step'] = 7
+    data['profiler_level'] = "Level1"
+    data['aic_metrics'] = "MemoryUB"
+    data['activities'] = ["CPU", "NPU"]
 
     with open(json_path, 'w', encoding='utf-8') as file:
         json.dump(data, file, ensure_ascii=False, indent=4)
+
 
 def train_tiny_transformer_with_dynamic_profiler(output_path, cfg_path):
     ds_train = FakeDataset.create_fake_nlp_dataset(
@@ -324,6 +331,7 @@ def test_tiny_transformer_o2_with_dynamic_profiler():
         for profiler_log_path in profiler_log_paths:
             FileChecker.check_file_for_keyword(profiler_log_path, "error")
 
+
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_net_with_dynamic_profiler_step():
     """
@@ -393,6 +401,12 @@ def test_net_with_dynamic_profiler_step():
                                     fuzzy_match=False
                                     )
         FileChecker.check_csv_items(kernel_details_step_6_7_path, {"Name": ["*BiasAdd*", "*MatMul"]})
+        FileChecker.check_csv_headers(kernel_details_step_6_7_path, ["aic_ub_read_bw_scalar(GB/s)",
+                                                                     "aic_ub_write_bw_scalar(GB/s)",
+                                                                     "aiv_ub_read_bw_vector(GB/s)",
+                                                                     "aiv_ub_write_bw_vector(GB/s)",
+                                                                     "aiv_ub_read_bw_scalar(GB/s)",
+                                                                     "aiv_ub_write_bw_scalar(GB/s)"])
         # Check operate_memory.csv
         operate_memory_2_5_path = glob.glob(f"{profiler_step_2_5_path}/*_ascend_ms/"
                                             f"ASCEND_PROFILER_OUTPUT/operator_memory.csv")[0]

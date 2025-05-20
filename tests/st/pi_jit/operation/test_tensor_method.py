@@ -15,7 +15,6 @@
 """Test Tensor methods"""
 
 from mindspore import context, ops, jit
-from mindspore.common._stub_tensor import StubTensor
 
 from tests.st.pi_jit.share.utils import assert_equal, assert_executed_by_graph_mode
 from tests.mark_utils import arg_mark
@@ -32,15 +31,15 @@ def test_tensor_type_guard():
     Expectation: No guard checking failure, no exception, no graph break.
     """
 
-    def fn(x: StubTensor):
+    def fn(x):
         return ops.add(x.squeeze(), 1)
 
     context.set_context(mode=context.PYNATIVE_MODE)
-    x = ops.arange(0, 4)  # It is a StubTensor
+    x = ops.arange(0, 4)
     o1 = fn(x)
 
     compiled_fn = pi_jit_with_config(fn, jit_config=jit_cfg)
-    x = ops.arange(0, 4)  # It is a StubTensor
+    x = ops.arange(0, 4)
     o2 = compiled_fn(x)
 
     assert_equal(o1, o2)

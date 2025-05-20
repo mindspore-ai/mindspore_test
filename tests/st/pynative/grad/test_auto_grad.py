@@ -22,6 +22,7 @@ from mindspore import nn
 from mindspore import ops
 from tests.mark_utils import arg_mark
 
+
 class MultiInputNet(nn.Cell):
     def construct(self, x, t):
         y = x * x
@@ -347,3 +348,36 @@ def test_auto_grad_bprop_net():
     net = CustomBpropNet()
     grad = mindspore.grad(net)(x)
     assert np.allclose(grad.asnumpy(), np.array([8], dtype=np.float32), 0.00001, 0.00001)
+
+
+class NoneCustomNet(nn.Cell):
+    def construct(self, x, y):
+        y = x * x
+        return y
+
+    def bprop(self, *args):
+        return args[0] * 2, None
+
+
+class NoneAddNet(nn.Cell):
+    def __init__(self):
+        super(NoneAddNet, self).__init__()
+        self.net = NoneCustomNet()
+
+    def construct(self, x):
+        y = x * x
+        output = self.net(x, y)
+        h = y + output
+        return h
+
+
+def test_auto_grad_none_add_net():
+    """
+    Feature: Test auto grad none add
+    Description: Test auto grad none add.
+    Expectation: Success.
+    """
+    x = Tensor([2.0], mindspore.float32)
+    net = NoneAddNet()
+    grad = mindspore.grad(net)(x)
+    assert np.allclose(grad.asnumpy(), np.array([8.], dtype=np.float32), 0.00001, 0.00001)

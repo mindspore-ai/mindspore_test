@@ -184,7 +184,7 @@ void ConvertSimpleInferInfoToAbstract(const OpGradInfoPtr &op_grad_info) {
 
 InputType SetValueGradInfoForTensor(const ValuePtr &value, InputType grad_type) {
   const auto &tensor_value = value->cast<tensor::TensorPtr>();
-  auto auto_grad_meta_data = autograd::impl::get_autograd_meta_impl(tensor_value);
+  auto auto_grad_meta_data = autograd::impl::GetAutogradMetaImpl(tensor_value);
   if (auto_grad_meta_data != nullptr) {
     if (auto_grad_meta_data->input_type() == InputType::kOpOutput) {
       return auto_grad_meta_data->input_type();
@@ -308,7 +308,7 @@ InputType AutoGradUtil::SetValueGradInfo(const ValuePtr &value, InputType grad_t
 
 InputType AutoGradUtil::SetTensorGradInfo(const tensor::TensorPtr &tensor) {
   MS_EXCEPTION_IF_NULL(tensor);
-  auto auto_grad_meta_data = autograd::impl::get_autograd_meta_impl(tensor);
+  auto auto_grad_meta_data = autograd::impl::GetAutogradMetaImpl(tensor);
   if (auto_grad_meta_data != nullptr) {
     if (auto_grad_meta_data->input_type() == InputType::kOpOutput) {
       return auto_grad_meta_data->input_type();
@@ -380,7 +380,7 @@ ValuePtr AutoGradUtil::VectorRefToValue(const VectorRef &vec_ref, bool requires_
 void AutoGradUtil::BuildViewAutoGradMeta(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &output,
                                          autograd::CreationType creation_type, bool requires_grad) {
   MS_EXCEPTION_IF_NULL(output);
-  auto view_meta = autograd::impl::get_view_autograd_meta_impl(src_tensor);
+  auto view_meta = autograd::impl::GetViewAutogradMetaImpl(src_tensor);
   if (view_meta != nullptr) {
     output->set_version(src_tensor->version());
     output->set_auto_grad_meta_data(std::make_shared<autograd::ViewAutoGradMetaData>(
@@ -394,7 +394,7 @@ void AutoGradUtil::BuildViewAutoGradMeta(const tensor::TensorPtr &src_tensor, co
       MS_LOG(DEBUG) << "Create new auto grad meta for input tensor of view op " << src_tensor->id();
       auto auto_grad_meta_data = std::make_shared<AutoGradMetaData>();
       src_tensor->set_auto_grad_meta_data(auto_grad_meta_data);
-      if (IsParamRequiresGrad(src_tensor) && autograd::impl::get_unsafe_grad_node_impl(src_tensor) == nullptr) {
+      if (IsParamRequiresGrad(src_tensor) && autograd::impl::GetUnsafeGradNodeImpl(src_tensor) == nullptr) {
         auto fn = std::make_shared<autograd::LeafNode>(src_tensor->param_info()->name(), src_tensor->shape(),
                                                        src_tensor->Dtype());
         auto_grad_meta_data->set_grad_node(fn);
@@ -513,7 +513,7 @@ bool AutoGradUtil::NeedGrad(const tensor::TensorPtr &input_tensor) {
   if (IsParamRequiresGrad(input_tensor)) {
     return true;
   }
-  return autograd::impl::get_unsafe_grad_node_impl(input_tensor) != nullptr;
+  return autograd::impl::GetUnsafeGradNodeImpl(input_tensor) != nullptr;
 }
 
 bool AutoGradUtil::NeedGrad(const std::vector<ValuePtr> &input_values) {
@@ -688,7 +688,7 @@ void AutoGradUtil::SetGradInfoForInputs(
   OrderedMap<tensor::TensorPtr, autograd::AutoGradMetaDataPtr> *param_meta_grad_info) {
   if (value->isa<tensor::Tensor>()) {
     const auto &input_tensor = value->cast<tensor::TensorPtr>();
-    const auto &auto_grad_meta_data = autograd::impl::get_autograd_meta_impl(input_tensor);
+    const auto &auto_grad_meta_data = autograd::impl::GetAutogradMetaImpl(input_tensor);
     MS_EXCEPTION_IF_NULL(auto_grad_meta_data);
     auto_grad_meta_data->set_grad_node(node);
     (*param_meta_grad_info)[input_tensor] = auto_grad_meta_data;

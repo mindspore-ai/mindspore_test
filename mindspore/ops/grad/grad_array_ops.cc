@@ -1081,7 +1081,7 @@ REG_BPROP_BUILDER("Sort").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   return NodePtrList{dx};
 });
 
-REG_BPROP_BUILDER("SortExt").SetUnusedInputs({i2, i3}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("SortExt").FreeUselessValues_IO({i0, i2, i3}, {i0}).SetBody(BODYFUNC(ib) {
   auto input = ib->GetInput(kIndex0);
   auto dim = ib->GetInput(kIndex1);
 

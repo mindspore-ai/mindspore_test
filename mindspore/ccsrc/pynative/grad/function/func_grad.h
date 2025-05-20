@@ -247,7 +247,7 @@ struct CompareNode {
   }
 };
 
-class AutoDiff {
+class AutoDiff : public AutoDiffInterface {
  public:
   /// Constructor
   /// \param output
@@ -267,6 +267,13 @@ class AutoDiff {
   ValuePtr RunBackward(const ValuePtrList &inputs, const tensor::TensorPtrList &weights,
                        const std::vector<size_t> &grad_position, const GradAttr &grad_attr,
                        bool collect_default_weights, bool has_aux, const ValuePtr &sens = nullptr);
+  /// Check the given node is in exec grad graph.
+  /// \param node
+  /// \return true if in grad graph
+  bool IsInExecGraph(const BackwardNodePtr &node) const override;
+  /// Add the given node to exec grad graph.
+  /// \param node
+  void AddNodeToExecGraph(const BackwardNodePtr &node) override;
   /// Clear resource of AutoDiff engine.
   void Clear();
 

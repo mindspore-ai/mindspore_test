@@ -50,7 +50,6 @@ from mindspore.common.api import _convert_python_data, _get_args_for_run_predict
 from mindspore.common.api import _process_dyn_args, _generate_dyn_compile_args
 from mindspore.common.parameter import _Buffer, Parameter, ParameterTuple
 from mindspore.common.tensor import Tensor
-from mindspore.ops.operations import Cast
 from mindspore.ops.primitive import Primitive
 from mindspore.ops.operations import _inner_ops as inner
 from mindspore.parallel.shard import Shard
@@ -165,12 +164,13 @@ class Cell(Cell_):
     global_cells = weakref.WeakKeyDictionary()
     _no_auto_lazy_inline = True
 
-    def __new__(cls, *args, **kwargs):
-        this = Cell_.__new__(cls, *args, **kwargs)
+    def __new__(class_, *args, **kwargs):
+        # Use class_ to avoid name conflicts with input args and kwargs.
+        this = Cell_.__new__(class_, *args, **kwargs)
         if Cell._no_auto_lazy_inline:
             return this
 
-        Cell.global_cells[this] = (cls, args, kwargs)
+        Cell.global_cells[this] = (class_, args, kwargs)
         return this
 
     def __init__(self, auto_prefix=True, flags=None):
@@ -235,7 +235,6 @@ class Cell(Cell_):
         super().__setattr__("_parameters_backward_hook", None)
 
         super().__setattr__("cell_type", None)
-        super().__setattr__("_cast", None)
         super().__setattr__("_has_config_recompute", False)
         super().__setattr__("_lazy_user_parameters", None)
         super().__setattr__("_dynamic_shape_inputs", None)
@@ -402,18 +401,6 @@ class Cell(Cell_):
         if self._lazy_construct_sig is None:
             super().__setattr__("_lazy_construct_sig", inspect.signature(self.construct))
         return self._lazy_construct_sig
-
-    @property
-    # pylint: disable=E0203
-    def cast(self):
-        if self._cast is None:
-            self._cast = Cast()
-        return self._cast
-
-    @cast.setter
-    # pylint: disable=E0203
-    def cast(self, value):
-        self._cast = value
 
     @property
     def param_prefix(self):

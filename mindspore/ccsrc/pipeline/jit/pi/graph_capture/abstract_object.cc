@@ -154,7 +154,6 @@ static void PrintPyObject(std::ostream *out_s, const py::handle &obj, bool print
   AObject::Type t = AObject::GetPyType(obj.ptr());
   switch (t) {
     case AObject::kTypeTensor:
-    case AObject::kTypeStubTensor:
       s << "Tensor'" << std::string(py::str(obj.attr("shape"))) << ", " << std::string(py::str(obj.attr("dtype")))
         << "'";
       break;
@@ -325,10 +324,13 @@ AbstractObjectBase::Type AbstractObjectBase::GetPyType(PyObject *o) {
 
 AbstractObjectBase::Type AbstractObjectBase::GetMsType(PyTypeObject *tp) {
   static const std::vector<std::pair<bool (*)(PyTypeObject *), AObject::Type>> match_func = {
-    {IsStubTensorType<true>, kTypeStubTensor}, {IsTensorType<true>, kTypeTensor},
-    {IsCellListType<false>, kTypeNNCellList},  {IsCellType<true>, kTypeCell},
-    {IsPrimitiveType<true>, kTypePrimitive},   {IsMetaFuncGraphType<true>, kTypeMetaFuncGraph},
-    {IsMSDTypeType<true>, kTypeMSDType},       {IsPrimitiveFunctionType<true>, kTypePrimitiveFunction},
+    {IsTensorType<true>, kTypeTensor},
+    {IsCellListType<false>, kTypeNNCellList},
+    {IsCellType<true>, kTypeCell},
+    {IsPrimitiveType<true>, kTypePrimitive},
+    {IsMetaFuncGraphType<true>, kTypeMetaFuncGraph},
+    {IsMSDTypeType<true>, kTypeMSDType},
+    {IsPrimitiveFunctionType<true>, kTypePrimitiveFunction},
   };
   if (tp == nullptr) {
     return kTypeAnyValue;
@@ -427,9 +429,8 @@ AObject *AbstractObjectBase::MakeAObject(AObject::Type type, PyTypeObject *tp, P
   MS_LOG(INFO) << "Create AbstractObject " << GetTypeDesc(type) << " Start...";
   AObject *res;
   switch (type) {
-    case kTypeStubTensor:
     case kTypeTensor:
-      res = Resource::Current()->pool()->New<AbstractTensor>(h, type == kTypeStubTensor);
+      res = Resource::Current()->pool()->New<AbstractTensor>(h, false);
       break;
     case kTypeType:
       res = Resource::Current()->pool()->New<AbstractType>(h);
@@ -1533,12 +1534,7 @@ py::object AbstractTensor::GetTensor(bool sync) {
 
 AbstractBasePtr PyObjectToAbstract(const py::object &arg) {
   ValuePtr converted = nullptr;
-  bool success;
-  if (IsStubTensor(arg)) {
-    success = mindspore::parse::ConvertStubData(arg, &converted);
-  } else {
-    success = mindspore::parse::ConvertData(arg, &converted);
-  }
+  bool success = mindspore::parse::ConvertData(arg, &converted);
   if (!success) {
     MS_LOG(EXCEPTION) << "Fail to convert the object: " << py::str(arg);
   }
@@ -1759,14 +1755,14 @@ AObject *AbstractTensor::GetAttr(const std::string &name) {
 
   PyObject *tmp = GetUninitializedTensor();
   if (type_object_ != Py_TYPE(tmp)) {
-    // tensor subclass or StubTensor and it's subclass
+    // tensor and it's subclass
     // generic attribute
     AObject *attr = this->AbstractObjectBase::GetAttr(name);
     attrs_[name] = attr;
     return attr;
   }
   // get attribute for exact mindspore.Tensor,
-  // not MetaTensor, not mindspore._c_expression.Tensor, not StubTensor
+  // not MetaTensor, not mindspore._c_expression.Tensor
 
   // known @property attribute
   auto iter = tensor_attr_type.find(name);

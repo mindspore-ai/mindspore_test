@@ -15,36 +15,23 @@
 """Dynamic Profile Monitor"""
 import os
 import sys
+import json
 import time
 import stat
-import json
 import atexit
-import struct
 import random
 import multiprocessing
 
 from mindspore import log as logger
 from mindspore.train import Callback
 from mindspore.profiler import Profiler, tensorboard_trace_handler, schedule
-from mindspore.communication import get_rank
 from mindspore.profiler.parser.ascend_analysis.file_manager import FileManager
 from mindspore.profiler.parser.ascend_analysis.path_manager import PathManager
 from mindspore.profiler.profiler_interface import ProfilerInterface
-from mindspore.profiler.common.constant import (
-    ProfilerActivity,
-    ProfilerLevel,
-    AicoreMetrics,
-    ExportType,
-)
+from mindspore.profiler.dynamic_profile.dynamic_profiler_config_context import DynamicProfilerConfigContext
+from mindspore.profiler.dynamic_profile.dynamic_monitor_proxy import MsDynamicMonitorProxySingleton
+from mindspore.profiler.dynamic_profile.dynamic_profiler_utils import DynamicProfilerUtils
 from mindspore.profiler.common.util import no_exception_func
-
-
-def get_real_rank():
-    """get rank id"""
-    try:
-        return get_rank()
-    except RuntimeError:
-        return int(os.getenv("RANK_ID", "0"))
 
 
 def print_msg(msg):
@@ -52,210 +39,21 @@ def print_msg(msg):
     print("[Dynamic Profiler] " + msg, flush=True)
 
 
-class DynamicProfilerArgs:
-    """
-    Data class for dynamic profile config.
-    """
-    FMT = "i" * 7 + "?" * 6
-    SIZE = struct.calcsize(FMT)
-
-    def __init__(self,
-                 start_step: int = -1,
-                 stop_step: int = -1,
-                 aic_metrics: int = -1,
-                 profiler_level: int = 0,
-                 analyse_mode: int = -1,
-                 activities: int = 0,
-                 export_type: int = 0,
-                 profile_memory: bool = False,
-                 mstx: bool = False,
-                 parallel_strategy: bool = False,
-                 with_stack: bool = False,
-                 data_simplification: bool = True,
-                 is_valid: bool = False,
-                 **kwargs):
-        self._start_step = start_step
-        self._stop_step = stop_step
-        self._aic_metrics = aic_metrics
-        self._profiler_level = profiler_level
-        self._analyse_mode = analyse_mode
-        self._activities = activities
-        self._export_type = export_type
-        self._profile_memory = profile_memory
-        self._mstx = mstx
-        self._parallel_strategy = parallel_strategy
-        self._with_stack = with_stack
-        self._data_simplification = data_simplification
-        self._is_valid = is_valid
-        self._check_params_type()
-
-    def _check_params_type(self):
-        """Check and enforce parameter types with lower complexity."""
-        # Define a parameter check rule. {Parameter name: (expected type, default value)}
-        param_rules = {
-            '_start_step': (int, -1),
-            '_stop_step': (int, -1),
-            '_aic_metrics': (int, -1),
-            '_profiler_level': (int, 0),
-            '_analyse_mode': (int, -1),
-            '_activities': (int, 0),
-            '_export_type': (int, 0),
-            '_profile_memory': (bool, False),
-            '_mstx': (bool, False),
-            '_parallel_strategy': (bool, False),
-            '_with_stack': (bool, False),
-            '_data_simplification': (bool, True),
-            '_is_valid': (bool, False)
-        }
-
-        def _is_valid_type(value, expected_type):
-            """Helper method for type checking."""
-            if expected_type is int and isinstance(value, bool):
-                return False
-            return isinstance(value, expected_type)
-
-        for param, (expected_type, default) in param_rules.items():
-            value = getattr(self, param)
-            if not _is_valid_type(value, expected_type):
-                logger.warning(
-                    f"{param[1:]} should be {expected_type.__name__} type, "
-                    f"will be reset to {default}."
-                )
-                setattr(self, param, default)
-
-    @property
-    def start_step(self):
-        """ get start step value."""
-        return self._start_step
-
-    @property
-    def stop_step(self):
-        """ get stop step value."""
-        return self._stop_step
-
-    @property
-    def is_valid(self):
-        """ get json valid value."""
-        return self._is_valid
-
-    @is_valid.setter
-    def is_valid(self, value):
-        """ set json valid value."""
-        self._is_valid = value
-
-    @property
-    def analyse_mode(self):
-        """ get analyse mode value."""
-        return self._convert_analyse_mode(self._analyse_mode)
-
-    @property
-    def vars(self):
-        """ get all values in DynamicProfilerArgs."""
-        not_supported_args = ['_is_valid']
-        res = {}
-        for key, value in self.__dict__.items():
-            if key not in not_supported_args:
-                res[key.replace('_', '', 1)] = value
-        return res
-
-    @property
-    def args(self):
-        """ get all args in DynamicProfilerArgs."""
-        self._profiler_level = self._convert_profiler_level(self._profiler_level)
-        self._activities = self._convert_activities(self._activities)
-        self._aic_metrics = self._convert_aic_metrics(self._aic_metrics)
-        self._export_type = self._convert_export_type(self._export_type)
-        not_supported_args = ['_start_step', '_stop_step', '_analyse_mode', '_is_valid']
-        res = {}
-        for key, value in self.__dict__.items():
-            if key not in not_supported_args:
-                res[key.replace('_', '', 1)] = value
-        return res
-
-    @classmethod
-    def from_bytes(cls, byte_data):
-        """ unpack bytes to DynamicProfilerArgs."""
-        unpacked = struct.unpack(cls.FMT, byte_data)
-        return cls(*unpacked)
-
-    def to_bytes(self):
-        """ pack DynamicProfilerArgs to bytes."""
-        instance_vars = tuple(self.__dict__.values())
-        if len(instance_vars) != len(self.FMT):
-            raise ValueError("Number of variables does not match format string.")
-        return struct.pack(DynamicProfilerArgs.FMT, *instance_vars)
-
-    def _convert_analyse_mode(self, analyse_mode: int) -> str:
-        """ convert analyse_mode to real args in Profiler."""
-        if analyse_mode == 0:
-            return 'sync'
-        if analyse_mode == 1:
-            return 'async'
-        return None
-
-    def _convert_profiler_level(self, profiler_level: int) -> ProfilerLevel:
-        """ convert profiler_level to real args in Profiler."""
-        if profiler_level == -1:
-            return ProfilerLevel.LevelNone
-        if profiler_level == 0:
-            return ProfilerLevel.Level0
-        if profiler_level == 1:
-            return ProfilerLevel.Level1
-        if profiler_level == 2:
-            return ProfilerLevel.Level2
-        return ProfilerLevel.Level0
-
-    def _convert_activities(self, activities: int) -> ProfilerLevel:
-        """ convert activities to real args in Profiler."""
-        if activities == 0:
-            return [ProfilerActivity.CPU, ProfilerActivity.NPU]
-        if activities == 1:
-            return [ProfilerActivity.CPU]
-        if activities == 2:
-            return [ProfilerActivity.NPU]
-        return [ProfilerActivity.CPU, ProfilerActivity.NPU]
-
-    def _convert_aic_metrics(self, aic_metrics: int) -> AicoreMetrics:
-        """ convert aic_metrics to real args in Profiler."""
-        if aic_metrics == -1:
-            return AicoreMetrics.AiCoreNone
-        if aic_metrics == 0:
-            return AicoreMetrics.PipeUtilization
-        if aic_metrics == 1:
-            return AicoreMetrics.ArithmeticUtilization
-        if aic_metrics == 2:
-            return AicoreMetrics.Memory
-        if aic_metrics == 3:
-            return AicoreMetrics.MemoryL0
-        if aic_metrics == 4:
-            return AicoreMetrics.MemoryUB
-        if aic_metrics == 5:
-            return AicoreMetrics.ResourceConflictRatio
-        if aic_metrics == 6:
-            return AicoreMetrics.L2Cache
-        if aic_metrics == 7:
-            return AicoreMetrics.MemoryAccess
-        return AicoreMetrics.AiCoreNone
-
-    def _convert_export_type(self, export_type: int) -> ExportType:
-        """ convert export_type to real args in Profiler."""
-        if export_type == 0:
-            return [ExportType.Text]
-        if export_type == 1:
-            return [ExportType.Db]
-        if export_type == 2:
-            return [ExportType.Text, ExportType.Db]
-        return [ExportType.Text]
-
 class DynamicProfilerMonitorBase(Callback):
     """
     Dynamic profile callback base class implementing the dynamic profile functionality.
     """
 
-    def __init__(self, cfg_path, output_path=None, poll_interval=2, **kwargs):
-        self._cfg_path = cfg_path
-        self._cfg_json_path = os.path.join(self._cfg_path, "profiler_config.json")
-        self._cfg_json_path = os.path.realpath(self._cfg_json_path)
+    NPU_MONITOR_START = "NPU_MONITOR_START"
+
+    def __init__(self, cfg_path=None, output_path=None, poll_interval=2, **kwargs):
+        self._is_dyno = DynamicProfilerUtils.is_dyno_mode()
+        self._rank_id = DynamicProfilerUtils.get_real_rank()
+        if not self._is_dyno:
+            self._cfg_path = cfg_path
+            self._cfg_json_path = os.path.join(self._cfg_path, "profiler_config.json")
+            self._cfg_json_path = os.path.realpath(self._cfg_json_path)
+            self._init_cfg_json()
         self._output_path = "dyn_profile_data" if output_path is None else output_path
         self._poll_interval = poll_interval
         if not isinstance(self._poll_interval, int):
@@ -268,7 +66,6 @@ class DynamicProfilerMonitorBase(Callback):
 
         self._kwargs = kwargs
         self._shm_name = time.strftime("DynamicProfileShm%Y%m%d%H", time.localtime())
-        self._rank_id = get_real_rank()
         self._shared_loop_flag = multiprocessing.Value('b', True)
         self._shm = None
         self._process = None
@@ -282,10 +79,11 @@ class DynamicProfilerMonitorBase(Callback):
         self._step_num = 0
 
         self._check_shm_for_killed()
-        self._init_cfg_json()
         self._create_shm()
         self._create_process()
         atexit.register(self._clean_resource)
+        if self._is_dyno:
+            atexit.register(self._finalize_dynolog)
 
     @no_exception_func()
     def step_begin(self, run_context):
@@ -295,13 +93,13 @@ class DynamicProfilerMonitorBase(Callback):
         Args:
             run_context (RunContext): Context of the train running.
         """
-        prof_args = self._get_prof_args()
-
+        prof_json = self._get_prof_args()
+        prof_args = DynamicProfilerConfigContext(prof_json)
         if not prof_args.is_valid:
             logger.error("Dynamic profile json is not valid, please check the json file.")
             return
 
-        if prof_args.start_step == -1 or prof_args.start_step == self._last_start_step:
+        if prof_args.start_step in (-1, self._last_start_step):
             return
 
         cb_params = run_context.original_args()
@@ -338,7 +136,8 @@ class DynamicProfilerMonitorBase(Callback):
         Args:
             run_context (RunContext): Context of the train running.
         """
-        prof_args = self._get_prof_args()
+        prof_json = self._get_prof_args()
+        prof_args = DynamicProfilerConfigContext(prof_json)
 
         if not prof_args.is_valid:
             logger.error("Dynamic profile json is not valid, please check the json file.")
@@ -451,43 +250,83 @@ class DynamicProfilerMonitorBase(Callback):
         """
 
         self._step_num += 1
-        prof_args = self._get_prof_args()
+        prof_json = self._get_prof_args()
+        if not prof_json:
+            return
+        if self._is_dyno:
+            # Dyno monitor process
+            if self.NPU_MONITOR_START in prof_json:
+                self._call_dyno_monitor(prof_json)
+                return
 
+        prof_args = DynamicProfilerConfigContext(prof_json)
         if not prof_args.is_valid:
-            logger.error("Dynamic profile json is not valid, please check the json file.")
+            logger.error("Dynamic profile config is not valid, please check the json or dyno config.")
             return
-
-        if prof_args.start_step == -1 or prof_args.stop_step == -1:
-            return
-
-        # Skips the number of steps less than start_step
-        if self._step_num < prof_args.start_step:
-            return
-
-        if self._start_step != prof_args.start_step or self._stop_step != prof_args.stop_step:
-            # Update new start_step and stop_step
-            self._start_step = prof_args.start_step
-            self._stop_step = prof_args.stop_step
-            if self._start_step >= 0 and 0 <= self._start_step <= self._stop_step:
-                prof_path = os.path.join(self._output_path,
-                                         f"rank{self._rank_id}_start{self._start_step}_stop{self._stop_step}")
-                print_msg(f"Rank {self._rank_id} create output path {prof_path}")
-                print_msg(f"Rank {self._rank_id} Dynamic profile start at step {self._start_step}, "
-                          f"will stop at step {self._stop_step}")
-                self._profiler = Profiler(schedule=schedule(wait=0, warmup=0,
-                                                            active=self._stop_step - self._start_step + 1,
-                                                            repeat=1,
-                                                            skip_first=1),
-                                          on_trace_ready=tensorboard_trace_handler(dir_name=prof_path),
-                                          **prof_args.args)
-            else:
-                self._profiler = None
-                logger.error("Rank %d Dynamic profile start at step %d and stop at step %d in config_json must be "
-                             "greater than or equal to 0, and stop step should not be less than start step",
-                             self._rank_id, self._start_step, self._stop_step)
+        self._handle_profiler_setup(prof_args)
 
         if self._profiler:
             self._profiler.step()
+
+    def _handle_profiler_setup(self, args):
+        """Common handler for profiler setup logic shared between dyno and non-dyno paths."""
+        start_step = args.start_step
+        stop_step = args.stop_step
+
+        if start_step == -1 or stop_step == -1:
+            return
+
+        if self._step_num < start_step:
+            return
+
+        if self._start_step != start_step or self._stop_step != stop_step:
+            self._start_step = start_step
+            self._stop_step = stop_step
+
+            if not (start_step >= 0 and 0 <= start_step <= stop_step):
+                self._profiler = None
+                logger.error(
+                    "Rank %d Dynamic profile start at step %d and stop at step %d must be "
+                    "greater than or equal to 0, and stop step should not be less than start step",
+                    self._rank_id, start_step, stop_step
+                )
+                return
+
+            # Setup profiler configuration
+            active_steps = stop_step - start_step + 1
+            self._output_path = args.prof_path if args.prof_path else self._output_path
+            prof_path = os.path.join(
+                self._output_path,
+                f"rank{self._rank_id}_start{start_step}_stop{stop_step}"
+            )
+            print_msg(f"Rank {self._rank_id} create output path {prof_path}")
+            print_msg(
+                f"Rank {self._rank_id} Dynamic profile start at step {start_step}, "
+                f"will stop at step {stop_step}"
+            )
+            profiler_config = {
+                "schedule": schedule(
+                    wait=0,
+                    warmup=0,
+                    active=active_steps,
+                    repeat=1,
+                    skip_first=1
+                ),
+                "on_trace_ready": tensorboard_trace_handler(
+                    dir_name=prof_path,
+                    analyse_flag=args.analyse
+                ),
+                **args.args
+            }
+
+            self._profiler = Profiler(**profiler_config)
+
+    @no_exception_func()
+    def _call_dyno_monitor(self, dyno_args):
+        if "is_valid" in dyno_args:
+            del dyno_args["is_valid"]
+        dyno_monitor_proxy = MsDynamicMonitorProxySingleton().get_proxy()
+        dyno_monitor_proxy.enable_dyno_npu_monitor(dyno_args)
 
     @no_exception_func()
     def on_train_end(self, run_context):
@@ -502,11 +341,15 @@ class DynamicProfilerMonitorBase(Callback):
     def _get_prof_args(self):
         """ Get prof_args """
         logger.error("Dynamic profiler _get_prof_args is not implemented")
-        return DynamicProfilerArgs()
+        return {}
 
     def _clean_resource(self):
         """Clean resource"""
         logger.error("Dynamic profiler _clean_resource is not implemented")
+
+    def _finalize_dynolog(self):
+        """finalize dynolog"""
+        logger.error("Dynolog monitor _finalize_dynolog is not implemented")
 
     def _check_step(self, start_step, stop_step, step_num):
         """Check step valid"""
@@ -536,7 +379,7 @@ class DynamicProfilerMonitorBase(Callback):
         if self._rank_id == 0:
             if not os.path.exists(self._cfg_json_path):
                 logger.warning("cfg_path is not exist, create default cfg json")
-                FileManager.create_json_file(self._cfg_path, DynamicProfilerArgs().vars,
+                FileManager.create_json_file(self._cfg_path, DynamicProfilerConfigContext.vars,
                                              "profiler_config.json", indent=4)
         else:
             logger.info("rank_id is not 0, skip init cfg json")
@@ -550,10 +393,12 @@ class DynamicProfilerMonitorBase(Callback):
     def _create_process(self):
         """Create json monitor process, one process will be created at one worker"""
         if self._is_create_process:
+            args = [self._shared_loop_flag, self._poll_interval, self._shm, self._rank_id] if self._is_dyno else \
+                [self._shared_loop_flag, self._poll_interval, self._shm, self._cfg_json_path]
             # daemon need to be set to True, otherwise the process will not be killed when the main process exits.
-            self._process = multiprocessing.Process(target=worker_func, daemon=True,
-                                                    args=(self._shared_loop_flag, self._poll_interval,
-                                                          self._shm, self._cfg_json_path))
+            self._process = multiprocessing.Process(target=worker_dyno_func if self._is_dyno else worker_func,
+                                                    daemon=True,
+                                                    args=args)
             self._process.start()
             logger.info("Config monitor process has been created by rank %d.", self._rank_id)
         else:
@@ -573,7 +418,7 @@ class DynamicProfilerMonitorBase(Callback):
         if not os.path.exists(shm_path):
             return
 
-        MAX_TIME_DIFF = 60 # seconds
+        MAX_TIME_DIFF = 60  # seconds
         time_shm = os.stat(shm_path).st_ctime
         cur_proc_time = self._get_pid_st_ctime(os.getpid())
 
@@ -593,7 +438,7 @@ class DynamicProfilerMonitorBase(Callback):
             logger.error("Process with PID %d does not exist.", pid)
         except PermissionError:
             logger.error("Permission denied when accessing PID %d.", pid)
-        except Exception as ex: # pylint: disable=W0703
+        except Exception as ex:  # pylint: disable=W0703
             logger.error("An error occurred while getting creation time for PID %d: %s", pid, str(ex))
 
 
@@ -601,7 +446,8 @@ if sys.version_info >= (3, 8):
     @no_exception_func()
     def write_bytes(shm, byte_data):
         """Write bytes to shared memory"""
-        shm.buf[:DynamicProfilerArgs.SIZE] = byte_data
+        shm.buf[:] = b'\x00' * len(shm.buf)
+        shm.buf[:len(byte_data)] = byte_data
 else:
     @no_exception_func()
     def write_bytes(shm, byte_data):
@@ -624,20 +470,47 @@ def worker_func(loop_flag, poll_interval, shm, cfg_path):
                     with open(cfg_path, 'r') as f:
                         data = json.load(f)
 
-                    # convert json to DynamicProfilerArgs
-                    prof_args = DynamicProfilerArgs(**data)
-                    prof_args.is_valid = True
+                    data['is_valid'] = True
                     logger.info("Dynamic profiler process load json success")
                 except json.JSONDecodeError as e:
-                    prof_args = DynamicProfilerArgs()
-                    prof_args.is_valid = False
+                    data = {'is_valid': False}
                     logger.error("Dynamic profiler process load json failed: %s", e)
-                byte_data = prof_args.to_bytes()
+                # convert json to bytes
+                byte_data = DynamicProfilerConfigContext.json_to_bytes(data)
                 write_bytes(shm, byte_data)
         else:
             logger.error("Dynamic profiler cfg json not exists")
         time.sleep(poll_interval)
     logger.info("Dynamic profiler process done")
+
+
+@no_exception_func()
+def worker_dyno_func(loop_flag, poll_interval, shm, rank_id):
+    """ dyno monitor process worker function python version >= 3.8"""
+    proxy = MsDynamicMonitorProxySingleton().get_proxy()
+    ret = proxy.init_dyno(rank_id)
+
+    if not ret:
+        logger.warning("Rank %d init dynolog failed !")
+        return
+    logger.info("Rank %d init dynolog success !")
+
+    while loop_flag.value:
+        try:
+            res = proxy.poll_dyno()
+            if not res:
+                continue
+            data = DynamicProfilerUtils.dyno_str_to_dict(res)
+            data['is_valid'] = True
+        except Exception as e:  # pylint: disable=broad-except
+            data = {'is_valid': False}
+            logger.error("Dynolog process load config failed: %s", e)
+
+        # convert dyno config json to bytes
+        byte_data = DynamicProfilerConfigContext.json_to_bytes(data)
+        write_bytes(shm, byte_data)
+        time.sleep(poll_interval)
+    logger.info("Dynolog process done")
 
 
 if sys.version_info >= (3, 8):
@@ -660,19 +533,30 @@ if sys.version_info >= (3, 8):
                   a relative value, with the first step of training being 1. The stop_step must be greater than or
                   equal to start_step. The default value is -1, indicating that data collection will not start during
                   the entire training process.
-                - aic_metrics (int, optional) - The range of values corresponds to the Profiler. The default value -1
-                  indicates that AI Core utilization is not collected, and 0 indicates PipeUtilization, 1 indicates
-                  ArithmeticUtilization, 2 stands for Memory, 3 stands for MemoryL0, 4 stands for MemoryUB, 5 indicates
-                  ResourceConflictRatio, 6 indicates L2Cache, 7 indicates MemoryAccess.
-                - profiler_level (int, optional) - Sets the level of performance data collection, where -1 represents
-                  ProfilerLevel.LevelNone, 0 represents ProfilerLevel.Level0, 1 represents ProfilerLevel.Level1, and
-                  2 represents ProfilerLevel.Level2. The default value is 0, indicating the ProfilerLevel.Level0
-                  collection level.
-                - activities (int, optional) - Sets the devices for performance data collection, where 0 represents
-                  CPU+NPU, 1 represents CPU, and 2 represents NPU. The default value is 0, indicating the collection
-                  of CPU+NPU performance data.
-                - export_type (int, optional) -  Sets the data type to export, where 0 represents text, 1 represents db,
-                  and 2 represents text and db. The default value is 0, indicating only export text type data.
+                - aic_metrics (int/str, optional) - Set the collection of AI Core metric data. The current version can
+                  pass in either type int or str. Later, it will be updated to only pass in the str type.
+                  Here, ``0`` and ``"PipeUtilization"`` represent PipeUtilization; ``1`` and ``"ArithmeticUtilization"``
+                  represent ArithmeticUtilization; ``2`` and ``"Memory"`` represent Memory; ``3`` and ``"MemoryL0"``
+                  represent MemoryL0; ``4`` and ``"MemoryUB"`` stand for MemoryUB; ``5`` and ``"ResourceConflictRatio"``
+                  represent ResourceConflictRatio; ``6`` and ``"L2Cache"`` represent L2Cache; ``7`` and
+                  ``"MemoryAccess"`` stand for MemoryAccess. The default value ``"AiCoreNone"`` indicates that the
+                  AI Core metric is not collected.
+                - profiler_level (int/str, optional) - Set the level for collecting performance data. The current
+                  version can pass in either type int or str, and it will be updated to only pass in str type
+                  in the future. Among them, ``-1`` and ``"LevelNone"`` represent ProfilerLevel.LevelNone, ``0``
+                  and ``"Level0"`` represent ProfilerLevel.Level0, and ``1`` and ``"Level1"`` represent
+                  ProfilerLevel.Level1. ``2`` and ``"Level2"`` stand for Profile Level.Level2.
+                  The default value ``"Level0"`` indicates the collection level of ProfilerLevel.Level0.
+                - activities (int/list, optional) - Set the device for collecting performance data.
+                  The current version can pass in either type int or list. Later, it will be updated to only
+                  pass in the list type. Among them, ``0`` and ``["CPU","NPU"]`` represent CPU+NPU, ``1`` and
+                  ``["CPU"]`` represent CPU, and ``2`` and ``["NPU"]`` represent NPU. The default values
+                  ``["CPU","NPU"]`` indicate the collection of  performance data of CPU+NPU.
+                - export_type (int/list, optional) - Set the type of the exported performance data.
+                  The current version can pass in either type int or list, and it will be updated later
+                  to only pass in the list type. Among them, ``0`` and ``["text"]`` represent text, ``1`` and ``["db"]``
+                  represent db, and ``2`` and ``["text","db"]`` represent text and db respectively. The default value
+                  ``["text"]`` indicates that only performance data of the text type is exported.
                 - profile_memory (bool, optional) - Set whether to collect memory performance data, true indicates that
                   memory performance data is collected, false indicates that memory performance data is not collected.
                   The default value is false, indicating that memory performance data is not collected.
@@ -690,6 +574,14 @@ if sys.version_info >= (3, 8):
                 - data_simplification (bool, optional) - Sets whether to enable data simplification, where true means
                   to enable and false means not to enable. The default value is true, indicating that data
                   simplification is enabled.
+                - mstx_domain_include (list, optional) - Set the set of enabled domain names when the mstx switch
+                  is turned on. The name must be of str type. Default value: ``[]``, indicating that this parameter
+                  is not used to control the domain. This parameter is mutually exclusive with the mstx_domain_exclude
+                  parameter and cannot be set. simultaneously. If both are set, only the mstx_domain_include parameter
+                  takes effect.
+                - mstx_domain_exclude (list, optional) - Set the set of domain names that are not enabled when the
+                  mstx switch is turned on. The name must be of str type. Default value: ``[]``, indicating that this
+                  parameter is not used to control the domain.
 
             output_path (str, optional): (Ascend only) Output data path. Default: ``"./dyn_profile_data"`` .
             poll_interval (int, optional): (Ascend only) The polling period of the monitoring process, in seconds.
@@ -729,9 +621,13 @@ if sys.version_info >= (3, 8):
             ...     model.train(10, data, callbacks=[dynprof_cb])
         """
 
-        def __init__(self, cfg_path, output_path="./dyn_profile_data", poll_interval=2, **kwargs):
-            if not isinstance(cfg_path, str):
-                raise TypeError("The cfg_path must be a string.")
+        def __init__(self, cfg_path=None, output_path="./dyn_profile_data", poll_interval=2, **kwargs):
+            if DynamicProfilerUtils.is_dyno_mode() and cfg_path is not None:
+                logger.warning("If you export 'KINETO_USE_DAEMON=1', your 'cfg_path' parameter will be invalid!")
+                cfg_path = None
+
+            if not DynamicProfilerUtils.is_dyno_mode() and not isinstance(cfg_path, str):
+                raise TypeError("If you set 'KINETO_USE_DAEMON' to not 1, The cfg_path must be a string.")
             if not isinstance(output_path, str):
                 logger.warning(f"The output_path must be a string, "
                                f"but got type {type(output_path)}, it will be set to './dyn_profile_data'.")
@@ -740,7 +636,21 @@ if sys.version_info >= (3, 8):
 
         def _get_prof_args(self):
             """ Get prof_args py38"""
-            return DynamicProfilerArgs.from_bytes(self._shm.buf[:DynamicProfilerArgs.SIZE])
+            byte_length = self._get_shm_byte_length()
+
+            if byte_length == 0:
+                return {}
+
+            valid_bytes = self._shm.buf[:byte_length]
+            return DynamicProfilerConfigContext.bytes_to_json(bytes(valid_bytes))
+
+        def _get_shm_byte_length(self):
+            byte_length = 0
+            for i, byte in enumerate(self._shm.buf):
+                if byte == 0:
+                    byte_length = i
+                    break
+            return byte_length
 
         @no_exception_func()
         def _clean_resource(self):
@@ -771,6 +681,12 @@ if sys.version_info >= (3, 8):
                 self._shm = None
 
         @no_exception_func()
+        def _finalize_dynolog(self):
+            dyno_monitor_proxy = MsDynamicMonitorProxySingleton().get_proxy()
+            dyno_monitor_proxy.finalize_dyno()
+            logger.info("Rank %d finalize dynolog success !", self._rank_id)
+
+        @no_exception_func()
         def _create_shm(self):
             """Create a json monitor process based on whether the SharedMemory is successfully created py38"""
             try_times = 10
@@ -789,7 +705,7 @@ if sys.version_info >= (3, 8):
                     try:
                         # Step 2: only one process can create shm successfully.
                         self._shm = shared_memory.SharedMemory(name=self._shm_name,
-                                                               create=True, size=DynamicProfilerArgs.SIZE)
+                                                               create=True, size=DynamicProfilerUtils.CFG_BUFFER_SIZE)
                         self._is_create_process = True
                         logger.info("Rank %d shared memory is created.", self._rank_id)
                         break
@@ -799,7 +715,7 @@ if sys.version_info >= (3, 8):
                         logger.warning("Rank %d shared memory create failed, "
                                        "retry times = %d.", self._rank_id, try_times)
                         time.sleep(random.uniform(0, 0.02))  # sleep 0 ~ 20 ms
-                except Exception as e: # pylint: disable=W0703
+                except Exception as e:  # pylint: disable=W0703
                     # shm open failed because of other process create shm not finished
                     try_times -= 1
                     logger.warning("Rank %d shared memory open failed, error: %s, retry times = %d",
@@ -858,16 +774,24 @@ else:
             ...     model.train(10, data, callbacks=[dynprof_cb])
         """
 
-        def __init__(self, cfg_path, output_path="./dyn_profile_data", poll_interval=2, **kwargs):
-            if not isinstance(cfg_path, str):
-                raise TypeError("The cfg_path must be a string.")
+        def __init__(self, cfg_path=None, output_path="./dyn_profile_data", poll_interval=2, **kwargs):
+            if DynamicProfilerUtils.is_dyno_mode() and cfg_path is not None:
+                logger.warning("If you export 'KINETO_USE_DAEMON=1', your 'cfg_path' parameter will be invalid!")
+                cfg_path = None
+
+            if not DynamicProfilerUtils.is_dyno_mode() and not isinstance(cfg_path, str):
+                raise TypeError("If you set 'KINETO_USE_DAEMON' to not 1, The cfg_path must be a string.")
+
             if not isinstance(output_path, str):
                 logger.warning(f"The output_path must be a string, "
                                f"but got type {type(output_path)}, it will be set to './dyn_profile_data'.")
                 output_path = "./dyn_profile_data"
             self._cfg_path = cfg_path
             self._shm_name = time.strftime("DynamicProfileShm%Y%m%d%H", time.localtime())
-            self._shm_dir = os.path.join(self._cfg_path, "shm")
+            self._shm_dir = (
+                "/dev/shm" if DynamicProfilerUtils.is_dyno_mode()
+                else os.path.join(self._cfg_path, "shm")
+            )
             PathManager.make_dir_safety(self._shm_dir)
             self._shm_path = os.path.realpath(os.path.join(self._shm_dir, self._shm_name))
 
@@ -878,7 +802,8 @@ else:
         def _get_prof_args(self):
             """ Get prof_args py37"""
             self._shm.seek(0)
-            return DynamicProfilerArgs.from_bytes(self._shm.read(DynamicProfilerArgs.SIZE))
+            return DynamicProfilerConfigContext.bytes_to_json(
+                bytes(self._shm.read(DynamicProfilerUtils.CFG_BUFFER_SIZE)))
 
         @no_exception_func()
         def _clean_resource(self):
@@ -923,7 +848,8 @@ else:
                     self.fd = os.open(self._shm_path, os.O_EXCL | os.O_RDWR,
                                       stat.S_IWUSR | stat.S_IRUSR | stat.S_IRGRP)
                     self._memory_mapped_file = os.fdopen(self.fd, 'rb')
-                    self._shm = mmap.mmap(self._memory_mapped_file.fileno(), length=DynamicProfilerArgs.SIZE)
+                    self._shm = mmap.mmap(self._memory_mapped_file.fileno(),
+                                          length=DynamicProfilerUtils.CFG_BUFFER_SIZE)
                     self._is_create_process = False
                     logger.info("Rank %d shared memory is connected.", self._rank_id)
                     break
@@ -937,7 +863,7 @@ else:
 
                         # Init mmap file need to write data
                         with os.fdopen(fd, 'wb') as f:
-                            data_instance = DynamicProfilerArgs()
+                            data_instance = DynamicProfilerConfigContext({})
                             byte_data = data_instance.to_bytes()
                             f.write(byte_data)
 
@@ -945,7 +871,8 @@ else:
                         self.fd = os.open(self._shm_path, os.O_EXCL | os.O_RDWR,
                                           stat.S_IWUSR | stat.S_IRUSR | stat.S_IRGRP)
                         self._memory_mapped_file = os.fdopen(self.fd, 'rb')
-                        self._shm = mmap.mmap(self._memory_mapped_file.fileno(), length=DynamicProfilerArgs.SIZE)
+                        self._shm = mmap.mmap(self._memory_mapped_file.fileno(), length=DynamicProfilerUtils.
+                                              CFG_BUFFER_SIZE)
                         self._is_create_process = True
                         logger.info("Rank %d shared memory is created.", self._rank_id)
                         break

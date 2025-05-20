@@ -52,9 +52,7 @@ ValuePtr TensorBackwardHook::operator()(const ValuePtr &grad) {
   const auto py_arg = CValueToPybindObj(grad);
   const auto ret = RunHook(tensor_id_, hook_, py_arg);
   ValuePtr val;
-  if (IsStubTensor(ret)) {
-    val = ConvertStubTensor(ret);
-  } else if (tensor::IsTensorPy(ret)) {
+  if (tensor::IsTensorPy(ret)) {
     val = tensor::ConvertToTensor(ret);
   } else {
     MS_LOG(EXCEPTION) << "Tensor hook should be return Tensor, but get type: "

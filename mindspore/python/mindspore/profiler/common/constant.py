@@ -212,3 +212,8 @@ class ExportType(Enum):
 class CannLibName:
     """CANN lib name"""
     CANN_MSPTI = "libmspti.so"
+
+
+class DynoMode:
+    """dyno mode"""
+    DYNO_DAEMON = "KINETO_USE_DAEMON"
