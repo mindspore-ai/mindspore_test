@@ -65,6 +65,9 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public HalResBase {
                                        TypeId type_id, const std::string &device_name, uint32_t device_id,
                                        uint32_t stream_id, const UserDataPtr &user_data = nullptr) const override;
 
+  bool SyncCopy(const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync, size_t stream_id) const override;
+  bool AsyncCopy(const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync, size_t stream_id) const override;
+
   bool LoadCollectiveCommLib() override;
   bool IsEnableVmm() const override;
 
