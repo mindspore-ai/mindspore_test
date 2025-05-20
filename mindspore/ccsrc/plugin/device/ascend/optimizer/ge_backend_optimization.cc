@@ -254,6 +254,27 @@ void GEUnifyMindIR(const KernelGraphPtr &kernel_graph) {
                                   profiler::GetClockSyscnt(), 0);
 }
 
+bool IsPassDisableForGPTO() {
+  // Disable some passes per stage
+  std::stringstream enable_pass_stage_var;
+  enable_pass_stage_var << "MS_ENABLE_GPTO_STAGE_";
+  auto parallel_context = parallel::ParallelContext::GetInstance();
+  auto stages = parallel_context->pipeline_stage_split_num();
+  auto stage_device_num = parallel_context->device_num() / stages;
+  auto stage_id = parallel_context->global_rank() / stage_device_num;
+  enable_pass_stage_var << stage_id;
+  std::string enable_pass_per_stage = common::GetEnv(enable_pass_stage_var.str());
+  if (enable_pass_per_stage != "" && (enable_pass_per_stage == "1" || enable_pass_per_stage == "3")) {
+    return True;
+  }
+  // Disable globally some passes
+  std::string enable_gpto = common::GetEnv("MS_ENABLE_GPTO");
+  if (enable_gpto == "1" || enable_gpto == "3") {
+    return True;
+  }
+  return False;
+}
+
 void GEAfterInlineOptimize(const KernelGraphPtr &kernel_graph) {
   uint64_t start_time = profiler::GetClockSyscnt();
   MS_EXCEPTION_IF_NULL(kernel_graph);
@@ -275,10 +296,13 @@ void GEAfterInlineOptimize(const KernelGraphPtr &kernel_graph) {
   after_inline_pm->AddPass(std::make_shared<InsertPreFetchDepend>());
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  if (ms_context->get_param<bool>(MS_CTX_ENABLE_GRAD_COMM_OPT)) {
-    after_inline_pm->AddPass(std::make_shared<OverlapGradReduce>());
+  if (!IsPassDisableForGPTO()) {
+    if (ms_context->get_param<bool>(MS_CTX_ENABLE_GRAD_COMM_OPT)) {
+      after_inline_pm->AddPass(std::make_shared<OverlapGradReduce>());
+    }
+    after_inline_pm->AddPass(std::make_shared<Overlap1b1f>());
   }
-  after_inline_pm->AddPass(std::make_shared<Overlap1b1f>());
+
   optimizer->AddPassManager(after_inline_pm);
   (void)optimizer->Optimize(kernel_graph);
   PROF_END(GEAfterInlineOptimize);

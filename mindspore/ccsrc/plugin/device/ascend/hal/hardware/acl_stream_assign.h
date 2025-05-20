@@ -59,9 +59,7 @@ class AclStreamAssign {
   AclStreamAssign(const AclStreamAssign &) = delete;
   AclStreamAssign &operator=(const AclStreamAssign &) = delete;
 
-  void AssignStream(const NotNull<KernelGraphPtr> &kernel_graph,
-                    const std::vector<std::pair<CNodePtr, std::tuple<char, size_t, size_t, size_t>>> &mock_exec_order,
-                    DeviceResManager *device_res_manager);
+  void AssignStream(const NotNull<KernelGraphPtr> &kernel_graph, DeviceResManager *device_res_manager);
   void CreateEvent(const NotNull<KernelGraphPtr> &kernel_graph);
 
  private:
@@ -88,9 +86,7 @@ class AclStreamAssign {
                               mindspore::HashMap<AnfNodePtr, std::vector<CNodePtr>> *kernel_recv,
                               mindspore::HashMap<AnfNodePtr, std::set<size_t>> *producer_streams);
 
-  void InsertEventForNonTaskSink(
-    const NotNull<KernelGraphPtr> &kernel_graph,
-    const std::vector<std::pair<CNodePtr, std::tuple<char, size_t, size_t, size_t>>> &mock_exec_order);
+  void InsertEventForNonTaskSink(const NotNull<KernelGraphPtr> &kernel_graph, DeviceResManager *device_res_manager);
 
   void ProcessStreamForInputs(const NotNull<KernelGraphPtr> &kernel_graph, const CNodePtr &kernel,
                               const NodeIoExecInfoPtr &io_exec_info,
