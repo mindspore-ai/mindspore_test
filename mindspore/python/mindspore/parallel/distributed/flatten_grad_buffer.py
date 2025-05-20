@@ -1,4 +1,4 @@
-# Copyright 2024 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -281,7 +281,6 @@ class FlattenGradBuffer:
             bucket = self.param_to_bucket[param]
             if bucket.register_grad_ready(param):
                 self.issued += 1
-            ## 需要有额外校验，保证每轮都成功触发了
             if self.issued == len(self.buckets):
                 self.ddp_handle.buffer_issued += 1
                 if self.ddp_handle.buffer_issued == len(self.ddp_handle.buffers):
