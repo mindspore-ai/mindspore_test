@@ -1592,7 +1592,7 @@ void DataPrepareActor::PrepareWeightForInputOptimize(const KernelWithIndex &node
   const auto &front_node = node_with_index.first;
   MS_EXCEPTION_IF_NULL(front_node);
   auto outer_idx = graph_parameter_store->GetFrontNodeToIndex(front_node.get());
-  (void)FetchParameter(std::make_pair(node_with_index, outer_idx), context, GetAID());
+  (void)FetchParameter(std::make_pair(node_with_index, outer_idx), GetAID());
   // Record the update tensors for reprepare.
   // This will be removed after input optimization performance improved.
   if (is_enable_infer_boost_) {

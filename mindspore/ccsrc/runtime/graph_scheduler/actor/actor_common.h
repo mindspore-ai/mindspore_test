@@ -555,9 +555,9 @@ mindspore::HashMap<size_t, size_t> GetRepeatDeviceAddressIndexPair(const std::ve
 // Check a graph is from inference phase.
 bool IsInferPhase(const std::string &phase);
 TensorPtr FetchInputTensorByArg(const VectorRef &args, size_t arg_index, const KernelWithIndex &front_node);
-KernelTensorPtr FetchParameter(const std::pair<KernelWithIndex, size_t> &parameter_index,
-                               OpContext<KernelTensor> *const context, const AID &from_aid, bool is_first_user = true,
-                               size_t stream_id = SIZE_MAX, bool enable_parallel_dispath = false);
+KernelTensorPtr FetchParameter(const std::pair<KernelWithIndex, size_t> &parameter_index, const AID &from_aid,
+                               bool is_first_user = true, size_t stream_id = SIZE_MAX,
+                               bool enable_parallel_dispath = false);
 bool IsEmptySequenceTensor(tensor::Tensor *tensor);
 size_t FetchInputTensorIndex(const KernelWithIndex &front_node);
 

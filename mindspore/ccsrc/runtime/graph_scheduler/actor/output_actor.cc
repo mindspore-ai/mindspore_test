@@ -229,7 +229,7 @@ void OutputActor::FetchParameterInput(OpContext<KernelTensor> *const context) {
     MS_EXCEPTION_IF_NULL(tensor);
 
     const auto new_tensor = std::make_shared<tensor::Tensor>(tensor->data_type(), tensor->shape());
-    auto parameter_kernel_tensor = FetchParameter(parameter_index.second, context, GetAID());
+    auto parameter_kernel_tensor = FetchParameter(parameter_index.second, GetAID());
     MS_EXCEPTION_IF_NULL(parameter_kernel_tensor);
     auto device_tensor = parameter_kernel_tensor->device_address().get();
     // Create the device address and put it into host tensor.
