@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <memory>
 #include "mindspore/ccsrc/pyboost/comm_handle.h"
 #include "mindspore/ccsrc/pyboost/comm_utils.h"
 #include "runtime/pynative/op_executor.h"
@@ -67,6 +68,55 @@ void CommHandle::ReleaseMultiStreamEvent(size_t cur_stream_id) {
     .GetMultiStreamController(device_ctx_->DeviceName())
     ->WaitEvent(*task_id_on_stream_, *record_stream_id_, cur_stream_id);
 }
+
+void WaitTaskFunc(CommHandlePtr comm_handle) {
+  MS_EXCEPTION_IF_NULL(comm_handle);
+  auto cur_stream_id = comm_handle->device_ctx()->device_res_manager_->GetCurrentStreamId();
+  auto wait_fn = [cur_stream_id, comm_handle]() {
+    runtime::OpExecutor::DispatchLaunchTask([cur_stream_id, comm_handle]() {
+      comm_handle->WaitDeviceEvent(cur_stream_id);
+
+      auto event = comm_handle->event();
+      if (event == nullptr) {
+        return;
+      }
+      auto device_ctx = comm_handle->device_ctx();
+      if (device_ctx != nullptr && device_ctx->initialized()) {
+        device_ctx->device_res_manager_->DestroyEvent(event);
+        MS_LOG(DEBUG) << "DestoryEvent done, event: " << event;
+      }
+    });
+
+    comm_handle->ReleaseMultiStreamEvent(cur_stream_id);
+  };
+  if (!runtime::OpExecutor::NeedSync()) {
+    runtime::OpExecutor::GetInstance().PushSimpleOpRunTask(
+      std::make_shared<runtime::PassthroughNoWaitDeviceTask>(wait_fn));
+  } else {
+    wait_fn();
+  }
+}
+
+void CommHandle::Wait() {
+  // Wait event async.
+  WaitTaskFunc(shared_from_this());
+  return;
+}
+
+void CommHandleTask::Run() {
+  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kPyNativeFrontendTask,
+                                     runtime::ProfilerRecorder::kNoName, false, false, task_id_);
+  run_func_();
+}
+
+void CommHandleTask::SetException(const std::exception_ptr &e) {
+  if (set_exception_func_ == nullptr) {
+    MS_LOG(ERROR) << "set_exception_func_ is null";
+    return;
+  }
+  set_exception_func_();
+}
+
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

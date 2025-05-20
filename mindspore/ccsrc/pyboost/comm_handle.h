@@ -18,6 +18,7 @@
 #define MINDSPORE_MINDSPORE_CCSRC_KERNEL_PYBOOST_COMM_HANDLE_H_
 
 #include <memory>
+#include <utility>
 #include "include/common/visible.h"
 #include "runtime/hardware/device_context.h"
 #include "ir/device_event.h"
@@ -25,7 +26,7 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-class PYBOOST_API CommHandle {
+class PYBOOST_API CommHandle : public std::enable_shared_from_this<CommHandle> {
  public:
   CommHandle() = default;
   explicit CommHandle(const device::DeviceContext *device_ctx) : device_ctx_(device_ctx) {}
@@ -45,6 +46,8 @@ class PYBOOST_API CommHandle {
 
   const device::DeviceContext *device_ctx() const { return device_ctx_; }
 
+  void Wait();
+
  private:
   DeviceEventPtr event_{nullptr};
   // Transfer between multi-stage pipelines
@@ -55,6 +58,24 @@ class PYBOOST_API CommHandle {
 };
 
 using CommHandlePtr = std::shared_ptr<CommHandle>;
+void PYBOOST_API WaitTaskFunc(CommHandlePtr comm_handle);
+
+class CommHandleTask : public runtime::AsyncTask {
+ public:
+  explicit CommHandleTask(std::function<void(void)> run_func)
+      : AsyncTask(runtime::kFrontendTask), run_func_(std::move(run_func)) {}
+  explicit CommHandleTask(std::function<void(void)> run_func, std::function<void()> set_exception_func)
+      : AsyncTask(runtime::kFrontendTask),
+        run_func_(std::move(run_func)),
+        set_exception_func_(std::move(set_exception_func)) {}
+  ~CommHandleTask() override = default;
+  void Run() override;
+  void SetException(const std::exception_ptr &e) override;
+
+ private:
+  std::function<void(void)> run_func_;
+  std::function<void()> set_exception_func_;
+};
 
 }  // namespace pyboost
 }  // namespace kernel
