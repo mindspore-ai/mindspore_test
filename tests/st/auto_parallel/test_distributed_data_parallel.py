@@ -1,4 +1,4 @@
-# Copyright 2024 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ def test_full_batch_DDP_without_bucket_rebuilt():
     """
     ret = os.system("sysctl -w net.ipv4.ip_local_reserved_ports=30000-30015")
     ret = os.system(
-        f"msrun --worker_num=2 --local_worker_num=2 --log_dir=msrun_log --join=True --master_port=8129\
+        f"msrun --worker_num=4 --local_worker_num=4 --log_dir=msrun_log --join=True --master_port=8129\
             pytest -s distributed_data_parallel.py::test_full_batch_DDP_without_bucket_rebuilt"
     )
     assert ret == 0
@@ -93,5 +93,85 @@ def test_accumulate_batch_DDP_without_bucket_rebuilt():
     ret = os.system(
         f"msrun --worker_num=4 --local_worker_num=4 --log_dir=msrun_log --join=True --master_port=8129\
             pytest -s distributed_data_parallel.py::test_accumulate_batch_DDP_without_bucket_rebuilt"
+    )
+    assert ret == 0
+
+
+@arg_mark(
+    plat_marks=["platform_ascend910b"],
+    level_mark="level0",
+    card_mark="allcards",
+    essential_mark="essential",
+)
+def test_full_batch_DDP_without_bucket_rebuilt_cpp():
+    """
+    Feature: Distributed Data Parallel(DDP).
+    Description: DDP single fullbatch training without bucket rebuild in params executed order
+    Expectation: Run success
+    """
+    ret = os.system("sysctl -w net.ipv4.ip_local_reserved_ports=30000-30015")
+    ret = os.system(
+        f"msrun --worker_num=4 --local_worker_num=4 --log_dir=msrun_log --join=True --master_port=8129\
+            pytest -s distributed_data_parallel.py::test_full_batch_DDP_without_bucket_rebuilt_cpp"
+    )
+    assert ret == 0
+
+
+@arg_mark(
+    plat_marks=["platform_ascend910b"],
+    level_mark="level0",
+    card_mark="allcards",
+    essential_mark="essential",
+)
+def test_full_batch_DDP_with_bucket_rebuilt_cpp():
+    """
+    Feature: Distributed Data Parallel(DDP).
+    Description: DDP single fullbatch training with bucket rebuild in params executed order
+    Expectation: Run success
+    """
+    ret = os.system("sysctl -w net.ipv4.ip_local_reserved_ports=30000-30015")
+    ret = os.system(
+        f"msrun --worker_num=4 --local_worker_num=4 --log_dir=msrun_log --join=True --master_port=8129\
+            pytest -s distributed_data_parallel.py::test_full_batch_DDP_with_bucket_rebuilt_cpp"
+    )
+    assert ret == 0
+
+
+@arg_mark(
+    plat_marks=["platform_ascend910b"],
+    level_mark="level0",
+    card_mark="allcards",
+    essential_mark="essential",
+)
+def test_accumulate_batch_DDP_with_bucket_rebuilt_cpp():
+    """
+    Feature: Distributed Data Parallel(DDP).
+    Description: DDP accumulated batch training with bucket rebuild in params executed order
+    Expectation: Run success
+    """
+    ret = os.system("sysctl -w net.ipv4.ip_local_reserved_ports=30000-30015")
+    ret = os.system(
+        f"msrun --worker_num=4 --local_worker_num=4 --log_dir=msrun_log --join=True --master_port=8129\
+            pytest -s distributed_data_parallel.py::test_accumulate_batch_DDP_with_bucket_rebuilt_cpp"
+    )
+    assert ret == 0
+
+
+@arg_mark(
+    plat_marks=["platform_ascend910b"],
+    level_mark="level0",
+    card_mark="allcards",
+    essential_mark="essential",
+)
+def test_accumulate_batch_DDP_without_bucket_rebuilt_cpp():
+    """
+    Feature: Distributed Data Parallel(DDP).
+    Description: DDP accumulated batch training without bucket rebuild in params executed order
+    Expectation: Run success
+    """
+    ret = os.system("sysctl -w net.ipv4.ip_local_reserved_ports=30000-30015")
+    ret = os.system(
+        f"msrun --worker_num=4 --local_worker_num=4 --log_dir=msrun_log --join=True --master_port=8129\
+            pytest -s distributed_data_parallel.py::test_accumulate_batch_DDP_without_bucket_rebuilt_cpp"
     )
     assert ret == 0

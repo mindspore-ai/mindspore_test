@@ -18,6 +18,7 @@ Parallel Base Configuration
     :template: classtemplate.rst
 
     mindspore.parallel.auto_parallel.AutoParallel
+    mindspore.parallel.distributed.DistributedDataParallel
     mindspore.parallel.nn.GradAccumulation
     mindspore.parallel.nn.MicroBatchInterleaved
     mindspore.parallel.nn.Pipeline

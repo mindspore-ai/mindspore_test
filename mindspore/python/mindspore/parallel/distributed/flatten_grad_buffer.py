@@ -1,4 +1,4 @@
-# Copyright 2024 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,12 +21,6 @@ from mindspore.communication.management import get_group_size
 import mindspore.communication.comm_func as comm_func
 
 __all__ = ["Bucket", "FlattenGradBuffer"]
-
-
-def divide(numerator, denominator):
-    """Ensure that numerator is divisible by the denominator and return the division value."""
-    ensure_divisibility(numerator, denominator)
-    return numerator // denominator
 
 
 class BufferType(Enum):
@@ -157,7 +151,6 @@ class FlattenGradBuffer:
         gradient_scaling_factor (float):
     """
 
-    # pylint: disable=W0613
     def __init__(self, average_in_collective, param_dtype, grad_dtype, params, data_parallel_group,
                  bucket_size, gradient_scaling_factor, ddp_handle):
         super(FlattenGradBuffer, self).__init__()
@@ -175,6 +168,11 @@ class FlattenGradBuffer:
         self.issued = 0
         self.ddp_handle = ddp_handle
 
+        buckets_metadata = self.calc_partition_metadata(bucket_size, params)
+        self.instantiate_buckets(buckets_metadata, params)
+
+    def calc_partition_metadata(self, bucket_size, params):
+        """calc bucket partition metadata"""
         # helper func
         def _need_new_bucket(bucket_numel, bucket_id):
             target_bucket_size = bucket_size
@@ -196,7 +194,6 @@ class FlattenGradBuffer:
             bucket_id = bucket_id + 1
             bucket_params = []
 
-        # get bucket partition metadata
         param_data_list = []
         buckets_metadata = []
         data_start_index = 0
@@ -225,9 +222,12 @@ class FlattenGradBuffer:
         # allocate contiguous memory for parameters and gradients
         self.numel = data_start_index
         self.grad_data = Tensor(shape=(self.numel), dtype=self.grad_dtype, init=Zero())
+        self.grad_data.init_data()
         self.numel_unpadded = 0
+        return buckets_metadata
 
-        # build bucket instance according to partition metadata
+    def instantiate_buckets(self, buckets_metadata, params):
+        """build bucket instance according to partition metadata"""
         for bucket_start_index, bucket_end_index, bucket_params in buckets_metadata:
             local_grad_data = self.grad_data[bucket_start_index:bucket_end_index]
             self.numel_unpadded += bucket_end_index - bucket_start_index
@@ -246,7 +246,7 @@ class FlattenGradBuffer:
                 self.param_to_bucket[param] = bucket
 
         for param in params:
-            data_start_index, data_end_index, bucket_id = self.param_index_map[param]
+            data_start_index, _, _ = self.param_index_map[param]
             param.grad = self._get_buffer_slice(
                 param.shape, data_start_index, BufferType.GRAD
             )
@@ -281,7 +281,6 @@ class FlattenGradBuffer:
             bucket = self.param_to_bucket[param]
             if bucket.register_grad_ready(param):
                 self.issued += 1
-            ## 需要有额外校验，保证每轮都成功触发了
             if self.issued == len(self.buckets):
                 self.ddp_handle.buffer_issued += 1
                 if self.ddp_handle.buffer_issued == len(self.ddp_handle.buffers):
