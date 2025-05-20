@@ -13,14 +13,19 @@
 # limitations under the License.
 # ============================================================================
 """ Distributed data parallel wrapper. """
+import itertools
 from contextlib import contextmanager
 from typing import Optional
 import mindspore.nn as nn
 import mindspore.log as logger
+from mindspore import Tensor, mint
 from mindspore.common import dtype as mstype
 from mindspore.mint.distributed import get_world_size
 from mindspore.communication import GlobalComm
-from .flatten_grad_buffer import FlattenGradBuffer
+from mindspore.common.api import _pynative_executor
+from mindspore.mint.distributed import broadcast
+from mindspore.parallel.distributed.flatten_grad_buffer import FlattenGradBuffer
+from mindspore._c_expression import Reducer, _find_unused_parameters
 
 __all__ = ["DistributedDataParallel"]
 
@@ -29,8 +34,19 @@ def get_data_parallel_group():
     return GlobalComm.WORLD_COMM_GROUP
 
 
-def get_data_parallel_world_size():
-    return get_world_size()
+def get_data_parallel_world_size(group):
+    return get_world_size(group)
+
+
+def _find_tensors(obj):
+    if isinstance(obj, Tensor):
+        return [obj]
+    if isinstance(obj, (list, tuple)):
+        return itertools.chain.from_iterable(map(_find_tensors, obj))
+    if isinstance(obj, dict):
+        return itertools.chain.from_iterable(map(_find_tensors, obj.values()))
+
+    return []
 
 
 class DistributedDataParallel(nn.Cell):
@@ -80,13 +96,17 @@ class DistributedDataParallel(nn.Cell):
         >>>            print("epoch: %s, step: %s, loss is %.15f" % (epoch, i, loss_value))
     """
 
-    def __init__(self, module, process_group=None, bucket_cap_mb: Optional[int] = None, find_unused_parameters=False,
-                 average_in_collective: bool = False, static_graph=False):
+    def __init__(self, module, init_sync=True, process_group=None, bucket_cap_mb: Optional[int] = None,
+                 find_unused_parameters=False, average_in_collective: bool = False, static_graph=False,
+                 reducer_mode="CppReducer"):
         super(DistributedDataParallel, self).__init__(auto_prefix=False)
+        self.init_sync = init_sync
         self.bucket_cap_mb = bucket_cap_mb
         self.average_in_collective = average_in_collective
         self.grad_reduce_in_fp32 = False
-        self.process_group = process_group
+        self.process_group = process_group if process_group else get_data_parallel_group()
+        self.static_graph = static_graph
+        self.find_unused_parameters = find_unused_parameters
 
         self.module = module
         self.param_to_buffer = {}
@@ -99,10 +119,15 @@ class DistributedDataParallel(nn.Cell):
 
         # grads sync with allreduce comm
         self.sync_enabled = True
+        self.reducer_mode = reducer_mode # "CppReducer" or "PythonReducer"
+        self.buffers = []
+        self.has_mark_unused_param = False
 
         bucketed_params = []
+        self.skipped_params = []
         for _, param in self.module.parameters_and_names():
             if not param.requires_grad:
+                self.skipped_params.append(param)
                 continue
             param.grad = None
             param.main_grad = None
@@ -112,17 +137,29 @@ class DistributedDataParallel(nn.Cell):
                 self.gradient_scaling_factor = 1.0
             else:
                 # scale grads with dp size locally, then allreduce to add grads
-                data_parallel_world_size = get_data_parallel_world_size()
+                data_parallel_world_size = get_data_parallel_world_size(self.process_group)
                 self.gradient_scaling_factor = 1.0 / data_parallel_world_size
+        self.bucketed_params = bucketed_params
 
+        if self.reducer_mode == "CppReducer":
+            self.reducer = Reducer(self.bucketed_params,
+                                   self.process_group,
+                                   bucket_cap_mb,
+                                   self.grad_reduce_in_fp32,
+                                   average_in_collective,
+                                   static_graph,
+                                   find_unused_parameters)
+            if self.init_sync:
+                self.broadcast_coalesced()
+            return
         # allocate buffer for trained params
         self.buffers = self.allocate_buffers_for_parameters(
-            bucketed_params,
-            group=get_data_parallel_group()
-            if self.process_group is None
-            else self.process_group,
+            self.bucketed_params,
+            group=self.process_group,
             gradient_scaling_factor=self.gradient_scaling_factor,
         )
+        if self.init_sync:
+            self.broadcast_coalesced()
 
         # register hook for bucket grad reduce
         self._register_hook_for_params()
@@ -131,11 +168,10 @@ class DistributedDataParallel(nn.Cell):
         self.rebuilt_params_ = []
         self.buffer_iterations = 0
         self.has_bucket_rebuilt = False
-        self.static_graph = static_graph
         self.buffer_issued = 0
+        self.triggered_once = False
 
-    def allocate_buffers_for_parameters(self, input_params, group, gradient_scaling_factor):
-        """allocate buffers for parameters in different dtype group."""
+    def _group_params_by_dtype(self, input_params):
         param_and_grad_dtype_to_params = {}
         # group all params by parameter's data type and their gradient's data type.
         for param in input_params:
@@ -144,6 +180,11 @@ class DistributedDataParallel(nn.Cell):
             if (param_dtype, grad_dtype) not in param_and_grad_dtype_to_params:
                 param_and_grad_dtype_to_params[(param_dtype, grad_dtype)] = []
             param_and_grad_dtype_to_params[(param_dtype, grad_dtype)].append(param)
+        return param_and_grad_dtype_to_params
+
+    def allocate_buffers_for_parameters(self, input_params, group, gradient_scaling_factor):
+        """allocate buffers for parameters in different dtype group."""
+        param_and_grad_dtype_to_params = self._group_params_by_dtype(input_params)
 
         buffers = []
         # allocate buffer for each group separately
@@ -162,10 +203,14 @@ class DistributedDataParallel(nn.Cell):
             )
             for param in params:
                 self.param_to_buffer[param] = buffers[-1]
-        logger.debug("allocate buffers for parameters:", buffers)
+        logger.debug("allocate buffers for parameters: %s", buffers)
         return buffers
 
     def final_grad_reduce(self):
+        logger.debug("trigger ddp final grad reduce, %d, %d", self.static_graph, len(self.unused_param))
+        if self._should_rebuild_buckets():
+            for param in self.unused_param:
+                self.rebuilt_params_.append(param)
         for buffer in self.buffers:
             buffer.final_grad_reduce()
             buffer.issued = 0
@@ -177,20 +222,37 @@ class DistributedDataParallel(nn.Cell):
             if param.requires_grad:
                 param.register_hook(self._make_param_hook(param))
 
-    def _post_forward(self):
-        pass
+    def _post_forward(self, output):
+        """prepare for backward (e.g. find unused params) if needed"""
+        if self.reducer_mode == "CppReducer":
+            if _pynative_executor.grad_flag() and self.sync_enabled:
+                self.reducer.prepare_for_backward(list(_find_tensors(output)))
+        else:
+            unused_param_idx = []
+            if self.static_graph and not self.triggered_once:
+                self.triggered_once = True
+                self.find_unused_parameters = False
+                unused_param_idx = _find_unused_parameters(list(_find_tensors(output)), self.bucketed_params)
+            elif self.find_unused_parameters:
+                unused_param_idx = _find_unused_parameters(list(_find_tensors(output)), self.bucketed_params)
+            self.unused_param = [self.bucketed_params[idx] for idx in unused_param_idx]
+            self.unused_param_name = [param.name for param in self.unused_param]
+            self.has_mark_unused_param = False
 
     def _pre_forward(self):
         """pre-process of forward pass to allocate buffer for parameters."""
+        if self.reducer_mode == "CppReducer":
+            if _pynative_executor.grad_flag() and self.sync_enabled:
+                self.reducer.prepare_for_forward()
+                self.reducer.rebuild_buckets()
+            return
         if self.rebuilt_params_ and self._should_rebuild_buckets():
             for i in self.rebuilt_params_:
                 i.old_grad = i.grad
 
             self.buffers = self.allocate_buffers_for_parameters(
                 self.rebuilt_params_,
-                group=get_data_parallel_group()
-                if self.process_group is None
-                else self.process_group,
+                group=self.process_group,
                 gradient_scaling_factor=self.gradient_scaling_factor,
             )
             for buffer in self.buffers:
@@ -200,6 +262,7 @@ class DistributedDataParallel(nn.Cell):
                 i.grad.copy_(i.old_grad)
                 i.old_grad = None
 
+            logger.debug("register unused param: %s", self.rebuilt_params_)
             self.has_bucket_rebuilt = True
             self.rebuilt_params_ = []
 
@@ -207,13 +270,16 @@ class DistributedDataParallel(nn.Cell):
         """construct for DistributedDataParallel."""
         self._pre_forward()
         output = self.module(*inputs, **inputs_dict)
-        self._post_forward()
+        self._post_forward(output)
         return output
 
     def zero_grad(self):
-        """reset buffers for the next train iteration."""
-        for buffer in self.buffers:
-            buffer.reset()
+        """DPP will accumulate grads automatically, it will zero grads when call zero_grad() manually."""
+        if self.reducer_mode == "CppReducer":
+            self.reducer.zero_grad()
+        else:
+            for buffer in self.buffers:
+                buffer.reset()
 
     def _enable_sync(self, enable):
         """enable grad buffer sync or not."""
@@ -238,6 +304,17 @@ class DistributedDataParallel(nn.Cell):
     def _make_param_hook(self, param):
         """make closure function as the param hook."""
         def param_hook(grad):
+            if not self.has_mark_unused_param:
+                for cur_param in self.unused_param:
+                    buffer = self.param_to_buffer[cur_param]
+                    logger.debug("register unused param: %s", cur_param)
+                    buffer.register_grad_ready(cur_param)
+                self.has_mark_unused_param = True
+            elif param.name in self.unused_param_name:
+                logger.debug("unused param already registered: %s", param)
+                return param.grad
+
+            logger.debug("register normal param: %s", param)
             buffer = self.param_to_buffer[param]
             param.grad.add_(grad)
             buffer.register_grad_ready(param)
@@ -246,3 +323,34 @@ class DistributedDataParallel(nn.Cell):
             return param.grad
 
         return param_hook
+
+    def broadcast_coalesced(self):
+        """broadcast params from rank 0"""
+        if self.reducer_mode == "CppReducer":
+            buckets = [[self.bucketed_params[idx] for idx in bucket] for bucket in self.reducer.bucket_indices]
+        else:
+            buckets = [bucket.params_list for buffer in self.buffers for bucket in buffer.buckets]
+        if self.skipped_params:
+            param_and_grad_dtype_to_params = self._group_params_by_dtype(self.skipped_params)
+            for params_list in param_and_grad_dtype_to_params.values():
+                buckets.append(params_list)
+
+        def finish(rate_limiter):
+            for _ in rate_limiter:
+                handle, coalesced, params = rate_limiter.pop(0)
+                handle.wait()
+                ptr = 0
+                for param in params:
+                    param.view(-1).copy_(coalesced[ptr : ptr + param.numel()])
+                    ptr += param.numel()
+
+        rate_limiter = []
+        for params in buckets:
+            flat_tensors = [t.view(-1) for t in params]
+            coalesced = mint.cat(flat_tensors)
+            handle = broadcast(coalesced, src=0, group=self.process_group, async_op=True)
+            rate_limiter.append((handle, coalesced, params))
+
+            if len(rate_limiter) >= 2:
+                finish(rate_limiter)
+        finish(rate_limiter)

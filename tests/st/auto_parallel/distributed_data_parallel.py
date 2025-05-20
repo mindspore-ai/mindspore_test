@@ -1,4 +1,4 @@
-# Copyright 2023 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ class Network(nn.Cell):
     def __init__(self):
         super().__init__()
         self.flatten = nn.Flatten()
+        self.unused_cell0 = nn.Dense(10, 10, weight_init="normal", bias_init="zeros")
         self.head = nn.Dense(10, 10, weight_init="normal", bias_init="zeros")
         self.dense_relu_sequential = nn.SequentialCell(
             nn.Dense(28 * 28, 512, weight_init="normal", bias_init="zeros"),
@@ -45,6 +46,9 @@ class Network(nn.Cell):
             nn.ReLU(),
             nn.Dense(512, 10, weight_init="normal", bias_init="zeros"),
         )
+        self.skipped_cell1 = nn.Dense(10, 10, weight_init="normal", bias_init="zeros")
+        self.skipped_cell1.weight.requires_grad = False
+        self.skipped_cell1.bias.requires_grad = False
 
     def construct(self, x):
         x = self.flatten(x)
@@ -82,22 +86,11 @@ class Accumulator:
         )
 
     def __call__(self, grads):
-        # 将单步获得的梯度累加至Accumulator的inner_grads
         self.map(ops.partial(ops.assign_add), self.inner_grads, grads)
-        # for grad in grads:
-        #     print(f"batch grad sum {grad.value().sum()} from rank {get_rank()}")
-        # if self.counter % self.accumulate_step != 0:
-        # for grad in self.inner_grads:
-        #     print(f"grad sum {grad.value().sum()} from rank {get_rank()}")
         if self.counter % self.accumulate_step == 0:
             self.inner_grads = self.grad_reducer(self.inner_grads)
-            # for grad in self.inner_grads:
-            #     print(f"grad sum {grad.value().sum()} from rank {get_rank()}")
-            # 如果达到累加步数，进行参数优化更新
             self.optimizer(self.inner_grads)
-            # 完成参数优化更新后，清零inner_grads
             self.map(ops.partial(ops.assign), self.inner_grads, self.zeros)
-        # 计算步数加一
         ops.assign_add(self.counter, Tensor(1, ms.int32))
         return True
 
@@ -111,7 +104,8 @@ def train_step_full_batch(net, data_set, grad_fn, optimizer, enable_ddp_flag):
         grad_reducer = nn.DistributedGradReducer(
             optimizer.parameters, mean=True, group=get_data_parallel_group()
         )
-    for epoch in range(1):
+
+    for epoch in range(2):
         i = 0
         for image, label in data_set:
             start_time = time.time()
@@ -135,7 +129,7 @@ def train_step_dgr_accumulate(data_set, grad_fn, accumulator):
     """
     Description: data parallel with grad accumulation case
     """
-    for epoch in range(1):
+    for epoch in range(2):
         loss = []
         i = 0
         for image, label in data_set:
@@ -156,7 +150,7 @@ def train_step_ddp_accumulate(net, data_set, grad_fn, optimizer, accu_steps):
     """
     Description: DDP data parallel with grad accumulation case
     """
-    for epoch in range(1):
+    for epoch in range(2):
         i = 0
         loss = []
         accu_count = 1
@@ -182,9 +176,10 @@ def train_step_ddp_accumulate(net, data_set, grad_fn, optimizer, accu_steps):
     return loss
 
 
-def test_full_batch_DDP_without_bucket_rebuilt():
+def test_full_batch_DDP_without_bucket_rebuilt(reducer_mode="PythonReducer"):
     """
     Description: DDP data parallel without rebuilt bucket
+    find unused params; but do not rebuild bucket
     """
     ms.set_context(
         device_target="Ascend",
@@ -193,8 +188,8 @@ def test_full_batch_DDP_without_bucket_rebuilt():
         deterministic="ON",
     )
     init_process_group()
-    ms.set_seed(1)
     data_set = generate_fake_dataset(batch_size=32, num_samples=320)
+    ms.set_seed(0)
     net = Network()
 
     def forward_fn(data, target):
@@ -210,11 +205,12 @@ def test_full_batch_DDP_without_bucket_rebuilt():
     loss_dgr = train_step_full_batch(net, data_set, grad_fn, optimizer, enable_ddp_flag)
 
     enable_ddp_flag = True
-    ms.set_seed(1)
     data_set = generate_fake_dataset(batch_size=32, num_samples=320)
+    ms.set_seed(get_rank())
     net = Network()
     net = DistributedDataParallel(
-        module=net, bucket_cap_mb=None, average_in_collective=True, static_graph=False
+        module=net, bucket_cap_mb=None, average_in_collective=True, static_graph=False,
+        find_unused_parameters=True, reducer_mode=reducer_mode
     )
 
     optimizer = AdamW(net.trainable_params(), 1e-4)
@@ -225,9 +221,10 @@ def test_full_batch_DDP_without_bucket_rebuilt():
     assert np.allclose(loss_ddp, loss_dgr, 1e-12, 1e-12)
 
 
-def test_full_batch_DDP_with_bucket_rebuilt():
+def test_full_batch_DDP_with_bucket_rebuilt(reducer_mode="PythonReducer"):
     """
     Description: DDP data parallel with rebuilt bucket
+    rebuild bucket; but do not find unused params
     """
     ms.set_context(
         device_target="Ascend",
@@ -236,8 +233,8 @@ def test_full_batch_DDP_with_bucket_rebuilt():
         deterministic="ON",
     )
     init_process_group()
-    ms.set_seed(1)
     data_set = generate_fake_dataset(batch_size=32, num_samples=320)
+    ms.set_seed(0)
     net = Network()
 
     def forward_fn(data, target):
@@ -254,11 +251,12 @@ def test_full_batch_DDP_with_bucket_rebuilt():
     loss_dgr = train_step_full_batch(net, data_set, grad_fn, optimizer, enable_ddp_flag)
 
     enable_ddp_flag = True
-    ms.set_seed(1)
     data_set = generate_fake_dataset(batch_size=32, num_samples=320)
+    ms.set_seed(get_rank())
     net = Network()
     net = DistributedDataParallel(
-        module=net, bucket_cap_mb=None, average_in_collective=True, static_graph=True
+        module=net, bucket_cap_mb=None, average_in_collective=True, static_graph=True,
+        find_unused_parameters=False, reducer_mode=reducer_mode
     )
     optimizer = AdamW(net.trainable_params(), 1e-4)
     grad_fn = ms.value_and_grad(forward_fn, None, net.trainable_params(), has_aux=True)
@@ -268,7 +266,7 @@ def test_full_batch_DDP_with_bucket_rebuilt():
     assert np.allclose(loss_ddp, loss_dgr, 1e-12, 1e-12)
 
 
-def test_accumulate_batch_DDP_with_bucket_rebuilt():
+def test_accumulate_batch_DDP_with_bucket_rebuilt(reducer_mode="PythonReducer"):
     """
     Description: DDP data parallel with rebuilt bucket
     """
@@ -279,12 +277,13 @@ def test_accumulate_batch_DDP_with_bucket_rebuilt():
         deterministic="ON",
     )
     init_process_group()
-    ms.set_seed(1)
     accu_steps = 4
     data_set = generate_fake_dataset(batch_size=32, num_samples=320)
+    ms.set_seed(get_rank())
     net = Network()
     net = DistributedDataParallel(
-        module=net, bucket_cap_mb=None, average_in_collective=True, static_graph=True
+        module=net, bucket_cap_mb=None, average_in_collective=True, static_graph=True,
+        find_unused_parameters=False, reducer_mode=reducer_mode
     )
     optimizer = AdamW(net.trainable_params(), 1e-4)
     loss_fn = nn.CrossEntropyLoss()
@@ -298,9 +297,9 @@ def test_accumulate_batch_DDP_with_bucket_rebuilt():
     grad_fn = ms.value_and_grad(forward_fn, None, net.trainable_params(), has_aux=True)
     loss_ddp = train_step_ddp_accumulate(net, data_set, grad_fn, optimizer, accu_steps)
 
-    ms.set_seed(1)
     accu_steps = 4
     data_set = generate_fake_dataset(batch_size=32, num_samples=320)
+    ms.set_seed(0)
     net = Network()
     optimizer = AdamW(net.trainable_params(), 1e-4)
     loss_fn = nn.CrossEntropyLoss()
@@ -311,7 +310,7 @@ def test_accumulate_batch_DDP_with_bucket_rebuilt():
     assert np.allclose(loss_ddp, loss_dgr, 1e-12, 1e-12)
 
 
-def test_accumulate_batch_DDP_without_bucket_rebuilt():
+def test_accumulate_batch_DDP_without_bucket_rebuilt(reducer_mode="PythonReducer"):
     """
     Description: DDP data parallel without rebuilt bucket
     """
@@ -322,12 +321,13 @@ def test_accumulate_batch_DDP_without_bucket_rebuilt():
         deterministic="ON",
     )
     init_process_group()
-    ms.set_seed(1)
     accu_steps = 4
     data_set = generate_fake_dataset(batch_size=32, num_samples=320)
+    ms.set_seed(get_rank())
     net = Network()
     net = DistributedDataParallel(
-        module=net, bucket_cap_mb=None, average_in_collective=True, static_graph=False
+        module=net, bucket_cap_mb=None, average_in_collective=True, static_graph=False,
+        find_unused_parameters=True, reducer_mode=reducer_mode
     )
     optimizer = AdamW(net.trainable_params(), 1e-4)
     loss_fn = nn.CrossEntropyLoss()
@@ -342,9 +342,9 @@ def test_accumulate_batch_DDP_without_bucket_rebuilt():
     grad_fn = ms.value_and_grad(forward_fn, None, net.trainable_params(), has_aux=True)
     loss_ddp = train_step_ddp_accumulate(net, data_set, grad_fn, optimizer, accu_steps)
 
-    ms.set_seed(1)
     accu_steps = 4
     data_set = generate_fake_dataset(batch_size=32, num_samples=320)
+    ms.set_seed(0)
     net = Network()
     optimizer = AdamW(net.trainable_params(), 1e-4)
     loss_fn = nn.CrossEntropyLoss()
@@ -353,3 +353,19 @@ def test_accumulate_batch_DDP_without_bucket_rebuilt():
     loss_dgr = train_step_dgr_accumulate(data_set, grad_fn, accumulator)
 
     assert np.allclose(loss_ddp, loss_dgr, 1e-12, 1e-12)
+
+
+def test_full_batch_DDP_with_bucket_rebuilt_cpp():
+    test_full_batch_DDP_with_bucket_rebuilt(reducer_mode="CppReducer")
+
+
+def test_full_batch_DDP_without_bucket_rebuilt_cpp():
+    test_full_batch_DDP_without_bucket_rebuilt(reducer_mode="CppReducer")
+
+
+def test_accumulate_batch_DDP_with_bucket_rebuilt_cpp():
+    test_accumulate_batch_DDP_with_bucket_rebuilt(reducer_mode="CppReducer")
+
+
+def test_accumulate_batch_DDP_without_bucket_rebuilt_cpp():
+    test_accumulate_batch_DDP_without_bucket_rebuilt(reducer_mode="CppReducer")

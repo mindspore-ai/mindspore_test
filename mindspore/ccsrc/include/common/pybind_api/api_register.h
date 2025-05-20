@@ -72,6 +72,9 @@ FRONTEND_EXPORT void RegisterPyBoostFunction(py::module *m);
 FRONTEND_EXPORT void RegisterCustomizeFunction(py::module *m);
 FRONTEND_EXPORT void RegisterFunctional(py::module *m);
 FRONTEND_EXPORT void RegDirectOps(py::module *m);
+namespace distributed {
+FRONTEND_EXPORT void RegReducer(py::module *m);
+}
 }  // namespace pynative
 
 namespace pijit {
