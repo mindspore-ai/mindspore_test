@@ -1866,16 +1866,13 @@ class Cell(Cell_):
         # replace all original usage.
         cells = self.cells_and_names()
         is_parallel_mode = self._get_cell_parallel_mode()
-        is_graph_mode = context.get_context('mode') == context.GRAPH_MODE
 
         for _, cell in cells:
             params = cell._params.items()
             for param_name, param in params:
-                not_sliced = not param.sliced
-                judgment = not_sliced
                 if param.param_info.is_pipeline_shared_param:
                     continue
-                if is_graph_mode and is_parallel_mode and judgment:
+                if is_parallel_mode and not param.sliced:
                     continue
                 if not auto_parallel_mode:
                     cell._params[param_name] = _updata(param)
@@ -1888,11 +1885,9 @@ class Cell(Cell_):
                     param_tuple = cell_dict[key]
                     new_param_tuple = []
                     for param in param_tuple:
-                        not_sliced = not param.sliced
-                        judgment = not_sliced
                         if param.param_info.is_pipeline_shared_param:
                             continue
-                        if is_graph_mode and is_parallel_mode and judgment:
+                        if is_parallel_mode and not param.sliced:
                             continue
                         if not auto_parallel_mode:
                             new_param_tuple.append(_updata(param))

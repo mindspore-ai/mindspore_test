@@ -119,20 +119,18 @@ def destroy_allgather_cell():
 
 def _chang_parallel_context(origin_dataset_strategy):
     """Change the original parallel state."""
-    if context.get_context("mode") == context.GRAPH_MODE:
-        context.set_auto_parallel_context(parallel_mode="hybrid_parallel")
-        if origin_dataset_strategy != "data_parallel":
-            context.set_auto_parallel_context(dataset_strategy="data_parallel")
+    context.set_auto_parallel_context(parallel_mode="hybrid_parallel")
+    if origin_dataset_strategy != "data_parallel":
+        context.set_auto_parallel_context(dataset_strategy="data_parallel")
 
 
 def _restore_parallel_context(origin_parallel_mode, origin_dataset_strategy):
     """Restore the original parallel state."""
-    if context.get_context("mode") == context.GRAPH_MODE:
-        context.set_auto_parallel_context(parallel_mode=origin_parallel_mode)
-        if origin_dataset_strategy != "data_parallel":
-            if origin_dataset_strategy is not None and isinstance(origin_dataset_strategy, list):
-                origin_dataset_strategy = tuple(tuple(ds_item) for ds_item in origin_dataset_strategy)
-            context.set_auto_parallel_context(dataset_strategy=origin_dataset_strategy)
+    context.set_auto_parallel_context(parallel_mode=origin_parallel_mode)
+    if origin_dataset_strategy != "data_parallel":
+        if origin_dataset_strategy is not None and isinstance(origin_dataset_strategy, list):
+            origin_dataset_strategy = tuple(tuple(ds_item) for ds_item in origin_dataset_strategy)
+        context.set_auto_parallel_context(dataset_strategy=origin_dataset_strategy)
 
 
 def _get_group_name(group_map, group):
@@ -166,11 +164,91 @@ def _remove_param_not_load(param_name, param_not_load):
         param_not_load.remove(param_name)
 
 
-def _single_parameter_broadcast(net, layout, param_not_load=None):
+def _get_param_index_in_group(total_param_loaded, group, param):
+    """Get param_index in group."""
+    param_rank_index = []
+    for rank_id in group:
+        if rank_id < len(total_param_loaded):
+            if param in total_param_loaded[rank_id]:
+                param_rank_index.append(rank_id)
+        else:
+            raise ValueError("rank_id should be smaller than total rank num")
+    return param_rank_index
+
+
+def _communicate_allreduce(allreduce_input, group_map, group):
+    """Communicate allreduce input."""
+    if not allreduce_input:
+        return
+    from mindspore import Tensor
+    group_name, is_manual_communication_group = _get_group_name(group_map, group)
+    if is_manual_communication_group:
+        create_group(group_name, list(group))
+    communicator = SingleCommunicator(group_name)
+    for real_param in allreduce_input:
+        real_param.set_data(communicator(Tensor(real_param)), real_param.sliced)
+    if is_manual_communication_group:
+        destroy_group(group_name)
+
+
+def _create_allreduce_input(params, group, net_param_dict, total_param_loaded, param_not_load, cur_rank):
+    """Creates allreduce input."""
+    from mindspore import Tensor
+    allreduce_input = []
+    for param in params:
+        if param not in net_param_dict:
+            continue
+        if param.startswith("accu_grads") or param.endswith("expert_load"):
+            continue
+        param_rank_index = _get_param_index_in_group(total_param_loaded, group, param)
+        if not param_rank_index:
+            continue
+        elif len(param_rank_index) == 1:
+            real_param = net_param_dict[param]
+            _remove_param_not_load(real_param.name, param_not_load)
+            if cur_rank != param_rank_index[0]:
+                real_param.set_data(Tensor(np.zeros(real_param.shape), dtype=real_param.dtype), real_param.sliced)
+            allreduce_input.append(real_param)
+        elif len(param_rank_index) > 1:
+            raise ValueError(f"For param {param} in group {group} should be in one rank, but in {param_rank_index}.")
+    return allreduce_input
+
+
+def _get_sorted_group_map():
+    """Get the world group map."""
+    group_map = _get_group_map()
+    if group_map:
+        group_map = {key: group_map[key] for key in sorted(group_map.keys())}
+    return group_map
+
+
+def _check_total_param_loaded(total_param_loaded):
+    """Check total_param_loaded."""
+    flag = True
+    for rank_id, param_loaded in enumerate(total_param_loaded):
+        if rank_id not in param_loaded:
+            flag = False
+            logger.warning("The order of loaded parameters on each card obtained by all_gather_object is incorrect,"
+                           "and the parameter broadcast will reorder them.")
+            break
+    if not flag:
+        new_total_param_loaded = [None] * len(total_param_loaded)
+        for _, param_loaded in enumerate(total_param_loaded):
+            for param in param_loaded:
+                if isinstance(param, int):
+                    new_total_param_loaded[param] = param_loaded
+                    break
+        return new_total_param_loaded
+    return total_param_loaded
+
+
+def _single_parameter_broadcast(net, layout, param_not_load=None, param_loaded=None):
     """
     Broadcast single parameter to other rank in data parallel dimension.
     """
-    from mindspore import Tensor
+    logger.info("Start loading the parameter broadcast for removing redundant parameters.")
+    from mindspore.runtime import synchronize
+    from mindspore.mint.distributed import all_gather_object
     origin_parallel_mode = context.get_auto_parallel_context("parallel_mode")
     origin_dataset_strategy = context.get_auto_parallel_context("dataset_strategy")
     cur_rank = get_rank()
@@ -188,33 +266,19 @@ def _single_parameter_broadcast(net, layout, param_not_load=None):
         return
     net_param_dict = net.parameters_dict()
     _chang_parallel_context(origin_dataset_strategy)
-    group_map = _get_group_map()
-    if group_map:
-        group_map = {key: group_map[key] for key in sorted(group_map.keys())}
+    param_loaded.add(cur_rank)
+    total_num = get_group_size()
+    total_param_loaded = [None] * total_num
+    all_gather_object(total_param_loaded, param_loaded)
+    total_param_loaded = _check_total_param_loaded(total_param_loaded)
+    group_map = _get_sorted_group_map()
     for group, params in param_redundancy_reversed.items():
-        group_name, is_manual_communication_group = _get_group_name(group_map, group)
-        allreduce_input = []
-        for param in params:
-            if param not in net_param_dict:
-                continue
-            if param.startswith("accu_grads") or param.endswith("expert_load"):
-                continue
-            real_param = net_param_dict[param]
-            _remove_param_not_load(real_param.name, param_not_load)
-            if param not in single_params[cur_rank]:
-                real_param.set_data(Tensor(np.zeros(real_param.shape), dtype=real_param.dtype), real_param.sliced)
-            allreduce_input.append(real_param)
-        if not allreduce_input:
-            continue
-        if is_manual_communication_group:
-            create_group(group_name, list(group))
-        allreduce_input.sort(key=lambda param: (str(param.shape), str(param.dtype)))
-        communicator = SingleCommunicator(group_name)
-        for real_param in allreduce_input:
-            real_param.set_data(communicator(Tensor(real_param)), real_param.sliced)
-        if is_manual_communication_group:
-            destroy_group(group_name)
+        allreduce_input = _create_allreduce_input(params, group, net_param_dict, total_param_loaded, param_not_load,
+                                                  cur_rank)
+        _communicate_allreduce(allreduce_input, group_map, group)
     _restore_parallel_context(origin_parallel_mode, origin_dataset_strategy)
+    synchronize()
+    logger.info("End loading the parameter broadcast for removing redundant parameters.")
 
 
 def _insert_virtual_pp_dim(layout):

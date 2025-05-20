@@ -17,6 +17,8 @@ import stat
 import time
 import pytest
 
+from safetensors import safe_open
+
 import mindspore as ms
 import mindspore.nn as nn
 from mindspore import context
@@ -57,6 +59,22 @@ class LeNet5(nn.Cell):
         x = self.relu(self.fc2(x))
         x = self.fc3(x)
         return x
+
+
+class LeNet5Load(nn.Cell):
+
+    def __init__(self, num_class=10, num_channel=1, include_top=True):
+        super(LeNet5Load, self).__init__()
+        self.conv1 = nn.Conv2d(num_channel, 6, 5, pad_mode='valid')
+        self.conv2 = nn.Conv2d(6, 16, 5, pad_mode='valid')
+        self.conv3 = nn.Conv2d(6, 16, 5, pad_mode='valid')
+        self.relu = nn.ReLU()
+        self.max_pool2d = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.include_top = include_top
+        if self.include_top:
+            self.flatten = nn.Flatten()
+            self.fc1 = nn.Dense(16 * 5 * 5, 120, weight_init=Normal(0.02))
+            self.fc2 = nn.Dense(120, 84, weight_init=Normal(0.02))
 
 
 def remove_ckpt(file_name):
@@ -189,3 +207,44 @@ def test_load_checkpoint_async_support_sf(mode):
     assert 'conv2.weight' in output_param_dict
     assert 'conv1.weight' not in output_param_dict
     assert 'fc1.bias' not in output_param_dict
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('mode', [context.GRAPH_MODE])
+def test_save_checkpoint_sf_with_remove_redundancy(mode):
+    """
+    Feature: mindspore.save_checkpoint
+    Description: Save safetensors checkpoint with remove_redundancy.
+    Expectation: success
+    """
+    context.set_context(mode=mode, device_target="Ascend")
+    net = LeNet5()
+    ms.save_checkpoint(net, "./sf_remove_redundancy_true.safetensors", format="safetensors", remove_redundancy=True)
+    ms.save_checkpoint(net, "./sf_remove_redundancy_false.safetensors", format="safetensors", remove_redundancy=False)
+
+    with safe_open("./sf_remove_redundancy_true.safetensors", framework='np') as f:
+        assert f.metadata()["remove_redundancy"] == "True"
+    with safe_open("./sf_remove_redundancy_false.safetensors", framework='np') as f:
+        assert f.metadata()["remove_redundancy"] == "False"
+
+    remove_ckpt("./sf_remove_redundancy_true.safetensors")
+    remove_ckpt("./sf_remove_redundancy_false.safetensors")
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('mode', [context.GRAPH_MODE])
+def test_load_checkpoint_sf_warnings(mode):
+    """
+    Feature: mindspore.save_checkpoint
+    Description: Monitor warning messages when loading safetensors.
+    Expectation: success
+    """
+    context.set_context(mode=mode, device_target="Ascend")
+    net = LeNet5()
+    ms.save_checkpoint(net, "./sf_warning.safetensors", format="safetensors")
+    param_dict = ms.load_checkpoint("./sf_warning.safetensors", format="safetensors")
+    net_load = LeNet5Load()
+    param_not_load, ckpt_not_load = ms.load_param_into_net(net_load, param_dict)
+    assert set(param_not_load) == {'conv3.weight'}
+    assert set(ckpt_not_load) == {'fc3.bias', 'fc3.weight'}
+    remove_ckpt("./sf_warning.safetensors")
