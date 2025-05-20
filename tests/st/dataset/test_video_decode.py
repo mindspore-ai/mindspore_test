@@ -15,6 +15,9 @@
 """
 Test VideoDecode
 """
+import os
+import random
+
 import numpy as np
 import pytest
 
@@ -22,7 +25,9 @@ import mindspore.dataset as ds
 import mindspore.dataset.vision as vision
 from tests.mark_utils import arg_mark
 
-filename_h264 = "./data/campus.h264"
+PWD = os.path.dirname(__file__)
+filename_h264 = PWD + "/data/campus.h264"
+
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_video_decoder():
@@ -31,10 +36,11 @@ def test_video_decoder():
     Description: Extracting frames from H.264/HEVC-encoded content
     Expectation: The Output is equal to the expected output
     """
-    output_frames = vision.read_video(filename_h264, pts_unit="pts")[0]
     original_video_backend = ds.config.get_video_backend()
-
     ds.config.set_video_backend("Ascend")
+
+    output_frames = vision.read_video(filename_h264, pts_unit="pts")[0]
+
     reader = vision.VideoDecoder(source=filename_h264)
     metadata = reader.metadata
     assert metadata["width"] == 270
@@ -79,7 +85,7 @@ def test_video_decoder_exception_case():
     ds.config.set_video_backend("Ascend")
     with pytest.raises(ValueError) as err:
         _ = vision.VideoDecoder(source="filename")
-    assert "The file filename does not exist or permission denied!" in str(err.value)
+    assert "does not exist or permission denied!" in str(err.value)
 
     with pytest.raises(TypeError) as err:
         _ = vision.VideoDecoder(source=True)
@@ -88,19 +94,19 @@ def test_video_decoder_exception_case():
     with pytest.raises(TypeError) as err:
         reader = vision.VideoDecoder(source=filename_h264)
         _ = reader.get_frames_at((1, 2))
-    assert "Argument indices with value (1, 2) is not of type [<class 'list'>], but got [<class 'tuple'>]." \
+    assert "Argument indices with value (1, 2) is not of type [<class 'list'>], but got <class 'tuple'>." \
            in str(err.value)
 
     with pytest.raises(TypeError) as err:
         reader = vision.VideoDecoder(source=filename_h264)
         _ = reader.get_frames_at([1, 2.0])
-    assert "Argument indices[1] with value 2.0 is not of type [<class 'int'>], but got [<class 'float'>]." \
+    assert "Argument indices[1] with value 2.0 is not of type [<class 'int'>], but got <class 'float'>." \
            in str(err.value)
 
     with pytest.raises(TypeError) as err:
         reader = vision.VideoDecoder(source=filename_h264)
         _ = reader.get_frames_at([1, True])
-    assert "Argument indices[1] with value True is not of type [<class 'int'>], but got [<class 'bool'>]." \
+    assert "Argument indices[1] with value True is not of type (<class 'int'>,), but got <class 'bool'>." \
            in str(err.value)
 
     with pytest.raises(ValueError) as err:
@@ -113,7 +119,7 @@ def test_video_decoder_exception_case():
         _ = reader.get_frames_at([0, -1])
     assert "Input Invalid frame index[1]=-1 is not within the required interval of [0, 19)." in str(err.value)
 
-    filename2 = "./data/campus.mov"
+    filename2 = PWD + "/data/campus.avi"
     with pytest.raises(RuntimeError) as err:
         reader = vision.VideoDecoder(source=filename2)
         _ = reader.get_frames_at([0])

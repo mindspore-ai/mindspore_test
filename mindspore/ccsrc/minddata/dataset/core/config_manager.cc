@@ -56,7 +56,7 @@ ConfigManager::ConfigManager()
       multiprocessing_timeout_interval_(kCfgMultiprocessingTimeoutInterval),
       iterator_mode_({{"do_copy", false}, {"parallel_convert", false}}),
       start_method_("fork"),
-      video_backend_("ffmpeg") {
+      video_backend_("CPU") {
   autotune_json_filepath_ = kEmptyString;
   num_cpu_threads_ = num_cpu_threads_ > 0 ? num_cpu_threads_ : std::numeric_limits<uint16_t>::max();
   num_parallel_workers_ = num_parallel_workers_ < num_cpu_threads_ ? num_parallel_workers_ : num_cpu_threads_;

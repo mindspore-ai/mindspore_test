@@ -13,11 +13,15 @@
 # limitations under the License.
 # ============================================================================
 
+import os
+
 import pytest
 
 import mindspore.dataset as ds
 from mindspore.dataset import vision
 from tests.mark_utils import arg_mark
+
+PWD = os.path.dirname(__file__)
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -83,7 +87,7 @@ def test_read_video_with_h264_pts():
     Description: Read a H264 file by "pts" as the pts_unit
     Expectation: The output is as expected
     """
-    filename = "./data/campus.h264"
+    filename = PWD + "/data/campus.h264"
     mindspore_output = vision.read_video(filename, pts_unit="pts")
     expected_output = ((19, 480, 270, 3), 701517643, (2, 15360), 1.7901399, 30.0, 44100)
     check_mindspore_data(mindspore_output, expected_output)
@@ -96,7 +100,7 @@ def test_read_video_with_h264_sec():
     Description: Read a H264 file by "sec" as the pts_unit
     Expectation: The output is as expected
     """
-    filename = "./data/campus.h264"
+    filename = PWD + "/data/campus.h264"
     mindspore_output = vision.read_video(filename, pts_unit="sec")
     expected_output = ((19, 480, 270, 3), 701517643, (2, 15360), 1.7901399, 30.0, 44100)
     check_mindspore_data(mindspore_output, expected_output)
@@ -109,7 +113,7 @@ def test_read_video_with_h264_start_pts_end_pts():
     Description: Read an H264 file by start_pts, end_pts, and "pts" as the pts_unit
     Expectation: The output is as expected
     """
-    filename = "./data/campus.h264"
+    filename = PWD + "/data/campus.h264"
     # The start_pts is 0, end_pts is 0.7.
     mindspore_output = vision.read_video(filename, start_pts=0, end_pts=0.7, pts_unit="sec")
     expected_output = ((19, 480, 270, 3), 701517643, (2, 15360), 1.7901399, 30.0, 44100)
@@ -133,7 +137,7 @@ def test_read_video_with_h265_pts():
     Description: Read a H265 file by "pts" as the pts_unit
     Expectation: The output is as expected
     """
-    filename = "./data/campus.h265"
+    filename = PWD + "/data/campus.h265"
     mindspore_output = vision.read_video(filename, pts_unit="pts")
     expected_output = ((1, 576, 720, 3), 48184768, (2, 4608), 0.0, 25.0, 44100)
     check_mindspore_data(mindspore_output, expected_output)
@@ -146,7 +150,7 @@ def test_read_video_with_h265_sec():
     Description: Read a H265 file by "sec" as the pts_unit
     Expectation: The output is as expected
     """
-    filename = "./data/campus.h265"
+    filename = PWD + "/data/campus.h265"
     mindspore_output = vision.read_video(filename, pts_unit="sec")
     expected_output = ((1, 576, 720, 3), 48184768, (2, 4608), 0.0, 25.0, 44100)
     check_mindspore_data(mindspore_output, expected_output)
@@ -159,7 +163,7 @@ def test_read_video_with_h265_start_pts_end_pts():
     Description: Read an H265 file by start_pts, end_pts, and "pts" as the pts_unit
     Expectation: The output is as expected
     """
-    filename = "./data/campus.h265"
+    filename = PWD + "/data/campus.h265"
     # The start_pts is 0, end_pts is 8709.
     mindspore_output = vision.read_video(filename, start_pts=0, end_pts=8709, pts_unit="pts")
     expected_output = ((1, 576, 720, 3), 48184768, (2, 4608), 0.0, 25.0, 44100)
@@ -177,7 +181,7 @@ def test_read_video_pipeline(python_multiprocessing):
 
     class VideoDataset:
         def __init__(self):
-            self.filename = "./data/campus.h265"
+            self.filename = PWD + "/data/campus.h265"
 
         def __getitem__(self, index):
             return vision.read_video(self.filename, pts_unit="sec")
