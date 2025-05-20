@@ -24,6 +24,8 @@ namespace mindspore {
 namespace kernel {
 bool GetSeqLenFromGraphAndCheckUpadate(const std::string &kernel_name, const std::vector<std::string> &tensor_name_list,
                                        std::vector<int32_t> *seq_len);
+bool GetSeqLenFromInputAndCheckUpadate(const std::string &kernel_name, const std::string &tensor_name,
+                                       KernelTensor *const actual_seq_length_ptr, std::vector<int32_t> *seq_len);
 bool ConvertSeqLenToVectorAndCheckUpadate(KernelTensor *const actual_seq_length_ptr, std::vector<int32_t> *seq_len);
 }  // namespace kernel
 }  // namespace mindspore
