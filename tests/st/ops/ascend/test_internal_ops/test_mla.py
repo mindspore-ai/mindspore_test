@@ -24,8 +24,9 @@ import pytest
 
 class MlaTestParam:
     """MlaTestParam"""
+
     def __init__(self, num_heads, kv_heads, block_size, head_size_nope, head_size_rope, num_blocks,
-        q_seq_lens : list, context_lengths : list, tor, nope_ms_dtype, rope_ms_dtype, mask_mode : str):
+                 q_seq_lens: list, context_lengths: list, tor, nope_ms_dtype, rope_ms_dtype, mask_mode: str):
 
         self.num_heads = num_heads
         self.kv_heads = kv_heads
@@ -44,13 +45,13 @@ class MlaTestParam:
         self.batch = len(q_seq_lens)
 
         self.max_context_len = max(context_lengths)
-        self.max_num_blocks_per_seq = (self.max_context_len + block_size - 1) // block_size
+        self.max_num_blocks_per_seq = (
+            self.max_context_len + block_size - 1) // block_size
 
         self.num_tokens = (int)(np.array(q_seq_lens).sum())
         self.block_tables = self._build_block_tables()
 
         self._build_tensor_inputs()
-
 
     def _build_np_mask(self):
         """_build_np_mask"""
@@ -59,14 +60,16 @@ class MlaTestParam:
 
         if self.mask_mode == "MASK_SPEC":
             pre_qseqlen = 0
-            np_mask = np.zeros(shape=(self.num_tokens, self.max_context_len)).astype(np.float32)
+            np_mask = np.zeros(
+                shape=(self.num_tokens, self.max_context_len)).astype(np.float32)
             for i in range(self.batch):
                 qseqlen = self.q_seq_lens[i]
                 kseqlen = self.context_lengths[i]
                 tri = np.ones((qseqlen, qseqlen))
                 tri = np.triu(tri, 1)
                 tri *= self.mask_factor
-                np_mask[pre_qseqlen:(pre_qseqlen + qseqlen), kseqlen-qseqlen:kseqlen] = tri
+                np_mask[pre_qseqlen:(pre_qseqlen + qseqlen),
+                        kseqlen-qseqlen:kseqlen] = tri
                 pre_qseqlen += qseqlen
             return np_mask
 
@@ -74,7 +77,6 @@ class MlaTestParam:
             pass
 
         return None
-
 
     def _build_block_tables(self):
         """_build_block_tables"""
@@ -86,11 +88,12 @@ class MlaTestParam:
             block_tables_list.append(block_table)
         return block_tables_list
 
-
     def _build_tensor_inputs(self):
         """_build_tensor_inputs"""
-        np_q_nope = np.random.uniform(-1.0, 1.0, size=(self.num_tokens, self.num_heads, self.head_size_nope))
-        np_q_rope = np.random.uniform(-1.0, 1.0, size=(self.num_tokens, self.num_heads, self.head_size_rope))
+        np_q_nope = np.random.uniform(-1.0, 1.0, size=(
+            self.num_tokens, self.num_heads, self.head_size_nope))
+        np_q_rope = np.random.uniform(-1.0, 1.0, size=(
+            self.num_tokens, self.num_heads, self.head_size_rope))
         np_ctkv = np.random.uniform(-1.0, 1.0, size=(self.num_blocks, self.block_size,
                                                      self.kv_heads, self.head_size_nope))
         np_k_rope = np.random.uniform(-1.0, 1.0, size=(self.num_blocks, self.block_size,
@@ -104,14 +107,18 @@ class MlaTestParam:
         self.ctkv_tensor = Tensor(np_ctkv, dtype=self.nope_ms_dtype)
         self.k_rope_tensor = Tensor(np_k_rope, dtype=self.rope_ms_dtype)
 
-        self.block_tables_tensor = Tensor(np.array(self.block_tables).astype(np.int32))
+        self.block_tables_tensor = Tensor(
+            np.array(self.block_tables).astype(np.int32))
 
         np_mask = self._build_np_mask()
-        self.mask_tensor = None if np_mask is None else Tensor(np_mask, dtype=self.rope_ms_dtype)
+        self.mask_tensor = None if np_mask is None else Tensor(
+            np_mask, dtype=self.rope_ms_dtype)
 
         if self.nope_ms_dtype == ms.int8:
-            self.deq_scale_qk_tensor = Tensor(np.random.uniform(-1.0, 1.0, size=(self.num_heads, )), dtype=ms.float32)
-            self.deq_scale_pv_tensor = Tensor(np.random.uniform(-1.0, 1.0, size=(self.num_heads, )), dtype=ms.float32)
+            self.deq_scale_qk_tensor = Tensor(
+                np.random.uniform(-1.0, 1.0, size=(self.num_heads,)), dtype=ms.float32)
+            self.deq_scale_pv_tensor = Tensor(
+                np.random.uniform(-1.0, 1.0, size=(self.num_heads,)), dtype=ms.float32)
         else:
             self.deq_scale_qk_tensor = None
             self.deq_scale_pv_tensor = None
@@ -122,6 +129,7 @@ class MlaTestParam:
 
 class Net(nn.Cell):
     """Net"""
+
     def __init__(self, q_head_num, kv_head_num, mask_type, tor):
         super().__init__()
         self.q_head_num = q_head_num
@@ -138,6 +146,7 @@ class Net(nn.Cell):
 
 class GoldenNet(nn.Cell):
     """GoldenNet"""
+
     def __init__(self, q_head_num, kv_head_num, mask_mode, tor, mla_v_dim):
         super().__init__()
         self.q_head_num = q_head_num
@@ -154,14 +163,16 @@ class GoldenNet(nn.Cell):
                        antiquant_offset, attn_mask, q_seq_lens, alibi_mask)
 
 
-def run_mla(test_param : MlaTestParam):
+def run_mla(test_param: MlaTestParam):
     """run mla"""
     context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
     context.set_context(jit_config={"jit_level": "O0", "infer_boost": "on"})
     dyn_q_nope_shape = [None for _ in test_param.q_nope_tensor.shape]
-    dyn_q_nope_tensor = Tensor(shape=dyn_q_nope_shape, dtype=test_param.q_nope_tensor.dtype)
+    dyn_q_nope_tensor = Tensor(
+        shape=dyn_q_nope_shape, dtype=test_param.q_nope_tensor.dtype)
 
-    net = Net(test_param.num_heads, test_param.kv_heads, test_param.mask_mode, test_param.tor)
+    net = Net(test_param.num_heads, test_param.kv_heads,
+              test_param.mask_mode, test_param.tor)
     net.set_inputs(q_nope=dyn_q_nope_tensor)
 
     out, _ = net(test_param.q_nope_tensor, test_param.q_rope_tensor, test_param.ctkv_tensor, test_param.k_rope_tensor,
@@ -170,7 +181,7 @@ def run_mla(test_param : MlaTestParam):
     return out
 
 
-def run_golden(test_param : MlaTestParam):
+def run_golden(test_param: MlaTestParam):
     """run_golden"""
     context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
     context.set_context(jit_config={"jit_level": "O0", "infer_boost": "on"})
@@ -178,10 +189,13 @@ def run_golden(test_param : MlaTestParam):
     mla_v_dim = 512
     query = ops.reshape(ops.concat((test_param.q_nope_tensor, test_param.q_rope_tensor), axis=-1),
                         (test_param.num_tokens, 1, -1))
-    key_cache = ops.concat((test_param.ctkv_tensor, test_param.k_rope_tensor), axis=-1)
+    key_cache = ops.concat(
+        (test_param.ctkv_tensor, test_param.k_rope_tensor), axis=-1)
     dyn_q_shape = [None for _ in test_param.q_nope_tensor.shape]
-    dyn_q_nope_tensor = Tensor(shape=dyn_q_shape, dtype=test_param.q_nope_tensor.dtype)
-    golden_net = GoldenNet(test_param.num_heads, test_param.kv_heads, "MASK_DEFAULT", test_param.tor, mla_v_dim)
+    dyn_q_nope_tensor = Tensor(
+        shape=dyn_q_shape, dtype=test_param.q_nope_tensor.dtype)
+    golden_net = GoldenNet(test_param.num_heads, test_param.kv_heads,
+                           "MASK_DEFAULT", test_param.tor, mla_v_dim)
     golden_net.set_inputs(query=dyn_q_nope_tensor)
 
     out_golden = golden_net(query, key_cache, key_cache, test_param.block_tables_tensor,
@@ -191,7 +205,7 @@ def run_golden(test_param : MlaTestParam):
     return out_golden
 
 
-def run_test(test_param : MlaTestParam):
+def run_test(test_param: MlaTestParam):
     """run test"""
     out_actual = run_mla(test_param)
     out_golden = run_golden(test_param)
@@ -213,7 +227,8 @@ def test_mla_base(dtype, mask_mode):
     """
     q_seq_lens = [1, 1, 1, 1]
     context_lengths = [192, 193, 194, 195]
-    test_param = MlaTestParam(32, 1, 128, 512, 64, 1024, q_seq_lens, context_lengths, 0.001, dtype, dtype, mask_mode)
+    test_param = MlaTestParam(32, 1, 128, 512, 64, 1024, q_seq_lens,
+                              context_lengths, 0.001, dtype, dtype, mask_mode)
     run_test(test_param)
 
 
