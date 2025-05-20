@@ -20,6 +20,7 @@
 #include <vector>
 #include <memory>
 #include <string>
+#include <utility>
 
 #include "ir/dtype/type.h"
 #include "utils/shape_utils.h"
@@ -89,5 +90,24 @@ class DeviceSync {
   virtual device::DeviceType GetDeviceType() const { return device::DeviceType::kUnknown; }
 };
 using DeviceSyncPtr = std::shared_ptr<DeviceSync>;
+
+using CopyFunc =
+  std::function<bool(const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync, size_t stream_id)>;
+MS_CORE_API void SetCopyFunc(device::DeviceType device_type, CopyFunc &&sync_func, CopyFunc &&async_func);
+
+template <device::DeviceType t>
+struct MS_CORE_API CopyFuncRegister {
+  explicit CopyFuncRegister(CopyFunc &&sync_func, CopyFunc &&async_func) {
+    SetCopyFunc(t, std::move(sync_func), std::move(async_func));
+  }
+};
+
+#define MS_REGISTER_HAL_COPY_FUNC(device_type, sync_func, async_func)           \
+  namespace {                                                                   \
+  static CopyFuncRegister<device_type> g_maker_register(sync_func, async_func); \
+  }
+
+bool SyncCopy(const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync, size_t stream_id);
+bool AsyncCopy(const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync, size_t stream_id);
 }  // namespace mindspore
 #endif  // MINDSPORE_CORE_IR_DEVICE_SYNC_H_

@@ -411,6 +411,15 @@ DeviceAddressPtr GPUResManager::CreateDeviceAddress(void *ptr, size_t size, cons
   return device_address;
 }
 
+bool GPUResManager::SyncCopy(const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync,
+                             size_t stream_id) const {
+  return true;
+}
+bool GPUResManager::AsyncCopy(const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync,
+                              size_t stream_id) const {
+  return true;
+}
+
 bool GPUResManager::CreateStream(size_t *stream_id) const {
   return GPUDeviceManager::GetInstance().CreateStream(stream_id);
 }
@@ -572,6 +581,26 @@ std::shared_ptr<void> GPUResManager::AllocateHostMemory(size_t size) const {
     }
   });
 }
+
+MS_REGISTER_HAL_COPY_FUNC(DeviceType::kGPU,
+                          ([](const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync, size_t stream_id) {
+                            auto context = MsContext::GetInstance();
+                            MS_EXCEPTION_IF_NULL(context);
+                            auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+                            device::ResKey res_key{DeviceType::kGPU, device_id};
+                            auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+                            MS_EXCEPTION_IF_NULL(res_manager);
+                            return res_manager->SyncCopy(dst_device_sync, src_device_sync, stream_id);
+                          }),
+                          ([](const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync, size_t stream_id) {
+                            auto context = MsContext::GetInstance();
+                            MS_EXCEPTION_IF_NULL(context);
+                            auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+                            device::ResKey res_key{DeviceType::kGPU, device_id};
+                            auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+                            MS_EXCEPTION_IF_NULL(res_manager);
+                            return res_manager->SyncCopy(dst_device_sync, src_device_sync, stream_id);
+                          }));
 
 MS_REGISTER_HAL_RES_MANAGER(kGPUDevice, DeviceType::kGPU, GPUResManager);
 }  // namespace gpu
