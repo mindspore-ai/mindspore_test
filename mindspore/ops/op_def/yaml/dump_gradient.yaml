@@ -1,0 +1,16 @@
+#operator dump_gradient
+dump_gradient:
+  args:
+    path:
+      dtype: str
+    x:
+      dtype: tensor
+    input_output:
+      dtype: str
+  returns:
+    output:
+      dtype: tensor
+  function:
+    disable: True
+  class:
+    name: DumpGradient

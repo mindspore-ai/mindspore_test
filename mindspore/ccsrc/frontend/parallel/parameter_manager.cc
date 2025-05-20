@@ -41,6 +41,7 @@
 #include "frontend/parallel/graph_util/node_info.h"
 #include "frontend/parallel/graph_util/get_parallel_info.h"
 #include "frontend/parallel/graph_util/pipeline_split_utils.h"
+#include "frontend/parallel/graph_util/parallel_tensordump.h"
 #include "frontend/parallel/node_check.h"
 #include "ir/tensor.h"
 #include "include/common/utils/comm_manager.h"
@@ -971,6 +972,9 @@ std::pair<AnfNodePtr, bool> FindParameter(const AnfNodePtr &node, const FuncGrap
   for (size_t index = 0; index < cnode->size(); ++index) {
     PrimitivePtr prim = prim_anf_node->value()->cast<PrimitivePtr>();
     MS_EXCEPTION_IF_NULL(prim);
+    if (prim->name() == DUMPGRADIENT && index != kDumpGradientSkipIndex) {
+      continue;
+    }
     if ((IsSkipNodes(prim) || IsInAllGatherNodeList(cnode)) && index != 1) {
       continue;
     }

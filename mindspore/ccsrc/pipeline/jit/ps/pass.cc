@@ -876,6 +876,7 @@ OptPassGroupMap GetOptPassesB(const opt::irpass::OptimizeIRPassLib &irpass) {
                                                irpass.load_eliminater_,
                                                irpass.redundant_stopgrad_eliminater_,
                                                irpass.special_op_eliminate_,
+                                               irpass.dump_gradient_eliminate_,
                                                irpass.environ_get_eliminate_,
                                                irpass.environ_get_add_eliminate_,
                                                irpass.environ_get_set_eliminate_,
@@ -1672,10 +1673,9 @@ bool OptAfterJitGradPass(const ResourcePtr &resource) {
   auto func_graph = resource->func_graph();
   MS_EXCEPTION_IF_NULL(func_graph);
   opt::irpass::OptimizeIRPassLib irpass;
-  opt::OptPassConfig ad_related_special_op_eliminate = opt::OptPassConfig({
-    irpass.ad_related_special_op_eliminate_,
-    irpass.special_op_eliminate_,
-  });
+  opt::OptPassConfig ad_related_special_op_eliminate = opt::OptPassConfig(
+    {irpass.ad_related_special_op_eliminate_, irpass.special_op_eliminate_, irpass.dump_gradient_eliminate_});
+
   opt::OptPassConfig mutable_op_eliminate = opt::OptPassConfig({
     irpass.mutable_op_eliminate_,
   });

@@ -417,7 +417,8 @@ void PipelineTransformer::FindStridedSliceNodes(const AnfNodePtr &node, AnfNodeS
     strided_slice_nodes->push_back(node);
     return;
   }
-  if (!IsPrimitiveCNode(node, prim::kPrimDepend) && !IsPrimitiveCNode(node, prim::kPrimInsertGradientOf)) {
+  if (!IsPrimitiveCNode(node, prim::kPrimDepend) && !IsPrimitiveCNode(node, prim::kPrimInsertGradientOf) &&
+      !IsPrimitiveCNode(node, prim::kPrimDumpGradient)) {
     return;
   }
   auto node_user = manager_->node_users()[node];
@@ -471,7 +472,8 @@ size_t PipelineTransformer::MicroSize(const AnfNodeIndexSet &input_node_users) c
     auto node = input_node_user.first;
     if (IsPrimitiveCNode(node, prim::kPrimStridedSlice)) {
       micro_size++;
-    } else if (IsPrimitiveCNode(node, prim::kPrimDepend) || IsPrimitiveCNode(node, prim::kPrimInsertGradientOf)) {
+    } else if (IsPrimitiveCNode(node, prim::kPrimDepend) || IsPrimitiveCNode(node, prim::kPrimInsertGradientOf) ||
+               IsPrimitiveCNode(node, prim::kPrimDumpGradient)) {
       auto next_node_user = manager_->node_users()[node];
       micro_size += MicroSize(next_node_user);
     }

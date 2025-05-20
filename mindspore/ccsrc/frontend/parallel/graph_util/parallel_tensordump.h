@@ -32,30 +32,66 @@ namespace parallel {
 constexpr char IN_MODE[] = "in";
 constexpr char OUT_MODE[] = "out";
 constexpr char IN_INSERTED[] = "in_inserted";
+constexpr char INPUT_OUTPUT[] = "input_output";
+constexpr char VISITED_DUMP[] = "visited_dump";
 
-class ParallelTensorDumpHandler {
+std::string GetInModeSuffixedDumpPath(const std::string &ori_path);
+std::string GetDumpInputOutputAttr(const AnfNodePtr &dump_node);
+std::string GetDumpHookInputOutputAttr(const AnfNodePtr &dump_gradient);
+
+// DumpGradient format in graph: CNode(kPrimDumpGradient, dump_path, x, input_output).
+// DumpGradient pass through 'x' when forwarding, and generate TensorDump for gradient which is passed to 'x'.
+constexpr int kDumpGradientSkipIndex = 2;
+
+class RedistributionParallelTensorDumpHandler {
  public:
-  explicit ParallelTensorDumpHandler(
+  explicit RedistributionParallelTensorDumpHandler(
     const std::vector<AnfNodePtr> &pre_nodes,
-    const std::vector<std::pair<std::pair<AnfNodePtr, int>, std::vector<int>>> &next_nodes);
-  void HandleParallelTensorDump();
+    const std::vector<std::pair<std::pair<AnfNodePtr, int>, std::vector<int>>> &next_nodes,
+    const FuncGraphManagerPtr &fg_manager);
+  // void MakeInModeDumpAfterRedistribution();
+  void HandleDumpAfterRedistributionNode();
 
  private:
-  AnfNodePtr prenode_redistribution_;
-  std::vector<std::pair<std::pair<AnfNodePtr, int>, std::vector<int>>> nodes_need_redistribution_;
-  // std::unordered_map<AnfNodePtr, AnfNodePtr> before_redistribution_node_map_;
-  std::set<AnfNodePtr> tensordump_need_remove_;
-  std::unordered_map<AnfNodePtr, std::vector<std::pair<AnfNodePtr, int>>> parent_to_successors_;
-  AnfNodePtrList CollectDumpNodesAlongPath(const AnfNodePtrList &path, const FuncGraphManagerPtr &manager);
   void InsertNewTensorDump(const CNodePtr &dump_cnode, const AnfNodePtr &last_insert_redistribution_op,
                            const CNodePtr &node, const size_t pos_u, const FuncGraphPtr &func_graph,
                            const ScopePtr &scope, const std::string &dump_mode);
-  void ProcessTensorDumps(const std::vector<AnfNodePtr> &dumps, const CNodePtr &node, const size_t pos_u,
-                          const AnfNodePtr &last_insert_op, const FuncGraphPtr &func_graph, const ScopePtr &scope);
+
   AnfNodePtrList CollectNodePathBetween(AnfNodePtr start, std::pair<AnfNodePtr, int> end);
-  AnfNodePtrList CollectSuccessorDumpNodes(const AnfNodePtr &parent_of_dump_nodes, const FuncGraphManagerPtr &manager);
+  AnfNodePtrList CollectDumpNodesAlongPath(const AnfNodePtrList &path, const FuncGraphManagerPtr &manager);
+  AnfNodePtrList CollectBwdDumpHookAlongPath(const AnfNodePtrList &path);
+
+  mindspore::CompactSet<std::string> GetScopeSetFromNodes(const std::vector<std::pair<AnfNodePtr, int>> &nodes);
+  AnfNodePtrList DoFilterByScopeSet(const mindspore::CompactSet<std::string> &scope_set, const ScopePtr &cur_node_scope,
+                                    const AnfNodePtrList &collects);
+
+  void MakeOutModeDumpBwdHookAfterRedistribution(const std::vector<AnfNodePtr> &bwd_dump_hooks, const CNodePtr &node,
+                                                 const size_t pos_u, const AnfNodePtr &last_insert_op);
+  void MakeInModeDumpAfterRedistribution(const std::vector<AnfNodePtr> &dumps, const CNodePtr &node, const size_t pos_u,
+                                         const AnfNodePtr &last_insert_op, const FuncGraphPtr &func_graph,
+                                         const ScopePtr &scope);
+  AnfNodePtr prenode_redistribution_;
+  std::vector<std::pair<std::pair<AnfNodePtr, int>, std::vector<int>>> nodes_need_redistribution_;
+  std::unordered_map<AnfNodePtr, std::vector<std::pair<AnfNodePtr, int>>> parent_to_successors_;
+  FuncGraphManagerPtr fg_manager_;
+};
+using RedistributionDumpHandlerPtr = std::shared_ptr<RedistributionParallelTensorDumpHandler>;
+
+class FwdCommunicationParallelTensorDumpHandler {
+ public:
+  explicit FwdCommunicationParallelTensorDumpHandler(const AnfNodePtr &node) : prior_(node) {}
+  void MakeOutModeDumpBeforeFwdComm();
+  void MakeInModeBwdHookBeforeFwdComm();
+  void CollectDumpNodes(const AnfNodePtr &start, bool first_recursive);
+
+ private:
+  std::set<AnfNodePtr> collect_visited_;
+  AnfNodePtrList dump_nodes_;
+  AnfNodePtrList bwd_dump_hooks_;
+  AnfNodePtr prior_;
 };
 
+using FwdCommDumpHandlerPtr = std::shared_ptr<FwdCommunicationParallelTensorDumpHandler>;
 }  // namespace parallel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_FRONTEND_PARALLEL_PARALLEL_TENSORDUMP_H_
