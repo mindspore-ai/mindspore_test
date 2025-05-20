@@ -139,6 +139,10 @@ class BACKEND_COMMON_EXPORT CollectiveManager {
 
   CollectiveCommunicationLib *device_comm_lib() { return device_comm_lib_instance_; }
 
+  void CacheInitedGroups(const std::string &name);
+  void ClearCacheInitedGroups();
+  size_t InitedGroupSize();
+
   // Initialize and finalize Dummy communication lib.
   bool InitializeDummyCommLib();
   bool FinalizeDummyCommLib();
@@ -274,6 +278,8 @@ class BACKEND_COMMON_EXPORT CollectiveManager {
   std::condition_variable result_blocker_;
   GroupToResultMap group_name_to_result_;
   std::vector<std::pair<std::string, std::vector<uint32_t>>> group_infos_;
+  mutable std::mutex cache_mutes_;
+  std::vector<std::string> inited_groups_;
 };
 
 // For scheduler node, CollectiveManager is not initialized. Return 0 as rank id.

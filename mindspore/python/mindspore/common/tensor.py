@@ -36,6 +36,7 @@ from mindspore import _checkparam as validator
 from mindspore._checkparam import is_stub_tensor, check_hook_fn
 from mindspore._check_jit_forbidden_api import jit_forbidden_register
 from mindspore.common.symbol import Symbol
+from mindspore._c_expression import is_reboot_node
 
 
 np_types = (np.int8, np.int16, np.int32, np.int64,
@@ -2152,7 +2153,8 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
                     self.init.seed, _ = self.seed
 
         with seed_context(self.init):
-            if not isinstance(self.init, ZeroInitializer) and slice_num_of_persistent_data == 1:
+            if (not isinstance(self.init, ZeroInitializer) and slice_num_of_persistent_data == 1)\
+                    and not is_reboot_node():
                 self.init(data)
         self.init = None
 
