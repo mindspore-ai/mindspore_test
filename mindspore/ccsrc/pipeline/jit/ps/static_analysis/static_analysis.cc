@@ -188,6 +188,11 @@ AbstractBasePtr BuildAsyncAbstractRecursively(const AbstractBasePtr &orig_abs,
     } else {
       MS_LOG(INTERNAL_EXCEPTION) << "FirstResult is not AbstractTuple or AbstractList, but: " << orig_abs->ToString();
     }
+    if (sequence_abs->dynamic_len()) {
+      auto new_seq_abs = dyn_cast_ptr<AbstractSequence>(new_abs);
+      new_seq_abs->set_dynamic_len(true);
+      new_seq_abs->set_dynamic_len_element_abs(sequence_abs->dynamic_len_element_abs());
+    }
     return new_abs;
   }
   MS_LOG(INTERNAL_EXCEPTION) << "Orig abstract is not AbstractTuple or AbstractList, but: " << orig_abs->ToString();
