@@ -26,34 +26,36 @@ namespace mindspore {
 namespace datadump {
 namespace {
 constexpr auto kDump = "Dump";
-}
+constexpr auto kWorkspaceAddress = "WorkspaceAddress";
+}  // namespace
 
 void DumpMemManager::Initialize(const DeviceContext *device_context) {
-  if (init_) {
-    return;
-  }
-  init_ = true;
-  size_t stream_size = device_context->device_res_manager_->QueryStreamSize();
-  MS_LOG(INFO) << "Dump start init memory cache, stream size is " << stream_size;
-  for (size_t stream_id = 0; stream_id < stream_size; ++stream_id) {
-    workspace_cache_[stream_id] = CreateWorkspaceKernelTensor(device_context, max_workspace_size_);
-    auto &stream_cache = output_cache_[stream_id];
-    if (stream_cache.empty()) {
+  std::call_once(init_flag_, [this, device_context]() {
+    MS_EXCEPTION_IF_NULL(device_context);
+    size_t stream_size = device_context->device_res_manager_->QueryStreamSize();
+    MS_LOG(INFO) << "Dump start init memory cache, stream size is " << stream_size;
+    workspace_cache_.reserve(stream_size);
+    for (size_t stream_id = 0; stream_id < stream_size; ++stream_id) {
+      workspace_cache_[stream_id] = CreateWorkspaceKernelTensor(device_context, max_workspace_size_);
+      auto &stream_cache = output_cache_[stream_id];
+      stream_cache.reserve(max_output_num_);
       for (size_t i = 0; i < max_output_num_; ++i) {
         stream_cache.emplace_back(CreateOutPutKernelTensor(device_context, kNumberTypeFloat64));
       }
     }
-  }
+  });
 }
 
 void DumpMemManager::ClearCache() {
+  std::scoped_lock lock_all(output_cache_mutex_, workspace_cache_mutex_);
   output_cache_.clear();
-  workspace_cache_.clear();
   output_index_.clear();
+  workspace_cache_.clear();
   MS_LOG(INFO) << "Clear dump memory cache";
 }
 
 void DumpMemManager::Reset() {
+  std::lock_guard<std::mutex> lock(output_cache_mutex_);
   for (auto &item : output_index_) {
     item.second = 0;
   }
@@ -68,7 +70,8 @@ KernelTensorPtr DumpMemManager::GetWorkSpaceTensor(const DeviceContext *device_c
                  << ", maximum is " << max_workspace_size_;
     return CreateWorkspaceKernelTensor(device_context, size);
   }
-  MS_LOG(INFO) << "Get workspace from cache";
+
+  std::lock_guard<std::mutex> lock(workspace_cache_mutex_);
   if (workspace_cache_.find(stream_id) == workspace_cache_.end()) {
     workspace_cache_[stream_id] = CreateWorkspaceKernelTensor(device_context, max_workspace_size_);
   }
@@ -80,7 +83,8 @@ KernelTensorPtr DumpMemManager::GetOutputTensor(const DeviceContext *device_cont
                                                 TypeId dtype_id) {
   MS_EXCEPTION_IF_NULL(device_context);
   Initialize(device_context);
-  auto &idx = output_index_[stream_id];
+  std::lock_guard<std::mutex> lock(output_cache_mutex_);
+  size_t idx = output_index_[stream_id]++;
   if (idx >= max_output_num_) {
     MS_LOG(INFO) << "Get output without cache, idx exceeds cache length. Idx is " << idx << ", max length is "
                  << max_output_num_;
@@ -88,13 +92,11 @@ KernelTensorPtr DumpMemManager::GetOutputTensor(const DeviceContext *device_cont
   }
 
   auto &stream_cache = output_cache_[stream_id];
-  if (stream_cache.empty()) {
-    for (size_t i = 0; i < max_output_num_; ++i) {
-      stream_cache.emplace_back(CreateOutPutKernelTensor(device_context, kNumberTypeFloat64));
-    }
+  while (stream_cache.size() < max_output_num_) {
+    stream_cache.emplace_back(CreateOutPutKernelTensor(device_context, kNumberTypeFloat64));
   }
-  MS_LOG(INFO) << "Get output from cache, index is " << idx;
-  auto output = stream_cache[idx++];
+
+  auto output = stream_cache[idx];
   output->set_dtype_id(dtype_id);
   output->set_size(UnitSizeInBytes(dtype_id));
   return output;
@@ -133,11 +135,10 @@ KernelTensorPtr DumpMemManager::CreateWorkspaceKernelTensor(const DeviceContext 
 
   auto device_address = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_address);
-  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, kDump, "WorkspaceAddress", "");
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, kDump, kWorkspaceAddress, "");
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, kDump, device::tracker::MemType::kWorkSpace,
                                                  device_address->GetSize(), device_address.get());
-  if (device_address->GetPtr() == nullptr &&
-      !device_context->device_res_manager_->AllocateMemory(device_address.get())) {
+  if (!device_context->device_res_manager_->AllocateMemory(device_address.get(), kDefaultStreamIndex)) {
     MS_LOG(EXCEPTION) << "Allocate dynamic workspace memory failed";
   }
   MS_LOG(DEBUG) << "Create workspace device address:" << device_address;

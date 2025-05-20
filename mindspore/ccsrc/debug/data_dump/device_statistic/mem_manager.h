@@ -17,7 +17,7 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include <map>
+#include <unordered_map>
 #include "runtime/hardware/device_context.h"
 #include "debug/data_dump/tensor_info_collect.h"
 
@@ -49,12 +49,16 @@ class BACKEND_COMMON_EXPORT DumpMemManager {
   KernelTensorPtr CreateWorkspaceKernelTensor(const DeviceContext *device_context, const size_t &workspace_size);
   DumpMemManager() = default;
 
-  std::map<size_t, std::vector<KernelTensorPtr>> output_cache_;
-  std::map<size_t, KernelTensorPtr> workspace_cache_;
-  std::map<size_t, size_t> output_index_;  // stream_id, index
+  std::unordered_map<size_t, std::vector<KernelTensorPtr>> output_cache_;
+  std::unordered_map<size_t, KernelTensorPtr> workspace_cache_;
+  std::unordered_map<size_t, size_t> output_index_;  // stream_id, index
+
   const size_t max_workspace_size_ = 128 * 1024;
   const size_t max_output_num_ = 128;
-  bool init_{false};
+
+  std::once_flag init_flag_;
+  std::mutex output_cache_mutex_;
+  std::mutex workspace_cache_mutex_;
 };
 }  // namespace datadump
 }  // namespace mindspore
