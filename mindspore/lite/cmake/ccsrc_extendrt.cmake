@@ -87,6 +87,8 @@ if(MSLITE_ENABLE_CLOUD_FUSION_INFERENCE OR MSLITE_ENABLE_CLOUD_INFERENCE)
             ${CCSRC_DIR}/memory/mem_pool/abstract_dynamic_mem_pool.cc
             ${CCSRC_DIR}/memory/mem_pool/mem_dynamic_allocator.cc
             ${CCSRC_DIR}/memory/mem_pool/mem_tracker.cc
+            ${CCSRC_DIR}/memory/mem_pool/tracker_graph.cc
+            ${CCSRC_DIR}/memory/mem_pool/race_checker.cc
             ${CCSRC_DIR}/common/thread_pool.cc
             ${CCSRC_DIR}/debug/profiler/profiler.cc
             ${CCSRC_DIR}/common/pynative/abstract_converter.cc
