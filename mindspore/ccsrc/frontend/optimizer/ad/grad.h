@@ -38,7 +38,8 @@ FRONTEND_EXPORT FuncGraphPtr Grad(const FuncGraphPtr &func_graph, const opt::Opt
                                   bool is_top = true, BpropAutoMonadLevel level = kLevelNone,
                                   bool is_view_inplace = false);
 FuncGraphVector GradMultiFuncGraph(const FuncGraphVector &func_graphs, const opt::OptimizerPtr &optimizer,
-                                   const std::vector<bool> &is_view_inplace, bool is_top = true);
+                                   const std::vector<bool> &is_view_inplace, bool is_top = true,
+                                   bool is_grad_by_j = false);
 FuncGraphPtr Kprim(const ValueNodePtr &value_node, const pipeline::ResourceBasePtr &resources);
 MetaFuncGraphPtr Kmeta(const PrimitivePtr &prim, const pipeline::ResourceBasePtr &, const AnfNodePtr &node);
 FRONTEND_EXPORT void CleanRes();

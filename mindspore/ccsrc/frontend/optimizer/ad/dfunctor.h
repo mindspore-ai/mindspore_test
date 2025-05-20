@@ -52,7 +52,7 @@ extern bool lift_fv_before_grad;
 class DFunctor : public std::enable_shared_from_this<DFunctor> {
  public:
   DFunctor(const FuncGraphPtr &primal_graph, const pipeline::ResourceBasePtr &resources, bool is_top,
-           bool is_view_inplace);
+           bool is_view_inplace, bool is_grad_by_j = false);
   ~DFunctor() = default;
   // Map object in D category to K category.
   void MapObject();
@@ -137,6 +137,7 @@ class DFunctor : public std::enable_shared_from_this<DFunctor> {
   // Cut off stopped objects in category D.
   bool need_cut_;
   bool is_top_;
+  bool is_grad_by_j_;
   static mindspore::HashMap<FuncGraphPtr, std::shared_ptr<DFunctor>> func_graph_to_functor_;
   static mindspore::HashMap<AnfNodePtr, AdjointPtr> anfnode_to_adjoin_definition_;
   bool is_view_inplace_;

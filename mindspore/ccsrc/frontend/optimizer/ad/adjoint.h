@@ -29,7 +29,8 @@ namespace mindspore {
 namespace ad {
 class Adjoint {
  public:
-  Adjoint(const AnfNodePtr &primal, const AnfNodePtr &k, const FuncGraphPtr &caller, bool is_view_inplace);
+  Adjoint(const AnfNodePtr &primal, const AnfNodePtr &k, const FuncGraphPtr &caller, bool is_view_inplace,
+          bool is_grad_by_j = false);
   ~Adjoint() = default;
   AnfNodePtr primal();
   AnfNodePtr k();
@@ -65,6 +66,7 @@ class Adjoint {
   bool back_bproped_{false};
   bool side_effect_bprop_app_propagate_{false};
   CNodePtr k_app_;
+  bool is_grad_by_j_;
 };
 
 using AdjointPtr = std::shared_ptr<Adjoint>;

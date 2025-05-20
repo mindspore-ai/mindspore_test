@@ -42,7 +42,7 @@ AnfNodePtr ExpandJPrimitive(const ValueNodePtr &vnode, const pipeline::ResourceB
 AnfNodePtrList ExpandMultiJ(const FuncGraphVector &func_graphs, const OptimizerPtr &optimizer,
                             const std::vector<bool> &is_view_inplace) {
   AnfNodePtrList expanded_nodes;
-  auto new_func_graphs = ad::GradMultiFuncGraph(func_graphs, optimizer, is_view_inplace, true);
+  auto new_func_graphs = ad::GradMultiFuncGraph(func_graphs, optimizer, is_view_inplace, true, true);
   (void)std::transform(new_func_graphs.cbegin(), new_func_graphs.cend(), std::back_inserter(expanded_nodes),
                        [](const FuncGraphPtr &new_func_graph) {
                          MS_EXCEPTION_IF_NULL(new_func_graph);
