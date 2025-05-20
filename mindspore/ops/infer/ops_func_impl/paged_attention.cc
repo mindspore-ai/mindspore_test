@@ -33,16 +33,26 @@ BaseShapePtr PagedAttentionFuncImpl::InferShape(const PrimitivePtr &primitive,
   auto res_shape = query_shape_ptr->GetShapeVector();
   auto key_shape_ptr = input_args[kPagedAttentionInputKeyCacheIndex]->GetShape();
   auto key_shape = key_shape_ptr->GetShapeVector();
+  auto value_shape_ptr = input_args[kPagedAttentionInputValueCacheIndex]->GetShape();
+  auto value_shape = value_shape_ptr->GetShapeVector();
+  if (IsDynamicRank(res_shape) || IsDynamicRank(key_shape) || IsDynamicRank(value_shape)) {
+    return std::make_shared<abstract::Shape>(ShapeVector({abstract::Shape::kShapeRankAny}));
+  }
+  if (IsDynamicShape(res_shape) || IsDynamicShape(key_shape) || IsDynamicShape(value_shape)) {
+    res_shape[res_shape.size() - 1] = abstract::Shape::kShapeDimAny;
+    return std::make_shared<abstract::TensorShape>(res_shape);
+  }
+
   auto d_qk = key_shape[key_shape.size() - 1];
   auto mla_v_dim_value = input_args[kPagedAttentionInputMlaVDimIndex]->GetValue();
-  auto mla_v_dim = GetScalarValue<int64_t>(mla_v_dim_value).value();
+  auto mla_v = GetScalarValue<int64_t>(mla_v_dim_value);
+  MS_CHECK_VALUE(mla_v.has_value(), " error: mla_v_dim should has valid value.");
+  auto mla_v_dim = mla_v.value();
   if (mla_v_dim > 0) {
     res_shape[res_shape.size() - 1] = res_shape[res_shape.size() - 1] / d_qk * mla_v_dim;
     return std::make_shared<abstract::TensorShape>(res_shape);
   }
 
-  auto value_shape_ptr = input_args[kPagedAttentionInputValueCacheIndex]->GetShape();
-  auto value_shape = value_shape_ptr->GetShapeVector();
   // DimV is different with DimQK in MLA
   auto d_vo = value_shape[value_shape.size() - 1];
   res_shape[res_shape.size() - 1] = res_shape[res_shape.size() - 1] / d_qk * d_vo;
