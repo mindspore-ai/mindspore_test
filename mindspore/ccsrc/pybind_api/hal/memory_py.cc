@@ -13,7 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+#include <fstream>
+#include <vector>
+#include <map>
 #include "pybind_api/hal/memory_py.h"
 #include "runtime/pipeline/pipeline.h"
 #include "runtime/hardware/device_context.h"
@@ -126,6 +128,122 @@ size_t EmptyCache(const std::string &device_target) {
   return device_ctx->device_res_manager_->EmptyCache();
 }
 
+namespace {
+std::vector<std::string> Split(const std::string &s, const std::string &delimiter) {
+  size_t pos_start = 0;
+  size_t pos_end;
+  size_t delim_len = delimiter.length();
+  std::string token;
+  std::vector<std::string> res;
+
+  while ((pos_end = s.find(delimiter, pos_start)) != std::string::npos) {
+    token = s.substr(pos_start, pos_end - pos_start);
+    pos_start = pos_end + delim_len;
+    res.push_back(token);
+  }
+
+  res.push_back(s.substr(pos_start));
+  return res;
+}
+
+template <typename T>
+T Parse(const std::string &s) {
+  std::stringstream sstream(s);
+  T ans;
+  sstream >> ans;
+  return ans;
+}
+
+struct MemoryBlock {
+  explicit MemoryBlock(const std::string &block_string) {
+    auto &&elements = Split(block_string, ",");
+    MS_EXCEPTION_IF_CHECK_FAIL(elements.size() > 10, "Invalid line : " + block_string);
+    start_time_stamp = Parse<size_t>(elements[0]);
+    MS_EXCEPTION_IF_CHECK_FAIL(start_time_stamp != 0, "Invalid start_time_stamp: " + elements[0]);
+    end_time_stamp = Parse<size_t>(elements[1]);
+    MS_EXCEPTION_IF_CHECK_FAIL(end_time_stamp != 0, "Invalid end_time_stamp: " + elements[1]);
+    stream_id = Parse<uint32_t>(elements[3]);
+    size = Parse<size_t>(elements[5]);
+    MS_EXCEPTION_IF_CHECK_FAIL(size != 0, "Invalid size: " + elements[5]);
+    actual_peak_mem = Parse<size_t>(elements[6]);
+    MS_EXCEPTION_IF_CHECK_FAIL(actual_peak_mem != 0, "Invalid actual_peak_mem: " + elements[6]);
+    type = Parse<std::string>(elements[9]);
+  }
+
+  size_t start_time_stamp;
+  size_t end_time_stamp;
+  uint32_t stream_id;
+  size_t size;
+  size_t actual_peak_mem;
+  std::string type;
+
+  bool IsPersistent() { return type == "ConstantValue" || type == "Weight" || type == "GeConst"; }
+};
+}  // namespace
+
+struct MemoryReplayProcesser {
+  MemoryReplayProcesser() {
+    device_context_ = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
+      {kAscendDevice, DeviceManagerConf::GetInstance()->device_id()});
+  }
+
+  ~MemoryReplayProcesser() = default;
+
+  void operator()(const std::string &file_path) {
+    MS_EXCEPTION_IF_NULL(device_context_);
+    device_context_->Initialize();
+    auto mem_pool = device_context_->device_res_manager_->mem_manager()->GetMemoryPool();
+
+    std::ifstream tracker_file(file_path, std::ios::in);
+    if (!tracker_file.is_open()) {
+      MS_LOG(EXCEPTION) << "Failed to open file: " << file_path << ". Please check whether the file exists.";
+      return;
+    }
+    std::string line;
+    size_t cur_time_stamp = 0L;
+    size_t process_line_no = 0;
+    while (std::getline(tracker_file, line)) {
+      process_line_no++;
+      // Skip title.
+      if (process_line_no == 1) {
+        continue;
+      }
+      MemoryBlock block(line);
+      MS_EXCEPTION_IF_CHECK_FAIL(block.start_time_stamp >= cur_time_stamp,
+                                 "Invalid memory block, line no : " + std::to_string(process_line_no));
+      cur_time_stamp = block.start_time_stamp;
+      for (auto iter = to_free_mems_.begin(); iter != to_free_mems_.end();) {
+        if (iter->first > block.start_time_stamp) {
+          break;
+        }
+        mem_pool->FreeTensorMem(iter->second);
+        iter = to_free_mems_.erase(iter);
+      }
+      void *addr = mem_pool->AllocTensorMem(block.size, block.IsPersistent(), false, block.stream_id);
+      // Record and compare peak value.
+      size_t cur_peak = mem_pool->ActualPeakStatistics();
+      if (block.actual_peak_mem != cur_peak) {
+        MS_LOG(WARNING) << "Process line : " << process_line_no << " block.actual_peak_mem : " << block.actual_peak_mem
+                        << " is not equal to cur peak : " << cur_peak << ".";
+      }
+      to_free_mems_[block.end_time_stamp] = addr;
+    }
+    for (auto iter = to_free_mems_.begin(); iter != to_free_mems_.end();) {
+      mem_pool->FreeTensorMem(iter->second);
+      iter = to_free_mems_.erase(iter);
+    }
+  }
+
+ private:
+  device::DeviceContext *device_context_;
+  std::map<size_t, void *> to_free_mems_;
+};
+
+void MemoryReplay(const std::string &file_path) {
+  MemoryReplayProcesser memory_replay_processer;
+  memory_replay_processer(file_path);
+}
+
 void RegMemory(py::module *m) {
   (void)m->def("_memory_stats", &mindspore::hal::MemoryStats, "Get memory pool's statistics.");
   (void)m->def("_reset_max_mem_reserved", &mindspore::hal::ResetMaxMemoryReserved,
@@ -133,6 +251,7 @@ void RegMemory(py::module *m) {
   (void)m->def("_reset_max_mem_allocated", &mindspore::hal::ResetMaxMemoryAllocated,
                "Reset the maximum recorded memory allocated.");
   (void)m->def("_empty_cache", &mindspore::hal::EmptyCache, "Empty memory pool cache.");
+  (void)m->def("_memory_replay", &mindspore::hal::MemoryReplay, py::arg("file_path"), "Memory replay.");
 }
 }  // namespace hal
 }  // namespace mindspore

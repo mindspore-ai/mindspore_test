@@ -191,7 +191,8 @@ size_t AscendVmmAdapter::MmapDeviceMem(const size_t size, const DeviceMemPtr add
     iter++;
   }
 
-  static bool enable_trace_mem = common::IsEnableAllocConfig(common::kAllocMemoryTracker);
+  static bool enable_trace_mem = common::IsEnableAllocConfig(common::kAllocMemoryTracker) ||
+                                 !common::GetAllocConfigValue(common::kAllocMemoryTrackerPath).empty();
   if (enable_trace_mem) {
     MS_LOG(INFO) << "Total physical memory handle size : " << physical_handle_size_ << ".";
   }

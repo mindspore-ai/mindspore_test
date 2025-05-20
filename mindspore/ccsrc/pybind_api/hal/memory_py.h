@@ -29,6 +29,8 @@ namespace hal {
 py::dict MemoryStats(const std::string &device_target);
 void ResetMaxMemoryReserved(const std::string &device_target);
 void ResetMaxMemoryAllocated(const std::string &device_target);
+size_t EmptyCache(const std::string &device_target);
+void MemoryReplay(const std::string &file_path);
 }  // namespace hal
 }  // namespace mindspore
 
