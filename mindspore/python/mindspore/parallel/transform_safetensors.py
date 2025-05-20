@@ -1033,9 +1033,9 @@ def unified_safetensors(src_dir, src_strategy_file, dst_dir, merge_with_redundan
     Merge multiple safetensor files into a unified safetensor file.
 
     Note:
-        - When merging weights, it will verify whether the merge_with_redundancy parameter differs from
-          the deduplication flag in the merged safetensors files. If they are the same, the merging will be performed
-          according to the deduplication flag in the files.
+        When merging weights, it will verify whether the `merge_with_redundancy` parameter differs from
+        the deduplication flag in the merged safetensors files. If they are the same, the merging will be performed
+        according to the deduplication flag in the files.
 
     Args:
         src_dir (str): Source weight saving directory.
