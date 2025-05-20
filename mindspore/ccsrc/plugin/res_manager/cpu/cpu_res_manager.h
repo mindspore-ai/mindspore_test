@@ -43,6 +43,9 @@ class CPUResManager : public HalResBase {
                                        TypeId type_id, const std::string &device_name, uint32_t device_id,
                                        uint32_t stream_id, const UserDataPtr &user_data = nullptr) const override;
 
+  bool SyncCopy(const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync, size_t stream_id) const override;
+  bool AsyncCopy(const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync, size_t stream_id) const override;
+
   std::pair<std::vector<size_t>, std::vector<size_t>> AllocDeviceMemoryForTensorList(
     const std::vector<tensor::TensorPtr> &tensor_list, bool enable_mem_align) override;
   tensor::TensorPtr GetSliceByTensorListIndexHandle(const std::vector<tensor::TensorPtr> &tensor_list,

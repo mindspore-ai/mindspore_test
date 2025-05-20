@@ -124,6 +124,7 @@ class ASCEND_RES_MANAGER_EXPORT AscendDeviceAddress : public LoadableDeviceAddre
                            const std::string &format, size_t stream_id = SIZE_MAX) const override;
 
  private:
+  friend class AscendResManager;
   bool SyncDeviceToHostAndConvertFormat(const ShapeVector &shape, size_t size, TypeId type, void *host_ptr,
                                         bool sync_on_demand = false) const;
   bool ConvertFormatAndSyncHostToDevice(const ShapeVector &shape, size_t size, TypeId type, const void *host_ptr,
