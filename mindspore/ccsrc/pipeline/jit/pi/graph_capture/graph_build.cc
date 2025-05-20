@@ -2377,8 +2377,7 @@ ValueNode *GraphBuilder::BuildCallClassNode(CallNode *call_node) {
   const auto &params = call_node->getInputs();
   AObject *instance = nullptr;
   bool support_create_instance = CheckSupportCreateInstance(call_node);
-  bool constant = type == AObject::kTypePrimitive || type == AObject::kTypeTensor ||
-                  IsMsClass(t->GetPyObject().ptr());
+  bool constant = type == AObject::kTypePrimitive || type == AObject::kTypeTensor || IsMsClass(t->GetPyObject().ptr());
   // create instance
   if (support_create_instance || constant) {
     MS_LOG(INFO) << "Build instance, support_create_instance=" << support_create_instance << ", constant=" << constant;
