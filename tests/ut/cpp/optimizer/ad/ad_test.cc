@@ -229,8 +229,6 @@ TEST_F(TestAD, test_constant_output) { AssertExpect("test_constant_output"); }
 // Description: Test the imag bprop with complex inputs and complex outputs.
 // Expectation: The final func_graph construct is correct.
 TEST_F(TestAD, TestImagBpropComplexInputComplexOutput) {
-  auto ms_context = MsContext::GetInstance();
-  ms_context->set_param<int>(MS_CTX_EXECUTION_MODE, kGraphMode);
   // Parse the forward fg and do renormalize.
   auto g = getPyFun.CallAndParseRet("get_test_ad_fn", "imag_forward");
   AbstractBasePtrList args_spec_list;

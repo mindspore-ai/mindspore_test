@@ -147,8 +147,7 @@ PyObject *RunGraph(const std::string &phase, const py::tuple &args, const std::s
   args_tuple = EliminateInvalidArgs(args_tuple, co_flags, enable_tuple_broaden);
   MS_LOG(INFO) << "Args for run: " << std::string(py::str(args_tuple));
   py::object ret;
-  int mode = MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE);
-  if (mode == kPynativeMode && pynative::GradState::Get().grad_flag()) {
+  if (pynative::GradState::Get().grad_flag()) {
     MS_LOG(INFO) << "Do GradJit";
     JitSyntaxLevelScope jit_syntax_level_scope;
     pynative::PyNativeAdapter::SetGraphPhase(phase);

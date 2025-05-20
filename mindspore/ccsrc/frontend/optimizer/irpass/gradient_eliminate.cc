@@ -75,13 +75,6 @@ void ExpandJPrim::CloneUsedPrimalGraph(const FuncGraphManagerPtr &manager, FuncG
 }
 
 bool ExpandJPrim::operator()(const FuncGraphPtr &func_graph, const OptimizerPtr &optimizer) {
-  // Check whether need to eliminate forward cnodes in pynative mode.
-  if (MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode &&
-      common::GetCompileConfig("PYNATIVE_JIT_GRAD_MODE") == "1") {
-    pynative::PyNativeAdapter::SetEliminateForward(pynative::PyNativeAdapter::GetEliminateForward() &&
-                                                   prim_nodes_.empty());
-  }
-
   // Expand j nodes that don't have embed j nodes.
   bool change = false;
   auto manager = optimizer->manager();

@@ -389,6 +389,10 @@ COMMON_EXPORT std::string GetPythonStackStr();
 COMMON_EXPORT bool IsJit();
 // Return whether it is compiling in jit compilation.
 COMMON_EXPORT bool JitCompiling();
+// Return whether it is compiling by jit pipeline.
+COMMON_EXPORT bool JitPipelineCompiling();
+// Return whether it is compiling by graph mode pipeline.
+COMMON_EXPORT bool GraphPipelineCompiling();
 // Return whether it is running in jit compilation.
 COMMON_EXPORT bool JitRunning();
 // Return format mode.
