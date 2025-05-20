@@ -65,6 +65,9 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public HalResBase {
                                        TypeId type_id, const std::string &device_name, uint32_t device_id,
                                        uint32_t stream_id, const UserDataPtr &user_data = nullptr) const override;
 
+  bool SyncCopy(const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync, size_t stream_id) const override;
+  bool AsyncCopy(const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync, size_t stream_id) const override;
+
   bool LoadCollectiveCommLib() override;
   bool IsEnableVmm() const override;
 
@@ -158,6 +161,15 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public HalResBase {
   bool LaunchCallback(std::function<void(void)> callback_func, size_t stream_id, bool is_block = false) const override;
 
   void InitializeForGe() const;
+
+ private:
+  bool SyncDeviceToHost(const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync, size_t stream_id) const;
+  bool SyncHostToDevice(const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync, size_t stream_id) const;
+  bool SyncDeviceToDevice(const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync, size_t stream_id) const;
+  bool AsyncDeviceToHost(const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync, size_t stream_id) const;
+  bool AsyncHostToDevice(const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync, size_t stream_id) const;
+  bool AsyncDeviceToDevice(const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync,
+                           size_t stream_id) const;
 
  private:
   MemUceInfo mem_uce_info_;
