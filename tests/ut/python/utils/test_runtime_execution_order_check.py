@@ -24,7 +24,7 @@ from mindspore.utils.runtime_execution_order_check import (
     ExecuteOrder,
     parse_and_validate,
     detect_cycle_in_graph,
-    CommExecOrderCheck,
+    comm_exec_order_check,
 )
 
 class TestRankFolderParser(unittest.TestCase):
@@ -360,7 +360,7 @@ class TestCommExecOrderCheck(unittest.TestCase):
         """Test calling end action before start."""
         with patch('mindspore._c_expression.CommExecOrderChecker.get_instance') as mock_get:
             mock_instance = mock_get.return_value
-            CommExecOrderCheck("end")
+            comm_exec_order_check("end")
             mock_instance.stop_collect_exec_order.assert_not_called()
             mock_logger.assert_called_once_with("The 'end' action cannot be called before the 'start' action.")
 
@@ -368,8 +368,8 @@ class TestCommExecOrderCheck(unittest.TestCase):
         """Test correct start-end sequence."""
         with patch('mindspore._c_expression.CommExecOrderChecker.get_instance') as mock_get:
             mock_instance = mock_get.return_value
-            CommExecOrderCheck("start")
-            CommExecOrderCheck("end")
+            comm_exec_order_check("start")
+            comm_exec_order_check("end")
 
             mock_instance.start_collect_exec_order.assert_called_once()
             mock_instance.stop_collect_exec_order.assert_called_once()
@@ -379,8 +379,8 @@ class TestCommExecOrderCheck(unittest.TestCase):
         """Test multiple start calls."""
         with patch('mindspore._c_expression.CommExecOrderChecker.get_instance') as mock_get:
             mock_instance = mock_get.return_value
-            CommExecOrderCheck("start")
-            CommExecOrderCheck("start")
+            comm_exec_order_check("start")
+            comm_exec_order_check("start")
 
             self.assertEqual(mock_instance.start_collect_exec_order.call_count, 1)
             self.assertEqual(mock_logger.call_count, 1)
@@ -390,9 +390,9 @@ class TestCommExecOrderCheck(unittest.TestCase):
         """Test multiple end calls."""
         with patch('mindspore._c_expression.CommExecOrderChecker.get_instance') as mock_get:
             mock_instance = mock_get.return_value
-            CommExecOrderCheck("start")
-            CommExecOrderCheck("end")
-            CommExecOrderCheck("end")
+            comm_exec_order_check("start")
+            comm_exec_order_check("end")
+            comm_exec_order_check("end")
 
             mock_instance.stop_collect_exec_order.assert_called_once()
             self.assertEqual(mock_logger.call_count, 1)

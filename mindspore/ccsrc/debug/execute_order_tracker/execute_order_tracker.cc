@@ -32,8 +32,6 @@
 
 namespace mindspore {
 namespace {
-using ShapeAndType = std::tuple<std::string, std::string, std::string, std::string, size_t, size_t>;
-
 template <typename T>
 void WriteCsvFile(const std::string &real_path, const std::vector<T> &data_list,
                   const std::vector<std::pair<std::string, std::function<std::string(const T &)>>> &csv_columns) {
@@ -133,7 +131,7 @@ CommOrderInfoPtr ExecuteOrderTracker::CreateCommOrderInfo(const std::string &ind
     comm_info->src_rank = GetCommunicationRanks(std::make_pair(cnode, kAttrSrcRank), comm_ranks);
     comm_info->dest_rank = GetCommunicationRanks(std::make_pair(cnode, kAttrDestRank), comm_ranks);
     comm_info->root_rank = GetCommunicationRanks(std::make_pair(cnode, kAttrRootRank), comm_ranks);
-
+    GetInputOutputShapeAndType(cnode, comm_info);
   } else {
     auto rank_str = GetCommunicationRanks(direct_rank, comm_ranks);
     if (primitive_str == kDistCommSendPrimName || primitive_str == kInnerCommSendPrimName) {
@@ -143,18 +141,6 @@ CommOrderInfoPtr ExecuteOrderTracker::CreateCommOrderInfo(const std::string &ind
     } else {
       comm_info->root_rank = rank_str;
     }
-  }
-
-  if (cnode) {
-    auto [input_shape_str, input_type_str, output_shape_str, output_type_str, input_size, output_size] =
-      GetInputOutputShapeAndType(cnode);
-    comm_info->input_shape = input_shape_str;
-    comm_info->input_type = input_type_str;
-    comm_info->output_shape = output_shape_str;
-    comm_info->output_type = output_type_str;
-    comm_info->input_size = std::to_string(input_size);
-    comm_info->output_size = std::to_string(output_size);
-  } else {
     comm_info->input_shape = tensor::ShapeToString(input_tensor->shape());
     comm_info->input_type = input_tensor->Dtype()->ToString();
     comm_info->output_shape = tensor::ShapeToString(output_tensor->shape());
@@ -162,7 +148,6 @@ CommOrderInfoPtr ExecuteOrderTracker::CreateCommOrderInfo(const std::string &ind
     comm_info->input_size = std::to_string(input_tensor->Size());
     comm_info->output_size = std::to_string(output_tensor->Size());
   }
-
   return comm_info;
 }
 
@@ -178,8 +163,8 @@ void ExecuteOrderTracker::ProcessPyboostCommOp(const std::shared_ptr<kernel::pyb
   order_info->stream_id = comm_stream_id;
   AddOrderInfo(order_info);
 
-  auto comm_info = CreateCommOrderInfo(order_info->index, group, op->primitive()->ToString(), nullptr, input_tensor,
-                                       output_tensor, rank);
+  auto comm_info =
+    CreateCommOrderInfo(order_info->index, group, op->primitive()->name(), nullptr, input_tensor, output_tensor, rank);
   AddCommOrderInfo(comm_info);
 
   if (comm_order_path_.empty()) {
@@ -218,7 +203,7 @@ void ExecuteOrderTracker::ProcessNode(const CNodePtr &cnode) {
   if (IsCommunicationOp(cnode)) {
     auto prim = GetValueNode<PrimitivePtr>(cnode->input(kIndex0));
     MS_EXCEPTION_IF_NULL(prim);
-    auto comm_info = CreateCommOrderInfo(order_info->index, group, prim->ToString(), cnode);
+    auto comm_info = CreateCommOrderInfo(order_info->index, group, prim->name(), cnode);
     AddCommOrderInfo(comm_info);
 
     if (comm_order_path_.empty()) {
@@ -293,7 +278,7 @@ std::string ExecuteOrderTracker::GetCommunicationRanks(
   return rank_value == std::numeric_limits<uint32_t>::max() ? "" : std::to_string(rank_value);
 }
 
-ShapeAndType ExecuteOrderTracker::GetInputOutputShapeAndType(const CNodePtr &cnode) const {
+void ExecuteOrderTracker::GetInputOutputShapeAndType(const CNodePtr &cnode, const CommOrderInfoPtr &comm_info) const {
   MS_EXCEPTION_IF_NULL(cnode);
 
   auto GetShapeAndType = [](AbstractBasePtr &abs) {
@@ -351,7 +336,11 @@ ShapeAndType ExecuteOrderTracker::GetInputOutputShapeAndType(const CNodePtr &cno
   }
   auto output_abs = cnode->abstract();
   if (!input_abs || !output_abs) {
-    return std::make_tuple("UnknownShape", "UnknownType", "UnknownShape", "UnknownType", 0, 0);
+    comm_info->input_shape = "UnknownShape";
+    comm_info->input_type = "UnknownType";
+    comm_info->output_shape = "UnknownShape";
+    comm_info->output_type = "UnknownType";
+    return;
   }
 
   auto [input_shape_str, input_type_str, input_abs_tensor] = GetShapeAndType(input_abs);
@@ -360,7 +349,12 @@ ShapeAndType ExecuteOrderTracker::GetInputOutputShapeAndType(const CNodePtr &cno
   size_t input_size = CalculateSize(input_abs_tensor);
   size_t output_size = CalculateSize(output_abs_tensor);
 
-  return {input_shape_str, input_type_str, output_shape_str, output_type_str, input_size, output_size};
+  comm_info->input_shape = input_shape_str;
+  comm_info->input_type = input_type_str;
+  comm_info->output_shape = output_shape_str;
+  comm_info->output_type = output_type_str;
+  comm_info->input_size = std::to_string(input_size);
+  comm_info->output_size = std::to_string(output_size);
 }
 
 void ExecuteOrderTracker::Clear() {

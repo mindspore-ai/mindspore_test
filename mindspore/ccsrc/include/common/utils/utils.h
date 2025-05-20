@@ -320,10 +320,10 @@ constexpr auto kChunk = "chunk";
 constexpr auto kMicro = "micro";
 
 // execute order tracker
-constexpr auto kDistCommSendPrimName = "PrimFunc_DistCommIsend";
-constexpr auto kInnerCommSendPrimName = "PrimFunc_InnerCommIsend";
-constexpr auto kDistCommRecvPrimName = "PrimFunc_DistCommIrecv";
-constexpr auto kInnerCommRecvPrimName = "PrimFunc_InnerCommIrecv";
+constexpr auto kDistCommSendPrimName = "DistCommIsend";
+constexpr auto kInnerCommSendPrimName = "InnerCommIsend";
+constexpr auto kDistCommRecvPrimName = "DistCommIrecv";
+constexpr auto kInnerCommRecvPrimName = "InnerCommIrecv";
 
 // User data key.
 

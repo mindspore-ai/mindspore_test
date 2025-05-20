@@ -98,8 +98,7 @@ class BACKEND_COMMON_EXPORT ExecuteOrderTracker {
                                        const tensor::TensorPtr &input_tensor = nullptr,
                                        const tensor::TensorPtr &output_tensor = nullptr, int64_t direct_rank = -1);
 
-  std::tuple<std::string, std::string, std::string, std::string, size_t, size_t> GetInputOutputShapeAndType(
-    const CNodePtr &cnode) const;
+  void GetInputOutputShapeAndType(const CNodePtr &cnode, const CommOrderInfoPtr &comm_info) const;
 
   std::string GetCommunicationRanks(const std::variant<int64_t, std::pair<const CNodePtr &, const char *>> &input,
                                     const std::vector<uint32_t> &comm_ranks) const;

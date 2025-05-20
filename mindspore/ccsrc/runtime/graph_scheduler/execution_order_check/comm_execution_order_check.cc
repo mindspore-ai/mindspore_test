@@ -128,9 +128,9 @@ void Process::CheckCommOrderIteration(size_t total_running_count) {
   } else {
     cache.need_add = (total_running_count % check_iteration == 0);
     if ((total_running_count - 1) % check_iteration == 0) {
-      cache.SwapBuffers(total_running_count - 1);
-      ProcessKernels(total_running_count - 1);
-      ValidateCommGroupExecuteOrders(total_running_count - 1);
+      cache.SwapBuffers(static_cast<int>(total_running_count - 1));
+      ProcessKernels(static_cast<int>(total_running_count - 1));
+      ValidateCommGroupExecuteOrders(static_cast<int>(total_running_count - 1));
     }
   }
 }
