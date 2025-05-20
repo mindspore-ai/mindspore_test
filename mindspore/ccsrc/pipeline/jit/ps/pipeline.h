@@ -219,6 +219,12 @@ class JitCompilingScope {
   ~JitCompilingScope() { MsContext::GetInstance()->set_jit_status(kNotJit); }
 };
 
+class GraphCompilingScope {
+ public:
+  GraphCompilingScope() { MsContext::GetInstance()->set_jit_status(kGraphCompiling); }
+  ~GraphCompilingScope() { MsContext::GetInstance()->set_jit_status(kNotJit); }
+};
+
 class JitRunningScope {
  public:
   JitRunningScope() { MsContext::GetInstance()->set_jit_status(kJitRunning); }

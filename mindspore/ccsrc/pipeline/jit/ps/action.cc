@@ -1342,8 +1342,7 @@ bool RequireJitGrad(const std::string &phase) {
 
 void SetViewInplaceGradFlag(const ResourcePtr &resource) {
   // pynative+jit
-  if (MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) != kGraphMode &&
-      RequireJitGrad(PhaseManager::GetInstance().phase())) {
+  if (RequireJitGrad(PhaseManager::GetInstance().phase())) {
     const auto &all_nodes = resource->manager()->all_nodes();
     if (FindViewInplaceNode({all_nodes.begin(), all_nodes.end()})) {
       MS_LOG(DEBUG) << "Found a view+inplace node. Grad run new pass.";
@@ -1530,7 +1529,7 @@ bool CheckGraphOutputConstOrParameter(const FuncGraphPtr &func_graph) {
 
 bool GetJitBpropGraph(const ResourcePtr &resource) {
   // This function only works in Pynative mode. The func_graph is decorated with 'jit'.
-  if (MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kGraphMode) {
+  if (!RequireJitGrad(PhaseManager::GetInstance().phase())) {
     return true;
   }
   return pynative::PyNativeAdapter::GetJitBpropGraph(resource, PhaseManager::GetInstance().phase());
