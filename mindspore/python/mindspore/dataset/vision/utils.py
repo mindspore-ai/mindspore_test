@@ -29,6 +29,7 @@ from PIL import Image
 import mindspore
 import mindspore._c_dataengine as cde
 from mindspore import log as logger
+from mindspore.dataset.core.validator_helpers import check_file, check_value, type_check, type_check_list
 from ..core.config import get_video_backend, set_video_backend
 
 _CALLED_TIMES = 0
@@ -1057,6 +1058,272 @@ def read_video(filename, start_pts=0, end_pts=None, pts_unit="pts"):
     if get_video_backend() == "Ascend":
         return _read_video_dvpp(filename, start_pts, end_pts, pts_unit)
     return _read_video_ffmpeg(filename, start_pts, end_pts, pts_unit)
+
+
+class VideoDecoder:
+    """
+    A decoder for single video streams, capable of parsing metadata and extracting frames
+    from H.264/HEVC-encoded content.
+
+    Args:
+        source(str): The path to the video file.
+
+    Raises:
+        TypeError: If `source` is not string.
+        ValueError: If `source` does not exist or permission denied.
+
+    Examples:
+            >>> import mindspore.dataset as ds
+            >>> import mindspore.dataset.vision as vision
+            >>>
+            >>> ds.config.set_video_backend("Ascend")
+            >>> reader = vision.VideoDecoder(source="/path/to/filename")
+    """
+    def __init__(self, source):
+        check_file(source)
+        self.source = source
+        self._metadata = self.metadata
+
+    @property
+    def metadata(self):
+        """
+        Getting metadata of the video stream.
+
+        Returns:
+            dict, information about the metadata.
+
+        Examples:
+            >>> import mindspore.dataset as ds
+            >>> import mindspore.dataset.vision as vision
+            >>>
+            >>> ds.config.set_video_backend("Ascend")
+            >>> reader = vision.VideoDecoder(source="/path/to/filename")
+            >>> metadata = reader.metadata
+        """
+        metadata = {}
+        filepath = os.path.realpath(self.source)
+        with cde.pyav_open(filepath) as container:
+            stream = container.streams.video[0]
+            metadata["width"] = stream.width
+            metadata["height"] = stream.height
+            metadata["duration_seconds"] = round(float(stream.duration * stream.time_base), 6)
+            metadata["num_frames"] = stream.frames
+            metadata["average_fps"] = float(stream.average_rate)
+        return metadata
+
+    def get_frames_at(self, indices):
+        """
+        Retrieves the frame at the specified index.
+
+        Args:
+            indices (list[int]): List of frame indices to acquire.
+
+        Returns:
+            numpy.ndarray, four dimensions uint8 data for video. The format is [T, H, W, C].
+            `T` is the number of frames, `H` is the height, `W` is the width, `C` is the channel for RGB.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Raises:
+            TypeError: If `indices` is not of type list.
+            TypeError: If `indices` value is not of type int.
+            ValueError: If `indices` value is not in range [0, total frames).
+
+        Examples:
+            >>> import mindspore.dataset as ds
+            >>> import mindspore.dataset.vision as vision
+            >>>
+            >>> ds.config.set_video_backend("Ascend")
+            >>> reader = vision.VideoDecoder(source="/path/to/filename")
+            >>> output_frames = reader.get_frames_at([0, 1, 2, 3])
+        """
+        type_check(indices, (list,), "indices")
+        type_check_list(indices, (int,), "indices")
+
+        if indices is None:
+            return np.empty(0, dtype=np.uint8)
+        for i, frame_index in enumerate(indices):
+            check_value(frame_index, [0, self._metadata["num_frames"]], "Invalid frame index[{0}]={1}".format(
+                i, indices[i]), right_open_interval=True)
+        filepath = os.path.realpath(self.source)
+
+        try:
+            with cde.pyav_open(filepath) as container:
+                if container.streams.video:
+                    if container.streams.video[0].name in ("hevc", "h264"):
+                        vframes = self._read_from_stream_dvpp_frames(
+                            filepath,
+                            container,
+                            0,
+                            float("inf"),
+                            container.streams.video[0],
+                            {"video": 0},
+                            indices,
+                        )
+                    else:
+                        raise RuntimeError(f"This video in {filepath} is coding by {container.streams.video[0].name}, "
+                                           "not supported on DVPP backend and will fall back to run on the pyav.")
+                else:
+                    vframes = np.empty(0, dtype=np.uint8)
+        except FFmpegError:
+            vframes = np.empty(0, dtype=np.uint8)
+
+        if vframes is not None and not vframes.empty():
+            # [T,C,H,W] --> [T,H,W,C]
+            vframes = vframes.transpose(0, 2, 3, 1)
+
+        return vframes
+
+    def _read_from_stream_dvpp_frames(self, filename, container, start_offset, end_offset,
+                                      stream, stream_name, indices):
+        """ Read video stream with DVPP. """
+        if not stream.type == "video":
+            raise RuntimeError("_read_from_stream_dvpp_frames only handle video type")
+        max_buffer_size = 5
+        # DivX-style packed B-frames can have out-of-order pts (2 frames in a single pkt)
+        # so need to buffer some extra frames to sort everything properly
+        should_buffer = _check_buffer(stream.codec_context.extradata)
+
+        seek_offset = start_offset
+        # some files don't seek to the right location, so better be safe here
+        seek_offset = max(seek_offset - 1, 0)
+
+        if should_buffer:
+            seek_offset = max(seek_offset - max_buffer_size, 0)
+        # init frames before seek
+        frames, pts_per_frame = _get_frame_by_cv(filename, container, stream)
+        container.seek(seek_offset, any_frame=False, backward=True, stream=stream)
+        decode_params = DecodeParams(container, start_offset, end_offset, stream)
+        frames = self._decode_video_dvpp_frames(decode_params, frames, pts_per_frame, indices)
+
+        if frames is None:
+            logger.warning(f"_decode_video_dvpp failed: {filename}")
+
+        return frames
+
+    def _get_key_frames_and_first_pts(self, container, stream):
+        """ Get key frames and first pts. """
+        key_list = []
+        first_pts = None
+        for packet in container.demux(stream):
+            if packet.pts is not None:
+                if packet.is_keyframe:
+                    key_list.append(int(packet.pts * stream.time_base * stream.average_rate))
+                    first_pts = packet.pts % pts_per_frame
+        return key_list, first_pts
+
+    def _compute_ret_tensor(self, container, stream, frames_count, frames_in_group, frames, pts_per_frame,
+                            ret_tensor, target_frame_positions, start_frame, chn):
+        """ Compute ret_tensor. """
+        for packet in container.demux(stream):
+            if packet.pts is not None:
+                if frames_count == len(frames_in_group):
+                    break
+                frame = frames[packet.pts].frame
+                input_tensor = frame
+                if packet.pts // pts_per_frame in frames_in_group:
+                    display = True
+                    frames_count += 1
+                    output_tensor = \
+                        ret_tensor[target_frame_positions[frames[packet.pts].positions - start_frame][0]]
+                else:
+                    display = False
+                    output_tensor = cde.DeviceBuffer([])
+                ret = cde.decode_video_send_stream(chn, cde.Tensor(input_tensor), 69, display, output_tensor)
+                if not ret == 0:
+                    logger.warning(f"decode_video_send_stream failed {ret}")
+
+    def _decode_video_dvpp_frames(self, decode_params, frames, pts_per_frame, indices):
+        """ Send frames to Ascend and using DVPP to decode. """
+
+        container = decode_params.container
+        start_offset = decode_params.start_offset
+        end_offset = decode_params.end_offset
+        stream = decode_params.stream
+
+        codecs_type = stream.name
+        hi_pt_h264 = 96
+        hi_pt_h265 = 265
+        if codecs_type == "h264":
+            codec_id = hi_pt_h264
+        elif codecs_type == "hevc":
+            codec_id = hi_pt_h265
+        else:
+            raise ValueError(f"The video codecs_type should be either 'h264' or 'hevc', got {codecs_type}.")
+
+        # if start_offset is between 2 frames, get one more previous frame
+        start_offset = int(start_offset / pts_per_frame) * pts_per_frame
+
+        frame_width = stream.width
+        frame_height = stream.height
+
+        # update end_offset_real
+        end_offset_real = end_offset
+        end_offset_real = min(end_offset_real, len(frames) * pts_per_frame)
+        start_frame = math.ceil(start_offset / pts_per_frame)
+        total_frame = math.ceil((end_offset_real - start_offset) / pts_per_frame)
+
+        if end_offset_real < start_offset or total_frame == 0:
+            return np.empty(0, dtype=np.uint8)
+        target_frame_list = list(set(indices))
+        target_frame_list.sort()
+        target_frame_positions = {}
+        for index, value in enumerate(target_frame_list):
+            target_frame_positions.setdefault(value, []).append(index)
+        ret_tensor = cde.DeviceBuffer([len(target_frame_list), 3, frame_height, frame_width])
+
+        # decode from dvpp
+        chn = cde.decode_video_create_chn(codec_id)
+        if chn == -1:
+            logger.warning(f"decode_video_create_chn failed {chn}")
+            cde.dvpp_sys_exit()
+            return None
+        ret = cde.decode_video_start_get_frame(chn, len(target_frame_list))
+        if not ret == 0:
+            logger.warning(f"decode_video_start_get_frame failed {ret}")
+            cde.decode_video_destroy_chnl(chn)
+            cde.dvpp_sys_exit()
+            return None
+
+        groups = {}
+        key_list, first_pts = self._get_key_frames_and_first_pts(container, stream)
+
+        for frame in target_frame_list:
+            keyframe = max(k for k in key_list if k <= frame)
+            groups.setdefault(keyframe, []).append(frame)
+        container.seek(0, any_frame=False, backward=True, stream=stream)
+        average_rate = stream.average_rate
+        time_base = stream.time_base
+
+        for keyframe, frames_in_group in groups.items():
+            frames_count = 0
+            timestamp = keyframe / average_rate
+            seek_target = int(timestamp / time_base + first_pts)
+            container.seek(seek_target, any_frame=False, backward=True, stream=stream)
+            self._compute_ret_tensor(container, stream, frames_count, frames_in_group, frames,
+                                     pts_per_frame, ret_tensor, target_frame_positions, start_frame, chn)
+
+        # ret_tensor is ordered by pts len(target_frame_list)
+        ret_tensor_dvpp = cde.decode_video_stop_get_frame(chn, len(target_frame_list))
+
+        # if ret_tensor_dvpp empty, means ret_tensor already filled
+        if ret_tensor_dvpp.numel() != 0:
+            ret_tensor = ret_tensor_dvpp
+
+        ret_numpy = np.empty(ret_tensor.shape, dtype=np.uint8)
+        ret = cde.copy_to_numpy(ret_tensor, ret_numpy)
+        if not ret == 0:
+            logger.warning(f"copy_to_numpy failed {ret}")
+
+        ret = cde.decode_video_destroy_chnl(chn)
+        if not ret == 0:
+            logger.warning(f"decode_video_destroy_chnl failed {ret}")
+
+        if indices != target_frame_list:
+            mapping = {val: ret_numpy[index] for index, val in enumerate(target_frame_list)}
+            ret_numpy = np.stack([mapping[val] for val in indices])
+        return ret_numpy
 
 
 def read_video_timestamps(filename, pts_unit="pts"):
