@@ -96,10 +96,15 @@ int32_t GroupedMatmulFuncImpl::PrivateCheckValidation(const PrimitivePtr &primit
   auto transpose_a = GetTransposeValue(input_infos, input_num + idxes_.transpose_a_offset);
   auto transpose_b = GetTransposeValue(input_infos, input_num + idxes_.transpose_b_offset);
   if (EnableInternal(primitive->name())) {
-    if (MS_UNLIKELY(transpose_a || !transpose_b)) {
-      MS_EXCEPTION(ValueError) << "For internal_op'" << primitive->name()
-                               << "', transpose_a should be False, transpose_b should be True, but got " << transpose_a
-                               << " and " << transpose_b;
+    if (MS_LIKELY(input_infos[idxes_.weight]->IsSequence())) {
+      const auto &weight_tensors = input_infos[idxes_.weight]->GetSequenceElements();
+      const auto &weight_type = weight_tensors.front()->GetType();
+      if (MS_UNLIKELY(weight_type == kNumberTypeInt8 && (transpose_a || !transpose_b))) {
+        MS_EXCEPTION(ValueError)
+          << "For internal_op'" << primitive->name()
+          << "', When the weight_type is int8, transpose_a should be False, transpose_b should be True, but got "
+          << transpose_a << " and " << transpose_b;
+      }
     }
 
     if (MS_UNLIKELY(group_type != 0)) {

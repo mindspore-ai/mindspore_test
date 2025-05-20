@@ -1202,7 +1202,7 @@ KernelTensorPtr PrepareParameter(const std::pair<KernelWithIndex, size_t> &param
 
       // Set tensor address to kernel tensor.
       MS_LOG(DEBUG) << "Set tensor address to kernel tensor, tensor address: " << tensor_address->PrintInfo()
-                    << ", old device address: " << ((device_tensor == nullptr) ? nullptr : device_tensor->PrintInfo())
+                    << ", old device address: " << ((device_tensor == nullptr) ? "nullptr" : device_tensor->PrintInfo())
                     << ", outer index: " << outer_index << ", inner index: " << inner_index
                     << ", kernel tensor: " << kernel_tensor.get();
       SetNodeIndexForTensorAddress(device_tensor, tensor_address, outer_index, inner_index);
