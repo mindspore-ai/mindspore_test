@@ -645,8 +645,8 @@ bool AscendResManager::SyncDeviceToHost(const DeviceSync *dst_device_sync, const
   const auto &src_device_address = dynamic_cast<const DeviceAddress *>(src_device_sync);
   MS_EXCEPTION_IF_NULL(dst_device_address);
   MS_EXCEPTION_IF_NULL(src_device_address);
-  return dst_device_address->SyncDeviceToHost(src_device_address->device_shape(), src_device_address->GetSize(),
-                                              src_device_address->type_id(), src_device_address->GetMutablePtr(), true);
+  return src_device_address->SyncDeviceToHost(dst_device_address->device_shape(), dst_device_address->GetSize(),
+                                              dst_device_address->type_id(), dst_device_address->GetMutablePtr(), true);
 }
 
 bool AscendResManager::SyncHostToDevice(const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync,
@@ -675,8 +675,8 @@ bool AscendResManager::AsyncDeviceToHost(const DeviceSync *dst_device_sync, cons
   const auto &src_device_address = dynamic_cast<const DeviceAddress *>(src_device_sync);
   MS_EXCEPTION_IF_NULL(dst_device_address);
   MS_EXCEPTION_IF_NULL(src_device_address);
-  return dst_device_address->AsyncDeviceToHost(src_device_address->device_shape(), src_device_address->GetSize(),
-                                               src_device_address->type_id(), src_device_address->GetMutablePtr(),
+  return src_device_address->AsyncDeviceToHost(dst_device_address->device_shape(), dst_device_address->GetSize(),
+                                               dst_device_address->type_id(), dst_device_address->GetMutablePtr(),
                                                stream_id);
 }
 
