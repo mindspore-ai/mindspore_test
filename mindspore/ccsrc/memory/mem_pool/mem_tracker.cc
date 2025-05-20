@@ -16,6 +16,7 @@
 
 #include "include/backend/mem_reuse/mem_tracker.h"
 
+#include <cstdint>
 #include <fstream>
 #include <memory>
 #include <mutex>
@@ -85,7 +86,7 @@ void MemoryTrackerEnabled::AddTask(const std::string &task_name, const std::stri
   if (to_graph) {
     time_stamp_++;
     task_list_.push_back(task_info);
-    graph::GraphTracker::getInstance().AddOperator(task_info);
+    graph::TrackerGraph::getInstance().AddOperator(task_info);
   }
 }
 void MemoryTrackerEnabled::AddTask(const std::string &task_name, const std::string &node_name,
@@ -114,7 +115,7 @@ void MemoryTrackerEnabled::CacheLastTask() {
   }
   cache = task_list_.back();
   task_list_.pop_back();
-  graph::GraphTracker::getInstance().CacheLastTask();
+  graph::TrackerGraph::getInstance().CacheLastTask();
 }
 
 void MemoryTrackerEnabled::EmptyCache() {
@@ -124,7 +125,7 @@ void MemoryTrackerEnabled::EmptyCache() {
   }
   task_list_.push_back(cache);
   cache = nullptr;
-  graph::GraphTracker::getInstance().EmptyCache();
+  graph::TrackerGraph::getInstance().EmptyCache();
 }
 
 void MemoryTrackerEnabled::AddNestedTask(const std::string &task_name, const std::string &node_name,
@@ -169,8 +170,8 @@ void MemoryTrackerEnabled::MarkTensorAsInput(const std::string &task_name, const
     return;
   }
   auto mem_block = mem_block_iter->second;
-  auto input_tensor = graph::GraphTracker::getInstance().AddTensor(mem_block, device_ptr, dtype, shape, tensor_info);
-  graph::GraphTracker::getInstance().AddOperatorInput(task_info, input_tensor);
+  auto input_tensor = graph::TrackerGraph::getInstance().AddTensor(mem_block, device_ptr, dtype, shape, tensor_info);
+  graph::TrackerGraph::getInstance().AddOperatorInput(task_info, input_tensor);
 }
 
 void MemoryTrackerEnabled::MarkTensorAsOutput(const std::string &task_name, const std::string &device_name,
@@ -196,8 +197,8 @@ void MemoryTrackerEnabled::MarkTensorAsOutput(const std::string &task_name, cons
     return;
   }
   auto mem_block = mem_block_iter->second;
-  auto output_tensor = graph::GraphTracker::getInstance().AddTensor(mem_block, device_ptr, dtype, shape, tensor_info);
-  graph::GraphTracker::getInstance().AddOperatorOutput(task_info, output_tensor);
+  auto output_tensor = graph::TrackerGraph::getInstance().AddTensor(mem_block, device_ptr, dtype, shape, tensor_info);
+  graph::TrackerGraph::getInstance().AddOperatorOutput(task_info, output_tensor);
 }
 
 MemInfoPtr MemoryTrackerEnabled::NewMemInfo(const std::string &task_name, MemType type, size_t size,
@@ -510,7 +511,7 @@ void MemoryTrackerEnabled::Dump(size_t rank_id) {
   has_dump = true;
 
   // Check if need dump
-  if (task_list_.empty() && !graph::GraphTracker::getInstance().NeedDump()) {
+  if (task_list_.empty() && !graph::TrackerGraph::getInstance().NeedDump()) {
     MS_LOG(WARNING) << "MemoryTracker skip Dump, since no data has been collected";
     return;
   }
@@ -530,7 +531,7 @@ void MemoryTrackerEnabled::Dump(size_t rank_id) {
     }
     auto mem_info = mem_block->mem_info.lock();
     if (mem_info) {
-      user_task_num += mem_info->user_tasks.size();
+      user_task_num += static_cast<int64_t>(mem_info->user_tasks.size());
     }
   }
   if (user_task_num >= kUserTaskNumThreshold && !common::IsEnableAllocConfig(common::kAllocSimpleTracker)) {
@@ -542,7 +543,7 @@ void MemoryTrackerEnabled::Dump(size_t rank_id) {
                   << ", mem block num: " << mem_block_list_.size() << ", user task num: " << user_task_num;
   MS_LOG(WARNING) << "block csv path: " << block_csv_path;
   MS_LOG(WARNING) << "task csv path: " << task_csv_path;
-  graph::GraphTracker::getInstance().Dump(graph_path);
+  graph::TrackerGraph::getInstance().Dump(graph_path);
 
   std::ofstream block_file(block_csv_path);
   if (!block_file) {

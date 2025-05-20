@@ -52,14 +52,14 @@ struct TrackerOperator {
 };
 using TrackerOperatorPtr = std::shared_ptr<TrackerOperator>;
 
-class GraphTracker {
+class TrackerGraph {
  public:
-  static GraphTracker &getInstance() {
-    static GraphTracker instance;
+  static TrackerGraph &getInstance() {
+    static TrackerGraph instance;
     return instance;
   }
-  GraphTracker(const GraphTracker &) = delete;
-  GraphTracker &operator=(const GraphTracker &) = delete;
+  TrackerGraph(const TrackerGraph &) = delete;
+  TrackerGraph &operator=(const TrackerGraph &) = delete;
   TrackerTensorPtr AddTensor(MemBlockInfoPtr mem_block, DeviceMemPtr device_ptr, TypeId dtype, const ShapeVector &shape,
                              TensorStorageInfoPtr tensor_info);
   void AddOperator(TaskInfoPtr task_info);
@@ -72,7 +72,7 @@ class GraphTracker {
   void EmptyCache();
 
  private:
-  GraphTracker() = default;
+  TrackerGraph() = default;
   std::mutex mutex_;
   bool begin_race_check_ = false;
   std::vector<TrackerTensorPtr> tensors_;
