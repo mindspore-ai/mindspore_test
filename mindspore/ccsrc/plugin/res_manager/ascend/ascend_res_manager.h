@@ -162,6 +162,15 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public HalResBase {
   void InitializeForGe() const override;
 
  private:
+  bool SyncDeviceToHost(const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync, size_t stream_id) const;
+  bool SyncHostToDevice(const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync, size_t stream_id) const;
+  bool SyncDeviceToDevice(const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync, size_t stream_id) const;
+  bool AsyncDeviceToHost(const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync, size_t stream_id) const;
+  bool AsyncHostToDevice(const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync, size_t stream_id) const;
+  bool AsyncDeviceToDevice(const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync,
+                           size_t stream_id) const;
+
+ private:
   MemUceInfo mem_uce_info_;
   std::mutex mem_uce_info_mutex_;
   bool initialized_ = false;
