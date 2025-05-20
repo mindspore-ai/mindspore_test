@@ -785,7 +785,9 @@ from .other_func import (
     partial,
     rotary_position_embedding,
     move_to,
-    moe_init_routing_v2
+    moe_init_routing_v2,
+    moe_distribute_dispatch,
+    moe_distribute_combine
 )
 
 from ._add_attr_func import (
