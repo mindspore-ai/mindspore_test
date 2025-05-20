@@ -18,6 +18,7 @@ mindspore.parallel提供了大量的自动并行接口，包括并行基础配�
     :template: classtemplate.rst
 
     mindspore.parallel.auto_parallel.AutoParallel
+    mindspore.parallel.distributed.DistributedDataParallel
     mindspore.parallel.nn.GradAccumulation
     mindspore.parallel.nn.MicroBatchInterleaved
     mindspore.parallel.nn.Pipeline
