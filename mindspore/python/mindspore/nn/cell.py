@@ -35,7 +35,7 @@ from typing import (
 
 import mindspore as ms
 from mindspore._checkparam import args_type_check, check_hook_fn
-from mindspore.common._auto_dynamic import is_auto_dynamic, convert_inputs_to_dynamic
+from mindspore.common.dynamic_shape._auto_dynamic import is_auto_dynamic, convert_inputs_to_dynamic
 from mindspore import log as logger
 from mindspore.common.parameter import PARAMETER_NAME_DEFAULT
 from mindspore.common.hook_handle import HookHandle

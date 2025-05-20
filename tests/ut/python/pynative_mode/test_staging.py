@@ -20,7 +20,6 @@ import mindspore as ms
 import mindspore.nn as nn
 from mindspore import Tensor
 from mindspore import context
-from mindspore.common import dtype
 from mindspore.common.api import jit
 from mindspore.ops import functional as F
 from mindspore.ops import operations as P
@@ -146,33 +145,6 @@ def test_class_method_composite_staging():
     y = Tensor(np.ones([3, 3]).astype(np.float32))
     net = TensorAddMulNet()
     output = net.construct(x, y)
-
-
-@pytest.mark.skip(reason="Need to implement dynamic arg for jit api.")
-@non_graph_engine
-def test_input_signature():
-    """ test_input_signature """
-
-    @jit(input_signature=(Tensor(dtype=dtype.float32, shape=(1, 1, 3, 3)),
-                          Tensor(dtype=dtype.float32, shape=(1, 1, 3, 3))))
-    def tensor_add_test(x, y):
-        """ tensor_add_test """
-        z = F.tensor_add(x, y)
-        return z
-
-    x1 = Tensor(np.ones([1, 1, 3, 3], dtype=np.float32))
-    y1 = Tensor(np.ones([1, 1, 3, 3], dtype=np.float32))
-    output = tensor_add_test(x1, y1)
-    # test input type signature
-    x2 = Tensor(np.ones([1, 1, 3, 3], dtype=np.float64))
-    y2 = Tensor(np.ones([1, 1, 3, 3], dtype=np.float64))
-    with pytest.raises(ValueError):
-        tensor_add_test(x2, y2)
-    # test input shape signature
-    x3 = Tensor(np.ones([1, 1, 4, 4], dtype=np.float64))
-    y3 = Tensor(np.ones([1, 1, 4, 4], dtype=np.float64))
-    with pytest.raises(ValueError):
-        tensor_add_test(x3, y3)
 
 
 def test_scalar_cast():

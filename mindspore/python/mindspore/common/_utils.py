@@ -1,6 +1,6 @@
 # This is the Python adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
 #
-# Copyright 2022 Huawei Technologies Co., Ltd
+# Copyright 2022-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 
 import os
 import math
+import types
 import ctypes
 import functools
 
@@ -44,6 +45,13 @@ def is_dim_unknown(shape):
     if -2 in shape:
         raise ValueError(f"'shape' should have only one -2 or no -2 at all but got ({shape}).")
     return False
+
+
+def get_func(func):
+    """Get function object"""
+    if isinstance(func, types.MethodType):
+        return func.__func__
+    return func
 
 
 def get_slice_num(dtype, shape):

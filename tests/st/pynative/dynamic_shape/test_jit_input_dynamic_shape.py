@@ -13,12 +13,10 @@
 # limitations under the License.
 # ============================================================================
 
-import pytest
 from mindspore.nn import Cell
 from mindspore import ops, context
 from mindspore.common import Tensor
-from mindspore.common import dtype
-from mindspore.common import jit
+from mindspore.common import jit, enable_dynamic, dtype
 import numpy as np
 from tests.mark_utils import arg_mark
 
@@ -78,14 +76,14 @@ class ShapeAdd(Cell):
         super().__init__()
         self.eps = (1,)
 
-    @jit(input_signature=(d, d))
+    @jit
+    @enable_dynamic(x=d, y=d)
     def construct(self, x, y):
         return x.shape + y.shape + self.eps
 
 
-@pytest.mark.skip(reason="Need to implement dynamic arg for jit api.")
 @arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level1',
+          level_mark='level0',
           card_mark='onecard',
           essential_mark='essential')
 def test_dynamic_shape_jit_shape_add():
@@ -107,7 +105,8 @@ class EmptyLess(Cell):
         self.cmp_tuple = (1, -5)
         self.red = ops.ReduceMean(keep_dims=False)
 
-    @jit(input_signature=(d, d1))
+    @jit
+    @enable_dynamic(x=d, axis=d1)
     def construct(self, x, axis):
         r = self.red(x, axis)
         out = x
@@ -118,7 +117,6 @@ class EmptyLess(Cell):
         return out
 
 
-@pytest.mark.skip(reason="Need to implement dynamic arg for jit api.")
 @arg_mark(plat_marks=['cpu_linux'],
           level_mark='level0',
           card_mark='onecard',
@@ -143,7 +141,8 @@ class ListEQ(Cell):
         self.cmp_list = (6,)
         self.red = ops.ReduceMean(keep_dims=False)
 
-    @jit(input_signature=(d, d1))
+    @jit
+    @enable_dynamic(x=d, axis=d1)
     def construct(self, x, axis):
         r = self.red(x, axis)
         out = x
@@ -154,7 +153,6 @@ class ListEQ(Cell):
         return out
 
 
-@pytest.mark.skip(reason="Need to implement dynamic arg for jit api.")
 @arg_mark(plat_marks=['cpu_linux'],
           level_mark='level0',
           card_mark='onecard',
@@ -178,7 +176,8 @@ class ListLt(Cell):
         super().__init__()
         self.cmp_list = [6]
 
-    @jit(input_signature=d)
+    @jit
+    @enable_dynamic(x=d)
     def construct(self, x):
         out = x
         if list(x.shape) < self.cmp_list:
@@ -188,7 +187,6 @@ class ListLt(Cell):
         return out
 
 
-@pytest.mark.skip(reason="Need to implement dynamic arg for jit api.")
 @arg_mark(plat_marks=['cpu_linux'],
           level_mark='level0',
           card_mark='onecard',
@@ -201,7 +199,6 @@ def test_set_inputs_shape_list_lt():
     """
     net = ListLt()
     x = np.ones([4, 6], np.float32)
-    net.set_inputs(d)
     fact = ShapeFactory(net)
     fact.forward_cmp(x)
     fact.grad_cmp(x)
@@ -213,7 +210,8 @@ class ListInsert(Cell):
         self.i = 0
         self.j = 1
 
-    @jit(input_signature=d)
+    @jit
+    @enable_dynamic(x=d)
     def construct(self, x):
         xshape = x.shape
         idx = xshape[self.i]
@@ -223,9 +221,8 @@ class ListInsert(Cell):
         return xshape
 
 
-@pytest.mark.skip(reason="Need to implement dynamic arg for jit api.")
 @arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level1',
+          level_mark='level0',
           card_mark='onecard',
           essential_mark='essential')
 def test_set_inputs_shape_list_insert():
@@ -246,14 +243,14 @@ class NegStepSlice(Cell):
         super().__init__()
         self.s = 0
 
-    @jit(input_signature=d)
+    @jit
+    @enable_dynamic(x=d)
     def construct(self, x):
         xshape = x.shape
         step = xshape[self.s] - 2
         return xshape[::step]
 
 
-@pytest.mark.skip(reason="Need to implement dynamic arg for jit api.")
 @arg_mark(plat_marks=['cpu_linux'],
           level_mark='level0',
           card_mark='onecard',
@@ -276,14 +273,14 @@ class SliceNegStep(Cell):
         super().__init__()
         self.s = 1
 
-    @jit(input_signature=d)
+    @jit
+    @enable_dynamic(x=d)
     def construct(self, x):
         xshape = x.shape
         step = xshape[self.s] - 4
         return xshape[1:0:step]
 
 
-@pytest.mark.skip(reason="Need to implement dynamic arg for jit api.")
 @arg_mark(plat_marks=['cpu_linux'],
           level_mark='level0',
           card_mark='onecard',
@@ -306,7 +303,8 @@ class InTuple(Cell):
         super().__init__()
         self.num = 4
 
-    @jit(input_signature=d)
+    @jit
+    @enable_dynamic(x=d)
     def construct(self, x):
         out = x
         xshape = x.shape
@@ -318,7 +316,6 @@ class InTuple(Cell):
         return out
 
 
-@pytest.mark.skip(reason="Need to implement dynamic arg for jit api.")
 @arg_mark(plat_marks=['cpu_linux'],
           level_mark='level0',
           card_mark='onecard',
@@ -341,16 +338,16 @@ class TupleIndex(Cell):
         super().__init__()
         self.target = 3
 
-    @jit(input_signature=d)
+    @jit
+    @enable_dynamic(x=d)
     def construct(self, x):
         xshape = x.shape
         idx = xshape.index(self.target, 1, 2)
         return idx
 
 
-@pytest.mark.skip(reason="Need to implement dynamic arg for jit api.")
 @arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level1',
+          level_mark='level0',
           card_mark='onecard',
           essential_mark='essential')
 def test_set_inputs_shape_tuple_index():
@@ -371,7 +368,8 @@ class SliceNeg(Cell):
         super().__init__()
         self.n = -1
 
-    @jit(input_signature=d3)
+    @jit
+    @enable_dynamic(x=d3)
     def construct(self, x):
         xshape = x.shape
         a = xshape[0] * self.n
@@ -379,7 +377,6 @@ class SliceNeg(Cell):
         return xshape[a:b]
 
 
-@pytest.mark.skip(reason="Need to implement dynamic arg for jit api.")
 @arg_mark(plat_marks=['cpu_linux'],
           level_mark='level0',
           card_mark='onecard',
@@ -402,15 +399,15 @@ class GetItemNeg(Cell):
         super().__init__()
         self.n = -2
 
-    @jit(input_signature=d3)
+    @jit
+    @enable_dynamic(x=d3)
     def construct(self, x):
         xshape = x.shape
         return xshape[self.n]
 
 
-@pytest.mark.skip(reason="Need to implement dynamic arg for jit api.")
 @arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level1',
+          level_mark='level0',
           card_mark='onecard',
           essential_mark='essential')
 def test_set_inputs_shape_getitem_neg():
@@ -431,14 +428,14 @@ class TupleMulInt(Cell):
         super().__init__()
         self.n = 0
 
-    @jit(input_signature=d)
+    @jit
+    @enable_dynamic(x=d)
     def construct(self, x):
         xshape = x.shape
         t = xshape[self.n]
         return xshape * t
 
 
-@pytest.mark.skip(reason="Need to implement dynamic arg for jit api.")
 @arg_mark(plat_marks=['cpu_linux'],
           level_mark='level0',
           card_mark='onecard',
