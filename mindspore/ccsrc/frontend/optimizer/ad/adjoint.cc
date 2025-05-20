@@ -24,8 +24,8 @@
 
 namespace mindspore {
 namespace ad {
-Adjoint::Adjoint(const AnfNodePtr &primal, const AnfNodePtr &k, const FuncGraphPtr &caller)
-    : primal_(primal), caller_(caller), dout_(nullptr) {
+Adjoint::Adjoint(const AnfNodePtr &primal, const AnfNodePtr &k, const FuncGraphPtr &caller, bool is_grad_by_j)
+    : primal_(primal), caller_(caller), dout_(nullptr), is_grad_by_j_(is_grad_by_j) {
   if (k != nullptr) {
     k_ = k;
     MS_LOG(DEBUG) << "Add adjoint for " << primal->ToString() << " " << k_->ToString();
@@ -83,17 +83,12 @@ void Adjoint::AccumulateDout(const AnfNodePtr &dout_factor) {
 
 namespace {
 void AddDefaultParamHooks(const pipeline::ResourceBasePtr &resources, const ParameterPtr &param) {
-  if (MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
-    MS_LOG(DEBUG) << "The hook for the parameter won't be added to the graph in PYNATIVE MODE.";
-    return;
-  }
-
   if (!param->has_default()) {
     MS_LOG(DEBUG) << "param: " << param->DebugString() << " not has default value";
     return;
   }
 
-  const auto default_value = param->default_param();
+  const auto &default_value = param->default_param();
   if (!default_value->isa<tensor::Tensor>()) {
     MS_LOG(DEBUG) << "The default value of " << param->ToString() << " is not a Tensor.";
     return;
@@ -117,7 +112,7 @@ AnfNodePtr Adjoint::ApplyTensorHookForDout(const pipeline::ResourceBasePtr &reso
   }
 
   auto param = primal_->cast<ParameterPtr>();
-  if (param->has_default()) {
+  if (param->has_default() && is_grad_by_j_) {
     AddDefaultParamHooks(resources, param);
   }
 

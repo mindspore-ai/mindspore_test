@@ -387,21 +387,5 @@ void AttachCustomBPropToGraph(const FuncGraphPtr &graph, const py::object &obj) 
   }
   return;
 }
-
-bool HasRegisterHook(const py::object &obj) { return HookUtils::HasRegisterHook(obj); }
-
-py::list GetRegisterHookList(const py::object &obj) { return HookUtils::GetRegisterHookList(obj); }
-
-void SaveTensorRegisterHook(const py::object &obj, const AnfNodePtr &node) {
-  if (node == nullptr || node->abstract() == nullptr) {
-    return;
-  }
-  auto hook_list = GetRegisterHookList(obj);
-  if (hook_list.empty()) {
-    return;
-  }
-  MS_LOG(INFO) << "Save Hook " << py::str(py::object(hook_list)) << " to " << node->DebugString();
-  node->abstract()->set_user_data<py::tuple>(kRegisterHookKey, std::make_shared<py::tuple>(py::tuple(hook_list)));
-}
 }  // namespace pijit
 }  // namespace mindspore

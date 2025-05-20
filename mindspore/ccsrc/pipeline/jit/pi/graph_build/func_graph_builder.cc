@@ -239,7 +239,6 @@ AnfNodePtr FuncGraphBuilder::ConvertParameterTupleToNode(const py::object &input
     if (cur_abs == nullptr) {
       return nullptr;
     }
-    SaveTensorRegisterHook(py::cast<py::object>(obj), cur_node);
     inputs.push_back(cur_node);
     inputs_abs.push_back(cur_abs);
   }
