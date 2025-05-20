@@ -44,6 +44,7 @@
 #include "utils/anf_utils.h"
 #include "frontend/expander/utils.h"
 #include "frontend/expander/bprop/bprop_irbuilder.h"
+#include "include/common/pynative/grad_state.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_h.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
@@ -342,7 +343,7 @@ FuncGraphPtr KPrim::KPrimitive(const CNodePtr &cnode, const ValueNodePtr &value_
 
   FuncGraphPtr bprop_fg = nullptr;
   if (IsPrimitiveEquals(prim, prim::kPrimHookBackward) || IsPrimitiveEquals(prim, prim::kPrimCellBackwardHook)) {
-    if (MsContext::GetInstance()->get_param<int>(MsCtxParam::MS_CTX_EXECUTION_MODE) == kGraphMode) {
+    if (!pynative::GradState::Get().RequiresGrad()) {
       MS_LOG_WITH_NODE(EXCEPTION, cnode)
         << "The Hook operation is not supported in graph mode, which is only supported in pynative mode.\n"
         << trace::GetDebugInfoStr(cnode->debug_info());
