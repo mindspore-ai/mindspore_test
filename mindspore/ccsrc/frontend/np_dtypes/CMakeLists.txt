@@ -3,6 +3,10 @@ if(Python3_FOUND)
     find_package(Python3 COMPONENTS NumPy Development)
     if(Python3_NumPy_FOUND)
         include_directories(${Python3_NumPy_INCLUDE_DIRS})
+        message(STATUS "Python3_NumPy_INCLUDE_DIRS: ${Python3_NumPy_INCLUDE_DIRS}")
+    else()
+        message(FATAL_ERROR "Required package Numpy not found, "
+                "please install Numpy<2.0 and try building MindSpore again.")
     endif()
 endif()
 
