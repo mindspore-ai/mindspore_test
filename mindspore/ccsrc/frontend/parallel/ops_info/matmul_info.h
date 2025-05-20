@@ -123,7 +123,10 @@ class BatchMatMulInfo : public MatMul {
                   const PrimitiveAttrs &attrs)
       : MatMul(name, inputs_shape, outputs_shape, attrs) {}
   ~BatchMatMulInfo() override = default;
-
+  Status Init(const StrategyPtr &in_strategy, const StrategyPtr &out_strategy,
+              const std::vector<std::shared_ptr<TensorLayout>> &in_tensor_layouts = {},
+              const std::vector<std::shared_ptr<TensorLayout>> &out_tensor_layouts = {}) override;
+  Status CheckOutputStrategy(const StrategyPtr &out_strategy) override;
   std::shared_ptr<Strategies> GenerateBatchStrategies() override;
 };
 

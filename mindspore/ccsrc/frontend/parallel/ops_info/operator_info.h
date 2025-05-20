@@ -611,6 +611,7 @@ class OperatorInfo {
       MS_LOG(ERROR) << error_msg;
     }
   }
+  Status InferByStrategy(const StrategyPtr &in_strategy, const StrategyPtr &out_strategy);
 
   std::string name_;
   std::string prim_name_;

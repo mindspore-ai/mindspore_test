@@ -171,3 +171,49 @@ def test_batch_matmul_opt_with_sp(has_bias):
     x = Tensor(np.ones([dp, ep, expert_num, channel, hidden_size]), dtype=ms.float16)
 
     compile_add_check_output(dir_name, net, x)
+
+def test_batch_matmul_sharding_output_by_layout():
+    """
+    Feature: BatchMatMul sharding output.
+    Description: BatchMatMul with output strategy and generate reduce_scatter.
+    Expectation: compile done without error.
+    """
+    context.set_context(mode=context.GRAPH_MODE)
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel",
+                                      device_num=128,
+                                      global_rank=0,
+                                      enable_alltoall=True)
+    hidden_size = 64
+    ffn_hidden_size = 4 * hidden_size
+    channel = 2256
+    expert_num = 16
+    dp = 2
+    ep = 8
+    mp = 8
+    sp = True
+    net = MoEFFNet(hidden_size, ffn_hidden_size, expert_num, dp, ep, mp, sp, True, True, True)
+    x = Tensor(np.ones([dp, ep, expert_num, channel, hidden_size]), dtype=ms.float16)
+    compile_net(net, x)
+
+def test_batch_matmul_sharding_output_by_stra():
+    """
+    Feature: BatchMatMul sharding output.
+    Description: BatchMatMul with output strategy and generate reduce_scatter.
+    Expectation: compile done without error.
+    """
+    context.set_context(mode=context.GRAPH_MODE)
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel",
+                                      device_num=128,
+                                      global_rank=0,
+                                      enable_alltoall=True)
+    hidden_size = 64
+    ffn_hidden_size = 4 * hidden_size
+    channel = 2256
+    expert_num = 16
+    dp = 2
+    ep = 8
+    mp = 8
+    sp = True
+    net = MoEFFNet(hidden_size, ffn_hidden_size, expert_num, dp, ep, mp, sp, True, False, True)
+    x = Tensor(np.ones([dp, ep, expert_num, channel, hidden_size]), dtype=ms.float16)
+    compile_net(net, x)
