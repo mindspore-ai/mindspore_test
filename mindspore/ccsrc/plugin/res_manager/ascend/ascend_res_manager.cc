@@ -613,6 +613,15 @@ DeviceAddressPtr AscendResManager::CreateDeviceAddress(void *ptr, size_t size, c
                                                real_device_id, stream_id);
 }
 
+bool AscendResManager::SyncCopy(const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync,
+                                size_t stream_id) const {
+  return true;
+}
+bool AscendResManager::AsyncCopy(const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync,
+                                 size_t stream_id) const {
+  return true;
+}
+
 bool AscendResManager::LoadCollectiveCommLib() {
   // If this is simulation, load dummy collective communication library.
   if (!common::GetEnv(kSimulationLevel).empty()) {
@@ -1196,6 +1205,26 @@ void AscendResManager::InitializeForGe() const {
   }
   initialized_ge = true;
 }
+
+MS_REGISTER_HAL_COPY_FUNC(DeviceType::kAscend,
+                          ([](const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync, size_t stream_id) {
+                            auto context = MsContext::GetInstance();
+                            MS_EXCEPTION_IF_NULL(context);
+                            auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+                            device::ResKey res_key{DeviceType::kAscend, device_id};
+                            auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+                            MS_EXCEPTION_IF_NULL(res_manager);
+                            return res_manager->SyncCopy(dst_device_sync, src_device_sync, stream_id);
+                          }),
+                          ([](const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync, size_t stream_id) {
+                            auto context = MsContext::GetInstance();
+                            MS_EXCEPTION_IF_NULL(context);
+                            auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+                            device::ResKey res_key{DeviceType::kAscend, device_id};
+                            auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+                            MS_EXCEPTION_IF_NULL(res_manager);
+                            return res_manager->SyncCopy(dst_device_sync, src_device_sync, stream_id);
+                          }));
 
 MS_REGISTER_HAL_RES_MANAGER(kAscendDevice, DeviceType::kAscend, AscendResManager);
 }  // namespace ascend
