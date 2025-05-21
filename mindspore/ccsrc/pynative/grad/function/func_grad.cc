@@ -1454,9 +1454,9 @@ void AutoDiff::BackPropagate() {
     auto fn = queue.top();
     queue.pop();
     MS_LOG(DEBUG) << "Begin calculate op: " << fn->name() << " gradients!";
+    auto ctx_iter = gradient_contexts_.find(fn.get());
     auto gradient_in_iter = input_buffer.find(fn.get());
-    auto extral_info_iter = gradient_contexts_.find(fn.get());
-    if (extral_info_iter == gradient_contexts_.end() || gradient_in_iter == input_buffer.end()) {
+    if (ctx_iter == gradient_contexts_.end() || gradient_in_iter == input_buffer.end()) {
       MS_LOG(DEBUG) << "No need grad, grad fn is: " << fn->ToString();
       continue;
     }
@@ -1467,10 +1467,10 @@ void AutoDiff::BackPropagate() {
       // to do
       CallBackwardHooks(fn, &gradient_in);
     }
-    if (extral_info_iter->second.captured_grad != nullptr) {
-      auto tensor_grad = gradient_in[extral_info_iter->second.captured_grad->input_index]->cast<tensor::TensorPtr>();
+    if (ctx_iter->second.captured_grad != nullptr) {
+      auto tensor_grad = gradient_in[ctx_iter->second.captured_grad->input_index]->cast<tensor::TensorPtr>();
       MS_EXCEPTION_IF_NULL(tensor_grad);
-      extral_info_iter->second.captured_grad->SetGradient(tensor_grad);
+      ctx_iter->second.captured_grad->SetGradient(tensor_grad);
       continue;
     }
     auto gradient_out = fn->CallBackward(gradient_in);
@@ -1487,6 +1487,10 @@ void AutoDiff::BackPropagate() {
         continue;
       }
       const auto &last_grad_node = next_edge.grad_node;
+      if (gradient_contexts_.find(last_grad_node.get()) == gradient_contexts_.end()) {
+        MS_LOG(DEBUG) << "No need grad, grad fn is: " << last_grad_node->ToString();
+        continue;
+      }
       auto it = dependencies_.find(last_grad_node.get());
       if (MS_UNLIKELY(it == dependencies_.end())) {
         MS_LOG(EXCEPTION) << "Last grad node should be in dependencies!";
