@@ -270,6 +270,7 @@ class BACKEND_COMMON_EXPORT AnfRuntimeAlgorithm {
   // Whether the kernel is not supported by other device and need be backed off on the CPU device.
   static bool IsNodeSupportKernelSelectBackoff(const AnfNodePtr &node, const KernelGraphPtr &graph);
   static bool IsKernelSelectBackoffOp(const AnfNodePtr &node);
+  static bool IsNeedContinuesMemoryOp(const AnfNodePtr &node);
   static void SetKernelSelectBackoffInfo(const CNodePtr &node,
                                          const std::pair<std::string, ExceptionType> &failure_info);
   static std::pair<std::string, ExceptionType> GetKernelSelectBackoffInfo(const AnfNodePtr &node);

@@ -2071,6 +2071,13 @@ bool AnfRuntimeAlgorithm::IsKernelSelectBackoffOp(const AnfNodePtr &node) {
   return false;
 }
 
+bool AnfRuntimeAlgorithm::IsNeedContinuesMemoryOp(const AnfNodePtr &kernel) {
+  static std::set<std::string> names = {kMatMulAllReduceOpName, kAlltoAllVOpName, kAllGatherVOpName,
+                                        kReduceScatterVOpName};
+  bool flag = (common::AnfAlgo::IsCommunicationOp(kernel)) && (names.count(common::AnfAlgo::GetCNodeName(kernel)) == 0);
+  return flag;
+}
+
 std::string AnfRuntimeAlgorithm::FetchDeviceTarget(const AnfNodePtr &node, const KernelGraph *graph) {
   MS_EXCEPTION_IF_NULL(node);
   MS_EXCEPTION_IF_NULL(graph);

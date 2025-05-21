@@ -50,8 +50,12 @@ class SomasNode {
   std::vector<SomasTensorPtr> control_output_tensors_;
 
   // Constructors/Destructors
-  SomasNode(std::string scope_full_name, size_t id, NodeType type, const size_t &stream_id)
-      : scope_full_name_(std::move(scope_full_name)), id_(id), type_(type), stream_id_(stream_id) {}
+  SomasNode(std::string scope_full_name, size_t id, NodeType type, bool is_need_contigous, const size_t &stream_id)
+      : scope_full_name_(std::move(scope_full_name)),
+        id_(id),
+        type_(type),
+        is_need_contigous_(is_need_contigous),
+        stream_id_(stream_id) {}
   SomasNode(const SomasNode &) = delete;
   SomasNode &operator=(const SomasNode &) = delete;
   ~SomasNode() = default;
@@ -60,10 +64,12 @@ class SomasNode {
   const size_t &GetId() const { return id_; }
   const size_t &GetStreamId() const { return stream_id_; }
   const NodeType &GetType() const { return type_; }
+  const bool IsNeedContigous() const { return is_need_contigous_; }
 
  private:
   const size_t id_{0};
   const NodeType type_;
+  const bool is_need_contigous_;
   const size_t stream_id_;
 };
 using SomasNodePtr = std::shared_ptr<SomasNode>;
