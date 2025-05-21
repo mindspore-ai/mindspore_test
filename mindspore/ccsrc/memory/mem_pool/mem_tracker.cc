@@ -48,13 +48,6 @@ constexpr size_t kLogThreshold = 10;
 constexpr size_t kLogPersentage = 100;
 }  // namespace
 
-std::tuple<std::string, std::string, std::string> MemoryTrackerEnabled::GetPath(size_t rank_id) {
-  std::string block_csv_path = memory::mem_pool::GeneratePath(rank_id, "memory_block", "csv");
-  std::string task_csv_path = memory::mem_pool::GeneratePath(rank_id, "task", "csv");
-  std::string graph_path = memory::mem_pool::GeneratePath(rank_id, "tracker_graph", "ir");
-  return std::tuple(block_csv_path, task_csv_path, graph_path);
-}
-
 void MemoryTrackerEnabled::AddTask(const std::string &task_name, const std::string &node_name,
                                    const std::string &graph_name, const bool to_graph, const std::string &file_name,
                                    size_t line_num) {
@@ -464,7 +457,7 @@ const std::vector<std::pair<std::string, std::function<void(const MemBlockInfoPt
    [](const MemBlockInfoPtr &mem_block, std::ofstream &oss) {
      static bool is_simple_tracker = common::IsEnableAllocConfig(common::kAllocSimpleTracker);
      if (is_simple_tracker) {
-        return;
+       return;
      }
      auto mem_info = mem_block->mem_info.lock();
      if (mem_info) {
@@ -516,10 +509,9 @@ void MemoryTrackerEnabled::Dump(size_t rank_id) {
     return;
   }
 
-  auto [block_csv_path, task_csv_path, graph_path] = GetPath(rank_id);
-  if (block_csv_path.empty() || task_csv_path.empty() || graph_path.empty()) {
-    MS_LOG(ERROR) << "Get realpath failed, block_csv_path:" << block_csv_path << ", task_csv_path:" << task_csv_path
-                  << ", " << graph_path;
+  auto graph_path = memory::mem_pool::GeneratePath(rank_id, "tracker_graph", "ir");
+  if (graph_path.empty()) {
+    MS_LOG(ERROR) << "Generate graph path failed, rank_id : " << rank_id << ".";
     return;
   }
 
@@ -541,13 +533,25 @@ void MemoryTrackerEnabled::Dump(size_t rank_id) {
   }
   MS_LOG(WARNING) << "MemoryTracker Dump start, task num: " << task_list_.size()
                   << ", mem block num: " << mem_block_list_.size() << ", user task num: " << user_task_num;
-  MS_LOG(WARNING) << "block csv path: " << block_csv_path;
-  MS_LOG(WARNING) << "task csv path: " << task_csv_path;
   graph::TrackerGraph::getInstance().Dump(graph_path);
 
-  std::ofstream block_file(block_csv_path);
+  MS_LOG(INFO) << "MemoryTracker Dump start";
+  DumpMemoryBlock(rank_id);
+  DumpTaskFile(rank_id);
+  MS_LOG(INFO) << "MemoryTracker Dump end";
+}
+
+void MemoryTrackerEnabled::DumpMemoryBlock(size_t rank_id) {
+  std::string memory_block_path = memory::mem_pool::GeneratePath(rank_id, "memory_block", "csv");
+  if (memory_block_path.empty()) {
+    MS_LOG(ERROR) << "Generate memory block path failed, rank_id : " << rank_id << ".";
+    return;
+  }
+
+  MS_LOG(WARNING) << "memory block path : " << memory_block_path << ".";
+  std::ofstream block_file(memory_block_path);
   if (!block_file) {
-    MS_LOG(EXCEPTION) << "Open file " << block_csv_path << " failed.";
+    MS_LOG(EXCEPTION) << "Open file " << memory_block_path << " failed.";
   }
   size_t not_bind_size = 0;
   for (const auto &csv : block_csv) {
@@ -576,7 +580,18 @@ void MemoryTrackerEnabled::Dump(size_t rank_id) {
       log_threshold += mem_block_list_.size() / kLogThreshold;
     }
   }
+  block_file.close();
+  MS_LOG(INFO) << "Not bind size : " << not_bind_size << ".";
+}
 
+void MemoryTrackerEnabled::DumpTaskFile(size_t rank_id) {
+  std::string task_csv_path = memory::mem_pool::GeneratePath(rank_id, "task", "csv");
+  if (task_csv_path.empty()) {
+    MS_LOG(ERROR) << "Generate task csv path failed, rank_id : " << rank_id << ".";
+    return;
+  }
+
+  MS_LOG(WARNING) << "task csv path: " << task_csv_path << ".";
   std::ofstream task_file(task_csv_path);
   if (!task_file) {
     MS_LOG(EXCEPTION) << "Open file " << task_csv_path << " failed.";
@@ -585,8 +600,8 @@ void MemoryTrackerEnabled::Dump(size_t rank_id) {
     task_file << csv.first << ",";
   }
   task_file << "\n";
-  log_threshold = task_list_.size() / kLogThreshold;
-  i = 0;
+  size_t log_threshold = task_list_.size() / kLogThreshold;
+  size_t i = 0;
   for (auto &task : task_list_) {
     i++;
     for (const auto &csv : task_csv) {
@@ -600,11 +615,7 @@ void MemoryTrackerEnabled::Dump(size_t rank_id) {
       log_threshold += task_list_.size() / kLogThreshold;
     }
   }
-
-  block_file.close();
   task_file.close();
-  MS_LOG(INFO) << "Not bind size, " << not_bind_size;
-  MS_LOG(INFO) << "MemoryTracker Dump end";
 }
 
 void MemoryTrackerEnabled::UpdateProfilingPos() {
