@@ -545,7 +545,8 @@ const void *KernelTensor::GetValuePtr() {
 }
 
 bool KernelTensor::SyncDataFromDeviceToHost() const {
-  static bool disable_host_value_cache = common::IsDisableRuntimeConfig("host_value_cache");
+  static bool disable_host_value_cache =
+    (common::IsDisableRuntimeConfig("host_value_cache") || (!MsContext::GetInstance()->IsEnableInferBoost()));
   if (disable_host_value_cache || !host_info_->is_host_info_valid_ || host_info_->need_wait_pipeline_) {
     // Note: must release lock when wait async resize or launch kernel finish, because the kernels' resize and launch
     // tasks which are waited maybe use this kernel's GetValue and try lock this mutex to avoid deadlock.
