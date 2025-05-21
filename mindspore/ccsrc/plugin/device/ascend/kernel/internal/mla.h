@@ -25,7 +25,23 @@
 
 namespace mindspore {
 namespace kernel {
-DECLARE_INTERNAL_KERNEL_MOD(Mla)
+class InternalMla : public InternalKernelMod {
+ public:
+  InternalMla() : InternalKernelMod() {}
+  ~InternalMla() = default;
+
+ protected:
+  bool Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
+  internal::InternalOpPtr CreateKernel(const internal::InputsImmutableInfoList &inputs,
+                                       const internal::OutputsImmutableInfoList &outputs,
+                                       const std::vector<KernelTensor *> &ms_inputs,
+                                       const std::vector<KernelTensor *> &ms_outputs) override;
+  bool UpdateParam(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
+
+ private:
+  bool created_flag_{false};
+  internal::MLAParam param_;
+};
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_KERNEL_INTERNAL_MLA_H_
