@@ -44,6 +44,7 @@ constexpr auto kPhaseNameIncrement = "increment";
 constexpr auto kQuantLinearSparseName = "QuantLinearSparse";
 constexpr auto kQuantBatchMatmulName = "QuantBatchMatmul";
 constexpr auto kGroupedMatmulName = "GroupedMatmul";
+constexpr auto kMlaPreprocessName = "MlaPreprocess";
 constexpr auto CONST_2 = 2;
 constexpr auto Align16 = 16;
 constexpr auto kQuantLinearSparseBiasIdx = 5;  // primitive input weight deq_scale compress_idx bias
@@ -67,6 +68,10 @@ static std::unordered_map<std::string, std::vector<std::vector<std::vector<size_
   {kPagedAttentionOpName, {{{0, 1, 2, 7}, {0}}, {{0, 1, 2, 7}, {0}}}},
   {kFlashAttentionScoreOpName, {{{0, 1, 2, 6}, {3}}, {{0, 1, 2, 6}, {3}}}},
   {kReshapeAndCacheOpName, {{{2, 3}, {}}, {{2, 3}, {}}}},
+  {kPrimNameMatmulSplitSiluFastgeluAddMulOut1, {{{1}, {}}, {{1}, {}}}},
+  {kPrimNameMatmulSplitSiluMulOut1, {{{1}, {}}, {{1}, {}}}},
+  {kPrimNameQMatmulSplitSiluFastgeluAddMulOut1, {{{0, 1}, {}}, {{1}, {}}}},
+  {kPrimNameQMatmulSplitSiluMulOut1, {{{0, 1}, {}}, {{1}, {}}}},
   {kGroupedMatmulName, {{{1}, {}}, {{1}, {}}}},
   {"GroupedMatmulV4", {{{1}, {}}, {{1}, {}}}}};
 

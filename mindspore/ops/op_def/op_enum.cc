@@ -212,7 +212,12 @@ REG_STRING_TO_ENUM_COMMON(kv_cache_quant_mode, StrToEnumMap{{"DEFAULT", PagedAtt
 
 // PagedAttentionMaskMode
 REG_STRING_TO_ENUM_COMMON(mask_mode, StrToEnumMap{{"MASK_DEFAULT", PagedAttentionMaskMode::MASK_DEFAULT},
-                                                  {"TRAPEZOIDAL", PagedAttentionMaskMode::TRAPEZOIDAL}})
+                                                  {"TRAPEZOIDAL", PagedAttentionMaskMode::TRAPEZOIDAL},
+                                                  {"MASK_NONE", MLAMode::MASK_NONE},
+                                                  {"MASK_NORM", MLAMode::MASK_NORM},
+                                                  {"MASK_ALIBI", MLAMode::MASK_ALIBI},
+                                                  {"MASK_SPEC", MLAMode::MASK_SPEC},
+                                                  {"MASK_FREE", MLAMode::MASK_FREE}})
 
 // ErrorMode
 REG_STRING_TO_ENUM_SPECIAL(error_mode, StrToEnumMap{{"CYCLE", ErrorMode::CYCLE}, {"SPECIFIC", ErrorMode::SPECIFIC}});

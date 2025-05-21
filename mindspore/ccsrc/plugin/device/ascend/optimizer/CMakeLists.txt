@@ -54,6 +54,7 @@ file(GLOB_RECURSE MS_OPTIMIZER_910B RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "./ir_fusion_infer/matmul_sigmoid_add_fusion.cc"
         "./ir_fusion_infer/matmul_sigmoid_cast_add_fusion.cc"
         "./ir_fusion_infer/matmul_elemwise_fusion.cc"
+        "./ir_fusion_infer/inference_qbmm_elemwise_fusion.cc"
         "./ir_fusion_infer/remove_fa_tensor_to_tuple_ops.cc"
         "./ir_fusion_infer/transpose_batch_matmul_transpose_fusion.cc"
         "./ir_fusion_infer/moe_init_routing_dyn_quantv2.cc"
