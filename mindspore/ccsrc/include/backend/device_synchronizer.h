@@ -28,7 +28,7 @@
 namespace mindspore {
 namespace device {
 // This class provides interfaces for synchronizing data between device and host.
-class BACKEND_EXPORT DeviceSynchronizer {
+class DeviceSynchronizer {
  public:
   DeviceSynchronizer() = default;
   virtual ~DeviceSynchronizer() = default;
