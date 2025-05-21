@@ -54,8 +54,12 @@ bool DependEdgeElimination::Run(const FuncGraphPtr &func_graph) {
       auto tuple_get_node = index_pair.first;
       if (IsPrimitiveCNode(tuple_get_node, prim::kPrimTupleGetItem)) {
         const auto &tuple_get_users = mng->node_users()[tuple_get_node];
-        auto tuple_index = common::AnfAlgo::GetTupleGetItemOutIndex(tuple_get_node->cast<CNodePtr>());
-        auto subgraph_ouput = output->cast<CNodePtr>()->input(tuple_index);
+        auto tuple_get_cnode = tuple_get_node->cast<CNodePtr>();
+        MS_EXCEPTION_IF_NULL(tuple_get_cnode);
+        auto tuple_index = common::AnfAlgo::GetTupleGetItemOutIndex(tuple_get_cnode);
+        auto make_tuple_node = output->cast<CNodePtr>();
+        MS_EXCEPTION_IF_NULL(make_tuple_node);
+        auto subgraph_ouput = make_tuple_node->input(tuple_index);
         MS_EXCEPTION_IF_NULL(subgraph_ouput);
         auto &[real_user_node, index] = tuple_get_users.back();
         if (!IsPrimitiveCNode(subgraph_ouput, prim::kPrimAssign) && tuple_get_users.size() == 1 &&

@@ -57,7 +57,7 @@ def get_output(net, args, args_dyn=None, enable_graph_kernel=False):
 
 @arg_mark(
     plat_marks=["platform_ascend910b"],
-    level_mark="level1",
+    level_mark="level0",
     card_mark="onecard",
     essential_mark="unessential",
 )
@@ -95,7 +95,7 @@ def test_dvm_grouped_matmul_splititem3_grouptype0(M0, K0, N0, E0, group_list_np)
 
 @arg_mark(
     plat_marks=["platform_ascend910b"],
-    level_mark="level1",
+    level_mark="level0",
     card_mark="onecard",
     essential_mark="unessential",
 )
@@ -130,7 +130,7 @@ def test_dvm_grouped_matmul_splititem3_grouptype2(M0, K0, N0, E0, group_list_np)
 
 @arg_mark(
     plat_marks=["platform_ascend910b"],
-    level_mark="level1",
+    level_mark="level0",
     card_mark="onecard",
     essential_mark="unessential",
 )

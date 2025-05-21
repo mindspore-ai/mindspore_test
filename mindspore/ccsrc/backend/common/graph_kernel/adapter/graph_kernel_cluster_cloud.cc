@@ -262,7 +262,9 @@ class DvmSupportChecker {
       if (step_node == nullptr) {
         return false;
       }
-      auto step_vector = GetValue<std::vector<int64_t>>(step_node->value());
+      auto step_value = step_node->value();
+      MS_EXCEPTION_IF_NULL(step_value);
+      auto step_vector = GetValue<std::vector<int64_t>>(step_value);
 
       if (std::any_of(step_vector.begin(), step_vector.end(), [](int i) { return i != 1; })) {
         return false;
@@ -301,11 +303,14 @@ class DvmSupportChecker {
 
   static bool DvmGroupedMatmulSupported(const AnfNodePtr &node) {
     constexpr int64_t MAX_GM_STRIDE = UINT16_MAX;
+    constexpr int64_t kGroupTypeK = 2;
+    constexpr int64_t kGroupTypeM = 0;
+    constexpr int64_t KSplitNumType3 = 3;
     auto prim = GetCNodePrimitive(node);
     MS_EXCEPTION_IF_NULL(prim);
     auto split_item = GetValue<int64_t>(prim->GetAttr("split_item"));
     auto group_type = GetValue<int64_t>(prim->GetAttr("group_type"));
-    if (split_item != 3 || (group_type != 0 && group_type != 2)) {
+    if (split_item != KSplitNumType3 || (group_type != kGroupTypeM && group_type != kGroupTypeK)) {
       return false;
     }
     auto node_output_type = GetNodeOutputType(node);
@@ -313,8 +318,10 @@ class DvmSupportChecker {
       return false;
     }
     auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     for (size_t i = kIndex4; i < kIndex8; i++) {
       auto input_node = cnode->input(i);
+      MS_EXCEPTION_IF_NULL(input_node);
       if (input_node->isa<ValueNode>() && input_node->cast<ValueNodePtr>()->value()->isa<None>()) {
         continue;
       }
