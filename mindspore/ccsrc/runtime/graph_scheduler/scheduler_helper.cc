@@ -94,9 +94,7 @@ void UpdateDataArrowRefCount(AbstractActor *const to_actor, size_t to_input_inde
       }
     }
   }
-  if (need_increase_ref_count) {
-    UpdateRefCount(device_tensor.get(), false);
-  } else {
+  if (!need_increase_ref_count) {
     device_tensor->UpdateFlag(device::kDeviceAddressFlagNullptr);
   }
 }
@@ -265,7 +263,6 @@ void SchedulerHelper::AddDeviceTensorStore(const AnfNodePtr &anf_node, const Ker
   SetHeteInfoForParamDeviceAddress(anf_node, kernel_tensor);
   DeviceTensorStore::GetInstance().Insert(const_cast<AnfNode *>(anf_node.get()), kernel_tensor);
   device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
-  UpdateRefCount(device_tensor.get(), true);
 }
 
 void SchedulerHelper::AddMonadDeviceTensorStore(AbstractActor *const to_actor, const CNodePtr &kernel,
@@ -579,11 +576,9 @@ void SchedulerHelper::AddDataArrow(AbstractActor *const from_actor, AbstractActo
     device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
   }
   // The device address of super kernel actor can't be changed, so set the max reference count.
-  if (IsControlFlowActor(to_actor->type()) || (((from_actor->type_ == KernelTransformType::kSuperKernelActor) ||
-                                                (to_actor->type_ == KernelTransformType::kSuperKernelActor)) &&
-                                               !EnableKbkSubGraphExecute())) {
-    UpdateRefCount(device_tensor.get(), true);
-  } else {
+  if (!(IsControlFlowActor(to_actor->type()) || (((from_actor->type_ == KernelTransformType::kSuperKernelActor) ||
+                                                  (to_actor->type_ == KernelTransformType::kSuperKernelActor)) &&
+                                                 !EnableKbkSubGraphExecute()))) {
     UpdateDataArrowRefCount(to_actor, to_input_index, device_tensor);
     GetUnusedRefCount(from_actor, to_actor, from_output_index, to_input_index, device_tensor);
   }
@@ -743,15 +738,10 @@ void SchedulerHelper::AddResultParameter(AbstractActor *const from_actor, Output
   if (kernel_tensor != nullptr && kernel_tensor->device_address() != nullptr) {
     auto device_tensor = kernel_tensor->device_address().get();
     device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
-    // The device tensor of graph out need be taken over by host tensor, so set the max reference count.
-    UpdateRefCount(device_tensor, true);
     MS_LOG(DEBUG) << "Add result arrow from actor:" << (from_actor != nullptr ? from_actor->GetAID().Name() : "null")
                   << " to actor:" << to_actor->GetAID() << " from kernel"
                   << (from_kernel == nullptr ? "null" : from_kernel->DebugString())
-                  << " device address:" << device_tensor
-                  << " original ref count:" << device_tensor->original_ref_count()
-                  << " ref count:" << device_tensor->ref_count()
-                  << " dynamic ref count:" << device_tensor->dynamic_ref_count();
+                  << " device address:" << device_tensor;
   }
 
   // Set the device contexts of to_actor.
@@ -786,15 +776,10 @@ void SchedulerHelper::AddResultArrow(AbstractActor *const from_actor, OutputActo
   device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
   // The output actor need use the relevant information of node to create output tensor.
   device_tensor->SetNodeIndex(from_kernel, from_output_index);
-  // The device tensor of graph out need be taken over by host tensor, so set the max reference count.
-  UpdateRefCount(device_tensor.get(), true);
-
   MS_LOG(DEBUG) << "Add result arrow from actor:" << (from_actor != nullptr ? from_actor->GetAID().Name() : "null")
                 << " to actor:" << to_actor->GetAID() << " from kernel"
-                << (from_kernel == nullptr ? "null" : from_kernel->DebugString()) << " device address:" << device_tensor
-                << " original ref count:" << device_tensor->original_ref_count()
-                << " ref count:" << device_tensor->ref_count()
-                << " dynamic ref count:" << device_tensor->dynamic_ref_count();
+                << (from_kernel == nullptr ? "null" : from_kernel->DebugString())
+                << " device address:" << device_tensor;
 
   // Set the device contexts of to_actor.
   if (output_position >= to_actor->device_contexts_.size()) {
@@ -940,7 +925,6 @@ void SchedulerHelper::AddFormalParameterDeviceTensor(ControlActor *const from_ac
   }
 
   device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
-  UpdateRefCount(device_tensor.get(), true);
   device_tensor->SetNodeIndex(input_node, 0);
 }
 
@@ -995,36 +979,6 @@ void SchedulerHelper::ConvertDataArrowToControlArrow(AbstractActor *const from_a
                                << ", data arrow index:" << data_arrow_index;
   }
 
-  // Recalculate the ref count of converted node.
-  size_t old_ref_count = device_tensor->ref_count();
-  // Ref count Initial value is 1.
-  size_t new_ref_count = 1;
-
-  auto is_only_shape_depend = [&device_tensor, &from_actor, &to_actor](const auto &output_data_arrow) {
-    const auto &to_actor_tmp = FetchActor(output_data_arrow->to_op_id_.Name());
-    if (to_actor_tmp == nullptr || to_actor_tmp->type() != KernelTransformType::kKernelActor) {
-      return false;
-    }
-    const auto &to_kernel_actor = dynamic_cast<KernelActor *>(to_actor_tmp);
-    MS_EXCEPTION_IF_NULL(to_kernel_actor);
-    if (to_kernel_actor->kernel() == nullptr) {
-      return false;
-    }
-    const auto &only_depend_shape_attr =
-      common::AnfAlgo::GetCNodePrimitiveAttr(to_kernel_actor->kernel(), kAttrOnlyDependShape);
-    if (only_depend_shape_attr == nullptr) {
-      return false;
-    }
-    auto only_depend_shape = GetValue<std::vector<bool>>(only_depend_shape_attr);
-    if (IntToSize(output_data_arrow->to_input_index_) < only_depend_shape.size() &&
-        only_depend_shape[output_data_arrow->to_input_index_]) {
-      MS_LOG(INFO) << "Skip add ref count for allow null device address:" << device_tensor
-                   << " from actor:" << from_actor->GetAID() << " to actor:" << to_actor->GetAID();
-      return true;
-    }
-    return false;
-  };
-
   for (auto &output_data_arrow : from_actor->output_data_arrows_) {
     MS_EXCEPTION_IF_NULL(output_data_arrow);
     if (output_data_arrow->from_output_index_ != data_arrow->from_output_index_) {
@@ -1032,20 +986,12 @@ void SchedulerHelper::ConvertDataArrowToControlArrow(AbstractActor *const from_a
     }
     if ((output_data_arrow->to_op_id_.Name().find(kExitActorNameSuffix) != std::string::npos) ||
         (output_data_arrow->to_op_id_.Name().find(kOutputActorNameSuffix) != std::string::npos)) {
-      new_ref_count = SIZE_MAX;
       break;
     }
-    if (device_tensor->flag() == device::kDeviceAddressFlagNullptr && is_only_shape_depend(output_data_arrow)) {
-      continue;
-    }
-    ++new_ref_count;
   }
-  device_tensor->set_original_ref_count(new_ref_count);
-  device_tensor->ResetRefCount();
   MS_LOG(INFO) << "Erase the invalid data arrow, from actor:" << from_actor->GetAID().Name()
                << ", from index:" << data_arrow->from_output_index_ << ", to actor:" << to_actor->GetAID().Name()
-               << ", to index:" << data_arrow->to_input_index_ << ", old ref count:" << old_ref_count
-               << ", new ref count:" << new_ref_count;
+               << ", to index:" << data_arrow->to_input_index_;
 
   // Add the control arrow.
   SchedulerHelper::AddControlArrow(from_actor, to_actor);

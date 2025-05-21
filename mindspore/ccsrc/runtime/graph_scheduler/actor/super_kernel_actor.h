@@ -167,13 +167,6 @@ class SuperKernelActor : public DebugAwareActor {
                                    size_t output_index);
 
   void RunGraphKernelByKernel(OpContext<KernelTensor> *const context);
-  // Need to correct current ref count or dynamic ref count by the use count of the input node(parameter) in the graph.
-  // From the outside, the input device address is used only once by the super kernel actor, origin ref count only +1 in
-  // compile phase.
-  void CorrectRefCount(size_t input_index, KernelTensor *kernel_tensor);
-  void CorrectRefCountByCondition(size_t index, const KernelTensorPtr &kernel_tensor,
-                                  std::vector<KernelTensorPtr> *memory_free_list);
-
   void FetchPersistentDeviceTensor();
 
   void UpdateMemoryTraceMangerStatus(OpContext<KernelTensor> *const context);

@@ -348,13 +348,6 @@ void GraphAdapter::UpdateForwardOutputInBpropGraph(const KernelGraphPtr &graph,
     runtime::DeviceTensorStore::GetInstance().Insert(front_node.get(), kernel_tensor);
     HandleBackoffValueNode(value_node, front_node, device_context);
   }
-
-  for (auto &[address, ref_count] : address_ref_count) {
-    MS_EXCEPTION_IF_NULL(address);
-    address->set_original_ref_count(ref_count);
-    address->ResetRefCount();
-    MS_LOG(DEBUG) << "device_address " << address.get() << " ref_count " << address->ref_count();
-  }
   MS_LOG(DEBUG) << "Update end";
 }
 

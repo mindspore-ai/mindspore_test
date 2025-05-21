@@ -120,8 +120,6 @@ void GraphParameterStore::ResetAddrRefCount(size_t outer_index, size_t inner_ind
     auto &device_tensor = kernel_tensor_with_info.first->device_address();
     if (device_tensor != nullptr) {
       auto user_cnt = kernel_tensor_with_info.second.first;
-      device_tensor->set_original_ref_count(user_cnt);
-      device_tensor->ResetRefCount();
       if (user_cnt > 0) {
         // When allocate memory, the ref count would be increase, so it should be decrease here.
         if (is_ref_count_max) {
@@ -268,7 +266,7 @@ void GraphParameterStore::ReleaseData() {
     auto &kernel_tensor = kernel_tensor_with_info.first;
     if (kernel_tensor != nullptr) {
       auto &device_tensor = kernel_tensor->device_address();
-      if (device_tensor != nullptr && device_tensor->original_ref_count() == SIZE_MAX &&
+      if (device_tensor != nullptr && device_tensor->new_ref_count() == SIZE_MAX &&
           !device_tensor->is_ptr_persisted()) {
         MS_LOG(DEBUG) << "Set store device tensor: " << device_tensor.get() << " ptr null, outer idx: " << index.first
                       << ", inner idx: " << index.second << ", info: " << device_tensor->PrintInfo();

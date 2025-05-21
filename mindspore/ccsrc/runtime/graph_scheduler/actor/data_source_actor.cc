@@ -344,14 +344,12 @@ void HostQueueDataSourceActor::ReleaseData() {
       continue;
     }
     // If the address from input tensor and the address is not used by runtime.
-    if (old_address->original_ref_count() == SIZE_MAX && !old_address->is_ptr_persisted()) {
+    if (old_address->new_ref_count() == SIZE_MAX && !old_address->is_ptr_persisted()) {
       auto new_address = old_address->CloneDeviceAddress();
       MS_EXCEPTION_IF_NULL(new_address);
       MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
         << "Create device tensor:" << new_address << " type:" << new_address->type_id();
-      new_address->set_original_ref_count(old_address->original_ref_count());
       new_address->set_new_ref_count(old_address->new_ref_count());
-      new_address->ResetRefCount();
       new_address->set_flag(old_address->flag());
       auto [node, index] = old_address->GetNodeIndex();
       new_address->SetNodeIndex(node, index);

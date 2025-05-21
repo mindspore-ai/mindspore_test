@@ -61,7 +61,6 @@ class ExitActor : public ControlActor {
   void Init() override;
   void FetchInput(OpContext<KernelTensor> *const context) override;
   void SendOutput(OpContext<KernelTensor> *const context) override;
-  void IncreaseDynamicRefCounts(OpContext<KernelTensor> *const context) override;
   void IncreaseNewRefCounts(OpContext<KernelTensor> *const context) override;
 
  private:

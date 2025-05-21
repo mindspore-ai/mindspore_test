@@ -466,7 +466,6 @@ void KernelActor::InitOutputInfo() {
         (void)somas_info_->InsertGraphOutputInfo(output_address.get(), somas_outputs[i].first, somas_outputs[i].second);
         ResetNewRefCountForRefOutputInSomas(kernel_, i);
       } else {
-        UpdateRefCount(output_address.get(), true);
         output_address->set_new_ref_count(SIZE_MAX);
       }
       output_need_somas = true;
@@ -529,7 +528,6 @@ void KernelActor::InitWorkspaceInfo() {
                      << " somas aligned size:" << somas_workspace[i].second
                      << " is smaller than address size:" << workspace_address->GetSize();
       }
-      UpdateRefCount(workspace_address.get(), true);
       workspace_address->set_new_ref_count(SIZE_MAX);
       workspace_need_somas = true;
     } else {
@@ -891,7 +889,7 @@ void *KernelActor::GetSomasDevicePtr(size_t offset) const {
 
 void KernelActor::TraceDynamicMemory() {
   for (size_t i = 0; i < output_kernel_tensors_.size(); i++) {
-    if (output_kernel_tensors_[i]->device_address()->original_ref_count() != SIZE_MAX) {
+    if (!is_output_kernel_[i]) {
       const auto &kernel_tensor = output_kernel_tensors_[i];
       MemoryTraceManager::GetInstance().AddKernelMemoryTraceBlock(
         std::make_shared<KernelMemoryTraceBlock>(kernel_, kernel_tensor->device_ptr(), kernel_tensor->size(),
@@ -1018,7 +1016,6 @@ void KernelActor::SetMemInfoForRdr() {
 
 void KernelActor::UpdateDeviceTensorCopyStore(DeviceTensor *const new_device_tensor,
                                               DeviceTensor *const input_device_tensor, size_t input_index) {
-  UpdateRefCount(new_device_tensor, true);
   MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
     << "Add device tensor copy store for device address:" << new_device_tensor
     << " type:" << new_device_tensor->GetDeviceType() << " and " << input_device_tensor

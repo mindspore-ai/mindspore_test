@@ -83,12 +83,10 @@ void SetSummaryNodesRefCount(const KernelGraph *graph) {
     size_t index = IntToSize(item.second.second);
     auto device_address = AnfAlgo::GetMutableOutputAddr(node, index, false);
     MS_EXCEPTION_IF_NULL(device_address);
-    device_address->set_original_ref_count(SIZE_MAX);
     MS_LOG(DEBUG) << "Set new ref count to max for summary node:" << node->fullname_with_scope()
                   << " debug string:" << node->DebugString() << " output index:" << index
                   << " device address:" << device_address;
     device_address->set_new_ref_count(SIZE_MAX);
-    device_address->ResetRefCount();
   }
 }
 

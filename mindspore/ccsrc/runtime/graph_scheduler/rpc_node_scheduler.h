@@ -58,15 +58,6 @@ class RpcNodeScheduler {
   void Abort();
 
  private:
-  /**
-   * @description: Update reference counts of rpc actors's inputs and workspaces.
-   *               Because the memory of inputs and workspaces should not be released by the framework until rpc module
-   *               done sending or receiving.
-   * @param {RpcActorSetPtr} rpc_actor_set: The rpc actors set.
-   * @return {void}
-   */
-  void UpdateRpcActorRefCounts(RpcActorSetPtr rpc_actor_set) const;
-
   // Create new route table proxy.
   ActorRouteTableProxyPtr CreateRouteTableProxy() const;
 
