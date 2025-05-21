@@ -18,7 +18,6 @@ import json
 import socket
 import ipaddress
 import mindspore.log as logger
-from mindspore import context
 from mindspore.runtime.thread_bind_core import _get_physical_device_id, _get_cpu_available, \
     _auto_generate_strategy, _equal_distribution_strategy
 
@@ -157,13 +156,15 @@ def _generate_auto_bind_core_strategy(local_worker_num):
     Get device to core range assigned for the all processes.
 
     """
+    simulation_level = os.getenv("MS_SIMULATION_LEVEL", "").strip()
+
     try:
         available_cpus = _get_cpu_available()
     except RuntimeError as e:
         logger.warning(f"Failed to acquire available cpu info, error: {e} Will not launch process with taskset.")
         return {}
 
-    if context.get_context("device_target") == "Ascend":
+    if not simulation_level:
         device_to_cpu_map = _auto_generate_strategy(local_worker_num, available_cpus)
     else:
         device_to_cpu_map = _equal_distribution_strategy(local_worker_num, available_cpus)
@@ -200,7 +201,14 @@ def _generate_bind_core_strategy(local_rank_id, device_to_cpu_map, arg_bind_core
     """
     affinity_cpu_str = ""
     cpu_list_for_device = []
-    physical_device_id = _get_physical_device_id(local_rank_id)
+    simulation_level = os.getenv("MS_SIMULATION_LEVEL", "").strip()
+
+    try:
+        physical_device_id = _get_physical_device_id(local_rank_id, simulation_level)
+    except RuntimeError as e:
+        logger.warning(f"Failed to acquire device id, error: {e} Will not launch process with taskset.")
+        return None
+
     if isinstance(arg_bind_core, dict):
         affinity_cpu_str = _parse_global_device_to_cpu_map(local_rank_id, physical_device_id, arg_bind_core)
         if not affinity_cpu_str:
