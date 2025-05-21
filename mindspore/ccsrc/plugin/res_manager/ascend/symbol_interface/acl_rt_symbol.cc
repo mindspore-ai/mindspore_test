@@ -78,6 +78,10 @@ aclrtGetMemUceInfoFunObj aclrtGetMemUceInfo_ = nullptr;
 aclrtDeviceTaskAbortFunObj aclrtDeviceTaskAbort_ = nullptr;
 aclrtMemUceRepairFunObj aclrtMemUceRepair_ = nullptr;
 aclrtEventGetTimestampFunObj aclrtEventGetTimestamp_ = nullptr;
+aclrtDeviceGetBareTgidFunObj aclrtDeviceGetBareTgid_ = nullptr;
+aclrtMemExportToShareableHandleFunObj aclrtMemExportToShareableHandle_ = nullptr;
+aclrtMemSetPidToShareableHandleFunObj aclrtMemSetPidToShareableHandle_ = nullptr;
+aclrtMemImportFromShareableHandleFunObj aclrtMemImportFromShareableHandle_ = nullptr;
 
 void LoadAclRtApiSymbol(const std::string &ascend_path) {
   std::string aclrt_plugin_path = ascend_path + "lib64/libascendcl.so";
@@ -144,6 +148,10 @@ void LoadAclRtApiSymbol(const std::string &ascend_path) {
   aclrtDeviceTaskAbort_ = DlsymAscendFuncObj(aclrtDeviceTaskAbort, handler);
   aclrtMemUceRepair_ = DlsymAscendFuncObj(aclrtMemUceRepair, handler);
   aclrtEventGetTimestamp_ = DlsymAscendFuncObj(aclrtEventGetTimestamp, handler);
+  aclrtDeviceGetBareTgid_ = DlsymAscendFuncObj(aclrtDeviceGetBareTgid, handler);
+  aclrtMemExportToShareableHandle_ = DlsymAscendFuncObj(aclrtMemExportToShareableHandle, handler);
+  aclrtMemSetPidToShareableHandle_ = DlsymAscendFuncObj(aclrtMemSetPidToShareableHandle, handler);
+  aclrtMemImportFromShareableHandle_ = DlsymAscendFuncObj(aclrtMemImportFromShareableHandle, handler);
   aclrt_get_last_error = DlsymAscend<int (*)(int)>(handler, "aclrtGetLastError");
   acl_get_recent_err_msg = DlsymAscend<const char *(*)()>(handler, "aclGetRecentErrMsg");
   MS_LOG(INFO) << "Load acl rt api success!";
