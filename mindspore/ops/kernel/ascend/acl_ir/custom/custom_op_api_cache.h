@@ -24,13 +24,17 @@
 
 namespace mindspore::device::ascend {
 using CustomSupportType = mindspore::kernel::custom::CustomSupportType;
-bool CustomHitCache(const char *aclnn_api, aclOpExecutor **executor, uint64_t *workspace_size,
-                    const std::vector<std::vector<KernelTensor *>> &inputs,
-                    const std::vector<std::vector<KernelTensor *>> &outputs,
-                    const std::vector<CustomSupportType> &input_output_types);
+bool CustomHitCacheSingle(const char *aclnn_api, aclOpExecutor **executor, uint64_t *workspace_size, uint64_t *hash_id,
+                          const std::vector<std::vector<KernelTensor *>> &inputs,
+                          const std::vector<std::vector<KernelTensor *>> &outputs,
+                          const std::vector<CustomSupportType> &input_output_types);
 uint64_t CustomAclnnHash(const std::string &op_type, const std::vector<std::vector<KernelTensor *>> &inputs,
                          const std::vector<std::vector<KernelTensor *>> &outputs,
                          const std::vector<CustomSupportType> &input_output_types);
+void CustomRefreshAddr(const std::string &op_type, const std::vector<std::vector<KernelTensor *>> &inputs,
+                       const std::vector<std::vector<KernelTensor *>> &outputs,
+                       const std::vector<CustomSupportType> &input_output_types);
+
 }  // namespace mindspore::device::ascend
 
 #endif  // MINDSPORE_OPS_KERNEL_ASCEND_ACL_IR_CUSTOM_CUSTOM_OP_API_CACHE_H_

@@ -33,7 +33,7 @@ namespace mindspore {
 namespace kernel {
 namespace custom {
 
-using ExecutorTuple = std::tuple<uint64_t, aclOpExecutor *, std::function<void()>>;
+using ExecutorTuple = std::tuple<uint64_t, aclOpExecutor *, std::function<void()>, uint64_t, bool>;
 
 class CustomV2AclnnKernelMod : public AclnnKernelMod {
  public:

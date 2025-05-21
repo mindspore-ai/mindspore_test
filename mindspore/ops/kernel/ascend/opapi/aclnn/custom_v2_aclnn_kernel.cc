@@ -446,10 +446,12 @@ ExecutorTuple CustomV2AclnnKernelMod::GenCustomExecutor(const std::vector<std::v
   std::function<void()> release_func = nullptr;
   uint64_t *workspace_size_addr = &workspace_size;
   device::ascend::aclOpExecutor **executor_addr = &executor;
-  if (CustomHitCache(api_name, executor_addr, workspace_size_addr, inputs, outputs, input_output_types_)) {
+  uint64_t new_hash_id;
+  if (CustomHitCacheSingle(api_name, executor_addr, workspace_size_addr, &new_hash_id, inputs, outputs,
+                           input_output_types_)) {
     MS_LOG(DEBUG) << "gen executor aclnn cache hit.";
     MS_VLOG(VL_CUSTOM_OP) << "gen executor aclnn cache hit.";
-    return std::make_tuple(workspace_size, executor, release_func);
+    return std::make_tuple(workspace_size, executor, release_func, new_hash_id, true);
   }
   MS_LOG(DEBUG) << "gen executor aclnn cache miss.";
   MS_VLOG(VL_CUSTOM_OP) << "gen executor aclnn cache miss.";
@@ -470,18 +472,19 @@ ExecutorTuple CustomV2AclnnKernelMod::GenCustomExecutor(const std::vector<std::v
     uninit_mem_func(nullptr, false);
   }
   device::ascend::UninitCacheThreadLocal();
-  return std::make_tuple(workspace_size, executor, release_func);
+  return std::make_tuple(workspace_size, executor, release_func, new_hash_id, false);
 }
 
 std::pair<aclOpExecutor *, std::function<void()>> CustomV2AclnnKernelMod::GetExecutor(
   const std::vector<std::vector<KernelTensor *>> &inputs, const std::vector<std::vector<KernelTensor *>> &outputs) {
-  if (hash_id_ == 0 || !hash_map_.count(hash_id_)) {
+  auto iter = hash_map_.find(hash_id_);
+  if (capacity_ == 0 || hash_id_ == 0 || iter == hash_map_.end()) {
     aclOpExecutor *executor;
     std::function<void()> release_func;
-    std::tie(std::ignore, executor, release_func) = GenCustomExecutor(inputs, outputs);
+    std::tie(std::ignore, executor, release_func, hash_id_, std::ignore) = GenCustomExecutor(inputs, outputs);
     return std::make_pair(executor, release_func);
   }
-  const auto &cur_run = *hash_map_[hash_id_];
+  const auto &cur_run = *(iter->second);
   UpdateTensorForLaunch(inputs, outputs, std::get<kReleaseFuncIndex>(cur_run));
   const auto &executor = std::get<1>(cur_run);
   return std::make_pair(executor, nullptr);
