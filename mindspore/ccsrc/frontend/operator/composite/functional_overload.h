@@ -63,18 +63,20 @@ class PrimitiveConverter {
         is_method_(is_method),
         need_pack_(need_pack) {}
   ValuePtr Convert();
+
+ private:
   bool MatchPrimitiveArgs(PrimitiveAttr *cur_prim);
   size_t GetPrimDefaultSize(const std::vector<ops::OpInputArg> &expect_op_args, const std::string &prim_name,
-                            size_t varargs_index, bool has_varargs);
+                            size_t varargs_index, bool has_varargs) const;
   bool CheckArgsSize(PrimitiveAttr *cur_prim);
   bool CheckKwargs(PrimitiveAttr *cur_prim);
   bool CheckPositionArgs(PrimitiveAttr *cur_prim);
-  std::string BuildMatchInfo(const std::vector<std::string> &arg_info_list);
-  std::string BuildDetailedErrorMsg(const std::vector<std::string> &arg_info_list);
+  std::string BuildMatchInfo(const std::vector<std::string> &arg_info_list) const;
+  std::string BuildDetailedErrorMsg(const std::vector<std::string> &arg_info_list) const;
   void GetOpDtypeList();
   void PrintErrorMessages();
-
- private:
+  bool CheckExplicitSequence(PrimitiveAttr *cur_prim, const std::vector<ops::OpInputArg> &expect_op_args) const;
+  bool CheckImplicitTuple(PrimitiveAttr *cur_prim, const std::vector<ops::OpInputArg> &expect_op_args);
   const std::string &functional_name_;
   const abstract::AbstractBasePtrList &input_args_abs_list_;
   std::vector<ops::OP_DTYPE> input_position_args_dtype_;
