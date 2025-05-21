@@ -160,10 +160,16 @@ py::list RegisterHook::GetHooks(const tensor::TensorPtr &tensor) {
       }
     }
   } else {
-    if (auto grad_node = impl::get_unsafe_grad_node_impl(tensor)) {
-      const auto &tensor_pre_hooks = grad_node->py_tensor_pre_hooks();
-      for (const auto &it : tensor_pre_hooks) {
-        hooks.append(it.second->hook_fn_);
+    if (const auto auto_grad_meta_data = impl::get_autograd_meta_impl(tensor)) {
+      const auto output_idx = auto_grad_meta_data->output_index();
+      if (const auto grad_node = auto_grad_meta_data->UnsafeGetGradNodeImpl()) {
+        const auto &py_tensor_pre_hooks = grad_node->py_tensor_pre_hooks();
+        for (const auto &item : py_tensor_pre_hooks) {
+          const auto &py_hooks = item.second;
+          if (py_hooks->output_idx_ == output_idx) {
+            hooks.append(py_hooks->hook_fn_);
+          }
+        }
       }
     }
   }
