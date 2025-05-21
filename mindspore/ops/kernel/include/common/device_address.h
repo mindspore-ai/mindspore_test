@@ -268,11 +268,11 @@ struct AddressCommon {
 
   std::string PrintInfo() const {
     std::ostringstream ofs;
-    ofs << "size:" << size_ << " tensor storage info:" << tensor_storage_info_;
+    ofs << " size:" << size_ << " tensor storage info:" << tensor_storage_info_;
     if (tensor_storage_info_ != nullptr) {
       ofs << tensor_storage_info_->ToString();
     }
-    ofs << "size:" << size_ << " format:" << format_ << " dtype:" << dtype_id_ << " device id:" << device_id_
+    ofs << " size:" << size_ << " format:" << format_ << " dtype:" << dtype_id_ << " device id:" << device_id_
         << " device name:" << device_name_ << " shape vector:{";
     std::for_each(shape_vector_.begin(), shape_vector_.end(), [&ofs](ShapeValueDType axis) { ofs << axis << " "; });
     ofs << "} point ref count:";

@@ -101,7 +101,7 @@ std::string DeviceAddress::PrintInfo() const {
     ofs << " " << address_common_->PrintInfo();
   }
   ofs << " device address deleter:" << (deleter_ != nullptr) << " flag:" << flag_
-      << " need sync user data:" << need_sync_user_data_ << " is view:" << is_view_;
+      << " need sync user data:" << need_sync_user_data_ << " user data:" << user_data_ << " is view:" << is_view_;
   return ofs.str();
 }
 
