@@ -3863,6 +3863,24 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         """
         return TensorPy_._data_ptr(self)
 
+
+    def data_ptr(self):
+        r"""
+        Get the data ptr address of tensor, for CPU is host address, GPU/NPU is device address.
+        User should know how to use the data ptr address.
+        Note: this api is an experimental api, users need understatnd it before use.
+
+        Supported Platforms:
+            ``CPU/GPU/Ascend``
+
+        Examples:
+            >>> import mindspore as ms
+            >>> from mindspore import Tensor
+            >>> x = ms.Tensor([1, 2, 3], ms.int64)
+            >>> data_ptr = x.data_ptr()
+        """
+        return TensorPy_._data_ptr(self)
+
     def normal_(self, mean=0, std=1, *, generator=None):
         r"""
         Update the `self` tensor in place by generating random numbers sampled from the normal

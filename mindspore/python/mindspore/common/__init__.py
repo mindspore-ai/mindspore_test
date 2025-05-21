@@ -41,6 +41,29 @@ from mindspore.common.generator import (
 from mindspore.ops.function.array_func import is_tensor, from_numpy
 from mindspore.common._grad_function import _Function
 
+try:
+    import triton
+    if isinstance(getattr(triton.runtime.jit, "type_canonicalisation_dict", None), dict):
+        ms_type_canonicalisation_dict = {
+            "Bool": "i1",
+            "Float16": "fp16",
+            "BFloat16": "bf16",
+            "Float32": "fp32",
+            "Float64": "fp64",
+            "Int8": "i8",
+            "Int16": "i16",
+            "Int32": "i32",
+            "Int64": "i64",
+            "UInt8": "u8",
+            "UInt16": "u16",
+            "UInt32": "u32",
+            "UInt64": "u64",
+        }
+        triton.runtime.jit.type_canonicalisation_dict.update(ms_type_canonicalisation_dict)
+
+except ImportError:
+    pass
+
 # symbols from dtype
 __all__ = [
     "int8", "byte",
