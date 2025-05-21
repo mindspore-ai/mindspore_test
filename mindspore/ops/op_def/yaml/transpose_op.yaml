@@ -11,4 +11,3 @@ transpose:
   view: True
   dispatch:
     enable: True
-    ascend_kernel: Internal

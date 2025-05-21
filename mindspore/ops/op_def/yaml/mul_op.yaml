@@ -15,4 +15,3 @@ mul:
             dtype: tensor
     dispatch:
         enable: True
-        ascend_kernel: InternalAscend

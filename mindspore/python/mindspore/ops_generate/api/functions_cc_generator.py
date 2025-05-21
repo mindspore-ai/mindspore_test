@@ -144,7 +144,7 @@ class FunctionsGenerator(BaseGenerator):
         clone_func_str = self._get_clone_inplace_str(op_proto.op_inplace, op_proto.op_class.name, inplace_clone_args)
         return_type_str = _get_return_type_str(op_proto)
         create_op_str = self.create_aclnn_op_template.replace(class_name=op_proto.op_class.name)
-        if getattr(op_proto.op_dispatch, 'ascend_kernel') in ('Internal', 'InternalAscend'):
+        if getattr(op_proto.op_dispatch, 'internal_op_ascend') != 'None':
             create_op_str = self.create_internal_op_template.replace(class_name=op_proto.op_class.name)
         return self.FUNCTION_BODY_TEMPLATE.replace(op_name=op_proto.op_name,
                                                    class_name=op_proto.op_class.name,

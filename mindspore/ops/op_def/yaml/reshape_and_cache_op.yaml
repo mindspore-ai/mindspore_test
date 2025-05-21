@@ -25,4 +25,4 @@ reshape_and_cache:
       dtype: tensor
   dispatch:
     enable: True
-    ascend_kernel: Internal
+    InternalOpAscend: AutoGen

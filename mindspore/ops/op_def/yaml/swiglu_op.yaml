@@ -11,6 +11,5 @@ swiglu:
       dtype: tensor
   dispatch:
     enable: True
-    ascend_kernel: Internal
     CPU: None
     GPU: None

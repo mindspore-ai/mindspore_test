@@ -60,4 +60,4 @@ paged_attention:
     disable: True
   dispatch:
     enable: True
-    ascend_kernel: Internal
+    InternalOpAscend: AutoGen

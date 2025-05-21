@@ -23,4 +23,3 @@ matmul:
   dispatch:
     enable: True
     Ascend: MatMulAscend
-    ascend_kernel: Internal
