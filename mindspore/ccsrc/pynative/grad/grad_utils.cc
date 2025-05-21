@@ -328,6 +328,9 @@ InputType AutoGradUtil::SetTensorGradInfo(const tensor::TensorPtr &tensor) {
     auto_grad_meta_data->set_input_type(InputType::kParameter);
     return InputType::kParameter;
   }
+  if (auto_grad_meta_data != nullptr && auto_grad_meta_data->input_type() == InputType::kInput) {
+    return InputType::kInput;
+  }
   return InputType::kConstant;
 }
 
