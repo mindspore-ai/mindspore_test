@@ -1064,7 +1064,7 @@ def read_video(filename, start_pts=0, end_pts=None, pts_unit="pts"):
 class VideoDecoder:
     """
     A decoder for single video streams, capable of parsing metadata and extracting frames
-    from H.264/HEVC-encoded content.
+    from H264/H265-encoded content.
 
     Args:
         source(str): The path to the video file.
@@ -1123,13 +1123,13 @@ class VideoDecoder:
             numpy.ndarray, four dimensions uint8 data for video. The format is [T, H, W, C].
             `T` is the number of frames, `H` is the height, `W` is the width, `C` is the channel for RGB.
 
-        Supported Platforms:
-            ``Ascend``
-
         Raises:
             TypeError: If `indices` is not of type list.
             TypeError: If `indices` value is not of type int.
             ValueError: If `indices` value is not in range [0, total frames).
+
+        Supported Platforms:
+            ``Ascend``
 
         Examples:
             >>> import mindspore.dataset as ds

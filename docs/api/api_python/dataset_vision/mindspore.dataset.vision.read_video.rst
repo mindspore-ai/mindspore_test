@@ -7,7 +7,8 @@ mindspore.dataset.vision.read_video
 
     使用CPU后端时支持的文件类型有AVI、H264、H265、MOV、MP4和WMV，使用Ascend后端时支持的文件类型有H264和H265。
 
-    .. note:: 此函数默认使用 CPU 执行，但也支持通过 `mindspore.dataset.config.set_video_backend("Ascend")` 设置视频后端使用 Ascend 执行。
+    .. note::
+        此函数默认使用 CPU 执行，但也支持通过 `mindspore.dataset.config.set_video_backend("Ascend")` 设置视频后端使用 Ascend 执行。
 
     参数：
         - **filename** (str) - 待读取视频文件路径。

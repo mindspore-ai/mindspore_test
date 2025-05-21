@@ -33,26 +33,28 @@ def set_backend():
 
 def check_mindspore_data(mindspore_data, expected_data, error_rate_limit=0.05):
     """
-    Description: Check mindspore_data with expected_data.
+    Check mindspore_data with expected_data.
+
     Args:
         mindspore_data (tuple(numpy.ndarray, numpy.ndarray, Dict)): the data returned by read_video
-        numpy.ndarray, four dimensions uint8 data for video. The format is [T, H, W, C]. `T` is the number of frames,
-            `H` is the height, `W` is the width, `C` is the channel for RGB.
-        numpy.ndarray, two dimensions float for audio. The format is [K, L]. `K` is the number of channels.
+            numpy.ndarray, four dimensions uint8 data for video. The format is [T, H, W, C].
+            `T` is the number of frames, `H` is the height, `W` is the width, `C` is the channel for RGB.
+            numpy.ndarray, two dimensions float for audio. The format is [K, L]. `K` is the number of channels.
             `L` is the length of the points.
-        Dict, metadata for the video and audio. It contains video_fps(float), audio_fps(int).
+            Dict, metadata for the video and audio. It contains video_fps(float), audio_fps(int).
 
         expected_data (tuple(numpy.ndarray, float, numpy.ndarray, float, float, int)): the generated data.
-        numpy.ndarray, four dimensions uint8 data for video. The format is [T, H, W, C]. `T` is the number of frames,
-            `H` is the height, `W` is the width, `C` is the channel for RGB.
-        float, the sum of the four dimensions uint8 data for video.
-        numpy.ndarray, two dimensions float for audio. The format is [K, L]. `K` is the number of channels.
+            numpy.ndarray, four dimensions uint8 data for video. The format is [T, H, W, C].
+            `T` is the number of frames, `H` is the height, `W` is the width, `C` is the channel for RGB.
+            float, the sum of the four dimensions uint8 data for video.
+            numpy.ndarray, two dimensions float for audio. The format is [K, L]. `K` is the number of channels.
             `L` is the length of the points.
-        float, the sum of the two dimensions float for audio.
-        float, the video_fps.
-        int, the audio_fps.
+            float, the sum of the two dimensions float for audio.
+            float, the video_fps.
+            int, the audio_fps.
 
         error_rate_limit (float, optional): the maximum error rate. Default: 0.05.
+
     Expectation: Pass all the assets.
     """
 
