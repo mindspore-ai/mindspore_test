@@ -49,25 +49,14 @@ class PyboostFunctionsGenerator(BaseGenerator):
             f'#include "{K.MS_PYBOOST_BASE_PATH}/auto_generate/${{operator_name}}.h"\n'
         )
         self.convert_template = Template("auto $arg_name = converter.${convert_func}(args, $arg_index);\n")
-        self.PYBOOST_FUNCTION_TEMPLATE = template.PYBOOST_FUNCTION_TEMPLATE
+        self.PYBOOST_REGISTRY_BODY_CC_TEMPLATE = template.PYBOOST_REGISTRY_BODY_CC_TEMPLATE
         self.REGISTER_DEFINE_TEMPLATE = template.REGISTER_DEFINE_TEMPLATE
         self.REGISTER_TEMPLATE = template.REGISTER_TEMPLATE
-        self.PYBOOST_FUNCTIONS_CC_TEMPLATE = template.PYBOOST_FUNCTIONS_CC_TEMPLATE
+        self.PYBOOST_REGISTRY_CC_TEMPLATE = template.PYBOOST_REGISTRY_CC_TEMPLATE
         self.TENSOR_FUNC_CLASS_REG = template.TENSOR_FUNC_CLASS_REG
         self.OP_DEF_INC_HEAD_TEMPLATE = template.OP_DEF_INC_HEAD_TEMPLATE
 
-        self.pyboost_op_base_template = Template("""
-py::object PYNATIVE_EXPORT ${func_name}_Base(const PrimitivePtr &prim, const py::list &args) {
-  #ifndef ENABLE_TEST
-    static Converter converter(&ops::${op_def_name});
-    converter.Parse(args);
-    ${parser_body}
-    return ${func_name}_OP(prim, converter.source_type(), ${op_args});
-  #else
-    return PyNativeAlgo::PyBoost::RunPyFunction(prim, args);
-  #endif
-}
-                    """)
+        self.pyboost_api_body_template = template.PYBOOST_API_BODY_CC_TEMPLATE
 
     def generate(self, work_path, op_protos):
         """
@@ -84,7 +73,7 @@ py::object PYNATIVE_EXPORT ${func_name}_Base(const PrimitivePtr &prim, const py:
         Returns:
             None
         """
-        pyboost_func_str = ''
+        pyboost_registry_body_str = ''
         pyboost_func_pybind_def = ''
         pyboost_func_include_headers_str = ''
         ops_inc_head_set = set()
@@ -92,8 +81,8 @@ py::object PYNATIVE_EXPORT ${func_name}_Base(const PrimitivePtr &prim, const py:
             if op_proto.op_dispatch is None or not op_proto.op_dispatch.enable:
                 continue
 
-            pyboost_func_str += self._get_pyboost_func_str(op_proto)
-            pyboost_func_str += template.NEW_LINE + template.NEW_LINE
+            pyboost_registry_body_str += self._get_pyboost_registry_body_str(op_proto)
+            pyboost_registry_body_str += template.NEW_LINE + template.NEW_LINE
 
             op_parser = OpTemplateParser(op_proto)
             pyboost_op_name = op_parser.get_pyboost_name()
@@ -107,22 +96,22 @@ py::object PYNATIVE_EXPORT ${func_name}_Base(const PrimitivePtr &prim, const py:
             ops_inc_head_set.add(self.OP_DEF_INC_HEAD_TEMPLATE.replace(prefix_char=op_proto.op_class.name[0].lower()))
         register_func_str = self.REGISTER_TEMPLATE.replace(register_func=pyboost_func_pybind_def)
         function_class_register = self._get_function_class_register(op_protos)
-        pyboost_func_file \
-            = self.PYBOOST_FUNCTIONS_CC_TEMPLATE.replace(ops_inc=list(sorted(ops_inc_head_set)),
-                                                         include_op_header=pyboost_func_include_headers_str,
-                                                         function_body=pyboost_func_str,
-                                                         register_function_body=register_func_str,
-                                                         function_class_register=function_class_register)
+        pyboost_registry_file \
+            = self.PYBOOST_REGISTRY_CC_TEMPLATE.replace(ops_inc=list(sorted(ops_inc_head_set)),
+                                                        include_op_header=pyboost_func_include_headers_str,
+                                                        function_body=pyboost_registry_body_str,
+                                                        register_function_body=register_func_str,
+                                                        function_class_register=function_class_register)
         save_path = os.path.join(work_path, K.PIPELINE_PYBOOST_FUNC_GEN_PATH)
         file_name = "pyboost_registry.cc"
-        save_file(save_path, file_name, pyboost_func_file)
+        save_file(save_path, file_name, pyboost_registry_file)
 
-        pyboost_function_base_str = self.get_pyboost_function_base_str(op_protos)
+        pyboost_function_base_str = self.get_pyboost_api_body_str(op_protos)
         save_path = os.path.join(work_path, K.PIPELINE_PYBOOST_FUNC_GEN_PATH)
         file_name = "pyboost_api.cc"
         save_file(save_path, file_name, pyboost_function_base_str)
 
-    def get_pyboost_function_base_str(self, op_protos):
+    def get_pyboost_api_body_str(self, op_protos):
         """
         Generates pyboost function base string.
 
@@ -132,8 +121,8 @@ py::object PYNATIVE_EXPORT ${func_name}_Base(const PrimitivePtr &prim, const py:
         Returns:
             str: pyboost function base string.
         """
-        pyboost_function_base_tpl = template.PYBOOST_FUNCTIONS_BASE_CC_TEMPLATE
-        pyboost_function_base = ''
+        pyboost_api_cc_tpl = template.PYBOOST_API_CC_TEMPLATE
+        pyboost_api_body_str = ''
         ops_inc_head_set = set()
         for op_proto in op_protos:
             if op_proto.op_dispatch is None or not op_proto.op_dispatch.enable:
@@ -143,7 +132,7 @@ py::object PYNATIVE_EXPORT ${func_name}_Base(const PrimitivePtr &prim, const py:
             op_def_name_str = op_parser.get_op_def_name_str()
             parser_body_str = self._generate_parser_func(op_proto)
             op_args_str = [op_arg.arg_name for op_arg in op_proto.op_args]
-            pyboost_function_base += self.pyboost_op_base_template.replace(func_name=op_pyboost_func_name,
+            pyboost_api_body_str += self.pyboost_api_body_template.replace(func_name=op_pyboost_func_name,
                                                                            op_def_name=op_def_name_str,
                                                                            parser_body=parser_body_str,
                                                                            class_name=op_proto.op_class.name,
@@ -151,20 +140,20 @@ py::object PYNATIVE_EXPORT ${func_name}_Base(const PrimitivePtr &prim, const py:
 
             ops_inc_head_set.add(self.OP_DEF_INC_HEAD_TEMPLATE.replace(prefix_char=op_proto.op_class.name[0].lower()))
 
-        return pyboost_function_base_tpl.replace(pyboost_op_base_body=pyboost_function_base)
+        return pyboost_api_cc_tpl.replace(pyboost_api_body=pyboost_api_body_str)
 
-    def _get_pyboost_func_str(self, op_proto):
+    def _get_pyboost_registry_body_str(self, op_proto):
         op_parser = OpTemplateParser(op_proto)
         op_pyboost_func_name = op_parser.get_pyboost_func_name()
         op_def_name_str = op_parser.get_op_def_name_str()
         parser_body_str = self._generate_parser_func(op_proto)
         op_args_str = [op_arg.arg_name for op_arg in op_proto.op_args]
-        function_tpl = self._get_function_tpl(op_proto)
-        return function_tpl.replace(func_name=op_pyboost_func_name,
-                                    op_def_name=op_def_name_str,
-                                    parser_body=parser_body_str,
-                                    class_name=op_proto.op_class.name,
-                                    op_args=op_args_str)
+        registry_body_tpl = self.get_pyboost_registry_body_cc_tpl(op_proto)
+        return registry_body_tpl.replace(func_name=op_pyboost_func_name,
+                                         op_def_name=op_def_name_str,
+                                         parser_body=parser_body_str,
+                                         class_name=op_proto.op_class.name,
+                                         op_args=op_args_str)
 
     def _get_function_class_register(self, op_protos) -> str:
         """
@@ -211,5 +200,5 @@ py::object PYNATIVE_EXPORT ${func_name}_Base(const PrimitivePtr &prim, const py:
                                                              arg_index=pyboost_utils.get_index(index))
         return parser_func_str
 
-    def _get_function_tpl(self, op_proto: OpProto):
-        return self.PYBOOST_FUNCTION_TEMPLATE
+    def get_pyboost_registry_body_cc_tpl(self, op_proto: OpProto):
+        return self.PYBOOST_REGISTRY_BODY_CC_TEMPLATE
