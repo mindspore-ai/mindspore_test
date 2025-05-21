@@ -1,0 +1,21 @@
+#operator kv_scale_cache
+kv_scale_cache:
+  args:
+    key_scale:
+      dtype: tensor
+    value_scale:
+      dtype: tensor
+    key_value_scale_cache:
+      dtype: tensor
+    batch_valid_length:
+      dtype: tensor
+    cache_mode:
+      dtype: int
+  args_signature:
+    rw_write: key_value_scale_cache
+    dtype_group: (key_scale, value_scale)
+  labels:
+    side_effect_mem: True
+  returns:
+    out:
+      dtype: tensor
