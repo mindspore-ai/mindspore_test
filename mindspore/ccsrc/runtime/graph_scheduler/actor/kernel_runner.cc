@@ -573,6 +573,17 @@ void KernelRunner::ConvertInputContiguous(OpContext<KernelTensor> *const context
         MS_LOG(DEBUG) << GetAID().Name() << " ignore the input address for input index: " << i;
         continue;
       }
+
+      // Check the inplace op not support the view input.
+      if (modifiable_ref_input_indexes_.count(i) > 0) {
+        std::string error_msg =
+          kernel_->fullname_with_scope() +
+          " is an inplace op and does not support view input. Please use other inplace op that support view "
+          "input instead, or convert the view input to continuous input in advance. The input index is " +
+          std::to_string(i) + trace::DumpSourceLines(kernel_);
+        SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_msg);
+      }
+
       MS_LOG(INFO) << "Make input [" << i << "] contiguous for kernel " << kernel_->DebugString();
       if (contiguous_tensors_[i] == nullptr) {
         // Make new device tensor and run InplaceCopy to make contiguous.
