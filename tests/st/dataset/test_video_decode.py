@@ -33,7 +33,7 @@ filename_h264 = PWD + "/data/campus.h264"
 def test_video_decoder():
     """
     Feature: VideoDecoder
-    Description: Extracting frames from H.264/HEVC-encoded content
+    Description: Extracting frames from H264/H265-encoded content
     Expectation: The Output is equal to the expected output
     """
     original_video_backend = ds.config.get_video_backend()
