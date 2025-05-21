@@ -1040,7 +1040,8 @@ Dimensions MakeStrategy(const std::vector<std::shared_ptr<OperatorInfo>> &ops, c
     } else if (input_size == 0) {
       strategy = {};
     } else {
-      MS_LOG(EXCEPTION) << ops[iter_ops]->name() << ": Tensor shape " << input_size << " is unexpected.";
+      MS_LOG(EXCEPTION) << ops[iter_ops]->name() << ": Tensor shape " << input_size
+                        << " is unexpected, currently setting strategies of five or more dimensions is not supported.";
     }
   }
   return strategy;
@@ -1249,7 +1250,9 @@ Dimensions CopyIncomingOperatorOutputStrategy(Graph::NodeType *node,
       strategy.push_back(FloatToLong(1 / node->tensor_parm.tensor_str.str_h));
       strategy.push_back(FloatToLong(1 / node->tensor_parm.tensor_str.str_w));
     } else {
-      MS_LOG(EXCEPTION) << ops[iter_ops]->name() << ": Tensor's shape is unknown.";
+      MS_LOG(EXCEPTION)
+        << ops[iter_ops]->name()
+        << ": Tensor's shape is illegal, currently setting strategies of five or more dimensions is not supported.";
     }
     break;
   }
