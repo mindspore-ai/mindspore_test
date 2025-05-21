@@ -9,7 +9,7 @@ from mindspore.communication import init, create_group, get_local_rank
 init()
 
 
-@pytest.mark.parametrize('mode', [context.PYNATIVE_MODE])
+@pytest.mark.parametrize('mode', [context.PYNATIVE_MODE, context.GRAPH_MODE])
 def test_sync_batch_norm_forward_world_size_2_channel_2_dim_4(mode):
     """
     Feature: Ops.
