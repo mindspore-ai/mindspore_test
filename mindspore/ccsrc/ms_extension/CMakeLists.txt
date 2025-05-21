@@ -19,4 +19,5 @@ set_target_properties(mindspore_extension PROPERTIES INSTALL_RPATH $ORIGIN)
 
 if(ENABLE_D)
     add_subdirectory(ascend)
+    enable_directory_when_only_build_plugins(ascend)
 endif()
