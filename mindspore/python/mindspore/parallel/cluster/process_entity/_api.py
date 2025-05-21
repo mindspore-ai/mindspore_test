@@ -212,6 +212,10 @@ class _ProcessManager:
             finally:
                 os.umask(origin_mask)
 
+        self.device_to_cpu_map = {}
+        if self.bind_core is True:
+            self.device_to_cpu_map = _generate_auto_bind_core_strategy(self.local_worker_num)
+
         self.proc_rank_map = {}
         self.enable_mindx = False
         tft_env = os.getenv("MS_ENABLE_TFT", "")
@@ -221,6 +225,7 @@ class _ProcessManager:
                 self.msmgr = MSRunPlugin()
                 self.msmgr.register_callbacks("KILL_WORKER", self.kill_workers)
                 self.msmgr.register_callbacks("START_ALL_WORKER", self.start_all_workers)
+                self.msmgr.register_callbacks("START_WORKER_LIST", self.start_worker_list)
                 self.msmgr.register_callbacks("MONITOR", self.monitor_rank_status)
                 self.enable_mindx = True
                 os.environ["MS_ENABLE_RECOVERY"] = str(1)
@@ -268,6 +273,45 @@ class _ProcessManager:
                               self.is_simulation)
         self.msn_process = msn.run()
 
+    def _start_single_worker(self, local_rank):
+        """
+        Start worker processor
+
+        Args:
+            local_rank: local rank id.
+        """
+        os.environ["DEVICE_ID"] = str(local_rank)
+        node_id, log_name = self._get_node_id_and_log_path(local_rank)
+        if node_id is None:
+            logger.warning(f"Rank ids will be assigned automatically, "
+                           "please use 'grep -rn 'rank id:' command to check each worker log's rank id.")
+        else:
+            # If node_id is generated in '_get_node_id_and_log_path' method, export 'RANK_ID' environment variable.
+            # This is for rank_table method's compatibility consideration.
+            os.environ["RANK_ID"] = str(node_id)
+            print(f"Start worker process with rank id:{node_id}, log file:{log_name}. "
+                  f"Environment variable [RANK_ID={node_id}] is exported.", flush=True)
+        if self.is_simulation and (self.sim_rank_id != -1):
+            # Reset RANK_ID env to sim_rank_id if sim_rank_id is set.
+            os.environ["RANK_ID"] = str(self.sim_rank_id)
+            logger.warning(f"In dryrun case, RANK_ID is assigned to {self.sim_rank_id}.")
+
+        if self.bind_core:
+            affinity_cpu_str = _generate_bind_core_strategy(local_rank, self.device_to_cpu_map, self.bind_core)
+            if affinity_cpu_str is not None:
+                cmd = _generate_cmd_args_list_with_core(self.cmd, self.cmd_args, affinity_cpu_str)
+            else:
+                cmd = _generate_cmd_args_list(self.cmd, self.cmd_args)
+        else:
+            cmd = _generate_cmd_args_list(self.cmd, self.cmd_args)
+        cgn = _ComputeGraphNode(self.worker_num, self.master_addr, self.master_port, self.cluster_time_out,
+                                node_id, self.node_rank, cmd, log_name, self.tail_worker_log, self.join,
+                                self.is_simulation)
+        process, tail_process = cgn.run()
+        self.cgn_processes.append(process)
+        self.tail_cgn_processes.append(tail_process)
+        self.proc_rank_map[local_rank] = process
+
     def start_workers(self):
         """
         Starts the worker nodes.
@@ -282,43 +326,8 @@ class _ProcessManager:
                            "'rank_id' of each process will be assigned after cluster is successfully built.\n"
                            "You can access 'RANK_ID' environment variable after calling "
                            "'mindspore.communication.init()'")
-
-        device_to_cpu_map = {}
-        if self.bind_core is True:
-            device_to_cpu_map = _generate_auto_bind_core_strategy(self.local_worker_num)
-
         for i in range(self.local_worker_num):
-            os.environ["DEVICE_ID"] = str(i)
-            node_id, log_name = self._get_node_id_and_log_path(i)
-            if node_id is None:
-                logger.warning(f"Rank ids will be assigned automatically, "
-                               "please use 'grep -rn 'rank id:' command to check each worker log's rank id.")
-            else:
-                # If node_id is generated in '_get_node_id_and_log_path' method, export 'RANK_ID' environment variable.
-                # This is for rank_table method's compatibility consideration.
-                os.environ["RANK_ID"] = str(node_id)
-                print(f"Start worker process with rank id:{node_id}, log file:{log_name}. "
-                      f"Environment variable [RANK_ID={node_id}] is exported.", flush=True)
-            if self.is_simulation and (self.sim_rank_id != -1):
-                # Reset RANK_ID env to sim_rank_id if sim_rank_id is set.
-                os.environ["RANK_ID"] = str(self.sim_rank_id)
-                logger.warning(f"In dryrun case, RANK_ID is assigned to {self.sim_rank_id}.")
-
-            if self.bind_core:
-                affinity_cpu_str = _generate_bind_core_strategy(i, device_to_cpu_map, self.bind_core)
-                if affinity_cpu_str is not None:
-                    cmd = _generate_cmd_args_list_with_core(self.cmd, self.cmd_args, affinity_cpu_str)
-                else:
-                    cmd = _generate_cmd_args_list(self.cmd, self.cmd_args)
-            else:
-                cmd = _generate_cmd_args_list(self.cmd, self.cmd_args)
-            cgn = _ComputeGraphNode(self.worker_num, self.master_addr, self.master_port, self.cluster_time_out,
-                                    node_id, self.node_rank, cmd, log_name, self.tail_worker_log, self.join,
-                                    self.is_simulation)
-            process, tail_process = cgn.run()
-            self.cgn_processes.append(process)
-            self.tail_cgn_processes.append(tail_process)
-            self.proc_rank_map[i] = process
+            self._start_single_worker(i)
 
     def join_processes(self):
         """
@@ -509,7 +518,8 @@ class _ProcessManager:
                 p_status = p.poll()
                 if (not psutil.pid_exists(p.pid)) and (p_status != 0):
                     p_status = 300
-                return {"pid": p.pid, "status": p_status, "global_rank": global_rank_id}
+                return {"pid": p.pid, "status": p_status, "global_rank": global_rank_id, "local_rank": rank_id,
+                        "node_id": self.node_rank}
             except KeyError:
                 logger.info(f"Process rank {rank_id} has not been initialized.")
                 return {"pid": None, "status": 200, "global_rank": global_rank_id}
@@ -529,6 +539,21 @@ class _ProcessManager:
         self.start_workers()
         worker_status = self.monitor_rank_status([-1])
         for i in range(self.local_worker_num):
+            if worker_status[i]["status"] != None:  # pylint: disable=singleton-comparison
+                return 1
+        return 0
+
+    def start_worker_list(self, rank_ids):
+        """
+        Start worker processor by rank list.
+
+        Args:
+            rank_ids: worker process's local rank list, which is also device_id.
+        """
+        for idx in rank_ids:
+            self._start_single_worker(idx)
+        worker_status = self.monitor_rank_status(rank_ids)
+        for i in range(rank_ids):
             if worker_status[i]["status"] != None:  # pylint: disable=singleton-comparison
                 return 1
         return 0
