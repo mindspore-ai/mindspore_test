@@ -2120,7 +2120,7 @@ class AllGatherV(PrimitiveWithInfer):
         [0 1 2 0 1 2 3]
 
     Tutorial Examples:
-        - `Distributed Set Communication Primitives - AllGather
+        - `Distributed Set Communication Primitives - AllGatherV
           <https://www.mindspore.cn/docs/en/master/api_python/samples/ops/communicate_ops.html#allgatherv>`_
 
     """
@@ -2152,11 +2152,11 @@ class ReduceScatterV(PrimitiveWithInfer):
     Args:
         op (str, optional): Specifies an operation used for element-wise reductions,
             like SUM, MIN and MAX, currently PROD is not supported. Default: ``ReduceOp.SUM`` .
-        group (str, optional): The communication group to work on. Default: ``GlobalComm.WORLD_COMM_GROUP`` .
+        group (str, optional): The communication group to work on. Default: ``GlobalComm.WORLD_COMM_GROUP`` , which
+            means ``"hccl_world_group"`` in Ascend, and ``"nccl_world_group"`` in GPU.
 
     Inputs:
         - **input_x** (Tensor) - One-dimensional tensor to be distributed, with the shape :math:`(x_1)`.
-          rank_size refers to the number of cards in the communication group.
         - **input_split_sizes** (Union[tuple[int], list[int], Tensor]) - One-dimensional tensor, a list of
           received data volumes for all ranks. The basic unit is the data type of Tensor. The value is not
           verified, and the user guarantees its correctness.
