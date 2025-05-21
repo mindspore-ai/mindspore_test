@@ -167,8 +167,8 @@ const std::vector<OpWithLevel> expand_ops_with_level_v2 = {
 
 // note: inplace op can not be fused by default, as view + inplace case may have precision error
 const std::vector<OpWithLevel> expand_ops_with_level_dvm = {
-  {kAscendDevice, OpLevel_1, prim::kPrimAdam},
-  {kAscendDevice, OpLevel_1, prim::kPrimAdamApplyOneWithDecayAssign},
+  {kAscendDevice, OpLevel_0, prim::kPrimAdam},
+  {kAscendDevice, OpLevel_0, prim::kPrimAdamApplyOneWithDecayAssign},
   {kAscendDevice, OpLevel_0, prim::kPrimAddcmul},
   {kAscendDevice, OpLevel_0, prim::kPrimAddN},
   {kAscendDevice, OpLevel_0, prim::kPrimBiasAdd},
@@ -202,9 +202,9 @@ const std::vector<OpWithLevel> expand_ops_with_level_dvm = {
   {kAscendDevice, OpLevel_1, prim::kPrimLogSoftmaxGrad},  // will be split to multiple sub graphs because of ReduceSum
   {kAscendDevice, OpLevel_0, prim::kPrimReLU},
   {kAscendDevice, OpLevel_0, prim::kPrimReluGrad},
-  {kAscendDevice, OpLevel_1, prim::kPrimAssignAdd},
-  {kAscendDevice, OpLevel_1, prim::kLambApplyOptimizerAssign},
-  {kAscendDevice, OpLevel_1, prim::kLambApplyWeightAssign},
+  {kAscendDevice, OpLevel_0, prim::kPrimAssignAdd},
+  {kAscendDevice, OpLevel_0, prim::kLambApplyOptimizerAssign},
+  {kAscendDevice, OpLevel_0, prim::kLambApplyWeightAssign},
   {kAscendDevice, OpLevel_0, prim::kPrimAdamApplyOneWithDecay},
   {kAscendDevice, OpLevel_1, prim::kPrimExpandDims},
   {kAscendDevice, OpLevel_1, prim::kPrimSqueeze},
