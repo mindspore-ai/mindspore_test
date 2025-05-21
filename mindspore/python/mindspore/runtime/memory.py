@@ -388,6 +388,7 @@ def reset_max_memory_allocated():
     device_target = ms.context.get_context("device_target")
     _reset_max_mem_allocated(device_target)
 
+
 def memory_replay(file_path):
     """
     Replay the memory operation based on the application and release order of

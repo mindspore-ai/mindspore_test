@@ -291,7 +291,7 @@ class BACKEND_EXPORT MemBufAllocator {
   bool enable_eager_free_;
 
   std::list<MemBlock *> mem_blocks_;
-  typedef memory::mem_pool::PooledAllocator<MemBuf *> MemAllocator;
+  using MemAllocator = memory::mem_pool::PooledAllocator<MemBuf *>;
   std::set<MemBuf *, MemBufComparator, MemAllocator> free_mem_bufs_;
   std::set<MemBuf *, MemBufComparator, MemAllocator> eager_free_mem_bufs_;
 
