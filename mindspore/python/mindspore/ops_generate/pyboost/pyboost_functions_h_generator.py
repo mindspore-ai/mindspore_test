@@ -42,6 +42,8 @@ class PyboostFunctionsHeaderGenerator(BaseGenerator):
         """Initializes the PyboostFunctionsHeaderGenerator with the necessary templates."""
         self.PYBOOST_FUNCTION_HEADER_TEMPLATE = template.PYBOOST_FUNCTION_HEADER_TEMPLATE
 
+        self.PYBOOST_FUNCTION_IMPL_HEADER_TEMPLATE = template.PYBOOST_FUNCTION_IMPL_HEADER_TEMPLATE
+
         self.pyboost_func_template = Template(
             'py::object PYNATIVE_EXPORT ${func_name}_Base(const PrimitivePtr &prim, const py::list &args);'
         )
@@ -73,11 +75,17 @@ class PyboostFunctionsHeaderGenerator(BaseGenerator):
             prim_func_list.append(self.pyboost_func_template.replace(func_name=op_pyboost_func_name))
             op_func_list_str.append(self.pyboost_op_func_template.replace(func_name=op_pyboost_func_name,
                                                                           input_args=op_input_args_str))
-        pyboost_func_h_str = self.PYBOOST_FUNCTION_HEADER_TEMPLATE.replace(prim_func_list=prim_func_list,
-                                                                           op_func_list=op_func_list_str)
+        pyboost_func_h_str = self.PYBOOST_FUNCTION_HEADER_TEMPLATE.replace(prim_func_list=prim_func_list)
         save_path = os.path.join(work_path, K.PIPELINE_PYBOOST_FUNC_GEN_PATH)
-        file_name = "pyboost_functions.h"
+        file_name = "pyboost_api.h"
         save_file(save_path, file_name, pyboost_func_h_str)
+
+        # impl header
+        pyboost_func_impl_h_str = self.PYBOOST_FUNCTION_IMPL_HEADER_TEMPLATE.replace(op_func_list=op_func_list_str)
+        save_path = os.path.join(work_path, K.PIPELINE_PYBOOST_FUNC_GEN_PATH)
+        file_name = "pyboost_core.h"
+        save_file(save_path, file_name, pyboost_func_impl_h_str)
+
 
     def _get_input_args_str(self, op_proto: OpProto) -> str:
         """

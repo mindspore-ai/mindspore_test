@@ -21,7 +21,4 @@ namespace py = pybind11;
 namespace mindspore::pynative {
 //primitive to pyboost op
 ${prim_func_list}
-
-//pyboost op api
-${op_func_list}
 }// namespace mindspore::pynative
