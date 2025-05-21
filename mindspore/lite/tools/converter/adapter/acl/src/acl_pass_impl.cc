@@ -140,6 +140,7 @@ constexpr auto kOpsTransPose = "Transpose";
 /* 1. For compatibility reasons (on MindIRs with old primitives), ResizeBilinear op still needs to be processed.
    2. ResizeBilinear in core/ops is deprecated, avoid using name string defined in core/ops. */
 constexpr auto kNameResizeBilinear = "ResizeBilinear";
+constexpr auto kNameScatterNdMax = "ScatterNdMax";
 const std::set<std::string> kSocVersionForAscendCFA = {
   "Ascend910B1",    "Ascend910B2",    "Ascend910B2C",   "Ascend910B3",    "Ascend910B4",    "Ascend310P3",
   "Ascend910_9391", "Ascend910_9381", "Ascend910_9392", "Ascend910_9382", "Ascend910_9372", "Ascend910_9361"};
@@ -838,7 +839,7 @@ STATUS AclPassImpl::MapperForOrgMindIR(const FuncGraphPtr &func_graph) {
 
   std::set<std::string> mindir_mapper = {ops::kNameTranspose, ops::kNameStandardNormal, ops::kNameBatchMatMul,
                                          ops::kNameMatMul,    ops::kNameAvgPool,        ops::kNameBatchNorm,
-                                         kNameResizeBilinear};
+                                         kNameResizeBilinear, kNameScatterNdMax};
   const std::set<PrimitivePtr> support_ptq_mindir_types = {prim::kPrimQuantDTypeCast, prim::kPrimAddFusion,
                                                            prim::kPrimMulFusion};
   for (auto graph : all_func_graphs) {
