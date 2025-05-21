@@ -48,14 +48,7 @@ void InternalKernelInfo::TransInternalShapes(internal::ShapeInfoList *shapelist,
   }
 }
 
-void InternalKernelInfo::TransInternalShapes(const TensorPtrList &inputs, const TensorPtrList &outputs) {
-  internal_inputs_shape_.resize(inputs.size());
-  internal_outputs_shape_.resize(outputs.size());
-  TransInternalShapes(&internal_inputs_shape_, inputs, true);
-  TransInternalShapes(&internal_outputs_shape_, outputs);
-}
-
-void InternalKernelInfo::UpdateArgImmutableInfo(internal::ArgImmutableInfo *arginfo, const TensorPtr &tensor,
+void InternalKernelInfo::UpdateArgImmutableInfo(internal::ArgImmutableInfo *arginfo, const BaseTensorPtr &tensor,
                                                 internal::DataType dtype) {
   arginfo->SetDtype(dtype);
   if (tensor == nullptr) {
@@ -69,7 +62,7 @@ void InternalKernelInfo::UpdateArgImmutableInfo(internal::ArgImmutableInfo *argi
 }
 
 void InternalKernelInfo::UpdateArgImmutableInfo(std::vector<internal::ArgImmutableInfo> *arginfos,
-                                                const TensorPtrList &tensorlist, bool is_input) {
+                                                const std::vector<BaseTensorPtr> &tensorlist, bool is_input) {
   arginfos->resize(tensorlist.size());
   for (size_t i = 0; i < tensorlist.size(); ++i) {
     if (is_input) {
@@ -80,7 +73,8 @@ void InternalKernelInfo::UpdateArgImmutableInfo(std::vector<internal::ArgImmutab
   }
 }
 
-bool InternalKernelInfo::IsInternalDtypeSupport(const TensorPtrList *ms_inputs, const TensorPtrList *ms_outputs) {
+bool InternalKernelInfo::IsInternalDtypeSupport(const std::vector<BaseTensorPtr> *ms_inputs,
+                                                const std::vector<BaseTensorPtr> *ms_outputs) {
   internal_inputs_dtype_.resize(ms_inputs->size());
   internal_outputs_dtype_.resize(ms_outputs->size());
 
@@ -89,8 +83,28 @@ bool InternalKernelInfo::IsInternalDtypeSupport(const TensorPtrList *ms_inputs, 
       internal_inputs_dtype_[i] = internal::DataType::kTypeNone;
       continue;
     }
-
     internal_inputs_dtype_[i] = TransInternalDataType(ms_inputs->at(i)->data_type());
+  }
+
+  for (size_t i = 0; i < ms_outputs->size(); ++i) {
+    if (ms_outputs->at(i) == nullptr) {
+      internal_outputs_dtype_[i] = internal::DataType::kTypeNone;
+      continue;
+    }
+    internal_outputs_dtype_[i] = TransInternalDataType(ms_outputs->at(i)->data_type());
+  }
+
+  return internal::IsInternalKernelDtypesSupported(kernel_name_, internal_inputs_dtype_, internal_outputs_dtype_);
+}
+
+bool InternalKernelInfo::Init(const BaseTensorPtrList &input_tensors, std::vector<BaseTensorPtr> *inputs,
+                              std::vector<BaseTensorPtr> *outputs, const std::vector<BaseTensorPtr> &op_outputs) {
+  auto ms_inputs_idx_list = ms_inputs_idx_map_[kernel_name_];
+  auto ms_outputs_idx_list = ms_outputs_idx_map_[kernel_name_];
+  for (size_t i = 0; i < ms_inputs_idx_list.size(); i++) {
+    auto ms_index = ms_inputs_idx_list[i];
+    auto input_tensor = input_tensors[ms_index];
+    (void)inputs->emplace_back(input_tensor);
   }
 
   for (size_t i = 0; i < ms_outputs->size(); ++i) {
@@ -114,9 +128,8 @@ void InternalKernelInfo::GetOrCreateKernel(const std::shared_ptr<pyboost::OpRunn
     internal_op_ = it->second;
     MS_LOG(DEBUG) << "Internal Op [" << kernel_name_ << "] hit cache";
   } else {
-    MS_LOG(DEBUG) << "Internal Op [" << kernel_name_ << "] miss cache";
     if (!IsInternalDtypeSupport(&inputs, &outputs)) {
-      MS_LOG(EXCEPTION) << "Input dtype is not supported for internal op [" << kernel_name_ << "]";
+      MS_EXCEPTION(TypeError) << "Input dtype is not supported for internal op [" << kernel_name_ << "]";
     }
     UpdateArgImmutableInfo(&inputs_ii_, inputs, true);
     UpdateArgImmutableInfo(&outputs_ii_, outputs);

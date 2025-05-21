@@ -81,7 +81,9 @@ void PagedAttention::Call(const std::shared_ptr<pyboost::OpRunner> &op, const ui
   has_alibi_mask_ = alibi_mask.has_value();
   CheckMask();
 
-  GetOrCreateKernel(op, op_key, tiling_key, inputs, outputs);
+  auto op_key = CalcInternalOpApiHash(kernel_name_, inputs, head_num_, tor_, kv_head_num_, kv_cache_quant_mode_,
+                                      mask_mode_, mla_v_dim_, q_seq_len_, kv_seq_len_, outputs);
+  GetOrCreateKernel(op, inputs, outputs, op_key);
   LAUNCH_INTERNAL(kernel_name_, op, internal_op_, inputs, outputs, tiling_info_);
 }
 MS_INTERNAL_KERNEL_INFO_FACTORY_REG(PagedAttention, PagedAttention);
