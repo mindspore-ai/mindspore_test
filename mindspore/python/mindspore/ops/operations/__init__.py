@@ -119,7 +119,7 @@ from .nn_ops import (LSTM, SGD, Adam, AdamWeightDecay, FusedSparseAdam, FusedSpa
                      FractionalMaxPool, FractionalMaxPool3DWithFixedKsize, FractionalMaxPoolWithFixedKsize,
                      GridSampler2D, TripletMarginLoss, UpsampleNearest3D, UpsampleTrilinear3D, PadV3, ChannelShuffle,
                      GLU, MaxUnpool3D, Pdist, RmsNorm, PagedAttention, PagedAttentionMask, ReshapeAndCache,
-                     ApplyRotaryPosEmb, GroupTopk)
+                     ApplyRotaryPosEmb, GroupTopk, MoeGatingGroupTopK)
 from .other_ops import (Assign, IOU, BoundingBoxDecode, BoundingBoxEncode,
                         ConfusionMatrix, UpdateState, Load, StopGradient, Reusing,
                         CheckValid, Partial, Depend, MoveTo, Push, Pull, PyExecute, PyFunc, _DynamicLossScale,
@@ -718,6 +718,7 @@ __all__ = [
     "PagedAttentionMask",
     "ReshapeAndCache",
     "ApplyRotaryPosEmb",
+    "MoeGatingGroupTopK",
     "GroupTopk",
     "RmsNorm",
     "Reshard",
