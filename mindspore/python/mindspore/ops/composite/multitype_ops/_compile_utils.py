@@ -334,9 +334,10 @@ def _process_multi_dim_index(self, indexes, remain_indexes, indexed_dims):
     for i, index in enumerate(indexes):
         if isinstance(index, (list, tuple, np.ndarray)):
             index = Tensor(index)
-            if F.dtype(index) in (mstype.int8, mstype.int16, mstype.uint16, mstype.uint32, mstype.uint64):
-                # only uint8, int32 and int64 are supported by IndexOp
-                index = F.cast(index, mstype.int64)
+        if isinstance(index, Tensor) and F.dtype(index) in (mstype.int8, mstype.int16, mstype.uint16, mstype.uint32,
+                                                            mstype.uint64):
+            # only uint8, int32 and int64 are supported by IndexOp
+            index = F.cast(index, mstype.int64)
         self_viewed, dim, remain_indexes, orig_dim, need_index_prim = _process_dim_in_multi_dim_index(
             self_viewed, self, index, dim, indexed_dims, i, remain_indexes, orig_dim, need_index_prim)
     return self_viewed, remain_indexes, need_index_prim
@@ -348,6 +349,7 @@ def _check_type_of_list_index(index_list):
         if isinstance(index, (Tensor, list, tuple, slice, type(None), EllipsisType)):
             return True
     return False
+
 
 def _wrap_index_to_tuple(index):
     """Wrap index to tuple"""
@@ -396,6 +398,7 @@ def do_copy(dst, src):
     if F.shape(src) == (1,):
         src = src.squeeze()
     return inplace_copy_op(dst, src)
+
 
 def _tensor_setitem(self, index, value):
     """Handle tensor setitem"""
