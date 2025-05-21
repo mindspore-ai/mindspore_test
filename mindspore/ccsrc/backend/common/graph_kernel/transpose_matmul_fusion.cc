@@ -49,7 +49,7 @@ bool IsTargetTranspose(const AnfNodePtr &input) {
     (void)std::transform(perm.begin(), perm.end(), perm.begin(),
                          [rank](int64_t axis) -> int64_t { return axis < 0 ? axis + rank : axis; });
     // the target transpose only changes the last two axes.
-    std::swap(perm[perm.size() - 1], perm[perm.size() - 2]);
+    std::swap(perm[perm.size() - kSizeOne], perm[perm.size() - kSizeTwo]);
     for (size_t i = 0; i < perm.size(); i++) {
       if (perm[i] != SizeToLong(i)) {
         return false;
@@ -58,6 +58,8 @@ bool IsTargetTranspose(const AnfNodePtr &input) {
     return true;
   }
   if (IsPrimitiveCNode(input, prim::kPrimTransposeExtView)) {
+    const int64_t kDimM = -2;
+    const int64_t kDimN = -1;
     auto transpose = input->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(transpose);
     auto perm0_node = transpose->input(kIndex2);
@@ -76,7 +78,7 @@ bool IsTargetTranspose(const AnfNodePtr &input) {
     if (perm1 < 0) {
       perm1 += rank;
     }
-    return perm0 == rank - 1 && perm1 == rank - 2;
+    return perm0 == rank + kDimN && perm1 == rank + kDimM;
   }
   return false;
 }

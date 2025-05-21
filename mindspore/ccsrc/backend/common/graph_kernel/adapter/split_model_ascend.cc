@@ -191,14 +191,16 @@ class FuseMatMul : public FusePattern {
 
  protected:
   bool Check(const AreaPtr &dom) override {
+    const int64_t kGroupTypeK = 2;
+    const size_t kGmmSize = 2;
     if (dom->size() == 1) {
       return dom->dom()->op() == kMatMulOpName || dom->dom()->op() == kBatchMatMulOpName;
-    } else if (dom->size() == 2) {
+    } else if (dom->size() == kGmmSize) {
       if (dom->ops()[0]->op() == ops::kNameGroupedMatmul && dom->ops()[1]->op() == kTupleGetItemOpName) {
         auto group_type_value = dom->dom()->attrs().at("group_type");
         MS_EXCEPTION_IF_NULL(group_type_value);
         auto group_type = GetValue<int64_t>(group_type_value);
-        return group_type == 2;
+        return group_type == kGroupTypeK;
       }
     }
     return false;
