@@ -19,6 +19,7 @@
 #include <utility>
 #include <algorithm>
 #include <map>
+#include <regex>
 #include <thread>
 #include "common/log_adapter.h"
 #include "src/common/utils.h"
@@ -36,7 +37,7 @@ namespace acl {
 namespace {
 constexpr size_t kBatchSizeNum = 1;
 constexpr size_t kImageSizeHwNum = 2;
-constexpr size_t kGranularitySize = 2097152;
+constexpr size_t kGranularitySize = 2097152;  // The physical memory size must be 2M aligned
 constexpr char kINFOLogLevel = '1';
 constexpr char kDEBUGLogLevel = '0';
 bool GetSizeByDtype(aclDataType data_type, size_t *size) {
@@ -54,6 +55,21 @@ bool GetSizeByDtype(aclDataType data_type, size_t *size) {
       break;
     default:
       return false;
+  }
+  return true;
+}
+
+bool ConvertStringToIntVector(const std::string &input, std::vector<int> *res) {
+  MS_CHECK_TRUE_MSG(res != nullptr, false, "res is nullptr!");
+  std::regex pattern(R"(^(?!,$)(\d+(,\s*\d+)*,?)?$)");  // "num1, num2, num3"
+  if (!std::regex_match(input, pattern)) {
+    MS_LOG(ERROR) << "Format of pids should like '123, 456, 789'! input pids:" << input;
+    return false;
+  }
+  std::stringstream ss(input);
+  std::string token;
+  while (std::getline(ss, token, ',')) {
+    res->push_back(std::stoi(token));
   }
   return true;
 }
@@ -635,18 +651,6 @@ bool ModelProcess::ShareWorkspaceAndWeightspaceProcess(const size_t &work_size) 
   return true;
 }
 
-std::vector<int> convertStringToIntVector(const std::string &input) {
-  std::vector<int> result;
-  std::stringstream ss(input);
-  std::string token;
-  while (std::getline(ss, token, ',')) {
-    if (stoi(token) != 0) {
-      result.push_back(std::stoi(token));
-    }
-  }
-  return result;
-}
-
 bool ModelProcess::MainProcess(const void *om_data, size_t om_data_size) {
   size_t work_size = 0;
   size_t weight_size = 0;
@@ -669,7 +673,11 @@ bool ModelProcess::MainProcess(const void *om_data, size_t om_data_size) {
     MS_LOG(ERROR) << "aclrtMemExportToShareableHandle failed! ret:" << ret;
     return lite::RET_ERROR;
   }
-  std::vector<int> pids = convertStringToIntVector(options_->pids);
+  std::vector<int> pids;
+  if (!ConvertStringToIntVector(options_->pids, &pids)) {
+    MS_LOG(ERROR) << "ConvertStringToIntVector failed!";
+    return false;
+  }
   ret = CALL_ASCEND_API(aclrtMemSetPidToShareableHandle, sharable_handle_, pids.data(), pids.size());
   if (ret != ACL_ERROR_NONE) {
     MS_LOG(ERROR) << "Set pid to shareable_handle failed! ret:" << ret;
