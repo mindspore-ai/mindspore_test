@@ -86,11 +86,12 @@ class InternalKernelInfo {
   }
 
  protected:
-  bool IsInternalDtypeSupport(const TensorPtrList *ms_inputs, const TensorPtrList *ms_outputs);
-  virtual uint64_t GetOrGenerateOpKey(const uint64_t &op_key) const { return op_key; }
-  virtual uint64_t GetOrGenerateOpTilingKey(const uint64_t &tiling_key) const { return tiling_key; }
-  virtual bool UpdateParam() { return true; }
-  TilingCacheItemPtr GetOrGenerateTiling(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &tiling_key);
+  void GetInputAndOutputIndex(const std::shared_ptr<pyboost::OpRunner> &op, const BaseTensorPtrList &input_tensors);
+  bool IsInternalDtypeSupport(const std::vector<BaseTensorPtr> *ms_inputs,
+                              const std::vector<BaseTensorPtr> *ms_outputs);
+  TilingCacheItemPtr GetOrGenerateTiling(const std::shared_ptr<pyboost::OpRunner> &op,
+                                         const std::vector<BaseTensorPtr> &inputs);
+  virtual uint64_t GenerateTilingKey(const std::string &kernel_name, const std::vector<BaseTensorPtr> &inputs);
   virtual internal::InternalOpPtr CreateKernel(const internal::InputsImmutableInfoList &inputs,
                                                const internal::OutputsImmutableInfoList &outputs) = 0;
   void TransInternalShapes(internal::ShapeInfoList *shapelist, const TensorPtrList &tensorlist, bool is_input = false);
@@ -99,6 +100,8 @@ class InternalKernelInfo {
   std::string kernel_name_;
   internal::InternalOpPtr internal_op_{nullptr};
   inline static std::unordered_map<uint64_t, internal::InternalOpPtr> hash_map_;
+  inline static std::unordered_map<std::string, std::vector<size_t>> ms_inputs_idx_map_;
+  inline static std::unordered_map<std::string, std::vector<size_t>> ms_outputs_idx_map_;
   internal::DtypeInfoList internal_inputs_dtype_;
   internal::DtypeInfoList internal_outputs_dtype_;
   internal::ShapeInfoList internal_inputs_shape_;
@@ -108,9 +111,10 @@ class InternalKernelInfo {
   TilingCacheItemPtr tiling_info_{nullptr};
 
  private:
-  void UpdateArgImmutableInfo(internal::ArgImmutableInfo *arginfo, const TensorPtr &tensor, internal::DataType dtype);
-  void UpdateArgImmutableInfo(std::vector<internal::ArgImmutableInfo> *arginfos, const TensorPtrList &tensorlist,
-                              bool is_input = false);
+  void UpdateArgImmutableInfo(internal::ArgImmutableInfo *arginfo, const BaseTensorPtr &tensor,
+                              internal::DataType dtype);
+  void UpdateArgImmutableInfo(std::vector<internal::ArgImmutableInfo> *arginfos,
+                              const std::vector<BaseTensorPtr> &tensorlist, bool is_input = false);
   SimpleSpinLock lock_;
 };
 using InternalKernelInfoPtr = std::shared_ptr<InternalKernelInfo>;

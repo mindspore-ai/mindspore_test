@@ -73,7 +73,9 @@ void FlashAttentionScore::Call(const std::shared_ptr<pyboost::OpRunner> &op, con
   param_.input_layout = static_cast<int32_t>(input_layout);
   param_.sparse_mode = static_cast<int32_t>(sparse_mode);
 
-  GetOrCreateKernel(op, op_key, tiling_key, inputs, outputs);
+  auto op_key = CalcInternalOpApiHash(kernel_name_, inputs, head_num_, tor_, pre_tokens_, next_tokens_, inner_precise_,
+                                      input_layout_, sparse_mode_, mask_dims_, q_seq_len_, kv_seq_len_, outputs);
+  GetOrCreateKernel(op, inputs, outputs, op_key);
   LAUNCH_INTERNAL(kernel_name_, op, internal_op_, inputs, outputs, tiling_info_);
 }
 MS_INTERNAL_KERNEL_INFO_FACTORY_REG(FlashAttentionScore, FlashAttentionScore);

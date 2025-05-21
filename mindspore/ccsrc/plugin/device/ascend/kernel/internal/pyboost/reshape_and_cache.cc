@@ -32,9 +32,13 @@ void ReshapeAndCache::Call(const std::shared_ptr<pyboost::OpRunner> &op, const u
   TensorPtrList inputs = {
     key, value.has_value() ? value.value() : nullptr, key_cache.has_value() ? key_cache.value() : nullptr,
     value_cache.has_value() ? value_cache.value() : nullptr, slot_mapping.has_value() ? slot_mapping.value() : nullptr};
-  TensorPtrList outputs;
-  TransInternalShapes(inputs, outputs);
-  GetOrCreateKernel(op, op_key, tiling_key, inputs, outputs);
+  std::vector<BaseTensorPtr> outputs;
+  internal_inputs_shape_.resize(inputs.size());
+  internal_outputs_shape_.resize(outputs.size());
+  TransInternalShapes(&internal_inputs_shape_, inputs);
+  TransInternalShapes(&internal_outputs_shape_, outputs);
+  auto op_key = CalcInternalOpApiHash(kernel_name_, inputs, outputs);
+  GetOrCreateKernel(op, inputs, outputs, op_key);
   LAUNCH_INTERNAL(kernel_name_, op, internal_op_, inputs, outputs, tiling_info_);
 }
 MS_INTERNAL_KERNEL_INFO_FACTORY_REG(ReshapeAndCache, ReshapeAndCache);
