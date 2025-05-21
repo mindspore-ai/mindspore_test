@@ -678,8 +678,9 @@ void KernelActor::Run(OpContext<KernelTensor> *const context) {
     OnMemoryAllocFinish(context);
   } catch (const std::exception &e) {
     MsException::Instance().SetException();
-    std::string error_info =
-      "#umsg#Kernel error:#umsg#run kernel[" + kernel_->fullname_with_scope() + "] failed, exception: " + e.what();
+    auto error_line = trace::DumpSourceLines(kernel_);
+    std::string error_info = "#umsg#Kernel error:#umsg#run kernel[" + kernel_->fullname_with_scope() +
+                             "] failed, exception: " + e.what() + error_line;
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(strategy_, (*context), error_info);
   }
   MS_VLOG(VL_RUNTIME_FRAMEWORK_ACTOR) << "Kernel actor:" << GetAID() << " end run.";

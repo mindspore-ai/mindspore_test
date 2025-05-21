@@ -421,7 +421,7 @@ bool WaitRuntimePipelineFinish(const OpContext<KernelTensor> *context, const std
   PROFILER_END(start_time, ProfilerModule::kRuntime, ProfilerEvent::kWaitTaskFinish, name, false);
 
   if (ActorDispatcher::enable_async_launch_kernel() && IsRunningFailed(context)) {
-    MS_LOG(ERROR) << "Wait runtime pipeline finish and an error occurred: " << context->error_info_;
+    MS_LOG(INFO) << "Wait runtime pipeline finish and an error occurred: " << context->error_info_;
     return false;
   }
   return true;

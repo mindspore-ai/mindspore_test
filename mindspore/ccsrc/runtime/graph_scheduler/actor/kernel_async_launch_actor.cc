@@ -17,6 +17,7 @@
 #include "runtime/graph_scheduler/actor/kernel_async_launch_actor.h"
 #include "runtime/graph_scheduler/actor/kernel_actor.h"
 #include "runtime/graph_scheduler/actor/kernel_runner.h"
+#include "pipeline/jit/ps/debug/trace.h"
 
 namespace mindspore {
 namespace runtime {
@@ -37,8 +38,9 @@ void KernelAsyncLaunchActor::LaunchKernel(OpContext<KernelTensor> *const context
   } catch (const std::exception &e) {
     if (context->error_info_.empty()) {
       MsException::Instance().SetException();
-      MS_LOG(INFO) << "Failed to launch kernel: " << kernel_actor->kernel()->fullname_with_scope()
-                   << " and catch exception: " << e.what();
+      auto error_line = trace::DumpSourceLines(kernel_actor->kernel());
+      MS_LOG(ERROR) << "Failed to launch kernel: " << kernel_actor->kernel()->fullname_with_scope()
+                    << " and catch exception: " << e.what() << error_line;
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(GraphExecutionStrategy::kPipeline, (*context), e.what());
     }
   }
@@ -50,8 +52,9 @@ void KernelAsyncLaunchActor::LaunchKernelV2(OpContext<KernelTensor> *const conte
   } catch (const std::exception &e) {
     if (context->error_info_.empty()) {
       MsException::Instance().SetException();
-      MS_LOG(INFO) << "Failed to launch kernel: " << kernel_runner->kernel()->fullname_with_scope()
-                   << " and catch exception: " << e.what();
+      auto error_line = trace::DumpSourceLines(kernel_runner->kernel());
+      MS_LOG(ERROR) << "Failed to launch kernel: " << kernel_runner->kernel()->fullname_with_scope()
+                    << " and catch exception: " << e.what() << error_line;
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(GraphExecutionStrategy::kPipeline, (*context), e.what());
     }
   }
