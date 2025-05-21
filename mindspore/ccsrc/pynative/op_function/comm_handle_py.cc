@@ -34,10 +34,16 @@ void CommHandlePy::Wait() {
   }
 
   MS_EXCEPTION_IF_NULL(device_ctx_);
+  auto cur_stream_id = device_ctx_->device_res_manager_->GetCurrentStreamId();
+  auto ret = wait_streams_.insert(cur_stream_id);
+  if (!ret.second) {
+    MS_LOG(INFO) << "Event already wait on stream " << cur_stream_id << ". Skip wait.";
+    return;
+  }
+
   // Wait event async.
   pynative::DispatchOp(
     std::make_shared<pynative::PassthroughFrontendTask>([comm_handle = comm_handle_]() { WaitTaskFunc(comm_handle); }));
-  comm_handle_ = nullptr;
   MS_LOG(DEBUG) << "release handle after wait";
 }
 
