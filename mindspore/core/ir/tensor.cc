@@ -448,6 +448,7 @@ TypeId Tensor::set_data_type(TypeId data_type) {
       device_sync_ = nullptr;
     }
     data_ = MakeTensorData(data_type, shape_, data_->data(), data_type_);
+    id_ = MakeId();
     return MetaTensor::set_data_type(data_type);
   }
   return data_type;
