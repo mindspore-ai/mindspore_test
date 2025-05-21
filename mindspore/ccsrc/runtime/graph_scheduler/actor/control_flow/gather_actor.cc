@@ -74,48 +74,6 @@ void GatherActor::SendOutput(OpContext<KernelTensor> *const context) {
   gather_input_ = nullptr;
 }
 
-void GatherActor::IncreaseDynamicRefCounts(OpContext<KernelTensor> *const context) {
-  ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kPreLaunch, GetAID().Name());
-  MS_EXCEPTION_IF_NULL(context);
-  // Build the gather input.
-  GatherInput(context);
-
-  // Increase dynamic ref count by the output data with branch id.
-  MS_EXCEPTION_IF_NULL(gather_input_);
-  const auto &iter = output_data_with_branch_id_arrows_.find(gather_input_->func_graph_);
-  if (iter != output_data_with_branch_id_arrows_.end()) {
-    for (size_t i = 0; i < iter->second.size(); ++i) {
-      // The device tensors of gather input are equivalent to output, so use the gather input directly to improve the
-      // performance.
-      IncreaseDynamicRefCount(gather_input_);
-    }
-  }
-
-  // Increase dynamic ref count by the output data.
-  for (size_t i = 0; i < output_data_.size(); ++i) {
-    MS_EXCEPTION_IF_NULL(output_data_[i].first);
-    std::string error_info = GetAID().Name() + " fetches data null, data index:" + std::to_string(i);
-    MS_EXCEPTION_IF_CHECK_FAIL((output_data_[i].first->data_ != nullptr), error_info);
-    IncreaseDynamicRefCount(output_data_[i].first.get());
-  }
-
-  // Increase dynamic ref count by the output partial.
-  for (const auto &partial_arrow : output_partial_arrows_) {
-    MS_EXCEPTION_IF_NULL(partial_arrow);
-    if (IntToSize(partial_arrow->from_output_index_) >= input_partials_.size()) {
-      std::string error_info = "Invalid partial input:" + std::to_string(partial_arrow->from_output_index_) +
-                               " current:" + std::to_string(input_partials_.size()) + " for actor:" + GetAID().Name();
-      SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
-    }
-    // The first partial maybe the local partial, so need use the gather input partial.
-    if (partial_arrow->from_output_index_ == 0) {
-      IncreaseDynamicRefCount(gather_input_);
-    } else {
-      IncreaseDynamicRefCount(input_partials_[IntToSize(partial_arrow->from_output_index_)]);
-    }
-  }
-}
-
 void GatherActor::IncreaseNewRefCounts(OpContext<KernelTensor> *const context) {
   ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kPreLaunch, GetAID().Name());
   MS_EXCEPTION_IF_NULL(context);

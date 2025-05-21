@@ -485,25 +485,6 @@ bool AsyncCopy(const DeviceTensor *dst_device_tensor, const DeviceTensor *src_de
   }
 }
 
-void UpdateRefCount(DeviceTensor *const device_tensor, bool is_max_ref_count) {
-  MS_EXCEPTION_IF_NULL(device_tensor);
-  if (is_max_ref_count) {
-    device_tensor->set_original_ref_count(SIZE_MAX);
-    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "Set origin ref count max for device address:" << device_tensor;
-  } else {
-    device_tensor->IncreaseOriginalRefCount();
-    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "Add origin ref count for device address:" << device_tensor
-                                                 << " origin ref count:" << device_tensor->original_ref_count();
-  }
-  device_tensor->ResetRefCount();
-}
-
-void UpdateRefCount(const AnfNodePtr &node, size_t output_idx, bool is_max_ref_count) {
-  MS_EXCEPTION_IF_NULL(node);
-  auto device_tensor = AnfAlgo::GetMutableOutputAddr(node, output_idx, false);
-  UpdateRefCount(device_tensor.get(), is_max_ref_count);
-}
-
 void FreeMemoryByDeviceContext(DeviceTensor *const device_tensor, const DeviceContext *device_context) {
   MS_EXCEPTION_IF_NULL(device_tensor);
   // The device context may be not accurate in the control flow scene, so need fetch by device name and device id.
@@ -520,8 +501,6 @@ void FreeMemoryByDeviceContext(DeviceTensor *const device_tensor, const DeviceCo
 void FreeMemoryByValueNode(const std::vector<std::weak_ptr<ValueNode>> &held_by_nodes, DeviceTensor *device_tensor) {
   MS_EXCEPTION_IF_NULL(device_tensor);
   device_tensor->ClearHeldByNodes();
-  device_tensor->set_original_ref_count(SIZE_MAX);
-  device_tensor->ResetRefCount();
 
   for (auto &node : held_by_nodes) {
     auto value_node = node.lock();
@@ -1142,7 +1121,6 @@ KernelTensorPtr PrepareParameter(const std::pair<KernelWithIndex, size_t> &param
   if (tensor_address != nullptr) {
     graph_parameter_store->SetDeviceTensorPrepared(outer_index, inner_index, true);
     tensor_address->set_new_ref_count(SIZE_MAX);
-    UpdateRefCount(tensor_address.get(), true);
     if (tensor_address->GetPtr() == nullptr && kernel_tensor != nullptr) {
       // Tensor address may not from runtime, sync data with tensor.
       if (enable_parallel_dispatch) {
@@ -1242,7 +1220,7 @@ KernelTensorPtr FetchParameter(const std::pair<KernelWithIndex, size_t> &paramet
   MS_EXCEPTION_IF_NULL(prepared_kernel_tensor);
   auto is_weight = graph_parameter_store->GetPositionWeight(outer_index);
   if (!is_weight && prepared_kernel_tensor->device_address() != nullptr &&
-      prepared_kernel_tensor->device_address()->original_ref_count() == SIZE_MAX) {
+      prepared_kernel_tensor->device_address()->new_ref_count() == SIZE_MAX) {
     graph_parameter_store->InsertNonWeightRefMaxInputs(outer_index, inner_index);
   }
   return prepared_kernel_tensor;

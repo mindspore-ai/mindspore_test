@@ -249,10 +249,6 @@ KernelWithIndex DeviceAddress::GetNodeIndex() const {
                                      : KernelWithIndex{node_index_.first.lock(), node_index_.second};
 }
 
-size_t DeviceAddress::IncreaseCounter() { return address_common_->pointer_ref_count_->IncreaseCounter(); }
-
-size_t DeviceAddress::DecreaseCounter() { return address_common_->pointer_ref_count_->DecreaseCounter(); }
-
 void DeviceAddress::IncreaseNewRefCount(const std::string &op_name, size_t i) {
   address_common_->pointer_ref_count_->IncreaseNewRefCount(i);
   MS_LOG(DEBUG) << "Op:" << op_name << " increase new ref count for device address:" << PrintInfo();

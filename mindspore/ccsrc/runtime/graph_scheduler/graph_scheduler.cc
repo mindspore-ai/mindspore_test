@@ -1094,7 +1094,6 @@ void ClearKernelActorDataForUce(ActorSet *const actor_set) {
       MS_EXCEPTION_IF_NULL(output_kernel_tensor);
       const auto &output_device_tensor = output_kernel_tensor->device_address();
       MS_EXCEPTION_IF_NULL(output_device_tensor);
-      output_device_tensor->ResetRefCount();
       if (output_device_tensor->new_ref_count() != SIZE_MAX) {
         output_device_tensor->set_new_ref_count(0);
       }
@@ -1113,7 +1112,6 @@ void ClearKernelActorDataForUce(ActorSet *const actor_set) {
         MS_EXCEPTION_IF_NULL(output_kernel_tensor);
         const auto &output_device_tensor = output_kernel_tensor->device_address();
         MS_EXCEPTION_IF_NULL(output_device_tensor);
-        output_device_tensor->ResetRefCount();
         if (output_device_tensor->new_ref_count() != SIZE_MAX) {
           output_device_tensor->set_new_ref_count(0);
         }
@@ -1546,90 +1544,6 @@ void GraphScheduler::CacheGraphOutputToActor(const GraphCompilerInfo &graph_comp
                    << " with index:" << origin_output_with_index.second;
 
       SchedulerHelper::AddSomasInfoForGraphOutput(output_actor, output_index, graph_id);
-    }
-  }
-}
-
-void GraphScheduler::UpdateDeviceAddressByRefInternalParameter(const GraphCompilerInfo &graph_compiler_info) {
-  for (const auto &graph : graph_compiler_info.graphs_) {
-    MS_EXCEPTION_IF_NULL(graph);
-    // The graph run mode no need update.
-    if (graph->is_graph_run_mode() && !EnableKbkSubGraphExecute()) {
-      continue;
-    }
-
-    for (const auto &ref_node_pair : graph->GetRefMap()) {
-      auto &cur_node_pair = ref_node_pair.first;
-      auto &origin_node_pair = ref_node_pair.second;
-      MS_EXCEPTION_IF_NULL(cur_node_pair.first);
-      MS_EXCEPTION_IF_NULL(origin_node_pair.first);
-      // Only the internal parameter need update.
-      if (!IsInternalParameter(origin_node_pair.first, graph)) {
-        continue;
-      }
-
-      // Get the real origin node by the internal parameter.
-      auto front_output_with_index = graph->GetOriginFrontNodeByInternalParameter(origin_node_pair.first);
-      MS_EXCEPTION_IF_NULL(front_output_with_index.first);
-      if (graph_output_to_actor_.count(front_output_with_index) == 0) {
-        if (graph_compiler_info.control_node_parser_ != nullptr &&
-            graph_compiler_info.control_node_parser_->IsControlFlowDataArrow(graph, origin_node_pair.first)) {
-          MS_LOG(DEBUG) << "Skip set ref for origin node:" << origin_node_pair.first->DebugString()
-                        << " current node:" << cur_node_pair.first->fullname_with_scope();
-          continue;
-        }
-        MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, front_output_with_index.first)
-          << "#dmsg#Runtime error info:#dmsg#Can't find graph output by front node:"
-          << front_output_with_index.first->DebugString()
-          << " backend internal parameter:" << origin_node_pair.first->DebugString();
-      }
-      MS_LOG(DEBUG) << "Graph:" << graph->ToString()
-                    << " ref backend internal parameter:" << origin_node_pair.first->DebugString()
-                    << " current node:" << cur_node_pair.first->DebugString()
-                    << " front node:" << front_output_with_index.first->DebugString();
-      auto real_origin_node_pair = graph_output_to_actor_[front_output_with_index].second;
-      real_origin_node_pair =
-        common::AnfAlgo::VisitKernelWithReturnType(real_origin_node_pair.first, real_origin_node_pair.second, false);
-      MS_EXCEPTION_IF_NULL(real_origin_node_pair.first);
-
-      auto cur_node_output_addr = AnfAlgo::GetMutableOutputAddr(cur_node_pair.first, cur_node_pair.second, false);
-      MS_EXCEPTION_IF_NULL(cur_node_output_addr);
-      auto origin_node_output_kt =
-        AnfAlgo::GetOutputKernelTensor(real_origin_node_pair.first, real_origin_node_pair.second, false);
-      MS_EXCEPTION_IF_NULL(origin_node_output_kt);
-      // The persistent device tensor need fetch the device address by device type from the device tensor store.
-      if (IsPersistentDeviceTensor(real_origin_node_pair.first)) {
-        front_output_with_index = common::AnfAlgo::VisitKernelWithReturnType(front_output_with_index.first,
-                                                                             front_output_with_index.second, false);
-        origin_node_output_kt = DeviceTensorStore::GetInstance().Fetch(front_output_with_index.first.get(),
-                                                                       cur_node_output_addr->GetDeviceType());
-      }
-      auto origin_node_output_addr = origin_node_output_kt->device_address();
-      MS_EXCEPTION_IF_NULL(origin_node_output_addr);
-      // The device address can't be updated through heterogeneous address.
-      if ((origin_node_output_addr->pointer_ref_count() == cur_node_output_addr->pointer_ref_count()) ||
-          (origin_node_output_addr.get() == cur_node_output_addr.get()) ||
-          (origin_node_output_addr->GetDeviceType() != cur_node_output_addr->GetDeviceType())) {
-        continue;
-      }
-
-      MS_LOG(INFO) << "Update device address by internal parameter: ref origin kernel is "
-                   << real_origin_node_pair.first->fullname_with_scope() << ", index is "
-                   << real_origin_node_pair.second << "; cur kernel is " << cur_node_pair.first->fullname_with_scope()
-                   << ", index is " << cur_node_pair.second << "; internal parameter is "
-                   << origin_node_pair.first->DebugString();
-      // Update the reference count of device address.
-      cur_node_output_addr->DecreaseOriginalRefCount();
-      cur_node_output_addr->ResetRefCount();
-      origin_node_output_addr->IncreaseOriginalRefCount();
-      MS_LOG(DEBUG) << "After increase ref count for device address:" << origin_node_output_addr
-                    << " ref count:" << origin_node_output_addr->original_ref_count();
-      origin_node_output_addr->ResetRefCount();
-      const auto &parser = graph_compiler_info.control_node_parser_;
-      if (parser == nullptr || !parser->IsInited() ||
-          parser->IsSameKernelGraphGroup(front_output_with_index.first, graph)) {
-        cur_node_output_addr->set_pointer_ref_count(origin_node_output_addr->pointer_ref_count());
-      }
     }
   }
 }
@@ -2436,10 +2350,6 @@ void GraphScheduler::LinkDataArrowInSinkMode(const KernelGraphPtr &graph, const 
     if (HasAbstractMonad(input_node)) {
       continue;
     }
-
-    if (!EnableKbkSubGraphExecute()) {
-      UpdateRefCount(input_node, 0, true);
-    }
     KernelWithIndex from_kernel_with_output_idx = std::make_pair(input_node, 0);
     KernelWithIndex to_kernel_with_input_idx = std::make_pair(input_node, node_index);
     // The gather of linking data arrows of kernel by the different from kernel type.
@@ -2932,11 +2842,11 @@ void GraphScheduler::LinkDataArrowForCopyActor(AbstractActor *const from_actor, 
   copy_output_device_address->ClearFlag(device::kDeviceAddressFlagNotUsed);
   if (!EnableKbkSubGraphExecute() && (to_actor->type_ == KernelTransformType::kSuperKernelActor ||
                                       to_actor->type_ == KernelTransformType::kAnyTypeKernelActor)) {
-    UpdateRefCount(copy_output_device_address.get(), true);
-  } else if (IsRefNode(from_kernel_with_output_idx, to_kernel_with_input_idx)) {
+    return;
+  }
+  if (IsRefNode(from_kernel_with_output_idx, to_kernel_with_input_idx)) {
     MS_LOG(DEBUG) << "Set ref count to max for ref output of kernel:" << from_kernel->DebugString()
                   << " index:" << from_kernel_with_output_idx.second;
-    UpdateRefCount(copy_output_device_address.get(), true);
     const auto &pre_device_tensor =
       !to_kernel_with_input_idx.first->isa<CNode>()
         ? AnfAlgo::GetMutableOutputAddr(to_kernel_with_input_idx.first, 0, false)
@@ -2944,8 +2854,6 @@ void GraphScheduler::LinkDataArrowForCopyActor(AbstractActor *const from_actor, 
     MS_EXCEPTION_IF_NULL(pre_device_tensor);
     copy_actor->ref_parameter_device_tensors_.emplace(pre_device_tensor);
     MS_LOG(DEBUG) << "Add ref parameter device address:" << pre_device_tensor << " for actor:" << copy_actor->GetAID();
-  } else {
-    UpdateRefCount(copy_output_device_address.get(), false);
   }
 }
 
@@ -3148,9 +3056,6 @@ void GraphScheduler::LinkControlArrowBySendRecvNodes(const KernelGraphPtr &graph
       for (size_t i = 0; i < common::AnfAlgo::GetInputTensorNum(parallel_node); ++i) {
         auto kernel_tensor = AnfAlgo::GetPrevNodeOutputKernelTensor(parallel_node, i, false);
         MS_EXCEPTION_IF_NULL(kernel_tensor);
-        auto device_tensor = kernel_tensor->device_address();
-        MS_EXCEPTION_IF_NULL(device_tensor);
-        UpdateRefCount(device_tensor.get());
         (void)recv_actor->external_reference_tensors_.emplace_back(kernel_tensor);
       }
 
@@ -3160,9 +3065,6 @@ void GraphScheduler::LinkControlArrowBySendRecvNodes(const KernelGraphPtr &graph
       for (size_t i = 0; i < workspace_num; ++i) {
         auto kernel_tensor = AnfAlgo::GetWorkspaceKernelTensor(parallel_node, i);
         MS_EXCEPTION_IF_NULL(kernel_tensor);
-        auto device_tensor = kernel_tensor->device_address();
-        MS_EXCEPTION_IF_NULL(device_tensor);
-        UpdateRefCount(device_tensor.get());
         (void)recv_actor->external_reference_tensors_.emplace_back(kernel_tensor);
       }
     }
@@ -3461,7 +3363,6 @@ void GraphScheduler::LinkOutputResultArrowForOutputActor(OutputActor *to_actor,
         auto host_queue_ds_actor = dynamic_cast<HostQueueDataSourceActor *>(from_actor);
         MS_EXCEPTION_IF_NULL(host_queue_ds_actor);
         auto position = host_queue_ds_actor->FetchNodePosition({real_from_kernel, 0});
-        UpdateRefCount(real_from_kernel, real_from_index, true);
         real_from_kernel = host_queue_ds_actor->FetchNode(position).first;
       }
     }
@@ -4008,9 +3909,8 @@ void DumpParameterTensor(const GraphCompilerInfo &graph_compiler_info, const Ker
         auto device_tensor = kernel_tensor->device_address().get();
         MS_EXCEPTION_IF_NULL(device_tensor);
         ofs << "\t\t\tdevice tensor value:" << device_tensor << "\tptr:" << device_tensor->GetPtr()
-            << "\tsize:" << device_tensor->GetSize() << "\toriginal_ref_count:" << device_tensor->original_ref_count()
-            << "\tdynamic_ref_count:" << device_tensor->dynamic_ref_count() << "\tflag:" << device_tensor->flag()
-            << "\tdevice_type:" << device_tensor->GetDeviceType()
+            << "\tsize:" << device_tensor->GetSize() << "\tnew_ref_count:" << device_tensor->new_ref_count()
+            << "\tflag:" << device_tensor->flag() << "\tdevice_type:" << device_tensor->GetDeviceType()
             << "\tis_ptr_persisted:" << device_tensor->is_ptr_persisted() << "\n ";
       }
     }
@@ -4037,8 +3937,7 @@ void DumpParameterTensor(const GraphCompilerInfo &graph_compiler_info, const Ker
       auto device_tensor = kernel_tensor->device_address().get();
       MS_EXCEPTION_IF_NULL(device_tensor);
       ofs << "\t\t\tdevice tensor value:" << device_tensor << "\tptr:" << device_tensor->GetPtr()
-          << "\tsize:" << device_tensor->GetSize() << "\toriginal_ref_count:" << device_tensor->original_ref_count()
-          << "\tdynamic_ref_count:" << device_tensor->dynamic_ref_count() << "\tflag:" << device_tensor->flag()
+          << "\tsize:" << device_tensor->GetSize() << "\tflag:" << device_tensor->flag()
           << "\tdevice_type:" << device_tensor->GetDeviceType()
           << "\tis_ptr_persisted:" << device_tensor->is_ptr_persisted() << "\n ";
     }
@@ -4071,9 +3970,7 @@ void GraphScheduler::DumpDeviceTensorStore(const GraphCompilerInfo &graph_compil
         MS_EXCEPTION_IF_NULL(device_tensor);
         ofs << "\t\t\tdevice tensor value:" << device_tensor << "\tptr:" << device_tensor->GetPtr()
             << "\tsize:" << device_tensor->GetSize() << "\tstream id:" << device_tensor->stream_id()
-            << "\toriginal_ref_count:" << device_tensor->original_ref_count()
-            << "\tdynamic_ref_count:" << device_tensor->dynamic_ref_count() << "\tflag:" << device_tensor->flag()
-            << "\tdevice_type:" << device_tensor->GetDeviceType()
+            << "\tflag:" << device_tensor->flag() << "\tdevice_type:" << device_tensor->GetDeviceType()
             << "\tis_ptr_persisted:" << device_tensor->is_ptr_persisted() << "\n ";
       }
     }

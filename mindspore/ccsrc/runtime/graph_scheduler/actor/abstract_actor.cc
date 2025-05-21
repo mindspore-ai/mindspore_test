@@ -49,9 +49,6 @@ void AbstractActor::RunOpData(OpData<KernelTensor> *const input_data, OpContext<
     error_info << "The input_data does not have a valid ptr of actor:" << GetAID().Name()
                << " with index:" << input_data->index_ << ", flag:" << device_tensor->flag()
                << " device address:" << device_tensor << ", kernel tensor: " << input_data->data_
-               << " ref count:" << device_tensor->ref_count()
-               << " dynamic ref count:" << device_tensor->dynamic_ref_count()
-               << " origin ref count:" << device_tensor->original_ref_count()
                << " new ref count:" << device_tensor->new_ref_count();
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info.str());
   }
@@ -64,9 +61,6 @@ void AbstractActor::RunOpData(OpData<KernelTensor> *const input_data, OpContext<
     << ", sequential num:" << sequential_num << ", the input data:" << input_data->data_
     << ", device address:" << device_tensor << " input index:" << input_data->index_
     << ", size:" << device_tensor->GetSize() << " ptr:" << device_tensor->GetMutablePtr()
-    << ", origin ref count:" << device_tensor->original_ref_count()
-    << ", current ref count:" << device_tensor->ref_count()
-    << ", dynamic ref count:" << device_tensor->dynamic_ref_count()
     << ", new ref count:" << device_tensor->new_ref_count() << ", flag:" << device_tensor->flag()
     << " user data:" << device_tensor->user_data() << " from memory pool:" << device_tensor->from_mem_pool()
     << " device type:" << device_tensor->GetDeviceType();

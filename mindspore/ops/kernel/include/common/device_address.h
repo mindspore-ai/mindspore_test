@@ -107,25 +107,6 @@ class PointerRefCount {
   // Set whether pointer in PointerRefCount is allocated from the memory pool.
   void set_from_mem_pool(bool from_mem_pool) { from_mem_pool_ = from_mem_pool; }
 
-  // Increase ref count or dynamic ref count.
-  size_t IncreaseCounter() {
-    if (ref_count_ != SIZE_MAX) {
-      return ++ref_count_;
-    } else if (dynamic_ref_count_ != INT32_MAX) {
-      return ++dynamic_ref_count_;
-    }
-    return SIZE_MAX;
-  }
-  // Decrease ref count or dynamic ref count.
-  size_t DecreaseCounter() {
-    if (ref_count_ != SIZE_MAX) {
-      return --ref_count_;
-    } else if (dynamic_ref_count_ != INT32_MAX) {
-      return --dynamic_ref_count_;
-    }
-    return SIZE_MAX;
-  }
-
   // The related interface of static reference count operation.
   void set_original_ref_count(size_t original_ref_count) { original_ref_count_ = original_ref_count; }
   size_t original_ref_count() const { return original_ref_count_; }
@@ -463,8 +444,6 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
 
   virtual void SetNodeIndex(const AnfNodePtr &node, size_t out_index);
   KernelWithIndex GetNodeIndex() const;
-  size_t IncreaseCounter();
-  size_t DecreaseCounter();
 
   void IncreaseNewRefCount(const std::string &op_name, size_t i = 1);
   size_t DecreaseNewRefCount(const std::string &op_name);

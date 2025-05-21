@@ -100,9 +100,6 @@ class ControlActor : public MemoryAwareActor {
   void GetAllKernelTensors(const OpPartialPtr &op_partial, std::vector<KernelTensorPtr> *kernel_tensors);
   void GetAllKernelTensors(const OpRealParameterWithBranchID &op_real_parameter,
                            std::vector<KernelTensorPtr> *kernel_tensors);
-  void IncreaseDynamicRefCount(const OpData<KernelTensor> *op_data) const;
-  void IncreaseDynamicRefCount(const OpPartialPtr &op_partial);
-  void IncreaseDynamicRefCount(const OpRealParameterWithBranchID &op_real_parameter);
 
   void IncreaseNewRefCountForPartial(const OpPartialPtr &op_partial);
   void IncreaseNewRefCountForRealParameter(const OpRealParameterWithBranchID &op_real_parameter);
@@ -118,8 +115,7 @@ class ControlActor : public MemoryAwareActor {
   void SendOutput(OpContext<KernelTensor> *const context) override;
   void EraseInput(const OpContext<KernelTensor> *context) override;
 
-  // Increase the dynamic ref count by the outputs. It corresponds to the SendOutput.
-  virtual void IncreaseDynamicRefCounts(OpContext<KernelTensor> *const context);
+  // Increase the new ref count by the outputs. It corresponds to the SendOutput.
   void IncreaseNewRefCounts(OpContext<KernelTensor> *const context) override;
   void MergeDeviceAddress(OpContext<KernelTensor> *const context, const std::vector<KernelTensor *> &addr_list,
                           KernelTensorPtr *kernel_tensor);

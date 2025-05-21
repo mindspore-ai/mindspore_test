@@ -389,9 +389,6 @@ void OutputActor::RunOpData(OpData<KernelTensor> *const input_data, OpContext<Ke
   MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
     << "Actor(" << GetAID().Name() << ") receive the input op data and output position:" << input_data->index_
     << " device tensor:" << input_data->data_ << " ptr:" << input_data->data_->device_ptr()
-    << " ref count:" << input_data->data_->ref_count()
-    << " origin ref count:" << input_data->data_->original_ref_count()
-    << " dynamic ref count:" << input_data->data_->dynamic_ref_count()
     << " from memory pool:" << input_data->data_->device_address()->from_mem_pool() << " output node:"
     << (input_data->data_->device_address()->GetNodeIndex().first == nullptr
           ? "null"

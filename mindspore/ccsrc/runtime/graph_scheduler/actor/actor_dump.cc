@@ -208,10 +208,7 @@ void DumpDSActor(const DataSourceActor *actor, std::ofstream &ofs) {
       ofs << "\t\t\tnode_order_number:" << i << "\tnode_name:" << data_node.first->fullname_with_scope()
           << "\tdebug_name:" << data_node.first->DebugString() << "\tindex:" << data_node.second
           << "\tptr:" << device_tensor->GetPtr() << "\tsize:" << device_tensor->GetSize()
-          << "\tstream id:" << device_tensor->stream_id()
-          << "\toriginal_ref_count:" << device_tensor->original_ref_count()
-          << "\tdynamic_ref_count:" << device_tensor->dynamic_ref_count() << "\tflag:" << device_tensor->flag()
-          << "\n ";
+          << "\tstream id:" << device_tensor->stream_id() << "\tflag:" << device_tensor->flag() << "\n ";
     }
   }
 
@@ -331,15 +328,11 @@ void DumpKernelActor(const KernelActor *actor, std::ofstream &ofs) {
       MS_EXCEPTION_IF_NULL(kernel_tensor);
       const auto &device_address = kernel_tensor->device_address();
       MS_EXCEPTION_IF_NULL(device_address);
-      copy_output_info = std::string("\tcopy output address original_ref_count:") +
-                         std::to_string(device_address->original_ref_count()) +
-                         "\t copy dest device target:" + GetDeviceNameByType(device_address->GetDeviceType());
+      copy_output_info = "\tcopy dest device target:" + GetDeviceNameByType(device_address->GetDeviceType());
     }
     ofs << "\t\t\toutput_index:" << i << "\tptr:" << device_tensor->GetPtr() << "\tsize:" << device_tensor->GetSize()
-        << "\tstream id:" << device_tensor->stream_id()
-        << "\toriginal_ref_count:" << device_tensor->original_ref_count()
-        << "\tdynamic_ref_count:" << device_tensor->dynamic_ref_count()
-        << "\tnew_ref_count:" << device_tensor->new_ref_count() << "\tflag:" << device_tensor->flag()
+        << "\tstream id:" << device_tensor->stream_id() << "\tnew_ref_count:" << device_tensor->new_ref_count()
+        << "\tflag:" << device_tensor->flag()
         << "\tis_somas_enable:" << kernel_info->IsTensorEnableSomas(somas_outputs, i)
         << "\tsomas_offset:" << kernel_info->GetTensorSomasOffset(somas_outputs, i)
         << "\tsomas_aligned_size:" << kernel_info->GetTensorSomasAlignedSize(somas_outputs, i)
@@ -353,9 +346,7 @@ void DumpKernelActor(const KernelActor *actor, std::ofstream &ofs) {
     auto &device_tensor = kernel_tensor->device_address();
     MS_EXCEPTION_IF_NULL(device_tensor);
     ofs << "\t\t\tworkspace_index:" << i << "\tptr:" << device_tensor->GetPtr() << "\tsize:" << device_tensor->GetSize()
-        << "\tstream id:" << device_tensor->stream_id()
-        << "\toriginal_ref_count:" << device_tensor->original_ref_count()
-        << "\tdynamic_ref_count:" << device_tensor->dynamic_ref_count() << "\tflag:" << device_tensor->flag()
+        << "\tstream id:" << device_tensor->stream_id() << "\tflag:" << device_tensor->flag()
         << "\tis_somas_enable:" << kernel_info->IsTensorEnableSomas(somas_workspace, i)
         << "\tsomas_offset:" << kernel_info->GetTensorSomasOffset(somas_workspace, i)
         << "\tsomas_aligned_size:" << kernel_info->GetTensorSomasAlignedSize(somas_workspace, i) << "\n ";
@@ -413,15 +404,11 @@ void DumpKernelActorV2(const KernelRunner *actor, std::ofstream &ofs) {
       MS_EXCEPTION_IF_NULL(kernel_tensor);
       const auto &device_address = kernel_tensor->device_address();
       MS_EXCEPTION_IF_NULL(device_address);
-      copy_output_info = std::string("\tcopy output address original_ref_count:") +
-                         std::to_string(device_address->original_ref_count()) +
-                         "\t copy dest device target:" + GetDeviceNameByType(device_address->GetDeviceType());
+      copy_output_info = "\tcopy dest device target:" + GetDeviceNameByType(device_address->GetDeviceType());
     }
     ofs << "\t\t\toutput_index:" << i << "\tptr:" << device_tensor->GetPtr() << "\tsize:" << device_tensor->GetSize()
-        << "\tstream id:" << device_tensor->stream_id()
-        << "\toriginal_ref_count:" << device_tensor->original_ref_count()
-        << "\tdynamic_ref_count:" << device_tensor->dynamic_ref_count()
-        << "\tnew_ref_count:" << device_tensor->new_ref_count() << "\tflag:" << device_tensor->flag()
+        << "\tstream id:" << device_tensor->stream_id() << "\tnew_ref_count:" << device_tensor->new_ref_count()
+        << "\tflag:" << device_tensor->flag()
         << "\tis_somas_enable:" << kernel_info->IsTensorEnableSomas(somas_outputs, i)
         << "\tsomas_offset:" << kernel_info->GetTensorSomasOffset(somas_outputs, i)
         << "\tsomas_aligned_size:" << kernel_info->GetTensorSomasAlignedSize(somas_outputs, i)
@@ -435,9 +422,7 @@ void DumpKernelActorV2(const KernelRunner *actor, std::ofstream &ofs) {
     auto &device_tensor = kernel_tensor->device_address();
     MS_EXCEPTION_IF_NULL(device_tensor);
     ofs << "\t\t\tworkspace_index:" << i << "\tptr:" << device_tensor->GetPtr() << "\tsize:" << device_tensor->GetSize()
-        << "\tstream id:" << device_tensor->stream_id()
-        << "\toriginal_ref_count:" << device_tensor->original_ref_count()
-        << "\tdynamic_ref_count:" << device_tensor->dynamic_ref_count() << "\tflag:" << device_tensor->flag()
+        << "\tstream id:" << device_tensor->stream_id() << "\tflag:" << device_tensor->flag()
         << "\tis_somas_enable:" << kernel_info->IsTensorEnableSomas(somas_workspace, i)
         << "\tsomas_offset:" << kernel_info->GetTensorSomasOffset(somas_workspace, i)
         << "\tsomas_aligned_size:" << kernel_info->GetTensorSomasAlignedSize(somas_workspace, i) << "\n ";
@@ -629,9 +614,7 @@ void DumpCopyActor(const CopyActor *actor, std::ofstream &ofs) {
   const auto &device_tensor = kernel_tensor->device_address().get();
   if (device_tensor != nullptr) {
     ofs << "\t\toutput_index:" << 0 << "\tptr:" << device_tensor->GetPtr() << "\tsize:" << device_tensor->GetSize()
-        << "\tstream id:" << device_tensor->stream_id()
-        << "\toriginal_ref_count:" << device_tensor->original_ref_count()
-        << "\tdynamic_ref_count:" << device_tensor->dynamic_ref_count() << "\tflag:" << device_tensor->flag() << "\n ";
+        << "\tstream id:" << device_tensor->stream_id() << "\tflag:" << device_tensor->flag() << "\n ";
   }
 
   DumpAbstractActor(actor, ofs);
@@ -1596,9 +1579,7 @@ void DumpActorInfo(AbstractActor *actor, size_t index, ActorInfoMap *actor_info,
   for_each(output_kernel_tensors.begin(), output_kernel_tensors.end(), [&ofs](const auto &kernel_tensor) {
     if (kernel_tensor == nullptr || kernel_tensor->device_address() == nullptr) {
       ofs << "<" << kernel_tensor << "> ";
-      return;
     }
-    ofs << "<" << kernel_tensor << " : ref count:" << kernel_tensor->device_address()->original_ref_count() << "> ";
   });
   ofs << "\n\t# AID : " << actor->GetAID().Name() << "\n";
 }
