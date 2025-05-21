@@ -29,11 +29,11 @@ import platform
 import random
 import numpy
 import mindspore._c_dataengine as cde
+import mindspore
 from mindspore import log as logger
 from mindspore.dataset.core.validator_helpers import replace_none, type_check, check_valid_str
 from mindspore.dataset.debug import DebugHook, PrintMetaDataHook
 from mindspore.dataset.core.validator_helpers import check_independent_mode
-
 
 __all__ = ['set_sending_batches', 'load', '_init_device_info',
            'set_seed', 'get_seed',
@@ -1174,3 +1174,41 @@ def get_multiprocessing_start_method():
         >>> multiprocessing_start_method = ds.config.get_multiprocessing_start_method()
     """
     return _config.get_multiprocessing_start_method()
+
+def set_video_backend(backend):
+    """
+    Set the backend used to decode videos.
+
+    Args:
+        backend (str): Type of the video backend. It can be "CPU" or "Ascend".
+
+    Raises:
+        TypeError: If `backend` is not of type str.
+        ValueError: If `backend` is not "CPU" or "Ascend".
+
+    Examples:
+        >>> import mindspore.dataset as ds
+        >>> ds.config.set_video_backend("CPU")
+    """
+
+    type_check(backend, (str,), "backend")
+    check_valid_str(backend, ["CPU", "Ascend"], "backend")
+    _config.set_video_backend(backend)
+    if backend == "Ascend":
+        mindspore.set_device(backend, device_id=0)
+        ret = cde.dvpp_sys_init()
+        if ret != 0:
+            raise RuntimeError(f"_dvpp_sys_init failed {ret}")
+
+def get_video_backend():
+    """
+    Returns the currently active backend used to decode videos.
+
+    Returns:
+        str, backend used to decode videos.
+
+    Examples:
+        >>> import mindspore.dataset as ds
+        >>> backend = ds.config.get_video_backend()
+    """
+    return _config.get_video_backend()

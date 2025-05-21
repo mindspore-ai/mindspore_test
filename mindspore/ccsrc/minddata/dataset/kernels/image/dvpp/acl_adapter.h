@@ -23,6 +23,7 @@
 #include <string>
 #include <vector>
 
+#include "minddata/dataset/core/device_buffer.h"
 #include "minddata/dataset/kernels/image/dvpp/utils/acl_plugin.h"
 #include "minddata/dataset/kernels/image/dvpp/utils/AclLiteError.h"
 #include "minddata/dataset/kernels/image/dvpp/utils/ErrorCode.h"
@@ -166,6 +167,27 @@ class AclAdapter {
   APP_ERROR DvppVerticalFlip(const std::shared_ptr<DeviceTensorAscend910B> &input,
                              std::shared_ptr<DeviceTensorAscend910B> *output);
 
+  APP_ERROR DvppSysInit();
+
+  APP_ERROR DvppSysExit();
+
+  APP_ERROR DvppVdecCreateChnl(int64_t pType, int64_t *chnl);
+
+  APP_ERROR DvppVdecStartGetFrame(int64_t chnId, int64_t totalFrame);
+
+  APP_ERROR DvppVdecSendStream(int64_t chnId, const std::shared_ptr<Tensor> &input, int64_t outFormat, bool display,
+                               std::shared_ptr<DeviceBuffer> *out);
+
+  APP_ERROR DvppVdecStopGetFrame(int64_t chnId, int64_t totalFrame, std::shared_ptr<DeviceBuffer> *output);
+
+  APP_ERROR DvppVdecDestroyChnl(int64_t chnId);
+
+  APP_ERROR DvppMalloc(uint32_t dev_id, void **dev_ptr, uint64_t size);
+
+  APP_ERROR DvppFree(void *dev_ptr);
+
+  APP_ERROR DvppMemcpy(const std::shared_ptr<DeviceBuffer> &src, void *dest);
+
   // acl
   APP_ERROR GetSocName(std::string *soc_name);
 
@@ -254,6 +276,16 @@ class AclAdapter {
   DvppRotateFunObj dvpp_rotate_fun_obj_;
   DvppSolarizeFunObj dvpp_solarize_fun_obj_;
   DvppVerticalFlipFunObj dvpp_vertical_flip_fun_obj_;
+  DvppSysInitFunObj dvpp_sys_init_fun_obj_;
+  DvppSysExitFunObj dvpp_sys_exit_fun_obj_;
+  DvppVdecCreateChnlFunObj dvpp_vdec_create_chnl_fun_obj_;
+  DvppVdecStartGetFrameFunObj dvpp_vdec_start_get_frame_fun_obj_;
+  DvppVdecSendStreamFunObj dvpp_vdec_send_stream_fun_obj_;
+  DvppVdecStopGetFrameFunObj dvpp_vdec_stop_get_frame_fun_obj_;
+  DvppVdecDestroyChnlFunObj dvpp_vdec_destroy_chnl_fun_obj_;
+  DvppMallocFunObj dvpp_malloc_fun_obj_;
+  DvppFreeFunObj dvpp_free_fun_obj_;
+  DvppMemcpyFunObj dvpp_memcpy_fun_obj_;
 
   // acl interface
   GetSocNameFunObj get_soc_name_fun_obj_;

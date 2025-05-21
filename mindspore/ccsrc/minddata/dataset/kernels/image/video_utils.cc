@@ -37,6 +37,10 @@ extern "C" {
 
 #include "minddata/dataset/core/tensor.h"
 #include "minddata/dataset/core/tensor_shape.h"
+#if defined(ENABLE_D)
+#include "minddata/dataset/kernels/image/dvpp/utils/dvpp_video_utils.h"
+#endif
+#include "minddata/dataset/core/config_manager.h"
 #include "minddata/dataset/kernels/image/image_utils.h"
 #include "utils/file_utils.h"
 
@@ -887,7 +891,7 @@ Status AVDecodeAudioFrame(struct AudioVisual *avinfo, std::vector<std::vector<T>
 template <typename T>
 Status AVAlignAudioFrames(std::vector<std::vector<T>> *audio_vector, int audio_channels,
                           std::shared_ptr<Tensor> *audio_output) {
-  TensorShape shape({audio_channels, (int64_t)(*audio_vector)[0].size()});
+  TensorShape shape({audio_channels, static_cast<int64_t>((*audio_vector)[0].size())});
   DataType type = DataType::FromCType<T>();
   if (Tensor::CreateEmpty(shape, type, audio_output) != Status::OK()) {
     RETURN_STATUS_UNEXPECTED("Failed to call Tensor::CreateEmpty.");

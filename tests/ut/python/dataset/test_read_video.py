@@ -44,7 +44,8 @@ def check_mindspore_data(mindspore_data, expected_data, error_rate_limit=0.05):
         error_rate_limit (float, optional): the maximum error rate. Default: 0.05.
     Expectation: Pass all the assets.
     """
-    # Check the video dta
+
+    # Check the video data
     assert mindspore_data[0].shape == expected_data[0]
     if expected_data[1] > 0:
         assert abs(1.0 - mindspore_data[0].sum() / expected_data[1]) < error_rate_limit
@@ -340,7 +341,7 @@ def test_read_video_param_filename_is_directory():
     # Test with a directory name
     wrong_filename = "../data/dataset/"
     error_message = "Invalid file path, " + wrong_filename + " is not a regular file."
-    invalid_param(wrong_filename, 0, None, "pts", RuntimeError, error_message)
+    invalid_param(wrong_filename, 0, None, "pts", ValueError, error_message)
 
 
 def test_read_video_param_filename_not_exist():
@@ -352,7 +353,7 @@ def test_read_video_param_filename_not_exist():
     # Test with a not exist filename
     wrong_filename = "this_file_is_not_exist"
     error_message = "Invalid file path, " + wrong_filename + " does not exist."
-    invalid_param(wrong_filename, 0, None, "pts", RuntimeError, error_message)
+    invalid_param(wrong_filename, 0, None, "pts", ValueError, error_message)
 
 
 def test_read_video_param_filename_not_supported():

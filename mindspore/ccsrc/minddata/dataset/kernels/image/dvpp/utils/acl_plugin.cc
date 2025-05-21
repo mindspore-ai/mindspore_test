@@ -22,6 +22,7 @@
 #include "minddata/dataset/kernels/image/dvpp/utils/MDAclProcess.h"
 #if defined(ENABLE_D)
 #include "minddata/dataset/kernels/image/dvpp/utils/dvpp_image_utils.h"
+#include "minddata/dataset/kernels/image/dvpp/utils/dvpp_video_utils.h"
 #include "minddata/dataset/core/device_tensor_ascend910b.h"
 #endif
 #include "minddata/dataset/include/dataset/constants.h"
@@ -625,5 +626,37 @@ APP_ERROR PluginDestroyIntArray(void *int_array) {
   }
 
   return mindspore::dataset::DestroyIntArray(int_array);
+}
+
+int64_t PluginDvppSysInit() { return mindspore::dataset::dvpp_sys_init(); }
+
+int64_t PluginDvppSysExit() { return mindspore::dataset::dvpp_sys_exit(); }
+
+int64_t PluginDvppVdecCreateChnl(int64_t pType) { return mindspore::dataset::dvpp_vdec_create_chnl(pType); }
+
+int64_t PluginDvppVdecStartGetFrame(int64_t chnId, int64_t totalFrame) {
+  return mindspore::dataset::dvpp_vdec_start_get_frame(chnId, totalFrame);
+}
+
+int64_t PluginDvppVdecSendStream(int64_t chnId, const std::shared_ptr<mindspore::dataset::Tensor> &input,
+                                 int64_t outFormat, bool display,
+                                 std::shared_ptr<mindspore::dataset::DeviceBuffer> *out) {
+  return mindspore::dataset::dvpp_vdec_send_stream(chnId, input, outFormat, display, out);
+}
+
+std::shared_ptr<mindspore::dataset::DeviceBuffer> PluginDvppVdecStopGetFrame(int64_t chnId, int64_t totalFrame) {
+  return mindspore::dataset::dvpp_vdec_stop_get_frame(chnId, totalFrame);
+}
+
+int64_t PluginDvppVdecDestroyChnl(int64_t chnId) { return mindspore::dataset::dvpp_vdec_destroy_chnl(chnId); }
+
+int64_t PluginDvppMalloc(uint32_t dev_id, void **dev_ptr, uint64_t size) {
+  return mindspore::dataset::dvpp_malloc(dev_id, dev_ptr, size);
+}
+
+int64_t PluginDvppFree(void *dev_ptr) { return mindspore::dataset::dvpp_free(dev_ptr); }
+
+int64_t PluginDvppMemcpy(const std::shared_ptr<mindspore::dataset::DeviceBuffer> &src, void *dest) {
+  return mindspore::dataset::dvpp_memcpy(src, dest);
 }
 #endif

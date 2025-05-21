@@ -5,8 +5,18 @@ add_subdirectory(dvpp)
 
 if(ENABLE_FFMPEG)
     set(FFMPEG_DEPEND_FILES
+        pyav/container.cc
+        pyav/context.cc
+        pyav/format.cc
+        pyav/frame.cc
+        pyav/packet.cc
+        pyav/stream.cc
         decode_video_op.cc
         video_utils.cc)
+endif()
+
+if(ENABLE_D)
+    include(${CMAKE_SOURCE_DIR}/cmake/graphengine_variables.cmake)
 endif()
 
 add_library(kernels-image OBJECT

@@ -5,12 +5,14 @@ mindspore.dataset.vision.read_video
 
     从视频文件中读取视频、音频、元数据。
 
-    支持的文件类型有AVI、H264、H265、MOV、MP4和WMV。
+    使用CPU后端时支持的文件类型有AVI、H264、H265、MOV、MP4和WMV，使用Ascend后端时支持的文件类型有H264和H265。
+
+    .. note:: 此函数默认使用 CPU 执行，但也支持通过 `mindspore.dataset.config.set_video_backend("Ascend")` 设置视频后端使用 Ascend 执行。
 
     参数：
         - **filename** (str) - 待读取视频文件路径。
-        - **start_pts** (Union[float, Fraction, int], 可选) - 视频的开始时间戳。默认值： ``0``。
-        - **end_pts** (Union[float, Fraction, int], 可选) - 视频的结束时间戳。默认值: ``None``，对应2147483647。
+        - **start_pts** (Union[float, Fraction, int], 可选) - 视频的开始时间戳。默认值： ``0``，从头开始读取。
+        - **end_pts** (Union[float, Fraction, int], 可选) - 视频的结束时间戳。默认值: ``None``，一直读取到结尾。
         - **pts_unit** (str, 可选) - 时间戳的单位，它可以是["pts", "sec"]中的任何一个。默认值： ``"pts"``。
 
     返回：
