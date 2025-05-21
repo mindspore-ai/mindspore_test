@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2024 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,15 @@
 #include "frontend/optimizer/ad/adjoint.h"
 
 #include "ir/anf.h"
+#include "ir/tensor_py_wrapperbase.h"
 #include "frontend/optimizer/ad/dfunctor.h"
+#include "include/common/utils/hook.h"
+#include "utils/tensor_hook_map.h"
 
 namespace mindspore {
 namespace ad {
-Adjoint::Adjoint(const AnfNodePtr &primal, const AnfNodePtr &k, const FuncGraphPtr &caller)
-    : primal_(primal), caller_(caller), dout_(nullptr) {
+Adjoint::Adjoint(const AnfNodePtr &primal, const AnfNodePtr &k, const FuncGraphPtr &caller, bool is_grad_by_j)
+    : primal_(primal), caller_(caller), dout_(nullptr), is_grad_by_j_(is_grad_by_j) {
   if (k != nullptr) {
     k_ = k;
     MS_LOG(DEBUG) << "Add adjoint for " << primal->ToString() << " " << k_->ToString();
@@ -78,17 +81,69 @@ void Adjoint::AccumulateDout(const AnfNodePtr &dout_factor) {
   dout_ = dout_factor;
 }
 
-void Adjoint::CallDoutHole() {
-  if (dout_ != nullptr) {
+namespace {
+void AddDefaultParamHooks(const pipeline::ResourceBasePtr &resources, const ParameterPtr &param) {
+  if (!param->has_default()) {
+    MS_LOG(DEBUG) << "param: " << param->DebugString() << " not has default value";
+    return;
+  }
+
+  const auto &default_value = param->default_param();
+  if (!default_value->isa<tensor::Tensor>()) {
+    MS_LOG(DEBUG) << "The default value of " << param->ToString() << " is not a Tensor.";
+    return;
+  }
+
+  const auto &tensor = default_value->cast<tensor::TensorPtr>();
+  const auto hooks = parse::ResolveTensorHooks(resources, tensor);
+  if (hooks != nullptr) {
+    MS_LOG(DEBUG) << "Add hooks for parameter: " << param->DebugString();
+    param->set_user_data(TENSOR_HOOK_MAP, hooks);
+  }
+}
+}  // namespace
+
+AnfNodePtr Adjoint::ApplyTensorHookForDout(const pipeline::ResourceBasePtr &resources) {
+  auto hooked_dout = dout_;
+
+  if (!primal_->isa<Parameter>()) {
+    MS_LOG(DEBUG) << "Only primal of type 'Parameter' can apply hooks now, your primal is: " << primal_->DebugString();
+    return hooked_dout;
+  }
+
+  auto param = primal_->cast<ParameterPtr>();
+  if (param->has_default() && is_grad_by_j_) {
+    AddDefaultParamHooks(resources, param);
+  }
+
+  if (!param->has_user_data(TENSOR_HOOK_MAP)) {
+    MS_LOG(DEBUG) << "Parameter: " << param->ToString() << " has no hooks.";
+    return hooked_dout;
+  }
+
+  MS_LOG(DEBUG) << "Add hooks for param: " << primal_->DebugString();
+  auto hooks = param->user_data<TensorHookMap>(TENSOR_HOOK_MAP);
+  for (auto &[id, hook] : *hooks) {
+    MS_LOG(DEBUG) << "Add hook for " << primal_->DebugString() << ", hook id: " << id << ", hook: " << hook->ToString();
+    hooked_dout = caller_->NewCNode({NewValueNode(hook), hooked_dout});
+  }
+
+  return hooked_dout;
+}
+
+void Adjoint::CallDoutHole(const pipeline::ResourceBasePtr &resources) {
+  auto dout = ApplyTensorHookForDout(resources);
+
+  if (dout != nullptr) {
     for (auto &user : dout_user_) {
       MS_LOG(DEBUG) << "Update dout user " << user.first->ToString() << " " << user.second << " input with dout "
-                    << dout_->ToString();
+                    << dout->ToString();
       if (user.first->input(user.second) != dout_hole_) {
         MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, user.first)
           << "Update dout user " << user.first->ToString() << " " << user.second << " input with dout "
-          << dout_->ToString() << ", user relation is set wrongly";
+          << dout->ToString() << ", user relation is set wrongly";
       }
-      user.first->set_input(user.second, dout_);
+      user.first->set_input(user.second, dout);
     }
   }
 }

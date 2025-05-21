@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,8 +60,8 @@ struct RegisterHook {
 
   // For store hook
   inline static uint64_t unique_id_ = 0;
+
   static std::unordered_map<uint64_t, std::weak_ptr<BackwardNode>> hook_id_node_map_;
-  static std::unordered_map<uint64_t, std::weak_ptr<std::map<uint64_t, py::function>>> tensor_id_with_hook_map_;
   static std::unordered_map<uint64_t, uint64_t> unique_id_with_tensor_id_;
 };
 }  // namespace mindspore::pynative::autograd

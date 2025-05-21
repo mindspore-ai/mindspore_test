@@ -34,75 +34,6 @@
 
 namespace mindspore {
 namespace pijit {
-namespace {
-AnfNodePtr CreateInsertGradientOfNode(const AnfNodePtr &node, const FuncGraphPtr &func_graph) {
-  auto hooks = node->abstract()->user_data<py::tuple>(pijit::kRegisterHookKey);
-  MS_LOG(INFO) << "Apply " << py::str(py::object(*hooks)) << " to " << node->DebugString();
-  auto ops_mod = python_adapter::GetPyModule("mindspore.ops.operations.debug_ops");
-  auto op_class = python_adapter::GetPyObjAttr(ops_mod, "InsertGradientOf");
-  auto insert_grad_of = node;
-  for (const auto &hook : *hooks) {
-    // Create class instance.
-    auto params = py::make_tuple(hook);
-    auto obj = parse::data_converter::CreatePythonObject(op_class, params);
-    if (py::isinstance<py::none>(obj)) {
-      MS_LOG(ERROR) << "Create python object `" << py::str(op_class)
-                    << "` failed, only support to create 'Cell', 'Primitive' or "
-                    << "user-defined Class decorated with 'jit_class'.";
-      return nullptr;
-    }
-    ValuePtr converted_res = nullptr;
-    bool converted = parse::ConvertData(obj, &converted_res, false);
-    if (!converted) {
-      MS_LOG(ERROR) << "Convert the python object failed";
-      return nullptr;
-    }
-    MS_EXCEPTION_IF_NULL(converted_res);
-    insert_grad_of = func_graph->NewCNode({NewValueNode(converted_res), insert_grad_of});
-    insert_grad_of->set_abstract(node->abstract());
-  }
-  return insert_grad_of;
-}
-
-bool ApplyRegisterHook(const AnfNodePtr &node) {
-  if (node->abstract() == nullptr || !node->abstract()->has_user_data(pijit::kRegisterHookKey)) {
-    return true;
-  }
-  auto func_graph = node->func_graph();
-  MS_EXCEPTION_IF_NULL(func_graph);
-  auto manager = func_graph->manager();
-  MS_EXCEPTION_IF_NULL(manager);
-  auto node_users = manager->node_users()[node];
-  for (const auto &node_and_index : node_users) {
-    if (IsPrimitiveCNode(node_and_index.first, prim::kPrimInsertGradientOf)) {
-      continue;
-    }
-    auto insert_grad_of = CreateInsertGradientOfNode(node, node_and_index.first->func_graph());
-    if (insert_grad_of == nullptr) {
-      return false;
-    }
-    manager->SetEdge(node_and_index.first, node_and_index.second, insert_grad_of);
-  }
-  return true;
-}
-
-bool HandleRegisterHook(const FuncGraphPtr &func_graph) {
-  auto top_func_graph = parse::Parser::GetTopFuncGraph();
-  MS_EXCEPTION_IF_NULL(top_func_graph);
-  if (func_graph->manager() == nullptr) {
-    auto manager = top_func_graph->manager();
-    MS_EXCEPTION_IF_NULL(manager);
-    manager->AddFuncGraph(func_graph);
-  }
-  mindspore::CompactSet<AnfNodePtr> nodes;
-  nodes.insert(func_graph->parameters().begin(), func_graph->parameters().end());
-  auto vars = func_graph->free_variables();
-  std::for_each(vars.begin(), vars.end(), [&nodes](const auto &var) { nodes.insert(var.first); });
-  nodes.insert(top_func_graph->parameters().begin(), top_func_graph->parameters().end());
-  return std::all_of(nodes.begin(), nodes.end(), [](const auto &node) { return ApplyRegisterHook(node); });
-}
-
-}  // namespace
 GraphBuildHelperPtr GraphBuildHelperFactory(const py::object &object) {
   auto value = ConvertPyObjToValue(object);
   if (value == nullptr) {
@@ -237,9 +168,6 @@ AbstractWrapperPtr GradGraphBuildHelper::Build(GraphBuilder *graph_builder, Call
   }
   auto ret = BuildGradNode(graph_builder->FGBuilder(), grad_net_wrapper, forward_fg, inputs_wrapper);
   MS_EXCEPTION_IF_NULL(ret);
-  if (!HandleRegisterHook(forward_fg)) {
-    return nullptr;
-  }
   HandleGradForwardSideEffect(graph_builder, forward_fg, ret, graph_builder->get_prev_call_builder(), call_node);
   return ret;
 }
@@ -518,7 +446,6 @@ AbstractWrapperPtrList GradGraphBuildHelper::HandleInputsForGrad(GraphBuilder *g
   MS_EXCEPTION_IF_NULL(grad_net_node);
   constexpr size_t grad_operation_index = 0;
   constexpr size_t forward_node_index = 1;
-  constexpr size_t param_tuple_index = 2;
   auto grad_operation_node = grad_net_node->input(grad_operation_index);
   auto grad_object = grad_operation_node->GetVobj()->GetPyObject();
   auto forward_node = grad_net_node->input(forward_node_index);
@@ -550,11 +477,6 @@ AbstractWrapperPtrList GradGraphBuildHelper::HandleInputsForGrad(GraphBuilder *g
     }
     auto wrapper = forward_input[index]->abstract_wrapper();
     auto node = graph_builder->FGBuilder()->FindNodeByWrapper(wrapper);
-    pijit::SaveTensorRegisterHook(obj, node);
-    GuardRegisterHook(forward_input[index]);
-  }
-  if (get_by_list) {
-    GuardRegisterHook(grad_net_node->input(param_tuple_index));
   }
 
   if (has_sense) {

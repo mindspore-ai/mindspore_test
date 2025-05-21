@@ -403,8 +403,6 @@ class GraphBuilder {
                                      StopTraceReason *stop_reason);
 };
 
-void GuardRegisterHook(ValueNode *node);
-
 namespace fg_build_utils {
 AbstractWrapperPtr FgTupleGetItem(const FuncGraphBuilderPtr &fg_builder, const AbstractWrapperPtr &tuple, int index);
 std::optional<std::vector<AbstractWrapperPtr>> FgTupleUnpack(const FuncGraphBuilderPtr &fg_builder,

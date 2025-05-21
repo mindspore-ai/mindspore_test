@@ -308,8 +308,11 @@ def test_need_reorder_hook_stmt_net():
     assert np.allclose(output_weight1_grad, expected_weight1_grad)
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('mode', [context.PYNATIVE_MODE, context.GRAPH_MODE])
-@pytest.mark.parametrize('net', [HookInJITNet(), CtrlFlowHookInJITNet()])
+@pytest.mark.parametrize('mode, net', [
+    (context.PYNATIVE_MODE, HookInJITNet()),
+    (context.PYNATIVE_MODE, CtrlFlowHookInJITNet()),
+    (context.GRAPH_MODE, HookInJITNet()),
+    (context.GRAPH_MODE, CtrlFlowHookInJITNet())])
 def test_hook_in_jit(mode, net):
     """
     Feature: Tensor.register_hook(hook_fn) inside graph.

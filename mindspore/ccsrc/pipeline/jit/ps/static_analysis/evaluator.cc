@@ -24,6 +24,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "utils/hash_set.h"
+#include "utils/tensor_hook_map.h"
 #include "ir/func_graph_cloner.h"
 #include "abstract/utils.h"
 #include "include/common/fallback.h"
@@ -782,6 +783,42 @@ EvalResultPtr PartialAppEvaluator::Run(AnalysisEnginePtr engine, const ConfigPtr
   return res;
 }
 
+void JEvaluator::AddHooksForPrimalFunc(const AbstractBasePtrList &args_abs_list) {
+  auto real_primal_func = dyn_cast_ptr<FuncGraphAbstractClosure>(primal_func_);
+  MS_EXCEPTION_IF_NULL(real_primal_func);
+  FuncGraphPtr primal_func_graph = real_primal_func->func_graph();
+  MS_EXCEPTION_IF_NULL(primal_func_graph);
+
+  const size_t param_size = primal_func_graph->parameters().size();
+  const size_t input_size = args_abs_list.size();
+  if (param_size != input_size) {
+    MS_LOG(EXCEPTION) << "Parameter size mismatch in JEvaluator: primal func graph expects " << param_size
+                      << " parameters, but received " << input_size << " inputs.";
+  }
+
+  for (size_t idx = 0; idx < args_abs_list.size(); ++idx) {
+    auto abs = args_abs_list[idx];
+    AbstractBasePtr abs_value;
+    if (abs->isa<AbstractTensor>()) {
+      abs_value = abs;
+    } else if (abs->isa<AbstractKeywordArg>()) {
+      abs_value = abs->cast<AbstractKeywordArgPtr>()->get_arg();
+    } else {
+      MS_LOG(DEBUG) << "When setting hook for argument, only arguments with abstract type of AbstractTensor "
+                       "or AbstractKeywordArg are supported. But got "
+                    << abs->ToString();
+      continue;
+    }
+
+    if (abs_value->has_user_data(TENSOR_HOOK_MAP)) {
+      auto param = primal_func_graph->parameters()[idx];
+      MS_LOG(DEBUG) << "Set hooks for " << idx << "th param " << param->DebugString();
+      auto hooks = abs_value->user_data<TensorHookMap>(TENSOR_HOOK_MAP);
+      param->set_user_data(TENSOR_HOOK_MAP, hooks);
+    }
+  }
+}
+
 EvalResultPtr JEvaluator::Run(AnalysisEnginePtr engine, const ConfigPtrList &args_conf_list,
                               const AnfNodeConfigPtr &out_conf) {
   AbstractBasePtrList args_abs_list = EvaluateArguments(args_conf_list);
@@ -790,6 +827,8 @@ EvalResultPtr JEvaluator::Run(AnalysisEnginePtr engine, const ConfigPtrList &arg
   if (eval_result != nullptr) {
     return eval_result;
   }
+
+  AddHooksForPrimalFunc(args_abs_list);
 
   // Call the original evaluator, get the result: y = f(x)
   EvalResultPtr result = evaluator_->Run(engine, args_conf_list, nullptr);

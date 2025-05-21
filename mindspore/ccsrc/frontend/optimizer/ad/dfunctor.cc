@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2024 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -110,8 +110,13 @@ void CopyPrimitivePtrForFpropReplace(const FuncGraphPtr &primal_graph, const Fun
 }
 }  // namespace
 
-DFunctor::DFunctor(const FuncGraphPtr &primal_graph, const pipeline::ResourceBasePtr &resources, bool is_top)
-    : primal_graph_(primal_graph), resources_(resources), need_cut_(false), is_top_(is_top) {
+DFunctor::DFunctor(const FuncGraphPtr &primal_graph, const pipeline::ResourceBasePtr &resources, bool is_top,
+                   bool is_grad_by_j)
+    : primal_graph_(primal_graph),
+      resources_(resources),
+      need_cut_(false),
+      is_top_(is_top),
+      is_grad_by_j_(is_grad_by_j) {
   {
     TraceGuard guard(MakeTraceInfo<TraceGradFprop>(primal_graph->debug_info()));
     k_graph_ = std::make_shared<FuncGraph>();
@@ -175,11 +180,11 @@ void DFunctor::BackPropagateFv(const AnfNodePtr &fv, const AnfNodePtr &din) {
         auto parent_adjoint = FindAdjoint(fv);
         AdjointPtr adjoint = nullptr;
         if (parent_adjoint != nullptr) {
-          adjoint = std::make_shared<Adjoint>(fv, parent_adjoint->k(), tape_);
+          adjoint = std::make_shared<Adjoint>(fv, parent_adjoint->k(), tape_, is_grad_by_j_);
         } else {
           MS_LOG(DEBUG) << "Can not find adjoint definition fv, add a k hole " << fv->func_graph()->ToString() << " "
                         << fv->ToString() << ".";
-          adjoint = std::make_shared<Adjoint>(fv, nullptr, tape_);
+          adjoint = std::make_shared<Adjoint>(fv, nullptr, tape_, is_grad_by_j_);
         }
         anfnode_to_adjoin_indirect_fv_[fv] = adjoint;
         fv_adjoint = anfnode_to_adjoin_indirect_fv_.find(fv);
@@ -454,7 +459,7 @@ AdjointPtr DFunctor::MapMorphism(const AnfNodePtr &morph) {
   auto forward_app =
     k_graph_->NewCNode({NewValueNode(prim::kPrimTupleGetItem), k_app, NewValueNode(static_cast<int64_t>(0))});
   // K:: cnode -> forward_app
-  auto node_adjoint = std::make_shared<Adjoint>(morph, forward_app, tape_);
+  auto node_adjoint = std::make_shared<Adjoint>(morph, forward_app, tape_, is_grad_by_j_);
   UpdateAdjoint(node_adjoint);
   anfnode_to_adjoin_[morph] = node_adjoint;
   if (cnode_morph->stop_gradient()) {
@@ -652,7 +657,7 @@ FuncGraphPtr DFunctor::KUserDefined(const FuncGraphPtr &primal) {
     // Reset defer_inline to enable successive inlining
     primal->set_flag(FUNC_GRAPH_FLAG_DEFER_INLINE, false);
 
-    auto functor = std::make_shared<DFunctor>(primal, resources_, false);
+    auto functor = std::make_shared<DFunctor>(primal, resources_, false, is_grad_by_j_);
     functor->Init();
     functor->k_graph_ = fg;
 
@@ -744,7 +749,7 @@ AnfNodePtr DFunctor::MapFuncGraphToK(const AnfNodePtr &primal) {
     MS_LOG(DEBUG) << "K graph functor user defined bprop " << func_graph->ToString() << ".";
     return NewValueNode(k_user_defined);
   }
-  auto functor = std::make_shared<DFunctor>(func_graph, resources_, false);
+  auto functor = std::make_shared<DFunctor>(func_graph, resources_, false, is_grad_by_j_);
   functor->Init();
   functor->MapObject();
   functor->MapMorphism();
@@ -791,15 +796,15 @@ void DFunctor::MapFvObject() {
     AdjointPtr adjoint = nullptr;
     auto parent_adjoint = FindAdjoint(node);
     if (parent_adjoint != nullptr) {
-      adjoint = std::make_shared<Adjoint>(node, parent_adjoint->k(), tape_);
+      adjoint = std::make_shared<Adjoint>(node, parent_adjoint->k(), tape_, is_grad_by_j_);
     } else {
       if (is_top_ || node->isa<Parameter>()) {
         // Out of ad scope, add adjoint for free variables.
-        adjoint = std::make_shared<Adjoint>(node, node, tape_);
+        adjoint = std::make_shared<Adjoint>(node, node, tape_, is_grad_by_j_);
         UpdateAdjoint(adjoint);
       } else {
         MS_LOG(DEBUG) << "Fail to find parent adjoint for nontop fv " << node->ToString() << ".";
-        adjoint = std::make_shared<Adjoint>(node, nullptr, tape_);
+        adjoint = std::make_shared<Adjoint>(node, nullptr, tape_, is_grad_by_j_);
       }
     }
     if (adjoint == nullptr) {
@@ -814,7 +819,7 @@ void DFunctor::MapParamObject() {
   for (auto &p : primal_graph_->parameters()) {
     ScopeGuard scope_guard(p->scope());
     MS_LOG(DEBUG) << "The parameter " << p->ToString() << ".";
-    auto adjoint = std::make_shared<Adjoint>(p, MapParameterToK(p), tape_);
+    auto adjoint = std::make_shared<Adjoint>(p, MapParameterToK(p), tape_, is_grad_by_j_);
     UpdateAdjoint(adjoint);
     anfnode_to_adjoin_[p] = adjoint;
   }
@@ -831,7 +836,7 @@ void DFunctor::MapValueObject() {
     auto node = value_pair.first;
     auto parent_adjoint = FindAdjoint(node);
     if (parent_adjoint != nullptr) {
-      auto adjoint = std::make_shared<Adjoint>(node, parent_adjoint->k(), tape_);
+      auto adjoint = std::make_shared<Adjoint>(node, parent_adjoint->k(), tape_, is_grad_by_j_);
       anfnode_to_adjoin_[node] = adjoint;
       continue;
     }
@@ -856,15 +861,15 @@ void DFunctor::MapValueObject() {
       }
       auto cnode = users.begin()->first->cast<CNodePtr>();  // We just use the first user.
       auto index = users.begin()->second;
-      adjoint = std::make_shared<Adjoint>(node, MapPrimitiveToK(cnode, index), tape_);
+      adjoint = std::make_shared<Adjoint>(node, MapPrimitiveToK(cnode, index), tape_, is_grad_by_j_);
     } else if (IsValueNode<FuncGraph>(node)) {  // FuncGraph
       MS_LOG(DEBUG) << "Map FuncGraph node " << node->DebugString() << ".";
-      adjoint = std::make_shared<Adjoint>(node, MapFuncGraphToK(node), tape_);
+      adjoint = std::make_shared<Adjoint>(node, MapFuncGraphToK(node), tape_, is_grad_by_j_);
     } else if (node->isa<Parameter>()) {  // Parameter, hardly reach here.
       MS_LOG(DEBUG) << "Map Parameter node " << node->DebugString() << ".";
-      adjoint = std::make_shared<Adjoint>(node, MapParameterToK(node), tape_);
+      adjoint = std::make_shared<Adjoint>(node, MapParameterToK(node), tape_, is_grad_by_j_);
     } else {
-      adjoint = std::make_shared<Adjoint>(node, node, tape_);
+      adjoint = std::make_shared<Adjoint>(node, node, tape_, is_grad_by_j_);
     }
     UpdateAdjoint(adjoint);
     anfnode_to_adjoin_[node] = adjoint;
@@ -917,10 +922,10 @@ void DFunctor::CallDoutHoleOnTape() const {
   // Call dout hole of all adjoint.
   for (auto &f : func_graph_to_functor_) {
     for (auto &adjoint : f.second->anfnode_to_adjoin_) {
-      adjoint.second->CallDoutHole();
+      adjoint.second->CallDoutHole(resources_);
     }
     for (auto &adjoint : f.second->anfnode_to_adjoin_indirect_fv_) {
-      adjoint.second->CallDoutHole();
+      adjoint.second->CallDoutHole(resources_);
     }
   }
 }

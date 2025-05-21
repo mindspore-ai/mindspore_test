@@ -1,6 +1,6 @@
 # This is the Python adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
 #
-# Copyright 2020-2024 Huawei Technologies Co., Ltd
+# Copyright 2020-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -942,6 +942,14 @@ def can_constant_fold(obj):
     """Check if the obj is the function can be constantly folded."""
     return obj in constant_fold_functions
 
+def hook_wrapper(hook_fn):
+    def inner(dout):
+        fdout = hook_fn(dout)
+        if fdout is None:
+            dout = ops.Depend()(dout, fdout)
+            return dout
+        return fdout
+    return inner
 
 class Parser:
     """
