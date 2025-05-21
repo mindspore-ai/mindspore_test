@@ -119,29 +119,31 @@ REGISTER_PYBOOST_GRAD_TEMPLATE = Template("${register_func}")
 PYBOOST_FUNCTION_HEADER_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_api_h.tpl'))
 
-PYBOOST_FUNCTION_IMPL_HEADER_TEMPLATE = Template.load_from_file(
-    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_functions_impl_h.tpl'))
+PYBOOST_CORE_HEADER_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_core_header.tpl'))
 
-PYBOOST_FUNCTION_TEMPLATE = Template.load_from_file(
-    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_function.tpl'))
+PYBOOST_REGISTRY_BODY_CC_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_registry_body_cc.tpl'))
 
-PYBOOST_FUNCTION_IMPL_TEMPLATE = Template.load_from_file(
-    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_function_impl.tpl'))
+PYBOOST_CORE_BODY_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_core_body.tpl'))
 
-PYBOOST_COMM_FUNCTION_IMPL_TEMPLATE = Template.load_from_file(
-    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_function_comm_impl.tpl'))
+PYBOOST_CORE_BODY_COMM_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_core_body_comm.tpl'))
 
-PYBOOST_FUNCTION_DYNAMIC_OUTPUT_IMPL_TEMPLATE = Template.load_from_file(
-    os.path.join(K.WORK_DIR,
-                 './mindspore/ccsrc/pynative/op_function/template/pyboost_function_dynamic_output_impl.tpl'))
+PYBOOST_CORE_BODY_SYNC_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_core_body_sync.tpl'))
 
-PYBOOST_FUNCTIONS_CC_TEMPLATE = Template.load_from_file(
+PYBOOST_REGISTRY_CC_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_registry_cc.tpl'))
 
-PYBOOST_FUNCTIONS_BASE_CC_TEMPLATE = Template.load_from_file(
+PYBOOST_API_CC_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_api_cc.tpl'))
 
-PYBOOST_FUNCTIONS_IMPL_CC_TEMPLATE = Template.load_from_file(
+PYBOOST_API_BODY_CC_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_api_body_cc.tpl'))
+
+PYBOOST_CORE_CC_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_core_cc.tpl'))
 
 PYBOOST_OVERLOAD_FUNCTIONS_CC_TEMPLATE = Template.load_from_file(

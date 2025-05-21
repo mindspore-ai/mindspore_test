@@ -22,9 +22,9 @@ py::object PYNATIVE_EXPORT ${func_name}_OP(const PrimitivePtr &prim, const std::
 
             kernel::pyboost::OpRunStatus::Get().set_run_info(
                 kernel::pyboost::OpStatus(op_run_info->async_status.disable_mix_precision,
-                                        op_run_info->async_status.is_jit_compiling,
-                                        op_run_info->async_status.custom_bprop_cell_count,
-                                        op_run_info->device_target));
+                                          op_run_info->async_status.is_jit_compiling,
+                                          op_run_info->async_status.custom_bprop_cell_count,
+                                          op_run_info->device_target));
             kernel::pyboost::RequireGradGuard require_grad_guard(op_run_info->requires_grad);
 
             auto outputs = kernel::pyboost::${operator_name}(${cast_args});
@@ -41,3 +41,4 @@ py::object PYNATIVE_EXPORT ${func_name}_OP(const PrimitivePtr &prim, const std::
     MS_LOG(DEBUG) << "Run ${func_name} end";
     return py::reinterpret_steal<py::object>(tensor::TransformOutput(py_output));
 }
+
