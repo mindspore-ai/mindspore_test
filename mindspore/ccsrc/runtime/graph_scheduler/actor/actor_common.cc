@@ -456,7 +456,7 @@ bool Copy(const DeviceTensor *dst_device_tensor, const DeviceTensor *src_device_
   }
 }
 
-bool AsyncCopy(const DeviceTensor *dst_device_tensor, const DeviceTensor *src_device_tensor) {
+bool AsyncCopy(const DeviceTensor *dst_device_tensor, const DeviceTensor *src_device_tensor, size_t stream_id) {
   MS_EXCEPTION_IF_NULL(dst_device_tensor);
   MS_EXCEPTION_IF_NULL(src_device_tensor);
   if (src_device_tensor->GetSize() != dst_device_tensor->GetSize()) {
@@ -467,11 +467,13 @@ bool AsyncCopy(const DeviceTensor *dst_device_tensor, const DeviceTensor *src_de
   // Exist the size alignment in some device, so get the min device size.
   size_t copy_size = std::min(src_device_tensor->GetSize(), dst_device_tensor->GetSize());
 
+  MS_LOG(DEBUG) << "src device tensor type: " << src_device_tensor->GetDeviceType()
+                << ", dst device tensor type: " << dst_device_tensor->GetDeviceType();
   if (dst_device_tensor->GetDeviceType() == src_device_tensor->GetDeviceType()) {
-    return dst_device_tensor->AsyncDeviceToDevice(src_device_tensor);
+    return dst_device_tensor->AsyncDeviceToDevice(src_device_tensor, stream_id);
   } else if (src_device_tensor->GetDeviceType() == device::DeviceType::kCPU) {
     // CPU device tensor copy to other device tensor.
-    return dst_device_tensor->AsyncHostToDevice(copy_size, src_device_tensor->GetPtr());
+    return dst_device_tensor->AsyncHostToDevice(copy_size, src_device_tensor->GetPtr(), stream_id);
   } else if (dst_device_tensor->GetDeviceType() == device::DeviceType::kCPU) {
     // Other device tensor copy to CPU device tensor.
     // Use Sync instead of Async because cpu ops may use host ptr immediately.
@@ -910,11 +912,6 @@ TensorPtr FetchInputTensorByArg(const VectorRef &args, size_t arg_index, const K
 
   std::vector<tensor::TensorPtr> flatten_tensors;
   AnfAlgo::FlattenInputArg(args[arg_index], front_node.first, &flatten_tensors);
-  if (EnableInputOptimize()) {
-    // Push flatten tensors into store buffers.
-    auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
-    graph_parameter_store->FillBuffer(arg_index, flatten_tensors);
-  }
   auto input_tensor_index = FetchInputTensorIndex(front_node);
   if (input_tensor_index >= flatten_tensors.size()) {
     MS_LOG(INFO) << "Input tensor index out of args range, index is " << input_tensor_index << " and tensors size is "
@@ -979,161 +976,82 @@ void UpdateDynamicShapeAndSize(tensor::Tensor *input_tensor, const KernelTensorP
   }
 }
 
-void SyncHostToDeviceFromTensor(size_t outer_index, size_t inner_index, tensor::Tensor *tensor,
-                                OpContext<KernelTensor> *const context, const AID &from_aid, const AnfNodePtr &node) {
+void SyncHostToDeviceFromTensor(size_t outer_index, size_t inner_index, tensor::Tensor *tensor, const AID &from_aid,
+                                const AnfNodePtr &node, bool is_first_user, size_t stream_id) {
   ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kKernelPrepareData, from_aid.Name());
-  MS_EXCEPTION_IF_NULL(context);
   auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
-  auto kernel_tensors = graph_parameter_store->Fetch(outer_index, inner_index);
+  auto kernel_tensor = graph_parameter_store->Fetch(outer_index, inner_index);
   if (NeedRunMemTracker()) {
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, from_aid.Name(), node->fullname_with_scope(),
                                                    from_aid.Name(), false);
   }
-  bool in_callback = false;
-  for (const auto kernel_tensor : kernel_tensors) {
-    // Update dynamic shape and size.
-    MS_EXCEPTION_IF_NULL(kernel_tensor);
-    const auto &device_tensor = kernel_tensor->device_address();
-    MS_EXCEPTION_IF_NULL(device_tensor);
-    if (graph_parameter_store->GetUserCnt(outer_index, inner_index, device_tensor->GetDeviceType()) == 0) {
-      MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-        << "Skip sync host to device for device tensor:" << device_tensor->PrintInfo() << " outer index:" << outer_index
-        << " inner index:" << inner_index << " for user count:0.";
-      continue;
-    }
-    UpdateDynamicShapeAndSize(tensor, kernel_tensor, outer_index, inner_index);
-    graph_parameter_store->ResetAddrRefCount(outer_index, inner_index, device_tensor->GetDeviceType());
-    if (TEST_FLAG(device_tensor->flag(), device::kDeviceAddressFlagNotUsed)) {
-      device_tensor->IncreaseNewRefCount(from_aid.Name());
-      MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-        << from_aid.Name() << " do not use input outer index: " << outer_index << ", inner index: " << inner_index
-        << ", address: " << device_tensor << " from graph parameter store.";
-      continue;
-    }
-    if (device_tensor->GetSize() == 0) {
-      // The device tensor will not allocate a valid ptr, but it would be send to actor to decrease the ref count,
-      // so the ref count should be add.
-      device_tensor->IncreaseNewRefCount(from_aid.Name());
-      MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-        << from_aid.Name() << " input size is 0, outer index" << outer_index << ", inner index: " << inner_index
-        << ", address: " << device_tensor << ".";
-      continue;
-    }
+  // Update dynamic shape and size.
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
+  const auto &device_tensor = kernel_tensor->device_address();
+  MS_EXCEPTION_IF_NULL(device_tensor);
+  if (graph_parameter_store->GetUserCnt(outer_index, inner_index) == 0) {
+    MS_LOG(DEBUG) << "Skip sync host to device for device tensor:" << device_tensor->PrintInfo()
+                  << " outer index:" << outer_index << " inner index:" << inner_index << " for user count:0.";
+    return;
+  }
+  UpdateDynamicShapeAndSize(tensor, kernel_tensor, outer_index, inner_index);
+  graph_parameter_store->ResetAddrRefCount(outer_index, inner_index);
+  if (TEST_FLAG(device_tensor->flag(), device::kDeviceAddressFlagNotUsed)) {
+    device_tensor->IncreaseNewRefCount(from_aid.Name());
+    MS_LOG(DEBUG) << from_aid.Name() << " do not use input outer index: " << outer_index
+                  << ", inner index: " << inner_index << ", address: " << device_tensor
+                  << " from graph parameter store.";
+    return;
+  }
+  if (device_tensor->GetSize() == 0) {
+    // The device tensor will not allocate a valid ptr, but it would be send to actor to decrease the ref count,
+    // so the ref count should be add.
+    device_tensor->IncreaseNewRefCount(from_aid.Name());
+    MS_LOG(DEBUG) << from_aid.Name() << " input size is 0, outer index" << outer_index
+                  << ", inner index: " << inner_index << ", address: " << device_tensor << ".";
+    return;
+  }
 
-    auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-      {device_tensor->device_name(), device_tensor->device_id()});
+  auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
+    {device_tensor->device_name(), device_tensor->device_id()});
 
-    if (device_tensor->GetPtr() == nullptr) {
-      auto mem_type = device_tensor->original_ref_count() == SIZE_MAX ? memory::mem_pool::MemType::kWeight
-                                                                      : memory::mem_pool::MemType::kKernel;
-      device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, from_aid.Name(), mem_type, device_tensor->GetSize(),
-                                                     device_tensor.get());
-      MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
-      if (!device_context->device_res_manager_->AllocateMemory(device_tensor.get(), kDefaultStreamIndex)) {
-        MS_LOG(EXCEPTION) << "Allocate memory failed, outer index: " << outer_index << ", inner index: " << inner_index
-                          << ", for device tensor: " << device_tensor->PrintInfo();
-      }
+  if (device_tensor->GetPtr() == nullptr) {
+    auto mem_type = device_tensor->original_ref_count() == SIZE_MAX ? memory::mem_pool::MemType::kWeight
+                                                                    : memory::mem_pool::MemType::kKernel;
+    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, from_aid.Name(), mem_type, device_tensor->GetSize(),
+                                                   device_tensor.get());
+    MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
+    if (!device_context->device_res_manager_->AllocateMemory(device_tensor.get(), kDefaultStreamIndex)) {
+      MS_LOG(EXCEPTION) << "Allocate memory failed, outer index: " << outer_index << ", inner index: " << inner_index
+                        << ", for device tensor: " << device_tensor->PrintInfo();
     }
+  }
 
-    auto tensor_size = LongToSize(tensor->data().nbytes());
+  auto tensor_size = LongToSize(tensor->data().nbytes());
+  if (is_first_user) {
     if (tensor_size > 0 && !device_tensor->AsyncHostToDevice(tensor_size, tensor->data_type(), tensor->data_ptr(),
-                                                             tensor->device_info().host_format_)) {
+                                                             tensor->device_info().host_format_, stream_id)) {
       MS_LOG(EXCEPTION) << "Fetch parameter async host to device failed.";
     }
-    if (!in_callback) {
-      graph_parameter_store->InsertTensorDataIntoCallback(tensor->data_ptr());
-      in_callback = true;
-    }
+  } else if (graph_parameter_store->GetAsyncMemcpyFun(outer_index, inner_index) == nullptr) {
+    graph_parameter_store->SetAsyncMemcpyFun(
+      outer_index, inner_index, [tensor_size, device_tensor, tensor](size_t stream_id) {
+        if (tensor_size > 0 && !device_tensor->AsyncHostToDevice(tensor_size, tensor->data_type(), tensor->data_ptr(),
+                                                                 tensor->device_info().host_format_, stream_id)) {
+          MS_LOG(EXCEPTION) << "Fetch parameter async host to device failed.";
+        }
+      });
   }
-}
 
-void SyncDeviceTensorsInParameterStore(size_t outer_index, size_t inner_index, const DeviceTensorPtr &tensor_address,
-                                       tensor::Tensor *tensor, OpContext<KernelTensor> *const context,
-                                       const AID &from_aid, const AnfNodePtr &node) {
-  ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kKernelPrepareData, from_aid.Name());
-  MS_EXCEPTION_IF_NULL(context);
-  MS_EXCEPTION_IF_NULL(tensor_address);
-  auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
-  auto kernel_tensors = graph_parameter_store->Fetch(outer_index, inner_index);
-  if (NeedRunMemTracker()) {
-    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, from_aid.Name(), node->fullname_with_scope(),
-                                                   from_aid.Name(), false);
-  }
-  bool in_callback = false;
-  for (const auto kernel_tensor : kernel_tensors) {
-    // Update dynamic shape and size.
-    MS_EXCEPTION_IF_NULL(kernel_tensor);
-    UpdateDynamicShapeAndSize(tensor, kernel_tensor, outer_index, inner_index);
-    const auto &device_tensor = kernel_tensor->device_address().get();
-    MS_EXCEPTION_IF_NULL(device_tensor);
-    if (TEST_FLAG(device_tensor->flag(), device::kDeviceAddressFlagNotUsed)) {
-      MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-        << from_aid.Name() << " do not use input outer index: " << outer_index << ", inner index: " << inner_index
-        << ", address: " << device_tensor << " from graph parameter store.";
-      static std::string store_name = "Parameter store no used";
-      device_tensor->IncreaseNewRefCount(store_name);
-      continue;
-    }
-    if (device_tensor == tensor_address.get()) {
-      continue;
-    }
-    graph_parameter_store->ResetAddrRefCount(outer_index, inner_index, device_tensor->GetDeviceType());
-
-    auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-      {device_tensor->device_name(), device_tensor->device_id()});
-
-    if (device_tensor->GetPtr() == nullptr) {
-      auto mem_type = device_tensor->original_ref_count() == SIZE_MAX ? memory::mem_pool::MemType::kWeight
-                                                                      : memory::mem_pool::MemType::kKernel;
-      device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, from_aid.Name(), mem_type, device_tensor->GetSize(),
-                                                     device_tensor);
-      MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
-      if (!device_context->device_res_manager_->AllocateMemory(device_tensor, kDefaultStreamIndex)) {
-        MS_LOG(EXCEPTION) << "Allocate memory failed, outer index: " << outer_index << ", inner index: " << inner_index
-                          << ", for device tensor: " << device_tensor->PrintInfo();
-      }
-    }
-
-    if (device_tensor->GetSize() == 0 || tensor_address->GetSize() == 0) {
-      MS_LOG(DEBUG) << from_aid.Name() << " input size is 0, outer index" << outer_index
-                    << ", inner index: " << inner_index << ", device tensor size: " << device_tensor->GetSize()
-                    << ", tensor address size: " << tensor_address->GetSize() << ".";
-      continue;
-    }
-
-    if (!AsyncCopy(device_tensor, tensor_address.get())) {
-      MS_LOG(EXCEPTION) << "Sync src addr: " << tensor_address.get() << ", to dst addr: " << device_tensor
-                        << " failed.";
-    }
-    if (!in_callback) {
-      graph_parameter_store->InsertDeviceTensorIntoCallback(tensor_address);
-      in_callback = true;
-    }
-  }
-}
-
-void SetMaxRefCountByStoreIndex(size_t outer_index, size_t inner_index) {
-  auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
-  for (const auto &kernel_tensor : graph_parameter_store->Fetch(outer_index, inner_index)) {
-    if (kernel_tensor == nullptr) {
-      continue;
-    }
-    auto address = kernel_tensor->device_address().get();
-    if (address != nullptr) {
-      address->set_new_ref_count(SIZE_MAX);
-      MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "Set new ref count to max for device address:" << address;
-    }
-  }
+  graph_parameter_store->InsertTensorDataIntoCallback(tensor->data_ptr());
 }
 
 KernelTensorPtr PrepareForNonTensorAddress(const std::pair<KernelWithIndex, size_t> &parameter_index, Tensor *tensor,
-                                           const DeviceContext *device_context, OpContext<KernelTensor> *const context,
-                                           const AID &from_aid) {
+                                           const AID &from_aid, bool is_first_user, size_t stream_id) {
   auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
   auto outer_index = parameter_index.second;
   auto inner_index = parameter_index.first.second;
-  auto kernel_tensor =
-    graph_parameter_store->FetchWithFreshRefMap(outer_index, inner_index, device_context->GetDeviceType());
+  auto kernel_tensor = graph_parameter_store->Fetch(outer_index, inner_index);
   MS_EXCEPTION_IF_NULL(kernel_tensor);
   auto device_tensor = kernel_tensor->device_address();
   if (device_tensor == nullptr) {
@@ -1144,15 +1062,16 @@ KernelTensorPtr PrepareForNonTensorAddress(const std::pair<KernelWithIndex, size
       shape = tensor->base_shape_ptr();
     }
     MS_EXCEPTION_IF_NULL(shape);
-    auto old_addr_info_ret =
-      graph_parameter_store->GetReleasePositionInfo({outer_index, inner_index}, device_context->GetDeviceType());
+    auto old_addr_info_ret = graph_parameter_store->GetReleasePositionInfo({outer_index, inner_index});
     if (!old_addr_info_ret.first) {
-      MS_LOG(EXCEPTION) << "Can not find info, outer index: " << outer_index << ", inner index: " << inner_index
-                        << ", type: " << device_context->GetDeviceType();
+      MS_LOG(EXCEPTION) << "Can not find info, outer index: " << outer_index << ", inner index: " << inner_index;
     }
     auto old_addr_info = old_addr_info_ret.second;
     TypePtr type = old_addr_info.first;
     MS_EXCEPTION_IF_NULL(type);
+    auto device_name = graph_parameter_store->GetParameterDeviceName(outer_index, inner_index);
+    auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
+      {device_name, MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
     auto new_device_tensor = device_context->device_res_manager_->CreateDeviceAddress();
     auto new_kernel_tensor =
       std::make_shared<kernel::KernelTensor>(new_device_tensor, shape, type, nullptr, ShapeVector{});
@@ -1169,39 +1088,25 @@ KernelTensorPtr PrepareForNonTensorAddress(const std::pair<KernelWithIndex, size
 
   auto front_node = parameter_index.first;
   MS_EXCEPTION_IF_NULL(front_node.first);
-  SyncHostToDeviceFromTensor(outer_index, inner_index, tensor, context, from_aid, front_node.first);
-  if (front_node.first->isa<Parameter>() &&
-      (common::AnfAlgo::IsParameterWeight(front_node.first->cast<ParameterPtr>()) ||
-       common::AnfAlgo::HasAbstractRef(front_node.first))) {
+  SyncHostToDeviceFromTensor(outer_index, inner_index, tensor, from_aid, front_node.first, is_first_user, stream_id);
+  if ((graph_parameter_store->GetPositionWeight(outer_index) || common::AnfAlgo::HasAbstractRef(front_node.first))) {
     tensor->set_device_address(device_tensor);
     device_tensor->set_new_ref_count(SIZE_MAX);
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "Set new ref count to max for device address:" << device_tensor;
-    SetMaxRefCountByStoreIndex(outer_index, inner_index);
   }
   graph_parameter_store->SetDeviceTensorPrepared(outer_index, inner_index, true);
   return kernel_tensor;
 }
 
-bool IsNeedSync(Tensor *tensor) {
-  if (tensor == nullptr) {
-    return false;
-  }
-  // Sub data need sync each step
-  auto data_ptr = tensor->data_ptr();
-  auto sync_flag = (data_ptr != nullptr && data_ptr->is_sub_data());
-  return sync_flag;
-}
-
 void SetNodeIndexForTensorAddress(const DeviceTensorPtr &device_tensor, const DeviceTensorPtr &tensor_address,
-                                  size_t outer_index, size_t inner_index, const DeviceContext *device_context) {
+                                  size_t outer_index, size_t inner_index) {
   auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
   if (device_tensor != nullptr) {
     const auto &node_with_index = device_tensor->GetNodeIndex();
     tensor_address->SetNodeIndex(node_with_index.first, node_with_index.second);
     tensor_address->set_flag(device_tensor->flag());
   } else {
-    auto old_addr_info_ret =
-      graph_parameter_store->GetReleasePositionInfo({outer_index, inner_index}, device_context->GetDeviceType());
+    auto old_addr_info_ret = graph_parameter_store->GetReleasePositionInfo({outer_index, inner_index});
     if (old_addr_info_ret.first) {
       auto old_addr_info = old_addr_info_ret.second;
       tensor_address->SetNodeIndex(old_addr_info.second.first, old_addr_info.second.second);
@@ -1209,155 +1114,134 @@ void SetNodeIndexForTensorAddress(const DeviceTensorPtr &device_tensor, const De
   }
 }
 
-bool IsParameter(const AnfNodePtr &node) {
-  MS_EXCEPTION_IF_NULL(node);
-  return node->isa<Parameter>() && common::AnfAlgo::IsParameterWeight(node->cast<ParameterPtr>());
-}
-
-bool IsSimilarDeviceAddress(const DeviceTensorPtr &device_tensor1, const DeviceTensorPtr &device_tensor2) {
-  return device_tensor1->GetDeviceType() == device_tensor2->GetDeviceType() &&
-         AnfAlgo::IsEquivalentFormat(device_tensor1->format(), device_tensor2->format()) &&
-         device_tensor1->type_id() == device_tensor2->type_id();
-}
-
-KernelTensorPtr PrepareParameter(const std::pair<KernelWithIndex, size_t> &parameter_index,
-                                 const DeviceContext *device_context, OpContext<KernelTensor> *const context,
-                                 const AID &from_aid) {
+KernelTensorPtr PrepareParameter(const std::pair<KernelWithIndex, size_t> &parameter_index, const AID &from_aid,
+                                 bool is_first_user, size_t stream_id, bool enable_parallel_dispatch) {
   // Check parameter prepared for concurrent
   auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
   auto outer_index = parameter_index.second;
   auto inner_index = parameter_index.first.second;
-  auto kernel_tensor =
-    graph_parameter_store->FetchWithFreshRefMap(outer_index, inner_index, device_context->GetDeviceType());
+  auto kernel_tensor = graph_parameter_store->Fetch(outer_index, inner_index);
   if (graph_parameter_store->GetDeviceTensorPrepared(outer_index, inner_index)) {
+    if (is_first_user && enable_parallel_dispatch) {
+      const auto &copy_func = graph_parameter_store->GetAsyncMemcpyFun(outer_index, inner_index);
+      if (copy_func != nullptr) {
+        copy_func(stream_id);
+        graph_parameter_store->SetAsyncMemcpyFun(outer_index, inner_index, nullptr);
+      }
+    }
     return kernel_tensor;
   }
   auto front_node = parameter_index.first;
-  MS_EXCEPTION_IF_NULL(front_node.first);
   MS_LOG(DEBUG) << "Prepare parameter input, actor: " << from_aid.Name() << ", outer index: " << outer_index
                 << ", inner index:" << inner_index << ", front node: " << front_node.first->DebugString();
   auto tensor = graph_parameter_store->FetchTensor(outer_index, front_node);
   MS_EXCEPTION_IF_NULL(tensor);
-  auto tensor_address = std::dynamic_pointer_cast<DeviceTensor>(tensor->device_address());
-  try {
-    // Prepare data if got tensor address.
-    if (tensor_address != nullptr) {
-      graph_parameter_store->SetDeviceTensorPrepared(outer_index, inner_index, true);
-      if (tensor_address->GetPtr() == nullptr && kernel_tensor != nullptr) {
-        // Tensor address may not from runtime, sync data with tensor.
-        SyncHostToDeviceFromTensor(outer_index, inner_index, tensor, context, from_aid, front_node.first);
-        auto device_tensor = kernel_tensor->device_address();
-        MS_EXCEPTION_IF_NULL(device_tensor);
-        tensor->set_device_address(device_tensor);
-        UpdateRefCount(device_tensor.get(), true);
-        device_tensor->set_new_ref_count(SIZE_MAX);
-        return kernel_tensor;
-      }
-      if (IsNeedSync(tensor)) {
-        if (!tensor_address->AsyncHostToDevice(LongToSize(tensor->data().nbytes()), tensor->data_type(),
-                                               tensor->data_ptr(), tensor->device_info().host_format_)) {
-          MS_LOG(EXCEPTION) << "Sync tensor host to device failed.";
-        }
-      }
+  auto tensor_address = std::static_pointer_cast<DeviceTensor>(tensor->device_address());
 
-      tensor_address->set_new_ref_count(SIZE_MAX);
-      MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "Set new ref count to max for device address:" << tensor_address;
-      MS_EXCEPTION_IF_NULL(kernel_tensor);
-      auto device_tensor = kernel_tensor->device_address();
-      if (tensor_address == device_tensor) {
-        UpdateRefCount(tensor_address.get(), true);
-        if (graph_parameter_store->HasHeter(outer_index, inner_index)) {
-          SyncDeviceTensorsInParameterStore(outer_index, inner_index, tensor_address, tensor, context, from_aid,
-                                            front_node.first);
-        }
-        return kernel_tensor;
+  // Prepare data if got tensor address.
+  if (tensor_address != nullptr) {
+    graph_parameter_store->SetDeviceTensorPrepared(outer_index, inner_index, true);
+    tensor_address->set_new_ref_count(SIZE_MAX);
+    UpdateRefCount(tensor_address.get(), true);
+    if (tensor_address->GetPtr() == nullptr && kernel_tensor != nullptr) {
+      // Tensor address may not from runtime, sync data with tensor.
+      if (enable_parallel_dispatch) {
+        MS_LOG(EXCEPTION) << "Can not sync a tensor which has sub data for parallel dispatch kernel mode currently.";
       }
-      // Set tensor address to graph parameter store.
-      if (device_tensor == nullptr || IsSimilarDeviceAddress(tensor_address, device_tensor)) {
-        MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-          << "Refresh store device tensor, from: " << tensor_address.get() << ", to: " << device_tensor.get()
-          << ", outer index: " << outer_index << ", inner index: " << inner_index
-          << ", device type: " << device::GetDeviceNameByType(tensor_address->GetDeviceType());
-        kernel_tensor->set_device_address(tensor_address);
-        SetNodeIndexForTensorAddress(device_tensor, tensor_address, outer_index, inner_index, device_context);
-        // device tensor may be null.
-        device_tensor = tensor_address;
+      if (!tensor_address->AsyncHostToDevice(LongToSize(tensor->data().nbytes()), tensor->data_type(),
+                                             tensor->data_ptr(), tensor->device_info().host_format_)) {
+        MS_LOG(EXCEPTION) << "Sync tensor host to device failed.";
       }
-      SyncDeviceTensorsInParameterStore(outer_index, inner_index, tensor_address, tensor, context, from_aid,
-                                        front_node.first);
-      if (IsParameter(front_node.first)) {
-        SetMaxRefCountByStoreIndex(outer_index, inner_index);
-      }
-      // use device tensor from graph.
-      UpdateRefCount(device_tensor.get(), true);
-      device_tensor->set_new_ref_count(SIZE_MAX);
-      if (device_tensor != nullptr && front_node.first->isa<Parameter>() &&
-          common::AnfAlgo::IsParameterWeight(front_node.first->cast<ParameterPtr>())) {
-        tensor->set_device_address(device_tensor);
-      }
-
+      graph_parameter_store->InsertTensorDataIntoCallback(tensor->data_ptr());
+      kernel_tensor->set_device_address(tensor_address);
       return kernel_tensor;
     }
 
-    // Prepare data for kernel tensor not from tensor.
-    kernel_tensor = PrepareForNonTensorAddress(parameter_index, tensor, device_context, context, from_aid);
-  } catch (const std::exception &e) {
-    MsException::Instance().SetException();
-    std::string error_info =
-      "#umsg#Kernel error:#umsg#fetch parameter failed, actor [" + from_aid.Name() + "], exception: " + e.what();
-    MS_EXCEPTION_IF_NULL(context);
-    if ((*context).error_info_.empty()) {
-      (*context).error_info_ = error_info;
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "Set new ref count to max for device address:" << tensor_address;
+    auto device_tensor = kernel_tensor->device_address();
+    if (tensor_address == device_tensor) {
+      return kernel_tensor;
     }
-    (*context).SetFailed(kFailure);
+
+    // Set tensor address to kernel tensor.
+    MS_LOG(DEBUG) << "Set tensor address to kernel tensor, tensor address: " << tensor_address->PrintInfo()
+                  << ", old device address: " << ((device_tensor == nullptr) ? "nullptr" : device_tensor->PrintInfo())
+                  << ", outer index: " << outer_index << ", inner index: " << inner_index
+                  << ", kernel tensor: " << kernel_tensor.get();
+    SetNodeIndexForTensorAddress(device_tensor, tensor_address, outer_index, inner_index);
+    kernel_tensor->set_device_address(tensor_address);
+    UpdateDynamicShapeAndSize(tensor, kernel_tensor, outer_index, inner_index);
+    return kernel_tensor;
   }
+
+  // Prepare data for kernel tensor not from tensor.
+  kernel_tensor = PrepareForNonTensorAddress(parameter_index, tensor, from_aid, is_first_user, stream_id);
+
   return kernel_tensor;
 }
 
-KernelTensorPtr FetchParameter(const std::pair<KernelWithIndex, size_t> &parameter_index,
-                               OpContext<KernelTensor> *const context, const DeviceContext *device_context,
-                               const AID &from_aid) {
+KernelTensorPtr FetchParameter(const std::pair<KernelWithIndex, size_t> &parameter_index, const AID &from_aid,
+                               bool is_first_user, size_t stream_id, bool enable_parallel_dispatch) {
   auto front_node = parameter_index.first.first;
-  MS_EXCEPTION_IF_NULL(front_node);
   auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
   auto outer_index = parameter_index.second;
   auto inner_index = parameter_index.first.second;
-  DeviceContext *real_device_context = const_cast<DeviceContext *>(device_context);
-  // Control node may not have device context.
-  if (real_device_context == nullptr) {
-    auto kernel_tensors = graph_parameter_store->Fetch(outer_index, inner_index);
-    if (kernel_tensors.size() != 1) {
-      MS_LOG(EXCEPTION) << "Control node should have only one device tensor in graph parameter store when device "
-                           "context is null, but got "
-                        << kernel_tensors.size();
-    }
-    MS_EXCEPTION_IF_NULL(kernel_tensors[0]);
-    auto device_name = kernel_tensors[0]->device_name();
-    auto device_id = kernel_tensors[0]->device_id();
-    real_device_context =
-      device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_name, device_id});
-  }
-  MS_EXCEPTION_IF_NULL(real_device_context);
+  graph_parameter_store->CheckIndexValid(outer_index, inner_index);
   MS_LOG(DEBUG) << "Fetch parameter for actor: " << from_aid.Name() << ", front node: " << front_node->DebugString()
-                << ", with index: " << parameter_index.first.second << ", addr index: " << parameter_index.second
-                << ", device type: " << real_device_context->GetDeviceType();
+                << ", with index: " << parameter_index.first.second << ", addr index: " << parameter_index.second;
+
+  // The parameter is not concurrently used, do not use lock.
+  if (!graph_parameter_store->IsConcurrentlyUse(outer_index, inner_index)) {
+    // Return device tensor from graph parameter store if data prepared.
+    auto kernel_tensor = graph_parameter_store->Fetch(outer_index, inner_index);
+    if (graph_parameter_store->GetDeviceTensorPrepared(outer_index, inner_index)) {
+      MS_EXCEPTION_IF_NULL(kernel_tensor);
+      // parallel dispatch kernel can not support multi graph parallel execute, no need lock.
+      if (is_first_user && enable_parallel_dispatch) {
+        const auto &copy_func = graph_parameter_store->GetAsyncMemcpyFun(outer_index, inner_index);
+        if (copy_func != nullptr) {
+          copy_func(stream_id);
+          graph_parameter_store->SetAsyncMemcpyFun(outer_index, inner_index, nullptr);
+        }
+      }
+      return kernel_tensor;
+    }
+
+    auto prepared_kernel_tensor =
+      PrepareParameter(parameter_index, from_aid, is_first_user, stream_id, enable_parallel_dispatch);
+    MS_EXCEPTION_IF_NULL(prepared_kernel_tensor);
+    auto is_weight = graph_parameter_store->GetPositionWeight(outer_index);
+    if (!is_weight && prepared_kernel_tensor->device_address() != nullptr &&
+        prepared_kernel_tensor->device_address()->original_ref_count() == SIZE_MAX) {
+      graph_parameter_store->InsertNonWeightRefMaxInputs(outer_index, inner_index);
+    }
+    return prepared_kernel_tensor;
+  }
 
   // Return device tensor from graph parameter store if data prepared.
   static std::shared_mutex mtx;
   std::shared_lock<std::shared_mutex> read_lock(mtx);
-  auto kernel_tensor = graph_parameter_store->Fetch(outer_index, inner_index, real_device_context->GetDeviceType());
+  auto kernel_tensor = graph_parameter_store->Fetch(outer_index, inner_index);
   if (graph_parameter_store->GetDeviceTensorPrepared(outer_index, inner_index)) {
     MS_EXCEPTION_IF_NULL(kernel_tensor);
+    // parallel dispatch kernel can not support multi graph parallel execute, no need lock.
+    if (is_first_user && enable_parallel_dispatch) {
+      const auto &copy_func = graph_parameter_store->GetAsyncMemcpyFun(outer_index, inner_index);
+      if (copy_func != nullptr) {
+        copy_func(stream_id);
+        graph_parameter_store->SetAsyncMemcpyFun(outer_index, inner_index, nullptr);
+      }
+    }
     return kernel_tensor;
   }
 
   read_lock.unlock();
   std::unique_lock<std::shared_mutex> write_lock(mtx);
-  auto prepared_kernel_tensor = PrepareParameter(parameter_index, real_device_context, context, from_aid);
+  auto prepared_kernel_tensor =
+    PrepareParameter(parameter_index, from_aid, is_first_user, stream_id, enable_parallel_dispatch);
   MS_EXCEPTION_IF_NULL(prepared_kernel_tensor);
-  bool is_non_weight_parameter =
-    front_node->isa<Parameter>() && (!common::AnfAlgo::IsParameterWeight(front_node->cast<ParameterPtr>()));
-  if (is_non_weight_parameter && prepared_kernel_tensor->device_address() != nullptr &&
+  auto is_weight = graph_parameter_store->GetPositionWeight(outer_index);
+  if (!is_weight && prepared_kernel_tensor->device_address() != nullptr &&
       prepared_kernel_tensor->device_address()->original_ref_count() == SIZE_MAX) {
     graph_parameter_store->InsertNonWeightRefMaxInputs(outer_index, inner_index);
   }

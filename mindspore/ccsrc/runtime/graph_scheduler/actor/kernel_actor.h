@@ -119,6 +119,16 @@ class KernelActor : public DebugAwareActor {
   }
   std::vector<KernelTensor *> GetOutputDeviceTensors() { return output_launch_tensors_; }
 
+  void set_insert_input_event(bool insert_input_event) { insert_input_event_ = insert_input_event; }
+
+  void set_is_first_used_param(bool is_first_used_param, size_t index) {
+    if (index >= is_first_used_params_.size()) {
+      MS_LOG(EXCEPTION) << "Out of range for setting first used param, index: " << index
+                        << ", size: " << is_first_used_params_.size();
+    }
+    is_first_used_params_[index] = is_first_used_param;
+  }
+
   // Reset state for UCE.
   void ResetState() override;
 
@@ -251,10 +261,12 @@ class KernelActor : public DebugAwareActor {
   bool is_stream_recv_actor_{false};
   // Flag for indicating if current actor is multi-thread safe, which was generate at compile time.
   bool is_multi_stream_safe_{false};
-  // Record kernel actor weight input for input optimize.
+  // Flag for record weight.
   std::vector<bool> is_weight_;
   // Flag for aclop or reshape that does not support non-contiguous input.
   bool need_check_tensor_contiguous_{false};
+  // Flag for kernel actor should insert event for parameter.
+  bool insert_input_event_{false};
 
  protected:
   friend class GraphScheduler;
@@ -278,6 +290,9 @@ class KernelActor : public DebugAwareActor {
   void FetchWorkspaceDeviceTensor();
   // Need copy when the data type or format between real parameters and formal parameters are inconsistent.
   void CopyInputDeviceTensor(KernelTensorPtr kernel_tensor, size_t input_index, OpContext<KernelTensor> *const context);
+  // Use for graph parameter.
+  void CopyParameterDeviceTensor(KernelTensorPtr kernel_tensor, size_t input_index,
+                                 OpContext<KernelTensor> *const context, size_t stream_id);
   void UpdateDeviceTensorCopyStore(DeviceTensor *const new_device_tensor, DeviceTensor *const input_device_tensor,
                                    size_t input_index);
   // The processing before kernel launch: update the info of kernel launch.
@@ -335,6 +350,7 @@ class KernelActor : public DebugAwareActor {
   mindspore::HashMap<size_t, size_t> increase_ref_count_size_;
   std::vector<bool> is_output_kernel_;
   std::vector<bool> is_monad_input_;
+  std::vector<bool> is_first_used_params_;
   bool is_mc2_kernel_{false};
   // This flag are only valid in control flow. In inline control flow, due to the existence of switch branches, some
   // kernel actors will not be executed, and the condition switch actor controls whether to execute. It points to

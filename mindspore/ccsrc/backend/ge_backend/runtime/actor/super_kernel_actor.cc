@@ -352,12 +352,13 @@ void SuperKernelActor::SendDebugReq(OpContext<KernelTensor> *const context) {
   OnDebugFinish(context);
 }
 
-bool SuperKernelActor::CopyInputDataPersistedHandle(DeviceTensor *input_device_tensor,
+bool SuperKernelActor::CopyInputDataPersistedHandle(const KernelTensorPtr &input_kernel_tensor,
                                                     const KernelTensorPtr &node_kernel_tensor, size_t i) {
+  auto &input_device_tensor = input_kernel_tensor->device_address();
   auto &node_device_tensor = node_kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(node_device_tensor);
   if ((input_device_tensor->GetDeviceType() == node_device_tensor->GetDeviceType()) &&
-      AnfAlgo::IsEquivalentFormat(input_device_tensor->format(), node_device_tensor->format())) {
+      AnfAlgo::IsEquivalentFormat(input_kernel_tensor->format(), node_kernel_tensor->format())) {
     MS_LOG(DEBUG) << "Not need copy for device tensor:" << node_device_tensor << " ptr:" << node_device_tensor->GetPtr()
                   << " index:" << i << " for actor:" << GetAID();
     // Set the ptr from input_device_tensor and set mem pool false to avoid memory double management for
@@ -470,7 +471,7 @@ bool SuperKernelActor::CopyInputData(const OpContext<KernelTensor> *context, con
     // If the input is not a persist device address, in a heterogeneous scenario, a new device address needs to
     // be created. And set ptr to node device address to support the zero copy of graph input nodes.
     if (!node_device_tensor->is_ptr_persisted()) {
-      if (CopyInputDataPersistedHandle(input_device_tensor, node_device_kernel_tensor, i)) {
+      if (CopyInputDataPersistedHandle(input_kernel_tensors_[i], node_device_kernel_tensor, i)) {
         continue;
       }
       copy_device_tensor = copy_input_kernel_tensors_[i]->device_address();

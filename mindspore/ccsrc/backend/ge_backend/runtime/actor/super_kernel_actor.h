@@ -83,8 +83,8 @@ class SuperKernelActor : public DebugAwareActor {
   std::queue<std::vector<KernelTensorPtr>> memory_free_lists_;
 
  private:
-  bool CopyInputDataPersistedHandle(DeviceTensor *input_device_tensor, const KernelTensorPtr &node_kernel_tensor,
-                                    size_t i);
+  bool CopyInputDataPersistedHandle(const KernelTensorPtr &input_kernel_tensor,
+                                    const KernelTensorPtr &node_kernel_tensor, size_t i);
 
   void FetchPersistentDeviceTensor();
 

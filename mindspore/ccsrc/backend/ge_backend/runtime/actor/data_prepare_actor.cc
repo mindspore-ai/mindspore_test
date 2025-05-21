@@ -279,7 +279,8 @@ void DataPrepareActor::UpdateDeviceAddressForDataNode(const AnfNodePtr &input_no
   // If tensor address and device address are different (heterogeneous scenarios), or device address is persisted
   // Update device address data in data source actor process.
   if (device_address->is_ptr_persisted() || (tensor_address->GetDeviceType() != device_address->GetDeviceType()) ||
-      (!AnfAlgo::IsEquivalentFormat(tensor_address->format(), device_address->format())) ||
+      (!AnfAlgo::IsEquivalentFormat(kernel::GetFormatFromStrToEnum(tensor_address->format()),
+                                    kernel::GetFormatFromStrToEnum(device_address->format()))) ||
       (tensor_address->type_id() != device_address->type_id())) {
     MS_LOG(DEBUG) << "Cannot update address of " << input_node->DebugString();
     return;
@@ -994,7 +995,8 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
       // In the scenario of training + inference , the device address of the weight node can not be changed when
       // multi-graphs sink mode is set.
       if (device_tensor->is_ptr_persisted() ||
-          !AnfAlgo::IsEquivalentFormat(host_tensor_address->format(), device_tensor->format())) {
+          !AnfAlgo::IsEquivalentFormat(kernel::GetFormatFromStrToEnum(host_tensor_address->format()),
+                                       kernel::GetFormatFromStrToEnum(device_tensor->format()))) {
         if ((device_tensor->GetPtr() == nullptr) &&
             (!res_manager->AllocateMemory(device_tensor.get(), kDefaultStreamIndex))) {
           SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(real_strategy_, *context, backend_node->fullname_with_scope(),

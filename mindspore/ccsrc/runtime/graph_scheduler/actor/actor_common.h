@@ -514,6 +514,10 @@ size_t GetDefragMemoryStepFreq();
 // Copy data from src_device_tensor to dst_device_tensor.
 bool Copy(const DeviceTensor *dst_device_tensor, const DeviceTensor *src_device_tensor);
 
+// Use async copy should use callback to avoid src device tenor released.
+bool AsyncCopy(const DeviceTensor *dst_device_tensor, const DeviceTensor *src_device_tensor,
+               size_t stream_id = SIZE_MAX);
+
 void UpdateRefCount(DeviceTensor *const device_tensor, bool is_max_ref_count = false);
 // Update the reference count of device tensor by the output index of node.
 void UpdateRefCount(const AnfNodePtr &node, size_t output_idx, bool is_max_ref_count = false);
@@ -545,10 +549,11 @@ mindspore::HashMap<size_t, size_t> GetRepeatDeviceAddressIndexPair(const std::ve
 // Check a graph is from inference phase.
 bool IsInferPhase(const std::string &phase);
 TensorPtr FetchInputTensorByArg(const VectorRef &args, size_t arg_index, const KernelWithIndex &front_node);
-KernelTensorPtr FetchParameter(const std::pair<KernelWithIndex, size_t> &parameter_index,
-                               OpContext<KernelTensor> *const context, const DeviceContext *device_context,
-                               const AID &from_aid);
+KernelTensorPtr FetchParameter(const std::pair<KernelWithIndex, size_t> &parameter_index, const AID &from_aid,
+                               bool is_first_user = true, size_t stream_id = SIZE_MAX,
+                               bool enable_parallel_dispath = false);
 bool IsEmptySequenceTensor(tensor::Tensor *tensor);
+size_t FetchInputTensorIndex(const KernelWithIndex &front_node);
 
 inline bool NeedRunMemTracker() {
   static bool is_enable_mem_tracker = device::tracker::MemTrackerManager::GetInstance().IsEnabled();

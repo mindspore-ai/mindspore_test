@@ -1032,18 +1032,6 @@ void DumpParameterStore(std::ofstream &ofs) {
           << "\n";
     }
   }
-  ofs << "\theter device tensor:\n";
-  const auto &heter_device_tensors = graph_parameter_store->GetAllHeter();
-  for (size_t outer_index = 0; outer_index < heter_device_tensors.size(); ++outer_index) {
-    for (size_t inner_index = 0; inner_index < heter_device_tensors[outer_index].size(); ++inner_index) {
-      ofs << "\t\touter_index:" << outer_index << " inner index:" << inner_index
-          << " user cnt:" << heter_device_tensors[outer_index][inner_index].second << " device tensor:"
-          << (heter_device_tensors[outer_index][inner_index].first == nullptr
-                ? "null"
-                : heter_device_tensors[outer_index][inner_index].first->PrintInfo())
-          << "\n";
-    }
-  }
 }
 
 void DumpSuperKernelActors(const std::vector<SuperKernelActorPtr> &actors, std::ofstream &ofs) {
@@ -1286,8 +1274,7 @@ void FetchGraphParameterStore(const AbstractActor *const actor, ActorInputMap *a
     }
     auto outer_idx = parameter_info.second;
     auto inner_idx = parameter_info.first.second;
-    auto kernel_tensor =
-      graph_parameter_store->Fetch(outer_idx, inner_idx, actor->device_contexts()[0]->GetDeviceType());
+    auto kernel_tensor = graph_parameter_store->Fetch(outer_idx, inner_idx);
     MS_EXCEPTION_IF_NULL(kernel_tensor);
     (*actor_inputs)[index] = {input_name, kernel_tensor};
   }
