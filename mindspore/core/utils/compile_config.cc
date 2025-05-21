@@ -49,8 +49,10 @@ void CompileConfigManager::CollectCompileConfig() {
         compile_config_[key] = value;
         MS_LOG(DEBUG) << "Key: " << key << ", Value: " << value;
       } else {
-        MS_LOG(WARNING) << "MS_JIT does not support parameter: " << key;
+        MS_LOG(EXCEPTION) << "MS_JIT does not support parameter: " << key;
       }
+    } else if (item != "0" && item != "1") {
+      MS_LOG(EXCEPTION) << "MS_JIT does not support parameter: " << item;
     }
   }
 
