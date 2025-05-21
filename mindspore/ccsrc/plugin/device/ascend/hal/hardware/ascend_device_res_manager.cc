@@ -294,6 +294,11 @@ bool AscendDeviceResManager::CreateStreamWithPriority(size_t *stream_id, int32_t
   return ascend_res_manager_->CreateStreamWithPriority(stream_id, priority);
 }
 
+bool AscendDeviceResManager::DestroyStream(size_t stream_id) const {
+  MS_EXCEPTION_IF_NULL(ascend_res_manager_);
+  return ascend_res_manager_->DestroyStream(stream_id);
+}
+
 size_t AscendDeviceResManager::QueryStreamSize() const {
   MS_EXCEPTION_IF_NULL(ascend_res_manager_);
   return ascend_res_manager_->QueryStreamSize();
