@@ -133,6 +133,61 @@ def test_deepseekv3_cell_dp2mp2ep2pp2mb4gas1bs1_deredundency_8p_gmm():
         f"where training loss: {loss_list}, golden_loss: {golden_loss}."
 
 
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='allcards', essential_mark='essential')
+def test_deepseekv3_cell_make_tuple_tuple_get_item_cross_graph():
+    """
+    Feature: test deepseekv3 cell make_tuple_tuple_get_item_cross_graph 8p gmm
+    Description: test deepseekv3 cell make_tuple_tuple_get_item_cross_graph 8p gmm
+    Expectation: st pass
+    """
+    case_name = "deepseekv3_cell_make_tuple_tuple_get_item_cross_graph"
+    sh_path = os.path.split(os.path.realpath(__file__))[0]
+
+    parallel_speed_up_json = {'matmul_grad_comm_overlap': True,
+                              "pp_1f1b_overlap": "MorphAllGather,MorphReduceScatter"}
+
+    deepseek_config = DeepseekConfig(parallel_speed_up_json=parallel_speed_up_json,
+                                     use_gmm=True,
+                                     enable_deredundency=True,
+                                     npu_nums_per_device=2)
+
+    file_path = prepare_deepseekv3_testcase_env(case_name, deepseek_config)
+
+    device_num = 8
+    hccl_if_base_port = 63334
+    master_port = 7123
+
+    # set env for training
+    env_cmd = 'export MS_DEV_GRAPH_KERNEL_FLAGS="--enable_pass=grouped_matmul_assignadd_fusion";'
+    env_cmd += 'export MS_DEV_RUNTIME_CONF="memory_statistics:True";'
+    env_cmd += 'export MS_MEMORY_STATISTIC=1'
+
+    os.system(f"{env_cmd}; bash {sh_path}/run_llm.sh {device_num} \
+    {file_path} {case_name} {master_port} {hccl_if_base_port} pp")
+
+    # check train over
+    check_pair = {"Training Over": 1}
+    real_log_path = log_path_preprocess(case_name, device_num)
+    for log in real_log_path:
+        check_log(log, check_pair)
+        # self-test results: 2614M, memory should be lower than 2614+50=2664M
+        check_peak_memory(log, "2664")
+
+    # check loss
+    # set the training log path
+    log_path = f'{sh_path}/{case_name}/worker_7.log'
+
+    # extract Training loss
+    loss_list = extract_losses_from_log(log_path)
+
+    # set golden_loss
+    golden_loss = [13.509, 13.509, 13.507, 13.507, 13.501, 13.503]
+    if_equal = golden_loss == loss_list
+    assert if_equal, \
+        f"Training loss is different from the golden loss, " \
+        f"where training loss: {loss_list}, golden_loss: {golden_loss}."
+
+
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='allcards', essential_mark='essential')
 def test_deepseekv3_cell_dp2mp2ep2pp2mb4gas1bs1_8p_bmm():
     """

@@ -64,6 +64,23 @@ class DeepseekConfig:
         self.moe_intermediate_size = moe_intermediate_size
 
 
+def replace_transpose_with_reshape(model_path):
+    old1 = "        freqs_cos = self.transpose(freqs_cos, (0, 2, 1, 3))"
+    new1 = "        bs, n, seq_len, d = self.shape(freqs_cons)\\n"
+    new2 = "        freqs_cos = self.reshape(freqs_cos, (bs, seq_len, n, d))\\n"
+    new3 = "        freqs_sin = self.reshape(freqs_sin, (bs, seq_len, n, d))\\n"
+    new = new1 + new2 + new3
+    sed_cmd = r"sed -i '/{}/i\{}' {}".format(old1, new, model_path)
+    status, _ = subprocess.getstatusoutput(sed_cmd)
+    if status != 0:
+        raise ValueError("Failed to update {}".model_path)
+    old2 = "transpose(freqs"
+    sed_cmd = r"sed -i '/{}/d' {}".format(old2, model_path)
+    status, _ = subprocess.getstatusoutput(sed_cmd)
+    if status != 0:
+        raise ValueError("Failed to update {}".model_path)
+
+
 def prepare_deepseekv3_testcase_env(testcase_name, net_config):
     sh_path = os.path.split(os.path.realpath(__file__))[0]
     # 1. create testcase folder
@@ -81,6 +98,10 @@ def prepare_deepseekv3_testcase_env(testcase_name, net_config):
             raise ValueError("Failed to update parallel_speed_up.json")
     if not status:
         raise Exception("Failed to replace config in {}".format(file_path))
+    # 6. replace transpose with reshape
+    model_path = f'{sh_path}/../mindformers/research/deepseek3/deepseek2_model.py'
+    replace_transpose_with_reshape(model_path)
+
     return file_path
 
 

@@ -250,6 +250,31 @@ static std::shared_ptr<TensorLayout> FindPrevParallelCareNodeLayout(const AnfNod
   return nullptr;
 }
 
+static CNodePtr GetArgumentByParameter(const AnfNodePtr &node) {
+  auto fg = node->func_graph();
+  auto parameters = fg->parameters();
+  auto iter = std::find(parameters.begin(), parameters.end(), node);
+  if (iter == parameters.end()) {
+    return nullptr;
+  }
+  auto pos = std::distance(parameters.begin(), iter);
+  auto fg_used_map = fg->func_graph_cnodes_index();
+  for (auto &cur_fg_use : fg_used_map) {
+    if (cur_fg_use.first->second != 0) {
+      continue;
+    }
+    auto cur_fg = cur_fg_use.first->first->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cur_fg);
+    auto argument = cur_fg->input(pos + 1);
+    if (argument->isa<Parameter>()) {
+      return GetArgumentByParameter(argument);
+    } else if (argument->isa<CNode>()) {
+      return argument->cast<CNodePtr>();
+    }
+  }
+  return nullptr;
+}
+
 std::shared_ptr<TensorLayout> FindPrevLayout(const AnfNodePtr &node, bool *is_input_param);
 std::shared_ptr<TensorLayout> FindPrevLayoutByParameter(const AnfNodePtr &node, bool *is_input_param) {
   auto node_param_ptr = node->cast<ParameterPtr>();
@@ -272,6 +297,42 @@ std::shared_ptr<TensorLayout> FindPrevLayoutByParameter(const AnfNodePtr &node, 
   return nullptr;
 }
 
+std::shared_ptr<TensorLayout> FindPrevLayoutByCallNode(const CNodePtr &cnode, int64_t tuple_index,
+                                                       bool *is_input_param) {
+  MS_EXCEPTION_IF_NULL(cnode);
+  auto fg = GetValueNode<FuncGraphPtr>(cnode->input(0));
+  auto pre_node = GetRealKernelNode(fg->output(), tuple_index, nullptr).first;
+  if (!pre_node) {
+    return nullptr;
+  }
+  return FindPrevLayout(pre_node, is_input_param);
+}
+
+std::shared_ptr<TensorLayout> FindPreLayoutForTupleGetitem(const CNodePtr &cnode, bool *is_input_param) {
+  auto tuple_index = GetTupleGetItemIndex(cnode);
+  CNodePtr tuple_getitem_real_input = nullptr;
+  auto tuple_getitem_input = cnode->input(1);
+  if (tuple_getitem_input->isa<CNode>()) {
+    tuple_getitem_real_input = tuple_getitem_input->cast<CNodePtr>();
+  } else if (tuple_getitem_input->isa<Parameter>()) {
+    tuple_getitem_real_input = GetArgumentByParameter(tuple_getitem_input);
+  }
+  if (IsPrimitiveCNode(tuple_getitem_real_input, prim::kPrimMakeTuple)) {
+    return FindPrevLayout(tuple_getitem_real_input->input(tuple_index + 1), is_input_param);
+  }
+  MS_EXCEPTION_IF_NULL(tuple_getitem_real_input);
+  if (IsValueNode<FuncGraph>(tuple_getitem_real_input->input(0))) {
+    return FindPrevLayoutByCallNode(tuple_getitem_real_input, tuple_index, is_input_param);
+  }
+  auto layout_ptr = FindPrevParallelCareNodeLayout(tuple_getitem_real_input, LongToSize(tuple_index));
+  if (!layout_ptr) {
+    MS_LOG_WITH_NODE(EXCEPTION, cnode)
+      << " Failure:FindPrevLayout failed, tuple_getitem before reshape, but there does not exit a "
+         "parallel care node before tuple_getitem!";
+  }
+  return layout_ptr;
+}
+
 std::shared_ptr<TensorLayout> FindPrevLayout(const AnfNodePtr &node, bool *is_input_param) {
   if (node->isa<Parameter>()) {
     return FindPrevLayoutByParameter(node, is_input_param);
@@ -281,12 +342,7 @@ std::shared_ptr<TensorLayout> FindPrevLayout(const AnfNodePtr &node, bool *is_in
   }
   CNodePtr cnode = node->cast<CNodePtr>();
   if (IsValueNode<FuncGraph>(cnode->input(0))) {
-    auto fg = GetValueNode<FuncGraphPtr>(cnode->input(0));
-    auto pre_node = GetRealKernelNode(fg->output(), -1, nullptr).first;
-    if (!pre_node) {
-      return nullptr;
-    }
-    return FindPrevLayout(pre_node, is_input_param);
+    return FindPrevLayoutByCallNode(cnode, -1, is_input_param);
   }
   if (!IsValueNode<Primitive>(cnode->input(0))) {
     return nullptr;
@@ -308,25 +364,7 @@ std::shared_ptr<TensorLayout> FindPrevLayout(const AnfNodePtr &node, bool *is_in
   ValueNodePtr prim_anf_node = cnode->input(0)->cast<ValueNodePtr>();
   PrimitivePtr prim = prim_anf_node->value()->cast<PrimitivePtr>();
   if (prim->name() == prim::kPrimTupleGetItem->name()) {
-    auto tuple_index = GetTupleGetItemIndex(cnode);
-    auto tuple_getitem_input = cnode->input(1)->cast<CNodePtr>();
-    MS_EXCEPTION_IF_NULL(tuple_getitem_input);
-    if (IsValueNode<FuncGraph>(tuple_getitem_input->input(0))) {
-      auto fg = GetValueNode<FuncGraphPtr>(tuple_getitem_input->input(0));
-      auto pre_node = GetRealKernelNode(fg->output(), tuple_index, nullptr).first;
-      if (!pre_node) {
-        return nullptr;
-      }
-      return FindPrevLayout(pre_node, is_input_param);
-    }
-    auto layout_ptr = FindPrevParallelCareNodeLayout(cnode->input(1), LongToSize(tuple_index));
-    if (!layout_ptr) {
-      MS_LOG_WITH_NODE(EXCEPTION, cnode)
-        << " Failure:FindPrevLayout failed, tuple_getitem before reshape, but there does not exit a "
-           "parallel care node "
-           "before tuple_getitem!";
-    }
-    return layout_ptr;
+    return FindPreLayoutForTupleGetitem(cnode, is_input_param);
   }
   for (size_t index = 0; index < cnode->size(); ++index) {
     if (prim->name() == DEPEND && index != 1) {
