@@ -15,9 +15,9 @@
 
 import numpy as np
 import mindspore as ms
-from mindspore.communication.management import init
 from mindspore import nn, context
 from mindspore.context import ParallelMode
+from mindspore.communication.management import init
 from mindspore.nn.utils import no_init_parameters
 from mindspore.parallel.auto_parallel import AutoParallel
 from mindspore.train import Model
