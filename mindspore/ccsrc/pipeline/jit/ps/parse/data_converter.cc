@@ -746,6 +746,7 @@ ValuePtr ConvertCellObjToFuncGraph(const py::object &obj, const ValuePtrList &ar
   if (py::hasattr(obj, CELL_IN_STRATEGY)) {
     auto cell_in_strategy_obj = py::getattr(obj, CELL_IN_STRATEGY);
     if (!cell_in_strategy_obj.is_none()) {
+      func_graph->set_flag(FUNC_GRAPH_FLAG_DEFER_INLINE, true);
       FuncGraphPtr shard_graph = CreateShardFuncGraph(obj, func_graph);
       return shard_graph;
     }
