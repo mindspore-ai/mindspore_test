@@ -22,7 +22,7 @@ from mindspore.common.api import _pynative_executor
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-@pytest.mark.parametrize('dtype', [ms.float8_e4m3fn, ms.float8_e5m2, ms.hifloat8])
+@pytest.mark.parametrize('dtype', ["fp8_e4m3fn", "fp8_e5m2", "hifp8"])
 def test_ops_quant_matmul_fp8(dtype):
     """
     Feature: ops.quant_matmul.
@@ -30,6 +30,17 @@ def test_ops_quant_matmul_fp8(dtype):
     Expectation: expect correct errors.
     """
     ms.context.set_context(mode=ms.PYNATIVE_MODE)
+
+    try:
+        from mindspore import float8_e4m3fn, float8_e5m2, hifloat8
+        dtypes = {
+            "fp8_e4m3fn": float8_e4m3fn,
+            "fp8_e5m2": float8_e5m2,
+            "hifp8": hifloat8,
+        }
+        dtype = dtypes[dtype]
+    except ImportError:
+        dtype = ms.float16
 
     x1_np = np.random.randn(2, 3, 4).astype(np.float32)
     x2_np = np.random.randn(2, 4, 5).astype(np.float32)

@@ -56,7 +56,7 @@ int64_t CheckAndGetGroups(const std::vector<int64_t> &group_sizes_list) {
   return groups;
 }
 
-BaseTensorPtr QuantMatmulFastEmpty(const ShapeVector &shape, const TypeId &type) {
+TensorPtr QuantMatmulFastEmpty(const ShapeVector &shape, const TypeId &type) {
   std::string device_name = "Ascend";
 
   auto ms_context = MsContext::GetInstance();
@@ -70,7 +70,7 @@ BaseTensorPtr QuantMatmulFastEmpty(const ShapeVector &shape, const TypeId &type)
   auto device_ctx = runtime::OpRunner::GetDeviceContext(device_name);
   MS_EXCEPTION_IF_NULL(device_ctx);
 
-  std::vector<tensor::BaseTensorPtr> outputs;
+  std::vector<tensor::TensorPtr> outputs;
   kernel::pyboost::PyBoostUtils::CreateOutputTensor(type, shape, &outputs);
   kernel::pyboost::PyBoostUtils::PrepareOpOutputs(device_ctx, 0, outputs);
   auto fn = [device_ctx, outputs]() { kernel::pyboost::PyBoostUtils::MallocOpOutputs(device_ctx, outputs); };
@@ -85,10 +85,9 @@ BaseTensorPtr QuantMatmulFastEmpty(const ShapeVector &shape, const TypeId &type)
 }
 }  // namespace
 
-void QuantMatmulAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &x1, const BaseTensorPtr &x2,
-                                const BaseTensorPtr &scale, const std::optional<BaseTensorPtr> &offset,
-                                const std::optional<BaseTensorPtr> &pertoken_scale,
-                                const std::optional<BaseTensorPtr> &bias,
+void QuantMatmulAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &x1, const TensorPtr &x2,
+                                const TensorPtr &scale, const std::optional<TensorPtr> &offset,
+                                const std::optional<TensorPtr> &pertoken_scale, const std::optional<TensorPtr> &bias,
                                 const std::optional<Int64ImmPtr> &output_dtype,
                                 const std::optional<Int64ImmPtr> &x1_dtype, const std::optional<Int64ImmPtr> &x2_dtype,
                                 const std::optional<Int64ImmPtr> &pertoken_scale_dtype,
@@ -96,12 +95,12 @@ void QuantMatmulAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseT
                                 const std::optional<ValueTuplePtr> &group_sizes) {
   OpRunner::InferOpOutput(op, x1, x2, scale, offset, pertoken_scale, bias, output_dtype, x1_dtype, x2_dtype,
                           pertoken_scale_dtype, scale_dtype, group_sizes);
-  BaseTensorPtr x1_val = x1;
+  TensorPtr x1_val = x1;
   if (x1_dtype.has_value()) {
     x1_val = PyBoostUtils::CastTensor(x1_val, static_cast<TypeId>(x1_dtype.value()->value()),
                                       op->device_context()->device_context_key_.device_name_);
   }
-  BaseTensorPtr x2_val = x2;
+  TensorPtr x2_val = x2;
   if (x2_dtype.has_value()) {
     x2_val = PyBoostUtils::CastTensor(x2_val, static_cast<TypeId>(x2_dtype.value()->value()),
                                       op->device_context()->device_context_key_.device_name_);
