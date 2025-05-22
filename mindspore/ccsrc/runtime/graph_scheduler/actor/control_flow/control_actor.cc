@@ -639,13 +639,11 @@ void ControlActor::MergeDeviceAddress(OpContext<KernelTensor> *const context,
     }
     bool ret = false;
     if (addr_list[i]->device_address()->device_name() == addr_list[0]->device_address()->device_name()) {
-      ret = tmp_device_tensor->SyncDeviceToDevice(addr_list[i]->device_address().get());
+      ret = SyncCopy(tmp_device_tensor.get(), addr_list[i]->device_address().get(), kDefaultStreamIndex);
     } else if (addr_list[0]->device_address()->device_name() == kCPUDevice) {
-      ret = addr_list[i]->device_address()->SyncDeviceToHost(addr_list[i]->device_address()->GetSize(),
-                                                             tmp_device_tensor->GetMutablePtr());
+      ret = SyncCopy(tmp_device_tensor.get(), addr_list[i]->device_address().get(), kDefaultStreamIndex);
     } else if (addr_list[i]->device_address()->device_name() == kCPUDevice) {
-      ret = tmp_device_tensor->SyncHostToDevice(addr_list[i]->device_address()->GetSize(),
-                                                addr_list[i]->device_address()->GetMutablePtr());
+      ret = SyncCopy(tmp_device_tensor.get(), addr_list[i]->device_address().get(), kDefaultStreamIndex);
     } else {
       MS_LOG(ERROR) << "Invalid device name for addr1:" << addr_list[0]->device_address()
                     << " name:" << addr_list[0]->device_address()->device_name()

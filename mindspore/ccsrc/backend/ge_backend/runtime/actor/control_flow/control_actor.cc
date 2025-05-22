@@ -481,7 +481,7 @@ void ControlActor::CreateHeterDeviceTensor(KernelTensor *const node_kernel_tenso
                 << " type:" << input_device_tensor->GetDeviceType() << " for copy actor:" << GetAID();
   DeviceTensorCopyStore::GetInstance().Insert(new_device_tensor.get(), input_device_tensor);
 
-  if (!Copy(new_device_tensor.get(), input_device_tensor)) {
+  if (!SyncCopy(new_device_tensor.get(), input_device_tensor, kDefaultStreamIndex)) {
     std::string error_info =
       "The formal parameter: " + node->DebugString() + " position:" + std::to_string(index) + " copy failed.";
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
@@ -766,13 +766,11 @@ void ControlActor::MergeDeviceAddress(OpContext<KernelTensor> *const context,
     }
     bool ret = false;
     if (addr_list[i]->device_address()->device_name() == addr_list[0]->device_address()->device_name()) {
-      ret = tmp_device_tensor->SyncDeviceToDevice(addr_list[i]->device_address().get());
+      ret = SyncCopy(tmp_device_tensor.get(), addr_list[i]->device_address().get(), kDefaultStreamIndex);
     } else if (addr_list[0]->device_address()->device_name() == kCPUDevice) {
-      ret = addr_list[i]->device_address()->SyncDeviceToHost(addr_list[i]->device_address()->GetSize(),
-                                                             tmp_device_tensor->GetMutablePtr());
+      ret = SyncCopy(tmp_device_tensor.get(), addr_list[i]->device_address().get(), kDefaultStreamIndex);
     } else if (addr_list[i]->device_address()->device_name() == kCPUDevice) {
-      ret = tmp_device_tensor->SyncHostToDevice(addr_list[i]->device_address()->GetSize(),
-                                                addr_list[i]->device_address()->GetMutablePtr());
+      ret = SyncCopy(tmp_device_tensor.get(), addr_list[i]->device_address().get(), kDefaultStreamIndex);
     } else {
       MS_LOG(ERROR) << "Invalid device name for addr1:" << addr_list[0]->device_address()
                     << " name:" << addr_list[0]->device_address()->device_name()

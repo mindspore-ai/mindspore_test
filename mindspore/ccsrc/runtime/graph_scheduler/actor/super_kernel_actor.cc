@@ -695,7 +695,7 @@ bool SuperKernelActor::CopyHeterogeneousOutput(OpContext<KernelTensor> *const co
       return false;
     }
 
-    auto ret = Copy(dest_device_address, src_device_address);
+    auto ret = SyncCopy(dest_device_address, src_device_address, kDefaultStreamIndex);
     if (!ret) {
       MS_LOG(ERROR) << "Copy for heterogeneous output failed, kernel actor: " << kernel_actor->GetAID().Name()
                     << ", output index: " << output_index << ", dest device address: " << dest_device_address
@@ -1252,7 +1252,7 @@ void SuperKernelActor::OnMemoryAllocFinish(OpContext<KernelTensor> *const contex
       MS_EXCEPTION_IF_NULL(item.second);
       MS_LOG(INFO) << "The input ref node copy back from address: " << item.first->GetPtr()
                    << " to address: " << item.second->GetPtr() << ".";
-      if (!Copy(item.second, item.first)) {
+      if (!SyncCopy(item.second, item.first, kDefaultStreamIndex)) {
         SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "Copy data failed.");
       }
     }
@@ -1407,7 +1407,7 @@ bool SuperKernelActor::CopyInputData(const OpContext<KernelTensor> *context, con
                  << " to device address:" << copy_device_tensor << " ptr:" << copy_device_tensor->GetPtr()
                  << " size:" << copy_device_tensor->GetSize() << ", type:" << copy_device_tensor->GetDeviceType()
                  << ", is ref node need copy back:" << is_parameters_need_copy_[i] << " for actor:" << GetAID();
-    if (!Copy(copy_device_tensor.get(), input_device_tensor)) {
+    if (!SyncCopy(copy_device_tensor.get(), input_device_tensor, kDefaultStreamIndex)) {
       MS_LOG(ERROR) << "Copy data failed for actor:" << GetAID() << " input index:" << i;
       continue;
     }

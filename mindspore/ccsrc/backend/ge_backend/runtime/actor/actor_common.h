@@ -270,9 +270,6 @@ bool IsControlFlowActor(KernelTransformType actor_type);
 
 size_t GetDefragMemoryStepFreq();
 
-// Copy data from src_device_tensor to dst_device_tensor.
-bool Copy(const DeviceTensor *dst_device_tensor, const DeviceTensor *src_device_tensor);
-
 void UpdateRefCount(DeviceTensor *const device_tensor, bool is_max_ref_count = false);
 // Update the reference count of device tensor by the output index of node.
 void UpdateRefCount(const AnfNodePtr &node, size_t output_idx, bool is_max_ref_count = false);

@@ -468,7 +468,7 @@ void OutputActor::UpdateOutputDeviceAddress() {
       if (common::IsDisableRuntimeConfig(common::kRuntimeCopyAsync)) {
         MS_LOG(DEBUG) << "Sync device data from device tensor: " << device_tensor
                       << ", to device tensor: " << tensor_device_address << ", size: " << device_tensor->GetSize();
-        if (!tensor_device_address->SyncDeviceToDevice(device_tensor.get())) {
+        if (!SyncCopy(tensor_device_address.get(), device_tensor.get(), kDefaultStreamIndex)) {
           MS_LOG_WITH_NODE(EXCEPTION, output_node)
             << "Sync device to device failed, device type: " << tensor_device_address->GetDeviceType()
             << ", output node: " << output_node->fullname_with_scope();
@@ -476,7 +476,7 @@ void OutputActor::UpdateOutputDeviceAddress() {
       } else {
         MS_LOG(DEBUG) << "Async device data from device tensor: " << device_tensor
                       << ", to device tensor: " << tensor_device_address << ", size: " << device_tensor->GetSize();
-        if (!tensor_device_address->AsyncDeviceToDevice(device_tensor.get())) {
+        if (!AsyncCopy(tensor_device_address.get(), device_tensor.get(), kDefaultStreamIndex)) {
           MS_LOG_WITH_NODE(EXCEPTION, output_node)
             << "Async device to device failed, device type: " << tensor_device_address->GetDeviceType()
             << ", output node: " << output_node->fullname_with_scope();

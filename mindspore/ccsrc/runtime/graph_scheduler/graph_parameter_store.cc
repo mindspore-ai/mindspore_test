@@ -86,9 +86,9 @@ void GraphParameterStore::SetFrontNodeToIndex(AnfNode *node, size_t index) {
   index_to_front_node_.emplace(index, node);
 }
 
-void GraphParameterStore::InsertTensorDataIntoCallback(const TensorDataPtr &tensor_data) {
+void GraphParameterStore::InsertDeviceTensorIntoCallback(const DeviceSyncPtr &device_tensor) {
   std::unique_lock<std::shared_mutex> lock(param_mutex_);
-  tensor_data_in_callback_.push_back(tensor_data);
+  device_tensor_in_callback_.push_back(device_tensor);
 }
 
 void GraphParameterStore::InsertNonWeightRefMaxInputs(size_t outer_index, size_t inner_index) {
@@ -103,7 +103,7 @@ void GraphParameterStore::ResetPrepareState() {
       kernel_tensors[j].second.second = false;
     }
   }
-  tensor_data_in_callback_.reserve(buffer_size_);
+  device_tensor_in_callback_.reserve(buffer_size_);
 }
 
 void GraphParameterStore::ResetAddrRefCount(size_t outer_index, size_t inner_index) {
@@ -224,13 +224,14 @@ bool GraphParameterStore::RecordGraphInputsAndIsDyn(const std::vector<size_t> &i
     }
     host_tensors_shape_[i] = input_tensor->shape();
     input_tensor->set_name(origin_parameter->fullname_with_scope());
-    llm_manager.add_graph_input(origin_parameter->fullname_with_scope(), input_tensor->data_ptr());
+    llm_manager.add_graph_input(origin_parameter->fullname_with_scope(),
+                                std::static_pointer_cast<DeviceTensor>(input_tensor->device_address()));
   }
   return isDyn;
 }
 
-void AddCopyDataCallBack(const std::vector<TensorDataPtr> &tensor_data_in_callback) {
-  device::CallbackFunc callback_func = [tensor_data_in_callback]() {
+void AddCopyDataCallBack(const std::vector<DeviceSyncPtr> &device_tensor_in_callback) {
+  device::CallbackFunc callback_func = [device_tensor_in_callback]() {
     // Clear buffer automatically.
   };
 
@@ -252,8 +253,8 @@ void GraphParameterStore::ReleaseData() {
   ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kReleaseResource, "GraphParameterStore");
   // Add copy data callback to avoid release data before async copy finished.
   std::unique_lock<std::shared_mutex> lock(param_mutex_);
-  AddCopyDataCallBack(tensor_data_in_callback_);
-  tensor_data_in_callback_.clear();
+  AddCopyDataCallBack(device_tensor_in_callback_);
+  device_tensor_in_callback_.clear();
 
   for (auto index : non_weight_ref_max_inputs_) {
     std::pair<size_t, size_t> position{index.first, index.second};
@@ -340,7 +341,7 @@ void GraphParameterStore::Clear() {
   front_node_to_index_.clear();
   node_to_real_front_node_.clear();
   index_to_front_node_.clear();
-  tensor_data_in_callback_.clear();
+  device_tensor_in_callback_.clear();
   for (auto &buffer : buffers_) {
     buffer.clear();
   }
