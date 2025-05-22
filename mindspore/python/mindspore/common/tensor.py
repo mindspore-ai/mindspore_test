@@ -2585,9 +2585,29 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
 
     def bernoulli_(self, p=0.5, *, generator=None):
         r"""
-        bernoulli_(p=0.5, *, generator=None) -> Tensor
+        Fills each location of self with an independent sample from Bernoulli(p).
 
-        In-place update version of :func:`mindspore.Tensor.bernoulli`.
+        Args:
+            p (Union[number.Number, Tensor], optional): `p` should either be a scalar or tensor containing
+                probabilities to be used for drawing the binary random number, between ``0`` and ``1`` .
+                If it is a tensor, `p` must be floating point. Default: ``0.5`` .
+
+        Keyword Args:
+            generator (:class:`mindspore.Generator`, optional): a pseudorandom number generator.
+                Default: ``None`` , uses the default pseudorandom number generator.
+
+        Returns:
+            The input tensor.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> from mindspore import Tensor
+            >>> x = Tensor([[2, 3, 4], [1, 2, 3]])
+            >>> p = 0.1
+            >>> print(x.bernoulli_(p).shape)
+            (2, 3)
         """
         return tensor_operator_registry.get('bernoulli_')(self, p, generator=generator)
 
