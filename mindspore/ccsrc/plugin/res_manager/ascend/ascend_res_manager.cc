@@ -598,7 +598,7 @@ DeviceAddressPtr AscendResManager::CreateDeviceAddress() const {
 DeviceAddressPtr AscendResManager::CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector,
                                                        const Format &format, TypeId type_id,
                                                        const std::string &device_name, uint32_t device_id,
-                                                       uint32_t stream_id, const UserDataPtr &) const {
+                                                       uint32_t stream_id, const UserDataPtr &user_data) const {
   auto real_device_name = device_name;
   auto real_device_id = device_id;
   if (device_name.empty()) {
@@ -609,8 +609,10 @@ DeviceAddressPtr AscendResManager::CreateDeviceAddress(void *ptr, size_t size, c
     MS_LOG(DEBUG) << "Create device address with real device name: " << real_device_name
                   << ", real device id: " << real_device_id;
   }
-  return std::make_shared<AscendDeviceAddress>(ptr, size, shape_vector, format, type_id, real_device_name,
-                                               real_device_id, stream_id);
+  auto device_address = std::make_shared<AscendDeviceAddress>(ptr, size, shape_vector, format, type_id,
+                                                              real_device_name, real_device_id, stream_id);
+  device_address->set_user_data(user_data);
+  return device_address;
 }
 
 bool AscendResManager::LoadCollectiveCommLib() {
