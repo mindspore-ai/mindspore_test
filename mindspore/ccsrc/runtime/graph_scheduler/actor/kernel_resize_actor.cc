@@ -42,10 +42,7 @@ void KernelResizeActor::RunOpData(OpData<KernelTensor> *const input_data, OpCont
     << "Actor(" << GetAID().Name() << ") receive the input op data and check running condition:" << can_run
     << ", sequential num:" << sequential_num << ", the input data:" << input_data->data_
     << " input index:" << input_data->index_ << ", size:" << input_data->data_->GetSize()
-    << ", origin ref count:" << input_data->data_->original_ref_count()
-    << ", current ref count:" << input_data->data_->ref_count()
-    << ", dynamic ref count:" << input_data->data_->dynamic_ref_count() << ", flag:" << input_data->data_->flag()
-    << " user data:" << input_data->data_->user_data();
+    << ", flag:" << input_data->data_->flag() << " user data:" << input_data->data_->user_data();
 
   if (can_run) {
     Run(context);

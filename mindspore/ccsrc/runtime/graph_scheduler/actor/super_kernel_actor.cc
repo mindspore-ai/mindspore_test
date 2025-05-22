@@ -366,19 +366,6 @@ size_t SuperKernelActor::FetchInputNodePosition(const AnfNodePtr &intput_node) {
   return iter - input_nodes.begin();
 }
 
-void SuperKernelActor::CorrectRefCountByCondition(size_t index, const KernelTensorPtr &kernel_tensor,
-                                                  std::vector<KernelTensorPtr> *memory_free_list) {
-  // There is no memory free action for use trace memory step, need to free input device address of the kernel graph
-  // after launch all kernels.
-  if (ActorDispatcher::enable_use_trace_memory()) {
-    if ((kernel_tensor->original_ref_count() != SIZE_MAX || kernel_tensor->dynamic_ref_count() != INT32_MAX)) {
-      (void)(*memory_free_list).emplace_back(kernel_tensor);
-    }
-  } else {
-    CorrectRefCount(index, kernel_tensor.get());
-  }
-}
-
 void SuperKernelActor::FetchInputDeviceTensor(OpContext<KernelTensor> *const context) {
   ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kPreLaunch, GetAID().Name());
   MS_EXCEPTION_IF_NULL(context);
@@ -515,33 +502,6 @@ void SuperKernelActor::FetchPersistentDeviceTensor() {
     size_t index = device_tensor_store_key.first;
     input_kernel_tensors_[index] = input_kernel_tensor;
   }
-}
-
-void SuperKernelActor::CorrectRefCount(size_t input_index, KernelTensor *kernel_tensor) {
-  MS_EXCEPTION_IF_NULL(kernel_tensor);
-  auto device_tensor = kernel_tensor->device_address();
-  MS_EXCEPTION_IF_NULL(device_tensor);
-  if (device_tensor->original_ref_count() == SIZE_MAX && device_tensor->dynamic_ref_count() == INT32_MAX) {
-    return;
-  }
-
-  const auto &input_use_cnt = input_params_use_cnt_.at(input_index);
-  if (input_use_cnt == 0) {
-    if (device_tensor->original_ref_count() != SIZE_MAX) {
-      // No user for this input in graph.
-      MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(device_tensor.get(), device_contexts_[0],
-                                                              GetAID().Name());
-    }
-    return;
-  }
-
-  if (device_tensor->original_ref_count() != SIZE_MAX) {
-    device_tensor->IncreaseRefCount(input_use_cnt);
-  } else if (device_tensor->dynamic_ref_count() != INT32_MAX) {
-    device_tensor->IncreaseDynamicRefCount(GetAID().Name(), SizeToInt(input_use_cnt));
-  }
-  // Need to decrease current ref count once.
-  MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(device_tensor.get(), device_contexts_[0], GetAID().Name());
 }
 
 void SuperKernelActor::UpdateMemoryTraceMangerStatus(OpContext<KernelTensor> *const context) {
@@ -792,7 +752,7 @@ void SuperKernelActor::FetchParameterInput(const KernelRunnerPtr &kernel_actor, 
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
       << "Actor: " << kernel_actor->GetAID().Name() << ", input index: " << parameter_index.first
       << ", device tensor: " << device_tensor << ", ptr: " << device_tensor->GetPtr()
-      << ", ref cnt: " << device_tensor->ref_count() << " new ref count:" << device_tensor->new_ref_count()
+      << " new ref count:" << device_tensor->new_ref_count()
       << " super kernel actor context:" << device_contexts_[0]->device_context_key().ToString()
       << " kernel actor context:" << kernel_actor->device_contexts()[0]->device_context_key().ToString();
     kernel_actor->SetInputDeviceTensor(kernel_tensor, parameter_index.first);
@@ -2503,7 +2463,6 @@ void SuperKernelActor::LinkKernelActorByDeviceType(const CNodePtr &kernel, size_
                 << " input context type:" << input_device_context->GetDeviceType()
                 << " need copy:" << need_not_copy_output_device_addr << " for actor:" << GetAID();
   if (need_not_copy_output_device_addr) {
-    UpdateRefCount(input_device_tensor.get(), false);
     if (input_index >= kernel_actor->input_kernel_tensors_.size() ||
         input_index >= kernel_actor->input_kernel_tensors_for_infer_.size() ||
         input_index >= kernel_actor->memory_free_list_.size()) {
@@ -2537,14 +2496,12 @@ void SuperKernelActor::LinkKernelActorByDeviceType(const CNodePtr &kernel, size_
     } else {
       MS_LOG(EXCEPTION) << "Insert copy output device address failed.";
     }
-    UpdateRefCount(input_device_tensor.get(), false);
   }
 
   const auto &input_copy_kernel_tensor = iter->second.first;
   MS_EXCEPTION_IF_NULL(input_copy_kernel_tensor);
   auto input_copy_device_address = input_copy_kernel_tensor->device_address().get();
   MS_EXCEPTION_IF_NULL(input_copy_device_address);
-  UpdateRefCount(input_copy_device_address, false);
   if (kernel_actor->modifiable_ref_input_indexes_.count(input_index) > 0) {
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
       << "Add device tensor copy store for device address:" << input_copy_device_address
@@ -2557,7 +2514,6 @@ void SuperKernelActor::LinkKernelActorByDeviceType(const CNodePtr &kernel, size_
                      [input_index](const std::pair<size_t, size_t> &pair) { return pair.second == input_index; });
       if (index_iter != ref_map.end() && kernel_actor->output_kernel_tensors_.size() > index_iter->first &&
           kernel_actor->output_kernel_tensors_[index_iter->first] != nullptr) {
-        UpdateRefCount(input_copy_device_address, true);
         iter->second.second.second.emplace_back(kernel_actor->output_kernel_tensors_[index_iter->first]);
         MS_LOG(DEBUG) << "Add dst device address:"
                       << kernel_actor->output_kernel_tensors_[index_iter->first]->device_address().get()

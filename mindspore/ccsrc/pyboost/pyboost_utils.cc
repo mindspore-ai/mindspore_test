@@ -207,8 +207,7 @@ DeviceSyncPtr PyBoostUtils::ContiguousByDeviceAddress(const DeviceSyncPtr &devic
     nullptr, address_size, storage_info->shape, DEFAULT_FORMAT, old_device_address->type_id(),
     device_context->device_context_key().device_name_, device_context->device_context_key().device_id_, stream_id);
   new_device_address->set_device_shape(storage_info->shape);
-  new_device_address->set_original_ref_count(SIZE_MAX);
-  new_device_address->ResetRefCount();
+  new_device_address->set_new_ref_count(SIZE_MAX);
 
   if (!device_context->GetKernelExecutor(false)->ExecuteKernelTask(
         runtime::KernelTaskType::kCONTIGUOUS_TASK, {old_device_address}, {new_device_address}, stream_id)) {

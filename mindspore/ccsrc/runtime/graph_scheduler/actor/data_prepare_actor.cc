@@ -281,8 +281,6 @@ void UpdateDeviceAddressByRefInputNode(const std::vector<KernelGraphPtr> &graphs
       MS_EXCEPTION_IF_NULL(input_addr);
       MS_EXCEPTION_IF_CHECK_FAIL((ref_node_output_addr->GetDeviceType() == input_addr->GetDeviceType()),
                                  "The device type of ref node is not equal.");
-      ref_node_output_addr->set_original_ref_count(SIZE_MAX);
-      ref_node_output_addr->ResetRefCount();
     }
   }
 }
@@ -497,8 +495,6 @@ void DataPrepareActor::UpdateDeviceAddressForDataNode(const AnfNodePtr &input_no
   MS_EXCEPTION_IF_NULL(device_address);
   if (tensor_address == device_address) {
     tensor_address->SetNodeIndex(input_node, 0);
-    tensor_address->set_original_ref_count(SIZE_MAX);
-    tensor_address->ResetRefCount();
     return;
   }
 
@@ -517,8 +513,6 @@ void DataPrepareActor::UpdateDeviceAddressForDataNode(const AnfNodePtr &input_no
   MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "Update device address of " << input_node->DebugString() << " to "
                                                << tensor_address.get() << " ptr:" << tensor_address->GetPtr();
   tensor_address->SetNodeIndex(input_node, 0);
-  tensor_address->set_original_ref_count(SIZE_MAX);
-  tensor_address->ResetRefCount();
   auto ref_iter = ref_device_tensors_.find({input_node, 0});
   if (ref_iter == ref_device_tensors_.end()) {
     return;
@@ -1043,8 +1037,6 @@ void DataPrepareActor::PrepareDataForValueNodeTensor(const ValueNodePtr &node, c
   }
 
   tensor->set_device_address(device_tensor);
-  UpdateRefCount(device_tensor.get(), true);
-
   SyncTensorData(tensor, kernel_tensor, node, device_context, context, real_strategy_);
   MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
     << "Prepare device data for value node: " << node->DebugString() << ", output index: " << 0
@@ -1105,8 +1097,6 @@ void DataPrepareActor::PrepareDataForControlValueNode(const KernelWithIndex &nod
   }
 
   tensor->set_device_address(device_tensor);
-  UpdateRefCount(device_tensor.get(), true);
-
   auto graph_str = (node->func_graph() == nullptr) ? "" : node->func_graph()->ToString();
   UpdateTracker("PrepareDataForControlValueNode", node, graph_str, memory::mem_pool::MemType::kConstantValue,
                 kernel_tensor);
@@ -1246,7 +1236,6 @@ void DataPrepareActor::PrepareDataForSequenceAndScalarValue(const ValueNodePtr &
     return;
   }
 
-  UpdateRefCount(device_tensor.get(), true);
   MS_LOG(DEBUG) << "Prepare device data for value node: " << node->DebugString();
   // 1. Allocate device memory for value node.
   auto graph_str = (node->func_graph() == nullptr) ? "" : node->func_graph()->ToString();
@@ -1410,7 +1399,6 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
       }
       is_need_sync = true;
       tensor->set_device_address(host_tensor_address);
-      UpdateRefCount(host_tensor_address.get(), true);
     }
     MS_EXCEPTION_IF_NULL(host_tensor_address);
 
@@ -1536,7 +1524,6 @@ void DataPrepareActor::PrepareDeviceTensorStoreForControlNode(const ControlNodeP
                         << ", device tensor size:" << kernel_tensor->device_address()->GetSize();
       }
       host_tensor_address->SetNodeIndex(node, 0);
-      UpdateRefCount(host_tensor_address.get(), true);
       kernel_tensor->set_device_address(host_tensor_address);
       DeviceTensorStore::GetInstance().Remove(front_parameter.get());
       DeviceTensorStore::GetInstance().Insert(front_parameter.get(), kernel_tensor);
