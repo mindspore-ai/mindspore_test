@@ -563,6 +563,30 @@ def test_custom_function_output_is_input():
     assert np.allclose(grads[0].asnumpy(), np.array([0, 2.], dtype=np.float32), 0.00001, 0.00001)
 
 
+@arg_mark(plat_marks=['platform_ascend'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_custom_function_output_is_input_inplace_error():
+    """
+    Feature: Custom autograd function.
+    Description: The output of forward function is input, and perform inplace ops on output.
+    Expectation: Raise RuntimeError.
+    """
+
+    def fn(x):
+        y = CustomFunctionOutIsInNet.apply(x)
+        y.add_(1.0)
+        return y
+
+    x = Tensor([3, 3], mindspore.float32)
+    grad_op = ops.GradOperation(get_all=True)
+    with pytest.raises(RuntimeError) as err:
+        grad_op(fn)(x)
+    assert ("This view tensor is output of custom cell, which has custom bprop, "
+            "it may not support view+inplace") in str(err.value)
+
+
 class CustomFunctionNonDiffNet(_Function):
     @staticmethod
     def forward(ctx, x, y):
