@@ -392,6 +392,7 @@ constexpr const char kNameAscendQuant[] = "Quant";
 constexpr const char kNameAscendQuantV2[] = "QuantV2";
 constexpr const char kNameAscendDequant[] = "Dequant";
 constexpr const char kNameQuantBatchMatmul[] = "QuantBatchMatmul";
+constexpr const char kNameQuantBatchMatmulV3[] = "QuantBatchMatmulV3";
 constexpr const char kNameQuantConv2D[] = "QuantConv2D";
 constexpr const char kNameWeightQuantBatchMatmul[] = "WeightQuantBatchMatmul";
 constexpr const char kNameDynamicQuantExt[] = "DynamicQuantExt";

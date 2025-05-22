@@ -147,6 +147,12 @@ PrimitiveCPtr OnnxCustomParser::Parse(const onnx::GraphProto &onnx_graph, const 
       }
       prim->AddAttr(kAttrOutputNum, api::MakeValue(onnx_node_attr.i()));
       MS_LOG(INFO) << "attribute_name: " << attribute_name << ", value is: " << onnx_node_attr.i();
+    } else if (attribute_name == "dtype") {
+      auto dst_type = GetDataTypeFromOnnx(static_cast<onnx::TensorProto_DataType>(onnx_node_attr.i()));
+      auto prim_c = prim->GetPrim();
+      MS_CHECK_TRUE_RET(prim_c != nullptr, nullptr);
+      (void)prim_c->AddAttr(kAttrDType, MakeValue(TypeIdToType(dst_type)));
+      MS_LOG(INFO) << "attribute_name: " << attribute_name << ", value is: " << onnx_node_attr.i();
     } else if (onnx_node_attr.type() == onnx::AttributeProto_AttributeType_FLOAT) {
       prim->AddAttr(attribute_name, api::MakeValue(onnx_node_attr.f()));
       MS_LOG(INFO) << "attribute_name: " << attribute_name << ", value is: " << onnx_node_attr.f();
