@@ -248,7 +248,7 @@ void BenchmarkFlags::InitInputDataList() {
 bool ParseResizeDimsStringV2(const std::string &input_string,
                              std::map<std::string, std::vector<int64_t>> *graph_input_shape_map) {
   // define regex pattern that matches "inTensor1:1,32,32,32;inTensor2:1,1,32,32,4"
-  std::regex pattern("^(\\w+:\\d+(?:,\\d+)*)(?:;(\\w+:\\d+(?:,\\d+)*))*;?$");
+  std::regex pattern("^([\\w.]+:\\d+(?:,\\d+)*)(?:;([\\w.]+:\\d+(?:,\\d+)*))*;?$");
   std::vector<int64_t> shape;
   if (std::regex_match(input_string, pattern)) {
     auto group_splits = lite::StrSplit(input_string, std::string(";"));
