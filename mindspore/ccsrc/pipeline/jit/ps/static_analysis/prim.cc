@@ -1024,8 +1024,12 @@ EvalResultPtr StandardPrimEvaluator::EvalPrim(const AnalysisEnginePtr &engine, c
   const auto &inplace_indexes = inplace_input_indexes();
   abs_base = inplace_prim() ? AddRefKeyForArgs(output_abs, args, rw_write_indexes, inplace_indexes) : output_abs;
   MS_EXCEPTION_IF_NULL(abs_base);
-  bool need_infect_view_output_flag = NeedInfectViewOutputFlag(args);
-  if (need_infect_view_output_flag && prim_->name() != "UpdateState") {
+  // Set output's kHasViewOutputFlag according to input args
+  if (prim_->name() == kDependOpName) {
+    if (NeedInfectViewOutputFlag({args[0]})) {
+      abs_base->set_user_data<bool>(kHasViewOutputFlag, std::make_shared<bool>(true));
+    }
+  } else if (prim_->name() != kUpdateStateOpName && NeedInfectViewOutputFlag(args)) {
     abs_base->set_user_data<bool>(kHasViewOutputFlag, std::make_shared<bool>(true));
   }
   prim_->EndRecordAddAttr();
