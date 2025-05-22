@@ -442,10 +442,27 @@ const std::vector<OpWithLevel> clusterable_ops_with_level_dvm = {
   {kAscendDevice, OpLevel_0, prim::kPrimLogicalOr},    {kAscendDevice, OpLevel_0, prim::kPrimLogicalNot},
   {kAscendDevice, OpLevel_0, prim::kPrimSelect},       {kAscendDevice, OpLevel_0, prim::kPrimAssign},
   {kAscendDevice, OpLevel_0, prim::kPrimReduceSum},    {kAscendDevice, OpLevel_0, prim::kPrimIsFinite},
-  {kAscendDevice, OpLevel_1, prim::kPrimReshape},      {kAscendDevice, OpLevel_0, prim::kPrimTranspose},
+  {kAscendDevice, OpLevel_2, prim::kPrimReshape},      {kAscendDevice, OpLevel_0, prim::kPrimTranspose},
   {kAscendDevice, OpLevel_0, prim::kPrimFloor},        {kAscendDevice, OpLevel_0, prim::kPrimCeil},
-  {kAscendDevice, OpLevel_0, prim::kPrimTrunc},
+  {kAscendDevice, OpLevel_0, prim::kPrimTrunc},        {kAscendDevice, OpLevel_1, prim::kPrimMatMul},
+  {kAscendDevice, OpLevel_1, prim::kPrimBatchMatMul},  {kAscendDevice, OpLevel_1, prim::kPrimGroupedMatmul},
 };
+
+bool IsComplexDataType(const AnfNodePtr &node) {
+  auto cb = Callback::Instance();
+  MS_EXCEPTION_IF_NULL(cb);
+  auto node_output_type = cb->GetOutputType(node, 0);
+  if (node_output_type == kNumberTypeComplex64 || node_output_type == kNumberTypeComplex128) {
+    return true;
+  }
+  if (IsPrimitiveCNode(node, prim::kPrimCast)) {
+    auto node_input_type = cb->GetInputType(node, 0);
+    if ((node_input_type == kNumberTypeComplex64) || (node_input_type == kNumberTypeComplex128)) {
+      return true;
+    }
+  }
+  return false;
+}
 }  // namespace
 
 std::vector<PrimitivePtr> StaticShapeCluster::GetClusterOps() {
@@ -518,15 +535,8 @@ bool StaticShapeCluster::IsClusterableOp(const AnfNodePtr &node) {
   auto cb = Callback::Instance();
   MS_EXCEPTION_IF_NULL(cb);
   // if node's output type is complex64 or complex128, cannot be added to the cluster list.
-  auto node_output_type = cb->GetOutputType(node, 0);
-  if (node_output_type == kNumberTypeComplex64 || node_output_type == kNumberTypeComplex128) {
+  if (IsComplexDataType(node)) {
     return false;
-  }
-  if (IsPrimitiveCNode(node, prim::kPrimCast)) {
-    auto node_input_type = cb->GetInputType(node, 0);
-    if ((node_input_type == kNumberTypeComplex64) || (node_input_type == kNumberTypeComplex128)) {
-      return false;
-    }
   }
 
   if (is_dvm && !DvmSupported(node)) {
@@ -553,8 +563,13 @@ bool StaticShapeCluster::IsClusterableOp(const AnfNodePtr &node) {
     // this node can be fused with input host ops by kernelpacket
     return false;
   }
-
-  return !GkUtils::InplaceWithViewInputs(node);
+  if (GkUtils::InplaceWithViewInputs(node)) {
+    return false;
+  }
+  if (is_dvm) {
+    GkUtils::CheckOpLevel(node, clusterable_ops_with_level_dvm, OpLevel_1);
+  }
+  return true;
 }
 
 std::vector<PrimitivePtr> DynamicShapeCluster::GetClusterableOpList() {
