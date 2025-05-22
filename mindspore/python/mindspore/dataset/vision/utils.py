@@ -1139,6 +1139,8 @@ class VideoDecoder:
             >>> reader = vision.VideoDecoder(source="/path/to/filename")
             >>> output_frames = reader.get_frames_at([0, 1, 2, 3])
         """
+        if get_video_backend() != "Ascend":
+            raise RuntimeError("Method get_frames_at is only supported on Ascend platform.")
         type_check(indices, (list,), "indices")
         type_check_list(indices, (int,), "indices")
 
@@ -1163,7 +1165,7 @@ class VideoDecoder:
                     )
                 else:
                     raise RuntimeError(f"This video in {filepath} is coding by {container.streams.video[0].name}, "
-                                       "not supported on DVPP backend and will fall back to run on the pyav.")
+                                       "not supported on DVPP backend.")
             else:
                 vframes = np.empty(0, dtype=np.uint8)
 
