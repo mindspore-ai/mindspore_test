@@ -658,7 +658,19 @@ def new_group(ranks=None,
             when backend is ``"hccl"`` will use Huawei Collective Communication Library(HCCL).
             when  backend is ``"mccl"`` will use MindSpore Collective Communication Library(MCCL).
             If ``None``, which means ``"hccl"`` in Ascend. Default is ``None``.
-        pg_options (str, invalid): Currently it is a reserved parameter.
+        pg_options (GroupOptions, optional): Additional communication group configuration parameters.
+            The backend will automatically select supported parameters and apply them during group
+            initialization. i.e. for the ``HCCL`` backend, ``hccl_config`` can be specified so that
+            group initialization configurations can be applied. Default is ``None``.
+
+            `GroupOptions` is defined as a class that can be instantiated as a python object.
+
+            .. code-block::
+
+                GroupOptions {
+                    hccl_config(dict)
+                }
+
         use_local_synchronization (bool, invalid): Currently it is a reserved parameter.
         group_desc (str, invalid): Currently it is a reserved parameter.
 

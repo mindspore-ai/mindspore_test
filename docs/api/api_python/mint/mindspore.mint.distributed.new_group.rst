@@ -12,7 +12,16 @@ mindspore.mint.distributed.new_group
         - **ranks** (list[int], 可选) - 设备编号列表。如果为 ``None`` ，创建全局通信组。默认值为 ``None`` 。
         - **timeout** (int, 无效参数) - 当前为预留参数。
         - **backend** (str, 无效参数) - 当前为预留参数。
-        - **pg_options** (str, 无效参数) - 当前为预留参数。
+        - **pg_options** (GroupOptions, 可选) - 额外通信组配置参数。后端会自动选择支持的参数并在通信组初始化时生效。例如对于 `HCCL` 后端，可以指定 `hccl_config` 来应用特定的通信组初始化配置。默认值为 ``None`` 。
+
+          `GroupOptions` 被定义为一个可以实例化为python对象的类。
+
+          .. code-block::
+
+            GroupOptions {
+                hccl_config(dict)
+            }
+
         - **use_local_synchronization** (bool, 无效参数) - 当前为预留参数。
         - **group_desc** (str, 无效参数) - 当前为预留参数。
 
