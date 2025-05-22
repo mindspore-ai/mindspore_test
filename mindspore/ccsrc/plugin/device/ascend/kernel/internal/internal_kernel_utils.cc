@@ -73,54 +73,6 @@ bool GetSeqLenFromGraphAndCheckUpadate(const std::string &kernel_name, const std
   return true;
 }
 
-bool GetSeqLenFromInputAndCheckUpadate(const std::string &kernel_name, const std::string &tensor_name,
-                                       KernelTensor *const actual_seq_length_ptr, std::vector<int32_t> *seq_len) {
-  MS_EXCEPTION_IF_NULL(actual_seq_length_ptr);
-  std::vector<int32_t> actual_seq_lengths_vector;
-  if (actual_seq_length_ptr->type_id() != kMetaTypeNone) {
-    TypeId actual_seq_lengths_dtype_id = actual_seq_length_ptr->dtype_id();
-    if (actual_seq_lengths_dtype_id == kNumberTypeInt64) {
-      std::vector<int64_t> actual_seq_lengths_vector_64 =
-        actual_seq_length_ptr->GetValueWithCheck<std::vector<int64_t>>();
-      actual_seq_lengths_vector.assign(actual_seq_lengths_vector_64.begin(), actual_seq_lengths_vector_64.end());
-    } else if (actual_seq_lengths_dtype_id == kNumberTypeInt32) {
-      actual_seq_lengths_vector = actual_seq_length_ptr->GetValueWithCheck<std::vector<int32_t>>();
-    } else {
-      MS_LOG(EXCEPTION) << "actual_seq_lengths data type must be Int32 or Int64, but got "
-                        << TypeIdToString(actual_seq_lengths_dtype_id);
-    }
-
-    bool is_need_update = false;
-    if (seq_len->size() != actual_seq_lengths_vector.size()) {
-      is_need_update = true;
-    } else {
-      for (size_t i = 0; i < actual_seq_lengths_vector.size(); i++) {
-        if ((*seq_len)[i] != actual_seq_lengths_vector[i]) {
-          is_need_update = true;
-          break;
-        }
-      }
-    }
-    if (is_need_update) {
-      seq_len->clear();
-      for (size_t i = 0; i < actual_seq_lengths_vector.size(); i++) {
-        (*seq_len).emplace_back(actual_seq_lengths_vector[i]);
-      }
-    }
-
-    MS_LOG(INFO) << "For op '" << kernel_name << "', set param seq_len with tensor_input '" << tensor_name << "' as "
-                 << (*seq_len);
-    return is_need_update;
-  }
-  MS_LOG(INFO) << "For op '" << kernel_name << "', if custom op disabled, param seq_len must be set, but none of '"
-               << tensor_name << "' is found in tensor_input";
-  if (seq_len->empty()) {
-    return false;
-  }
-  seq_len->clear();
-  return true;
-}
-
 bool ConvertSeqLenToVectorAndCheckUpadate(KernelTensor *const actual_seq_length_ptr, std::vector<int32_t> *seq_len) {
   MS_EXCEPTION_IF_NULL(actual_seq_length_ptr);
   std::vector<int32_t> actual_seq_lengths_vector;
