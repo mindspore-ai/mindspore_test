@@ -155,19 +155,31 @@ T Parse(const std::string &s) {
 }
 
 struct MemoryBlock {
+  static constexpr size_t kMemBlockSizeLimit = 10;
+  static constexpr size_t kStartTimeStampIdx = 0;
+  static constexpr size_t kEndTimeStampIdx = 1;
+  static constexpr size_t kStreamIdIdx = 3;
+  static constexpr size_t kSizeIdx = 5;
+  static constexpr size_t kActualPeakMemIdx = 6;
+  static constexpr size_t kTypeIdx = 9;
+  static constexpr size_t kInvalidValue = 0;
+
   explicit MemoryBlock(const std::string &block_string) {
     auto &&elements = Split(block_string, ",");
-    MS_EXCEPTION_IF_CHECK_FAIL(elements.size() > 10, "Invalid line : " + block_string);
-    start_time_stamp = Parse<size_t>(elements[0]);
-    MS_EXCEPTION_IF_CHECK_FAIL(start_time_stamp != 0, "Invalid start_time_stamp: " + elements[0]);
-    end_time_stamp = Parse<size_t>(elements[1]);
-    MS_EXCEPTION_IF_CHECK_FAIL(end_time_stamp != 0, "Invalid end_time_stamp: " + elements[1]);
-    stream_id = Parse<uint32_t>(elements[3]);
-    size = Parse<size_t>(elements[5]);
-    MS_EXCEPTION_IF_CHECK_FAIL(size != 0, "Invalid size: " + elements[5]);
-    actual_peak_mem = Parse<size_t>(elements[6]);
-    MS_EXCEPTION_IF_CHECK_FAIL(actual_peak_mem != 0, "Invalid actual_peak_mem: " + elements[6]);
-    type = Parse<std::string>(elements[9]);
+    MS_EXCEPTION_IF_CHECK_FAIL(elements.size() > kMemBlockSizeLimit, "Invalid line : " + block_string);
+    start_time_stamp = Parse<size_t>(elements[kStartTimeStampIdx]);
+    MS_EXCEPTION_IF_CHECK_FAIL(start_time_stamp != kInvalidValue,
+                               "Invalid start_time_stamp: " + elements[kStartTimeStampIdx]);
+    end_time_stamp = Parse<size_t>(elements[kEndTimeStampIdx]);
+    MS_EXCEPTION_IF_CHECK_FAIL(end_time_stamp != kInvalidValue,
+                               "Invalid end_time_stamp: " + elements[kEndTimeStampIdx]);
+    stream_id = Parse<uint32_t>(elements[kStreamIdIdx]);
+    size = Parse<size_t>(elements[kSizeIdx]);
+    MS_EXCEPTION_IF_CHECK_FAIL(size != kInvalidValue, "Invalid size: " + elements[kSizeIdx]);
+    actual_peak_mem = Parse<size_t>(elements[kActualPeakMemIdx]);
+    MS_EXCEPTION_IF_CHECK_FAIL(actual_peak_mem != kInvalidValue,
+                               "Invalid actual_peak_mem: " + elements[kActualPeakMemIdx]);
+    type = Parse<std::string>(elements[kTypeIdx]);
   }
 
   size_t start_time_stamp;
