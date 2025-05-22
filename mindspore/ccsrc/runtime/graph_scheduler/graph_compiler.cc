@@ -244,45 +244,6 @@ void OptimizeNopNode(KernelGraph *graph) {
   }
 }
 
-bool IsEnableZeroCopy(bool run_in_pynative) {
-  if (run_in_pynative) {
-    return false;
-  }
-
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  bool task_sink = ms_context->get_param<bool>(MS_CTX_ENABLE_TASK_SINK);
-  bool is_multi_graph_sink = ms_context->get_param<bool>(MS_CTX_IS_MULTI_GRAPH_SINK);
-  // If the run mode is not subgraph sink, the flag should not be set.
-  if (!task_sink || is_multi_graph_sink) {
-    // Jit level O2 in graph mode will execute ge and zero copy flag should be set.
-    if (!common::AnfAlgo::IsBackendGe() || ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) != kGraphMode) {
-      return false;
-    }
-  }
-
-// In ps cache mode, the whole graph sink has set multi_graph_sink to false, the zero copy cannot be enabled.
-#if defined(__linux__) && defined(WITH_BACKEND)
-  if (ps::PSContext::instance()->cache_enable()) {
-    return false;
-  }
-#endif
-
-  auto parallel_context = parallel::ParallelContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(parallel_context);
-  auto parallel_mode = parallel_context->parallel_mode();
-  bool is_parallel_mode = parallel_mode == parallel::kSemiAutoParallel || parallel_mode == parallel::kAutoParallel ||
-                          parallel_mode == parallel::kHybridParallel || parallel_mode == parallel::kDataParallel;
-  // If there are auto parallel in graph, the flag should not be set. In parallel, the continue memory in communication
-  // ops not support addr change.
-  // force zero copy when use ge
-  bool is_enable_ge = ms_context->backend_policy() == "ge";
-  if (is_parallel_mode && !is_enable_ge) {
-    return false;
-  }
-  return true;
-}
-
 void SetRunGraphBySingleOpFlag(const KernelGraphPtr &graph) {
   MS_EXCEPTION_IF_NULL(graph);
   for (auto &node : graph->execution_order()) {
@@ -522,8 +483,8 @@ GraphId GraphCompiler::CompileGraph(const GraphSegmentPtr &segment,
   // Generate kernel graph.
   uint64_t start_time = profiler::GetClockSyscnt();
   PROF_START(ConstructKernelGraph);
-  auto kernel_graph = session_->ConstructKernelGraph(nodes, io_nodes.second, device_target, backend_jit_config, true,
-                                                     IsEnableZeroCopy(run_in_pynative));
+  auto kernel_graph =
+    session_->ConstructKernelGraph(nodes, io_nodes.second, device_target, backend_jit_config, true, true);
   PROF_END(ConstructKernelGraph);
   auto actual_run_mode = run_mode;
   if (actual_run_mode == device::RunMode::kUnknown) {

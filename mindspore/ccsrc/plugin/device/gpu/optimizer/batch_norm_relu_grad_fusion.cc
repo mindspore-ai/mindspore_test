@@ -72,7 +72,7 @@ const AnfNodePtr BatchNormReluGradFusion::Process(const FuncGraphPtr &graph, con
   }
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  if (ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
+  if (!IsJit()) {
     return nullptr;
   }
   auto shape = AnfAlgo::GetInputDeviceShape(node, 0);

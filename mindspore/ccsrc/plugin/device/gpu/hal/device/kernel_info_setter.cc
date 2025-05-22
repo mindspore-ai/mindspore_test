@@ -517,7 +517,7 @@ void FormatTransformChecker::CheckSupportFormatTransform(const std::shared_ptr<s
     format_transform_ = false;
     return;
   }
-  if (ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
+  if (!IsJit()) {
     format_transform_ = false;
     return;
   }

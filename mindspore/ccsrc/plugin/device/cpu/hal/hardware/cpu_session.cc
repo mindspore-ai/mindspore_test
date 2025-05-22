@@ -97,7 +97,7 @@ void CPUSession::Optimize(const std::shared_ptr<KernelGraph> &kernel_graph) {
 #if defined(__linux__) && defined(WITH_BACKEND)
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  if (ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) != kPynativeMode && ps::PSContext::instance()->is_ps_mode()) {
+  if (ps::PSContext::instance()->is_ps_mode()) {
     if (ps::PSContext::instance()->is_worker()) {
       std::string pass_name = "replace_node_by_proxy";
       pass_name.append(std::to_string(graph_sum_));

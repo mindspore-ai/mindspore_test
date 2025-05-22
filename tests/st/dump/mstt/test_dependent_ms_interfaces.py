@@ -48,7 +48,7 @@ def test_interfaces_used_in_mstt():
     assert 'ascend' in soc_version
 
     ms.set_device('Ascend')
-    ms.set_context(mode=ms.PYNATIVE_MODE, jit_config={'jit_level': 'O0'})
+    ms.set_context(mode=ms.PYNATIVE_MODE, jit_config={'jit_level': 'O0'}, max_device_memory="20GB")
     mode = ms.get_context("mode")
     jit_level = ms.context.get_jit_config().get("jit_level")
     assert mode == ms.PYNATIVE_MODE
