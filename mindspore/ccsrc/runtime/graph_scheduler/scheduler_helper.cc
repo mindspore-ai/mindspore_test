@@ -1646,7 +1646,6 @@ KernelTensorPtr SchedulerHelper::CloneKernelTensorWithDeviceInfo(const KernelTen
   new_device_address->set_host_shape(kernel_tensor->host_shape());
   auto new_kernel_tensor = kernel_tensor->CloneKernelTensor();
   new_kernel_tensor->set_device_address(new_device_address);
-  new_kernel_tensor->set_device_synchronizer(new_device_address->NewDeviceSynchronizer());
   return new_kernel_tensor;
 }
 }  // namespace runtime

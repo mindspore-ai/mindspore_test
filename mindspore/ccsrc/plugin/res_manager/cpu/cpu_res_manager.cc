@@ -22,7 +22,6 @@
 #include "runtime/device/res_manager/memory_manager.h"
 #include "plugin/res_manager/cpu/cpu_mem_manager/cpu_hash_table_util.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_synchronizer.h"
 #include "runtime/device/res_manager/tensor_array.h"
 
 namespace mindspore {

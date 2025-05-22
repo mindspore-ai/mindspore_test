@@ -32,7 +32,6 @@
 #include "utils/check_convert_utils.h"
 #include "include/common/utils/utils.h"
 #include "common/device_type.h"
-#include "include/backend/device_synchronizer.h"
 
 namespace mindspore {
 namespace device {
@@ -390,7 +389,6 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   virtual bool AsyncDeviceToDevice(const DeviceAddress *, size_t stream_id = SIZE_MAX) const { return true; }
   virtual bool CopyDeviceToHost(void *dst, const void *src, const size_t &size) const { return true; }
   virtual bool CopyHostToDevice(void *dst, const void *src, const size_t &size) const { return true; }
-  virtual DeviceSynchronizerPtr NewDeviceSynchronizer() { MS_LOG(EXCEPTION) << "Not implemented."; }
 
   const void *GetPtr() const;
   void set_ptr(void *ptr);

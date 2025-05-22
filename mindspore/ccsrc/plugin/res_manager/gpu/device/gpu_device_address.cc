@@ -26,13 +26,10 @@
 #include "plugin/device/gpu/hal/device/gpu_common.h"
 #include "plugin/res_manager/gpu/device/gpu_event.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
-#include "plugin/res_manager/gpu/device/gpu_device_synchronizer.h"
 
 namespace mindspore {
 namespace device {
 namespace gpu {
-DeviceSynchronizerPtr GPUDeviceAddress::NewDeviceSynchronizer() { return std::make_shared<GPUDeviceSynchronizer>(); }
-
 void GPUDeviceAddress::SetDevicePtrDeleter() {
   if (address_common_ == nullptr || address_common_->pointer_ref_count_ == nullptr) {
     return;
@@ -415,6 +412,63 @@ mindspore::tensor::TensorPtr GPUDeviceAddress::LoadMemToHost(const std::string &
     return nullptr;
   }
   return out_tensor;
+}
+
+bool GPUDeviceAddress::SyncDeviceToHost(void *host_ptr, const void *device_ptr, size_t size,
+                                        const std::string &device_name, uint32_t device_id, mindspore::Format format,
+                                        const ShapeVector &shape, size_t stream_id,
+                                        const UserDataPtr &user_data) const {
+  MS_EXCEPTION_IF_NULL(host_ptr);
+  MS_EXCEPTION_IF_NULL(device_ptr);
+  auto stream = GPUDeviceManager::GetInstance().GetStream(stream_id);
+  if (stream == nullptr) {
+    stream = GPUDeviceManager::GetInstance().default_stream();
+  }
+  MS_ERROR_IF_NULL(stream);
+
+  auto gpu_res_manager = HalResManager::GetInstance().GetOrCreateResManager({DeviceType::kGPU, device_id});
+  MS_EXCEPTION_IF_NULL(gpu_res_manager);
+  if (!gpu_res_manager->BindDeviceToCurrentThread(false)) {
+    MS_LOG(WARNING) << "Bind device to current thread failed.";
+  }
+
+  if (stream_id != kDefaultStreamIndex) {
+    auto default_stream = GPUDeviceManager::GetInstance().GetStream(kDefaultStreamIndex);
+    CHECK_RET_WITH_RETURN_ERROR(CudaDriver::SyncStream(default_stream), "SyncStream 0 failed");
+  }
+
+  void *src_ptr = const_cast<void *>(device_ptr);
+  CHECK_RET_WITH_RETURN_ERROR(CudaDriver::CopyDeviceMemToHostAsync(host_ptr, src_ptr, size, stream),
+                              "CopyDeviceMemToHostAsync failed");
+  CHECK_RET_WITH_RETURN_ERROR(CudaDriver::SyncStream(stream), "SyncStream failed");
+
+  return true;
+}
+
+bool GPUDeviceAddress::SyncHostToDevice(void *device_ptr, const void *host_ptr, size_t size,
+                                        const std::string &device_name, uint32_t device_id, mindspore::Format format,
+                                        const ShapeVector &shape, size_t stream_id,
+                                        const UserDataPtr &user_data) const {
+  MS_EXCEPTION_IF_NULL(device_ptr);
+  MS_EXCEPTION_IF_NULL(host_ptr);
+  auto stream = GPUDeviceManager::GetInstance().GetStream(stream_id);
+  if (stream == nullptr) {
+    stream = GPUDeviceManager::GetInstance().default_stream();
+  }
+  MS_ERROR_IF_NULL(stream);
+
+  auto gpu_res_manager = HalResManager::GetInstance().GetOrCreateResManager({DeviceType::kGPU, device_id});
+  MS_EXCEPTION_IF_NULL(gpu_res_manager);
+  if (!gpu_res_manager->BindDeviceToCurrentThread(false)) {
+    MS_LOG(WARNING) << "Bind device to current thread failed.";
+  }
+
+  CHECK_RET_WITH_RETURN_ERROR(CudaDriver::CopyHostMemToDeviceAsync(device_ptr, host_ptr, size, stream),
+                              "CopyHostMemToDeviceAsync failed");
+
+  CHECK_RET_WITH_RETURN_ERROR(CudaDriver::SyncStream(stream), "SyncStream failed");
+
+  return true;
 }
 }  // namespace gpu
 }  // namespace device

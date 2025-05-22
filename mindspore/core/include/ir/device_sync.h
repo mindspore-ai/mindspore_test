@@ -25,6 +25,7 @@
 #include "utils/shape_utils.h"
 #include "ir/tensor_storage_info.h"
 #include "ir/tensor_data.h"
+#include "mindapi/base/format.h"
 
 using std::string;
 
@@ -50,6 +51,20 @@ class DeviceSync {
                                 const tensor::TensorDataPtr &tensor_data) const {
     MS_EXCEPTION_IF_NULL(tensor_data);
     return SyncHostToDevice(shape, size, type, tensor_data->data(), format);
+  }
+
+  // Copy device memory to host side synchronously.
+  virtual bool SyncDeviceToHost(void *host_ptr, const void *device_ptr, size_t size, const std::string &device_name,
+                                uint32_t device_id, mindspore::Format format, const ShapeVector &shape,
+                                size_t stream_id, const UserDataPtr &user_data = nullptr) const {
+    return true;
+  }
+
+  // Copy host memory to device side synchronously.
+  virtual bool SyncHostToDevice(void *device_ptr, const void *host_ptr, size_t size, const std::string &device_name,
+                                uint32_t device_id, mindspore::Format format, const ShapeVector &shape,
+                                size_t stream_id, const UserDataPtr &user_data = nullptr) const {
+    return true;
   }
 
   virtual void *GetMutablePtr() const = 0;
