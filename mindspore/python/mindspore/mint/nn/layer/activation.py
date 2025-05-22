@@ -44,9 +44,10 @@ class SiLU(Cell):
 
     .. warning::
         This is an experimental API that is subject to change or deletion.
+
     Args:
-        - **inplace** (bool, optional) - If it is ``True``, enable the in place update function.
-          Default value: ``False``.
+        inplace (bool, optional): If it is ``True``, enable the in-place update function.
+            Default value: ``False``.
 
     Inputs:
         - **input** (Tensor) - `input` is :math:`x` in the preceding formula.

@@ -1,6 +1,7 @@
 inplace_silu:
     description: |
         Computes Sigmoid Linear Unit of input element-wise. The SiLU function is defined as:
+
         .. math::
 
             \text{SiLU}(x) = x * \sigma(x),
