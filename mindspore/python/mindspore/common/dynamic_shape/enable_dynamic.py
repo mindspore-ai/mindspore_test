@@ -117,11 +117,47 @@ def generate_dynamic_tensor_args(args_list, dynamic_shapes):
                  f"new_compile_args: {new_compile_args}")
     return new_compile_args
 
-def enable_dynamic(*args, **kwargs):
-    """Define enable_dynamic decorator"""
+def enable_dynamic(**kwargs):
+    """
+    Use to specify whether the shape of the parameter is dynamic shape or dynamic rank.
+
+    Note:
+        - It needs to be used in conjunction with the JIT interface. Without using the JIT decorator,
+          the dynamic shape and dynamic rank functions will not be enabled.
+        - In the scenario where both set_context(mode=GRAPH_MODE) and nn.Cell are set simultaneously,
+          use enabled_dynamic to report an error.
+
+    Args:
+        kwargs (dict): The input types are Tensor, tuple[Tensor] and list[Tensor]. If one or
+        more dimensions in the shape of the parameter need to be specified as dynamic shapes,
+        the corresponding dimensions in the shape can be set to None. If the shape that needs
+        to generate specified parameters is dynamic rank, the shape can be set to None.
+
+    Returns:
+        Function, return a function that specifies the dynamic shape information of the parameter.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import numpy as np
+        >>> import mindspore as ms
+        >>> from mindspore import Tensor
+        >>> from mindspore import enable_dynamic
+        >>> from mindspore import jit
+        ...
+        >>> x = Tensor(np.random.randn(2, 3), ms.float32)
+        >>> y = Tensor(np.random.randn(2, 3), ms.float32)
+        ...
+        >>> # Specify parameter y as dynamic shape
+        >>> @enable_dynamic(y=Tensor(shape=None, dtype=ms.float32))
+        >>> @jit
+        >>> def func(x, y):
+        ...     return x + 1, y + 1
+        ...
+        >>> out = func(x, y)
+    """
     # Check inputs at first.
-    if args:
-        raise ValueError(f"Decorator enable_dynamic only supports keyword arguments as inputs, but got {args}.")
     if not kwargs:
         raise ValueError(f"When using decorator enable_dynamic, the input cannot be empty!")
     for name, arg in kwargs.items():

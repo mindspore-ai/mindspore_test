@@ -77,18 +77,6 @@ def test_list_arguments():
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-def test_invalid_positional_arguments():
-    """
-    Features: Dynamic shape.
-    Description: Test enable_dynamic.
-    Expectation: No exception.
-    """
-    with pytest.raises(ValueError) as raise_info:
-        ms.enable_dynamic(1)
-    assert "Decorator enable_dynamic only supports keyword arguments as inputs" in str(raise_info.value)
-
-
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_invalid_args_number():
     """
     Features: Dynamic shape.
