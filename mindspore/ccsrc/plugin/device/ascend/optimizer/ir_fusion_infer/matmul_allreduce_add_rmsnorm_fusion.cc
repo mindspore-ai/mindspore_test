@@ -108,6 +108,11 @@ bool MatMulAllReduceAddRmsNormFusion::IsSupport(const AnfNodePtr &node, const Fu
 
   auto x1_shape = common::AnfAlgo::GetPrevNodeOutputInferShape(matmul_node, kIndex0);
   auto x2_shape = common::AnfAlgo::GetPrevNodeOutputInferShape(matmul_node, kIndex1);
+  auto residual_shape = common::AnfAlgo::GetPrevNodeOutputInferShape(add_node, kIndex0);
+  if (residual_shape.size() != kSizeThree) {
+    MS_LOG(INFO) << "only support residual with three dimensions.";
+    return false;
+  }
   if ((x1_shape.size() != kSizeTwo && x1_shape.size() != kSizeThree) || x2_shape.size() != kSizeTwo) {
     MS_LOG(INFO) << "only support x1 two or three dimensions and x2 two dimensions, but got x1 " << x1_shape.size()
                  << " dimensions and x2 " << x2_shape.size() << " dimensions.";
