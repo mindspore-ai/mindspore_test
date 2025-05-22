@@ -86,13 +86,6 @@ void CreateViewNode(const std::string &name, const AnfNodePtr &origin_node,
                     mindspore::HashMap<AnfNodePtr, AnfNodePtr> *replaced_nodes) {
   MS_EXCEPTION_IF_NULL(replaced_nodes);
   auto ops = name;
-  if (ops == "Transpose") {
-    if (TransposePattern(origin_node, manager)) {
-      ops = ops.append("View");
-    } else {
-      return;
-    }
-  }
   auto cnode = origin_node->cast<CNodePtr>();
   auto inputs = cnode->inputs();
   inputs[0] = NewValueNode(std::make_shared<Primitive>(ops));
@@ -144,6 +137,10 @@ void ProcessReplacedNodes(const FuncGraphPtr &graph, const mindspore::HashMap<An
 }
 
 bool GraphViewReplacePass::Run(const FuncGraphPtr &func_graph) {
+  if (common::GetEnv("MS_DEV_JIT_ENABLE_VIEW_OP") == "0") {
+    return true;
+  }
+
   MS_EXCEPTION_IF_NULL(func_graph);
   std::vector<AnfNodePtr> node_list = TopoSort(func_graph->get_return());
   auto manager = func_graph->manager();
@@ -160,11 +157,7 @@ bool GraphViewReplacePass::Run(const FuncGraphPtr &func_graph) {
     auto kernel_name = AnfUtils::GetCNodeName(node);
 
     // The view op list defined in yamls. Special case: Transpose + GroupMatmul/Matmul
-    if (!(common::AnfAlgo::IsViewNode(node) || kernel_name == "Transpose")) {
-      continue;
-    }
-    // Skip reshapeview when input is from view. Need to be done when the ref count is ready.
-    if (kernel_name == "Reshape" && IsInputsFromView(cnode)) {
+    if (!common::AnfAlgo::IsViewNode(node)) {
       continue;
     }
     MS_LOG(INFO) << "Process view for " << kernel_name;

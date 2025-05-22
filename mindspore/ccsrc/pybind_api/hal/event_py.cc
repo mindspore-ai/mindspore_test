@@ -31,12 +31,23 @@ std::mutex EventCnt::unrecorded_cnt_mtx_;
 
 EventPy::~EventPy() {
   if (creator_stream_ != nullptr && event_ != nullptr) {
-    runtime::Pipeline::Get().WaitForward();
-    const auto &device_ctx = creator_stream_->device_ctx();
-    MS_LOG(DEBUG) << "DestroyEvent, event:" << event_;
-    if (device_ctx != nullptr && device_ctx->initialized()) {
-      device_ctx->device_res_manager_->DestroyEvent(event_);
-    }
+    pynative::DispatchOp(
+      std::make_shared<pynative::PassthroughFrontendTask>([creator_stream = creator_stream_, event = event_]() {
+        auto destruct_fn = [creator_stream, event]() {
+          const auto &device_ctx = creator_stream->device_ctx();
+          if (device_ctx != nullptr && device_ctx->initialized()) {
+            runtime::OpExecutor::DispatchLaunchTask(
+              [device_ctx, event]() { device_ctx->device_res_manager_->DestroyEvent(event); });
+          }
+        };
+
+        if (!runtime::OpExecutor::NeedSync()) {
+          runtime::OpExecutor::GetInstance().PushSimpleOpRunTask(
+            std::make_shared<runtime::PassthroughNoWaitDeviceTask>(destruct_fn));
+        } else {
+          destruct_fn();
+        }
+      }));
   }
   creator_stream_ = nullptr;
   event_ = nullptr;

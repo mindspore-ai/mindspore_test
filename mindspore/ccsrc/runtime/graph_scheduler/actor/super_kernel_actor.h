@@ -141,7 +141,7 @@ class SuperKernelActor : public DebugAwareActor {
   std::queue<std::vector<KernelTensorPtr>> memory_free_lists_;
 
  protected:
-  bool CopyInputDataPersistedHandle(const DeviceContext *device_context, DeviceTensor *input_device_tensor,
+  bool CopyInputDataPersistedHandle(const DeviceContext *device_context, const KernelTensorPtr &input_kernel_tensor,
                                     const KernelTensorPtr &node_kernel_tensor, size_t i);
 
   // Generate and initialize all kernel actors by execution order of graph_ for kerkel by kernl execute a sub garph
@@ -167,13 +167,6 @@ class SuperKernelActor : public DebugAwareActor {
                                    size_t output_index);
 
   void RunGraphKernelByKernel(OpContext<KernelTensor> *const context);
-  // Need to correct current ref count or dynamic ref count by the use count of the input node(parameter) in the graph.
-  // From the outside, the input device address is used only once by the super kernel actor, origin ref count only +1 in
-  // compile phase.
-  void CorrectRefCount(size_t input_index, KernelTensor *kernel_tensor);
-  void CorrectRefCountByCondition(size_t index, const KernelTensorPtr &kernel_tensor,
-                                  std::vector<KernelTensorPtr> *memory_free_list);
-
   void FetchPersistentDeviceTensor();
 
   void UpdateMemoryTraceMangerStatus(OpContext<KernelTensor> *const context);
@@ -195,7 +188,8 @@ class SuperKernelActor : public DebugAwareActor {
 
   void TrackInputMemory();
 
-  void FetchParameterInput(const KernelRunnerPtr &kernel_actor, OpContext<KernelTensor> *const context);
+  void FetchParameterInput(const KernelRunnerPtr &kernel_actor, OpContext<KernelTensor> *const context,
+                           size_t stream_id = SIZE_MAX);
   void FreeInputParamWithoutUser(OpContext<KernelTensor> *const context);
   void RecordKernelActorWeight();
 
@@ -246,8 +240,6 @@ class SuperKernelActor : public DebugAwareActor {
 
   // Record whether the input is used by kernel actor.
   std::vector<bool> is_input_used_;
-  // Record every param first used kernel actor to correct the ref count.
-  mindspore::HashMap<KernelRunnerPtr, std::vector<std::pair<size_t, size_t>>> kernel_actor_to_graph_parameters_map_;
   // Record which kernel actor should insert event when fetch parameter on non-default stream.
   mindspore::HashSet<KernelRunner *> kernel_actors_insert_event_;
 
@@ -284,8 +276,6 @@ class SuperKernelActor : public DebugAwareActor {
   static std::vector<DeviceEventPtr> events_;
   static std::vector<AsyncRQueuePtr> queues_;
 
-  // Remove after input optimize simplify.
-  bool first_step_for_inference_{true};
   bool enable_infer_boost_{false};
 
   // Whether the actor include a control flow actor.

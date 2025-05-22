@@ -351,8 +351,8 @@ void GPUSession::LoadInputData(const std::shared_ptr<KernelGraph> &kernel_graph,
       MS_EXCEPTION_IF_NULL(device_address);
       bool need_sync = CheckIfNeedSync(tensor, device_address, pk_node);
       if (need_sync) {
-        if (common::AnfAlgo::IsParameterWeight(pk_node) || UpdatedByAssign(kernel_graph, input_node) ||
-            ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
+        MS_LOG(EXCEPTION) << "GPUSession::LoadInputData is deprecated.";
+        if (common::AnfAlgo::IsParameterWeight(pk_node) || UpdatedByAssign(kernel_graph, input_node)) {
           tensor->set_device_address(device_address);
         }
         auto size = UpdateGraphInputAbstract(input_node, tensor);

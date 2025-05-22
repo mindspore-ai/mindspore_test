@@ -13,20 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "frontend/parallel/pipeline_transformer/pipeline_scheduler.h"
 
 #include <vector>
 #include <string>
 #include <utility>
 #include <algorithm>
 #include <memory>
-#include "frontend/parallel/pipeline_transformer/pipeline_scheduler.h"
+
 #include "frontend/parallel/ops_info/ops_utils.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/node_check.h"
-#include "mindspore/ops/op_def/array_ops.h"
-#include "mindspore/ops/op_def/other_ops.h"
 #include "ir/anf.h"
 #include "ir/graph_utils.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"

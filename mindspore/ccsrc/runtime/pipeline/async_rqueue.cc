@@ -26,8 +26,6 @@
 #include "utils/ms_exception.h"
 #include "debug/profiler/profiler.h"
 
-#include "utils/profile.h"
-
 namespace mindspore {
 namespace runtime {
 constexpr size_t kThreadNameThreshold = 15;

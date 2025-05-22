@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,11 @@
 #define MINDSPORE_CCSRC_PIPELINE_PYNATIVE_GRAD_GRAD_UTILS_H_
 
 #include "pynative/grad/grad_utils.h"
+
 #include <algorithm>
 #include <vector>
+
+#include "backend/graph_compiler/transform.h"
 #include "mindspore/ops/op_def/sparse_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
@@ -327,6 +330,9 @@ InputType AutoGradUtil::SetTensorGradInfo(const tensor::TensorPtr &tensor) {
   if (tensor->is_parameter()) {
     auto_grad_meta_data->set_input_type(InputType::kParameter);
     return InputType::kParameter;
+  }
+  if (auto_grad_meta_data != nullptr && auto_grad_meta_data->input_type() == InputType::kInput) {
+    return InputType::kInput;
   }
   return InputType::kConstant;
 }

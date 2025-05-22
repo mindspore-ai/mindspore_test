@@ -116,9 +116,9 @@ using BaseOperatorPtr = std::shared_ptr<ops::BaseOperator>;
 class KernelAttr;
 
 struct InputDataInfo {
-  InputDataInfo(const std::string &format, const ShapeVector &shape, size_t size, TypeId type_id)
+  InputDataInfo(const Format &format, const ShapeVector &shape, size_t size, TypeId type_id)
       : format_(format), shape_(shape), size_(size), type_id_(type_id) {}
-  std::string format_;
+  Format format_;
   ShapeVector shape_;
   size_t size_;
   TypeId type_id_;

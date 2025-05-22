@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@
 #include "pynative/pynative_utils.h"
 #include "pynative/grad/jit/jit_dfunctor.h"
 #include "pipeline/jit/ps/pipeline.h"
-#include "pipeline/jit/ps/pipeline_jit.h"
+#include "pipeline/jit/ps/executor/jit_executor_py.h"
 #include "ir/func_graph_cloner.h"
 #include "frontend/expander/bprop/bprop.h"
 #include "include/common/pynative/common_utils.h"
@@ -672,10 +672,6 @@ py::object Jit::GradJit(const py::args &args) {
 }
 
 bool GetJitBpropGraphInner(const pipeline::ResourcePtr &resource, const std::string &phase) {
-  // This function only works in Pynative mode. The func_graph is decorated with 'jit'.
-  if (MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kGraphMode) {
-    return true;
-  }
   return pynative::PyNativeExecutor::GetInstance()->grad_executor()->jit()->GetJitGradGraph(resource, phase);
 }
 

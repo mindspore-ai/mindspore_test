@@ -18,8 +18,11 @@
 
 #include <memory>
 #include <map>
+
+#include "pipeline/jit/ps/executor/executor_py.h"
+#include "pipeline/jit/ps/executor/graph_executor_py.h"
 #include "pipeline/jit/ps/pass.h"
-#include "pipeline/jit/ps/pipeline_jit.h"
+#include "pipeline/jit/ps/executor/jit_executor_py.h"
 #include "pipeline/jit/ps/parse/data_converter.h"
 #include "pynative/pynative_execute.h"
 #include "pynative/op_function/converter.h"
@@ -45,6 +48,7 @@
 #include "backend/backend_manager/backend_manager.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "runtime/device/kernel_runtime_manager.h"
+#include "runtime/device/res_manager/hal_res_manager.h"
 #include "runtime/pynative/op_executor.h"
 #include "runtime/device/stream_synchronizer.h"
 #include "debug/profiler/profiler.h"
@@ -157,6 +161,7 @@ void ClearResPart2() {
   MS_LOG(INFO) << "End clear ConfigManager.";
 
   session::ExecutorManager::Instance().Clear();
+  device::HalResManager::GetInstance().Clear();
 
   MS_LOG(INFO) << "Start clear BackendManager...";
   backend::BackendManager::GetInstance().Clear();

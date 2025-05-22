@@ -5,8 +5,8 @@ py::object PYNATIVE_EXPORT ${func_name}_OP(const PrimitivePtr &prim, const std::
 
   // TODO: Not support multi-thread yet.
   {
-    GilReleaseWithCheck no_gil;
-    runtime::Pipeline::Get().frontend_stage()->Wait();
+  GilReleaseWithCheck no_gil;
+  runtime::Pipeline::Get().frontend_stage()->Wait();
   }
 
   auto old_stream_id = kernel::pyboost::PyBoostUtils::cur_stream_id();
@@ -39,37 +39,3 @@ py::object PYNATIVE_EXPORT ${func_name}_OP(const PrimitivePtr &prim, const std::
   MS_LOG(DEBUG) << "Run ${func_name} end";
   return py::reinterpret_steal<py::object>(tensor::Wrap(outputs));
 }
-
-py::object ${func_name}_Base(const PrimitivePtr &prim, const py::list &args) {
-  #ifndef ENABLE_TEST
-    static Converter converter(&ops::${op_def_name});
-    converter.Parse(args);
-    ${parser_body}
-    return ${func_name}_OP(prim, converter.source_type(), ${op_args});
-  #else
-    return PyNativeAlgo::PyBoost::RunPyFunction(prim, args);
-  #endif
-}
-
-py::object PYNATIVE_EXPORT ${func_name}(const py::args &args) {
-  if (args.size() != kIndex2) {
-  MS_LOG(EXCEPTION) << "Two args are needed by RunOp"
-  << ", but got " << args.size();
-  }
-  const auto &prim = PyNativeAlgo::PyBoost::ConvertPrimitive(args[0]);
-  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunOp,
-                                     prim->name(), false, true);
-  return ${func_name}_Base(prim, args[1]);
-}
-
-class PYNATIVE_EXPORT ${class_name}PrimAdapter: public PrimitiveFunctionAdapter {
-public:
-${class_name}PrimAdapter() : PrimitiveFunctionAdapter() {}
-~${class_name}PrimAdapter() = default;
-std::string name() override { return "${class_name}"; }
-py::object Call(const py::list &args) {
-  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunOp,
-                                     "${class_name}", false, true);
-  return ${func_name}_Base(prim::kPrim${class_name}, args);
-}
-};

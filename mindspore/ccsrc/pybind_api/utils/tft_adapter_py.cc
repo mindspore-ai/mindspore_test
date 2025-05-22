@@ -208,6 +208,15 @@ void RebuildSubCommunication() {
 }
 bool IsRebootNode() { return UCEException::GetInstance().is_reboot_node(); }
 
+void CleanUniqueId() {
+  MS_LOG(WARNING) << "Start clean unique id";
+  auto group_info = distributed::collective::CollectiveManager::instance()->get_group_info();
+  for (const auto &item : group_info) {
+    distributed::collective::CollectiveManager::instance()->ClearUniqueID(item.first);
+  }
+  MS_LOG(WARNING) << "End clean unique id";
+}
+
 void RegTFT(py::module *m) {
   (void)m->def("_stop_device", &mindspore::StopDevice, "Stop the device.");
   (void)m->def("_repair_device", &mindspore::UceMemRepair, "Repair the device.");
@@ -225,6 +234,7 @@ void RegTFT(py::module *m) {
   (void)m->def(
     "_tft_finish_record_threads", []() { mindspore::debug::tft::TFTWaitSem::GetInstance().FinishRecordThreads(); },
     "TFT finish recording newly created threads");
+  (void)m->def("_clean_unique_id", &CleanUniqueId, "Clean unique id.");
   (void)m->def("_finalize_comm", &FinalizeCommunication, "Finalize comm.");
   (void)m->def("_rebuild_sub_group", &RebuildSubCommunication, "Rebuild comm.");
   (void)m->def("_rebuild_world_group", &RebuildHcclWorldGroup, "Rebuild comm.");

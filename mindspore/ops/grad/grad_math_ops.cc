@@ -92,6 +92,7 @@ void FreeTensorOfInplaceDivTensor(const PynativeCallback &cb) {
     cb.FreeDeviceAddress(&inputs[0]);
     MS_LOG(DEBUG) << "Clear device address for inputs[0] of" << cb.opname();
   }
+  cb.FreeOutputDeviceAddress();
 }
 
 NodePtrList IgammaBpropExpanderDyn(BpropBuilder *ib) {
@@ -1639,16 +1640,13 @@ REG_BPROP_BUILDER("InplaceDiv")
     }
 
     if (other->need_compute_grad_out()) {
-      auto neg_dout = ib->Emit("Neg", {dout});
       auto div_res1 = ib->Div(input, other);
       auto div_res2 = ib->Div(div_res1, other);
-
       auto div_res2_type = ib->GetDtypeId(div_res2);
       if (div_res2_type == kNumberTypeComplex64 || div_res2_type == kNumberTypeComplex128) {
         div_res2 = ib->Conj(div_res2);
       }
-
-      bc_other = ib->Mul(div_res2, neg_dout);
+      bc_other = -dout * div_res2;
     }
 
     std::vector<NodePtr> ret = BinopGradCommon(ib, input, other, bc_input, bc_other);

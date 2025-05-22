@@ -39,6 +39,12 @@ if(ENABLE_CPU)
         COMPONENT mindspore
         NAMELINK_SKIP
     )
+    install(
+        TARGETS mindspore_cpu_res_manager LIBRARY
+        DESTINATION ${INSTALL_PLUGIN_DIR}/cpu
+        COMPONENT mindspore
+        NAMELINK_SKIP
+    )
 endif()
 
 if(ENABLE_D)
@@ -130,7 +136,7 @@ if(ENABLE_GPU)
     )
     install(
         TARGETS mindspore_gpu_res_manager LIBRARY
-        DESTINATION ${INSTALL_PLUGIN_DIR}
+        DESTINATION ${INSTALL_PLUGIN_DIR}/gpu
         COMPONENT mindspore
         NAMELINK_SKIP
     )

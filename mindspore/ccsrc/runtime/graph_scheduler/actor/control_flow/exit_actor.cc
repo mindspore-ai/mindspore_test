@@ -173,53 +173,6 @@ void ExitActor::OnMemoryAllocFinish(OpContext<KernelTensor> *const context) {
   }
 }
 
-void ExitActor::IncreaseDynamicRefCounts(OpContext<KernelTensor> *const context) {
-  MS_EXCEPTION_IF_NULL(context);
-  ControlActor::IncreaseDynamicRefCounts(context);
-
-  ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kPreLaunch, GetAID().Name());
-  // Increase dynamic ref count by the output data in output branch.
-  if (output_branch_data_.count(output_branch_id_) > 0) {
-    for (auto &output_data : output_branch_data_[output_branch_id_]) {
-      MS_EXCEPTION_IF_NULL(output_data.second);
-      IncreaseDynamicRefCount(output_data.second.get());
-    }
-  }
-
-  // Increase dynamic ref count by the output partial in output branch.
-  if (output_branch_partial_arrows_.count(output_branch_id_) > 0) {
-    for (const auto &partial_arrow : output_branch_partial_arrows_[output_branch_id_]) {
-      MS_EXCEPTION_IF_NULL(partial_arrow);
-      if (IntToSize(partial_arrow->from_output_index_) >= input_partials_.size()) {
-        std::string error_info = "Invalid partial input:" + std::to_string(partial_arrow->from_output_index_) +
-                                 " current:" + std::to_string(input_partials_.size()) + " for actor:" + GetAID().Name();
-        SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
-      }
-      auto output_partial = input_partials_[IntToSize(partial_arrow->from_output_index_)];
-      IncreaseDynamicRefCount(output_partial);
-    }
-  }
-  if (input_kernel_tensors_.size() != device_contexts_.size()) {
-    MS_LOG(ERROR) << "Input device tensor size:" << input_kernel_tensors_.size()
-                  << " is not equal to context size:" << device_contexts_.size() << " for actor:" << GetAID();
-  }
-  // The input device tensor may not have users and needs to free the memory.
-  for (size_t i = 0; i < input_kernel_tensors_.size(); ++i) {
-    if (input_kernel_tensors_[i] != nullptr && (input_kernel_tensors_[i]->device_address() != nullptr) &&
-        (input_kernel_tensors_[i]->device_address()->dynamic_ref_count() == 0) && (device_contexts_[i] != nullptr)) {
-      MS_LOG(INFO) << GetAID().Name() << " input index:" << i << " has no user and free the memory.";
-      // Update the real used device context by the input data.
-      if (device_contexts_[i]->GetDeviceType() != input_kernel_tensors_[i]->device_address()->GetDeviceType()) {
-        device_contexts_[i] = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-          {input_kernel_tensors_[i]->device_address()->device_name(),
-           input_kernel_tensors_[i]->device_address()->device_id()});
-        MS_LOG(INFO) << "Update device context type to:" << device_contexts_[i]->GetDeviceType();
-      }
-      device_contexts_[i]->device_res_manager_->FreeMemory(input_kernel_tensors_[i]->device_address().get());
-    }
-  }
-}
-
 void ExitActor::IncreaseNewRefCounts(OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(context);
   ControlActor::IncreaseNewRefCounts(context);
@@ -343,7 +296,7 @@ bool ExitActor::IsNeedCopyDeviceAddress(DeviceTensor *const input_device_tensor,
   }
 
   if (is_need_dynamic_checks_[index]) {
-    if (input_device_tensor->dynamic_ref_count() != INT32_MAX) {
+    if (input_device_tensor->new_ref_count() != INT32_MAX) {
       return false;
     }
     const auto &node = input_device_tensor->GetNodeIndex().first;
@@ -440,10 +393,6 @@ void ExitActor::CopyDeviceAddress(OpContext<KernelTensor> *const context) {
     new_device_tensor->set_need_sync_user_data(input_device_tensor->need_sync_user_data());
     new_device_tensor->SetNodeIndex(node_with_index.first, node_with_index.second);
     new_device_tensor->set_from_persistent_mem(input_device_tensor->from_persistent_mem());
-    // The device address which is created by actor uses the dynamic ref count.
-    new_device_tensor->set_dynamic_ref_count(0);
-    new_device_tensor->set_original_ref_count(SIZE_MAX);
-    new_device_tensor->ResetRefCount();
 
     // If the address ptr can't be changed, then alloc the new device memory and copy the data.
     if (input_device_tensor->is_ptr_persisted()) {

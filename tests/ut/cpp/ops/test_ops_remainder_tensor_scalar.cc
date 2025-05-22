@@ -14,103 +14,31 @@
  * limitations under the License.
  */
 
-#include <vector>
-#include <memory>
-#include "common/common_test.h"
-#include "ir/dtype/type.h"
-#include "abstract/dshape.h"
-#include "utils/tensor_construct_utils.h"
-#include "ir/primitive.h"
-#include "abstract/abstract_value.h"
-#include "include/backend/optimizer/helper.h"
-#include "ops/test_ops.h"
-#include "infer/ops_func_impl/remainder_tensor_scalar.h"
-#include "ops/test_value_utils.h"
-#include "ops/test_ops_cmp_utils.h"
+#include "ops/utils/general_infer_utils.h"
 
-namespace mindspore {
-namespace ops {
-
-struct RemainderTensorScalarParam {
-  ValuePtr y;
-  std::vector<int64_t> x_shape;
-  TypePtr x_type;
-  std::vector<int64_t> out_shape;
-  TypePtr out_type;
-};
-
-class TestRemainderTensorScalar :
-  public TestOps,
-  public testing::WithParamInterface<std::tuple<RemainderTensorScalarParam>> {};
-
-TEST_P(TestRemainderTensorScalar, dyn_shape) {
-  const auto &param = std::get<0>(GetParam());
-
-  RemainderTensorScalarFuncImpl remainder_tensor_scalar_func_impl;
-  auto prim = std::make_shared<Primitive>("RemainderTensorScalar");
-  auto x = std::make_shared<abstract::AbstractTensor>(param.x_type, param.x_shape);
-  auto y = param.y->ToAbstract();
-  auto expect_shape = std::make_shared<abstract::TensorShape>(param.out_shape);
-  auto expect_dtype = std::make_shared<TensorType>(param.out_type);
-
-  auto out_shape = remainder_tensor_scalar_func_impl.InferShape(prim, {x, y});
-  ASSERT_TRUE(*out_shape == *expect_shape);
-  auto out_dtype = remainder_tensor_scalar_func_impl.InferType(prim, {x, y});
-  ASSERT_TRUE(*out_dtype == *expect_dtype);
+namespace mindspore::ops {
+namespace {
+std::vector<GeneralInferParam> prepare_params() {
+  GeneralInferParamGenerator generator;
+  generator
+    .FeedInputArgs({InferInfoParam{ShapeVector{10}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(true)}})
+    .FeedExpectedOutput({{10}}, {kNumberTypeFloat32});
+  generator
+    .FeedInputArgs({InferInfoParam{ShapeVector{10, 5}, kNumberTypeInt16},
+                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(3)}})
+    .FeedExpectedOutput({{10, 5}}, {kNumberTypeInt16});
+  generator
+    .FeedInputArgs({InferInfoParam{ShapeVector{10, -1}, kNumberTypeInt16},
+                    InferInfoParam{ShapeVector{}, kNumberTypeFloat32, CreateScalar<float>(3.)}})
+    .FeedExpectedOutput({{10, -1}}, {kNumberTypeFloat32});
+  generator
+    .FeedInputArgs({InferInfoParam{ShapeVector{-2}, kNumberTypeFloat64},
+                    InferInfoParam{ShapeVector{}, kNumberTypeFloat64, CreateScalar<float>(3.)}})
+    .FeedExpectedOutput({{-2}}, {kNumberTypeFloat64});
+  return generator.Generate();
 }
+}  // namespace
 
-class TestRemainderTensorScalarSimpleInfer :
-  public TestOps,
-  public testing::WithParamInterface<std::tuple<RemainderTensorScalarParam>> {};
-
-TEST_P(TestRemainderTensorScalarSimpleInfer, simple_infer) {
-  const auto &param = std::get<0>(GetParam());
-  RemainderTensorScalarFuncImpl remainder_tensor_scalar_func_impl;
-
-  auto prim = std::make_shared<Primitive>("RemainderTensorScalar");
-  ASSERT_NE(prim, nullptr);
-
-  auto x = std::make_shared<tensor::Tensor>(param.x_type->type_id(), param.x_shape);
-  ASSERT_NE(x, nullptr);
-  ValuePtrList input_values;
-  input_values.push_back(std::move(x));
-  input_values.push_back(std::move(param.y));
-
-  auto expect_shape = ShapeArray{param.out_shape};
-  auto expect_type = TypePtrList{param.out_type};
-
-  auto output_shape = remainder_tensor_scalar_func_impl.InferShape(prim, input_values);
-  auto output_type = remainder_tensor_scalar_func_impl.InferType(prim, input_values);
-
-  ShapeCompare(output_shape, expect_shape);
-  TypeCompare(output_type, expect_type);
-}
-
-auto RemainderTensorScalarOpTestCases =
-  testing::ValuesIn({RemainderTensorScalarParam{CreateScalar<bool>(true), {10}, kFloat32, {10}, kFloat32},
-                     RemainderTensorScalarParam{CreateScalar<bool>(true), {10, 1, 2}, kInt64, {10, 1, 2}, kInt64},
-                     RemainderTensorScalarParam{CreateScalar<float>(2.0), {10, 4, 2}, kInt64, {10, 4, 2}, kFloat32},
-                     RemainderTensorScalarParam{CreateScalar<int>(2), {10, 1, -1}, kInt64, {10, 1, -1}, kInt64},
-                     RemainderTensorScalarParam{CreateScalar<int>(2), {10, 1, -1}, kFloat32, {10, 1, -1}, kFloat32},
-                     RemainderTensorScalarParam{CreateScalar<bool>(false), {-2}, kInt64, {-2}, kInt64},
-                     RemainderTensorScalarParam{CreateScalar<float>(2.0), {}, kFloat32, {}, kFloat32},
-                     RemainderTensorScalarParam{CreateScalar<bool>(true), {}, kInt64, {}, kInt64},
-                     RemainderTensorScalarParam{CreateScalar<int>(2), {}, kInt64, {}, kInt64}});
-
-auto RemainderTensorScalarOpSimpleInferTestCases =
-  testing::ValuesIn({RemainderTensorScalarParam{CreateScalar<bool>(true), {10}, kFloat32, {10}, kFloat32},
-                     RemainderTensorScalarParam{CreateScalar<bool>(true), {10, 1, 2}, kInt64, {10, 1, 2}, kInt64},
-                     RemainderTensorScalarParam{CreateScalar<float>(2.0), {10, 4, 2}, kInt64, {10, 4, 2}, kFloat32},
-                     RemainderTensorScalarParam{CreateScalar<float>(2.0), {}, kFloat32, {}, kFloat32},
-                     RemainderTensorScalarParam{CreateScalar<bool>(true), {}, kInt64, {}, kInt64},
-                     RemainderTensorScalarParam{CreateScalar<int>(2), {}, kInt64, {}, kInt64}});
-
-INSTANTIATE_TEST_CASE_P(TestRemainderTensorScalar,
-                        TestRemainderTensorScalar,
-                        testing::Combine(RemainderTensorScalarOpTestCases));
-
-INSTANTIATE_TEST_CASE_P(TestRemainderTensorScalarSimpleInfer,
-                        TestRemainderTensorScalarSimpleInfer,
-                        testing::Combine(RemainderTensorScalarOpSimpleInferTestCases));
-}  // namespace ops
-}  // namespace mindspore
+INSTANTIATE_TEST_CASE_P(RemainderTensorScalar, GeneralInferTest, testing::ValuesIn(prepare_params()));
+}  // namespace mindspore::ops

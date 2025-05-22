@@ -34,15 +34,6 @@ endif()
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/proto_compile_config.cmake)
 
-# for pybind_api/np_dtype/np_dtypes.cc
-find_package(Python3 COMPONENTS Interpreter Development)
-if(Python3_FOUND)
-    find_package(Python3 COMPONENTS NumPy Development)
-    if(Python3_NumPy_FOUND)
-        include_directories(${Python3_NumPy_INCLUDE_DIRS})
-    endif()
-endif()
-
 ## make sub objects
 set(SUB_COMP
         transform/express_ir
@@ -66,7 +57,7 @@ foreach(_comp ${SUB_COMP})
         add_dependencies(_mindspore_${sub}_obj proto_input mindspore_core mindspore_ops mindspore_ms_backend)
     endif()
     if(CMAKE_SYSTEM_NAME MATCHES "Windows")
-        target_compile_definitions(_mindspore_${sub}_obj PRIVATE FRONTEND_DLL BUILDING_ME_DLL BUILDING_NP_DTYPE_DLL)
+        target_compile_definitions(_mindspore_${sub}_obj PRIVATE FRONTEND_DLL)
     endif()
 endforeach()
 
@@ -188,9 +179,6 @@ set(MS_BACKEND_SUB_COMP
         plugin/device/cpu/hal/hardware
         plugin/device/cpu/optimizer
         plugin/device/cpu/kernel
-        plugin/res_manager/cpu
-        plugin/res_manager/cpu/cpu_device_address
-        plugin/res_manager/cpu/cpu_mem_manager
         )
 
 foreach(_comp ${MS_BACKEND_SUB_COMP})
@@ -222,14 +210,15 @@ if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
     set_target_properties(mindspore_backend_common PROPERTIES MACOSX_RPATH ON)
     set_target_properties(mindspore_backend_common PROPERTIES INSTALL_RPATH @loader_path)
     set_target_properties(mindspore_ms_backend PROPERTIES MACOSX_RPATH ON)
-    set_target_properties(mindspore_ms_backend PROPERTIES INSTALL_RPATH @loader_path)
+    set_target_properties(mindspore_ms_backend PROPERTIES INSTALL_RPATH @loader_path:@loader_path/plugin/cpu)
 else()
     set_target_properties(mindspore_backend_common PROPERTIES INSTALL_RPATH $ORIGIN)
-    set_target_properties(mindspore_ms_backend PROPERTIES INSTALL_RPATH $ORIGIN)
+    set_target_properties(mindspore_ms_backend PROPERTIES INSTALL_RPATH $ORIGIN:$ORIGIN/plugin/cpu)
 endif()
 
 if(ENABLE_CPU)
-    target_link_libraries(mindspore_ms_backend PRIVATE mindspore::dnnl mindspore::mkldnn nnacl)
+    target_link_libraries(mindspore_ms_backend PRIVATE mindspore::dnnl mindspore::mkldnn nnacl
+            mindspore_cpu_res_manager)
 endif()
 
 if(NOT WIN32)
@@ -308,7 +297,7 @@ set_target_properties(_c_expression PROPERTIES INSTALL_RPATH ${ORIGIN_PATH}/lib:
 
 if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
     set(CMAKE_MACOSX_RPATH 1)
-    set(CMAKE_INSTALL_RPATH "@loader_path/lib;@loader_path")
+    set(CMAKE_INSTALL_RPATH "@loader_path/lib;@loader_path;@loader_path/lib/plugin/cpu")
     set_target_properties(_c_expression PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH}")
 endif()
 

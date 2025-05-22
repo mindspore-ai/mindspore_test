@@ -21,7 +21,6 @@
 #include <vector>
 #include <string>
 #include "common/device_address.h"
-#include "include/backend/kernel_info.h"
 #include "include/backend/kernel_graph.h"
 
 namespace mindspore::runtime {

@@ -18,6 +18,7 @@
 #include <string>
 #include <utility>
 #include "utils/log_adapter.h"
+#include "include/utils/ms_utils.h"
 
 namespace mindspore {
 CompileConfigManager &CompileConfigManager::GetInstance() noexcept {
@@ -34,6 +35,27 @@ void CompileConfigManager::CollectCompileConfig() {
   }
   MS_LOG(DEBUG) << "To collect all compile configs.";
   compile_config_ = collect_func_();
+
+  // collect from MS_JIT
+  std::istringstream iss(common::GetEnv("MS_JIT"));
+  std::string item;
+
+  while (std::getline(iss, item, ',')) {
+    size_t pos = item.find(':');
+    if (pos != std::string::npos) {
+      std::string key = item.substr(0, pos);
+      std::string value = item.substr(pos + 1);
+      if (compile_config_.find(key) != compile_config_.end()) {
+        compile_config_[key] = value;
+        MS_LOG(DEBUG) << "Key: " << key << ", Value: " << value;
+      } else {
+        MS_LOG(EXCEPTION) << "MS_JIT does not support parameter: " << key;
+      }
+    } else if (item != "0" && item != "1") {
+      MS_LOG(EXCEPTION) << "MS_JIT does not support parameter: " << item;
+    }
+  }
+
   collect_finished_ = true;
 }
 

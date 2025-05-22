@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_PIPELINE_JIT_PS_PIPELINE_JIT_H_
-#define MINDSPORE_CCSRC_PIPELINE_JIT_PS_PIPELINE_JIT_H_
+#ifndef MINDSPORE_CCSRC_PIPELINE_JIT_PS_EXECUTOR_JIT_EXECUTOR_PY_H_
+#define MINDSPORE_CCSRC_PIPELINE_JIT_PS_EXECUTOR_JIT_EXECUTOR_PY_H_
 
 #include <string>
 #include <memory>
-#include "pipeline/jit/ps/action.h"
+
+#include "pipeline/jit/ps/executor/executor_py.h"
 #include "pipeline/jit/ps/pipeline.h"
 #include "include/common/visible.h"
 
@@ -65,4 +66,4 @@ using JitExecutorPyPtr = std::shared_ptr<JitExecutorPy>;
 FRONTEND_EXPORT pipeline::ExecutorPyPtr GetExecutor(const std::string &phase = "");
 }  // namespace pipeline
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_PIPELINE_JIT_PS_PIPELINE_JIT_H_
+#endif  // MINDSPORE_CCSRC_PIPELINE_JIT_PS_EXECUTOR_JIT_EXECUTOR_PY_H_

@@ -45,7 +45,6 @@ class GatherActor : public ControlActor {
 
  protected:
   void SendOutput(OpContext<KernelTensor> *const context) override;
-  void IncreaseDynamicRefCounts(OpContext<KernelTensor> *const context) override;
   void IncreaseNewRefCounts(OpContext<KernelTensor> *const context) override;
 
  private:

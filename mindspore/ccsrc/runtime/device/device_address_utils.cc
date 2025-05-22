@@ -577,8 +577,7 @@ void DeviceAddressUtils::CreateKernelOutputDeviceAddress(const DeviceContext *de
                     << " addr:" << device_address << " type:" << device_address->type_id()
                     << ", kernel tensor addr:" << kernel_tensor.get()
                     << ", kernel tensor: " << kernel_tensor->ToString() << " addr size:" << address_size
-                    << " real size:" << device_address->GetSize()
-                    << " origin ref count:" << device_address->original_ref_count();
+                    << " real size:" << device_address->GetSize();
       device_address->set_stream_id(AnfAlgo::GetStreamId(kernel));
       AnfAlgo::SetOutputKernelTensor(kernel_tensor, i, kernel.get());
     }
@@ -778,10 +777,6 @@ void DeviceAddressUtils::UpdateDeviceAddressForInplaceNode(const KernelGraphPtr 
       auto group_node_device_address = AnfAlgo::GetMutableOutputAddr(group_node, index, false);
       MS_EXCEPTION_IF_NULL(group_node_device_address);
       // Update the reference count of device address.
-      device_address->IncreaseOriginalRefCount();
-      MS_LOG(DEBUG) << "After increase ref count for device address:" << device_address
-                    << " ref count:" << device_address->original_ref_count();
-      device_address->ResetRefCount();
       group_node_device_address->set_pointer_ref_count(device_address->pointer_ref_count());
     }
   }
@@ -840,13 +835,6 @@ void DeviceAddressUtils::UpdateDeviceAddress(const session::AnfWithOutIndex &cur
                  << origin_pair.first->fullname_with_scope() << ", index is " << origin_pair.second
                  << "; cur device address " << cur_node_output_addr << " kernel is "
                  << cur_pair.first->fullname_with_scope() << ", index is " << cur_pair.second;
-    // Update the reference count of device address.
-    cur_node_output_addr->DecreaseOriginalRefCount();
-    cur_node_output_addr->ResetRefCount();
-    origin_node_output_addr->IncreaseOriginalRefCount();
-    MS_LOG(DEBUG) << "After increase ref count for device address:" << origin_node_output_addr
-                  << " ref count:" << origin_node_output_addr->original_ref_count();
-    origin_node_output_addr->ResetRefCount();
     cur_node_output_addr->set_pointer_ref_count(origin_node_output_addr->pointer_ref_count());
     cur_node_output_addr->UpdateFlag(device::kDeviceAddressFlagRefNode);
   } else {
@@ -932,8 +920,6 @@ KernelTensorPtr DeviceAddressUtils::CloneEmptyKernelTensor(const KernelTensorPtr
   MS_LOG(DEBUG) << "Create device tensor:" << new_device_address << ", kernel tensor: " << new_kernel_tensor
                 << ", type:" << new_device_address->type_id();
 
-  new_device_address->set_original_ref_count(old_device_address->original_ref_count());
-  new_device_address->ResetRefCount();
   auto node = old_device_address->GetNodeIndex();
   new_device_address->SetNodeIndex(node.first, node.second);
   new_device_address->set_padding_type(old_device_address->padding_type());
@@ -1359,9 +1345,7 @@ device::DeviceAddressPtr DeviceAddressUtils::ConvertContiguousDeviceAddress(
 
   auto new_device_address = kernel_tensor->device_address();
   new_device_address->set_device_shape(old_storage_info->shape);
-  new_device_address->set_original_ref_count(SIZE_MAX);
   new_device_address->set_new_ref_count(SIZE_MAX);
-  new_device_address->ResetRefCount();
 
   if (is_sync) {
     // ExecuteKernelTask sync, need to wait until all tasks in queue are complete.

@@ -17,17 +17,18 @@
  */
 
 #include "pipeline/jit/ps/parse/data_converter.h"
+
 #include <utility>
 #include <unordered_map>
 #include <algorithm>
 #include <map>
 
 #include "include/common/utils/tensor_py.h"
-#include "mindspore/ops/op_def/structure_ops.h"
 #include "pipeline/jit/ps/parse/resolve.h"
 #include "pipeline/jit/ps/pipeline.h"
 #include "frontend/operator/ops.h"
 #include "frontend/operator/composite/composite.h"
+#include "frontend/operator/composite/multitype_funcgraph.h"
 #include "ir/func_graph_cloner.h"
 #include "ir/cell.h"
 #include "ir/dtype.h"
@@ -38,7 +39,8 @@
 #include "include/common/utils/convert_utils_py.h"
 #include "include/common/utils/parallel_context.h"
 #include "include/common/utils/primfunc_utils.h"
-#include "frontend/operator/composite/multitype_funcgraph.h"
+#include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/structure_ops.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
@@ -664,7 +666,7 @@ void ConvertBackwardHookToFuncGraph(const py::object &obj) {
 ValuePtr ConvertCellObjToFuncGraph(const py::object &obj, const ValuePtrList &args_value_list) {
   if (py::hasattr(obj, "construct")) {
     const auto &construct_obj = py::getattr(obj, "construct");
-    bool graph_mode = MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kGraphMode;
+    bool graph_mode = GraphPipelineCompiling();
     if (py::hasattr(construct_obj, "__trace_func__") && !graph_mode) {
       return prim::kPrimTraceGraph;
     }
@@ -782,7 +784,7 @@ ValuePtr ConvertOtherObj(const py::object &obj, bool forbid_reuse = false) {
         return std::make_shared<InterpretedObject>(obj);
       }
     }
-    bool graph_mode = MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kGraphMode;
+    bool graph_mode = GraphPipelineCompiling();
     if (py::hasattr(obj, "__trace_func__") && !graph_mode) {
       return prim::kPrimTraceGraph;
     }

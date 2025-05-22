@@ -275,7 +275,8 @@ bool PrimitiveConverter::CheckKwargs(PrimitiveAttr *cur_prim) {
 }
 
 size_t PrimitiveConverter::GetPrimDefaultSize(const std::vector<ops::OpInputArg> &expect_op_args,
-                                              const std::string &prim_name, size_t varargs_index, bool has_varargs) {
+                                              const std::string &prim_name, size_t varargs_index,
+                                              bool has_varargs) const {
   auto default_dict = parse::GetPrimDefaultDict(prim_name);
   bool has_default = !py::isinstance<py::none>(default_dict);
   // The default value of vararg is ().
@@ -288,26 +289,51 @@ size_t PrimitiveConverter::GetPrimDefaultSize(const std::vector<ops::OpInputArg>
   return varargs_count + default_dict.cast<py::dict>().size();
 }
 
-bool PrimitiveConverter::CheckPositionArgs(PrimitiveAttr *cur_prim) {
-  size_t check_position_size = input_position_args_dtype_.size();
-  if (cur_prim->has_varargs) {
-    bool all_int = false;
-    if (input_position_args_dtype_.size() > cur_prim->varargs_index) {
-      check_position_size = cur_prim->varargs_index;
-      all_int = std::all_of(input_position_args_dtype_.begin() + cur_prim->varargs_index,
-                            input_position_args_dtype_.begin() + input_position_args_dtype_.size(),
-                            [](const auto &op_dtype) { return op_dtype == ops::DT_INT; });
-    }
-    // all of args type show be int or primitive name has "Deprecated"
-    if ((cur_prim->prim_name.find("Deprecated") != std::string::npos) || all_int) {
-      *need_pack_ = true;
+bool PrimitiveConverter::CheckExplicitSequence(PrimitiveAttr *cur_prim,
+                                               const std::vector<ops::OpInputArg> &expect_op_args) const {
+  MS_LOG(DEBUG) << "Check explicit sequence";
+  return input_position_args_dtype_.size() == (cur_prim->varargs_index + 1) &&
+         MatchPrimitiveArgDtype(cur_prim->prim_name, expect_op_args[cur_prim->varargs_index],
+                                input_position_args_dtype_[cur_prim->varargs_index]);
+}
+
+bool PrimitiveConverter::CheckImplicitTuple(PrimitiveAttr *cur_prim,
+                                            const std::vector<ops::OpInputArg> &expect_op_args) {
+  MS_LOG(DEBUG) << "Check implicit tuple";
+  for (size_t i = cur_prim->varargs_index; i < input_position_args_dtype_.size(); ++i) {
+    const auto &arg_name = expect_op_args[cur_prim->varargs_index].arg_name_;
+    // Variable parameters support only the integer type.
+    if (!MatchExpectedDtype(ops::OP_DTYPE::DT_INT, input_position_args_dtype_[i])) {
+      error_msgs_.push_back(functional_name_ + "(): argument '" + arg_name + "' (position " + std::to_string(i) +
+                            ") must be " + ops::EnumToString(expect_op_args[cur_prim->varargs_index].arg_dtype_) +
+                            ", not " + ops::EnumToString(input_position_args_dtype_[i]) + ".");
+      return false;
     }
   }
+  *need_pack_ = true;
+  return true;
+}
+
+bool PrimitiveConverter::CheckPositionArgs(PrimitiveAttr *cur_prim) {
+  size_t check_position = input_position_args_dtype_.size();
   const auto kwonly_list =
     is_method_ ? GetMethodKwonlyArgs(cur_prim->prim_name) : GetFunctionKwonlyArgs(cur_prim->prim_name);
   const auto &op_def = ops::GetOpDef(cur_prim->prim_name);
   const auto &expect_op_args = op_def->args_;
-  for (size_t i = 0; i < check_position_size; ++i) {
+
+  if (cur_prim->has_varargs && input_position_args_dtype_.size() > cur_prim->varargs_index) {
+    check_position = cur_prim->varargs_index;
+    if (!CheckExplicitSequence(cur_prim, expect_op_args) && !CheckImplicitTuple(cur_prim, expect_op_args)) {
+      return false;
+    }
+    // MetaFuncGraph does not support *args scenario
+    if (cur_prim->prim_name.find("DeprecatedTranspose") != std::string::npos) {
+      *need_pack_ = true;
+    }
+  }
+
+  MS_LOG(DEBUG) << "Check position args";
+  for (size_t i = 0; i < check_position; ++i) {
     // position argument should not be keyword-only.
     const auto &arg_name = expect_op_args[i].arg_name_;
     if (kwonly_list != nullptr && kwonly_list->find(arg_name) != kwonly_list->end()) {
@@ -408,7 +434,7 @@ std::stringstream BuildApiInputInfo(const std::string &function_name, const std:
   return ss;
 }
 
-std::string PrimitiveConverter::BuildMatchInfo(const std::vector<std::string> &arg_info_list) {
+std::string PrimitiveConverter::BuildMatchInfo(const std::vector<std::string> &arg_info_list) const {
   MS_LOG(DEBUG) << "first_failed_position_ = " << first_failed_position_;
   std::stringstream ss;
   std::string result;
@@ -429,7 +455,7 @@ std::string PrimitiveConverter::BuildMatchInfo(const std::vector<std::string> &a
   return ss.str();
 }
 
-std::string PrimitiveConverter::BuildDetailedErrorMsg(const std::vector<std::string> &arg_info_list) {
+std::string PrimitiveConverter::BuildDetailedErrorMsg(const std::vector<std::string> &arg_info_list) const {
   const auto &signature_map =
     is_method_ ? ops::tensor_method_overload_signature_map : ops::function_overload_signature_map;
   auto it = signature_map.find(functional_name_);

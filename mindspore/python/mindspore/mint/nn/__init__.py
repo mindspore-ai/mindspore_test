@@ -1189,7 +1189,7 @@ class PixelShuffle(Cell):
         >>> pixel_shuffle = mint.nn.PixelShuffle(3)
         >>> input = mint.randn(1, 9, 4, 4)
         >>> output = pixel_shuffle(input)
-        >>> print(output.shape())
+        >>> print(output.shape)
             [1, 1, 12, 12]
     """
 

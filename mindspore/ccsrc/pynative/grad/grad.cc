@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@
 #include "pynative/grad/function/func_grad.h"
 #include "pynative/pynative_utils.h"
 #include "pynative/grad/grad_utils.h"
-#include "pipeline/jit/ps/pipeline_jit.h"
+#include "pipeline/jit/ps/executor/jit_executor_py.h"
 #include "ir/cell.h"
 #include "ir/func_graph_cloner.h"
 #include "pipeline/jit/ps/parse/data_converter.h"

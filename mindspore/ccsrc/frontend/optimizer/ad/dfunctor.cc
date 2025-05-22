@@ -447,11 +447,6 @@ AdjointPtr DFunctor::MapMorphism(const AnfNodePtr &morph) {
     }
   }
 
-  // Run in pynative mode, when @jit is used.
-  if (MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode &&
-      common::GetCompileConfig("PYNATIVE_JIT_GRAD_MODE") == "1") {
-    pynative::PyNativeAdapter::ProcessCnodeFromAdGrad(k_app, cnode_morph);
-  }
   for (size_t i = 0; i < param_adjoints.size(); ++i) {
     param_adjoints[i]->RegisterKUser(k_app, i);
   }
@@ -828,10 +823,8 @@ void DFunctor::MapParamObject() {
 void DFunctor::MapValueObject() {
   // Map ValueNode.
   auto manager = resources_->manager();
-  if (MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
-    if (pynative::GradState::Get().RequiresGrad() && common::GetCompileConfig("PYNATIVE_JIT_GRAD_MODE") != "1") {
-      CopyPrimitivePtrForFpropReplace(primal_graph_, manager);
-    }
+  if (pynative::GradState::Get().RequiresGrad()) {
+    CopyPrimitivePtrForFpropReplace(primal_graph_, manager);
   }
   auto &value_nodes = primal_graph_->value_nodes();
   for (const auto &value_pair : value_nodes) {
