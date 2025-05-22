@@ -26,6 +26,7 @@
 #include "ir/meta_tensor.h"
 #include "utils/log_adapter.h"
 #include "ir/tensor_data.h"
+#include "common/device_address.h"
 
 namespace mindspore {
 // Current not support multi -thread use this Single Instance
@@ -41,9 +42,9 @@ class MS_CORE_API LLMManager {
   /// \brief Destructor.
   ~LLMManager() = default;
 
-  tensor::TensorDataPtr get_graph_input(const std::string &name);
+  device::DeviceAddressPtr get_graph_input(const std::string &name);
 
-  void add_graph_input(const std::string &name, tensor::TensorDataPtr tensor);
+  void add_graph_input(const std::string &name, device::DeviceAddressPtr tensor);
 
   void reset_graph_inputs();
 
@@ -55,7 +56,7 @@ class MS_CORE_API LLMManager {
 
  private:
   bool force_resize_kernel_{false};
-  std::map<std::string, tensor::TensorDataPtr> graph_inputs_map_;
+  std::map<std::string, device::DeviceAddressPtr> graph_inputs_map_;
   std::set<std::string> force_resize_kernel_set_{};
 };
 }  // namespace mindspore

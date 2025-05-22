@@ -91,7 +91,7 @@ void GraphParameterStore::InsertTensorDataIntoCallback(const TensorDataPtr &tens
   tensor_data_in_callback_.push_back(tensor_data);
 }
 
-void GraphParameterStore::InsertDeviceTensorIntoCallback(const DeviceTensorPtr &device_tensor) {
+void GraphParameterStore::InsertDeviceTensorIntoCallback(const DeviceSyncPtr &device_tensor) {
   std::unique_lock<std::shared_mutex> lock(param_mutex_);
   device_tensor_in_callback_.emplace(device_tensor);
 }
@@ -227,13 +227,14 @@ bool GraphParameterStore::RecordGraphInputsAndIsDyn(const std::vector<size_t> &i
     }
     host_tensors_shape_[i] = input_tensor->shape();
     input_tensor->set_name(origin_parameter->fullname_with_scope());
-    llm_manager.add_graph_input(origin_parameter->fullname_with_scope(), input_tensor->data_ptr());
+    llm_manager.add_graph_input(origin_parameter->fullname_with_scope(),
+                                std::static_pointer_cast<DeviceTensor>(host_tensor->device_address()));
   }
   return isDyn;
 }
 
 void AddCopyDataCallBack(const std::vector<TensorDataPtr> &tensor_data_in_callback,
-                         const std::set<DeviceTensorPtr> &device_tensor_in_callback) {
+                         const std::set<DeviceSyncPtr> &device_tensor_in_callback) {
   device::CallbackFunc callback_func = [tensor_data_in_callback, device_tensor_in_callback]() {
     // Clear buffer automatically.
   };
