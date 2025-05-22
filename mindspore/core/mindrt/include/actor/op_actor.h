@@ -97,6 +97,7 @@ struct OpContext {
   std::vector<OpDataPtr<T>> *output_data_;
   std::vector<Promise<int>> *results_;
   // Record the error info for print.
+  bool is_error_{false};
   std::string error_info_{""};
   const void *kernel_call_back_before_;
   const void *kernel_call_back_after_;
@@ -124,6 +125,7 @@ struct OpRTContext {
   std::vector<OpRTDataPtr<T>> *output_data_;
   std::vector<Promise<int>> *results_;
   // Record the error info for print.
+  bool is_error_{false};
   std::string error_info_{""};
   const void *kernel_call_back_before_;
   const void *kernel_call_back_after_;

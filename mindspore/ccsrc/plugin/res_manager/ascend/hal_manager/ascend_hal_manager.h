@@ -53,6 +53,7 @@ class ASCEND_RES_MANAGER_EXPORT AscendHalManager {
   void DestroyAllContext();
 
  private:
+  static AscendHalManager instance_;
   std::set<uint32_t> initialized_device_set_{};
   // default <device_id, aclrtcontext> pair
   std::map<uint32_t, aclrtContext> default_device_context_map_;

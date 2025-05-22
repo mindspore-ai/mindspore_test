@@ -150,6 +150,11 @@ class GPUKernelExecutor : public KernelExecutor {
   bool LaunchKernel(const CNodePtr &kernel, const std::vector<KernelTensor *> &inputs,
                     const std::vector<KernelTensor *> &workspace, const std::vector<KernelTensor *> &outputs,
                     KernelMod *kernel_mod, void *stream) const override;
+  bool LaunchKernelHP(const CNodePtr &kernel, const std::vector<KernelTensor *> &inputs,
+                      const std::vector<KernelTensor *> &workspace, const std::vector<KernelTensor *> &outputs,
+                      KernelMod *kernel_mod, void *stream) const override {
+    return LaunchKernel(kernel, inputs, workspace, outputs, kernel_mod, stream);
+  }
 
   uint32_t GetRankID() const override;
 

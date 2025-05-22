@@ -254,6 +254,8 @@ void DeviceAddress::IncreaseNewRefCount(const std::string &op_name, size_t i) {
   MS_LOG(DEBUG) << "Op:" << op_name << " increase new ref count for device address:" << PrintInfo();
 }
 
+void DeviceAddress::IncreaseNewRefCount(size_t i) { address_common_->pointer_ref_count_->IncreaseNewRefCount(i); }
+
 size_t DeviceAddress::DecreaseNewRefCount(const std::string &op_name) {
   size_t ref_count = address_common_->pointer_ref_count_->DecreaseNewRefCount();
   MS_LOG(DEBUG) << "Op:" << op_name << " decrease new ref count for device address:" << PrintInfo();
@@ -337,6 +339,10 @@ bool DeviceAddress::IsPtrValid() const {
 
 bool DeviceAddress::IsNotNeedAlloc() const {
   return IsPtrValid() || TEST_FLAG(flag(), device::kDeviceAddressFlagNotUsed);
+}
+
+bool DeviceAddress::IsNotNeedAllocWOLock() const {
+  return (GetDevicePtr() != nullptr) || TEST_FLAG(flag(), device::kDeviceAddressFlagNotUsed);
 }
 
 // Return the valid device ptr.

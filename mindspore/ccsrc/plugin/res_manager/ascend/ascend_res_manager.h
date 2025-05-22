@@ -171,6 +171,8 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public HalResBase {
   std::shared_ptr<MemoryManager> mem_manager_{nullptr};
   DeviceEventPtrList device_events_{};
   std::mutex device_events_mutex_;
+  uint32_t device_id_{0};
+  bool enable_memory_tracker_{false};
 };
 }  // namespace ascend
 }  // namespace device

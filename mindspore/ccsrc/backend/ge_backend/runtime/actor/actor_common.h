@@ -104,6 +104,7 @@ enum class KernelTransformType {
 #define SET_OPCONTEXT_FAIL_RET_WITH_ERROR(op_context, message) \
   do {                                                         \
     if ((op_context).error_info_.empty()) {                    \
+      (op_context).is_error_ = true;                           \
       (op_context).error_info_ = message;                      \
     }                                                          \
     (op_context).SetFailed(kFailure);                          \
@@ -122,6 +123,7 @@ enum class KernelTransformType {
       MS_LOG(EXCEPTION) << (message);                                                \
     }                                                                                \
     if ((op_context).error_info_.empty()) {                                          \
+      (op_context).is_error_ = true;                                                 \
       (op_context).error_info_ = message;                                            \
     }                                                                                \
     (op_context).SetFailed(kFailure);                                                \
@@ -144,6 +146,7 @@ enum class KernelTransformType {
       MS_LOG(ERROR) << message;                                                                    \
     }                                                                                              \
     if ((op_context).error_info_.empty()) {                                                        \
+      (op_context).is_error_ = true;                                                               \
       (op_context).error_info_ = message;                                                          \
     }                                                                                              \
     (op_context).SetFailed(kFailure);                                                              \
