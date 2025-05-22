@@ -1,0 +1,7 @@
+masked_scatter:
+  op_yaml: masked_scatter_op.yaml
+  py_method: tensor_masked_scatter
+  Ascend: pyboost
+  CPU: pyboost
+  GPU: pyboost
+  interface: tensor

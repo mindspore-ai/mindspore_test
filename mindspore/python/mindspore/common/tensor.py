@@ -3624,46 +3624,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('ormqr')(self, input2, input3, left, transpose)
 
-    def masked_scatter(self, mask, x):
-        r"""
-        Updates the value in the "self Tensor" with the `tensor` value according to the mask, and returns a Tensor.
-        The shape of `mask` and the "self Tensor" must be the same or `mask` is broadcastable.
-
-        .. warning::
-            This is an experimental API that is subject to change or deletion.
-
-        Args:
-            mask (Tensor[bool]): A bool tensor with a shape broadcastable to the "self Tensor".
-            x (Tensor): A tensor with the same data type as the "self Tensor". The number
-                of elements must be greater than or equal to the number of True's in `mask`.
-
-        Returns:
-            Tensor, with the same type and shape as the "self Tensor".
-
-        Raises:
-            TypeError: If `mask` or `x` is not a Tensor.
-            TypeError: If data type of the "self Tensor" is not be supported.
-            TypeError: If dtype of `mask` is not bool.
-            TypeError: If the dim of the "self Tensor" less than the dim of `mask`.
-            ValueError: If `mask` can not be broadcastable to the "self Tensor".
-            ValueError: If the number of elements in `x` is less than the number required for the updates.
-
-        Supported Platforms:
-            ``Ascend`` ``CPU``
-
-        Examples:
-            >>> import numpy as np
-            >>> import mindspore
-            >>> from mindspore import Tensor
-            >>> x = Tensor(np.array([1., 2., 3., 4.]), mindspore.float32)
-            >>> mask = Tensor(np.array([True, True, False, True]), mindspore.bool)
-            >>> tensor = Tensor(np.array([5., 6., 7.]), mindspore.float32)
-            >>> output = x.masked_scatter(mask, tensor)
-            >>> print(output)
-            [5. 6. 3. 7.]
-        """
-        return tensor_operator_registry.get('masked_scatter')()(self, mask, x)
-
     def index_put(self, indices, values, accumulate=False):
         r"""
         Based on the indices in `indices`, replace the corresponding elements in Tensor `self`

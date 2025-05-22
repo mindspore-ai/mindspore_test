@@ -3251,36 +3251,66 @@ REG_BPROP_BUILDER("SegmentMean").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   return {dx, ib->OutZeros(segment_ids)};
 });
 
+namespace {
+NodePtr CalDupdates(BpropBuilder *ib, int64_t diffNumel, const NodePtr &dout, const NodePtr &maskSelected) {
+  if (diffNumel > 0) {
+    ShapeVector zerosShape = {static_cast<int64_t>(diffNumel)};
+    auto zerosFillin = ib->Zeros(ib->Value<ShapeVector>(zerosShape), ib->Value<int64_t>(ib->GetDtypeId(dout)));
+    auto dupdatesConcated = ib->Concat({maskSelected, zerosFillin}, 0);
+    return dupdatesConcated;
+  } else {
+    return maskSelected;
+  }
+}
+}  // namespace
+
+DEF_PURE_SHAPE_CALC(g_masked_scatter)
+  .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
+    auto updatesSize =
+      std::accumulate(inputs.at(kIndex0).begin(), inputs.at(kIndex0).end(), 1, std::multiplies<size_t>());
+    auto maskSize = std::accumulate(inputs.at(kIndex1).begin(), inputs.at(kIndex1).end(), 1, std::multiplies<size_t>());
+    std::vector<int64_t> res_shape;
+    auto diffNumel = updatesSize - maskSize;
+    res_shape.push_back(diffNumel);
+    return {res_shape};
+  })
+  .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &) -> std::vector<int64_t> { return {1}; });
+
 REG_BPROP_BUILDER("MaskedScatter").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto mask = ib->GetInput(kIndex1);
   auto updates = ib->GetInput(kIndex2);
   auto dout = ib->GetInput(kIndex4);
-  dout = ib->Cast(dout, kFloat32);
   NodePtr dx = nullptr;
+  // dx
   if (x->need_compute_grad_out()) {
-    dx = ib->MaskedFill(dout, mask, ib->Tensor(0, kFloat32));
-    dx = ib->Cast(dx, ib->GetDtype(x));
+    dx = ib->MaskedFill(dout, mask, ib->Tensor(0, ib->GetDtype(x)));
   } else {
     dx = ib->OutZeros(x);
   }
+
+  // dupdates
   NodePtr dupdates = nullptr;
   if (updates->need_compute_grad_out()) {
-    dupdates = ib->Cast(ib->Reshape(ib->ZerosLikeExt(updates, ib->EmitValue(kNone)), {-1}), kFloat32);
-    auto dupdates_val = ib->Cast(ib->Emit("MaskedSelect", {dout, mask}), kFloat32);
-    auto length = ib->TupleGetItem(ib->Shape(dupdates_val), LongToSize(0));
-    auto scatter_indices = ib->Range(length);
-    auto axis = ib->Value<int64_t>(0);
-    auto reduce = ib->Value(static_cast<int64_t>(Reduce::REDUCE_NONE));
-    dupdates = ib->Emit("TensorScatterElements", {dupdates, scatter_indices, dupdates_val, axis, reduce});
-    // The operator test case pass on cpu or ascend backend. But it may fail once enabled on gpu backend for pynative
-    // mode. Now it is not supported on gpu backend.
+    auto maskSelected = ib->Emit("MaskedSelect", {dout, mask});
+    if (IsDynamic(ib->GetShape(maskSelected))) {
+      auto zerosShape = ib->ShapeCalc(g_masked_scatter, {updates, maskSelected})[0];
+      auto diffNumel = ib->TupleGetItem(zerosShape, 0);
+      auto cond = ib->Greater(ib->ScalarToTensor(diffNumel, kInt64), ib->Tensor(0, kInt64));
+      auto zerosFillin = ib->Zeros(zerosShape, ib->Value<int64_t>(ib->GetDtypeId(dout)));
+      auto trueBranch = [&](Emitter *e) -> NodePtrList { return {ib->Concat({maskSelected, zerosFillin}, 0)}; };
+      auto falseBranch = [&maskSelected](Emitter *e) -> NodePtrList { return {maskSelected}; };
+      dupdates = ib->Conditional(cond, trueBranch, falseBranch);
+    } else {
+      auto diffNumel = ib->GetSize(updates) - ib->GetSize(maskSelected);
+      dupdates = CalDupdates(ib, diffNumel, dout, maskSelected);
+    }
     dupdates = ib->Reshape(dupdates, ib->Shape(updates));
-    dupdates = ib->Cast(dupdates, ib->GetDtype(updates));
   } else {
     dupdates = ib->OutZeros(updates);
   }
-  return {dx, ib->OutZeros(mask), dupdates};
+  std::vector<NodePtr> ret = BinopGradCommon(ib, x, mask, dx, nullptr);
+  return {ret[0], ib->OutZeros(mask), dupdates};
 });
 
 REG_BPROP_BUILDER("CountNonZero").SetUnusedInputs({i0, i1, i2}).SetBody(ReturnZeros);
