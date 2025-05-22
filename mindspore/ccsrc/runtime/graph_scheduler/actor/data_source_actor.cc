@@ -230,7 +230,7 @@ void CopyHostTensorToKernelTensor(const tensor::TensorPtr &host_tensor, const ke
     if (tensor_device_address->GetPtr() == device_tensor->GetPtr()) {
       return;
     }
-    if (!Copy(device_tensor, tensor_device_address.get())) {
+    if (!SyncCopy(device_tensor, tensor_device_address.get(), kDefaultStreamIndex)) {
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "Copy data failed.");
     }
     return;
@@ -248,14 +248,11 @@ void CopyHostTensorToKernelTensor(const tensor::TensorPtr &host_tensor, const ke
   }
   if (enable_async_copy) {
     MS_LOG(INFO) << "Node : " << node_index.first->DebugString();
-    if (!device_tensor->AsyncHostToDevice(LongToSize(host_tensor->data().nbytes()), host_tensor->data_type(),
-                                          host_tensor->data_ptr()->data())) {
+    if (!AsyncCopy(device_tensor, host_tensor->device_address().get(), kDefaultStreamIndex)) {
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "SyncHostToDevice failed.");
     }
   } else {
-    if (!device_tensor->SyncHostToDevice(AnfAlgo::GetRuntimePaddingShape(node_index.first, node_index.second),
-                                         LongToSize(host_tensor->data().nbytes()), host_tensor->data_type(),
-                                         host_tensor->device_info().host_format_, host_tensor->data_ptr())) {
+    if (!SyncCopy(device_tensor, host_tensor->device_address().get(), kDefaultStreamIndex)) {
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "SyncHostToDevice failed.");
     }
   }

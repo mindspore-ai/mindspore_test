@@ -394,7 +394,7 @@ void ExitActor::CopyDeviceAddress(OpContext<KernelTensor> *const context) {
         SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(GraphExecutionStrategy::kPipeline, *context, GetAID().Name(),
                                                     new_device_tensor->GetSize());
       }
-      if (!new_device_tensor->SyncDeviceToDevice(input_device_tensor)) {
+      if (!SyncCopy(new_device_tensor.get(), input_device_tensor, kDefaultStreamIndex)) {
         SET_OPCONTEXT_FAIL_RET_WITH_ERROR(*context, "Sync device to device failed.");
       }
     } else {
