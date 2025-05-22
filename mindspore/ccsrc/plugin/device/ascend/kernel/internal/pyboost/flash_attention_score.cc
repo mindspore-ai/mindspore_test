@@ -74,7 +74,7 @@ void InternalKernelInfoFlashAttentionScore::Call(
   sparse_mode_ = static_cast<int32_t>(sparse_mode);
 
   auto op_key = CalcInternalOpApiHash(kernel_name_, inputs, head_num_, tor_, pre_tokens_, next_tokens_, inner_precise_,
-                                      input_layout_, sparse_mode_, mask_dims_, q_seq_len_, kv_seq_len_);
+                                      input_layout_, sparse_mode_, mask_dims_, q_seq_len_, kv_seq_len_, outputs);
   GetOrCreateKernel(op, inputs, outputs, op_key);
   LAUNCH_INTERNAL(kernel_name_, op, internal_op_, inputs, outputs, tiling_info_);
 }

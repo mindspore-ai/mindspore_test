@@ -38,7 +38,7 @@ void InternalKernelInfoReshapeAndCache::Call(const std::shared_ptr<pyboost::OpRu
   internal_outputs_shape_.resize(outputs.size());
   TransInternalShapes(&internal_inputs_shape_, inputs);
   TransInternalShapes(&internal_outputs_shape_, outputs);
-  auto op_key = CalcInternalOpApiHash(kernel_name_, inputs);
+  auto op_key = CalcInternalOpApiHash(kernel_name_, inputs, outputs);
   GetOrCreateKernel(op, inputs, outputs, op_key);
   LAUNCH_INTERNAL(kernel_name_, op, internal_op_, inputs, outputs, tiling_info_);
 }

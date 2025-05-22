@@ -38,7 +38,7 @@ void InternalKernelInfoApplyRotaryPosEmb::Call(const std::shared_ptr<pyboost::Op
   TransInternalShapes(&internal_inputs_shape_, inputs);
   TransInternalShapes(&internal_outputs_shape_, outputs);
   cos_format_ = cos_format;
-  auto op_key = CalcInternalOpApiHash(kernel_name_, inputs, cos_format_);
+  auto op_key = CalcInternalOpApiHash(kernel_name_, inputs, cos_format_, outputs);
   GetOrCreateKernel(op, inputs, outputs, op_key);
   LAUNCH_INTERNAL(kernel_name_, op, internal_op_, inputs, outputs, tiling_info_);
 }
