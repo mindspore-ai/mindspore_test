@@ -24,9 +24,9 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr InplaceBernoulliTensorAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                            const BaseTensorPtr &input, const BaseTensorPtr &p,
-                                                            const BaseTensorPtr &seed, const BaseTensorPtr &offset) {
+tensor::TensorPtr InplaceBernoulliTensorAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input,
+                                                        const TensorPtr &p, const TensorPtr &seed,
+                                                        const TensorPtr &offset) {
   MS_LOG(DEBUG) << "Call InplaceBernoulliTensor start";
   auto [seed_imm, offset_imm] = UpdateGeneratorState(seed, offset);
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input, p);

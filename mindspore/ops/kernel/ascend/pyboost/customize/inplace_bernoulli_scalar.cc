@@ -24,9 +24,9 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr InplaceBernoulliScalarAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                            const BaseTensorPtr &input, const FP32ImmPtr &p,
-                                                            const BaseTensorPtr &seed, const BaseTensorPtr &offset) {
+tensor::TensorPtr InplaceBernoulliScalarAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input,
+                                                        const FP32ImmPtr &p, const TensorPtr &seed,
+                                                        const TensorPtr &offset) {
   MS_LOG(DEBUG) << "Call InplaceBernoulliScalar start";
   auto p_scalar = p->cast<ScalarPtr>();
   MS_EXCEPTION_IF_NULL(p_scalar);
