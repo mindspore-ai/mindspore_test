@@ -285,31 +285,6 @@ bool CPUResManager::AsyncCopy(const DeviceSync *dst_device_sync, const DeviceSyn
   return true;
 }
 
-bool CPUResManager::LoadCollectiveCommLib() {
-  bool using_mpi = common::UseMPI();
-  if (using_mpi) {
-    std::string mpi_comm_lib_name = "libmpi_collective.so";
-    auto loader = std::make_shared<CollectiveCommLibLoader>(mpi_comm_lib_name);
-    MS_EXCEPTION_IF_NULL(loader);
-    if (!loader->Initialize()) {
-      MS_LOG(EXCEPTION) << "Failed to load mpi collective library.";
-    }
-
-    void *collective_comm_lib_handle = loader->collective_comm_lib_ptr();
-    MS_EXCEPTION_IF_NULL(collective_comm_lib_handle);
-
-    auto instance_func = DlsymFuncObj(communication_lib_instance, collective_comm_lib_handle);
-    collective_comm_lib_ = instance_func();
-    MS_EXCEPTION_IF_NULL(collective_comm_lib_);
-  } else {
-#if defined(__linux__) && defined(WITH_BACKEND)
-    collective_comm_lib_ = &MsCollectiveCommLib::GetInstance();
-    MS_EXCEPTION_IF_NULL(collective_comm_lib_);
-#endif
-  }
-  return true;
-}
-
 MS_REGISTER_HAL_COPY_FUNC(DeviceType::kAscend,
                           ([](const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync, size_t stream_id) {
                             auto context = MsContext::GetInstance();
