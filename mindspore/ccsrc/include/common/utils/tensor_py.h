@@ -469,6 +469,17 @@ class COMMON_EXPORT TensorPy {
   void SetSliceShapeOfPersistentData(const py::object &slice_shape_of_persistent_data);
 
   void UpdateStub(const TensorPtr &tensor);
+
+  /// \brief Get storage of tensor.
+  ///
+  /// \return The storage of tensor.
+  const py::object GetStorage() const;
+
+  /// \brief Get storage of tensor.
+  ///
+  /// \return The storage of tensor.
+  void SetStorage(py::object storage);
+
   bool has_stub() const { return stub_ != nullptr; }
   const stub::StubNodePtr &stub() const { return stub_; }
   const stub::StubNodePtr &MakeStub() {
@@ -491,6 +502,7 @@ class COMMON_EXPORT TensorPy {
   py::object retain_grad_;
   py::object slice_num_of_persistent_data_;
   py::object slice_shape_of_persistent_data_;
+  py::object storage_{py::none()};
   std::string device_;
   TensorPtr tensor_{nullptr};
   py::object flatten_tensor_;

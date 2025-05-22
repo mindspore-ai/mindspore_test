@@ -335,6 +335,7 @@ mindspore.Tensor
     mindspore.Tensor.square
     mindspore.Tensor.squeeze
     mindspore.Tensor.std
+    mindspore.Tensor.storage
     mindspore.Tensor.storage_offset
     mindspore.Tensor.stride
     mindspore.Tensor.strides
@@ -377,6 +378,7 @@ mindspore.Tensor
     mindspore.Tensor.unsorted_segment_min
     mindspore.Tensor.unsorted_segment_prod
     mindspore.Tensor.unsqueeze
+    mindspore.Tensor.untyped_storage
     mindspore.Tensor.var
     mindspore.Tensor.view
     mindspore.Tensor.view_as

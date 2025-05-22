@@ -561,11 +561,11 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   void set_address_common(const AddressCommonPtr &address_common);
   ContinuousDeviceAddressesPtr continuous_device_addresses() const;
   void set_continuous_device_addresses(const ContinuousDeviceAddressesPtr &continuous_device_addresses);
+  size_t size() const { return address_common_->size_; }
 
  protected:
   // address basic info
   AddressCommonPtr address_common_{nullptr};
-  size_t size() const { return address_common_->size_; }
 
   void *GetDevicePtr() const { return address_common_->pointer_ref_count_->ptr(); }
   void SetDevicePtr(void *ptr) const { address_common_->pointer_ref_count_->set_ptr(ptr); }

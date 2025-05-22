@@ -66,7 +66,7 @@ add_library(mindspore_frontend SHARED ${SUB_OBJECTS_SRC})
 target_link_libraries(mindspore_frontend PRIVATE mindspore_ms_backend mindspore_core mindspore::pybind11_module securec
                       mindspore_pyboost mindspore_common mindspore_ops mindspore_ops_kernel_common
                       mindspore_backend_manager proto_input mindspore_profiler mindspore_runtime_pipeline
-                      mindspore_backend_common)
+                      mindspore_backend_common mindspore_res_manager)
 if(NOT WIN32)
     target_link_libraries(mindspore_frontend PRIVATE dl)
 endif()

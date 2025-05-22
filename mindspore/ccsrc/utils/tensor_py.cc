@@ -105,6 +105,10 @@ TensorPtr TensorPy::GetTensor() const {
 
 void TensorPy::UpdateStub(const TensorPtr &tensor) { stub_->SetValue(tensor); }
 
+const py::object TensorPy::GetStorage() const { return storage_; }
+
+void TensorPy::SetStorage(py::object storage) { storage_ = storage; }
+
 const py::object TensorPy::GetParentTensor() {
   if (!parent_tensor_.check() || parent_tensor_.is_none()) {
     return py::none();
