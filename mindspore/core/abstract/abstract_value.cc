@@ -1872,12 +1872,13 @@ std::string AbstractTensor::ToString() const {
   MS_EXCEPTION_IF_NULL(value_track);
   buffer << type_name() << "("
          << "shape: " << shape_track->ToString() << ", element: " << element_->ToString()
-         << ", value_ptr: " << value_track << ", value: " << value_track->ToString() << ")";
+         << ", value_ptr: " << value_track << ", value: " << value_track->ToString();
 
   auto has_view_output = this->user_data<bool>(kHasViewOutputFlag);
   if (has_view_output != nullptr && *has_view_output) {
     buffer << ", has_view_output";
   }
+  buffer << ")";
   return buffer.str();
 }
 
@@ -2223,7 +2224,7 @@ std::string AbstractRefTensor::ToString() const {
   if (value != nullptr) {
     buffer << ", value: " << value->ToString();
   }
-  buffer << "," << RefTensorTypeToString();
+  buffer << RefTensorTypeToString();
   auto has_view_output = this->user_data<bool>(kHasViewOutputFlag);
   if (has_view_output != nullptr && *has_view_output) {
     buffer << ", has_view_output";

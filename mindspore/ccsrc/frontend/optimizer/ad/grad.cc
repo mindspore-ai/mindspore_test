@@ -239,9 +239,15 @@ void CheckOutputInner(const AnfNodePtr &node) {
 
 void CheckViewInplaceOutput(const FuncGraphPtr &func_graph) {
   const auto &output = func_graph->output();
-  auto output_bas = output->abstract();
-  if (output_bas != nullptr && output_bas->isa<abstract::AbstractRefTensor>()) {
-    auto ref = output_bas->cast<abstract::AbstractRefPtr>();
+  MS_EXCEPTION_IF_NULL(output);
+  auto output_abs = output->abstract();
+  if (output_abs != nullptr && output_abs->isa<abstract::AbstractRefTensor>()) {
+    auto ref = output_abs->cast<abstract::AbstractRefPtr>();
+    if (ref->is_view_output()) {
+      MS_LOG(EXCEPTION) << "The current view inplace differentiation scenario is not supported. "
+                           "The code location is as follows:\n"
+                        << trace::GetDebugInfoStr(output->debug_info());
+    }
     if (ref->is_view_input()) {
       return;
     }

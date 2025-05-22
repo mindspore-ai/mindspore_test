@@ -846,7 +846,7 @@ void PrimitiveFunctionEvaluator::CheckArgsSizeAndType(const AbstractBasePtrList 
 AbstractBasePtr UpdateViewOpsAbstract(const AbstractBasePtr &res, const AbstractBasePtrList &args) {
   MS_EXCEPTION_IF_NULL(res);
   if (!res->isa<abstract::AbstractTensor>() && !res->isa<abstract::AbstractTuple>()) {
-    MS_LOG(EXCEPTION) << "The abstract of view operation is exception:" << res->ToString();
+    MS_LOG(EXCEPTION) << "The abstract of view operation is exception: " << res->ToString();
   }
 
   // Update the abstract of first input of view operation.
@@ -887,7 +887,7 @@ AbstractBasePtr UpdateViewOpsAbstract(const AbstractBasePtr &res, const Abstract
         continue;
       }
       if (!ele->isa<abstract::AbstractTensor>()) {
-        MS_LOG(EXCEPTION) << "The abstract of view operation is exception:" << res->ToString();
+        MS_LOG(EXCEPTION) << "The abstract of view operation is exception: " << res->ToString();
       }
       auto ele_abs = dyn_cast<abstract::AbstractTensor>(ele);
       auto new_ele_abs = ConvertTensorToRef(ele_abs);
@@ -902,7 +902,7 @@ AbstractBasePtr UpdateViewOpsAbstract(const AbstractBasePtr &res, const Abstract
     output_sequence_abs->set_elements(output_list);
     new_res = res;
   }
-  MS_LOG(DEBUG) << "The new abstract of view operation is:" << new_res->ToString();
+  MS_LOG(DEBUG) << "The new abstract of view operation is: " << new_res->ToString();
   return new_res;
 }
 
