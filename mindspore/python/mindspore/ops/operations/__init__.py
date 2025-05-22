@@ -403,6 +403,8 @@ __all__ = [
     'UnsortedSegmentProd',
     "AllGather",
     "AllReduce",
+    "AllGatherV",
+    "ReduceScatterV",
     "Reduce",
     "_AllSwap",
     "ReduceScatter",

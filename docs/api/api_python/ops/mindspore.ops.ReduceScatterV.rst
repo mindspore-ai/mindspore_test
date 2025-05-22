@@ -9,8 +9,8 @@ mindspore.ops.ReduceScatterV
         只支持一维的输入，使用该接口前需要将输入数据展开成一维。
 
     参数：
-        - **op** (str, 可选) - 指定用于元素的规约操作，如SUM、MIN和MAX， 当前不支持PROD。默认值： ``ReduceOp.SUM`` 。
-        - **group** (str, 可选) - 要处理的通信组。默认值： ``GlobalComm.WORLD_COMM_group`` 。
+        - **op** (str, 可选) - 指定用于元素的规约操作，如SUM、MIN和MAX，当前不支持PROD。默认值： ``ReduceOp.SUM`` 。
+        - **group** (str，可选) - 工作的通信组，默认值： ``GlobalComm.WORLD_COMM_GROUP`` （即Ascend平台为 ``"hccl_world_group"`` ，GPU平台为 ``"nccl_world_group"`` ）。
 
     输入：
         - **input_x** (Tensor) - 一维待分发的张量，shape为 :math:`(x_1)`。

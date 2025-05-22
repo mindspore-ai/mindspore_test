@@ -92,9 +92,9 @@ print(output)
 
 ## AllGatherV
 
-`AllGatherV`操作相对`AllGather`来说，支持收集不均匀的Tensor，并将每张卡的输入Tensor的进行拼接，最终每张卡输出是相同的数值，`output_split_sizes`中存储每张卡输入的数据量。
+`AllGatherV`操作相对`AllGather`来说，支持收集不均匀的Tensor，并将每张卡的输入Tensor进行拼接，最终每张卡输出是相同的数值，`output_split_sizes`中存储每张卡输入的数据量。
 
-示例代码如下：我们根据rank号（每张卡所属通信编号）初始化每个进程中`AllGatherV`算子输入的数值。例如卡0，我们申请了一个1x3大小，数值为[0,1,2]的输入；卡1，我们申请了一个1x4大小，数值为[0,1,2,3]的输入。`output_split_sizes`设置为[3, 4]。然后调用`AllGatherV`算子，在通信域为`0-1`的卡（所有卡的通信范围即nccl_world_group）中进行通信，并且打印输出结果。
+示例代码如下：我们根据rank号（每张卡所属通信编号）初始化每个进程中`AllGatherV`算子输入的数值。例如卡0，我们申请了一个1x3大小，数值为[0,1,2]的输入；卡1，我们申请了一个1x4大小，数值为[0,1,2,3]的输入。`output_split_sizes`设置为[3, 4]。然后调用`AllGatherV`算子，在通信域为`0-1`的卡（所有卡的通信范围即hccl_world_group）中进行通信，并且打印输出结果。
 
 ```python
 import mindspore as ms
@@ -167,9 +167,9 @@ print(output)
 
 ## ReduceScatterV
 
-`ReduceScatterV`操作相对`ReduceScatter`来说，支持对不均匀的张量进行规约并分发。`ReduceScatterV`将每张卡的输入先进行求和，并根据`input_split_sizes`中定义的每张卡分发的数据量，将数据分发到对应的卡上。。
+`ReduceScatterV`操作相对`ReduceScatter`来说，支持对不均匀的张量进行规约并分发。`ReduceScatterV`将每张卡的输入先进行求和，并根据`input_split_sizes`中定义的每张卡分发的数据量，将数据分发到对应的卡上。
 
-示例代码如下：我们根据rank号（每张卡所属通信编号）初始化每个进程中`ReduceScatterV`算子输入的数值。例如卡0和卡1，我们申请了一个1*3大小，数值为[0, 1, 2.0]的输入，`input_split_sizes`设置为[2, 1]。然后调用`ReduceScatterV`算子，在通信域为`0-1`的卡（所有卡的通信范围即nccl_world_group）中进行通信，并且打印输出结果。
+示例代码如下：我们根据rank号（每张卡所属通信编号）初始化每个进程中`ReduceScatterV`算子输入的数值。例如卡0和卡1，我们申请了一个1*3大小，数值为[0, 1, 2.0]的输入，`input_split_sizes`设置为[2, 1]。然后调用`ReduceScatterV`算子，在通信域为`0-1`的卡（所有卡的通信范围即hccl_world_group）中进行通信，并且打印输出结果。
 
 ```python
 import mindspore as ms

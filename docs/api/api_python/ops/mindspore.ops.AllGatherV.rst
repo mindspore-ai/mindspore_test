@@ -1,5 +1,5 @@
-﻿mindspore.ops.AllGather
-========================
+﻿mindspore.ops.AllGatherV
+=========================
 
 .. py:class:: mindspore.ops.AllGatherV(group=GlobalComm.WORLD_COMM_GROUP)
 

@@ -90,6 +90,44 @@ The result of the run is as follows, with the output log path `log/1/rank.0`:
  [3.]]
 ```
 
+## AllGatherV
+
+The `AllGatherV` operation, compared to `AllGather`, supports collecting non-uniform Tensors and concatenating the input Tensors of each card. Eventually, each card outputs the same value, and the `output_split_sizes` stores the amount of data input by each card.
+
+The sample code is as follows: We initialize the input values of the `AllGatherV` operator in each process based on the rank number (the communication ID to which each card belongs). For example, for card 0, we allocate an input of size 1×3 with values [0, 1, 2]; for card 1, we allocate an input of size 1×4 with values [0, 1, 2, 3]. The `output_split_sizes` is set to [3, 4]. Then we call the `AllGatherV` operator to perform communication in the communication domain of cards 0-1 (the communication scope of all cards, i.e., hccl_world_group), and print the output results.
+
+```python
+import mindspore as ms
+from mindspore.ops.operations.comm_ops import AllGatherV
+import mindspore.nn as nn
+from mindspore.communication import init, get_rank
+from mindspore import Tensor
+
+ms.set_context(mode=ms.GRAPH_MODE)
+init()
+class Net(nn.Cell):
+    def __init__(self):
+        super(Net, self).__init__()
+        self.allgatherv = AllGatherV()
+
+    def construct(self, x, output_split_sizes):
+        return self.allgatherv(x, output_split_sizes)
+
+rank = get_rank()
+data = [i for i in range(rank + 3)]
+input_x = Tensor(data)
+output_split_sizes = [3, 4]
+net = Net()
+output = net(input_x, output_split_sizes)
+print(output)
+```
+
+The result of the run is as follows, with the output log path `log/1/rank.0`:
+
+```text
+[0 1 2 0 1 2 3]
+```
+
 ## ReduceScatter
 
 ![image](../../../api_python/samples/ops/images/reducescatter.png)
@@ -125,6 +163,50 @@ The running result is as follows, with the output log path `log/1/rank.0`:
 
 ```text
 [[0.]]
+```
+
+## ReduceScatterV
+
+The `ReduceScatterV` operation, compared to `ReduceScatter`, supports reducing and distributing non-uniform tensors. `ReduceScatterV` first sums the input of each card and then distributes the data to the corresponding cards according to the data volume distributed to each card defined in `input_split_sizes`.
+
+The sample code is as follows: We initialize the numerical values input to the `ReduceScatterV` operator in each process based on the rank number (the communication ID to which each card belongs). For example, for cards 0 and 1, we allocate an input of size 1×3 with values [0, 1, 2.0], and set `input_split_sizes` to [2, 1]. Then we call the `ReduceScatterV` operator to perform communication within the communication domain of cards 0-1 (the communication scope of all cards, i.e., the hccl_world_group), and print the output results.
+
+```python
+import mindspore as ms
+from mindspore import Tensor
+from mindspore.communication import init, get_rank
+from mindspore.ops import ReduceOp
+import mindspore.nn as nn
+from mindspore.ops.operations.comm_ops import ReduceScatterV
+
+ms.set_context(mode=ms.GRAPH_MODE)
+init()
+class Net(nn.Cell):
+    def __init__(self):
+        super(Net, self).__init__()
+        self.reducescatterv = ReduceScatterV(ReduceOp.SUM)
+
+    def construct(self, x, input_split_sizes):
+        return self.reducescatterv(x, input_split_sizes)
+
+rank = get_rank()
+input_x = Tensor([0, 1, 2.0])
+input_split_sizes = [2, 1]
+net = Net()
+output = net(input_x, input_split_sizes)
+print(output)
+```
+
+The output of the rank0 is:
+
+```text
+[0. 2]
+```
+
+The output of the rank1 is:
+
+```text
+[4.]
 ```
 
 ## Reduce
