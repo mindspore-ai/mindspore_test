@@ -2581,7 +2581,6 @@ py::object BaseRefToPyDataWithUserData(const BaseRef &value, const AbstractBaseP
   if (utils::isa<ValuePtr>(value)) {
     // Do not use abs as input to BaseRefToPyData, since the res need to be a tensor to get user data.
     auto res = BaseRefToPyData(value);
-    MS_LOG(DEBUG) << "res: " << py::str(res);
     const auto user_data = GetUserDataFromAddress(res);
     if (user_data != nullptr) {
       return user_data->obj;

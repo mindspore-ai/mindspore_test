@@ -201,6 +201,18 @@ const char CELL_PARAMETERS_BACKWARD_HOOK[] = "_parameters_backward_hook";
 const char CELL_PARAMETERS_AND_NAMES[] = "parameters_and_names";
 const char CELL_CELLS_AND_NAMES[] = "cells_and_names";
 
+const char CELL_FORWARD_PRE_HOOK[] = "_forward_pre_hook";
+const char CELL_JIT_FORWARD_PRE_HOOK[] = "_jit_forward_pre_hook";
+
+const char CELL_FORWARD_HOOK[] = "_forward_hook";
+const char CELL_JIT_FORWARD_HOOK[] = "_jit_forward_hook";
+
+const char CELL_BACKWARD_PRE_HOOK[] = "_backward_pre_hook";
+const char CELL_JIT_BACKWARD_PRE_HOOK[] = "_jit_backward_pre_hook";
+
+const char CELL_BACKWARD_HOOK[] = "_backward_hook";
+const char CELL_JIT_BACKWARD_HOOK[] = "_jit_backward_hook";
+
 // Define ref tensor user data keys.
 const char REF_TENSOR_BACKWARD_HOOK[] = "backward_hook";
 

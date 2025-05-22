@@ -34,6 +34,7 @@ from typing import (
 )
 
 import mindspore as ms
+import mindspore.ops as ops
 from mindspore._checkparam import args_type_check, check_hook_fn
 from mindspore.common.dynamic_shape._auto_dynamic import is_auto_dynamic, convert_inputs_to_dynamic
 from mindspore import log as logger
@@ -195,6 +196,7 @@ class Cell(Cell_):
         super().__setattr__("_recompute_cell", None)
         super().__setattr__("mixed_precision_type", None)
         super().__setattr__("_lazy_construct_sig", None)
+        super().__setattr__("modify_hook", 0)
         init_pipeline()
 
         # call gc to release GE session resources used by non-used cell objects
@@ -1073,23 +1075,6 @@ class Cell(Cell_):
                             f"{default_args} default argument, total {positional_args + default_args}, "
                             f"but got {len(args)}.")
 
-    # pylint: disable=E0203
-    def _hook_fn_registered(self):
-        '''Hook function in graph mode'''
-        # Check super().__init__() in graph mode.
-        try:
-            if self._forward_pre_hook or self._forward_hook or self._backward_pre_hook or self._backward_hook:
-                return True
-        except AttributeError as e:
-            raise AttributeError(f"The '{type(self).__name__}' object does not inherit attribute from 'cell'. "
-                                 f"Please use 'super().__init__()'.") from e
-        if not self._is_recursion_hook:
-            self._is_recursion_hook = True
-            for cell in self.cells():
-                if cell._hook_fn_registered():
-                    return True
-        return False
-
     def _get_prims_recursively(self):
         all_prims = list()
         for _, value in self._primitives.items():
@@ -1279,9 +1264,13 @@ class Cell(Cell_):
         self._init_flag = True
 
     def _self_check(self):
-        if not self._is_check_and_refresh:
-            self.check_names_and_refresh_name()
-            self._is_check_and_refresh = True
+        try:
+            if not self._is_check_and_refresh:  # pylint: disable=E0203
+                self.check_names_and_refresh_name()
+                self._is_check_and_refresh = True
+        except AttributeError as e:
+            raise AttributeError(f"The '{type(self).__name__}' object does not inherit attribute from 'cell'. "
+                                 f"Please use 'super().__init__()'.") from e
 
     def _predict(self, *args, **kwargs):
         if not hasattr(self, "phase"):
@@ -1306,11 +1295,8 @@ class Cell(Cell_):
             if predict_compiled:
                 return res
             self._check_construct_args(*args)
-
-            if self._hook_fn_registered():
-                logger.warning(f"For 'Cell', it's not support hook function in graph mode. If you want to use hook "
-                               f"function, please use context.set_context to set pynative mode.")
             self._self_check()
+            self.__compile_cell_hook__ = True
             out = self.compile_and_run(*args, **kwargs)
             return out
 
@@ -2571,6 +2557,7 @@ class Cell(Cell_):
             raise ValueError(f"Negative 'fusion_size' {fusion_size} is invalid.")
         Tensor._flatten_tensors(self.trainable_params(), fusion_size)  # pylint: disable=W0212
 
+    @jit_forbidden_register
     def register_forward_pre_hook(self, hook_fn, with_kwargs=False):
         """
         Register forward pre hook function for Cell object.
@@ -2590,7 +2577,6 @@ class Cell(Cell_):
           `with_kwargs` is ``True`` .
 
         Note:
-            - The feature does not take effect in graph mode or in PyNative mode with functions decorated by jit.
             - The `hook_fn` can modify the forward inputs by returning new inputs. If `with_kwargs` is ``Flase`` , a
               single value (whick will be wrapped into a tuple unless already a tuple) or a tuple of args should be
               returned. If `with_kwargs` is ``True`` , both `args` and `kwargs` should be returned.
@@ -2641,15 +2627,15 @@ class Cell(Cell_):
             (Tensor(shape=[1], dtype=Float32, value= [ 2.00000000e+00]), Tensor(shape=[1], dtype=Float32,
             value= [ 2.00000000e+00]))
         """
-        if context._get_mode() == context.GRAPH_MODE:
-            return HookHandle()
         check_hook_fn(hook_fn)
-        handle = HookHandle(self._forward_pre_hook, extra_dict=self._forward_pre_hook_with_kwargs)
+        handle = HookHandle(self._forward_pre_hook, extra_dict=self._forward_pre_hook_with_kwargs, cell=self)
         self._forward_pre_hook[handle.handle_id] = hook_fn
         if with_kwargs:
             self._forward_pre_hook_with_kwargs[handle.handle_id] = True
+        self.modify_hook += 1
         return handle
 
+    @jit_forbidden_register
     def _run_forward_pre_hook(self, args, kwargs):
         """
         Running forward pre hook function registered on Cell object.
@@ -2673,6 +2659,35 @@ class Cell(Cell_):
                     args = ret
         return args, kwargs
 
+    def _jit_forward_pre_hook(self, inputs):
+        """
+        Compile forward pre hook function registered on Cell object.
+
+        Args:
+            inputs: The input objects of cell object.
+
+        Returns:
+            - **outputs** - New input objects or none.
+
+        Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+        """
+        forward_pre_hook_inputs = inputs
+        for fn in self._forward_pre_hook.values():
+            ret = fn(self, forward_pre_hook_inputs)
+            if ret is not None:
+                if not isinstance(ret, tuple):
+                    forward_pre_hook_inputs = (ret,)
+                else:
+                    forward_pre_hook_inputs = ret
+
+        if len(forward_pre_hook_inputs) != len(inputs):
+            raise TypeError(
+                "The forward pre hook return value size is {} not equal to input size {}".format(
+                    len(forward_pre_hook_inputs), len(inputs)))
+        return forward_pre_hook_inputs
+
+    @jit_forbidden_register
     def register_forward_hook(self, hook_fn, with_kwargs=False):
         """
         Register forward hook function for Cell object.
@@ -2693,7 +2708,6 @@ class Cell(Cell_):
         - `output`: Output generated by the `construct` function.
 
         Note:
-            - The feature does not take effect in graph mode or in PyNative mode with functions decorated by jit.
             - The `hook_fn` can modify the forward outputs by returning new outputs.
             - In order to prevent running failed when switching to graph mode, it is not recommended to call it in the
               `construct` function of Cell object.
@@ -2746,15 +2760,44 @@ class Cell(Cell_):
         """
         if self.has_bprop:
             return HookHandle()
-        if context._get_mode() == context.GRAPH_MODE:
-            return HookHandle()
         check_hook_fn(hook_fn)
-        handle = HookHandle(self._forward_hook, extra_dict=self._forward_hook_with_kwargs)
+        handle = HookHandle(self._forward_hook, extra_dict=self._forward_hook_with_kwargs, cell=self)
         self._forward_hook[handle.handle_id] = hook_fn
         if with_kwargs:
             self._forward_hook_with_kwargs[handle.handle_id] = True
+        self.modify_hook += 1
         return handle
 
+    def _jit_forward_hook(self, inputs, output):
+        """
+        Compile forward hook function registered on Cell object.
+
+        Args:
+            inputs: The input objects of Cell object.
+            output: The output object of Cell object.
+
+        Returns:
+            - **output** - New output object or none.
+
+        Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+        """
+        forward_hook_output = output
+        for fn in self._forward_hook.values():
+            ret = fn(self, inputs, forward_hook_output)
+            if ret is not None:
+                forward_hook_output = ret
+
+        if isinstance(output, tuple):
+            if not isinstance(forward_hook_output, tuple):
+                forward_hook_output = (forward_hook_output,)
+            if len(forward_hook_output) != len(output):
+                raise TypeError(
+                    "The forward hook return value size is {} not equal to output size {}".format(
+                        len(forward_hook_output), len(output)))
+        return forward_hook_output
+
+    @jit_forbidden_register
     def _run_forward_hook(self, args, kwargs, output):
         """
         Running forward hook function registered on Cell object.
@@ -2768,12 +2811,12 @@ class Cell(Cell_):
                 output = ret
         return output
 
+    @jit_forbidden_register
     def register_backward_pre_hook(self, hook_fn):
         """
         Register the backward pre hook function.
 
         Note:
-            - The `register_backward_pre_hook(hook_fn)` does not work in graph mode or functions decorated with 'jit'.
             - The 'hook_fn' must be defined as the following code.
               `cell` is the Cell object. `grad_output` is the gradient passed to the Cell.
             - The 'hook_fn' should have the following signature:
@@ -2822,18 +2865,18 @@ class Cell(Cell_):
             >>> print(output)
             (Tensor(shape=[1], dtype=Float32, value= [ 2.00000000e+00]),)
         """
-        if context._get_mode() == context.GRAPH_MODE:
-            return HookHandle()
         check_hook_fn(hook_fn)
-        handle = HookHandle(self._backward_pre_hook)
+        handle = HookHandle(self._backward_pre_hook, extra_dict=None, cell=self)
         self._backward_pre_hook[handle.handle_id] = hook_fn
-        if self._cell_backward_pre_hook is None:
+        if self._cell_backward_pre_hook is None:  # pylint: disable=E0203
             # Generate a CellBackwardHook prim, and add function for it
             self._cell_backward_pre_hook = inner.CellBackwardHook(self.cls_name + "(" + str(id(self)) + ")",
                                                                   self, self._backward_pre_hook)
             self._cell_backward_pre_hook.register_backward_pre_hook()
+        self.modify_hook += 1
         return handle
 
+    @jit_forbidden_register
     def _run_backward_pre_hook(self, outputs):
         """
         Running backward pre hook function registered on Cell object.
@@ -3381,12 +3424,12 @@ class Cell(Cell_):
             )
         return _IncompatibleKeys(missing_keys, unexpected_keys)
 
+    @jit_forbidden_register
     def register_backward_hook(self, hook_fn):
         """
         Register the backward hook function.
 
         Note:
-            - The `register_backward_hook(hook_fn)` does not work in graph mode or functions decorated with 'jit'.
             - The 'hook_fn' must be defined as the following code.
               `cell` is the registered Cell object. `grad_input` is the gradient computed and passed to
               the next Cell or primitive, which can be return a new gradient or None. `grad_output` is the gradient
@@ -3438,18 +3481,18 @@ class Cell(Cell_):
             >>> print(output)
             (Tensor(shape=[1], dtype=Float32, value= [ 2.00000000e+00]),)
         """
-        if context._get_mode() == context.GRAPH_MODE:
-            return HookHandle()
         check_hook_fn(hook_fn)
-        handle = HookHandle(self._backward_hook)
+        handle = HookHandle(self._backward_hook, extra_dict=None, cell=self)
         self._backward_hook[handle.handle_id] = hook_fn
-        if self._cell_backward_hook is None:
+        if self._cell_backward_hook is None:  # pylint: disable=E0203
             # Generate a CellBackwardHook prim, and add function for it
             self._cell_backward_hook = inner.CellBackwardHook(self.cls_name + "(" + str(id(self)) + ")",
                                                               self, self._backward_hook)
             self._cell_backward_hook.register_backward_hook()
+        self.modify_hook += 1
         return handle
 
+    @jit_forbidden_register
     def _backward_hook_construct(self, *inputs, **kwargs):
         """
         Backward hook construct method to replace original construct method.
@@ -3575,7 +3618,7 @@ class Cell(Cell_):
         """
         Validator.check_bool(mode)
         Validator.check_bool(output_recompute)
-        if not self._has_config_recompute:
+        if not self._has_config_recompute:  # pylint: disable=E0203
             self._has_config_recompute = True
         else:
             logger.info("The recompute interface can be configured only once."
@@ -3758,6 +3801,61 @@ class Cell(Cell_):
                 cell._parameters_forward_hook = forward_hook
                 cell._parameters_backward_hook = backward_hook
 
+    def _jit_backward_pre_hook(self, grad_output):
+        new_grad_output = grad_output
+        if not isinstance(grad_output, tuple):
+            new_grad_output = (grad_output,)
+
+        for fn in self._backward_pre_hook.values():
+            ret = fn(self, new_grad_output)
+            # output = ret
+            if ret is not None:
+                if not isinstance(ret, tuple):
+                    output = (ret,)
+                else:
+                    output = ret
+            else:
+                output = ops.Depend()(new_grad_output, ret)
+            new_grad_output = output
+
+        if not isinstance(grad_output, tuple):
+            return new_grad_output[0]
+
+        if len(new_grad_output) != len(grad_output):
+            raise TypeError(
+                "The backward pre hook return value size is {} not equal to input size {}".format(
+                    len(new_grad_output), len(grad_output)))
+
+        return new_grad_output
+
+    def _jit_backward_hook(self, grad_input, grad_output):
+        backward_hook_input = grad_input
+        backward_hook_output = grad_output
+        if not isinstance(grad_input, tuple):
+            backward_hook_input = (grad_input,)
+        if not isinstance(grad_output, tuple):
+            backward_hook_output = (grad_output,)
+
+        for fn in self._backward_hook.values():
+            ret = fn(self, backward_hook_input, backward_hook_output)
+            if ret is not None:
+                if not isinstance(ret, tuple):
+                    output = (ret,)
+                else:
+                    output = ret
+            else:
+                output = ops.Depend()(backward_hook_input, ret)
+
+            backward_hook_input = output
+
+        if not isinstance(grad_input, tuple):
+            return backward_hook_input[0]
+
+        if len(backward_hook_input) != len(grad_input):
+            raise TypeError(
+                "The backward hook return value size is {} not equal to input size {}".format(
+                    len(backward_hook_input), len(grad_input)))
+        return backward_hook_input
 
 class GraphCell(Cell):
     """

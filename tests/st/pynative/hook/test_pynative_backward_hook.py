@@ -1,4 +1,4 @@
-# Copyright 2022 Huawei Technologies Co., Ltd
+# Copyright 2022-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,14 +13,12 @@
 # limitations under the License.
 # ============================================================================
 import numpy as np
-import pytest
 import mindspore.nn as nn
-from mindspore import ops, Tensor, jit, context
+from mindspore import ops, Tensor, context
 from mindspore.ops import GradOperation
 from mindspore.common import ParameterTuple
-from mindspore.common.api import _pynative_executor
 from tests.mark_utils import arg_mark
-
+from tests.st.pynative.hook.common import assert_jit_net, assert_jit_grad_net_by_grad_op
 
 def forward_pre_hook_fn_add(cell, inp):
     x = inp[0] + inp[0]
@@ -208,6 +206,7 @@ def test_pynative_backward_hook():
     # case 1: register hook function in __init__ function.
     net = Net()
     grad = grad_op(net)(input_x, input_y)
+    assert_jit_grad_net_by_grad_op(grad_op, net, grad, False, input_x, input_y)
     assert len(grad) == 2
     assert np.allclose(grad[0].asnumpy(), input_x.asnumpy(), 0.000001, 0.000001)
     assert np.allclose(grad[1].asnumpy(), input_x.asnumpy(), 0.000001, 0.000001)
@@ -215,6 +214,7 @@ def test_pynative_backward_hook():
     net.handle.remove()
     net.handle.remove()
     grad = grad_op(net)(input_x, input_y)
+    assert_jit_grad_net_by_grad_op(grad_op, net, grad, False, input_x, input_y)
     assert len(grad) == 2
     expect_grad = Tensor(np.ones([1]).astype(np.float32) * 2)
     assert np.allclose(grad[0].asnumpy(), expect_grad.asnumpy(), 0.000001, 0.000001)
@@ -224,6 +224,7 @@ def test_pynative_backward_hook():
     net.mul.register_backward_hook(backward_hook_fn2)
     handle3 = net.mul.register_backward_hook(backward_hook_fn3)
     grad = grad_op(net)(input_x, input_y)
+    assert_jit_grad_net_by_grad_op(grad_op, net, grad, False, input_x, input_y)
     assert len(grad) == 2
     expect_gradx = Tensor(np.ones([1]).astype(np.float32) * 5)
     expect_grady = Tensor(np.ones([1]).astype(np.float32) * 6)
@@ -232,6 +233,7 @@ def test_pynative_backward_hook():
     # case 5: remove hook function by handle.
     handle3.remove()
     grad = grad_op(net)(input_x, input_y)
+    assert_jit_grad_net_by_grad_op(grad_op, net, grad, False, input_x, input_y)
     assert len(grad) == 2
     expect_gradx = Tensor(np.ones([1]).astype(np.float32) * 2)
     expect_grady = Tensor(np.ones([1]).astype(np.float32) * 3)
@@ -258,10 +260,12 @@ def test_pynative_hook_base_line():
     handle1 = net.conv.register_forward_pre_hook(forward_pre_hook_fn_add)
     handle2 = net.conv.register_forward_pre_hook(forward_pre_hook_fn_mul)
     out = net(input_x)
+    assert_jit_net(net, out, input_x)
     cmp_net_pre_hook = CmpNetPreHook()
     expect_out = cmp_net_pre_hook(input_x)
     assert np.allclose(out.asnumpy(), expect_out.asnumpy(), 0.000001, 0.000001)
     grad = grad_op(net, ParameterTuple(net.trainable_params()))(input_x)
+    assert_jit_grad_net_by_grad_op(grad_op, net, grad, True, input_x)
     expect_grad = grad_op(cmp_net_pre_hook, ParameterTuple(cmp_net_pre_hook.trainable_params()))(input_x)
     assert len(grad) == len(expect_grad)
     assert np.allclose(grad[0][0].asnumpy(), expect_grad[0][0].asnumpy(), 0.000001, 0.000001)
@@ -274,10 +278,12 @@ def test_pynative_hook_base_line():
     handlea = net.bn.register_forward_hook(forward_hook_fn_relu)
     handleb = net.bn.register_forward_hook(forward_hook_fn_add)
     out = net(input_x)
+    assert_jit_net(net, out, input_x)
     cmp_net_fw_hook = CmpNetFWHook()
     expect_out = cmp_net_fw_hook(input_x)
     assert np.allclose(out.asnumpy(), expect_out.asnumpy(), 0.000001, 0.000001)
     grad = grad_op(net, ParameterTuple(net.trainable_params()))(input_x)
+    assert_jit_grad_net_by_grad_op(grad_op, net, grad, True, input_x)
     expect_grad = grad_op(cmp_net_fw_hook, ParameterTuple(cmp_net_fw_hook.trainable_params()))(input_x)
     assert len(grad) == len(expect_grad)
     assert np.allclose(grad[0][0].asnumpy(), expect_grad[0][0].asnumpy(), 0.000001, 0.000001)
@@ -289,10 +295,12 @@ def test_pynative_hook_base_line():
     handleb.remove()
     net.conv.register_backward_hook(backward_hook_fn4)
     out = net(input_x)
+    assert_jit_net(net, out, input_x)
     compare_net = CmpNet()
     expect_out = compare_net(input_x)
     assert np.allclose(out.asnumpy(), expect_out.asnumpy(), 0.000001, 0.000001)
     grad = grad_op(net, ParameterTuple(net.trainable_params()))(input_x)
+    assert_jit_grad_net_by_grad_op(grad_op, net, grad, True, input_x)
     expect_grad = grad_op(compare_net, ParameterTuple(compare_net.trainable_params()))(input_x)
     assert len(grad) == len(expect_grad)
     expect_gradx = Tensor(np.ones([2, 2, 2, 2]).astype(np.float32) * 10)
@@ -321,6 +329,7 @@ def test_pynative_hook_tuple_with_single_element():
     split_net = SpiltNet()
     split_net.register_backward_hook(backward_hook_fn)
     output = split_net(Tensor(input_x), 1)
+    assert_jit_net(split_net, output, Tensor(input_x), 1)
     output_cat = ops.cat(output, axis=1)
     print(output_cat)
 
@@ -333,41 +342,6 @@ def backward_hook_with_jit(cell_id, grad_inp, grad_outp):
     print("input: ", grad_inp)
     print("outp: ", grad_outp)
     return Tensor(np.array([2, 3, 4, 5])).astype(np.float32), Tensor(np.array([5, 6, 7, 8]).astype(np.float32))
-
-
-class NetJit(nn.Cell):
-    def __init__(self):
-        super(NetJit, self).__init__()
-        self.mul = nn.MatMul()
-        self.relu = nn.ReLU()
-        self.handle = self.mul.register_backward_hook(backward_hook_with_jit)
-
-    @jit
-    def construct(self, x, y):
-        x = self.mul(x, y)
-        x = self.relu(x)
-        x = x + y
-        return x
-
-
-@arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
-          card_mark='onecard',
-          essential_mark='essential')
-def test_hook_backward_with_jit():
-    """
-    Feature: Test hook backward feature
-    Description: test hook with jit
-    Expectation: Success
-    """
-    context.set_context(mode=context.PYNATIVE_MODE, save_graphs=0)
-    input_x = Tensor(np.array([1, 2, 3, 4]).astype(np.float32))
-    input_y = Tensor(np.array([5, 6, 7, 8]).astype(np.float32))
-    net = NetJit()
-    with pytest.raises(RuntimeError):
-        _ = net(input_x, input_y)
-        _pynative_executor.sync()
-
 
 def test_pynative_backward_hook_with_modify_cell():
     """
@@ -382,6 +356,8 @@ def test_pynative_backward_hook_with_modify_cell():
     net = SingleNet()
     net.conv.register_backward_hook(backward_hook_fn5)
     grad = grad_op(net, ParameterTuple(net.trainable_params()))(input_x)
+    # hook with memory side effect is not supported now
+    # assert_jit_grad_net_by_grad_op(grad_op, net, grad, False, input_x)
     assert len(grad) == 2
     assert net.conv.a == 2
 
@@ -402,8 +378,9 @@ def test_pynative_backward_hook_unpair():
     # register backward hook.
     net = SingleNet()
     net.conv.register_backward_hook(backward_hook_fn6)
-    grad_op(net, ParameterTuple(net.trainable_params()))(input_x)
+    grad = grad_op(net, ParameterTuple(net.trainable_params()))(input_x)
     assert unpair_v == 2
+    assert_jit_grad_net_by_grad_op(grad_op, net, grad, True, input_x)
 
 
 @arg_mark(plat_marks=['cpu_linux'],
@@ -425,6 +402,7 @@ def test_pynative_backward_with_dict():
     grad = grad_op(net, ParameterTuple(net.trainable_params()))(input_x)
     assert len(grad) == 3
     assert net.dict_net.a == 2
+    assert_jit_grad_net_by_grad_op(grad_op, net, grad, True, input_x)
 
 
 @arg_mark(plat_marks=['cpu_linux'],
@@ -446,6 +424,7 @@ def test_pynative_backward_with_dict_input():
     net.register_backward_hook(backward_hook_fn7)
     grad = grad_op(net, ParameterTuple(net.trainable_params()))(input_x, tmp=input_y)
     assert len(grad) == 3
+    assert_jit_grad_net_by_grad_op(grad_op, net, grad, True, input_x, tmp=input_y)
 
 
 @arg_mark(plat_marks=['platform_ascend'],
@@ -495,8 +474,10 @@ def test_pynative_backward_hook_pack_and_unpack():
 
     input_x = (Tensor(1.0),)
     out = net(input_x)
+    assert_jit_net(net, out, input_x)
     assert isinstance(out, tuple) and isinstance(out[0], Tensor)
 
     input_x = ((Tensor(1.0),),)
     out = net(input_x)
+    assert_jit_net(net, out, input_x)
     assert isinstance(out, tuple) and isinstance(out[0], tuple) and isinstance(out[0][0], Tensor)

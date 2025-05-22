@@ -1,4 +1,4 @@
-# Copyright 2022 Huawei Technologies Co., Ltd
+# Copyright 2022-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+
 import pytest
 import numpy as np
 import mindspore as ms
@@ -24,7 +25,7 @@ from mindspore.common.api import jit
 from mindspore import ops as P
 from mindspore.common.api import _pynative_executor
 from tests.mark_utils import arg_mark
-
+from tests.st.pynative.hook.common import assert_jit_net, assert_jit_grad_net_by_grad_op, assert_jit_grad_net_by_ms_grad
 
 def forward_pre_hook_fn_bn(cell, inp):
     out = nn.BatchNorm2d(2, momentum=0.99, eps=0.00001, gamma_init="ones")(inp[0])
@@ -73,12 +74,11 @@ def forward_hook_fn_with_ms_func(cell, inp, outp):
 
 
 def backward_hook_fn(cell, grad_inp, grad_outp):
-    print("Enter backward hook function.")
+
     return grad_inp
 
 
 def backward_hook_fn_inner(cell, grad_inp, grad_outp):
-    print("Enter backward hook function inner.")
     return grad_inp
 
 
@@ -138,7 +138,6 @@ class SingleNetMsFuncInner(nn.Cell):
         self.bn.register_backward_hook(backward_hook_fn_inner)
         self.relu = nn.ReLU()
 
-    @jit
     def construct(self, x):
         x = self.bn(x)
         x = self.relu(x)
@@ -215,18 +214,6 @@ class CompareSingleNet3(nn.Cell):
         return x
 
 
-class CompareSingleNet4(nn.Cell):
-    def __init__(self):
-        super(CompareSingleNet4, self).__init__()
-        self.conv = nn.Conv2d(2, 2, kernel_size=2, stride=1, padding=0, weight_init="ones", pad_mode="valid")
-        self.relu = nn.ReLU()
-
-    def construct(self, x):
-        x = self.conv(x)
-        x = self.relu(x)
-        return x
-
-
 class CompareSingleNet5(nn.Cell):
     def __init__(self):
         super(CompareSingleNet5, self).__init__()
@@ -236,11 +223,15 @@ class CompareSingleNet5(nn.Cell):
 
     def construct(self, x):
         x = self.conv(x)
-        x = x + x
+        x = x + x # inner
+        x = x + x # inner.bn
+        x = x * x # inner.bn
         x = self.bn(x)
+        x = x + x # inner.bn
+        x = x * x # inner.bn
         x = self.relu(x)
-        x = x + x
-        x = x * x
+        x = x + x # inner
+        x = x * x # inner
         x = x + x
         return x
 
@@ -298,7 +289,6 @@ class CompareMultiNet2(nn.Cell):
         x = self.mul(x, x)
         return x
 
-
 @arg_mark(plat_marks=['cpu_linux'],
           level_mark='level0',
           card_mark='onecard',
@@ -316,10 +306,13 @@ def test_pynative_forward_hook():
     # case 1: calling remove() of handle to remove some hook function.
     net = SingleNet()
     out = net(inputs)
+    assert_jit_net(net, out, inputs)
     compare_single_net1 = CompareSingleNet1()
     expect_out = compare_single_net1(inputs)
     assert np.allclose(out.asnumpy(), expect_out.asnumpy(), 0.000001, 0.000001)
-    grad = grad_op(net, ParameterTuple(net.trainable_params()))(inputs)
+    grad_net = grad_op(net, ParameterTuple(net.trainable_params()))
+    grad = grad_net(inputs)
+    assert_jit_grad_net_by_grad_op(grad_op, net, grad, True, inputs)
     expect_grad = grad_op(compare_single_net1, ParameterTuple(compare_single_net1.trainable_params()))(inputs)
     assert len(grad) == len(expect_grad)
     assert np.allclose(grad[0][0].asnumpy(), expect_grad[0][0].asnumpy(), 0.000001, 0.000001)
@@ -331,10 +324,13 @@ def test_pynative_forward_hook():
     net.relu.register_forward_pre_hook(forward_pre_hook_fn_add)
     handle2 = net.relu.register_forward_hook(forward_hook_fn_mul)
     out = net(inputs)
+    assert_jit_net(net, out, inputs)
     compare_single_net2 = CompareSingleNet2()
     expect_out = compare_single_net2(inputs)
     assert np.allclose(out.asnumpy(), expect_out.asnumpy(), 0.000001, 0.000001)
-    grad = grad_op(net, ParameterTuple(net.trainable_params()))(inputs)
+    grad_net = grad_op(net, ParameterTuple(net.trainable_params()))
+    grad = grad_net(inputs)
+    assert_jit_grad_net_by_grad_op(grad_op, net, grad, True, inputs)
     expect_grad = grad_op(compare_single_net2, ParameterTuple(compare_single_net2.trainable_params()))(inputs)
     assert len(grad) == len(expect_grad)
     assert np.allclose(grad[0][0].asnumpy(), expect_grad[0][0].asnumpy(), 0.000001, 0.000001)
@@ -344,10 +340,13 @@ def test_pynative_forward_hook():
     net.handle4.remove()
     handle2.remove()
     out = net(inputs)
+    assert_jit_net(net, out, inputs)
     compare_single_net3 = CompareSingleNet3()
     expect_out = compare_single_net3(inputs)
     assert np.allclose(out.asnumpy(), expect_out.asnumpy(), 0.000001, 0.000001)
-    grad = grad_op(net, ParameterTuple(net.trainable_params()))(inputs)
+    grad_net = grad_op(net, ParameterTuple(net.trainable_params()))
+    grad = grad_net(inputs)
+    assert_jit_grad_net_by_grad_op(grad_op, net, grad, True, inputs)
     expect_grad = grad_op(compare_single_net3, ParameterTuple(compare_single_net3.trainable_params()))(inputs)
     assert len(grad) == len(expect_grad)
     assert np.allclose(grad[0][0].asnumpy(), expect_grad[0][0].asnumpy(), 0.000001, 0.000001)
@@ -364,17 +363,19 @@ def test_pynative_forward_hook_multi_inp():
     Description: Test PyNative forward hook function and forward pre hook function with multi input.
     Expectation: The calculation result is correct.
     """
-
     context.set_context(mode=context.PYNATIVE_MODE)
     inputs = Tensor(np.ones([2, 2, 2, 2]).astype(np.float32) * 3)
     grad_op = GradOperation(get_all=True, get_by_list=True, sens_param=False)
     # case 1: register hook function for multi-input op.
     multi_net = MultiNet()
     out = multi_net(inputs, inputs)
+    assert_jit_net(multi_net, out, inputs, inputs)
     compare_multi_net1 = CompareMultiNet1()
     expect_out = compare_multi_net1(inputs, inputs)
     assert np.allclose(out.asnumpy(), expect_out.asnumpy(), 0.000001, 0.000001)
-    grad = grad_op(multi_net, ParameterTuple(multi_net.trainable_params()))(inputs, inputs)
+    grad_net = grad_op(multi_net, ParameterTuple(multi_net.trainable_params()))
+    grad = grad_net(inputs, inputs)
+    assert_jit_grad_net_by_grad_op(grad_op, multi_net, grad, True, inputs, inputs)
     expect_grad = grad_op(compare_multi_net1, ParameterTuple(compare_multi_net1.trainable_params()))(inputs, inputs)
     assert len(grad) == len(expect_grad)
     assert np.allclose(grad[0][0].asnumpy(), expect_grad[0][0].asnumpy(), 0.000001, 0.000001)
@@ -386,10 +387,13 @@ def test_pynative_forward_hook_multi_inp():
     multi_net.handle3.remove()
     multi_net.handle4.remove()
     out = multi_net(inputs, inputs)
+    assert_jit_net(multi_net, out, inputs, inputs)
     compare_multi_net2 = CompareMultiNet2()
     expect_out = compare_multi_net2(inputs, inputs)
     assert np.allclose(out.asnumpy(), expect_out.asnumpy(), 0.000001, 0.000001)
-    grad = grad_op(multi_net, ParameterTuple(multi_net.trainable_params()))(inputs, inputs)
+    grad_net = grad_op(multi_net, ParameterTuple(multi_net.trainable_params()))
+    grad = grad_net(inputs, inputs)
+    assert_jit_grad_net_by_grad_op(grad_op, multi_net, grad, True, inputs, inputs)
     expect_grad = grad_op(compare_multi_net2, ParameterTuple(compare_multi_net2.trainable_params()))(inputs, inputs)
     assert len(grad) == len(expect_grad)
     assert np.allclose(grad[0][0].asnumpy(), expect_grad[0][0].asnumpy(), 0.000001, 0.000001)
@@ -399,7 +403,13 @@ def test_pynative_forward_hook_multi_inp():
     # case 4: register hook function in construct.
     net = SingleNetInConstruct()
     compare_net = CompareSingleNet1()
-    grad = grad_op(net, ParameterTuple(net.trainable_params()))(inputs)
+    grad_net = grad_op(net, ParameterTuple(net.trainable_params()))
+    grad = grad_net(inputs)
+    with pytest.raises(RuntimeError) as e:
+        assert_jit_grad_net_by_grad_op(grad_op, net, grad, True, inputs)
+    assert (
+        "Failed to compile in GRAPH_MODE because the method or function 'mindspore.nn.cell.Cell.register_forward_hook' "
+        "is not supported in 'construct' or function with @jit decorator" in str(e.value))
     expect_grad = grad_op(compare_net, ParameterTuple(compare_net.trainable_params()))(inputs)
     assert len(grad) == len(expect_grad)
     assert np.allclose(grad[0][0].asnumpy(), expect_grad[0][0].asnumpy(), 0.000001, 0.000001)
@@ -441,63 +451,37 @@ def test_pynative_forward_hook_with_ms_func():
 
     inputs = Tensor(np.ones([2, 2, 2, 2]).astype(np.float32) * 2)
     grad_op = GradOperation(get_all=True, get_by_list=True, sens_param=False)
-    # case: ms_funciton in pynative mode.
     context.set_context(mode=context.PYNATIVE_MODE)
-    single_net_msfunc = SingleNetMsFunc()
-    out = single_net_msfunc(inputs)
     compare_single_net5 = CompareSingleNet5()
     expect_out = compare_single_net5(inputs)
-    assert np.allclose(out.asnumpy(), expect_out.asnumpy(), 0.000001, 0.000001)
-    grad = grad_op(single_net_msfunc, ParameterTuple(single_net_msfunc.trainable_params()))(inputs)
     expect_grad = grad_op(compare_single_net5, ParameterTuple(compare_single_net5.trainable_params()))(inputs)
-    assert len(grad) == len(expect_grad)
-    assert np.allclose(grad[0][0].asnumpy(), expect_grad[0][0].asnumpy(), 0.000001, 0.000001)
-    assert np.allclose(grad[1][0].asnumpy(), expect_grad[1][0].asnumpy(), 0.000001, 0.000001)
-    assert np.allclose(grad[1][1].asnumpy(), expect_grad[1][1].asnumpy(), 0.000001, 0.000001)
-    assert np.allclose(grad[1][2].asnumpy(), expect_grad[1][2].asnumpy(), 0.000001, 0.000001)
+
+    single_net_msfunc = SingleNetMsFunc()
+    out = single_net_msfunc(inputs)
+
+    def run_test():
+        assert np.allclose(out.asnumpy(), expect_out.asnumpy(), 0.000001, 0.000001)
+        grad = grad_op(single_net_msfunc, ParameterTuple(single_net_msfunc.trainable_params()))(inputs)
+        assert len(grad) == len(expect_grad)
+        assert np.allclose(grad[0][0].asnumpy(), expect_grad[0][0].asnumpy(), 0.000001, 0.000001)
+        assert np.allclose(grad[1][0].asnumpy(), expect_grad[1][0].asnumpy(), 0.000001, 0.000001)
+        assert np.allclose(grad[1][1].asnumpy(), expect_grad[1][1].asnumpy(), 0.000001, 0.000001)
+        assert np.allclose(grad[1][2].asnumpy(), expect_grad[1][2].asnumpy(), 0.000001, 0.000001)
+
+    # case: ms_funciton in pynative mode.
+    context.set_context(mode=context.PYNATIVE_MODE)
+    run_test()
+
     # case: ms_funciton in graph mode.
     context.set_context(mode=context.GRAPH_MODE)
-    out = single_net_msfunc(inputs)
-    compare_single_net1 = CompareSingleNet1()
-    expect_out = compare_single_net1(inputs)
-    assert np.allclose(out.asnumpy(), expect_out.asnumpy(), 0.000001, 0.000001)
-    grad = grad_op(single_net_msfunc, ParameterTuple(single_net_msfunc.trainable_params()))(inputs)
-    expect_grad = grad_op(compare_single_net1, ParameterTuple(compare_single_net1.trainable_params()))(inputs)
-    context.set_context(mode=context.PYNATIVE_MODE)
-    assert len(grad) == len(expect_grad)
-    assert np.allclose(grad[0][0].asnumpy(), expect_grad[0][0].asnumpy(), 0.000001, 0.000001)
-    assert np.allclose(grad[1][0].asnumpy(), expect_grad[1][0].asnumpy(), 0.000001, 0.000001)
-    assert np.allclose(grad[1][1].asnumpy(), expect_grad[1][1].asnumpy(), 0.000001, 0.000001)
-    assert np.allclose(grad[1][2].asnumpy(), expect_grad[1][2].asnumpy(), 0.000001, 0.000001)
-    context.set_context(mode=context.PYNATIVE_MODE)
+    run_test()
 
-
-@arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
-          card_mark='onecard',
-          essential_mark='essential')
-def test_pynative_forward_hook_in_graph_mode():
-    """
-    Feature: PyNative hook function.
-    Description: Test PyNative forward hook function and forward pre hook function in graph mode.
-    Expectation: The calculation result is correct.
-    """
-
-    context.set_context(mode=context.GRAPH_MODE)
-    inputs = Tensor(np.ones([2, 2, 2, 2]).astype(np.float32) * 3)
-    grad_op = GradOperation(get_all=True, get_by_list=True, sens_param=False)
-    net = SingleNet()
-    out = net(inputs)
-    compare_net = CompareSingleNet4()
-    expect_out = compare_net(inputs)
-    assert np.allclose(out.asnumpy(), expect_out.asnumpy(), 0.000001, 0.000001)
-    grad = grad_op(net, ParameterTuple(net.trainable_params()))(inputs)
-    expect_grad = grad_op(compare_net, ParameterTuple(compare_net.trainable_params()))(inputs)
     context.set_context(mode=context.PYNATIVE_MODE)
-    assert len(grad) == len(expect_grad)
-    assert np.allclose(grad[0][0].asnumpy(), expect_grad[0][0].asnumpy(), 0.000001, 0.000001)
-    assert np.allclose(grad[1][0].asnumpy(), expect_grad[1][0].asnumpy(), 0.000001, 0.000001)
-    context.set_context(mode=context.PYNATIVE_MODE)
+    old_construct = single_net_msfunc.inner.construct
+    single_net_msfunc.inner.construct = jit(single_net_msfunc.inner.construct)
+    run_test()
+    single_net_msfunc.construct = old_construct
+
 
 
 def forward_pre_hook_fn(cell, inputs):
@@ -529,17 +513,21 @@ def test_pynative_forward_hook_delete():
     Expectation: The calculation result is correct.
     """
     net = TestHookNet()
-    grad_net = ms.grad(net, grad_position=(0, 1))
+    grad_position = (0, 1)
+    grad_net = ms.grad(net, grad_position=grad_position)
 
     x = ms.Tensor(np.ones([1]).astype(np.float32))
     y = ms.Tensor(np.ones([1]).astype(np.float32))
 
     output = net(x, y)
+    assert_jit_net(net, output, x, y)
     assert output.asnumpy().all() == np.array([2]).all()
     grads = grad_net(x, y)
+    assert_jit_grad_net_by_ms_grad(net, grad_position, grads, x, y)
     assert grads[0].asnumpy().all() == np.array([1]).all()
     net.handle.remove()
     grads = grad_net(x, y)
+    assert_jit_grad_net_by_ms_grad(net, grad_position, grads, x, y)
     assert grads[1].asnumpy().all() == np.array([1]).all()
 
 

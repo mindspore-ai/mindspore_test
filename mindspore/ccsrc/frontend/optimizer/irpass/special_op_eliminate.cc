@@ -49,7 +49,6 @@ SpecialOpEliminater::SpecialOpEliminater()
     : insert_gradient_of_(std::make_shared<PrimEliminater>(prim::kPrimInsertGradientOf)),
       stop_gradient_(std::make_shared<PrimEliminater>(prim::kPrimStopGradient)),
       hook_backward_(std::make_shared<PrimEliminater>(prim::kPrimHookBackward)),
-      cell_backward_hook_(std::make_shared<PrimEliminater>(prim::kPrimCellBackwardHook)),
       print_shape_type_(std::make_shared<PrimEliminater>(prim::kPrimPrintShapeType)),
       mirror_(std::make_shared<PrimEliminater>(prim::kPrimMirror)),
       virtual_div_(std::make_shared<PrimEliminater>(prim::kPrimVirtualDiv)),
@@ -57,7 +56,6 @@ SpecialOpEliminater::SpecialOpEliminater()
   (void)eliminaters_.emplace_back(insert_gradient_of_);
   (void)eliminaters_.emplace_back(stop_gradient_);
   (void)eliminaters_.emplace_back(hook_backward_);
-  (void)eliminaters_.emplace_back(cell_backward_hook_);
   (void)eliminaters_.emplace_back(print_shape_type_);
   (void)eliminaters_.emplace_back(mirror_);
   (void)eliminaters_.emplace_back(virtual_div_);
@@ -69,7 +67,7 @@ AnfNodePtr SpecialOpEliminater::operator()(const OptimizerPtr &optimizer, const 
   for (auto &eliminater : eliminaters_) {
     new_node = (*eliminater)(optimizer, node);
     if (new_node != nullptr) {
-      if (IsPrimitiveCNode(node, prim::kPrimHookBackward) || IsPrimitiveCNode(node, prim::kPrimCellBackwardHook)) {
+      if (IsPrimitiveCNode(node, prim::kPrimHookBackward)) {
         MS_LOG(WARNING) << "Hook operation does not work in graph mode or functions decorated with 'jit', it will be "
                            "eliminated during compilation.";
       }

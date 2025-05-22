@@ -108,6 +108,7 @@ const char FUNC_GRAPH_FLAG_PROXY_GRAPH[] = "proxy_graph";
 const char FUNC_GRAPH_FLAG_NO_CHILD_GRAPH[] = "no_child_graph";
 const char FUNC_GRAPH_FLAG_AMP_STRATEGY[] = "amp_strategy";
 const char FUNC_GRAPH_FLAG_ROLLED_HEADER[] = "rolled_header";
+const char FUNC_GRAPH_FLAG_FORWARD_PRE_HOOK[] = "forward_pre_hook";
 
 const char kFuncGraphFlagUndetermined[] = "undeterminate";
 const char kFuncGraphFlagBackPropEntry[] = "back_prop_entry";
