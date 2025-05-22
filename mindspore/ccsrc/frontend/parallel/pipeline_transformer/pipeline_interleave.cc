@@ -49,6 +49,7 @@
 #include "utils/tensor_construct_utils.h"
 #include "frontend/parallel/parallel_node_check.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
@@ -1059,6 +1060,15 @@ void PipelineInterleave::CutBorder() {
   std::reverse(all_nodes.begin(), all_nodes.end());
   int64_t order = 0;
   for (auto &node : all_nodes) {
+    if (is_v_shape_ &&
+        (IsPrimitiveCNode(node, prim::kPrimMatMul) || (IsPrimitiveCNode(node, prim::kPrimBatchMatMul)))) {
+      const auto &cnode = node->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(cnode);
+      const auto &the_3rd_input = cnode->input(kIndex3);
+      const auto &trans_b = GetValueNode(the_3rd_input);
+      bool is_trans_b = GetValue<bool>(trans_b);
+      cnode->AddPrimalAttr(FORWARD_TRANSPOSE_B, MakeValue(is_trans_b));
+    }
     auto stage_info = node->user_data<NodeStageInfo>();
     if (!node->isa<CNode>() || stage_info == nullptr || stage_info->stage() == -1 ||
         IsPrimitiveCNode(node, prim::kPrimUpdateState)) {
