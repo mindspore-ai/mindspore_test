@@ -62,14 +62,13 @@ class PyboostFunctionsImplGenerator(BaseGenerator):
         )
         self.convert_template = Template("auto $arg_name = converter.${convert_func}(args, $arg_index);\n")
         self.input_args_template = Template(" const ${arg_type}& ${arg_name},")
-        self.PYBOOST_FUNCTION_TEMPLATE = template.PYBOOST_FUNCTION_TEMPLATE
-        self.PYBOOST_FUNCTIONS_IMPL_CC_TEMPLATE = template.PYBOOST_FUNCTIONS_IMPL_CC_TEMPLATE
+        self.PYBOOST_CORE_CC_TEMPLATE = template.PYBOOST_CORE_CC_TEMPLATE
         self.TENSOR_FUNC_CLASS_REG = template.TENSOR_FUNC_CLASS_REG
         self.OP_DEF_INC_HEAD_TEMPLATE = template.OP_DEF_INC_HEAD_TEMPLATE
 
-        self.PYBOOST_FUNCTION_IMPL_TEMPLATE = template.PYBOOST_FUNCTION_IMPL_TEMPLATE
-        self.PYBOOST_COMM_FUNCTION_IMPL_TEMPLATE = template.PYBOOST_COMM_FUNCTION_IMPL_TEMPLATE
-        self.PYBOOST_FUNCTION_DYNAMIC_OUTPUT_IMPL_TEMPLATE = template.PYBOOST_FUNCTION_DYNAMIC_OUTPUT_IMPL_TEMPLATE
+        self.PYBOOST_CORE_BODY_TEMPLATE = template.PYBOOST_CORE_BODY_TEMPLATE
+        self.PYBOOST_CORE_BODY_COMM_TEMPLATE = template.PYBOOST_CORE_BODY_COMM_TEMPLATE
+        self.PYBOOST_CORE_BODY_SYNC_TEMPLATE = template.PYBOOST_CORE_BODY_SYNC_TEMPLATE
 
     def generate(self, work_path, op_protos):
         """
@@ -95,16 +94,16 @@ class PyboostFunctionsImplGenerator(BaseGenerator):
                 pyboost_func_include_headers_str += self.pyboost_func_include_header_template.replace(
                     operator_name=op_proto.op_name)
 
-        # generate pyboost impl cc
-        pyboost_func_impl_str = self._get_pyboost_func_impl_all_str(op_protos)
-        pyboost_func_impl_file \
-            = self.PYBOOST_FUNCTIONS_IMPL_CC_TEMPLATE.replace(include_op_header=pyboost_func_include_headers_str,
-                                                              function_body=pyboost_func_impl_str)
+        # generate pyboost core cc
+        pyboost_core_body_str = self._get_pyboost_core_body_all_str(op_protos)
+        pyboost_core_file \
+            = self.PYBOOST_CORE_CC_TEMPLATE.replace(include_op_header=pyboost_func_include_headers_str,
+                                                    function_body=pyboost_core_body_str)
         save_path = os.path.join(work_path, K.PIPELINE_PYBOOST_FUNC_GEN_PATH)
         file_name = "pyboost_core.cc"
-        save_file(save_path, file_name, pyboost_func_impl_file)
+        save_file(save_path, file_name, pyboost_core_file)
 
-    def _get_pyboost_func_impl_all_str(self, op_protos):
+    def _get_pyboost_core_body_all_str(self, op_protos):
         """
         Generates pyboost functions implementation string for all operations.
 
@@ -114,15 +113,15 @@ class PyboostFunctionsImplGenerator(BaseGenerator):
         Returns:
             str: pyboost functions implementation string for all operations.
         """
-        pyboost_func_impl_str = ''
+        pyboost_core_body_str = ''
         for op_proto in op_protos:
             if op_proto.op_dispatch is None or not op_proto.op_dispatch.enable:
                 continue
-            pyboost_func_impl_str += self._get_pyboost_func_impl_str(op_proto)
+            pyboost_core_body_str += self._get_pyboost_core_body_str(op_proto)
 
-        return pyboost_func_impl_str
+        return pyboost_core_body_str
 
-    def _get_pyboost_func_impl_str(self, op_proto):
+    def _get_pyboost_core_body_str(self, op_proto):
         """
         Generates pyboost functions implementation string for specific operator.
 
@@ -148,25 +147,25 @@ class PyboostFunctionsImplGenerator(BaseGenerator):
         view_arg_str = ", " + view_arg_str if view_arg_str else ''
         multi_ouptut_str = 'Multi' if is_op_multi_output(op_proto.op_returns) else ''
         output_num_str = len(op_proto.op_returns)
-        function_tpl = self._get_function_impl_tpl(op_proto)
-        return function_tpl.replace(func_name=op_pyboost_func_name,
-                                    op_def_name=op_def_name_str,
-                                    type_num=type_num,
-                                    same_type=same_type,
-                                    input_args=op_input_args_str,
-                                    parser_body=parser_body_str,
-                                    op_name=op_proto.op_class.name,
-                                    class_name=op_proto.op_class.name,
-                                    op_args=op_args_str,
-                                    convert_stub=convert_stub_str,
-                                    optional_to_value=optional_to_value_str,
-                                    call_args=call_args_str,
-                                    grad_args=grad_args_str,
-                                    cast_args=cast_args_str,
-                                    view_arg=view_arg_str,
-                                    is_multi=multi_ouptut_str,
-                                    output_num=output_num_str,
-                                    operator_name=op_proto.op_name)
+        pyboost_core_body_tpl = self._get_pyboost_core_body_tpl(op_proto)
+        return pyboost_core_body_tpl.replace(func_name=op_pyboost_func_name,
+                                             op_def_name=op_def_name_str,
+                                             type_num=type_num,
+                                             same_type=same_type,
+                                             input_args=op_input_args_str,
+                                             parser_body=parser_body_str,
+                                             op_name=op_proto.op_class.name,
+                                             class_name=op_proto.op_class.name,
+                                             op_args=op_args_str,
+                                             convert_stub=convert_stub_str,
+                                             optional_to_value=optional_to_value_str,
+                                             call_args=call_args_str,
+                                             grad_args=grad_args_str,
+                                             cast_args=cast_args_str,
+                                             view_arg=view_arg_str,
+                                             is_multi=multi_ouptut_str,
+                                             output_num=output_num_str,
+                                             operator_name=op_proto.op_name)
 
     def _generate_parser_func(self, op_proto: OpProto) -> str:
         """
@@ -389,9 +388,9 @@ class PyboostFunctionsImplGenerator(BaseGenerator):
                 break
         return arg_str
 
-    def _get_function_impl_tpl(self, op_proto: OpProto):
+    def _get_pyboost_core_body_tpl(self, op_proto: OpProto):
         if len(op_proto.op_returns) == 1 and is_tensor_list(op_proto.op_returns[0]):
             # op output size is unknown
-            return self.PYBOOST_FUNCTION_DYNAMIC_OUTPUT_IMPL_TEMPLATE
-        return self.PYBOOST_COMM_FUNCTION_IMPL_TEMPLATE \
-            if op_proto.op_dispatch.is_comm_op else self.PYBOOST_FUNCTION_IMPL_TEMPLATE
+            return self.PYBOOST_CORE_BODY_SYNC_TEMPLATE
+        return self.PYBOOST_CORE_BODY_COMM_TEMPLATE \
+            if op_proto.op_dispatch.is_comm_op else self.PYBOOST_CORE_BODY_TEMPLATE
