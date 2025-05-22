@@ -92,53 +92,6 @@ void SetSummaryNodesRefCount(const KernelGraph *graph) {
   }
 }
 
-bool EnableBackendCompileCache(const FuncGraphPtr &func_graph, const device::DeviceType &device_type) {
-  if (!CompileCacheEnable()) {
-    return false;
-  }
-  auto &context = CompileCacheContext::GetInstance();
-  if (context.FrontGraph() != func_graph) {
-    return false;
-  }
-  if (context.RestrictedScenarios()) {
-    return false;
-  }
-  if (MsContext::GetInstance()->backend_policy() == "ge") {
-    return false;
-  }
-  if (device_type != device::DeviceType::kAscend) {
-    return false;
-  }
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  if (ms_context->CellReuseLevel() != CellReuseLevel::kNoCellReuse) {
-    return false;
-  }
-  return true;
-}
-
-bool UseCacheToCompileGraph(const FuncGraphPtr &func_graph, const device::DeviceType &device_type) {
-  if (!EnableBackendCompileCache(func_graph, device_type)) {
-    return false;
-  }
-  auto &context = CompileCacheContext::GetInstance();
-  if (!context.UseCompileCache()) {
-    return false;
-  }
-  return true;
-}
-
-bool ExportCompileCache(const FuncGraphPtr &func_graph, const device::DeviceType &device_type) {
-  if (!EnableBackendCompileCache(func_graph, device_type)) {
-    return false;
-  }
-  auto &context = CompileCacheContext::GetInstance();
-  if (context.UseCompileCache()) {
-    return false;
-  }
-  return true;
-}
-
 // Fetch the real input of the nop node recursively.
 AnfNodePtr FetchRealNodeByNopNode(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
@@ -283,29 +236,6 @@ bool IsEnableZeroCopy(bool run_in_pynative) {
     return false;
   }
   return true;
-}
-
-void SetRunGraphBySingleOpFlag(const KernelGraphPtr &graph) {
-  MS_EXCEPTION_IF_NULL(graph);
-  for (auto &node : graph->execution_order()) {
-    MS_EXCEPTION_IF_NULL(node);
-    MS_EXCEPTION_IF_NULL(node->input(0));
-    bool enable = false;
-    if (!AnfAlgo::NodeValueIsFuncGraph(node->input(0))) {
-      if (!kernel::CheckResizeCondition(node) && graph->has_flag(kFlagPyNativeRunInGraph)) {
-        MS_LOG(INFO) << "Enable Run Graph By Single Op";
-        enable = true;
-      }
-    }
-    // BpGraph contain bprop_cut node.
-    auto contain_bprop_cut = common::AnfAlgo::IsBpropCutOpExecInBackend(node);
-    if (enable || contain_bprop_cut) {
-      MS_LOG(INFO) << "Set kFlagEnableRunGraphBySingleOp: NeedSkipResize:" << enable
-                   << ", BpGraph contain bprop_cut node:" << contain_bprop_cut;
-      graph->set_flag(kFlagEnableRunGraphBySingleOp, true);
-      break;
-    }
-  }
 }
 
 void UseCacheToCompileGraphImpl(const KernelGraphPtr &graph, const DeviceContext *device_context) {
@@ -551,7 +481,6 @@ GraphId GraphCompiler::CompileGraph(const KernelGraphPtr &kernel_graph,
     return CompileAnyTypeInputGraph(kernel_graph, outputs, device_context);
   }
   kernel_graph->erase_flag(kFlagPyNativeRunInGraph);
-  SetRunGraphBySingleOpFlag(kernel_graph);
   kernel_graph->UpdateGraphAquireGilAttr();
 
   if (run_mode == device::RunMode::kUnknown) {
@@ -612,125 +541,6 @@ GraphId GraphCompiler::CompileGraph(const KernelGraphPtr &kernel_graph,
 
 GraphCompilerInfo::~GraphCompilerInfo() {
   GraphScheduler::GetInstance().Clear(name_, graphs_, origin_parameters_order_, control_node_parser_);
-}
-
-GraphId GraphCompiler::CompileDynamicGraph(const GraphSegmentPtr &segment, const AnfNodePtrList &outputs,
-                                           const DeviceContext *device_context,
-                                           const backend::BackendJitConfig &backend_jit_config) {
-  MS_EXCEPTION_IF_NULL(segment);
-  MS_EXCEPTION_IF_NULL(device_context);
-  MS_LOG(INFO) << "Status record: start compile graph.";
-
-  auto nodes = segment->nodes_;
-  auto device_target = device_context->GetDeviceType();
-  // Generate kernel graph.
-  (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageConstructKernelGraph,
-                                  profiler::GetClockSyscnt(), 0, 1);
-  const auto &kernel_graph =
-    session_->ConstructKernelGraph(nodes, outputs, device_target, backend_jit_config, true, false);
-  return CompileDynamicGraph(kernel_graph, device_context);
-}
-
-GraphId GraphCompiler::CompileDynamicGraph(const KernelGraphPtr &kernel_graph, const DeviceContext *device_context) {
-  MS_EXCEPTION_IF_NULL(kernel_graph);
-  MS_EXCEPTION_IF_NULL(device_context);
-  // Dynamic shape or dynamic graph structure flag.
-  kernel_graph->set_flag(kAttrMutableKernel, true);
-  MS_LOG(INFO) << "Set kFlagEnableRunGraphBySingleOp: Dynamic shape or dynamic graph structure flag";
-  kernel_graph->set_flag(kFlagEnableRunGraphBySingleOp, true);
-
-  kernel_graph->UpdateGraphAquireGilAttr();
-  kernel_graph->SetInputNodes();
-  auto manager = Manage(kernel_graph);
-  if (manager) {
-    manager->AddFuncGraph(kernel_graph);
-    kernel_graph->set_manager(manager);
-  }
-  session_->SetInputNodeUsage(kernel_graph, manager);
-  kernel_graph->SetOptimizerFlag();
-  kernel_graph->set_run_mode(device::RunMode::kKernelMode);
-  std::set<KernelGraphPtr> memo;
-  RecursiveSetRunMode(kernel_graph, &memo);
-
-  // kernel_graph kernel does not support pynative mode now, print a warning here.
-  graphkernel::GraphKernelFlags::GetInstance().CheckSupport();
-
-  GraphId graph_id = kernel_graph->graph_id();
-  kernel_graph->set_root_graph_id(graph_id);
-  ResetNodeId({kernel_graph});
-  session_->DumpGraphs({kernel_graph});
-
-  MS_LOG(INFO) << "Status record: end compile kernel_graph. kernel_graph id: " << graph_id;
-  return graph_id;
-}
-
-KernelGraphPtr GraphCompiler::ConstructKernelGraphForGraphRunMode(const FuncGraphPtr &func_graph,
-                                                                  const DeviceContext *device_context,
-                                                                  const backend::BackendJitConfig &backend_jit_config,
-                                                                  std::vector<KernelGraphPtr> *const all_graphs,
-                                                                  bool *const need_return_ahead) {
-  MS_EXCEPTION_IF_NULL(func_graph);
-  MS_EXCEPTION_IF_NULL(device_context);
-  MS_EXCEPTION_IF_NULL(all_graphs);
-  auto device_target = device_context->GetDeviceType();
-  KernelGraphPtr root_graph = session_->ConstructKernelGraph(func_graph, all_graphs, device_target, backend_jit_config);
-  MS_EXCEPTION_IF_NULL(root_graph);
-  for (const auto &graph : *all_graphs) {
-    MS_EXCEPTION_IF_NULL(graph);
-    MS_LOG(INFO) << "Set root graph for graph: " << graph->graph_id() << " to: " << root_graph->graph_id() << ".";
-    graph->set_root_graph_id(root_graph->graph_id());
-    graph->set_run_mode(device::RunMode::kGraphMode);
-    graph->set_is_loop_count_sink(true);
-    graph->set_attrs(func_graph->attrs());
-    opt::OptimizationWithoutBackend(graph);
-  }
-
-  // Unify the MindIR, must be before of the graph optimization.
-  auto kernel_executor = device_context->GetKernelExecutor(false);
-  if (kernel_executor != nullptr) {
-    kernel_executor->AddMindIRPass(root_graph);
-  }
-
-  root_graph->SetExecOrderByDefault();
-  // todo: waiting for GraphExecutor
-  MS_EXCEPTION_IF_NULL(MsContext::GetInstance());
-  if (MsContext::GetInstance()->backend_policy() == "ge") {
-    auto manager = MakeManager();
-    MS_EXCEPTION_IF_NULL(manager);
-    for (const auto &graph : *all_graphs) {
-      MS_EXCEPTION_IF_NULL(graph);
-      graph->set_flag(kFlagEnableZeroCopyInGraph, true);
-      manager->AddFuncGraph(graph);
-      graph->set_manager(manager);
-      graph->SetInputNodes();
-    }
-    root_graph->SetInputNodes();
-    MS_EXCEPTION_IF_NULL(device_context->graph_executor_);
-    device_context->GetKernelExecutor(false)->OptimizeGraph(root_graph);
-    if (!device_context->graph_executor_->CompileGraph(root_graph, {})) {
-      MS_LOG(EXCEPTION) << "Compile graph failed: " << root_graph->graph_id();
-    }
-    root_graph->CacheGraphOutputToFrontNodeWithIndex({root_graph->output()}, {func_graph->output()});
-    *need_return_ahead = true;
-  }
-  if (*need_return_ahead) {
-    return root_graph;
-  }
-  // set executing sink true in graph mode
-  root_graph->set_run_mode(device::RunMode::kGraphMode);
-  root_graph->set_is_loop_count_sink(true);
-#if defined(__linux__) && defined(WITH_BACKEND)
-  // Embedding cache need global step of compute graph, can not enable loop sink, move loop control to loop count actor.
-  if (ps::PSContext::instance()->cache_enable()) {
-    root_graph->set_is_loop_count_sink(false);
-    for (const auto &graph : *all_graphs) {
-      MS_EXCEPTION_IF_NULL(graph);
-      graph->set_is_loop_count_sink(false);
-    }
-  }
-#endif
-  root_graph->SetInputNodes();
-  return root_graph;
 }
 
 void BuildStreamForCompileCache(const KernelGraphPtr &kernel_graph, const DeviceContext *device_context) {
@@ -818,65 +628,6 @@ bool GraphCompiler::CompileGraphForKernelRunModeUseCache(const FuncGraphPtr &fun
   }
   MS_LOG(INFO) << "Status record: end use cache to compile graph kbk for: " << func_graph->ToString();
   return true;
-}
-
-GraphId GraphCompiler::CompileWholeGraphForGraphRunMode(const FuncGraphPtr &func_graph,
-                                                        const DeviceContext *device_context,
-                                                        const backend::BackendJitConfig &backend_jit_config) {
-  MS_EXCEPTION_IF_NULL(session_);
-  MS_EXCEPTION_IF_NULL(func_graph);
-  MS_EXCEPTION_IF_NULL(device_context);
-  MS_LOG(INFO) << "Status record: start compile graph.";
-  // Generate kernel graph.
-  std::vector<KernelGraphPtr> all_graphs;
-  auto device_target = device_context->GetDeviceType();
-  KernelGraphPtr root_graph;
-  bool need_return_ahead = false;
-  if (UseCacheToCompileGraph(func_graph, device_target)) {
-    const auto &graphs = session_->ConstructKernelGraph(&all_graphs);
-    if (graphs.empty()) {
-      MS_LOG(EXCEPTION) << "Failed to construct kernel graph for:" << func_graph->ToString();
-    }
-    root_graph = graphs[0];
-    use_cache_to_compile_graph_ = true;
-  } else {
-    root_graph = ConstructKernelGraphForGraphRunMode(func_graph, device_context, backend_jit_config, &all_graphs,
-                                                     &need_return_ahead);
-  }
-  GraphId graph_id = root_graph->graph_id();
-  if (need_return_ahead) {
-    return graph_id;
-  }
-  if (ExportCompileCache(func_graph, device_target)) {
-    export_compile_cache_ = true;
-  }
-  if (!func_graph->has_flag(kFlagPyNativeRunInGraph)) {
-    graph_id = CompileGraphImpl(root_graph, device_context);
-  }
-
-  ResetNodeId(all_graphs);
-  // dump all graphs.
-  session_->DumpGraphs(all_graphs);
-
-  if (!func_graph->has_flag(kFlagPyNativeRunInGraph)) {
-    // Cache the backend graph output nodes to front nodes with output index.
-    auto output = func_graph->output();
-    MS_EXCEPTION_IF_NULL(output);
-    auto backend_node = root_graph->output();
-    MS_EXCEPTION_IF_NULL(backend_node);
-    root_graph->CacheGraphOutputToFrontNodeWithIndex({backend_node}, {output});
-    AnfAlgo::UpdateGraphValidRefPair(root_graph);
-  } else {
-    for (auto &node : root_graph->execution_order()) {
-      if (common::AnfAlgo::IsBpropCutOpExecInBackend(node)) {
-        MS_LOG(INFO) << "Set kFlagEnableRunGraphBySingleOp: IsBpropCutOpExecInBackend";
-        root_graph->set_flag(kFlagEnableRunGraphBySingleOp, true);
-      }
-    }
-    root_graph->set_front_outputs({func_graph->output()});
-  }
-  MS_LOG(INFO) << "Status record: end compile graph. graph id: " << graph_id;
-  return graph_id;
 }
 
 GraphId GraphCompiler::CompileGraphImpl(const KernelGraphPtr &graph, const DeviceContext *device_context,
@@ -1016,80 +767,11 @@ void GraphCompiler::CreateDeviceAddress(const KernelGraphPtr &graph, const Devic
   MS_LOG(INFO) << "Status record: end create device address. graph id: " << graph->graph_id();
 }
 
-void GraphCompiler::GetParamAndOutputIndex(
-  const KernelGraphPtr &graph, const std::vector<TensorPtr> &inputs, VectorRef *const outputs,
-  std::map<AnfNodePtr, size_t> *parameter_index,
-  std::map<KernelWithIndex, std::vector<std::vector<size_t>>> *output_indexes) {
-  MS_EXCEPTION_IF_NULL(session_);
-  session_->GetParameterIndex(graph.get(), inputs, parameter_index);
-  session_->CreateOutputPlaceholder(graph, inputs, outputs, output_indexes);
-}
-
-void GraphCompiler::GetSingleOpInputTensors(const CNodePtr &kernel,
-                                            const std::map<KernelWithIndex, tensor::TensorPtr> &op_output,
-                                            const std::map<AnfNodePtr, size_t> &parameter_index,
-                                            const std::vector<TensorPtr> &graph_inputs, bool is_run_pyboost,
-                                            InputInfo *const input_info) {
-  MS_EXCEPTION_IF_NULL(session_);
-  if (is_run_pyboost) {
-    session_->GetOpInputTensorsFromCNode(kernel, op_output, parameter_index, graph_inputs, input_info);
-  } else {
-    session_->GetOpInputTensors(kernel, op_output, parameter_index, graph_inputs, input_info);
-  }
-}
-
-tensor::TensorPtr GraphCompiler::GetSingleOpInputTensorByIndex(
-  const CNodePtr &kernel, const std::map<KernelWithIndex, tensor::TensorPtr> &op_output,
-  const std::map<AnfNodePtr, size_t> &parameter_index, const std::vector<TensorPtr> &graph_inputs,
-  InputInfo *const input_info, size_t input_index) {
-  MS_EXCEPTION_IF_NULL(session_);
-  return session_->GetOpInputTensorByIndex(kernel, op_output, parameter_index, graph_inputs, input_info, input_index);
-}
-
-void GraphCompiler::GetSingleOpRunInfoAndGraphInfo(const CNodePtr &kernel, const InputInfo &input_info,
-                                                   bool use_dynamic_shape_process,
-                                                   session::BackendOpRunInfoPtr *op_run_info,
-                                                   const GraphOutputInfo *const graph_output_info) {
-  MS_EXCEPTION_IF_NULL(session_);
-  *op_run_info = session_->GetSingleOpRunInfo(kernel, input_info, graph_output_info);
-  (*op_run_info)->base_op_run_info.use_dynamic_shape_process = use_dynamic_shape_process;
-}
-
-void GraphCompiler::CalculateRefCount(const KernelGraphPtr &graph, std::map<KernelWithIndex, size_t> *ref_count) const {
-  MS_EXCEPTION_IF_NULL(session_);
-  session_->GetRefCount(graph.get(), ref_count);
-}
-
-void GraphCompiler::CalculateForwardOpOutputCount(const KernelGraphPtr &graph,
-                                                  const std::vector<tensor::TensorPtr> &inputs,
-                                                  std::map<std::string, size_t> *forward_op_output_tensor_id,
-                                                  const std::map<AnfNodePtr, size_t> &parameter_index) const {
-  MS_EXCEPTION_IF_NULL(session_);
-  MS_EXCEPTION_IF_NULL(forward_op_output_tensor_id);
-  forward_op_output_tensor_id->clear();
-  session_->GetForwardOpOutputRefCount(graph.get(), inputs, forward_op_output_tensor_id, parameter_index);
-}
-
 void GraphCompiler::UpdateRefCount(const std::set<KernelWithIndex> &input_kernels_with_index,
                                    std::map<KernelWithIndex, size_t> *ref_count,
                                    std::map<KernelWithIndex, tensor::TensorPtr> *op_output_map) const {
   MS_EXCEPTION_IF_NULL(session_);
   session_->HandleOpInputs(input_kernels_with_index, ref_count, op_output_map);
-}
-
-void GraphCompiler::UpdateForwardOpOutputRefCount(const std::vector<ValuePtr> &input_values,
-                                                  std::map<std::string, size_t> *forward_op_output_tensor_id) const {
-  MS_EXCEPTION_IF_NULL(session_);
-  MS_EXCEPTION_IF_NULL(forward_op_output_tensor_id);
-  session_->ReleaseForwardOpOutput(input_values, forward_op_output_tensor_id);
-}
-
-void GraphCompiler::RecoverGraphOutput(const AnfNodePtr &kernel, const VectorRef &op_outputs,
-                                       const std::map<KernelWithIndex, size_t> &ref_count,
-                                       std::map<KernelWithIndex, tensor::TensorPtr> *op_output_map,
-                                       GraphOutputInfo *const graph_output_info) const {
-  MS_EXCEPTION_IF_NULL(session_);
-  session_->HandleOpOutputs(kernel, op_outputs, ref_count, op_output_map, graph_output_info);
 }
 
 void GraphCompiler::RegisterSummaryCallBackFunc(const CallBackFunc &callback) const {
