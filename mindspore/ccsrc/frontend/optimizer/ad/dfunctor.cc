@@ -131,10 +131,7 @@ void CopyPrimitivePtrForFpropReplace(const FuncGraphPtr &primal_graph, const Fun
 }
 
 bool NeedGradForUpdateState(const CNodePtr &cnode, const NodeUsersMap &node_user_map, bool is_view_inplace) {
-  if (!cnode->IsApply(prim::kPrimUpdateState)) {
-    return true;
-  }
-  if (!is_view_inplace) {
+  if (!cnode->IsApply(prim::kPrimUpdateState) || !is_view_inplace) {
     return false;
   }
   return std::any_of(cnode->inputs().begin(), cnode->inputs().end(), [node_user_map](const auto &node_input) {
@@ -414,15 +411,14 @@ CNodePtr DFunctor::CalculateDoutTuple(const CNodePtr &cnode_morph, const CNodePt
   }
 
   if (IsPrimitiveCNode(cnode_morph, prim::kPrimTupleGetItem) && (index == 1)) {
-    constexpr size_t kInputIndex = 1;
-    constexpr size_t kIdxIndex = 2;
-    auto dout_temp =
-      caller->NewCNodeInOrder({NewValueNode(prim::GetPythonOps("zeros_like")), k_app->input(kInputIndex)});
+    constexpr size_t input_idx = 1;
+    constexpr size_t index_idx = 2;
+    auto dout_temp = caller->NewCNodeInOrder({NewValueNode(prim::GetPythonOps("zeros_like")), k_app->input(input_idx)});
     auto generate_dout_tuple = std::make_shared<prim::GenerateBpropOutTuple>("generate_dout_tuple");
     generate_dout_tuple->set_ops_type(prim::OpsType::Type_Variable);
     auto dout_tuple_tmp = caller->NewCNodeInOrder({NewValueNode(generate_dout_tuple), dout_temp});
     return caller->NewCNodeInOrder(
-      {NewValueNode(prim::kPrimTupleSetItem), dout_tuple_tmp, k_app->input(kIdxIndex), node_adjoint->real_dout()});
+      {NewValueNode(prim::kPrimTupleSetItem), dout_tuple_tmp, k_app->input(index_idx), node_adjoint->real_dout()});
   }
 
   // Get Din/dmask/ops_type from din_tuple: (din, (dmask, ops_tye));
@@ -547,8 +543,8 @@ void DFunctor::BackPropagate(const CNodePtr &cnode_morph, const AdjointPtr &node
     }
     auto node_input = cnode_morph->input(i);
     const auto &node_users_map = resources_->manager()->node_users();
-    constexpr auto kNeedGradFlag = "need_grad";
-    bool need_grad = node_input->has_user_data(kNeedGradFlag) && *node_input->user_data<bool>(kNeedGradFlag);
+    constexpr auto need_grad_flag = "need_grad";
+    bool need_grad = node_input->has_user_data(need_grad_flag) && *node_input->user_data<bool>(need_grad_flag);
     if (InplaceUsedByUpdateStateOnly(node_input, node_users_map) && need_grad) {
       // Initialize a dout for the cnode used only by updatestate.
       MS_LOG(DEBUG) << "The Inplace node only used by UpdateState needs to pass the gradient. The node is:"
@@ -1151,15 +1147,18 @@ FuncGraphPtr DFunctor::tape() { return tape_; }
 
 void DFunctor::BroadCastStopFlag() {
   // As stop set expanding, all directly or indirectly stopped CNode will be cut off
-  auto node_users_map = resources_->manager()->node_users();
+  const auto &node_users_map = resources_->manager()->node_users();
   while (need_cut_) {
     need_cut_ = false;
     for (auto &node : primal_graph_->nodes()) {
       auto cnode = dyn_cast<CNode>(node);
       if (cnode != nullptr && !cnode->stop_gradient()) {
+        if (NeedGradForUpdateState(cnode, node_users_map, is_view_inplace_)) {
+          continue;
+        }
         // Cut off the cnode only when it's not referred any more
-        if (cnode->IsApply(prim::kPrimStopGradient) || AllReferencesStopped(cnode) || StopGradientForScalar(cnode) ||
-            cnode->IsApply(prim::kPrimPyExecute) || !NeedGradForUpdateState(cnode, node_users_map, is_view_inplace_)) {
+        if (cnode->IsApply(prim::kPrimStopGradient) || cnode->IsApply(prim::kPrimUpdateState) ||
+            AllReferencesStopped(cnode) || StopGradientForScalar(cnode) || cnode->IsApply(prim::kPrimPyExecute)) {
           MS_LOG(DEBUG) << "Set stop gradient flag for " << cnode->ToString() << ".";
           cnode->set_stop_gradient(true);
           // The stop set changed, more cut required
