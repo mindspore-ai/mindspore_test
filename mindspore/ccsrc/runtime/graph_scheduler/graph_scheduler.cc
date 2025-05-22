@@ -55,6 +55,7 @@
 #include "include/common/utils/convert_utils.h"
 #include "utils/ms_context.h"
 #include "utils/profile.h"
+#include "utils/llm_manager.h"
 #include "utils/phase.h"
 #include "common/common_utils.h"
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
@@ -3724,6 +3725,85 @@ void GraphScheduler::LinkOutputResultArrowForOutputActor(OutputActor *to_actor,
   }
 }
 
+void CheckParallelLaunchForSubGraphExecute(const GraphCompilerInfo &graph_compiler_info) {
+  if (graph_compiler_info.graphs_.size() != 1 || graph_compiler_info.control_node_parser_ == nullptr ||
+      graph_compiler_info.control_node_parser_->IsInited()) {
+    MS_LOG(DEBUG) << "Skip check parallel launch for multi graph or control flow.";
+    return;
+  }
+  const auto &kernel_graph = graph_compiler_info.graphs_[0];
+  MS_EXCEPTION_IF_NULL(kernel_graph);
+
+  auto runtime_conf_instance = runtime::RuntimeConf::GetInstance();
+  MS_EXCEPTION_IF_NULL(runtime_conf_instance);
+  if (common::IsDisableRuntimeConfig("host_value_cache")) {
+    MS_LOG(INFO) << "Skip check parallel launch for disable host value cache.";
+    return;
+  }
+  if (!MsContext::GetInstance()->IsEnableInferBoost()) {
+    MS_LOG(INFO) << "Skip check parallel launch for not infer boost.";
+    return;
+  }
+  if (!runtime_conf_instance->IsKernelLaunchGroupConfigured()) {
+    MS_LOG(INFO) << "Skip check parallel launch for not enable parallel.";
+    return;
+  }
+  std::set<KernelWithIndex> ref_nodes;
+  // Collect Ref node.
+  for (const auto &kernel : kernel_graph->execution_order()) {
+    MS_EXCEPTION_IF_NULL(kernel);
+    if (kernel->kernel_info() == nullptr) {
+      continue;
+    }
+    auto kernel_info = dynamic_cast<KernelInfo *>(kernel->kernel_info());
+    MS_EXCEPTION_IF_NULL(kernel_info);
+    if (kernel_info->out_in_ref_map().empty()) {
+      continue;
+    }
+    for (const auto &pair : kernel_info->out_in_ref_map()) {
+      auto input_node = common::AnfAlgo::GetInputNode(kernel, pair.second);
+      MS_EXCEPTION_IF_NULL(input_node);
+      ref_nodes.emplace(common::AnfAlgo::VisitKernelWithReturnType(input_node, 0, false));
+      ref_nodes.emplace(KernelWithIndex(kernel, pair.first));
+    }
+  }
+
+  // Check has ref for GetValue nodes.
+  auto &llm_manager = LLMManager::GetInstance();
+  for (const auto &kernel : kernel_graph->execution_order()) {
+    MS_EXCEPTION_IF_NULL(kernel);
+    const auto &kernel_info = dynamic_cast<KernelInfo *>(kernel->kernel_info());
+    MS_EXCEPTION_IF_NULL(kernel_info);
+    const auto &kernel_mod = kernel_info->MutableKernelMod();
+    MS_EXCEPTION_IF_NULL(kernel_mod);
+    if (!llm_manager.need_force_resize(kernel_mod->kernel_name())) {
+      continue;
+    }
+
+    auto depend_list = abstract::GetValueDependArgIndices(kernel);
+    size_t input_num = common::AnfAlgo::GetInputNum(kernel);
+    for (size_t index : depend_list) {
+      if (index >= input_num) {
+        MS_LOG(WARNING) << "Invalid value depend index:" << index << " input num:" << input_num
+                        << " for kernel:" << kernel->fullname_with_scope();
+        continue;
+      }
+      auto input_node = common::AnfAlgo::GetInputNode(kernel, index);
+      MS_EXCEPTION_IF_NULL(input_node);
+      const auto &real_input_node = common::AnfAlgo::VisitKernelWithReturnType(input_node, 0, false);
+      MS_EXCEPTION_IF_NULL(real_input_node.first);
+      if (ref_nodes.find(real_input_node) != ref_nodes.end()) {
+        MS_LOG(EXCEPTION) << "In parallel launch, kernel:" << kernel->fullname_with_scope()
+                          << " needs to get the value of its input " << index << ":"
+                          << real_input_node.first->fullname_with_scope()
+                          << ", but this input will be changed by some operators. Please disable parallel launch by "
+                             "`ms.runtime.set_kernel_launch_group()` or disable host value launch by `export "
+                             "MS_DEV_RUNTIME_CONF=\"host_value_cache:false\"`.";
+      }
+    }
+  }
+}
+
 void GraphScheduler::LinkKernelActorsForSubGraphExecute(const GraphCompilerInfo &graph_compiler_info,
                                                         const ActorSet *actor_set) const {
   MS_EXCEPTION_IF_NULL(actor_set);
@@ -3733,6 +3813,7 @@ void GraphScheduler::LinkKernelActorsForSubGraphExecute(const GraphCompilerInfo 
       super_kernel_actor->BuildAndLinkKernelActors();
       CorrectKernelRunnerRefCountForSuperKernelActor(super_kernel_actor);
     }
+    CheckParallelLaunchForSubGraphExecute(graph_compiler_info);
     OptimizeHeterInfoForSubGraphExecute(graph_compiler_info, actor_set);
   }
 }
