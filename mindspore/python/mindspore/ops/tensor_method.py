@@ -441,6 +441,9 @@ from mindspore.ops.auto_generate.gen_ops_prim import inplace_exp_op
 # 1030 log_
 from mindspore.ops.auto_generate.gen_ops_prim import inplace_log_op
 
+# 1031 masked_scatter
+from mindspore.ops.auto_generate import masked_scatter
+
 from .._checkparam import check_axis_in_range
 from ..ops.composite.multitype_ops import _compile_utils as compile_utils
 
@@ -1928,3 +1931,6 @@ def tensor_gmm(x, weight, *, bias=None, group_list=None, group_type=0, group_lis
 
 def raise_func(*args, **kwargs):
     raise NotImplementedError("this func has not been implemented.")
+
+def tensor_masked_scatter(input, mask, source):
+    return masked_scatter(input, mask, source)
