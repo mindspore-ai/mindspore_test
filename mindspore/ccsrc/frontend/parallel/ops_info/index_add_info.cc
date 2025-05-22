@@ -45,7 +45,8 @@ Status IndexAddExtInfo::GetAttrs() {
     MS_LOG(ERROR) << "For distributed operator " << name_ << ", failed to get the input value of parameter 'dim'.";
     return FAILED;
   }
-  dim_ = dim_opt.value();
+  auto dim = dim_opt.value();
+  dim_ = LongToSize(dim);
   MS_LOG(DEBUG) << "inputs_shape " << inputs_shape_;
 
   if (dim_ < 0 || dim_ >= inputs_shape_[kNameInputDim].size()) {
