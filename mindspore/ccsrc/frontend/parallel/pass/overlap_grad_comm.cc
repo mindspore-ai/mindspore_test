@@ -78,7 +78,7 @@ std::vector<CNodePtr> GetDwRelyNodes(const CNodePtr &dw_matmul) {
 }
 
 void InsertDwMatmulDepend(const FuncGraphPtr &backward_graph, const std::vector<CNodePtr> &dw_matmul_list) {
-  if (MsContext::GetInstance()->get_param<bool>(MS_CTX_GRAD_COMM_OVERLAP)) {
+  if (!MsContext::GetInstance()->get_param<std::string>(MS_CTX_GRAD_COMM_OVERLAP).empty()) {
     return;
   }
   auto manager = backward_graph->manager();

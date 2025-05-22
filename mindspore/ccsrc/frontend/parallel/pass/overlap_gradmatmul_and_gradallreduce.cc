@@ -20,6 +20,7 @@
 #include <algorithm>
 #include <string>
 #include <queue>
+#include <sstream>
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/other_ops.h"
@@ -46,6 +47,18 @@ std::unordered_map<std::string, size_t> match_prim_level = {{prim::kPrimMatMul->
                                                             {prim::kPrimBatchMatMulExt->name(), 1},
                                                             {prim::kPrimGroupedMatmul->name(), 2}};
 const size_t count_ten = 10;
+
+std::set<std::string> split(const std::string &str, char delimiter) {
+  std::set<std::string> tokens;
+  std::string token;
+  std::istringstream tokenStream(str);
+
+  while (std::getline(tokenStream, token, delimiter)) {
+    tokens.insert(token);
+  }
+
+  return tokens;
+}
 
 void ExtractForwardMatMul(const std::vector<CNodePtr> &origin_nodes_topological,
                           std::vector<std::string> *forward_matmul_unique_id_list) {
@@ -165,8 +178,14 @@ void OverLapGradMatMul(const FuncGraphManagerPtr &manager, const std::vector<CNo
                        const std::vector<std::string> &forward_matmul_unique_id_list) {
   std::set<CNodePtr> matched_matmul_list;
   CNodePtrList communicate_cnode_list;
+  auto grad_comm_value = MsContext::GetInstance()->get_param<std::string>(MS_CTX_GRAD_COMM_OVERLAP);
+  auto grad_comm_name_list = split(grad_comm_value, ',');
   for (const auto &node : origin_nodes_topological) {
-    if (!IsSomePrimitiveList(node, {ALL_GATHER, REDUCE_SCATTER, ALL_REDUCE, ALL_TO_ALL, ALL_TO_ALLV})) {
+    auto cnode = node->cast<CNodePtr>();
+    if (cnode == nullptr) {
+      continue;
+    }
+    if (!IsSomePrimitiveList(cnode, grad_comm_name_list)) {
       continue;
     }
     if (IsForwardNode(node) || node->HasAttr(kAttrDuplicated)) {
@@ -254,7 +273,7 @@ void OverlapGradMatmulAndGradAllreduce(const FuncGraphPtr &graph) {
   }
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  auto is_enable = ms_context->get_param<bool>(MS_CTX_GRAD_COMM_OVERLAP);
+  auto is_enable = !ms_context->get_param<std::string>(MS_CTX_GRAD_COMM_OVERLAP).empty();
   if (!is_enable) {
     return;
   }
