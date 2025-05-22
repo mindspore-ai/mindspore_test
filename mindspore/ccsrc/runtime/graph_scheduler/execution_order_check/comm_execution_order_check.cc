@@ -138,7 +138,6 @@ void Process::CheckCommOrderIteration(size_t total_running_count) {
 std::string Process::GetGroupFromPrim(const PrimitivePtr &prim) {
   auto group_attr = prim->GetAttr(kAttrGroup);
   if (!group_attr || !group_attr->isa<StringImm>()) {
-    MS_LOG(WARNING) << "Group attribute is missing or not a string";
     return "";
   }
 
@@ -270,6 +269,8 @@ void Process::AllGatherExecuteOrderHash(std::unique_ptr<char[]> *output_host_buf
     nullptr, kMaxAllGatherBuffSize, {static_cast<int64_t>(kMaxAllGatherBuffSize)}, Format::DEFAULT_FORMAT,
     TypeId::kNumberTypeUInt8, device_target, device_id, comm_stream_id);
 
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "AllocMemoryForCheckCommExecutionOrder",
+                                                 "AllocMemoryForCheckCommExecutionOrder", "", false);
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "AllocMemoryForCheckCommExecutionOrder",
                                                  device::tracker::MemType::kOther, input_device_tensor->GetSize(),
                                                  input_device_tensor.get());
@@ -476,7 +477,6 @@ void Process::StopCollectExecOrder() {
   cache.need_add = false;
   ProcessKernels();
   ValidateCommGroupExecuteOrders();
-  cache.ClearBuffers();
 }
 }  // namespace runtime
 }  // namespace mindspore
