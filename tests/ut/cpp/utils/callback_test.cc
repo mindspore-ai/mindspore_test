@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 #include "pybind11/pybind11.h"
 #include "include/common/utils/callbacks.h"
 #include "common/common_test.h"
+#include "pipeline/jit/ps/executor/graph_executor_py.h"
 #include "pipeline/jit/ps/pipeline.h"
 #include "include/common/utils/python_adapter.h"
 #include "mindspore/ccsrc/backend/ge_backend/graph_ir/df_graph_manager.h"
