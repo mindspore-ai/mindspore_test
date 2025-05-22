@@ -948,41 +948,35 @@ ValuePtr ForwardExecutor::RunOpInMs(const FrontendOpRunInfoPtr &op_run_info,
 void ForwardExecutor::CreateInputAddressForViewOp(const tensor::TensorPtr &input_tensor,
                                                   const FrontendOpRunInfoPtr &op_run_info) {
   MS_EXCEPTION_IF_NULL(input_tensor);
-  bool is_cpu_address_exist = false;
-  const auto &device_sync = input_tensor->device_address();
-  if (device_sync != nullptr) {
-    auto tensor_address = std::static_pointer_cast<device::DeviceAddress>(device_sync);
-    MS_EXCEPTION_IF_NULL(tensor_address);
-    if (tensor_address->GetDeviceType() != device::DeviceType::kCPU) {
-      // If the address is a cpu address, need to check if the device-ptr is from pool in device thread(flag is not set
-      // yet). If the device-ptr is not from pool, need to recopy.
-      tensor_address->set_is_view(true);
-      return;
-    }
-    is_cpu_address_exist = true;
-  }
+  const auto &device_address = std::static_pointer_cast<device::DeviceAddress>(input_tensor->device_address());
 
   const auto &device_context = runtime::OpRunner::GetDeviceContext(op_run_info->base_op_run_info.device_target);
   MS_EXCEPTION_IF_NULL(device_context);
-
-  // If the address exists means address is not from pool, no need to create adderss repeatedly.
-  // Just copy data.
-  if (!is_cpu_address_exist) {
-    MS_LOG(DEBUG) << "Input_tensor address is nullptr, need create address.";
-    auto address_size = GetTypeByte(input_tensor->Dtype()) * static_cast<size_t>(input_tensor->ElementsNum());
-    auto kernel_tensor = AnfAlgo::CreateKernelTensor(
-      nullptr, address_size, Format::DEFAULT_FORMAT, input_tensor->data_type(), input_tensor->shape(),
-      device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
-    kernel_tensor->SetType(std::make_shared<TensorType>(input_tensor->Dtype()));
-    kernel_tensor->SetShape(std::make_shared<abstract::TensorShape>(input_tensor->shape()));
-    kernel_tensor->set_stream_id(op_run_info->base_op_run_info.stream_id);
-
-    auto device_address = kernel_tensor->device_address();
-    input_tensor->set_device_address(device_address);
+  MS_EXCEPTION_IF_NULL(device_address);
+  if (device_address->GetDeviceType() == device_context->GetDeviceType()) {
+    // todo: copy data if the cpu device address is from python data.
+    MS_LOG(DEBUG) << "Input device address is from memory pool, and device type is " << device_address->GetDeviceType()
+                  << " device_target " << device_context->GetDeviceType();
+    return;
   }
 
-  MS_EXCEPTION_IF_NULL(op_backend_);
-  op_backend_->RunAllocMemTask(device_context, input_tensor, EnablePipeline(""), is_cpu_address_exist);
+  MS_LOG(DEBUG) << "Input_tensor address is nullptr, need create address.";
+  auto address_size = GetTypeByte(input_tensor->Dtype()) * static_cast<size_t>(input_tensor->ElementsNum());
+  auto kernel_tensor = AnfAlgo::CreateKernelTensor(
+    nullptr, address_size, Format::DEFAULT_FORMAT, input_tensor->data_type(), input_tensor->shape(),
+    device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
+  kernel_tensor->SetType(std::make_shared<TensorType>(input_tensor->Dtype()));
+  kernel_tensor->SetShape(std::make_shared<abstract::TensorShape>(input_tensor->shape()));
+  kernel_tensor->set_stream_id(op_run_info->base_op_run_info.stream_id);
+
+  auto new_device_address = kernel_tensor->device_address();
+  input_tensor->set_device_address(new_device_address);
+  input_tensor->set_need_pipeline_sync(true);
+  input_tensor->set_to_device(
+    [new_device_address, device_address, stream_id = op_run_info->base_op_run_info.stream_id]() {
+      return AsyncCopy(new_device_address.get(), device_address.get(), stream_id);
+    });
+  op_backend_->RunAllocMemTask(device_context, input_tensor, EnablePipeline(""));
 }
 
 device::DeviceAddressPtr ForwardExecutor::TensorContiguousCallback(const DeviceSyncPtr &device_address,

@@ -36,15 +36,13 @@ class BACKEND_EXPORT ViewBackend {
   void RunViewKernelTask(const pynative::BaseOpRunInfo &base_op_run_info, const runtime::KernelTaskType &task_type,
                          bool enable_async) const;
 
-  void RunAllocMemTask(DeviceContext *device_context, const tensor::TensorPtr &tensor, bool enable_async,
-                       bool is_cpu_address_exist) const;
+  void RunAllocMemTask(DeviceContext *device_context, const tensor::TensorPtr &tensor, bool enable_async) const;
 
   void RunViewKernelTaskAsyncImpl(const runtime::KernelTaskType &task_type, DeviceContext *device_context,
                                   const device::DeviceAddressPtrList &input_addr_list,
                                   const device::DeviceAddressPtrList &output_addr_list, const size_t &stream_id) const;
 
-  void AllocateMemForTensor(const tensor::TensorPtr &tensor, DeviceContext *device_context,
-                            bool is_cpu_address_exist) const;
+  void AllocateMemForTensor(const tensor::TensorPtr &tensor, DeviceContext *device_context) const;
 
   static void ContiguousInputByRunInfo(const BackendOpRunInfoPtr &op_run_info);
 
@@ -105,8 +103,7 @@ class BACKEND_EXPORT OpBackend {
   void RunViewKernelTask(const pynative::BaseOpRunInfo &base_op_run_info, const runtime::KernelTaskType &task_type,
                          bool enable_async) const;
 
-  void RunAllocMemTask(DeviceContext *device_context, const tensor::TensorPtr &tensor, bool enable_async,
-                       bool is_cpu_address_exist) const;
+  void RunAllocMemTask(DeviceContext *device_context, const tensor::TensorPtr &tensor, bool enable_async) const;
 
  protected:
   void RunInner(const BackendOpRunInfoPtr &op_run_info, const std::string &device_name, uint32_t device_id,

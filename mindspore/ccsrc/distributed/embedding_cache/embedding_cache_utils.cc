@@ -411,7 +411,6 @@ void EmbeddingCacheTableManager::WarmUpHostCacheItem(const std::shared_ptr<Embed
 
   auto key_ptr = std::get<0>(entry.second);
   MS_EXCEPTION_IF_NULL(key_ptr);
-  auto key_data_ptr = key_ptr->data_ptr();
   for (ssize_t i = start; i != end; i++) {
     auto key_data_type = key_ptr->data_type();
     int64_t key = 0;
