@@ -118,7 +118,7 @@ static PyObject *TensorPython_get_init(PyObject *self, void *) {
 static PyObject *TensorPython_get_device(PyObject *self, void *) {
   HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
-  std::string deviceString = obj->value.GetDevice();
+  std::string deviceString = TensorPybind::GetDevice(obj->value.GetTensor());
   return PyUnicode_FromString(deviceString.c_str());
   HANDLE_MS_EXCEPTION_END
 }
@@ -226,15 +226,6 @@ static int TensorPython_set_init(PyObject *self, PyObject *value, void *) {
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
   py::object initializer_object = py::reinterpret_borrow<py::object>(value);
   obj->value.SetInitializer(initializer_object);
-  return 0;
-  HANDLE_MS_EXCEPTION_RET_FAIL_END
-}
-
-static int TensorPython_set_device(PyObject *self, PyObject *value, void *) {
-  HANDLE_MS_EXCEPTION
-  PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
-  const char *deviceString = PyUnicode_AsUTF8(value);
-  obj->value.SetDevice(std::string(deviceString));
   return 0;
   HANDLE_MS_EXCEPTION_RET_FAIL_END
 }
@@ -401,8 +392,8 @@ static PyGetSetDef PyTensorPython_getseters[] = {
   {"const_arg", (getter)TensorPython_get_ConstArg, (setter)TensorPython_set_ConstArg,
    "Whether the tensor is a constant when it is used for the argument of a network.", NULL},
   {"init", (getter)TensorPython_get_init, (setter)TensorPython_set_init, "The information of init data.", NULL},
-  {"device", (getter)TensorPython_get_device, (setter)TensorPython_set_device,
-   "This parameter is reserved and does not need to be configured.", NULL},
+  {"device", (getter)TensorPython_get_device, nullptr, "This parameter is reserved and does not need to be configured.",
+   NULL},
   {"parent_tensor_", (getter)TensorPython_get_ParentTensor, (setter)TensorPython_set_ParentTensor,
    "If current Tensor is an index value of another Tensor, set to another Tensor.", NULL},
   {"index_of_parent_", (getter)TensorPython_get_IndexOfParent, (setter)TensorPython_set_IndexOfParent,
