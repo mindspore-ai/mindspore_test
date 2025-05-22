@@ -27,10 +27,12 @@ from tests.mark_utils import arg_mark
 
 PWD = os.path.dirname(__file__)
 filename_h264 = PWD + "/data/campus.h264"
+filename_h265 = PWD + "/data/campus_h265.mp4"
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-def test_video_decoder():
+@pytest.mark.parametrize("filename", [filename_h264, filename_h265])
+def test_video_decoder(filename):
     """
     Feature: VideoDecoder
     Description: Extracting frames from H264/H265-encoded content
@@ -39,9 +41,9 @@ def test_video_decoder():
     original_video_backend = ds.config.get_video_backend()
     ds.config.set_video_backend("Ascend")
 
-    output_frames = vision.read_video(filename_h264, pts_unit="pts")[0]
+    output_frames = vision.read_video(filename, pts_unit="pts")[0]
 
-    reader = vision.VideoDecoder(source=filename_h264)
+    reader = vision.VideoDecoder(source=filename)
     metadata = reader.metadata
     assert metadata["width"] == 270
     assert metadata["height"] == 480
@@ -123,11 +125,17 @@ def test_video_decoder_exception_case():
     with pytest.raises(RuntimeError) as err:
         reader = vision.VideoDecoder(source=filename2)
         _ = reader.get_frames_at([0])
-    assert "not supported on DVPP backend and will fall back to run on the pyav" in str(err.value)
+    assert "not supported on DVPP backend" in str(err.value)
+
+    ds.config.set_video_backend("CPU")
+    with pytest.raises(RuntimeError) as err:
+        reader = vision.VideoDecoder(source=filename_h264)
+        _ = reader.get_frames_at([0, 5])
+    assert "only supported on Ascend platform" in str(err.value)
 
     ds.config.set_video_backend(original_video_backend)
 
 
 if __name__ == '__main__':
-    test_video_decoder()
+    test_video_decoder(filename)
     test_video_decoder_exception_case()
