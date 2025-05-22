@@ -1,4 +1,4 @@
-# Copyright 2024 Huawei Technologies Co., Ltd
+# Copyright 2024-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,9 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+import os
+import numpy as np
 import mindspore as ms
 import mindspore.nn as nn
 from mindspore import context, Tensor, Parameter
+from mindspore import dtype as mstype
 from mindspore.ops import operations as P
 from tests.mark_utils import arg_mark
 
@@ -442,3 +445,55 @@ def test_tensor_inplace_order_list():
     out = net(input_x, input_y)
     print(out)
     assert out[0] == 4 and out[1] == 2
+
+
+def _count_unequal_element(data_expected, data_me, rtol, atol):
+    assert data_expected.shape == data_me.shape
+    total_count = len(data_expected.flatten())
+    error = np.abs(data_expected - data_me)
+    greater = np.greater(error, atol + np.abs(data_me) * rtol)
+    nan_diff = np.not_equal(np.isnan(data_expected), np.isnan(data_me))
+    inf_diff = np.not_equal(np.isinf(data_expected), np.isinf(data_me))
+    neginf_diff = np.not_equal(np.isneginf(data_expected), np.isneginf(data_me))
+    greater = greater + nan_diff + inf_diff + neginf_diff
+    loss_count = np.count_nonzero(greater)
+    assert (loss_count / total_count) < rtol, \
+        "\ndata_expected_std:{0}\ndata_me_error:{1}\nloss:{2}". \
+            format(data_expected[greater], data_me[greater], error[greater])
+
+
+def allclose_nparray(data_expected, data_me, rtol, atol, equal_nan=True):
+    if not np.allclose(data_expected, data_me, rtol, atol, equal_nan=equal_nan):
+        _count_unequal_element(data_expected, data_me, rtol, atol)
+    else:
+        assert np.array(data_expected).shape == np.array(data_me).shape
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_tensor_augassign():
+    """
+    Feature: Support tensor inplace.
+    Description: Support tensor inplace.
+    Expectation: Run success.
+    """
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.input_x = Tensor([2.0, 3.0, 4.0, 5.0], mstype.float32)
+            self.relu = nn.ReLU()
+        def construct(self, input_y):
+            self.input_x[:] **= input_y
+            out = self.relu(self.input_x)
+            return out
+
+    input_me = Tensor([1, 2, 3, 4], mstype.float32)
+    net = Net()
+    @ms.jit(capture_mode='ast', jit_level="O0", backend="ms_backend")
+    def net_forward(net, x):
+        return net(x)
+
+    os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
+    out_me = net_forward(net, input_me)
+    expected_res = np.array([2, 9, 64, 625], dtype=np.float32)
+    allclose_nparray(expected_res, out_me.asnumpy(), 0.001, 0.001)
+    os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '0'

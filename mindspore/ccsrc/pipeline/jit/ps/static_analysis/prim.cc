@@ -181,6 +181,7 @@ AbstractBasePtr AddRefKeyForArgs(const AbstractBasePtr &output_abs, const Abstra
       if (ref_tensor->isa<abstract::AbstractRefTensor>()) {
         ref_tensor->cast<abstract::AbstractRefPtr>()->set_is_inplace(true);
       }
+      ref_tensor = ref_tensor->Broaden();
       input_args[index]->set_inplace_abstract(ref_tensor);
     }
   }
@@ -190,11 +191,14 @@ AbstractBasePtr AddRefKeyForArgs(const AbstractBasePtr &output_abs, const Abstra
   // If output is a tensor.
   if (output_abs->isa<AbstractTensor>()) {
     auto inplace_index = inplace_indexes[0];
-    if (inplace_index != -1 && !IsValueKnown(input_args[inplace_index])) {
+    if (inplace_index != -1) {
       auto res_abs = input_args[inplace_index];
-      return res_abs->isa<AbstractRefTensor>() ? res_abs : res_abs->inplace_abstract();
+      MS_EXCEPTION_IF_NULL(res_abs);
+      auto cur_res = res_abs->isa<AbstractRefTensor>() ? res_abs : res_abs->inplace_abstract();
+      MS_EXCEPTION_IF_NULL(cur_res);
+      cur_res = cur_res->Broaden();
+      return cur_res;
     }
-    return output_abs;
   }
   // If output is a tuple or a list of tensors.
   AbstractBasePtrList output_list;
@@ -208,10 +212,11 @@ AbstractBasePtr AddRefKeyForArgs(const AbstractBasePtr &output_abs, const Abstra
     }
     for (size_t i = 0; i < inplace_indexes.size(); ++i) {
       auto inplace_index = inplace_indexes[i];
-      if (inplace_index != -1 && !IsValueKnown(input_args[inplace_index])) {
+      if (inplace_index != -1) {
         auto outi_arg = input_args[inplace_index]->isa<AbstractRefTensor>()
                           ? input_args[inplace_index]
                           : input_args[inplace_index]->inplace_abstract();
+        outi_arg = outi_arg->Broaden();
         (void)output_list.emplace_back(outi_arg);
       } else {
         (void)output_list.emplace_back(output_args[i]);
