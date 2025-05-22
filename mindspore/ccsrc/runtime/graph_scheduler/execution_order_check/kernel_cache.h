@@ -57,6 +57,8 @@ class BACKEND_EXPORT KernelCache {
 
   void SwapBuffers(int step);
 
+  void ClearBuffers() { current_buffer_.clear(); }
+
   std::vector<std::any> GetBuffers(int step);
 
   bool need_add{false};

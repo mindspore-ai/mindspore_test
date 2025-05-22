@@ -476,6 +476,7 @@ void Process::StopCollectExecOrder() {
   cache.need_add = false;
   ProcessKernels();
   ValidateCommGroupExecuteOrders();
+  cache.ClearBuffers();
 }
 }  // namespace runtime
 }  // namespace mindspore

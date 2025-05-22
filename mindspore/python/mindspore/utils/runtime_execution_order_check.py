@@ -42,6 +42,7 @@ def comm_exec_order_check(action):
     checker = CommExecOrderCheck()
     checker(action)
 
+
 class CommExecOrderCheck:
     """Controller for communication execution order verification.
 
@@ -117,11 +118,11 @@ class ExecuteOrder:
             comm_str = ",".join(self.comm_rank)
             return f"{self.primitive}_{self.group}_({comm_str})"
 
-        if self.primitive == "Send":
+        if self.primitive == "Send" or self.primitive == "DistCommIsend" or self.primitive == "InnerCommIsend":
             # Unique base key of the Send operation.
             return f"Send_Receive_{self.group}_({rank})->({self.dest_rank})_{self.input_shape}"
 
-        if self.primitive == "Receive":
+        if self.primitive == "Receive" or self.primitive == "DistCommIrecv" or self.primitive == "InnerCommIrecv":
             # Unique base key of the reception operation
             return f"Send_Receive_{self.group}_({self.src_rank})->({rank})_{self.output_shape}"
 
@@ -265,10 +266,14 @@ class RankFolderParser:
             rank_id = os.path.basename(path).split("_")[1]
             # Adding one more layer to access the "execute_order" folder
             execute_order_path = os.path.join(path, "execute_order")
-            if os.path.exists(execute_order_path):
-                rank_result = self.parse_rank_folder(execute_order_path, rank_id)
-                if rank_result:
-                    result[rank_id] = rank_result[1]  # Extract execute orders
+            if not os.path.exists(execute_order_path):
+                raise FileNotFoundError(
+                    f"Execute order folder does not exist: {execute_order_path} "
+                    f"for rank_{rank_id} folder."
+                )
+            rank_result = self.parse_rank_folder(execute_order_path, rank_id)
+            if rank_result:
+                result[rank_id] = rank_result[1]  # Extract execute orders
             return result
 
         # If the path is a directory containing rank_{x} folders, parse all
@@ -280,8 +285,12 @@ class RankFolderParser:
                     rank_folder_path = os.path.join(path, d)
                     execute_order_path = os.path.join(rank_folder_path, "execute_order")
 
-                    if os.path.exists(execute_order_path):
-                        futures.append(thread_executor.submit(self.parse_rank_folder, execute_order_path, rank_id))
+                    if not os.path.exists(execute_order_path):
+                        raise FileNotFoundError(
+                            f"Execute order folder does not exist: {execute_order_path} "
+                            f"for rank_{rank_id} folder."
+                        )
+                    futures.append(thread_executor.submit(self.parse_rank_folder, execute_order_path, rank_id))
 
             for future in as_completed(futures):
                 try:
@@ -463,7 +472,6 @@ def detect_cycle_in_graph(ranks_map):
     - tuple: (cycle_path, cycle_ranks) where cycle_path is a list of nodes forming the cycle and cycle_ranks
              is a list of rank transitions corresponding to the cycle path.
     """
-    # Step 1: Build the directed graph and track edges with ranks
     graph = defaultdict(list)
     rank_edges = {}
 
@@ -473,46 +481,38 @@ def detect_cycle_in_graph(ranks_map):
             graph[u].append(v)
             rank_edges[(u, v)] = rank
 
-    # Step 2: Detect cycle using DFS with path and rank tracking
     visited = set()
     cycle_path = []
     cycle_ranks = []
 
-    for node in graph:
+    def dfs(node, path, node_indices):
+        nonlocal cycle_path, cycle_ranks
+        if node in node_indices:
+            cycle_start = node_indices[node]
+            cycle_path = path[cycle_start:] + [node]
+            for i in range(cycle_start, len(path)):
+                u = path[i]
+                v = path[i + 1] if i + 1 < len(path) else node
+                cycle_ranks.append(f"{rank_edges[(u, v)]} {u} -> {v}")
+            return True
         if node in visited:
-            continue
+            return False
+        visited.add(node)
+        node_indices[node] = len(path)
+        path.append(node)
+        for neighbor in graph[node]:
+            if dfs(neighbor, path, node_indices):
+                return True
+        path.pop()
+        del node_indices[node]
+        return False
 
-        stack = [(node, None, False)]
-        path = []
-        node_indices = {}
+    all_nodes = list(graph.keys())
 
-        while stack:
-            current, parent, is_visited = stack.pop()
-
-            if is_visited:
-                if current in node_indices:
-                    del path[node_indices[current]:]
-                continue
-
-            if current in node_indices:
-                cycle_start = node_indices[current]
-                cycle_path = path[cycle_start:] + [current]
-
-                for i in range(cycle_start, len(path)):
-                    u, v = path[i], path[i+1] if i+1 < len(path) else current
-                    cycle_ranks.append(f"{rank_edges[(u, v)]} {u} -> {v}")
+    for node in all_nodes:
+        if node not in visited:
+            if dfs(node, [], {}):
                 return cycle_path, cycle_ranks
-
-            if current in visited:
-                continue
-
-            visited.add(current)
-            node_indices[current] = len(path)
-            path.append(current)
-
-            stack.append((current, parent, True))
-            for neighbor in reversed(graph.get(current, [])):
-                stack.append((neighbor, current, False))
 
     return None, None
 
@@ -556,7 +556,7 @@ def output_cycle_results(cycle_path, cycle_ranks):
         for rank in cycle_ranks:
             logger.warning(rank)
     else:
-        logger.warning("Check success.")
+        logger.warning("Cycle Check success. THere is no cycle in the graph.")
 
 
 def runtime_execution_order_check(folders_, all_rank=None):
@@ -594,7 +594,7 @@ def runtime_execution_order_check(folders_, all_rank=None):
     if all_rank is None:
         all_rank = determine_all_rank(folders_)
 
-    if all_rank is None:  # Input validation failed
+    if folders_ is None:  # Input validation failed
         logger.error("Invalid input. `folders_` must be a non-empty string or a list with at least one string element.")
         return
 
