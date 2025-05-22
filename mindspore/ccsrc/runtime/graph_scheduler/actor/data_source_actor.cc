@@ -230,7 +230,7 @@ void CopyHostTensorToKernelTensor(const tensor::TensorPtr &host_tensor, const ke
     if (tensor_device_address->GetPtr() == device_tensor->GetPtr()) {
       return;
     }
-    if (!Copy(device_tensor, tensor_device_address.get())) {
+    if (!SyncCopy(device_tensor, tensor_device_address.get(), kDefaultStreamIndex)) {
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "Copy data failed.");
     }
     return;
@@ -249,22 +249,12 @@ void CopyHostTensorToKernelTensor(const tensor::TensorPtr &host_tensor, const ke
   }
   if (enable_async_copy) {
     MS_LOG(INFO) << "Node : " << node_index.first->DebugString();
-    if (!device_tensor->AsyncHostToDevice(LongToSize(host_tensor->data().nbytes()), host_tensor->data_type(),
-                                          host_tensor->data_ptr()->data())) {
-      std::stringstream ofs;
-      ofs << "AsyncHostToDevice failed for device tensor:" << device_tensor->ToString()
-          << " host ptr:" << host_tensor->data_ptr();
-      SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), ofs.str());
+    if (!AsyncCopy(device_tensor, host_tensor->device_address().get(), kDefaultStreamIndex)) {
+      SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "SyncHostToDevice failed.");
     }
   } else {
-    if (!device_tensor->SyncHostToDevice(AnfAlgo::GetRuntimePaddingShape(node_index.first, node_index.second),
-                                         LongToSize(host_tensor->data().nbytes()), host_tensor->data_type(),
-                                         host_tensor->device_info().host_format_, host_tensor->data_ptr())) {
-      std::stringstream ofs;
-      ofs << "SyncHostToDevice failed for device tensor:" << device_tensor->ToString()
-          << " host ptr:" << host_tensor->data_ptr() << " type:" << host_tensor->data_type()
-          << " node:" << node_index.first->DebugString();
-      SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), ofs.str());
+    if (!SyncCopy(device_tensor, host_tensor->device_address().get(), kDefaultStreamIndex)) {
+      SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "SyncHostToDevice failed.");
     }
   }
 

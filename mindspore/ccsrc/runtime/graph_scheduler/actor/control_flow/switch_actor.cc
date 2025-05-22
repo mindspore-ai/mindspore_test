@@ -94,7 +94,8 @@ size_t SwitchActor::GetIndex(const OpContext<KernelTensor> *const context) const
       return index = static_cast<int64_t>(py::cast<bool>(obj) ? 1 : 0);
     }
   }
-  if (!device_tensor->SyncDeviceToHost(host_shape, size, type_id, static_cast<void *>(buf))) {
+  auto tensor = std::make_shared<tensor::Tensor>(type_id, host_shape, buf, size);
+  if (!SyncCopy(device_tensor, tensor->device_address().get(), kDefaultStreamIndex)) {
     MS_LOG(ERROR) << GetAID().Name() << " get index from device address failed, type id:" << type_id;
     return 0;
   }

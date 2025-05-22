@@ -195,7 +195,7 @@ void HostQueueDataSourceActor::OnMemoryAllocFinish(OpContext<KernelTensor> *cons
         if (tensor_device_address == device_tensor) {
           continue;
         }
-        if (!Copy(device_tensor.get(), tensor_device_address.get())) {
+        if (!SyncCopy(device_tensor.get(), tensor_device_address.get(), kDefaultStreamIndex)) {
           SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "Copy data failed.");
         }
         continue;
@@ -208,22 +208,12 @@ void HostQueueDataSourceActor::OnMemoryAllocFinish(OpContext<KernelTensor> *cons
       if (enable_async_copy) {
         MS_LOG(INFO) << "Index :" << i
                      << ", data_node_with_indexs_[i].first : " << data_node_with_indexs_[i].first->DebugString();
-        if (!device_tensor->AsyncHostToDevice(LongToSize(host_tensor->DataNBytes()), host_tensor->data_type(),
-                                              host_tensor->data_ptr()->data())) {
-          std::stringstream ofs;
-          ofs << "AsyncHostToDevice failed for device tensor:" << device_tensor->ToString()
-              << " host ptr:" << host_tensor->data_ptr()->data();
-          SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), ofs.str());
+        if (!AsyncCopy(device_tensor.get(), host_tensor->device_address().get(), kDefaultStreamIndex)) {
+          SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "SyncHostToDevice failed.");
         }
       } else {
-        if (!device_tensor->SyncHostToDevice(
-              AnfAlgo::GetRuntimePaddingShape(data_node_with_indexs_[i].first, data_node_with_indexs_[i].second),
-              LongToSize(host_tensor->DataNBytes()), host_tensor->data_type(),
-              host_tensor->device_info().host_format_, host_tensor->data_ptr())) {
-          std::stringstream ofs;
-          ofs << "SyncHostToDevice failed for device tensor:" << device_tensor->ToString()
-              << " host ptr:" << host_tensor->data_ptr();
-          SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), ofs.str());
+        if (!SyncCopy(device_tensor.get(), host_tensor->device_address().get(), kDefaultStreamIndex)) {
+          SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "SyncHostToDevice failed.");
         }
       }
 
