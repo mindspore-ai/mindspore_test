@@ -446,7 +446,7 @@ def test_dataset_strategy_with_layout_using_autoparallel_cell():
     strategy3 = ((2, 4),)
     with no_init_parameters():
         net = GradWrap(NetWithLoss(Net1(strategy1, strategy2, strategy3)))
-    parallel_net = AutoParallel(net, parallel_mode="seme_auto")
+    parallel_net = AutoParallel(net, parallel_mode="semi_auto")
     parallel_net.dataset_strategy(strategy0)
     x = Tensor(np.ones([128 // 4, 32 // 2]), dtype=ms.float32)
     y = Tensor(np.ones([32 // 4, 64 // 2]), dtype=ms.float32)
