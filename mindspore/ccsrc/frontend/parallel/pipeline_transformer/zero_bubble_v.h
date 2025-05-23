@@ -41,7 +41,7 @@ class ZeroBubbleV : public PipelineScheduler {
  protected:
   void InsertCallControlOrder(const std::vector<BorderPair> &borders,
                               const std::string &tags = "zero_bubble_v_control");
-  void InsertContorlOrder(const std::vector<BorderPair> &borders, size_t start, size_t end,
+  void InsertControlOrder(const std::vector<BorderPair> &borders, size_t start, size_t end,
                           const std::string &tags = "zero_bubble_v_control");
   void ReorderInnerOverlap(const std::vector<BorderPair> &borders,
                            const std::vector<std::pair<size_t, size_t>> &overlap_border,

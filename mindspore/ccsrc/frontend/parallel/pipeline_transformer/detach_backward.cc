@@ -143,11 +143,15 @@ std::vector<size_t> DetachBackward::DetachDxAndDwGraph(const FuncGraphPtr &fg, b
     }
     dw_index.emplace_back(i - 1);
     dw_out_inputs.emplace_back(cur_input);
-    dx_out_inputs.emplace_back(dw_c->input(1));
+    size_t input_index = kIndex1;
+    if (dw_c->HasPrimalAttr(FORWARD_TRANSPOSE_B) && !GetValue<bool>(dw_c->GetPrimalAttr(FORWARD_TRANSPOSE_B))) {
+      input_index = kIndex2;
+    }
+    dx_out_inputs.emplace_back(dw_c->input(input_index));
     if (is_dw_fg) {
       auto fg_new_param = std::make_shared<Parameter>(fg);
       fg_params.emplace_back(fg_new_param);
-      manager_->SetEdge(dw_c, 1, fg_new_param);
+      manager_->SetEdge(dw_c, input_index, fg_new_param);
     }
   }
   auto no_used_index = HandleBwdGraphOutputs(std::make_pair(dx_out_inputs, dw_out_inputs), is_dw_fg, fg, fg_params,

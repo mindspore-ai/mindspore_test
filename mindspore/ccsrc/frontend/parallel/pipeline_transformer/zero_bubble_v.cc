@@ -57,7 +57,7 @@ void Add1b1fReceiveAttr(const BorderPair &recv, const std::string &tag, size_t i
   }
 }
 
-void ZeroBubbleV::InsertContorlOrder(const std::vector<BorderPair> &borders, size_t start, size_t end,
+void ZeroBubbleV::InsertControlOrder(const std::vector<BorderPair> &borders, size_t start, size_t end,
                                      const std::string &tags) {
   while (start < end) {
     auto prior_border = borders[start].second;
@@ -112,7 +112,7 @@ void LabelFor1b1fOverlap(const std::vector<BorderPair> &borders, const std::pair
       const auto &prior_recv_border = prior_recv.second.border;
       MS_EXCEPTION_IF_NULL(prior_recv_border);
       // only label advanced recv
-      if (JudgeBorderType(prior_recv_border) == BorderType::kReceive && index_1f1b > 1) {
+      if (JudgeBorderType(prior_recv_border) == BorderType::kReceive && index_1f1b > 0) {
         Add1b1fReceiveAttr(prior_recv, kCNodeAttr1f1bIndexRecv, index_1f1b);
       }
 
@@ -120,7 +120,7 @@ void LabelFor1b1fOverlap(const std::vector<BorderPair> &borders, const std::pair
       const auto &next_recv_border = next_recv.second.border;
       MS_EXCEPTION_IF_NULL(next_recv_border);
       // only label advanced recv
-      if (inter_recv_index > prior_cell_index && index_1f1b > 1) {
+      if (inter_recv_index > prior_cell_index && index_1f1b > 0) {
         Add1b1fReceiveAttr(next_recv, kCNodeAttr1f1bIndexInterRecv, index_1f1b);
       }
       index_1f1b++;
@@ -172,6 +172,14 @@ void ZeroBubbleV::ReorderInnerOverlap(const std::vector<BorderPair> &borders,
   auto start_step4 = border_step4.first;
   auto end_step5 = border_step5.second;
   auto pre_index = start_step4;
+  for (size_t i = 0; i < overlap_border.size(); i++) {
+    const auto &index = overlap_border[i];
+    auto start_index = index.first;
+    auto end_index = index.second;
+    InsertControlOrder(borders, pre_index, start_index);
+    pre_index = end_index;
+  }
+  InsertControlOrder(borders, overlap_border.back().second, end_step5);
 
   for (size_t i = 0; i < overlap_border.size(); i++) {
     const auto &index = overlap_border[i];
@@ -179,18 +187,10 @@ void ZeroBubbleV::ReorderInnerOverlap(const std::vector<BorderPair> &borders,
     auto end_index = index.second;
     const auto &start = borders[start_index];
     const auto &end = borders[end_index];
-    MS_LOG(INFO) << "ZeroBubbleV::ReorderInnerOverlap: start_index: " << start_index << ", end_index: " << end_index
-                 << ", overlap_border size: " << overlap_border.size();
-    MS_LOG(INFO) << "ZeroBubbleV::ReorderInnerOverlap: start: " << start.second.border->ToString()
-                 << ", end: " << end.first.border->ToString();
     ControlOrder(start.second, end.first, kPrimalAttr1b1fCallCall);
-    InsertContorlOrder(borders, pre_index, start_index);
-    pre_index = end_index;
     if (end_index - start_index <= 1) {
       continue;
     }
-    const auto &pre_overlap = borders[start_index - 1];
-    const auto &next_overlap = borders[end_index + 1];
     for (size_t j = start_index + 1; j <= end_index; j++) {
       const auto &pre_cur = borders[j - 1];
       const auto &cur = borders[j];
@@ -201,14 +201,24 @@ void ZeroBubbleV::ReorderInnerOverlap(const std::vector<BorderPair> &borders,
       }
       const auto &cur_border_type = JudgeBorderType(cur_border);
       if (cur_border_type == BorderType::kSend) {
-        ControlOrder(cur.second, next_overlap.first, "send_out_1f1b");
+        auto next_users = GetOutputNodesWithFilter(
+          end.first.border, [&](const AnfNodePtr &anode) { return IsPrimitiveCNode(anode, prim::kPrimTupleGetItem); });
+        for (const auto &next_user : next_users) {
+          if (IsPrimitiveCNode(next_user.first, prim::kPrimDepend)) {
+            ControlOrder(cur.second, {next_user.first->cast<CNodePtr>(), 0, 0}, "send_out_1f1b");
+          }
+        }
       }
       if (cur_border_type == BorderType::kReceive) {
-        ControlOrder(pre_overlap.second, cur.first, "input_recv_1f1b");
+        const auto &cell_inputs = start.second.border->inputs();
+        for (const auto &cell_input : cell_inputs) {
+          if (IsPrimitiveCNode(cell_input, prim::kPrimDepend)) {
+            ControlOrder({cell_input->cast<CNodePtr>(), 0, 0}, cur.first, "input_recv_1f1b");
+          }
+        }
       }
     }
   }
-  InsertContorlOrder(borders, overlap_border.back().second, end_step5);
 }
 
 void MarkDualPipePhase(const std::vector<BorderPair> &orders, const std::string &tag, size_t start, size_t end,
@@ -530,7 +540,6 @@ void ZeroBubbleV::ReorderFor1b1fOverlap(const std::vector<BorderPair> borders,
   auto end_step4 = border_step4.second;
   auto start_step5 = border_step5.first;
   auto end_step5 = border_step5.second;
-  InsertContorlOrder(borders, 0, start_step4, "before_overlap");
   std::vector<BorderPair> before_overlap(borders.begin(), borders.begin() + start_step4);
   std::vector<BorderPair> after_overlap(borders.begin() + end_step5, borders.end());
   std::vector<BorderPair> after_step4(borders.begin() + start_step5, borders.end());
@@ -573,12 +582,13 @@ void ZeroBubbleV::ReorderFor1b1fOverlap(const std::vector<BorderPair> borders,
       call_call_control(cur, is_step4);
     }
   }
+  InsertControlOrder(borders, 0, start_step4, "before_overlap");
   ReorderInnerOverlap(borders, overlap_border_index, border_step4, border_step5);
   call_call_step4.push_back(next_cell_step4);
   call_call_step5.push_back(next_cell_step5);
   InsertCallControlOrder(call_call_step4, "call_call_1f1b");
   InsertCallControlOrder(call_call_step5, "call_call_1f1b");
-  InsertContorlOrder(borders, end_step5, borders.size() - 1, "after_overlap");
+  InsertControlOrder(borders, end_step5, borders.size() - 1, "after_overlap");
 }
 
 void ZeroBubbleV::Reorder() {
