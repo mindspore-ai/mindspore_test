@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "infer/all_to_all_v.h"
 
+#include "infer/all_gather_v.h"
 #include <memory>
 #include <set>
 #include <string>
@@ -38,43 +38,45 @@
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
 #include "utils/anf_utils.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 
 namespace mindspore {
 namespace ops {
-MIND_API_OPERATOR_IMPL(AlltoAllV, BaseOperator);
-class AlltoAllVInfer : public abstract::OpInferBase {
+MIND_API_OPERATOR_IMPL(AllGatherV, BaseOperator);
+
+class AllGatherVInfer : public abstract::OpInferBase {
  public:
   BaseShapePtr InferShape(const PrimitivePtr &primitive,
                           const std::vector<AbstractBasePtr> &input_args) const override {
     MS_EXCEPTION_IF_NULL(primitive);
     const auto prim_name = primitive->name();
     BaseShapePtr shape;
-    std::vector<int64_t> recv_numel_list;
-    if (input_args.size() == kInputNum3) {
-      (void)CheckAndConvertUtils::CheckInteger("input numbers", SizeToLong(input_args.size()), kEqual, kInputNum3,
+    std::vector<int64_t> output_split_sizes;
+    auto rank_size_ptr = primitive->GetAttr(kRankSize);
+    auto rank_size = GetValue<int64_t>(rank_size_ptr);
+    if (input_args.size() == kInputNum2) {
+      (void)CheckAndConvertUtils::CheckInteger("input numbers", SizeToLong(input_args.size()), kEqual, kInputNum2,
                                                prim_name);
-      auto value = GetArrayValue<int64_t>(input_args[kIndex2]);
+      auto value = GetArrayValue<int64_t>(input_args[kIndex1]);
       if (!value.has_value()) {
         return std::make_shared<abstract::TensorShape>(ShapeVector{abstract::Shape::kShapeDimAny});
       }
       if (value.value().HasUnknownValue()) {
         MS_EXCEPTION(ValueError)
           << "For primitive[" << prim_name
-          << "], there are unknown values in input2, please handle this case before calling this function.";
+          << "], there are unknown values in input1, please handle this case before calling this function.";
       }
-      recv_numel_list = value.value().ToVector();
+      output_split_sizes = value.value().ToVector();
     } else {
-      MS_LOG(EXCEPTION) << "AlltoAllV input numbers must be 3.";
+      MS_LOG(EXCEPTION) << "AllGatherV input numbers must be 2.";
     }
-    auto block_size = GetValue<int64_t>(primitive->GetAttr(kAttrBlockSize));
     int64_t output_numel = 0;
-    for (size_t i = 0; i < recv_numel_list.size(); i++) {
-      if (recv_numel_list[i] < 0) {
-        output_numel = abstract::Shape::kShapeDimAny;
-        break;
+    (void)CheckAndConvertUtils::CheckInteger("output_split_sizes size", static_cast<int64_t>(output_split_sizes.size()),
+                                             kEqual, rank_size, prim_name);
+    for (size_t i = 0; i < output_split_sizes.size(); i++) {
+      if (output_split_sizes[i] < 0) {
+        MS_LOG(EXCEPTION) << "output_split_sizes value is illegal.";
       }
-      output_numel += recv_numel_list[i] * block_size;
+      output_numel += output_split_sizes[i];
     }
     if (output_numel == 0) {
       return std::make_shared<abstract::TensorShape>(ShapeVector{});
@@ -97,12 +99,12 @@ class AlltoAllVInfer : public abstract::OpInferBase {
     }
     // flag to check different valid types on ascend
     auto is_ascend = (context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kAscendDevice);
-    if (!is_ascend) {
-      (void)CheckAndConvertUtils::CheckTensorTypeValid("x", x_type, common_valid_types_with_bool, prim_name);
-    } else {
-      (void)CheckAndConvertUtils::CheckTensorTypeValid("x", x_type, common_valid_types, prim_name);
-    }
 
+    if (!is_ascend) {
+      (void)CheckAndConvertUtils::CheckTypeValid("x", x_type, common_valid_types_with_bool, prim_name);
+    } else {
+      (void)CheckAndConvertUtils::CheckTypeValid("x", x_type, common_valid_types, prim_name);
+    }
     return x_type->Clone();
   }
 
@@ -110,18 +112,19 @@ class AlltoAllVInfer : public abstract::OpInferBase {
                                     const std::vector<AbstractBasePtr> &input_args) const override {
     MS_EXCEPTION_IF_NULL(primitive);
     const auto prim_name = primitive->name();
-    if (input_args.size() == kInputNum3) {
-      (void)CheckAndConvertUtils::CheckInteger("input numbers", SizeToLong(input_args.size()), kEqual, kInputNum3,
+    if (input_args.size() == kInputNum2) {
+      (void)CheckAndConvertUtils::CheckInteger("input numbers", SizeToLong(input_args.size()), kEqual, kInputNum2,
                                                prim_name);
     } else {
-      MS_LOG(EXCEPTION) << "AlltoAllV input numbers must be 3.";
+      MS_LOG(EXCEPTION) << "AllGatherV input numbers must be 2.";
     }
     auto type = InferType(primitive, input_args);
     auto shape = InferShape(primitive, input_args);
     return abstract::MakeAbstract(shape, type);
   }
-  std::set<int64_t> GetValueDependArgIndices() const override { return {1, 2}; }
+  std::set<int64_t> GetValueDependArgIndices() const override { return {1}; }
 };
-REGISTER_PRIMITIVE_OP_INFER_IMPL(AlltoAllV, prim::kPrimAlltoAllV, AlltoAllVInfer, false);
+REGISTER_PRIMITIVE_OP_INFER_IMPL(AllGatherV, prim::kPrimAllGatherV, AllGatherVInfer, false);
+
 }  // namespace ops
 }  // namespace mindspore

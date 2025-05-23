@@ -61,9 +61,7 @@ bool InsertTensorMoveForCommunication::Run(const FuncGraphPtr &graph) {
   std::vector<AnfNodePtr> node_list = TopoSort(graph->get_return());
   std::vector<CNodePtr> communication_op_list;
   for (auto &node : node_list) {
-    if (node == nullptr || !common::AnfAlgo::IsCommunicationOp(node) ||
-        common::AnfAlgo::GetCNodeName(node) == kMatMulAllReduceOpName ||
-        common::AnfAlgo::GetCNodeName(node) == kAlltoAllVOpName) {
+    if (node == nullptr || !AnfAlgo::IsNeedContinuesMemoryOp(node)) {
       continue;
     }
     auto communication_op = node->cast<CNodePtr>();

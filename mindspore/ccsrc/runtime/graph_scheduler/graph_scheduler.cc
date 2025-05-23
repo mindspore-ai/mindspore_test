@@ -545,13 +545,6 @@ KernelWithIndex FetchRealFrontNode(const KernelWithIndex &node_with_index, const
   }
   return front_node_with_idx;
 }
-
-bool NoNeedContinuesOp(const AnfNodePtr &kernel) {
-  bool flag = !common::AnfAlgo::IsCommunicationOp(kernel) ||
-              common::AnfAlgo::GetCNodeName(kernel) == kMatMulAllReduceOpName ||
-              common::AnfAlgo::GetCNodeName(kernel) == kAlltoAllVOpName;
-  return flag;
-}
 }  // namespace
 
 GraphScheduler &GraphScheduler::GetInstance() noexcept {
@@ -1721,7 +1714,7 @@ void GraphScheduler::ProcessContinuousMemoryInfo(const ActorSetPtr &actor_set,
         if (common::AnfAlgo::GetCNodeName(kernel) == kFlattenConcatOpName) {
           graph_compiler_info.exist_flatten_concat_ = true;
         }
-        if (NoNeedContinuesOp(kernel)) {
+        if (!AnfAlgo::IsNeedContinuesMemoryOp(kernel)) {
           continue;
         }
         auto key =
@@ -2047,9 +2040,8 @@ std::vector<KernelActorPtr> GraphScheduler::BuildKernelActor(const GraphCompiler
         // Set the member of kernel actor.
         kernel_actor->is_launch_skipped_ =
           common::AnfAlgo::IsNopNode(kernel) && graph->IsInRefOutputMap(std::make_pair(kernel, 0));
-        kernel_actor->inputs_continuous_memory_ = (common::AnfAlgo::IsCommunicationOp(kernel) &&
-                                                   common::AnfAlgo::GetCNodeName(kernel) != kMatMulAllReduceOpName) &&
-                                                  (common::AnfAlgo::GetInputTensorNum(kernel) > 1);
+        kernel_actor->inputs_continuous_memory_ =
+          AnfAlgo::IsNeedContinuesMemoryOp(kernel) && (common::AnfAlgo::GetInputTensorNum(kernel) > 1);
 
         if (IsPrimitiveCNode(kernel, prim::kPrimStreamSend)) {
           SchedulerHelper::ProcessStreamSendRecvEventPair(&send_recv_nodes, kernel, kernel_actor, true);

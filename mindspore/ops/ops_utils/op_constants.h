@@ -68,6 +68,13 @@ constexpr size_t kDim4 = 4;
 constexpr size_t kDim5 = 5;
 constexpr size_t kDim6 = 6;
 
+// Number of input
+constexpr size_t kInputNum0 = 0;
+constexpr size_t kInputNum1 = 1;
+constexpr size_t kInputNum2 = 2;
+constexpr size_t kInputNum3 = 3;
+constexpr size_t kInputNum4 = 4;
+
 // attr key name
 constexpr auto kAttrInternalSepcialFormat = "internal_special_format";
 constexpr auto kAttrSegment = "segment";

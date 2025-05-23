@@ -47,8 +47,6 @@
 namespace mindspore::lite {
 namespace {
 const std::vector<int> kNH2NCPerm = {0, 3, 1, 2};
-constexpr int kInputNum3 = 3;
-constexpr int kInputNum4 = 4;
 constexpr int kDataInfoMinLen = 2;
 
 STATUS AddAttrToInput(const FuncGraphPtr &func_graph, const CNodePtr &cnode, int input_num,
