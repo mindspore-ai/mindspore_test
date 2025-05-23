@@ -924,16 +924,27 @@ void CollectiveManager::SetGlobalCommInfo(CommunicationGroupPtr group, const std
   struct sockaddr_in sa;
   inet_pton(AF_INET, master_addr.c_str(), &(sa.sin_addr));
   uint32_t master_ip = ntohl(sa.sin_addr.s_addr);
-
   if (common::GetEnv("MS_SCHED_PORT").empty()) {
     MS_LOG(INFO) << "MS_SCHED_PORT is not set, will not call HcclSetGlobalCommInfo.";
     return;
   }
   uint32_t master_port = static_cast<uint32_t>(std::stoi(common::GetEnv("MS_SCHED_PORT")));
-
-  uint32_t group_rank = GetGroupRankFromWorldRank(global_rank_id_, group_name);
-
-  if (!group->SetGlobalCommInfo(master_ip, master_port, global_rank_size_, group_rank, local_rank_size_)) {
+  uint32_t node_rank;
+  std::string env_node_rank = common::GetEnv("MS_NODE_RANK");
+  if (env_node_rank.empty() || std::stoi(env_node_rank) < 0) {
+    std::string worker_addr = common::GetEnv("MS_WORKER_IP");
+    if (worker_addr.empty()) {
+      MS_LOG(INFO) << "MS_WORKER_IP is not set while MS_NODE_RANK is not set to a non-negative integer, will not call "
+                      "HcclSetGlobalCommInfo.";
+      return;
+    }
+    struct sockaddr_in sa_worker;
+    inet_pton(AF_INET, worker_addr.c_str(), &(sa_worker.sin_addr));
+    node_rank = ntohl(sa_worker.sin_addr.s_addr);
+  } else {
+    node_rank = static_cast<uint32_t>(std::stoi(env_node_rank));
+  }
+  if (!group->SetGlobalCommInfo(master_ip, master_port, global_rank_size_, node_rank, local_rank_size_)) {
     MS_LOG(WARNING) << "Failed to SetGlobalCommInfo " << group_name;
     return;
   }
