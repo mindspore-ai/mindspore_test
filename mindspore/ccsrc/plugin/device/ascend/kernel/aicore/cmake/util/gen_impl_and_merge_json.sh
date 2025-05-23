@@ -3,12 +3,12 @@ project_path=$1
 build_path=$2
 vendor_name=$3
 if [[ ! -d "$project_path" ]]; then
-    echo "[ERROR] No projcet path is provided"
+    echo "[ERROR] There is no projcet path is provided."
     exit 1
 fi
 
 if [[ ! -d "$build_path" ]]; then
-    echo "[ERROR] No build path is provided"
+    echo "[ERROR] There is no build path is provided."
     exit 1
 fi
 

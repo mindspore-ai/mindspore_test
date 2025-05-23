@@ -174,6 +174,7 @@ const AnfNodePtr AdamWeightDecayUnifyMindIR::CreateAdamApplyOneWithDecay(const F
                                                                          const std::vector<AnfNodePtr> &ori_param,
                                                                          const AnfNodePtrList &input_list,
                                                                          const AnfNodePtrList &new_node_inputs) const {
+  MS_EXCEPTION_IF_NULL(node);
   auto new_cnode = NewCNode(new_node_inputs, func_graph);
   MS_EXCEPTION_IF_NULL(new_cnode);
   new_cnode->set_scope(node->scope());
@@ -202,6 +203,7 @@ const AnfNodePtr AdamWeightDecayUnifyMindIR::CreateAdamApplyOneWithDecay(const F
   auto assign_m = CreateAssignCNode(func_graph, ori_param[kIndex1], update_param[kIndex1], input_list[kIndex11]);
   auto assign_v = CreateAssignCNode(func_graph, ori_param[kIndex2], update_param[kIndex2], input_list[kIndex11]);
   auto make_tuple = CreateMakeTupleNode(func_graph, std::vector<AnfNodePtr>{assign_param, assign_m, assign_v});
+  MS_EXCEPTION_IF_NULL(make_tuple);
   make_tuple->set_scope(node->scope());
   return make_tuple;
 }
@@ -210,6 +212,7 @@ const AnfNodePtr AdamWeightDecayUnifyMindIR::CreateAdamApplyOneWithDecayAssign(c
                                                                                const AnfNodePtr &node,
                                                                                const AnfNodePtrList &input_list,
                                                                                AnfNodePtrList *new_node_inputs) const {
+  MS_EXCEPTION_IF_NULL(node);
   if (input_list[kIndex11] != nullptr) {
     (void)new_node_inputs->emplace_back(input_list[kIndex11]);
   }

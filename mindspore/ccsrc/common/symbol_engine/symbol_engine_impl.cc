@@ -495,6 +495,7 @@ bool SymbolEngineImpl::SetParamSymbols(const CNodePtr &cnode, const FuncGraphPtr
 
 void SymbolEngineImpl::BuildSubgraphImpl(const CNodePtr &cnode, const FuncGraphPtr &sub_fg, size_t begin_input_index) {
   MS_EXCEPTION_IF_NULL(sub_fg);
+  MS_EXCEPTION_IF_NULL(cnode);
   auto visit_cnt = ++visited_graph_[sub_fg.get()];
   MS_LOG(DEBUG) << "Build subgraph " << sub_fg->ToString() << " of node " << cnode->fullname_with_scope()
                 << ". visit count: " << visit_cnt;
