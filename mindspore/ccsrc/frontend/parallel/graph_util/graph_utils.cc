@@ -806,7 +806,7 @@ std::vector<AnfNodePtr> ReplaceOpInput(const Operator &replace_op, const std::st
   OperatorArgs arg_replace_op = replace_op.second;
   OperatorParams params = arg_replace_op.second;
   if (node->size() < SIZE_TWO) {
-    // GetNext operator dose not has input
+    // GetNext operator does not has input
     if (node->size() == 1) {
       return ConvertToRealInputs(replace_op.first, instance_name, AnfNodePtrList{}, arg_replace_op.first);
     }

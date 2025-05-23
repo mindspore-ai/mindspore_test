@@ -29,7 +29,7 @@ Status FlangerOp::Compute(const std::shared_ptr<Tensor> &input, std::shared_ptr<
   const int32_t kChannelIndex = -2;
   const int32_t kChannelLimit = 4;
   CHECK_FAIL_RETURN_SYNTAX_ERROR(input->shape()[kChannelIndex] <= kChannelLimit,
-                                 "Flanger: the channel of input tensor dose not match the requirement of operator. "
+                                 "Flanger: the channel of input tensor does not match the requirement of operator. "
                                  "Expecting tensor with channel less than or equal to 4. But got channel: " +
                                    std::to_string(input->shape()[kChannelIndex]));
 

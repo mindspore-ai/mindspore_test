@@ -1308,7 +1308,7 @@ AnfNodePtr FuncGraphSpecializer::BuildSpecializedNodeInner(const CNodePtr &cnode
     context = context->parent();
   }
   auto fg_spec = specializer_->GetFuncGraphSpecializer(context);
-  // If func graph specializer dose not exist before, make a new specializer and push to stack, and return nullptr.
+  // If func graph specializer does not exist before, make a new specializer and push to stack, and return nullptr.
   if (fg_spec == nullptr) {
     fg_spec = specializer_->NewFuncGraphSpecializer(context, context->func_graph());
     specializer_->PushFuncGraphTodoItem(fg_spec);

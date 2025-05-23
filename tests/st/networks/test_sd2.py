@@ -100,7 +100,7 @@ def load_pretrained_model(pretrained_ckpt, net, unet_initialize_random=False):
 
         ms.load_param_into_net(net, param_dict)
     else:
-        logger.warning("Checkpoint file %s dose not exist!!!", pretrained_ckpt)
+        logger.warning("Checkpoint file %s does not exist!!!", pretrained_ckpt)
 
 
 def build_model_from_config(config, args=None):

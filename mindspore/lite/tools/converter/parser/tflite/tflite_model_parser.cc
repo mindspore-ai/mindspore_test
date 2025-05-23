@@ -154,12 +154,12 @@ STATUS TfliteModelParser::TfliteModelVerify() {
     }
     auto ret = TfliteOpVerify(subgraph, tflite_model_operator_codes_size, all_subgraph_tensor_size);
     if (ret != RET_OK) {
-      MS_LOG(ERROR) << "Tflite op verification dose not pass.";
+      MS_LOG(ERROR) << "Tflite op verification does not pass.";
       return RET_ERROR;
     }
     ret = TfliteTensorVerify(subgraph, tflite_model_buffers_size);
     if (ret != RET_OK) {
-      MS_LOG(ERROR) << "Tflite Tensor verification dose not pass.";
+      MS_LOG(ERROR) << "Tflite Tensor verification does not pass.";
       return RET_ERROR;
     }
   }

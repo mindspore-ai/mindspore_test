@@ -283,7 +283,7 @@ void OverlapGradComm(const FuncGraphPtr &graph) {
   }
   const auto cell_reuse = ms_context->CellReuseLevel() != CellReuseLevel::kNoCellReuse;
   if (cell_reuse) {
-    MS_LOG(WARNING) << "Currently, grad communication overlap dose not support in lazy_line mode.";
+    MS_LOG(WARNING) << "Currently, grad communication overlap does not support in lazy_line mode.";
     return;
   }
   auto manager = graph->manager();

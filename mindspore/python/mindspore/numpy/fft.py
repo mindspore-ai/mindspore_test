@@ -684,7 +684,7 @@ def ihfft(a, n=None, axis=-1, norm=None):
 
     Note:
         - `ihfft` is currently only used in `mindscience` scientific computing scenarios and
-        dose not support other usage scenarios.
+        does not support other usage scenarios.
         - `ihfft` is not supported on Windows platform yet.
 
     Args:

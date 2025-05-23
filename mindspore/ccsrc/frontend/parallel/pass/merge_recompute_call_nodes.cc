@@ -65,7 +65,7 @@ AnfNodePtr GetDependRelyNode(const CNodePtr &cnode) {
       rely_node = depend_cnode->input(kIndex2);
     } else if (rely_node != depend_cnode->input(kIndex2)) {
       MS_LOG(WARNING) << "For recompute call node:" << cnode->DebugString()
-                      << " dose not rely on the same control edge,"
+                      << " does not rely on the same control edge,"
                          " thus not doing recompute comm overlap.";
       return nullptr;
     }

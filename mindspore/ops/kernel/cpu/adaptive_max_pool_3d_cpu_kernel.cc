@@ -291,7 +291,7 @@ void AdaptiveMaxPool3DCpuKernelMod::AdaptiveMaxPool3DCompute(const std::vector<K
     ComputeKernel(input_data, output_data, indices_data, start, end);
   };
 
-  // The AdaptiveMaxPool3D will be reinit in graph mode, so the ParallelLaunchAutoSearch dose not work, use
+  // The AdaptiveMaxPool3D will be reinit in graph mode, so the ParallelLaunchAutoSearch does not work, use
   // ParallelLaunch instead.
   const float block_size = 1.0;
   ParallelLaunch(shard_adaptive_max_pool_3d, output_size_T_, block_size);

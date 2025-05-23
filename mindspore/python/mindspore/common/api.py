@@ -1958,7 +1958,7 @@ class _CellGraphExecutor:
         obj.__parse_method__ = 'construct'
         if not hasattr(obj, obj.__parse_method__):
             raise AttributeError(
-                'The class {} dose not have method {}'.format(obj.__class__.__name__, obj.__parse_method__))
+                'The class {} does not have method {}'.format(obj.__class__.__name__, obj.__parse_method__))
         key_id = str(id(obj)) + str(obj.create_time)
         args = get_auto_dynamic_shape_args(args, key_id)
 

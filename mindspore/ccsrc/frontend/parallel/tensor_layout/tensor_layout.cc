@@ -150,13 +150,13 @@ Status TensorLayout::InitFromExtendVector(const Shape &device_matrix, const std:
     std::accumulate(device_arrangement.begin(), device_arrangement.end(), 1, std::multiplies<int64_t>());
   if (device_num != device_total && check_device_num) {
     MS_LOG(ERROR) << "The configured device_matrix " << device_arrangement << " accumulate value " << device_total
-                  << " dose not equal to the device number in one stage " << device_num;
+                  << " does not equal to the device number in one stage " << device_num;
     return FAILED;
   }
   Shape extended_tensor_map;
   Shape reshaped_tensor_shape;
   if (tensor_shape.size() != tensor_map.size()) {
-    MS_LOG(ERROR) << "The tensor_shape " << tensor_shape << " dose not have the same size with tensor_map "
+    MS_LOG(ERROR) << "The tensor_shape " << tensor_shape << " does not have the same size with tensor_map "
                   << tensor_map;
     return FAILED;
   }
@@ -173,7 +173,7 @@ Status TensorLayout::InitFromExtendVector(const Shape &device_matrix, const std:
 
   if (not_none_count > device_arrangement.size()) {
     MS_LOG(ERROR) << "The device_matrix " << device_arrangement
-                  << " length dose not greater equal than the not None size of extended_tensor_map "
+                  << " length does not greater equal than the not None size of extended_tensor_map "
                   << extended_tensor_map;
     return FAILED;
   }

@@ -51,11 +51,11 @@ int ArithmeticNPUOp::IsSupport(const schema::Primitive *primitive, const std::ve
     }
   }
   if (type_ == mindspore::schema::PrimitiveType_Less && in_shape_0.size() == 1) {
-    MS_LOG(WARNING) << name_ << " dose not support 1d input.";
+    MS_LOG(WARNING) << name_ << " does not support 1d input.";
     return RET_NOT_SUPPORT;
   }
   if (type_ == mindspore::schema::PrimitiveType_Equal && in_shape_0.size() == ARITHMETIC_INPUT_NUM) {
-    MS_LOG(WARNING) << name_ << " dose not support 2d input.";
+    MS_LOG(WARNING) << name_ << " does not support 2d input.";
     return RET_NOT_SUPPORT;
   }
   return RET_OK;

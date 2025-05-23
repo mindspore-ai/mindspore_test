@@ -1640,10 +1640,10 @@ Status OperatorInfo::InitWithTensorLayout(const std::vector<std::shared_ptr<Tens
   if (outputs_tensor_info_.size() != outputs_shape_.size()) {
     if (is_in_layout_propagation_) {
       MS_LOG(INFO) << name_ << ": the output tensor layout num " << outputs_tensor_info_.size()
-                   << " dose not match the output num " << outputs_shape_.size();
+                   << " does not match the output num " << outputs_shape_.size();
     } else {
       MS_LOG(ERROR) << name_ << ": the output tensor layout num " << outputs_tensor_info_.size()
-                    << " dose not match the output num " << outputs_shape_.size();
+                    << " does not match the output num " << outputs_shape_.size();
     }
     return FAILED;
   }
@@ -1730,7 +1730,7 @@ Status OperatorInfo::InitWithTensorLayoutForNewShape(const std::vector<TensorLay
 
   if (outputs_tensor_info_new_.size() != outputs_shape_new_.size()) {
     MS_LOG(ERROR) << name_ << ": the output tensor layout num " << outputs_tensor_info_new_.size()
-                  << " dose not match the output num " << outputs_shape_new_.size();
+                  << " does not match the output num " << outputs_shape_new_.size();
     return FAILED;
   }
 
@@ -2495,7 +2495,7 @@ Status OperatorInfo::SetCostUnderStrategyWithCost(const std::shared_ptr<Strategy
 
   if (outputs_tensor_info_.size() != outputs_shape_.size()) {
     MS_LOG(WARNING) << name_ << ": the output tensor layout num " << outputs_tensor_info_.size()
-                    << " dose not match the output num " << outputs_shape_.size();
+                    << " does not match the output num " << outputs_shape_.size();
     return FAILED;
   }
 

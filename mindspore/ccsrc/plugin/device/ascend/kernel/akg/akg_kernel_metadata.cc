@@ -43,7 +43,7 @@ void AkgMetadataInfo(const CNodePtr &kernel_node, std::vector<KernelBuildInfoPtr
   }
 
   if (kernel_info_list->empty()) {
-    MS_LOG(WARNING) << "Akg dose not has metadata of op[" << op_name << "].";
+    MS_LOG(WARNING) << "Akg does not has metadata of op[" << op_name << "].";
   }
 }
 }  // namespace kernel

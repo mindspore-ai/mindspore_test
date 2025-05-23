@@ -274,7 +274,7 @@ Status TileInfo::InferOutputTensorInfo() {
   auto output_infer_tensor_layout = InferOutputLayout();
   if (output_infer_tensor_layout.tensor_shape_before().array() != outputs_shape_[kIndex0]) {
     MS_LOG(ERROR) << "The infer output shape " << output_infer_tensor_layout.tensor_shape_before().array()
-                  << " dose not match the output shape " << outputs_shape_[kIndex0];
+                  << " does not match the output shape " << outputs_shape_[kIndex0];
     return FAILED;
   }
   TensorInfo output_tensor_info(output_infer_tensor_layout);

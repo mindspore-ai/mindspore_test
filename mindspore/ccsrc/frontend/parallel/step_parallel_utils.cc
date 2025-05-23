@@ -926,7 +926,7 @@ RankList FindCommonMirrorGroup(const FuncGraphPtr &root) {
     }
     auto prim = GetCNodePrimitive(node);
     if (!prim->HasAttr(GROUP)) {
-      MS_LOG_WITH_NODE(EXCEPTION, node) << "The mirror operator dose not have group attr : " << node->DebugString();
+      MS_LOG_WITH_NODE(EXCEPTION, node) << "The mirror operator does not have group attr : " << node->DebugString();
     }
     std::string group_name = GetValue<std::string>(prim->GetAttr(GROUP));
     std::vector<int64_t> group_list = g_device_manager->FindRankListByHashName(group_name);
