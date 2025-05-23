@@ -143,8 +143,8 @@ def test_vmap_sparseapplyadagradopv2():
     Description: Compare the vmap result with the manually batch result.
     Expectation: Output matching expected values
     """
-    var = Parameter(Tensor(np.array([[0.2], [0.1]]).astype(np.float32)))
-    accum = Parameter(Tensor(np.array([[0.1], [0.1]]).astype(np.float32)))
+    var = Parameter(Tensor(np.array([[0.2], [0.1]]).astype(np.float32)), name="var")
+    accum = Parameter(Tensor(np.array([[0.1], [0.1]]).astype(np.float32)), name="accum")
     gradient = Tensor(np.array([[0.7], [0.1]]).astype(np.float32))
     indices = Tensor([[0], [0]], mindspore.int32)
     sparse_apply_adagrad = Net(update_slots=True)
