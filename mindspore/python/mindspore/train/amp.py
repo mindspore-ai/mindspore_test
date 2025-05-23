@@ -112,6 +112,7 @@ AMP_AUTO_BLACK_LIST = [
     P.BatchNorm,
     gen.BatchNormExt,
     gen.GroupNorm,
+    gen.Norm,
     P.KLDivLoss,
     P.SmoothL1Loss,
     P.MultilabelMarginLoss,
