@@ -31,9 +31,6 @@ namespace mindspore {
 namespace opt {
 namespace irpass {
 
-constexpr auto kInvalidInplaceDout = "invalid_inplace_dout";
-constexpr auto kFlagNeedCheckViewInplaceDoutBprop = "need_check_view_inplace_dout_bprop";
-
 namespace {
 bool IsCreatedByViewOp(const AnfNodePtr &node) {
   const auto &prim = GetCNodePrimitive(node);
@@ -275,6 +272,15 @@ void CheckInvalidDoutFromElementsUseFlag(const FuncGraphPtr &func_graph, bool ne
   // Check invalid dout for the first time
   // If passed, just return
   // If has invalid dout, do second check to avoid incorrect element_use_flag
+
+#ifdef ENABLE_DUMP_IR
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  if (context->CanDump(kIntroductory)) {
+    DumpIR("opt_check_invalid_dout_before_first_check" + func_graph->ToString() + ".ir", func_graph);
+  }
+#endif
+
   if (!CheckInvalidDoutOfBprop(func_graph, false)) {
     return;
   }
@@ -283,14 +289,6 @@ void CheckInvalidDoutFromElementsUseFlag(const FuncGraphPtr &func_graph, bool ne
   if (need_clone) {
     check_func_graph = BasicClone(func_graph);
   }
-
-#ifdef ENABLE_DUMP_IR
-  auto context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context);
-  if (context->CanDump(kIntroductory)) {
-    DumpIR("opt_check_invalid_dout_before_first_check" + check_func_graph->ToString() + ".ir", check_func_graph);
-  }
-#endif
 
   // Remark element use flag and remove unused nodes until not change
   bool is_changed = true;
@@ -329,12 +327,13 @@ void CheckBpropGraphHasInvalidDoutHelper(const FuncGraphPtr &func_graph, const s
   if (!need_check) {
     return;
   }
-  ResetUselessFuncGraph(func_graph, need_grads);
+  FuncGraphPtr cloned_func_graph = BasicClone(func_graph);
+  ResetUselessFuncGraph(cloned_func_graph, need_grads);
   auto resource = std::make_shared<pipeline::Resource>();
-  resource->set_func_graph(func_graph);
+  resource->set_func_graph(cloned_func_graph);
   auto new_manager = resource->manager();
   MS_EXCEPTION_IF_NULL(new_manager);
-  new_manager->AddFuncGraph(func_graph);
+  new_manager->AddFuncGraph(cloned_func_graph);
   auto new_func_graph = CheckInvalidDoutGraphPass(resource);
   CheckInvalidDoutFromElementsUseFlag(new_func_graph);
 }

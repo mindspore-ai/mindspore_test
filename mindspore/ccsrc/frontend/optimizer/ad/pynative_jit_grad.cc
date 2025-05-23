@@ -21,7 +21,7 @@
 #include <memory>
 #include <utility>
 #include <algorithm>
-
+#include <set>
 #include "backend/graph_compiler/transform.h"
 #include "pynative/pynative_utils.h"
 #include "include/common/utils/primitive_utils.h"
@@ -48,6 +48,7 @@ mindspore::HashMap<std::string, std::pair<FuncGraphPtr, FuncGraphPtr>> pass_grad
 mindspore::HashMap<std::string, FuncGraphPtr> pass_grad_graph_valuenode_;
 mindspore::HashMap<std::string, pipeline::ResourcePtr> jit_forward_resource;
 mindspore::HashMap<std::string, FuncGraphPtr> original_bprop_graph;
+std::set<std::string> check_invalid_dout_bprop_graph;
 
 namespace {
 static const std::vector<PrimitivePtr> UNREUSED_PRIM_LIST = {
@@ -351,9 +352,13 @@ std::pair<bool, FuncGraphPtr> GetBpropGraphWithParamalization(const pynative::Gr
     after_opt_fg = jit_adgrad_processer->GenerateBpropGraph();
     MS_LOG(INFO) << "Start optimizing brop graph.";
     pynative::CommonUtils::DumpGraphIR("opt_backward_before_opt.ir", after_opt_fg);
-    auto check_invalid_dout_level = common::GetCompileConfig("CHECK_INVALID_VIEW_INPLACE_DOUT_LEVEL");
-    if (check_invalid_dout_level == "" || check_invalid_dout_level == opt::irpass::kCheckDoutLevelSceneOne) {
-      original_bprop_graph[grad_param->graph_cache_key] = BasicClone(after_opt_fg);
+    // Cache original bprop graph to do invalid view inplace dout check
+    if (after_opt_fg->has_flag(opt::irpass::kFlagNeedCheckViewInplaceDoutBprop)) {
+      auto check_invalid_dout_level = common::GetCompileConfig("CHECK_INVALID_VIEW_INPLACE_DOUT_LEVEL");
+      if (check_invalid_dout_level == "" || check_invalid_dout_level == opt::irpass::kCheckDoutLevelSceneOne) {
+        original_bprop_graph[grad_param->graph_cache_key] = BasicClone(after_opt_fg);
+      }
+      after_opt_fg->erase_flag(opt::irpass::kFlagNeedCheckViewInplaceDoutBprop);
     }
     after_opt_fg = OptimizeBpropGraph(after_opt_fg, grad_param);
     MS_LOG(INFO) << "Bprop graph generated successfully.";
@@ -437,17 +442,30 @@ void ClearGradCache() {
   pass_grad_graph_param_.clear();
   jit_forward_resource.clear();
   original_bprop_graph.clear();
+  check_invalid_dout_bprop_graph.clear();
 }
 
 void CheckBpropGraphHasInvalidDout(const std::string &cache_key, const std::vector<bool> &need_grads) {
-  const auto it = original_bprop_graph.find(cache_key);
-  if (it == original_bprop_graph.end()) {
+  const auto &it_for_ori_bprop_graph = original_bprop_graph.find(cache_key);
+  if (it_for_ori_bprop_graph == original_bprop_graph.end()) {
     return;
   }
-  auto original_bprop = it->second;
+  // Using cache_key and need_grad_indexes as final key to get check result
+  std::ostringstream oss;
+  oss << cache_key;
+  for (bool b : need_grads) {
+    oss << (b ? '1' : '0');
+  }
+  std::string check_dout_key = oss.str();
+  // Has checked before and passed
+  if (check_invalid_dout_bprop_graph.find(check_dout_key) != check_invalid_dout_bprop_graph.end()) {
+    return;
+  }
+  auto original_bprop = it_for_ori_bprop_graph->second;
   MS_EXCEPTION_IF_NULL(original_bprop);
+  MS_LOG(INFO) << "Do invalid view inpalce dout check for cache_key: " << check_dout_key;
   mindspore::opt::irpass::CheckBpropGraphHasInvalidDoutHelper(original_bprop, need_grads);
-  original_bprop_graph.erase(cache_key);
+  check_invalid_dout_bprop_graph.insert(check_dout_key);
 }
 
 void BpropGenerator::Init() {
@@ -497,6 +515,9 @@ void BpropGenerator::Init() {
     auto k_fg = GetValueNode<FuncGraphPtr>(node);
     if (!k_fg) {
       continue;
+    }
+    if (k_fg->has_flag(opt::irpass::kFlagNeedCheckViewInplaceDoutBprop)) {
+      basic_graph_->set_flag(opt::irpass::kFlagNeedCheckViewInplaceDoutBprop, true);
     }
     // Find primal cnode for this fprop
     const auto &primal_cnode_iter = k_fg->transforms().find("primal_cnode");

@@ -27,6 +27,8 @@ namespace irpass {
 
 constexpr auto kCheckDoutLevelSceneOne = "1";
 constexpr auto kCheckDoutLevelSceneTwo = "2";
+constexpr auto kInvalidInplaceDout = "invalid_inplace_dout";
+constexpr auto kFlagNeedCheckViewInplaceDoutBprop = "need_check_view_inplace_dout_bprop";
 
 class CheckInvalidViewInplaceDout {
  public:
