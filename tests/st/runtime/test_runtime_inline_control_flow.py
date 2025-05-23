@@ -182,8 +182,8 @@ def test_return_parameter():
     Description: Control flow if.
     Expectation: AttributeError.
     """
-    param_a = Parameter(Tensor(5))
-    param_b = Parameter(Tensor(5))
+    param_a = Parameter(Tensor(5), name="a")
+    param_b = Parameter(Tensor(5), name="b")
 
     @jit(backend="ms_backend")
     def foo(x, param_a, param_b):
@@ -202,8 +202,8 @@ def test_return_param_untail_call():
     Description: Control flow if.
     Expectation: AttributeError.
     """
-    param_a = Parameter(Tensor(5))
-    param_b = Parameter(Tensor(6))
+    param_a = Parameter(Tensor(5), name="a")
+    param_b = Parameter(Tensor(6), name="b")
 
     @jit(backend="ms_backend")
     def foo(x, param_a, param_b):
@@ -376,8 +376,8 @@ def test_update_and_return_parameter():
     Expectation: AttributeError.
     """
 
-    param_a = Parameter(Tensor(5))
-    param_b = Parameter(Tensor(5))
+    param_a = Parameter(Tensor(5), name="a")
+    param_b = Parameter(Tensor(5), name="b")
 
     @jit(backend="ms_backend")
     def foo(x, param_a, param_b):
@@ -406,8 +406,8 @@ def test_return_switch_input_in_branch():
     Expectation: AttributeError.
     """
 
-    param_a = Parameter(Tensor(5))
-    param_b = Parameter(Tensor(5))
+    param_a = Parameter(Tensor(5), name="a")
+    param_b = Parameter(Tensor(5), name="b")
 
     @jit(backend="ms_backend")
     def foo(x, param_a, param_b):
@@ -436,8 +436,8 @@ def test_return_switch_input():
     Expectation: AttributeError.
     """
 
-    param_a = Parameter(Tensor(5))
-    param_b = Parameter(Tensor(5))
+    param_a = Parameter(Tensor(5), name="a")
+    param_b = Parameter(Tensor(5), name="b")
 
     @jit(backend="ms_backend")
     def foo(x, param_a, param_b):
@@ -759,8 +759,8 @@ def test_control_arrow_from_switch_to_gather():
     Description: Control flow if.
     Expectation: AttributeError.
     """
-    param_a = Parameter(Tensor(5))
-    param_b = Parameter(Tensor(5))
+    param_a = Parameter(Tensor(5), name="a")
+    param_b = Parameter(Tensor(5), name="b")
 
     @jit(backend="ms_backend")
     def foo(x, param_a, param_b):
