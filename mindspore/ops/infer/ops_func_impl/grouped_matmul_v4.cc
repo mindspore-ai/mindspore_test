@@ -86,10 +86,25 @@ int64_t GroupedMatmulV4FuncImpl::FetchGroupListSize(const PrimitivePtr &primitiv
 TypeIdList GroupedMatmulV4FuncImpl::InferType(const PrimitivePtr &primitive,
                                               const InferInfoPtrList &input_infos) const {
   const auto &x_tensors = input_infos[idxes_.x]->GetSequenceElements();
+  const auto &w_tensors = input_infos[idxes_.weight]->GetSequenceElements();
   const auto &scale_infos = input_infos[scale_idx_];
+  TypeId x_type = x_tensors[0]->GetType();
+  TypeId w_type = w_tensors[0]->GetType();
   TypeIdList output_types;
-  if (scale_infos->IsNone()) {
-    auto x_type = x_tensors[0]->GetType();
+  if (x_type == kNumberTypeInt8 && w_type == kNumberTypeInt4) {
+    constexpr size_t kOutDtypeIndex = 16;
+    TypeId output_type = kNumberTypeBFloat16;
+    if (!input_infos[kOutDtypeIndex]->IsNone()) {
+      auto dtype_ptr = input_infos[kOutDtypeIndex]->GetScalarValueWithCheck<int64_t>();
+      output_type = static_cast<TypeId>(dtype_ptr);
+      static std::set<TypeId> valid_dtype_set = {kNumberTypeFloat16, kNumberTypeBFloat16};
+      MS_CHECK_VALUE(valid_dtype_set.find(output_type) != valid_dtype_set.end(),
+                     "For 'GroupedMatmulV4' with A8W4, the output type must be in [Float16, BFloat16], but got " +
+                       TypeIdToString(output_type));
+    }
+    std::transform(x_tensors.begin(), x_tensors.end(), std::back_inserter(output_types),
+                   [output_type](const InferInfoPtr &info) { return output_type; });
+  } else if (scale_infos->IsNone()) {
     auto out_type = x_type == kNumberTypeInt8 ? kNumberTypeInt32 : x_type;
     std::transform(x_tensors.begin(), x_tensors.end(), std::back_inserter(output_types),
                    [=](const InferInfoPtr &info) { return out_type; });

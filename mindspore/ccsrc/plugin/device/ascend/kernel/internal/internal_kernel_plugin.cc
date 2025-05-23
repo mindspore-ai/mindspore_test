@@ -68,7 +68,7 @@ using GetNzIndicesFunc = std::function<IndexTable(const AnfNodePtr &node)>;
 static IndexTable GroupedMatmulV4NzIndicesGetter(const AnfNodePtr &node) {
   auto x_dtype = common::AnfAlgo::GetPrevNodeOutputInferDataType(node, 0);
   auto weight_dtype = common::AnfAlgo::GetPrevNodeOutputInferDataType(node, 1);
-  if (x_dtype == kNumberTypeInt8 && (weight_dtype == kNumberTypeInt8 || weight_dtype == kNumberTypeInt4)) {
+  if (x_dtype == kNumberTypeInt8 && weight_dtype == kNumberTypeInt8) {
     auto x_shape = common::AnfAlgo::GetPrevNodeOutputInferShape(node, 0);
     auto weight_shape = common::AnfAlgo::GetPrevNodeOutputInferShape(node, 1);
     constexpr auto kRankTwo = 2;
