@@ -41,7 +41,7 @@ enum TaskType {
 
 enum class KernelTaskType { kNORMAL_VIEW_TASK = 0, kCONTIGUOUS_TASK, kCOPY_TASK };
 
-class AsyncTask {
+class RUNTIME_PIPELINE_EXPORT AsyncTask {
  public:
   explicit AsyncTask(TaskType task_type) : task_type_(task_type) {}
   virtual ~AsyncTask() = default;

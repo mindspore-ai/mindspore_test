@@ -29,7 +29,7 @@
 namespace mindspore {
 namespace pynative {
 
-class PyboostTask : public runtime::AsyncTask {
+class PYNATIVE_EXPORT PyboostTask : public runtime::AsyncTask {
  public:
   PyboostTask(std::function<void(const PyboostOpRunInfoPtr &op_run_info)> run_func, PyboostOpRunInfoPtr op_run_info)
       : AsyncTask(runtime::kFrontendTask), run_func_(std::move(run_func)), op_run_info_(std::move(op_run_info)) {}
@@ -42,7 +42,7 @@ class PyboostTask : public runtime::AsyncTask {
   PyboostOpRunInfoPtr op_run_info_;
 };
 
-class FrontendTask : public runtime::AsyncTask {
+class PYNATIVE_EXPORT FrontendTask : public runtime::AsyncTask {
  public:
   FrontendTask(std::function<void(const FrontendOpRunInfoPtr &op_run_info)> run_func, FrontendOpRunInfoPtr op_run_info)
       : AsyncTask(runtime::kFrontendTask), run_func_(std::move(run_func)), op_run_info_(std::move(op_run_info)) {}
@@ -72,7 +72,7 @@ class PYNATIVE_EXPORT PassthroughFrontendTask : public runtime::AsyncTask {
   std::function<void()> set_exception_func_;
 };
 
-class PyboostPromiseTask : public PyboostTask {
+class PYNATIVE_EXPORT PyboostPromiseTask : public PyboostTask {
  public:
   PyboostPromiseTask(std::function<void(const PyboostOpRunInfoPtr &op_run_info)> run_func,
                      std::function<void()> set_exception_func, PyboostOpRunInfoPtr op_run_info)
@@ -90,7 +90,7 @@ class PyboostPromiseTask : public PyboostTask {
   std::function<void()> set_exception_func_;
 };
 
-class FrontendPromiseTask : public FrontendTask {
+class PYNATIVE_EXPORT FrontendPromiseTask : public FrontendTask {
  public:
   FrontendPromiseTask(std::function<void(const FrontendOpRunInfoPtr &op_run_info)> run_func,
                       std::function<void()> set_exception_func, FrontendOpRunInfoPtr op_run_info)
