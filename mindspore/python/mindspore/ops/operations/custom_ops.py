@@ -343,8 +343,8 @@ class Custom(ops.PrimitiveWithInfer):
                        Custom(func="{dir_path}/{file_name}:{module_name}:{func_name}",...)
                        (ex. Custom(func="./add.jl:Add:add", out_shape=[1], out_dtype=mstype.float32, "julia"))
 
-        out_shape (Union[function, list, tuple]): The output shape infer function or the value of output shape of
-            `func`. Default: ``None`` .
+        out_shape (Union[function, list, tuple], optional): The output shape infer function or the value of output
+            shape of `func`. Default: ``None`` .
 
             If func has single output, then the value of output shape is a list or tuple of int.
 
@@ -354,8 +354,8 @@ class Custom(ops.PrimitiveWithInfer):
             The input can be None only when the func_type input is "hybrid". In this case, the automatic infer
             shape mechanic will be enabled.
 
-        out_dtype (Union[function, :class:`mindspore.dtype`, tuple[:class:`mindspore.dtype`]]): The output data type
-            infer function or the value of output data type of `func`. Default: ``None`` .
+        out_dtype (Union[function, :class:`mindspore.dtype`, tuple[:class:`mindspore.dtype`]], optional): The output
+            data type infer function or the value of output data type of `func`. Default: ``None`` .
 
             If func has single output, then the value of output shape is a `mindspore.dtype`.
 
@@ -365,13 +365,12 @@ class Custom(ops.PrimitiveWithInfer):
             The input can be None only when the func_type input is "hybrid". In this case, the automatic infer
             value mechanic will be enabled.
 
-        func_type (str): The implementation type of `func`, should be one of
+        func_type (str, optional): The implementation type of `func`, should be one of
+            [ ``"aot"`` , ``"pyfunc"`` , ``"julia"`` ]. Default: ``"pyfunc"``.
 
-            [ ``"aot"`` , ``"pyfunc"`` , ``"julia"`` ].
-
-        bprop (function): The back propagation function of `func`. Default: ``None`` .
-        reg_info (Union[str, dict, list, tuple]): Represents the registration information(reg info) of `func` with
-            json format of type str or dict. The reg info specifies supported data types and formats of inputs and
+        bprop (function, optional): The back propagation function of `func`. Default: ``None`` .
+        reg_info (Union[str, dict, list, tuple], optional): Represents the registration information(reg info) of `func`
+            with json format of type str or dict. The reg info specifies supported data types and formats of inputs and
             outputs, attributes and target of `func`. Default: ``None`` .
 
             If reg info is a list or tuple, then each item should be with json format of type str or dict, which
@@ -429,7 +428,7 @@ class Custom(ops.PrimitiveWithInfer):
     op_path_in_cache = []  # Save paths for op functions created in the cached.
     custom_aot_warning = True  # Flag to enable warnings about custom aot path white list
 
-    def __init__(self, func, out_shape=None, out_dtype=None, func_type="hybrid", bprop=None, reg_info=None):
+    def __init__(self, func, out_shape=None, out_dtype=None, func_type="pyfunc", bprop=None, reg_info=None):
         super().__init__("Custom")
 
         self.supported_targets = [ASCEND, GPU, CPU]

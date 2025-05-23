@@ -1,7 +1,7 @@
 mindspore.ops.Custom
 =====================
 
-.. py:class:: mindspore.ops.Custom(func, bprop=None, out_dtype=None, func_type="hybrid", out_shape=None, reg_info=None)
+.. py:class:: mindspore.ops.Custom(func, out_shape=None, out_dtype=None, func_type="pyfunc", bprop=None, reg_info=None)
 
     `Custom` 算子是MindSpore自定义算子的统一接口。用户可以利用该接口自行定义MindSpore内置算子库尚未包含的算子。
     根据输入函数的不同，用户可以创建多个自定义算子，并将其应用于神经网络中。
@@ -90,11 +90,11 @@ mindspore.ops.Custom
                      Custom(func="{dir_path}/{file_name}:{module_name}:{func_name}",...)
 
                  例如：Custom(func="./add.jl:Add:add", out_shape=[1], out_dtype=mstype.float32, "julia")
-        - **out_shape** (Union[function, list, tuple]) - 自定义算子的输出的形状或者输出形状的推导函数。默认值： ``None`` 。
-        - **out_dtype** (Union[function, :class:`mindspore.dtype`, tuple[:class:`mindspore.dtype`]]) - 自定义算子的输出的数据类型或者输出数据类型的推导函数。默认值： ``None`` 。
-        - **func_type** (str) - 自定义算子的函数类型，必须是[ ``"aot"`` , ``"pyfunc"`` , ``"julia"``]中之一。
-        - **bprop** (function) - 自定义算子的反向函数。默认值： ``None``。
-        - **reg_info** (Union[str, dict, list, tuple]) - 自定义算子的算子注册信息。默认值： ``None`` 。
+        - **out_shape** (Union[function, list, tuple], 可选) - 自定义算子的输出的形状或者输出形状的推导函数。默认值： ``None`` 。
+        - **out_dtype** (Union[function, :class:`mindspore.dtype`, tuple[:class:`mindspore.dtype`]], 可选) - 自定义算子的输出的数据类型或者输出数据类型的推导函数。默认值： ``None`` 。
+        - **func_type** (str, 可选) - 自定义算子的函数类型，必须是[ ``"aot"`` , ``"pyfunc"`` , ``"julia"``]中之一。默认值： ``"pyfunc"``。
+        - **bprop** (function, 可选) - 自定义算子的反向函数。默认值： ``None``。
+        - **reg_info** (Union[str, dict, list, tuple], 可选) - 自定义算子的算子注册信息。默认值： ``None`` 。
 
     输入：
         - **input** (Union(tuple, list)) - 输入要计算的Tensor。
