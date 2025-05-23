@@ -39,8 +39,11 @@ constexpr auto kAttrIrUnified = "ir_unified";
 constexpr auto kAttrFlashIndex = "FLASH_INDEX";
 bool CheckNoNeedTranspose(const ShapeVector &shape, size_t dim) {
   if (shape.size() > dim && dim > 0) {
-    for (size_t i = 0; i < dim; i++) {
-      if (shape[i] != 1) {
+    for (size_t i = 0; i < shape.size(); i++) {
+      if (i < dim && shape[i] != 1) {
+        return false;
+      }
+      if (shape[i] < 0) {
         return false;
       }
     }
