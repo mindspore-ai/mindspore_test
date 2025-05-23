@@ -169,7 +169,7 @@ def test_view_in_control_flow5():
            "not supported to compute gradients for the other inputs of this in-place operator" in str(err.value)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_view_in_control_flow6():
     """
     Feature: view operation in control flow.
@@ -224,7 +224,7 @@ def test_view_in_control_flow7():
     grad(net, grad_position=1)(Tensor(3), Tensor([1, 2]))
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_view_in_control_flow8():
     """
     Feature: view operation in control flow.
@@ -254,7 +254,7 @@ def test_view_in_control_flow8():
            "not supported to compute gradients for the other inputs of this in-place operator" in str(err.value)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_view_in_control_flow9():
     """
     Feature: view operation in control flow.
