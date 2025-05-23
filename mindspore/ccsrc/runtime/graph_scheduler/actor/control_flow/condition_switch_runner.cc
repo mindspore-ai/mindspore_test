@@ -53,6 +53,7 @@ void ConditionSwitchRunner::Init() {
                     << " is not equal kernel info stream id : " << kernel_info_->stream_id() << ".";
     }
     (void)output_kernel_tensors_.emplace_back(output_kernel_tensor);
+    (void)output_launch_tensors_.emplace_back(output_kernel_tensor.get());
   }
 
   real_input_num_ = common::AnfAlgo::GetInputTensorNum(kernel_);
