@@ -1256,10 +1256,10 @@ static PyObject *TensorPython_Storage(PyObject *self, PyObject *args, PyObject *
       MS_LOG(EXCEPTION) << "Current Tensor has no device!";
     }
     Storage storage = Storage(result);
-    tensor->value.SetStorage(py::reinterpret_borrow<py::object>(CreateStorageObj(storage)));
+    tensor->value.SetStorage(py::reinterpret_steal<py::object>(CreateStorageObj(storage)));
   }
-  Py_INCREF(tensor->value.GetStorage().ptr());
-  return tensor->value.GetStorage().ptr();
+  py::object storage_obj = tensor->value.GetStorage();
+  return storage_obj.release().ptr();
   HANDLE_MS_EXCEPTION_END
 }
 

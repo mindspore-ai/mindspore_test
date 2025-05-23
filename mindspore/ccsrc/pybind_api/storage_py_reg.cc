@@ -39,6 +39,12 @@ static int StoragePy_Setitem(StoragePy *self, PyObject *index, PyObject *value) 
   HANDLE_MS_EXCEPTION_RET_FAIL_END
 }
 
+static void StoragePy_PyDealloc(PyObject *obj) {
+  const auto &storage = StoragePy_Unpack(obj);
+  storage.~Storage();
+  Py_TYPE(obj)->tp_free(obj);
+}
+
 static PyMappingMethods StoragePy_mappingmethods = {(lenfunc)StoragePy_Length, (binaryfunc)StoragePy_Getitem,
                                                     (objobjargproc)StoragePy_Setitem};
 
@@ -46,7 +52,7 @@ PyTypeObject StoragePyType = {
   PyVarObject_HEAD_INIT(NULL, 0) "StoragePy", /* tp_name */
   sizeof(StoragePy),                          /* tp_basicsize */
   0,                                          /* tp_itemsize */
-  nullptr,                                    /* tp_dealloc */
+  StoragePy_PyDealloc,                        /* tp_dealloc */
   0,                                          /* tp_vectorcall_offset */
   nullptr,                                    /* tp_getattr */
   nullptr,                                    /* tp_setattr */
