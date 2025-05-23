@@ -1675,6 +1675,13 @@ REG_BPROP_BUILDER("InplaceReLU").FreeUselessValues_I({}).SetBody(BODYFUNC(ib) {
   return {dx};
 });
 
+REG_BPROP_BUILDER("InplaceSiLU").FreeUselessValues_O({}).CloneInplaceInput().SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto dout = ib->GetInput(kIndex2);
+  auto dx = ib->SiLUGrad(dout, x);
+  return {dx};
+});
+
 REG_BPROP_BUILDER("Threshold").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
   auto input = ib->GetInput(kIndex0);
   auto threshold = ib->GetInput(kIndex1);
