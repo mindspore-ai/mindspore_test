@@ -3629,7 +3629,7 @@ class MatrixSolveLs(Primitive):
         TypeError: If `l2_regularizer` is not float64.
         TypeError: If `fast` is not bool.
         ValueError: If dimensions of `matrix` or `rhs` is less than 2.
-        ValueError: If shape of `matrix` dose not match the shape of `rhs`.
+        ValueError: If shape of `matrix` does not match the shape of `rhs`.
 
     Supported Platforms:
         ``CPU``

@@ -532,12 +532,12 @@ Status RmsNormInfo::InferOutputTensorInfo() {
   InferOutputLayout();
   if (output_infer_tensor_layout_.tensor_shape_before().array() != outputs_shape_[kIndex0]) {
     MS_LOG(ERROR) << "The infer output shape " << output_infer_tensor_layout_.tensor_shape_before().array()
-                  << " dose not match the output shape " << outputs_shape_[kIndex0];
+                  << " does not match the output shape " << outputs_shape_[kIndex0];
     return FAILED;
   }
   if (rstd_infer_tensor_layout_.tensor_shape_before().array() != outputs_shape_[kIndex1]) {
     MS_LOG(ERROR) << "The infer output rstd shape " << rstd_infer_tensor_layout_.tensor_shape_before().array()
-                  << " dose not match the output shape " << outputs_shape_[kIndex1];
+                  << " does not match the output shape " << outputs_shape_[kIndex1];
     return FAILED;
   }
   TensorInfo output_tensor_info(output_infer_tensor_layout_);

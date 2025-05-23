@@ -2801,7 +2801,7 @@ void OnnxExporter::ExportPrimAddExt(const FuncGraphPtr &, const CNodePtr &node,
   auto y_input_name = GetNodeInputName(node->input(kTwoNum), node_map_ptr, graph_proto);
   auto alpha = GetInt64Value(node->input(kThreeNum));
   if (alpha != 1) {
-    MS_EXCEPTION(ValueError) << "Onnx Add op dose not have alpha attr, please keep alpha equal to 1";
+    MS_EXCEPTION(ValueError) << "Onnx Add op does not have alpha attr, please keep alpha equal to 1";
   }
 
   auto node_name = RegisterNodeWithUniqueName(node, node_map_ptr);
@@ -2867,7 +2867,7 @@ void OnnxExporter::ExportPrimBatchNormExt(const FuncGraphPtr &, const CNodePtr &
     node_proto->add_output(MakeOutputName(node_name, i));
   }
 
-  // training attr dose not match onnx low version op, so jumps kSixNum
+  // training attr does not match onnx low version op, so jumps kSixNum
   auto momentum = GetFloatValue(node->input(kSevenNum));
   auto epsilon = GetFloatValue(node->input(kEightNum));
 

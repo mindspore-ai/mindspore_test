@@ -622,7 +622,7 @@ Status MatMul::CheckInputLayout() {
   if (in_layout0.device_arrangement_origin().array() != in_layout1.device_arrangement_origin().array()) {
     std::ostringstream oss;
     oss << "The device_matrix of input0 " << in_layout0.device_arrangement_origin().array()
-        << " dose not equal to device_matrix of input1 " << in_layout1.device_arrangement_origin().array();
+        << " does not equal to device_matrix of input1 " << in_layout1.device_arrangement_origin().array();
     log_func_mm(oss, is_in_layout_propagation_);
     return FAILED;
   }
@@ -733,13 +733,13 @@ Status MatMul::CheckOutputLayout() {
                                                  output_infer_tensor_layout_.tensor_shape_before().array());
   if (reduce_scatter_out_layout != out_layout) {
     if (is_in_layout_propagation_) {
-      MS_LOG(INFO) << name_ << ": The user configured output layout dose not match the inferred output layout";
+      MS_LOG(INFO) << name_ << ": The user configured output layout does not match the inferred output layout";
       return FAILED;
     }
     MS_LOG(ERROR) << "The user configured output layout { device_matrix:"
                   << out_layout.device_arrangement_origin().array() << ", tensor_map:" << out_layout.tensor_map_before()
                   << ", tensor_shape:" << out_layout.tensor_shape_before().array()
-                  << " } dose not match the inferred output layout { device_matrix:"
+                  << " } does not match the inferred output layout { device_matrix:"
                   << output_infer_tensor_layout_.device_arrangement_origin().array()
                   << ", tensor_map:" << output_infer_tensor_layout_.tensor_map_before()
                   << ", tensor_shape:" << output_infer_tensor_layout_.tensor_shape_before().array()
@@ -895,7 +895,7 @@ Status MatMul::InferOutputTensorInfo() {
   output_infer_tensor_layout_ = InferOutputLayout();
   if (output_infer_tensor_layout_.tensor_shape_before().array() != outputs_shape_[kIndex0]) {
     MS_LOG(ERROR) << "The infer output shape " << output_infer_tensor_layout_.tensor_shape_before().array()
-                  << " dose not match the output shape " << outputs_shape_[kIndex0];
+                  << " does not match the output shape " << outputs_shape_[kIndex0];
     return FAILED;
   }
   TensorInfo output_tensor_info(output_infer_tensor_layout_);

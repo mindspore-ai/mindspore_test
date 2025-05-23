@@ -28,7 +28,7 @@ int ReduceNPUOp::IsSupport(const schema::Primitive *primitive, const std::vector
   CHECK_LESS_RETURN(in_tensors.size(), kInputSize1);
   auto reduce_axes = inputs_.at(1);
   if (!reduce_axes.IsConst()) {
-    MS_LOG(WARNING) << "Npu Reduce op dose not support non-const axes.";
+    MS_LOG(WARNING) << "Npu Reduce op does not support non-const axes.";
     return RET_NOT_SUPPORT;
   }
   reduce_mode_ = reduce_prim->mode();

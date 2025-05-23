@@ -359,10 +359,10 @@ Status LayerNormInfo::CheckInputLayout() {
   if (gamma_layout.tensor_map_before() != beta_layout.tensor_map_before()) {
     if (is_in_layout_propagation_) {
       MS_LOG(INFO) << name_ << ": The tensor map of gamma " << ShapesToString(gamma_layout.tensor_map_before())
-                   << " dose not equal to tensor map of beta " << ShapesToString(beta_layout.tensor_map_before());
+                   << " does not equal to tensor map of beta " << ShapesToString(beta_layout.tensor_map_before());
     } else {
       MS_LOG(ERROR) << name_ << ": The tensor map of gamma " << ShapesToString(gamma_layout.tensor_map_before())
-                    << " dose not equal to tensor map of beta " << ShapesToString(beta_layout.tensor_map_before());
+                    << " does not equal to tensor map of beta " << ShapesToString(beta_layout.tensor_map_before());
     }
     return FAILED;
   }
@@ -513,17 +513,17 @@ Status LayerNormInfo::InferOutputTensorInfo() {
   InferOutputLayout();
   if (output_infer_tensor_layout_.tensor_shape_before().array() != outputs_shape_[kIndex0]) {
     MS_LOG(ERROR) << "The infer output shape " << output_infer_tensor_layout_.tensor_shape_before().array()
-                  << " dose not match the output shape " << outputs_shape_[kIndex0];
+                  << " does not match the output shape " << outputs_shape_[kIndex0];
     return FAILED;
   }
   if (mean_infer_tensor_layout_.tensor_shape_before().array() != outputs_shape_[kIndex1]) {
     MS_LOG(ERROR) << "The infer output mean shape " << mean_infer_tensor_layout_.tensor_shape_before().array()
-                  << " dose not match the output shape " << outputs_shape_[kIndex1];
+                  << " does not match the output shape " << outputs_shape_[kIndex1];
     return FAILED;
   }
   if (var_infer_tensor_layout_.tensor_shape_before().array() != outputs_shape_[kIndex2]) {
     MS_LOG(ERROR) << "The infer output var shape " << var_infer_tensor_layout_.tensor_shape_before().array()
-                  << " dose not match the output shape " << outputs_shape_[kIndex2];
+                  << " does not match the output shape " << outputs_shape_[kIndex2];
     return FAILED;
   }
   TensorInfo output_tensor_info(output_infer_tensor_layout_);

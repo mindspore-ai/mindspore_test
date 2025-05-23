@@ -93,7 +93,7 @@ bool ExtractInterLeavedCommNode(const std::vector<CNodePtr> &origin_nodes_topolo
       continue;
     }
     if (pipeline_micro >= 0 && !cnode->HasPrimalAttr(parallel::MICRO)) {
-      MS_LOG(INFO) << "communication cnode :" << cnode->DebugString() << " dose not contains micro info.";
+      MS_LOG(INFO) << "communication cnode :" << cnode->DebugString() << " does not contains micro info.";
       continue;
     }
     size_t micro_interleaved_fp_bp_comm_order =

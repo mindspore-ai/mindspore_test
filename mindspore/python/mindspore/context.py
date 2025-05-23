@@ -207,7 +207,7 @@ class _Context:
             parallel_mode = _get_auto_parallel_context("parallel_mode")
             if parallel_mode not in (ParallelMode.DATA_PARALLEL, ParallelMode.STAND_ALONE, ParallelMode.AUTO_PARALLEL):
                 raise ValueError(f"Got {parallel_mode}, when the user enabled SEMI_AUTO_PARALELL, "
-                                 f"pynative mode dose not support, you should set either "
+                                 f"pynative mode does not support, you should set either "
                                  f"context.set_auto_parallel_context(parallel_mode='data_parallel'), "
                                  f"context.set_auto_parallel_context(parallel_mode='stand_alone') "
                                  f"or context.set_auto_parallel_context(parallel_mode='auto_parallel').")

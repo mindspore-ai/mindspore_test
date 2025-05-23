@@ -712,7 +712,7 @@ BackendGraphId GEBackend::Build(const FuncGraphPtr &func_graph, const BackendJit
     return graph_id;
   }
   MS_LOG(EXCEPTION)
-    << "The GE backend dose not support subgraph sink and heterogeneous scenarios, please use the ms backend.";
+    << "The GE backend does not support subgraph sink and heterogeneous scenarios, please use the ms backend.";
   return 0;
 }
 

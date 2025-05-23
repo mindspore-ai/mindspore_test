@@ -29,7 +29,7 @@ void HostMetadataInfo(const CNodePtr &kernel_node, std::vector<std::shared_ptr<K
   MS_EXCEPTION_IF_NULL(kernel_info_list);
 
   if (!common::AnfAlgo::IsHostKernel(kernel_node)) {
-    MS_LOG(DEBUG) << "Host dose not have op [" << kernel_node->DebugString() << "]";
+    MS_LOG(DEBUG) << "Host does not have op [" << kernel_node->DebugString() << "]";
     return;
   }
   std::vector<std::string> inputs_format{};

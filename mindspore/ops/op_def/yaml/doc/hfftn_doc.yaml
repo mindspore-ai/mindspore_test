@@ -4,7 +4,7 @@ hfftn:
 
       Note:
           - `hfftn` is currently only used in `mindscience` scientific computing scenarios and
-            dose not support other usage scenarios.
+            does not support other usage scenarios.
           - `hfftn` is not supported on Windows platform yet.
 
       Args:

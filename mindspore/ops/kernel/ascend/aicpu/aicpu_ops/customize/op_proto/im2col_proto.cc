@@ -23,7 +23,7 @@ namespace {
 static bool CheckListEmptyAndValue(const std::string &op_name, const std::vector<int64_t> &list,
                                    const std::string &attr_name) {
   if (list.size() < 1) {
-    OP_LOGE(op_name.c_str(), "The %s dose not have enough elements(%lu)!", attr_name.c_str(), list.size());
+    OP_LOGE(op_name.c_str(), "The %s does not have enough elements(%lu)!", attr_name.c_str(), list.size());
     return false;
   }
   return true;
@@ -43,7 +43,7 @@ CUST_IMPLEMT_VERIFIER(Im2col, CustIm2colVerify) {
   std::vector<int64_t> ksize;
   op.GetAttr("ksizes", ksize);
   if (ksize.size() < 2) {
-    OP_LOGE(TbeGetName(op).c_str(), "The ksizes dose not have enough elements(%lu)!", ksize.size());
+    OP_LOGE(TbeGetName(op).c_str(), "The ksizes does not have enough elements(%lu)!", ksize.size());
     return GRAPH_FAILED;
   }
 

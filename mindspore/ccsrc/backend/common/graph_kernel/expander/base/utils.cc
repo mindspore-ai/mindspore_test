@@ -49,7 +49,7 @@ bool CheckAllFormatsSame(const DefaultIrBuilder *ib,
 bool CheckAttrs(const DefaultIrBuilder *ib, const std::vector<std::string> &attrs) {
   for (auto &a : attrs) {
     if (ib->attrs().count(a) == 0) {
-      MS_LOG(INFO) << "attr " << a << " dose not exist. Op: " << ib->name();
+      MS_LOG(INFO) << "attr " << a << " does not exist. Op: " << ib->name();
       return false;
     }
   }
