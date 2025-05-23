@@ -116,7 +116,7 @@ MemBuf *MemBufAllocator::Malloc(size_t size) {
 }
 
 inline MemBuf *MemBufAllocator::SearchAvaliableMemBuf(size_t size) {
-  if (!enable_eager_free_ || has_do_eager_free_) {
+  if (!enable_eager_free_) {
     return nullptr;
   }
   // Search from back to front, because the free mem buf is sorted by size.
@@ -279,7 +279,6 @@ const std::pair<size_t, size_t> MemBufAllocator::FreeIdleMemsByEagerFree() {
   }
   MS_LOG(INFO) << "Free idle mems by eager free, eager_free_size : " << eager_free_size
                << ", real_free_size : " << real_free_size << ".";
-  has_do_eager_free_ = true;
   return std::make_pair(eager_free_size, real_free_size);
 }
 
