@@ -19,6 +19,8 @@
 
 #include <string>
 #include <vector>
+#include <algorithm>
+
 #include "ir/anf.h"
 #include "include/api/dual_abi_helper.h"
 #include "mindspore/ccsrc/include/common/utils/anfalgo.h"

@@ -109,11 +109,11 @@ SymbolPtr CommonPadOp::Eval() {
 }
 
 REG_SYMBOL_OP_BUILDER("PadV3")
-  .SetShapeDepend({DependOn::kShape, DependOn::kValue})
+  .SetShapeDepend({DependOn::kShape, DependOn::kValue, DependOn::kNone, DependOn::kNone, DependOn::kValue})
   .SetShapeFunc([](OperationBuilder *b) -> SymbolPtr {
     auto input = b->GetInputShape(kIndex0);
     auto padding = b->GetInputValue(kIndex1);
-    auto contiguous = b->GetAttr("paddings_contiguous");
+    auto contiguous = b->GetInputValue(kIndex4);
     MS_EXCEPTION_IF_NULL(contiguous);
     return b->Emit(std::make_shared<CommonPadOp>(input, padding, contiguous));
   });

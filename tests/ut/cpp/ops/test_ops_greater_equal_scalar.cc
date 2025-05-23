@@ -22,19 +22,19 @@ std::vector<GeneralInferParam> prepare_params() {
   GeneralInferParamGenerator generator;
   generator
     .FeedInputArgs({InferInfoParam{ShapeVector{2, 3}, kNumberTypeFloat32},
-                    InferInfoParam{ShapeVector{}, kNumberTypeFloat32, CreateScalar<float>(1.)}})
+                    InferInfoParam{ShapeVector{}, kNumberTypeFloat64, CreateScalar<double>(1.)}})
     .FeedExpectedOutput({{2, 3}}, {kNumberTypeBool});
   generator
     .FeedInputArgs({InferInfoParam{ShapeVector{2, -1}, kNumberTypeFloat32},
-                    InferInfoParam{ShapeVector{}, kNumberTypeFloat32, CreateScalar<float>(1.)}})
+                    InferInfoParam{ShapeVector{}, kNumberTypeFloat64, CreateScalar<double>(1.)}})
     .FeedExpectedOutput({{2, -1}}, {kNumberTypeBool});
   generator
     .FeedInputArgs({InferInfoParam{ShapeVector{-1, -1}, kNumberTypeFloat32},
-                    InferInfoParam{ShapeVector{}, kNumberTypeFloat32, CreateScalar<float>(1.)}})
+                    InferInfoParam{ShapeVector{}, kNumberTypeFloat64, CreateScalar<double>(1.)}})
     .FeedExpectedOutput({{-1, -1}}, {kNumberTypeBool});
   generator
     .FeedInputArgs({InferInfoParam{ShapeVector{-2}, kNumberTypeFloat32},
-                    InferInfoParam{ShapeVector{}, kNumberTypeFloat32, CreateScalar<float>(1.)}})
+                    InferInfoParam{ShapeVector{}, kNumberTypeFloat64, CreateScalar<double>(1.)}})
     .FeedExpectedOutput({{-2}}, {kNumberTypeBool});
   return generator.Generate();
 }

@@ -26,44 +26,53 @@ namespace {
 std::vector<GeneralInferParam> prepare_params() {
   GeneralInferParamGenerator generator;
   generator
-    .FeedInputArgs({InferInfoParam{ShapeVector{1, 1}, kNumberTypeFloat16}, InferInfoParam{ShapeVector{1}, kNumberTypeFloat16},
-                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<float>(1.)}})
+    .FeedInputArgs({InferInfoParam{ShapeVector{1, 1}, kNumberTypeFloat16},
+                    InferInfoParam{ShapeVector{1}, kNumberTypeFloat16},
+                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(1)}})
     .FeedExpectedOutput({{1, 1}}, {kNumberTypeFloat16});
   generator
-    .FeedInputArgs({InferInfoParam{ShapeVector{2, 3}, kNumberTypeFloat16}, InferInfoParam{ShapeVector{3}, kNumberTypeFloat32},
-                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<float>(1.)}})
+    .FeedInputArgs({InferInfoParam{ShapeVector{2, 3}, kNumberTypeFloat16},
+                    InferInfoParam{ShapeVector{3}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(1)}})
     .FeedExpectedOutput({{2, 3}}, {kNumberTypeFloat16});
   generator
-    .FeedInputArgs({InferInfoParam{ShapeVector{2, 3}, kNumberTypeFloat32}, InferInfoParam{ShapeVector{3}, kNumberTypeFloat16},
-                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<float>(1.)}})
+    .FeedInputArgs({InferInfoParam{ShapeVector{2, 3}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{3}, kNumberTypeFloat16},
+                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(1)}})
     .FeedExpectedOutput({{2, 3}}, {kNumberTypeFloat32});
   generator
-    .FeedInputArgs({InferInfoParam{ShapeVector{2, 3, 4}, kNumberTypeFloat64}, InferInfoParam{ShapeVector{2, 3, 4}, kNumberTypeFloat64},
-                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<float>(1.)}})
+    .FeedInputArgs({InferInfoParam{ShapeVector{2, 3, 4}, kNumberTypeFloat64},
+                    InferInfoParam{ShapeVector{2, 3, 4}, kNumberTypeFloat64},
+                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(1)}})
     .FeedExpectedOutput({{2, 3, 4}}, {kNumberTypeFloat64});
   generator
-    .FeedInputArgs({InferInfoParam{ShapeVector{2, 3}, kNumberTypeInt8}, InferInfoParam{ShapeVector{3}, kNumberTypeFloat32},
-                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<float>(1.)}})
+    .FeedInputArgs({InferInfoParam{ShapeVector{2, 3}, kNumberTypeInt8},
+                    InferInfoParam{ShapeVector{3}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(1)}})
     .FeedExpectedOutput({{2, 3}}, {kNumberTypeInt8});
   generator
-    .FeedInputArgs({InferInfoParam{ShapeVector{2, 3}, kNumberTypeInt16}, InferInfoParam{ShapeVector{3}, kNumberTypeFloat32},
-                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<float>(1.)}})
+    .FeedInputArgs({InferInfoParam{ShapeVector{2, 3}, kNumberTypeInt16},
+                    InferInfoParam{ShapeVector{3}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(1)}})
     .FeedExpectedOutput({{2, 3}}, {kNumberTypeInt16});
   generator
-    .FeedInputArgs({InferInfoParam{ShapeVector{2, 3}, kNumberTypeInt32}, InferInfoParam{ShapeVector{3}, kNumberTypeFloat32},
-                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<float>(1.)}})
+    .FeedInputArgs({InferInfoParam{ShapeVector{2, 3}, kNumberTypeInt32},
+                    InferInfoParam{ShapeVector{3}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(1)}})
     .FeedExpectedOutput({{2, 3}}, {kNumberTypeInt32});
   generator
-    .FeedInputArgs({InferInfoParam{ShapeVector{2, 3}, kNumberTypeInt64}, InferInfoParam{ShapeVector{3}, kNumberTypeFloat32},
-                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<float>(1.)}})
+    .FeedInputArgs({InferInfoParam{ShapeVector{2, 3}, kNumberTypeInt64},
+                    InferInfoParam{ShapeVector{3}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(1)}})
     .FeedExpectedOutput({{2, 3}}, {kNumberTypeInt64});
   generator
     .FeedInputArgs({InferInfoParam{ShapeVector{2, 3}, kNumberTypeInt8}, InferInfoParam{ShapeVector{3}, kNumberTypeInt8},
-                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<float>(1.)}})
+                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(1)}})
     .FeedExpectedOutput({{2, 3}}, {kNumberTypeInt8});
   generator
-    .FeedInputArgs({InferInfoParam{ShapeVector{-1, -1}, kNumberTypeFloat32}, InferInfoParam{ShapeVector{1, 2}, kNumberTypeFloat32},
-                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<float>(1.)}})
+    .FeedInputArgs({InferInfoParam{ShapeVector{-1, -1}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{1, 2}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(1)}})
     .FeedExpectedOutput({{-1, -1}}, {kNumberTypeFloat32});
   return generator.Generate();
 }

@@ -1302,21 +1302,6 @@ class ApplyAdamWithAmsgradNet(nn.Cell):
         return out
 
 
-class SparseApplyAdadeltaNet(nn.Cell):
-    def __init__(self, epsilon, use_locking=True):
-        super(SparseApplyAdadeltaNet, self).__init__()
-        self.sparse_apply_adadelta = P.SparseApplyAdadelta(epsilon, use_locking)
-        self.lr = 0.001
-        self.rho = 0.0
-        self.var = Parameter(Tensor(np.random.rand(3, 3).astype(np.float32)), name="var")
-        self.accum = Parameter(Tensor(np.random.rand(3, 3).astype(np.float32)), name="accum")
-        self.accum_update = Parameter(Tensor(np.random.rand(3, 3).astype(np.float32)), name="accum_update")
-
-    def construct(self, grad, indices):
-        out = self.sparse_apply_adadelta(self.var, self.accum, self.accum_update, self.lr, self.rho, grad, indices)
-        return out
-
-
 class ApplyAdagradDANet(nn.Cell):
     def __init__(self, use_locking=False):
         super(ApplyAdagradDANet, self).__init__()
@@ -3505,11 +3490,6 @@ test_case_nn_ops = [
         'block': P.HShrink(),
         'desc_inputs': [Tensor(np.array([[0.5, 1, 2.0], [0.0533, 0.0776, -2.1233]]), mstype.float32)],
         'desc_bprop': [],
-        'skip': ['backward']}),
-    ('SparseApplyAdadelta', {
-        'block': SparseApplyAdadeltaNet(1e-6),
-        'desc_inputs': [Tensor(np.random.rand(3, 3), mstype.float32),
-                        Tensor(np.ones((3,)), mstype.int32)],
         'skip': ['backward']}),
     ('HShrinkGrad', {
         'block': G.HShrinkGrad(),

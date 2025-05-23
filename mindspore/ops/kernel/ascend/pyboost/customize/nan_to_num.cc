@@ -66,7 +66,7 @@ tensor::TensorPtr NanToNumAscendCustomize(const std::shared_ptr<OpRunner> &op, c
                                               const std::optional<FP64ImmPtr> &neginf) {
   const float DEFAULT_NAN = 0.0;
 
-  auto new_nan = nan.has_value() ? nan.value()->value() : DEFAULT_NAN;
+  float new_nan = nan.has_value() ? nan.value()->value() : DEFAULT_NAN;
   OpRunner::InferOpOutput(op, input_tensor, nan, posinf, neginf);
 
   bool posinf_has_value = posinf.has_value();

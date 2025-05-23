@@ -17,6 +17,7 @@
 #include "kernel/cpu/pad_v3_cpu_kernel.h"
 #include <cstdint>
 #include <utility>
+#include <set>
 #include "common/kernel.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"

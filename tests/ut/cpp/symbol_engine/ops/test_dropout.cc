@@ -20,6 +20,7 @@
 #include "common/graph_optimizer_test_framework.h"
 #include "abstract/dshape.h"
 #include "common/mockcpp.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore::symshape::test {
 struct DropoutExtOp {
@@ -33,7 +34,7 @@ TEST_P(TestDropoutExt, compare_shape_succ) {
   const auto &param = GetParam();
   mindspore::test::ConstructGraph cg;
   auto x = cg.NewTensorInput("x", kFloat32, param.shape);
-  auto p = cg.NewValueNode(MakeValue<float>(0.6));
+  auto p = cg.NewValueNode(MakeValue<pyfloat>(0.6));
   auto seed = cg.NewTensorInput("seed", kInt64, {1});
   auto offset = cg.NewTensorInput("offset", kInt64, {1});
   auto node = cg.NewCNode("DropoutExt", {x, p, seed, offset});

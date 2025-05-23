@@ -42,13 +42,13 @@ bool RangeCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const st
   return MatchKernelFunc(kernel_name_, inputs, outputs);
 }
 
-template <typename T>
+template <typename S, typename T>
 bool RangeCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &,
                                      const std::vector<KernelTensor *> &outputs) {
-  auto start = GetDeviceAddress<T>(inputs, kIndex0)[kIndex0];
-  auto limit = GetDeviceAddress<T>(inputs, kIndex1)[kIndex0];
-  auto delta = GetDeviceAddress<T>(inputs, kIndex2)[kIndex0];
-  if (delta == static_cast<T>(0)) {
+  auto start = GetDeviceAddress<S>(inputs, kIndex0)[kIndex0];
+  auto limit = GetDeviceAddress<S>(inputs, kIndex1)[kIndex0];
+  auto delta = GetDeviceAddress<S>(inputs, kIndex2)[kIndex0];
+  if (delta == static_cast<S>(0)) {
     MS_LOG(ERROR) << "For " << kernel_name_ << ", the delta can not be 0.";
     return false;
   }
@@ -57,7 +57,7 @@ bool RangeCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs, 
   size_t output_size = outputs[kIndex0]->size() / sizeof(T);
   if (Sign(delta) * Sign(limit - start) >= 0) {
     for (int index = 0; index < SizeToInt(output_size); index++) {
-      output[index] = delta * index + start;
+      output[index] = static_cast<T>(delta * index + start);
     }
   } else {
     MS_LOG(ERROR) << "For " << kernel_name_ << ", upper bound and larger bound inconsistent with step sign.";
@@ -74,29 +74,28 @@ const std::vector<std::pair<KernelAttr, RangeCpuKernelMod::KernelRunFunc>> &Rang
        .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
        .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
        .AddOutputAttr(kNumberTypeFloat32),
-     &RangeCpuKernelMod::LaunchKernel<float>},
+     &RangeCpuKernelMod::LaunchKernel<float, float>},
     {KernelAttr()
        .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat64)
        .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat64)
        .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat64)
        .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
-       .AddOutputAttr(kNumberTypeFloat64),
-     &RangeCpuKernelMod::LaunchKernel<double>},
+       .AddOutputAttr(kNumberTypeFloat32),
+     &RangeCpuKernelMod::LaunchKernel<double, float>},
     {KernelAttr()
        .AddInputAttr(kObjectTypeNumber, kNumberTypeInt32)
        .AddInputAttr(kObjectTypeNumber, kNumberTypeInt32)
        .AddInputAttr(kObjectTypeNumber, kNumberTypeInt32)
        .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
        .AddOutputAttr(kNumberTypeInt32),
-     &RangeCpuKernelMod::LaunchKernel<int32_t>},
+     &RangeCpuKernelMod::LaunchKernel<int32_t, int32_t>},
     {KernelAttr()
        .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
        .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
        .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
        .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
        .AddOutputAttr(kNumberTypeInt64),
-     &RangeCpuKernelMod::LaunchKernel<int64_t>},
-  };
+     &RangeCpuKernelMod::LaunchKernel<int64_t, int64_t>}};
   return func_list;
 }
 

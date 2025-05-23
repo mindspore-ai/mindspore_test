@@ -27,7 +27,7 @@
 namespace mindspore {
 namespace ops {
 #define I64(x) (static_cast<int64_t>((x)))
-#define F32(x) (static_cast<float>((x)))
+#define F64(x) (static_cast<double>((x)))
 struct RFFTFreqShape {
   ValuePtr n;
   ValuePtr d;
@@ -72,10 +72,10 @@ TEST_P(TestRFFTFreq, dyn_shape) {
   ASSERT_TRUE(*out_dtype == *expect_dtype);
 }
 
-auto rfftfreq_shape_cases = testing::Values(RFFTFreqShape{CreateScalar(I64(4)), CreateScalar(F32(1.0)), {3}},
-                                            RFFTFreqShape{CreateScalar(I64(7)), CreateScalar(F32(2.5)), {4}},
-                                            RFFTFreqShape{CreateScalar(I64(9)), CreateScalar(F32(3.7)), {5}},
-                                            RFFTFreqShape{CreateScalar(I64(1)), CreateScalar(F32(4.2)), {1}});
+auto rfftfreq_shape_cases = testing::Values(RFFTFreqShape{CreateScalar(I64(4)), CreateScalar(F64(1.0)), {3}},
+                                            RFFTFreqShape{CreateScalar(I64(7)), CreateScalar(F64(2.5)), {4}},
+                                            RFFTFreqShape{CreateScalar(I64(9)), CreateScalar(F64(3.7)), {5}},
+                                            RFFTFreqShape{CreateScalar(I64(1)), CreateScalar(F64(4.2)), {1}});
 
 auto rfftfreq_type_cases = testing::ValuesIn({RFFTFreqType{CreateScalar<int64_t>(kNumberTypeBFloat16), kBFloat16},
                                               RFFTFreqType{CreateScalar<int64_t>(kNumberTypeFloat16), kFloat16},

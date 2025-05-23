@@ -17,44 +17,44 @@
 #include "ops/utils/general_infer_utils.h"
 
 namespace mindspore::ops {
-namespace  {
+namespace {
 std::vector<GeneralInferParam> prepare_params() {
   GeneralInferParamGenerator generator;
   // static
   generator
-    .FeedInputArgs({InferInfoParam{ShapeVector{2,3}, kNumberTypeFloat32},
-                    InferInfoParam{ShapeVector{2,3}, kNumberTypeFloat32},
-                    InferInfoParam{ShapeVector{2,3}, kNumberTypeFloat32},
-                    InferInfoParam{ShapeVector{}, kNumberTypeFloat32, CreateScalar<float>(1.0)}})
-    .FeedExpectedOutput({{2,3}}, {kNumberTypeFloat32});
+    .FeedInputArgs({InferInfoParam{ShapeVector{2, 3}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{2, 3}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{2, 3}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{}, kNumberTypeFloat64, CreateScalar<double>(1.0)}})
+    .FeedExpectedOutput({{2, 3}}, {kNumberTypeFloat32});
   // dynamic shape
   generator
-    .FeedInputArgs({InferInfoParam{ShapeVector{2,-1}, kNumberTypeFloat32},
-                    InferInfoParam{ShapeVector{2,-1}, kNumberTypeFloat32},
-                    InferInfoParam{ShapeVector{2,-1}, kNumberTypeFloat32},
-                    InferInfoParam{ShapeVector{}, kNumberTypeFloat32, CreateScalar<float>(1.0)}})
-    .FeedExpectedOutput({{2,-1}}, {kNumberTypeFloat32});
+    .FeedInputArgs({InferInfoParam{ShapeVector{2, -1}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{2, -1}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{2, -1}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{}, kNumberTypeFloat64, CreateScalar<double>(1.0)}})
+    .FeedExpectedOutput({{2, -1}}, {kNumberTypeFloat32});
   generator
-    .FeedInputArgs({InferInfoParam{ShapeVector{2,-1, 2}, kNumberTypeFloat32},
-                    InferInfoParam{ShapeVector{2,-1, 2}, kNumberTypeFloat32},
+    .FeedInputArgs({InferInfoParam{ShapeVector{2, -1, 2}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{2, -1, 2}, kNumberTypeFloat32},
                     InferInfoParam{ShapeVector{2, 3, 2}, kNumberTypeFloat32},
-                    InferInfoParam{ShapeVector{}, kNumberTypeFloat32, CreateScalar<float>(1.0)}})
+                    InferInfoParam{ShapeVector{}, kNumberTypeFloat64, CreateScalar<double>(1.0)}})
     .FeedExpectedOutput({{2, 3, 2}}, {kNumberTypeFloat32});
   generator
-    .FeedInputArgs({InferInfoParam{ShapeVector{-1,-1}, kNumberTypeFloat32},
-                    InferInfoParam{ShapeVector{-1,-1}, kNumberTypeFloat32},
-                    InferInfoParam{ShapeVector{-1,-1}, kNumberTypeFloat32},
-                    InferInfoParam{ShapeVector{}, kNumberTypeFloat32, CreateScalar<float>(1.0)}})
-    .FeedExpectedOutput({{-1,-1}}, {kNumberTypeFloat32});
-  //dynamic rank
+    .FeedInputArgs({InferInfoParam{ShapeVector{-1, -1}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{-1, -1}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{-1, -1}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{}, kNumberTypeFloat64, CreateScalar<double>(1.0)}})
+    .FeedExpectedOutput({{-1, -1}}, {kNumberTypeFloat32});
+  // dynamic rank
   generator
     .FeedInputArgs({InferInfoParam{ShapeVector{-2}, kNumberTypeFloat32},
                     InferInfoParam{ShapeVector{-2}, kNumberTypeFloat32},
                     InferInfoParam{ShapeVector{-2}, kNumberTypeFloat32},
-                    InferInfoParam{ShapeVector{}, kNumberTypeFloat32, CreateScalar<float>(1.0)}})
+                    InferInfoParam{ShapeVector{}, kNumberTypeFloat64, CreateScalar<double>(1.0)}})
     .FeedExpectedOutput({{-2}}, {kNumberTypeFloat32});
   return generator.Generate();
 }
-}  //namespace
+}  // namespace
 INSTANTIATE_TEST_CASE_P(AddcdivExt, GeneralInferTest, testing::ValuesIn(prepare_params()));
-}  // namespace mindspore
+}  // namespace mindspore::ops

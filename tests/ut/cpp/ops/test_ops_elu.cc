@@ -19,6 +19,7 @@
 #include "ops/test_ops.h"
 #include "ops/test_ops_cmp_utils.h"
 #include "ops/test_value_utils.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace ops {
@@ -36,7 +37,7 @@ TEST_P(TestElu, dyn_shape) {
   auto input_x = std::make_shared<abstract::AbstractTensor>(param.x_type, param.x_shape);
   auto expect_shape = std::make_shared<abstract::Shape>(param.out_shape);
   auto expect_dtype = std::make_shared<TensorType>(param.out_type);
-  auto alpha = CreateScalar(1.f)->ToAbstract();
+  auto alpha = CreateScalar<pyfloat>(1.)->ToAbstract();
 
   EluFuncImpl elu_func;
   auto prim = std::make_shared<Primitive>("Elu");

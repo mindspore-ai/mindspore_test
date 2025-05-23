@@ -104,5 +104,13 @@ void RegOpEnum(py::module *m) {
     .value("SUM", Reduction::REDUCTION_SUM)
     .value("MEAN", Reduction::MEAN)
     .value("NONE", Reduction::NONE);
+  (void)py::enum_<Mode>(*m, "ModeEnum", py::arithmetic())
+    .value("REDUCED", Mode::REDUCED)
+    .value("COMPLETE", Mode::COMPLETE)
+    .value("R", Mode::R)
+    .value("CONSTANT", Mode::CONSTANT)
+    .value("REFLECT", Mode::REFLECT)
+    .value("EDGE", Mode::EDGE)
+    .value("CIRCULAR", Mode::CIRCULAR);
 }
 }  // namespace mindspore::ops

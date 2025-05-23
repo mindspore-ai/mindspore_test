@@ -31,7 +31,7 @@ from mindspore.ops._vmap.vmap_base import vmap_rules_getters, vmap_general_prepr
 from mindspore.ops.primitive import Primitive
 from mindspore.ops.auto_generate import Embedding
 from mindspore.ops._utils import arg_handler as handler
-from mindspore._c_expression import FormatEnum as Format
+from mindspore._c_expression import FormatEnum as Format, ModeEnum as Mode
 
 
 @vmap_rules_getters.register(P.ApplyAdaMax)
@@ -1136,29 +1136,27 @@ def get_pad_v3_vmap_rule(prim, axis_size):
     """VmapRule for `PadV3` operation."""
     pad_pair = 2
     input_max_dim = 4
-    mode = prim.mode
 
-    def vmap_rule(*params_bdim):
-        is_all_none, result = vmap_general_preprocess(
-            prim, params_bdim)
+    def vmap_rule(x_bdim, paddings_bdim, constant_value_bdim, mode_bdim, paddings_contiguous_bdim):
+        is_all_none, result = vmap_general_preprocess(prim, x_bdim, paddings_bdim,
+                                                      constant_value_bdim, mode_bdim,
+                                                      paddings_contiguous_bdim)
         if is_all_none:
             return result
-        if len(params_bdim) < 2:
-            _raise_value_error("The input params in `PadV3` must >= 2, "
-                               "but got {}.".format(len(params_bdim)))
-        input_x, input_x_dim = params_bdim[0]
-        paddings, paddings_dim = params_bdim[1]
-        values = None
+        input_x, input_x_dim = x_bdim
+        paddings, paddings_dim = paddings_bdim
+        values, values_dim = constant_value_bdim
+        mode, _ = mode_bdim
+        paddings_contiguous, _ = paddings_contiguous_bdim
         out = None
         x = _bdim_at_front(input_x, input_x_dim, axis_size)
         if paddings_dim is not None:
             _raise_value_error("The source axis of `paddings` in `PadV3` must be None, "
                                "but got {}.".format(paddings_dim))
-        if mode == "constant":
-            if len(params_bdim) != 3:
-                _raise_value_error("The input params in `PadV3` of constant mode must be 3, "
-                                   "but got {}.".format(len(params_bdim)))
-            values, values_dim = params_bdim[2]
+        if mode == Mode.CONSTANT:
+            if values is None:
+                _raise_value_error("For `PadV3`, the constant_value should be a Tensor, "
+                                   "but got {}.".format(len(constant_value_bdim)))
             if values_dim is not None:
                 _raise_value_error("The source axis of `values_dim` in `PadV3` must be None, "
                                    "but got {}.".format(values_dim))
@@ -1169,10 +1167,7 @@ def get_pad_v3_vmap_rule(prim, axis_size):
         x_ndim = F.rank(x)
         # pylint: disable=chained-comparison
         if pad_dim < x_ndim and x_ndim < input_max_dim:
-            if mode == "constant":
-                out = prim(x, paddings, values)
-            else:
-                out = prim(x, paddings)
+                out = prim(x, paddings, values, mode, paddings_contiguous)
         elif x_ndim >= input_max_dim:
             # reshape to 4 dims
             x_shape = F.shape(x)
@@ -1182,10 +1177,7 @@ def get_pad_v3_vmap_rule(prim, axis_size):
                 first_shape *= x_shape[i]
             input_shape = (first_shape,) + x_shape[(-input_max_dim + 1):]
             x = F.reshape(x, input_shape)
-            if mode == "constant":
-                out = prim(x, paddings, values)
-            else:
-                out = prim(x, paddings)
+            out = prim(x, paddings, values, mode, paddings_contiguous)
             out_shape = F.shape(out)
             real_out_shape = x_shape[:diff_dim + 1] + out_shape[1:]
             out = F.reshape(out, real_out_shape)

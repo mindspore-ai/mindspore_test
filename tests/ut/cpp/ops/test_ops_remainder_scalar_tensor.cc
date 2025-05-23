@@ -14,103 +14,50 @@
  * limitations under the License.
  */
 
-#include <vector>
-#include <memory>
-#include "common/common_test.h"
-#include "ir/dtype/type.h"
-#include "abstract/dshape.h"
-#include "utils/tensor_construct_utils.h"
-#include "ir/primitive.h"
-#include "abstract/abstract_value.h"
-#include "include/backend/optimizer/helper.h"
-#include "ops/test_ops.h"
-#include "infer/ops_func_impl/remainder_scalar_tensor.h"
-#include "ops/test_value_utils.h"
-#include "ops/test_ops_cmp_utils.h"
+#include "ops/utils/general_infer_utils.h"
 
-namespace mindspore {
-namespace ops {
+namespace mindspore::ops {
+namespace {
+std::vector<GeneralInferParam> prepare_params() {
+  GeneralInferParamGenerator generator;
+  generator
+    .FeedInputArgs({
+      InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(true)},
+      InferInfoParam{ShapeVector{10}, kNumberTypeFloat32},
+    })
+    .FeedExpectedOutput({{10}}, {kNumberTypeFloat32});
 
-struct RemainderScalarTensorParam {
-  ValuePtr x;
-  std::vector<int64_t> y_shape;
-  TypePtr y_type;
-  std::vector<int64_t> out_shape;
-  TypePtr out_type;
-};
+  generator
+    .FeedInputArgs({
+      InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(true)},
+      InferInfoParam{ShapeVector{10, 1, 2}, kNumberTypeInt64},
+    })
+    .FeedExpectedOutput({{10, 1, 2}}, {kNumberTypeInt64});
 
-class TestRemainderScalarTensor :
-  public TestOps,
-  public testing::WithParamInterface<std::tuple<RemainderScalarTensorParam>> {};
+  generator
+    .FeedInputArgs({
+      InferInfoParam{ShapeVector{}, kNumberTypeFloat64, CreateScalar<double>(2.0)},
+      InferInfoParam{ShapeVector{10, 1, 2}, kNumberTypeInt64},
+    })
+    .FeedExpectedOutput({{10, 1, 2}}, {kNumberTypeFloat32});
 
-TEST_P(TestRemainderScalarTensor, dyn_shape) {
-  const auto &param = std::get<0>(GetParam());
+  generator
+    .FeedInputArgs({
+      InferInfoParam{ShapeVector{}, kNumberTypeFloat64, CreateScalar<double>(2.0)},
+      InferInfoParam{ShapeVector{10, 4, 2}, kNumberTypeFloat16},
+    })
+    .FeedExpectedOutput({{10, 4, 2}}, {kNumberTypeFloat16});
 
-  RemainderScalarTensorFuncImpl remainder_scalar_tensor_func_impl;
-  auto prim = std::make_shared<Primitive>("RemainderScalarTensor");
-  auto y = std::make_shared<abstract::AbstractTensor>(param.y_type, param.y_shape);
-  auto x = param.x->ToAbstract();
-  auto expect_shape = std::make_shared<abstract::TensorShape>(param.out_shape);
-  auto expect_dtype = std::make_shared<TensorType>(param.out_type);
+  generator
+    .FeedInputArgs({
+      InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(2)},
+      InferInfoParam{ShapeVector{-2}, kNumberTypeInt16},
+    })
+    .FeedExpectedOutput({{-2}}, {kNumberTypeInt16});
 
-  auto out_shape = remainder_scalar_tensor_func_impl.InferShape(prim, {x, y});
-  ASSERT_TRUE(*out_shape == *expect_shape);
-  auto out_dtype = remainder_scalar_tensor_func_impl.InferType(prim, {x, y});
-  ASSERT_TRUE(*out_dtype == *expect_dtype);
+  return generator.Generate();
 }
+}  // namespace
 
-class TestRemainderScalarTensorSimpleInfer :
-  public TestOps,
-  public testing::WithParamInterface<std::tuple<RemainderScalarTensorParam>> {};
-
-TEST_P(TestRemainderScalarTensorSimpleInfer, simple_infer) {
-  const auto &param = std::get<0>(GetParam());
-  RemainderScalarTensorFuncImpl remainder_scalar_tensor_func_impl;
-
-  auto prim = std::make_shared<Primitive>("RemainderScalarTensor");
-  ASSERT_NE(prim, nullptr);
-
-  auto y = std::make_shared<tensor::Tensor>(param.y_type->type_id(), param.y_shape);
-  ASSERT_NE(y, nullptr);
-  ValuePtrList input_values;
-  input_values.push_back(std::move(param.x));
-  input_values.push_back(std::move(y));
-
-  auto expect_shape = ShapeArray{param.out_shape};
-  auto expect_type = TypePtrList{param.out_type};
-
-  auto output_shape = remainder_scalar_tensor_func_impl.InferShape(prim, input_values);
-  auto output_type = remainder_scalar_tensor_func_impl.InferType(prim, input_values);
-
-  ShapeCompare(output_shape, expect_shape);
-  TypeCompare(output_type, expect_type);
-}
-
-auto RemainderScalarTensorOpTestCases =
-  testing::ValuesIn({RemainderScalarTensorParam{CreateScalar<bool>(true), {10}, kFloat32, {10}, kFloat32},
-                     RemainderScalarTensorParam{CreateScalar<bool>(true), {10, 1, 2}, kInt64, {10, 1, 2}, kInt64},
-                     RemainderScalarTensorParam{CreateScalar<float>(2.0), {10, 4, 2}, kInt64, {10, 4, 2}, kFloat32},
-                     RemainderScalarTensorParam{CreateScalar<int>(2), {10, 1, -1}, kInt64, {10, 1, -1}, kInt64},
-                     RemainderScalarTensorParam{CreateScalar<int>(2), {10, 1, -1}, kFloat32, {10, 1, -1}, kFloat32},
-                     RemainderScalarTensorParam{CreateScalar<bool>(false), {-2}, kInt64, {-2}, kInt64},
-                     RemainderScalarTensorParam{CreateScalar<float>(2.0), {}, kFloat32, {}, kFloat32},
-                     RemainderScalarTensorParam{CreateScalar<bool>(true), {}, kInt64, {}, kInt64},
-                     RemainderScalarTensorParam{CreateScalar<int>(2), {}, kInt64, {}, kInt64}});
-
-auto RemainderScalarTensorOpSimpleInferTestCases =
-  testing::ValuesIn({RemainderScalarTensorParam{CreateScalar<bool>(true), {10}, kFloat32, {10}, kFloat32},
-                     RemainderScalarTensorParam{CreateScalar<bool>(true), {10, 1, 2}, kInt64, {10, 1, 2}, kInt64},
-                     RemainderScalarTensorParam{CreateScalar<float>(2.0), {10, 4, 2}, kInt64, {10, 4, 2}, kFloat32},
-                     RemainderScalarTensorParam{CreateScalar<float>(2.0), {}, kFloat32, {}, kFloat32},
-                     RemainderScalarTensorParam{CreateScalar<bool>(true), {}, kInt64, {}, kInt64},
-                     RemainderScalarTensorParam{CreateScalar<int>(2), {}, kInt64, {}, kInt64}});
-
-INSTANTIATE_TEST_CASE_P(TestRemainderScalarTensor,
-                        TestRemainderScalarTensor,
-                        testing::Combine(RemainderScalarTensorOpTestCases));
-
-INSTANTIATE_TEST_CASE_P(TestRemainderScalarTensorSimpleInfer,
-                        TestRemainderScalarTensorSimpleInfer,
-                        testing::Combine(RemainderScalarTensorOpSimpleInferTestCases));
-}  // namespace ops
-}  // namespace mindspore
+INSTANTIATE_TEST_CASE_P(RemainderScalarTensor, GeneralInferTest, testing::ValuesIn(prepare_params()));
+}  // namespace mindspore::ops

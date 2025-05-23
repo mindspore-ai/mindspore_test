@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 #include "kernel/ascend/opapi/aclnn/elu_ext_aclnn_kernel.h"
+
 #include <map>
-#include <memory>
 #include <functional>
+
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
 #include "kernel/ascend/acl_ir/acl_helper.h"

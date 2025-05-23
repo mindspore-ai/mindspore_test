@@ -23,6 +23,7 @@
 #include "infer/ops_func_impl/pow_scalar_tensor.h"
 #include "ops/test_ops.h"
 #include "ops/test_value_utils.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace ops {
@@ -33,7 +34,7 @@ TEST_P(TestPowScalarTensor, pow_scalar_tensor_dyn_shape) {
   auto primitive = std::make_shared<Primitive>("PowScalarTensor");
   ASSERT_NE(primitive, nullptr);
   const auto &param = GetParam();
-  auto x = CreateScalar<float>(2.3)->ToAbstract();
+  auto x = CreateScalar<pyfloat>(2.3)->ToAbstract();
   auto y = std::make_shared<abstract::AbstractTensor>(param.x_type, param.x_shape);
   ASSERT_NE(y, nullptr);
   std::vector<abstract::AbstractBasePtr> input_args{std::move(x), std::move(y)};

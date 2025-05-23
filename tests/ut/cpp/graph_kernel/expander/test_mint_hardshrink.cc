@@ -31,7 +31,7 @@ namespace mindspore::graphkernel::test {
 namespace {
 struct HShrinkParams {
   ShapeVector input_shape;
-  float lambd;
+  double lambd;
   ShapeVector expect_shape;
   TypePtr type;
 };

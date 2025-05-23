@@ -14,40 +14,40 @@
  * limitations under the License.
  */
 #include "ops/utils/general_infer_utils.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore::ops {
 namespace {
 std::vector<GeneralInferParam> prepare_params() {
-    GeneralInferParamGenerator generator;
-    generator
-      .FeedInputArgs({InferInfoParam{ShapeVector{3, 3, 4}, kNumberTypeFloat32},
-                      InferInfoParam{ShapeVector{3, 3, 5}, kNumberTypeFloat32},
-                      InferInfoParam{ShapeVector{3, 4, 5}, kNumberTypeFloat32},
-                      InferInfoParam{ShapeVector{3, 3, 4}, kNumberTypeFloat32},
-                      InferInfoParam{ShapeVector{}, kNumberTypeFloat32, CreateScalar<float>(2.)}})
-      .FeedExpectedOutput({{3, 3, 5}}, {kNumberTypeFloat32});
-    generator
-      .FeedInputArgs({InferInfoParam{ShapeVector{3, 3, 4}, kNumberTypeFloat32},
-                      InferInfoParam{ShapeVector{1, 3, 5}, kNumberTypeFloat32},
-                      InferInfoParam{ShapeVector{3, 4, 5}, kNumberTypeFloat32},
-                      InferInfoParam{ShapeVector{3, 3, 4}, kNumberTypeFloat32},
-                      InferInfoParam{ShapeVector{}, kNumberTypeFloat32, CreateScalar<float>(2.)}})
-      .FeedExpectedOutput({{3, 3, 5}}, {kNumberTypeFloat32});
-    generator
-      .FeedInputArgs({InferInfoParam{ShapeVector{3, 3, 4}, kNumberTypeFloat32},
-                      InferInfoParam{ShapeVector{3, 3, 5}, kNumberTypeFloat32},
-                      InferInfoParam{ShapeVector{1, 4, 5}, kNumberTypeFloat32},
-                      InferInfoParam{ShapeVector{3, 3, 4}, kNumberTypeFloat32},
-                      InferInfoParam{ShapeVector{}, kNumberTypeFloat32, CreateScalar<float>(2.)}})
-      .FeedExpectedOutput({{3, 3, 5}}, {kNumberTypeFloat32});
-    generator
-      .FeedInputArgs({InferInfoParam{ShapeVector{3, 4}, kNumberTypeFloat32},
-                      InferInfoParam{ShapeVector{3, 5}, kNumberTypeFloat32},
-                      InferInfoParam{ShapeVector{4, 5}, kNumberTypeFloat32},
-                      InferInfoParam{ShapeVector{3, 4}, kNumberTypeFloat32},
-                      InferInfoParam{ShapeVector{}, kNumberTypeFloat32, CreateScalar<float>(2.)}})
-      .FeedExpectedOutput({{3, 5}}, {kNumberTypeFloat32});
-    return generator.Generate();
+  GeneralInferParamGenerator generator;
+  generator
+    .FeedInputArgs({InferInfoParam{ShapeVector{3, 3, 4}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{3, 3, 5}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{3, 4, 5}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{3, 3, 4}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{}, kNumberTypePyFloat, CreateScalar<pyfloat>(2.)}})
+    .FeedExpectedOutput({{3, 3, 5}}, {kNumberTypeFloat32});
+  generator
+    .FeedInputArgs({InferInfoParam{ShapeVector{3, 3, 4}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{1, 3, 5}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{3, 4, 5}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{3, 3, 4}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{}, kNumberTypePyFloat, CreateScalar<pyfloat>(2.)}})
+    .FeedExpectedOutput({{3, 3, 5}}, {kNumberTypeFloat32});
+  generator
+    .FeedInputArgs({InferInfoParam{ShapeVector{3, 3, 4}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{3, 3, 5}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{1, 4, 5}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{3, 3, 4}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{}, kNumberTypePyFloat, CreateScalar<pyfloat>(2.)}})
+    .FeedExpectedOutput({{3, 3, 5}}, {kNumberTypeFloat32});
+  generator
+    .FeedInputArgs(
+      {InferInfoParam{ShapeVector{3, 4}, kNumberTypeFloat32}, InferInfoParam{ShapeVector{3, 5}, kNumberTypeFloat32},
+       InferInfoParam{ShapeVector{4, 5}, kNumberTypeFloat32}, InferInfoParam{ShapeVector{3, 4}, kNumberTypeFloat32},
+       InferInfoParam{ShapeVector{}, kNumberTypePyFloat, CreateScalar<pyfloat>(2.)}})
+    .FeedExpectedOutput({{3, 5}}, {kNumberTypeFloat32});
+  return generator.Generate();
 }
 }  // namespace
 

@@ -32,7 +32,7 @@ struct RmsNormParams {
   ShapeVector gamma_shape;
   TypePtr x_type;
   TypePtr gamma_type;
-  float eps{1e-6};
+  double eps{1e-6};
 };
 
 struct RmsNormGradParams {

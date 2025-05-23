@@ -40,7 +40,7 @@ internal::InternalOpPtr InternalFusedAddTopKDiv::CreateKernel(const internal::In
   if (group_num->dtype_id() == TypeId::kNumberTypeInt64 && group_topk->dtype_id() == TypeId::kNumberTypeInt64 &&
       n->dtype_id() == TypeId::kNumberTypeInt64 && k->dtype_id() == TypeId::kNumberTypeInt64 &&
       activate_type->dtype_id() == TypeId::kNumberTypeInt64 && is_norm->dtype_id() == TypeId::kNumberTypeBool &&
-      scale->dtype_id() == TypeId::kNumberTypeFloat32) {
+      scale->dtype_id() == TypeId::kNumberTypePyFloat) {
     param.group_num = static_cast<int32_t>(group_num->GetValue<int64_t>().value());
     param.group_topk = static_cast<int32_t>(group_topk->GetValue<int64_t>().value());
     param.n = static_cast<int32_t>(n->GetValue<int64_t>().value());

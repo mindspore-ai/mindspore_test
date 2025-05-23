@@ -91,9 +91,9 @@ TEST_F(TestGraphExpanderCheck, add_ext) {
   RunAddExt(kUInt16, kUInt16, kInt64, true, can_not_expand, this);
   RunAddExt(kUInt32, kUInt32, kInt64, true, can_not_expand, this);
   RunAddExt(kUInt64, kUInt64, kInt64, true, can_not_expand, this);
-  RunAddExt(kFloat16, kFloat16, kFloat32, true, can_expand, this);
-  RunAddExt(kFloat32, kFloat32, kFloat32, true, can_expand, this);
-  RunAddExt(kBFloat16, kBFloat16, kFloat32, true, can_expand, this);
+  RunAddExt(kFloat16, kFloat16, kFloat64, true, can_expand, this);
+  RunAddExt(kFloat32, kFloat32, kFloat64, true, can_expand, this);
+  RunAddExt(kBFloat16, kBFloat16, kFloat64, true, can_expand, this);
   RunAddExt(kBFloat16, kBFloat16, kInt64, true, can_expand, this);
   RunAddExt(kBFloat16, kBFloat16, kInt64, false, can_not_expand, this);
 }

@@ -21,6 +21,7 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <functional>
 
 #include "abstract/abstract_value.h"
 #include "abstract/dshape.h"

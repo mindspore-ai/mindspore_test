@@ -37,6 +37,7 @@
 #include "ops/test_value_utils.h"
 #include "ops/test_ops_cmp_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace ops {
@@ -97,7 +98,7 @@ TEST_P(TestUpsampleForward, dyn_shape) {
 }
 
 namespace {
-float scale = 0.5;
+pyfloat scale = 0.5;
 auto Upsample3DDynTestCase = testing::ValuesIn(
   {UpsampleForwardParams{{1, 3, 8, 8, 8}, CreatePyIntTuple({4, 4, 4}), kNone, {1, 3, 4, 4, 4}},
    UpsampleForwardParams{{1, 3, 8, 8, 8}, kNone, CreateTuple({scale, scale, scale}), {1, 3, 4, 4, 4}},
@@ -113,7 +114,8 @@ auto Upsample3DDynTestCase = testing::ValuesIn(
    UpsampleForwardParams{{2, 2, -1, -1, -1}, CreatePyIntTuple({8, 8, kValueAny}), kNone, {2, 2, 8, 8, -1}},
    UpsampleForwardParams{{2, -1, 8, 8, 8}, kValueAny, kNone, {2, -1, -1, -1, -1}},
    UpsampleForwardParams{{-1, 2, -1, -1, -1}, kValueAny, kNone, {-1, 2, -1, -1, -1}},
-   UpsampleForwardParams{{2, -1, 8, 4, 6}, kNone, CreateTuple({kValueAny, kValueAny, float(1.7)}), {2, -1, -1, -1, 10}},
+   UpsampleForwardParams{
+     {2, -1, 8, 4, 6}, kNone, CreateTuple({kValueAny, kValueAny, pyfloat(1.7)}), {2, -1, -1, -1, 10}},
    UpsampleForwardParams{{-1, 2, -1, -1, -1}, kNone, kValueAny, {-1, 2, -1, -1, -1}},
 
    UpsampleForwardParams{{-2}, CreatePyIntTuple({10, kValueAny, 8}), kNone, {-1, -1, 10, -1, 8}},
@@ -121,34 +123,34 @@ auto Upsample3DDynTestCase = testing::ValuesIn(
 
    UpsampleForwardParams{{-2}, CreatePyIntTuple({kValueAny, kValueAny, kValueAny}), kNone, {-1, -1, -1, -1, -1}},
    UpsampleForwardParams{{-2}, kValueAny, kNone, {-1, -1, -1, -1, -1}},
-   UpsampleForwardParams{{-2}, kNone, CreateTuple({float(1.5), float(1.6), float(1.7)}), {-1, -1, -1, -1, -1}},
+   UpsampleForwardParams{{-2}, kNone, CreateTuple({pyfloat(1.5), pyfloat(1.6), pyfloat(1.7)}), {-1, -1, -1, -1, -1}},
    UpsampleForwardParams{{-2}, kNone, kValueAny, {-1, -1, -1, -1, -1}}});
 
-auto Upsample2DDynTestCase =
-  testing::ValuesIn({UpsampleForwardParams{{1, 3, 8, 8}, CreatePyIntTuple({4, 4}), kNone, {1, 3, 4, 4}},
-                     UpsampleForwardParams{{1, 3, 8, 8}, kNone, CreateTuple({scale, scale}), {1, 3, 4, 4}},
+auto Upsample2DDynTestCase = testing::ValuesIn(
+  {UpsampleForwardParams{{1, 3, 8, 8}, CreatePyIntTuple({4, 4}), kNone, {1, 3, 4, 4}},
+   UpsampleForwardParams{{1, 3, 8, 8}, kNone, CreateTuple({scale, scale}), {1, 3, 4, 4}},
 
-                     UpsampleForwardParams{{1, 3, 8, 8}, CreatePyIntTuple({4, kValueAny}), kNone, {1, 3, 4, -1}},
-                     UpsampleForwardParams{{1, 3, 8, 8}, kValueAny, kNone, {1, 3, -1, -1}},
-                     UpsampleForwardParams{{1, 3, 8, 8}, kNone, CreateTuple({scale, kValueAny}), {1, 3, 4, -1}},
-                     UpsampleForwardParams{{1, 3, 8, 8}, kNone, kValueAny, {1, 3, -1, -1}},
+   UpsampleForwardParams{{1, 3, 8, 8}, CreatePyIntTuple({4, kValueAny}), kNone, {1, 3, 4, -1}},
+   UpsampleForwardParams{{1, 3, 8, 8}, kValueAny, kNone, {1, 3, -1, -1}},
+   UpsampleForwardParams{{1, 3, 8, 8}, kNone, CreateTuple({scale, kValueAny}), {1, 3, 4, -1}},
+   UpsampleForwardParams{{1, 3, 8, 8}, kNone, kValueAny, {1, 3, -1, -1}},
 
-                     UpsampleForwardParams{{1, 3, 8, -1}, CreatePyIntTuple({4, 4}), kNone, {1, 3, 4, 4}},
-                     UpsampleForwardParams{{1, 3, 8, -1}, kNone, CreateTuple({scale, scale}), {1, 3, 4, -1}},
+   UpsampleForwardParams{{1, 3, 8, -1}, CreatePyIntTuple({4, 4}), kNone, {1, 3, 4, 4}},
+   UpsampleForwardParams{{1, 3, 8, -1}, kNone, CreateTuple({scale, scale}), {1, 3, 4, -1}},
 
-                     UpsampleForwardParams{{2, 2, -1, -1}, CreatePyIntTuple({8, 8}), kNone, {2, 2, 8, 8}},
-                     UpsampleForwardParams{{2, -1, 8, 8}, kValueAny, kNone, {2, -1, -1, -1}},
-                     UpsampleForwardParams{{-1, 2, -1, -1}, kValueAny, kNone, {-1, 2, -1, -1}},
-                     UpsampleForwardParams{{2, -1, 8, 4}, kNone, CreateTuple({kValueAny, float(1.6)}), {2, -1, -1, 6}},
-                     UpsampleForwardParams{{-1, 2, -1, -1}, kNone, kValueAny, {-1, 2, -1, -1}},
+   UpsampleForwardParams{{2, 2, -1, -1}, CreatePyIntTuple({8, 8}), kNone, {2, 2, 8, 8}},
+   UpsampleForwardParams{{2, -1, 8, 8}, kValueAny, kNone, {2, -1, -1, -1}},
+   UpsampleForwardParams{{-1, 2, -1, -1}, kValueAny, kNone, {-1, 2, -1, -1}},
+   UpsampleForwardParams{{2, -1, 8, 4}, kNone, CreateTuple({kValueAny, pyfloat(1.6)}), {2, -1, -1, 6}},
+   UpsampleForwardParams{{-1, 2, -1, -1}, kNone, kValueAny, {-1, 2, -1, -1}},
 
-                     UpsampleForwardParams{{-2}, CreatePyIntTuple({10, kValueAny}), kNone, {-1, -1, 10, -1}},
-                     UpsampleForwardParams{{-2}, kNone, CreateTuple({float(1.5), float(1.6)}), {-1, -1, -1, -1}},
+   UpsampleForwardParams{{-2}, CreatePyIntTuple({10, kValueAny}), kNone, {-1, -1, 10, -1}},
+   UpsampleForwardParams{{-2}, kNone, CreateTuple({pyfloat(1.5), pyfloat(1.6)}), {-1, -1, -1, -1}},
 
-                     UpsampleForwardParams{{-2}, CreatePyIntTuple({kValueAny, kValueAny}), kNone, {-1, -1, -1, -1}},
-                     UpsampleForwardParams{{-2}, kValueAny, kNone, {-1, -1, -1, -1}},
-                     UpsampleForwardParams{{-2}, kNone, CreateTuple({kValueAny, kValueAny}), {-1, -1, -1, -1}},
-                     UpsampleForwardParams{{-2}, kNone, kValueAny, {-1, -1, -1, -1}}});
+   UpsampleForwardParams{{-2}, CreatePyIntTuple({kValueAny, kValueAny}), kNone, {-1, -1, -1, -1}},
+   UpsampleForwardParams{{-2}, kValueAny, kNone, {-1, -1, -1, -1}},
+   UpsampleForwardParams{{-2}, kNone, CreateTuple({kValueAny, kValueAny}), {-1, -1, -1, -1}},
+   UpsampleForwardParams{{-2}, kNone, kValueAny, {-1, -1, -1, -1}}});
 
 auto Upsample1DDynTestCase =
   testing::ValuesIn({UpsampleForwardParams{{1, 3, 8}, CreatePyIntTuple({4}), kNone, {1, 3, 4}},
@@ -163,7 +165,7 @@ auto Upsample1DDynTestCase =
                      UpsampleForwardParams{{1, 3, -1}, kNone, CreateTuple({scale}), {1, 3, -1}},
 
                      UpsampleForwardParams{{2, -1, 4}, CreatePyIntTuple({8}), kNone, {2, -1, 8}},
-                     UpsampleForwardParams{{2, -1, 4}, kNone, CreateTuple({float(1.5)}), {2, -1, 6}},
+                     UpsampleForwardParams{{2, -1, 4}, kNone, CreateTuple({pyfloat(1.5)}), {2, -1, 6}},
 
                      UpsampleForwardParams{{-1, 2, -1}, CreatePyIntTuple({kValueAny}), kNone, {-1, 2, -1}},
                      UpsampleForwardParams{{2, -1, 8}, CreatePyIntTuple({kValueAny}), kNone, {2, -1, -1}},

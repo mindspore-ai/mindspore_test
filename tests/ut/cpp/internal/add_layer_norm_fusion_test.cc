@@ -44,7 +44,7 @@ TEST_F(AddLayernormFusionUT, AddLayernormFusionTest) {
   auto add = c.NewCNode("Add", {input_0, input_1}, {});
   auto begin_norm_axis = c.NewValueNode(MakeValue<int64_t>(-1));
   auto begin_params_axis = c.NewValueNode(MakeValue<int64_t>(-1));
-  auto eps = c.NewValueNode(MakeValue<float>(1e-5));
+  auto eps = c.NewValueNode(MakeValue<double>(1e-5));
   auto layernorm = c.NewCNode("LayerNorm", {add, gamma, beta, begin_norm_axis, begin_params_axis, eps}, {});
   c.SetOutput(layernorm);
   test::RunPass(c.GetGraph(), {std::make_shared<opt::AddLayernormFusion>()});
@@ -69,7 +69,7 @@ TEST_F(AddLayernormFusionUT, AddLayernormV3FusionTest) {
   auto add = c.NewCNode("Add", {input_0, input_1}, {});
   auto begin_norm_axis = c.NewValueNode(MakeValue<int64_t>(-1));
   auto begin_params_axis = c.NewValueNode(MakeValue<int64_t>(-1));
-  auto eps = c.NewValueNode(MakeValue<float>(1e-5));
+  auto eps = c.NewValueNode(MakeValue<double>(1e-5));
   auto layernorm = c.NewCNode("LayerNormV3", {add, gamma, beta, begin_norm_axis, begin_params_axis, eps}, {});
   c.SetOutput(layernorm);
   test::RunPass(c.GetGraph(), {std::make_shared<opt::AddLayernormV3Fusion>()});
@@ -94,7 +94,7 @@ TEST_F(AddLayernormFusionUT, AddLayernormExtFusionTest) {
   auto beta = c.NewTensorInput("beta", kFloat16, {11264});
   auto add = c.NewCNode("Add", {input_0, input_1}, {});
   auto normalize_shape = c.NewValueNode(MakeValue<std::vector<int64_t>>({11264}));
-  auto eps = c.NewValueNode(MakeValue<float>(1e-5));
+  auto eps = c.NewValueNode(MakeValue<double>(1e-5));
   auto layernorm = c.NewCNode("LayerNormExt", {add, normalize_shape, gamma, beta, eps}, {});
   c.SetOutput(layernorm);
   test::RunPass(c.GetGraph(), {std::make_shared<opt::AddLayernormExtFusion>()});

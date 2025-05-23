@@ -56,7 +56,7 @@ REG_FALLBACK_BUILDER("AddScalar").SetBody(BODYFUNC(ib) {
 
   auto x_type = ib->GetDtype(x)->type_id();
   auto y_type = ib->GetDtype(y)->type_id();
-  if ((y_type == kNumberTypePyFloat || y_type == kNumberTypeInt64) &&
+  if ((kFloatSet.find(y_type) != kFloatSet.end() || y_type == kNumberTypeInt64) &&
       (x_type == kNumberTypeUInt16 || x_type == kNumberTypeUInt32 || x_type == kNumberTypeUInt64)) {
     MS_EXCEPTION(TypeError) << "Type implicit conversion between Tensor[" << TypeIdToString(x_type) << "] and "
                             << TypeIdToString(y_type) << " is not supported.";
@@ -86,7 +86,7 @@ REG_FALLBACK_BUILDER("SubScalar").SetBody(BODYFUNC(ib) {
 
   auto x_type = ib->GetDtype(x)->type_id();
   auto y_type = ib->GetDtype(y)->type_id();
-  if ((y_type == kNumberTypePyFloat || y_type == kNumberTypeInt64) &&
+  if ((kFloatSet.find(y_type) != kFloatSet.end() || y_type == kNumberTypeInt64) &&
       (x_type == kNumberTypeUInt16 || x_type == kNumberTypeUInt32 || x_type == kNumberTypeUInt64)) {
     MS_EXCEPTION(TypeError) << "Type implicit conversion between Tensor[" << TypeIdToString(x_type) << "] and "
                             << TypeIdToString(y_type) << " is not supported.";
@@ -199,7 +199,7 @@ REG_FALLBACK_BUILDER("Muls").SetBody(BODYFUNC(ib) {
   auto x_type = ib->GetDtype(x)->type_id();
   auto y_type = ib->GetDtype(y)->type_id();
   if ((x_type == kNumberTypeUInt16 || x_type == kNumberTypeUInt32 || x_type == kNumberTypeUInt64) &&
-      (y_type == kNumberTypePyFloat || y_type == kNumberTypeInt64)) {
+      (kFloatSet.find(y_type) != kFloatSet.end() || y_type == kNumberTypeInt64)) {
     MS_EXCEPTION(TypeError) << "Type implicit conversion between Tensor[" << TypeIdToString(x_type) << "] and "
                             << TypeIdToString(y_type) << " is not supported.";
   }

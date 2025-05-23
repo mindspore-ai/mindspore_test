@@ -3934,7 +3934,7 @@ REG_BPROP_BUILDER("LerpScalar").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
   auto dout = ib->GetInput(kIndex4);
   auto val = GetScalarValue<pyfloat>(weight->BuildValue());
   NodePtr dstart = val.has_value()
-                     ? ib->Emit("Muls", {dout, ib->Value<pyfloat>(1.0 - static_cast<double>(val.value()))})
+                     ? ib->Emit("Muls", {dout, ib->Value<pyfloat>(1.0 - static_cast<pyfloat>(val.value()))})
                      : ib->Emit("Muls", {dout, ib->ScalarSub(ib->Value<pyfloat>(1.0), weight)});
   auto dend = ib->Emit("Muls", {dout, weight});
   auto tmp = BinopGradCommon(ib, start, end, dstart, dend);

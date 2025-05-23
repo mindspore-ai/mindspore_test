@@ -19,40 +19,40 @@
 
 namespace mindspore {
 namespace kernel {
-MS_REG_GPU_KERNEL_ONE(Range,
+MS_REG_GPU_KERNEL_TWO(Range,
                       KernelAttr()
                         .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
                         .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
                         .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
                         .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
                         .AddOutputAttr(kNumberTypeFloat32),
-                      RangeGpuKernelMod, float)
+                      RangeGpuKernelMod, float, float)
 
-MS_REG_GPU_KERNEL_ONE(Range,
+MS_REG_GPU_KERNEL_TWO(Range,
                       KernelAttr()
                         .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat64)
                         .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat64)
                         .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat64)
                         .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
-                        .AddOutputAttr(kNumberTypeFloat64),
-                      RangeGpuKernelMod, double)
+                        .AddOutputAttr(kNumberTypeFloat32),
+                      RangeGpuKernelMod, double, float)
 
-MS_REG_GPU_KERNEL_ONE(Range,
+MS_REG_GPU_KERNEL_TWO(Range,
                       KernelAttr()
                         .AddInputAttr(kObjectTypeNumber, kNumberTypeInt32)
                         .AddInputAttr(kObjectTypeNumber, kNumberTypeInt32)
                         .AddInputAttr(kObjectTypeNumber, kNumberTypeInt32)
                         .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
                         .AddOutputAttr(kNumberTypeInt32),
-                      RangeGpuKernelMod, int32_t)
+                      RangeGpuKernelMod, int32_t, int32_t)
 
-MS_REG_GPU_KERNEL_ONE(Range,
+MS_REG_GPU_KERNEL_TWO(Range,
                       KernelAttr()
                         .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
                         .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
                         .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
                         .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
                         .AddOutputAttr(kNumberTypeInt64),
-                      RangeGpuKernelMod, int64_t)
+                      RangeGpuKernelMod, int64_t, int64_t)
 }  // namespace kernel
 }  // namespace mindspore

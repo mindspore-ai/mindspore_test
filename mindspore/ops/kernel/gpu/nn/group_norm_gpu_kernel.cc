@@ -22,7 +22,6 @@
 
 #include "kernel/gpu/cuda_impl/cuda_ops/group_norm_impl.cuh"
 #include "mindspore/core/include/mindapi/base/types.h"
-#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {

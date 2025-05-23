@@ -13,26 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef MINDSPORE_CCSRC_BACKEND_COMMON_PASS_CONVERT_INPUT_TYPE_H_
+#define MINDSPORE_CCSRC_BACKEND_COMMON_PASS_CONVERT_INPUT_TYPE_H_
 
-#ifndef MINDSPORE_CORE_OPS_APPLY_RMS_PROP_H_
-#define MINDSPORE_CORE_OPS_APPLY_RMS_PROP_H_
-
-#include <set>
-#include <memory>
-#include <vector>
-
-#include "ops/ops_func_impl/op_func_impl.h"
+#include "include/backend/optimizer/optimizer.h"
 
 namespace mindspore {
-namespace ops {
-class OPS_API ApplyRMSPropFuncImpl : public OpFuncImpl {
+namespace opt {
+class BACKEND_COMMON_EXPORT ConvertInputType : public PatternProcessPass {
  public:
-  BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
-  TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
-  std::set<int64_t> GetValueDependArgIndices() const override { return {5, 6, 7}; }
+  explicit ConvertInputType(bool multigraph = true) : PatternProcessPass("convert_input_type", multigraph) {}
+  ~ConvertInputType() override = default;
+
+  const AnfNodePtr Process(const FuncGraphPtr &graph, const AnfNodePtr &node, const EquivPtr &) const override;
 };
-
-}  // namespace ops
+}  // namespace opt
 }  // namespace mindspore
-
-#endif  // MINDSPORE_CORE_OPS_APPLY_RMS_PROP_H_
+#endif  // MINDSPORE_CCSRC_BACKEND_COMMON_PASS_CONVERT_INPUT_TYPE_H_

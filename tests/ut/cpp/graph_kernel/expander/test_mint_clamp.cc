@@ -36,8 +36,8 @@ namespace mindspore::graphkernel::test {
 namespace {
 struct ClampScalarParams {
   ShapeVector x1_shape;
-  float min;
-  float max;
+  double min;
+  double max;
   ShapeVector expect_shape;
   TypePtr type;
 };

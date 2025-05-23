@@ -26,12 +26,11 @@ namespace mindspore::ops {
 /// \brief Implementation of InferShape and InferType functions for operator 'Range'
 class OPS_API RangeFuncImpl : public OpFuncImpl {
  public:
-  BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
-  TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
-  int32_t CheckValidation(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
-  std::set<int64_t> GetValueDependArgIndices() const override {
-    return {kInputIndex0, kInputIndex1, kInputIndex2, kInputIndex3};
-  };
+  ShapeArray InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+  TypeIdList InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+  int32_t CheckValidation(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+  bool GeneralInferRegistered() const override { return true; }
+  std::set<int64_t> GetValueDependArgIndices() const override { return {0, 1, 2, 3}; };
 };
 }  // namespace mindspore::ops
 

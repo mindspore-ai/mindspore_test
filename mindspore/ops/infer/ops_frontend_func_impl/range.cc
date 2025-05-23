@@ -70,10 +70,18 @@ ValuePtr RangeImpl(const TypeId dtype, const std::vector<AbstractBasePtr> &input
     auto tensor = std::make_shared<tensor::Tensor>(dtype, out_shape);
 
     // assign value
-    auto output = static_cast<T *>(tensor->data_c());
-    MS_EXCEPTION_IF_NULL(output);
-    for (int64_t index = 0; index < out_num; index++) {
-      output[index] = delta * static_cast<T>(index) + start;
+    if constexpr (std::is_same<T, double>::value) {
+      auto output = static_cast<float *>(tensor->data_c());
+      MS_EXCEPTION_IF_NULL(output);
+      for (int64_t index = 0; index < out_num; index++) {
+        output[index] = static_cast<float>(delta * static_cast<double>(index) + start);
+      }
+    } else {
+      auto output = static_cast<T *>(tensor->data_c());
+      MS_EXCEPTION_IF_NULL(output);
+      for (int64_t index = 0; index < out_num; index++) {
+        output[index] = delta * static_cast<T>(index) + start;
+      }
     }
     res = tensor;
   } else {
@@ -127,14 +135,15 @@ class RangeFrontendFuncImpl final : public OpFrontendFuncImpl {
   }
 
   ValuePtr CalRangeOutTensor(const std::vector<AbstractBasePtr> &input_args) const noexcept {
-    auto type = input_args[0]->GetType()->type_id();
-    auto it = RangeFuncMap.find(type);
+    auto start_type = input_args[0]->GetType()->type_id();
+    auto out_type = start_type == kNumberTypeFloat64 ? kNumberTypeFloat32 : start_type;
+    auto it = RangeFuncMap.find(start_type);
     if (it == RangeFuncMap.end()) {
-      MS_LOG(DEBUG) << "For Range, the dtype of input must be int32, int64, float32, float64, but got "
-                    << TypeIdToString(type) << ".";
+      MS_LOG(DEBUG) << "For Range, the dtype of input must be int32, int64, float32 or float64, but got "
+                    << TypeIdToString(start_type) << ".";
       return nullptr;
     }
-    auto result_tensor = it->second(type, input_args);
+    auto result_tensor = it->second(out_type, input_args);
     return result_tensor;
   }
 };

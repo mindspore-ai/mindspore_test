@@ -146,7 +146,8 @@ const std::map<std::string, std::vector<std::pair<size_t, TypeId>>> kTransInputD
   {prim::kPrimApplyCamePart3->name(), {{3, kNumberTypeFloat32}, {4, kNumberTypeFloat32}, {5, kNumberTypeFloat32}}},
   {prim::kPrimApplyCamePart4->name(), {{7, kNumberTypeFloat32}}},
   {prim::kPrimFFTFreq->name(), {{2, kNumberTypeFloat32}}},
-  {prim::kPrimRFFTFreq->name(), {{2, kNumberTypeFloat32}}}};
+  {prim::kPrimRFFTFreq->name(), {{2, kNumberTypeFloat32}}},
+  {prim::kPrimRange->name(), {{1, kNumberTypeFloat32}, {2, kNumberTypeFloat32}, {3, kNumberTypeFloat32}}}};
 
 // {node name | {{attr_name, dst_type}...}}
 const std::map<std::string, std::vector<std::pair<std::string, TypeId>>> kTransAttrDTypeMap = {

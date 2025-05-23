@@ -24,7 +24,7 @@ pad_v3:
         Inputs:
             - **x** (Tensor) - Tensor to be padded. It has shape :math:`(N, *)`, where :math:`*` means
                 any number of additional dimensions.
-            - **paddings** (Union[Tensor, list[int], tupple[int]]) -  Specifies the number of zeros to be padded before
+            - **paddings** (Union[Tensor, list[int], tuple[int]]) -  Specifies the number of zeros to be padded before
                 and after each dimension of the input Tensor `x`. It's a 1D Tensor of type int32 or int64.
             - **constant_value** (Union[Tensor, number], optional) - Padding value to use in 'constant' mode,
                 if not specified, None is used instead. It has the same type as `x`.

@@ -36,7 +36,7 @@ std::vector<GeneralInferParam> prepare_params() {
       // input
       InferInfoParam{ShapeVector{1, 2, 3, 4, 5}, kNumberTypeInt32},
       // other
-      InferInfoParam{ShapeVector{}, kNumberTypeFloat32, CreateScalar<float>(2.)},
+      InferInfoParam{ShapeVector{}, kNumberTypeFloat64, CreateScalar<double>(2.)},
     })
     .FeedExpectedOutput({{1, 2, 3, 4, 5}}, {kNumberTypeFloat32});
 

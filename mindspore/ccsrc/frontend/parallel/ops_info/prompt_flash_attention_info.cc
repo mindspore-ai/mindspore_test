@@ -109,7 +109,7 @@ void PromptFlashAttentionInfo::SetOptinalInputs() {
       }
       valid_input_index++;
     } else if (optinal_input_ptr->isa<None>() || optinal_input_ptr->isa<StringImm>() ||
-               optinal_input_ptr->isa<Int64Imm>() || optinal_input_ptr->isa<FP32Imm>()) {
+               optinal_input_ptr->isa<Int64Imm>() || optinal_input_ptr->isa<FP64Imm>()) {
       optinal_inputs_[index] = False;
     } else {
       TypePtr input_type = optinal_input_ptr->type();

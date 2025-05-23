@@ -45,7 +45,7 @@ std::vector<TypeId> FmodScalarFuncImpl::InferType(const PrimitivePtr &primitive,
   auto other_type = input_infos[kIndex1]->GetType();
   TypeId out_type;
 
-  if (IsIntBoolType(input_type) && other_type == kNumberTypeFloat32) {
+  if (IsIntBoolType(input_type) && other_type == kNumberTypePyFloat) {
     out_type = kNumberTypeFloat32;
   } else if (input_type == kNumberTypeBool && IsIntBoolType(other_type)) {
     out_type = kNumberTypeInt64;

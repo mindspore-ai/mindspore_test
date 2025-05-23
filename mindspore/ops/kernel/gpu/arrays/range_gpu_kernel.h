@@ -31,7 +31,7 @@ namespace mindspore {
 namespace kernel {
 constexpr size_t kInputSize = 4;
 
-template <typename T>
+template <typename T, typename S>
 class RangeGpuKernelMod : public NativeGpuKernelMod {
  public:
   RangeGpuKernelMod() { ResetResource(); }
@@ -42,15 +42,15 @@ class RangeGpuKernelMod : public NativeGpuKernelMod {
     T *range_start = GetDeviceAddress<T>(inputs, 0);
     T *range_end = GetDeviceAddress<T>(inputs, 1);
     T *range_delta = GetDeviceAddress<T>(inputs, 2);
-    T *output_device_address = GetDeviceAddress<T>(outputs, 0);
+    S *output_device_address = GetDeviceAddress<S>(outputs, 0);
     int64_t *output_shape_device_address = GetDeviceAddress<int64_t>(workspace, 0);
     DynamicRangeErrorCode *error_code_device_address = GetDeviceAddress<DynamicRangeErrorCode>(workspace, 1);
 
     stream_ptr_ = stream_ptr;
 
-    auto status = CudaValidateInputAndInferShape(range_start, range_end, range_delta, output_shape_device_address,
-                                                 error_code_device_address, max_output_length_,
-                                                 reinterpret_cast<cudaStream_t>(stream_ptr));
+    auto status = CudaValidateInputAndInferShape<T>(range_start, range_end, range_delta, output_shape_device_address,
+                                                    error_code_device_address, max_output_length_,
+                                                    reinterpret_cast<cudaStream_t>(stream_ptr));
     CHECK_CUDA_STATUS(status, kernel_name_);
 
     DynamicRangeErrorCode error_code = DynamicRangeErrorCode::kOk;
@@ -71,8 +71,8 @@ class RangeGpuKernelMod : public NativeGpuKernelMod {
 
     LogExceptionIfNotOk(error_code);
 
-    status = CalRange(range_start, range_end, range_delta, output_device_address, output_shape_device_address,
-                      error_code_device_address, max_output_length_, reinterpret_cast<cudaStream_t>(stream_ptr));
+    status = CalRange<T, S>(range_start, range_end, range_delta, output_device_address, output_shape_device_address,
+                            error_code_device_address, max_output_length_, reinterpret_cast<cudaStream_t>(stream_ptr));
     CHECK_CUDA_STATUS(status, kernel_name_);
 
     return true;
@@ -120,6 +120,7 @@ class RangeGpuKernelMod : public NativeGpuKernelMod {
     if (ret != KRET_OK) {
       return ret;
     }
+
     max_output_length_ = inputs[kIndex3]->GetValueWithCheck<int64_t>();
     workspace_size_list_.push_back(sizeof(int64_t));
     workspace_size_list_.push_back(sizeof(DynamicRangeErrorCode));

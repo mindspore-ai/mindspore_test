@@ -19,6 +19,7 @@
 
 #include <memory>
 #include <vector>
+#include <set>
 #include "ops/ops_func_impl/op_func_impl.h"
 
 namespace mindspore::ops {

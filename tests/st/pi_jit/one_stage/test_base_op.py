@@ -1155,7 +1155,7 @@ def test_attr_as_inputs_7():
     cond = [Tensor([-1]), 1, 2.2, np.float16(3.3)]
     for i in cond:
         net.x = i
-        x = Tensor(np.random.rand(1))
+        x = Tensor(np.random.rand(1).astype(np.float32))
         y = net(x)
         assert (net.x + x) == y
 

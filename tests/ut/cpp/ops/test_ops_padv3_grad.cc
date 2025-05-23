@@ -17,7 +17,7 @@
 #include <memory>
 #include <string>
 #include "common/common_test.h"
-#include "infer/grad/pad_v3_grad.h"
+#include "mindspore/ops/op_def/op_enum.h"
 #include "ir/dtype/type.h"
 #include "abstract/dshape.h"
 #include "utils/tensor_construct_utils.h"
@@ -35,7 +35,7 @@ struct PadV3GradParams {
   TypePtr input_type;
   ShapeVector paddings_shape;
   TypePtr paddings_type;
-  std::string mode;
+  Mode mode;
   bool paddings_contiguous;
   ShapeVector out_shape;
   TypePtr out_type;
@@ -49,15 +49,18 @@ TEST_P(TestPadV3Grad, dyn_shape) {
   auto paddings = std::make_shared<abstract::AbstractTensor>(param.paddings_type, param.paddings_shape);
   ASSERT_NE(input, nullptr);
   ASSERT_NE(paddings, nullptr);
+  auto mode_value = std::make_shared<Int64Imm>(param.mode);
+  auto mode = mode_value->ToAbstract();
+  auto paddings_contiguous_value = std::make_shared<BoolImm>(param.paddings_contiguous);
+  auto paddings_contiguous = paddings_contiguous_value->ToAbstract();
+  ASSERT_NE(mode, nullptr);
+  ASSERT_NE(paddings_contiguous, nullptr);
 
   auto prim = std::make_shared<Primitive>(kNamePadV3Grad);
-  prim->set_attr("mode", MakeValue<std::string>(param.mode));
-  prim->set_attr("paddings_contiguous", MakeValue<bool>(param.paddings_contiguous));
-
   auto expect = std::make_shared<abstract::AbstractTensor>(param.out_type, param.out_shape);
   ASSERT_NE(expect, nullptr);
 
-  auto out_abstract = opt::CppInferShapeAndType(prim, {input, paddings});
+  auto out_abstract = opt::CppInferShapeAndType(prim, {input, paddings, mode, paddings_contiguous});
   ASSERT_NE(out_abstract, nullptr);
   ASSERT_TRUE(*out_abstract == *expect);
 }
@@ -65,14 +68,14 @@ TEST_P(TestPadV3Grad, dyn_shape) {
 INSTANTIATE_TEST_CASE_P(
   TestPadV3GradGroup, TestPadV3Grad,
   testing::Values(
-    PadV3GradParams{{1, -1, -1, -1}, kFloat32, {-1, -1}, kInt32, "constant", true, {-1, -1, -1, -1}, kFloat32},
-    PadV3GradParams{{1, 2, 3, 4}, kFloat32, {-1, -1}, kInt32, "constant", true, {-1, -1, -1, -1}, kFloat32},
-    PadV3GradParams{{-2}, kFloat32, {-1, -1}, kInt32, "constant", true, {-2}, kFloat32},
-    PadV3GradParams{{1, -1, -1, -1}, kFloat32, {-1, -1}, kInt32, "reflect", true, {-1, -1, -1, -1}, kFloat32},
-    PadV3GradParams{{1, 2, 3, 4}, kFloat32, {-1, -1}, kInt32, "reflect", true, {-1, -1, -1, -1}, kFloat32},
-    PadV3GradParams{{-2}, kFloat32, {-1, -1}, kInt32, "reflect", true, {-2}, kFloat32},
-    PadV3GradParams{{1, -1, -1, -1}, kFloat32, {-1, -1}, kInt32, "replicate", true, {-1, -1, -1, -1}, kFloat32},
-    PadV3GradParams{{1, 2, 3, 4}, kFloat32, {-1, -1}, kInt32, "replicate", true, {-1, -1, -1, -1}, kFloat32},
-    PadV3GradParams{{-2}, kFloat32, {-1, -1}, kInt32, "replicate", true, {-2}, kFloat32}));
+    PadV3GradParams{{1, -1, -1, -1}, kFloat32, {-1, -1}, kInt32, Mode::CONSTANT, true, {-1, -1, -1, -1}, kFloat32},
+    PadV3GradParams{{1, 2, 3, 4}, kFloat32, {-1, -1}, kInt32, Mode::CONSTANT, true, {-1, -1, -1, -1}, kFloat32},
+    PadV3GradParams{{-2}, kFloat32, {-1, -1}, kInt32, Mode::CONSTANT, true, {-2}, kFloat32},
+    PadV3GradParams{{1, -1, -1, -1}, kFloat32, {-1, -1}, kInt32, Mode::REFLECT, true, {-1, -1, -1, -1}, kFloat32},
+    PadV3GradParams{{1, 2, 3, 4}, kFloat32, {-1, -1}, kInt32, Mode::REFLECT, true, {-1, -1, -1, -1}, kFloat32},
+    PadV3GradParams{{-2}, kFloat32, {-1, -1}, kInt32, Mode::REFLECT, true, {-2}, kFloat32},
+    PadV3GradParams{{1, -1, -1, -1}, kFloat32, {-1, -1}, kInt32, Mode::CIRCULAR, true, {-1, -1, -1, -1}, kFloat32},
+    PadV3GradParams{{1, 2, 3, 4}, kFloat32, {-1, -1}, kInt32, Mode::CIRCULAR, true, {-1, -1, -1, -1}, kFloat32},
+    PadV3GradParams{{-2}, kFloat32, {-1, -1}, kInt32, Mode::CIRCULAR, true, {-2}, kFloat32}));
 }  // namespace ops
 }  // namespace mindspore

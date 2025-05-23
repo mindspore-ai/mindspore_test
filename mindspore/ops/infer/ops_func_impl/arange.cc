@@ -14,30 +14,27 @@
  * limitations under the License.
  */
 
+#include "infer/ops_func_impl/arange.h"
+
 #include <any>
 #include <memory>
 #include <vector>
+#include <utility>
 #include <algorithm>
+
 #include "abstract/dshape.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
-#include "ops/ops_func_impl/simple_infer.h"
 #include "utils/log_adapter.h"
 #include "utils/shape_utils.h"
-#include "infer/ops_func_impl/arange.h"
 #include "ops_utils/op_constants.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 
 namespace mindspore::ops {
 namespace {
-#define IsNoneOrAnyValue(value_ptr) ((value_ptr->isa<None>()) || (value_ptr->ContainsValueAny()))
-
-bool ArangeIsFloat(TypeId type_id) { return kNumberTypeFloat <= type_id && type_id <= kNumberTypeComplex128; }
-
-bool CheckDtypeValidAndIsInteger(const PrimitivePtr &primitive, const ValuePtr &dtype_value) {
-  if (dtype_value == mindspore::kNone) {
+bool CheckDtypeValidAndIsInteger(const PrimitivePtr &primitive, const InferInfoPtr &dtype_info) {
+  if (dtype_info->IsNone()) {
     return false;
   }
-  auto dtype_opt = GetScalarValue<int64_t>(dtype_value);
+  auto dtype_opt = dtype_info->GetScalarValue<int64_t>();
   MS_CHECK_VALUE(dtype_opt.has_value(), primitive->name() + " error: the dtype argument has no valid value.");
   auto dtype_id = static_cast<TypeId>(dtype_opt.value());
   if (dtype_id == kNumberTypeFloat16 || dtype_id == kNumberTypeFloat32 || dtype_id == kNumberTypeFloat64 ||
@@ -53,13 +50,13 @@ bool CheckDtypeValidAndIsInteger(const PrimitivePtr &primitive, const ValuePtr &
 }
 
 template <typename T>
-int64_t ComputeShapeSize(const ValuePtrList &input_values, bool result_type_is_int) {
-  auto start_opt = GetScalarValue<T>(input_values[kIndex0]);
-  auto end_opt = GetScalarValue<T>(input_values[kIndex1]);
-  auto step_opt = GetScalarValue<T>(input_values[kIndex2]);
+int64_t ComputeShapeSize(const InferInfoPtrList &input_infos, bool result_type_is_int) {
+  auto start_opt = input_infos[kIndex0]->GetScalarValue<T>();
+  auto end_opt = input_infos[kIndex1]->GetScalarValue<T>();
+  auto step_opt = input_infos[kIndex2]->GetScalarValue<T>();
 
   if (MS_UNLIKELY(!start_opt.has_value()) || MS_UNLIKELY(!end_opt.has_value()) || MS_UNLIKELY(!step_opt.has_value())) {
-    return static_cast<int64_t>(-1);
+    return abstract::Shape::kShapeDimAny;
   }
 
   auto start = start_opt.value();
@@ -96,91 +93,58 @@ int64_t ComputeShapeSize(const ValuePtrList &input_values, bool result_type_is_i
   return static_cast<int64_t>(shape_size);
 }
 
-int64_t GetShapeSize(const TypePtr dtype, const ValuePtrList &input_values, bool result_type_is_int) {
-  int64_t shape_size = 0;
-  if (*dtype == *kBool) {
-    shape_size = ComputeShapeSize<bool>(input_values, result_type_is_int);
-  } else if ((*dtype == *kInt) || (*dtype == *kInt32)) {
-    shape_size = ComputeShapeSize<int32_t>(input_values, result_type_is_int);
-  } else if (*dtype == *kInt64) {
-    shape_size = ComputeShapeSize<int64_t>(input_values, result_type_is_int);
-  } else if ((*dtype == *kFloat) || (*dtype == *kFloat32)) {
-    shape_size = ComputeShapeSize<float>(input_values, result_type_is_int);
-  } else if (*dtype == *kFloat64) {
-    shape_size = ComputeShapeSize<double>(input_values, result_type_is_int);
-  } else {
-    MS_EXCEPTION(TypeError) << "For Arange, the type of input must be int32, int64, float32, float64 or bool, but got "
-                            << TypeIdToString(dtype->type_id()) << ".";
+int64_t GetShapeSize(const InferInfoPtrList &input_infos, bool result_type_is_int) {
+  int64_t shape_size{abstract::Shape::kShapeDimAny};
+  auto start_type = input_infos[kIndex0]->GetType();
+  switch (start_type) {
+    case kNumberTypeBool:
+      shape_size = ComputeShapeSize<bool>(input_infos, result_type_is_int);
+      break;
+    case kNumberTypeInt32:
+    case kNumberTypeInt:
+      shape_size = ComputeShapeSize<int32_t>(input_infos, result_type_is_int);
+      break;
+    case kNumberTypeInt64:
+      shape_size = ComputeShapeSize<int64_t>(input_infos, result_type_is_int);
+      break;
+    case kNumberTypeFloat:
+    case kNumberTypeFloat32:
+      shape_size = ComputeShapeSize<float>(input_infos, result_type_is_int);
+      break;
+    case kNumberTypeFloat64:
+      shape_size = ComputeShapeSize<double>(input_infos, result_type_is_int);
+      break;
+    default:
+      MS_EXCEPTION(TypeError)
+        << "For Arange, the type of input must be int32, int64, float32, float64 or bool, but got "
+        << TypeIdToString(start_type) << ".";
   }
   return shape_size;
 }
 }  // namespace
 
-BaseShapePtr ArangeFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                        const std::vector<AbstractBasePtr> &input_args) const {
-  ShapeVector out_shape = {};
-  auto start_value = input_args[kInputIndex0]->GetValue();
-  auto end_value = input_args[kInputIndex1]->GetValue();
-  auto step_value = input_args[kInputIndex2]->GetValue();
-  auto dtype_value = input_args[kInputIndex3]->GetValue();
-
-  bool is_compile = (IsNoneOrAnyValue(start_value) || IsNoneOrAnyValue(end_value) || IsNoneOrAnyValue(step_value));
-  if (is_compile) {
-    (void)out_shape.emplace_back(abstract::Shape::kShapeDimAny);
-    return std::make_shared<abstract::Shape>(out_shape);
-  }
-
-  ValuePtrList input_values = {start_value, end_value, step_value, dtype_value};
-  auto input_type = input_args[kInputIndex0]->GetType();
-  auto result_type_is_int = CheckDtypeValidAndIsInteger(primitive, dtype_value);
-  auto shape_size = GetShapeSize(input_type, input_values, result_type_is_int);
-  if (shape_size < 0) {
-    (void)out_shape.emplace_back(abstract::Shape::kShapeDimAny);
-    return std::make_shared<abstract::Shape>(out_shape);
-  }
-  (void)out_shape.emplace_back(shape_size);
-  return std::make_shared<abstract::TensorShape>(out_shape);
-}
-
-TypePtr ArangeFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
-  if (input_args[kInputIndex3]->GetType()->isa<TypeNone>()) {
-    auto CheckFloatFunc = [](const AbstractBasePtr &input_arg) {
-      return ArangeIsFloat(input_arg->GetType()->type_id());
-    };
-    if (std::any_of(input_args.begin(), input_args.begin() + kIndex3, CheckFloatFunc)) {
-      return std::make_shared<TensorType>(kFloat32);
-    }
-    return std::make_shared<TensorType>(kInt64);
-  }
-  auto dtype_opt = GetScalarValue<int64_t>(input_args[kInputIndex3]->GetValue());
-  MS_CHECK_VALUE(dtype_opt.has_value(), primitive->name() + " error: the dtype argument has no valid value.");
-  return std::make_shared<TensorType>(TypeIdToType(static_cast<TypeId>(dtype_opt.value())));
-}
-
-// simple infer
-TypePtrList ArangeFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &dtype_value = input_values[kInputIndex3];
-  if (dtype_value == mindspore::kNone) {
-    auto CheckFloatFunc = [](const ValuePtr &value) { return ArangeIsFloat(value->type()->type_id()); };
-    if (std::any_of(input_values.begin(), input_values.begin() + kIndex3, CheckFloatFunc)) {
-      return {kFloat32};
-    }
-    return {kInt64};
-  }
-  auto dtype_opt = GetScalarValue<int64_t>(dtype_value);
-  MS_CHECK_VALUE(dtype_opt.has_value(), primitive->name() + " error: the dtype argument has no valid value.");
-  return {TypeIdToType(static_cast<TypeId>(dtype_opt.value()))};
-}
-
-ShapeArray ArangeFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &start_value = input_values[kInputIndex0];
-  const auto &dtype_value = input_values[kInputIndex3];
-
-  auto result_type_is_int = CheckDtypeValidAndIsInteger(primitive, dtype_value);
-  auto shape_size = GetShapeSize(start_value->type(), input_values, result_type_is_int);
+ShapeArray ArangeFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+  const auto &dtype_info = input_infos[kIndex3];
+  auto result_type_is_int = CheckDtypeValidAndIsInteger(primitive, dtype_info);
+  auto shape_size = GetShapeSize(input_infos, result_type_is_int);
   ShapeVector output_shape{shape_size};
-  return {output_shape};
+  return {std::move(output_shape)};
 }
 
-REGISTER_SIMPLE_INFER(kNameArange, ArangeFuncImpl)
+TypeIdList ArangeFuncImpl::InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+  const auto &dtype_info = input_infos[kIndex3];
+  if (dtype_info->IsNone()) {
+    auto CheckFloatFunc = [](const InferInfoPtr &input_info) {
+      auto type_id = input_info->GetType();
+      return type_id == kNumberTypeFloat64 || type_id == kNumberTypeFloat32;
+    };
+    if (std::any_of(input_infos.begin(), input_infos.begin() + kIndex3, CheckFloatFunc)) {
+      return {kNumberTypeFloat32};
+    }
+    return {kNumberTypeInt64};
+  }
+  auto dtype_opt = dtype_info->GetScalarValue<int64_t>();
+  MS_CHECK_VALUE(dtype_opt.has_value(), primitive->name() + " error: the dtype argument has no valid value.");
+  return {static_cast<TypeId>(dtype_opt.value())};
+}
 }  // namespace mindspore::ops

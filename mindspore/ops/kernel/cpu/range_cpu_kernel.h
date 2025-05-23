@@ -44,7 +44,7 @@ class RangeCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<Ra
  protected:
   std::vector<KernelAttr> GetOpSupport() override { return OpSupport(); }
 
-  template <typename T>
+  template <typename S, typename T>
   bool LaunchKernel(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                     const std::vector<KernelTensor *> &outputs);
 };

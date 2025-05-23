@@ -3687,6 +3687,10 @@ void OnnxExporter::ExportPrimMuls(const FuncGraphPtr &, const CNodePtr &node,
       auto value_float_point = dyn_cast<FP32Imm>(value_node_val);
       tensor_proto->add_float_data(value_float_point->value());
       tensor_proto->set_data_type(GetOnnxDataType(kNumberTypeFloat32));
+    } else if (value_node_val->isa<FP64Imm>()) {
+      auto value_double_point = dyn_cast<FP64Imm>(value_node_val);
+      tensor_proto->add_float_data(static_cast<float>(value_double_point->value()));
+      tensor_proto->set_data_type(GetOnnxDataType(kNumberTypeFloat32));
     } else {
       MS_LOG(EXCEPTION) << "The dtype of input y is not support for Muls to convert to onnx.";
     }

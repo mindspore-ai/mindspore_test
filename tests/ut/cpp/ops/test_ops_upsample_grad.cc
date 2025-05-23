@@ -32,6 +32,7 @@
 #include "ops/test_ops.h"
 #include "ops/test_value_utils.h"
 #include "ops/test_ops_cmp_utils.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 
 namespace mindspore {
@@ -95,7 +96,7 @@ TEST_P(TestUpsampleBackward, dyn_shape) {
 }
 
 namespace {
-float scale = 0.5;
+pyfloat scale = 0.5;
 auto Upsample3DDynTestCase = testing::ValuesIn(
   {UpsampleBackwardParams{
      {1, 3, 8, 8, 8}, CreatePyIntTuple({1, 3, 4, 4, 4}), CreatePyIntTuple({8, 8, 8}), kNone, {1, 3, 4, 4, 4}},

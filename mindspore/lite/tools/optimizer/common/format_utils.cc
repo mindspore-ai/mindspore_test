@@ -24,8 +24,6 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/nn_op_name.h"
 #include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
-#include "infer/adam.h"
-#include "infer/apply_momentum.h"
 #include "infer/batch_to_space.h"
 #include "infer/crop.h"
 #include "infer/depth_to_space.h"

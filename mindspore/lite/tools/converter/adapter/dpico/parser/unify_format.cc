@@ -20,7 +20,7 @@
 #include "common/format_utils.h"
 #include "parser/parser_utils.h"
 #include "infer/tuple_get_item.h"
-#include "infer/adam.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/sgd.h"
 #include "infer/cxx_api/conv2d_fusion.h"
 #include "infer/cxx_api/conv2d_transpose_fusion.h"

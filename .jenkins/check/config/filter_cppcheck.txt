@@ -95,6 +95,7 @@
 "mindspore/ccsrc/plugin/res_manager/ascend/op_adapter/op_declare/image_ops_declare.cc"  "unknownMacro"
 "mindspore/mindspore/ccsrc/frontend/operator/meta_dsl/func_op/"                         "syntaxError"
 "mindspore/mindspore/ccsrc/pyboost/customize/pixel_shuffle.cc"                                    "zerodivcond"
+"mindspore/mindspore/ccsrc/plugin/res_manager/ascend/op_adapter/op_declare/pad_ops_declare.cc"    "unknownMacro"
 
 # MindData
 "mindspore/mindspore/ccsrc/minddata/dataset/engine/dataset_iterator.cc"                               "useStlAlgorithm"
