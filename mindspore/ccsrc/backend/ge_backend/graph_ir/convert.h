@@ -43,6 +43,7 @@
 #include "plugin/res_manager/ascend/op_adapter/op_adapter_desc.h"
 #include "graph/operator_reg.h"
 #include "ge/ge_api.h"
+#include "include/backend/visible.h"
 
 namespace mindspore::backend::ge_backend {
 using OpAdapterPtr = device::ascend::OpAdapterPtr;
@@ -92,7 +93,7 @@ DfGraphPtr GenExampleGraph(const std::string &name);
 
 using SetDynRefDataFunc = std::function<ShapeVector(const AnfNodePtr &, const ShapeVector &)>;
 
-class DfGraphConvertor {
+class BACKEND_EXPORT DfGraphConvertor {
  public:
   explicit DfGraphConvertor(const AnfGraphPtr &anf_graph, const std::string &phase_prefix,
                             RefModeFlag ref_mode_type = RefModeFlag::kRefModeEnv,

@@ -49,7 +49,7 @@ if(ENABLE_D)
             NAMELINK_SKIP
     )
     install(
-        TARGETS mindspore_ascend_res_manager LIBRARY
+        TARGETS mindspore_ascend_res_manager mindspore_graph_ir LIBRARY
         DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
         COMPONENT mindspore
         NAMELINK_SKIP

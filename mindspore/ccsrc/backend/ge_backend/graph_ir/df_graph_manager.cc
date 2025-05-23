@@ -20,13 +20,13 @@
 #include "backend/ge_backend/graph_ir/df_graph_manager.h"
 #include "backend/ge_backend/graph_ir/aoe_util.h"
 #include "utils/ms_context.h"
-#include "pipeline/jit/ps/base.h"
 #include "utils/phase.h"
 #ifndef ENABLE_LITE_ACL
 #include "include/common/utils/python_adapter.h"
 #endif
 #include "include/common/utils/compile_cache_context.h"
 #include "include/common/debug/common.h"
+#include "include/common/utils/utils.h"
 
 namespace mindspore::backend::ge_backend {
 DfGraphWrapper::DfGraphWrapper(const std::string &name, const int &id, const DfGraphPtr &graph_ptr,

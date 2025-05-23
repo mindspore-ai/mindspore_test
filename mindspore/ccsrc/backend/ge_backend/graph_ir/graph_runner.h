@@ -24,9 +24,10 @@
 #include "plugin/res_manager/ascend/op_adapter/transform_util.h"
 #include "backend/ge_backend/graph_ir/df_graph_manager.h"
 #include "ir/tensor.h"
+#include "include/backend/visible.h"
 
 namespace mindspore::backend::ge_backend {
-class GraphRunner {
+class BACKEND_EXPORT GraphRunner {
  public:
   explicit GraphRunner(const GraphRunnerOptions &options);
   ~GraphRunner() { sess_ = nullptr; }
