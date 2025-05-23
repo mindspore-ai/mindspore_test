@@ -297,38 +297,6 @@ extern int TensorPython_set_VirtualFlag(PyObject *self, PyObject *value, void *)
   HANDLE_MS_EXCEPTION_RET_FAIL_END
 }
 
-extern PyObject *TensorPython_get_slice_num_of_persistent_data_(PyObject *self, void *) {
-  HANDLE_MS_EXCEPTION
-  PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
-  py::object sliceNumOfPersistentData = obj->value.GetSliceNumOfPersistentData();
-  return sliceNumOfPersistentData.release().ptr();
-  HANDLE_MS_EXCEPTION_END
-}
-
-extern int TensorPython_set_slice_num_of_persistent_data_(PyObject *self, PyObject *value, void *) {
-  HANDLE_MS_EXCEPTION
-  PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
-  obj->value.SetSliceNumOfPersistentData(py::reinterpret_borrow<py::object>(value));
-  return 0;
-  HANDLE_MS_EXCEPTION_RET_FAIL_END
-}
-
-extern PyObject *TensorPython_get_slice_shape_of_persistent_data_(PyObject *self, void *) {
-  HANDLE_MS_EXCEPTION
-  PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
-  py::object sliceNumOfPersistentData = obj->value.GetSliceShapeOfPersistentData();
-  return sliceNumOfPersistentData.release().ptr();
-  HANDLE_MS_EXCEPTION_END
-}
-
-extern int TensorPython_set_slice_shape_of_persistent_data_(PyObject *self, PyObject *value, void *) {
-  HANDLE_MS_EXCEPTION
-  PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
-  obj->value.SetSliceShapeOfPersistentData(py::reinterpret_borrow<py::object>(value));
-  return 0;
-  HANDLE_MS_EXCEPTION_RET_FAIL_END
-}
-
 extern PyObject *TensorPython_get_grad(PyObject *self, void *) {
   HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
@@ -476,10 +444,6 @@ static PyGetSetDef PyTensorPython_getseters[] = {
   {"virtual_flag", (getter)TensorPython_get_Virtual, (setter)TensorPython_set_VirtualFlag, "Get the _virtual flag.",
    NULL},
   {"symbolic_shape", (getter)TensorPython_get_SymbolicShape, nullptr, "Get the symbolic shape.", NULL},
-  {"slice_num_of_persistent_data_", (getter)TensorPython_get_slice_num_of_persistent_data_,
-   TensorPython_set_slice_num_of_persistent_data_, "Get the slice_num_of_persistent_data_.", NULL},
-  {"slice_shape_of_persistent_data_", (getter)TensorPython_get_slice_shape_of_persistent_data_,
-   TensorPython_set_slice_shape_of_persistent_data_, "Get the slice_shape_of_persistent_data_.", NULL},
   {"_grad", (getter)TensorPython_get_grad, TensorPython_set_grad, "Get the _grad.", NULL},
   {"_grad_fn", (getter)TensorPython_get_grad_fn, TensorPython_set_grad_fn, "Get the _grad_fn.", NULL},
   {"_requires_grad", (getter)TensorPython_get_requires_grad, TensorPython_set_requires_grad, "Get the _requires_grad.",
@@ -664,27 +628,6 @@ extern PyObject *TensorPython_check_stub(PyObject *self, PyObject *args) {
   HANDLE_MS_EXCEPTION_END
 }
 
-extern PyObject *TensorPy_make_persistent_data_tensor(PyObject *self, PyObject *args) {
-  HANDLE_MS_EXCEPTION
-  PyObject *py_input;
-  PyObject *py_slice_num;
-  if (!PyArg_ParseTuple(args, "OO", &py_input, &py_slice_num)) {
-    return nullptr;
-  }
-  py::array input = py::reinterpret_borrow<py::array>(py_input);
-  py::int_ slice_num = py::reinterpret_borrow<py::int_>(py_slice_num);
-  TensorPtr tensor = TensorPybind::MakePersistentDataTensorOfNumpy(input, slice_num);
-  PyType<TensorPy> *result = (PyType<TensorPy> *)TensorPyType->tp_alloc(TensorPyType, 0);
-  if (result == nullptr) {
-    PyErr_SetString(PyExc_RuntimeError, "Failed to create TensorPy object");
-    return nullptr;
-  }
-  new (&result->value) TensorPy(tensor);
-  result->value.SetInitFinished(true);
-  return reinterpret_cast<PyObject *>(result);
-  HANDLE_MS_EXCEPTION_END
-}
-
 extern PyObject *TensorPython_get_bytes(PyObject *self, PyObject *args) {
   HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
@@ -723,28 +666,6 @@ extern PyObject *TensorPython_flush_from_cache(PyObject *self, PyObject *args) {
   auto tensor = obj->value.GetTensor();
   TensorPybind::FlushFromCache(*tensor);
   Py_RETURN_NONE;
-  HANDLE_MS_EXCEPTION_END
-}
-
-extern PyObject *TensorPython_is_persistent_data(PyObject *self, PyObject *args) {
-  HANDLE_MS_EXCEPTION
-  PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
-  bool result = obj->value.IsPersistentData();
-  return PyBool_FromLong(result);
-  HANDLE_MS_EXCEPTION_END
-}
-
-extern PyObject *TensorPython_asnumpy_of_slice_persistent_data(PyObject *self, PyObject *args) {
-  HANDLE_MS_EXCEPTION
-  int32_t param_key;
-  int slice_index;
-  if (!PyArg_ParseTuple(args, "ii", &param_key, &slice_index)) {
-    return nullptr;
-  }
-  PyType<TensorPy> *tensor = reinterpret_cast<PyType<TensorPy> *>(self);
-  auto tensorTmp = tensor->value.GetTensor();
-  py::array np_array = TensorPybind::AsNumpyOfSlice(*tensorTmp, param_key, slice_index);
-  return np_array.release().ptr();
   HANDLE_MS_EXCEPTION_END
 }
 
@@ -1255,22 +1176,6 @@ static PyMethodDef Tensor_methods[] = {
   {"setitem_index_info", TensorIndex_setitem_index_info, METH_STATIC | METH_VARARGS, "Set item index information."},
   {"getitem_index_info", TensorIndex_getitem_index_info, METH_STATIC | METH_VARARGS, "Get item index information."},
   {"_is_test_stub", TensorPython_check_stub, METH_STATIC | METH_NOARGS, "Check if this is a test stub."},
-  {"persistent_data_from_numpy", TensorPy_make_persistent_data_tensor, METH_VARARGS,
-   R"mydelimiter(
-                                Creates a Tensor from a numpy.ndarray without copy.
-                                Use persistent data tensor.
-   
-                                Arg:
-                                    array (numpy.ndarray): The input ndarray.
-                                    slice_num (int): The slice num of persistent data tensor.
-   
-                                Returns:
-                                    Tensor, tensor with shared data to input ndarray.
-   
-                                Examples:
-                                    >>> a = np.ones((2, 3))
-                                    >>> t = mindspore.Tensor.persistent_data_from_numpy(a, 1)
-                                )mydelimiter"},
   {"get_bytes", TensorPython_get_bytes, METH_VARARGS, R"mydelimiter(
                                 Get raw data of tensor with type of bytes.
    
@@ -1308,27 +1213,6 @@ static PyMethodDef Tensor_methods[] = {
                                 Examples:
                                     >>> data = mindspore.Tensor(np.ones((2, 3)))
                                     >>> data._flush_from_cache()
-                                )mydelimiter"},
-  {"is_persistent_data", TensorPython_is_persistent_data, METH_NOARGS, R"mydelimiter(
-                                Check if tensor have persistent data.
-   
-                                Returns:
-                                    Bool.
-   
-                                Examples:
-                                    >>> data = mindspore.Tensor(np.ones((2, 3)))
-                                    >>> data.is_persistent_data()
-                                )mydelimiter"},
-  {"asnumpy_of_slice_persistent_data", TensorPython_asnumpy_of_slice_persistent_data, METH_VARARGS,
-   R"mydelimiter(
-                                Convert tensor to numpy.ndarray of a slice.
-   
-                                Returns:
-                                    numpy.ndarray.
-   
-                                Examples:
-                                    >>> data = mindspore.Tensor(np.ones((2000000000, 256)))
-                                    >>> data.asnumpy_of_slice_persistent_data(0, 1)
                                 )mydelimiter"},
   {"is_init", TensorPython_is_init, METH_NOARGS, R"mydelimiter(
                                 Get tensor init_flag.

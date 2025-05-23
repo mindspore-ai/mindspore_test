@@ -202,10 +202,6 @@ class COMMON_EXPORT TensorPy {
   /// \param[in] shape [ShapeVector] The shape of the tensor.
   void SetShape(const ShapeVector &shape);
 
-  /// \brief Get whether this tensor data have use persistent storage to save data.
-  /// \return Whether this tensor data have use persistent storage to save data.
-  bool IsPersistentData() const;
-
   /// \brief Gets tensor's dimension.
   /// \return The number of dimensions of the tensor data.
   int DataDim() const;
@@ -342,22 +338,6 @@ class COMMON_EXPORT TensorPy {
   /// \param[in] retain_grad [py::object] The retain gradient.
   void SetRetainGrad(const py::object &retain_grad);
 
-  /// \brief Get the slice number of tensor persistent data.
-  /// \return The slice number of tensor persistent data.
-  const py::object GetSliceNumOfPersistentData() const;
-
-  /// \brief Set the slice number of persistent data to tensor.
-  /// \param[in] slice_num_of_persistent_data [py::object] The slice number of persistent data.
-  void SetSliceNumOfPersistentData(const py::object &slice_num_of_persistent_data);
-
-  /// \brief Get the slice shape of tensor persistent data.
-  /// \return The slice shape of persistent data.
-  const py::object GetSliceShapeOfPersistentData() const;
-
-  /// \brief Set the slice shape of persistent data to tensor.
-  /// \param[in] slice_shape_of_persistent_data [py::object] The slice shape of persistent data.
-  void SetSliceShapeOfPersistentData(const py::object &slice_shape_of_persistent_data);
-
   void UpdateStub(const TensorPtr &tensor);
 
   /// \brief Get storage of tensor.
@@ -388,8 +368,6 @@ class COMMON_EXPORT TensorPy {
   py::object grad_fn_;
   py::object requires_grad_;
   py::object retain_grad_;
-  py::object slice_num_of_persistent_data_;
-  py::object slice_shape_of_persistent_data_;
   py::object storage_{py::none()};
   std::string device_;
   TensorPtr tensor_{nullptr};
