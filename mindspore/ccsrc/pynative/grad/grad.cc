@@ -748,7 +748,13 @@ py::object GradExecutor::CheckAlreadyRun(const prim::GradOperationPtr &grad, con
   // same. GradOperation information includes grad order for distinguish high-order.
   // Use a flag: call_grad_api_first_ for distinguish these two scenarios. If scenarios 1 are taken,
   // call_grad_api_first_ will not take effect, otherwise, it works.
-  bool need_increase_grad_order = NeedIncreaseGradOrder(obj_id);
+  bool disable_high_order = common::GetEnv("MS_DEV_DISABLE_AUTO_H2D") == "1";
+  bool need_increase_grad_order = false;
+  if (disable_high_order) {
+    grad_order_ = 1;
+  } else {
+    need_increase_grad_order = NeedIncreaseGradOrder(obj_id);
+  }
   auto input_args_id = GetInputArgsId(args);
   // Under the condition that the stack is empty (forward process completed or no forward process),
   // check whether need to run forward process
