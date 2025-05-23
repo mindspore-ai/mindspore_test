@@ -36,8 +36,8 @@ internal::InternalOpPtr InternalMla::CreateKernel(const internal::InputsImmutabl
   param.mask_type = static_cast<internal::MLAParam::MaskType>(ms_inputs[kIndex13]->GetValueWithCheck<int64_t>());
   param.is_ring = static_cast<int32_t>(ms_inputs[kIndex14]->GetValueWithCheck<int64_t>());
 
-  (void)GetSeqLenFromInputAndCheckUpadate(kernel_name_, {"q_seq_lens"}, ms_inputs[kIndex8], &param.q_seq_len);
-  (void)GetSeqLenFromInputAndCheckUpadate(kernel_name_, {"batch_valid_length"}, ms_inputs[kIndex9], &param.kv_seq_len);
+  (void)GetSeqLenFromGraphAndCheckUpadate(kernel_name_, {"q_seq_lens"}, &param.q_seq_len);
+  (void)GetSeqLenFromGraphAndCheckUpadate(kernel_name_, {"batch_valid_length"}, &param.kv_seq_len);
 
   return internal::CreateMLAOp(inputs_ii, outputs_ii, param, internal::kInternalMLAOpName);
 }
