@@ -97,6 +97,9 @@ class BACKEND_COMMON_EXPORT CollectiveManager {
   // Destroy device communication group for resume training.
   bool DestroyDeviceSideCommunicationGroup(const std::string &group_name);
 
+  // Call HcclSetGlobalCommInfo to pass necessary info in world group.
+  void SetGlobalCommInfo(CommunicationGroupPtr group, const std::string &group_name);
+
   // Get the inner comm name of the specified group.
   std::string GetCommName(const std::string &group_name);
 

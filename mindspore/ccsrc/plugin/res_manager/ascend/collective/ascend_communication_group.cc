@@ -220,6 +220,23 @@ void *AscendCommunicationGroup::GenerateRootInfo(size_t *root_info_size) {
   return &unique_id_;
 }
 
+bool AscendCommunicationGroup::SetGlobalCommInfo(uint32_t master_ip, uint32_t master_port, uint32_t total_rank_size,
+                                                 uint32_t group_rank, uint32_t local_rank_size) {
+  MS_LOG(WARNING) << "Start to SetGlobalCommInfo for " << name_ << ", master_ip:" << master_ip
+                  << ", master_port:" << master_port << ", group_rank:" << group_rank
+                  << ", total_rank_size:" << total_rank_size << ", local_rank_size" << local_rank_size;
+  int32_t ret = hccl::HcclAdapter::GetInstance().HcclSetGlobalCommInfo(master_ip, master_port, total_rank_size,
+                                                                       group_rank, local_rank_size);
+  if (ret == static_cast<int32_t>(HCCL_E_NOT_SUPPORT)) {
+    MS_LOG(INFO) << "HcclSetGlobalCommInfo is not supported.";
+  } else if (ret != static_cast<int32_t>(HCCL_SUCCESS)) {
+    MS_LOG(ERROR) << "Failed to set HCCL global comm info: " << CALL_ASCEND_API(aclGetRecentErrMsg);
+    return false;
+  }
+  MS_LOG(WARNING) << "End to SetGlobalCommInfo for " << name_;
+  return true;
+}
+
 const HcclComm &AscendCommunicationGroup::hccl_communicator() const { return comm_; }
 
 std::string AscendCommunicationGroup::inner_comm_name() const { return inner_comm_name_; }
