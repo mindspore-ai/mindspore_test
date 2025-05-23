@@ -34,11 +34,13 @@ class CFG;
 class Block;
 class Instr {
  public:
-  Instr(const Instr &) = delete;
   Instr &operator=(const Instr &) = delete;
-  Instr(int op, int arg, int bci = -1, int line = -1) : bci_(bci), op_(op), arg_(arg), line_(line), jump_(nullptr) {}
+  Instr(const Instr &o) : op_(o.op_), arg_(o.arg_), name_(o.name_), cnst_(o.cnst_), jump_(nullptr), loc_(o.loc_) {}
+  Instr(int op, int arg) : bci_(-1), op_(op), arg_(arg), jump_(nullptr), loc_{-1, -1, -1, -1} {}
+  Instr(int op, int arg, const CodeLocation &loc) : Instr(op, arg) { loc_ = loc; }
   Instr(int op, int arg, const std::string &name) : Instr(op, arg) { name_ = name; }
   Instr(int op, int arg, const py::object &cnst) : Instr(op, arg) { cnst_ = cnst; }
+  Instr(int op, int arg, int bci, int line = -1) : Instr(op, arg) { bci_ = bci, loc_ = {line, line, -1, -1}; }
   explicit Instr(int op) : Instr(op, 0) {}
 
   int bci() const { return bci_; }
@@ -47,13 +49,16 @@ class Instr {
   void set_op(int op) { op_ = op; }
   int arg() const { return arg_; }
   void set_arg(int arg) { arg_ = arg; }
-  int line() const { return line_; }
-  void set_line(int l) { line_ = l; }
+  int line() const { return loc_.start_line_; }
+  void set_line(int l) { loc_.start_line_ = l; }
   Instr *extra_jump() const { return jump_; }
   void set_extra_jump(Instr *j) { jump_ = j; }
+  const auto &location() const { return loc_; }
+  void set_location(const CodeLocation &loc) { loc_ = loc; }
 
   const std::string &name() const { return name_; }
   void set_name(const std::string &n) { name_ = n; }
+  void set_name(const char *n) { name_ = n ? n : ""; }
   const py::object &cnst() const { return cnst_; }
   void set_cnst(const py::handle &cnst) { cnst_ = py::reinterpret_borrow<py::object>(cnst); }
 
@@ -64,11 +69,12 @@ class Instr {
   int bci_;
   int op_;
   int arg_;
-  int line_;
   // these field only one is valid, union this these field like this { const char *, PyObject *, Instr * } ?
   std::string name_;
+  // if python3.11 ~ python3.12 and opcode is call, `cnst_` is KW_NAMES
   py::object cnst_;
   Instr *jump_;
+  CodeLocation loc_;
 };
 
 class Block {
@@ -158,6 +164,10 @@ class CFG {
   std::vector<std::unique_ptr<Instr>> &instr_pool() { return instrs_; }
   std::vector<std::unique_ptr<Block>> &bb_pool() { return bb_pool_; }
   std::unique_ptr<Liveness> &liveness() { return liveness_; }
+  const ExceptionTable &exc_table() const { return exc_table_; }
+  // python3.11+ only, find first exception table item of try/with blocks
+  ExceptionTable::const_iterator FindTryWithBlock(int bci) const;
+  ExceptionTable::const_iterator FindExcTableItem(int bci) const;
   int GetLocalCount() const { return co_.LocalSize(); }
 
   const Liveness *GetLiveness();
@@ -172,14 +182,17 @@ class CFG {
   std::string ToString() const;
 
  private:
+  Instr *GetInstruction(int bci);
   void BuildInst(const uint8_t *begin, const uint8_t *end);
   std::map<int, Block *> BuildBB(const uint8_t *begin, const uint8_t *end);
   void BuildCFG(const std::map<int, Block *> &labels);
+  ExceptionTable::const_iterator FindTryWithStart(ExceptionTable::const_iterator iter) const;
 
   PyCodeWrapper co_;
   std::vector<std::unique_ptr<Instr>> instrs_;
   std::vector<std::unique_ptr<Block>> bb_pool_;
   std::unique_ptr<Liveness> liveness_;
+  ExceptionTable exc_table_;
 };
 }  // namespace pijit
 }  // namespace mindspore

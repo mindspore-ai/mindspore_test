@@ -78,7 +78,7 @@ void SpreadMicroInterleavedIndexForForwardCommNodes(const CNodePtr &input_node, 
       node_queue.push(input_cnode);
       if (input_cnode->HasPrimalAttr(kPrimalAttrForwardCommNodeUniqueId)) {
         if (pipeline_micro >= 0 && !input_cnode->HasPrimalAttr(parallel::MICRO)) {
-          MS_LOG(INFO) << "node :" << input_cnode->DebugString() << " dose not contain micro tag.";
+          MS_LOG(INFO) << "node :" << input_cnode->DebugString() << " does not contain micro tag.";
           continue;
         }
         input_cnode->AddAttr(parallel::MICRO_INTERLEAVED_INDEX, MakeValue<size_t>(micro_interleaved_index));

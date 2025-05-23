@@ -72,7 +72,6 @@ def test_while_after_if_tensor_2():
     assert res_z == 1
 
 
-@pytest.mark.skip(reason="fix later")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_while_after_if_numpy():
     """
@@ -98,7 +97,6 @@ def test_while_after_if_numpy():
     assert (res.asnumpy() == [-3, -4]).all()
 
 
-@pytest.mark.skip(reason="fix later")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_while_after_if_numpy_2():
     """

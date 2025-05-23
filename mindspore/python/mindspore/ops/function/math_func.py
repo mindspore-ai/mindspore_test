@@ -3218,7 +3218,7 @@ def approximate_equal(x, y, tolerance=1e-5):
         >>> import mindspore
         >>> mindspore.ops.approximate_equal(mindspore.tensor([1e6, 2e6, float("inf"), float("-inf"), float("nan")]),
         ...                                 mindspore.tensor([1e6, 2e7, float("inf"), float("-inf"), float("nan")]))
-        Tensor(shape=[6], dtype=Bool, value= [ True, False, False, False, False])
+        Tensor(shape=[5], dtype=Bool, value= [ True, False, False, False, False])
         >>>
         >>> mindspore.ops.approximate_equal(mindspore.tensor([1e6, 2e6, 3e6]),
         ...                                 mindspore.tensor([1.00001e6, 2.00002e6, 3.00009e6]), tolerance=1e3)

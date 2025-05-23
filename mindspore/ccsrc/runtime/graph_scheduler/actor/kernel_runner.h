@@ -101,6 +101,16 @@ class KernelRunner {
   }
   std::vector<KernelTensor *> GetOutputDeviceTensors() { return output_launch_tensors_; }
 
+  void set_insert_input_event(bool insert_input_event) { insert_input_event_ = insert_input_event; }
+
+  void set_is_first_used_param(bool is_first_used_param, size_t index) {
+    if (index >= is_first_used_params_.size()) {
+      MS_LOG(EXCEPTION) << "Out of range for setting first used param, index: " << index
+                        << ", size: " << is_first_used_params_.size();
+    }
+    is_first_used_params_[index] = is_first_used_param;
+  }
+
   // Reset state for UCE.
   void ResetState();
 
@@ -183,11 +193,6 @@ class KernelRunner {
 
   // Auto increment id for actor.
   int64_t actor_id_;
-
-  // The second of pair indicates the output data flag. See constant prefixed with kOutputDataFalg for details.
-  std::vector<std::pair<OpDataUniquePtr<KernelTensor>, size_t>> output_data_;
-  // Record the fusion output index for output data arrow.
-  mindspore::HashMap<DataArrow *, size_t> data_arrow_to_fusion_actor_indexs_;
 
   // Whether use input optimize.
   bool enable_input_optimize_;
@@ -278,6 +283,8 @@ class KernelRunner {
   std::vector<bool> is_weight_;
   // Flag for aclop or reshape that does not support non-contiguous input.
   bool need_check_tensor_contiguous_{false};
+  // Flag for kernel actor should insert event for parameter.
+  bool insert_input_event_{false};
 
  protected:
   friend class GraphScheduler;
@@ -297,6 +304,9 @@ class KernelRunner {
   void FetchWorkspaceDeviceTensor();
   // Need copy when the data type or format between real parameters and formal parameters are inconsistent.
   void CopyInputDeviceTensor(KernelTensorPtr device_tensor, size_t input_index, OpContext<KernelTensor> *const context);
+  // Use for graph parameter.
+  void CopyParameterDeviceTensor(KernelTensorPtr kernel_tensor, size_t input_index,
+                                 OpContext<KernelTensor> *const context, size_t stream_id);
   void UpdateDeviceTensorCopyStore(DeviceTensor *const new_device_tensor, DeviceTensor *const input_device_tensor,
                                    size_t input_index);
   // The processing before kernel launch: update the info of kernel launch.
@@ -352,6 +362,7 @@ class KernelRunner {
   mindspore::HashMap<size_t, size_t> increase_ref_count_size_;
   std::vector<bool> is_output_kernel_;
   std::vector<bool> is_monad_input_;
+  std::vector<bool> is_first_used_params_;
   bool is_mc2_kernel_{false};
   // This flag are only valid in control flow. In inline control flow, due to the existence of switch branches, some
   // kernel actors will not be executed, and the condition switch actor controls whether to execute. It points to

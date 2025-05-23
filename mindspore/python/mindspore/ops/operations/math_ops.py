@@ -3354,9 +3354,8 @@ class ComplexAbs(Primitive):
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
         >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.asarray(np.complex(3+4j)), mindspore.complex64)
+        >>> x = Tensor(3+4j, mindspore.complex64)
         >>> complex_abs = ops.ComplexAbs()
         >>> output = complex_abs(x)
         >>> print(output)
@@ -3630,7 +3629,7 @@ class MatrixSolveLs(Primitive):
         TypeError: If `l2_regularizer` is not float64.
         TypeError: If `fast` is not bool.
         ValueError: If dimensions of `matrix` or `rhs` is less than 2.
-        ValueError: If shape of `matrix` dose not match the shape of `rhs`.
+        ValueError: If shape of `matrix` does not match the shape of `rhs`.
 
     Supported Platforms:
         ``CPU``

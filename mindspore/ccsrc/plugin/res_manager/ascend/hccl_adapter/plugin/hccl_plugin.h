@@ -57,6 +57,11 @@ ORIGIN_METHOD(HcclSend, HcclResult, void *, uint64_t, HcclDataType, uint32_t, Hc
 ORIGIN_METHOD(HcclRecv, HcclResult, void *, uint64_t, HcclDataType, uint32_t, HcclComm, aclrtStream);
 ORIGIN_METHOD(HcclAlltoAllV, HcclResult, const void *, const void *, const void *, HcclDataType, const void *,
               const void *, const void *, HcclDataType, HcclComm, aclrtStream);
+ORIGIN_METHOD(HcclAllGatherV, HcclResult, void *, uint64_t, void *, const void *, const void *, HcclDataType, HcclComm,
+              aclrtStream);
+ORIGIN_METHOD(HcclReduceScatterV, HcclResult, void *, const void *, const void *, void *, uint64_t, HcclDataType,
+              HcclReduceOp, HcclComm, aclrtStream);
+
 ORIGIN_METHOD(HcclAlltoAll, HcclResult, const void *, uint64_t, HcclDataType, const void *, uint64_t, HcclDataType,
               HcclComm, aclrtStream);
 ORIGIN_METHOD(HcclBarrier, HcclResult, HcclComm, aclrtStream);
@@ -65,6 +70,7 @@ ORIGIN_METHOD(HcclCommResume, HcclResult, HcclComm)
 
 ORIGIN_METHOD(HcclGetCommAsyncError, HcclResult, HcclComm, HcclResult *);
 ORIGIN_METHOD(HcclGetErrorString, const char *, HcclResult);
+ORIGIN_METHOD(HcclSetGlobalCommInfo, HcclResult, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t);
 ORIGIN_METHOD(HcclCommInitClusterInfo, HcclResult, const char *, uint32_t, HcclComm *);
 ORIGIN_METHOD(HcclCommInitClusterInfoConfig, HcclResult, const char *, uint32_t, HcclCommConfig *, HcclComm *);
 ORIGIN_METHOD(HcclCommInitRootInfoConfig, HcclResult, uint32_t, const HcclRootInfo *, uint32_t, const HcclCommConfig *,

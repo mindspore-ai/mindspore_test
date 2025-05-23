@@ -24,7 +24,6 @@
 #include <shared_mutex>
 
 #include "runtime/device/res_manager/memory_manager.h"
-#include "include/backend/mem_reuse/mem_dynamic_allocator.h"
 #include "utils/hash_map.h"
 #include "utils/hash_set.h"
 #include "runtime/device/res_manager/utils/visible.h"

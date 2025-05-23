@@ -1675,6 +1675,13 @@ REG_BPROP_BUILDER("InplaceReLU").FreeUselessValues_I({}).SetBody(BODYFUNC(ib) {
   return {dx};
 });
 
+REG_BPROP_BUILDER("InplaceSiLU").FreeUselessValues_O({}).CloneInplaceInput().SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto dout = ib->GetInput(kIndex2);
+  auto dx = ib->SiLUGrad(dout, x);
+  return {dx};
+});
+
 REG_BPROP_BUILDER("Threshold").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
   auto input = ib->GetInput(kIndex0);
   auto threshold = ib->GetInput(kIndex1);
@@ -1773,7 +1780,7 @@ REG_BPROP_BUILDER("TopK").FreeUselessValues_IO({i0, i1}, {i0}).SetBody(BODYFUNC(
   }
 });
 
-REG_BPROP_BUILDER("TopkExt").FreeUselessValues_IO({i3, i4}, {i0}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("TopkExt").FreeUselessValues_IO({i0, i3, i4}, {i0}).SetBody(BODYFUNC(ib) {
   // x, k, dim, largest, sorted, out(values, indices), dout(grad_values, grad_indices)
   auto input_x = ib->GetInput(kIndex0);
   auto out = ib->GetInput(kIndex5);
@@ -3550,10 +3557,10 @@ REG_BPROP_BUILDER("Conv2DBackpropFilter").SetUnusedInputs({i2, i3}).SetBody(BODY
   auto filter_size = ib->GetInput(kIndex2);
   auto dout = ib->GetInput(kIndex4);
   auto x_shape = ib->Shape(x);
-  auto dw_dx = dy->need_compute_grad_out()
+  auto dw_dy = dy->need_compute_grad_out() ? ib->Emit(kConv2DOpName, {x, dout}, Conv2DAttrs(ib)) : ib->OutZeros(dy);
+  auto dw_dx = x->need_compute_grad_out()
                  ? ib->Emit(kConv2DBackpropInputOpName, {dy, dout, x_shape}, Conv2DBackpropAttrs(ib))
-                 : ib->OutZeros(dy);
-  auto dw_dy = x->need_compute_grad_out() ? ib->Emit(kConv2DOpName, {x, dout}, Conv2DAttrs(ib)) : ib->OutZeros(x);
+                 : ib->OutZeros(x);
   return {dw_dy, dw_dx, ib->OutZeros(filter_size)};
 });
 
@@ -3901,7 +3908,7 @@ REG_BPROP_BUILDER("AdaptiveAvgPool3D").SetUnusedInputs({i0, i1}).SetBody(BODYFUN
   return {dx};
 });
 
-REG_BPROP_BUILDER("AdaptiveAvgPool3DExt").SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("AdaptiveAvgPool3DExt").FreeUselessValues_O({}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto output_size = ib->GetInput(kIndex1);
   auto out = ib->GetInput(kIndex2);

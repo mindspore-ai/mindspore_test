@@ -696,7 +696,8 @@ py::array TensorPybind::SyncAsNumpy(const Tensor &tensor) {
     if (tensor.data_type() == kNumberTypeBFloat16 && !np_dtypes::NumpyVersionValid(numpy_version)) {
       MS_EXCEPTION(TypeError) << "For asnumpy, the Numpy bfloat16 data type is supported only when the "
                               << "current Numpy version is not less than the version when the mindspore "
-                              << "is compiled, but got current Numpy version :" << numpy_version
+                              << "is compiled, and the major versions must be same,"
+                              << "but got current Numpy version :" << numpy_version
                               << ", Numpy version when the mindspore is compiled:" << minimum_numpy_version;
     }
 
@@ -705,12 +706,6 @@ py::array TensorPybind::SyncAsNumpy(const Tensor &tensor) {
       tensor_for_copy.data_sync();
     }
     const_cast<Tensor &>(tensor).set_copy_done_flag(false);
-
-    // To be deleted
-    // Release device address of graph output tensor.
-    if (tensor.need_release_device_mem()) {
-      const_cast<Tensor &>(tensor).set_device_address(nullptr);
-    }
   }
   return AsNumpy(tensor_for_copy);
 }
@@ -781,7 +776,7 @@ void TensorPybind::Load(const Tensor &tensor) {
     MS_LOG(WARNING) << "Tensor has no cpu data, can not be loaded.";
     return;
   }
-  const auto device = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  const auto device = device_address->device_name();
   auto device_ctx = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
     {device, MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
   // make sure op execute end before data copy
@@ -828,6 +823,22 @@ void TensorPybind::SetDeviceAddress(const TensorPtr &tensor, uintptr_t addr, con
     auto device_address = std::dynamic_pointer_cast<device::MbufDeviceAddress>(device_sync_);
     device_address->SetData(data);
   }
+}
+
+std::shared_ptr<StorageBase> TensorPybind::GetStorage(const TensorPtr &tensor) {
+  runtime::Pipeline::Get().WaitAll();
+  auto device_sync = tensor->device_address();
+  device::DeviceAddressPtr device_address = nullptr;
+  if (device_sync != nullptr) {
+    device_address = std::dynamic_pointer_cast<device::DeviceAddress>(device_sync);
+  } else {
+    return nullptr;
+  }
+  if (device_address->device_name() != "Ascend") {
+    MS_LOG(EXCEPTION) << "The current Storage does not yet support " << device_address->device_name();
+  }
+  auto storage_base = std::make_shared<StorageBase>(device_address);
+  return storage_base;
 }
 
 uintptr_t TensorPybind::DataPtr(const TensorPtr &tensor) {

@@ -18,6 +18,7 @@
 
 #include <string>
 #include <vector>
+#include <utility>
 
 #include "acl/acl.h"
 #include "atb/atb_infer.h"
@@ -28,7 +29,7 @@ namespace mindspore {
 namespace kernel {
 class InplaceGroupedMatmulAddATBKernelMod : public ATBKernelMod {
  public:
-  InplaceGroupedMatmulAddATBKernelMod() : ATBKernelMod() {}
+  InplaceGroupedMatmulAddATBKernelMod() : ATBKernelMod(std::move("inplace_grouped_matmul_add")) {}
   ~InplaceGroupedMatmulAddATBKernelMod() = default;
 
   void GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;

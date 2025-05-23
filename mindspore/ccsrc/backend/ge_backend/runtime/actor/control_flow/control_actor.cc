@@ -18,6 +18,7 @@
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/profile.h"
+#include "utils/ms_context.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
 
 namespace mindspore {
@@ -541,7 +542,8 @@ void ControlActor::UpdateOutputData(OpData<KernelTensor> *const output_data, con
     MS_LOG(DEBUG) << "Check copy for device address:" << device_tensor << " type:" << device_tensor->GetDeviceType()
                   << " and " << data << " type:" << data->GetDeviceType() << " ptr:" << data->GetPtr();
     // Copy from the real parameter to formal parameter and insert the device tensor copy store.
-    if ((!AnfAlgo::IsEquivalentFormat(device_tensor->format(), data->format())) ||
+    if ((!AnfAlgo::IsEquivalentFormat(kernel::GetFormatFromStrToEnum(device_tensor->format()),
+                                      kernel::GetFormatFromStrToEnum(data->format()))) ||
         (device_tensor->GetDeviceType() != data->GetDeviceType())) {
       MS_LOG(INFO) << GetAID().Name() << " the input position:" << formal_parameter_position
                    << " copy from real parameter address:" << data << ", type:" << data->GetDeviceType()

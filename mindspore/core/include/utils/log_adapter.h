@@ -201,6 +201,7 @@ enum SubModuleId : int {
   SM_LLM_BOOST,          // llm boost
   SM_TRACE,              // JIT trace
   SM_INTERNAL_KERNEL,    // internal kernel
+  SM_EXTENSION,          // MindSpore Extension interfaces
   NUM_SUBMODUES,         // number of submodules
 };
 
@@ -265,6 +266,7 @@ enum VLogLevel : int {
   VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS,
   VL_RUNTIME_FRAMEWORK_ACTOR_MSG,
   VL_RUNTIME_FRAMEWORK_MEMORY,
+  VL_RUNTIME_FRAMEWORK_PRINT_PROF,
   VL_RUNTIME_FRAMEWORK_OTHER,
   VL_RUNTIME_FRAMEWORK_MEMORY_ALLOCATE_CHECK = VL_RUNTIME_FRAMEWORK + COMPONENT_RANGE - 1,
   VL_GE = COMPONENT_START + (SM_GE - 1) * COMPONENT_RANGE,  // 30. GraphEngine

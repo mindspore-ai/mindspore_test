@@ -232,8 +232,7 @@ void OutputActor::FetchParameterInput(OpContext<KernelTensor> *const context) {
     MS_EXCEPTION_IF_NULL(tensor);
 
     const auto new_tensor = std::make_shared<tensor::Tensor>(tensor->data_type(), tensor->shape());
-    auto &device_context = device_contexts_[output_position];
-    auto parameter_kernel_tensor = FetchParameter(parameter_index.second, context, device_context, GetAID());
+    auto parameter_kernel_tensor = FetchParameter(parameter_index.second, GetAID());
     MS_EXCEPTION_IF_NULL(parameter_kernel_tensor);
     auto device_tensor = parameter_kernel_tensor->device_address().get();
     // Create the device address and put it into host tensor.
@@ -243,7 +242,8 @@ void OutputActor::FetchParameterInput(OpContext<KernelTensor> *const context) {
       auto kernel_tensor = AnfAlgo::CreateKernelTensor(
         nullptr, device_tensor->GetSize(), kernel::GetFormatFromStrToEnum(device_tensor->format()),
         device_tensor->type_id(), parameter_kernel_tensor->host_shape(),
-        device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
+        device_contexts_[output_position]->device_context_key().device_name_,
+        device_contexts_[output_position]->device_context_key().device_id_);
       kernel_tensor->SetType(parameter_kernel_tensor->GetType());
       kernel_tensor->SetShape(parameter_kernel_tensor->GetShape());
       kernel_tensor->set_stream_id(device_tensor->stream_id());
@@ -389,9 +389,6 @@ void OutputActor::RunOpData(OpData<KernelTensor> *const input_data, OpContext<Ke
   MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
     << "Actor(" << GetAID().Name() << ") receive the input op data and output position:" << input_data->index_
     << " device tensor:" << input_data->data_ << " ptr:" << input_data->data_->device_ptr()
-    << " ref count:" << input_data->data_->ref_count()
-    << " origin ref count:" << input_data->data_->original_ref_count()
-    << " dynamic ref count:" << input_data->data_->dynamic_ref_count()
     << " from memory pool:" << input_data->data_->device_address()->from_mem_pool() << " output node:"
     << (input_data->data_->device_address()->GetNodeIndex().first == nullptr
           ? "null"
@@ -420,7 +417,6 @@ void OutputActor::RunOpData(OpData<KernelTensor> *const input_data, OpContext<Ke
   if (tensor == nullptr) {
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR(*context, "Create output tensor failed.");
   }
-  tensor->set_need_release_device_mem(true);
   outputs_[output_position] = tensor;
   if (!flatten_stub_nodes_.empty()) {
     const auto &stub_node = flatten_stub_nodes_.at(output_position);
@@ -573,7 +569,6 @@ TensorPtr OutputActor::CreateOutputTensor(const AnfNodePtr &output_node, size_t 
     old_to_new_device_address_[device_tensor] = tensor_device_address;
   }
 
-  tensor->set_need_release_device_mem(true);
   if (output_kernel_tensor->tensor_storage_info()) {
     tensor->set_contiguous_callback([this](const DeviceSyncPtr &address) -> DeviceSyncPtr {
       return MakeTensorContiguousCallback(address, address->GetTensorStorageInfo());

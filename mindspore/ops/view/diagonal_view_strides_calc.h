@@ -21,7 +21,10 @@
 
 namespace mindspore {
 namespace ops {
-
+OPS_API TensorStorageInfoPtrList DiagonalViewBasicTypeCalc(const PrimitivePtr &prim,
+                                                           const mindspore::tensor::TensorPtr &input_tensor,
+                                                           const int64_t &offset, const int64_t &dim1,
+                                                           const int64_t &dim2);
 OPS_API TensorStorageInfoPtrList DiagonalViewCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs);
 }  // namespace ops
 }  // namespace mindspore

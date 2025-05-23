@@ -19,7 +19,6 @@
 #include <memory>
 #include <string>
 #include <map>
-#include "include/common/utils/anfalgo.h"
 #include "common/kernel.h"
 
 namespace mindspore {

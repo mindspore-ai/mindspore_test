@@ -47,6 +47,11 @@ class COMMON_EXPORT TensorPy {
   /// \param[in] input [TensorPtr] The input base tensor.
   explicit TensorPy(const TensorPtr &input);
 
+  /// \brief Create TensorPy with StubNode.
+  ///
+  /// \param[in] input [StubNodePtr] stub_node.
+  explicit TensorPy(const stub::StubNodePtr &stub_node);
+
   /// \brief Create 0 dimension tensorpy from an int64_t scalar.
   ///
   /// \param[in] input [int64_t] The data for tensorpy.
@@ -464,6 +469,17 @@ class COMMON_EXPORT TensorPy {
   void SetSliceShapeOfPersistentData(const py::object &slice_shape_of_persistent_data);
 
   void UpdateStub(const TensorPtr &tensor);
+
+  /// \brief Get storage of tensor.
+  ///
+  /// \return The storage of tensor.
+  const py::object GetStorage() const;
+
+  /// \brief Get storage of tensor.
+  ///
+  /// \return The storage of tensor.
+  void SetStorage(py::object storage);
+
   bool has_stub() const { return stub_ != nullptr; }
   const stub::StubNodePtr &stub() const { return stub_; }
   const stub::StubNodePtr &MakeStub() {
@@ -486,6 +502,7 @@ class COMMON_EXPORT TensorPy {
   py::object retain_grad_;
   py::object slice_num_of_persistent_data_;
   py::object slice_shape_of_persistent_data_;
+  py::object storage_{py::none()};
   std::string device_;
   TensorPtr tensor_{nullptr};
   py::object flatten_tensor_;
@@ -554,6 +571,7 @@ COMMON_EXPORT py::object PackTensorToPyObject(TensorPtr tensor);
 COMMON_EXPORT py::object GetPythonTensor();
 
 COMMON_EXPORT PyObject *PackTensor(const TensorPtr &tensor);
+COMMON_EXPORT PyObject *PackStubTensor(const stub::StubNodePtr &stub_node);
 COMMON_EXPORT PyObject *Wrap(const TensorPtr &tensor);
 COMMON_EXPORT PyObject *Wrap(const std::vector<TensorPtr> &tensors);
 template <typename... Args>

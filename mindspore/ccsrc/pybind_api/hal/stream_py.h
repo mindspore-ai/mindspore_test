@@ -24,12 +24,11 @@ namespace mindspore {
 namespace hal {
 class StreamPy {
  public:
-  StreamPy() = default;
+  StreamPy();
   explicit StreamPy(int priority);
   StreamPy(int priority, int stream_id);
-  StreamPy(device::DeviceContext *device_ctx, const size_t &stream_id)
-      : device_ctx_(device_ctx), stream_id_(stream_id) {}
-  explicit StreamPy(const StreamPy &stream) : device_ctx_(stream.device_ctx()), stream_id_(stream.stream_id()) {}
+  StreamPy(device::DeviceContext *device_ctx, const size_t &stream_id);
+  explicit StreamPy(const StreamPy &stream);
   ~StreamPy();
 
   // Query if the event has completed

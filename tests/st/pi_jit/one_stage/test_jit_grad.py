@@ -292,7 +292,6 @@ def test_jit_grad_with_grad_tensor_in_sequence_with_kwargs_2():
     assert jcr["code"]["call_count_"] > 0
 
 
-@pytest.mark.skip(reason="Graph is break because input can not be mutable")
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_jit_grad_with_invalid_input():
     """
@@ -318,7 +317,6 @@ def test_jit_grad_with_invalid_input():
     assert jcr["code"]["call_count_"] > 0
 
 
-@pytest.mark.skip(reason="Graph is break because input can not be mutable")
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_jit_grad_with_invalid_input_2():
     """

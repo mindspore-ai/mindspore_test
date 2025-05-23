@@ -82,7 +82,6 @@ def python_test6(x):
     return func(*y, **d)
 
 
-@pytest.mark.skip
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('python_func', [python_test1])
 @pytest.mark.parametrize('jit_func', [jit_test1])
@@ -117,7 +116,6 @@ def test_call_function2(python_func, jit_func, x):
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
 
 
-@pytest.mark.skip
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('python_func', [python_test3])
 @pytest.mark.parametrize('jit_func', [jit_test3])
@@ -135,7 +133,6 @@ def test_call_function3(python_func, jit_func, x):
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
 
 
-@pytest.mark.skip
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('python_func', [python_test4])
 @pytest.mark.parametrize('jit_func', [jit_test4])
@@ -153,7 +150,6 @@ def test_call_function4(python_func, jit_func, x):
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
 
 
-@pytest.mark.skip
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('python_func', [python_test5])
 @pytest.mark.parametrize('jit_func', [jit_test5])
@@ -171,7 +167,6 @@ def test_call_function5(python_func, jit_func, x):
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
 
 
-@pytest.mark.skip
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('python_func', [python_test6])
 @pytest.mark.parametrize('jit_func', [jit_test6])

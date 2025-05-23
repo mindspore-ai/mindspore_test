@@ -38,7 +38,10 @@ std::string Instr::ToString() const {
   }
 #endif
   std::stringstream s;
-  s << bci_ << ' ' << Opcode(op_).name() << ' ' << arg_;
+  s << bci() << ' ' << Opcode(op_).name() << ' ' << arg_;
+  if (Opcode(op_).IsBinaryMath()) {
+    s << "(" << Opcode(op_).BinaryMathString(arg_) << ")";
+  }
   if (!name().empty()) {
     s << "  " << name();
   }
@@ -48,6 +51,7 @@ std::string Instr::ToString() const {
   if (extra_jump()) {
     s << " -> " << extra_jump()->bci();
   }
+  s << " " << loc_;
   return s.str();
 }
 
@@ -103,12 +107,31 @@ void CFG::GenerateCFG() {
   BuildInst(begin, end);
   BuildCFG(BuildBB(begin, end));
   MarkDeadBB();
+  exc_table_ = co_.DecodeExceptionTable();
+
 #if IS_PYTHON_3_11_PLUS
   for (size_t index = 0, size = instrs_.size(); index < size; ++index) {
     // code check: std::replace can't apply to std::make_unique
     (void)(instrs_[index] == nullptr ? !(instrs_[index] = std::make_unique<Instr>(CACHE, 0, index)) : false);
   }
 #endif
+}
+
+static int DeOptimizedOpcode(int op) {
+#if IS_PYTHON_3_11_PLUS
+  /**
+   * `PRECALL` is only for python3.11, and it's a optimized opcode that do nothing if not bound method call
+   * It's same as `LOAD_METHOD` and `CALL_METHOD`, here ignore it
+   * `MAKE_CELL` and `COPY_FREE_VARS` is prefix of code, used to complete `FrameType` object. If reuse
+   * free variable and cell variable, and change local position, need change these codes. Here ignore it,
+   * add them at code gen
+   */
+  op = (op == PRECALL || op == MAKE_CELL || op == COPY_FREE_VARS) ? NOP : op;
+#else
+  op = op == LOAD_METHOD ? LOAD_ATTR : (op == CALL_METHOD ? CALL_FUNCTION : op);
+#endif
+  // for python3.11+, the bytes from getattr(code, "co_code"), all opcode is de-optimized
+  return op;
 }
 
 // Skip inline CACHE entries
@@ -125,7 +148,6 @@ inline void DecodeInstructionBytes(const uint8_t *begin, const uint8_t *end, Ft 
       continue;
     }
     int op = code[i];
-    // for python3.11+, the bytes from getattr(code, "co_code"), all opcode is de-optimized
     Opcode deop(op);
     caches = deop.InstrSize() - 1;
     arg = code[i + 1] | extended_arg;
@@ -134,46 +156,61 @@ inline void DecodeInstructionBytes(const uint8_t *begin, const uint8_t *end, Ft 
   }
 }
 
-void CFG::BuildInst(const uint8_t *begin, const uint8_t *end) {
-  const auto make_instr = [this](int off, int op, int arg) {
-#if IS_PYTHON_3_11_PLUS
-    op = op == LOAD_METHOD ? LOAD_ATTR : op;
-#else
-    op = op == LOAD_METHOD ? LOAD_ATTR : (op == CALL_METHOD ? CALL_FUNCTION : op);
+Instr *CFG::GetInstruction(int bci) {
+  if (instrs_[bci] == nullptr) {
+    instrs_[bci] = std::make_unique<Instr>(CACHE);
+  }
+  return instrs_[bci].get();
+}
+
+static void SetInstructionName(PyCodeWrapper co, Instr *cur) {
+  Opcode opcode(cur->op());
+  int arg = cur->arg();
+  if (opcode.IsLocalAccess() || opcode.HasFree()) {
+    PyCodeWrapper::LocalKind k = opcode.IsLocalAccess() ? PyCodeWrapper::kCoFastLocal : PyCodeWrapper::kCoFastFree;
+    cur->set_name(co.FastLocalName(co.FastLocalIndex(k, arg)));
+  }
+  if (opcode.HasName()) {
+    int index = arg;
+#if IS_PYTHON_3_12_PLUS
+    index = opcode == LOAD_ATTR ? (index >> 1) : index;
 #endif
+#if IS_PYTHON_3_11_PLUS
+    index = opcode == LOAD_GLOBAL ? (index >> 1) : index;
+#endif
+    py::object names = co.co_names();
+    cur->set_name(PyUnicode_AsUTF8(PyTuple_GET_ITEM(names.ptr(), index)));
+  }
+}
+
+void CFG::BuildInst(const uint8_t *begin, const uint8_t *end) {
+  py::object kw_names;
+  const auto make_instr = [this, &kw_names](int off, int op, int arg) {
+    op = DeOptimizedOpcode(op);
     Opcode opcode(op);
     int bci = off / PY_BCSIZE;
     MS_EXCEPTION_IF_CHECK_FAIL(static_cast<size_t>(bci) < instrs_.size(), "Error byte code end");
 
-    int line = PyCode_Addr2Line(co_.ptr(), off);
-    if (instrs_[bci] == nullptr) {
-      instrs_[bci] = std::make_unique<Instr>(op);
-    }
-    const auto &cur = instrs_[bci];
+    Instr *cur = GetInstruction(bci);
     cur->set_bci(bci);
     cur->set_op(op);
     cur->set_arg(arg);
-    cur->set_line(line);
+    cur->set_location(co_.Addr2Location(off));
+    SetInstructionName(co_, cur);
     if (opcode.HasConst()) {  // KW_NAMES, LOAD_CONST, RETURN_CONST
       cur->set_cnst(co_.co_consts()[arg]);
+      if (op == KW_NAMES) {
+        kw_names = cur->cnst();
+      }
     }
-    if (opcode.HasName()) {
-      int index = arg;
-#if IS_PYTHON_3_12_PLUS
-      index = op == LOAD_ATTR ? (index >> 1) : index;
-#elif IS_PYTHON_3_11_PLUS
-      index = op == LOAD_GLOBAL ? (index >> 1) : index;
-#endif
-      cur->set_name(PyUnicode_AsUTF8(co_.co_names()[index].ptr()));
+    if (kw_names.ptr() != nullptr && opcode.IsCall()) {
+      cur->set_cnst(kw_names);
+      kw_names = py::object();
     }
-    if (!opcode.HasJump()) {
-      return;
+    if (opcode.HasJump()) {
+      int jump = opcode.JumpTarget(bci, arg);
+      cur->set_extra_jump(GetInstruction(jump));
     }
-    int jump = opcode.JumpTarget(bci, arg);
-    if (instrs_[jump] == nullptr) {
-      instrs_[jump] = std::make_unique<Instr>(op);
-    }
-    cur->set_extra_jump(instrs_[jump].get());
   };
 
   DecodeInstructionBytes(begin, end, make_instr);
@@ -298,6 +335,22 @@ void CFG::MarkDeadBB() {
   }
 }
 
+ExceptionTable::const_iterator CFG::FindExcTableItem(int random_bci) const {
+  const auto &map = this->exc_table();
+  if (map.size() == 0) {
+    return map.end();
+  }
+  auto iter = map.lower_bound(random_bci);
+  if (iter == map.end() || (iter->first != random_bci && iter != map.begin())) {
+    --iter;  // check previous item
+  }
+  MS_LOG(DEBUG) << "find a closest exception table item for bci: " << random_bci << ": " << iter->second;
+  if (iter->second.begin_ > random_bci || random_bci >= iter->second.end_) {
+    return map.end();
+  }
+  return iter;
+}
+
 Block *CFG::GetBlockByBci(int bci) const {
   auto iter = std::find_if(bb_pool().begin(), bb_pool().end(), [bci](const std::unique_ptr<Block> &i) {
     return i->begin_ci() <= bci && bci < i->end_ci();
@@ -306,6 +359,67 @@ Block *CFG::GetBlockByBci(int bci) const {
     MS_LOG(INTERNAL_EXCEPTION) << "can't find block at " << bci;
   }
   return iter->get();
+}
+
+ExceptionTable::const_iterator CFG::FindTryWithStart(ExceptionTable::const_iterator ii) const {
+  const auto &map = this->exc_table();
+  const auto &list = this->instr_pool();
+  auto iter = ii;
+  if (iter == map.end()) {
+    return iter;
+  }
+  // find try start by exception item
+  for (int handler = iter->second.jump_; list[handler]->op() != PUSH_EXC_INFO;) {
+    if (iter == map.begin()) {
+      MS_LOG(INFO) << "unknown exception handler pattern";
+      return map.end();
+    }
+    --iter;
+    handler = iter->second.jump_;
+  }
+  if (iter == map.begin()) {
+    return iter;
+  }
+  auto another = iter;
+  --another;
+  another = FindTryWithStart(another);
+  if (another == map.end()) {
+    return iter;
+  }
+  if (another->second.jump_ == iter->second.jump_) {
+    // finally block has duplicate handler. try find again
+    --another;
+    return FindTryWithStart(another);
+  }
+  return another;
+}
+
+ExceptionTable::const_iterator CFG::FindTryWithBlock(int random_bci) const {
+  const auto &map = this->exc_table();
+  const auto &list = this->instr_pool();
+  if (map.empty()) {
+    return map.end();
+  }
+  MS_EXCEPTION_IF_CHECK_FAIL(static_cast<size_t>(random_bci) < list.size(), "out of bci range");
+  if (list[random_bci]->op() == BEFORE_WITH) {
+    random_bci++;
+  }
+  auto iter = FindExcTableItem(random_bci);
+  if (iter == map.end()) {
+    return iter;
+  }
+  auto other_iter = FindTryWithStart(iter);
+  if (other_iter != map.end()) {
+    MS_LOG(DEBUG) << "try begin maybe in " << other_iter->second;
+  }
+  int handler = iter->second.jump_;
+  if (list[handler]->op() != PUSH_EXC_INFO) {
+    MS_LOG(INFO) << "unknown exception handler pattern";
+    return map.end();
+  }
+  MS_LOG(DEBUG) << "try/with block syntax bci range (no finally block) [" << iter->second.begin_ << ","
+                << (list[handler - 1]->extra_jump() ? list[handler - 1]->extra_jump()->bci() : list.size()) << ")";
+  return iter;
 }
 
 std::string CFG::ToString() const {
@@ -318,6 +432,13 @@ std::string CFG::ToString() const {
         os << "  " << instrs_[i]->ToString() << std::endl;
       }
     }
+  }
+  if (exc_table_.empty()) {
+    return os.str();
+  }
+  os << "exception handler:" << std::endl;
+  for (const auto &pair : exc_table_) {
+    os << pair.second << std::endl;
   }
   return os.str();
 }

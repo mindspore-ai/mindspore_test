@@ -27,7 +27,7 @@
 #include "frontend/parallel/strategy.h"
 #include "frontend/parallel/tensor_layout/tensor_redistribution.h"
 #include "pipeline/jit/ps/resource.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "ir/core_ops_primitive.h"
 
 namespace mindspore {
 namespace parallel {
@@ -274,7 +274,7 @@ Status TileInfo::InferOutputTensorInfo() {
   auto output_infer_tensor_layout = InferOutputLayout();
   if (output_infer_tensor_layout.tensor_shape_before().array() != outputs_shape_[kIndex0]) {
     MS_LOG(ERROR) << "The infer output shape " << output_infer_tensor_layout.tensor_shape_before().array()
-                  << " dose not match the output shape " << outputs_shape_[kIndex0];
+                  << " does not match the output shape " << outputs_shape_[kIndex0];
     return FAILED;
   }
   TensorInfo output_tensor_info(output_infer_tensor_layout);

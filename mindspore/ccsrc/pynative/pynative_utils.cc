@@ -956,9 +956,6 @@ std::string PyParser::GetIdByPyObj(const py::object &obj) {
   if (tensor::IsTensorPy(obj)) {
     return tensor::ConvertToTensor(obj)->id();
   }
-  if (IsStubTensor(obj)) {
-    return ConvertStubTensor(obj)->id();
-  }
   if (py::isinstance<Cell>(obj)) {
     return obj.cast<CellPtr>()->id();
   }
@@ -1036,9 +1033,6 @@ void PyParser::SetPrim(const FrontendOpRunInfoPtr &op_run_info, const py::object
 
 std::string PyParser::BuilidPyInputTypeString(const py::object &obj) {
   if (tensor::IsTensorPy(obj)) {
-    return "Tensor";
-  }
-  if (IsStubTensor(obj)) {
     return "Tensor";
   }
   // bool must before int, because bool is a special int
@@ -1297,11 +1291,20 @@ ValuePtrList DataConvert::TensorListToValueList(const tensor::TensorPtrList &ten
   return output_values;
 }
 
+PyboostOpRunInfoPtr PyBoost::Init_Pyboost(const PrimitivePtr &prim) {
+  const auto &pynative_executor = Common::GetPyNativeExecutor();
+  const auto &forward_executor = pynative_executor->forward_executor();
+  const auto &op_run_info = std::make_shared<PyboostOpRunInfo>();
+  op_run_info->op_prim = prim;
+  pynative_executor->StoreAsyncStatus(op_run_info);
+  forward_executor->InitOpRunInfo(op_run_info);
+  return op_run_info;
+}
+
 FrontendOpRunInfoPtr PyBoost::Init(const PrimitivePtr &prim) {
   const auto &pynative_executor = Common::GetPyNativeExecutor();
   const auto &forward_executor = pynative_executor->forward_executor();
   const auto &op_run_info = std::make_shared<FrontendOpRunInfo>();
-  prim->EnableSharedMutex();
   op_run_info->op_grad_info->op_prim = prim;
   op_run_info->base_op_run_info.op_name = prim->name();
   pynative_executor->StoreAsyncStatus(op_run_info);

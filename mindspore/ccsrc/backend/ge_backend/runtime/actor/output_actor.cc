@@ -15,8 +15,7 @@
  */
 
 #include "backend/ge_backend/runtime/actor/output_actor.h"
-#include "utils/log_adapter.h"
-#include "utils/ms_utils.h"
+#include "utils/ms_context.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
 
@@ -275,7 +274,6 @@ void OutputActor::RunOpData(OpData<KernelTensor> *const input_data, OpContext<Ke
   if (tensor == nullptr) {
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR(*context, "Create output tensor failed.");
   }
-  tensor->set_need_release_device_mem(true);
   outputs_[output_position] = tensor;
   if (!flatten_stub_nodes_.empty()) {
     const auto &stub_node = flatten_stub_nodes_.at(output_position);
@@ -387,7 +385,6 @@ TensorPtr OutputActor::CreateOutputTensor(const AnfNodePtr &output_node, size_t 
     output_node_to_tensor_device_address_[{output_node, output_index}] = tensor_device_address;
   }
 
-  tensor->set_need_release_device_mem(true);
   return tensor;
 }
 

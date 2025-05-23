@@ -164,17 +164,21 @@ static std::pair<py::object, py::object> PackExArgs(const std::vector<py::object
     if (ret_vector_args) {
       PyObject *vals = PyDict_Values(kwargs.ptr());
       PyObject *keys = PyDict_Keys(kwargs.ptr());
-      PyObject *new_args = PySequence_Concat(pargs.ptr(), vals);
+      PyObject *keys_tuple = PySequence_Tuple(keys);
+      PyObject *vals_tuple = PySequence_Tuple(vals);
+      PyObject *new_args = PySequence_Concat(pargs.ptr(), vals_tuple);
+      Py_DECREF(keys);
       Py_DECREF(vals);
+      Py_DECREF(vals_tuple);
       pargs = py::reinterpret_steal<py::tuple>(new_args);
-      kwargs = py::reinterpret_steal<py::tuple>(keys);
+      kwargs = py::reinterpret_steal<py::tuple>(keys_tuple);
     }
   } while (0);
   return {pargs, kwargs};
 }
 
 std::pair<py::object, py::object> Utils::PackCallStackArgs(const std::vector<py::object> &args, int callop,
-                                                           bool ret_vector_args) {
+                                                           const py::object &kw_names, bool ret_vector_args) {
   std::pair<py::object, py::object> failed;
   size_t args_size = args.size();
   if (std::find_if(args.begin(), args.end(), [](const py::object &o) { return o.ptr() == nullptr; }) != args.end()) {
@@ -184,13 +188,15 @@ std::pair<py::object, py::object> Utils::PackCallStackArgs(const std::vector<py:
   Py_ssize_t kwsize = 0;
   py::object pargs;
   py::object kwargs;
-  if (callop == CALL_FUNCTION_KW || callop == CALL_FUNCTION || callop == CALL_METHOD) {
-    if (callop == CALL_FUNCTION_KW) {
-      py::object keys = args.back();
+  if (callop == CALL_FUNCTION_KW || callop == CALL_FUNCTION || callop == CALL || callop == CALL_METHOD) {
+    if (kw_names.ptr() != nullptr) {
+      py::object keys = kw_names;
       if (!PyTuple_Check(keys.ptr())) {
         return failed;
       }
+#if !IS_PYTHON_3_11_PLUS
       psize--;
+#endif
       kwsize = PyTuple_GET_SIZE(keys.ptr());
       if (psize < kwsize) {
         return failed;

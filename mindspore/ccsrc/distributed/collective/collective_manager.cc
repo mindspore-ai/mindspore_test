@@ -15,6 +15,9 @@
  */
 
 #include "include/backend/distributed/collective/collective_manager.h"
+#if !defined(_WIN32) && !defined(_WIN64)
+#include <arpa/inet.h>
+#endif
 #include <algorithm>
 #include <string>
 #include <iostream>
@@ -26,12 +29,14 @@
 #include <csignal>
 #include <future>
 #include <memory>
+#include <cstdint>
 #include "utils/ms_context.h"
 #include "utils/device_manager_conf.h"
 #include "utils/distributed_meta.h"
 #include "include/backend/distributed/recovery/recovery_context.h"
 #include "include/backend/distributed/collective/collect_hccl_init_info.h"
 #include "distributed/persistent/storage/json_utils.h"
+#include "runtime/collective/collective_communication_lib.h"
 #include "runtime/collective/dummy_collective_communication_lib.h"
 #include "availability/silent_check/silent_check.h"
 
@@ -216,7 +221,7 @@ bool CollectiveManager::Initialize() {
     // Step 4: Create global communication group asynchronizely
     MS_EXCEPTION_IF_NULL(device_comm_lib_instance_);
     bool async = IsAsyncInitGlobalComm();
-    CreateGroupConfig config = {};
+    GroupOptions config = {};
     config.async = async;
     auto group_name = device_comm_lib_instance_->global_group_name();
     PROF_START(CreateGlobalCommunicationGroup);
@@ -332,8 +337,7 @@ bool CollectiveManager::GetLocalGroupRankAndSize(const std::vector<uint32_t> &gr
 }
 
 bool CollectiveManager::CreateCommunicationGroup(const std::string &group_name,
-                                                 const std::vector<uint32_t> &group_ranks,
-                                                 const CreateGroupConfig &config) {
+                                                 const std::vector<uint32_t> &group_ranks, const GroupOptions &config) {
   PROF_START(distributed_create_group);
   MS_LOG(WARNING) << "Start to create communication group: " << group_name << " " << group_ranks
                   << ", async: " << config.async << ", submit_now: " << config.submit_now;
@@ -364,16 +368,16 @@ bool CollectiveManager::CreateCommunicationGroup(const std::string &group_name,
   MS_EXCEPTION_IF_NULL(host_comm_lib_instance_);
   // Step 1: Create communication group on host side.
   PROF_START(CreateCommunicationGroupOnHostSide);
-  RETURN_IF_FALSE_WITH_LOG(
-    host_comm_lib_instance_->CreateCommunicationGroup(group_name, group_ranks, local_group_rank, local_group_size),
-    "Failed to create host communication group" + group_name);
+  RETURN_IF_FALSE_WITH_LOG(host_comm_lib_instance_->CreateCommunicationGroup(group_name, group_ranks, local_group_rank,
+                                                                             local_group_size, config),
+                           "Failed to create host communication group" + group_name);
   PROF_END(CreateCommunicationGroupOnHostSide);
 
   // Step 2: Create communication group on device side.
   PROF_START(CreateCommunicationGroupOnDeviceSide);
-  RETURN_IF_FALSE_WITH_LOG(
-    device_comm_lib_instance_->CreateCommunicationGroup(group_name, group_ranks, local_group_rank, local_group_size),
-    "Failed to create device communication group" + group_name);
+  RETURN_IF_FALSE_WITH_LOG(device_comm_lib_instance_->CreateCommunicationGroup(
+                             group_name, group_ranks, local_group_rank, local_group_size, config),
+                           "Failed to create device communication group" + group_name);
   PROF_END(CreateCommunicationGroupOnDeviceSide);
 
   // save pipeline parallel local rank for silent check
@@ -904,6 +908,50 @@ bool CollectiveManager::ResumeHcclComm() {
   return true;
 }
 
+void CollectiveManager::SetGlobalCommInfo(CommunicationGroupPtr group, const std::string &group_name) {
+#if !defined(_WIN32) && !defined(_WIN64)
+  // Only hccl_world_group will call SetGlobalCommInfo.
+  if (group_name != "hccl_world_group") {
+    return;
+  }
+
+  MS_LOG(INFO) << "Begin set global communication info: " << group_name;
+  std::string master_addr = common::GetEnv("MS_SCHED_HOST");
+  if (master_addr.empty()) {
+    MS_LOG(INFO) << "MS_SCHED_HOST is not set, will not call HcclSetGlobalCommInfo.";
+    return;
+  }
+  struct sockaddr_in sa;
+  inet_pton(AF_INET, master_addr.c_str(), &(sa.sin_addr));
+  uint32_t master_ip = ntohl(sa.sin_addr.s_addr);
+  if (common::GetEnv("MS_SCHED_PORT").empty()) {
+    MS_LOG(INFO) << "MS_SCHED_PORT is not set, will not call HcclSetGlobalCommInfo.";
+    return;
+  }
+  uint32_t master_port = static_cast<uint32_t>(std::stoi(common::GetEnv("MS_SCHED_PORT")));
+  uint32_t node_rank;
+  std::string env_node_rank = common::GetEnv("MS_NODE_RANK");
+  if (env_node_rank.empty() || std::stoi(env_node_rank) < 0) {
+    std::string worker_addr = common::GetEnv("MS_WORKER_IP");
+    if (worker_addr.empty()) {
+      MS_LOG(INFO) << "MS_WORKER_IP is not set while MS_NODE_RANK is not set to a non-negative integer, will not call "
+                      "HcclSetGlobalCommInfo.";
+      return;
+    }
+    struct sockaddr_in sa_worker;
+    inet_pton(AF_INET, worker_addr.c_str(), &(sa_worker.sin_addr));
+    node_rank = ntohl(sa_worker.sin_addr.s_addr);
+  } else {
+    node_rank = static_cast<uint32_t>(std::stoi(env_node_rank));
+  }
+  if (!group->SetGlobalCommInfo(master_ip, master_port, global_rank_size_, node_rank, local_rank_size_)) {
+    MS_LOG(WARNING) << "Failed to SetGlobalCommInfo " << group_name;
+    return;
+  }
+  MS_LOG(INFO) << "End set global communication info: " << group_name;
+#endif
+}
+
 bool CollectiveManager::CreateDeviceCommunicator(const std::string &group_name, const int32_t buffsize) {
   MS_LOG(INFO) << "Create device communicator for " << group_name;
 
@@ -913,7 +961,6 @@ bool CollectiveManager::CreateDeviceCommunicator(const std::string &group_name, 
     SetCommBuffSize(group_name, buffsize);
   }
 
-  // Step 1: Generate device information of the root node.
   MS_EXCEPTION_IF_NULL(device_comm_lib_instance_);
   CommunicationGroupPtr group = device_comm_lib_instance_->GetGroup(group_name);
   if (group_name.compare(kIndex0, kSizeFour, kPlatFormMccl) == 0 &&
@@ -922,6 +969,10 @@ bool CollectiveManager::CreateDeviceCommunicator(const std::string &group_name, 
     MS_LOG(INFO) << "Begin to Create mccl group " << group_name;
   }
   MS_EXCEPTION_IF_NULL(group);
+
+  SetGlobalCommInfo(group, group_name);
+
+  // Step 1: Generate device information of the root node.
   std::string rank_table_file_path = common::GetEnv("RANK_TABLE_FILE");
   bool ret = false;
   void *root_info;

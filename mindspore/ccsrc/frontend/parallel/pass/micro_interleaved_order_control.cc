@@ -128,7 +128,7 @@ bool ExtractInterLeavedCommNode(const std::vector<CNodePtr> &origin_nodes_topolo
       continue;
     }
     if (block_id >= 0 && !cnode->HasPrimalAttr(block_index)) {
-      MS_LOG(INFO) << "communication cnode :" << cnode->DebugString() << " dose not contains " << block_index
+      MS_LOG(INFO) << "communication cnode :" << cnode->DebugString() << " does not contains " << block_index
                    << " info.";
       continue;
     }

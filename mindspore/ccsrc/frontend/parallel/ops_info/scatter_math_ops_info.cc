@@ -181,7 +181,7 @@ Status ScatterMathOpsInfo::ComputeReplaceGraph(const CNodePtr &cnode) {
   auto add_mask = gen_g.PushBack({gen_g.NewOpInst(ADD), mul, sub_mask});
   auto info_position = name_.find("Info");
   if (info_position == std::string::npos) {
-    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "The name " << name_ << " dose not contain 'Info'";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "The name " << name_ << " does not contain 'Info'";
   }
   auto node_name = name_.substr(0, info_position);
   auto scatter_ops = gen_g.PushBack({gen_g.NewOpInst(node_name), gen_g.virtual_input_node(), minimum, add_mask});
@@ -222,7 +222,7 @@ Status ScatterAddInfo::ComputeReplaceGraph(const CNodePtr &cnode) {
   auto mul = gen_g.PushBack({gen_g.NewOpInst(MUL), gen_g.virtual_input_node(), reshape});
   auto info_position = name_.find("Info");
   if (info_position == std::string::npos) {
-    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "The name " << name_ << " dose not contain 'Info'";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "The name " << name_ << " does not contain 'Info'";
   }
   auto node_name = name_.substr(0, info_position);
   auto scatter_ops = gen_g.PushBack({gen_g.NewOpInst(node_name), gen_g.virtual_input_node(), minimum, mul});

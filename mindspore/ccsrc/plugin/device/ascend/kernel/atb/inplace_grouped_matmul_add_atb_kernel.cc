@@ -45,13 +45,13 @@ void InplaceGroupedMatmulAddATBKernelMod::SetTensorStorageInfo(const KernelTenso
 
 void InplaceGroupedMatmulAddATBKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                            const std::vector<KernelTensor *> &outputs) {
-  uint64_t hash_id = device::ascend::AtbHash();
+  atb::infer::GroupedMatmulInplaceAddParam param;
+  param.transposeA = true;
+  param.transposeB = false;
+  uint64_t hash_id = device::ascend::AtbHash(param, op_name_);
   if (hash_id != hash_id_) {
-    hash_id_ = hash_id;
-    atb::infer::GroupedMatmulInplaceAddParam param;
-    param.transposeA = true;
-    param.transposeB = false;
     atb::CreateOperation(param, &op_);
+    hash_id_ = hash_id;
   }
 
   out_tensor_ = inputs[kIndex3]->CloneKernelTensor();

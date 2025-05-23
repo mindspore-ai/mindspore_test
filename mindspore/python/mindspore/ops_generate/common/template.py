@@ -93,7 +93,6 @@ ${func_impl_name}_impl = _Pyboost${class_name}Prim()
 """)
 
 IMPORT_PYBOOST_PRIM_HEADER = f"""
-from mindspore.common._stub_tensor import _convert_stub
 from mindspore.ops._utils.arg_handler import *
 """
 
@@ -118,19 +117,34 @@ REGISTER_PYBOOST_GRAD_DEFINE_TEMPLATE = Template(
 REGISTER_PYBOOST_GRAD_TEMPLATE = Template("${register_func}")
 
 PYBOOST_FUNCTION_HEADER_TEMPLATE = Template.load_from_file(
-    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_functions_h.tpl'))
+    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_api_h.tpl'))
 
-PYBOOST_FUNCTION_TEMPLATE = Template.load_from_file(
-    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_function.tpl'))
+PYBOOST_CORE_HEADER_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_core_header.tpl'))
 
-PYBOOST_COMM_FUNCTION_TEMPLATE = Template.load_from_file(
-    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_comm_function.tpl'))
+PYBOOST_REGISTRY_BODY_CC_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_registry_body_cc.tpl'))
 
-PYBOOST_FUNCTION_DYNAMIC_OUTPUT_TEMPLATE = Template.load_from_file(
-    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_function_dynamic_output.tpl'))
+PYBOOST_CORE_BODY_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_core_body.tpl'))
 
-PYBOOST_FUNCTIONS_CC_TEMPLATE = Template.load_from_file(
-    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_functions_cc.tpl'))
+PYBOOST_CORE_BODY_COMM_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_core_body_comm.tpl'))
+
+PYBOOST_CORE_BODY_SYNC_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_core_body_sync.tpl'))
+
+PYBOOST_REGISTRY_CC_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_registry_cc.tpl'))
+
+PYBOOST_API_CC_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_api_cc.tpl'))
+
+PYBOOST_API_BODY_CC_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_api_body_cc.tpl'))
+
+PYBOOST_CORE_CC_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_core_cc.tpl'))
 
 PYBOOST_OVERLOAD_FUNCTIONS_CC_TEMPLATE = Template.load_from_file(
     os.path.join(
@@ -225,6 +239,8 @@ PYBOOST_ASCEND_SINGLE_OP_HEADER_TEMPLATE = Template.load_from_file(
 PYBOOST_ASCEND_SINGLE_HCLL_OP_HEADER_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR,
                  f'./{K.MS_OPS_KERNEL_PATH}/ascend/pyboost/template/pyboost_aclnn_single_hccl_op_header_template.tpl'))
+
+PYBOOST_CALL_FUNC_TEMPLATE = Template('${return_type} Call(${call_args_with_type}) override;')
 
 PYBOOST_ASCEND_SINGLE_OP_SOURCE_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR,
@@ -373,7 +389,6 @@ from mindspore.ops._primitive_cache import _get_cache_prim
 from mindspore.ops._utils.arg_dtype_cast import type_it
 from mindspore.ops._utils.arg_handler import *
 from mindspore._c_expression import OpDtype
-from mindspore.common._stub_tensor import _convert_stub
 from mindspore.common.jit_context import jit_context
 from mindspore._checkparam import is_stub_tensor
 """
@@ -508,6 +523,9 @@ FUNCTIONS_CC_TEMPLATE = Template.load_from_file(
 
 FUNCTION_BODY_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/function_body.tpl'))
+
+FUNCTION_COMM_BODY_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/comm_function_body.tpl'))
 
 FUNCTIONS_H_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/functions_h.tpl'))

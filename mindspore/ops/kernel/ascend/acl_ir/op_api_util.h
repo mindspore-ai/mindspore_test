@@ -31,7 +31,6 @@
 #include "kernel/ascend/visible.h"
 
 namespace mindspore::device::ascend {
-enum CustomSupportType : int8_t { UNKNOWN = -1, kTypeTensor, kTypeBool, kTypeInt, kTypeFloat, kTypeString };
 
 typedef enum : int8_t {
   KEEP_DTYPE = 0,

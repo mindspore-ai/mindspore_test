@@ -18,12 +18,14 @@
 #include "ops_utils/op_constants.h"
 #include "abstract/abstract_value.h"
 #include "include/common/utils/anfalgo.h"
+#include "include/common/utils/utils.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "include/backend/distributed/collective/collective_manager.h"
-#include "runtime/graph_scheduler/execution_order_check/kernel_cache.h"
 #include "runtime/graph_scheduler/execution_order_check/comm_execution_order_check.h"
 #include "mindspore/core/include/utils/ms_utils.h"
 #include "mindspore/ccsrc/include/common/utils/comm_manager.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
 
 namespace mindspore {
 namespace runtime {
@@ -128,19 +130,54 @@ void Process::CheckCommOrderIteration(size_t total_running_count) {
   } else {
     cache.need_add = (total_running_count % check_iteration == 0);
     if ((total_running_count - 1) % check_iteration == 0) {
-      cache.SwapBuffers(total_running_count - 1);
-      ProcessKernels(total_running_count - 1);
-      ValidateCommGroupExecuteOrders(total_running_count - 1);
+      cache.SwapBuffers(static_cast<int>(total_running_count - 1));
+      ProcessKernels(static_cast<int>(total_running_count - 1));
+      ValidateCommGroupExecuteOrders(static_cast<int>(total_running_count - 1));
     }
   }
+}
+
+std::string Process::GetGroupFromPrim(const PrimitivePtr &prim) {
+  auto group_attr = prim->GetAttr(kAttrGroup);
+  if (!group_attr || !group_attr->isa<StringImm>()) {
+    return "";
+  }
+
+  auto group_ptr = group_attr->cast<StringImmPtr>();
+  if (!group_ptr) {
+    MS_LOG(WARNING) << "Failed to cast group attribute to StringImm";
+    return "";
+  }
+  return group_ptr->value();
+}
+
+std::pair<std::string, std::string> Process::GetKernelShapes(const CNodePtr &kernel) {
+  auto input_node = kernel->input(kIndex1);
+  std::string input_shape = "UnknownShape";
+  if (input_node && input_node->abstract()) {
+    auto input_shape_abs = input_node->abstract()->GetShapeTrack();
+    input_shape = (input_shape_abs ? input_shape_abs->ToString() : "UnknownShape");
+  } else {
+    MS_LOG(WARNING) << "Input node or its abstract is null for kernel: " << kernel->fullname_with_scope();
+  }
+
+  std::string output_shape = "UnknownShape";
+  auto output_abs = kernel->abstract();
+  if (output_abs) {
+    auto output_shape_abs = output_abs->GetShapeTrack();
+    output_shape = (output_shape_abs ? output_shape_abs->ToString() : "UnknownShape");
+  } else {
+    MS_LOG(WARNING) << "Abstract is null for output node in kernel: " << kernel->fullname_with_scope();
+  }
+  return {input_shape, output_shape};
 }
 
 void Process::ProcessKernels(int step) {
   MS_LOG(INFO) << "The processing hash kernel logic in the online check of the execution sequence of the communication "
                   "operator starts.";
-  ProcessResult *result = &latest_results_[step];
-  // Retrieve kernels for the current step
-  auto kernels = KernelCache::GetInstance().GetBuffers(step);
+  ProcessResult *result = (step == kPynativeFlag) ? &pynative_results_ : &latest_results_[step];
+  std::vector<std::any> kernels = KernelCache::GetInstance().GetBuffers(step);
+
   if (kernels.empty()) {
     MS_LOG(WARNING) << "No kernels to process.";
     return;
@@ -150,69 +187,64 @@ void Process::ProcessKernels(int step) {
   group_to_hash.reserve(20);
 
   // Process each kernel
-  for (const auto &kernel : kernels) {
-    // Skip kernel if it does not have the 'Group' attribute
-    if (!common::AnfAlgo::HasNodeAttr(kAttrGroup, kernel)) {
-      continue;
+  for (const auto &item : kernels) {
+    if (item.type() == typeid(CNodePtr)) {
+      auto kernel = std::any_cast<CNodePtr>(item);
+      auto prim = GetCNodePrimitive(kernel);
+      if (!prim) {
+        MS_LOG(WARNING) << "Primitive is null for kernel: " << kernel->fullname_with_scope();
+        continue;
+      }
+
+      const std::string group = GetGroupFromPrim(prim);
+      if (group.empty()) {
+        continue;
+      }
+
+      auto [input_shape, output_shape] = GetKernelShapes(kernel);
+
+      // Fetch communication ranks for the group
+      FetchCommRanksCache(group);
+
+      const std::string primitive_str = prim->ToString();
+      if (primitive_str == "Send" || primitive_str == "Receive") {
+        // Send | Receive -> srcRank-DestRank Hash(SR-Shape)
+        ProcessSendReceive(result, group, kernel, primitive_str, input_shape, output_shape);
+      } else {
+        // group: Hash(Primitive-InputShape)
+        ProcessNormalGroupHash(result, group, primitive_str, input_shape);
+      }
+
+      // Skip kernel if it does not have the 'Group' attribute
+      if (!common::AnfAlgo::HasNodeAttr(kAttrGroup, kernel)) {
+        continue;
+      }
+    } else if (item.type() == typeid(CommPyboostKernelPtr)) {
+      auto kernel = std::any_cast<CommPyboostKernelPtr>(item);
+      FetchCommRanksCache(kernel->group);
+      if (kernel->primitive == prim::kPrimDistCommIsend->name() ||
+          kernel->primitive == prim::kPrimInnerCommIsend->name() ||
+          kernel->primitive == prim::kPrimDistCommIrecv->name() ||
+          kernel->primitive == prim::kPrimInnerCommIrecv->name()) {
+        ProcessSendReceive(result, kernel->group, kernel, kernel->primitive, kernel->input_shape, kernel->output_shape);
+      } else {
+        ProcessNormalGroupHash(result, kernel->group, kernel->primitive, kernel->input_shape);
+      }
     }
 
-    auto prim = GetCNodePrimitive(kernel);
-    if (!prim) {
-      MS_LOG(WARNING) << "Primitive is null for kernel: " << kernel->fullname_with_scope();
-      continue;
-    }
-
-    auto group_attr = prim->GetAttr(kAttrGroup);
-    if (!group_attr || !group_attr->isa<StringImm>()) {
-      MS_LOG(WARNING) << "Group attribute is missing or not a string for kernel: " << kernel->fullname_with_scope();
-      continue;
-    }
-
-    auto group_ptr = group_attr->cast<StringImmPtr>();
-    if (!group_ptr) {
-      MS_LOG(WARNING) << "Failed to cast group attribute to StringImm for kernel: " << kernel->fullname_with_scope();
-      continue;
-    }
-
-    const std::string &group = group_ptr->value();
-
-    auto input_node = kernel->input(kIndex1);
-    std::string input_shape = "UnknownShape";
-    if (input_node && input_node->abstract()) {
-      auto input_shape_abs = input_node->abstract()->GetShapeTrack();
-      input_shape = (input_shape_abs ? input_shape_abs->ToString() : "UnknownShape");
-    } else {
-      MS_LOG(WARNING) << "Input node or its abstract is null for kernel: " << kernel->fullname_with_scope();
-    }
-
-    std::string output_shape = "UnknownShape";
-    auto output_abs = kernel->abstract();
-    if (output_abs) {
-      auto output_shape_abs = output_abs->GetShapeTrack();
-      output_shape = (output_shape_abs ? output_shape_abs->ToString() : "UnknownShape");
-    } else {
-      MS_LOG(WARNING) << "Abstract is null for output node in kernel: " << kernel->fullname_with_scope();
-    }
-
-    // Fetch communication ranks for the group
-    FetchCommRanksCache(group);
-
-    const std::string primitive_str = prim->ToString();
-    if (primitive_str == "Send" || primitive_str == "Receive") {
-      // Send | Receive -> srcRank-DestRank Hash(SR-Shape)
-      ProcessSendReceive(result, group, kernel, primitive_str, input_shape, output_shape);
-    } else {
-      // group: Hash(Primitive-InputShape)
-      ProcessNormalGroupHash(result, group, primitive_str, input_shape);
-    }
+    MS_LOG(INFO) << "Process kernel size: " << kernels.size() << " for step: " << step;
   }
-  MS_LOG(INFO) << "Process kernel size: " << kernels.size() << " for step: " << step;
 }
 
-void Process::AllGatherExecuteOrderHash(int step, std::unique_ptr<char[]> *output_host_buffer) {
+void Process::AllGatherExecuteOrderHash(std::unique_ptr<char[]> *output_host_buffer, int step) {
   MS_LOG(INFO) << "The processing allgather group hash in the online check of the execution sequence of the "
                   "communication operator starts.";
-  ProcessResult process_result = latest_results_[step];
+  ProcessResult process_result;
+  if (step == kPynativeFlag) {
+    process_result = pynative_results_;
+  } else {
+    process_result = latest_results_[step];
+  }
 
   const auto &context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
@@ -241,6 +273,8 @@ void Process::AllGatherExecuteOrderHash(int step, std::unique_ptr<char[]> *outpu
     nullptr, kMaxAllGatherBuffSize, {static_cast<int64_t>(kMaxAllGatherBuffSize)}, Format::DEFAULT_FORMAT,
     TypeId::kNumberTypeUInt8, device_target, device_id, comm_stream_id);
 
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "AllocMemoryForCheckCommExecutionOrder",
+                                                 "AllocMemoryForCheckCommExecutionOrder", "", false);
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "AllocMemoryForCheckCommExecutionOrder",
                                                  device::tracker::MemType::kOther, input_device_tensor->GetSize(),
                                                  input_device_tensor.get());
@@ -272,7 +306,10 @@ void Process::AllGatherExecuteOrderHash(int step, std::unique_ptr<char[]> *outpu
   }
 
   auto comm_lib = distributed::collective::CollectiveManager::instance()->device_comm_lib();
+  MS_EXCEPTION_IF_NULL(comm_lib);
+  MS_LOG(WARNING) << "comm_stream_id:" << comm_stream_id;
   void *stream_ptr = device_context->device_res_manager_->GetStream(comm_stream_id);
+  MS_EXCEPTION_IF_NULL(stream_ptr);
 
   auto ret = device_context->device_res_manager_->SyncAllStreams();
   if (!ret) {
@@ -303,7 +340,7 @@ void Process::AllGatherExecuteOrderHash(int step, std::unique_ptr<char[]> *outpu
 void Process::ValidateCommGroupExecuteOrders(int step) {
   MS_LOG(INFO) << "The online verification of the execution sequence precision of the communication operator starts.";
   std::unique_ptr<char[]> output_host_buffer = std::make_unique<char[]>(kMaxAllGatherBuffSize * GetRankSize());
-  AllGatherExecuteOrderHash(step, &output_host_buffer);
+  AllGatherExecuteOrderHash(&output_host_buffer, step);
 
   std::map<std::string, std::map<uint64_t, size_t>> group_execute_order_hash;
   size_t offset_z = 0;
@@ -361,6 +398,7 @@ void Process::ValidateExecuteOrders(const std::map<std::string, std::map<uint64_
       }
     }
   }
+  MS_LOG(WARNING) << "ValidateExecuteOrders pass, the communication execution order is correct.";
 }
 
 uint64_t Process::accumulate_hash(uint64_t current_hash, const std::string &str) {
@@ -368,18 +406,24 @@ uint64_t Process::accumulate_hash(uint64_t current_hash, const std::string &str)
                          [](uint64_t hash, char c) { return fnv1a_hash_update(hash, c); });
 }
 
-void Process::ProcessSendReceive(ProcessResult *result, const std::string &group, const CNodePtr &kernel,
+void Process::ProcessSendReceive(ProcessResult *result, const std::string &group, const KernelVariant &kernel,
                                  const std::string &primitive_str, const std::string &inputShape,
                                  const std::string &outputShape) {
   std::string rank_id = GetRankID();
-  std::string other_rank = (primitive_str == "Send") ? GetRankByAttrName(kernel, comm_rank_cache_[group], kAttrDestRank)
-                                                     : GetRankByAttrName(kernel, comm_rank_cache_[group], kAttrSrcRank);
-
+  std::string other_rank;
+  if (auto cnode_ptr = std::get_if<CNodePtr>(&kernel)) {
+    other_rank = (primitive_str == "Send") ? GetRankByAttrName(*cnode_ptr, comm_rank_cache_[group], kAttrDestRank)
+                                           : GetRankByAttrName(*cnode_ptr, comm_rank_cache_[group], kAttrSrcRank);
+  } else if (auto pyboost_ptr = std::get_if<CommPyboostKernelPtr>(&kernel)) {
+    other_rank = std::to_string((*pyboost_ptr)->rank);
+  }
   std::string key =
     (rank_id < other_rank) ? kSendReceive + rank_id + "-" + other_rank : kSendReceive + other_rank + "-" + rank_id;
 
-  std::string value_string = (primitive_str == "Send") ? kSendReceive + rank_id + other_rank + inputShape
-                                                       : kSendReceive + other_rank + rank_id + outputShape;
+  std::string value_string = (primitive_str == "Send" || primitive_str == prim::kPrimDistCommIsend->name() ||
+                              primitive_str == prim::kPrimInnerCommIsend->name())
+                               ? kSendReceive + rank_id + other_rank + inputShape
+                               : kSendReceive + other_rank + rank_id + outputShape;
 
   auto it = result->group_hashes.find(key);
   if (it == result->group_hashes.end()) {
@@ -425,6 +469,18 @@ void Process::FetchCommRanksCache(const std::string &group_name) {
 #endif
   }
   comm_rank_cache_[group_name] = comm_ranks;
+}
+
+void Process::StartCollectExecOrder() {
+  auto &cache = KernelCache::GetInstance();
+  cache.need_add = true;
+}
+
+void Process::StopCollectExecOrder() {
+  auto &cache = KernelCache::GetInstance();
+  cache.need_add = false;
+  ProcessKernels();
+  ValidateCommGroupExecuteOrders();
 }
 }  // namespace runtime
 }  // namespace mindspore

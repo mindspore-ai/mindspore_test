@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,17 +24,12 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API BatchNormExtFuncImpl : public OpFuncImpl {
+class OPS_API BatchNormExtFuncImpl final : public OpFuncImpl {
  public:
-  BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
-
-  TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
-
-  ShapeArray InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const override;
-  TypePtrList InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const override;
-
- protected:
-  virtual size_t GetAttrPosZero() const { return 5; }
+  ShapeArray InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+  std::vector<TypeId> InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+  int32_t CheckValidation(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+  bool GeneralInferRegistered() const override { return true; }
 };
 }  // namespace ops
 }  // namespace mindspore

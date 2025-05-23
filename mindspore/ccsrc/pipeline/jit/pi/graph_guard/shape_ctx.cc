@@ -19,16 +19,25 @@
 #include "ir/tensor.h"
 #include "pipeline/jit/pi/python_adapter/pydef.h"
 #include "include/common/utils/tensor_py.h"
-#include "pipeline/jit/pi/python_adapter/py_frame.h"
 
 namespace py = pybind11;
 
 namespace mindspore {
 namespace pijit {
 
-ShapeContext::ShapeContext(EvalFrameObject *f, PyObject *signature)
-    : frame_(f), signature_(signature), is_method_(false), applied_(false) {
-  Py_XINCREF(f);
+#if IS_PYTHON_3_11_PLUS
+
+ShapeContext::ShapeContext(PyFrameWrapper f, const py::object &signature) {}
+ShapeContext::~ShapeContext() {}
+bool ShapeContext::CheckValid() { return false; }
+void ShapeContext::ApplySignature() {}
+void ShapeContext::RevertSignature() {}
+
+#else
+
+ShapeContext::ShapeContext(PyFrameWrapper f, const py::object &h)
+    : frame_(f), signature_(h.ptr()), is_method_(false), applied_(false) {
+  PyObject *signature = h.ptr();
   Py_XINCREF(signature);
   if (signature != nullptr) {
     if (!PyTuple_Check(signature) && !PyList_Check(signature)) {
@@ -62,7 +71,6 @@ ShapeContext::ShapeContext(EvalFrameObject *f, PyObject *signature)
 
 ShapeContext::~ShapeContext() {
   RevertSignature();
-  Py_XDECREF(frame_);
   Py_XDECREF(signature_);
 }
 
@@ -225,11 +233,6 @@ bool ShapeContext::CheckValid() {
   return true;
 }
 
-#if IS_PYTHON_3_11_PLUS
-void ShapeContext::ApplySignature() { MS_LOG(ERROR) << "not implement in python3.11"; }
-void ShapeContext::RevertSignature() { MS_LOG(ERROR) << "not implement in python3.11"; }
-#else
-
 void ShapeContext::ApplySignature() {
   if (applied_) {
     return;
@@ -237,12 +240,18 @@ void ShapeContext::ApplySignature() {
   if (!CheckValid()) {
     return;
   }
-  int argc = frame_->f_code->co_argcount + frame_->f_code->co_kwonlyargcount;
+  PyCodeWrapper co_wrapper = frame_.GetCode();
+  // in python3.11+, modify fast local maybe cause error
+  PyObject **fast_local = const_cast<PyObject **>(frame_.FastLocal());
+  bool has_va;
+  bool has_kw_va;
+  int argc = co_wrapper.ArgCount(&has_va, &has_kw_va);
+  argc = argc - has_va - has_kw_va;
   for (int i = (is_method_ ? 1 : 0), j = 0; i < argc; ++i, ++j) {
     PyObject *sig_item = PyTuple_GetItem(signature_, j);
-    PyObject *org_item = frame_->f_localsplus[i];
+    PyObject *org_item = fast_local[i];
     if (sig_item != nullptr && sig_item != Py_None && org_item != nullptr && org_item != Py_None) {
-      frame_->f_localsplus[i] = sig_item;
+      fast_local[i] = sig_item;
     }
   }
   applied_ = true;
@@ -252,12 +261,18 @@ void ShapeContext::RevertSignature() {
   if (!applied_) {
     return;
   }
-  int argc = frame_->f_code->co_argcount + frame_->f_code->co_kwonlyargcount;
+  PyCodeWrapper co_wrapper = frame_.GetCode();
+  PyObject **fast_local = const_cast<PyObject **>(frame_.FastLocal());
+  bool has_va;
+  bool has_kw_va;
+  int argc = co_wrapper.ArgCount(&has_va, &has_kw_va);
+  argc = argc - has_va - has_kw_va;
   for (int i = (is_method_ ? 1 : 0), j = 0; i < argc; ++i, ++j) {
-    frame_->f_localsplus[i] = origin_[j];
+    fast_local[i] = origin_[j];
   }
   applied_ = false;
 }
+
 #endif
 
 }  // namespace pijit

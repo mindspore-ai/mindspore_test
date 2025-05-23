@@ -242,17 +242,6 @@ BackendOpRunInfoPtr CreateBackendOpRunInfo(const FrontendOpRunInfoPtr &op_run_in
   return backend_op_run_info;
 }
 
-void UpdateStubTensor(const FrontendOpRunInfoPtr &op_run_info) {
-  // Some operators do not have StubNodes, such as Cast inserted for automatic mixed precision.
-  if (op_run_info->stub_output != nullptr) {
-    if (op_run_info->base_op_run_info.has_dynamic_output ||
-        OpCompiler::GetInstance().IsInvalidInferResultOp(op_run_info->base_op_run_info.op_name)) {
-      UpdateOutputStubNodeAbs(op_run_info);
-    }
-    op_run_info->stub_output->SetValue(op_run_info->real_out);
-  }
-}
-
 runtime::KernelTaskType GetViewOpTaskType(const std::string &op_name) {
   if (op_name == kCopyWithSliceOpName) {
     return runtime::KernelTaskType::kCOPY_TASK;
@@ -303,6 +292,23 @@ size_t GetCurStreamId(const std::string &device_target) {
   stream_id = device_ctx->device_res_manager_->GetCurrentStreamId();
 #endif
   return stream_id;
+}
+
+bool GetMixprecisionTypeFromStrategy(const PyboostOpRunInfoPtr &op_run_info) {
+  MS_EXCEPTION_IF_NULL(op_run_info);
+  auto cur_amp_Strategy = amp::GetCurrentAmpStrategy();
+  if (cur_amp_Strategy == nullptr || cur_amp_Strategy->GetAmpLevel() == amp::AmpLevel::O0) {
+    return false;
+  }
+  const auto &op_cast_strategy_info = GetPrimCastStrategyInfo(cur_amp_Strategy, op_run_info->op_prim->name());
+  if (op_cast_strategy_info.strategy == amp::Ignore) {
+    return false;
+  }
+  if (op_cast_strategy_info.strategy == amp::AutoPromote) {
+    op_run_info->mix_type = kAutoPromote;
+  }
+  op_run_info->mix_precision_type = op_cast_strategy_info.dtype;
+  return true;
 }
 
 bool GetMixprecisionTypeFromStrategy(const FrontendOpRunInfoPtr &op_run_info) {
@@ -367,6 +373,15 @@ GradExecutorPtr ForwardExecutor::grad() const {
   auto grad_executor = grad_executor_.lock();
   MS_EXCEPTION_IF_NULL(grad_executor);
   return grad_executor;
+}
+
+void ForwardExecutor::InitOpRunInfo(const PyboostOpRunInfoPtr &op_run_info) {
+  Init();
+  // Used for async run
+  op_run_info->requires_grad = GradState::Get().RequiresGrad();
+  op_run_info->device_target = GetCurrentDeviceTarget(op_run_info->op_prim);
+  auto device_context = runtime::OpRunner::GetDeviceContext(op_run_info->device_target);
+  op_run_info->stream_id = device_context->device_res_manager_->GetCurrentStreamId();
 }
 
 void ForwardExecutor::InitOpRunInfo(const FrontendOpRunInfoPtr &op_run_info) {
@@ -656,7 +671,6 @@ void ForwardExecutor::RunOpBackendSync(const FrontendOpRunInfoPtr &op_run_info) 
   RunOpBackend(op_run_info, backend_op_run_info);
   if (!op_run_info->requires_grad) {
     MS_LOG(DEBUG) << "Grad flag is false";
-    UpdateStubTensor(op_run_info);
     return;
   }
 
@@ -664,8 +678,6 @@ void ForwardExecutor::RunOpBackendSync(const FrontendOpRunInfoPtr &op_run_info) 
   op_run_info->op_grad_info->out_abs = op_run_info->base_op_run_info.abstract;
   // Do op grad and record op info
   ForwardOpGradImpl(op_run_info->op_grad_info, op_run_info->async_status);
-  // output is dynamic shape. Need to update abstract and value.
-  UpdateStubTensor(op_run_info);
 }
 
 void ForwardExecutor::OpRunInfoUsePrimC(const FrontendOpRunInfoPtr &op_run_info) const {
@@ -866,6 +878,16 @@ ValuePtr ForwardExecutor::RunOpInVM(const FrontendOpRunInfoPtr &op_run_info) con
   }
   MS_LOG(DEBUG) << "RunOpInVM end";
   return result_v;
+}
+
+bool ForwardExecutor::CellNotSetMixedPrecision(const PyboostOpRunInfoPtr &op_run_info) {
+  MS_EXCEPTION_IF_NULL(op_run_info);
+  if (!mix_precision_type_stack_.empty() && mix_precision_type_stack_.top() != kNotSet) {
+    op_run_info->mix_type = mix_precision_type_stack_.top();
+    return false;
+  }
+  // get mix_precision_type from amp strategy stack
+  return !GetMixprecisionTypeFromStrategy(op_run_info);
 }
 
 bool ForwardExecutor::CellNotSetMixedPrecision(const FrontendOpRunInfoPtr &op_run_info) {

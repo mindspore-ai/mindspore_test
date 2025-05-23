@@ -17,6 +17,7 @@
 #include <vector>
 #include <memory>
 #include "include/common/utils/anfalgo.h"
+#include "include/backend/optimizer/helper.h"
 #include "ops_utils/op_utils.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"

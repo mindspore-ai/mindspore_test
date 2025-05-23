@@ -37,9 +37,7 @@ TensorPtr FastPermute(const TensorPtr &input, const std::vector<int64_t> &perm) 
   for (const auto &perm_i : perm) {
     // cppcheck-suppress useStlAlgorithm
     if (perm_i != dim++) {
-      auto perm_v = MakeValue<std::vector<int64_t>>(perm)->cast<ValueTuplePtr>();
-      MS_EXCEPTION_IF_NULL(perm_v);
-      return transpose(input, perm_v);
+      return transpose(input, perm);
     }
   }
   return input;
@@ -252,10 +250,7 @@ void EinsumExtAdjustOperands(const std::vector<TensorPtr> &operands_list,
                                    << ", but it is not equal to previously seen dimension, "
                                    << operand->shape().at(dim2) << " != " << operand->shape().at(dim1) << ".";
         }
-        auto offset = std::make_shared<Int64Imm>(0);
-        auto dim1_v = std::make_shared<Int64Imm>(dim1);
-        auto dim2_v = std::make_shared<Int64Imm>(dim2);
-        operand = diagonal_view(operand, offset, dim1_v, dim2_v);
+        operand = diagonal_view(operand, kIndex0, dim1, dim2);
         // movedim(-1, dim1)
         int64_t movedim_dim = 0;
         std::vector<int64_t> movedim_perm = {};
@@ -272,7 +267,7 @@ void EinsumExtAdjustOperands(const std::vector<TensorPtr> &operands_list,
 
     for (auto &axis : perm_axis) {
       if (axis == kIdleIdx) {
-        operand = expand_dims(operand, std::make_shared<Int64Imm>(dim));
+        operand = expand_dims(operand, dim);
         axis = dim++;
       }
     }
@@ -364,8 +359,7 @@ TensorPtr EinsumExtMultiplication(const TensorPtr &left_operand, const TensorPtr
   }
 
   auto op_reshape = [](const TensorPtr &input, const std::vector<int64_t> &shape) -> TensorPtr {
-    auto shape_v = MakeValue<std::vector<int64_t>>(shape)->cast<ValueTuplePtr>();
-    return reshape(input, shape_v);
+    return reshape(input, shape);
   };
 
   left = op_reshape(FastPermute(left, l_perm_axis), left_shape);
@@ -423,8 +417,7 @@ TensorPtr EinsumExtContractOperands(const std::vector<TensorPtr> &adjust_operand
       for (auto dim = align_rank - 1; dim >= output_rank; dim--) {
         reshape_shape.erase(reshape_shape.begin() + dim);
       }
-      auto reshape_shape_v = MakeValue<std::vector<int64_t>>(reshape_shape)->cast<ValueTuplePtr>();
-      result = reshape(result, reshape_shape_v);
+      result = reshape(result, reshape_shape);
     } else {
       std::vector<int64_t> sum_dims(align_rank - output_rank);
       std::iota(sum_dims.begin(), sum_dims.end(), output_rank);

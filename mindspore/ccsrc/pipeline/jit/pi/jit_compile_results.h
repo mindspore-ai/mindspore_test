@@ -42,15 +42,6 @@ class Traceback {
     bool is_graph_mode_;
   };
 
-  struct InlineInfo {
-    std::string func_name_;
-    std::string inline_name_;
-    std::string root_name_;
-    InlineReason res;
-    int code_size_;
-    int depth;
-    int line;
-  };
   Traceback() = default;
   Traceback(const std::string &raw_func_name, const std::string &raw_func_info_name, int raw_code_size)
       : raw_func_name_(raw_func_name), raw_func_info_name_(raw_func_info_name), raw_code_size_(raw_code_size) {}
@@ -58,18 +49,14 @@ class Traceback {
   void Clear() {
     tbs_.clear();
     stop_trace_res_.clear();
-    inline_infos_.clear();
   }
 
   std::string raw_func_name() const { return raw_func_name_; }
   void PushTbs(const Element &tb) { tbs_.push_back(tb); }
   void PushStopTraceRes(const std::string &func_name, StopTraceReason res) { stop_trace_res_.emplace(func_name, res); }
-  void PushInlineInfo(InlineInfo info);
-  void DumpInlineInfo(std::stringstream &os, const std::string &func_name) const;
   int FindMaxNameLength(const std::list<Element> &tbs) const;
   std::string Dump(bool is_all = false) const;
   std::string DumpSummary() const;
-  std::string GetStopTrace();
 
  private:
   std::string raw_func_name_;
@@ -78,8 +65,6 @@ class Traceback {
   std::list<Element> tbs_;
   // <func_name, stop_trace_reason>
   std::unordered_map<std::string, StopTraceReason> stop_trace_res_;
-  // <root_func_name, InlineInfo>
-  std::map<std::string, std::list<InlineInfo>> inline_infos_;
 };
 
 class JitCompileResults {
@@ -113,7 +98,7 @@ class JitCompileResults {
 
   void set_stat(State s);
   void set_input_signature(const py::object &sig) { input_signature_ = sig; }
-  void set_origin_frame(EvalFrameObject *f) { compile_frame_ = PyFrameWrapper(f); }
+  void set_origin_frame(PyFrameWrapper f) { compile_frame_ = f; }
   void set_code(const OptCodePtr &p) { cache_.set_code(p); }
   void set_tbs(const std::shared_ptr<Traceback> &t) { tbs_ = t; }
   void set_conf(const std::shared_ptr<GraphJitConfig> &c) { conf_ = c; }

@@ -63,10 +63,8 @@ std::vector<TensorPtr> IndexGetNewTensor(const std::shared_ptr<OpRunner> &op, co
       auto nonzero_op = CREATE_PYBOOST_OP(InnerNonZero, device_name);
       auto nonzero_tensor = nonzero_op->Call(tensor);
       for (int64_t j = 0; j < rank; j++) {
-        const auto dim = std::make_shared<Int64Imm>(kIndex0);
-        const auto index = std::make_shared<Int64Imm>(j);
         auto select_op = CREATE_PYBOOST_OP(SelectExtView, device_name);
-        auto select_tensor = select_op->Call(nonzero_tensor, dim, index);
+        auto select_tensor = select_op->Call(nonzero_tensor, kIndex0, j);
         result.emplace_back(select_tensor);
       }
     } else {

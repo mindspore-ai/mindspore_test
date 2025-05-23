@@ -78,7 +78,7 @@ void EntranceActor::Run(OpContext<KernelTensor> *const context) {
 
   FetchInput(context);
 
-  // Note that IncreaseDynamicRefCount must be in front of SendMemoryFreeReq. SendMemoryFreeReq will decreasing the
+  // Note that IncreaseNewRefCounts must be in front of SendMemoryFreeReq. SendMemoryFreeReq will decreasing the
   // dynamic ref count. Avoid the illegal timing problem that the dynamic reference count is decremented and then
   // incremented.
   IncreaseNewRefCounts(context);

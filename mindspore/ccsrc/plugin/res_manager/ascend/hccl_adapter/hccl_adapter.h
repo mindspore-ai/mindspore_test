@@ -49,6 +49,18 @@ struct HcclAllToAllVParams {
   std::vector<uint64_t> rdispls;
 };
 
+struct HcclAllGatherVParams {
+  uint64_t send_count;
+  std::vector<uint64_t> recv_counts;
+  std::vector<uint64_t> rdispls;
+};
+
+struct HcclReduceScatterVParams {
+  std::vector<uint64_t> send_counts;
+  std::vector<uint64_t> sdispls;
+  uint64_t recv_count;
+};
+
 struct HcclAllToAllParams {
   uint64_t sendcount;
   uint64_t recvcount;
@@ -63,6 +75,8 @@ class ASCEND_RES_MANAGER_EXPORT HcclAdapter {
   // common
   bool InitHccl(uint32_t device_id, std::string_view rank_id, std::string_view rank_file, HcclMode hccl_mode);
   bool InitHccl(uint32_t device_id, std::string_view rank_id);
+  HcclResult HcclSetGlobalCommInfo(uint32_t masterIp, uint32_t masterPort, uint32_t totalRankSize, uint32_t nodeId,
+                                   uint32_t localRankSize);
   HcclResult HcclCommInitClusterInfoConfig(const char *rank_table, uint32_t rank_id, HcclCommConfig *config,
                                            HcclComm *hccl_comm_);
   HcclResult HcclCommInitRootInfoConfig(uint32_t n_ranks, const HcclRootInfo *root_info, uint32_t rank,
@@ -100,6 +114,14 @@ class ASCEND_RES_MANAGER_EXPORT HcclAdapter {
                       HcclComm comm) const;
   HcclResult HcclAlltoAllV(void *send_buf, void *recv_buf, hccl::HcclAllToAllVParams params, HcclDataType dataType,
                            const aclrtStream stream, HcclComm comm) const;
+
+  HcclResult HcclReduceScatterV(void *send_buf, void *recv_buf, hccl::HcclReduceScatterVParams params,
+                                HcclDataType data_type, const HcclReduceOp op, const aclrtStream stream,
+                                HcclComm hccl_comm) const;
+
+  HcclResult HcclAllGatherV(void *send_buf, void *recv_buf, hccl::HcclAllGatherVParams params, HcclDataType data_type,
+                            const aclrtStream stream, HcclComm hccl_comm) const;
+
   HcclResult HcclAllToAll(void *send_buf, void *recv_buf, hccl::HcclAllToAllParams params, HcclDataType dataType,
                           const aclrtStream stream, HcclComm comm) const;
   HcclResult HcclBarrier(const aclrtStream stream, HcclComm comm) const;
@@ -148,6 +170,7 @@ class ASCEND_RES_MANAGER_EXPORT HcclAdapter {
   GetAllKernelBuilderFunObj get_all_kernel_builder_ = nullptr;
   HcomDestroyFunObj hcom_destroy_ = nullptr;
 
+  HcclSetGlobalCommInfoFunObj set_hccl_global_comm_info_ = nullptr;
   HcclCommInitClusterInfoFunObj init_hccl_comm_ = nullptr;
   HcclCommInitClusterInfoConfigFunObj init_hccl_global_comm_ranktable_ = nullptr;
   HcclCommInitRootInfoConfigFunObj init_hccl_root_info_config_ = nullptr;
@@ -165,10 +188,11 @@ class ASCEND_RES_MANAGER_EXPORT HcclAdapter {
   HcclGetRankIdFunObj single_op_hccl_get_rank_id_ = nullptr;
   HcclGetRankSizeFunObj single_op_hccl_get_rank_size_ = nullptr;
   HcclAlltoAllVFunObj launch_hccl_all_to_allv_ = nullptr;
+  HcclReduceScatterVFunObj launch_hccl_reduce_scatterv_ = nullptr;
+  HcclAllGatherVFunObj launch_hccl_all_gatherv_ = nullptr;
   HcclAlltoAllFunObj launch_hccl_all_to_all_ = nullptr;
   HcclBatchSendRecvFunObj launch_hccl_batch_isend_irecv_ = nullptr;
   HcclCommResumeFunObj launch_hccl_comm_resume_ = nullptr;
-
   HcclGetCommAsyncErrorFunObj hccl_get_comm_async_error_ = nullptr;
   HcclGetErrorStringFunObj hccl_get_error_string_ = nullptr;
   HcomCreateGroupFunObj hccl_create_group_ = nullptr;

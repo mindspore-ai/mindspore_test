@@ -44,12 +44,16 @@ std::string GetTensorMethodName(const py::object &obj);
 bool IsTensorMethod(const py::object &obj);
 bool IsTensorOverloadMethod(const py::object &obj);
 bool EnableTensorOverload();
-void SyncStubTensor(const py::handle &obj);
+void SyncTensor(const py::handle &obj);
 
 ValuePtr ConvertPyObjToValue(const py::handle &handle);
 
 void PrintConstantAbstract(const AbstractBasePtr &abs);
 void AttachCustomBPropToGraph(const FuncGraphPtr &graph, const py::object &obj);
+
+// Check whether it is an nn.CellList.
+bool IsCellList(const py::object &obj);
+bool IsConvertToInterpretedObject(const py::object &obj);
 
 // Check whether it is an nn.CellList.
 bool IsCellList(const py::object &obj);

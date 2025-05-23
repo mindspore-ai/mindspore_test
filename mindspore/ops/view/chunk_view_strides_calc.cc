@@ -22,6 +22,12 @@
 #include "view/chunk_strides_calc.h"
 
 namespace mindspore::ops {
+TensorStorageInfoPtrList ChunkViewBasicTypeCalc(const PrimitivePtr &prim,
+                                                const mindspore::tensor::TensorPtr &input_tensor, const int64_t &chunks,
+                                                const int64_t &dim) {
+  return ChunkBasicTypeCalc(prim, input_tensor, chunks, dim);
+}
+
 TensorStorageInfoPtrList ChunkViewCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
   return ChunkCalc(prim, inputs);
 }

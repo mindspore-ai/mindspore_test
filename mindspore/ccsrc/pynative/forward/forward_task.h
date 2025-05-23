@@ -28,7 +28,21 @@
 
 namespace mindspore {
 namespace pynative {
-class FrontendTask : public runtime::AsyncTask {
+
+class PYNATIVE_EXPORT PyboostTask : public runtime::AsyncTask {
+ public:
+  PyboostTask(std::function<void(const PyboostOpRunInfoPtr &op_run_info)> run_func, PyboostOpRunInfoPtr op_run_info)
+      : AsyncTask(runtime::kFrontendTask), run_func_(std::move(run_func)), op_run_info_(std::move(op_run_info)) {}
+  ~PyboostTask() override = default;
+  void Run() override;
+  void SetException(const std::exception_ptr &e) override;
+
+ private:
+  std::function<void(const PyboostOpRunInfoPtr &op_run_info)> run_func_;
+  PyboostOpRunInfoPtr op_run_info_;
+};
+
+class PYNATIVE_EXPORT FrontendTask : public runtime::AsyncTask {
  public:
   FrontendTask(std::function<void(const FrontendOpRunInfoPtr &op_run_info)> run_func, FrontendOpRunInfoPtr op_run_info)
       : AsyncTask(runtime::kFrontendTask), run_func_(std::move(run_func)), op_run_info_(std::move(op_run_info)) {}
@@ -58,7 +72,25 @@ class PYNATIVE_EXPORT PassthroughFrontendTask : public runtime::AsyncTask {
   std::function<void()> set_exception_func_;
 };
 
-class FrontendPromiseTask : public FrontendTask {
+class PYNATIVE_EXPORT PyboostPromiseTask : public PyboostTask {
+ public:
+  PyboostPromiseTask(std::function<void(const PyboostOpRunInfoPtr &op_run_info)> run_func,
+                     std::function<void()> set_exception_func, PyboostOpRunInfoPtr op_run_info)
+      : PyboostTask(std::move(run_func), std::move(op_run_info)), set_exception_func_(std::move(set_exception_func)) {}
+
+  void SetException(const std::exception_ptr &e) override {
+    if (set_exception_func_ == nullptr) {
+      MS_LOG(ERROR) << "set_exception_func_ is null";
+      return;
+    }
+    set_exception_func_();
+  }
+
+ private:
+  std::function<void()> set_exception_func_;
+};
+
+class PYNATIVE_EXPORT FrontendPromiseTask : public FrontendTask {
  public:
   FrontendPromiseTask(std::function<void(const FrontendOpRunInfoPtr &op_run_info)> run_func,
                       std::function<void()> set_exception_func, FrontendOpRunInfoPtr op_run_info)

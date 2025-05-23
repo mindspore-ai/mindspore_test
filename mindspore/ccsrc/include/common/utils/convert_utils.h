@@ -26,9 +26,6 @@
 #include <set>
 #include <optional>
 #include "utils/hash_map.h"
-#include "utils/hash_set.h"
-#include "utils/convert_utils_base.h"
-#include "base/base_ref.h"
 #include "base/base.h"
 #include "ir/anf.h"
 #include "ir/func_graph.h"
@@ -114,6 +111,9 @@ COMMON_EXPORT std::string ValueSimpleInfoToString(const ValueSimpleInfo &value_s
 
 COMMON_EXPORT abstract::AbstractBasePtr TransformValueSimpleInfoToAbstract(const ValueSimpleInfo &value_simple_info);
 
+COMMON_EXPORT ValueTuplePtr PackBasicTypeToValue(const std::vector<int64_t> &val);
+COMMON_EXPORT Int64ImmPtr PackBasicTypeToValue(const int64_t &val);
+
 template <typename T>
 ValuePtr OptionalToValue(const std::optional<T> &val) {
   if (!val.has_value()) {
@@ -121,6 +121,20 @@ ValuePtr OptionalToValue(const std::optional<T> &val) {
   }
   return val.value();
 }
+
+template <typename T>
+auto PackToValue(const std::optional<T> &val) {
+  if (!val.has_value()) {
+    return kNone;
+  }
+  return PackToValue(val.value());
+}
+
+template <typename T>
+auto PackToValue(const T &val) {
+  return PackBasicTypeToValue(val);
+}
+
 }  // namespace mindspore
 
 #endif  // MINDSPORE_CCSRC_INCLUDE_COMMON_UTILS_CONVERT_UTILS_H_

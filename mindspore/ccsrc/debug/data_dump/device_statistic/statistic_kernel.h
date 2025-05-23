@@ -57,7 +57,6 @@ class StatisticKernel {
   bool CheckDataType(const TypeId &dtype_id) { return supported_dtype_.find(dtype_id) != supported_dtype_.end(); }
 
  protected:
-  KernelTensorPtr GenerateDeviceAddress(const size_t &mem_size, const TypeId &dtype_id, const ShapeVector &shape);
   KernelTensorPtr GetWorkSpaceDeviceAddress(const std::vector<KernelTensor *> &inputs,
                                             const std::vector<KernelTensor *> &outputs);
   virtual KernelTensorPtr GetOutputDeviceAddress(TypeId dtype_id);

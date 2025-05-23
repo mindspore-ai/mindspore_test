@@ -20,6 +20,7 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include <utility>
 #include "common/ms_factory.h"
 #include "plugin/device/ascend/kernel/atb/atb_adapter.h"
 #include "acl/acl.h"
@@ -28,7 +29,7 @@
 namespace mindspore::kernel {
 class ATBKernelMod : public KernelMod {
  public:
-  ATBKernelMod() = default;
+  explicit ATBKernelMod(std::string &&kernel_name) : op_name_(std::move(kernel_name)) {}
   ~ATBKernelMod();
 
   bool Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);
@@ -43,6 +44,7 @@ class ATBKernelMod : public KernelMod {
   std::vector<KernelAttr> GetOpSupport() override { MS_LOG(EXCEPTION) << "This interface is not support in ATB."; }
 
  protected:
+  std::string op_name_;
   atb::Operation *op_;
   device::ascend::ParamSetter param_setter_;
   uint64_t hash_id_{0};

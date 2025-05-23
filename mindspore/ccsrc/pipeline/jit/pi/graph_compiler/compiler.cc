@@ -18,12 +18,13 @@
 #include <memory>
 #include <string>
 #include <algorithm>
+#include <utility>
 #include "include/common/debug/anf_ir_dump.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "ir/func_graph.h"
 #include "pipeline/jit/pi/graph_compiler/utils.h"
 #include "pipeline/jit/pi/graph_compiler/parser/byte_code_parser.h"
-#include "pipeline/jit/ps/pipeline_jit.h"
+#include "pipeline/jit/ps/executor/jit_executor_py.h"
 #include "pipeline/jit/pi/utils/utils.h"
 #include "include/common/pynative/grad_state.h"
 #include "include/common/pynative/adapter.h"
@@ -102,10 +103,10 @@ void MarkArgumentMutableWithParams(const py::tuple &args, const AnfNodePtrList &
   }
 }
 
-py::tuple EliminateStubTensor(const py::tuple &args) {
+py::tuple MakeNewArgsTuple(const py::tuple &args) {
   py::tuple new_args = py::reinterpret_steal<py::tuple>(PyTuple_New(args.size()));
   for (size_t idx = 0; idx < args.size(); idx++) {
-    new_args[idx] = IsStubTensor(args[idx]) ? python_adapter::CallPyObjMethod(args[idx], "stub_sync") : args[idx];
+    new_args[idx] = args[idx];
   }
   return new_args;
 }
@@ -139,7 +140,7 @@ PyObject *RunGraph(const std::string &phase, const py::tuple &args, const std::s
   auto graph_executor = pipeline::GetExecutor();
   MS_EXCEPTION_IF_NULL(graph_executor);
   py::tuple args_tuple = EliminateSelf(args, name);
-  args_tuple = EliminateStubTensor(args_tuple);
+  args_tuple = MakeNewArgsTuple(args_tuple);
   auto origin_fg = graph_executor->GetFuncGraph(phase);
   const auto &params = origin_fg->parameters();
   MarkArgumentMutableWithParams(args_tuple, params);
@@ -147,8 +148,7 @@ PyObject *RunGraph(const std::string &phase, const py::tuple &args, const std::s
   args_tuple = EliminateInvalidArgs(args_tuple, co_flags, enable_tuple_broaden);
   MS_LOG(INFO) << "Args for run: " << std::string(py::str(args_tuple));
   py::object ret;
-  int mode = MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE);
-  if (mode == kPynativeMode && pynative::GradState::Get().grad_flag()) {
+  if (pynative::GradState::Get().grad_flag()) {
     MS_LOG(INFO) << "Do GradJit";
     JitSyntaxLevelScope jit_syntax_level_scope;
     pynative::PyNativeAdapter::SetGraphPhase(phase);
@@ -205,8 +205,12 @@ CallableGraph GraphCompiler::Compile(const FuncGraphPtr &func_graph, const py::t
   if (func_graph == nullptr) {
     return nullptr;
   }
-  py::tuple new_arg = EliminateStubTensor(args);
-  new_arg = EliminateSelf(new_arg, compile_info.co_name_);
+  py::tuple new_arg = MakeNewArgsTuple(args);
+  const auto &parameters = func_graph->parameters();
+  auto args_cnt = parameters.size() - func_graph->fv_param_count();
+  if (new_arg.size() > args_cnt) {
+    new_arg = EliminateSelf(new_arg, compile_info.co_name_);
+  }
   MarkArgumentMutable(new_arg);
   if (MsContext::GetInstance()->CanDump(kIntroductory)) {
     DumpIR("graph_before_compile.ir", func_graph);
@@ -230,6 +234,35 @@ CallableGraph GraphCompiler::Compile(const FuncGraphPtr &func_graph, const py::t
   (void)jit_executor->CompileInner(func_graph, new_arg, kwargs, phase, true);
 
   return callable;
+}
+
+std::pair<std::string, CallableGraph> GraphCompiler::Compile(const FuncGraphPtr &func_graph,
+                                                             const CompileInfo &compile_info) {
+  if (func_graph == nullptr) {
+    return std::make_pair("", nullptr);
+  }
+  std::string phase =
+    compile_info.co_filename_ + "_" + std::to_string(compile_info.co_firstlineno_) + "_" + compile_info.co_name_;
+  const auto &parameters = func_graph->parameters();
+  py::tuple args(parameters.size() - func_graph->fv_param_count());
+  size_t cur_fv_param_count = 0;
+  for (size_t i = 0; i < parameters.size(); ++i) {
+    auto para = parameters[i]->cast<ParameterPtr>();
+    MS_EXCEPTION_IF_NULL(para);
+    if (para->has_default()) {
+      cur_fv_param_count++;
+      continue;
+    }
+    auto para_abstract = para->abstract();
+    MS_EXCEPTION_IF_NULL(para_abstract);
+    phase += "_" + para_abstract->ToString();
+    auto input_obj = para->user_data<py::object>("pi_jit_py_obj");
+    MS_EXCEPTION_IF_NULL(input_obj);
+    args[i - cur_fv_param_count] = *input_obj;
+  }
+  phase += ".pi_jit";
+  CallableGraph callable = GraphCompiler::Compile(func_graph, args, py::dict(), phase, compile_info);
+  return std::make_pair(phase, callable);
 }
 }  // namespace pijit
 }  // namespace mindspore

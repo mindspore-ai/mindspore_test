@@ -1,7 +1,7 @@
 mindspore.mint.nn.functional.silu
 ==================================
 
-.. py:function:: mindspore.mint.nn.functional.silu(input)
+.. py:function:: mindspore.mint.nn.functional.silu(input, inplace=False)
 
     逐元素计算激活函数SiLU（Sigmoid Linear Unit）。有时也被称作Swish函数。该激活函数定义为：
 
@@ -21,6 +21,7 @@ mindspore.mint.nn.functional.silu
 
     参数：
         - **input** (Tensor) - `input` 即为上述公式中的 :math:`x`。数据类型为float16或float32的输入。
+        - **inplace** (bool, 可选) - 若为 ``True`` 则启用原地更新功能。默认值： ``False`` 。
 
     返回：
         Tensor，数据类型和shape与 `input` 的相同。

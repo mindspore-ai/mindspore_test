@@ -22,7 +22,8 @@ import socket
 import psutil
 import mindspore.log as logger
 from ._utils import _generate_cmd_args_list, _generate_cmd_args_list_with_core, _generate_url, \
-    _is_local_ip, _convert_addr_to_ip, _send_scale_num, _get_local_ip, _generate_bind_core_policy
+    _is_local_ip, _convert_addr_to_ip, _send_scale_num, _get_local_ip, _generate_auto_bind_core_strategy, \
+    _generate_bind_core_strategy
 
 
 class _Node:
@@ -79,11 +80,12 @@ class _ComputeGraphNode(_Node):
     Worker node for dynamic networking. Inherits from the Node class.
     """
 
-    def __init__(self, worker_num, sched_host, sched_port, timeout, node_id, args_list, output_file,
+    def __init__(self, worker_num, sched_host, sched_port, timeout, node_id, node_rank, args_list, output_file,
                  tail_worker_log, join, is_simulation):
         super().__init__(worker_num, sched_host, sched_port, timeout, args_list, output_file,
                          tail_worker_log, join, is_simulation)
         self.node_id = node_id
+        self.node_rank = node_rank
 
     def run(self):
         """
@@ -95,6 +97,8 @@ class _ComputeGraphNode(_Node):
         super().run()
         if self.node_id is not None:
             os.environ["MS_NODE_ID"] = str(self.node_id)
+        if self.node_rank is not None:
+            os.environ["MS_NODE_RANK"] = str(self.node_rank)
         # If simulation level is set, environment variable 'MS_ROLE' will not be set.
         if not self.is_simulation:
             os.environ["MS_ROLE"] = "MS_WORKER"
@@ -276,6 +280,10 @@ class _ProcessManager:
                            "You can access 'RANK_ID' environment variable after calling "
                            "'mindspore.communication.init()'")
 
+        device_to_cpu_map = {}
+        if self.bind_core is True:
+            device_to_cpu_map = _generate_auto_bind_core_strategy(self.local_worker_num)
+
         for i in range(self.local_worker_num):
             os.environ["DEVICE_ID"] = str(i)
             node_id, log_name = self._get_node_id_and_log_path(i)
@@ -294,7 +302,7 @@ class _ProcessManager:
                 logger.warning(f"In dryrun case, RANK_ID is assigned to {self.sim_rank_id}.")
 
             if self.bind_core:
-                affinity_cpu_str = _generate_bind_core_policy(i, self.local_worker_num, self.bind_core)
+                affinity_cpu_str = _generate_bind_core_strategy(i, device_to_cpu_map, self.bind_core)
                 if affinity_cpu_str is not None:
                     cmd = _generate_cmd_args_list_with_core(self.cmd, self.cmd_args, affinity_cpu_str)
                 else:
@@ -302,7 +310,8 @@ class _ProcessManager:
             else:
                 cmd = _generate_cmd_args_list(self.cmd, self.cmd_args)
             cgn = _ComputeGraphNode(self.worker_num, self.master_addr, self.master_port, self.cluster_time_out,
-                                    node_id, cmd, log_name, self.tail_worker_log, self.join, self.is_simulation)
+                                    node_id, self.node_rank, cmd, log_name, self.tail_worker_log, self.join,
+                                    self.is_simulation)
             process, tail_process = cgn.run()
             self.cgn_processes.append(process)
             self.tail_cgn_processes.append(tail_process)

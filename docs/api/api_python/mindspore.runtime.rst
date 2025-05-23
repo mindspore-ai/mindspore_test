@@ -27,6 +27,7 @@ mindspore.runtime
     mindspore.runtime.max_memory_allocated
     mindspore.runtime.max_memory_reserved
     mindspore.runtime.memory_allocated
+    mindspore.runtime.memory_replay
     mindspore.runtime.memory_reserved
     mindspore.runtime.memory_stats
     mindspore.runtime.memory_summary

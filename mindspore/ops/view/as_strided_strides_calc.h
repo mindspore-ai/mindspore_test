@@ -21,7 +21,11 @@
 
 namespace mindspore {
 namespace ops {
-
+OPS_API TensorStorageInfoPtrList AsStridedBasicTypeCalc(const PrimitivePtr &prim,
+                                                        const mindspore::tensor::TensorPtr &input_tensor,
+                                                        const std::vector<int64_t> &size,
+                                                        const std::vector<int64_t> &stride,
+                                                        const int64_t &storage_offset);
 OPS_API TensorStorageInfoPtrList AsStridedCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs);
 
 }  // namespace ops

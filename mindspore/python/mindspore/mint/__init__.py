@@ -478,7 +478,7 @@ from mindspore.ops.auto_generate import log2_ext as log2
 from mindspore.ops.function.math_func import isnan_ext as isnan
 
 # 916
-from mindspore.ops.auto_generate import index_add_ext as index_add
+from mindspore.ops.functional_overload import index_add
 
 # 1007
 from mindspore.ops.auto_generate import t_ext as t

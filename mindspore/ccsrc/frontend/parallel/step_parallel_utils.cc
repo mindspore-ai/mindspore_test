@@ -926,7 +926,7 @@ RankList FindCommonMirrorGroup(const FuncGraphPtr &root) {
     }
     auto prim = GetCNodePrimitive(node);
     if (!prim->HasAttr(GROUP)) {
-      MS_LOG_WITH_NODE(EXCEPTION, node) << "The mirror operator dose not have group attr : " << node->DebugString();
+      MS_LOG_WITH_NODE(EXCEPTION, node) << "The mirror operator does not have group attr : " << node->DebugString();
     }
     std::string group_name = GetValue<std::string>(prim->GetAttr(GROUP));
     std::vector<int64_t> group_list = g_device_manager->FindRankListByHashName(group_name);
@@ -1302,7 +1302,8 @@ bool IsSplittableOperator(const std::string &op_name) {
      CONVOLUTION, LIN_SPACE_EXT, ONEHOTEXT, FFTSHIFT, IFFTSHIFT, FFT, IFFT, FFT2, IFFT2, FFTN, IFFTN, CUM_SUM_EXT,
      RFFT, IRFFT, RFFT2, IRFFT2, RFFTN, IRFFTN, HFFT, IHFFT, HFFT2, IHFFT2, HFFTN, IHFFTN, DCT, IDCT, DCTN, IDCTN,
      NANTONUM, ZEROS, ISCLOSE, POLAR, REMAINDER_TENSOR_TENSOR, REMAINDER_TENSOR_SCALAR, REMAINDER_SCALAR_TENSOR,
-     SOLVE_TRIANGULAR, TRACEV2, LSTSQV2, GENERATEEODMASKV2, MEANEXT, REPEAT_INTERLEAVE_INT, REPEAT_INTERLEAVE_TENSOR};
+     SOLVE_TRIANGULAR, TRACEV2, LSTSQV2, GENERATEEODMASKV2, MEANEXT, REPEAT_INTERLEAVE_INT, REPEAT_INTERLEAVE_TENSOR,
+     FMOD_TENSOR, INPLACE_COPY};
   // clang-format on
 
   auto iter = splittable_op.find(op_name);

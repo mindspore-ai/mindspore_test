@@ -92,7 +92,7 @@ Status TensorRedistribution::MakeFromToLayout(const TensorLayout &from, const Te
     return to_origin_.InitFromVector(device_matrix, new_map, to_layout.tensor_shape().array());
   }
   MS_LOG(ERROR) << "The from layout sharding micro interleaved num:" << from.GetVirtualRank().size()
-                << " dose not match the to layout sharding micro interleaved num:" << to.GetVirtualRank().size();
+                << " does not match the to layout sharding micro interleaved num:" << to.GetVirtualRank().size();
   return FAILED;
 }
 

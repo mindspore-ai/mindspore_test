@@ -4,7 +4,7 @@ rfft:
     
     Note:
         - `rfft` is currently only used in `mindscience` scientific computing scenarios and
-          dose not support other usage scenarios.
+          does not support other usage scenarios.
         - `rfft` is not supported on Windows platform yet.
     
     Args:

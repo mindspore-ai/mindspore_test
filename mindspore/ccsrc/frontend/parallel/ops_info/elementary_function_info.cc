@@ -205,7 +205,7 @@ Status RepeatInterleaveInfo::InferOutputTensorInfo() {
   }
   if (output_infer_tensor_layout.tensor_shape_before().array() != outputs_shape_[kIndex0]) {
     MS_LOG(ERROR) << "For distributed operator " << name_ << ", the infer output shape "
-                  << output_infer_tensor_layout.tensor_shape_before().array() << " dose not match the output shape "
+                  << output_infer_tensor_layout.tensor_shape_before().array() << " does not match the output shape "
                   << outputs_shape_[kIndex0];
     return FAILED;
   }

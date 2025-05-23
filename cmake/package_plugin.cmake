@@ -39,6 +39,12 @@ if(ENABLE_CPU)
         COMPONENT mindspore
         NAMELINK_SKIP
     )
+    install(
+        TARGETS mindspore_cpu_res_manager LIBRARY
+        DESTINATION ${INSTALL_PLUGIN_DIR}/cpu
+        COMPONENT mindspore
+        NAMELINK_SKIP
+    )
 endif()
 
 if(ENABLE_D)
@@ -82,10 +88,15 @@ if(ENABLE_D)
     endif()
     if(EXISTS ${ASCEND_NNAL_ATB_PATH})
         install(
-                TARGETS mindspore_atb_kernels LIBRARY
+                TARGETS mindspore_atb_kernels mindspore_pyboost_atb_kernels LIBRARY
                 DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
                 COMPONENT mindspore
                 NAMELINK_SKIP
+        )
+        install(
+                TARGETS mindspore_extension_ascend_atb ARCHIVE
+                DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
+                COMPONENT mindspore
         )
     endif()
     install(
@@ -130,7 +141,7 @@ if(ENABLE_GPU)
     )
     install(
         TARGETS mindspore_gpu_res_manager LIBRARY
-        DESTINATION ${INSTALL_PLUGIN_DIR}
+        DESTINATION ${INSTALL_PLUGIN_DIR}/gpu
         COMPONENT mindspore
         NAMELINK_SKIP
     )

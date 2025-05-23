@@ -545,7 +545,7 @@ def get_group_rank_from_world_rank(world_rank_id, group):
     return _get_group_rank_from_world_rank_helper(world_rank_id=world_rank_id, group=group)
 
 
-def create_group(group, rank_ids):
+def create_group(group, rank_ids, options=None):
     """
     Create a user collective communication group.
 
@@ -558,6 +558,18 @@ def create_group(group, rank_ids):
     Args:
         group (str): The name of the communication group to be created.
         rank_ids (list): A list of device IDs.
+        options (GroupOptions, optional): Additional communication group configuration parameters.
+            The backend will automatically select supported parameters and apply them during group
+            initialization. i.e. for the ``HCCL`` backend, ``hccl_config`` can be specified so that
+            group initialization configurations can be applied. Default is ``None``.
+
+            `GroupOptions` is defined as a class that can be instantiated as a python object.
+
+            .. code-block::
+
+                GroupOptions {
+                    hccl_config(dict)
+                }
 
     Raises:
         TypeError: If group is not a string or `rank_ids` is not a list.
@@ -578,22 +590,24 @@ def create_group(group, rank_ids):
             for more details.
 
         >>> import mindspore as ms
-        >>> from mindspore import set_context
-        >>> from mindspore import ops
+        >>> from mindspore import set_context, ops
+        >>> from mindspore._c_expression import GroupOptions
         >>> from mindspore.communication import init, create_group, get_rank
         >>> set_context(mode=ms.GRAPH_MODE)
         >>> ms.set_device(device_target="Ascend")
         >>> init()
         >>> group = "0-7"
         >>> rank_ids = [0,7]
+        >>> options = GroupOptions()
+        >>> options.hccl_config = {"hccl_buffer_size": 400}
         >>> if get_rank() in rank_ids:
-        ...     create_group(group, rank_ids)
+        ...     create_group(group, rank_ids, options)
         ...     allreduce = ops.AllReduce(group)
     """
     if not isinstance(group, str):
         raise TypeError("For 'create_group', the argument 'group' must be type of string, "
                         "but got 'group' type : {}.".format(type(group)))
-    _create_group_helper(group, rank_ids)
+    _create_group_helper(group, rank_ids, options)
 
 
 def destroy_group(group):

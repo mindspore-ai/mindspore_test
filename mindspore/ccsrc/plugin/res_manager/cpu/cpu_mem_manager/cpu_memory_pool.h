@@ -21,12 +21,14 @@
 #include <mutex>
 #include <string>
 
+#include "plugin/res_manager/cpu/visible.h"
 #include "include/backend/mem_reuse/mem_dynamic_allocator.h"
+#include "utils/ms_utils.h"
 
 namespace mindspore {
 namespace device {
 namespace cpu {
-class BACKEND_EXPORT CPUMemoryPool : public DynamicMemPoolBestFit {
+class CPU_RES_MANAGER_EXPORT CPUMemoryPool : public DynamicMemPoolBestFit {
  public:
   ~CPUMemoryPool() override = default;
 

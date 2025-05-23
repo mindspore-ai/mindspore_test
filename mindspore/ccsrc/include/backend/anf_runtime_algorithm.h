@@ -71,7 +71,7 @@ class BACKEND_COMMON_EXPORT AnfRuntimeAlgorithm {
   // get input format select of anf node
   static std::string GetInputFormat(const AnfNodePtr &node, size_t input_idx);
   // Judge whether the format is equivalent by converting between default format and real format.
-  static bool IsEquivalentFormat(const std::string &src_format, const std::string &dst_format);
+  static bool IsEquivalentFormat(const Format &src_format, const Format &dst_format);
   // get output format from prev node,input_index is the input index of current node related to prev node
   static std::string GetPrevNodeOutputFormat(const AnfNodePtr &anf_node, size_t input_idx);
   // get reshape_type of from the output of input node.
@@ -270,6 +270,7 @@ class BACKEND_COMMON_EXPORT AnfRuntimeAlgorithm {
   // Whether the kernel is not supported by other device and need be backed off on the CPU device.
   static bool IsNodeSupportKernelSelectBackoff(const AnfNodePtr &node, const KernelGraphPtr &graph);
   static bool IsKernelSelectBackoffOp(const AnfNodePtr &node);
+  static bool IsNeedContinuesMemoryOp(const AnfNodePtr &node);
   static void SetKernelSelectBackoffInfo(const CNodePtr &node,
                                          const std::pair<std::string, ExceptionType> &failure_info);
   static std::pair<std::string, ExceptionType> GetKernelSelectBackoffInfo(const AnfNodePtr &node);

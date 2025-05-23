@@ -19,6 +19,11 @@
 #include "view/expand_dims_strides_calc.h"
 
 namespace mindspore::ops {
+TensorStorageInfoPtrList ExpandDimsViewBasicTypeCalc(const PrimitivePtr &prim,
+                                                     const mindspore::tensor::TensorPtr &input_tensor,
+                                                     const int64_t &dim) {
+  return ExpandDimsBasicTypeCalc(prim, input_tensor, dim);
+}
 
 TensorStorageInfoPtrList ExpandDimsViewCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
   return ExpandDimsCalc(prim, inputs);

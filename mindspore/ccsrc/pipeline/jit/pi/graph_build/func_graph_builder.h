@@ -17,10 +17,11 @@
 #ifndef MINDSPORE_PI_JIT_GRAPH_BUILD_FUNC_GRAPH_BUILDER_H_
 #define MINDSPORE_PI_JIT_GRAPH_BUILD_FUNC_GRAPH_BUILDER_H_
 
-#include <vector>
+#include <map>
 #include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 #include "ir/value.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "pipeline/jit/ps/parse/parse_base.h"
@@ -33,6 +34,7 @@ class FuncGraphBuilder;
 using FuncGraphBuilderPtr = std::shared_ptr<FuncGraphBuilder>;
 class AbstractWrapper;
 using AbstractWrapperPtr = std::shared_ptr<AbstractWrapper>;
+using CallableGraph = std::function<PyObject *(PyObject *, PyObject *)>;
 
 class FuncGraphBuilder {
  public:
@@ -119,19 +121,23 @@ class FuncGraphBuilder {
   ///
   /// \param[in] callable_obj The callable python object.
   /// \param[in] inputs_obj The input python objects.
+  /// \param[in] kw_names The input python objects.
   ///
   /// \return The abstract wrapper of the infer result.
   AbstractWrapperPtr AddNodeCallFunctionKw(const py::object &callable_obj,
-                                           const AbstractWrapperPtrList &inputs_abstract_wrapper);
+                                           const AbstractWrapperPtrList &inputs_abstract_wrapper,
+                                           const py::object &kw_names);
 
   /// \brief Add a cnode to the graph with graph is parsed in ast and byte code is CallFunctionKw.
   ///
   /// \param[in] callable_value The callable value.
   /// \param[in] inputs_obj The input python objects.
+  /// \param[in] kw_names The input python objects.
   ///
   /// \return The abstract wrapper of the infer result.
   AbstractWrapperPtr AddNodeCallFunctionKw(const ValuePtr &callable_value,
-                                           const AbstractWrapperPtrList &inputs_abstract_wrapper);
+                                           const AbstractWrapperPtrList &inputs_abstract_wrapper,
+                                           const py::object &kw_names);
 
   /// \brief Add a python object to graph.
   ///
@@ -278,7 +284,18 @@ class FuncGraphBuilder {
   /// \note Nodes created during the conversion of Dict nodes need to be added to the graph using this method.
   void AddLocalVariableNode(const AbstractWrapperPtr &wrapper, const AnfNodePtr &node);
 
+  void EraseCandidateIsolatedNode(const AnfNodePtr &node);
+
   AbstractWrapperPtr AddAttributeInput(const py::object &object);
+
+  /// \brief Save the phase and the callable of the func_graph.
+  ///
+  /// \param[in] result The phase and the callable.
+  void SetCompileResult(const std::pair<std::string, CallableGraph> &result) { compile_result_ = result; }
+  /// \brief Get the phase and the callable of the func_graph.
+  ///
+  /// \return The phase and the callable.
+  const std::pair<std::string, CallableGraph> &GetCompileResult() const { return compile_result_; }
 
  private:
   AnfNodePtr ConvertObjToNode(const py::object &input_obj);
@@ -302,8 +319,6 @@ class FuncGraphBuilder {
 
   void MarkNodeIsolated(const AnfNodePtr &node, bool force);
 
-  void EraseCandidateIsolatedNode(const AnfNodePtr &node);
-
   AnfNodePtr GenerateOutputNode();
 
   AnfNodePtr AttachIsolatedNode(const AnfNodePtr &node) const;
@@ -321,6 +336,7 @@ class FuncGraphBuilder {
 
   FuncGraphManagerPtr mng_;
   size_t origin_top_input_num_ = 0;
+  std::pair<std::string, CallableGraph> compile_result_;
 };
 }  // namespace pijit
 }  // namespace mindspore

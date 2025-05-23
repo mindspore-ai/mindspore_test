@@ -45,6 +45,10 @@ class SiLU(Cell):
     .. warning::
         This is an experimental API that is subject to change or deletion.
 
+    Args:
+        inplace (bool, optional): If it is ``True``, enable the in-place update function.
+            Default value: ``False``.
+
     Inputs:
         - **input** (Tensor) - `input` is :math:`x` in the preceding formula.
           Input with the data type float16 or float32. Tensor of any dimension.
@@ -63,18 +67,19 @@ class SiLU(Cell):
         >>> from mindspore import Tensor, mint
         >>> import numpy as np
         >>> input = Tensor(np.array([-1, 2, -3, 2, -1]), mindspore.float16)
-        >>> silu = mint.nn.SiLU()
+        >>> silu = mint.nn.SiLU(inplace=False)
         >>> output = silu(input)
         >>> print(output)
         [-0.269  1.762  -0.1423  1.762  -0.269]
     """
 
-    def __init__(self):
+    def __init__(self, inplace=False):
         """Initialize SiLU."""
         super(SiLU, self).__init__()
+        self.inplace = inplace
 
     def construct(self, x):
-        return mint.nn.functional.silu(x)
+        return mint.nn.functional.silu(x, self.inplace)
 
 
 class Sigmoid(Cell):
@@ -354,9 +359,6 @@ class Threshold(Cell):
         x, &\text{ if } x > \text{threshold} \\
         \text{value}, &\text{ otherwise }
         \end{cases}
-
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
 
     Args:
         threshold (Union[int, float]): The value of the threshold.

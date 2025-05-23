@@ -27,11 +27,10 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::TensorPtr MaxPoolWithMaskAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &x_tensor,
-                                                 const ValueTuplePtr &kernel_size,
-                                                 const std::optional<ValueTuplePtr> &strides, const ValueTuplePtr &pads,
-                                                 const ValueTuplePtr &dilation, const BoolImmPtr &ceil_mode,
-                                                 const Int64ImmPtr &argmax_type);
+void MaxPoolWithMaskAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &x_tensor,
+                                    const ValueTuplePtr &kernel_size, const std::optional<ValueTuplePtr> &strides,
+                                    const ValueTuplePtr &pads, const ValueTuplePtr &dilation,
+                                    const BoolImmPtr &ceil_mode, const Int64ImmPtr &argmax_type);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

@@ -184,7 +184,6 @@ Tensor::Tensor(const Tensor &tensor)
       is_forward_output_(tensor.is_forward_output_),
       need_pipeline_sync_(tensor.need_pipeline_sync_),
       init_flag_(tensor.init_flag_),
-      need_release_device_mem_(tensor.need_release_device_mem_),
       cache_enable_(tensor.cache_enable_),
       copy_done_flag_(tensor.copy_done_flag_) {
   user_data_ = tensor.user_data_;
@@ -209,7 +208,6 @@ Tensor::Tensor(const Tensor &tensor, TypeId data_type)
       is_forward_output_(tensor.is_forward_output_),
       need_pipeline_sync_(tensor.need_pipeline_sync_),
       init_flag_(tensor.init_flag_),
-      need_release_device_mem_(tensor.need_release_device_mem_),
       cache_enable_(tensor.cache_enable_),
       copy_done_flag_(tensor.copy_done_flag_) {
   user_data_ = tensor.user_data_;
@@ -232,7 +230,6 @@ Tensor &Tensor::operator=(const Tensor &tensor) {
   base_shape_ptr_ = tensor.base_shape_ptr_;
   auto_grad_meta_data_ = tensor.auto_grad_meta_data_;
   init_flag_ = tensor.init_flag_;
-  need_release_device_mem_ = tensor.need_release_device_mem_;
   cache_enable_ = tensor.cache_enable_;
   cache_tensor_ptr_ = tensor.cache_tensor_ptr_;
   hashmap_tensor_ptr_ = tensor.hashmap_tensor_ptr_;
@@ -380,6 +377,11 @@ Tensor &Tensor::AssignValue(const Tensor &tensor) {
     sync_status_ = tensor.sync_status_;
     version_ = tensor.version_;
     MS_EXCEPTION_IF_NULL(data_);
+    if (this->auto_grad_meta_data() != nullptr && this->auto_grad_meta_data()->input_type() == InputType::kInput) {
+      MS_LOG(EXCEPTION)
+        << "Can not modify tensor id of input tensor from network by assign value, this may caused by slice op, "
+           "please check your code to avoid this error!";
+    }
     if (data_->is_sub_data()) {
       // If tensor data is sub data, we should keep data
       // memory address unchange and copy data to it.
@@ -393,7 +395,6 @@ Tensor &Tensor::AssignValue(const Tensor &tensor) {
     }
 
     device_info_ = CopyDeviceInfo(tensor.device_info_);
-    need_release_device_mem_ = tensor.need_release_device_mem_;
 
     // Need execute callback when update host value of Tensor.
     ExecuteUpdateValueCallback();
@@ -438,7 +439,12 @@ bool Tensor::ValueEqual(const Tensor &tensor) const {
 TypeId Tensor::set_data_type(TypeId data_type) {
   if (data_type != data_type_) {
     MS_EXCEPTION_IF_NULL(data_);
+    if (device_sync_ != nullptr) {
+      data_sync();
+      device_sync_ = nullptr;
+    }
     data_ = MakeTensorData(data_type, shape_, data_->data(), data_type_);
+    id_ = MakeId();
     return MetaTensor::set_data_type(data_type);
   }
   return data_type;

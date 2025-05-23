@@ -201,31 +201,27 @@ NodePtrList GenerateNodeInputs(const OpGradInfoPtr &op_grad_info, const FuncBuil
   return node_inputs;
 }
 
-void RunTensorHook(ValuePtrList *grad_in, const BackwardNodePtr &grad_node) {
+void RunPyTensorHook(ValuePtrList *grad_in, const BackwardNodePtr &grad_node) {
   static const std::string kTensorHook = "TensorHook";
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunExpanderFunc,
                                      kTensorHook, false);
   MS_EXCEPTION_IF_NULL(grad_in);
   MS_EXCEPTION_IF_NULL(grad_node);
-  if (grad_in->size() != kSizeOne) {
-    MS_LOG(EXCEPTION) << "Tensor hook just work on one tensor value, not support value sequence";
-  }
   runtime::Pipeline::Get().WaitFrontend();
-  for (const auto &hook : grad_node->backward_hooks()) {
-    MS_LOG(DEBUG) << "Run hook id T" << hook.first;
-    MS_EXCEPTION_IF_NULL(hook.second);
-    (*grad_in)[kIndex0] = (*(hook.second))(grad_in->front());
+  for (const auto &[hook_id, hook] : grad_node->py_tensor_pre_hooks()) {
+    MS_LOG(DEBUG) << "Run hook id T" << hook_id;
+    MS_EXCEPTION_IF_NULL(hook);
+    (*hook)(grad_in);
   }
   runtime::Pipeline::Get().WaitFrontend();
   MS_LOG(DEBUG) << PyNativeAlgo::Common::PrintDebugInfo(*grad_in, "After hook print gradient in: ");
 }
 
-void CallBackwardHooks(const BackwardNodePtr &grad_node, ValuePtrList *grad_in) {
+void CallBackwardNodePreHooks(const BackwardNodePtr &grad_node, ValuePtrList *grad_in) {
   MS_EXCEPTION_IF_NULL(grad_in);
-  if (grad_node->backward_hooks().empty()) {
-    return;
+  if (!grad_node->py_tensor_pre_hooks().empty()) {
+    RunPyTensorHook(grad_in, grad_node);
   }
-  RunTensorHook(grad_in, grad_node);
 }
 
 void ReleaseResource(const BackwardNodePtr &grad_node) {
@@ -242,7 +238,7 @@ void UpdateCreationType(const ValuePtrList &flatten_outputs) {
   for (const auto &output : flatten_outputs) {
     if (output->isa<tensor::Tensor>()) {
       auto output_tensor = output->cast<tensor::TensorPtr>();
-      auto view_meta = impl::get_view_autograd_meta_impl(output_tensor);
+      auto view_meta = impl::GetViewAutogradMetaImpl(output_tensor);
       if (view_meta == nullptr) {
         return;
       }
@@ -255,7 +251,7 @@ void UpdateCreationType(const ValuePtrList &flatten_outputs) {
 void CheckInplace(const OpGradInfoPtr &op_grad_info) {
   auto output_tensor = op_grad_info->out_value->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(output_tensor);
-  auto view_meta = impl::get_view_autograd_meta_impl(output_tensor);
+  auto view_meta = impl::GetViewAutogradMetaImpl(output_tensor);
   if (view_meta && view_meta->creation_type() != CreationType::kDefault) {
     std::ostringstream ss;
     std::string header = "A view of base is being inplace modified, ";
@@ -280,7 +276,7 @@ void CheckInplace(const OpGradInfoPtr &op_grad_info) {
   }
   if (view_meta != nullptr) {
     const auto &base_tensor = view_meta->view_info().base();
-    auto auto_grad_meta_data = impl::get_autograd_meta_impl(base_tensor);
+    auto auto_grad_meta_data = impl::GetAutogradMetaImpl(base_tensor);
     if (auto_grad_meta_data) {
       auto grad_node = auto_grad_meta_data->UnsafeGetGradNodeImpl();
       if (grad_node != nullptr && isa<LeafNode>(grad_node)) {
@@ -289,7 +285,7 @@ void CheckInplace(const OpGradInfoPtr &op_grad_info) {
       }
     }
   }
-  auto meta_data = impl::get_autograd_meta_impl(output_tensor);
+  auto meta_data = impl::GetAutogradMetaImpl(output_tensor);
   if (meta_data && meta_data->UnsafeGetGradNodeImpl() && isa<LeafNode>(meta_data->UnsafeGetGradNodeImpl())) {
     MS_LOG(EXCEPTION) << "A leaf tensor that requires grad is being used in an inplace operator, "
                       << op_grad_info->op_prim->name() << ", which is forbidden!";
@@ -312,7 +308,7 @@ void UpdateVersion(const OpGradInfoPtr &op_grad_info, const ValuePtrList &flatte
         if (out_tensor->storage_info() == nullptr) {
           return;
         }
-        auto view_meta = impl::get_view_autograd_meta_impl(out_tensor);
+        auto view_meta = impl::GetViewAutogradMetaImpl(out_tensor);
         MS_EXCEPTION_IF_NULL(view_meta);
         view_meta->set_version_attr(out_tensor->version().current_version());
       }
@@ -489,7 +485,7 @@ void ProcessPost(const ValuePtrList &flatten_outputs, const TensorPtrSet &dirty_
     for (size_t i = 0; i < flatten_outputs.size(); i++) {
       if (flatten_outputs[i]->isa<tensor::Tensor>()) {
         auto base_tensor = flatten_outputs[i]->cast<tensor::TensorPtr>();
-        auto view_meta = impl::get_view_autograd_meta_impl(base_tensor);
+        auto view_meta = impl::GetViewAutogradMetaImpl(base_tensor);
         if (view_meta) {
           MS_LOG(DEBUG) << "Set creation type kMultiOutput for tensor " << base_tensor->id();
           view_meta->set_creation_type(CreationType::kMultiOutput);
@@ -525,7 +521,7 @@ void ProcessForwardOutput(const ValuePtrList &flatten_outputs, const TensorPtrSe
     if (is_diff) {
       ++num_diff_tensors;
       if (is_dirty) {
-        auto meta_data = impl::get_autograd_meta_impl(base_tensor);
+        auto meta_data = impl::GetAutogradMetaImpl(base_tensor);
         // tensor is leaf and need grad could not inplace.
         bool is_leaf =
           meta_data && meta_data->UnsafeGetGradNodeImpl() && isa<LeafNode>(meta_data->UnsafeGetGradNodeImpl());
@@ -539,7 +535,7 @@ void ProcessForwardOutput(const ValuePtrList &flatten_outputs, const TensorPtrSe
           MS_LOG(WARNING) << "A tensor is not an input, but is given to mark_dirty function.";
         }
 
-        auto view_meta = impl::get_view_autograd_meta_impl(base_tensor);
+        auto view_meta = impl::GetViewAutogradMetaImpl(base_tensor);
         if (view_meta != nullptr && flatten_outputs.size() > 1) {
           MS_LOG(EXCEPTION) << "A view is one of output for multi output operator, "
                             << "which is forbidden. You can use out-of-place op to repalce.";
@@ -555,7 +551,7 @@ void ProcessForwardOutput(const ValuePtrList &flatten_outputs, const TensorPtrSe
         MS_LOG(DEBUG) << "End update next edge for " << grad_node->ToString();
       }
     }
-    auto view_meta = impl::get_view_autograd_meta_impl(base_tensor);
+    auto view_meta = impl::GetViewAutogradMetaImpl(base_tensor);
     if (view_meta && !(is_input && is_dirty)) {
       MS_LOG(DEBUG) << "Set creation type kCustomBprop for tensor " << base_tensor->id();
       view_meta->set_creation_type(CreationType::kCustomBprop);
@@ -655,9 +651,9 @@ void CallCustomBprop(const CustomContext &context) {
 
 BackwardNodePtr SafeGetGradNodeImpl(const tensor::TensorPtr &tensor) {
   MS_LOG(DEBUG) << "Begin SafeGetGradNodeImpl";
-  auto view_meta = impl::get_view_autograd_meta_impl(tensor);
+  auto view_meta = impl::GetViewAutogradMetaImpl(tensor);
   if (view_meta == nullptr) {
-    auto auto_grad_meta_data = impl::get_autograd_meta_impl(tensor);
+    auto auto_grad_meta_data = impl::GetAutogradMetaImpl(tensor);
     if (auto_grad_meta_data == nullptr) {
       return nullptr;
     }
@@ -725,7 +721,7 @@ BackwardNodePtr BuildGraphBackwardNode(const GradParamPtr &grad_param) {
 
 void RebaseVariable(const OpGradInfoPtr &op_grad_info, const BackwardNodePtr &func_node,
                     const tensor::TensorPtr &output_tensor, size_t output_index) {
-  auto view_meta = impl::get_view_autograd_meta_impl(output_tensor);
+  auto view_meta = impl::GetViewAutogradMetaImpl(output_tensor);
   if (view_meta != nullptr) {
     MS_LOG(DEBUG) << "Inplace op: " << op_grad_info->op_prim->name()
                   << "'s input is a view tensor, try build copyslice node";
@@ -750,7 +746,7 @@ void RebaseVariable(const OpGradInfoPtr &op_grad_info, const BackwardNodePtr &fu
     return;
   }
   // inplace op input tensor is also output tensor.
-  auto auto_grad_meta = impl::get_autograd_meta_impl(output_tensor);
+  auto auto_grad_meta = impl::GetAutogradMetaImpl(output_tensor);
   auto_grad_meta->set_grad_node(func_node);
   auto_grad_meta->set_output_index(output_index);
   MS_LOG(DEBUG) << "End update next edge for " << func_node->ToString();
@@ -826,14 +822,15 @@ void FuncBackwardNode::PreProcess(const ValuePtrList &dout, const FuncBuilderPtr
     bool is_need_grad = false;
     if (!value->isa<ValueSequence>()) {
       index++;
-      is_need_grad = next_edges()[index].is_defined();
+      is_need_grad = impl::CurrentAutoDiffEngine()->IsInExecGraph(next_edges()[index].grad_node);
     } else {
       auto seq = value->cast<ValueSequencePtr>();
       if (!seq->value().empty() && seq->value()[0]->isa<tensor::Tensor>()) {
         auto begin_index = index;
         index += static_cast<int32_t>(seq->value().size());
-        is_need_grad = std::any_of(next_edges().begin() + begin_index, next_edges().begin() + index,
-                                   [](const auto &edge) { return edge.is_defined(); });
+        is_need_grad =
+          std::any_of(next_edges().begin() + begin_index, next_edges().begin() + index,
+                      [](const auto &edge) { return impl::CurrentAutoDiffEngine()->IsInExecGraph(edge.grad_node); });
       } else {
         index++;
         is_need_grad = next_edges()[index].is_defined();
@@ -1002,6 +999,10 @@ ValuePtrList CopySliceNode::CallBackwardImpl(const NodePtr &grad_node) {
   auto grad_slice = emitter_->AsStrided(clone_grad, emitter_->Value(output_.shape()),
                                         emitter_->Value(output_.strides()), emitter_->Value((int64_t)view_offset));
   auto clone_grad_slice = emitter_->Contiguous(grad_slice);
+  // If the 0'th child node need grad, we need put the 0'th child node of inplace node in exec graph.
+  if (impl::CurrentAutoDiffEngine()->IsInExecGraph(next_edges()[kIndex0].grad_node)) {
+    impl::CurrentAutoDiffEngine()->AddNodeToExecGraph(inplace_func_->next_edges()[kIndex0].grad_node);
+  }
   auto res = inplace_func_->CallBackward({clone_grad_slice->Value()});
   ValuePtrList grad_inputs(res.size());
   for (size_t i = 0; i < res.size(); ++i) {
@@ -1192,22 +1193,20 @@ ValuePtr AutoDiff::GetInputGrads(const ValuePtrList &inputs, bool grad_all_input
 }
 
 ValuePtr AutoDiff::GetTensorGrad(const ValuePtr &val) {
-  auto tensor = PyNativeAlgo::Common::GetTensorFromSparseTensor(val);
+  const auto tensor = PyNativeAlgo::Common::GetTensorFromSparseTensor(val);
   MS_EXCEPTION_IF_NULL(tensor);
-  auto auto_grad_meta_data = tensor->auto_grad_meta_data();
-  if (auto_grad_meta_data == nullptr) {
-    return AutoGradUtil::BuildSpecialValueGrad(val, nullptr, func_impl_.get(), SpecialType::kZerosLikeType);
+  if (const auto grad_node = impl::GetUnsafeGradNodeImpl(tensor)) {
+    const auto iter = gradient_contexts_.find(grad_node.get());
+    if (iter == gradient_contexts_.end()) {
+      MS_LOG(INFO) << "tensor requires grad is true, but not in grad graph";
+      const auto leaf_node = std::dynamic_pointer_cast<LeafNode>(grad_node);
+      MS_EXCEPTION_IF_NULL(leaf_node);
+      return LeafNodeNotInGradButHasTensorHook(leaf_node);
+    }
+    const auto tensor_grad = iter->second.captured_grad->grad;
+    return AutoGradUtil::BuildSpecialValueGrad(tensor, tensor_grad, func_impl_.get(), SpecialType::kZerosLikeType);
   }
-  auto grad_node = auto_grad_meta_data->UnsafeGetGradNodeImpl();
-  auto iter = gradient_contexts_.find(grad_node.get());
-  if (iter == gradient_contexts_.end()) {
-    MS_LOG(INFO) << "tensor requires grad is true, but not in grad graph";
-    auto leaf_node = std::dynamic_pointer_cast<LeafNode>(grad_node);
-    MS_EXCEPTION_IF_NULL(leaf_node);
-    return LeafNodeNotInGradButHasTensorHook(leaf_node);
-  }
-  auto tensor_grad = iter->second.captured_grad->grad;
-  return AutoGradUtil::BuildSpecialValueGrad(tensor, tensor_grad, func_impl_.get(), SpecialType::kZerosLikeType);
+  return AutoGradUtil::BuildSpecialValueGrad(val, nullptr, func_impl_.get(), SpecialType::kZerosLikeType);
 }
 
 ValuePtr AutoDiff::GetLeafNodeGrad(const BackwardNodePtr &grad_node) {
@@ -1325,6 +1324,11 @@ void AutoDiff::UpdateDependencies(
   std::unordered_map<BackwardNode *, int32_t> *dependencies) {
   std::vector<BackwardNode *> d_queue{root.get()};
   std::unordered_set<BackwardNode *> node_used_in_graph;
+  if (input_buffer.count(root.get()) > 0) {
+    MS_LOG(DEBUG) << "Node: " << root->name() << " is need calculate after None gradients!";
+    queue->push(root);
+    return;
+  }
   while (!d_queue.empty()) {
     auto node = d_queue.back();
     d_queue.pop_back();
@@ -1355,7 +1359,7 @@ std::vector<BackwardNodePtr> AutoDiff::GetWeightsNode(const tensor::TensorPtrLis
     for (const auto &val : inputs) {
       if (val->isa<tensor::Tensor>()) {
         auto tensor = val->cast<tensor::TensorPtr>();
-        auto node = impl::get_unsafe_grad_node_impl(tensor);
+        auto node = impl::GetUnsafeGradNodeImpl(tensor);
         if (node != nullptr) {
           inputs_node.emplace_back(node);
         }
@@ -1446,9 +1450,9 @@ void AutoDiff::BackPropagate() {
     auto fn = queue.top();
     queue.pop();
     MS_LOG(DEBUG) << "Begin calculate op: " << fn->name() << " gradients!";
+    auto ctx_iter = gradient_contexts_.find(fn.get());
     auto gradient_in_iter = input_buffer.find(fn.get());
-    auto extral_info_iter = gradient_contexts_.find(fn.get());
-    if (extral_info_iter == gradient_contexts_.end() || gradient_in_iter == input_buffer.end()) {
+    if (ctx_iter == gradient_contexts_.end() || gradient_in_iter == input_buffer.end()) {
       MS_LOG(DEBUG) << "No need grad, grad fn is: " << fn->ToString();
       continue;
     }
@@ -1457,12 +1461,12 @@ void AutoDiff::BackPropagate() {
     // If register hook by weight, and weight in recomputed cell.So, hook will execute, which is not expect.
     if (!is_run_recompute_ || !isa<LeafNode>(fn)) {
       // to do
-      CallBackwardHooks(fn, &gradient_in);
+      CallBackwardNodePreHooks(fn, &gradient_in);
     }
-    if (extral_info_iter->second.captured_grad != nullptr) {
-      auto tensor_grad = gradient_in[extral_info_iter->second.captured_grad->input_index]->cast<tensor::TensorPtr>();
+    if (ctx_iter->second.captured_grad != nullptr) {
+      auto tensor_grad = gradient_in[ctx_iter->second.captured_grad->input_index]->cast<tensor::TensorPtr>();
       MS_EXCEPTION_IF_NULL(tensor_grad);
-      extral_info_iter->second.captured_grad->SetGradient(tensor_grad);
+      ctx_iter->second.captured_grad->SetGradient(tensor_grad);
       continue;
     }
     auto gradient_out = fn->CallBackward(gradient_in);
@@ -1479,6 +1483,10 @@ void AutoDiff::BackPropagate() {
         continue;
       }
       const auto &last_grad_node = next_edge.grad_node;
+      if (gradient_contexts_.find(last_grad_node.get()) == gradient_contexts_.end()) {
+        MS_LOG(DEBUG) << "No need grad, grad fn is: " << last_grad_node->ToString();
+        continue;
+      }
       auto it = dependencies_.find(last_grad_node.get());
       if (MS_UNLIKELY(it == dependencies_.end())) {
         MS_LOG(EXCEPTION) << "Last grad node should be in dependencies!";
@@ -1518,12 +1526,12 @@ void AutoDiff::BackPropagate() {
 
 ValuePtr AutoDiff::LeafNodeNotInGradButHasTensorHook(const std::shared_ptr<LeafNode> &fn) const {
   MS_EXCEPTION_IF_NULL(fn);
-  if (is_run_recompute_ || fn->backward_hooks().empty()) {
+  if (is_run_recompute_ || fn->py_tensor_pre_hooks().empty()) {
     return fn->Zeros(func_impl_);
   }
   ValuePtrList grad_in{};
   (void)grad_in.emplace_back(fn->Zeros(func_impl_));
-  RunTensorHook(&grad_in, fn);
+  RunPyTensorHook(&grad_in, fn);
   auto grad_tensor = grad_in.front()->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(grad_tensor);
   return grad_tensor;
@@ -1676,6 +1684,20 @@ ValuePtr AutoDiff::RunBackward(const ValuePtrList &inputs, const tensor::TensorP
     python_adapter::PyAdapterCallback::ProcessUnPairedCellHook(true);
   }
   return GetGrads(inputs, weights_node, grad_position, grad_attr);
+}
+
+bool AutoDiff::IsInExecGraph(const BackwardNodePtr &node) const {
+  if (node == nullptr) {
+    return false;
+  }
+  return gradient_contexts_.find(node.get()) != gradient_contexts_.end();
+}
+
+void AutoDiff::AddNodeToExecGraph(const BackwardNodePtr &node) {
+  if (gradient_contexts_.find(node.get()) != gradient_contexts_.end()) {
+    return;
+  }
+  gradient_contexts_[node.get()] = GradientContext(true);
 }
 
 void AutoDiff::Clear() {

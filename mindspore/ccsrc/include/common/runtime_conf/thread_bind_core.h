@@ -25,9 +25,6 @@
 #include <mutex>
 #include <iostream>
 
-#include "include/backend/visible.h"
-#include "mindapi/base/macros.h"
-#include "utils/log_adapter.h"
 #include "include/common/visible.h"
 
 namespace mindspore {
@@ -41,7 +38,7 @@ class COMMON_EXPORT ThreadBindCore {
     static ThreadBindCore instance;
     return instance;
   }
-  void enable_thread_bind_core_with_policy(const ModuleBindCorePolicy &bind_core_policy);
+  void enable_thread_bind_core(const ModuleBindCorePolicy &module_bind_core_strategy);
   bool parse_thread_bind_core_policy(const kBindCoreModule &module_name);
   std::vector<int> get_thread_bind_core_list(const kBindCoreModule &module_name);
   void bind_thread_core(const std::vector<int> &cpu_list);

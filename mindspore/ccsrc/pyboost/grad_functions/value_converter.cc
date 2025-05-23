@@ -50,6 +50,12 @@ TypePtr ValueConverter::ToDtype(const ValuePtr &input) { return Convert<TypePtr>
 
 ValueTuplePtr ValueConverter::ToValueTuple(const ValuePtr &input) { return Convert<ValueTuplePtr>(input); }
 
+std::vector<int64_t> ValueConverter::ToBasicIntVector(const ValuePtr &input) {
+  return ConvertBasic<ValueTuplePtr, std::vector<int64_t>>(input);
+}
+
+int64_t ValueConverter::ToBasicInt(const ValuePtr &input) { return ConvertBasic<Int64ImmPtr, int64_t>(input); }
+
 std::optional<Int64ImmPtr> ValueConverter::ToIntOptional(const ValuePtr &input) {
   return ConvertOptional<Int64ImmPtr>(input);
 }
@@ -80,6 +86,14 @@ std::optional<TypePtr> ValueConverter::ToDtypeOptional(const ValuePtr &input) {
 
 std::optional<ValueTuplePtr> ValueConverter::ToValueTupleOptional(const ValuePtr &input) {
   return ConvertOptional<ValueTuplePtr>(input);
+}
+
+std::optional<std::vector<int64_t>> ValueConverter::ToBasicIntVectorOptional(const ValuePtr &input) {
+  return ConvertBasicOptional<ValueTuplePtr, std::vector<int64_t>>(input);
+}
+
+std::optional<int64_t> ValueConverter::ToBasicIntOptional(const ValuePtr &input) {
+  return ConvertBasicOptional<Int64ImmPtr, int64_t>(input);
 }
 
 tensor::TensorPtr ValueConverter::ContiguousTensorValue(const std::string &device_target,

@@ -7,6 +7,7 @@ import mindspore.common.dtype as mstype
 import numpy as np
 from .share.utils import match_array, pi_jit_with_config
 from tests.mark_utils import arg_mark
+from tests.st.pi_jit.share.utils import assert_no_graph_break
 
 def kwf(*vargs, p=-1, **kwvargs):
     return (p, vargs, kwvargs)
@@ -57,7 +58,6 @@ def func(self, x):
     return {e: d, **self, "rec_tuple": x}
 
 
-@pytest.mark.skip(reason="type infer error, fix later")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_self_reference():
     """
@@ -278,17 +278,18 @@ class MyTuple(MyDict):
         return iter(self.__dict__.values())
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('test_user_defined_dict', [True, False])
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('test_user_defined_dict', [False, True])
 def test_unpack_call(test_user_defined_dict):
     """
     Feature: Test unpack call
     Description: For user defined dict and tuple, support break graph to avoid unpack the sequence
     Expectation: The results should match for both modes.
     """
+    x=Tensor([1])
     kwargs = MyDict()
-    setattr(kwargs, "k1", "keyword1")
-    setattr(kwargs, "k2", "keyword2")
+    setattr(kwargs, "k1", x)
+    setattr(kwargs, "k2", x)
 
     args = MyTuple(kwargs.keys())
     if not test_user_defined_dict:
@@ -296,7 +297,7 @@ def test_unpack_call(test_user_defined_dict):
         kwargs = dict(kwargs)
 
     def results_offer(a, b, k1, k2):
-        return {a: k1, b: k2}
+        return {a: k1, b: k2 + x}
 
     def forward2(*args, **kwargs):
         return results_offer(*args, **kwargs)
@@ -314,8 +315,12 @@ def test_unpack_call(test_user_defined_dict):
 
     res1 = unpack_call()
     res2 = unpack_call2()
-    assert {**res1} == {**kwargs}
-    assert res2 == {1: 1, 2: 2}
+    assert {**res1} == {"k1": x, "k2": x + x}
+    assert res2 == {1: 1, 2: 2 + x}
+    assert_no_graph_break(unpack_call2)
+    jcr = get_code_extra(getattr(unpack_call, "__wrapped__", unpack_call))
+    assert jcr is not None
+    assert jcr['break_count_'] < 2
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
@@ -383,7 +388,7 @@ def test_mix_0(mode: int):
     Expectation: The results should match for both modes.
     """
 
-    @pi_jit_with_config(jit_config={"kEnableEliminateUnusedOperation": True, "loop_unrolling": True})
+    @pi_jit_with_config(jit_config={"loop_unrolling": True})
     def inner_func(mode):
         index = 1 if mode else 0
         x = [Tensor([1]), 1]

@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@
 #include "pybind11/pybind11.h"
 #include "frontend/ir/primitive_py.h"
 #include "include/common/utils/convert_utils_py.h"
-#include "pipeline/jit/ps/pipeline_jit.h"
+#include "pipeline/jit/ps/executor/jit_executor_py.h"
 #include "pipeline/jit/pi/utils/utils.h"
 #include "pipeline/jit/pi/python_adapter/pydef.h"
 #include "pipeline/jit/pi/utils/opcode_declare.h"
@@ -67,25 +67,6 @@ static bool CompareOptCodeByCount(OptCodePtr a, OptCodePtr b) {
   }
 }
 
-void ShrinkCodeSet(OptCodeSet *set, OptCodePtr target) {
-  OptCodeSet match;
-  OptCodeSet mismatch;
-  auto guard_target = target->GetGuard();
-  for (size_t i = set->size(); i != 0;) {
-    i--;
-    auto item = set->at(i);
-    auto guard_item = item->GetGuard();
-    if (guard_target->MatchShape(guard_item)) {
-      match.insert(match.begin(), item);
-    } else {
-      mismatch.insert(mismatch.begin(), item);
-    }
-  }
-  set->clear();
-  set->insert(set->begin(), mismatch.begin(), mismatch.end());
-  set->insert(set->end(), match.begin(), match.end());
-}
-
 static constexpr int64_t kDynamicShapeLimitCount = 3;
 
 void OptStrategy::MakeGCStrategy(OptCodeHubPtr hub, int limit_size, int limit_count, bool enable_dynamicshape,
@@ -106,9 +87,6 @@ void OptStrategy::MakeGCStrategy(OptCodeHubPtr hub, int limit_size, int limit_co
     if (limit_count > 0) {
       if (set.size() > (size_t)limit_count) {
         OptCodeSet toDel;
-        if (enable_dynamicshape) {
-          ShrinkCodeSet(&set, except);
-        }
         toDel.insert(toDel.begin(), set.begin() + limit_count, set.end());
         for (auto item : toDel) {
           hub->DelOptTarget(item);
@@ -118,9 +96,6 @@ void OptStrategy::MakeGCStrategy(OptCodeHubPtr hub, int limit_size, int limit_co
     if (limit_size > 0) {
       auto graph_executor = pipeline::GetExecutor();
       OptCodeSet toDel;
-      if (enable_dynamicshape) {
-        ShrinkCodeSet(&set, except);
-      }
       for (auto item : set) {
         if (limit_size == 0) {
           toDel.push_back(item);
@@ -163,36 +138,6 @@ static OptStrategy::CalcKind TensorComputable(PyObject *obj, ssize_t max_dim) {
   return OptStrategy::CalcKind::kCalcShape;
 }
 
-static OptStrategy::CalcKind StubTensorComputable(PyObject *obj, ssize_t max_dim) {
-  auto stub = PyObject_GetAttrString(obj, "stub");
-  if (stub != nullptr && stub != Py_None) {
-    auto pyObj = py::cast<py::object>(stub);
-    auto ptr = pyObj.cast<mindspore::stub::StubNodePtr>();
-    auto base = ptr->ToAbstract();
-    auto shape = base->BuildShape()->cast<abstract::ShapePtr>();
-    Py_DECREF(stub);
-    if (shape && !shape->IsDynamic()) {
-      if (!std::any_of(shape->shape().begin(), shape->shape().end(),
-                       [max_dim](const int64_t dim) { return dim > max_dim; })) {
-        return OptStrategy::CalcKind::kCalcValue;
-      }
-    } else {
-      return OptStrategy::CalcKind::kCalcUnsupported;
-    }
-  } else {
-    obj = PyObject_GetAttrString(obj, "tensor");
-    auto pyObj = py::cast<py::object>(obj);
-    Py_DECREF(obj);
-    auto tensor_ptr = tensor::ConvertToTensor(pyObj);
-    MS_EXCEPTION_IF_NULL(tensor_ptr);
-    auto shape = tensor_ptr->shape();
-    if (!std::any_of(shape.begin(), shape.end(), [max_dim](const int64_t dim) { return dim > max_dim; })) {
-      return OptStrategy::CalcKind::kCalcValue;
-    }
-  }
-  return OptStrategy::CalcKind::kCalcShape;
-}
-
 static OptStrategy::CalcKind ObjectComputable(PyObject *obj, ssize_t max_dim = kMaxCalcDim) {
   static const std::vector<bool (*)(PyObject *)> computable = {
     [](PyObject *op) { return op == Py_None || op == Py_True || op == Py_False || op == Py_Ellipsis; },
@@ -207,8 +152,6 @@ static OptStrategy::CalcKind ObjectComputable(PyObject *obj, ssize_t max_dim = k
     return OptStrategy::CalcKind::kCalcValue;
   } else if (IsTensorPyObject(obj)) {
     return TensorComputable(obj, max_dim);
-  } else if (IsStubTensor(py::cast<py::object>(obj))) {
-    return StubTensorComputable(obj, max_dim);
   } else {
     return OptStrategy::CalcKind::kCalcUnsupported;
   }

@@ -256,6 +256,7 @@ class _DynamicGRUAscend(Cell):
         self.gru = P.DynamicGRUV2(gate_order='rzh')
         self.transpose = P.Transpose()
         self.dtype = mstype.float16
+        self.cast = P.Cast()
 
     def construct(self, x, h_0, seq_length, w_ih, w_hh, b_ih, b_hh):
         '''Dynamic GRU module on Ascend'''

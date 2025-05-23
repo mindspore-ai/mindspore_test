@@ -65,12 +65,23 @@ TensorStorageInfoPtrList ViewStridesCalc(const OldTensorInfoPtr old_tensor_info,
   return {new_storage_info};
 }
 
-TensorStorageInfoPtrList ViewCalcImpl(const PrimitivePtr &prim, const tensor::TensorPtr &input_tensor,
-                                      const std::vector<int64_t> &shape) {
-  MS_EXCEPTION_IF_NULL(input_tensor);
+TensorStorageInfoPtrList ViewCalcImpl(const tensor::TensorPtr &input_tensor, const std::vector<int64_t> &shape) {
   auto old_tensor_info = GetOldTensorInfo(input_tensor);
-
   return ViewStridesCalc(old_tensor_info, shape);
+}
+
+TensorStorageInfoPtrList ViewBasicTypeCalc(const PrimitivePtr &prim, const tensor::TensorPtr &input_tensor,
+                                           const std::vector<int64_t> &shape) {
+  auto ori_storage_info = input_tensor->storage_info();
+  if (ori_storage_info != nullptr && !ori_storage_info->is_contiguous) {
+    MS_LOG(EXCEPTION) << "input tensor:" << input_tensor->ToString()
+                      << " is not contiguous, storage info:" << ori_storage_info->ToString();
+  }
+  if (std::any_of(shape.begin(), shape.end(), [](const int64_t &shape_i) { return shape_i < -1; })) {
+    MS_EXCEPTION(ValueError) << "For primitive[" << prim->name()
+                             << "], the component of shape can't be less than -1, but got " << shape;
+  }
+  return ViewCalcImpl(input_tensor, shape);
 }
 
 TensorStorageInfoPtrList ViewCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
@@ -81,13 +92,11 @@ TensorStorageInfoPtrList ViewCalc(const PrimitivePtr &prim, const std::vector<Va
     MS_LOG(EXCEPTION) << "input tensor:" << input_tensor->ToString()
                       << " is not contiguous, storage info:" << ori_storage_info->ToString();
   }
-
   auto shape = GetValue<std::vector<int64_t>>(inputs[kInputIndex1]);
   if (std::any_of(shape.begin(), shape.end(), [](const int64_t &shape_i) { return shape_i < -1; })) {
     MS_EXCEPTION(ValueError) << "For primitive[" << prim->name()
                              << "], the component of shape can't be less than -1, but got " << shape;
   }
-
-  return ViewCalcImpl(prim, input_tensor, shape);
+  return ViewCalcImpl(input_tensor, shape);
 }
 }  // namespace mindspore::ops

@@ -16,6 +16,8 @@
 
 #include "plugin/res_manager/ascend/collective/ascend_communication_group.h"
 #include <map>
+#include <variant>
+#include <unordered_map>
 #include <algorithm>
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
@@ -33,13 +35,13 @@
 namespace mindspore {
 namespace device {
 namespace ascend {
-AscendCommunicationGroup::AscendCommunicationGroup(const std::string &name, const std::vector<uint32_t> &group_ranks,
-                                                   uint32_t global_rank, uint32_t local_group_rank,
-                                                   uint32_t local_group_size)
+AscendCommunicationGroup::AscendCommunicationGroup(
+  const std::string &name, const std::vector<uint32_t> &group_ranks, uint32_t global_rank, uint32_t local_group_rank,
+  uint32_t local_group_size, const std::unordered_map<std::string, std::variant<uint32_t, std::string>> &hccl_config)
     : CommunicationGroup(name, group_ranks, global_rank, local_group_rank, local_group_size),
       unique_id_({}),
       comm_(nullptr),
-      config_({}) {
+      hccl_config_(hccl_config) {
   auto ret = memset_s(inner_comm_name_, INNER_COMM_NAME_MAX_LENGTH, 0x00, INNER_COMM_NAME_MAX_LENGTH);
   if (ret != EOK) {
     MS_LOG(ERROR) << "memset_s errorno: " << ret;
@@ -68,14 +70,16 @@ bool AscendCommunicationGroup::Initialize(void *root_info) {
   } else {
     group_rank = GetGroupRank(global_rank_);
   }
-
+  // Generate HcclCommConfig.
+  HcclCommConfig config = CreateHcclCommConfig();
+  // Call HCCL initialize comm API.
   bool ret = false;
   std::string rank_table_file_path = common::GetEnv("RANK_TABLE_FILE");
   if (!rank_table_file_path.empty() && common::GetEnv(kSimulationLevel).empty() &&
       !distributed::cluster::ClusterContext::instance()->enable_cross_cluster()) {
-    ret = InitializeByRankTable(rank_table_file_path, group_size, group_rank);
+    ret = InitByRankTable(rank_table_file_path, group_size, group_rank, &config);
   } else {
-    ret = InitializeByRootInfoConfig(root_info, group_size, group_rank);
+    ret = InitByRootInfoConfig(root_info, group_size, group_rank, config);
   }
   if (!ret) {
     return false;
@@ -97,8 +101,6 @@ bool AscendCommunicationGroup::Initialize(void *root_info) {
     (void)HcclWatchDogManager::GetInstance().InitHandler(handle_size);
     MS_LOG(INFO) << "hccl watchdog on device side is successfully initialized.";
   }
-  // clear uniqueid
-  distributed::collective::CollectiveManager::instance()->ClearUniqueID(name_);
   (void)CALL_ASCEND_API(aclrtResetDevice, device_id);
   return true;
 }
@@ -127,46 +129,68 @@ bool AscendCommunicationGroup::Finalize() {
   return true;
 }
 
-void AscendCommunicationGroup::InitializeCommConfig() {
-  HcclCommConfigInit(&config_);
+void AscendCommunicationGroup::InitHcclCommConfig(HcclCommConfig *config) {
+  HcclCommConfigInit(config);
   auto instance = distributed::collective::CollectHcclInitInfo::GetInstance();
   uint32_t buffsize = instance->GetBuffsize(name_);
-  config_.hcclBufferSize = buffsize == 0 ? HCCL_COMM_DEFAULT_BUFFSIZE : buffsize;
+  config->hcclBufferSize = buffsize == 0 ? HCCL_COMM_DEFAULT_BUFFSIZE : buffsize;
+
   // The hcclDeterministic configured for the communicator is preferentially based on the parameter in the context,
   // or if this parameter is not configured, hcclDeterministic is configured based on the environment variable
   // 'HCCL_DETERMINISTIC'.
   std::string env_hccl_deterministic = common::GetEnv("HCCL_DETERMINISTIC");
-  config_.hcclDeterministic = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DETERMINISTIC) == "ON"
+  config->hcclDeterministic = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DETERMINISTIC) == "ON"
                                 ? 1
                                 : (env_hccl_deterministic == "true" ? 1 : 0);
 }
 
-bool AscendCommunicationGroup::InitializeByRootInfoConfig(void *root_info, uint32_t group_size, uint32_t group_rank) {
-  InitializeCommConfig();
-  MS_LOG(WARNING) << "Start to initialize communicator by HcclCommInitRootInfo for " << name_ << ", hcclBufferSize is "
-                  << config_.hcclBufferSize << " MB."
-                  << " hcclDeterministic is " << config_.hcclDeterministic;
+HcclCommConfig AscendCommunicationGroup::CreateHcclCommConfig() {
+  HcclCommConfig config;
+  InitHcclCommConfig(&config);
+
+  if (hccl_config_.empty()) {
+    return config;
+  }
+
+  // Parameters passed to HCCL via API's config have higher priority than those set in the environment variableThe.
+  if (hccl_config_.find("hccl_buffer_size") != hccl_config_.end()) {
+    if (!std::holds_alternative<uint32_t>(hccl_config_["hccl_buffer_size"])) {
+      MS_LOG(EXCEPTION)
+        << "Failed to set hcclBufferSize. Type of hccl_buffer_size in GroupOptions should be unsigned integer.";
+    }
+    config.hcclBufferSize = std::get<uint32_t>(hccl_config_["hccl_buffer_size"]);
+  }
+
+  return config;
+}
+
+bool AscendCommunicationGroup::InitByRootInfoConfig(void *root_info, uint32_t group_size, uint32_t group_rank,
+                                                    const HcclCommConfig &config) {
+  MS_LOG(WARNING) << "Start to initialize communicator by HcclCommInitRootInfoConfig for " << name_
+                  << ", hcclBufferSize is " << config.hcclBufferSize << " MB, hcclDeterministic is "
+                  << config.hcclDeterministic;
   unique_id_ = *(static_cast<HcclRootInfo *>(root_info));
   // MindSpore 2.5 uses HcclCommInitRootInfo to avoid using hcclconfig feature.
-  if (HcclCommInitRootInfo(static_cast<uint32_t>(group_size), &unique_id_, static_cast<uint32_t>(group_rank), &comm_) !=
-      static_cast<int32_t>(HCCL_SUCCESS)) {
+  if (hccl::HcclAdapter::GetInstance().HcclCommInitRootInfoConfig(static_cast<uint32_t>(group_size), &unique_id_,
+                                                                  static_cast<uint32_t>(group_rank), &config,
+                                                                  &comm_) != static_cast<int32_t>(HCCL_SUCCESS)) {
     const string &error_message = ErrorManagerAdapter::GetErrorMessage(true);
-    MS_LOG(ERROR) << "HcclCommInitRootInfo failed. " + error_message;
+    MS_LOG(ERROR) << "HcclCommInitRootInfoConfig failed. " + error_message;
     return false;
   }
-  MS_LOG(WARNING) << "End to initialize communicator by HcclCommInitRootInfo for " << name_;
+  MS_LOG(WARNING) << "End to initialize communicator by HcclCommInitRootInfoConfig for " << name_;
   return true;
 }
 
-bool AscendCommunicationGroup::InitializeByRankTable(std::string rank_table, uint32_t group_size, uint32_t group_rank) {
-  InitializeCommConfig();
+bool AscendCommunicationGroup::InitByRankTable(std::string rank_table, uint32_t group_size, uint32_t group_rank,
+                                               HcclCommConfig *config) {
   if (name_ == kHCCLGlobalGroupName) {
     // Initialize global communicator by 'HcclCommInitClusterInfoConfig'.
     MS_LOG(WARNING) << "Start to initialize communicator by HcclCommInitClusterInfoConfig for " << name_
-                    << ", hcclBufferSize is " << config_.hcclBufferSize << " MB."
-                    << " hcclDeterministic is " << config_.hcclDeterministic;
+                    << ", hcclBufferSize is " << config->hcclBufferSize << " MB. hcclDeterministic is "
+                    << config->hcclDeterministic;
     if (hccl::HcclAdapter::GetInstance().HcclCommInitClusterInfoConfig(static_cast<const char *>(rank_table.c_str()),
-                                                                       static_cast<uint32_t>(global_rank_), &config_,
+                                                                       static_cast<uint32_t>(global_rank_), config,
                                                                        &comm_) != static_cast<int32_t>(HCCL_SUCCESS)) {
       const string &error_message = ErrorManagerAdapter::GetErrorMessage(true);
       MS_LOG(ERROR) << "HcclCommInitClusterInfoConfig failed. " + error_message;
@@ -176,8 +200,8 @@ bool AscendCommunicationGroup::InitializeByRankTable(std::string rank_table, uin
   } else {
     // split sub communicator from global communicator by 'HcclCreateSubCommConfig'.
     MS_LOG(WARNING) << "Start to initialize communicator by HcclCreateSubCommConfig for " << name_
-                    << ", hcclBufferSize is " << config_.hcclBufferSize << " MB."
-                    << " hcclDeterministic is " << config_.hcclDeterministic;
+                    << ", hcclBufferSize is " << config->hcclBufferSize << " MB. hcclDeterministic is "
+                    << config->hcclDeterministic;
     // The HCCL global communicator. This is used as a parameter to segment sub communicator if initializing with
     // 'HcclCreateSubCommConfig'.
     auto global_comm = AscendCollectiveCommLib::GetInstance().HcclCommunicator(kHCCLGlobalGroupName);
@@ -186,7 +210,7 @@ bool AscendCommunicationGroup::InitializeByRankTable(std::string rank_table, uin
     size_t sub_comm_id = to_hash(name_);
     if (hccl::HcclAdapter::GetInstance().HcclCreateSubCommConfig(
           &global_comm, static_cast<uint32_t>(group_size), group_ranks_.data(), static_cast<uint64_t>(sub_comm_id),
-          static_cast<uint32_t>(group_rank), &config_, &comm_) != static_cast<int32_t>(HCCL_SUCCESS)) {
+          static_cast<uint32_t>(group_rank), config, &comm_) != static_cast<int32_t>(HCCL_SUCCESS)) {
       const string &error_message = ErrorManagerAdapter::GetErrorMessage(true);
       MS_LOG(ERROR) << "HcclCreateSubCommConfig failed. " + error_message;
       return false;
@@ -220,6 +244,23 @@ void *AscendCommunicationGroup::GenerateRootInfo(size_t *root_info_size) {
     }
   }
   return &unique_id_;
+}
+
+bool AscendCommunicationGroup::SetGlobalCommInfo(uint32_t master_ip, uint32_t master_port, uint32_t total_rank_size,
+                                                 uint32_t node_rank, uint32_t local_rank_size) {
+  MS_LOG(WARNING) << "Start to SetGlobalCommInfo for " << name_ << ", master_ip:" << master_ip
+                  << ", master_port:" << master_port << ", node_rank:" << node_rank
+                  << ", total_rank_size:" << total_rank_size << ", local_rank_size" << local_rank_size;
+  int32_t ret = hccl::HcclAdapter::GetInstance().HcclSetGlobalCommInfo(master_ip, master_port, total_rank_size,
+                                                                       node_rank, local_rank_size);
+  if (ret == static_cast<int32_t>(HCCL_E_NOT_SUPPORT)) {
+    MS_LOG(INFO) << "HcclSetGlobalCommInfo is not supported.";
+  } else if (ret != static_cast<int32_t>(HCCL_SUCCESS)) {
+    MS_LOG(ERROR) << "Failed to set HCCL global comm info: " << CALL_ASCEND_API(aclGetRecentErrMsg);
+    return false;
+  }
+  MS_LOG(WARNING) << "End to SetGlobalCommInfo for " << name_;
+  return true;
 }
 
 const HcclComm &AscendCommunicationGroup::hccl_communicator() const { return comm_; }

@@ -211,6 +211,76 @@ def test_grouped_matmul_v4_x2d_w3d_splititem3_grouptype0_a16w8(mode):
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', ['KBK', 'pynative'])
+def test_grouped_matmul_v4_x2d_w3d_splititem3_grouptype0_a16w4(mode):
+    """
+    Feature: Test grouped_matmul
+    Description: semi_auto_parallel
+    Expectation: shape is as expected.
+    """
+    context.set_context(device_target="Ascend")
+    if mode == 'KBK':
+        ms.set_context(mode=ms.GRAPH_MODE)
+        ms.set_context(jit_level='O0')
+    elif mode == 'pynative':
+        ms.set_context(mode=ms.PYNATIVE_MODE)
+    gmm_v4_net = GroupedMatmulV4Net()
+
+    split_item = 3
+    group_type = 0
+    group_list_type = 0
+
+    M0 = 32
+    K0 = 256
+    N0 = 128
+    E0 = 8
+    group_list_np = [1, 3, 10, 14, 18, 22, 24, 30] # last value can be less than total token numbers
+
+    # numpy calculate
+    np_x_all = np.random.uniform(-128, 127, size=[M0, K0]).astype(np.float16)
+    np_w_all = np.random.uniform(0, 2, size=[E0, K0, N0]).astype(np.int8)
+    antiquant_scale0 = np.array(np.full([E0, N0], 0.01)).astype(np.float16)
+    antiquant_offset0 = np.array(np.full([E0, N0], 1)).astype(np.float16)
+
+    for i in range(E0):
+        for j in range(K0):
+            for k in range(N0):
+                np_w_all[i, j, k] = np_w_all[i, j, k] & 0xf
+
+    np_w_all_int4 = np.ones((E0 * K0 * N0 // 2,), dtype=np.int8)
+    np_w_all_one_rank = np_w_all.reshape(-1,)
+    for i in range(E0 * K0 * N0 // 2):
+        np_w_all_int4[i] = np_w_all_one_rank[i * 2] | ((np_w_all_one_rank[(i * 2) + 1] & 15) << 4)
+
+    np_w_all_int4_3_rank = np_w_all_int4.reshape((E0, K0, N0 // 2))
+
+    np_x = split_x(np_x_all, group_list_np)
+    np_w = split_w(np_w_all)
+    np_s = split_w(antiquant_scale0)
+    np_o = split_w(antiquant_offset0)
+    res_np = [np.matmul(x0, (w0 + o0) * s0) for x0, w0, s0, o0 in zip(np_x, np_w, np_s, np_o)]
+    expect_np = np.concatenate(res_np, axis=0)
+
+    # ms calculate
+    x = [ms.Tensor(np_x_all)]
+    w = [ms.Tensor(np_w_all_int4_3_rank, dtype=ms.qint4x2)]
+    antiquant_scale = [ms.Tensor(antiquant_scale0)]
+    antiquant_offset = [ms.Tensor(antiquant_offset0)]
+
+    b = None
+    scale = None
+    offset = None
+    pertoken_scale = None
+    group_list = ms.Tensor(group_list_np, dtype=mstype.int64)
+
+    res = gmm_v4_net(x, w, b, scale, offset, antiquant_scale, antiquant_offset, pertoken_scale, group_list,
+                     split_item, group_type, group_list_type)
+
+    # compare
+    np.testing.assert_allclose(expect_np, res[0][:30].asnumpy(), rtol=1e-3, atol=1e-3)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize('mode', ['KBK', 'pynative'])
 def test_grouped_matmul_v4_x2d_w3d_splititem3_grouptype0_none_pertoken(mode):
     """
     Feature: Test grouped_matmul
@@ -296,25 +366,27 @@ def test_grouped_matmul_v4_x2d_w3d_splititem3_grouptype0_none_perchannel(mode):
     np_x_all = np.random.uniform(-128, 127, size=[M0, K0]).astype(np.int8)
     np_w_all = np.random.uniform(-128, 127, size=[E0, K0, N0]).astype(np.int8)
     np_s_all = np.array(np.full([E0, N0], 10)).astype(np.float32)
+    np_b_all = np.array(np.full([E0, N0], 1)).astype(np.float32)
 
     np_x = split_x(np_x_all, np.cumsum(group_list_np))
     np_w = split_w(np_w_all)
     np_s = split_w(np_s_all)
-    res_np = [np.matmul(x0, w0 * s0) for x0, w0, s0 in zip(np_x, np_w, np_s)]
+    np_b = split_w(np_b_all)
+    res_np = [np.matmul(x0, w0 * s0) + b0 * s0 for x0, w0, s0, b0 in zip(np_x, np_w, np_s, np_b)]
     except_np = np.concatenate(res_np, axis=0)
 
     # ms calculate
     x = [ms.Tensor(np_x_all)]
     w = [ms.Tensor(np_w_all)]
     scale = [ms.Tensor(np_s_all, dtype=mstype.bfloat16)]
+    bias = [ms.Tensor(np_b, dtype=mstype.int32)]
 
-    b = None
     offset = None
     antiquant_scale = None
     antiquant_offset = None
     group_list = ms.Tensor(group_list_np, dtype=mstype.int64)
 
-    res = gmm_v4_net(x, w, b, scale, offset, antiquant_scale, antiquant_offset, None, group_list,
+    res = gmm_v4_net(x, w, bias, scale, offset, antiquant_scale, antiquant_offset, None, group_list,
                      split_item, group_type, group_list_type)
 
     # compare

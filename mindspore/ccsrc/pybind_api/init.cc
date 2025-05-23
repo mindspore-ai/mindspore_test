@@ -20,7 +20,8 @@
 #include <string>
 #include "common/oplib/oplib.h"
 #include "pipeline/jit/ps/pipeline.h"
-#include "pipeline/jit/ps/pipeline_jit.h"
+#include "pipeline/jit/ps/executor/graph_executor_py.h"
+#include "pipeline/jit/ps/executor/jit_executor_py.h"
 #include "frontend/operator/composite/composite.h"
 #include "frontend/operator/composite/functional_overload.h"
 #include "pynative/pynative_execute.h"
@@ -47,6 +48,7 @@
 #include "runtime/graph_scheduler/embedding_cache_scheduler.h"
 #endif
 #include "runtime/hardware/device_context_manager.h"
+#include "runtime/collective/collective_communication_lib.h"
 #include "include/backend/mem_reuse/mem_dynamic_allocator.h"
 #include "frontend/parallel/tensor_layout/tensor_transform.h"
 #include "pipeline/llm_boost/utils.h"
@@ -60,6 +62,7 @@
 #include "include/common/np_dtype/np_dtypes.h"
 #include "include/common/amp/amp.h"
 #include "pipeline/jit/trace/trace_recorder.h"
+#include "runtime/graph_scheduler/execution_order_check/comm_execution_order_check.h"
 #ifdef _WIN32
 #include "kernel/cpu/utils/cpu_utils.h"
 #endif
@@ -78,10 +81,10 @@ using TensorTransform = mindspore::parallel::TensorTransform;
 using OffloadContext = mindspore::OffloadContext;
 using mindspore::MsCtxParam;
 using PSContext = mindspore::ps::PSContext;
-using CreateGroupConfig = mindspore::distributed::collective::CreateGroupConfig;
 using CollectiveManager = mindspore::distributed::collective::CollectiveManager;
 using TCPStoreClient = mindspore::distributed::cluster::TCPStoreClient;
 using RecoveryContext = mindspore::distributed::recovery::RecoveryContext;
+using GroupOptions = mindspore::device::GroupOptions;
 using DeviceContextManager = mindspore::device::DeviceContextManager;
 using DeviceContext = mindspore::device::DeviceContext;
 
@@ -180,6 +183,7 @@ void RegModule(py::module *m) {
   RegSignatureEnumRW(m);
   RegRandomSeededGenerator(m);
   RegPreJit(m);
+  RegStorage(m);
   mindspore::tensor::RegMetaTensor(m);
   mindspore::tensor::RegCSRTensor(m);
   mindspore::tensor::RegCOOTensor(m);
@@ -694,15 +698,17 @@ PYBIND11_MODULE(_c_expression, m) {
     .def(py::init())
     .def_static("reg_op", &OpLib::RegOp, "Register op info.");
 
-  (void)py::class_<CreateGroupConfig>(m, "CreateGroupConfig")
-    .def_readwrite("async", &CreateGroupConfig::async)
-    .def_readwrite("submit_now", &CreateGroupConfig::submit_now);
+  (void)py::class_<GroupOptions>(m, "GroupOptions")
+    .def(py::init<>())
+    .def_readwrite("async", &GroupOptions::async)
+    .def_readwrite("submit_now", &GroupOptions::submit_now)
+    .def_readwrite("hccl_config", &GroupOptions::hccl_config);
 
   (void)py::class_<CollectiveManager, std::shared_ptr<CollectiveManager>>(m, "CollectiveManager")
     .def_static("get_instance", &CollectiveManager::instance, "Get collective manager instance.")
     .def("initialized", &CollectiveManager::initialized, "Returns whether distributed module is initialized.")
     .def("create_group", &CollectiveManager::CreateCommunicationGroup, "Create collective group.",
-         pybind11::arg("group_name"), pybind11::arg("rank_list"), pybind11::arg("async") = CreateGroupConfig())
+         pybind11::arg("group_name"), pybind11::arg("rank_list"), pybind11::arg("options") = GroupOptions())
     .def("destroy_group", &CollectiveManager::DestroyCommunicationGroup, "Destroy collective group.")
     .def("get_group_map", &CollectiveManager::get_group_map, "Get the group map")
     .def("get_local_rank_id", &CollectiveManager::GetLocalRankId, "Get the node rank id.")
@@ -811,4 +817,10 @@ PYBIND11_MODULE(_c_expression, m) {
   (void)m.def("_bind_device_ctx", &mindspore::pipeline::BindDeviceCtx, "Bind device context to current thread");
   (void)m.def("swap_cache", &mindspore::pipeline::SwapCache, py::arg("host"), py::arg("device"),
               py::arg("block_mapping"), py::arg("is_device_to_host"), "Swap Cache for PageAttention.");
+
+  (void)py::class_<mindspore::runtime::Process, std::shared_ptr<mindspore::runtime::Process>>(m, "CommExecOrderChecker")
+    .def_static("get_instance", &mindspore::runtime::Process::GetInstance, py::return_value_policy::reference,
+                "Get CommExecOrderChecker instance.")
+    .def("start_collect_exec_order", &mindspore::runtime::Process::StartCollectExecOrder, "Start collect exec order.")
+    .def("stop_collect_exec_order", &mindspore::runtime::Process::StopCollectExecOrder, "Stop collect exec order.");
 }

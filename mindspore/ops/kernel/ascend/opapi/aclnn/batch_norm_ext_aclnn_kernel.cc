@@ -29,7 +29,8 @@ namespace batch_norm_ext {
 
 void BatchNormExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                           const std::vector<KernelTensor *> &outputs) {
-  auto training = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex5]);
+  training_ = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex5]);
+
   auto eps_dtype_id = inputs[kIndex7]->dtype_id();
   eps_ = (eps_dtype_id == kNumberTypeFloat32) ? static_cast<double>(inputs[kIndex7]->GetValueWithCheck<float>())
                                               : inputs[kIndex7]->GetValueWithCheck<double>();
@@ -39,16 +40,15 @@ void BatchNormExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inp
                 ? static_cast<double>(inputs[kIndex6]->GetValueWithCheck<float>())
                 : inputs[kIndex7]->GetValueWithCheck<double>();
 
-  GetWorkspaceForResize(inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], inputs[kIndex3], inputs[kIndex4], training,
+  GetWorkspaceForResize(inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], inputs[kIndex3], inputs[kIndex4], training_,
                         momentum_, eps_, outputs[kIndex0], outputs[kIndex1], outputs[kIndex2]);
 }
 
 bool BatchNormExtAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                                 const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
-  auto training = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex5]);
   RunOp(stream_ptr, workspace, inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], inputs[kIndex3], inputs[kIndex4],
-        training, momentum_, eps_, outputs[kIndex0], outputs[kIndex1], outputs[kIndex2]);
+        training_, momentum_, eps_, outputs[kIndex0], outputs[kIndex1], outputs[kIndex2]);
   return true;
 }
 

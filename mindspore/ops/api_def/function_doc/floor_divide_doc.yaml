@@ -1,5 +1,7 @@
 floor_divide:
   description: |
+    floor_divide(input, other) -> Tensor
+
     Divides the first input tensor by the second input tensor element-wise and round down to the closest integer.
 
     Inputs of `input` and `other` comply with the implicit type conversion rules to make the data types consistent.

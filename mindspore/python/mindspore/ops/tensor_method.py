@@ -21,7 +21,7 @@ from mindspore.ops import operations as P
 from mindspore.ops import functional as F
 from mindspore.ops.composite.multitype_ops import _compile_utils as utils
 from mindspore.ops.composite.multitype_ops._compile_utils import (
-    sequence_to_tensor, _tensor_sub, _tensor_pow, _tensor_div, _tensor_floordiv
+    sequence_to_tensor, _tensor_sub, _tensor_pow, _tensor_div, _tensor_floordiv, _tensor_mod
 )
 from mindspore.ops.auto_generate.gen_ops_prim import (
     inplace_scatter_src_op, inplace_scatter_src_reduce_op, inplace_scatter_value_op, inplace_scatter_value_reduce_op,
@@ -946,6 +946,10 @@ def tensor_remainder(input, other):
 
 def deprecated_tensor_remainder(input, divisor):
     return remainder(input, divisor)
+
+
+def deprecated_tensor_mod(input, other):
+    return _tensor_mod(input, other)
 
 
 # 86 repeat

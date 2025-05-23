@@ -18,8 +18,7 @@
 #include <memory>
 #include "runtime/device/res_manager/utils/convert_tensor_utils.h"
 #include "plugin/res_manager/cpu/cpu_mem_manager/cpu_memory_pool.h"
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_synchronizer.h"
-#include "plugin/device/cpu/hal/device/cpu_hash_table_util.h"
+#include "plugin/res_manager/cpu/cpu_mem_manager/cpu_hash_table_util.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 
 namespace mindspore {
@@ -69,8 +68,6 @@ bool SyncUserDataToDevice(const UserDataPtr &user_data, const void *host_ptr, si
   return true;
 }
 }  // namespace
-
-DeviceSynchronizerPtr CPUDeviceAddress::NewDeviceSynchronizer() { return std::make_shared<CPUDeviceSynchronizer>(); }
 
 void CPUDeviceAddress::SetDevicePtrDeleter() {
   if (address_common_ == nullptr || address_common_->pointer_ref_count_ == nullptr) {
@@ -207,8 +204,6 @@ bool CPUDeviceAddress::SyncHostToDevice(const ShapeVector &, size_t size, TypeId
       set_from_mem_pool(false);
     }
     SetDevicePtr(const_cast<void *>(host_ptr));
-    set_original_ref_count(SIZE_MAX);
-    set_ref_count(SIZE_MAX);
     set_new_ref_count(SIZE_MAX);
   } else if (type_id() == kNumberTypeFloat32 && type == kNumberTypeFloat16) {
     HalfToFloat(GetDevicePtr(), host_ptr, size >> 1);
@@ -226,17 +221,17 @@ bool CPUDeviceAddress::SyncHostToDevice(const ShapeVector &, size_t size, TypeId
   return true;
 }
 
-bool CPUDeviceAddress::AsyncHostToDevice(size_t size, TypeId type, const void *host_ptr) const {
+bool CPUDeviceAddress::AsyncHostToDevice(size_t size, TypeId type, const void *host_ptr, size_t) const {
   // cpu not provide async copy, call sync copy instead
   return SyncHostToDevice({}, size, type, host_ptr, "");
 }
 
-bool CPUDeviceAddress::AsyncDeviceToDevice(const DeviceAddress *src_device_addr) const {
+bool CPUDeviceAddress::AsyncDeviceToDevice(const DeviceAddress *src_device_addr, size_t) const {
   return SyncDeviceToDevice(src_device_addr);
 }
 
 bool CPUDeviceAddress::AsyncHostToDevice(size_t size, TypeId type, const tensor::TensorDataPtr &tensor_data,
-                                         const std::string &format) const {
+                                         const std::string &format, size_t) const {
   return SyncHostToDevice(GetShapeVector(), size, type, tensor_data->data(), format);
 }
 
@@ -297,6 +292,40 @@ DeviceAddressPtr CPUDeviceAddress::CloneDeviceAddress() {
   auto clone_device_address = std::make_shared<CPUDeviceAddress>();
   DeviceAddress::CloneDeviceAddress(clone_device_address);
   return clone_device_address;
+}
+
+bool CPUDeviceAddress::SyncDeviceToHost(void *host_ptr, const void *device_ptr, size_t size,
+                                        const std::string &device_name, uint32_t device_id, mindspore::Format format,
+                                        const ShapeVector &shape, size_t stream_id,
+                                        const UserDataPtr &user_data) const {
+  MS_EXCEPTION_IF_NULL(host_ptr);
+  MS_EXCEPTION_IF_NULL(device_ptr);
+
+  // For the CPU, device is the Host side, use memcpy_s to copy data.
+  auto ret = memcpy_s(host_ptr, size, device_ptr, size);
+  if (ret != EOK) {
+    MS_LOG(ERROR) << "Memcpy for sync device memory to host side failed, errno[" << ret << "]";
+    return false;
+  }
+
+  return true;
+}
+
+bool CPUDeviceAddress::SyncHostToDevice(void *device_ptr, const void *host_ptr, size_t size,
+                                        const std::string &device_name, uint32_t device_id, mindspore::Format format,
+                                        const ShapeVector &shape, size_t stream_id,
+                                        const UserDataPtr &user_data) const {
+  MS_EXCEPTION_IF_NULL(device_ptr);
+  MS_EXCEPTION_IF_NULL(host_ptr);
+
+  // For the CPU, device is the Host side, use memcpy_s to copy data.
+  auto ret = memcpy_s(device_ptr, size, host_ptr, size);
+  if (ret != EOK) {
+    MS_LOG(ERROR) << "Memcpy for sync host memory to device side failed, errno[" << ret << "]";
+    return false;
+  }
+
+  return true;
 }
 }  // namespace cpu
 }  // namespace device

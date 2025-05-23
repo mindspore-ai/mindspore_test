@@ -18,6 +18,7 @@
 #include <memory>
 #include "mindspore/ops/op_def/arithmetic_ops.h"
 #include "include/common/utils/anfalgo.h"
+#include "include/backend/optimizer/helper.h"
 
 /* This pass changes the following pattern.
 

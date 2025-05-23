@@ -30,7 +30,6 @@
 
 #include "utils/ms_utils.h"
 #include "utils/ms_context.h"
-#include "utils/log_adapter.h"
 #include "utils/file_utils.h"
 #include "utils/convert_utils_base.h"
 #include "utils/distributed_meta.h"
@@ -45,7 +44,7 @@ constexpr char kRunTimeThread[] = "runtime";
 constexpr char kDataThread[] = "minddata";
 }  // namespace
 
-void ThreadBindCore::enable_thread_bind_core_with_policy(const ModuleBindCorePolicy &bind_core_policy) {
+void ThreadBindCore::enable_thread_bind_core(const ModuleBindCorePolicy &bind_core_policy) {
   if (is_enable_thread_bind_core_) {
     MS_LOG(WARNING)
       << "Thead bind core has already been enabled and will be implemented based on the first binding policy.";

@@ -29,12 +29,11 @@
 #include "include/common/utils/utils.h"
 #include "abstract/abstract_value.h"
 #include "ir/primitive.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
 
 namespace mindspore {
-
 namespace {
-using ShapeAndType = std::tuple<std::string, std::string, std::string, std::string, size_t, size_t>;
-
 template <typename T>
 void WriteCsvFile(const std::string &real_path, const std::vector<T> &data_list,
                   const std::vector<std::pair<std::string, std::function<std::string(const T &)>>> &csv_columns) {
@@ -116,8 +115,67 @@ void ExecuteOrderTracker::AddCommOrderInfo(const CommOrderInfoPtr &comm_info) {
   comm_order_info_list_.emplace_back(comm_info);
 }
 
+CommOrderInfoPtr ExecuteOrderTracker::CreateCommOrderInfo(const std::string &index, const std::string &group,
+                                                          const std::string &primitive_str, const CNodePtr &cnode,
+                                                          const tensor::TensorPtr &input_tensor,
+                                                          const tensor::TensorPtr &output_tensor, int64_t direct_rank) {
+  auto comm_info = std::make_shared<CommOrderInfo>();
+  comm_info->index = index;
+  comm_info->group = group;
+  comm_info->primitive = primitive_str;
+
+  auto comm_ranks = GetCommRanks(group);
+  comm_info->comm_rank = std::accumulate(
+    comm_ranks.begin(), comm_ranks.end(), std::string(),
+    [](const std::string &a, uint32_t b) { return a.empty() ? std::to_string(b) : a + " " + std::to_string(b); });
+
+  if (cnode) {
+    comm_info->src_rank = GetCommunicationRanks(std::make_pair(cnode, kAttrSrcRank), comm_ranks);
+    comm_info->dest_rank = GetCommunicationRanks(std::make_pair(cnode, kAttrDestRank), comm_ranks);
+    comm_info->root_rank = GetCommunicationRanks(std::make_pair(cnode, kAttrRootRank), comm_ranks);
+    GetInputOutputShapeAndType(cnode, comm_info);
+  } else {
+    auto rank_str = GetCommunicationRanks(direct_rank, comm_ranks);
+    if (primitive_str == prim::kPrimDistCommIsend->name() || primitive_str == prim::kPrimInnerCommIsend->name()) {
+      comm_info->dest_rank = rank_str;
+    } else if (primitive_str == prim::kPrimDistCommIrecv->name() ||
+               primitive_str == prim::kPrimInnerCommIrecv->name()) {
+      comm_info->src_rank = rank_str;
+    } else {
+      comm_info->root_rank = rank_str;
+    }
+    comm_info->input_shape = tensor::ShapeToString(input_tensor->shape());
+    comm_info->input_type = input_tensor->Dtype()->ToString();
+    comm_info->output_shape = tensor::ShapeToString(output_tensor->shape());
+    comm_info->output_type = output_tensor->Dtype()->ToString();
+    comm_info->input_size = std::to_string(input_tensor->Size());
+    comm_info->output_size = std::to_string(output_tensor->Size());
+  }
+  return comm_info;
+}
+
+void ExecuteOrderTracker::ProcessPyboostCommOp(const std::shared_ptr<kernel::pyboost::OpRunner> &op,
+                                               const std::string &group, size_t comm_stream_id,
+                                               const tensor::TensorPtr &input_tensor,
+                                               const tensor::TensorPtr &output_tensor, int64_t rank) {
+  MS_EXCEPTION_IF_NULL(op);
+  MS_EXCEPTION_IF_NULL(op->primitive());
+  auto order_info = std::make_shared<OrderInfo>();
+  order_info->node_name = op->primitive()->name();
+  order_info->group = group;
+  order_info->stream_id = comm_stream_id;
+  AddOrderInfo(order_info);
+
+  auto comm_info =
+    CreateCommOrderInfo(order_info->index, group, op->primitive()->name(), nullptr, input_tensor, output_tensor, rank);
+  AddCommOrderInfo(comm_info);
+
+  if (comm_order_path_.empty()) {
+    comm_order_path_ = GetExecuteOrderFilePath(kCommExecuteOrderFileName);
+  }
+}
+
 void ExecuteOrderTracker::ProcessNode(const CNodePtr &cnode) {
-  MS_LOG(INFO) << "The execution order stored program starts running.";
   MS_EXCEPTION_IF_NULL(cnode);
   auto order_info = std::make_shared<OrderInfo>();
   order_info->node_name = cnode->fullname_with_scope();
@@ -146,48 +204,20 @@ void ExecuteOrderTracker::ProcessNode(const CNodePtr &cnode) {
 
   AddOrderInfo(order_info);
   if (IsCommunicationOp(cnode)) {
-    auto comm_info = std::make_shared<CommOrderInfo>();
-    comm_info->index = order_info->index;
-    comm_info->group = order_info->group;
-    // Get comm_ranks and comm_rank strings
-    auto comm_ranks = GetCommRanks(order_info->group);
-    std::string comm_ranks_str = std::accumulate(
-      comm_ranks.begin(), comm_ranks.end(), std::string(),
-      [](const std::string &a, uint32_t b) { return a.empty() ? std::to_string(b) : a + " " + std::to_string(b); });
-    comm_info->comm_rank = comm_ranks_str;
-
     auto prim = GetValueNode<PrimitivePtr>(cnode->input(kIndex0));
     MS_EXCEPTION_IF_NULL(prim);
-    comm_info->primitive = prim->ToString();
-
-    // Get src_rank, dest_rank, root_rank
-    auto [src_rank_str, dest_rank_str, root_rank_str] = GetCommunicationRanks(cnode, comm_ranks);
-    comm_info->src_rank = src_rank_str;
-    comm_info->dest_rank = dest_rank_str;
-    comm_info->root_rank = root_rank_str;
-
-    // Get the shape and type of input and output
-    auto [input_shape_str, input_type_str, output_shape_str, output_type_str, input_size, output_size] =
-      GetInputOutputShapeAndType(cnode);
-
-    comm_info->input_shape = input_shape_str;
-    comm_info->input_type = input_type_str;
-    comm_info->output_shape = output_shape_str;
-    comm_info->output_type = output_type_str;
-    comm_info->input_size = std::to_string(input_size);
-    comm_info->output_size = std::to_string(output_size);
-
+    auto comm_info = CreateCommOrderInfo(order_info->index, group, prim->name(), cnode);
     AddCommOrderInfo(comm_info);
-
-    // Cache the path when launching for the first time to avoid losing rank information when destroying
-    if (order_path_.empty()) {
-      order_path_ = GetExecuteOrderFilePath(kExecuteOrderFileName);
-    }
 
     if (comm_order_path_.empty()) {
       comm_order_path_ = GetExecuteOrderFilePath(kCommExecuteOrderFileName);
     }
   }
+  // Cache the path when launching for the first time to avoid losing rank information when destroying
+  if (order_path_.empty()) {
+    order_path_ = GetExecuteOrderFilePath(kExecuteOrderFileName);
+  }
+
   MS_LOG(INFO) << "Execution order storage program runs to the end.";
 }
 
@@ -226,12 +256,18 @@ std::vector<uint32_t> ExecuteOrderTracker::GetCommRanks(const std::string &group
   return comm_ranks;
 }
 
-std::tuple<std::string, std::string, std::string> ExecuteOrderTracker::GetCommunicationRanks(
-  const CNodePtr &cnode, const std::vector<uint32_t> &comm_ranks) const {
-  MS_EXCEPTION_IF_NULL(cnode);
-
-  auto get_rank_str = [&](const std::string &attr_name) -> std::string {
-    uint32_t rank_value = std::numeric_limits<uint32_t>::max();
+std::string ExecuteOrderTracker::GetCommunicationRanks(
+  const std::variant<int64_t, std::pair<const CNodePtr &, const char *>> &input,
+  const std::vector<uint32_t> &comm_ranks) const {
+  uint32_t rank_value = std::numeric_limits<uint32_t>::max();
+  if (auto *rank_ptr = std::get_if<int64_t>(&input)) {
+    int64_t rank = *rank_ptr;
+    if (rank >= 0 && static_cast<size_t>(rank) < comm_ranks.size()) {
+      rank_value = comm_ranks[static_cast<size_t>(rank)];
+    }
+  } else if (auto *pair_ptr = std::get_if<std::pair<const CNodePtr &, const char *>>(&input)) {
+    auto [cnode, attr_name] = *pair_ptr;
+    MS_EXCEPTION_IF_NULL(cnode);
     if (common::AnfAlgo::HasNodeAttr(attr_name, cnode)) {
       int64_t rank_attr = common::AnfAlgo::GetNodeAttr<int64_t>(cnode, attr_name);
       if (rank_attr >= 0 && static_cast<size_t>(rank_attr) < comm_ranks.size()) {
@@ -241,16 +277,11 @@ std::tuple<std::string, std::string, std::string> ExecuteOrderTracker::GetCommun
                           << comm_ranks.size();
       }
     }
-    return rank_value == std::numeric_limits<uint32_t>::max() ? "" : std::to_string(rank_value);
-  };
-  std::string src_rank = get_rank_str(kAttrSrcRank);
-  std::string dest_rank = get_rank_str(kAttrDestRank);
-  std::string root_rank = get_rank_str(kAttrRootRank);
-
-  return {src_rank, dest_rank, root_rank};
+  }
+  return rank_value == std::numeric_limits<uint32_t>::max() ? "" : std::to_string(rank_value);
 }
 
-ShapeAndType ExecuteOrderTracker::GetInputOutputShapeAndType(const CNodePtr &cnode) const {
+void ExecuteOrderTracker::GetInputOutputShapeAndType(const CNodePtr &cnode, const CommOrderInfoPtr &comm_info) const {
   MS_EXCEPTION_IF_NULL(cnode);
 
   auto GetShapeAndType = [](AbstractBasePtr &abs) {
@@ -302,11 +333,17 @@ ShapeAndType ExecuteOrderTracker::GetInputOutputShapeAndType(const CNodePtr &cno
     }
     return data_size * type_size;
   };
-
-  auto input_abs = cnode->input(1)->abstract();
+  AbstractBasePtr input_abs = nullptr;
+  if (cnode->inputs().size() > 1) {
+    input_abs = cnode->input(1)->abstract();
+  }
   auto output_abs = cnode->abstract();
   if (!input_abs || !output_abs) {
-    return std::make_tuple("UnknownShape", "UnknownType", "UnknownShape", "UnknownType", 0, 0);
+    comm_info->input_shape = "UnknownShape";
+    comm_info->input_type = "UnknownType";
+    comm_info->output_shape = "UnknownShape";
+    comm_info->output_type = "UnknownType";
+    return;
   }
 
   auto [input_shape_str, input_type_str, input_abs_tensor] = GetShapeAndType(input_abs);
@@ -315,7 +352,12 @@ ShapeAndType ExecuteOrderTracker::GetInputOutputShapeAndType(const CNodePtr &cno
   size_t input_size = CalculateSize(input_abs_tensor);
   size_t output_size = CalculateSize(output_abs_tensor);
 
-  return {input_shape_str, input_type_str, output_shape_str, output_type_str, input_size, output_size};
+  comm_info->input_shape = input_shape_str;
+  comm_info->input_type = input_type_str;
+  comm_info->output_shape = output_shape_str;
+  comm_info->output_type = output_type_str;
+  comm_info->input_size = std::to_string(input_size);
+  comm_info->output_size = std::to_string(output_size);
 }
 
 void ExecuteOrderTracker::Clear() {
@@ -360,17 +402,16 @@ void ExecuteOrderTracker::Clear() {
   if (!order_info_list_.empty()) {
     if (order_path_.empty()) {
       MS_LOG(WARNING) << "Execute order dump path is empty, can not dump execute order.";
-      return;
+    } else {
+      WriteCsvFile(order_path_, order_info_list_, order_info_csv);
     }
-    WriteCsvFile(order_path_, order_info_list_, order_info_csv);
   }
-
   if (!comm_order_info_list_.empty()) {
     if (comm_order_path_.empty()) {
       MS_LOG(WARNING) << "Comm execute order dump path is empty, can not dump comm execute order.";
-      return;
+    } else {
+      WriteCsvFile(comm_order_path_, comm_order_info_list_, comm_order_csv);
     }
-    WriteCsvFile(comm_order_path_, comm_order_info_list_, comm_order_csv);
   }
 
   MS_LOG(INFO) << "ExecuteOrderTracker data dumped successfully.";

@@ -84,6 +84,7 @@ _get_ps_context_func_map = {
     "config_file_path": ps_context().config_file_path,
 }
 
+
 def _get_ps_mode_rank():
     ps_rank = ps_context().ps_rank_id()
     if ps_rank == -1:

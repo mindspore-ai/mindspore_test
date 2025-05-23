@@ -15,10 +15,12 @@
  */
 
 #include "pipeline/jit/pi/graph_build/func_graph_builder.h"
+
 #include <algorithm>
 #include <utility>
 #include <set>
 #include <queue>
+
 #include "frontend/operator/composite/do_signature.h"
 #include "pipeline/jit/ps/static_analysis/static_analysis.h"
 #include "pipeline/jit/ps/action.h"
@@ -27,6 +29,7 @@
 #include "pipeline/jit/pi/pi_jit_config.h"
 #include "pipeline/jit/ps/parse/parse.h"
 #include "mindspore/ops/op_def/arithmetic_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "ir/tensor.h"
@@ -37,7 +40,6 @@
 #include "pipeline/jit/pi/graph_build/build_graph_utils.h"
 #include "pipeline/jit/pi/graph_build/parameter_manager.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
-#include "mindspore/ops/op_def/framework_ops.h"
 
 namespace mindspore {
 namespace pijit {
@@ -423,11 +425,6 @@ AbstractWrapperPtr FuncGraphBuilder::AddTopGraphArgInput(const py::object &objec
     MS_LOG(INFO) << "Get top graph arg input failed.";
     return nullptr;
   }
-  if (py::isinstance<Cell>(object) || PyFunction_Check(object.ptr()) || PyMethod_Check(object.ptr()) ||
-      object.ptr() == Py_None || PyCFunction_Check(object.ptr())) {
-    MS_LOG(DEBUG) << "Arg is Cell or function, cannot add to top graph input. Arg: " << py::str(object);
-    return nullptr;
-  }
   auto abs = BuildAbstractForInputObject(object);
   if (abs == nullptr) {
     MS_LOG(INFO) << "Failed to add input for python object: " << std::string(py::str(object)) << "  " << object.ptr();
@@ -440,7 +437,7 @@ AbstractWrapperPtr FuncGraphBuilder::AddTopGraphArgInput(const py::object &objec
   AbstractWrapperPtr abstract_wrapper = std::make_shared<AbstractWrapper>(para->abstract());
   (void)key_to_node_.emplace(abstract_wrapper, para);
   origin_top_input_num_ = origin_top_input_num_ + 1;
-  MS_LOG(INFO) << "Add top arg input success, python object: " << py::str(object) << ", node: " << para->DebugString()
+  MS_LOG(INFO) << "Add top arg input success, python object: " << py::repr(object) << ", node: " << para->DebugString()
                << ", abstract: " << abs->ToString();
   return abstract_wrapper;
 }
@@ -452,12 +449,12 @@ AbstractWrapperPtr FuncGraphBuilder::AddTopGraphVargsInputs(const py::object &va
   }
   auto vargs_tuple = vargs.cast<py::tuple>();
   if (vargs_tuple.ptr() == nullptr) {
-    MS_LOG(INFO) << "Vargs object should be tuple but got: " << py::str(vargs) << ", add top graph vargs failed.";
+    MS_LOG(INFO) << "Vargs object should be tuple but got: " << py::repr(vargs) << ", add top graph vargs failed.";
     return nullptr;
   }
   auto value = ConvertPyObjToValue(vargs);
   if (value == nullptr || !value->isa<ValueTuple>()) {
-    MS_LOG(INFO) << "Convert vargs to value failed, vargs: " << py::str(vargs);
+    MS_LOG(INFO) << "Convert vargs to value failed, vargs: " << py::repr(vargs);
     return nullptr;
   }
   auto value_tuple = value->cast<ValueTuplePtr>();
@@ -473,7 +470,7 @@ AbstractWrapperPtr FuncGraphBuilder::AddTopGraphVargsInputs(const py::object &va
     auto cur_obj = vargs_tuple[i].cast<py::object>();
     auto cur_abs = BuildAbstractForInputObject(cur_obj);
     if (cur_abs == nullptr) {
-      MS_LOG(INFO) << "Fail to convert args element " << py::str(cur_obj);
+      MS_LOG(INFO) << "Fail to convert args element " << py::repr(cur_obj);
       return nullptr;
     }
     new_elements.push_back(cur_abs);
@@ -484,7 +481,7 @@ AbstractWrapperPtr FuncGraphBuilder::AddTopGraphVargsInputs(const py::object &va
   para->set_user_data(kPiJitPyObjKey, std::make_shared<py::object>(vargs));
   AbstractWrapperPtr abstract_wrapper = std::make_shared<AbstractWrapper>(para->abstract());
   (void)key_to_node_.emplace(abstract_wrapper, para);
-  MS_LOG(INFO) << "Add top vargs input success, python object: " << py::str(vargs) << ", node: " << para->DebugString()
+  MS_LOG(INFO) << "Add top vargs input success, python object: " << py::repr(vargs) << ", node: " << para->DebugString()
                << ", abstract: " << new_vargs_abs->ToString();
   origin_top_input_num_ = origin_top_input_num_ + 1;
   return abstract_wrapper;
@@ -610,22 +607,14 @@ AbstractWrapperPtr FuncGraphBuilder::AddNode(const py::object &callable_obj,
 }
 
 AbstractWrapperPtr FuncGraphBuilder::AddNodeCallFunctionKw(const ValuePtr &callable_value,
-                                                           const AbstractWrapperPtrList &inputs_abstract_wrapper) {
+                                                           const AbstractWrapperPtrList &inputs_abstract_wrapper,
+                                                           const py::object &kw_names) {
   MS_LOG(INFO) << "Handle CallFunctionKw with callable_value: " << callable_value->ToString();
-  auto key_abstract = inputs_abstract_wrapper.back()->abstract();
-  if (key_abstract == nullptr || !key_abstract->isa<abstract::AbstractTuple>()) {
-    MS_LOG(INFO) << "Key abstract should be tuple but got: " << key_abstract->ToString();
-    return nullptr;
-  }
-  auto key_tuple_abstract = key_abstract->cast<abstract::AbstractTuplePtr>();
-  auto key_tuple_value = key_tuple_abstract->BuildValue();
-  if (key_tuple_value->ContainsValueAny()) {
-    MS_LOG(INFO) << "Key abstract should be constant but got: " << key_abstract->ToString();
-    return nullptr;
-  }
-  size_t dict_len = key_tuple_abstract->size();
-  MS_EXCEPTION_IF_CHECK_FAIL(inputs_abstract_wrapper.size() >= dict_len + 1, "kwargs length check error");
-  size_t arg_len = inputs_abstract_wrapper.size() - dict_len - 1;
+  MS_EXCEPTION_IF_CHECK_FAIL(kw_names.ptr() != nullptr && py::tuple::check_(kw_names), "must be tuple");
+  size_t dict_len = py::reinterpret_borrow<py::tuple>(kw_names).size();
+  auto key_tuple_value = ConvertPyObjToValue(kw_names);
+  MS_EXCEPTION_IF_CHECK_FAIL(inputs_abstract_wrapper.size() >= dict_len, "kwargs length check error");
+  size_t arg_len = inputs_abstract_wrapper.size() - dict_len;
 
   auto fg = std::make_shared<FuncGraph>();
   std::vector<AnfNodePtr> arg_inputs = {NewValueNode(prim::kPrimMakeTuple)};
@@ -646,19 +635,20 @@ AbstractWrapperPtr FuncGraphBuilder::AddNodeCallFunctionKw(const ValuePtr &calla
     {NewValueNode(prim::kPrimDoUnpackCall), NewValueNode(callable_value), arg_tuple_node, dict_node_inputs});
   fg->set_output(call_node);
 
-  AbstractWrapperPtrList new_abstract_wrapper(inputs_abstract_wrapper.begin(), inputs_abstract_wrapper.end() - 1);
+  AbstractWrapperPtrList new_abstract_wrapper(inputs_abstract_wrapper.begin(), inputs_abstract_wrapper.end());
   return AddNode(fg, new_abstract_wrapper);
 }
 
 AbstractWrapperPtr FuncGraphBuilder::AddNodeCallFunctionKw(const py::object &callable_obj,
-                                                           const AbstractWrapperPtrList &inputs_abstract_wrapper) {
+                                                           const AbstractWrapperPtrList &inputs_abstract_wrapper,
+                                                           const py::object &kw_names) {
   MS_LOG(INFO) << "Handle CallFunctionKw with callable_object: " << py::str(callable_obj);
   auto callable_value = ConvertPyObjToValue(callable_obj);
   if (callable_value == nullptr) {
     MS_LOG(INFO) << "Convert to value failed for callable_obj: " << py::str(callable_obj);
     return nullptr;
   }
-  return AddNodeCallFunctionKw(callable_value, inputs_abstract_wrapper);
+  return AddNodeCallFunctionKw(callable_value, inputs_abstract_wrapper, kw_names);
 }
 
 AbstractWrapperPtr FuncGraphBuilder::AddNodeCallFunctionEx(const ValuePtr &callable_value,

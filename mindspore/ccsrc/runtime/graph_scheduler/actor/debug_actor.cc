@@ -28,7 +28,7 @@
 #ifdef ENABLE_DEBUGGER
 #include "include/backend/debug/debugger/debugger.h"
 #include "debug/debugger/debugger_utils.h"
-#include "debug/data_dump/device_statistic/check_overflow.h"
+#include "debug/data_dump/device_statistic/mem_manager.h"
 #endif
 #include "debug/data_dump/data_dumper.h"
 #include "include/common/debug/common.h"
@@ -187,6 +187,7 @@ void DebugActor::AscendKbkDump(const CNodePtr &cnode, const std::vector<KernelTe
         MS_LOG(EXCEPTION) << "Sync stream error!";
       }
     }
+    datadump::DumpMemManager::GetInstance().Reset();
   }
   exec_order_ += 1;
 }
@@ -313,7 +314,7 @@ void DebugActor::DebugOnStepEnd(OpContext<KernelTensor> *const, const AID *, int
 void DebugActor::Finalize() {
   DumpJsonParser::GetInstance().PrintUnusedKernel();
 #ifdef ENABLE_DEBUGGER
-  datadump::CheckOverflowKernel::ClearMemoryCache();
+  datadump::DumpMemManager::GetInstance().ClearCache();
 #endif
 }
 }  // namespace runtime

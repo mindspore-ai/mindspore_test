@@ -16,6 +16,7 @@
 #ifndef MINDSPORE_PI_JIT_GRAPH_CAPTURE_GRAPH_H
 #define MINDSPORE_PI_JIT_GRAPH_CAPTURE_GRAPH_H
 
+#include <exception>
 #include <map>
 #include <memory>
 #include <string>
@@ -88,6 +89,12 @@ class FrameStates {
     stack.insert(stack.end() - i, v);
   }
 
+  void Swap(int i) {
+    MS_ASSERT((int)stack.size() - i >= 0);
+    auto top_idx = stack.size() - 1;
+    std::swap(stack[top_idx], stack[top_idx - i]);
+  }
+
   void ResizeLocal(int i) {
     MS_ASSERT((int)locals.size() <= i);
     locals.resize(i, &ValueNode::kUnboundLocal);
@@ -124,6 +131,11 @@ class Graph {
     StopTraceReason reason_;
   };
 
+  struct ExpandParamInfo {
+    ValueNode *node_;
+    std::vector<const AObject *> elements_;
+  };
+
   Graph(PyCodeObject *co, PyObject *globals, const GraphJitConfig &conf);
   virtual ~Graph();
 
@@ -138,10 +150,8 @@ class Graph {
   PyCodeObject *GetCodeObj() const { return reinterpret_cast<PyCodeObject *>(co_.ptr()); }
   const py::object &GetGlobals() const { return f_globals_; }
 
-  void StopTraceAt(int bci, StopTraceReason reason) {
-    break_info_.bci_ = bci;
-    break_info_.reason_ = reason;
-  }
+  /// @throws GraphBreakException if fullgraph=true (graph break is not allowed)
+  void StopTraceAt(int bci, StopTraceReason reason, const std::vector<std::string> &hints = {});
   int GetStopTraceBci() const { return break_info_.bci_; }
   StopTraceReason GetStopTraceReason() const { return break_info_.reason_; }
   const char *GetModuleName() const { return module_name_; }
@@ -167,8 +177,13 @@ class Graph {
   // only func name
   std::string GetCodeName() const {
     PyCodeObject *c = reinterpret_cast<PyCodeObject *>(co_.ptr());
-    return py::str(c->co_name);
+    if (c != nullptr && c->co_name != nullptr) {
+      return py::str(c->co_name);
+    }
+    return "";
   }
+
+  const std::vector<ValueNode *> &GetParameters() const { return params_; }
 
   void GuardParameter(ValueNode *param);
   void GuardGlobal(ValueNode *global_value);
@@ -181,10 +196,10 @@ class Graph {
 
   TracePtr TraceValueNode(ValueNode *, int max_trace_depth = -1);
   std::vector<TracePtr> TraceValueNodeClosure(ValueNode *, bool *ret, int max_trace_depth = -1);
-  int GetPruneBranchCount() const { return prune_branch_count_; }
-  void SetPruneBranchCount(int count) { prune_branch_count_ = count; }
   const std::shared_ptr<OptCode> &GetGuardManager() const;
   void SetGuard(const std::shared_ptr<OptCode> &guard);
+  void RemoveAllGuardItems() const;
+  std::map<const AObject *, ExpandParamInfo> &GetExpandParamInfo() { return expand_param_info_; }
 
   // (chaiyouheng): restore graph status at loop begin, clear trace values and operations and guards
   bool RestoreLoopStatus() const { return false; }
@@ -198,8 +213,9 @@ class Graph {
   void SetParent(Graph *parent) { parent_ = parent; }
   Graph *GetParent() const { return parent_; }
 
-  const std::shared_ptr<SideEffect> &GetSideEffect() const;
-  void SetSideEffect(const std::shared_ptr<SideEffect> &handler);
+  const std::shared_ptr<SideEffect> &GetSideEffect() const { return side_effect_; }
+  void SetSideEffect(const std::shared_ptr<SideEffect> &handler) { side_effect_ = handler; }
+  const std::shared_ptr<SideEffectHandler> &GetSideEffectHandler() const { return side_effect_handler_; }
 
   std::vector<ValueNode *> CollectAliveNode(int bci, std::vector<int> *ids = nullptr) const;
   // collect alive node, clear the bit if alive local is unbound
@@ -208,6 +224,7 @@ class Graph {
   void FoundInnerClass() { found_inner_class = true; }
 
   const auto &prepare() const { return prepare_; }
+  auto &prepare() { return prepare_; }
   bool PrepareParameter(ValueNode *node);
 
   // return true if has fail guard matched
@@ -226,6 +243,10 @@ class Graph {
   // frame status
   std::map<int, std::unique_ptr<FrameStates>> frame_states_;
   std::vector<ValueNode *> traced_nodes_;
+
+  std::vector<ValueNode *> params_;
+
+  std::map<const AObject *, ExpandParamInfo> expand_param_info_;
 
   // return value
   ValueNode *ret_val_;
@@ -247,9 +268,9 @@ class Graph {
 
   const GraphJitConfig &conf_;
 
-  int prune_branch_count_;
   Graph *parent_{nullptr};
   std::shared_ptr<SideEffect> side_effect_;
+  std::shared_ptr<SideEffectHandler> side_effect_handler_;
   bool found_inner_class = false;
 
   struct PrepareInfo {
@@ -259,6 +280,15 @@ class Graph {
   std::unique_ptr<GuardBuilder> guard_builder_;
 
   std::shared_ptr<FuncGraphBuilder> func_graph_builder_;
+};
+
+// If using @jit(fullgraph=true), will throw this exception when graph break occurs.
+class GraphBreakException : public std::runtime_error {
+ public:
+  explicit GraphBreakException(const std::string &msg) : std::runtime_error(msg) {}
+  explicit GraphBreakException(const char *msg) : std::runtime_error(msg) {}
+  // Similar to py::builtin_exception::set_error(), call PyErr_SetString() to throw an exception to the Python side.
+  void set_error() const;
 };
 
 // Return the file path of python code.

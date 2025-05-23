@@ -34,15 +34,6 @@ endif()
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/proto_compile_config.cmake)
 
-# for pybind_api/np_dtype/np_dtypes.cc
-find_package(Python3 COMPONENTS Interpreter Development)
-if(Python3_FOUND)
-    find_package(Python3 COMPONENTS NumPy Development)
-    if(Python3_NumPy_FOUND)
-        include_directories(${Python3_NumPy_INCLUDE_DIRS})
-    endif()
-endif()
-
 ## make sub objects
 set(SUB_COMP
         transform/express_ir
@@ -66,7 +57,7 @@ foreach(_comp ${SUB_COMP})
         add_dependencies(_mindspore_${sub}_obj proto_input mindspore_core mindspore_ops mindspore_ms_backend)
     endif()
     if(CMAKE_SYSTEM_NAME MATCHES "Windows")
-        target_compile_definitions(_mindspore_${sub}_obj PRIVATE FRONTEND_DLL BUILDING_ME_DLL BUILDING_NP_DTYPE_DLL)
+        target_compile_definitions(_mindspore_${sub}_obj PRIVATE FRONTEND_DLL)
     endif()
 endforeach()
 
@@ -75,7 +66,7 @@ add_library(mindspore_frontend SHARED ${SUB_OBJECTS_SRC})
 target_link_libraries(mindspore_frontend PRIVATE mindspore_ms_backend mindspore_core mindspore::pybind11_module securec
                       mindspore_pyboost mindspore_common mindspore_ops mindspore_ops_kernel_common
                       mindspore_backend_manager proto_input mindspore_profiler mindspore_runtime_pipeline
-                      mindspore_backend_common)
+                      mindspore_backend_common mindspore_res_manager)
 if(NOT WIN32)
     target_link_libraries(mindspore_frontend PRIVATE dl)
 endif()
@@ -188,9 +179,6 @@ set(MS_BACKEND_SUB_COMP
         plugin/device/cpu/hal/hardware
         plugin/device/cpu/optimizer
         plugin/device/cpu/kernel
-        plugin/res_manager/cpu
-        plugin/res_manager/cpu/cpu_device_address
-        plugin/res_manager/cpu/cpu_mem_manager
         )
 
 foreach(_comp ${MS_BACKEND_SUB_COMP})
@@ -222,14 +210,15 @@ if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
     set_target_properties(mindspore_backend_common PROPERTIES MACOSX_RPATH ON)
     set_target_properties(mindspore_backend_common PROPERTIES INSTALL_RPATH @loader_path)
     set_target_properties(mindspore_ms_backend PROPERTIES MACOSX_RPATH ON)
-    set_target_properties(mindspore_ms_backend PROPERTIES INSTALL_RPATH @loader_path)
+    set_target_properties(mindspore_ms_backend PROPERTIES INSTALL_RPATH @loader_path:@loader_path/plugin/cpu)
 else()
     set_target_properties(mindspore_backend_common PROPERTIES INSTALL_RPATH $ORIGIN)
-    set_target_properties(mindspore_ms_backend PROPERTIES INSTALL_RPATH $ORIGIN)
+    set_target_properties(mindspore_ms_backend PROPERTIES INSTALL_RPATH $ORIGIN:$ORIGIN/plugin/cpu)
 endif()
 
 if(ENABLE_CPU)
-    target_link_libraries(mindspore_ms_backend PRIVATE mindspore::dnnl mindspore::mkldnn nnacl)
+    target_link_libraries(mindspore_ms_backend PRIVATE mindspore::dnnl mindspore::mkldnn nnacl
+            mindspore_cpu_res_manager)
 endif()
 
 if(NOT WIN32)
@@ -280,26 +269,27 @@ if(CMAKE_SYSTEM_NAME MATCHES "Windows")
                 mindspore_core mindspore_frontend mindspore_res_manager mindspore_ops_kernel_common
                 mindspore_ops mindspore_common mindspore_ms_backend mindspore_pyboost mindspore_pynative
                 mindspore_backend_manager mindspore_profiler mindspore_runtime_pipeline
-                mindspore_dump)
+                mindspore_dump mindspore_backend_common)
         target_link_libraries(_c_expression PRIVATE -Wl,--no-as-needed mindspore_ops_host -Wl,--as-needed)
     else()
         target_link_libraries(_c_expression PRIVATE mindspore_core mindspore_ops mindspore_common
                 mindspore_ops_kernel_common mindspore_ms_backend mindspore_frontend mindspore_ops_grad mindspore_pyboost
                 mindspore_pynative mindspore_backend_manager mindspore_res_manager mindspore_ops_host
-                mindspore_profiler mindspore_runtime_pipeline mindspore_dump)
+                mindspore_profiler mindspore_runtime_pipeline mindspore_dump mindspore_backend_common)
         target_link_options(_c_expression PRIVATE "/WHOLEARCHIVE:mindspore_ops_grad.lib")
     endif()
 elseif(CMAKE_SYSTEM_NAME MATCHES "Darwin")
     target_link_libraries(_c_expression PRIVATE -Wl,-all_load mindspore_ops_grad proto_input -Wl,-noall_load
         mindspore_core mindspore_ops mindspore_common mindspore_ms_backend mindspore_pyboost mindspore_backend_manager
         mindspore_ops_kernel_common mindspore_res_manager mindspore_frontend mindspore_pynative mindspore_profiler
-        mindspore_runtime_pipeline mindspore_dump)
+        mindspore_runtime_pipeline mindspore_dump mindspore_backend_common)
     target_link_libraries(_c_expression PRIVATE mindspore::pybind11_module)
 else()
     target_link_libraries(_c_expression PRIVATE -Wl,--whole-archive mindspore_ops_grad proto_input
             -Wl,--no-whole-archive mindspore_core mindspore_ops mindspore_common mindspore_ops_kernel_common
-            mindspore_ms_backend mindspore_frontend mindspore_runtime_pipeline mindspore_dump
-            mindspore_pyboost mindspore_pynative mindspore_backend_manager mindspore_res_manager mindspore_profiler)
+            mindspore_ms_backend mindspore_frontend mindspore_runtime_pipeline mindspore_dump mindspore_backend_common
+            mindspore_pyboost mindspore_pynative mindspore_backend_manager mindspore_res_manager mindspore_profiler
+            mindspore_extension)
     target_link_libraries(_c_expression PRIVATE mindspore::pybind11_module)
 endif()
 
@@ -308,7 +298,7 @@ set_target_properties(_c_expression PROPERTIES INSTALL_RPATH ${ORIGIN_PATH}/lib:
 
 if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
     set(CMAKE_MACOSX_RPATH 1)
-    set(CMAKE_INSTALL_RPATH "@loader_path/lib;@loader_path")
+    set(CMAKE_INSTALL_RPATH "@loader_path/lib;@loader_path;@loader_path/lib/plugin/cpu")
     set_target_properties(_c_expression PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_RPATH}")
 endif()
 
@@ -334,4 +324,8 @@ endif()
 
 if(ENABLE_D)
     include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/ascend_compile_config.cmake)
+endif()
+
+if(CMAKE_SYSTEM_NAME MATCHES "Linux")
+    add_subdirectory(ms_extension)
 endif()

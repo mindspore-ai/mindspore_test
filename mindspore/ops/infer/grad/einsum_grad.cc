@@ -41,7 +41,6 @@
 namespace mindspore {
 namespace ops {
 namespace {
-constexpr int64_t kInputNum2 = 2;
 abstract::BaseShapePtr EinsumGradInferShape(const PrimitivePtr &primitive,
                                             const std::vector<AbstractBasePtr> &input_args) {
   MS_EXCEPTION_IF_NULL(primitive);

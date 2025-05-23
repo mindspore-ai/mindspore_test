@@ -92,6 +92,7 @@ void FreeTensorOfInplaceDivTensor(const PynativeCallback &cb) {
     cb.FreeDeviceAddress(&inputs[0]);
     MS_LOG(DEBUG) << "Clear device address for inputs[0] of" << cb.opname();
   }
+  cb.FreeOutputDeviceAddress();
 }
 
 NodePtrList IgammaBpropExpanderDyn(BpropBuilder *ib) {
@@ -1639,16 +1640,13 @@ REG_BPROP_BUILDER("InplaceDiv")
     }
 
     if (other->need_compute_grad_out()) {
-      auto neg_dout = ib->Emit("Neg", {dout});
       auto div_res1 = ib->Div(input, other);
       auto div_res2 = ib->Div(div_res1, other);
-
       auto div_res2_type = ib->GetDtypeId(div_res2);
       if (div_res2_type == kNumberTypeComplex64 || div_res2_type == kNumberTypeComplex128) {
         div_res2 = ib->Conj(div_res2);
       }
-
-      bc_other = ib->Mul(div_res2, neg_dout);
+      bc_other = -dout * div_res2;
     }
 
     std::vector<NodePtr> ret = BinopGradCommon(ib, input, other, bc_input, bc_other);
@@ -2346,11 +2344,11 @@ REG_BPROP_BUILDER("CumsumExt").FreeUselessValues_IO({i0, i2}, {}).SetBody(BODYFU
   return {ret, ib->OutZeros(dim), ib->OutZeros(dtype)};
 });
 
-REG_BPROP_BUILDER("Cummax").FreeUselessValues_O({i0}).SetBody(BODYFUNC(ib) { return CumMaxMinGrad(ib); });
+REG_BPROP_BUILDER("Cummax").FreeUselessValues_IO({i0}, {i0}).SetBody(BODYFUNC(ib) { return CumMaxMinGrad(ib); });
 
-REG_BPROP_BUILDER("Cummin").FreeUselessValues_O({i0}).SetBody(BODYFUNC(ib) { return CumMaxMinGrad(ib); });
+REG_BPROP_BUILDER("Cummin").FreeUselessValues_IO({i0}, {i0}).SetBody(BODYFUNC(ib) { return CumMaxMinGrad(ib); });
 
-REG_BPROP_BUILDER("CumminExt").FreeUselessValues_O({i0}).SetBody(BODYFUNC(ib) { return CumMaxMinGrad(ib); });
+REG_BPROP_BUILDER("CumminExt").FreeUselessValues_IO({i0}, {i0}).SetBody(BODYFUNC(ib) { return CumMaxMinGrad(ib); });
 
 REG_BPROP_BUILDER("MulNoNan").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
@@ -2865,8 +2863,9 @@ REG_BPROP_BUILDER("FloorMod").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("RemainderTensorScalar").FreeUselessValues_IO({}, {}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
   auto other = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto dout = ib->Cast(ib->GetInput(kIndex3), ib->GetDtype(input));
   return {dout, ib->OutZeros(other)};
 });
 
@@ -2879,8 +2878,42 @@ REG_BPROP_BUILDER("RemainderTensorTensor").SetUnusedInputs({i2}).SetBody(BODYFUN
   if (other->need_compute_grad_out()) {
     d_other = (-dout) * (ib->DivMod(input, other, ops::RoundingMode::FLOOR));
   }
-  return {BinopGradCommon(ib, input, other, d_input, d_other)};
+  const auto &grads = BinopGradCommon(ib, input, other, d_input, d_other);
+  d_input = input->need_compute_grad_out() ? ib->Cast(grads[kIndex0], ib->GetDtype(input)) : nullptr;
+  d_other = other->need_compute_grad_out() ? ib->Cast(grads[kIndex1], ib->GetDtype(other)) : nullptr;
+  return {d_input, d_other};
 });
+
+REG_BPROP_BUILDER("RemainderScalarTensor").SetUnusedInputs({i0, i1, i2, i3}).SetBody(ReturnZeros);
+
+REG_BPROP_BUILDER("InplaceRemainderTensorScalar").FreeUselessValues_IO({}, {}).SetBody(BODYFUNC(ib) {
+  auto other = ib->GetInput(kIndex1);
+  auto dout = ib->GetInput(kIndex3);
+  return {dout, ib->OutZeros(other)};
+});
+
+inline static bool CloneInplaceInputFuncForInplaceRemainderTensorTensor(const PynativeCallback &cb) {
+  if (!cb.IsNotRequiresGrad(kIndex1)) {
+    return true;
+  }
+  return false;
+}
+
+REG_BPROP_BUILDER("InplaceRemainderTensorTensor")
+  .SetUnusedInputs({i2})
+  .CloneInplaceInput(CloneInplaceInputFuncForInplaceRemainderTensorTensor)
+  .SetBody(BODYFUNC(ib) {
+    auto input = ib->GetInput(kIndex0);
+    auto other = ib->GetInput(kIndex1);
+    auto dout = ib->GetInput(kIndex3);
+    NodePtr d_input = dout;
+    NodePtr d_other = nullptr;
+    if (other->need_compute_grad_out()) {
+      d_other = (-dout) * (ib->DivMod(input, other, ops::RoundingMode::FLOOR));
+      d_other = ib->Cast(d_other, ib->GetDtype(other));
+    }
+    return {BinopGradCommon(ib, input, other, d_input, d_other)};
+  });
 
 REG_BPROP_BUILDER("TruncateDiv").SetUnusedInputs({i0, i1, i2, i3}).SetBody(ReturnZeros);
 
@@ -3192,7 +3225,7 @@ REG_BPROP_BUILDER("Min").SetBody(BODYFUNC(ib) {
   return {dx};
 });
 
-REG_BPROP_BUILDER("MedianDim").SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("MedianDim").FreeUselessValues_IO({i0}, {i0}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto axis = ib->GetInput(kIndex1);
   auto keep_dims = ib->GetInput(kIndex2);
@@ -3291,7 +3324,7 @@ REG_BPROP_BUILDER("InplaceErfinv").CloneInplaceInput(CloneInplaceInputFuncForInp
 
 REG_BPROP_BUILDER("Bernoulli").FreeUselessValues_IO({}, {}).SetBody(ReturnZeros);
 
-REG_BPROP_BUILDER("BernoulliExt").FreeUselessValues_IO({i1, i2}, {}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("BernoulliExt").FreeUselessValues_IO({i0, i1, i2}, {}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto seed = ib->GetInput(kIndex1);
   auto offset = ib->GetInput(kIndex2);
@@ -3452,7 +3485,7 @@ REG_BPROP_BUILDER("ArgMinWithValue").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) 
   return {dx, ib->OutZeros(axis), ib->OutZeros(keep_dims)};
 });
 
-REG_BPROP_BUILDER("MaxDim").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("MaxDim").FreeUselessValues_IO({i0}, {i0}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto axis = ib->GetInput(kIndex1);
   auto keep_dims = ib->GetInput(kIndex2);
@@ -3462,7 +3495,7 @@ REG_BPROP_BUILDER("MaxDim").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
   return {dx, ib->OutZeros(axis), ib->OutZeros(keep_dims)};
 });
 
-REG_BPROP_BUILDER("MinDim").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("MinDim").FreeUselessValues_IO({i0}, {i0}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto axis = ib->GetInput(kIndex1);
   auto keep_dims = ib->GetInput(kIndex2);

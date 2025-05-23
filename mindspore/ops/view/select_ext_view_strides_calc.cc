@@ -24,7 +24,6 @@ constexpr size_t kSelectExtInputsNum = 3;
 }
 
 namespace mindspore::ops {
-
 TensorStorageInfoPtrList SelectExtStridesCalc(const OldTensorInfoPtr old_tensor_info, const int64_t ori_dim,
                                               const int64_t ori_index) {
   auto old_shape = old_tensor_info->old_shape;
@@ -54,6 +53,17 @@ TensorStorageInfoPtrList SelectExtStridesCalc(const OldTensorInfoPtr old_tensor_
                                         old_tensor_info->ori_strides, IsContiguous(new_shape, new_strides));
   return {new_storage_info};
 }
+
+TensorStorageInfoPtrList SelectExtViewBasicTypeCalc(const PrimitivePtr &prim,
+                                                    const mindspore::tensor::TensorPtr &input_tensor,
+                                                    const int64_t &dim, const int64_t &index) {
+  auto input_type = input_tensor->Dtype();
+  (void)CheckAndConvertUtils::CheckTypeValid("input", input_type, common_valid_types_with_complex_and_bool,
+                                             prim->name());
+  auto old_tensor_info = GetOldTensorInfo(input_tensor);
+  return SelectExtStridesCalc(old_tensor_info, dim, index);
+}
+
 TensorStorageInfoPtrList SelectExtViewCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
   if (CheckInputsNull(inputs, kSelectExtInputsNum) || !inputs[kInputIndex0]->isa<tensor::Tensor>()) {
     MS_LOG(EXCEPTION) << "inputs num is invalid, num:" << inputs.size();

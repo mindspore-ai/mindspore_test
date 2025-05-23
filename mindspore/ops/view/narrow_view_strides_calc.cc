@@ -22,6 +22,12 @@
 #include "view/narrow_view_strides_calc.h"
 
 namespace mindspore::ops {
+TensorStorageInfoPtrList NarrowViewBasicTypeCalc(const PrimitivePtr &prim,
+                                                 const mindspore::tensor::TensorPtr &input_tensor, const int64_t &dim,
+                                                 const int64_t &start, const int64_t &length) {
+  return NarrowBasicTypeCalc(prim, input_tensor, dim, start, length);
+}
+
 TensorStorageInfoPtrList NarrowViewCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
   return NarrowCalc(prim, inputs);
 }

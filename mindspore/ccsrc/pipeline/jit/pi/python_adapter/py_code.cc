@@ -81,15 +81,6 @@ py::tuple PyCodeWrapper::CellVars() {
 #endif
 }
 
-Py_ssize_t *PyCodeWrapper::Cell2Arg() {
-#if IS_PYTHON_3_11_PLUS
-  return nullptr;
-#else
-  PyCodeObject *co = this->ptr_;
-  return co->co_cell2arg;
-#endif
-}
-
 py::tuple PyCodeWrapper::FreeVars() {
   PyCodeObject *co = this->ptr_;
 #if IS_PYTHON_3_11_PLUS
@@ -149,14 +140,54 @@ py::tuple PyCodeWrapper::FastLocalNames() const {
 #endif
 }
 
+int PyCodeWrapper::Cell2Arg(int cell_var_index) {
+  if (cell_var_index >= CellVarsSize()) {
+    return -1;
+  }
+#if IS_PYTHON_3_11_PLUS
+  py::tuple names = CellVars();
+  const char *cell_var_name = PyUnicode_AsUTF8(PyTuple_GET_ITEM(names.ptr(), cell_var_index));
+  return Cell2Arg(cell_var_name);
+#else
+  return ptr_->co_cell2arg != nullptr && ptr_->co_cell2arg[cell_var_index] != CO_CELL_NOT_AN_ARG
+           ? ptr_->co_cell2arg[cell_var_index]
+           : -1;
+#endif
+}
+
+int PyCodeWrapper::Cell2Arg(const char *cell_var_name) {
+#if IS_PYTHON_3_11_PLUS
+  py::tuple names = VarNames();
+  for (int i = 0, size = names.size(); i < size; ++i) {
+    const char *name = PyUnicode_AsUTF8(PyTuple_GET_ITEM(names.ptr(), i));
+    if (strcmp(name, cell_var_name) == 0) {
+      return i;
+    }
+  }
+#else
+  py::tuple names = CellVars();
+  for (int i = 0, size = names.size(); i < size; ++i) {
+    const char *name = PyUnicode_AsUTF8(PyTuple_GET_ITEM(names.ptr(), i));
+    if (strcmp(name, cell_var_name) == 0) {
+      return Cell2Arg(i);
+    }
+  }
+#endif
+  return -1;
+}
+
 PyCodeWrapper::LocalKind PyCodeWrapper::FastLocalKind(int i) const {
   PyCodeObject *co = this->ptr_;
 #if IS_PYTHON_3_11_PLUS
   auto kind = _PyLocals_GetKind(co->co_localspluskinds, i);
+  if (kind & CO_FAST_FREE) {
+    return LocalKind::kCoFastFree;
+  }
+  if (kind & CO_FAST_CELL) {
+    return LocalKind::kCoFastCell;
+  }
   if (kind & CO_FAST_LOCAL) {
     return LocalKind::kCoFastLocal;
-  } else if (kind & CO_FAST_CELL) {
-    return LocalKind::kCoFastCell;
   }
 #else
   if (i < co->co_nlocals) {
@@ -169,7 +200,7 @@ PyCodeWrapper::LocalKind PyCodeWrapper::FastLocalKind(int i) const {
   return LocalKind::kCoFastFree;
 }
 
-int PyCodeWrapper::FastLocalIndex(PyCodeWrapper::LocalKind kind, int instr_arg) {
+int PyCodeWrapper::FastLocalIndex(PyCodeWrapper::LocalKind kind, int instr_arg) const {
   if (kind == LocalKind::kCoFastLocal) {
     return instr_arg;
   }
@@ -181,6 +212,24 @@ int PyCodeWrapper::FastLocalIndex(PyCodeWrapper::LocalKind kind, int instr_arg) 
 #endif
   }
   return -1;
+}
+
+const char *PyCodeWrapper::FastLocalName(int fast_local_index) const {
+  PyCodeObject *co = this->ptr_;
+
+#if IS_PYTHON_3_11_PLUS
+  return PyUnicode_AsUTF8(PyTuple_GET_ITEM(co->co_localsplusnames, fast_local_index));
+#else
+  if (fast_local_index < co->co_nlocals) {
+    return PyUnicode_AsUTF8(PyTuple_GET_ITEM(co->co_varnames, fast_local_index));
+  } else if (fast_local_index < FastLocalSize()) {
+    int size = PyTuple_GET_SIZE(co->co_cellvars);
+    int index = fast_local_index - co->co_nlocals;
+    return PyUnicode_AsUTF8(index < size ? PyTuple_GET_ITEM(co->co_cellvars, index)
+                                         : PyTuple_GET_ITEM(co->co_freevars, index - size));
+  }
+#endif
+  return nullptr;
 }
 
 py::object PyCodeWrapper::DeepCopy() {
@@ -201,6 +250,48 @@ py::object PyCodeWrapper::DeepCopy() {
   }
 
   throw py::error_already_set();
+}
+
+int PyCodeWrapper::Addr2Line(int byte_offset) { return PyCode_Addr2Line(ptr_, byte_offset); }
+CodeLocation PyCodeWrapper::Addr2Location(int byte_offset) {
+#if IS_PYTHON_3_11_PLUS
+  CodeLocation loc;
+  PyCode_Addr2Location(ptr_, byte_offset, &loc.start_line_, &loc.start_column_, &loc.end_line_, &loc.end_column_);
+  return loc;
+#else
+  int line = Addr2Line(byte_offset);
+  return {line, line, -1, -1};
+#endif
+}
+
+ExceptionTable PyCodeWrapper::DecodeExceptionTable() {
+  ExceptionTable exc_table;
+  py::object bytes = py::getattr(reinterpret_cast<PyObject *>(ptr()), "co_exceptiontable", nullptr);
+  if (bytes.ptr() == nullptr) {
+    return exc_table;
+  }
+  const uint8_t *begin = reinterpret_cast<const uint8_t *>(PyBytes_AsString(bytes.ptr()));
+  const uint8_t *end = begin + PyBytes_GET_SIZE(bytes.ptr());
+  auto iter = begin;
+  const auto read_variant = [&iter, &end]() {
+    const int kValidBits = 6;
+    const int kValueMask = (1 << kValidBits) - 1;
+    int val = iter[0] & kValueMask;
+    while (iter[0] & (1 << kValidBits)) {
+      iter++;
+      val = (val << kValidBits) | (iter[0] & kValueMask);
+    }
+    ++iter;
+    return val;
+  };
+  while (iter < end) {
+    int start = read_variant();
+    int len = read_variant();
+    int jump = read_variant();
+    int pack = read_variant();
+    exc_table[start] = {start, start + len, jump, pack >> 1, (pack & 1) ? true : false};
+  }
+  return exc_table;
 }
 
 std::string ToString(const PyCodeWrapper &code) {

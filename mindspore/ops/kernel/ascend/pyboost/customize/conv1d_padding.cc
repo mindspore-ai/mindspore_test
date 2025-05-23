@@ -97,12 +97,12 @@ tensor::TensorPtr Conv1DPaddingAscendCustomize(const std::shared_ptr<OpRunner> &
   TensorPtr input_tensor_new = input_tensor;
   TensorPtr expand_input_x_imm = input_tensor;
   if (!is_batchify) {
-    std::vector<ValuePtr> expand_input_shape;
-    expand_input_shape.insert(expand_input_shape.begin(), std::make_shared<Int64Imm>(1));
+    std::vector<int64_t> expand_input_shape;
+    expand_input_shape.insert(expand_input_shape.begin(), 1);
     std::transform(input_shape.begin(), input_shape.end(), std::back_inserter(expand_input_shape),
-                   [](int64_t e) { return std::make_shared<Int64Imm>(e); });
+                   [](int64_t e) { return e; });
     auto reshape_op = CREATE_PYBOOST_OP(Reshape, op->device_context()->device_context_key_.device_name_);
-    expand_input_x_imm = reshape_op->Call(input_tensor, std::make_shared<ValueTuple>(expand_input_shape));
+    expand_input_x_imm = reshape_op->Call(input_tensor, expand_input_shape);
     input_tensor_new = expand_input_x_imm;
   }
   std::vector<int64_t> pad_vector = {0};
@@ -173,12 +173,12 @@ tensor::TensorPtr Conv1DPaddingAscendCustomize(const std::shared_ptr<OpRunner> &
     auto output_imm = convolution_op->Call(input_tensor_new, weight_tensor, bias_tensor, stride, pad_ptr, dilation,
                                            transposed_imm_ptr, output_padding_vector_1d_imm_ptr, group);
     auto output_imm_shape = output_imm->shape();
-    std::vector<ValuePtr> squeeze_output_shape;
+    std::vector<int64_t> squeeze_output_shape;
     for (int64_t i = 1; i < SizeToLong(output_imm_shape.size()); i++) {
-      squeeze_output_shape.emplace_back(std::make_shared<Int64Imm>(output_imm_shape[i]));
+      squeeze_output_shape.emplace_back(output_imm_shape[i]);
     }
     auto reshape_op2 = CREATE_PYBOOST_OP(Reshape, op->device_context()->device_context_key_.device_name_);
-    auto squeeze_output_tensor = reshape_op2->Call(output_imm, std::make_shared<ValueTuple>(squeeze_output_shape));
+    auto squeeze_output_tensor = reshape_op2->Call(output_imm, squeeze_output_shape);
     op->set_outputs(reshape_op2->outputs());
     return squeeze_output_tensor;
   }

@@ -18,7 +18,7 @@ import mindspore.ops as ops
 from mindspore import context
 from mindspore.common.dtype import pytype_to_dtype
 from mindspore.common.api import jit
-from mindspore.train._utils import _exec_datagraph, _get_types_and_shapes
+from mindspore.train._utils import _exec_datagraph, _get_types_and_shapes, enable_data_broadcast
 from mindspore.train.dataset_helper import _has_dynamic_shape, _check_inputs
 import mindspore.dataset as ds
 from mindspore._c_expression import _set_dataset_mode_config
@@ -41,6 +41,15 @@ def _init_sink_dataset(dataset, sink_size, input_signature, create_info):
     is_info_queue = (create_info and sink_size == 1 and dataset_size != 1 and
                      input_signature is None and not dynamic_shape and
                      context.get_context('device_target') == 'Ascend')
+
+    # Don't enable dynamic shape(multi-subgraph) feature in pp/data_broadcast mode,
+    # otherwise get_data_info will stuck since some rank do not consume data.
+    use_pipeline_parallel = (context.get_auto_parallel_context("pipeline_stages") > 1)
+    data_broadcast = enable_data_broadcast()
+
+    if use_pipeline_parallel or data_broadcast:
+        is_info_queue = False
+
     transfer_dataset = _exec_datagraph(dataset, sink_size, create_data_info_queue=is_info_queue)
     dataset.__transfer_dataset__ = transfer_dataset
 

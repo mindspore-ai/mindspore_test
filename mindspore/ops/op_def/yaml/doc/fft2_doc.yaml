@@ -4,7 +4,7 @@ fft2:
 
       Note:
           - `fft2` is currently only used in `mindscience` scientific computing scenarios and
-            dose not support other usage scenarios.
+            does not support other usage scenarios.
           - `fft2` is not supported on Windows platform yet.
 
       Args:

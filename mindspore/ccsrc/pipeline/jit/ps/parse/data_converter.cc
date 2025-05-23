@@ -17,17 +17,18 @@
  */
 
 #include "pipeline/jit/ps/parse/data_converter.h"
+
 #include <utility>
 #include <unordered_map>
 #include <algorithm>
 #include <map>
 
 #include "include/common/utils/tensor_py.h"
-#include "mindspore/ops/op_def/structure_ops.h"
 #include "pipeline/jit/ps/parse/resolve.h"
 #include "pipeline/jit/ps/pipeline.h"
 #include "frontend/operator/ops.h"
 #include "frontend/operator/composite/composite.h"
+#include "frontend/operator/composite/multitype_funcgraph.h"
 #include "ir/func_graph_cloner.h"
 #include "ir/cell.h"
 #include "ir/dtype.h"
@@ -38,7 +39,8 @@
 #include "include/common/utils/convert_utils_py.h"
 #include "include/common/utils/parallel_context.h"
 #include "include/common/utils/primfunc_utils.h"
-#include "frontend/operator/composite/multitype_funcgraph.h"
+#include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/structure_ops.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
@@ -241,10 +243,6 @@ ValuePtr ConvertSlice(const py::object &obj) {
 
     if (tensor::IsTensorPy(py_attr)) {
       return tensor::ConvertToTensor(py_attr);
-    }
-
-    if (IsStubTensor(py_attr)) {
-      return ConvertStubTensor(py_attr);
     }
     MS_LOG(EXCEPTION) << "Attribute '" << attr << "' of " << py::str(obj)
                       << " should be int or Tensor with Int type but got " << py::str(py_attr);
@@ -668,7 +666,7 @@ void ConvertBackwardHookToFuncGraph(const py::object &obj) {
 ValuePtr ConvertCellObjToFuncGraph(const py::object &obj, const ValuePtrList &args_value_list) {
   if (py::hasattr(obj, "construct")) {
     const auto &construct_obj = py::getattr(obj, "construct");
-    bool graph_mode = MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kGraphMode;
+    bool graph_mode = GraphPipelineCompiling();
     if (py::hasattr(construct_obj, "__trace_func__") && !graph_mode) {
       return prim::kPrimTraceGraph;
     }
@@ -786,7 +784,7 @@ ValuePtr ConvertOtherObj(const py::object &obj, bool forbid_reuse = false) {
         return std::make_shared<InterpretedObject>(obj);
       }
     }
-    bool graph_mode = MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kGraphMode;
+    bool graph_mode = GraphPipelineCompiling();
     if (py::hasattr(obj, "__trace_func__") && !graph_mode) {
       return prim::kPrimTraceGraph;
     }
@@ -918,7 +916,6 @@ ValuePtr ObjCast(const py::object &obj) {
 static const std::vector<DataConvertFuncPtr> &GetDataConvertFuncs() {
   // Convert data by python object type.
   static const std::vector<DataConvertFuncPtr> data_convert_funcs{
-    std::make_shared<ByFuncDataConvertFunc>(IsStubTensor, ConvertStubTensor),
     std::make_shared<ByFuncDataConvertFunc>(IsNamedTuple, ConvertNamedTuple),
     std::make_shared<ByFuncDataConvertFunc>(tensor::IsTensorPy, ConvertTensorAndSyncCompiling),
     std::make_shared<ByAttrDataConvertFunc>(ConvertMsClass, PYTHON_MS_CLASS),
@@ -956,8 +953,6 @@ static const std::vector<DataConvertFuncPtr> &GetDataConvertFuncs() {
 static const std::vector<DataConvertFuncPtr> &GetStubDataConvertFuncs() {
   // Convert data by python object type.
   static const std::vector<DataConvertFuncPtr> data_convert_funcs{
-    std::make_shared<ByFuncDataConvertFunc>([](const py::object &obj) -> bool { return IsStubTensor(obj); },
-                                            PyStubNodeCast),
     std::make_shared<ByTypeDataConvertFunc<stub::TensorNode>>(ObjCast<std::shared_ptr<stub::TensorNode>>),
     std::make_shared<ByTypeDataConvertFunc<py::tuple>>(ConvertStubTuple),
     std::make_shared<ByTypeDataConvertFunc<py::list>>(ConvertStubList),
@@ -1395,49 +1390,15 @@ ValuePtr ConvertTensor(const py::object &obj) {
     return tensor::ConvertToValue(obj);
   }
 
-  if (IsStubTensor(obj)) {
-    return PyStubNodeCast(obj);
-  }
-
   return nullptr;
 }
 
 TensorPtr ConvertTensorValue(const py::object &obj) {
-  // The difference between the new ConvertTensorValue function and the existing ConvertTensor is:
-  // If the obj a StubNode, it must be called the WaitValue to convert to a Tensor.
-  if (IsStubTensor(obj)) {
-    auto py_stub = py::getattr(obj, stub::PY_ATTR_STUB);
-    auto stub = py_stub.cast<stub::StubNodePtr>();
-    if (stub == nullptr) {
-      return tensor::ConvertToTensor(py::getattr(obj, stub::PY_ATTR_TENSOR));
-    }
-    auto value = stub->WaitValue();
-    auto tensor = value->cast<TensorPtr>();
-    if (tensor == nullptr) {
-      // Tensor should convert to Tensor for Graph mode
-      auto base_tensor = value->cast<TensorPtr>();
-      auto real_tensor = std::make_shared<Tensor>(*base_tensor);
-      stub->SetValue(real_tensor);
-      return real_tensor;
-    }
-    return tensor;
-  }
-
   if (tensor::IsTensorPy(obj)) {
     return tensor::ConvertToTensor(obj);
   }
 
   return nullptr;
-}
-
-static inline void *GetTensorDataPtr(const tensor::TensorPtr &tensor) {
-  MS_EXCEPTION_IF_NULL(tensor);
-  const auto &device_address = tensor->device_address();
-  if (device_address != nullptr) {
-    // Before get data, sync form device address should be performed first
-    tensor->data_sync();
-  }
-  return tensor->data_c();
 }
 
 ValuePtr ConvertStr(const py::object &obj) {

@@ -32,14 +32,49 @@ void ReleaseConvertTypesImpl(const std::vector<void *> &params,
   CheckParamsSize(params.size(), input_output_types.size());
   for (size_t i = 0; i < params.size() - kIndex2; i++) {
     auto type = input_output_types[i];
-    // The `float,int,bool,string`  type does not need to be released.
-    // aclTensorList, aclScalar,aclArray need to be released. In the future, if support for the above types is needed,
-    // remember to release them.
-    if (type == CustomSupportType::kTypeTensor) {
-      const auto &acl_tensor = static_cast<aclTensor *>(params[i]);
-      MS_EXCEPTION_IF_NULL(acl_tensor);
-      Release(acl_tensor);
-      break;
+    MS_LOG(DEBUG) << "Release convert types input-" << i
+                  << ", type: " << mindspore::kernel::custom::custom_supported_type_to_string.at(type);
+    MS_VLOG(VL_CUSTOM_OP) << "Release convert types input-" << i
+                          << ", type: " << mindspore::kernel::custom::custom_supported_type_to_string.at(type);
+    switch (type) {
+      case CustomSupportType::kTypeTensor: {
+        const auto &acl_tensor = static_cast<aclTensor *>(params[i]);
+        MS_EXCEPTION_IF_NULL(acl_tensor);
+        Release(acl_tensor);
+        break;
+      }
+      case CustomSupportType::kTypeTensorList: {
+        const auto &acl_tensor_list = static_cast<aclTensorList *>(params[i]);
+        MS_EXCEPTION_IF_NULL(acl_tensor_list);
+        Release(acl_tensor_list);
+        break;
+      }
+      case CustomSupportType::kTypeScalar: {
+        const auto &acl_scalar = static_cast<aclScalar *>(params[i]);
+        MS_EXCEPTION_IF_NULL(acl_scalar);
+        Release(acl_scalar);
+        break;
+      }
+      case CustomSupportType::kTypeIntArray: {
+        const auto &acl_int_array = static_cast<aclIntArray *>(params[i]);
+        MS_EXCEPTION_IF_NULL(acl_int_array);
+        Release(acl_int_array);
+        break;
+      }
+      case CustomSupportType::kTypeBoolArray: {
+        const auto &acl_bool_array = static_cast<aclBoolArray *>(params[i]);
+        MS_EXCEPTION_IF_NULL(acl_bool_array);
+        Release(acl_bool_array);
+        break;
+      }
+      case CustomSupportType::kTypeFloatArray: {
+        const auto &acl_float_array = static_cast<aclFloatArray *>(params[i]);
+        MS_EXCEPTION_IF_NULL(acl_float_array);
+        Release(acl_float_array);
+        break;
+      }
+      default:
+        break;
     }
   }
   Release(params[params.size() - kIndex2]);
@@ -78,13 +113,49 @@ void CustomGraphCache::UpdateAddressForTensor(aclOpExecutor *executor,
   size_t valid_index = 0;
   for (size_t i = 0; i < params.size() - kIndex2; i++) {
     auto type = input_output_types_[i];
-    // The `float,int,bool,string`  type does not need to be updated address.
-    // aclTensorList, std::optional<aclTensor>, need to be updated address. In the future, if support for the above
-    // types is needed, remember to update.
-    if (type == CustomSupportType::kTypeTensor) {
-      const auto &acl_tensor = static_cast<aclTensor *>(params[i]);
-      MS_EXCEPTION_IF_NULL(acl_tensor);
-      UpdateAddress(executor, acl_tensor, address_list[i], &valid_index);
+    MS_LOG(DEBUG) << "Update tensor address for input-" << i
+                  << ", type: " << mindspore::kernel::custom::custom_supported_type_to_string.at(type);
+    MS_VLOG(VL_CUSTOM_OP) << "Update tensor address for input-" << i
+                          << ", type: " << mindspore::kernel::custom::custom_supported_type_to_string.at(type);
+    switch (type) {
+      case CustomSupportType::kTypeTensor: {
+        const auto &acl_tensor = static_cast<aclTensor *>(params[i]);
+        MS_EXCEPTION_IF_NULL(acl_tensor);
+        UpdateAddress(executor, acl_tensor, address_list[i], &valid_index);
+        break;
+      }
+      case CustomSupportType::kTypeTensorList: {
+        const auto &acl_tensor_list = static_cast<aclTensorList *>(params[i]);
+        MS_EXCEPTION_IF_NULL(acl_tensor_list);
+        UpdateAddress(executor, acl_tensor_list, address_list[i], &valid_index);
+        break;
+      }
+      case CustomSupportType::kTypeScalar: {
+        const auto &acl_scalar = static_cast<aclScalar *>(params[i]);
+        MS_EXCEPTION_IF_NULL(acl_scalar);
+        UpdateAddress(executor, acl_scalar, address_list[i], &valid_index);
+        break;
+      }
+      case CustomSupportType::kTypeIntArray: {
+        const auto &acl_int_array = static_cast<aclIntArray *>(params[i]);
+        MS_EXCEPTION_IF_NULL(acl_int_array);
+        UpdateAddress(executor, acl_int_array, address_list[i], &valid_index);
+        break;
+      }
+      case CustomSupportType::kTypeBoolArray: {
+        const auto &acl_bool_array = static_cast<aclBoolArray *>(params[i]);
+        MS_EXCEPTION_IF_NULL(acl_bool_array);
+        UpdateAddress(executor, acl_bool_array, address_list[i], &valid_index);
+        break;
+      }
+      case CustomSupportType::kTypeFloatArray: {
+        const auto &acl_float_array = static_cast<aclFloatArray *>(params[i]);
+        MS_EXCEPTION_IF_NULL(acl_float_array);
+        UpdateAddress(executor, acl_float_array, address_list[i], &valid_index);
+        break;
+      }
+      default:
+        break;
     }
   }
 }

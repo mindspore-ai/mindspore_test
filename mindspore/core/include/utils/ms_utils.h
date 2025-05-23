@@ -77,6 +77,8 @@ const char kAllocEnableVmm[] = "enable_vmm";
 const char kAllocVmmAlignSize[] = "vmm_align_size";
 const char kAllocMemoryRecycle[] = "memory_recycle";
 const char kAllocMemoryTracker[] = "memory_tracker";
+const char kAllocSimpleTracker[] = "simple_tracker";
+const char kAllocMemoryTrackerPath[] = "memory_tracker_path";
 const char kAllocDefragMemoryStepFreq[] = "defrag_memory_step_freq";
 const char kAllocMemoryPool[] = "older_pool";
 
@@ -91,7 +93,6 @@ const char kRuntimePipeline[] = "pipeline";
 const char kRuntimeGraphPipeline[] = "graph_pipeline";
 const char kRuntimeKbkSubGraphMode[] = "kbk_sub_graph_mode";
 const char kRuntimeCommunicationLaunchGroup[] = "communication_launch_group";
-const char kRuntimeView[] = "view";
 const char kRuntimeInsertTensorMove[] = "insert_tensormove";
 const char kRuntimeAllfinite[] = "all_finite";
 const char kRuntimeParalletAssignAddOpt[] = "parallel_assignadd_opt";

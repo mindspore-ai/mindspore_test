@@ -23,6 +23,7 @@
 #include "mindspore/ops/op_def/other_ops.h"
 #include "include/common/utils/utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/optimizer/helper.h"
 #include "include/common/utils/anfalgo.h"
 #include "utils/trace_base.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"

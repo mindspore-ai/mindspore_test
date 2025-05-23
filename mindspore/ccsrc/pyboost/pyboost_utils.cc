@@ -173,7 +173,14 @@ kernel::KernelModPtr PyBoostUtils::CreateKernelMod(const PrimitivePtr &prim, con
   if (kernel_mod == nullptr) {
     kernel_mod = device_context->GetKernelExecutor(false)->CreateKernelMod(op_name);
     if (kernel_mod == nullptr) {
-      MS_LOG(EXCEPTION) << "Create kernelmod for op " << op_name << " failed";
+      if (common::EnvHelper::GetInstance()->GetEnv("MS_OP_PLUGIN_PATH") != nullptr) {
+        // if env var MS_OP_PLUGIN_PATH is set, then use custom op plugin to load op
+        const std::string custom_op_name = "CustomOpPlugin";
+        kernel_mod = device_context->GetKernelExecutor(false)->CreateKernelMod(custom_op_name);
+        MS_EXCEPTION_IF_NULL(kernel_mod);
+      } else {
+        MS_LOG(EXCEPTION) << "Create kernelmod for op " << op_name << " failed";
+      }
     }
     if (!kernel_mod->Init(prim, inputs, outputs)) {
       MS_LOG(EXCEPTION) << "KernelMod Init Failed: " << op_name;
@@ -207,8 +214,7 @@ DeviceSyncPtr PyBoostUtils::ContiguousByDeviceAddress(const DeviceSyncPtr &devic
     nullptr, address_size, storage_info->shape, DEFAULT_FORMAT, old_device_address->type_id(),
     device_context->device_context_key().device_name_, device_context->device_context_key().device_id_, stream_id);
   new_device_address->set_device_shape(storage_info->shape);
-  new_device_address->set_original_ref_count(SIZE_MAX);
-  new_device_address->ResetRefCount();
+  new_device_address->set_new_ref_count(SIZE_MAX);
 
   if (!device_context->GetKernelExecutor(false)->ExecuteKernelTask(
         runtime::KernelTaskType::kCONTIGUOUS_TASK, {old_device_address}, {new_device_address}, stream_id)) {
@@ -241,7 +247,7 @@ void PyBoostUtils::CreateOutputTensor(const DeviceContext *device_context, const
   output_tensor->set_contiguous_callback(
     [](const DeviceSyncPtr &device_address) -> DeviceSyncPtr { return ContiguousByDeviceAddress(device_address); });
 
-  auto input_device_address = std::dynamic_pointer_cast<device::DeviceAddress>(input->device_address());
+  auto input_device_address = std::static_pointer_cast<device::DeviceAddress>(input->device_address());
   MS_EXCEPTION_IF_NULL(input_device_address);
   input_device_address->set_is_view(true);
 
@@ -588,6 +594,11 @@ std::pair<bool, KernelAttr> PyBoostUtils::SelectKernel(const std::vector<Abstrac
   // only support CPU
   const auto &kernel_mod = device_context->GetKernelExecutor(false)->CreateKernelMod(op_name);
   if (kernel_mod == nullptr) {
+    if (common::EnvHelper::GetInstance()->GetEnv("MS_OP_PLUGIN_PATH") != nullptr) {
+      // if env var MS_OP_PLUGIN_PATH is set, then use custom op plugin to load op
+      MS_LOG(INFO) << "The kernel " << op_name << " unregistered, use custom op plugin";
+      return {true, KernelAttr()};
+    }
     MS_LOG(EXCEPTION) << "The kernel " << op_name << " unregistered.";
   }
   return GetKernelAttr(op_name, kernel_mod, GetInputTypeFromAbstractBase(inputs_abs),

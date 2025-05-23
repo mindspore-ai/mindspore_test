@@ -151,8 +151,7 @@ file(GLOB_RECURSE MINDSPORE_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "../../../mindspore/ccsrc/distributed/rpc/tcp/*.cc"
         "../../../mindspore/ccsrc/plugin/res_manager/cpu/cpu_res_manager.cc"
         "../../../mindspore/ccsrc/plugin/res_manager/cpu/cpu_device_address/cpu_device_address.cc"
-        "../../../mindspore/ccsrc/plugin/res_manager/cpu/cpu_device_address/cpu_device_synchronizer.cc"
-        "../../../mindspore/ccsrc/plugin/device/cpu/hal/device/cpu_hash_table.cc"
+        "../../../mindspore/ccsrc/plugin/res_manager/cpu/cpu_mem_manager/cpu_hash_table.cc"
         "../../../mindspore/ccsrc/plugin/res_manager/cpu/cpu_mem_manager/cpu_memory_pool.cc"
         "../../../mindspore/ccsrc/plugin/device/cpu/hal/hardware/ms_collective_topo.cc"
         "../../../mindspore/ccsrc/plugin/device/cpu/optimizer/*.cc"
@@ -176,10 +175,6 @@ file(GLOB_RECURSE MINDSPORE_ASCEND_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/common/ascend_utils.cc"
         "../../../mindspore/ccsrc/plugin/res_manager/ascend/mem_manager/abstract_ascend_memory_pool_support.cc"
         "../../../mindspore/ccsrc/plugin/res_manager/ascend/ascend_device_address/ascend_device_address.cc"
-        "../../../mindspore/ccsrc/runtime/device/res_manager/hal_res_manager.cc"
-        "../../../mindspore/ccsrc/runtime/device/res_manager/utils/utils.cc"
-        "../../../mindspore/ccsrc/runtime/device/res_manager/utils/convert_tensor_utils.cc"
-        "../../../mindspore/ccsrc/plugin/res_manager/ascend/ascend_device_address/ascend_device_synchronizer.cc"
         "../../../mindspore/ccsrc/plugin/res_manager/ascend/mem_manager/ascend_dynamic_mem_adapter.cc"
         "../../../mindspore/ccsrc/plugin/res_manager/ascend/event/ascend_event.cc"
         "../../../mindspore/ccsrc/plugin/res_manager/ascend/mem_manager/ascend_gmem_adapter.cc"
@@ -296,7 +291,8 @@ include_directories("${CMAKE_BINARY_DIR}/plugin/device/ascend/kernel/aicpu")
 
 add_library(_ut_obj_static STATIC ${UT_SRCS})
 target_link_libraries(_ut_obj_static PRIVATE mindspore_ms_backend mindspore_pyboost mindspore_backend_manager
-                      mindspore_res_manager mindspore_profiler mindspore_backend_common mindspore::protobuf)
+                      mindspore_res_manager mindspore_profiler mindspore_backend_common mindspore_ops_kernel_common
+                      mindspore::protobuf)
 foreach(comp ${ALL_UT_COMPS})
     add_executable(ut_${comp}_tests ${UT_${comp}_SRCS})
 

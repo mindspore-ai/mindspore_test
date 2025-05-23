@@ -346,7 +346,7 @@ Status ArithmeticBase::InferOutputTensorInfo() {
   output_infer_tensor_layout_ = InferOutputLayout();
   if (output_infer_tensor_layout_.tensor_shape_before().array() != outputs_shape_[kIndex0]) {
     MS_LOG(ERROR) << "The infer output shape " << output_infer_tensor_layout_.tensor_shape_before().array()
-                  << " dose not match the output shape " << outputs_shape_[kIndex0];
+                  << " does not match the output shape " << outputs_shape_[kIndex0];
     return FAILED;
   }
   TensorInfo output_tensor_info(output_infer_tensor_layout_);
@@ -371,10 +371,10 @@ Status ArithmeticBase::CheckInputLayout() {
   if (in_layout0.device_arrangement_origin().array() != in_layout1.device_arrangement_origin().array()) {
     if (is_in_layout_propagation_) {
       MS_LOG(INFO) << "The device_matrix of input0 " << in_layout0.device_arrangement_origin().array()
-                   << " dose not equal to device_matrix of input1 " << in_layout1.device_arrangement_origin().array();
+                   << " does not equal to device_matrix of input1 " << in_layout1.device_arrangement_origin().array();
     } else {
       MS_LOG(ERROR) << "The device_matrix of input0 " << in_layout0.device_arrangement_origin().array()
-                    << " dose not equal to device_matrix of input1 " << in_layout1.device_arrangement_origin().array();
+                    << " does not equal to device_matrix of input1 " << in_layout1.device_arrangement_origin().array();
     }
     return FAILED;
   }
@@ -610,7 +610,7 @@ Status OuterInfo::InferOutputTensorInfo() {
   }
   if (output_infer_tensor_layout_.tensor_shape_before().array() != outputs_shape_[kIndex0]) {
     MS_LOG(ERROR) << "For distributed operator " << name_ << ", the infer output shape "
-                  << output_infer_tensor_layout_.tensor_shape_before().array() << " dose not match the output shape "
+                  << output_infer_tensor_layout_.tensor_shape_before().array() << " does not match the output shape "
                   << outputs_shape_[kIndex0];
     return FAILED;
   }
@@ -1243,5 +1243,7 @@ REGISTER(IsCloseInfo);  // has not bprop
 REGISTER(RemainderTensorTensorInfo);
 REGISTER(FmodScalarInfo);
 REGISTER(MulsInfo);
+REGISTER(FmodTensorInfo);
+REGISTER(InplaceCopyInfo);
 }  // namespace parallel
 }  // namespace mindspore

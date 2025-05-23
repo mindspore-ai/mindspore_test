@@ -113,6 +113,7 @@ enum class ProfilerEvent {
   kPyBoostMallocInput,
   kPyBoostMallocOutput,
   kPyBoostLaunchAclnn,
+  kPyBoostLaunchAtb,
   // pybind api
   kPyNativeNewGraph,
   kPyNativeEndGraph,
@@ -211,6 +212,7 @@ static const std::map<ProfilerEvent, std::string> kProfilerEventString = {
   {ProfilerEvent::kPyBoostMallocInput, "MallocInput"},
   {ProfilerEvent::kPyBoostMallocOutput, "MallocOutput"},
   {ProfilerEvent::kPyBoostLaunchAclnn, "LaunchAclnn"},
+  {ProfilerEvent::kPyBoostLaunchAtb, "LaunchAtb"},
   // pybind api
   {ProfilerEvent::kPyNativeNewGraph, "new_graph"},
   {ProfilerEvent::kPyNativeEndGraph, "end_graph"},
@@ -236,17 +238,17 @@ static const std::map<ProfilerEvent, std::string> kProfilerEventString = {
   {ProfilerEvent::kNativeFunc, "NativeFunc"},
 };
 
-#define PROFILER_START(start_time)                                                     \
-  do {                                                                                 \
-    if (mindspore::runtime::ProfilerAnalyzer::GetInstance().profiler_enable()) {       \
-      start_time = mindspore::runtime::ProfilerAnalyzer::GetInstance().GetTimeStamp(); \
-    }                                                                                  \
+#define PROFILER_START(start_time)                                                            \
+  do {                                                                                        \
+    if (MS_UNLIKELY(mindspore::runtime::ProfilerAnalyzer::GetInstance().profiler_enable())) { \
+      start_time = mindspore::runtime::ProfilerAnalyzer::GetInstance().GetTimeStamp();        \
+    }                                                                                         \
   } while (0);
 
 // Match PROFILER_START to use.
 #define PROFILER_END(start_time, module, event, op_name, is_inner_event)                                       \
   do {                                                                                                         \
-    if (mindspore::runtime::ProfilerAnalyzer::GetInstance().profiler_enable()) {                               \
+    if (MS_UNLIKELY(mindspore::runtime::ProfilerAnalyzer::GetInstance().profiler_enable())) {                  \
       auto end_time = mindspore::runtime::ProfilerAnalyzer::GetInstance().GetTimeStamp();                      \
       auto brief_name = mindspore::runtime::ProfilerAnalyzer::GetInstance().GetBriefName(op_name);             \
       mindspore::runtime::ProfilerAnalyzer::GetInstance().RecordData(                                          \

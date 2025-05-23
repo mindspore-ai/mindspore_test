@@ -251,6 +251,7 @@ std::optional<std::string> ToPyStr(const py::object &obj);
 // Convert py::object to py::str, and then convert it to std::string.
 // Return default_value if obj.ptr() is nullptr, or if exception is caught.
 std::string ToPyStr(const py::object &obj, const std::string &default_value);
+void ClearCNodeAbstract(const FuncGraphPtr &func_graph);
 }  // namespace parse
 }  // namespace mindspore
 

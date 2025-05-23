@@ -23,7 +23,6 @@
 #include <string>
 #include "pipeline/jit/ps/resource.h"
 #include "pipeline/jit/ps/pass.h"
-#include "backend/graph_compiler/segment_runner.h"
 
 namespace mindspore {
 namespace pipeline {

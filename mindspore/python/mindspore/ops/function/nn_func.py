@@ -53,7 +53,8 @@ from mindspore.ops.auto_generate import (reflection_pad_1d_op, reflection_pad_2d
                                          upsample_nearest1d_op, upsample_nearest2d_op, upsample_nearest3d_op,
                                          upsample_linear1d_op, upsample_bilinear2d_op, upsample_bicubic2d_op,
                                          upsample_trilinear3d_impl, fill_scalar_op, floor_op, nllloss_2d_op,
-                                         masked_fill_op, masked_select, ones, flatten_ext, conv_transpose2d)
+                                         masked_fill_op, masked_select, ones, flatten_ext, conv_transpose2d,
+                                         func_max_pool2d_op)
 # 2
 
 # 3
@@ -6981,10 +6982,6 @@ def batch_norm_ext(input, running_mean, running_var, weight=None, bias=None, tra
         [[ 2.1621194  1.2360122]
          [14.810596  10.180061 ]]
     """
-    if weight is None:
-        weight = ops.ones([input.shape[1]], dtype=input.dtype)
-    if bias is None:
-        bias = ops.zeros([input.shape[1]], dtype=input.dtype)
     output = batch_norm_ext_op(input, weight, bias, running_mean, running_var, training, momentum, eps)
     return output[0]
 
@@ -8912,13 +8909,7 @@ def max_pool2d_ext(input, kernel_size, stride=None, padding=0, dilation=1, ceil_
         >>> print(argmax.shape)
         (20, 16, 24, 31)
     """
-    strides = stride if (stride is not None) else kernel_size
-    if return_indices:
-        max_pool_func_ = _get_cache_prim(MaxPoolWithIndices)(kernel_size, strides, padding, dilation, ceil_mode)
-        out, indices = max_pool_func_(input)
-    else:
-        max_pool_func_ = _get_cache_prim(MaxPoolWithMask)(kernel_size, strides, padding, dilation, ceil_mode)
-        out, indices = max_pool_func_(input)
+    out, indices = func_max_pool2d_op(input, kernel_size, stride, padding, dilation, ceil_mode, return_indices)
     if return_indices:
         return out, indices
     return out

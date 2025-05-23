@@ -34,15 +34,19 @@ class RES_EXPORT HalResManager {
  public:
   ~HalResManager() = default;
   static HalResManager &GetInstance();
+  void Clear();
   void Register(const DeviceType device, HalResManagerCreator &&hal_res_manager_creator);
   HalResBase *GetOrCreateResManager(const ResKey &res_key);
   HalResPtr GetResManager(const ResKey &res_key);
+  void LoadResManager(const DeviceType &device_name);
+  void UnLoadResManager(const DeviceType &device_name);
 
   MultiStreamControllerPtr &GetMultiStreamController(const std::string &device_name);
 
  private:
   std::map<DeviceType, HalResManagerCreator> hal_res_manager_creators_;
   std::map<std::string, HalResPtr> res_managers_;
+  std::map<DeviceType, void *> loaded_res_manager_handles_;
 
   // Since multi device is not supported currently, here use device target type to improve performance.
   // Device target type : 0, 1, 2, 3, and real device support : 'GPU' 'Ascend' 'CPU'.

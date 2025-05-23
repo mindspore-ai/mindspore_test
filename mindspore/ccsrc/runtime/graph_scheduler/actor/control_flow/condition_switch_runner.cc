@@ -47,7 +47,7 @@ void ConditionSwitchRunner::Init() {
     auto &output_kernel_tensor = output_kernel_tensors[i];
     MS_EXCEPTION_IF_NULL(output_kernel_tensor);
     auto output_address = output_kernel_tensor->device_address().get();
-
+    MS_EXCEPTION_IF_NULL(output_address);
     if (output_address->stream_id() != kernel_info_->stream_id()) {
       MS_LOG(DEBUG) << "Output address : " << output_address << " stream id :" << output_address->stream_id()
                     << " is not equal kernel info stream id : " << kernel_info_->stream_id() << ".";
@@ -205,7 +205,7 @@ void ConditionSwitchRunner::FetchParameterInput(OpContext<KernelTensor> *const c
   }
 
   for (auto &parameter_index : parameter_indexs_) {
-    auto kernel_tensor = FetchParameter(parameter_index.second, context, device_contexts_[0], GetAID());
+    auto kernel_tensor = FetchParameter(parameter_index.second, GetAID());
     if (kernel_tensor == nullptr) {
       std::string error_info =
         GetAID().Name() + " get graph parameter store failed: " + parameter_index.second.first.first->DebugString() +

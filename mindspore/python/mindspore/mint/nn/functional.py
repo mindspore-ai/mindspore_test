@@ -118,7 +118,8 @@ from mindspore.ops.auto_generate import soft_margin_loss
 # 45
 
 # 46
-from mindspore.ops.functional import silu
+from mindspore.ops.auto_generate import silu as silu_func
+from mindspore.ops.auto_generate import inplace_silu
 # 47
 
 # 48
@@ -282,6 +283,52 @@ from mindspore.ops.auto_generate import adaptive_avg_pool1d
 from mindspore.ops.functional import adaptive_avg_pool2d_ext as adaptive_avg_pool2d
 from mindspore.ops.function.nn_func import cross_entropy_ext as cross_entropy
 from mindspore.ops.function.nn_func import nll_loss_ext as nll_loss
+
+def silu(input, inplace=False):
+    r"""
+    Computes Sigmoid Linear Unit of input element-wise. The SiLU function is defined as:
+
+    .. math::
+
+        \text{SiLU}(x) = x * \sigma(x),
+
+    where :math:`x` is an element of the input, :math:`\sigma(x)` is Sigmoid function.
+
+    .. math::
+
+        \text{sigma}(x_i) = \frac{1}{1 + \exp(-x_i)},
+
+    SiLU Function Graph:
+
+    .. image:: ../images/SiLU.png
+        :align: center
+
+    Args:
+        input (Tensor): `input` is :math:`x` in the preceding formula. Input with the data type
+            float16 or float32.
+        inplace (bool, optional): If it is ``True``, enable the in place update function. Default value: ``False``.
+
+    Returns:
+        Tensor, with the same type and shape as the `input`.
+
+    Raises:
+        TypeError: If dtype of `input` is neither float16 nor float32.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import Tensor, mint
+        >>> import numpy as np
+        >>> input = Tensor(np.array([-1, 2, -3, 2, -1]), mindspore.float16)
+        >>> output = mint.nn.functional.silu(input, inplace=False)
+        >>> print(output)
+        [-0.269  1.762  -0.1423  1.762  -0.269]
+    """
+    if inplace:
+        return inplace_silu(input)
+    return silu_func(input)
 
 
 def elu(input, alpha=1.0, inplace=False):
@@ -954,9 +1001,6 @@ def threshold(input, threshold, value, inplace=False):  # pylint: disable=W0621
         x, &\text{ if } x > \text{threshold} \\
         \text{value}, &\text{ otherwise }
         \end{cases}
-
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
 
     Args:
         input (Tensor): The input Tensor.

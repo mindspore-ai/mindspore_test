@@ -3,7 +3,6 @@ import types
 from mindspore import Tensor
 from mindspore import dtype as mstype
 from mindspore import ops
-from mindspore.common._stub_tensor import StubTensor
 from mindspore._c_expression import get_code_extra
 from mindspore.common._pijit_context import PIJitCaptureContext
 
@@ -58,7 +57,7 @@ def assert_equal(expected, actual, decimal=7, err_msg=''):
         for k in expected:
             assert k in actual
             assert_equal(expected[k], actual[k], decimal=decimal, err_msg=err_msg)
-    elif isinstance(expected, (Tensor, StubTensor)):
+    elif isinstance(expected, Tensor):
         assert isinstance(actual, Tensor)
         match_array(actual, expected, error=decimal, err_msg=err_msg)
     else:
@@ -192,8 +191,8 @@ def assert_graph_compile_status(func, break_count=None, call_count=None, compile
     assert has_graph(jcr)
 
 
-def pi_jit_with_config(function=None, jit_config=None):
-    wrap_func = PIJitCaptureContext(jit_config)
+def pi_jit_with_config(function=None, jit_config=None, *, fullgraph=False):
+    wrap_func = PIJitCaptureContext(jit_config=jit_config, fullgraph=fullgraph)
     if function is not None:
         return wrap_func(function)
     return wrap_func

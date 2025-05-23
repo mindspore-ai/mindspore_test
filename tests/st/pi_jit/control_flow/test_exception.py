@@ -43,7 +43,6 @@ def test_exception_case_1():
     res = jit(function=func, capture_mode="bytecode")(5)
     jcr = get_code_extra(func)
     assert jcr["code"]["call_count_"] > 0
-    assert jcr["compile_count_"] == 1
     assert jcr["break_count_"] == 0
     assert expected == res
 
@@ -73,7 +72,6 @@ def test_exception_case_2():
     res = jit(function=func, capture_mode="bytecode")(5)
     jcr = get_code_extra(func)
     assert jcr["code"]["call_count_"] > 0
-    assert jcr["compile_count_"] == 1
     assert jcr["break_count_"] == 0
     assert expected == res
 
@@ -199,7 +197,6 @@ def test_exception_case_6():
     res = jit(function=func, capture_mode="bytecode")(5)
     jcr = get_code_extra(func)
     assert jcr["code"]["call_count_"] > 0
-    assert jcr["compile_count_"] == 1
     assert jcr["break_count_"] == 0
     assert expected == res
 

@@ -54,8 +54,6 @@ class PYNATIVE_EXPORT ForwardExecutor {
 
   void DispatchFrontendTask(const FrontendOpRunInfoPtr &op_run_info);
   void RunOpFrontend(const FrontendOpRunInfoPtr &op_run_info);
-  // If sub is true, this function will not convert StubTensor to Tensor.
-  // Used to reduce the overhead of StubTensor WaitValue.
   FrontendOpRunInfoPtr GenerateOpRunInfo(const py::args &args, bool stub = false);
   ValuePtr RunSliceOpFrontend(const std::vector<ValuePtr> &input_values,
                               const std::vector<SliceOpInfoPtr> &slice_op_infos, bool requires_grad,
@@ -81,6 +79,7 @@ class PYNATIVE_EXPORT ForwardExecutor {
   void ExecuteLazyTask() const;
   void Sync(const bool &);
   std::function<void(const bool &)> SyncData = [this](auto &&PH1) { return Sync(std::forward<decltype(PH1)>(PH1)); };
+  bool CellNotSetMixedPrecision(const PyboostOpRunInfoPtr &op_run_info);
   bool CellNotSetMixedPrecision(const FrontendOpRunInfoPtr &op_run_info);
   inline InferOperationPtr infer_operation() const {
     MS_EXCEPTION_IF_NULL(infer_operation_);
@@ -94,6 +93,7 @@ class PYNATIVE_EXPORT ForwardExecutor {
   void ReInit();
   void ForwardOpGradImpl(const OpGradInfoPtr &grad_info, const AsyncStatus &async_status) const;
   GradExecutorPtr grad() const;
+  void InitOpRunInfo(const PyboostOpRunInfoPtr &op_run_info);
   void InitOpRunInfo(const FrontendOpRunInfoPtr &op_run_info);
   // Mix precision and Implicit transform
   void SetCastForInputs(const FrontendOpRunInfoPtr &op_run_info) const;

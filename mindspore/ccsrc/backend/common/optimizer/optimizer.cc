@@ -19,6 +19,7 @@
 #include <vector>
 #include <utility>
 #include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/optimizer/helper.h"
 
 namespace mindspore {
 namespace opt {

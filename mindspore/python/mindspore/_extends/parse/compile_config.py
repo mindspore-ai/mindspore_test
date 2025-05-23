@@ -334,6 +334,15 @@ Value Range:
 PIJIT_SUBGRAPH_BREAK_OPTIMIZE = ''
 
 """
+Name: ENABLE_ELIMINATE_UNUSED_PARAMS
+Function: Whether to enable eliminate unused parameters optimization in PIJit.
+Value Range:
+    1: Enable, Disable if other value.
+    Default: Disable.
+"""
+ENABLE_ELIMINATE_UNUSED_PARAMS = ''
+
+"""
 Name: PUT_ALL_CNODE_INTO_ORDER_LIST
 Function: Whether to put all CNode into order list in back prop.
 Value Range:
@@ -387,6 +396,7 @@ __all__ = [
     "DEBUG_LEVEL",
     "PYNATIVE_JIT_GRAD_MODE",
     "PIJIT_SUBGRAPH_BREAK_OPTIMIZE",
+    "ENABLE_ELIMINATE_UNUSED_PARAMS",
     "PUT_ALL_CNODE_INTO_ORDER_LIST",
     "CHECK_PASS_NODE_SCOPE",
 ]

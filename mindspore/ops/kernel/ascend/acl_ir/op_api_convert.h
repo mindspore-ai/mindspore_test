@@ -430,7 +430,7 @@ inline aclTensor *ConvertType(const tensor::TensorPtr &tensor) {
   }
   auto acl_data_type = AclConverter::ConvertType(tensor->data_type());
   auto device_address = std::dynamic_pointer_cast<device::DeviceAddress>(tensor->device_address());
-  if (device_address->GetMutablePtr() == nullptr) {
+  if (device_address->size() != 0 && device_address->GetMutablePtr() == nullptr) {
     MS_LOG(EXCEPTION) << "The device memory is null, please allocate the device memory for tensor "
                       << tensor->ToString();
   }
@@ -440,19 +440,19 @@ inline aclTensor *ConvertType(const tensor::TensorPtr &tensor) {
   return acl_tensor;
 }
 
-inline aclIntArray *ConvertType(const std::optional<std::vector<int64_t>> &int_array_opt) {
-  if (int_array_opt.has_value()) {
-    return ConvertType(int_array_opt.value());
-  }
-  return nullptr;
-}
-
 inline aclIntArray *ConvertType(const std::vector<int64_t> &int_array) {
   if (int_array.empty()) {
     MS_LOG(DEBUG) << "int array is empty!";
   }
   static OpApiTensorConverter converter;
   return converter.CreateIntArray(int_array);
+}
+
+inline aclIntArray *ConvertType(const std::optional<std::vector<int64_t>> &int_array_opt) {
+  if (int_array_opt.has_value()) {
+    return ConvertType(int_array_opt.value());
+  }
+  return nullptr;
 }
 
 inline aclIntArray *ConvertType(const std::pair<std::vector<int64_t>, bool> &int_array_pair) {

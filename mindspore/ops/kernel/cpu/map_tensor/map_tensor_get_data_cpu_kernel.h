@@ -22,7 +22,7 @@
 #include <map>
 #include <utility>
 #include "mindspore/ops/infer/map_tensor_get_data.h"
-#include "plugin/device/cpu/hal/device/cpu_hash_table.h"
+#include "plugin/res_manager/cpu/cpu_mem_manager/cpu_hash_table.h"
 #include "kernel/cpu/map_tensor/map_tensor_cpu_kernel.h"
 
 namespace mindspore {

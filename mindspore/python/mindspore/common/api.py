@@ -42,7 +42,7 @@ from mindspore.common.sparse_tensor import RowTensor as PythonRowTensor
 from mindspore._c_expression.amp import get_curr_amp_strategy
 from mindspore._c_expression import GraphExecutor_, JitExecutor_, CSRTensor, RowTensor, COOTensor, \
     PyNativeExecutor_, verify_inputs_signature, init_exec_dataset, _set_dataset_mode_config, init_pipeline, \
-    _run_jit_pipeline, _ms_memory_recycle, _bind_device_ctx, StubNode, MSContext, TensorPy as Tensor
+    _run_jit_pipeline, _ms_memory_recycle, _bind_device_ctx, MSContext, TensorPy as Tensor
 from mindspore.parallel._ps_context import _is_role_sched
 from mindspore.parallel._utils import _check_full_batch, _get_parameter_broadcast, _is_in_auto_parallel_mode, \
     _is_parallel_mode
@@ -134,8 +134,6 @@ def _convert_python_data(data):
     """
     if isinstance(data, PythonTensor):
         return data
-    if isinstance(data, StubNode):
-        return ms.common._stub_tensor._convert_stub(data)
     if data.__class__ is tuple:
         # Handle namedtuple since its type is tuple.
         if hasattr(data, "_fields"):
@@ -658,12 +656,9 @@ class _JitExecutor:
             args_list = args_list[1:]
         phase = ""
         try:
-            if context.get_context("mode") == context.PYNATIVE_MODE:
-                _pynative_executor.set_jit_compile_status(True, phase)
-                phase = self.compile(self.fn.__name__, *args_list, **kwargs)
-                _pynative_executor.set_jit_compile_status(False, phase)
-            else:
-                phase = self.compile(self.fn.__name__, *args_list, **kwargs)
+            _pynative_executor.set_jit_compile_status(True, phase)
+            phase = self.compile(self.fn.__name__, *args_list, **kwargs)
+            _pynative_executor.set_jit_compile_status(False, phase)
         except Exception as err:
             _pynative_executor.clear_res()
             raise err
@@ -672,15 +667,11 @@ class _JitExecutor:
             return None
 
         new_inputs = self._generate_run_args(args_list, kwargs)
-        if context.get_context("mode") == context.PYNATIVE_MODE and not jit_context():
-            output = _pynative_executor.grad_jit(*new_inputs)
-        else:
-            output = self._graph_executor(tuple(new_inputs), phase)
-            if jit_context():
-                if is_stub_tensor(output):
-                    output = output.stub_sync()
-                return jit_context().run_graph(phase, output, *tuple(new_inputs))
-
+        output = _pynative_executor.grad_jit(*new_inputs)
+        if jit_context():
+            if is_stub_tensor(output):
+                output = output.stub_sync()
+            return jit_context().run_graph(phase, output, *tuple(new_inputs))
         return output
 
     def compile(self, method_name, *args, **kwargs):
@@ -1121,9 +1112,9 @@ def jit(
         capture_mode (str, optional): The method to create a callable MindSpore graph. The value of capture_mode
             should be ``ast`` , ``bytecode`` or ``trace`` . Default: ``ast`` .
 
-            - `ast <https://www.mindspore.cn/docs/en/r2.5.0/model_train/program_form/static_graph.html>`_ :
+            - `ast <https://www.mindspore.cn/docs/en/master/features/compile/graph_construction.html#ast>`_ :
               Parse Python ast to build graph.
-            - `bytecode <https://www.mindspore.cn/docs/en/r2.5.0/model_train/program_form/pynative.html#pijit>`_ :
+            - `bytecode <https://www.mindspore.cn/docs/en/master/features/compile/graph_construction.html#bytecode>`_ :
               Parse Python bytecode to build graph at runtime. This is an experimental prototype that is subject to
               change and/or deletion.
             - `trace` : Trace the execution of Python code to build graph. This is an experimental prototype that is
@@ -1145,8 +1136,8 @@ def jit(
         fullgraph (bool, optional): Whether to capture the entire function into graph. If False, jit attempts to
             be compatible with all Python syntax in the function as much as possible. If True, we require that the
             entire function can be captured into graph. If this is not possible (that is, if there is Python syntax
-            not supported), then it will raise an exception. This currently only applies when capture_mode is ast.
-            Default: ``False``.
+            not supported), then it will raise an exception. This currently only applies when capture_mode is ``ast``
+            or ``bytecode``. Default: ``False``.
         backend (str, optional): The compilation backend to be used. If this parameter is not set, the framework will
             use ``GE`` backend for Atlas training series products and ``ms_backend`` backend for others including Atlas
             A2 training series products by default.
@@ -1287,7 +1278,7 @@ def jit(
     if capture_mode == "ast":
         wrap_func = _jit_ast(hash_obj, dynamic, jit_config)
     elif capture_mode == "bytecode":
-        wrap_func = PIJitCaptureContext(jit_config)
+        wrap_func = PIJitCaptureContext(fullgraph=fullgraph, jit_config=jit_config)
     else:
         wrap_func = _jit_trace()
 
@@ -1936,13 +1927,6 @@ class _CellGraphExecutor:
         else:
             _set_dataset_mode_config('normal')
 
-    @staticmethod
-    def _use_vm_mode():
-        enable_ge = context.get_context("enable_ge")
-        enable_debug_runtime = context.get_context("enable_debug_runtime")
-        exe_mode = context.get_context("mode") == context.PYNATIVE_MODE
-        return not enable_ge or (enable_debug_runtime and exe_mode)
-
     def _build_data_graph(self, obj, phase):
         self._graph_executor.build_data_graph(obj.parameters_dict(), phase)
 
@@ -1974,7 +1958,7 @@ class _CellGraphExecutor:
         obj.__parse_method__ = 'construct'
         if not hasattr(obj, obj.__parse_method__):
             raise AttributeError(
-                'The class {} dose not have method {}'.format(obj.__class__.__name__, obj.__parse_method__))
+                'The class {} does not have method {}'.format(obj.__class__.__name__, obj.__parse_method__))
         key_id = str(id(obj)) + str(obj.create_time)
         args = get_auto_dynamic_shape_args(args, key_id)
 

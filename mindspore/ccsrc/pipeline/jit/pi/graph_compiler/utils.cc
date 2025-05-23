@@ -230,6 +230,42 @@ std::string GraphUtils::OpCompareArgToGraphName(int oparg) {
 
 std::string GraphUtils::ContainsOpToGraphName(int oparg) { return oparg == 1 ? "not_in_" : "in_"; }
 
+std::string GraphUtils::BinaryOpToGraphName(int oparg) {
+#if IS_PYTHON_3_11_PLUS
+
+  static std::map<int, std::string> binary_op_arg_2_graph_name = {{NB_ADD, "add"},
+                                                                  {NB_POWER, "pow_"},
+                                                                  {NB_MULTIPLY, "mul"},
+                                                                  {NB_REMAINDER, "mod"},
+                                                                  {NB_SUBTRACT, "sub"},
+                                                                  {NB_FLOOR_DIVIDE, "floordiv"},
+                                                                  {NB_TRUE_DIVIDE, "div"},
+                                                                  {NB_MATRIX_MULTIPLY, "matmul"},
+                                                                  {NB_INPLACE_FLOOR_DIVIDE, "floordiv"},
+                                                                  {NB_INPLACE_TRUE_DIVIDE, "div"},
+                                                                  {NB_INPLACE_ADD, "add"},
+                                                                  {NB_INPLACE_SUBTRACT, "sub"},
+                                                                  {NB_INPLACE_MULTIPLY, "mul"},
+                                                                  {NB_INPLACE_REMAINDER, "mod"},
+                                                                  {NB_LSHIFT, "left_shift"},
+                                                                  {NB_RSHIFT, "right_shift"},
+                                                                  {NB_AND, "bitwise_and"},
+                                                                  {NB_XOR, "bitwise_xor"},
+                                                                  {NB_OR, "bitwise_or"},
+                                                                  {NB_INPLACE_POWER, "pow"},
+                                                                  {NB_INPLACE_LSHIFT, "left_shift"},
+                                                                  {NB_INPLACE_RSHIFT, "right_shift"},
+                                                                  {NB_INPLACE_AND, "bitwise_and"},
+                                                                  {NB_INPLACE_XOR, "bitwise_xor"},
+                                                                  {NB_INPLACE_OR, "bitwise_or"}};
+  auto iter = binary_op_arg_2_graph_name.find(oparg);
+  if (iter != binary_op_arg_2_graph_name.end()) {
+    return iter->second;
+  }
+#endif
+  return "";
+}
+
 AnfNodePtr GraphUtils::GetMetaFuncGraph(int op_code) {
   // MS_EXCEPTION_IF_CHECK_FAIL(op_code_2_graph_name.find(op_code) != op_code_2_graph_name.end(),
   //                            "Not find the mutitype ops of OpCode " + std::to_string(op_code) + ".");

@@ -1384,7 +1384,7 @@ def trace(a, offset=0, axis1=0, axis2=1, dtype=None):
 
     Note:
         - `trace` is currently only used in `mindscience` scientific computing scenarios and
-          dose not support other usage scenarios.
+          does not support other usage scenarios.
         - `trace` is not supported on Windows platform yet.
 
     Args:

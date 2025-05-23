@@ -162,6 +162,10 @@ class AutoParallel(Cell):
         super(AutoParallel, self).__init__(auto_prefix=False)
         self.network = network
 
+        if parallel_mode not in ["semi_auto", "sharding_propagation", "recursive_programming"]:
+            raise ValueError("the argument 'parallel_mode' must be one of ['semi_auto', 'sharding_propagation'," \
+                  " 'recursive_programming'], but got the value : {} .".format(parallel_mode))
+
         self._parallel_mode = parallel_mode
 
         self._global_rank = get_rank()

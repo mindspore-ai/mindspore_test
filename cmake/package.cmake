@@ -55,6 +55,7 @@ install(
     TARGETS mindspore_core mindspore_ops mindspore_common mindspore_ms_backend mindspore_pyboost mindspore_pynative
         mindspore_backend_manager mindspore_res_manager mindspore_frontend mindspore_ops_kernel_common
         mindspore_profiler mindspore_memory_pool mindspore_runtime_pipeline mindspore_dump mindspore_backend_common
+        mindspore_extension
     DESTINATION ${INSTALL_LIB_DIR}
     COMPONENT mindspore
 )
@@ -68,8 +69,13 @@ endif()
 
 if(ENABLE_D)
     install(
-        TARGETS mindspore_ge_backend mindspore_ascend_res_manager
+        TARGETS mindspore_ge_backend
         DESTINATION ${INSTALL_LIB_DIR}
+        COMPONENT mindspore
+    )
+    install(
+        TARGETS mindspore_ascend_res_manager
+        DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
         COMPONENT mindspore
     )
     install(
@@ -82,8 +88,14 @@ endif()
 
 if(ENABLE_GPU)
     install(
-            TARGETS mindspore_gpu mindspore_gpu_res_manager LIBRARY
+            TARGETS mindspore_gpu LIBRARY
             DESTINATION ${INSTALL_PLUGIN_DIR}
+            COMPONENT mindspore
+            NAMELINK_SKIP
+    )
+    install(
+            TARGETS mindspore_gpu_res_manager LIBRARY
+            DESTINATION ${INSTALL_PLUGIN_DIR}/gpu
             COMPONENT mindspore
             NAMELINK_SKIP
     )
@@ -162,6 +174,11 @@ if(ENABLE_CPU)
         COMPONENT mindspore
     )
     install(
+        TARGETS mindspore_cpu_res_manager
+        DESTINATION ${INSTALL_PLUGIN_DIR}/cpu
+        COMPONENT mindspore
+    )
+    install(
         TARGETS mindspore_ops_host LIBRARY
         DESTINATION ${INSTALL_PLUGIN_DIR}
         COMPONENT mindspore
@@ -214,10 +231,15 @@ endif()
 if(ENABLE_D)
     if(EXISTS ${ASCEND_NNAL_ATB_PATH})
         install(
-                TARGETS mindspore_atb_kernels LIBRARY
+                TARGETS mindspore_atb_kernels mindspore_pyboost_atb_kernels LIBRARY
                 DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
                 COMPONENT mindspore
                 NAMELINK_SKIP
+        )
+        install(
+                TARGETS mindspore_extension_ascend_atb ARCHIVE
+                DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
+                COMPONENT mindspore
         )
     endif()
     if(ENABLE_MPI)
@@ -472,8 +494,9 @@ install(DIRECTORY ${CMAKE_SOURCE_DIR}/third_party/securec
     FILES_MATCHING PATTERN "*.h")
 
 ## msextension for custom ops
-install(FILES ${CMAKE_SOURCE_DIR}/mindspore/ops/ops_utils/ms_extension.h
+install(FILES ${CMAKE_SOURCE_DIR}/mindspore/ccsrc/ms_extension/all.h
     DESTINATION ${INSTALL_BASE_DIR}/include
+    RENAME ms_extension.h
     COMPONENT mindspore)
 
 ## third-party header files

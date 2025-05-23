@@ -17,6 +17,7 @@
 #include "backend/common/pass/add_dynamic_shape_attr.h"
 #include "ir/anf.h"
 #include "include/common/utils/anfalgo.h"
+#include "include/backend/kernel_graph.h"
 
 namespace mindspore {
 namespace opt {

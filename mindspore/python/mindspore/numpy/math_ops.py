@@ -5809,7 +5809,7 @@ def correlate(a, v, mode='valid'):
 
     Note:
         - `correlate` is currently only used in `mindscience` scientific computing scenarios and
-          dose not support other usage scenarios.
+          does not support other usage scenarios.
         - `correlate` is not supported on Windows platform yet.
 
     Args:

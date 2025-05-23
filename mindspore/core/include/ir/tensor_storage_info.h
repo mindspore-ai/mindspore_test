@@ -68,6 +68,7 @@ struct TensorStorageInfo {
     buf << "  ori_shape=" << VectorToString(ori_shape);
     buf << "  ori_strides=" << VectorToString(ori_strides);
     buf << "  is_contiguous=" << std::to_string(is_contiguous);
+    buf << "  ori_size=" << ori_size;
     buf << ")";
     return buf.str();
   }

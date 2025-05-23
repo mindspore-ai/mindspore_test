@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,18 +18,11 @@
 #define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_BITWISE_XOR_SCALAR_H_
 
 #include <vector>
-#include "ops/ops_func_impl/op_func_impl.h"
+#include "infer/ops_func_impl/bitwise_and_scalar.h"
 
 namespace mindspore {
 namespace ops {
-class OPS_API BitwiseXorScalarFuncImpl : public OpFuncImpl {
- public:
-  BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
-  TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
-  // simply infer
-  ShapeArray InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const override;
-  TypePtrList InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const override;
-};
+class OPS_API BitwiseXorScalarFuncImpl : public BitwiseAndScalarFuncImpl {};
 }  // namespace ops
 }  // namespace mindspore
 

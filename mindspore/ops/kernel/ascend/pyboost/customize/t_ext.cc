@@ -35,11 +35,11 @@ void TExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &i
 
   const auto &device_name = device_context->device_context_key_.device_name_;
   auto transpose_op = CREATE_PYBOOST_OP(Transpose, device_name);
-  std::vector<ValuePtr> perm(input_rank);
+  std::vector<int64_t> perm(input_rank);
   for (size_t i = 0; i < input_rank; ++i) {
-    perm[i] = MakeValue(static_cast<int64_t>(input_rank - i - 1));
+    perm[i] = static_cast<int64_t>(input_rank - i - 1);
   }
-  auto output_tensor = transpose_op->Call(input_tensor, std::make_shared<ValueTuple>(perm));
+  auto output_tensor = transpose_op->Call(input_tensor, perm);
   op->set_outputs({output_tensor});
 
   MS_LOG(DEBUG) << "TExt Launch end";

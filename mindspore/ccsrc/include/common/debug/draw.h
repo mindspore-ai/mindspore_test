@@ -21,7 +21,9 @@
 #include <string>
 #include "ir/anf.h"
 #include "utils/any.h"
-#include "include/common/debug/common.h"
+#include "utils/file_utils.h"
+#include "base/base.h"
+#include "include/common/visible.h"
 
 namespace mindspore {
 namespace draw {

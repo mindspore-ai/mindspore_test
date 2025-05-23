@@ -32,7 +32,6 @@
 #include "utils/check_convert_utils.h"
 #include "include/common/utils/utils.h"
 #include "common/device_type.h"
-#include "include/backend/device_synchronizer.h"
 
 namespace mindspore {
 namespace device {
@@ -106,25 +105,6 @@ class PointerRefCount {
   bool from_mem_pool() const { return from_mem_pool_; }
   // Set whether pointer in PointerRefCount is allocated from the memory pool.
   void set_from_mem_pool(bool from_mem_pool) { from_mem_pool_ = from_mem_pool; }
-
-  // Increase ref count or dynamic ref count.
-  size_t IncreaseCounter() {
-    if (ref_count_ != SIZE_MAX) {
-      return ++ref_count_;
-    } else if (dynamic_ref_count_ != INT32_MAX) {
-      return ++dynamic_ref_count_;
-    }
-    return SIZE_MAX;
-  }
-  // Decrease ref count or dynamic ref count.
-  size_t DecreaseCounter() {
-    if (ref_count_ != SIZE_MAX) {
-      return --ref_count_;
-    } else if (dynamic_ref_count_ != INT32_MAX) {
-      return --dynamic_ref_count_;
-    }
-    return SIZE_MAX;
-  }
 
   // The related interface of static reference count operation.
   void set_original_ref_count(size_t original_ref_count) { original_ref_count_ = original_ref_count; }
@@ -268,11 +248,11 @@ struct AddressCommon {
 
   std::string PrintInfo() const {
     std::ostringstream ofs;
-    ofs << "size:" << size_ << " tensor storage info:" << tensor_storage_info_;
+    ofs << " size:" << size_ << " tensor storage info:" << tensor_storage_info_;
     if (tensor_storage_info_ != nullptr) {
       ofs << tensor_storage_info_->ToString();
     }
-    ofs << "size:" << size_ << " format:" << format_ << " dtype:" << dtype_id_ << " device id:" << device_id_
+    ofs << " size:" << size_ << " format:" << format_ << " dtype:" << dtype_id_ << " device id:" << device_id_
         << " device name:" << device_name_ << " shape vector:{";
     std::for_each(shape_vector_.begin(), shape_vector_.end(), [&ofs](ShapeValueDType axis) { ofs << axis << " "; });
     ofs << "} point ref count:";
@@ -384,14 +364,17 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   virtual bool CopyDeviceToHostWithoutSyncStream(void *dst, size_t dst_size, const void *src, size_t src_size) {
     return true;
   }
-  virtual bool AsyncHostToDevice(size_t size, TypeId /* type */, const void *host_ptr) const { return true; }
+  virtual bool AsyncHostToDevice(size_t size, TypeId /* type */, const void *host_ptr,
+                                 size_t stream_id = SIZE_MAX) const {
+    return true;
+  }
   virtual bool AsyncHostToDevice(size_t size, TypeId type, const tensor::TensorDataPtr &tensor_data,
-                                 const std::string &format) const {
+                                 const std::string &format, size_t stream_id = SIZE_MAX) const {
     return true;
   }
 
-  virtual bool AsyncHostToDevice(size_t size, const void *host_ptr) const { return true; }
-  virtual bool AsyncDeviceToHost(size_t size, void *host_ptr) const { return true; }
+  virtual bool AsyncHostToDevice(size_t size, const void *host_ptr, size_t stream_id = SIZE_MAX) const { return true; }
+  virtual bool AsyncDeviceToHost(size_t size, void *host_ptr, size_t stream_id = SIZE_MAX) const { return true; }
 
   // Asynchronously copy host memory to device side.
   virtual bool AsyncHostToDevice(const ShapeVector &, size_t, TypeId, const void *, size_t) const { return true; }
@@ -403,10 +386,9 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
     return true;
   }
   // Asynchronously copy device memory to device side.
-  virtual bool AsyncDeviceToDevice(const DeviceAddress *) const { return true; }
+  virtual bool AsyncDeviceToDevice(const DeviceAddress *, size_t stream_id = SIZE_MAX) const { return true; }
   virtual bool CopyDeviceToHost(void *dst, const void *src, const size_t &size) const { return true; }
   virtual bool CopyHostToDevice(void *dst, const void *src, const size_t &size) const { return true; }
-  virtual DeviceSynchronizerPtr NewDeviceSynchronizer() { MS_LOG(EXCEPTION) << "Not implemented."; }
 
   const void *GetPtr() const;
   void set_ptr(void *ptr);
@@ -460,8 +442,6 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
 
   virtual void SetNodeIndex(const AnfNodePtr &node, size_t out_index);
   KernelWithIndex GetNodeIndex() const;
-  size_t IncreaseCounter();
-  size_t DecreaseCounter();
 
   void IncreaseNewRefCount(const std::string &op_name, size_t i = 1);
   size_t DecreaseNewRefCount(const std::string &op_name);
@@ -579,17 +559,18 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   void set_address_common(const AddressCommonPtr &address_common);
   ContinuousDeviceAddressesPtr continuous_device_addresses() const;
   void set_continuous_device_addresses(const ContinuousDeviceAddressesPtr &continuous_device_addresses);
+  size_t size() const { return address_common_->size_; }
 
  protected:
   // address basic info
   AddressCommonPtr address_common_{nullptr};
-  size_t size() const { return address_common_->size_; }
 
   void *GetDevicePtr() const { return address_common_->pointer_ref_count_->ptr(); }
   void SetDevicePtr(void *ptr) const { address_common_->pointer_ref_count_->set_ptr(ptr); }
 
   void SetTypeId(TypeId type) const { address_common_->dtype_id_ = type; }
-  virtual bool AsyncDeviceToDevice(const ShapeVector &, size_t, TypeId, const void *, const std::string &) const {
+  virtual bool AsyncDeviceToDevice(const ShapeVector &, size_t, TypeId, const void *, const std::string &,
+                                   size_t stream_id = SIZE_MAX) const {
     return true;
   }
 

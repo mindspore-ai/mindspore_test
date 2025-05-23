@@ -203,7 +203,7 @@ void TagAllReduceDependentsNodesSearchSpace(
     auto last_allreduce_node = allreduce_list.back();
     auto last_allreduce_idx_in_orders = std::find(node_list.begin(), node_list.end(), last_allreduce_node);
     if (last_allreduce_idx_in_orders - first_grad_node_idx_in_orders < 0) {
-      MS_LOG(EXCEPTION) << "The allreduce node dose not has any backward node with the same fusion id before it.";
+      MS_LOG(EXCEPTION) << "The allreduce node does not has any backward node with the same fusion id before it.";
     }
     for (auto anf_iter = first_grad_node_idx_in_orders; anf_iter != last_allreduce_idx_in_orders; ++anf_iter) {
       if (!(*anf_iter)->cast<CNodePtr>()) {

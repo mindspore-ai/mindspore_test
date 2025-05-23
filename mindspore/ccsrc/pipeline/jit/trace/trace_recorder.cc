@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@
 #include "include/common/debug/anf_ir_dump.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/structure_ops.h"
-#include "pipeline/jit/ps/pipeline_jit.h"
+#include "pipeline/jit/ps/executor/jit_executor_py.h"
 #include "pipeline/jit/ps/parse/parse_base.h"
 #include "pipeline/jit/ps/static_analysis/static_analysis.h"
 #include "pipeline/jit/ps/parse/resolve.h"
@@ -460,8 +460,7 @@ py::object TraceRecorder::RunGraph(const py::object &phase, const py::tuple &arg
   auto graph_executor = pipeline::GetExecutor();
   MS_EXCEPTION_IF_NULL(graph_executor);
   py::object res;
-  int mode = MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE);
-  if (mode == kPynativeMode && pynative::GradState::Get().RequiresGrad()) {
+  if (pynative::GradState::Get().RequiresGrad()) {
     pynative::PyNativeAdapter::SetGraphPhase(py::cast<std::string>(phase));
     FuncGraphPtr jit_fg = graph_executor->GetFuncGraph(py::cast<std::string>(phase));
     MS_EXCEPTION_IF_NULL(jit_fg);
@@ -548,6 +547,7 @@ void TraceRecorder::NewFuncGraphNode(const py::tuple &info, const py::args &inpu
       (void)node_inputs.emplace_back(new_param);
     }
   }
+  parse::ClearCNodeAbstract(jit_fg);
   (void)node_inputs.insert(node_inputs.cbegin(), NewValueNode(jit_fg));
   AnfNodePtr cnode = graph_stack_.top()->NewCNodeInOrder(node_inputs);
   if (cnode->debug_info() != nullptr) {

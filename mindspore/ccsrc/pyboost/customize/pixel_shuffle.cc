@@ -78,7 +78,7 @@ tensor::TensorPtr PixelShuffleCustomize(const std::shared_ptr<OpRunner> &op, con
   // permuting dims.
   std::vector<int64_t> added_dims_shape(input_shape.begin(), input_shape_batch_end);
   added_dims_shape.insert(added_dims_shape.end(), {oc, upscale_factor, upscale_factor, h, w});
-  const auto input_reshaped = reshape(input, MakeValueTuple(added_dims_shape));
+  const auto input_reshaped = reshape(input, added_dims_shape);
 
   // Next, shuffle by permuting the new upscale_factor dims alongside the height and width dims.
   std::vector<int64_t> permutation(input_shape.begin(), input_shape_batch_end);
@@ -89,13 +89,13 @@ tensor::TensorPtr PixelShuffleCustomize(const std::shared_ptr<OpRunner> &op, con
                                          -4,   /* 1st upscale_factor */
                                          -1,   /* w */
                                          -3}); /* 2nd upscale_factor */
-  const auto input_permuted = transpose(input_reshaped, MakeValueTuple(permutation));
+  const auto input_permuted = transpose(input_reshaped, permutation);
 
   // Finally, upscale by collapsing (h, upscale_factor) -> a single dim (oh)
   // and (w, upscale_factor) -> a single dim (ow).
   std::vector<int64_t> final_shape(input_shape.begin(), input_shape_batch_end);
   final_shape.insert(final_shape.end(), {oc, oh, ow});
-  const auto final_out = view(contiguous(input_permuted), MakeValueTuple(final_shape));
+  const auto final_out = view(contiguous(input_permuted), final_shape);
   op->set_outputs({final_out});
   return op->output(0);
 }

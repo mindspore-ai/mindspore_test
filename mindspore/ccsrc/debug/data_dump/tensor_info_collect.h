@@ -38,7 +38,8 @@ class TensorInfoForDump {
         host_shape(host_shape),
         device_size(device_size),
         kernel_tensor(kernel_tensor) {
-    this->device_ptr = kernel_tensor->device_address()->GetPtr();
+    MS_EXCEPTION_IF_NULL(kernel_tensor);
+    this->device_ptr = kernel_tensor->device_ptr();
   }
 
   std::string io;

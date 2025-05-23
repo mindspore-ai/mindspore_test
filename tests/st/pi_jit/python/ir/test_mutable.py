@@ -21,7 +21,6 @@ from mindspore import jit, context
 from tests.mark_utils import arg_mark
 
 
-@pytest.mark.skip(reason="tmp skip")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_mutable_with_scalar():
     """

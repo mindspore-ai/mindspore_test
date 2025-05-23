@@ -260,6 +260,8 @@ TraceContextPtr TraceManager::CurrentContextInfo() {
   return nullptr;
 }
 
+const std::vector<TraceContext> &TraceManager::trace_context_stack() { return trace_context_stack_; }
+
 bool TraceManager::DebugTrace(const LocationPtr &location) {
   if (location == nullptr) {
     return false;

@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@
 #include <memory>
 #include <utility>
 #include <algorithm>
+
+#include "backend/graph_compiler/transform.h"
 #include "pynative/pynative_utils.h"
 #include "include/common/utils/primitive_utils.h"
 #include "include/common/pynative/common_utils.h"

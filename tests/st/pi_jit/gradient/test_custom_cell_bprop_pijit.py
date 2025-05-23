@@ -145,7 +145,6 @@ def test_grad_in_bprop_1():
     assert (grads[1].asnumpy() == (np.zeros([2, 2]) + 10).astype(np.float32)).all()
 
 
-@pytest.mark.skip
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_grad_in_bprop_2():
     """
@@ -164,6 +163,7 @@ def test_grad_in_bprop_2():
         def bprop(self, x, y, out, dout):
             return x * y, y + x
 
+    @jit(capture_mode="bytecode")
     class GradInBprop_2(nn.Cell):
         def __init__(self):
             super(GradInBprop_2, self).__init__()
@@ -747,7 +747,6 @@ def test_pynative_forward_with_parameter_in_sub_cell_get_by_list():
     assert np.allclose(out[1][0].asnumpy(), expect_dz)
 
 
-@pytest.mark.skip
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_dde_self_define_cell_output_not_use():
     """

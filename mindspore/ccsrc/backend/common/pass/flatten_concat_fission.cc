@@ -27,6 +27,8 @@
 #include "mindspore/ops/op_def/array_ops.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
+#include "utils/ms_context.h"
+#include "include/backend/optimizer/helper.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
@@ -180,6 +182,11 @@ const AnfNodePtr FlattenConcatFission::Process(const FuncGraphPtr &func_graph, c
   MS_EXCEPTION_IF_NULL(node);
   auto cnode = node->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(cnode);
+
+  // Used for flatten weight, remove after the feature is abort.
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  ms_context->set_param<bool>(MS_ENV_FLATTEN_WEIGHT, true);
 
   // After ConvertTupleInputToDynamicInput pass is removed, we need to expand tuple inputs for FlattenConcat op here.
   ExpandFlattenConcatTupleInput(func_graph, cnode);

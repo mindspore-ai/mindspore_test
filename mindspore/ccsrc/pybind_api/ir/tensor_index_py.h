@@ -78,8 +78,8 @@ class Slice final {
  public:
   Slice(const py::object &start_index, const py::object &stop_index, const py::object &step_index) {
     dim_size_ = kIndexMax;
-    if (IsTensorPy(step_index) || IsStubTensor(step_index)) {
-      auto step_tensor = IsStubTensor(step_index) ? ConvertStubTensor(step_index) : ConvertToTensor(step_index);
+    if (IsTensorPy(step_index)) {
+      auto step_tensor = ConvertToTensor(step_index);
       MS_EXCEPTION_IF_NULL(step_tensor);
       if (step_tensor->data_type() == kMetaTypeNone) {
         step_ = 1;
@@ -197,9 +197,6 @@ class Slice final {
       auto tensor_index = ConvertToTensor(index);
       MS_EXCEPTION_IF_NULL(tensor_index);
       return tensor_index->data_type() == kMetaTypeNone;
-    } else if (IsStubTensor(index)) {
-      auto type_id = GetStubTensorInfo(index).second->type_id();
-      return type_id == kMetaTypeNone;
     } else if (py::isinstance<py::none>(index)) {
       return true;
     }
@@ -208,8 +205,8 @@ class Slice final {
 
   static inline int64_t NormalizeIndex(const py::object &index, int64_t step, int64_t dim_size) {
     int64_t normalized_index;
-    if (IsTensorPy(index) || IsStubTensor(index)) {
-      auto tensor_index = IsStubTensor(index) ? ConvertStubTensor(index) : ConvertToTensor(index);
+    if (IsTensorPy(index)) {
+      auto tensor_index = ConvertToTensor(index);
       MS_EXCEPTION_IF_NULL(tensor_index);
       normalized_index = NormalizeIndex(tensor_index, step, dim_size);
     } else if (py::isinstance<py::int_>(index)) {
@@ -282,9 +279,6 @@ class TensorIndex final {
     } else if (py::isinstance<py::bool_>(py_object)) {
       this->boolean_ = py_object.cast<py::bool_>();
       this->type_ = TensorIndexType::Boolean;
-    } else if (IsStubTensor(py_object)) {
-      this->tensorpynew_ = ConvertPyObject2StubTensor(py_object);
-      this->type_ = TensorIndexType::Tensor;
     } else if (IsTensorPy(py_object)) {
       this->tensorpynew_ = py_object;
       this->type_ = TensorIndexType::Tensor;
@@ -465,10 +459,6 @@ class TensorIndex final {
       TensorPtr data = ConvertToTensor(value);
       MS_EXCEPTION_IF_NULL(data);
       auto data_shape = data->shape();
-      return data_shape.empty();
-    }
-    if (IsStubTensor(value)) {
-      auto data_shape = GetStubTensorInfo(value).first;
       return data_shape.empty();
     }
     return CheckTypeIsInstance(TensorIndex(value).type(),
@@ -683,8 +673,6 @@ class TensorIndex final {
 
   friend std::ostream &operator<<(std::ostream &stream, const TensorIndex &tensor_index);
   friend std::ostream &operator<<(std::ostream &stream, const std::vector<TensorIndex> &tensor_indices);
-
-  static const py::handle ConvertPyObject2StubTensor(const py::handle &obj);
 };
 }  // namespace tensor
 }  // namespace mindspore

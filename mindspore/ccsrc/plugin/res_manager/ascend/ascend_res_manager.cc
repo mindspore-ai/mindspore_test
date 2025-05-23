@@ -29,7 +29,6 @@
 #include "plugin/res_manager/ascend/mem_manager/ascend_memory_manager.h"
 #include "plugin/res_manager/ascend/mem_manager/ascend_vmm_adapter.h"
 #include "plugin/res_manager/ascend/ascend_device_address/ascend_device_address.h"
-#include "plugin/res_manager/ascend/ascend_device_address/ascend_device_synchronizer.h"
 #include "plugin/res_manager/ascend/device_context_conf/op_debug_conf.h"
 #include "plugin/res_manager/ascend/event/ascend_event.h"
 #include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
@@ -157,11 +156,7 @@ void SetAscendConfig(const std::shared_ptr<MsContext> &ms_context_ptr, std::map<
   MS_EXCEPTION_IF_NULL(ms_context_ptr);
   MS_EXCEPTION_IF_NULL(ge_options);
 
-  std::string topo_sorting_mode = "0";
-  if (ms_context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
-    topo_sorting_mode = "2";
-  }
-  (*ge_options)["ge.topoSortingMode"] = topo_sorting_mode;
+  (*ge_options)["ge.topoSortingMode"] = "0";
   // disable RemoveSameConstPass, it will be caused the communication failed on multi-card.
   (*ge_options)["ge.disableOptimizations"] = "RemoveSameConstPass";
 
@@ -598,7 +593,7 @@ DeviceAddressPtr AscendResManager::CreateDeviceAddress() const {
 DeviceAddressPtr AscendResManager::CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector,
                                                        const Format &format, TypeId type_id,
                                                        const std::string &device_name, uint32_t device_id,
-                                                       uint32_t stream_id, const UserDataPtr &) const {
+                                                       uint32_t stream_id, const UserDataPtr &user_data) const {
   auto real_device_name = device_name;
   auto real_device_id = device_id;
   if (device_name.empty()) {
@@ -609,8 +604,10 @@ DeviceAddressPtr AscendResManager::CreateDeviceAddress(void *ptr, size_t size, c
     MS_LOG(DEBUG) << "Create device address with real device name: " << real_device_name
                   << ", real device id: " << real_device_id;
   }
-  return std::make_shared<AscendDeviceAddress>(ptr, size, shape_vector, format, type_id, real_device_name,
-                                               real_device_id, stream_id);
+  auto device_address = std::make_shared<AscendDeviceAddress>(ptr, size, shape_vector, format, type_id,
+                                                              real_device_name, real_device_id, stream_id);
+  device_address->set_user_data(user_data);
+  return device_address;
 }
 
 bool AscendResManager::LoadCollectiveCommLib() {
@@ -732,6 +729,15 @@ bool AscendResManager::CreateStreamWithPriority(size_t *stream_id, int32_t prior
   }
   AscendStreamMng::GetInstance().CreateStreamWithFlags(stream_id, ACL_STREAM_FAST_LAUNCH | ACL_STREAM_FAST_SYNC,
                                                        IntToUint(priority));
+  return true;
+}
+
+bool AscendResManager::DestroyStream(size_t stream_id) const {
+  if (!BindDeviceToCurrentThread(false)) {
+    MS_LOG(ERROR) << "Bind context to current thread failed";
+    return false;
+  }
+  AscendStreamMng::GetInstance().DestroyStream(stream_id);
   return true;
 }
 

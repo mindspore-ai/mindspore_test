@@ -84,37 +84,6 @@ void ControlActor::GetAllKernelTensors(const OpRealParameterWithBranchID &op_rea
   }
 }
 
-void ControlActor::IncreaseDynamicRefCount(const OpData<KernelTensor> *op_data) const {
-  MS_EXCEPTION_IF_NULL(op_data);
-  MS_EXCEPTION_IF_NULL(op_data->data_);
-  auto &device_address = op_data->data_->device_address();
-  MS_EXCEPTION_IF_NULL(device_address);
-  device_address->IncreaseDynamicRefCount(GetAID().Name());
-}
-
-void ControlActor::IncreaseDynamicRefCount(const OpPartialPtr &op_partial) {
-  if (op_partial == nullptr) {
-    MS_LOG(EXCEPTION) << "Empty op partial for actor:" << GetAID();
-  }
-  std::vector<KernelTensorPtr> partial_kernel_tensors;
-  GetAllKernelTensors(op_partial, &partial_kernel_tensors);
-  for (auto &partial_kernel_tensor : partial_kernel_tensors) {
-    MS_EXCEPTION_IF_NULL(partial_kernel_tensor);
-    MS_EXCEPTION_IF_NULL(partial_kernel_tensor->device_address());
-    partial_kernel_tensor->device_address()->IncreaseDynamicRefCount(GetAID().Name());
-  }
-}
-
-void ControlActor::IncreaseDynamicRefCount(const OpRealParameterWithBranchID &op_real_parameter) {
-  std::vector<KernelTensorPtr> partial_kernel_tensors;
-  GetAllKernelTensors(op_real_parameter, &partial_kernel_tensors);
-  for (auto &partial_kernel_tensor : partial_kernel_tensors) {
-    MS_EXCEPTION_IF_NULL(partial_kernel_tensor);
-    MS_EXCEPTION_IF_NULL(partial_kernel_tensor->device_address());
-    partial_kernel_tensor->device_address()->IncreaseDynamicRefCount(GetAID().Name());
-  }
-}
-
 void ControlActor::IncreaseNewRefCountForPartial(const OpPartialPtr &op_partial) {
   if (op_partial == nullptr) {
     MS_LOG(EXCEPTION) << "Empty op partial for actor:" << GetAID();
@@ -201,7 +170,7 @@ void ControlActor::Run(OpContext<KernelTensor> *const context) {
       return;
     }
 
-    // Note that IncreaseDynamicRefCounts must be in front of SendMemoryFreeReq. SendMemoryFreeReq will decreasing the
+    // Note that IncreaseNewRefCounts must be in front of SendMemoryFreeReq. SendMemoryFreeReq will decreasing the
     // dynamic ref count. Avoid the illegal timing problem that the dynamic reference count is decremented and then
     // incremented.
     IncreaseNewRefCounts(context);
@@ -279,8 +248,7 @@ void ControlActor::FetchParameterInput(OpContext<KernelTensor> *const context) {
                                " current:" + std::to_string(device_contexts_.size()) + " for actor:" + GetAID().Name();
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
     }
-    auto kernel_tensor =
-      FetchParameter(parameter_index.second, context, device_contexts_[parameter_index.first], GetAID());
+    auto kernel_tensor = FetchParameter(parameter_index.second, GetAID());
     MS_EXCEPTION_IF_NULL(kernel_tensor);
     if (parameter_index.first >= input_kernel_tensors_.size()) {
       std::string error_info = "The input index is out of range, need:" + std::to_string(parameter_index.first) +
@@ -388,40 +356,6 @@ void ControlActor::FetchInput(OpContext<KernelTensor> *const context) {
   auto iter = input_branch_ids_.find(context->sequential_num_);
   if (iter != input_branch_ids_.end() && (!iter->second.empty())) {
     output_branch_id_ = iter->second.top();
-  }
-}
-
-void ControlActor::IncreaseDynamicRefCounts(OpContext<KernelTensor> *const context) {
-  ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kPreLaunch, GetAID().Name());
-  MS_EXCEPTION_IF_NULL(context);
-  // Increase dynamic ref count by the output data.
-  for (size_t i = 0; i < output_data_.size(); ++i) {
-    MS_EXCEPTION_IF_NULL(output_data_[i].first);
-    if (output_data_[i].first->data_ == nullptr) {
-      std::string error_info = GetAID().Name() + " fetches data null, data index:" + std::to_string(i) +
-                               " to actor:" + output_data_[i].first->op_id_.Name() +
-                               " index:" + std::to_string(output_data_[i].first->index_);
-      SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
-    }
-    if (i < output_need_disable_dynamic_ref_counts_.size() && output_need_disable_dynamic_ref_counts_[i]) {
-      MS_LOG(DEBUG) << "Disable dynamic ref count for device address:" << output_data_[i].first->data_
-                    << " ptr:" << output_data_[i].first->data_->device_ptr() << " for actor:" << GetAID();
-      output_data_[i].first->data_->device_address()->UpdateFlag(device::kDeviceAddressFlagNullptr);
-      continue;
-    }
-    IncreaseDynamicRefCount(output_data_[i].first.get());
-  }
-
-  // Increase dynamic ref count by the output partial.
-  for (const auto &output_partial_arrow : output_partial_arrows_) {
-    MS_EXCEPTION_IF_NULL(output_partial_arrow);
-    if (IntToSize(output_partial_arrow->from_output_index_) >= input_partials_.size()) {
-      std::string error_info = "Invalid partial input:" + std::to_string(output_partial_arrow->from_output_index_) +
-                               " current:" + std::to_string(input_partials_.size()) + " for actor:" + GetAID().Name();
-      SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
-    }
-    auto output_partial = input_partials_[IntToSize(output_partial_arrow->from_output_index_)];
-    IncreaseDynamicRefCount(output_partial);
   }
 }
 
@@ -676,9 +610,6 @@ void ControlActor::MergeDeviceAddress(OpContext<KernelTensor> *const context,
   created_new_nodes_.emplace_back(new_cnode);
   new_device_tensor->SetNodeIndex(new_cnode, 0);
   new_device_tensor->set_from_persistent_mem(addr_list[0]->device_address()->from_persistent_mem());
-  new_device_tensor->set_dynamic_ref_count(0);
-  new_device_tensor->set_original_ref_count(SIZE_MAX);
-  new_device_tensor->ResetRefCount();
 
   // Merge device address list into a single device address.
   auto tmp_kernel_tensor = AnfAlgo::CreateKernelTensor(
@@ -752,9 +683,6 @@ void ControlActor::MergeEmptyAddressDeviceAddress(OpContext<KernelTensor> *const
     device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
   const auto &new_device_tensor = new_kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(new_device_tensor);
-  new_device_tensor->set_dynamic_ref_count(0);
-  new_device_tensor->set_original_ref_count(SIZE_MAX);
-  new_device_tensor->ResetRefCount();
   if (!device_context->device_res_manager_->AllocateMemory(new_device_tensor.get(), kDefaultStreamIndex)) {
     SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(GraphExecutionStrategy::kPipeline, *context, *device_context,
                                                 GetAID().Name(), new_device_tensor->GetSize());

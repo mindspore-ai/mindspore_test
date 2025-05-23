@@ -19,9 +19,6 @@
 
 namespace mindspore {
 namespace kernel {
-namespace {
-static constexpr size_t kInputNum3 = 3;
-}
 bool HcomAlltoAllVKernel::GetAllToAllVParam(const std::vector<int64_t> &send_numel_list,
                                             const std::vector<int64_t> &recv_numel_list) {
   auto send_offset_list = primitive_->HasAttr(kAttrSendOffsetList)

@@ -12,7 +12,7 @@ class GradFactory:
         npw = onp.random.randn(*shape)
         npb = onp.random.randn(*shape)
         self.net = Net(npw, npb)
-        self.npx = onp.random.randn(*shape)
+        self.npx = onp.ones(shape)
         self.npy = onp.random.randn(*shape)
         self.nps = onp.ones(shape)
         self.pos = pos
@@ -27,18 +27,19 @@ class GradFactory:
             get.append(self.pos)
         else:
             get.extend(self.pos)
-        real_weights = []
-        if self.weight is not None:
-            if 'w' in self.weight:
+        real_weights = None
+        tmp_weights = self.weight
+        if tmp_weights is not None:
+            real_weights = []
+            if 'w' in tmp_weights:
                 real_weights.append(self.net.w)
                 get.append(self.net.w)
-            if 'b' in self.weight:
+            if 'b' in tmp_weights:
                 real_weights.append(self.net.b)
                 get.append(self.net.b)
-            self.weight = real_weights
 
         grad_net = Grad(self.net,
-                        self.pos, self.weight, get)
+                        self.pos, real_weights, get)
         x = Tensor(self.npx, dtype.float32)
         y = Tensor(self.npy, dtype.float32)
         grads = grad_net(x, y)
@@ -188,7 +189,6 @@ def test_grad_return_ids_pos01_pynative(func):
     jit_grad2, pijit_grad2 = func(Grad)
     match_array(jit_grad2, pijit_grad2)
 
-@pytest.mark.skip
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('func', [grad_return_ids_weight_w])
 def test_grad_return_ids_weight_w_pynative(func):
@@ -213,7 +213,6 @@ def test_grad_return_ids_weight_w_pynative(func):
     jit_grad2, pijit_grad2 = func(Grad)
     match_array(jit_grad2, pijit_grad2)
 
-@pytest.mark.skip
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('func', [grad_return_ids_weight_wb])
 def test_grad_return_ids_weight_wb_pynative(func):
@@ -238,7 +237,6 @@ def test_grad_return_ids_weight_wb_pynative(func):
     jit_grad2, pijit_grad2 = func(Grad)
     match_array(jit_grad2, pijit_grad2)
 
-@pytest.mark.skip
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('func', [grad_return_ids_pos_weight])
 def test_grad_return_ids_pos_weight_pynative(func):

@@ -40,12 +40,6 @@ inline PyObject *PyObject_Vectorcall(PyObject *func, PyObject *const *stack, Py_
 #endif
 
 #if IS_PYTHON_3_11_PLUS
-using EvalFrameObject = _PyInterpreterFrame;
-#else
-using EvalFrameObject = PyFrameObject;
-#endif  // IS_PYTHON_3_11_PLUS
-
-#if IS_PYTHON_3_11_PLUS
 #define PY_FRAME_EVAL_FUNCTION_SIGNATURE PyThreadState *ts, _PyInterpreterFrame *f, int exc
 #elif IS_PYTHON_3_9_PLUS
 #define PY_FRAME_EVAL_FUNCTION_SIGNATURE PyThreadState *ts, PyFrameObject *f, int exc

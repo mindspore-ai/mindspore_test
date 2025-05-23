@@ -34,35 +34,9 @@ void CommHandlePy::Wait() {
   }
 
   MS_EXCEPTION_IF_NULL(device_ctx_);
-  auto cur_stream_id = device_ctx_->device_res_manager_->GetCurrentStreamId();
   // Wait event async.
   pynative::DispatchOp(
-    std::make_shared<pynative::PassthroughFrontendTask>([cur_stream_id, comm_handle = comm_handle_]() {
-      auto wait_fn = [comm_handle, cur_stream_id]() {
-        runtime::OpExecutor::DispatchLaunchTask([comm_handle, cur_stream_id]() {
-          MS_EXCEPTION_IF_NULL(comm_handle);
-          comm_handle->WaitDeviceEvent(cur_stream_id);
-
-          auto event = comm_handle->event();
-          if (event == nullptr) {
-            return;
-          }
-          auto device_ctx = comm_handle->device_ctx();
-          if (device_ctx != nullptr && device_ctx->initialized()) {
-            device_ctx->device_res_manager_->DestroyEvent(event);
-            MS_LOG(DEBUG) << "DestoryEvent done, event: " << event;
-          }
-        });
-
-        comm_handle->ReleaseMultiStreamEvent(cur_stream_id);
-      };
-      if (!runtime::OpExecutor::NeedSync()) {
-        runtime::OpExecutor::GetInstance().PushSimpleOpRunTask(
-          std::make_shared<runtime::PassthroughNoWaitDeviceTask>(wait_fn));
-      } else {
-        wait_fn();
-      }
-    }));
+    std::make_shared<pynative::PassthroughFrontendTask>([comm_handle = comm_handle_]() { WaitTaskFunc(comm_handle); }));
   comm_handle_ = nullptr;
   MS_LOG(DEBUG) << "release handle after wait";
 }

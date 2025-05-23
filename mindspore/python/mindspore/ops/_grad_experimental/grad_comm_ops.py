@@ -27,7 +27,8 @@ from mindspore.ops.operations._inner_ops import issubclass_
 from mindspore.common.sparse_tensor import RowTensorInner
 from mindspore.ops.composite.multitype_ops.zeros_like_impl import zeros_like
 from mindspore.ops.operations.comm_ops import (AllGather, _MiniStepAllGather, _HostAllGather, AllReduce,
-                                               NeighborExchange, AlltoAll, AlltoAllV, NeighborExchangeV2, Broadcast,
+                                               NeighborExchange, AlltoAll, AlltoAllV, NeighborExchangeV2,
+                                               Broadcast, AllGatherV, ReduceScatterV,
                                                _GetTensorSlice, _MirrorOperator, _MirrorMiniStepOperator, ReduceOp,
                                                ReduceScatter, _HostReduceScatter, _VirtualDiv, _VirtualAdd, _AllSwap,
                                                _VirtualAssignAdd, _VirtualAccuGrad, _MirrorMicroStepOperator,
@@ -646,6 +647,38 @@ def get_bprop_all_to_all_v(self):
     def bprop(x, send_numel_list, recv_numel_list, out, dout):
         dx = all_to_all_v_grad(dout, recv_numel_list, send_numel_list)
         return (dx, zeros_like(send_numel_list), zeros_like(recv_numel_list))
+
+    return bprop
+
+
+@bprop_getters.register(AllGatherV)
+def get_bprop_all_gather_v(self):
+    """Generate bprop for AllGatherV."""
+    all_gather_v_grad = ReduceScatterV(ReduceOp.SUM, self.group)
+    if hasattr(self, "instance_name") and self.instance_name:
+        instance_name = "grad" + self.instance_name
+        all_gather_v_grad.set_prim_instance_name(instance_name)
+
+    def bprop(x, output_split_sizes, out, dout):
+        dx = all_gather_v_grad(dout, output_split_sizes)
+        return (dx, zeros_like(output_split_sizes))
+
+    return bprop
+
+
+@bprop_getters.register(ReduceScatterV)
+def get_bprop_reduce_scatter_v(self):
+    """Generate bprop for ReduceScatterV."""
+    reduce_scatter_v_grad = AllGatherV(self.group)
+    if hasattr(self, "instance_name") and self.instance_name:
+        instance_name = "grad" + self.instance_name
+        reduce_scatter_v_grad.set_prim_instance_name(instance_name)
+    if self.op != ReduceOp.SUM:
+        raise RuntimeError("The reducescatter bprop only support ReduceOp.SUM until now.")
+
+    def bprop(x, input_split_sizes, out, dout):
+        dx = reduce_scatter_v_grad(dout, input_split_sizes)
+        return (dx, zeros_like(input_split_sizes))
 
     return bprop
 

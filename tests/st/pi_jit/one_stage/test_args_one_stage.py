@@ -25,7 +25,6 @@ cfg = {
     "replace_nncell_by_construct": True,
     "print_after_all": False,
     "print_bb": False,
-    "MAX_INLINE_DEPTH": 10,
     "allowed_inline_modules": ["mindspore"],  # buildsubgraph
 }
 
@@ -732,7 +731,6 @@ def test_parser_key_value4(func):
     func()
 
 
-@pytest.mark.skip(reason="unimplement CFunction error occurs")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('func', [parser_args_var_mixed_002])
 def test_parser_key_value5(func):

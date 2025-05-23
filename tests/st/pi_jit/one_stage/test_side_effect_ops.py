@@ -25,7 +25,7 @@ import mindspore as ms
 from mindspore import context
 from mindspore import Tensor
 from mindspore import ops
-from mindspore.common.api import jit
+from mindspore.ops.composite import GradOperation
 from tests.st.pi_jit.share.utils import assert_no_graph_break
 from tests.st.pi_jit.share.utils import pi_jit_with_config
 
@@ -64,6 +64,11 @@ def check_output(output, patterns):
     for pattern in patterns:
         index = output.find(pattern, index)
         assert index != -1, "Unexpected output:\n" + output + "\n--- pattern ---\n" + pattern
+
+
+def count_output(output, target, num):
+    assert output, "Capture output failed!"
+    assert output.count(target) == num
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -273,3 +278,42 @@ def test_print_in_sub_graph_with_no_return():
                 'inner result1: ',  'Tensor(shape=[], dtype=Int32, value=3)',
                 'inner result2: ',  'Tensor(shape=[], dtype=Int32, value=4)']
     check_output(cap.output, patterns)
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_base_grad_operation_with_side_effect():
+    """
+    Feature: One stage GradOperation
+    Description: Test One stage GradOperation with no graph break
+    Expectation: No exception.
+    """
+
+    class Net(nn.Cell):
+        def construct(self, x, y):
+            ret = x + y
+            print("x + y: ", ret)
+            return ret
+
+    class GradNet(nn.Cell):
+        def __init__(self, net, ):
+            super(GradNet, self).__init__()
+            self.net = net
+            self.grad_op = GradOperation(False, False, False)
+
+        @pi_jit_with_config(jit_config={"compile_with_try": False})
+        def construct(self, x, y):
+            grad_ret = self.grad_op(self.net)(x, y)
+            return grad_ret
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    cap = Capture()
+    with capture(cap):
+        net = Net()
+        grad_net = GradNet(net)
+        a = Tensor([1])
+        b = Tensor([2,])
+        grad_net(a, b)
+        sys.stdout.flush()
+        time.sleep(2.0)
+
+    count_output(cap.output, "x + y", 1)

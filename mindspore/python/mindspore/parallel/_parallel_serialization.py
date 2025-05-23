@@ -278,7 +278,7 @@ def _extract_pipeline_stage_num(strategy_file):
             pipeline_stage_set.update(layout[6])
         pipeline_stage_num = len(pipeline_stage_set)
         if list(pipeline_stage_set) != list(range(pipeline_stage_num)):
-            raise ValueError("The strategy file for pipeline parallel dose not contains all stages.")
+            raise ValueError("The strategy file for pipeline parallel does not contains all stages.")
     return pipeline_stage_num
 
 

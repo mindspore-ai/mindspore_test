@@ -101,7 +101,7 @@ std::string DeviceAddress::PrintInfo() const {
     ofs << " " << address_common_->PrintInfo();
   }
   ofs << " device address deleter:" << (deleter_ != nullptr) << " flag:" << flag_
-      << " need sync user data:" << need_sync_user_data_ << " is view:" << is_view_;
+      << " need sync user data:" << need_sync_user_data_ << " user data:" << user_data_ << " is view:" << is_view_;
   return ofs.str();
 }
 
@@ -248,10 +248,6 @@ KernelWithIndex DeviceAddress::GetNodeIndex() const {
   return node_index_.first.expired() ? KernelWithIndex{nullptr, node_index_.second}
                                      : KernelWithIndex{node_index_.first.lock(), node_index_.second};
 }
-
-size_t DeviceAddress::IncreaseCounter() { return address_common_->pointer_ref_count_->IncreaseCounter(); }
-
-size_t DeviceAddress::DecreaseCounter() { return address_common_->pointer_ref_count_->DecreaseCounter(); }
 
 void DeviceAddress::IncreaseNewRefCount(const std::string &op_name, size_t i) {
   address_common_->pointer_ref_count_->IncreaseNewRefCount(i);

@@ -22,7 +22,7 @@
 
 namespace mindspore::pipeline {
 // Enforce order of execution of the given graph.
-void ME_EXPORT OrderEnforce(const FuncGraphPtr &func_graph);
+void FRONTEND_EXPORT OrderEnforce(const FuncGraphPtr &func_graph);
 }  // namespace mindspore::pipeline
 
 #endif  // MINDSPORE_CCSRC_PIPELINE_JIT_ORDER_ENFORCE_H_

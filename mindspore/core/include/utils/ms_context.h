@@ -25,7 +25,6 @@
 #include <mutex>
 #include <vector>
 #include <optional>
-#include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
 #include "utils/device_manager_conf.h"
 
@@ -53,9 +52,10 @@ enum JitSyntaxLevel : int {
 };
 
 enum JitStatus : int {
-  kNotJit,        // Not Jit.
-  kJitCompiling,  // Jit Compiling.
-  kJitRunning,    // Jit Running.
+  kNotJit,          // Not Jit.
+  kJitCompiling,    // Jit Compiling.
+  kGraphCompiling,  // JIt Compiling with graph mode.
+  kJitRunning,      // Jit Running.
 };
 
 enum DebugLevel : int {
@@ -144,6 +144,8 @@ enum MsCtxParam : unsigned {
   MS_CTX_ENABLE_FUSED_CAST_ADD_OPT,
   MS_CTX_NEED_CKPT,
   MS_CTX_ENABLE_OFFLOADING_PACKED_EXPERTS,
+  // Used for flatten weight, remove after the feature is abort.
+  MS_ENV_FLATTEN_WEIGHT,
   MS_CTX_TYPE_BOOL_END,
 
   // parameter of type int

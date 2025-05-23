@@ -33,24 +33,17 @@ namespace pyboost {
 namespace {
 size_t Rank(const TensorPtr &x) { return x->shape_c().size(); }
 
-ValueTuplePtr ShapeVectorToValueTuple(ShapeVector shape_vector) {
-  std::vector<ValuePtr> shape_out_vector;
-  std::transform(shape_vector.begin(), shape_vector.end(), std::back_inserter(shape_out_vector),
-                 [](int64_t x) { return MakeValue(x); });
-  return std::make_shared<ValueTuple>(std::move(shape_out_vector));
-}
-
 TensorPtr Expand(TensorPtr tensor, size_t ndim, const DeviceContext *device_context) {
   auto reshape = CREATE_PYBOOST_OP(Reshape, device_context->device_context_key_.device_name_);
   ShapeVector shape = tensor->shape();
   while (shape.size() < ndim) {
     shape.insert(shape.begin(), 1);
   }
-  tensor = reshape->Call(tensor, ShapeVectorToValueTuple(shape));
+  tensor = reshape->Call(tensor, shape);
   return tensor;
 }
 
-ValueTuplePtr ReduceTo3D(const ShapeVector &shape) {
+std::vector<int64_t> ReduceTo3D(const ShapeVector &shape) {
   ShapeVector ret;
   int64_t dim0 = 1;
   for (size_t i = 0; i < shape.size() - kDim2; ++i) {
@@ -59,7 +52,7 @@ ValueTuplePtr ReduceTo3D(const ShapeVector &shape) {
   ret.push_back(dim0);
   ret.push_back(shape[shape.size() - kDim2]);
   ret.push_back(shape[shape.size() - kDim1]);
-  return ShapeVectorToValueTuple(ret);
+  return ret;
 }
 }  // namespace
 void MatMulExtGPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
@@ -115,8 +108,8 @@ void MatMulExtGPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr 
       for (size_t i = 0; i < shape1_orig.size() - 1; ++i) {
         new_shape_dim0 *= shape1_orig[i];
       }
-      std::vector<ValuePtr> new_shape_vector = {MakeValue(new_shape_dim0), MakeValue(shape1_orig.back())};
-      input = contiguous_1->Call(reshape_1->Call(input, std::make_shared<ValueTuple>(new_shape_vector)));
+      std::vector<int64_t> new_shape_vector = {new_shape_dim0, shape1_orig.back()};
+      input = contiguous_1->Call(reshape_1->Call(input, new_shape_vector));
     }
     res = matmul->Call(input, other, std::make_shared<BoolImm>(false), std::make_shared<BoolImm>(transpose_b));
   } else {
@@ -132,21 +125,21 @@ void MatMulExtGPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr 
 
     if (shape_cur1 != shape_backbone) {
       auto broadcast_to = CREATE_PYBOOST_OP(BroadcastTo, device_context->device_context_key_.device_name_);
-      input = contiguous_5->Call(broadcast_to->Call(
-        input, ShapeVectorToValueTuple(ops::GetMatMulExtBroadcastShape(shape_backbone, shape1_orig))));
+      input =
+        contiguous_5->Call(broadcast_to->Call(input, ops::GetMatMulExtBroadcastShape(shape_backbone, shape1_orig)));
     }
 
     if (shape_cur2 != shape_backbone) {
       auto broadcast_to = CREATE_PYBOOST_OP(BroadcastTo, device_context->device_context_key_.device_name_);
-      other = contiguous_6->Call(broadcast_to->Call(
-        other, ShapeVectorToValueTuple(ops::GetMatMulExtBroadcastShape(shape_backbone, shape2_orig))));
+      other =
+        contiguous_6->Call(broadcast_to->Call(other, ops::GetMatMulExtBroadcastShape(shape_backbone, shape2_orig)));
     }
     input = contiguous_3->Call(reshape_3->Call(input, ReduceTo3D(input->shape())));
     other = contiguous_4->Call(reshape_4->Call(other, ReduceTo3D(other->shape())));
 
     res = batch_matmul->Call(input, other, std::make_shared<BoolImm>(false), std::make_shared<BoolImm>(transpose_b));
   }
-  contiguous_2->Call(reshape_2->Call(res, ShapeVectorToValueTuple(shape_out)));
+  contiguous_2->Call(reshape_2->Call(res, shape_out));
   op->set_outputs(contiguous_2->outputs());
   MS_LOG(DEBUG) << "Launch end"
                 << "nD";

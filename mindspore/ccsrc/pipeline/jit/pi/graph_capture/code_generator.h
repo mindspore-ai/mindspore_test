@@ -48,9 +48,19 @@ struct GraphInputInfo {
   ValueNode *vargs = nullptr;
   ValueNode *kwargs = nullptr;
 };
+using InstructionList = std::vector<std::unique_ptr<Instr>>;
 
 class CodeGenerator {
  public:
+  struct ExceptionCodeItem {
+    // [begin, end]
+    Instr *begin_;
+    Instr *end_;
+    Instr *jump_;
+    int stack_;
+    bool lasti_;
+  };
+
   struct Code {
     int co_argcount;
     int co_kwonlyargcount;
@@ -63,18 +73,26 @@ class CodeGenerator {
     std::vector<std::string> co_freevars;
     std::string co_name;
     py::object co_filename;
-    py::object co_qualname;
-    py::object co_exceptiontable;
+    std::string co_qualname;
+    std::vector<ExceptionCodeItem> co_exceptiontable;
   };
 
-  explicit CodeGenerator(const NodeSet *nodes)
-      : nodes_(nodes), globals_(), code_(), nodes_alive_(), locals_map_(), missing_value_to_undefine_(false) {}
+  explicit CodeGenerator(const NodeSet *nodes, bool vm_mode = false)
+      : nodes_(nodes),
+        globals_(),
+        code_(),
+        nodes_alive_(),
+        locals_map_(),
+        missing_value_to_undefine_(false),
+        vm_mode_(vm_mode) {}
+  explicit CodeGenerator(Code &&ccode) : code_(std::move(ccode)) {}
 
   void set_missing_value_to_undefine(bool v) { missing_value_to_undefine_ = v; }
 
   void SetGlobals(const py::dict &dict) { globals_ = dict; }
   const py::dict &GetGlobals() const { return globals_; }
   const std::unordered_map<ValueNode *, int> &GetLocalsMap() const { return locals_map_; }
+  std::unordered_map<ValueNode *, int> &GetLocalsMap() { return locals_map_; }
   const Code &GetCode() const { return code_; }
   void SetArgsInfo(int argcount, int kwonlyargcount) {
     code_.co_argcount = argcount;
@@ -87,20 +105,22 @@ class CodeGenerator {
   void SetCellVariableNames(const std::vector<std::string> &names) { code_.co_cellvars = names; }
   void SetFreeVariableNames(const std::vector<std::string> &names) { code_.co_freevars = names; }
   void SetCodeName(const std::string &name) { code_.co_name = name; }
+  void SetQualName(const std::string &qualname) { code_.co_qualname = qualname; }
   void SetFileName(const py::object &file) { code_.co_filename = file; }
-  void SetQualName(const py::object &qualname) { code_.co_qualname = qualname; }
-  void SetExceptionTable(const py::object &exceptiontable) { code_.co_exceptiontable = exceptiontable; }
 
   void ClearAlive(ValueNode *node) { nodes_alive_.erase(node); }
   void ClearAlive() { nodes_alive_.clear(); }
   void MarkAlive(ValueNode *node) { MarkAlive(node, INT_MAX); }
   void MarkAlive();
   // make the node same as other node, use same local index, if the node not in locals, try to load it
-  void MakeSameLocal(ValueNode *new_node, ValueNode *old_node);
+  void MakeSameLocal(ValueNode *new_node, ValueNode *old_node, bool clear = false);
   void NewInstr(int op, int arg = 0, int line = -1);
   void AddInstrs(std::vector<std::unique_ptr<Instr>> &&list);
+  void AddInstructionWithExceptionTable(const CFG *cfg, int start, int end);
+  void CollectExceptionTableItem(const CFG *cfg, int start, int end);
   void AddInstr(std::unique_ptr<Instr> &&instr);
-  void EraseUnusedInstr();
+  void AddCallInstr(size_t load_args_offset, int oparg);
+  py::object NewCode();
 
   // initialize local map of parameters
   void Init();
@@ -121,33 +141,6 @@ class CodeGenerator {
 
   // add node to locals map
   int AllocLocal(ValueNode *node, int index = INT_MAX);
-
-  /**
-   * Transform code info to PyCodeObject
-   *
-   * \param ccode code info
-   * \return PyCodeObject
-   */
-  static py::object Transform(const Code &ccode);
-
-  /**
-   * Calculate max stack size
-   *
-   * \param list instruct nodes list
-   * \param sp start of stack depth
-   * \return max depth of stack, or -1 if stack out of bound
-   */
-  static int CalculateStackSize(const std::vector<std::unique_ptr<Instr>> &list, int sp = 0);
-
-  /**
-   * Convert instruction list to bytes object. generate line table.
-   *
-   * \param list instruct nodes list
-   * \param first_line first line
-   * \return first is co_code, second is co_lnotab
-   */
-  static std::pair<py::bytes, py::bytes> ConvertToCodeBytes(const std::vector<std::unique_ptr<Instr>> &list,
-                                                            int first_line);
 
   /**
    * Copy instruction list at range [start, end).
@@ -180,19 +173,25 @@ class CodeGenerator {
     const std::vector<std::unique_ptr<Instr>> &replacement);
 
   /**
-   * Erase unused instr
-   *
-   * \param list instruction list
-   */
-  static void EraseUnusedInstr(std::vector<std::unique_ptr<Instr>> *list);
-
-  /**
    * generate rot instructions
    */
   static std::vector<std::unique_ptr<Instr>> RotStack(int stack);
 
  private:
   void MarkAlive(ValueNode *node, int order);
+  void EraseUnusedInstr();
+  void ResetExceptionCodeItem(InstructionList::const_iterator erased);
+
+  static py::object Transform(const Code &ccode);
+  static std::pair<py::bytes, py::bytes> ConvertToCodeBytes(const Code &ccode);
+  static int CalculateStackSize(const Code &ccode, int sp = 0);
+
+  // python3.11+ only
+  std::vector<std::unique_ptr<Instr>> ByteCodePrefix() const;
+  void FixOffset();
+  void FixLocalOffset(int invalid_index);
+  void FixFreeOffset(const std::vector<std::string> &other_closure_names);
+  static int ExceptionStackRequired(const Code &ccode);
 
   const NodeSet *nodes_;
   py::dict globals_;
@@ -200,6 +199,7 @@ class CodeGenerator {
   std::unordered_map<ValueNode *, int> nodes_alive_;
   std::unordered_map<ValueNode *, int> locals_map_;
   bool missing_value_to_undefine_;
+  bool vm_mode_;
 };
 
 class LoopBodyReCaptureCodeGenerator {
@@ -260,6 +260,10 @@ class CodeBreakGenerator {
  private:
   const CFG *GetCFG() const { return cfg_; }
 
+  // for python3.11+ copy origin instruction need pop the null pointer (which is only consume by call instruction)
+  // from stack. here generate code from node avoid pop null
+  bool IsCopyCapturedInstructions() const { return !IS_PYTHON_3_11_PLUS && no_graph_ && !NeedHandleBreakAtCall(); }
+
   void ExtendCodeInfo(CodeGenerator *cg, bool merge_kw_only) const;
 
   // rebuild parameters of graph, identify parameters that graph only support as constant
@@ -278,7 +282,7 @@ class CodeBreakGenerator {
   void HandleOutputOpt(CodeGenerator *code_gen);
 
   // make function of untracked bytecode, build restore frame operations of untracked bytecode
-  py::object MakeUntrackedCode(int untracked_bci, int untracked_stack_effect) const;
+  py::object MakeUntrackedCode(int untracked_bci, int untracked_stack_effect, int *argc) const;
 
   void ReconstructStack(CodeGenerator *code_gen, int untracked_bci, int untracked_stack_effect) const;
 
@@ -296,6 +300,10 @@ class CodeBreakGenerator {
   // generate specialize code if break point is call
   void BreakAtCall(CodeGenerator *code_gen) const;
   bool NeedHandleBreakAtCall() const;
+  // Similar to BreakAtIf(), but it breaks at conditional-statement of a callee function (or we say a subgraph).
+  void BreakAtCalleeIfCondition(CodeGenerator *code_gen) const;
+  py::object MakeUntrackedCodeForNestedCalls(const std::vector<Graph *> &call_stack, int top_argc, int untracked_bci,
+                                             int stack_effect) const;
 
   void RestoreStack(CodeGenerator *code_gen) const;
 
@@ -334,12 +342,8 @@ class CodeBreakGenerator {
   // used to record the value nodes and the nodes that replaced them
   std::map<ValueNode *, ValueNode *> replaced_nodes_;
 
-  GraphInputInfo graph_inputs_info_;
-
   // break bci alive locals
   std::vector<int> alive_locals_;
-
-  std::shared_ptr<SideEffect> side_effect_handler_;
 
   // break bci
   int break_bci_;

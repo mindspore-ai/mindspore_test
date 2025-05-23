@@ -19,7 +19,6 @@ from tests.mark_utils import arg_mark
 import mindspore as ms
 import mindspore.nn as nn
 from mindspore import Tensor
-from mindspore.common.api import _pynative_executor
 
 
 class Net(nn.Cell):
@@ -51,11 +50,7 @@ def test_tensor_remainder_pyboost(mode):
     ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     net1 = Net1()
     x = Tensor(np.array([-3, -2, -1, 1, 2, 3]), ms.float32)
-    if ms.get_context('device_target') != 'Ascend' and ms.get_context('mode') == ms.GRAPH_MODE:
-        with pytest.raises(RuntimeError):
-            net1(x, -1.5)
-            _pynative_executor.sync()
-        return
+    net1(x, -1.5)
     net = Net()
     output = net(x, -1.5)
     expect_output1 = [0, -0.5, -1, -0.5, -1, 0]

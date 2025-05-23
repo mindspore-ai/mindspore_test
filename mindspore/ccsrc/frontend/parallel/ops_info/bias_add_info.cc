@@ -136,10 +136,10 @@ Status BiasAddInfo::CheckInputLayout() {
   if (in_layout0.device_arrangement_origin().array() != in_layout1.device_arrangement_origin().array()) {
     if (is_in_layout_propagation_) {
       MS_LOG(INFO) << "The device_matrix of input0 " << in_layout0.device_arrangement_origin().array()
-                   << " dose not equal to device_matrix of input1 " << in_layout1.device_arrangement_origin().array();
+                   << " does not equal to device_matrix of input1 " << in_layout1.device_arrangement_origin().array();
     } else {
       MS_LOG(ERROR) << "The device_matrix of input0 " << in_layout0.device_arrangement_origin().array()
-                    << " dose not equal to device_matrix of input1 " << in_layout1.device_arrangement_origin().array();
+                    << " does not equal to device_matrix of input1 " << in_layout1.device_arrangement_origin().array();
     }
     return FAILED;
   }

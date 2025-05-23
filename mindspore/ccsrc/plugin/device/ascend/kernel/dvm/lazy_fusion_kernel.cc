@@ -26,6 +26,7 @@ namespace kernel {
 namespace {
 void *WsAllocCallback(uint64_t size, void *user_data) {
   auto kernel = static_cast<LazyFusionKernelAscend *>(user_data);
+  MS_LOG(INFO) << "Alloc workspace for dvm kernel, kernel id is " << kernel->id() << " " << kernel << " size: " << size;
   return kernel->AllocWorkspace(size);
 }
 }  // namespace
@@ -178,7 +179,7 @@ bool LazyFusionKernelAscend::HasTensor(const TensorPtr &x) const {
 }
 
 void LazyFusionKernelAscend::Launch() {
-  MS_LOG(INFO) << "Run launch task dvm kernel start, kernel id is " << id();
+  MS_LOG(INFO) << "Run launch task dvm kernel start, kernel id is " << id() << " " << this;
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kPyNativeLaunchTask,
                                      "FlushEager", false);
   device_context_->device_res_manager_->BindDeviceToCurrentThread(false);
@@ -189,7 +190,7 @@ void LazyFusionKernelAscend::Launch() {
     EagerLaunch(stream_ptr);
   }
   if (LazyFusionFlags::GetInstance().synchronize && !device::ascend::AscendStreamMng::GetInstance().SyncAllStreams()) {
-    MS_LOG(EXCEPTION) << "SyncStream failed for dvm kernel";
+    MS_LOG(EXCEPTION) << "SyncStream failed for dvm kernel, kernel id is " << id() << " " << this;
   }
   if (!cross_stream_addrs_.empty()) {
     auto &ms = device::HalResManager::GetInstance().GetMultiStreamController(device_context_->DeviceName());
@@ -199,7 +200,7 @@ void LazyFusionKernelAscend::Launch() {
     cross_stream_addrs_.clear();
   }
   ClearKernel();
-  MS_LOG(INFO) << "Run launch task dvm kernel end, kernel id is " << id();
+  MS_LOG(INFO) << "Run launch task dvm kernel end, kernel id is " << id() << " " << this;
 }
 
 void LazyFusionKernelAscend::Flush() {
@@ -209,7 +210,7 @@ void LazyFusionKernelAscend::Flush() {
   }
   // Async
   auto task = std::make_shared<runtime::PyBoostDeviceTask>([this]() {
-    MS_LOG(INFO) << "Run device task dvm kernel start, kernel id is " << id();
+    MS_LOG(INFO) << "Run device task dvm kernel start, kernel id is " << id() << " " << this;
     {
       runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kPyBoostDeviceTask,
                                          "MallocIO", false);
@@ -241,7 +242,7 @@ void LazyFusionKernelAscend::Flush() {
                                                          memory::mem_pool::MemType::kPyNativeOutput,
                                                          device_address->GetSize(), device_address.get());
           if (!device_context_->device_res_manager_->AllocateMemory(device_address.get())) {
-            MS_LOG(EXCEPTION) << "Allocate memory failed for dvm kernel output";
+            MS_LOG(EXCEPTION) << "Allocate memory failed for dvm kernel output, kernel id is " << id() << " " << this;
           }
         }
         auto storage_info = device_address->GetTensorStorageInfo();
@@ -253,7 +254,8 @@ void LazyFusionKernelAscend::Flush() {
         has_store = true;
       }
       if (!has_store) {
-        MS_LOG(INFO) << "Skip launch task dvm kernel, kernel id is " << id();
+        MS_LOG(INFO) << "Skip launch task dvm kernel, kernel id is " << id() << " " << this
+                     << " output size: " << outputs_.size();
         Clear();
         return;
       }
@@ -282,7 +284,7 @@ void LazyFusionKernelAscend::Flush() {
       ClearGraph();
       runtime::OpExecutor::DispatchLaunchTask([this]() { Launch(); });
     }
-    MS_LOG(INFO) << "Run device task dvm kernel end, kernel id is " << id();
+    MS_LOG(INFO) << "Run device task dvm kernel end, kernel id is " << id() << " " << this;
   });
   runtime::ProfilerAnalyzer::GetInstance().RecordFlowData(task->task_id());
   runtime::Pipeline::Get().backend_stage()->runtime::AsyncRQueue::Push(task);  // No flush here

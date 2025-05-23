@@ -138,15 +138,6 @@ void AddDataArrows(const ActorSet *actor_set, const KernelActor *kernel_actor, K
     } else {
       SchedulerHelper::AddDataArrow(from_actor, kernel_infer_actor, data_arrow->from_output_index_,
                                     data_arrow->to_input_index_);
-      if (from_actor->type() == KernelTransformType::kCopyActor) {
-        auto *copy_actor = dynamic_cast<CopyActor *>(from_actor);
-        MS_EXCEPTION_IF_NULL(copy_actor);
-        MS_EXCEPTION_IF_NULL(copy_actor->output());
-        const auto &device_tensor = copy_actor->output()->device_address();
-        MS_EXCEPTION_IF_NULL(device_tensor);
-        UpdateRefCount(device_tensor.get(), false);
-        UpdateRefCount(device_tensor.get(), false);
-      }
       SchedulerHelper::AddDataArrow(from_actor, kernel_resize_actor, data_arrow->from_output_index_,
                                     data_arrow->to_input_index_);
     }

@@ -29,14 +29,16 @@ namespace batch_norm_grad_ext {
 
 void BatchNormGradExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                               const std::vector<KernelTensor *> &outputs) {
-  auto training = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex7]);
-  auto eps = static_cast<double>(device::ascend::ConvertKernelTensor<float>(inputs[kIndex8]));
-  const auto &output_mask_vec = device::ascend::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex9]);
+  training_ = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex7]);
+  eps_ = static_cast<double>(device::ascend::ConvertKernelTensor<float>(inputs[kIndex8]));
+
   output_mask_.clear();
+  const auto &output_mask_vec = device::ascend::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex9]);
   std::transform(output_mask_vec.begin(), output_mask_vec.end(), std::back_inserter(output_mask_),
                  [](const int64_t &value) { return static_cast<uint8_t>(value); });
+
   GetWorkspaceForResize(inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], inputs[kIndex3], inputs[kIndex4],
-                        inputs[kIndex5], inputs[kIndex6], training, eps, output_mask_, outputs[kIndex0],
+                        inputs[kIndex5], inputs[kIndex6], training_, eps_, output_mask_, outputs[kIndex0],
                         outputs[kIndex1], outputs[kIndex2]);
 }
 
@@ -44,10 +46,8 @@ bool BatchNormGradExtAscend::Launch(const std::vector<KernelTensor *> &inputs,
                                     const std::vector<KernelTensor *> &workspace,
                                     const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
-  auto training = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex7]);
-  auto eps = static_cast<double>(device::ascend::ConvertKernelTensor<float>(inputs[kIndex8]));
   RunOp(stream_ptr, workspace, inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], inputs[kIndex3], inputs[kIndex4],
-        inputs[kIndex5], inputs[kIndex6], training, eps, output_mask_, outputs[kIndex0], outputs[kIndex1],
+        inputs[kIndex5], inputs[kIndex6], training_, eps_, output_mask_, outputs[kIndex0], outputs[kIndex1],
         outputs[kIndex2]);
   return true;
 }

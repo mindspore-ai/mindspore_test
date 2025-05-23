@@ -19,7 +19,7 @@
 #include <memory>
 #include <vector>
 #include "pybind11/pybind11.h"
-#include "pipeline/jit/pi/python_adapter/pydef.h"
+#include "pipeline/jit/pi/python_adapter/py_frame.h"
 
 namespace mindspore {
 namespace pijit {
@@ -27,7 +27,7 @@ namespace pijit {
 /// \brief shape context
 class ShapeContext {
  public:
-  ShapeContext(EvalFrameObject *f, PyObject *signature);
+  ShapeContext(PyFrameWrapper f, const py::object &signature);
   virtual ~ShapeContext();
 
   virtual bool CheckValid();
@@ -35,7 +35,7 @@ class ShapeContext {
   virtual void RevertSignature();
 
  protected:
-  EvalFrameObject *frame_;
+  PyFrameWrapper frame_;
   PyObject *signature_;
   std::vector<PyObject *> origin_;
   bool is_method_;

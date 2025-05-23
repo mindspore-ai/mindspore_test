@@ -23,8 +23,6 @@
 #include <vector>
 #include <list>
 #include <mutex>
-#include "utils/hash_map.h"
-#include "utils/convert_utils_base.h"
 #include "include/backend/visible.h"
 #include "distributed/embedding_cache/cache_strategy/cache.h"
 

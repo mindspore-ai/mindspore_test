@@ -334,7 +334,7 @@ std::vector<MSTensor> LiteRTGraphExecutor::GetLiteSessionOutputs() {
     return empty;
   }
   if (names.size() != outputs.size()) {
-    MS_LOG(ERROR) << "The size of outputs dose not match the size of names.";
+    MS_LOG(ERROR) << "The size of outputs does not match the size of names.";
     return empty;
   }
   res.resize(names.size());

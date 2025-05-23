@@ -37,6 +37,13 @@ class FunctionsHeaderGenerator(BaseGenerator):
         """
         self.FUNCTIONS_H_TEMPLATE = template.FUNCTIONS_H_TEMPLATE
         self.function_interface_template = Template("${return_type} BACKEND_EXPORT ${op_name}(${input_args});")
+        self.function_interface_template_comm = Template(
+            "${return_type} BACKEND_EXPORT ${op_name}_inner(${input_args}," \
+            "CommHandlePtr comm_handle, const std::string& target);"
+        )
+        self.function_interface_template_comm_return_handle = Template(
+            "${return_type_with_handle} BACKEND_EXPORT ${op_name}(${input_args});"
+        )
 
     def generate(self, work_path, op_protos):
         """
@@ -48,14 +55,30 @@ class FunctionsHeaderGenerator(BaseGenerator):
         """
         functions_list = []
         for op_proto in op_protos:
-            if op_proto.op_dispatch is None or op_proto.op_dispatch.is_comm_op:
+            if op_proto.op_dispatch is None:
                 continue
             input_args_with_type_str = self._get_input_args(op_proto)
             return_type_str = _get_return_type_str(op_proto)
-            functions = self.function_interface_template.replace(op_name=op_proto.op_name,
-                                                                 input_args=input_args_with_type_str,
-                                                                 return_type=return_type_str)
+            function_template = (
+                self.function_interface_template
+                if not op_proto.op_dispatch.is_comm_op
+                else self.function_interface_template_comm
+            )
+            functions = function_template.replace(op_name=op_proto.op_name,
+                                                  input_args=input_args_with_type_str,
+                                                  return_type=return_type_str)
             functions_list.append(functions)
+            if op_proto.op_dispatch.is_comm_op:
+                return_type_with_handle = _get_return_type_with_handle_str(return_type_str)
+                functions_with_handle = (
+                    self.function_interface_template_comm_return_handle.replace(
+                        op_name=op_proto.op_name,
+                        input_args=input_args_with_type_str,
+                        return_type=return_type_str,
+                        return_type_with_handle=return_type_with_handle,
+                    )
+                )
+                functions_list.append(functions_with_handle)
         pyboost_func_h_str = self.FUNCTIONS_H_TEMPLATE.replace(op_call_with_grad=functions_list)
         save_path = os.path.join(work_path, K.MS_PYBOOST_FUNCTIONS_AUTO_GEN_PATH)
         file_name = "functions.h"
@@ -73,7 +96,7 @@ class FunctionsHeaderGenerator(BaseGenerator):
         """
         args_list = []
         for op_arg in op_proto.op_args:
-            input_dtype = get_input_dtype(op_arg.arg_dtype, is_optional_param(op_arg))
+            input_dtype = get_input_dtype(op_arg.arg_dtype, is_optional_param(op_arg), op_proto.op_view)
             args_list.append("const " + input_dtype + " &" + op_arg.arg_name)
         return args_list
 
@@ -89,6 +112,7 @@ class FunctionsGenerator(BaseGenerator):
         """
         self.FUNCTIONS_CC_TEMPLATE = template.FUNCTIONS_CC_TEMPLATE
         self.FUNCTION_BODY_TEMPLATE = template.FUNCTION_BODY_TEMPLATE
+        self.FUNCTION_COMM_BODY_TEMPLATE = template.FUNCTION_COMM_BODY_TEMPLATE
         self.pyboost_func_include_header_template = Template(
             f'#include "{K.MS_PYBOOST_BASE_PATH}/auto_generate/${{operator_name}}.h"\n'
         )
@@ -108,7 +132,7 @@ class FunctionsGenerator(BaseGenerator):
         op_call_with_grad_list = []
         ops_inc_head_set = set()
         for op_proto in op_protos:
-            if op_proto.op_dispatch is None or op_proto.op_dispatch.is_comm_op:
+            if op_proto.op_dispatch is None:
                 continue
             func_include_headers_list.append(
                 self.pyboost_func_include_header_template.replace(operator_name=op_proto.op_name))
@@ -137,6 +161,16 @@ class FunctionsGenerator(BaseGenerator):
         inplace_clone_args = self._get_clone_input_args(op_proto, False, False)
         clone_func_str = self._get_clone_inplace_str(op_proto.op_inplace, op_proto.op_class.name, inplace_clone_args)
         return_type_str = _get_return_type_str(op_proto)
+        if op_proto.op_dispatch.is_comm_op:
+            return_type_with_handle = _get_return_type_with_handle_str(return_type_str)
+            comm_body = self.FUNCTION_COMM_BODY_TEMPLATE.replace(op_name=op_proto.op_name,
+                                                                 class_name=op_proto.op_class.name,
+                                                                 input_args=input_args,
+                                                                 clone_func=clone_func_str,
+                                                                 input_args_with_type=input_args_with_type,
+                                                                 return_type=return_type_str,
+                                                                 return_type_with_handle=return_type_with_handle)
+            return comm_body
         return self.FUNCTION_BODY_TEMPLATE.replace(op_name=op_proto.op_name,
                                                    class_name=op_proto.op_class.name,
                                                    input_args=input_args,
@@ -157,7 +191,7 @@ class FunctionsGenerator(BaseGenerator):
         """
         args_list = []
         for op_arg in op_proto.op_args:
-            input_dtype = get_input_dtype(op_arg.arg_dtype, is_optional_param(op_arg))
+            input_dtype = get_input_dtype(op_arg.arg_dtype, is_optional_param(op_arg), op_proto.op_view)
             if has_type:
                 args_list.append("const " + input_dtype + " &" + op_arg.arg_name)
             else:
@@ -194,7 +228,7 @@ class FunctionsGenerator(BaseGenerator):
         """
         args_list = []
         for op_arg in op_proto.op_args:
-            input_dtype = get_input_dtype(op_arg.arg_dtype, is_optional_param(op_arg))
+            input_dtype = get_input_dtype(op_arg.arg_dtype, is_optional_param(op_arg), op_proto.op_view)
             if has_type:
                 args_list.append(f"const {input_dtype} &{op_arg.arg_name}")
             else:
@@ -204,6 +238,8 @@ class FunctionsGenerator(BaseGenerator):
                     args_list.append(f"{op_arg.arg_name}")
         return args_list
 
+def _get_return_type_with_handle_str(return_type_str):
+    return f"std::tuple<{return_type_str}, CommHandlePtr>"
 
 def _get_return_type_str(op_proto):
     """

@@ -32,10 +32,7 @@ void FlattenExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const Tensor
   MS_LOG(DEBUG) << op->primitive()->name() << " Call start";
   OpRunner::InferOpOutput(op, input_x_tensor, start_dim, end_dim);
   const ShapeVector &output_shape = op->output_value_simple_info()->shape_vector_[0];
-  std::vector<ValuePtr> out_shape;
-  std::transform(output_shape.begin(), output_shape.end(), std::back_inserter(out_shape),
-                 [](int64_t x) { return MakeValue(x); });
-  auto new_shape = std::make_shared<ValueTuple>(out_shape);
+  auto new_shape = output_shape;
   auto reshape_op = CREATE_PYBOOST_OP(Reshape, op->device_context()->device_context_key_.device_name_);
   reshape_op->Call(input_x_tensor, new_shape);
   op->set_outputs(reshape_op->outputs());

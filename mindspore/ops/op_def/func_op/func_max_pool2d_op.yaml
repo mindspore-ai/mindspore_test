@@ -1,0 +1,41 @@
+#operator func_max_pool2d
+func_max_pool2d:
+    args:
+        input:
+            dtype: tensor
+        kernel_size:
+            dtype: tuple[int]
+            arg_handler: to_kernel_size
+        stride:
+            dtype: tuple[int]
+            default: None
+            arg_handler: to_strides
+        padding:
+            dtype: tuple[int]
+            default: 0
+            arg_handler: to_output_padding
+        dilation:
+            dtype: tuple[int]
+            default: (1, 1)
+            arg_handler: to_dilations
+        ceil_mode:
+            dtype: bool
+            default: False
+        return_indices:
+            dtype: bool
+            default: False
+    returns:
+        output:
+            dtype: tensor
+        indices:
+            dtype: tensor
+    function:
+        disable: True
+    bprop_expander: False
+    class:
+        name: FuncMaxPool2D
+    dispatch:
+        enable: True
+        Ascend: FuncMaxPool2DAscend
+        CPU: None
+        GPU: None

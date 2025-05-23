@@ -26,7 +26,6 @@
 #include "plugin/res_manager/gpu/device_context_conf/op_tuning_conf.h"
 #include "plugin/device/gpu/hal/device/kernel_info_setter.h"
 #include "plugin/device/gpu/hal/device/gpu_kernel_build.h"
-#include "plugin/res_manager/gpu/device/gpu_device_synchronizer.h"
 #include "plugin/res_manager/gpu/device/gpu_memory_manager.h"
 #include "plugin/res_manager/gpu/device/gpu_memory_allocator.h"
 #include "plugin/device/gpu/hal/device/gpu_stream_assign.h"
@@ -289,12 +288,10 @@ void GPUKernelExecutor::OptimizeGraphWithDeviceInfo(const KernelGraphPtr &graph)
     pm->AddPass(std::make_shared<opt::InsertFormatTransformOp>());
     pm->AddPass(std::make_shared<opt::RemoveFormatTransformPair>());
     pm->AddPass(std::make_shared<opt::RemoveRedundantFormatTransform>());
-    if (ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) == kGraphMode) {
-      // Remove node only used by UpdateState, in order to ensure the correct execution sequence in
-      // CudnnInplaceAggregate.
-      pm->AddPass(std::make_shared<opt::OptimizeUpdateState>());
-      pm->AddPass(std::make_shared<opt::CudnnInplaceAggregate>());
-    }
+    // Remove node only used by UpdateState, in order to ensure the correct execution sequence in
+    // CudnnInplaceAggregate.
+    pm->AddPass(std::make_shared<opt::OptimizeUpdateState>());
+    pm->AddPass(std::make_shared<opt::CudnnInplaceAggregate>());
   }
 
   pm->AddPass(std::make_shared<opt::AdjustDependForParallelOptimizerRecomputeAllGather>());
@@ -849,8 +846,7 @@ bool GPUKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_ty
   // Sync running.
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  if ((ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) &&
-      runtime::RuntimeConf::GetInstance()->launch_blocking() && !res_manager_->SyncAllStreams()) {
+  if (runtime::RuntimeConf::GetInstance()->launch_blocking() && !res_manager_->SyncAllStreams()) {
     return false;
   }
 

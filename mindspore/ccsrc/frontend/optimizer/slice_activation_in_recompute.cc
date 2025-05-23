@@ -339,7 +339,7 @@ void SliceRecomputedActivationNodes(const FuncGraphPtr &graph) {
         stage_slice_allgathers.push_back(slice_allgather_node);
       } else if (current_micro != -1) {
         MS_LOG_WITH_NODE(EXCEPTION, slice_allgather_node)
-          << "The micro number dose not match the execution orders in pipeline parallel";
+          << "The micro number does not match the execution orders in pipeline parallel";
       }
     }
     MS_LOG(INFO) << "Insert last stage allgather depends, micro is: " << current_micro;

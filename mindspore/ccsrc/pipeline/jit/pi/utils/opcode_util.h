@@ -78,6 +78,7 @@ class Opcode {
   bool MayDelete(int oparg = 0) const;
   bool IsExcMatch(int oparg = 0) const;
   int InstrSize(int oparg = 0) const;
+  const char *BinaryMathString(int arg);
 
   bool HasJump() const { return IsJRel() || IsJAbs(); }
   bool IsCall() const { return class_ == Class::kCall; }
@@ -86,6 +87,10 @@ class Opcode {
   bool IsBuildOp() const { return class_ == Class::kContainerBuild; }
   bool IsCellAccess() const { return class_ == Class::kCell; }
   bool IsLocalAccess() const { return class_ == Class::kLocal; }
+  bool IsCallFunc() const;
+  bool IsConditionJump() const;
+  bool IsBoolConditionJump() const;
+  bool IsNoneConditionJump() const;
 
   // python3.9 explicit IS_OP from COMPARE_OP
   bool CheckIsOp(int oparg, bool *invert = nullptr) const;

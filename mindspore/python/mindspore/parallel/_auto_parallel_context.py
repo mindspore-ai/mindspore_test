@@ -999,8 +999,10 @@ class _AutoParallelContext:
                                                                _PipelineScheduler.PIPELINE_SEQPIPE,
                                                                _PipelineScheduler.PIPELINE_SEQVPP,
                                                                _PipelineScheduler.PIPELINE_SEQSMARTVPP])
-        if not pipeline_config[pp_interleave] and pipeline_config[pp_scheduler] != _PipelineScheduler.PIPELINE_1F1B:
-            raise ValueError(f"When pipeline_interleave is False, {pp_scheduler} is not supported")
+        scheduler_val = pipeline_config[pp_scheduler]
+        if not pipeline_config[pp_interleave] and scheduler_val != _PipelineScheduler.PIPELINE_1F1B:
+            raise TypeError(f"When pipeline_interleave is False, {scheduler_val!r} is not supported, "
+                            "only '1f1b' is allowed.")
 
         self._context_handle.set_pipeline_scheduler(pipeline_config[pp_scheduler])
 

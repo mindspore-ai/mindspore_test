@@ -18,6 +18,7 @@
 #define MINDSPORE_MINDSPORE_CCSRC_KERNEL_PYBOOST_COMM_HANDLE_H_
 
 #include <memory>
+#include <utility>
 #include "include/common/visible.h"
 #include "runtime/hardware/device_context.h"
 #include "ir/device_event.h"
@@ -25,7 +26,7 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-class PYBOOST_API CommHandle {
+class PYBOOST_API CommHandle : public std::enable_shared_from_this<CommHandle> {
  public:
   CommHandle() = default;
   explicit CommHandle(const device::DeviceContext *device_ctx) : device_ctx_(device_ctx) {}
@@ -45,6 +46,8 @@ class PYBOOST_API CommHandle {
 
   const device::DeviceContext *device_ctx() const { return device_ctx_; }
 
+  void Wait();
+
  private:
   DeviceEventPtr event_{nullptr};
   // Transfer between multi-stage pipelines
@@ -55,6 +58,7 @@ class PYBOOST_API CommHandle {
 };
 
 using CommHandlePtr = std::shared_ptr<CommHandle>;
+void PYBOOST_API WaitTaskFunc(CommHandlePtr comm_handle);
 
 }  // namespace pyboost
 }  // namespace kernel

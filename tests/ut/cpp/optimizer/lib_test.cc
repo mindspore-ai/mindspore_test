@@ -32,6 +32,7 @@
 #include "include/common/debug/draw.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "pipeline/jit/ps/parse/data_converter.h"
+#include "pipeline/jit/ps/resource.h"
 #include "include/common/utils/convert_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
@@ -45,9 +46,6 @@ class TestOptLib : public UT::Common {
   void SetUp() override {
     UT::InitPythonPath();
     parse::data_converter::ClearObjectCache();
-    auto ms_context = MsContext::GetInstance();
-    MS_EXCEPTION_IF_NULL(ms_context);
-    ms_context->set_param<int>(MS_CTX_EXECUTION_MODE, kGraphMode);
   }
 
   FuncGraphPtr RunTransform(FuncGraphPtr gbefore, const SubstitutionList &transform) {

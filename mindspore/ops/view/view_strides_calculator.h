@@ -23,7 +23,6 @@
 #include <utility>
 #include "ir/tensor.h"
 #include "utils/hash_map.h"
-#include "ir/value.h"
 #include "mindspore/ops/op_def/op_name.h"
 #include "ir/primitive.h"
 

@@ -207,7 +207,7 @@ bool SelectAkgKernel(const CNodePtr &kernel_node, const std::shared_ptr<KernelBu
     MS_LOG(EXCEPTION) << "Parsed metadata of op[" << op_name << "] failed.";
   }
   if (kernel_info_list.empty()) {
-    MS_LOG(EXCEPTION) << "Akg dose not has metadata of op[" << op_name << "].";
+    MS_LOG(EXCEPTION) << "Akg does not has metadata of op[" << op_name << "].";
   }
 
   bool match = std::any_of(kernel_info_list.begin(), kernel_info_list.end(),
@@ -517,7 +517,7 @@ void FormatTransformChecker::CheckSupportFormatTransform(const std::shared_ptr<s
     format_transform_ = false;
     return;
   }
-  if (ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
+  if (!IsJit()) {
     format_transform_ = false;
     return;
   }

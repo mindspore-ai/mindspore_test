@@ -62,7 +62,6 @@ class ASCEND_RES_MANAGER_EXPORT AscendDeviceAddress : public LoadableDeviceAddre
 
   DeviceAddressPtr CloneDeviceAddress() override;
 
-  DeviceSynchronizerPtr NewDeviceSynchronizer() override;
   bool SyncDeviceToHost(size_t size, void *const host_ptr) const override;
   bool SyncHostToDevice(size_t size, const void *host_ptr) const override;
   bool SyncDeviceToHost(const ShapeVector &shape, size_t size, TypeId type, void *host_ptr,
@@ -72,19 +71,26 @@ class ASCEND_RES_MANAGER_EXPORT AscendDeviceAddress : public LoadableDeviceAddre
   bool SyncHostToDevice(const ShapeVector &shape, size_t size, TypeId type, const std::string &format,
                         const tensor::TensorDataPtr &tensor_data) const override;
 
-  bool AsyncHostToDevice(size_t size, const void *host_ptr) const override;
+  bool AsyncHostToDevice(size_t size, const void *host_ptr, size_t stream_id) const override;
 
-  bool AsyncDeviceToHost(size_t size, void *host_ptr) const override;
+  bool AsyncDeviceToHost(size_t size, void *host_ptr, size_t stream_id) const override;
 
-  bool AsyncDeviceToDevice(const DeviceAddress *src_device_addr) const override;
+  bool AsyncDeviceToDevice(const DeviceAddress *src_device_addr, size_t stream_id) const override;
   bool SyncDeviceToDevice(const ShapeVector &shape, size_t size, TypeId type, const void *src_ptr,
                           const std::string &format) const override;
-  bool AsyncHostToDevice(size_t size, TypeId /* type */, const void *host_ptr) const override;
+  bool AsyncHostToDevice(size_t size, TypeId /* type */, const void *host_ptr, size_t stream_id) const override;
   bool AsyncHostToDevice(size_t size, TypeId type, const tensor::TensorDataPtr &tensor_data,
-                         const std::string &host_format) const override;
+                         const std::string &host_format, size_t stream_id) const override;
   bool SyncDeviceToDevice(const DeviceSync *src_device_addr) const override;
   bool CopyDeviceToHost(void *dst, const void *src, const size_t &size) const override;
   bool CopyHostToDevice(void *dst, const void *src, const size_t &size) const override;
+  bool SyncDeviceToHost(void *host_ptr, const void *device_ptr, size_t size, const std::string &device_name,
+                        uint32_t device_id, mindspore::Format format, const ShapeVector &shape, size_t stream_id,
+                        const UserDataPtr &user_data = nullptr) const override;
+
+  bool SyncHostToDevice(void *device_ptr, const void *host_ptr, size_t size, const std::string &device_name,
+                        uint32_t device_id, mindspore::Format format, const ShapeVector &shape, size_t stream_id,
+                        const UserDataPtr &user_data = nullptr) const override;
   void ClearDeviceMemory() override;
   DeviceType GetDeviceType() const override { return DeviceType::kAscend; }
   mindspore::tensor::TensorPtr LoadMemToHost(const std::string &tensor_name, const ShapeVector &host_shape,
@@ -115,7 +121,7 @@ class ASCEND_RES_MANAGER_EXPORT AscendDeviceAddress : public LoadableDeviceAddre
 
   void DeviceToDevice(void *dst, void *src, size_t size, size_t stream_id) const;
   bool AsyncDeviceToDevice(const ShapeVector &shape, size_t size, TypeId type, const void *src_ptr,
-                           const std::string &format) const override;
+                           const std::string &format, size_t stream_id = SIZE_MAX) const override;
 
  private:
   bool SyncDeviceToHostAndConvertFormat(const ShapeVector &shape, size_t size, TypeId type, void *host_ptr,
@@ -134,7 +140,8 @@ class ASCEND_RES_MANAGER_EXPORT AscendDeviceAddress : public LoadableDeviceAddre
                                          bool sync_on_demand = false) const;
   void SyncMemory(void *dst, const void *src, uint64_t size, aclrtMemcpyKind kind,
                   const tensor::TensorDataPtr &tensor_data = nullptr, bool sync_on_demand = false) const;
-  void SyncHostMemoryToDeviceWithCopySrc(void *dst, const void *src, uint64_t size, aclrtMemcpyKind kind) const;
+  void SyncHostMemoryToDeviceWithCopySrc(void *dst, const void *src, uint64_t size, aclrtMemcpyKind kind,
+                                         size_t stream_id = SIZE_MAX) const;
   void SyncHostMemoryToDeviceForTensorFromNumpy(void *dst, const void *src, uint64_t size, aclrtMemcpyKind kind) const;
   void SyncHostMemoryToDeviceWithTensorData(void *dst, const void *src, uint64_t size, aclrtMemcpyKind kind,
                                             const tensor::TensorDataPtr &tensor_data) const;

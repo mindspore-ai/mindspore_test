@@ -64,6 +64,16 @@ OPS_API TensorStorageInfoPtrList SplitWithSizeStridesCalc(const OldTensorInfoPtr
   return storage_info_list;
 }
 
+TensorStorageInfoPtrList SplitWithSizeBasicTypeCalc(const PrimitivePtr &prim,
+                                                    const mindspore::tensor::TensorPtr &input_tensor,
+                                                    const std::vector<int64_t> &split_size, const int64_t &dim) {
+  auto input_type = input_tensor->Dtype();
+  (void)CheckAndConvertUtils::CheckTypeValid("input", input_type, common_valid_types_with_complex_and_bool,
+                                             prim->name());
+  auto old_tensor_info = GetOldTensorInfo(input_tensor);
+  return SplitWithSizeStridesCalc(old_tensor_info, split_size, dim);
+}
+
 TensorStorageInfoPtrList SplitWithSizeCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
   if (!inputs[kInputIndex0]->isa<tensor::Tensor>()) {
     MS_LOG(EXCEPTION) << "For [" << prim->name() << "], first input is not tensor.";

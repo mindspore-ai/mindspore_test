@@ -18,10 +18,12 @@
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "include/backend/distributed/collective/collective_manager.h"
+#include "include/backend/debug/execute_order_tracker/execute_order_tracker.h"
 #include "plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "mindspore/ccsrc/pyboost/comm_utils.h"
 #include "runtime/pipeline/pipeline.h"
+#include "runtime/graph_scheduler/execution_order_check/kernel_cache.h"
 #include "include/common/runtime_conf/runtime_conf.h"
 #include "utils/ms_utils.h"
 #include "availability/silent_check/silent_check.h"
@@ -39,7 +41,7 @@ void CommonCommRunTask(const std::function<void(void)> &run_func) {
 }
 void CommonCommAscendFunc(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor, const StringImmPtr &group,
                           const std::function<void(const HcclComm &, void *)> &launch_func,
-                          const std::function<void(const DeviceEventPtr &, size_t)> &post_func) {
+                          const std::function<void(const DeviceEventPtr &, size_t)> &post_func, int64_t rank) {
   const auto &op_name = op->primitive()->name();
   MS_LOG(DEBUG) << "Run device task " << op_name << " end";
 
@@ -73,8 +75,8 @@ void CommonCommAscendFunc(const std::shared_ptr<OpRunner> &op, const TensorPtr &
     comm_stream_id = device_context->device_res_manager_->GetCommunicationStreamIDByGroup(group_str);
   }
 
-  auto func = [device_context, op_stream_id = op->stream_id(), comm_handle, hccl_comm, comm_stream_id, op_name,
-               launch_func]() {
+  auto func = [device_context, op, group_str, input_tensor, op_stream_id = op->stream_id(), comm_handle, hccl_comm,
+               comm_stream_id, op_name, launch_func, rank]() {
     runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kPyNativeLaunchTask,
                                        op_name, false);
 
@@ -83,6 +85,16 @@ void CommonCommAscendFunc(const std::shared_ptr<OpRunner> &op, const TensorPtr &
     device::tracker::CALL_MEMORY_TRACKER(CacheLastTask);
     CommUtils::GetInstance().SyncOpStream(device_context, op_stream_id, comm_stream_id);
     device::tracker::CALL_MEMORY_TRACKER(EmptyCache);
+
+    static runtime::KernelCache &cache = runtime::KernelCache::GetInstance();
+    if (cache.need_add) {
+      cache.AddPyboostKernel(op->primitive()->name(), group_str, tensor::ShapeToString(input_tensor->shape()),
+                             tensor::ShapeToString(op->output(0)->shape()), rank);
+    }
+    if (EnableExecuteOrderDump()) {
+      auto &execute_order_tracker = ExecuteOrderTracker::GetInstance();
+      execute_order_tracker.ProcessPyboostCommOp(op, group_str, comm_stream_id, input_tensor, op->output(0), rank);
+    }
     auto comm_stream_ptr = device::ascend::AscendStreamMng::GetInstance().GetStream(comm_stream_id);
 
     if (launch_func) {
