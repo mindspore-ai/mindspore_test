@@ -148,6 +148,7 @@ class PynativeIRBuilder : public IrBuilder {
     }
     auto real_input = inputs[0]->get()->cast<ValueNodePtr>();
     MS_EXCEPTION_IF_NULL(real_input);
+    MS_EXCEPTION_IF_NULL(real_input->value());
     auto real_input_value = real_input->value()->cast<ValueSequeuePtr>();
     if (real_input_value != nullptr) {
       auto item_idx = GetValue<int64_t>(inputs[1]->get()->cast<ValueNodePtr>()->value());

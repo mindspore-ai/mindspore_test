@@ -182,7 +182,9 @@ const AnfNodePtr BatchNormGradInferFission::Process(const FuncGraphPtr &func_gra
   MS_EXCEPTION_IF_NULL(cnode);
   auto is_training_input = cnode->input(kIsTraningIdx);
   MS_EXCEPTION_IF_NULL(is_training_input);
-  auto value = is_training_input->abstract()->GetValue();
+  auto abs = is_training_input->abstract();
+  MS_EXCEPTION_IF_NULL(abs);
+  auto value = abs->GetValue();
   auto is_training = GetValueWithCheck<bool>(value);
   if (is_training) {
     MS_LOG(DEBUG) << "The is_training value of " << node->DebugString() << " is true, no need change";

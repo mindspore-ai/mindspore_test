@@ -459,6 +459,7 @@ void PostRunOp::ClearOpInputOutput(const OpCompilerInfoPtr &op_compiler_info) co
 }
 
 void PostRunOp::UpdateOutputAbstract(const VectorRef &outputs, const session::BackendOpRunInfoPtr &op_run_info) const {
+  MS_EXCEPTION_IF_NULL(op_run_info);
   auto output_size = outputs.size();
   if (output_size == 1 && op_run_info->base_op_run_info.op_name != kGetNextOpName) {
     auto output_tensor = utils::cast<tensor::TensorPtr>(outputs[0]);
