@@ -1181,6 +1181,9 @@ void ParseOpInputByOpDef(const ops::OpDefPtr &op_def, const py::list &op_inputs,
         MS_EXCEPTION_IF_NULL(convert_func);
         value = convert_func(op_inputs[i]);
         if (value != nullptr) {
+          if (value->isa<tensor::Tensor>()) {
+            value->cast<tensor::TensorPtr>()->set_source_type(cast_dtype);
+          }
           op_run_info->op_grad_info->input_value[i] = value;
           op_run_info->source_type[i] = cast_dtype;
           break;

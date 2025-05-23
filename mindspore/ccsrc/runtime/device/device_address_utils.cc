@@ -943,7 +943,8 @@ KernelTensorPtr DeviceAddressUtils::CloneEmptyKernelTensor(const KernelTensorPtr
 void CheckAutoH2D(const DeviceContext *device_context, const tensor::TensorPtr &tensor) {
   auto addr = tensor->device_address();
   if (addr == nullptr) {
-    if (device_context->GetDeviceType() == device::DeviceType::kCPU) {
+    if (device_context->GetDeviceType() == device::DeviceType::kCPU ||
+        tensor->source_type() != ops::OP_DTYPE::DT_BEGIN) {
       return;
     }
     MS_LOG(EXCEPTION) << "The tensor " << tensor->ToString() << " device address is null! Need to call Tensor.to first";

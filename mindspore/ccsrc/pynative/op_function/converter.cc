@@ -189,7 +189,9 @@ ValuePtr Converter::ToTensor(const py::list &python_args, size_t i) {
   if (!op_arg.cast_dtype_.empty()) {
     auto convert = ConvertByCastDtype(obj, op_arg, i);
     if (convert != nullptr && convert->isa<tensor::Tensor>()) {
-      return convert->cast<tensor::TensorPtr>();
+      auto converted_tensor = convert->cast<tensor::TensorPtr>();
+      converted_tensor->set_source_type(source_type_[i]);
+      return converted_tensor;
     }
   }
 
