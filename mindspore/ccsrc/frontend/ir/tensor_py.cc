@@ -734,6 +734,53 @@ py::array TensorPybind::AsNumpy(const Tensor &tensor) {
   return py::array(np_dtype, info.shape, info.strides, info.ptr, owner);
 }
 
+void TensorPybind::ReleaseDeviceMemory(const Tensor &tensor) {
+  py::gil_scoped_release gil_release;
+  const auto &device_sync = tensor.device_address();
+    if (device_sync == nullptr) {
+      return;
+    }
+    const auto &device_address = std::dynamic_pointer_cast<device::DeviceAddress>(device_sync);
+    if (device_address == nullptr) {
+      return;
+    }
+    if (device_address->GetDeviceType() == device::DeviceType::kCPU) {
+      MS_LOG(INFO) << "Tensor with CPUDeviceAddress can not be release.";
+      return;
+    }
+    if (device_address->GetPtr() == nullptr) {
+      MS_LOG(INFO) << "This tensor's device_ptr is nullptr, it may have been released by"
+                   << " the framework.";
+      return;
+    }
+    MS_LOG(INFO) << "Tensor release device memory start, the tensor's device_address is : " << device_address.get()
+                 << ", the tensor's size is : " << device_address->GetSize();
+    device_address->ClearDeviceMemory();
+}
+
+void TensorPybind::LoadZeros(const Tensor &tensor) {
+  py::gil_scoped_release gil_release;
+  const auto &device_sync = tensor.device_address();
+  if (device_sync == nullptr) {
+    MS_LOG(WARNING) << "Tensor has no DeviceSync, can not be loaded.";
+    return;
+  }
+  const auto &device_address = std::dynamic_pointer_cast<device::DeviceAddress>(device_sync);
+  if (device_address == nullptr) {
+    MS_LOG(WARNING) << "Tensor has no DeviceAddress, can not be loaded.";
+    return;
+  }
+
+  const auto device = device_address->device_name();
+  auto device_ctx = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
+    {device, MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
+
+  device_ctx->device_res_manager_->AllocateMemory(device_address.get());
+  MS_LOG(INFO) << "Start load zeros, the tensor's device_address is : " << device_address.get()
+               << ", the tensor's size is : " << device_address->GetSize();
+  device_address->FillZeros();
+}
+
 void TensorPybind::Offload(const BaseTensorPtr &tensor, bool release) {
   py::gil_scoped_release gil_release;
   if (release) {

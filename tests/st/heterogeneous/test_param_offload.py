@@ -142,3 +142,46 @@ def test_param_offload_between_nets():
         losses.append(loss)
 
     assert losses[-1].asnumpy() <= 2.28684
+
+
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+def test_param_release_and_load_zeros():
+    '''
+    Feature: Parameter release device memory and load zeros
+    Description: Test parameter release device memory and load zeros
+    Expectation: Train TestNet success
+    '''
+    ms.set_seed(1)
+    context.set_context(jit_level='O0')
+    net = TestNet()
+    optimizer = nn.SGD(net.trainable_params(), 1e-2)
+    loss_fn = nn.CrossEntropyLoss()
+    net_with_loss = WithLossCell(net, loss_fn)
+    train_network = TrainOneStepCell(net_with_loss, optimizer)  # optimizer
+    train_network.set_train()
+    batch_size = 32
+    data = Tensor(np.ones([batch_size, 1, 28, 28]).astype(np.float32) * 0.01)
+    label = Tensor(np.ones([batch_size]).astype(np.int32))
+    loss = train_network(data, label)
+
+    before_release_mem = ms.hal.memory_stats()['total_allocated_memory']
+    release_nbytes = 0
+    for _, param in train_network.parameters_and_names():
+        release_nbytes += param.nbytes
+        param._release_device_memory()
+    after_release_mem = ms.hal.memory_stats()['total_allocated_memory']
+    assert before_release_mem - after_release_mem >= release_nbytes
+
+    before_load_mem = after_release_mem
+    load_nbytes = 0
+    for _, param in train_network.parameters_and_names():
+        load_nbytes += param.nbytes
+        param._load_zeros()
+    after_load_mem = ms.hal.memory_stats()['total_allocated_memory']
+    assert after_load_mem - before_load_mem >= load_nbytes
+
+    param_values_sum = 0
+    for _, param in train_network.parameters_and_names():
+        load_nbytes += param.nbytes
+        param_values_sum += param.asnumpy().sum()
+    assert param_values_sum < 1e-7

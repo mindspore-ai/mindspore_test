@@ -103,6 +103,8 @@ class ASCEND_RES_MANAGER_EXPORT AscendDeviceAddress : public LoadableDeviceAddre
   }
   bool CopyDeviceToHostWithoutSyncStream(void *dst, size_t dst_size, const void *src, size_t src_size);
 
+  void FillZeros() override;
+
  protected:
   bool CopyDeviceToHost(void *dst, const void *src, size_t size, bool async, size_t stream_id) const override;
   bool CopyHostToDevice(void *dst, const void *src, size_t size, bool async, size_t stream_id) const override;

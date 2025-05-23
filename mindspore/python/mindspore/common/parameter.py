@@ -1050,6 +1050,42 @@ class Parameter(Tensor_):
         """
         return Tensor_._load(self)
 
+    def _release_device_memory(self):
+        r"""
+        Release parameter device memory.
+
+        Supported Platforms:
+            ``Ascend``
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+        Examples:
+            >>> from mindspore import Parameter, Tensor
+            >>> x = Parameter(Tensor(np.array([1, 2], dtype=np.float32)), name="param")
+            >>> x._offload()
+            >>> x._load()
+            >>> x._release_device_memory()
+        """
+        return Tensor_._release_device_memory(self)
+
+    def _load_zeros(self):
+        r"""
+        load zeros to device.
+
+        Supported Platforms:
+            ``Ascend``
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+        Examples:
+            >>> from mindspore import Parameter, Tensor
+            >>> x = Parameter(Tensor(np.array([1, 2], dtype=np.float32)), name="param")
+            >>> x._offload()
+            >>> x._load_zeros()
+        """
+        return Tensor_._load_zeros(self)
 
 # Metaclass to combine _TensorMeta and the instance check override for Buffer.
 class _BufferMeta(_TensorMeta):

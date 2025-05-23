@@ -1014,6 +1014,40 @@ static PyObject *TensorPython_SetOffload(PyObject *self, PyObject *args) {
   HANDLE_MS_EXCEPTION_END
 }
 
+static PyObject *TensorPython_ReleaseDeviceMemory(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
+  PyObject *obj;
+  if (self != nullptr) {
+    obj = self;
+  } else if (!PyArg_ParseTuple(args, "O", &obj)) {
+    return nullptr;
+  }
+
+  runtime::Pipeline::Get().WaitForward();
+  PyType<TensorPy> *tensorObj = (PyType<TensorPy> *)obj;
+  auto tensor = tensorObj->value.GetTensor();
+  TensorPybind::ReleaseDeviceMemory(*tensor);
+  Py_RETURN_NONE;
+  HANDLE_MS_EXCEPTION_END
+}
+
+static PyObject *TensorPython_LoadZeros(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
+  PyObject *obj;
+  if (self != nullptr) {
+    obj = self;
+  } else if (!PyArg_ParseTuple(args, "O", &obj)) {
+    return nullptr;
+  }
+
+  runtime::Pipeline::Get().WaitForward();
+  PyType<TensorPy> *tensorObj = (PyType<TensorPy> *)obj;
+  auto tensor = tensorObj->value.GetTensor();
+  TensorPybind::LoadZeros(*tensor);
+  Py_RETURN_NONE;
+  HANDLE_MS_EXCEPTION_END
+}
+
 static PyObject *TensorPython_set_device_address(PyObject *self, PyObject *args) {
   HANDLE_MS_EXCEPTION
   uintptr_t addr;
@@ -1625,6 +1659,9 @@ static PyMethodDef Tensor_methods[] = {
   {"_data_ptr", (PyCFunction)TensorPython_GetDataPtr, METH_VARARGS, "get Data ptr."},
   {"_need_contiguous", (PyCFunction)TensorPython_NeedContiguous, METH_VARARGS | METH_KEYWORDS, "need Contiguous."},
   {"_load", (PyCFunction)TensorPython_SetLoad, METH_VARARGS, "SetLoad."},
+  {"_release_device_memory", (PyCFunction)TensorPython_ReleaseDeviceMemory, METH_VARARGS, 
+   "Release device address for the tensor."},
+  {"_load_zeros", (PyCFunction)TensorPython_LoadZeros, METH_VARARGS, "Load zeros for the tensor."},
   {NULL, NULL, 0, NULL}};
 
 static void TensorPy_pydealloc(PyObject *obj) {

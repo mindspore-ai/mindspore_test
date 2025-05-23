@@ -192,6 +192,10 @@ class FRONTEND_EXPORT TensorPybind {
 
   static void Load(const Tensor &tensor);
 
+  static void ReleaseDeviceMemory(const Tensor &tensor);
+
+  static void LoadZeros(const Tensor &tensor);
+
   // move tensor from device to host, or host to device asynchronously
   static TensorPtr MoveTo(const Tensor &self, const std::string &to, bool blocking = True);
 

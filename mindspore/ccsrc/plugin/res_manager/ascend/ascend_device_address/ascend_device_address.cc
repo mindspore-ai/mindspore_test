@@ -1128,6 +1128,13 @@ bool AscendDeviceAddress::CopyDeviceToHostWithoutSyncStream(void *dst, size_t ds
   return (ret != ACL_ERROR_NONE);
 }
 
+void AscendDeviceAddress::FillZeros() {
+  auto ret = CALL_ASCEND_API(aclrtMemset, GetDevicePtr(), GetSize(), 0, GetSize());
+  if (ret != ACL_ERROR_NONE) {
+    MS_LOG(ERROR) << "Call aclrtMemset for Filling zeros failed, the error num[" << ret << "]";;
+  }
+}
+
 /*
  * Feature group: Dump
  * Target device group: Ascend.

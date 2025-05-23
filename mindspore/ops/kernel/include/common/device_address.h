@@ -263,6 +263,9 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   // Load data from host to device and free host memory
   virtual bool Load(size_t) { MS_LOG(EXCEPTION) << "Not implemented."; }
 
+  // fill zeros for device memory
+  virtual void FillZeros() { MS_LOG(EXCEPTION) << "Not implemented."; }
+
   // Move data to destination hardware and free resource on source hardware
   virtual bool MoveTo(StorageType, bool, size_t) { MS_LOG(EXCEPTION) << "Not implemented."; }
 
