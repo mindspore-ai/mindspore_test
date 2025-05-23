@@ -1080,11 +1080,6 @@ OPERATOR_ONNX_CONVERT_DEFINE(Softplus, Softplus, OpNameInfo())
 OPERATOR_ONNX_CONVERT_DEFINE(Tanh, Tanh, OpNameInfo())
 OPERATOR_ONNX_CONVERT_DEFINE(Abs, Abs, OpNameInfo())
 
-// MindSpore Softmax axis(int, Tuple)
-OPERATOR_ONNX_CONVERT_DEFINE(Softmax, Softmax,
-                             OpNameInfo().Attr("axis", "axis", onnx::AttributeProto_AttributeType_INT,
-                                               SetAttrTupleValueToProto<0>))
-
 // MindSpore LogSoftmax axis(int)
 OPERATOR_ONNX_CONVERT_DEFINE(LogSoftmax, LogSoftmax,
                              OpNameInfo().Attr("axis", "axis", onnx::AttributeProto_AttributeType_INT,
@@ -1152,7 +1147,6 @@ void RegisterOpConverters(const std::function<void(OpNameInfo &&)> &fn) {
 
   fn(OP_CONVERT_FUNCTION_NAME(Softplus)());
   fn(OP_CONVERT_FUNCTION_NAME(Tanh)());
-  fn(OP_CONVERT_FUNCTION_NAME(Softmax)());
   fn(OP_CONVERT_FUNCTION_NAME(LogSoftmax)());
   fn(OP_CONVERT_FUNCTION_NAME(Abs)());
   fn(OP_CONVERT_FUNCTION_NAME(Softsign)());
@@ -1337,6 +1331,12 @@ class OnnxExporter {
                        std::map<AnfNodePtr, std::string> *node_map_ptr, onnx::GraphProto *graph_proto);
   void ExportPrimReLU6(const FuncGraphPtr &func_graph, const CNodePtr &node,
                        std::map<AnfNodePtr, std::string> *node_map_ptr, onnx::GraphProto *graph_proto);
+  void ExportPrimSiLU(const FuncGraphPtr &func_graph, const CNodePtr &node,
+                      std::map<AnfNodePtr, std::string> *node_map_ptr, onnx::GraphProto *graph_proto);
+  void ExportPrimSoftmax(const FuncGraphPtr &func_graph, const CNodePtr &node,
+                         std::map<AnfNodePtr, std::string> *node_map_ptr, onnx::GraphProto *graph_proto);
+  void ExportPrimMuls(const FuncGraphPtr &func_graph, const CNodePtr &node,
+                      std::map<AnfNodePtr, std::string> *node_map_ptr, onnx::GraphProto *graph_proto);
   void ExportPrimDepthwiseConv2d(const FuncGraphPtr &func_graph, const CNodePtr &node,
                                  std::map<AnfNodePtr, std::string> *node_map_ptr, onnx::GraphProto *graph_proto);
   void ExportPrimTile(const FuncGraphPtr &func_graph, const CNodePtr &node,
@@ -3597,6 +3597,153 @@ void OnnxExporter::ExportPrimReLU6(const FuncGraphPtr &, const CNodePtr &node,
   AddClipOp(input_x_name, node_name, 0.0f, 6.0f, onnx_input_type, graph_proto);
 }
 
+// MindSpore SiLU -> ONNX x * Sigmoid(x)
+void OnnxExporter::ExportPrimSiLU(const FuncGraphPtr &, const CNodePtr &node,
+                                  std::map<AnfNodePtr, std::string> *node_map_ptr,
+                                  onnx::GraphProto *const graph_proto) {
+  auto input_x = GetNodeInputName(node->input(kOneNum), node_map_ptr, graph_proto);
+  // Add Sigmoid Node
+  auto sigmoid_name = GenerateUniqueName();
+  AddOp("Sigmoid", {input_x}, {sigmoid_name}, graph_proto);
+
+  // Add Mul Node
+  auto mul_name = RegisterNodeWithUniqueName(node, node_map_ptr);
+  AddOp("Mul", {input_x, sigmoid_name}, {mul_name}, graph_proto);
+}
+
+// MindSpore Muls -> ONNX cast + mul
+void OnnxExporter::ExportPrimMuls(const FuncGraphPtr &, const CNodePtr &node,
+                                  std::map<AnfNodePtr, std::string> *node_map_ptr,
+                                  onnx::GraphProto *const graph_proto) {
+  auto input_x = GetNodeInputName(node->input(kOneNum), node_map_ptr, graph_proto);
+
+  auto x_type = node->input(kOneNum)->Type();
+  auto x_dtype = dyn_cast<TensorType>(x_type)->element()->type_id();
+  auto promote_dtype = x_dtype;
+
+  auto y_node = node->input(kTwoNum);
+  auto node_name = GenerateUniqueName();
+  std::string input_y_name = node_name + "_input_y";
+  std::string input_y_cast = node_name + "_input_y_cast";
+
+  if (y_node->isa<ValueNode>()) {
+    onnx::NodeProto *node_proto = graph_proto->add_node();
+    node_proto->add_output(input_y_name);
+    node_proto->set_op_type("Constant");
+    onnx::AttributeProto *attr_proto = node_proto->add_attribute();
+    attr_proto->set_name("value");
+    attr_proto->set_type(onnx::AttributeProto_AttributeType_TENSOR);
+    onnx::TensorProto *tensor_proto = attr_proto->mutable_t();
+
+    auto value_node_val = dyn_cast<ValueNode>(y_node)->value();
+    if (value_node_val->isa<Int64Imm>()) {
+      auto value_int_point = dyn_cast<Int64Imm>(value_node_val);
+      tensor_proto->add_int64_data(value_int_point->value());
+      tensor_proto->set_data_type(GetOnnxDataType(kNumberTypeInt64));
+    } else if (value_node_val->isa<Int32Imm>()) {
+      auto value_int_point = dyn_cast<Int32Imm>(value_node_val);
+      tensor_proto->add_int32_data(value_int_point->value());
+      tensor_proto->set_data_type(GetOnnxDataType(kNumberTypeInt32));
+    } else if (value_node_val->isa<Int16Imm>()) {
+      auto value_int_point = dyn_cast<Int16Imm>(value_node_val);
+      tensor_proto->add_int64_data(value_int_point->value());
+      tensor_proto->set_data_type(GetOnnxDataType(kNumberTypeInt64));
+    } else if (value_node_val->isa<Int8Imm>()) {
+      auto value_int_point = dyn_cast<Int8Imm>(value_node_val);
+      tensor_proto->add_int64_data(value_int_point->value());
+      tensor_proto->set_data_type(GetOnnxDataType(kNumberTypeInt64));
+    } else if (value_node_val->isa<FP32Imm>() || value_node_val->isa<FP16Imm>()) {
+      auto value_float_point = dyn_cast<FP32Imm>(value_node_val);
+      tensor_proto->add_float_data(value_float_point->value());
+      tensor_proto->set_data_type(GetOnnxDataType(kNumberTypeFloat32));
+    } else {
+      MS_LOG(EXCEPTION) << "The dtype of input y is not support for Muls to convert to onnx.";
+    }
+    AddCastOp(input_y_name, input_y_cast, GetOnnxDataType(promote_dtype), graph_proto);
+  } else {
+    auto input_y = GetNodeInputName(y_node, node_map_ptr, graph_proto);
+    AddCastOp(input_y, input_y_cast, GetOnnxDataType(promote_dtype), graph_proto);
+  }
+
+  // Add Mul Node
+  auto mul_name = RegisterNodeWithUniqueName(node, node_map_ptr);
+  AddOp("Mul", {input_x, input_y_cast}, {mul_name}, graph_proto);
+}
+
+void OnnxExporter::ExportPrimSoftmax(const FuncGraphPtr &, const CNodePtr &node,
+                                     std::map<AnfNodePtr, std::string> *node_map_ptr,
+                                     onnx::GraphProto *const graph_proto) {
+  auto input_x = GetNodeInputName(node->input(kOneNum), node_map_ptr, graph_proto);
+  auto node_name = RegisterNodeWithUniqueName(node, node_map_ptr);
+
+  const auto &input_shape = dyn_cast<abstract::Shape>(node->input(kOneNum)->Shape())->shape();
+  int64_t input_rank = static_cast<int64_t>(input_shape.size());
+
+  auto axis_tuple_ptr = GetOpAttributePtr<ValueTuple>(node, "axis");
+  if (axis_tuple_ptr->size() > 1) {
+    MS_EXCEPTION(ValueError) << "Only support axis.size = 1 for Softmax op.";
+  }
+  int64_t axis = GetValue<int64_t>((*axis_tuple_ptr)[0]);
+
+  if (axis < 0) {
+    axis = input_rank + axis;
+  }
+  bool need_transpose = (input_rank != axis + 1);
+  std::vector<int64_t> new_axis;
+  auto input_x_trans_name = input_x + "_Transpose";
+  if (need_transpose) {
+    new_axis.resize(input_rank);
+    for (auto i = 0; i < input_rank; ++i) {
+      new_axis[i] = static_cast<int64_t>(i);
+    }
+    std::swap(new_axis[axis], new_axis.back());
+    onnx::NodeProto *node_proto_transpose_1 = graph_proto->add_node();
+    node_proto_transpose_1->set_op_type("Transpose");
+    node_proto_transpose_1->set_name(node_name + "_Transpose_1");
+    node_proto_transpose_1->add_input(input_x);
+    node_proto_transpose_1->add_output(input_x_trans_name);
+
+    auto *perm_attr_proto = node_proto_transpose_1->add_attribute();
+    perm_attr_proto->set_name("perm");
+    perm_attr_proto->set_type(onnx::AttributeProto_AttributeType_INTS);
+    for (size_t i = 0; i < new_axis.size(); i++) {
+      perm_attr_proto->add_ints(new_axis[i]);
+    }
+    axis = input_rank - 1;
+  }
+  auto input_x_softmax_name = input_x + "_Softmax";
+  onnx::NodeProto *node_proto_softmax = graph_proto->add_node();
+  node_proto_softmax->set_op_type("Softmax");
+  node_proto_softmax->set_name(node_name + "_Softmax");
+  if (need_transpose) {
+    node_proto_softmax->add_input(input_x_trans_name);
+    node_proto_softmax->add_output(input_x_softmax_name);
+  } else {
+    node_proto_softmax->add_input(input_x);
+    node_proto_softmax->add_output(node_name);
+  }
+
+  auto *axis_attr_proto = node_proto_softmax->add_attribute();
+  axis_attr_proto->set_name("axis");
+  axis_attr_proto->set_type(onnx::AttributeProto_AttributeType_INT);
+  axis_attr_proto->set_i(axis);
+
+  if (need_transpose) {
+    onnx::NodeProto *node_proto_transpose_2 = graph_proto->add_node();
+    node_proto_transpose_2->set_op_type("Transpose");
+    node_proto_transpose_2->set_name(node_name + "_Transpose_2");
+    node_proto_transpose_2->add_input(input_x_softmax_name);
+    node_proto_transpose_2->add_output(node_name);
+
+    auto *perm_attr_proto2 = node_proto_transpose_2->add_attribute();
+    perm_attr_proto2->set_name("perm");
+    perm_attr_proto2->set_type(onnx::AttributeProto_AttributeType_INTS);
+    for (size_t i = 0; i < new_axis.size(); i++) {
+      perm_attr_proto2->add_ints(new_axis[i]);
+    }
+  }
+}
+
 void OnnxExporter::ExportPrimDepthwiseConv2d(const FuncGraphPtr &, const CNodePtr &node,
                                              std::map<AnfNodePtr, std::string> *node_map_ptr,
                                              onnx::GraphProto *const graph_proto) {
@@ -5215,6 +5362,9 @@ void OnnxExporter::ExportCNode(const FuncGraphPtr &func_graph, const CNodePtr &n
     {prim::kPrimFloorMod, &OnnxExporter::ExportPrimFloorMod},
     {prim::kPrimSort, &OnnxExporter::ExportPrimSort},
     {prim::kPrimCustom, &OnnxExporter::ExportPrimCustom},
+    {prim::kPrimSiLU, &OnnxExporter::ExportPrimSiLU},
+    {prim::kPrimMuls, &OnnxExporter::ExportPrimMuls},
+    {prim::kPrimSoftmax, &OnnxExporter::ExportPrimSoftmax},
   };
 
   InitExportTables(export_table);
