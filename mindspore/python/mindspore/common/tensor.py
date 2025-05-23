@@ -17,7 +17,6 @@
 __all__ = ['Tensor']
 
 import abc
-import math
 import numbers
 import numpy as np
 
@@ -29,7 +28,6 @@ from mindspore import log as logger
 from mindspore.common import dtype as mstype
 from mindspore.common.hook_handle import _TensorHookHandle
 
-from mindspore.common._utils import get_slice_num
 from mindspore.common._register_for_tensor import tensor_operator_registry
 from mindspore._c_expression import TensorPy as TensorPy_
 from mindspore._c_expression import _rmod_instance
@@ -985,37 +983,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         """
         return self.asnumpy()
 
-    def is_persistent_data(self):
-        """
-        Check if size of tensor is huge, and need save data to persistent storage.
-        If size of tensor is bigger then MS_EMBEDDING_REMOTE_CACHE_MEMORY_SIZE, it will
-        use persistent storage to save tensor data. And will spilt data to some slice.
-
-        Returns:
-            True or False
-        """
-        return TensorPy_.is_persistent_data(self)
-
-    def asnumpy_of_slice_persistent_data(self, param_key, slice_index):
-        """
-        Convert a slice of tensor data to numpy array. A slice is part of tensor data.
-        Returns as a NumPy ndarray. This slice tensor data and the returned ndarray
-        share the same underlying storage. Changes to self tensor will be reflected in the ndarray.
-
-        Returns:
-            A numpy ndarray which shares the same underlying storage with the slice of tensor data.
-        """
-        return TensorPy_.asnumpy_of_slice_persistent_data(self, param_key, slice_index)
-
-    def slice_num_of_persistent_data(self):
-        """
-        Get slice num of a tensor which use persistent storage.
-
-        Returns:
-            Num of slice.
-        """
-        return self.slice_num_of_persistent_data_
-
     def slice_scatter(self, src, axis=0, start=None, end=None, step=1):
         """
         For details, please refer to :func:`mindspore.ops.slice_scatter`.
@@ -1033,15 +1000,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.ops.geqrf`.
         """
         return tensor_operator_registry.get('geqrf')(self)
-
-    def slice_shape_of_persistent_data(self):
-        """
-        Get slice shape of tensor after cut to slice size.
-
-        Returns:
-            The slice shape of tensor.
-        """
-        return self.slice_shape_of_persistent_data_
 
     def value(self):
         """
@@ -2084,15 +2042,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
 
         if shape is None:
             shape = self.shape
-        # At embedding cache scenes, we need limit the size of memory for tensor.
-        # And save out of range data to persistent storage to support TB-Level size of tensor.
-        data_shape = list(shape)
-        slice_num_of_persistent_data = get_slice_num(self.dtype, shape)
-        if slice_num_of_persistent_data > 1:
-            slice_first_dim = math.ceil(shape[0] / slice_num_of_persistent_data)
-            data_shape[0] = slice_first_dim
-            self.slice_shape_of_persistent_data_ = data_shape
-            self.slice_num_of_persistent_data_ = slice_num_of_persistent_data
 
         from mindspore.common.initializer import Zero as ZeroInitializer
 
@@ -2100,9 +2049,9 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         try:
             dtype_ = mstype.int8 if is_qint4x2 else self.dtype
             if isinstance(self.init, ZeroInitializer):
-                data = np.zeros(data_shape, dtype=mstype.dtype_to_nptype(dtype_))
+                data = np.zeros(shape, dtype=mstype.dtype_to_nptype(dtype_))
             else:
-                data = np.ndarray(data_shape, dtype=mstype.dtype_to_nptype(dtype_))
+                data = np.ndarray(shape, dtype=mstype.dtype_to_nptype(dtype_))
         except ValueError as e:
             msg = "Error shape={}".format(shape)
             logger.critical(msg)
@@ -2138,16 +2087,12 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
                     self.init.seed, _ = self.seed
 
         with seed_context(self.init):
-            if (not isinstance(self.init, ZeroInitializer) and slice_num_of_persistent_data == 1) \
+            if (not isinstance(self.init, ZeroInitializer)) \
                     and not is_reboot_node():
                 self.init(data)
         self.init = None
 
-        # At embedding cache scenes. When size of tensor is out of range, we store data to persistent storage
-        if slice_num_of_persistent_data > 1:
-            self.assign_value(TensorPy_.persistent_data_from_numpy(data, slice_num_of_persistent_data))
-        else:
-            self.assign_value(TensorPy_.from_numpy(data))
+        self.assign_value(TensorPy_.from_numpy(data))
 
         if is_qint4x2:
             self.set_dtype(mstype.qint4x2)

@@ -21,7 +21,6 @@ from copy import copy
 import time
 import os
 import sys
-import math
 import numbers
 import numpy as np
 
@@ -30,7 +29,6 @@ from mindspore.log import _LogActionOnce
 from mindspore._c_expression import ParamInfo
 from mindspore.common import dtype as mstype
 from mindspore import context
-from mindspore.common._utils import get_slice_num, get_slice_shape
 from mindspore.common.initializer import initializer
 from mindspore.common.tensor import Tensor, _TensorMeta
 from mindspore import _checkparam as Validator
@@ -40,7 +38,7 @@ from mindspore.parallel._tensor import _get_slice_index
 from mindspore.parallel._auto_parallel_context import auto_parallel_context
 from mindspore.parallel._ps_context import _is_role_worker, _is_role_pserver, _is_role_sched, _clone_hash_table, \
                                            _is_ps_mode
-from mindspore.parallel._ps_context import _reinsert_hash_table_size, _insert_accumu_init_info, _cache_enable
+from mindspore.parallel._ps_context import _reinsert_hash_table_size, _insert_accumu_init_info
 from mindspore.common._decorator import deprecated
 from mindspore.communication._comm_helper import _is_initialized
 from mindspore.communication import get_group_size, get_rank
@@ -320,24 +318,10 @@ class Parameter(Tensor_):
         self._unique = False
         self.is_in_parallel = _is_in_auto_parallel_mode()
         self._pipeline_stage_list = []
-        self.slice_num = 1
         if -1 in self.shape:
             raise ValueError(f"All shape elements of the Parameter must be positive. But got None.")
         if isinstance(default_input, (Tensor_, Tensor)):
-            # At embedding cache scenes, we need limit the size of memory for parameter.
-            # And save out range data to persistent storage to support TB-Level size parameter.
-            slice_num_of_persistent_data = get_slice_num(default_input.dtype, default_input.shape)
-            if slice_num_of_persistent_data > 1:
-                data_shape = list(default_input.shape)
-                slice_first_dim = math.ceil(data_shape[0] / slice_num_of_persistent_data)
-                data_shape[0] = slice_first_dim
-                self.param_info.use_persistent_storage = True
-                self.param_info.origin_shape = default_input.shape
-                self.slice_num = slice_num_of_persistent_data
-                Tensor_.__init__(self, dtype=default_input.dtype, shape=tuple(data_shape))
-            else:
-                Tensor_.__init__(self, dtype=default_input.dtype, shape=default_input.shape)
-
+            Tensor_.__init__(self, dtype=default_input.dtype, shape=default_input.shape)
         elif isinstance(default_input, int):
             Tensor_.__init__(self, dtype=mstype.int64, shape=())
         elif isinstance(default_input, float):
@@ -399,11 +383,10 @@ class Parameter(Tensor_):
                     return (Tensor, data.asnumpy(), mstype.qint4x2)
                 return (Tensor, data.asnumpy())
 
-            not_init_data = not init_param or _is_role_sched() or (_is_role_pserver() and _cache_enable()) \
-                            or _is_in_auto_parallel_mode() or _is_parallel_mode()
+            not_init_data = not init_param or _is_role_sched() or _is_in_auto_parallel_mode() or _is_parallel_mode()
             if not_init_data:
                 # do not init data while in auto parallel.
-                return (Tensor, None, data.dtype, get_slice_shape(data.dtype, data.shape), data.init)
+                return (Tensor, None, data.dtype, data.shape, data.init)
             return (Tensor, data.init_data())
         if isinstance(data, int):
             return (Tensor, data, mstype.int32)
@@ -667,7 +650,7 @@ class Parameter(Tensor_):
         if self.cache_shape:
             x.cache_shape = self.cache_shape
         if init != 'same':
-            shape = self.shape if self.slice_num == 1 else self.param_info.origin_shape
+            shape = self.shape
             dtype = self.dtype
             tensor = initializer(init, shape=shape, dtype=dtype)
             x.set_data(tensor)
@@ -986,10 +969,8 @@ class Parameter(Tensor_):
 
         init_data_args = self._get_init_data_args(layout)
 
-        if _is_role_sched():
-            return self
         if self.init_in_server and self.is_param_ps and isinstance(self.init_mode, Tensor) and \
-                self.init_mode.init is not None and _is_role_worker():
+                self.init_mode.init is not None and (_is_role_worker() or _is_role_sched()):
             if self.cache_enable:
                 data = self.init_mode.init_data(*init_data_args)
             else:

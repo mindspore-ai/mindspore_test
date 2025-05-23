@@ -139,12 +139,6 @@ class FRONTEND_EXPORT TensorPybind {
   /// \param[in] input [py::array] Data value of the tensor.
   static TensorPtr MakeTensorOfNumpy(const py::array &input);
 
-  /// \brief Create Tensor from a numpy array without copy, use persistent tensor data.
-  ///
-  /// \param[in] input [py::array] Data value of the tensor.
-  /// \param[in] slice_num [py::int_] slice num of data.
-  static TensorPtr MakePersistentDataTensorOfNumpy(const py::array &input, const py::int_ slice_num);
-
   static py::bytes GetBytes(const Tensor &tensor);
 
   static py::buffer_info GetPyBufferFromPyArray(const py::array &input);
@@ -159,11 +153,6 @@ class FRONTEND_EXPORT TensorPybind {
   static py::array SyncAsNumpy(const Tensor &tensor);
 
   static py::array AsNumpy(const Tensor &tensor);
-
-  /// \brief Get slice data as numpy of tensor which use persistent tensor data.
-  ///
-  /// \return [py::array] Slice Data of the tensor at slice_index.
-  static py::array AsNumpyOfSlice(const Tensor &tensor, const int32_t param_key, int slice_index);
 
   static py::tuple GetPyTupleShape(const Tensor &tensor);
 
@@ -294,14 +283,6 @@ class FRONTEND_EXPORT TensorPyImpl {
   /// \return This pointer address of TensorPy.
   static TensorPyPtr MakeTensorOfNumpy(const py::array &input);
 
-  /// \brief Create TensorPy from a numpy array without copy, use persistent tensor data.
-  ///
-  /// \param[in] input [py::array] Data value of the tensor.
-  /// \param[in] slice_num [py::int_] Slice num of data.
-  ///
-  /// \return This pointer address of TensorPy.
-  static TensorPyPtr MakePersistentDataTensorOfNumpy(const py::array &input, const py::int_ slice_num);
-
   /// \brief Convert python object to Tensor.
   ///
   /// \param[in] bytes_obj [py::bytes] Python object.
@@ -336,7 +317,6 @@ class FRONTEND_EXPORT TensorPyImpl {
   /// \return The numpy data.
   static py::array SyncAsNumpy(const TensorPyPtr &tensorpy);
   static void FlushFromCache(const TensorPyPtr &tensorpy);
-  static py::array AsNumpyOfSlice(const TensorPyPtr &tensorpy, const int32_t param_key, int slice_index);
   static TensorPyPtr MoveTo(const TensorPyPtr &tensorpy, const std::string &to, bool blocking = True);
   static void SetDeviceAddress(const TensorPyPtr &tensorpy, uintptr_t addr, const ShapeVector &shape,
                                const TypePtr type_ptr);

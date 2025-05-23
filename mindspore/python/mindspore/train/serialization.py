@@ -401,9 +401,6 @@ def _exec_save(ckpt_file_name, data_list, enc_key=None, enc_mode="AES-GCM", map_
                                                                                 crc_num, crc_check,
                                                                                 ckpt_total_io_time)
                             continue
-                        if isinstance(value[2], Tensor) and hasattr(value[2], "slice_num") and value[2].slice_num > 1:
-                            _write_hugeparameter(name, value, f)
-                            continue
 
                         crc_num, ckpt_total_io_time = _write_parameter_bytes_data(name, value, f, enc_key, plain_data,
                                                                                   crc_num, crc_check,
@@ -544,27 +541,6 @@ def _write_mapparameter(name, value, f, map_param_inc=False):
         f.write(checkpoint_list.SerializeToString())
         if data_map_slice[3]:
             break
-
-
-def _write_hugeparameter(name, value, f):
-    """Write huge parameter into protobuf file."""
-    slice_num = value[2].slice_num
-    offset = 0
-    max_size = value[0][0]
-    for param_slice in range(slice_num):
-        checkpoint_list = Checkpoint()
-        param_value = checkpoint_list.value.add()
-        param_value.tag = name
-        param_tensor = param_value.tensor
-        param_tensor.dims.extend(value[0])
-        param_tensor.tensor_type = value[1]
-        param_key = value[3]
-        numpy_data = value[2].asnumpy_of_slice_persistent_data(param_key, param_slice)
-        if offset + numpy_data.shape[0] > max_size:
-            numpy_data = numpy_data[:max_size - offset]
-        param_tensor.tensor_content = numpy_data.tobytes()
-        f.write(checkpoint_list.SerializeToString())
-        offset += numpy_data.shape[0]
 
 
 def _check_save_obj_and_ckpt_file_name(save_obj, ckpt_file_name, format):
@@ -767,9 +743,7 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
                 data_list[param["name"]].append(param["data"])
                 continue
             if isinstance(param["data"], list):
-                if param["data"][0] == "persistent_data":
-                    _save_param_list_data(data_list, key, param)
-                elif param["data"][0] == "offload_parameter":
+                if param["data"][0] == "offload_parameter":
                     data_list[key].append("offload_parameter")
                     _save_param_list_data(data_list, key, param)
 
@@ -962,10 +936,7 @@ def _convert_cell_to_param_list(save_obj, integrated_save, append_dict, choice_f
             param_list.append(each_param)
             continue
 
-        if value.data.is_persistent_data():
-            # list save persistent_data: [Tensor, shape, type, param.key]
-            param_data = ["persistent_data", value.data, value.param_info.origin_shape, str(value.dtype), value.key]
-        elif value.data.offload_file_path() != "":
+        if value.data.offload_file_path() != "":
             # list save offload data: [Param, shape, type, param.key]
             param_data = ["offload_parameter"]
             param_tensor = value.data
@@ -1010,7 +981,6 @@ def _convert_save_obj_to_param_list(save_obj, integrated_save, append_dict, choi
 def _save_param_list_data(data_list, key, param):
     """Save persistent data into save_obj."""
     dims = []
-    # persistent_data shape can not be ()
     for dim in param['data'][2]:
         dims.append(dim)
     data_list[key].append(dims)

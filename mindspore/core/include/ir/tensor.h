@@ -741,11 +741,6 @@ class MS_CORE_API Tensor : public MetaTensor {
   /// \return tensor compression type.
   TensorCompressionType compression_type() const { return compression_type_; }
 
-  /// \brief If tensor use persistent tensor data.
-  ///
-  /// \return if use persistent tenor data.
-  bool is_persistent_data() const;
-
   /// \brief Set tensor name.
   ///
   /// \param[in] tensor_name The tensor name.

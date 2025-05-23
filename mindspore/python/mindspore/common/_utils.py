@@ -16,14 +16,9 @@
 # ============================================================================
 """common utils."""
 
-import os
-import math
 import ctypes
-import functools
 
 from mindspore import log as logger
-from mindspore.common import dtype as mstype
-from mindspore.parallel._ps_context import _is_ps_mode, _is_role_pserver, _is_role_sched
 
 
 def is_shape_unknown(shape):
@@ -44,45 +39,6 @@ def is_dim_unknown(shape):
     if -2 in shape:
         raise ValueError(f"'shape' should have only one -2 or no -2 at all but got ({shape}).")
     return False
-
-
-def get_slice_num(dtype, shape):
-    """Check whether size of data is too huge, and cut it to a smaller one, return slice num."""
-    slice_num = 1
-    need_split = _is_ps_mode() and (_is_role_pserver() or _is_role_sched())
-
-    if not need_split:
-        return slice_num
-
-    if "MS_EMBEDDING_REMOTE_CACHE_MEMORY_SIZE" not in os.environ:
-        return slice_num
-
-    num_element = functools.reduce(lambda x, y: x * y, shape, 1)
-    data_size = num_element * mstype.type_size_in_bytes(dtype)
-    remote_cache_size = int(os.getenv("MS_EMBEDDING_REMOTE_CACHE_MEMORY_SIZE")) << 30
-    if remote_cache_size == 0:
-        raise ValueError("The remote cache size set by env variable[MS_EMBEDDING_REMOTE_CACHE_MEMORY_SIZE]"
-                         " should be greater than 0.")
-
-    if data_size <= remote_cache_size:
-        return slice_num
-
-    slice_num = math.ceil(data_size / remote_cache_size)
-    return slice_num
-
-
-def get_slice_shape(dtype, shape):
-    """Check whether size of data is too huge, and cut it to a smaller one, return slice shape."""
-    slice_num = get_slice_num(dtype, shape)
-    if slice_num == 1:
-        return shape
-
-    new_shape = list(shape)
-    if slice_num == 0:
-        raise ValueError("The slice num is at least 1, but got 0")
-    slice_first_dim = math.ceil(new_shape[0] / slice_num)
-    new_shape[0] = slice_first_dim
-    return tuple(new_shape)
 
 
 def _jit_fallback_raise_func(type_name, script):

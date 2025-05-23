@@ -187,8 +187,6 @@ void TensorPy::SetInitFlag(bool flag) { GetTensor()->set_init_flag(flag); }
 
 void TensorPy::SetShape(const ShapeVector &shape) { GetTensor()->set_shape(shape); }
 
-bool TensorPy::IsPersistentData() const { return GetTensor()->is_persistent_data(); }
-
 int TensorPy::DataDim() const { return GetTensor()->DataDim(); }
 
 TensorPy &TensorPy::AssignValue(const TensorPy &tensorpy) {
@@ -314,28 +312,6 @@ const py::object TensorPy::GetRetainGrad() const {
 }
 
 void TensorPy::SetRetainGrad(const py::object &retain_grad) { retain_grad_ = retain_grad; }
-
-const py::object TensorPy::GetSliceNumOfPersistentData() const {
-  if (!slice_num_of_persistent_data_.check() || slice_num_of_persistent_data_.is_none()) {
-    return py::none();
-  }
-  return slice_num_of_persistent_data_;
-}
-
-void TensorPy::SetSliceNumOfPersistentData(const py::object &slice_num_of_persistent_data) {
-  slice_num_of_persistent_data_ = slice_num_of_persistent_data;
-}
-
-const py::object TensorPy::GetSliceShapeOfPersistentData() const {
-  if (!slice_shape_of_persistent_data_.check() || slice_shape_of_persistent_data_.is_none()) {
-    return py::none();
-  }
-  return slice_shape_of_persistent_data_;
-}
-
-void TensorPy::SetSliceShapeOfPersistentData(const py::object &slice_shape_of_persistent_data) {
-  slice_shape_of_persistent_data_ = slice_shape_of_persistent_data;
-}
 
 /* =========================================== Common Function ================================================= */
 bool IsTensorPy(const py::handle &obj) {
