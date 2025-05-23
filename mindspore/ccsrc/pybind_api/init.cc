@@ -62,6 +62,7 @@
 #include "include/common/np_dtype/np_dtypes.h"
 #include "include/common/amp/amp.h"
 #include "pipeline/jit/trace/trace_recorder.h"
+#include "runtime/graph_scheduler/execution_order_check/comm_execution_order_check.h"
 #ifdef _WIN32
 #include "kernel/cpu/utils/cpu_utils.h"
 #endif
@@ -816,4 +817,10 @@ PYBIND11_MODULE(_c_expression, m) {
   (void)m.def("_bind_device_ctx", &mindspore::pipeline::BindDeviceCtx, "Bind device context to current thread");
   (void)m.def("swap_cache", &mindspore::pipeline::SwapCache, py::arg("host"), py::arg("device"),
               py::arg("block_mapping"), py::arg("is_device_to_host"), "Swap Cache for PageAttention.");
+
+  (void)py::class_<mindspore::runtime::Process, std::shared_ptr<mindspore::runtime::Process>>(m, "CommExecOrderChecker")
+    .def_static("get_instance", &mindspore::runtime::Process::GetInstance, py::return_value_policy::reference,
+                "Get CommExecOrderChecker instance.")
+    .def("start_collect_exec_order", &mindspore::runtime::Process::StartCollectExecOrder, "Start collect exec order.")
+    .def("stop_collect_exec_order", &mindspore::runtime::Process::StopCollectExecOrder, "Stop collect exec order.");
 }

@@ -25,18 +25,22 @@
 #include <string>
 #include <tuple>
 #include <unordered_map>
+#include <utility>
 #include "ir/anf.h"
+#include "include/backend/visible.h"
+#include "runtime/graph_scheduler/execution_order_check/kernel_cache.h"
 
 namespace mindspore {
 namespace runtime {
-
-class Process {
+using KernelVariant = std::variant<CNodePtr, CommPyboostKernelPtr>;
+class BACKEND_EXPORT Process {
  public:
   static Process &GetInstance() {
     static Process instance;
     return instance;
   }
 
+  static const int kPynativeFlag = -1;
   static const size_t kMaxAllGatherBuffSize;
   static const uint64_t kFnvOffsetBasis;
   static const char kCommGroupName[];
@@ -55,7 +59,9 @@ class Process {
     std::unordered_map<std::string, uint64_t> group_hashes;
   };
 
-  void ProcessKernels(int step);
+  void StartCollectExecOrder();
+
+  void StopCollectExecOrder();
 
  private:
   std::unordered_map<int, std::future<ProcessResult>> async_futures_;
@@ -63,22 +69,26 @@ class Process {
   std::mutex cache_mutex_;
 
   Process() = default;
-  ~Process() = default;
 
   DISABLE_COPY_AND_ASSIGN(Process);
 
   std::unordered_map<int, ProcessResult> latest_results_;
+  ProcessResult pynative_results_;
 
   uint32_t GetRankSize();
   std::string GetRankID();
+  std::string GetGroupFromPrim(const PrimitivePtr &prim);
+  std::pair<std::string, std::string> GetKernelShapes(const CNodePtr &kernel);
 
-  void ValidateCommGroupExecuteOrders(int step);
-  void AllGatherExecuteOrderHash(int step, std::unique_ptr<char[]> *output_host_buffer);
+  void ProcessKernels(int step = kPynativeFlag);
+
+  void ValidateCommGroupExecuteOrders(int step = kPynativeFlag);
+  void AllGatherExecuteOrderHash(std::unique_ptr<char[]> *output_host_buffer, int step = kPynativeFlag);
   void ValidateExecuteOrders(const std::map<std::string, std::map<uint64_t, size_t>> &group_execute_order_hash);
 
   uint64_t accumulate_hash(uint64_t current_hash, const std::string &str);
   void FetchCommRanksCache(const std::string &group_name);
-  void ProcessSendReceive(ProcessResult *result, const std::string &group, const CNodePtr &kernel,
+  void ProcessSendReceive(ProcessResult *result, const std::string &group, const KernelVariant &kernel,
                           const std::string &primitive_str, const std::string &inputShape,
                           const std::string &outputShape);
   void ProcessNormalGroupHash(ProcessResult *result, const std::string &group, const std::string &primitive_str,

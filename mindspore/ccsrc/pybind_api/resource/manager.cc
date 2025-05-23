@@ -49,6 +49,7 @@
 #include "runtime/hardware/device_context_manager.h"
 #include "runtime/device/kernel_runtime_manager.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
+#include "runtime/graph_scheduler/execution_order_check/kernel_cache.h"
 #include "runtime/pynative/op_executor.h"
 #include "runtime/device/stream_synchronizer.h"
 #include "debug/profiler/profiler.h"
@@ -252,6 +253,7 @@ void ClearSingleton() {
   DumpJsonParser::Finalize();
   CommManager::Clear();
   expander::ClearAllCache();
+  runtime::KernelCache::GetInstance().ClearBuffers();
 
   MS_LOG(INFO) << "End clear singleton.";
 }

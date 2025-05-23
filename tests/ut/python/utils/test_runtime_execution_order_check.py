@@ -24,6 +24,7 @@ from mindspore.utils.runtime_execution_order_check import (
     ExecuteOrder,
     parse_and_validate,
     detect_cycle_in_graph,
+    comm_exec_order_check,
 )
 
 class TestRankFolderParser(unittest.TestCase):
@@ -300,6 +301,31 @@ class TestDetectCycleInGraph(unittest.TestCase):
         self.assertIsNone(cycle_path)
         self.assertIsNone(cycle_ranks)
 
+    def test_complex_cycle(self):
+        ranks_map = {
+            "1": ["A", "B", "C"],
+            "2": ["C", "D", "E"],
+            "3": ["E", "A"]
+        }
+        cycle_path, cycle_ranks = detect_cycle_in_graph(ranks_map)
+        self.assertEqual(cycle_path, ["A", "B", "C", "D", "E", "A"])
+        self.assertEqual(cycle_ranks, [
+            '1 A -> B',
+            '1 B -> C',
+            '2 C -> D',
+            '2 D -> E',
+            '3 E -> A'
+        ])
+
+    def test_disconnected_components_with_cycle(self):
+        ranks_map = {
+            "1": ["A", "B", "C"],
+            "2": ["D", "E", "D"]
+        }
+        cycle_path, cycle_ranks = detect_cycle_in_graph(ranks_map)
+        self.assertEqual(cycle_path, ["D", "E", "D"])
+        self.assertEqual(cycle_ranks, ['2 D -> E', '2 E -> D'])
+
     def test_cross_rank_cycle(self):
         ranks_map = {
             '1': ['A', 'B'],
@@ -349,6 +375,66 @@ class TestDetectCycleInGraph(unittest.TestCase):
         cycle_path, cycle_ranks = detect_cycle_in_graph(ranks_map)
         self.assertIsNone(cycle_path)
         self.assertIsNone(cycle_ranks)
+
+        ranks_map = {
+            '1': ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'],
+            '2': ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'],
+            '3': ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'],
+            '4': ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'],
+            '5': ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'],
+            '6': ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'],
+            '7': ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'],
+            '8': ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']
+        }
+        cycle_path, cycle_ranks = detect_cycle_in_graph(ranks_map)
+        self.assertIsNone(cycle_path)
+        self.assertIsNone(cycle_ranks)
+
+
+class TestCommExecOrderCheck(unittest.TestCase):
+    """Test cases for CommExecOrderCheck class validation logic."""
+
+    @patch('mindspore.log.error')
+    def test_end_before_start(self, mock_logger):
+        """Test calling end action before start."""
+        with patch('mindspore._c_expression.CommExecOrderChecker.get_instance') as mock_get:
+            mock_instance = mock_get.return_value
+            comm_exec_order_check("end")
+            mock_instance.stop_collect_exec_order.assert_not_called()
+            mock_logger.assert_called_once_with("The 'end' action cannot be called before the 'start' action.")
+
+    def test_normal_sequence(self):
+        """Test correct start-end sequence."""
+        with patch('mindspore._c_expression.CommExecOrderChecker.get_instance') as mock_get:
+            mock_instance = mock_get.return_value
+            comm_exec_order_check("start")
+            comm_exec_order_check("end")
+
+            mock_instance.start_collect_exec_order.assert_called_once()
+            mock_instance.stop_collect_exec_order.assert_called_once()
+
+    @patch('mindspore.log.error')
+    def test_multiple_starts(self, mock_logger):
+        """Test multiple start calls."""
+        with patch('mindspore._c_expression.CommExecOrderChecker.get_instance') as mock_get:
+            mock_instance = mock_get.return_value
+            comm_exec_order_check("start")
+            comm_exec_order_check("start")
+
+            self.assertEqual(mock_instance.start_collect_exec_order.call_count, 1)
+            self.assertEqual(mock_logger.call_count, 1)
+
+    @patch('mindspore.log.error')
+    def test_multiple_ends(self, mock_logger):
+        """Test multiple end calls."""
+        with patch('mindspore._c_expression.CommExecOrderChecker.get_instance') as mock_get:
+            mock_instance = mock_get.return_value
+            comm_exec_order_check("start")
+            comm_exec_order_check("end")
+            comm_exec_order_check("end")
+
+            mock_instance.stop_collect_exec_order.assert_called_once()
+            self.assertEqual(mock_logger.call_count, 1)
 
 
 if __name__ == "__main__":

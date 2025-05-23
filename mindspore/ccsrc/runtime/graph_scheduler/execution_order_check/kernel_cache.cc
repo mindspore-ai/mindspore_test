@@ -26,13 +26,22 @@ void KernelCache::SwapBuffers(int step) {
   current_buffer_.reserve(100000);
 }
 
-std::vector<CNodePtr> KernelCache::GetBuffers(int step) {
+std::vector<std::any> KernelCache::GetBuffers(int step) {
   std::lock_guard<std::mutex> lock(mutex_);
+  if (step == -1) {
+    return current_buffer_;
+  }
   auto it = step_buffers_.find(step);
   if (it != step_buffers_.end()) {
     return it->second;
   }
   return {};
+}
+
+void KernelCache::AddPyboostKernel(const std::string &prim_name, const std::string &group,
+                                   const std::string &input_shape, const std::string &output_shape, int64_t rank) {
+  auto kernel = std::make_shared<CommPyboostKernel>(prim_name, group, input_shape, output_shape, rank);
+  current_buffer_.emplace_back(kernel);
 }
 }  // namespace runtime
 }  // namespace mindspore
