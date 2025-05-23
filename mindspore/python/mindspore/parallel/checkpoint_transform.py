@@ -1163,6 +1163,8 @@ def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_stra
             train_strategy_filename = ms.context.get_auto_parallel_context("strategy_ckpt_load_file")
 
     _train_strategy = build_searched_strategy(train_strategy_filename)
+    if not _train_strategy:
+        return True
     train_strategy = _convert_to_list(_train_strategy)
 
     train_dev_count = 1
