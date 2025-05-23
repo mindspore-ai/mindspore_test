@@ -108,7 +108,7 @@ struct MS_CORE_API CopyFuncRegister {
   static CopyFuncRegister<device_type> g_maker_register(sync_func, async_func); \
   }
 
-bool SyncCopy(const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync, size_t stream_id);
-bool AsyncCopy(const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync, size_t stream_id);
+MS_CORE_API bool SyncCopy(const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync, size_t stream_id);
+MS_CORE_API bool AsyncCopy(const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync, size_t stream_id);
 }  // namespace mindspore
 #endif  // MINDSPORE_CORE_IR_DEVICE_SYNC_H_

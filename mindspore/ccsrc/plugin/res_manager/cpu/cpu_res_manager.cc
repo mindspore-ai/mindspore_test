@@ -284,12 +284,12 @@ bool CPUResManager::AsyncCopy(const DeviceSync *dst_device_sync, const DeviceSyn
   return true;
 }
 
-MS_REGISTER_HAL_COPY_FUNC(DeviceType::kAscend,
+MS_REGISTER_HAL_COPY_FUNC(DeviceType::kCPU,
                           ([](const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync, size_t stream_id) {
                             auto context = MsContext::GetInstance();
                             MS_EXCEPTION_IF_NULL(context);
                             auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-                            device::ResKey res_key{DeviceType::kAscend, device_id};
+                            device::ResKey res_key{DeviceType::kCPU, device_id};
                             auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
                             MS_EXCEPTION_IF_NULL(res_manager);
                             return res_manager->SyncCopy(dst_device_sync, src_device_sync, stream_id);
@@ -298,7 +298,7 @@ MS_REGISTER_HAL_COPY_FUNC(DeviceType::kAscend,
                             auto context = MsContext::GetInstance();
                             MS_EXCEPTION_IF_NULL(context);
                             auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-                            device::ResKey res_key{DeviceType::kAscend, device_id};
+                            device::ResKey res_key{DeviceType::kCPU, device_id};
                             auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
                             MS_EXCEPTION_IF_NULL(res_manager);
                             return res_manager->SyncCopy(dst_device_sync, src_device_sync, stream_id);
