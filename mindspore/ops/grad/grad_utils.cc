@@ -31,11 +31,11 @@
 namespace mindspore::expander::bprop {
 NodePtrList ReturnZeros(BpropBuilder *ib) {
   const auto &inputs = ib->GetInputs();
-  if (inputs.size() <= kDim2) {
+  if (inputs.size() <= i2) {
     MS_LOG(EXCEPTION) << "Bprop's inputs size should be greater than 2 (includes out and dout), but got "
                       << inputs.size();
   }
-  auto output_num = inputs.size() - kDim2;
+  auto output_num = inputs.size() - i2;
   NodePtrList outputs(output_num);
   for (size_t i = 0; i < output_num; ++i) {
     outputs[i] = ib->OutZeros(inputs[i]);
@@ -48,10 +48,10 @@ std::pair<std::vector<bool>, std::vector<std::vector<int64_t>>> DynBroadcastGrad
   const std::vector<int64_t> &x_shape, const std::vector<int64_t> &y_shape) {
   auto x_size = x_shape.size();
   auto y_size = y_shape.size();
-  ShapeVector shape[kDim2] = {x_shape, y_shape};
+  ShapeVector shape[i2] = {x_shape, y_shape};
   auto n = std::max(x_size, y_size);
   std::vector<bool> need_shapecalc = {false, false};
-  std::vector<std::vector<int64_t>> reduce_axis(kDim2);
+  std::vector<std::vector<int64_t>> reduce_axis(i2);
   if (IsDynamicRank(shape[0]) || IsDynamicRank(shape[1])) {
     return {{true, true}, reduce_axis};
   }
@@ -64,13 +64,13 @@ std::pair<std::vector<bool>, std::vector<std::vector<int64_t>>> DynBroadcastGrad
         break;
       }
     } else if (dim_value[1] > 0 && dim_value[0] > 0) {
-      for (size_t j = 0; j < kDim2; j++) {
+      for (size_t j = 0; j < i2; j++) {
         if (dim_value[j] == 1) {
           (void)reduce_axis[j].emplace_back(reduce_idx);
         }
       }
     } else {
-      for (size_t j = 0; j < kDim2; j++) {
+      for (size_t j = 0; j < i2; j++) {
         if (dim_value[j] == -1) {
           if (dim_value[j ^ 1] == 1) {
             (void)reduce_axis[j ^ 1].emplace_back(reduce_idx);
@@ -98,7 +98,7 @@ NodePtrList DynBinopGradCommon(BpropBuilder *ib, const NodePtr &x, const NodePtr
   if (need_shapecalc[0] || need_shapecalc[1]) {
     broadcast_axes = ib->BroadcastGradientArgs(inputs[0], inputs[1], shift);
   }
-  for (size_t i = 0; i < kDim2; i++) {
+  for (size_t i = 0; i < i2; i++) {
     if (reduce[i] == nullptr) {
       continue;
     }
@@ -238,8 +238,8 @@ int64_t GetIntValue(const NodePtr &node) {
   auto value = node->BuildValue();
   if (value->isa<tensor::Tensor>()) {
     auto t_vec = CheckAndConvertUtils::CheckTensorIntValue("tensor", value, "bprop");
-    MS_EXCEPTION_IF_CHECK_FAIL(t_vec.size() >= kIndex1, "Get single tensor value failed");
-    return t_vec[kIndex0];
+    MS_EXCEPTION_IF_CHECK_FAIL(t_vec.size() >= i1, "Get single tensor value failed");
+    return t_vec[i0];
   }
   return AnfUtils::GetIntValue(value);
 }
@@ -248,7 +248,7 @@ NodePtr StaticBinopGradCommon(BpropBuilder *ib, const NodePtr &dx, const ShapeAr
                               const ShapeArray &broadcast_shape, size_t shift, size_t index, bool *is_dynamic_shape) {
   NodePtr reduce_dx = dx;
   auto shape_dynamic_dims = std::count_if(shape[index].begin(), shape[index].end(), [](int64_t x) { return x <= -1; });
-  if (broadcast_shape[kIndex0].empty() || broadcast_shape[kIndex1].empty()) {
+  if (broadcast_shape[i0].empty() || broadcast_shape[i1].empty()) {
     if (broadcast_shape[index].empty()) {
       if (shift) {
         std::vector<int64_t> axis(broadcast_shape[index ^ 1].size());
@@ -292,27 +292,25 @@ NodePtrList BinopGradCommon(BpropBuilder *ib, const NodePtr &x, const NodePtr &y
   // The function is usually used in backprop op to reduce additional dimensions
   // created by broadcasting.
   NodePtrList inputs{x, y};
-  ShapeArray shape{ib->GetShape(inputs[kIndex0]), ib->GetShape(inputs[kIndex1])};
+  ShapeArray shape{ib->GetShape(inputs[i0]), ib->GetShape(inputs[i1])};
   NodePtrList reduce = {dx, dy};
-  if (IsDynamicRank(shape[kIndex0]) || IsDynamicRank(shape[kIndex1])) {
+  if (IsDynamicRank(shape[i0]) || IsDynamicRank(shape[i1])) {
     return DynBinopGradCommon(ib, x, y, dx, dy, shift);
   }
-  if (shape[kIndex0].size() <= shift && shape[kIndex0].size() == shape[kIndex1].size()) {
+  if (shape[i0].size() <= shift && shape[i0].size() == shape[i1].size()) {
     return reduce;
   }
-  ShapeArray broadcast_shape(kDim2);
-  for (size_t i = 0; i < kDim2; i++) {
+  ShapeArray broadcast_shape(i2);
+  for (size_t i = 0; i < i2; i++) {
     broadcast_shape[i] = ShapeVector(shape[i].begin(), shape[i].end() - shift);
   }
   bool is_x_shape_dynamic = false;
   bool is_y_shape_dynamic = false;
   if (dx != nullptr) {
-    reduce[kIndex0] =
-      StaticBinopGradCommon(ib, reduce[kIndex0], shape, broadcast_shape, shift, kIndex0, &is_x_shape_dynamic);
+    reduce[i0] = StaticBinopGradCommon(ib, reduce[i0], shape, broadcast_shape, shift, i0, &is_x_shape_dynamic);
   }
   if (dy != nullptr) {
-    reduce[kIndex1] =
-      StaticBinopGradCommon(ib, reduce[kIndex1], shape, broadcast_shape, shift, kIndex1, &is_y_shape_dynamic);
+    reduce[i1] = StaticBinopGradCommon(ib, reduce[i1], shape, broadcast_shape, shift, i1, &is_y_shape_dynamic);
   }
   if (is_x_shape_dynamic || is_y_shape_dynamic) {
     return DynBinopGradCommon(ib, x, y, dx, dy, shift);
@@ -323,17 +321,17 @@ NodePtrList BinopGradCommon(BpropBuilder *ib, const NodePtr &x, const NodePtr &y
 NodePtrList MatMulExtBroadCastGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr &y, const NodePtr &dx,
                                    const NodePtr &dy, size_t ignore_offset) {
   NodePtrList inputs{x, y};
-  ShapeArray shape{ib->GetShape(inputs[kIndex0]), ib->GetShape(inputs[kIndex1])};
+  ShapeArray shape{ib->GetShape(inputs[i0]), ib->GetShape(inputs[i1])};
   NodePtrList reduce = {dx, dy};
-  ShapeArray broadcast_shape(kDim2);
+  ShapeArray broadcast_shape(i2);
   broadcast_shape[0] = shape[0];
   broadcast_shape[1] = shape[1];
 
   if (dx != nullptr) {
-    reduce[kIndex0] = MatMulExtBroadCastGradPart(ib, reduce[kIndex0], shape, broadcast_shape, ignore_offset, kIndex0);
+    reduce[i0] = MatMulExtBroadCastGradPart(ib, reduce[i0], shape, broadcast_shape, ignore_offset, i0);
   }
   if (dy != nullptr) {
-    reduce[kIndex1] = MatMulExtBroadCastGradPart(ib, reduce[kIndex1], shape, broadcast_shape, ignore_offset, kIndex1);
+    reduce[i1] = MatMulExtBroadCastGradPart(ib, reduce[i1], shape, broadcast_shape, ignore_offset, i1);
   }
   return reduce;
 }
@@ -715,7 +713,7 @@ NodePtr ArgminOrArgmaxGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr &ax
 
 NodePtr MeidanDimGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr &axis, const NodePtr &keep_dims,
                       const NodePtr &out, const NodePtr &dout) {
-  return ReduceCommonOpGrad(ib, x, axis, keep_dims, out, dout, kIndex0, kIndex1);
+  return ReduceCommonOpGrad(ib, x, axis, keep_dims, out, dout, i0, i1);
 }
 
 inline NodePtr ReduceCommonOpGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr &axis, const NodePtr &keep_dims,
@@ -818,18 +816,18 @@ bool CheckType(const TypePtr &check_type, const std::set<TypePtr> &template_type
 
 ShapeVector PoolToNHWC(const ShapeVector &v) {
   ShapeVector new_v(v);
-  new_v[kIndex1] = v[kIndex2];
-  new_v[kIndex2] = v[kIndex3];
-  new_v[kIndex3] = v[kIndex1];
+  new_v[i1] = v[i2];
+  new_v[i2] = v[i3];
+  new_v[i3] = v[i1];
   return new_v;
 }
 
 ShapeVector ConvToNHWC(const ShapeVector &v) {
   ShapeVector new_v(v);
-  new_v[kIndex0] = v[kIndex1];
-  new_v[kIndex1] = v[kIndex2];
-  new_v[kIndex2] = v[kIndex3];
-  new_v[kIndex3] = 1;
+  new_v[i0] = v[i1];
+  new_v[i1] = v[i2];
+  new_v[i2] = v[i3];
+  new_v[i3] = 1;
   return new_v;
 }
 
@@ -860,14 +858,14 @@ NodePtr MatrixTranspose(BpropBuilder *ib, const NodePtr &x) {
     return ib->TransposeView(x, ib->TensorToTuple(perm));
   }
   auto dim = shape.size();
-  if (dim < kDim2) {
+  if (dim < i2) {
     MS_LOG_EXCEPTION << "For MatrixTranspose, input's ndim " << dim << " is less or equal to 2, which is invalid";
   }
   std::vector<int64_t> perm(dim);
   for (size_t i = 0; i < dim; i++) {
     perm[i] = static_cast<int64_t>(i);
   }
-  std::swap(perm[dim - kIndex2], perm[dim - kIndex1]);
+  std::swap(perm[dim - i2], perm[dim - i1]);
   return ib->TransposeView(x, perm);
 }
 
@@ -889,14 +887,14 @@ NodePtr MatrixTransposeExt(BpropBuilder *ib, const NodePtr &x) {
     return ib->TransposeView(x, ib->TensorToTuple(perm));
   }
   auto dim = shape.size();
-  if (dim < kDim2) {
+  if (dim < i2) {
     return x;
   }
   std::vector<int64_t> perm(dim);
   for (size_t i = 0; i < dim; i++) {
     perm[i] = static_cast<int64_t>(i);
   }
-  std::swap(perm[dim - kIndex2], perm[dim - kIndex1]);
+  std::swap(perm[dim - i2], perm[dim - i1]);
   return ib->TransposeView(x, perm);
 }
 
