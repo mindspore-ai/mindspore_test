@@ -235,6 +235,12 @@ bool ReadStatciAclOp(const std::string &op_name, bool is_dynamic) {
 
   return is_dynamic;
 }
+
+std::vector<int64_t> GetDynamicInputSize(const PrimitivePtr &prim) {
+  MS_EXCEPTION_IF_NULL(prim);
+  return prim->HasAttr(kAttrDynInputSizes) ? GetValue<std::vector<int64_t>>(prim->GetAttr(kAttrDynInputSizes))
+                                           : std::vector<int64_t>();
+}
 }  // namespace
 
 template <typename ConvertType>
@@ -840,10 +846,7 @@ void AclConverter::ConvertMsIdxToGeIdx(const PrimitivePtr &prim, const std::vect
 
   ms_and_ge_inputs_sort_info_.clear();
   ms_and_ge_inputs_idx_info_.clear();
-  std::vector<int64_t> dyn_input_sizes = {};
-  if (prim->HasAttr(kAttrDynInputSizes)) {
-    dyn_input_sizes = GetValue<std::vector<int64_t>>(prim->GetAttr(kAttrDynInputSizes));
-  }
+  auto dyn_input_sizes = GetDynamicInputSize(prim);
 
   size_t ms_real_idx = 0;
   size_t attr_offset = 0;

@@ -303,7 +303,7 @@ typedef struct aclScalarList aclScalarList;
             else:
                 inputs_types.append("aclTensor*")
         for attr in attrs:
-            inputs_types.append(self._get_type_declaration(attr.get(REG_INFO_KEY_TYPE)))
+            inputs_types.append(CustomCodeGenerator._get_type_declaration(attr.get(REG_INFO_KEY_TYPE)))
 
         for output in outputs:
             if output.get(REG_INFO_KEY_PARAM_TYPE) == "dynamic":
@@ -438,7 +438,7 @@ typedef struct aclScalarList aclScalarList;
             RuntimeError: If unsupported input or output type is encountered.
         """
         func_params = []
-        for i in range(len(inputs_types)):
+        for i, _ in enumerate(inputs_types):
             typ = inputs_types[i]
             if typ in self.supported_input_pointer_type:
                 func_params.append(f"input{i}")
@@ -448,7 +448,7 @@ typedef struct aclScalarList aclScalarList;
                 raise RuntimeError(
                     f"Unsupported input type: {typ}, supported input types are: {self.supported_input_type}")
 
-        for i in range(len(outputs_types)):
+        for i, _ in enumerate(outputs_types):
             typ = outputs_types[i]
             if typ in self.supported_output_type:
                 func_params.append(f"output{i}")
@@ -495,7 +495,8 @@ extern "C" int {func_name}GetWorkSpaceSize(void *func_ptr, std::vector<void *> i
     outputs_code=";\n".join(outputs_code) + ";", func_params=", ".join(func_params))
         return code
 
-    def _get_type_declaration(self, typ):
+    @staticmethod
+    def _get_type_declaration(typ):
         """Get the C++ type declaration based on the type.
 
        Args:
@@ -517,8 +518,8 @@ extern "C" int {func_name}GetWorkSpaceSize(void *func_ptr, std::vector<void *> i
         }
         try:
             return type_map[typ]
-        except KeyError:
-            raise RuntimeError(f"Unsupported type: {typ}")
+        except KeyError as e:
+            raise RuntimeError(f"Unsupported type: {typ}") from e
 
 
 class CustomInfoGenerator:
@@ -540,7 +541,7 @@ class CustomInfoGenerator:
         self.prefix = "aclnn"
         self.pure_op_name = self._get_pure_name(op_name)
         self.prefix_op_name = self._get_prefix_name(op_name)
-        self.aclnn_api_file_name = self._get_aclnn_api_file_name(self.prefix_op_name)
+        self.aclnn_api_file_name = CustomInfoGenerator._get_aclnn_api_file_name(self.prefix_op_name)
 
         self.env_ascend_opp_path = os.getenv("ASCEND_OPP_PATH")
         self.env_ascend_custom_opp_path = os.getenv("ASCEND_CUSTOM_OPP_PATH")
@@ -552,7 +553,8 @@ class CustomInfoGenerator:
         self.aclnn_api_paths = []
         self.aclnn_api = ""
 
-    def _get_aclnn_api_file_name(self, op_name):
+    @staticmethod
+    def _get_aclnn_api_file_name(op_name):
         """ Converts a camel-case operation name to an underscore-separated filename with a .h suffix."""
         name = re.sub(r'(.)([A-Z][a-z]+)', r'\1_\2', op_name)
         name = re.sub(r'([a-z0-9])([A-Z])', r'\1_\2', name)
@@ -628,7 +630,7 @@ class CustomInfoGenerator:
         opp_vendors_path = os.path.join(self.env_ascend_opp_path, "vendors")
         opp_vendors_config_path = os.path.join(opp_vendors_path, "config.ini")
         if os.path.exists(opp_vendors_config_path):
-            priorities = self._parse_load_priority(opp_vendors_config_path)
+            priorities = CustomInfoGenerator._parse_load_priority(opp_vendors_config_path)
             for priority in priorities:
                 aclnn_api_file_path = os.path.join(opp_vendors_path, priority.strip(), "op_api/include/")
                 if self._get_aclnn_api_from_file(aclnn_api_file_path):
@@ -673,7 +675,8 @@ class CustomInfoGenerator:
             param_types.append(type_part)
         return param_types
 
-    def _parse_load_priority(self, config_file_path):
+    @staticmethod
+    def _parse_load_priority(config_file_path):
         """
         Parse the load priority from a configuration file.
 
@@ -757,7 +760,7 @@ class CustomInfoGenerator:
         opp_vendors_path = os.path.join(self.env_ascend_opp_path, "vendors")
         opp_vendors_config_path = os.path.join(opp_vendors_path, "config.ini")
         if os.path.exists(opp_vendors_config_path):
-            priorities = self._parse_load_priority(opp_vendors_config_path)
+            priorities = CustomInfoGenerator._parse_load_priority(opp_vendors_config_path)
             for priority in priorities:
                 op_info_path = os.path.join(opp_vendors_path, priority.strip(), op_info_json_path)
                 if self._get_op_info_from_file(op_info_path):
@@ -815,7 +818,8 @@ class CustomInfoGenerator:
 
         return reg_info
 
-    def _get_dtype_format(self, dtype, format_str):
+    @staticmethod
+    def _get_dtype_format(dtype, format_str):
         """
         Combine data type and format into a tuple.
 
@@ -874,19 +878,19 @@ class CustomInfoGenerator:
         for dtype_format_index in range(len(inputs_types[0])):
             op_dtypes_formats = []
             # Process input data types and formats
-            for input_index in range(len(inputs_types)):
+            for input_index, _ in enumerate(inputs_types):
                 dtype = inputs_types[input_index][dtype_format_index]
                 format_str = inputs_formats[input_index][dtype_format_index] if dtype_format_index < len(
                     inputs_formats[input_index]) else "DefaultFormat"
-                dtype_format = self._get_dtype_format(dtype, format_str)
+                dtype_format = CustomInfoGenerator._get_dtype_format(dtype, format_str)
                 op_dtypes_formats.append(dtype_format)
 
             # Process output data types and formats
-            for output_index in range(len(outputs_types)):
+            for output_index, _ in enumerate(outputs_types):
                 dtype = outputs_types[output_index][dtype_format_index]
                 format_str = outputs_formats[output_index][dtype_format_index] if dtype_format_index < len(
                     outputs_formats[output_index]) else "DefaultFormat"
-                dtype_format = self._get_dtype_format(dtype, format_str)
+                dtype_format = CustomInfoGenerator._get_dtype_format(dtype, format_str)
                 op_dtypes_formats.append(dtype_format)
 
             custom_reg_op.dtype_format(*op_dtypes_formats)
