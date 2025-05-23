@@ -336,6 +336,7 @@ bool AscendDeviceAddress::Float64ToFloatAndSyncHostToDevice(void *dst, size_t ds
   auto host_tmp = std::vector<float>(elem_num);
   DoubleToFloat(host_tmp.data(), src, elem_num);
   SyncMemory(dst, host_tmp.data(), dst_size, ACL_MEMCPY_HOST_TO_DEVICE, tensor_data);
+  SyncStreamUtils();
   return true;
 }
 
@@ -678,6 +679,7 @@ bool AscendDeviceAddress::SyncHostToDeviceImpl(const ShapeVector &shape, size_t 
         return false;
       }
       CopyHostToDevice(host_tmp.data(), GetSize(), tensor_data);
+      SyncStreamUtils();
     }
   } else {
     if (IsOpNeedTransFormat(DeviceAddress::format())) {
@@ -931,6 +933,7 @@ bool AscendDeviceAddress::ConvertFormatAndSyncHostToDevice(const ShapeVector &sh
       return false;
     }
     CopyHostToDevice(dst_tmp.data(), GetSize(), tensor_data);
+    SyncStreamUtils();
   } else {
     const trans::FormatArgs format_args{host_ptr,   GetSize(),    kOpFormat_NCHW, format(),
                                         host_shape, device_shape, type_id()};
@@ -941,6 +944,7 @@ bool AscendDeviceAddress::ConvertFormatAndSyncHostToDevice(const ShapeVector &sh
       return false;
     }
     CopyHostToDevice(host_tmp.data(), GetSize(), tensor_data);
+    SyncStreamUtils();
   }
   return sync_ok;
 }
