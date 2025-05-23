@@ -19,6 +19,7 @@
 
 #include <string>
 #include <vector>
+#include <utility>
 #include "plugin/device/ascend/kernel/atb/atb_kernel_mod.h"
 #include "acl/acl.h"
 #include "atb/atb_infer.h"
@@ -27,7 +28,7 @@
 namespace mindspore::kernel {
 class InplaceMatmulAddATBKernelMod : public ATBKernelMod {
  public:
-  InplaceMatmulAddATBKernelMod() : ATBKernelMod() {}
+  InplaceMatmulAddATBKernelMod() : ATBKernelMod(std::move("inplace_matmul_add")) {}
   ~InplaceMatmulAddATBKernelMod() = default;
 
   void GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;

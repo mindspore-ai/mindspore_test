@@ -34,8 +34,40 @@ atb::Tensor GetAtbTensor(mindspore::kernel::KernelTensor *kernel_tensor) {
     tensor.desc.shape.dims[i] = shape[i];
   }
   tensor.dataSize = kernel_tensor->size();
-  // only contiguous tensor is supported now.
   tensor.deviceData = kernel_tensor->device_ptr();
+  // only contiguous tensor is supported now.
+  const auto &storage_info = kernel_tensor->tensor_storage_info();
+  if (storage_info != nullptr && !storage_info->is_contiguous) {
+    MS_LOG(EXCEPTION) << "Only contiguous tensor is supported in atb now.";
+  }
+  return tensor;
+}
+
+atb::Tensor GetAtbTensor(const tensor::TensorPtr &base_tensor) {
+  MS_EXCEPTION_IF_NULL(base_tensor);
+  atb::Tensor tensor;
+  if (base_tensor == nullptr) {
+    return tensor;
+  }
+  const auto &shape = base_tensor->shape();
+  const auto shape_size = shape.size();
+  tensor.desc.dtype = AclConverter::ConvertType(base_tensor->data_type());
+  tensor.desc.format = ACL_FORMAT_ND;
+  tensor.desc.shape.dimNum = shape_size;
+  for (size_t i = 0; i < shape_size; i++) {
+    tensor.desc.shape.dims[i] = shape[i];
+  }
+  tensor.dataSize = base_tensor->Size();
+  auto device_address = base_tensor->device_address()->GetMutablePtr();
+  if (device_address == nullptr) {
+    MS_LOG(EXCEPTION) << "The device address is null, please allocate the device memory for tensor";
+  }
+  tensor.deviceData = device_address;
+  // only contiguous tensor is supported now.
+  const auto &storage_info = base_tensor->storage_info();
+  if (storage_info != nullptr && !storage_info->is_contiguous) {
+    MS_LOG(EXCEPTION) << "Only contiguous tensor is supported in atb now.";
+  }
   return tensor;
 }
 
@@ -51,7 +83,7 @@ static atb::Context *atb_context = nullptr;
 ParamSetter &ParamSetter::Input(mindspore::kernel::KernelTensor *kernel_tensor) {
   MS_EXCEPTION_IF_NULL(kernel_tensor);
   atb::Tensor tensor = GetAtbTensor(kernel_tensor);
-  variant_pack.inTensors.push_back(tensor);
+  variant_pack.inTensors.push_back(std::move(tensor));
   return *this;
 }
 
@@ -62,10 +94,24 @@ ParamSetter &ParamSetter::Input(std::optional<mindspore::kernel::KernelTensor *>
   return Input(nullptr);
 }
 
+ParamSetter &ParamSetter::Input(const tensor::TensorPtr &base_tensor) {
+  MS_EXCEPTION_IF_NULL(base_tensor);
+  atb::Tensor tensor = GetAtbTensor(base_tensor);
+  variant_pack.inTensors.push_back(std::move(tensor));
+  return *this;
+}
+
+ParamSetter &ParamSetter::Input(const std::optional<tensor::TensorPtr> &base_tensor) {
+  if (base_tensor.has_value()) {
+    return Input(base_tensor.value());
+  }
+  return Input(nullptr);
+}
+
 ParamSetter &ParamSetter::Output(mindspore::kernel::KernelTensor *kernel_tensor) {
   MS_EXCEPTION_IF_NULL(kernel_tensor);
   atb::Tensor tensor = GetAtbTensor(kernel_tensor);
-  variant_pack.outTensors.push_back(tensor);
+  variant_pack.outTensors.push_back(std::move(tensor));
 
   if (stream == nullptr) {
     size_t stream_id = kernel_tensor->stream_id();
@@ -77,6 +123,20 @@ ParamSetter &ParamSetter::Output(mindspore::kernel::KernelTensor *kernel_tensor)
 ParamSetter &ParamSetter::Output(std::optional<mindspore::kernel::KernelTensor *> kernel_tensor) {
   if (kernel_tensor.has_value()) {
     return Output(kernel_tensor.value());
+  }
+  return Output(nullptr);
+}
+
+ParamSetter &ParamSetter::Output(const tensor::TensorPtr &base_tensor) {
+  MS_EXCEPTION_IF_NULL(base_tensor);
+  atb::Tensor tensor = GetAtbTensor(base_tensor);
+  variant_pack.outTensors.push_back(std::move(tensor));
+  return *this;
+}
+
+ParamSetter &ParamSetter::Output(const std::optional<tensor::TensorPtr> &base_tensor) {
+  if (base_tensor.has_value()) {
+    return Output(base_tensor.value());
   }
   return Output(nullptr);
 }
@@ -107,6 +167,16 @@ void Launch(atb::Operation *op, atb::VariantPack variant_pack, void *workspace_p
   MS_EXCEPTION_IF_NULL(op);
   auto ret = op->Execute(variant_pack, reinterpret_cast<uint8_t *>(workspace_ptr), workpsace_size_list[0],
                          GetAtbContext(stream));
+  if (ret != 0) {
+    MS_LOG(EXCEPTION) << "Execute failed.";
+  }
+}
+
+void Launch(atb::Operation *op, atb::VariantPack variant_pack, void *workspace_ptr, size_t workpsace_size,
+            aclrtStream stream) {
+  MS_EXCEPTION_IF_NULL(op);
+  auto ret =
+    op->Execute(variant_pack, reinterpret_cast<uint8_t *>(workspace_ptr), workpsace_size, GetAtbContext(stream));
   if (ret != 0) {
     MS_LOG(EXCEPTION) << "Execute failed.";
   }

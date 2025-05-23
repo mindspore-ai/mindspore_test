@@ -231,7 +231,7 @@ endif()
 if(ENABLE_D)
     if(EXISTS ${ASCEND_NNAL_ATB_PATH})
         install(
-                TARGETS mindspore_atb_kernels LIBRARY
+                TARGETS mindspore_atb_kernels mindspore_pyboost_atb_kernels LIBRARY
                 DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
                 COMPONENT mindspore
                 NAMELINK_SKIP
