@@ -85,7 +85,10 @@ void OptCode::SetPythonCode(const py::object &code) {
 
 PyCodeObject *OptCode::GetPythonCode() const { return reinterpret_cast<PyCodeObject *>(compiled_code_.ptr()); }
 
-void OptCode::SetGuard(OptGuardPtr guard) { guard_ = guard; }
+void OptCode::SetGuard(OptGuardPtr guard) {
+  guard->set_code_hub(guard_->code_hub());
+  guard_ = guard;
+}
 
 OptGuardPtr OptCode::GetGuard() { return guard_; }
 
@@ -120,11 +123,13 @@ OptCodePtr OptCodeHub::AddOptTarget(OptOptionPtr option) {
   for (auto &item : codeMap_) {
     if (*(item.first.get()) == *(option.get())) {
       ret = std::make_shared<OptCode>();
+      ret->GetGuard()->set_code_hub(shared_from_this());
       item.second.push_back(ret);
       return ret;
     }
   }
   ret = std::make_shared<OptCode>();
+  ret->GetGuard()->set_code_hub(shared_from_this());
   codeMap_[option].push_back(ret);
   ret->SetOption(option);
   return ret;
@@ -210,71 +215,55 @@ CodeCache::CodeCache(void *jcr)
     : jcr_(OptOption::CreateOptionByPoint(jcr)), code_hub_(std::make_shared<OptCodeHub>()) {}
 
 void CodeCache::CollectFailGuard() {
-  auto iter = code_hub_->codeMap_.find(jcr_);
-  if (iter == code_hub_->codeMap_.end()) {
-    return;
-  }
-  GuardItemSet set;
-  for (const auto &i : iter->second) {
-    for (const auto &j : i->GetGuard()->guard_list()) {
-      if (j->fail_count() != 0) {
-        set.emplace(j);
-        j->set_faile_count(0);
-      }
-    }
-  }
-  for (const auto &i : set) {
-    fail_guard_[i].count_++;
-  }
+  const auto &c = GuardContext::Data::GetInstance()->guard_cache();
+  auto iter = std::find_if(c.begin(), c.end(), [](const auto &i) { return i->fail_count(); });
+  MS_EXCEPTION_IF_CHECK_FAIL(iter != c.end(), "can't find failed item");
+  auto &info = fail_guard_[GuardItemKey((*iter)->GetTrace())];
+  info.count_++;
+  info.item_ = (*iter)->shared_from_this();
+  MS_LOG(DEBUG) << "cache fail count " << info.count_ << " for trace: " << info.item_->GetTrace()->ToString();
 }
 
-static bool MatchTracePath(const TracePtr &left, const TracePtr &right) {
-  if (left == right) {
-    return true;
+CodeCache::FailInfo CodeCache::FindFailInfo(const TracePtr &p, GIType item_type) const {
+  if (p == nullptr) {
+    return {};
   }
-  std::vector<std::pair<TracePtr, TracePtr>> stack;
-  (void)stack.emplace_back(left, right);
-  while (!stack.empty()) {
-    auto cmp = std::move(stack.back());
-    stack.pop_back();
-    if (cmp.first->GetTraceType() != cmp.second->GetTraceType()) {
-      return false;
-    }
-    if (RootTrace::Support(cmp.first->GetTraceType()) || cmp.first->Info().Id() == cmp.second->Info().Id()) {
-      continue;
-    }
-    if (cmp.first->GetTraceType() == TraceType::Operation) {
-      OpTrace *first = static_cast<OpTrace *>(cmp.first.get());
-      OpTrace *second = static_cast<OpTrace *>(cmp.second.get());
-      if (first->GetParamCount() != second->GetParamCount() || first->GetOpCode() != second->GetOpCode() ||
-          first->GetName() != second->GetName()) {
-        return false;
-      }
-      for (size_t i = 0, end = first->GetParamCount(); i != end; ++i) {
-        (void)stack.emplace_back(first->GetParam(i), second->GetParam(i));
-      }
-      continue;
-    }
-    MS_LOG(INFO) << "unsupported trace match: " << cmp.first->ToString();
-    return false;
-  }
-  return true;
-}
-
-bool CodeCache::GuardItemKey::operator==(const GuardItemKey &o) const noexcept {
-  return ptr_->GetType() == o.ptr_->GetType() && MatchTracePath(ptr_->GetTrace(), o.ptr_->GetTrace());
-}
-
-CodeCache::FailInfo CodeCache::FindFailInfo(const GuardItemPtr &p) const {
-  // guard type equal, trace operations equal
+  const FailInfo *result = nullptr;
   auto iter = fail_guard().find(GuardItemKey(p));
-  return iter == fail_guard().end() ? FailInfo{0} : iter->second;
+  if (iter != fail_guard().end()) {
+    const auto &i = iter->second;
+    if (i.item_->GetType() == item_type && GuardItemPyTypeMatch(i.item_, p->GetObject())) {
+      result = &i;
+    }
+  }
+  if (result == nullptr) {
+    return {};
+  }
+  return *result;
 }
 
 void CodeCache::Clear() {
   code_ = nullptr;
   code_hub_->codeMap_[jcr_].clear();
   fail_guard_.clear();
+}
+
+GuardContext::Data *GuardContext::Data::GetInstance() {
+  static GuardContext::Data instance;
+  return &instance;
+}
+
+GuardContext::~GuardContext() {
+  auto &guard_cache = Data::GetInstance()->guard_cache();
+  auto &trace_cache = Data::GetInstance()->trace_cache();
+  for (const auto &item : guard_cache) {
+    item->ClearCache();
+  }
+  for (const auto &item : trace_cache) {
+    item->ClearCache();
+  }
+  guard_cache.clear();
+  trace_cache.clear();
 }
 
 }  // namespace pijit

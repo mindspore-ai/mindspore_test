@@ -18,6 +18,7 @@
 #include <memory>
 #include <string>
 #include <algorithm>
+#include <utility>
 #include "include/common/debug/anf_ir_dump.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "ir/func_graph.h"
@@ -205,7 +206,11 @@ CallableGraph GraphCompiler::Compile(const FuncGraphPtr &func_graph, const py::t
     return nullptr;
   }
   py::tuple new_arg = MakeNewArgsTuple(args);
-  new_arg = EliminateSelf(new_arg, compile_info.co_name_);
+  const auto &parameters = func_graph->parameters();
+  auto args_cnt = parameters.size() - func_graph->fv_param_count();
+  if (new_arg.size() > args_cnt) {
+    new_arg = EliminateSelf(new_arg, compile_info.co_name_);
+  }
   MarkArgumentMutable(new_arg);
   if (MsContext::GetInstance()->CanDump(kIntroductory)) {
     DumpIR("graph_before_compile.ir", func_graph);
@@ -229,6 +234,35 @@ CallableGraph GraphCompiler::Compile(const FuncGraphPtr &func_graph, const py::t
   (void)jit_executor->CompileInner(func_graph, new_arg, kwargs, phase, true);
 
   return callable;
+}
+
+std::pair<std::string, CallableGraph> GraphCompiler::Compile(const FuncGraphPtr &func_graph,
+                                                             const CompileInfo &compile_info) {
+  if (func_graph == nullptr) {
+    return std::make_pair("", nullptr);
+  }
+  std::string phase =
+    compile_info.co_filename_ + "_" + std::to_string(compile_info.co_firstlineno_) + "_" + compile_info.co_name_;
+  const auto &parameters = func_graph->parameters();
+  py::tuple args(parameters.size() - func_graph->fv_param_count());
+  size_t cur_fv_param_count = 0;
+  for (size_t i = 0; i < parameters.size(); ++i) {
+    auto para = parameters[i]->cast<ParameterPtr>();
+    MS_EXCEPTION_IF_NULL(para);
+    if (para->has_default()) {
+      cur_fv_param_count++;
+      continue;
+    }
+    auto para_abstract = para->abstract();
+    MS_EXCEPTION_IF_NULL(para_abstract);
+    phase += "_" + para_abstract->ToString();
+    auto input_obj = para->user_data<py::object>("pi_jit_py_obj");
+    MS_EXCEPTION_IF_NULL(input_obj);
+    args[i - cur_fv_param_count] = *input_obj;
+  }
+  phase += ".pi_jit";
+  CallableGraph callable = GraphCompiler::Compile(func_graph, args, py::dict(), phase, compile_info);
+  return std::make_pair(phase, callable);
 }
 }  // namespace pijit
 }  // namespace mindspore

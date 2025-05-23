@@ -294,53 +294,33 @@ static std::string GuardCheckFailInfo(const GuardItemPtr &item, const py::handle
   return s.str();
 }
 
-bool OptGuard::Check(const EvalFrameObject *frame, bool print, std::map<size_t, PyObject *> *cache,
-                     std::map<size_t, bool> *success, std::map<size_t, bool> *fail, bool perf) {
-  // filter failure case
-  if (fail != nullptr) {
-    for (const auto &item : guardMap_) {
-      if (fail->find(item.first) != fail->end()) {
-        MS_LOG(DEBUG) << "Found in failure cache, no need to check this guard: " << item.second->ToString();
-        return false;
-      }
+bool OptGuard::Check(PyFrameWrapper frame, bool print, bool perf) {
+  // see `OptGuard::Record`, no duplicate item
+  const auto &list = guardList_;
+  for (size_t i = 0, size = list.size(); i < size; ++i) {
+    const auto &item = list[i];
+    if (item->fail_count()) {
+      return false;
     }
-  }
-  std::vector<GuardItemPtr> list;
-  list.reserve(guardList_.size());
-  // filter success case
-  if (success != nullptr) {
-    std::copy_if(guardList_.begin(), guardList_.end(), std::back_inserter(list),
-                 [success](const GuardItemPtr &guard) { return success->find(guard->Info().Id()) == success->end(); });
-  } else {
-    list = guardList_;
-  }
-  list = OptStrategy::MakeGuardItemListStrategyByFrame(list);
-  for (size_t i = 0; i < list.size(); ++i) {
-    GuardItemPtr item = list[i];
+    if (item->checked()) {
+      continue;
+    }
     if (perf) {
       g_guard_perf.LogGuardPerfStart(this, item.get());
+      item->set_perf(perf);
     }
-    bool result = item->Check(frame, cache, perf);
+    bool result = item->Check(frame);
+    item->Cache(result);
     if (perf) {
       g_guard_perf.LogGuardPerfEnd(item.get(), result);
+      item->set_perf(false);
     }
-    if (!result) {
-      item->set_faile_count(item->fail_count() + 1);
-      UpdateGuardList(item);
-      if (fail != nullptr) {
-        fail->operator[](item->Info().Id()) = false;
-      }
-      MS_LOG(DEBUG) << "Guard check fail:" << item->ToString();
-      if (print) {
-        auto trace = item->GetTrace();
-        auto obj = GetObjectFromTrace(frame, trace);
-        GRAPH_JIT_LOG_F("%s\n", GuardCheckFailInfo(item, obj).c_str());
-        Py_XDECREF(obj);
-      }
-      return false;
-    } else if (success != nullptr) {
-      success->operator[](item->Info().Id()) = true;
+    if (result) {
+      continue;
     }
+    MS_LOG(DEBUG) << "Guard check fail:" << GuardCheckFailInfo(item, GetObjectFromTrace(frame, item->GetTrace()));
+    UpdateGuardList(item);
+    return false;
   }
   return true;
 }
@@ -362,8 +342,6 @@ bool OptGuard::GuardOn(TracePtr var, GuardLevel tp, bool needSpecialize, int rec
       item = GuardId(var);
     } else if (tp == GuardLevel::GType) {
       item = GuardType(var);
-    } else if (tp == GuardLevel::GAttr) {
-      item = GuardAttr(var);
     } else if (tp == GuardLevel::GEqual) {
       item = GuardEqual(var, needSpecialize, recurseDepth);
     }
@@ -374,31 +352,44 @@ bool OptGuard::GuardOn(TracePtr var, GuardLevel tp, bool needSpecialize, int rec
   return Record(item);
 }
 
-bool OptGuard::Record(const GuardItemPtr &item) {
-  TracePtr var = item->GetTrace();
-  if (item != nullptr) {
-    size_t szItem = item->Info().Id();
-    if (guardMap_.find(szItem) == guardMap_.end()) {
-      if (traceMap_.find(var->Info().Id()) == traceMap_.end()) {
-        guardList_.push_back(item);
-        guardMap_[szItem] = item;
-        traceMap_[var->Info().Id()] = item;
-      } else {
-        auto old_item = traceMap_[var->Info().Id()];
-        if (old_item->GetType() < item->GetType()) {
-          guardMap_[szItem] = item;
-          traceMap_[var->Info().Id()] = item;
-          auto iter = std::find(guardList_.begin(), guardList_.end(), old_item);
-          if (iter != guardList_.end()) {
-            *iter = item;
-          }
-        }
-      }
-    }
-    return true;
-  } else {
+bool OptGuard::Record(const GuardItemPtr &new_item) {
+  GuardItemPtr item = new_item;
+  if (item == nullptr) {
     return false;
   }
+  MS_EXCEPTION_IF_NULL(code_hub());
+  auto &guard_map = code_hub()->guard_map();
+
+  size_t hash = item->Info().Id();
+  auto cur_item = &guard_map[hash];
+  if (*cur_item == nullptr) {
+    *cur_item = item;
+    item->UpdateTrace(&code_hub()->trace_map());
+  } else if (*cur_item != item) {
+    bool is_match = item->operator==(**cur_item);
+    MS_LOG(DEBUG) << "find duplicate guard item in the global compile cache, current == reused: "
+                  << (is_match ? "true" : "false, id conflict, not reuse") << std::endl
+                  << "current: " << item.get() << ": [ " << item->ToString() << " ]" << std::endl
+                  << "reused : " << cur_item->get() << ": [ " << (*cur_item)->ToString() << " ]";
+    if (!is_match) {
+      cur_item = &item;
+    }
+  }
+  auto &list = guardList_;
+  auto iter = std::find_if(list.begin(), list.end(), [hash](const auto &p) { return p->Info().Id() == hash; });
+  if (iter == list.end()) {
+    list.push_back(*cur_item);
+  } else if (*cur_item != *iter) {
+    bool is_match = (*iter)->operator==(**cur_item);
+    MS_LOG(DEBUG) << "find duplicate guard item for the function, current == reused: "
+                  << (is_match ? "true" : "false, id conflict, not reuse") << std::endl
+                  << "current: " << iter->get() << ": [ " << (*iter)->ToString() << " ]" << std::endl
+                  << "reused : " << cur_item->get() << ": [ " << (*cur_item)->ToString() << " ]";
+    if (!is_match) {
+      list.push_back(*cur_item);
+    }
+  }
+  return true;
 }
 
 bool OptGuard::GuardIDS(const TracePtr &tr) {
@@ -416,10 +407,7 @@ bool OptGuard::GuardIDS(const TracePtr &tr) {
   }
   auto new_item = pijit::GuardIDS(tr, item);
   if (new_item != item) {
-    guardList_.push_back(new_item);
-    GuardItemPtr *ref = &guardMap_[new_item->Info().Id()];
-    *ref != nullptr ? (void)(MS_LOG(ERROR) << "guard hash conflict") : ((void)0);
-    *ref = new_item;
+    Record(new_item);
   }
   return true;
 }
@@ -430,9 +418,6 @@ bool OptGuard::Erase(const GuardItemPtr &last) {
     return false;
   }
   guardList_.erase(guardList_.begin() + std::distance(iter, guardList_.rend()) - 1);
-  auto m_iter = guardMap_.find(last->Info().Id());
-  MS_EXCEPTION_IF_CHECK_FAIL(m_iter != guardMap_.end() && m_iter->second == last, "id conflict !");
-  guardMap_.erase(m_iter);
   return true;
 }
 
@@ -482,7 +467,11 @@ static GuardItemPtr GuardOnGDeduce(TracePtr var, PyObject *obj, const std::map<s
   } else if (py::isinstance<mindspore::ParamInfo>(obj)) {
     item = GuardEqual(var, true, INT_MAX);
   } else {
-    item = GuardType(var);
+    // CheckLiteral use exactly type match, so mindspore.mutable object will come to this case.
+    item = GuardOnMutableOrConstObj(var);
+    if (item == nullptr) {
+      item = GuardType(var);
+    }
   }
   return item;
 }
@@ -604,19 +593,6 @@ static GuardItemPtr GuardOnDynamicLenContainer(TracePtr var) {
   return item;
 }
 
-void OptGuard::AddTraceFromGuard(const std::vector<TracePtr> &traces, OptGuardPtr other) {
-  for (size_t i = 0; i < traces.size(); ++i) {
-    auto dst = traces[i];
-    auto src = std::make_shared<RootTrace>(dst->GetObject(), TraceType::Param, i);
-    for (auto item : other->guardList_) {
-      item->Replace(dst, src);
-    }
-  }
-  for (auto item : other->guardList_) {
-    guardList_.push_back(item);
-  }
-}
-
 std::string OptGuard::GetDescript() {
   std::string ret;
   for (auto item : guardList_) {
@@ -642,165 +618,20 @@ void OptGuard::UpdateConfig(const std::map<std::string, bool> &bool_config,
   }
 }
 
-void OptGuard::Backup() { guardStack_.push(std::make_tuple(guardList_, guardMap_, traceMap_)); }
+void OptGuard::Backup() { guardStack_.push(std::make_tuple(guardList_)); }
 
 void OptGuard::Rollback() {
   GuardCheckPoint point = guardStack_.top();
   guardList_.swap(std::get<0>(point));
-  guardMap_.swap(std::get<1>(point));
-  traceMap_.swap(std::get<2>(point));
   guardStack_.pop();
 }
 
 void OptGuard::Pop() { guardStack_.pop(); }
 
-static bool MatchDynamicShape(GuardItemPtr item, const std::vector<GuardItemPtr> &list) {
-  auto trace_type = item->GetTrace()->GetTraceType();
-  auto guard_type = item->GetType();
-  if ((trace_type != TraceType::Deref && trace_type != TraceType::Param) || guard_type != GIType::GTEqual) {
-    return false;
-  }
-  for (auto other : list) {
-    if (item->MatchDynamicShape(other)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-bool OptGuard::MatchShape(OptGuardPtr other) {
-  if (std::any_of(guardList_.begin(), guardList_.end(), [other](auto &item) {
-        return (!std::any_of(other->guardList_.begin(), other->guardList_.end(), [item](GuardItemPtr oi) {
-          return *item == *oi;
-        }) && !MatchDynamicShape(item, other->guardList_));
-      })) {
-    return false;
-  }
-  if (std::any_of(other->guardList_.begin(), other->guardList_.end(), [this](auto &item) {
-        return (!std::any_of(guardList_.begin(), guardList_.end(), [item](GuardItemPtr oi) { return *item == *oi; }));
-      })) {
-    return false;
-  }
-  return true;
-}
-#if IS_PYTHON_3_11_PLUS
-std::vector<PyObject *> OptGuard::ApplyDynamicShape(EvalFrameObject *f) {
-  std::vector<PyObject *> ret;
-  MS_LOG(ERROR) << "not implement in python3.11";
-  return ret;
-}
-void OptGuard::RevertDynamicShape(EvalFrameObject *f, const std::vector<PyObject *> &backup) {
-  MS_LOG(ERROR) << "not implement in python3.11";
-}
-#else
-static PyObject *FindItem(const std::vector<GuardItemPtr> &guardList, int idx, TraceType type, PyObject *obj) {
-  auto iter = std::find_if(guardList.begin(), guardList.end(), [idx, type](GuardItemPtr item) {
-    if (item->GetTrace()->GetTraceType() == type) {
-      int index;
-      std::string name, module_name;
-      (reinterpret_cast<RootTrace *>(item->GetTrace().get()))->GetParam(&index, &name, &module_name);
-      return (idx == index);
-    } else {
-      return false;
-    }
-  });
-  if (iter != guardList.end()) {
-    GuardItemPtr item = *iter;
-    return item->ApplyDynamicShape(obj);
-  } else {
-    return nullptr;
-  }
-}
-
-std::vector<PyObject *> OptGuard::ApplyDynamicShape(EvalFrameObject *f) {
-  std::vector<PyObject *> ret;
-  int argc = f->f_code->co_argcount + f->f_code->co_kwonlyargcount;
-  PyObject *vargs = NULL;
-  PyObject *kwargs = NULL;
-  if (f->f_code->co_flags & CO_VARARGS) {
-    vargs = f->f_localsplus[argc];
-  }
-  if (f->f_code->co_flags & CO_VARKEYWORDS) {
-    kwargs = f->f_localsplus[argc + (vargs ? 1 : 0)];
-  }
-  for (int i = 0; i < argc; ++i) {
-    auto new_obj = FindItem(guardList_, i, TraceType::Param, f->f_localsplus[i]);
-    if (new_obj == nullptr) {
-      ret.push_back(nullptr);
-    } else {
-      ret.push_back(f->f_localsplus[i]);
-      f->f_localsplus[i] = new_obj;
-    }
-  }
-
-  if (vargs != NULL) {
-    ret.push_back(nullptr);
-  }
-  if (kwargs != NULL) {
-    ret.push_back(nullptr);
-  }
-  ret.resize(f->f_code->co_nlocals, nullptr);
-  for (int i = 0; f->f_code->co_cell2arg && i < PyTuple_GET_SIZE(f->f_code->co_cellvars); ++i) {
-    Py_ssize_t arg = f->f_code->co_cell2arg[i];
-    if (arg != CO_CELL_NOT_AN_ARG) {
-      auto cell = f->f_localsplus[f->f_code->co_nlocals + i];
-      auto new_obj = FindItem(guardList_, i, TraceType::Deref, PyCell_GET(cell));
-      if (new_obj == nullptr) {
-        ret.push_back(nullptr);
-      } else {
-        ret.push_back(PyCell_GET(cell));
-        PyCell_SET(cell, new_obj);
-      }
-    }
-  }
-  ret.resize(f->f_code->co_nlocals + PyTuple_GET_SIZE(f->f_code->co_cellvars), nullptr);
-  for (int i = 0; i < PyTuple_GET_SIZE(f->f_code->co_freevars); ++i) {
-    Py_ssize_t arg = PyTuple_GET_SIZE(f->f_code->co_cellvars) + i;
-    auto cell = f->f_localsplus[f->f_code->co_nlocals + arg];
-    auto new_obj = FindItem(guardList_, arg, TraceType::Deref, PyCell_GET(cell));
-    if (new_obj == nullptr) {
-      ret.push_back(nullptr);
-    } else {
-      ret.push_back(PyCell_GET(cell));
-      PyCell_SET(cell, new_obj);
-    }
-  }
-  return ret;
-}
-
-void OptGuard::RevertDynamicShape(EvalFrameObject *f, const std::vector<PyObject *> &backup) {
-  int argc = f->f_code->co_argcount + f->f_code->co_kwonlyargcount;
-  for (int i = 0; i < argc; ++i) {
-    if (backup[i] != nullptr) {
-      Py_XDECREF(f->f_localsplus[i]);
-      f->f_localsplus[i] = backup[i];
-    }
-  }
-  for (int i = 0; f->f_code->co_cell2arg && i < PyTuple_GET_SIZE(f->f_code->co_cellvars); ++i) {
-    Py_ssize_t arg = f->f_code->co_cell2arg[i];
-    if (arg != CO_CELL_NOT_AN_ARG) {
-      auto cell = f->f_localsplus[f->f_code->co_nlocals + i];
-      if (backup[f->f_code->co_nlocals + i] != nullptr) {
-        Py_XDECREF(PyCell_GET(cell));
-        PyCell_SET(cell, backup[f->f_code->co_nlocals + i]);
-      }
-    }
-  }
-  for (int i = 0; i < PyTuple_GET_SIZE(f->f_code->co_freevars); ++i) {
-    Py_ssize_t arg = PyTuple_GET_SIZE(f->f_code->co_cellvars) + i;
-    auto cell = f->f_localsplus[f->f_code->co_nlocals + arg];
-    if (backup[f->f_code->co_nlocals + arg] != nullptr) {
-      Py_XDECREF(PyCell_GET(cell));
-      PyCell_SET(cell, backup[f->f_code->co_nlocals + arg]);
-    }
-  }
-}
-#endif
-
 std::string OptGuard::ToString() const {
   std::stringstream s;
   for (const auto &i : guardList_) {
-    s << "  guard [" << i.get() << "] [" << i->ToString() << " ]" << std::endl;
+    s << "  guard [" << i.get() << "] " << i->Info().Id() << " [" << i->ToString() << " ]" << std::endl;
   }
   return s.str();
 }
@@ -812,8 +643,6 @@ OptGuardPtr OptGuard::Optimize() {
     auto new_item = old_item->Optimize();
     if (new_item != nullptr) {
       guardList_[i] = new_item;
-      guardMap_.erase(old_item->Info().Id());
-      guardMap_[new_item->Info().Id()] = new_item;
       need_update = true;
     }
   }
@@ -831,7 +660,6 @@ void OptGuard::FilterConstItem() {
     auto item = guardList_[i];
     if (item->GetTrace()->IsConst()) {
       guardList_.erase(guardList_.begin() + i);
-      guardMap_.erase(item->Info().Id());
     } else {
       i++;
     }

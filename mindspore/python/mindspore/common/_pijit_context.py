@@ -37,14 +37,22 @@ def _update_graph_executor_config(jit_config):
     GraphExecutor_.get_instance().set_jit_config(JitConfig(**valid_config).jit_config_dict)
 
 
+class Unsupported(RuntimeError):
+    """If using @jit(fullgraph=True), pijit will raise an Unsupported exception when encountering a graph break."""
+
+    # pylint: disable=useless-super-delegation
+    def __init__(self, msg: str):
+        super().__init__(msg)
+
+
 class PIJitCaptureContext:
     """
     Context manager for pijit graph capture
     """
 
-    def __init__(self, jit_config=None, input_signature=None):
+    def __init__(self, fullgraph=False, jit_config=None, input_signature=None):
         _update_graph_executor_config(jit_config)
-        config = {}
+        config = {'fullgraph': fullgraph}
         if isinstance(jit_config, JitConfig):
             config.update(jit_config.jit_config_dict)
         elif jit_config is not None:
@@ -82,9 +90,13 @@ class PIJitCaptureContext:
             with self:
                 self.ret = self.fn(*args, **kwds)
                 return self.ret
+
         return _fn
 
     def __call__(self, fn):
+        """
+        :raises Unsupported: If using @jit(fullgraph=True), will raise exception when encountering a graph break.
+        """
         if isinstance(fn, type) and issubclass(fn, mindspore.nn.Cell):
             fn.construct = self(fn.construct)
             return fn
@@ -126,6 +138,7 @@ def _get_skip_files():
     """
     Get skip files by SKIP_RULES
     """
+
     def _filter(path: str):
         if path.endswith("__init__.py"):
             return path[0:-11]

@@ -21,7 +21,76 @@ namespace mindspore {
 namespace pijit {
 
 Opcode Opcode::opmap[Opcode::kMaxCode];
-const Opcode Opcode::k_ILLEGAL_OPCODE = {"ILLEGAL_OPCODE", ILLEGAL_OPCODE, Opcode::Class::kOther, 0};
+const Opcode Opcode::k_ILLEGAL_OPCODE = {"ILLEGAL_OPCODE", ILLEGAL_OPCODE, Opcode::Class::kNop, 0};
+
+constexpr const char *binary_enum_map[] = {
+  "+",    // NB_ADD                                   0
+  "&",    // NB_AND                                   1
+  "//",   // NB_FLOOR_DIVIDE                          2
+  "<<",   // NB_LSHIFT                                3
+  "@",    // NB_MATRIX_MULTIPLY                       4
+  "*",    // NB_MULTIPLY                              5
+  "%",    // NB_REMAINDER                             6
+  "|",    // NB_OR                                    7
+  "**",   // NB_POWER                                 8
+  ">>",   // NB_RSHIFT                                9
+  "-",    // NB_SUBTRACT                             10
+  "/",    // NB_TRUE_DIVIDE                          11
+  "^",    // NB_XOR                                  12
+  "+=",   // NB_INPLACE_ADD                          13
+  "&=",   // NB_INPLACE_AND                          14
+  "//=",  // NB_INPLACE_FLOOR_DIVIDE                 15
+  "<<=",  // NB_INPLACE_LSHIFT                       16
+  "@=",   // NB_INPLACE_MATRIX_MULTIPLY              17
+  "*=",   // NB_INPLACE_MULTIPLY                     18
+  "%=",   // NB_INPLACE_REMAINDER                    19
+  "|=",   // NB_INPLACE_OR                           20
+  "**=",  // NB_INPLACE_POWER                        21
+  ">>=",  // NB_INPLACE_RSHIFT                       22
+  "-=",   // NB_INPLACE_SUBTRACT                     23
+  "/=",   // NB_INPLACE_TRUE_DIVIDE                  24
+  "^=",   // NB_INPLACE_XOR                          25
+};
+
+constexpr const char *compare_enum_map[] = {
+  "<",   // Py_LT 0
+  "<=",  // Py_LE 1
+  "==",  // Py_EQ 2
+  "!=",  // Py_NE 3
+  ">",   // Py_GT 4
+  ">=",  // Py_GE 5
+};
+
+static auto BinaryOpMapEnum() {
+  static uint8_t nb_map[256] = {0};
+  nb_map[BINARY_ADD] = 0;
+  nb_map[BINARY_AND] = 1;
+  nb_map[BINARY_FLOOR_DIVIDE] = 2;
+  nb_map[BINARY_LSHIFT] = 3;
+  nb_map[BINARY_MATRIX_MULTIPLY] = 4;
+  nb_map[BINARY_MULTIPLY] = 5;
+  nb_map[BINARY_MODULO] = 6;
+  nb_map[BINARY_OR] = 7;
+  nb_map[BINARY_POWER] = 8;
+  nb_map[BINARY_RSHIFT] = 9;
+  nb_map[BINARY_SUBTRACT] = 10;
+  nb_map[BINARY_TRUE_DIVIDE] = 11;
+  nb_map[BINARY_XOR] = 12;
+  nb_map[INPLACE_ADD] = 13;
+  nb_map[INPLACE_AND] = 14;
+  nb_map[INPLACE_FLOOR_DIVIDE] = 15;
+  nb_map[INPLACE_LSHIFT] = 16;
+  nb_map[INPLACE_MATRIX_MULTIPLY] = 17;
+  nb_map[INPLACE_MULTIPLY] = 18;
+  nb_map[INPLACE_MODULO] = 19;
+  nb_map[INPLACE_OR] = 20;
+  nb_map[INPLACE_POWER] = 21;
+  nb_map[INPLACE_RSHIFT] = 22;
+  nb_map[INPLACE_SUBTRACT] = 23;
+  nb_map[INPLACE_TRUE_DIVIDE] = 24;
+  nb_map[INPLACE_XOR] = 25;
+  return nb_map;
+}
 
 enum OpcodeFlag {
   kJRel = 1 << 0,      // is jump relative
@@ -57,6 +126,41 @@ bool Opcode::IsExcMatch(int oparg) const {
 #else
   return false;
 #endif
+}
+
+bool Opcode::IsCallFunc() const {
+  if (code_ == ILLEGAL_OPCODE) {
+    return false;
+  }
+  return code_ == CALL || code_ == CALL_FUNCTION;
+}
+
+bool Opcode::IsConditionJump() const {
+  if (code_ == ILLEGAL_OPCODE) {
+    return false;
+  }
+  return code_ == POP_JUMP_BACKWARD_IF_FALSE || code_ == POP_JUMP_BACKWARD_IF_NONE ||
+         code_ == POP_JUMP_BACKWARD_IF_NOT_NONE || code_ == POP_JUMP_BACKWARD_IF_TRUE ||
+         code_ == POP_JUMP_FORWARD_IF_FALSE || code_ == POP_JUMP_FORWARD_IF_NONE ||
+         code_ == POP_JUMP_FORWARD_IF_NOT_NONE || code_ == POP_JUMP_FORWARD_IF_TRUE || code_ == POP_JUMP_IF_FALSE ||
+         code_ == POP_JUMP_IF_TRUE || code_ == JUMP_IF_FALSE_OR_POP || code_ == JUMP_IF_TRUE_OR_POP;
+}
+
+bool Opcode::IsBoolConditionJump() const {
+  if (code_ == ILLEGAL_OPCODE) {
+    return false;
+  }
+  return code_ == POP_JUMP_BACKWARD_IF_FALSE || code_ == POP_JUMP_BACKWARD_IF_TRUE ||
+         code_ == POP_JUMP_FORWARD_IF_FALSE || code_ == POP_JUMP_FORWARD_IF_TRUE || code_ == POP_JUMP_IF_FALSE ||
+         code_ == POP_JUMP_IF_TRUE || code_ == JUMP_IF_FALSE_OR_POP || code_ == JUMP_IF_TRUE_OR_POP;
+}
+
+bool Opcode::IsNoneConditionJump() const {
+  if (code_ == ILLEGAL_OPCODE) {
+    return false;
+  }
+  return code_ == POP_JUMP_BACKWARD_IF_NONE || code_ == POP_JUMP_BACKWARD_IF_NOT_NONE ||
+         code_ == POP_JUMP_FORWARD_IF_NONE || code_ == POP_JUMP_FORWARD_IF_NOT_NONE;
 }
 
 // see "${PythonInclude}/internal/pycore_opcode.h"
@@ -97,6 +201,17 @@ int Opcode::InstrSize(int arg) const {
   static uint8_t *cache = GetOpCacheCount();
   int extended_args = (arg > 0xffffff) + (arg > 0xffff) + (arg > 0xff);
   return extended_args + 1 + cache[code_];
+}
+
+const char *Opcode::BinaryMathString(int i) {
+  static auto op_to_enum = BinaryOpMapEnum();
+  uint8_t arg = static_cast<uint8_t>(i);
+  if (code_ == COMPARE_OP) {
+    return arg <= Py_GE ? compare_enum_map[arg] : "?";
+  }
+  uint8_t index = IS_PYTHON_3_11_PLUS ? arg : op_to_enum[code_];
+  constexpr int binary_enum_max = sizeof(binary_enum_map) / sizeof(binary_enum_map[0]);
+  return index < binary_enum_max ? binary_enum_map[index] : "?";
 }
 
 bool Opcode::CheckIsOp(int oparg, bool *invert) const {

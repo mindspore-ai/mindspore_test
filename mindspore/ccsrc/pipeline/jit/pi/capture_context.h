@@ -114,7 +114,7 @@ class CaptureContext {
   Stat stat_;
 
   // config skip rule
-  bool use_white_list_;
+  bool use_white_list_{true};
 };
 }  // namespace pijit
 }  // namespace mindspore

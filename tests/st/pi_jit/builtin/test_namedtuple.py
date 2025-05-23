@@ -279,7 +279,6 @@ def test_create_namedtuple_with_default_args_of_tensor_type():
     assert_executed_by_graph_mode(fn)
 
 
-@pytest.mark.skip('fix later')
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_create_namedtuple_with_variable_length_args():
     """
@@ -307,7 +306,6 @@ def test_create_namedtuple_with_variable_length_args():
 PointV6 = namedtuple('Point', ['x', 'y', 'z', 'offset', 'scale'])
 
 
-@pytest.mark.skip('fix later')
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_create_namedtuple_with_variable_length_args_and_kwargs():
     """
@@ -335,7 +333,6 @@ def test_create_namedtuple_with_variable_length_args_and_kwargs():
 PointV7 = namedtuple('Point', ['x', 'y', 'z', 'offset', 'scale'], defaults=[0., 1.])
 
 
-@pytest.mark.skip('fix later')
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_create_namedtuple_with_all_kinds_of_arguments():
     """
@@ -345,7 +342,7 @@ def test_create_namedtuple_with_all_kinds_of_arguments():
     """
 
     def fn(x, y, *args, **kwargs):
-        p = PointV7(x, y=y, *args, **kwargs)
+        p = PointV7(x, y, *args, **kwargs)
         return (ops.add(p.x, p.y) - p.z + p.offset) * p.scale
 
     x = Tensor([1, 2, 3])

@@ -46,7 +46,6 @@ const std::vector<std::string> kAstFunctionList = {
   "mindspore.ops.function.array_func", "mindspore.ops.function.nn_func", "mindspore.ops.function.math_func"};
 
 bool CheckSupportCreateInstance(CallNode *call_node);
-ValueNode *GetSelfFromMethod(ValueNode *method);
 class GraphBuilder {
  public:
   static const char *ID___self__;
@@ -67,7 +66,6 @@ class GraphBuilder {
 
   StopTraceReason TraceRun();
 
-  void CollectInlineInfo(CallNode *node, int depth);
   Graph *GetGraph() const { return graph_; }
   void DumpDFG();
 
@@ -88,15 +86,11 @@ class GraphBuilder {
   std::vector<TryBlock> &GetTryBlockStacks() { return tryBlockStacks_; }
   TryBlock PopStack();
 
-  // loop analyze
-  void HandleLoop();
-
   /**
    * Handle call node. Infer call result. Inline call node bytecode
-   * \param depth Current inline depth
    * \return Ttop trace reason of sub-graph
    */
-  StopTraceReason HandleCall(int depth);
+  StopTraceReason HandleCall();
 
   /**
    * Resolve callable object, if it's unknown object, return infer failed reason.
@@ -129,8 +123,6 @@ class GraphBuilder {
    */
   bool HandleCallParameters(const py::object &func_info, CallNode *call_node, FrameStates *frame);
 
-  bool UnpackDynamicLengthTupleByBytecode(std::vector<ValueNode *> *params, ValueNode *args_node, CallNode *call_node);
-
   /**
    * Unpack CALL_FUNCTION_EX parameters to stack
    * \param[in] params the call stack
@@ -142,10 +134,6 @@ class GraphBuilder {
   bool UnpackCallExParams(std::vector<ValueNode *> *params, int extra_local, bool *has_kw, CallNode *call_node);
 
   bool UnpackCallExDict(std::vector<ValueNode *> *params, CallNode *call_node);
-
-  bool UnpackDynamicLengthDictByBytecode(std::vector<ValueNode *> *params, CallNode *call_node, ValueNode *dict_node);
-  // generate the general unpack operations of dict, return operations
-  std::vector<AbstractNode *> GenerateDictUnpack(ValueNode *kwargs_node);
 
   /**
    * Pack key-word parameters, generate kwvargs value node, check kw-defaults arguments
@@ -178,10 +166,7 @@ class GraphBuilder {
   bool HandlePositionParams(const py::object &func, std::vector<ValueNode *> *params, FrameStates *frame);
 
   // build subgraph, return stop trace reason
-  StopTraceReason BuildSubGraph(CallNode *call_node, int depth, const py::object &func,
-                                const GraphBuilderPtr &subgraph);
-
-  bool ReplaceCall(CallNode *call_node, const py::object &func);
+  StopTraceReason BuildSubGraph(CallNode *call_node, const py::object &func, const GraphBuilderPtr &subgraph);
 
   ValueNode *BuildCallClassNode(CallNode *call_node);
 
@@ -220,8 +205,6 @@ class GraphBuilder {
 
   ValueNode *ReplaceMergeOp(int opcode, const std::vector<ValueNode *> &inputs);
 
-  bool ClassInstantiationFold(CallNode *, AObject::Type);
-
   // frame operation
   ValueNode *&seek(int p) { return frame_.Peek(p); }
   void push(ValueNode *v) { frame_.Push(v); }
@@ -230,6 +213,7 @@ class GraphBuilder {
   ValueNode *getLocal(int i) { return frame_.Local(i); }
   void setLocal(int i, ValueNode *n) { frame_.SetLocal(i, n); }
 
+  Instr NewCallFuncInstr(int oparg);
   // pointers
   std::vector<Graph *> graph_pool_;
   ValueNode *NewValueNode(AObject *o, int op, int arg, const std::vector<ValueNode *> &p = {},
@@ -247,6 +231,8 @@ class GraphBuilder {
 
   // bytecode operations
   bool TraceRunControl(const Instr &instr);
+  bool ConditionJump(const Instr &instr, int *cond, int *jump_to, ValueNode **cond_node);
+  bool ConditionJumpPy311(const Instr &instr, int *cond, int *jump_to, ValueNode **cond_node);
   bool TraceRunForIter(const Instr &instr);
   bool DoUnpack(const Instr &instr);
   bool DoBuildWithUnpack(const Instr &instr);
@@ -274,6 +260,7 @@ class GraphBuilder {
   bool DoBinary(const Instr &instr);
   bool DoIsOp(const Instr &instr);
   bool DoContainsOp(const Instr &instr);
+  bool DoListOrTupleAdd(const Instr &instr);
   bool DoBinaryAdd(const Instr &instr);
   bool DoInplaceAdd(const Instr &instr);
   bool DoCompare(const Instr &instr);
@@ -281,12 +268,11 @@ class GraphBuilder {
   bool DoMergeOp(const Instr &instr);
   bool DoFormatValue(const Instr &instr);
   bool DoImport(const Instr &instr);
+  bool DoSend(const Instr &instr);
   bool DoYieldValue(const Instr &instr);
   bool DoYieldFrom(const Instr &instr);
   bool DoGetYieldFromIter(const Instr &instr);
   bool DoWith(const Instr &instr);
-  bool DoOtherBytecode(const Instr &instr);
-  bool NotImplementBytecode(const Instr &instr);
   bool DoRaise(const Instr &instr);
   bool DoSetupFinally(const Instr &instr);
   bool DoWithCleanUpStart(const Instr &instr);
@@ -296,13 +282,16 @@ class GraphBuilder {
   bool DoEndFinally(const Instr &instr);
   bool DoCallFinally(const Instr &instr);
   bool DoSetupExc(const Instr &instr);
-  bool DoRaiseVarage(const Instr &instr);
   bool DoPopExc(const Instr &instr);
   bool DoExcMatch(const Instr &instr);
   bool DoLoadAssertError(const Instr &instr);
   bool DoPopStack(const Instr &instr);
   bool DoRaiseVarags(const Instr &instr);
   bool DoLoadName(const Instr &instr);
+  bool DoPushNull(const Instr &instr);
+  bool DoBinaryOp(const Instr &instr);
+  bool DoCheckExcMatch(const Instr &instr);
+  bool DoPushExcInfo(const Instr &instr);
 
   const auto &root() const { return root_; }
   const auto &frame() const { return frame_; }
@@ -330,7 +319,7 @@ class GraphBuilder {
   bool Symbolic(ValueNode *node);
 
   BindArgumentsHelper<ValueNode *> PackInputsForFunc(const py::object &obj, int op_code,
-                                                     const std::vector<ValueNode *> &inputs,
+                                                     const std::vector<ValueNode *> &inputs, PyObject *kw_names,
                                                      ValueNode *self_node = nullptr, bool eliminate_sens = false);
   GraphBuilderPtr get_prev_call_builder() const { return prev_call_builder_; }
 
@@ -356,7 +345,7 @@ class GraphBuilder {
   ValueNode *MakePrimCastNode(ValueNode *node, const py::handle &dst_dtype);
   bool DoMixedPrecisionLocalAccess(const Instr &instr, ValueNode *node);
   ValueNode *DoMixedPrecisionAttrAccess(const Instr &instr, ValueNode *node, ValueNode *attr);
-  bool ResolveNoGrad(CallNode *call_node, StopTraceReason *stop_reason);
+  bool ResolveNoGrad(CallNode *call_node);
 
   void FGAddTopInputsWithExpander();
   void FGAddTopInputs();

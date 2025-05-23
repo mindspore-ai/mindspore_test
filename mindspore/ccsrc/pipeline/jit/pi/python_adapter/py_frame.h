@@ -22,6 +22,12 @@
 namespace mindspore {
 namespace pijit {
 
+#if IS_PYTHON_3_11_PLUS
+using EvalFrameObject = _PyInterpreterFrame;
+#else
+using EvalFrameObject = PyFrameObject;
+#endif  // IS_PYTHON_3_11_PLUS
+
 /**
  * wrapper Frame object to fast access it's field
  */
@@ -56,17 +62,11 @@ class PyFrameWrapper {
     auto code = GetCode();
     for (auto size = code.FastLocalSize(), i = 0; i < size; ++i) {
       auto k = code.FastLocalKind(i);
-      if (fast[i] == nullptr) {
-        continue;
-      }
       if (k == PyCodeWrapper::kCoFastLocal) {
         FastLocalIterFunc(lh)(fast[i], i);
       } else if (k == PyCodeWrapper::kCoFastCell) {
         FastLocalIterFunc(ch)(fast[i], i);
       } else if (k == PyCodeWrapper::kCoFastFree) {
-        if (std::is_same<FreeHandler, nullptr_t>::value) {
-          break;
-        }
         FastLocalIterFunc(fh)(fast[i], i);
       }
     }
@@ -85,7 +85,6 @@ class PyFrameWrapper {
   EvalFrameObject *frame_;
 };
 
-EvalFrameObject *FrameConvert(PyFrameObject *);
 PyFunctionObject *FunctionNew(PyFunctionObject *old_func, PyCodeObject *new_code);
 
 }  // namespace pijit

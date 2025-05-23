@@ -15,8 +15,10 @@
  */
 #include "pipeline/jit/pi/graph_capture/graph_analyzer.h"
 #include <algorithm>
+#include <iterator>
 #include <list>
 #include <optional>
+#include <memory>
 #include <utility>
 #include <unordered_set>
 #include <stack>
@@ -29,6 +31,7 @@
 #include "pipeline/jit/pi/graph_capture/graph_build.h"
 #include "pipeline/jit/pi/graph_capture/side_effect.h"
 #include "pipeline/jit/pi/graph_build/build_graph_utils.h"
+#include "pipeline/jit/pi/graph_capture/graph_arguments_optimizer.h"
 
 #define ADD_NODE(container, node)                                                   \
   do {                                                                              \
@@ -39,15 +42,6 @@
 
 namespace mindspore {
 namespace pijit {
-
-void GraphAnalyzer::OptimizeSideEffectRecord() const {
-  if (graph_->GetSideEffect()->IsEmpty()) {
-    return;
-  }
-  const std::vector<ValueNode *> &alive = graph_->CollectAliveNode(graph_->GetStopTraceBci());
-  graph_->GetSideEffect()->Optimize(alive);
-}
-
 namespace {
 void CollectAllSubGraphs(const Graph *root, int break_bci, std::unordered_set<const Graph *> *sub_graphs) {
   for (ValueNode *node : root->GetTracedNodes()) {
@@ -62,39 +56,15 @@ void CollectAllSubGraphs(const Graph *root, int break_bci, std::unordered_set<co
   }
 }
 
-std::vector<ValueNode *> CollectSideEffectRecords(const Graph *graph, int break_bci) {
-  std::unordered_set<const Graph *> sub_graphs;
-  CollectAllSubGraphs(graph, break_bci, &sub_graphs);
-
-  std::vector<ValueNode *> result;
-  for (const auto &pair : graph->GetSideEffect()->nodes()) {
-    ValueNode *node = pair.first;
-    if (sub_graphs.find(node->GetGraph()) != sub_graphs.end() ||
-        (node->GetGraph() == graph && (break_bci == -1 || node->bci() < break_bci))) {
-      result.push_back(node);
-    }
-  }
-  return result;
+bool IsEnableSubGraphBreakOptimize(const Graph *graph) {
+#if IS_PYTHON_3_11_PLUS
+  return false;
+#else
+  return graph->Config().GetBoolConfig(GraphJitConfig::kSubgraphBreakOpt) &&
+         common::GetCompileConfig("PIJIT_SUBGRAPH_BREAK_OPTIMIZE") != "0";
+#endif
 }
 }  // namespace
-
-void GraphAnalyzer::ResetSideEffectRecord() const {
-  int break_bci = graph_->GetStopTraceBci();
-  if (break_bci == -1 || graph_->GetSideEffect()->IsEmpty()) {
-    return;
-  }
-  auto &side_effect = graph_->GetSideEffect();
-  std::vector<ValueNode *> nodes = CollectSideEffectRecords(graph_, break_bci);  // Top-graph side-effect nodes
-  if (graph_break_info_.is_break_at_call && !graph_break_info_.captured_subgraphs.empty()) {
-    for (const Graph *graph : graph_break_info_.captured_subgraphs) {
-      const std::vector<ValueNode *> &subgraph_nodes = CollectSideEffectRecords(graph, graph->GetStopTraceBci());
-      nodes.insert(nodes.end(), subgraph_nodes.begin(), subgraph_nodes.end());
-    }
-  }
-  side_effect->ResetRecord({nodes.begin(), nodes.end()});
-
-  OptimizeSideEffectRecord();  // after reset record, rollback side-effect record status
-}
 
 void GraphAnalyzer::CapturedInfo::Info::clear() {
   values.clear();
@@ -103,18 +73,10 @@ void GraphAnalyzer::CapturedInfo::Info::clear() {
   outputs.clear();
 }
 
-void GraphAnalyzer::CapturedInfo::GraphInputs::clear() {
-  args.clear();
-  globals.clear();
-  vargs = nullptr;
-  kwargs = nullptr;
-}
-
 void GraphAnalyzer::CapturedInfo::clear() {
   captured_.clear();
   interpret_.clear();
   outputs_optimize_.clear();
-  graph_inputs_.clear();
 }
 
 std::string GraphAnalyzer::CapturedInfo::Info::ToString() {
@@ -137,29 +99,6 @@ std::string GraphAnalyzer::CapturedInfo::Info::ToString() {
   return s.str();
 }
 
-std::string GraphAnalyzer::CapturedInfo::GraphInputs::ToString() {
-  std::stringstream s;
-  s << "globals: ";
-  for (auto i : globals) {
-    s << i->ToString() << "\n";
-  }
-  s << "args: \n";
-  for (auto i : args) {
-    s << i->ToString() << "\n";
-  }
-  s << "vargs: ";
-  if (vargs != nullptr) {
-    s << vargs->ToString();
-  }
-  s << "\n";
-  s << "kwargs: ";
-  if (kwargs != nullptr) {
-    s << kwargs->ToString();
-  }
-  s << "\n";
-  return s.str();
-}
-
 std::string GraphAnalyzer::CapturedInfo::ToString() {
   std::stringstream s;
   s << "1. captured_ info: \n";
@@ -168,9 +107,7 @@ std::string GraphAnalyzer::CapturedInfo::ToString() {
   s << outputs_optimize_.ToString();
   s << "3. interpret_ info: \n";
   s << interpret_.ToString();
-  s << "4. graph_inputs_: \n";
-  s << graph_inputs_.ToString();
-  s << "5. has_grad_: " << has_grad_ << "\n";
+  s << "4. has_grad_: " << has_grad_ << "\n";
   return s.str();
 }
 
@@ -194,7 +131,51 @@ void UpdateBreakInfo(Graph *graph) {
 }
 }  // namespace
 
+void GraphAnalyzer::BeforeAnalyze() {
+#if IS_PYTHON_3_11_PLUS
+  Graph *g = this->graph_;
+  int break_bci = g->GetStopTraceBci();
+  if (break_bci == -1) {
+    return;
+  }
+  auto iter = g->GetCFG()->FindTryWithBlock(break_bci);
+  if (iter == g->GetCFG()->exc_table().end()) {
+    return;
+  }
+  int new_break_bci = iter->second.begin_;
+  if (new_break_bci != 0 && g->GetCFG()->instr_pool()[new_break_bci - 1]->op() == BEFORE_WITH) {
+    new_break_bci--;
+  }
+  MS_LOG(INFO) << "break at try/with block, reset break bci to try/with syntax start: " << break_bci << " -> "
+               << new_break_bci;
+  g->StopTraceAt(new_break_bci, g->GetStopTraceReason());
+#endif
+}
+
+void GraphAnalyzer::GraphArgumentOpt() {
+  if (graph_->Config().GetBoolConfig(GraphJitConfig::kInterpretCapturedCode)) {
+    return;
+  }
+  if (!graph_->Config().GetBoolConfig(GraphJitConfig::kExpandGraphInput)) {
+    return;
+  }
+  if (!graph_->Config().GetBoolConfig(GraphJitConfig::kEliminateRedundantArgs)) {
+    return;
+  }
+  auto optimizer = GraphArgumentOptimizer::GetNewInstance(graph_);
+  optimizer->SetGraphNodes(GetCaptureInfo().captured_.operations);
+  optimizer->Run({GetCaptureInfo().captured_.outputs});
+  auto inputs = GetCaptureInfo().captured_.inputs;
+  GetCaptureInfo().captured_.inputs = optimizer->GetArguments();
+  for (const auto &input : GetCaptureInfo().outputs_optimize_.inputs) {
+    if (std::find(inputs.begin(), inputs.end(), input) != inputs.end()) {
+      graph_->PrepareParameter(input);
+    }
+  }
+}
+
 void GraphAnalyzer::Analyze() {
+  BeforeAnalyze();
   MS_LOG(INFO) << "Start graph analyze";
   auto collect_trace_nodes = [this]() {
     const auto &nodes = graph_->GetTracedNodes();
@@ -212,18 +193,16 @@ void GraphAnalyzer::Analyze() {
   };
 
   CollectClosureSideEffect();
-  OptimizeSideEffectRecord();
 
-  auto origin_stop_bci = graph_->GetStopTraceBci();
   // assume all values is captured to func_graph
+  GetCaptureInfo().captured_.inputs = graph_->prepare().inputs_;
   GetCaptureInfo().captured_.operations = collect_trace_nodes();
   UseDefAnalyze();
-  ResetSideEffectRecord();
-
   auto func_graph_builder = graph_builder_->FGBuilder();
   if (func_graph_builder->graph() == nullptr) {
     // Graph build failed, add all nodes to ordered_escaped_locals.
     PyCodeWrapper co(graph_->GetCodeObj());
+    auto origin_stop_bci = graph_->GetStopTraceBci();
     if (origin_stop_bci == -1) {
       MS_LOG(INFO) << "no graph in " << py::str(reinterpret_cast<PyObject *>(co.ptr()));
     } else {
@@ -233,7 +212,7 @@ void GraphAnalyzer::Analyze() {
     if (graph_break_info_.is_break_at_call && !graph_break_info_.captured_subgraphs.empty()) {
       GetCaptureInfo().captured_.clear();
     } else {
-      graph_->StopTraceAt(origin_stop_bci, StopTraceReason::kStopTraceDataDependsOnGraphOut);
+      graph_->StopTraceAt(origin_stop_bci, StopTraceReason::kStopTraceNoGraphCaptured);
       UpdateBreakInfo(graph_);
       need_interpret_ = true;
       GetCaptureInfo().clear();
@@ -241,20 +220,13 @@ void GraphAnalyzer::Analyze() {
       GetCaptureInfo().interpret_.inputs = graph_->GetFrame(0).GetLocals();
       GetCaptureInfo().interpret_.operations = collect_trace_nodes();
       GetCaptureInfo().interpret_.outputs = graph_->break_info().alive_nodes_;
-      const auto &side_effect_nodes = graph_->GetSideEffect()->GetRequiredNodes();
-      std::copy(side_effect_nodes.begin(), side_effect_nodes.end(), std::back_inserter(info_.interpret_.outputs));
-      // remove side-effect node
-      auto is_remove = [this](ValueNode *node) {
-        const auto &rec = this->graph_->GetSideEffect();
-        return rec->IsRecord(node) && !rec->NeedTrack(node);
-      };
-      auto *ops = &GetCaptureInfo().interpret_.operations;
-      ops->erase(std::remove_if(ops->begin(), ops->end(), is_remove), ops->end());
       return;
     }
   }
 
   CollectCapturedAndInterpret();
+
+  GraphArgumentOpt();
 
   need_interpret_ = true;
   if (graph_->GetStopTraceBci() != -1 || !GetCaptureInfo().interpret_.operations.empty()) {
@@ -272,7 +244,8 @@ void GraphAnalyzer::Analyze() {
     }
     param_index++;
   }
-  need_interpret_ = !graph_->GetSideEffect()->IsEmpty() || !GetCaptureInfo().outputs_optimize_.operations.empty();
+  need_interpret_ = !graph_->GetSideEffect()->IsEmpty() || !GetCaptureInfo().outputs_optimize_.operations.empty() ||
+                    param_index != graph_->GetCodeObj()->co_argcount;
 }
 
 void GraphAnalyzer::CollectClosureSideEffect() {
@@ -412,10 +385,13 @@ ValueNode *GraphAnalyzer::MutateSequenceNode(ValueNode *node) {
 
     auto bc_index = graph_->NewValueNode(AObject::Convert(py::int_(index)), LOAD_CONST, -1, {});
     bc_index->set_abstract_wrapper(index_abstract_wrapper);
-    auto bc_item = graph_->NewValueNode(AObject::Convert(item_abstract_wrapper), BINARY_SUBSCR, 0, {node, bc_index});
+    auto vobj_item = static_cast<AbstractSequence *>(node->GetOwnVobj())->GetItem(bc_index->GetOwnVobj());
+    auto bc_item = graph_->NewValueNode(vobj_item, BINARY_SUBSCR, 0, {node, bc_index});
     bc_item->set_abstract_wrapper(item_abstract_wrapper);
 
+    bc_index->MarkGraphNode();
     ADD_NODE(captured.operations, bc_index);
+    bc_item->MarkGraphNode();
     ADD_NODE(captured.operations, bc_item);
     mutated_node->AddInput(bc_item);
   }
@@ -484,19 +460,22 @@ std::pair<ValueNode *, ValueNode *> GraphAnalyzer::MutateDictNode(ValueNode *nod
   ValueNode *dict_method = GetBuiltinMethodNode(&interpret.operations, "dict");  // always interpret
   // use 'dict(zip(dict.keys(obj), dict.value(obj)))' to restore dict
   // consider use expression 'dict(dict.items(obj))'
-  auto bc_keys = graph_->NewCallNode(CALL_FUNCTION, 1, {dict_keys_method, node});
+  auto call_op_code = IS_PYTHON_3_11_PLUS ? CALL : CALL_FUNCTION;
+  auto bc_keys = graph_->NewCallNode(call_op_code, 1, {dict_keys_method, node});
   bc_keys->set_abstract_wrapper(keys_wrapper);
-  bc_keys->SetVobj(AObject::Convert(keys_wrapper));
-  auto bc_values = graph_->NewCallNode(CALL_FUNCTION, 1, {dict_values_method, node});
+  bc_keys->UpdateVobj();
+  auto bc_values = graph_->NewCallNode(call_op_code, 1, {dict_values_method, node});
   bc_values->set_abstract_wrapper(values_wrapper);
-  bc_values->SetVobj(AObject::Convert(values_wrapper));
-  auto call_zip = graph_->NewCallNode(CALL_FUNCTION, 2, {zip_method, bc_keys, bc_values});
-  auto make_dict = graph_->NewCallNode(CALL_FUNCTION, 1, {dict_method, call_zip});
+  bc_values->UpdateVobj();
+  auto call_zip = graph_->NewCallNode(call_op_code, 2, {zip_method, bc_keys, bc_values});
+  auto make_dict = graph_->NewCallNode(call_op_code, 1, {dict_method, call_zip});
   make_dict->set_abstract_wrapper(std::make_shared<AbstractWrapper>(abstract));
   make_dict->SetVobj(node->GetVobj());
 
   // keys and values is graph values
+  bc_keys->MarkGraphNode();
   ADD_NODE(captured.operations, bc_keys);
+  bc_values->MarkGraphNode();
   ADD_NODE(captured.operations, bc_values);
   // call zip and call dict is interpret operations
   ADD_NODE(outputs_optimize.operations, make_dict);
@@ -580,11 +559,15 @@ bool GraphAnalyzer::AnalyzeTopGraphAliveNodes(const std::vector<ValueNode *> &al
   func_graph_builder->ClearOutputNodes();
   auto &captured = GetCaptureInfo().captured_;
   captured.outputs.clear();
-  auto &outputs_optimize = GetCaptureInfo().outputs_optimize_;
+  auto &outputs_optimize = GetCaptureInfo().outputs_optimize_.operations;
 
   // use order set as work list
   mindspore::CompactSet<ValueNode *> nodes;
   nodes.insert(alive_nodes.begin(), alive_nodes.end());
+  auto side_effect_handler = graph_->GetSideEffectHandler();
+  side_effect_handler->Run();
+  auto side_effect_inputs = side_effect_handler->GetSideEffectInputs();
+  nodes.insert(side_effect_inputs.begin(), side_effect_inputs.end());
   while (!nodes.empty()) {
     auto node = *nodes.begin();
     nodes.erase(nodes.begin());
@@ -613,10 +596,13 @@ bool GraphAnalyzer::AnalyzeTopGraphAliveNodes(const std::vector<ValueNode *> &al
     if (!IsValidOutput(node) || is_not_in_top_graph) {
       auto msg = (is_not_in_top_graph ? "Not in top graph node : " : "Invalid output : ");
       MS_LOG(INFO) << msg << node->ToString();
-      if (graph_->Config().GetBoolConfig(GraphJitConfig::kLogGraphBreak) && Opcode(node->GetOpcode()).IsCall()) {
+      if (graph_->Config().GetLogConfig(GraphJitConfig::kGraphBreak) && Opcode(node->GetOpcode()).IsCall()) {
         GRAPH_JIT_LOG_F("This call node will executed in pynative : [%s]", node->ToString().c_str());
       }
-      ADD_NODE(outputs_optimize.operations, node);
+      // The side effect node will be handled by side_effect_handler, avoid exec twice.
+      if (!node->IsSideEffectNode()) {
+        ADD_NODE(outputs_optimize, node);
+      }
       nodes.insert(node->getInputs().begin(), node->getInputs().end());
       continue;
     }
@@ -631,15 +617,19 @@ bool GraphAnalyzer::AnalyzeTopGraphAliveNodes(const std::vector<ValueNode *> &al
       auto sequence = MutateSequenceNode(node);  // transform to build_list or build_tuple
       if (node->abstract_wrapper()->abstract()->isa<abstract::AbstractNamedTuple>()) {
         // specialize for named tuple, 1: graph output tuple, 2: python reconstruct namedtuple
-        ADD_NODE(outputs_optimize.operations, MutateNamedtupleNode(sequence, node));
+        ADD_NODE(outputs_optimize, MutateNamedtupleNode(sequence, node));
       }
-      ADD_NODE(outputs_optimize.operations, sequence);
+      ADD_NODE(outputs_optimize, sequence);
       nodes.insert(sequence->getInputs().begin(), sequence->getInputs().end());
     } else {
       MS_LOG(INTERNAL_EXCEPTION) << "the node can't add graph out and not handle by output optimize, it's missing ["
                                  << node->ToString();
     }
   }
+  auto side_effect_nodes = side_effect_handler->GetSideEffect();
+  std::for_each(side_effect_nodes.begin(), side_effect_nodes.end(),
+                [&outputs_optimize](auto &node) { outputs_optimize.insert(outputs_optimize.begin(), node); });
+  outputs_optimize = SideEffectHandler::OptimizeSideEffect(outputs_optimize);
   return true;
 }
 
@@ -653,7 +643,6 @@ void GraphAnalyzer::UpdateCapturedOrder() {
 }
 
 void GraphAnalyzer::CollectCapturedAndInterpret() {
-  GetCaptureInfo().captured_.inputs = graph_->prepare().inputs_;
   // check inputs is valid if break point is rollback
 
   GetCaptureInfo().outputs_optimize_.inputs = CollectInputs(GetCaptureInfo().outputs_optimize_.operations);
@@ -670,42 +659,13 @@ void GraphAnalyzer::CollectCapturedAndInterpret() {
       std::copy(alive_nodes.begin(), alive_nodes.end(), std::back_inserter(info_.interpret_.outputs));
     }
   }
-  auto &side_effect_nodes = graph_->GetSideEffect()->GetRequiredNodes();
-  std::copy(side_effect_nodes.begin(), side_effect_nodes.end(), std::back_inserter(info_.interpret_.outputs));
-
-  // remove side-effect node
-  auto is_remove = [this](ValueNode *node) {
-    const auto &rec = this->graph_->GetSideEffect();
-    return rec->IsRecord(node) && !rec->NeedTrack(node);
-  };
-  auto *ops = &GetCaptureInfo().captured_.operations;
-  ops->erase(std::remove_if(ops->begin(), ops->end(), is_remove), ops->end());
-  ops = &GetCaptureInfo().interpret_.operations;
-  ops->erase(std::remove_if(ops->begin(), ops->end(), is_remove), ops->end());
-
-  // graph inputs is ordered by MindGraphBuilder, here do nothing
-  // not care variable args, variable key words
-  GetCaptureInfo().graph_inputs_.args = GetCaptureInfo().captured_.inputs;
 }
 
 namespace {
-// Collect side-effect keep alive nodes in this graph before the break bci.
-std::unordered_set<ValueNode *> CollectSideEffectAliveNodes(const Graph *graph, int break_bci) {
-  const std::vector<ValueNode *> &nodes = CollectSideEffectRecords(graph, break_bci);
-
-  std::unordered_set<ValueNode *> result;
-  auto &side_effect = graph->GetSideEffect();
-  for (ValueNode *node : nodes) {
-    const std::vector<ValueNode *> &alive_nodes = side_effect->GetKeepAlive(node);
-    result.insert(alive_nodes.begin(), alive_nodes.end());
-  }
-  return result;
-}
-
 // Get the alive nodes and side-effect alive nodes in this graph before the break bci.
 std::vector<ValueNode *> GetAliveNodes(const Graph *graph) {
   int bci = graph->GetStopTraceBci();
-  if (graph->Config().GetBoolConfig(GraphJitConfig::kLogGraphBreak)) {
+  if (graph->Config().GetLogConfig(GraphJitConfig::kGraphBreak)) {
     GRAPH_JIT_LOG_F("UD analyze: enter GetAliveNodes bci %d", bci);
   }
   std::vector<ValueNode *> alive_nodes = graph->CollectAliveNode(bci);
@@ -713,14 +673,8 @@ std::vector<ValueNode *> GetAliveNodes(const Graph *graph) {
   for (auto node : alive_nodes) {
     uniques.insert(node);
   }
-  // Do not use SideEffect::GetRequiredNodes(), as it will collect side-effect nodes generated at break bci.
-  const std::unordered_set<ValueNode *> &sideeffect_alive_nodes = CollectSideEffectAliveNodes(graph, bci);
-  for (auto node : sideeffect_alive_nodes) {
-    uniques.insert(node);
-  }
-  alive_nodes.assign(uniques.begin(), uniques.end());
 
-  if (graph->Config().GetBoolConfig(GraphJitConfig::kLogGraphBreak)) {
+  if (graph->Config().GetLogConfig(GraphJitConfig::kGraphBreak)) {
     GRAPH_JIT_LOG_F("UD analyze: alive node size : %ld", alive_nodes.size());
     for (auto node : alive_nodes) {
       if (node) {
@@ -748,14 +702,6 @@ CallNode *FindBreakAtCall(const Graph *graph) {
 // Check if the graph is break at calling subgraph.
 inline bool IsBreakAtCall(Graph *graph) { return FindBreakAtCall(graph) != nullptr; }
 
-bool IsEnableSubGraphBreakOptimize(const Graph *graph) {
-#if IS_PYTHON_3_11_PLUS
-  return false;
-#else
-  return graph->Config().GetBoolConfig(GraphJitConfig::kSubgraphBreakOpt) &&
-         common::GetCompileConfig("PIJIT_SUBGRAPH_BREAK_OPTIMIZE") != "0";
-#endif
-}
 }  // namespace
 
 void GraphAnalyzer::UseDefAnalyze() {
@@ -816,11 +762,9 @@ bool CanCapturePartialGraph(const Graph *graph) {
     return false;
   }
   static const std::unordered_set<int> unsupported_break_op = {
-    JUMP_IF_FALSE_OR_POP, JUMP_IF_TRUE_OR_POP,   POP_JUMP_IF_FALSE, POP_JUMP_IF_TRUE, YIELD_VALUE,
-    YIELD_FROM,           GET_YIELD_FROM_ITER,   SETUP_WITH,        SETUP_FINALLY,    WITH_CLEANUP_START,
-    WITH_CLEANUP_FINISH,  END_FINALLY,           SETUP_EXCEPT,      POP_EXCEPT,       RERAISE,
-    RAISE_VARARGS,        JUMP_IF_NOT_EXC_MATCH, BEGIN_FINALLY,     POP_FINALLY,      CALL_FINALLY,
-    JUMP_ABSOLUTE,        JUMP_FORWARD};
+    YIELD_VALUE,           YIELD_FROM,    GET_YIELD_FROM_ITER, SETUP_WITH,   SETUP_FINALLY, WITH_CLEANUP_START,
+    WITH_CLEANUP_FINISH,   END_FINALLY,   SETUP_EXCEPT,        POP_EXCEPT,   RERAISE,       RAISE_VARARGS,
+    JUMP_IF_NOT_EXC_MATCH, BEGIN_FINALLY, POP_FINALLY,         CALL_FINALLY, JUMP_ABSOLUTE, JUMP_FORWARD};
   int break_bci = graph->GetStopTraceBci();
   const auto &instr_pool = graph->GetCFG()->instr_pool();
   MS_EXCEPTION_IF_CHECK_FAIL(break_bci >= 0 && break_bci < SizeToInt(instr_pool.size()), "Illegal break bci");
@@ -890,7 +834,7 @@ void GraphAnalyzer::AnalyzeSubGraphBreakRecursive(CallNode *root) {
       break;
     }
     const std::vector<ValueNode *> &alive_nodes = SubGraphUseDefAnalyze(sub_graph);
-    if (sub_graph->GetStopTraceReason() == kStopTraceUDAnalyzeError) {
+    if (sub_graph->GetStopTraceReason() == kStopTraceUDAnalyze_Error) {
       MS_LOG(INFO) << "UD analyze failed, can not capture subgraph: " << GetNameAndLocation(sub_graph);
       break;
     }
@@ -990,6 +934,10 @@ bool GraphAnalyzer::AnalyzeSubGraphAliveNodes(const std::vector<ValueNode *> &al
   std::vector<ValueNode *> output_optimize;
 
   std::list<ValueNode *> nodes(alive_nodes.begin(), alive_nodes.end());
+  auto side_effect_handler = graph->GetSideEffectHandler();
+  side_effect_handler->Run();
+  auto side_effect_inputs = side_effect_handler->GetSideEffectInputs();
+  std::copy(side_effect_inputs.begin(), side_effect_inputs.end(), std::back_inserter(nodes));
   while (!nodes.empty()) {
     auto node = nodes.front();
     nodes.pop_front();
@@ -1011,24 +959,37 @@ bool GraphAnalyzer::AnalyzeSubGraphAliveNodes(const std::vector<ValueNode *> &al
     }
     if (!IsValidOutput(node) && node->GetOpcode() == LOAD_ATTR) {
       MS_LOG(DEBUG) << "Reconstruct subgraph output: " << node->ToString();
-      output_optimize.push_back(node);
+      // The side effect node will be handled by side_effect_handler, avoid exec twice.
+      if (!node->IsSideEffectNode()) {
+        output_optimize.push_back(node);
+      }
       nodes.insert(nodes.end(), node->getInputs().begin(), node->getInputs().end());
       continue;
     }
     MS_LOG(INFO) << "Add subgraph output failed: " << node->ToString();
     if (!CheckNewBreakBci(graph, node)) {
-      graph->StopTraceAt(graph->GetStopTraceBci(), StopTraceReason::kStopTraceUDAnalyzeError);
+      graph->StopTraceAt(graph->GetStopTraceBci(), StopTraceReason::kStopTraceUDAnalyze_Error);
       fg_builder->ClearOutputNodes();
       graph_outputs->clear();
       return true;
     }
     MS_LOG(INFO) << "Reset subgraph break bci: " << node->ToString() << " at: \""
                  << pijit::GetFileName(node->GetGraph()) << ":" << node->GetLineNo() << "\"";
-    graph->StopTraceAt(node->bci(), StopTraceReason::kStopTraceUDReset);
+    graph->StopTraceAt(node->bci(), StopTraceReason::kStopTraceGraphOutput_Type_Unsupported);
     return false;
   }
-  std::for_each(output_optimize.begin(), output_optimize.end(),
-                [this](ValueNode *node) { ADD_NODE(info_.outputs_optimize_.operations, node); });
+  // Status que: The nodes used to optimize the outputs of the top graph have been put into info_.outputs_optimize
+  //             The nodes will be exec before sub-graph
+  //             info_.outputs_optimize will be reversed in UseDefAnalyze.
+  // Means if the nodes put into info_.outputs_optimize will exec before the nodes of the top graph, and it is
+  // incorrect. So the nodes in output_optimize should be put in the front of info_.outputs_optimize
+  auto &ops = info_.outputs_optimize_.operations;
+  ops.insert(ops.begin(), output_optimize.begin(), output_optimize.end());
+  auto side_effect_nodes = side_effect_handler->GetSideEffect();
+  std::for_each(side_effect_nodes.begin(), side_effect_nodes.end(), [this](auto &node) {
+    info_.outputs_optimize_.operations.insert(info_.outputs_optimize_.operations.begin(), node);
+  });
+  info_.outputs_optimize_.operations = SideEffectHandler::OptimizeSideEffect(info_.outputs_optimize_.operations);
   return true;
 }
 
@@ -1075,7 +1036,7 @@ ValueNode *FindDuplicateData(const std::vector<ValueNode *> &nodes, size_t end_i
   iter = std::find_if(nodes.begin(), end_iter, [&node](ValueNode *k) {
     auto left = node->abstract_wrapper() ? node->abstract_wrapper()->abstract() : nullptr;
     auto right = k->abstract_wrapper() ? k->abstract_wrapper()->abstract() : nullptr;
-    return IsDuplicateData(left, right) || (node->GetVobj() != nullptr && node->GetVobj() == k->GetVobj());
+    return IsDuplicateData(left, right) || (node->GetVobj() != nullptr && node->GetOwnVobj() == k->GetOwnVobj());
   });
   if (iter != end_iter) {
     return *iter;

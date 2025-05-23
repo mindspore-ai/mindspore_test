@@ -61,7 +61,7 @@ bool JustCallAndSetRes(CallNode *call_node, GraphBuilder *unused) {
   std::vector<py::object> args;
   std::transform(call_node->getInputs().begin() + 1, call_node->getInputs().end(), std::back_inserter(args),
                  [](ValueNode *n) { return n->GetVobj() ? n->GetVobj()->GetPyObject() : py::object(); });
-  auto pair = Utils::PackCallStackArgs(args, call_node->GetOpcode());
+  auto pair = Utils::PackCallStackArgs(args, call_node->GetOpcode(), call_node->kw_names());
   if (pair.first.ptr() == nullptr) {
     return SetCallResType<AObject::kTypeAnyValue>(call_node);
   }
@@ -87,7 +87,7 @@ bool JustCallAndSetResWithArgs(CallNode *call_node, const std::vector<py::object
     return SetCallResType<AObject::kTypeAnyValue>(call_node);
   }
 
-  auto pair = Utils::PackCallStackArgs(args, call_node->GetOpcode());
+  auto pair = Utils::PackCallStackArgs(args, call_node->GetOpcode(), call_node->kw_names());
   if (pair.first.ptr() == nullptr) {
     return SetCallResType<AObject::kTypeAnyValue>(call_node);
   }
@@ -223,7 +223,7 @@ void HandleGradFuncCall(CallNode *call_node, AObject *decorated, bool sens_param
     param_ready = stack_args.back().ptr() != nullptr;
   }
   if (param_ready) {
-    auto pair = Utils::PackCallStackArgs(stack_args, call_node->GetOpcode());
+    auto pair = Utils::PackCallStackArgs(stack_args, call_node->GetOpcode(), call_node->kw_names());
     args = pair.first;
     kwargs = pair.second;
     param_ready = pair.first.ptr() != nullptr;
@@ -278,7 +278,7 @@ static bool GuardBuiltinFunc(CallNode *call_node) {
   if (PyMethod_Check(func)) {
     auto self = PyMethod_GET_SELF(func);
     if (IsTensorType<true>(Py_TYPE(self))) {
-      auto self_node = GetSelfFromMethod(func_node);
+      auto self_node = call_node->GetSelf();
       if (self_node == nullptr) {
         MS_LOG(WARNING) << "failed to find self value node for call node" << call_node->ToString();
         return false;
@@ -443,7 +443,9 @@ static bool InferListAppend(CallNode *call_node, GraphBuilder *parent) {
   bool is_referenced = false;
   parent->ReplaceAll(old_node, new_node, &is_referenced);
   const auto &replace_map = parent->GetGraph()->GetSideEffect()->data()->modified_and_replaced_map();
-  bool is_new_var = self->GetOpcode() == BUILD_LIST && replace_map.find(self) == replace_map.end();
+  auto is_param_expander_enable = parent->GetGraph()->Config().GetBoolConfig(GraphJitConfig::kExpandGraphInput);
+  bool is_new_var =
+    self->GetOpcode() == BUILD_LIST && replace_map.find(self) == replace_map.end() && !is_param_expander_enable;
   if (!is_new_var || is_referenced || self == new_element) {
     parent->GetGraph()->GetSideEffect()->data()->RecordModifiedAndReplacedNode(old_node, new_node);
     RecordBuiltinMethodSideEffect(parent->GetGraph(), call_node, "append");
@@ -489,7 +491,9 @@ static bool InferListMethodWithSideEffect(CallNode *call_node, GraphBuilder *par
   bool is_referenced = false;
   parent->ReplaceAll(old_node, new_node, &is_referenced);
   const auto &replace_map = parent->GetGraph()->GetSideEffect()->data()->modified_and_replaced_map();
-  bool is_new_var = self->GetOpcode() == BUILD_LIST && replace_map.find(self) == replace_map.end();
+  auto is_param_expander_enable = parent->GetGraph()->Config().GetBoolConfig(GraphJitConfig::kExpandGraphInput);
+  bool is_new_var =
+    self->GetOpcode() == BUILD_LIST && replace_map.find(self) == replace_map.end() && !is_param_expander_enable;
   if (!is_new_var || is_referenced || !is_safe_replace(call_node, parent)) {
     parent->GetGraph()->GetSideEffect()->data()->RecordModifiedAndReplacedNode(old_node, new_node);
     RecordBuiltinMethodSideEffect(parent->GetGraph(), call_node, method_name);
@@ -635,7 +639,9 @@ static bool InferDictPop(CallNode *call_node, GraphBuilder *parent) {
   bool is_referenced = false;
   parent->ReplaceAll(old_node, new_node, &is_referenced);
   const auto &replace_map = parent->GetGraph()->GetSideEffect()->data()->modified_and_replaced_map();
-  bool is_new_var = self->GetOpcode() == BUILD_MAP && replace_map.find(self) == replace_map.end();
+  auto is_param_expander_enable = parent->GetGraph()->Config().GetBoolConfig(GraphJitConfig::kExpandGraphInput);
+  bool is_new_var =
+    self->GetOpcode() == BUILD_MAP && replace_map.find(self) == replace_map.end() && !is_param_expander_enable;
   if (!is_new_var || is_referenced) {
     parent->GetGraph()->GetSideEffect()->data()->RecordModifiedAndReplacedNode(old_node, new_node);
     RecordBuiltinMethodSideEffect(parent->GetGraph(), call_node, "pop");
@@ -672,6 +678,7 @@ static void TensorAssignValue(CallNode *call_node, GraphBuilder *parent, ValueNo
   auto new_node = parent->MakeTensorCopy(new_value);
 
   call_node->SetSubGraph(nullptr);
+  old_value->GetVobj()->SetNextVersion(new_node->GetVobj());
   call_node->SetVobj(new_node->GetVobj());
 
   // update frame status and record side-effect
@@ -692,7 +699,7 @@ static void TensorAssignValue(CallNode *call_node, GraphBuilder *parent, ValueNo
 bool InferTensorAssignValue(CallNode *call_node, GraphBuilder *parent) {
   bool is_not_method = false;
   ValueNode *self = GetSelfFromKnownMethod(call_node, &is_not_method);
-  if (self == nullptr || call_node->GetOpcode() != CALL_FUNCTION) {
+  if (self == nullptr || !Opcode(call_node->GetOpcode()).IsCallFunc()) {
     call_node->SetSubGraph(nullptr);
     return false;
   }
@@ -908,7 +915,7 @@ static FuncKey KeyFinderSkipModule(const py::object &callable) {
   if (!PyFunction_Check(func_info) && !PyCFunction_Check(func_info) && !PyType_Check(func_info)) {
     func_info = reinterpret_cast<PyObject *>(Py_TYPE(func_info));
   }
-  if (kPIJitConfigDefault.GetBoolConfig(GraphJitConfig::kLogGraphBreak)) {
+  if (kPIJitConfigDefault.GetLogConfig(GraphJitConfig::kGraphBreak)) {
     MS_LOG(ERROR) << "func " << std::string(py::str(func_info)) << " is forbidden to analyze, module is " << mod;
   }
   return FUNC_KEY_PIJIT_FORBIDDEN;

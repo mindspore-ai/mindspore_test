@@ -121,19 +121,46 @@ class OptCodeHub : public std::enable_shared_from_this<OptCodeHub> {
   virtual void DelOptTarget(OptOptionPtr option, OptCodePtr code);
   virtual void DelOptTarget(OptCodePtr code);
   virtual std::vector<OptCodeSet> GetAllOptTarget();
+
   static void Register(std::string key, OptCodePtr code);
   static OptCodePtr Filter(std::string key, OptCodeFilterFunc filter);
+
+  auto &guard_map() { return guard_map_; }
+  const auto &guard_map() const { return guard_map_; }
+  auto &trace_map() { return trace_map_; }
+  const auto &trace_map() const { return trace_map_; }
 
  protected:
   // use OptOption instead of OptOptionPtr ...
   std::map<OptOptionPtr, OptCodeSet, OptOption::Less> codeMap_;
+  std::map<size_t, GuardItemPtr> guard_map_;
+  std::map<size_t, TracePtr> trace_map_;
 };
 
 using OptCodeHubPtr = std::shared_ptr<OptCodeHub>;
 
+class GuardContext {
+ public:
+  class Data {
+   public:
+    static Data *GetInstance();
+    auto &guard_cache() { return guard_cache_; }
+    auto &trace_cache() { return trace_cache_; }
+
+   private:
+    Data() = default;
+    std::vector<GuardItem *> guard_cache_;
+    std::vector<Trace *> trace_cache_;
+  };
+
+  GuardContext() = default;
+  ~GuardContext();
+};
+
 class CodeCache {
  public:
   struct FailInfo {
+    GuardItemPtr item_;
     int count_;
   };
 
@@ -143,27 +170,24 @@ class CodeCache {
   const auto &code() const { return code_; }
 
   void set_code(const OptCodePtr &ptr) { code_ = ptr; }
-  FailInfo FindFailInfo(const GuardItemPtr &p) const;
+  FailInfo FindFailInfo(const TracePtr &p, GIType item_type) const;
   void CollectFailGuard();
   void Clear();
 
  private:
   class GuardItemKey {
    public:
-    explicit GuardItemKey(const GuardItemPtr &p) : ptr_(p) {}
-    auto operator-> () const { return ptr_.operator->(); }
+    explicit GuardItemKey(const TracePtr &p) : ptr_(p) {}
     auto ptr() const { return ptr_; }
-    size_t hash() const { return ptr_ ? ptr_->GetTrace()->Info().Id() + ptr_->GetType() : 0; }
-    bool operator==(const GuardItemKey &) const noexcept;
+    bool operator==(const GuardItemKey &o) const noexcept { return ptr_ == o.ptr_ || *ptr_ == *o.ptr_; }
 
    private:
-    GuardItemPtr ptr_;
+    TracePtr ptr_;
   };
   struct KeyHash {
-    bool operator()(const GuardItemKey &p) const noexcept { return p.hash(); }
+    bool operator()(const GuardItemKey &p) const noexcept { return p.ptr()->Info().Id(); }
   };
 
-  using GuardItemSet = std::unordered_set<GuardItemKey, KeyHash>;
   using FailGuardItemMap = std::unordered_map<GuardItemKey, FailInfo, KeyHash>;
 
   OptOptionPtr jcr_;

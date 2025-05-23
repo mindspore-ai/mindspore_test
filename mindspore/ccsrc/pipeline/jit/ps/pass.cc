@@ -330,6 +330,7 @@ FuncGraphPtr JitBpropGraphPass(const ResourcePtr &resource, bool need_renormaliz
     irpass.depend_value_elim_,
     irpass.reshape_eliminate_,
     irpass.switch_simplify_,
+    irpass.merge_addn_,
     irpass.addn_zero_filter_,
     irpass.ad_related_special_op_eliminate_,
     irpass.special_op_eliminate_,
@@ -1591,6 +1592,21 @@ bool AutoParallelSymbolPassWithReNormalize(const ResourcePtr &resource) {
   auto opt = opt::Optimizer::MakeOptimizer("parallel-infer-symbol", resource, opt_map, true);
   (void)opt->step(func_graph, false);
   MS_LOG(INFO) << "symbol pass for parallel end";
+  return true;
+}
+
+bool EliminateUnusedParamsPass(const ResourcePtr &resource) {
+  MS_EXCEPTION_IF_NULL(resource);
+  MS_EXCEPTION_IF_NULL(resource->func_graph());
+  FuncGraphPtr func_graph = resource->func_graph();
+  ud_chain::Preprocess(func_graph);
+  AnfNodePtrList parameters;
+  for (const auto &param : func_graph->parameters()) {
+    if (!ud_chain::GetUsers(param).empty() || param->cast<ParameterPtr>()->has_default()) {
+      parameters.push_back(param);
+    }
+  }
+  func_graph->set_parameters(parameters);
   return true;
 }
 

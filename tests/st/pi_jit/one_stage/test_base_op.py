@@ -567,7 +567,6 @@ def test_handle_mutable_kwargs_args_2():
     assert ret == 12
 
 
-@pytest.mark.skip(reason="fix later")
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_use_free_variable():
     """
@@ -593,7 +592,6 @@ def test_use_free_variable():
     assert jcr["break_count_"] == 0
 
 
-@pytest.mark.skip(reason="When disable loop_unrolling, check guard failed.")
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_use_free_variable_2():
     """
@@ -1142,6 +1140,111 @@ def test_attr_as_inputs_6():
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_attr_as_inputs_7():
+    """
+    Feature: Dynamic attribute support.
+    Description: Test dynamic type.
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        @jit(capture_mode="bytecode")
+        def construct(self, x):
+            return self.x + x
+
+    net = Net()
+    cond = [Tensor([-1]), 1, 2.2, np.float16(3.3)]
+    for i in cond:
+        net.x = i
+        x = Tensor(np.random.rand(1))
+        y = net(x)
+        assert (net.x + x) == y
+
+    assert_graph_compile_status(Net.construct, 0, 1, 4)
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_attr_as_inputs_8():
+    """
+    Feature: Dynamic attribute support.
+    Description: Test dynamic shape.
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        @pi_jit_with_config(jit_config={"_symbolic": 1})
+        def construct(self, x):
+            return self.x + x
+
+    net = Net()
+    cond = []
+    for i in range(1, 16):
+        cond.append(Tensor(np.resize(np.array([i], np.float32).repeat(i), (i, 1))))
+    for i in cond:
+        net.x = i
+        x = Tensor(np.random.rand(4))
+        y = net(x)
+        assert ((net.x + x) == y).all()
+
+    assert_graph_compile_status(Net.construct, 0, 8, 8)
+
+    # validate dynamic shape check
+    i = Tensor(np.random.rand(4,4), dtype=mindspore.float32)
+    net.x = i
+    y = net(x)
+    assert ((net.x + x) == y).all()
+    assert_graph_compile_status(Net.construct, 0, 1, 9)
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_symbolic_input_1():
+    """
+    Feature: Dynamic scalar mutable.
+    Description: Test scalar input mutable.
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        @jit(capture_mode="bytecode")
+        def construct(self, x, y):
+            return x + y
+
+    net = Net()
+    for x in range(10):
+        y = Tensor(np.random.rand(1))
+        z = net(x, y)
+        assert x + y == z
+
+    assert_graph_compile_status(Net.construct, 0, 8, 3)
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_symbolic_input_2():
+    """
+    Feature: Dynamic shape input.
+    Description: Test dynamic shape tensor as input.
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        @pi_jit_with_config(jit_config={"_symbolic": 1})
+        def construct(self, x):
+            return x + x
+
+    net = Net()
+    cond = []
+    for i in range(1, 16):
+        cond.append(Tensor(np.resize(np.array([i], np.float32).repeat(i), (i, 1))))
+    for x in cond:
+        y = net(x)
+        assert ((x + x) == y).all()
+
+    assert_graph_compile_status(Net.construct, 0, 9, 7)
+
+    # validate dynamic shape check
+    x = Tensor(np.random.rand(4,4), dtype=mindspore.float32)
+    y = net(x)
+    assert ((x + x) == y).all()
+    assert_graph_compile_status(Net.construct, 0, 1, 8)
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_attr_as_inputs_config():
     """
     Feature: One stage basic operation.
@@ -1355,7 +1458,6 @@ def test_subgraph_with_primitive_output():
     assert_executed_by_graph_mode(foo)
 
 
-@pytest.mark.skip(reason="Subgraph with only load const add output failed, fix later")
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_subgraph_with_primitive_output_2():
     """

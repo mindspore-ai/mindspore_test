@@ -19,21 +19,20 @@ import mindspore.context as context
 from mindspore import Tensor, jit
 from mindspore.common import dtype as mstype
 from tests.mark_utils import arg_mark
-from tests.st.pi_jit.share.utils import pi_jit_with_config
 
 SYS_VER = (sys.version_info.major, sys.version_info.minor)
 if SYS_VER != (3, 7) and SYS_VER != (3, 9):
     pytest.skip("not implement for python" + str(SYS_VER), allow_module_level=True)
 
 
-@pi_jit_with_config(jit_config={"compile_without_capture": True})
+@jit(capture_mode="bytecode")
 def single_branch(x, y):
     if x > 0:
         x = x + y
 
     return x
 
-@pi_jit_with_config(jit_config={"compile_without_capture": True})
+@jit(capture_mode="bytecode")
 def repeat_single_branch(x, y):
     if x > 0:
         x = x + y
@@ -47,7 +46,7 @@ def repeat_single_branch(x, y):
 
     return x
 
-@pi_jit_with_config(jit_config={"compile_without_capture": True})
+@jit(capture_mode="bytecode")
 def nest_single_branch(x, y):
     if x > 0:
         x = x + y
@@ -57,7 +56,7 @@ def nest_single_branch(x, y):
 
     return x
 
-@pi_jit_with_config(jit_config={"compile_without_capture": True})
+@jit(capture_mode="bytecode")
 def full_branch(x, y):
     if x > 0:
         x = x + y
@@ -66,7 +65,7 @@ def full_branch(x, y):
 
     return x
 
-@pi_jit_with_config(jit_config={"compile_without_capture": True})
+@jit(capture_mode="bytecode")
 def repeat_full_branch(x, y):
     if x > 0:
         x = x + y
@@ -80,7 +79,7 @@ def repeat_full_branch(x, y):
 
     return x
 
-@pi_jit_with_config(jit_config={"compile_without_capture": True})
+@jit(capture_mode="bytecode")
 def nest_full_branch(x, y):
     if x > 0:
         x = x + y
@@ -97,7 +96,7 @@ def nest_full_branch(x, y):
 
     return x
 
-@pi_jit_with_config(jit_config={"compile_without_capture": True})
+@jit(capture_mode="bytecode")
 def multi_branch(x, y):
     if x > 0:
         x = x + y
@@ -108,7 +107,7 @@ def multi_branch(x, y):
 
     return x
 
-@pi_jit_with_config(jit_config={"compile_without_capture": True})
+@jit(capture_mode="bytecode")
 def return_branch_1(x, y):
     if x > 0:
         return x + y
@@ -116,7 +115,7 @@ def return_branch_1(x, y):
     return x
 
 # pylint: disable=R1705
-@pi_jit_with_config(jit_config={"compile_without_capture": True})
+@jit(capture_mode="bytecode")
 def return_branch_2(x, y):
     if x > 0:
         return x + y
@@ -126,7 +125,7 @@ def return_branch_2(x, y):
     return x
 
 # pylint: disable=R1705
-@pi_jit_with_config(jit_config={"compile_without_capture": True})
+@jit(capture_mode="bytecode")
 def return_branch_3(x, y):
     if x > 0:
         return x + y
@@ -136,7 +135,7 @@ def return_branch_3(x, y):
     return x
 
 # pylint: disable=R1705
-@pi_jit_with_config(jit_config={"compile_without_capture": True})
+@jit(capture_mode="bytecode")
 def return_branch_4(x, y):
     if x > 0:
         return x + y
@@ -144,7 +143,7 @@ def return_branch_4(x, y):
         return x
 
 # pylint: disable=R1705
-@pi_jit_with_config(jit_config={"compile_without_capture": True})
+@jit(capture_mode="bytecode")
 def return_branch_5(x, y):
     if x > 0:
         if x > 5:

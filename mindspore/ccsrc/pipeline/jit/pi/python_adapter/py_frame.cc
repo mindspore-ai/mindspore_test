@@ -39,7 +39,7 @@ PyObject *EvalFrameGetLocals(_PyInterpreterFrame *f);
 inline PyObject *EvalFrameGetFreevars(_PyInterpreterFrame *f) {
   auto func = EvalFrameGetFunction(f);
   Py_DECREF(func);  // frame has reference
-  return Py_NewRef(func->func_closure);
+  return Py_XNewRef(func->func_closure);
 }
 
 #else
@@ -120,8 +120,6 @@ PyObject *EvalFrameGetLocals(PyFrameObject *f) {
 
 namespace mindspore {
 namespace pijit {
-
-EvalFrameObject *FrameConvert(PyFrameObject *f) { return GetEvalFrame(f); }
 
 // copy a function helper for EvalNewCode
 PyFunctionObject *FunctionNew(PyFunctionObject *old_func, PyCodeObject *new_code) {
@@ -248,7 +246,7 @@ py::object PyFrameWrapper::GetFunction() const {
 }
 py::tuple PyFrameWrapper::FreeVars() const {
   PyObject *ref = EvalFrameGetFreevars(frame_);
-  return py::reinterpret_steal<py::tuple>(ref);
+  return ref ? py::reinterpret_steal<py::tuple>(ref) : py::tuple();
 }
 py::dict PyFrameWrapper::Locals() const {
   PyObject *ref = EvalFrameGetLocals(frame_);

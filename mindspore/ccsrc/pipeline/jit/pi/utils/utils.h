@@ -63,7 +63,7 @@ class Utils {
    * \return a pair of arguments for object call
    */
   static std::pair<py::object, py::object> PackCallStackArgs(const std::vector<py::object> &args, int opcode,
-                                                             bool ret_vector_args = false);
+                                                             const py::object &kw, bool ret_vector_args = false);
 
   // alias python 'print(func); import dis; dis.dis(func)'
   static void DisFuncObject(PyObject *);
@@ -84,7 +84,7 @@ class Utils {
 
 /* use python format pattern */
 template <typename... Args>
-py::str PyStringFormat(std::string fmt, Args &&... args) {
+py::str PyStringFormat(std::string fmt, Args &&...args) {
   if (fmt.back() == '\n') {
     fmt.back() = ' ';
   }
@@ -198,22 +198,25 @@ class PackCallStackHelper {
   explicit PackCallStackHelper(int opcode) : opcode_(opcode) {}
   auto &result() { return result_; }
 
-  template <typename CastKeys, typename CastSequence, typename CastKeyWords>
-  bool Pack(const std::vector<T> &stack_args, CastKeys to_keys, CastSequence to_seq, CastKeyWords to_map) {
+  template <typename CastSequence, typename CastKeyWords>
+  bool Pack(const std::vector<T> &stack_args, CastSequence to_seq, CastKeyWords to_map, PyObject *kw_names) {
     if (opcode_ == CALL_FUNCTION_EX) {
       result_.args_ = to_seq(stack_args[0]);
       result_.kw_ = stack_args.size() > 1 ? to_map(stack_args[1]) : std::map<std::string, T>();
       return true;
     }
-    if (opcode_ != CALL_FUNCTION_KW && opcode_ != CALL_FUNCTION) {
+    if (!Opcode(opcode_).IsCall()) {
       return false;
     }
     size_t size = stack_args.size();
-    if (opcode_ == CALL_FUNCTION_KW) {
-      std::vector<std::string> keys = to_keys(stack_args.back());
-      size = size - keys.size() - 1;
-      for (size_t i = 0; i < keys.size(); ++i) {
-        result_.kw_[std::move(keys[i])] = stack_args[size + i];
+    if (kw_names != nullptr) {
+#if !IS_PYTHON_3_11_PLUS
+      size--;
+#endif
+      size_t keys_size = PyTuple_GET_SIZE(kw_names);
+      size = size - keys_size;
+      for (size_t i = 0; i < keys_size; ++i) {
+        result_.kw_[PyUnicode_AsUTF8(PyTuple_GET_ITEM(kw_names, i))] = stack_args[size + i];
       }
     }
     std::copy(stack_args.begin(), stack_args.begin() + size, std::back_inserter(result_.args_));
@@ -268,7 +271,8 @@ class BindArgumentsHelper {
       MS_LOG(ERROR) << "takes " << co_->co_argcount << " positional arguments but " << argc << " was given";
       return false;
     }
-    PyObject **begin = &PyTuple_GET_ITEM(PyCodeWrapper(co_).VarNames().ptr(), 0);
+    auto vars = PyCodeWrapper(co_).VarNames();
+    PyObject **begin = &PyTuple_GET_ITEM(vars.ptr(), 0);
     PyObject **end = begin + parameter_argc;
     for (const auto &item : kw) {
       const auto &k = item.first;

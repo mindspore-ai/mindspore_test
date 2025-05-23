@@ -17,13 +17,9 @@ import sys
 import pytest
 import mindspore as ms
 from mindspore import Tensor, context, jit, nn, ops
-from mindspore._c_expression import get_code_extra
 
 from tests.mark_utils import arg_mark
 from ..share.utils import match_array, assert_no_graph_break
-from tests.st.pi_jit.share.utils import pi_jit_with_config
-
-cfg = {"compile_with_try": False}
 
 context.set_context(mode=context.PYNATIVE_MODE)
 
@@ -43,8 +39,8 @@ def test_guard_for_Cell_1():
     pynative_net = Net()
     jit_net1 = Net()
     jit_net2 = Net()
-    jit_net1.construct = pi_jit_with_config(jit_net1.construct, jit_config=cfg)
-    jit_net2.construct = pi_jit_with_config(jit_net2.construct, jit_config=cfg)
+    jit_net1.construct = jit(jit_net1.construct, capture_mode='bytecode')
+    jit_net2.construct = jit(jit_net2.construct, capture_mode='bytecode')
 
     x = ops.randn(2, 4)
     y = ops.randn(4, 2)
@@ -103,7 +99,7 @@ def test_guard_for_CellList_1():
     x = Tensor([1, 2, 3, 4], dtype=ms.float32)
     o1 = net(x)
 
-    net.construct = pi_jit_with_config(net.construct, jit_config=cfg)
+    net.construct = jit(net.construct, capture_mode='bytecode')
     o2 = net(x)
     match_array(o1, o2)
     assert_no_graph_break(net.construct, call_count=1)
@@ -126,7 +122,7 @@ def test_guard_for_CellList_2():
     x = Tensor([1, 2, 3, 4], dtype=ms.float32)
     o1 = net(x)
 
-    net.construct = pi_jit_with_config(net.construct, jit_config=cfg)
+    net.construct = jit(net.construct, capture_mode='bytecode')
     o2 = net(x)
     match_array(o1, o2)
     assert_no_graph_break(net.construct, call_count=1)
@@ -152,7 +148,7 @@ def test_guard_for_CellList_3():
     x = Tensor([1, 2, 3, 4], dtype=ms.float32)
     o1 = net(x)
 
-    net.construct = pi_jit_with_config(net.construct, jit_config=cfg)
+    net.construct = jit(net.construct, capture_mode='bytecode')
     o2 = net(x)
     match_array(o1, o2)
     assert_no_graph_break(net.construct, call_count=1)
@@ -176,7 +172,7 @@ def test_guard_for_CellList_4():
     x = Tensor([1, 2, 3, 4], dtype=ms.float32)
     o1 = net(x)
 
-    net.construct = pi_jit_with_config(net.construct, jit_config=cfg)
+    net.construct = jit(net.construct, capture_mode='bytecode')
     o2 = net(x)
     match_array(o1, o2)
     assert_no_graph_break(net.construct, call_count=1)
@@ -188,7 +184,6 @@ def test_guard_for_CellList_4():
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.skip(reason="Need Fixed")
 def test_guard_for_CellList_5():
     """
     Feature: Test guard for CellList.
@@ -200,7 +195,7 @@ def test_guard_for_CellList_5():
     x = Tensor([1, 2, 3, 4], dtype=ms.float32)
     o1 = net(x)
 
-    net.construct = pi_jit_with_config(net.construct, jit_config=cfg)
+    net.construct = jit(net.construct, capture_mode='bytecode')
     o2 = net(x)
     match_array(o1, o2)
     assert_no_graph_break(net.construct, call_count=1)
@@ -234,7 +229,7 @@ def test_guard_for_CellList_6():
     x = Tensor([1, 2, 3, 4], dtype=ms.float32)
     o1 = net(x)
 
-    net.construct = pi_jit_with_config(net.construct, jit_config=cfg)
+    net.construct = jit(net.construct, capture_mode='bytecode')
     o2 = net(x)
     match_array(o1, o2)
     assert_no_graph_break(net.construct, call_count=1)
@@ -258,7 +253,7 @@ def test_guard_for_CellList_7():
     x = Tensor([1, 2, 3, 4], dtype=ms.float32)
     o1 = net(x)
 
-    net.construct = pi_jit_with_config(net.construct, jit_config=cfg)
+    net.construct = jit(net.construct, capture_mode='bytecode')
     o2 = net(x)
     match_array(o1, o2)
     assert_no_graph_break(net.construct, call_count=1)

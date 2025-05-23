@@ -36,7 +36,6 @@ typedef enum _GuardLevel {
   GDeduce = 0,
   GId,
   GType,
-  GAttr,
   GEqual,
   kGuardMatchIDS,
 } GuardLevel;
@@ -44,8 +43,8 @@ typedef enum _GuardLevel {
 using GuardItemVector = std::vector<GuardItemPtr>;
 using GuardItemMap = std::map<size_t, GuardItemPtr>;
 using GuardTraceMap = std::map<size_t, GuardItemPtr>;
-using GuardCheckPoint = std::tuple<GuardItemVector, GuardItemMap, GuardTraceMap>;
-
+using GuardCheckPoint = std::tuple<GuardItemVector>;
+class OptCodeHub;
 class OptGuard : public std::enable_shared_from_this<OptGuard> {
  public:
   OptGuard();
@@ -58,9 +57,8 @@ class OptGuard : public std::enable_shared_from_this<OptGuard> {
   /// \param[in] fail to record the items which fail to guard
   /// \param[in] perf to record the performance of guard
   /// \param[out] the variables have been modified
-  virtual bool Check(const EvalFrameObject *frame, bool print, std::map<size_t, PyObject *> *cache = nullptr,
-                     std::map<size_t, bool> *success = nullptr, std::map<size_t, bool> *fail = nullptr,
-                     bool perf = false);
+  bool Check(PyFrameWrapper frame, bool print, bool perf = false);
+
   /// \brief guard the variable which has trace to retrieve
   /// \param[in] frame python frame
   /// \param[in] var to trace the path to retrieve the object
@@ -70,10 +68,7 @@ class OptGuard : public std::enable_shared_from_this<OptGuard> {
   /// \param[out] whether to guard successfully
   virtual bool GuardOn(TracePtr var, GuardLevel tp = GuardLevel::GDeduce, bool needSpecialize = true,
                        int recurseDepth = 0);
-  /// \brief add trace from guard, traces to replace in other guard
-  /// \param[in] traces to replace in other guard
-  /// \param[in] other guard with traces
-  virtual void AddTraceFromGuard(const std::vector<TracePtr> &traces, std::shared_ptr<OptGuard> other);
+
   /// \brief return the description for the guard
   virtual std::string GetDescript();
   virtual void UpdateConfig(const std::map<std::string, bool> &bool_config,
@@ -82,10 +77,8 @@ class OptGuard : public std::enable_shared_from_this<OptGuard> {
   virtual void Rollback();
   virtual void Pop();
   virtual bool IsEmpty() { return guardList_.size() == 0; }
-  virtual bool MatchShape(std::shared_ptr<OptGuard> other);
-  virtual std::vector<PyObject *> ApplyDynamicShape(EvalFrameObject *frame);
-  virtual void RevertDynamicShape(EvalFrameObject *frame, const std::vector<PyObject *> &backup);
   const auto &guard_list() const { return guardList_; }
+  void RemoveAllGuardItems() { guardList_.clear(); }
 
   bool Erase(const GuardItemPtr &last_item);
 
@@ -94,13 +87,16 @@ class OptGuard : public std::enable_shared_from_this<OptGuard> {
   virtual std::shared_ptr<OptGuard> Optimize();
   virtual void FilterConstItem();
 
+  void set_code_hub(const std::shared_ptr<OptCodeHub> &manager) { code_hub_ = manager; }
+  std::shared_ptr<OptCodeHub> code_hub() const { return code_hub_.lock(); }
+
  protected:
   bool GuardIDS(const TracePtr &tr);
   bool Record(const GuardItemPtr &item);
   void UpdateGuardList(GuardItemPtr item);
+
+  std::weak_ptr<OptCodeHub> code_hub_;
   std::vector<GuardItemPtr> guardList_;
-  std::map<size_t, GuardItemPtr> guardMap_;
-  GuardTraceMap traceMap_;
   std::stack<GuardCheckPoint> guardStack_;
   std::map<std::string, bool> bool_config_;
   std::map<std::string, int> int_config_;

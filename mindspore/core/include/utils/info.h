@@ -114,6 +114,11 @@ class MS_CORE_API TraceManager {
   /// \return The current trace context.
   static TraceContextPtr CurrentContextInfo();
 
+  /// \brief Get the call stack of all trace contexts.
+  ///
+  /// \return All trace contexts in the call stack, with the top-of-stack element at the end of the std::vector.
+  static const std::vector<TraceContext> &trace_context_stack();
+
   /// \brief Debug trace with the given location.
   ///
   /// \param[in] location The source code location for debug trace.

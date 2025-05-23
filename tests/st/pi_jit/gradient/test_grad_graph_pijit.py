@@ -175,7 +175,6 @@ def test_grad_iteration_function_graph():
     assert np.allclose(real_grad[1].asnumpy(), expect_grad2.asnumpy())
 
 
-@pytest.mark.skip
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_grad_wrap_with_msfunction_graph():
     """
@@ -493,7 +492,6 @@ def test_grad_if_ith_train_one_step():
     train_one_if_net(x, y)
 
 
-@pytest.mark.skip(reason="Core dump under pijit mode, mismatched number of graph args, fix later")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_grad_net_d_net_g():
     """
@@ -960,7 +958,6 @@ def test_construct_get_grad_by_weight():
     assert np.allclose(grad_out.asnumpy(), expect_grad_input)
 
 
-@pytest.mark.skip
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_get_grad_wrap_with_msfunction_graph():
     """
@@ -977,7 +974,6 @@ def test_get_grad_wrap_with_msfunction_graph():
     assert np.allclose(real_grad.asnumpy(), expect_grad.asnumpy())
 
 
-@pytest.mark.skip
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_grad_primal_graph_call_others():
     """

@@ -29,25 +29,69 @@ namespace mindspore {
 namespace pijit {
 constexpr const size_t MoveEightBits = 8;
 
+// https://github.com/python/cpython/blob/main/Python/assemble.c#L158
+class ExceptionTableEncoder {
+ public:
+  void WriteByte(uint32_t i) { bytes_ << static_cast<uint8_t>(i); }
+  void WriteVariant(int value, int mask_bits);
+  void WriteItem(const ExceptionTableItem &item);
+  py::bytes Result() {
+    std::string r = bytes_.str();  // here must be copy from stream ensure it's complete c str
+    return py::bytes(r);
+  }
+
+ private:
+  std::stringstream bytes_;
+};
+
+// https://github.com/python/cpython/blob/main/Python/assemble.c#L340
+class LocationTableEncoder {
+ public:
+  // copy from _PyCodeLocationInfoKind
+  enum Kind {
+    kCodeLocationShort0 = 0,
+    kCodeLocationOneLine0 = 10,
+    kCodeLocationOneLine1 = 11,
+    kCodeLocationOneLine2 = 12,
+    kCodeLocationNoColumns = 13,
+    kCodeLocationLong = 14,
+    kCodeLocationNone = 15
+  };
+  explicit LocationTableEncoder(int first_line) : pre_line_(first_line) {}
+  void WriteByte(uint32_t i) { bytes_ << static_cast<uint8_t>(i); }
+  py::bytes Result() {
+    std::string r = bytes_.str();  // here must be copy from stream ensure it's complete c str
+    return py::bytes(r);
+  }
+
+  // |- flag:1 -|- code:4 -|- len:3 -|
+  void WriteItemStart(int code, int len);
+  void WriteVariant(uint32_t value);
+  void WriteSignedVariant(int32_t value);
+  void Add(int bci_delta, const CodeLocation &loc);
+  void AddEntry(int offset, const CodeLocation &loc);
+  void NoneEntry(int offset);
+  void NoColumn(int offset, int line_delta);
+  void OneLineEntry(int offset, int line_delta, int column, int end_column);
+  void ShortEntry(int offset, int column, int end_column);
+  void LongEntry(int offset, const CodeLocation &loc);
+
+ private:
+  std::stringstream bytes_;
+  int pre_line_;
+};
+
 class GraphParameterBuilder {
  public:
   static std::string Key(int, ValueNode *n);
 
-  void Init(const std::vector<ValueNode *> &args, const std::vector<ValueNode *> &globals, ValueNode *vargs,
-            ValueNode *kwargs);
+  void Init(const std::vector<ValueNode *> &args);
   void Build(const std::unordered_map<ValueNode *, int> &locals);
 
   std::vector<ValueNode *> args_;
-  std::vector<ValueNode *> globals_;
   std::vector<std::unique_ptr<Instr>> load_;  // load parameters and store parameters to global, for caller
   std::vector<std::unique_ptr<Instr>> dele_;  // delete global parameters, for caller
   std::vector<std::unique_ptr<Instr>> sort_;  // load global parameter and store to locals, for callee
-  ValueNode *vargs_;
-  ValueNode *kwargs_;
-
- private:
-  void BuildVargs(const std::unordered_map<ValueNode *, int> &locals);
-  void BuildKwVargs(const std::unordered_map<ValueNode *, int> &locals);
 };
 
 static bool FindBlock(int start_bci, const CFG *cfg, int *target_bci, int *stack_effect);
@@ -98,6 +142,18 @@ void MapAdd(const py::dict &dict, const std::string &key, const py::object &valu
 }
 
 static int GetOpcodeMaxStackEffect(int op, int arg, bool jump) {
+#if IS_PYTHON_3_11_PLUS && !IS_PYTHON_3_12_PLUS
+  if (op == PRECALL) {
+    return 0;
+  }
+  if (op == CALL) {
+    return -(arg + 1);
+  }
+  if (op == CALL_FUNCTION_EX) {
+    return -2 - static_cast<bool>(arg & 1);
+  }
+#endif
+
   int off;
   off = PyCompile_OpcodeStackEffect(op, arg);
   if (op == NOP || op == EXTENDED_ARG) {
@@ -109,7 +165,20 @@ static int GetOpcodeMaxStackEffect(int op, int arg, bool jump) {
   return off;
 }
 
-int CodeGenerator::CalculateStackSize(const std::vector<std::unique_ptr<Instr>> &list, int sp) {
+int CodeGenerator::ExceptionStackRequired(const Code &ccode) {
+  int sp = 0;
+  if (ccode.co_exceptiontable.empty()) {
+    return sp;
+  }
+  // python3.11+
+  for (const auto &item : ccode.co_exceptiontable) {
+    sp = std::max(item.stack_ + item.lasti_, sp);
+  }
+  return sp;
+}
+
+int CodeGenerator::CalculateStackSize(const Code &ccode, int sp) {
+  const InstructionList &list = ccode.co_code;
   std::unordered_map<Instr *, int> blocks;
   int max_depth = 0;
   int flag = 0;
@@ -136,40 +205,50 @@ int CodeGenerator::CalculateStackSize(const std::vector<std::unique_ptr<Instr>> 
     sp += GetOpcodeMaxStackEffect(op, arg, false);
     max_depth = std::max(sp, max_depth);
   }
-  return sp < 0 ? -1 : max_depth;
+  return sp < 0 ? -1 : max_depth + ExceptionStackRequired(ccode);
 }
 
 // reset bci, reset jump offset
 static void CalculateOffset(const std::vector<std::unique_ptr<Instr>> &list) {
-  constexpr auto InstrSize = [](unsigned arg) constexpr {
-    return arg <= 0xff ? 1 : arg <= 0xffff ? 2 : arg <= 0xffffff ? 3 : 4;
-  };
-
   bool re_calc;
   do {
     re_calc = false;
-    int bci = -1;
+    int bci = 0;
     for (const auto &i : list) {
-      bci += InstrSize(i->arg());
       i->set_bci(bci);
+      bci += i->InstrSize();
     }
     for (const auto &i : list) {
-      int isize = InstrSize(i->arg());
+      int isize = i->InstrSize();
       Instr *tar = i->extra_jump();
       if (tar) {
-        i->set_arg(Opcode(i->op()).JumpOffset(i->bci(), tar->bci() - InstrSize(tar->arg()) + 1));
-        re_calc |= isize != InstrSize(i->arg());
+        int oparg = Opcode(i->op()).JumpOffset(i->bci(), tar->bci());
+        i->set_arg(oparg);
+        re_calc |= isize != i->InstrSize();
       }
     }
   } while (re_calc);
 }
 
-std::pair<py::bytes, py::bytes> CodeGenerator::ConvertToCodeBytes(const std::vector<std::unique_ptr<Instr>> &list,
-                                                                  int first_line) {
+std::string PrintCodeBytes(const std::string &code_bytes) {
+  std::stringstream s;
+  for (auto iter = code_bytes.begin(), end = code_bytes.end(); iter != end; iter += sizeof(uint16_t)) {
+    Opcode op(static_cast<int>(static_cast<uint8_t>(*iter)));
+    int arg = static_cast<int>(static_cast<uint8_t>(*(iter + 1)));
+    s << "code: " << op << " " << op.name() << " " << arg << std::endl;
+  }
+  return s.str();
+}
+
+std::pair<py::bytes, py::bytes> CodeGenerator::ConvertToCodeBytes(const Code &ccode) {
+  const auto &list = ccode.co_code;
+  int first_line = ccode.co_firstlineno;
   std::vector<char> co_lnotab;
-  std::vector<_Py_CODEUNIT> co_code;
+  std::stringstream co_code;
 
   CalculateOffset(list);
+
+  MS_LOG(DEBUG) << "after calculate offset, bci is: " << std::endl << PrintInstr(list);
 
   int line = first_line > 0 ? first_line : 0;
   int bci = 0;
@@ -187,19 +266,50 @@ std::pair<py::bytes, py::bytes> CodeGenerator::ConvertToCodeBytes(const std::vec
       bci = i->bci();
       line = i->line();
     }
-    unsigned int oparg = Opcode(i->op()).HasArg() ? i->arg() : 0;
-    for (unsigned c = 0, exa = oparg >> MoveEightBits; exa > 0; exa >>= MoveEightBits, ++c) {
-      co_code.insert(co_code.end() - c, _Py_MAKECODEUNIT(EXTENDED_ARG, exa & 0xffu));
+    Opcode opcode(i->op());
+    unsigned int oparg = opcode.HasArg() ? i->arg() : 0;
+    for (int c = (oparg > 0xffffff) + (oparg > 0xffff) + (oparg > 0xff); c > 0; --c) {
+      co_code << static_cast<uint8_t>(EXTENDED_ARG) << static_cast<uint8_t>(oparg >> (MoveEightBits * c));
     }
-    co_code.push_back(_Py_MAKECODEUNIT(i->op(), oparg & 0xffu));
+    co_code << static_cast<uint8_t>(i->op()) << static_cast<uint8_t>(oparg & 0xffu);
+    for (int c = opcode.InstrSize() - 1; c > 0; --c) {
+      co_code << static_cast<uint8_t>(CACHE) << static_cast<uint8_t>(0);
+    }
   }
 #if IS_PYTHON_3_10_PLUS
   co_lnotab.push_back(sizeof(_Py_CODEUNIT) * (list.size() - static_cast<size_t>(bci)));
   co_lnotab.push_back(1);
 #endif
-  const char *code_data = reinterpret_cast<const char *>(co_code.data());
-  const size_t code_size = co_code.size() * sizeof(co_code[0]);
-  return {py::bytes(code_data, code_size), py::bytes(co_lnotab.data(), co_lnotab.size())};
+  std::string code_bytes = co_code.str();
+  MS_LOG(DEBUG) << "encode bytes:" << std::endl << PrintCodeBytes(code_bytes);
+  return {py::bytes(code_bytes), py::bytes(co_lnotab.data(), co_lnotab.size())};
+}
+
+py::bytes EncodeExceptionTable(const CodeGenerator::Code &ccode) {
+  ExceptionTableEncoder encoder;
+  for (const auto &i : ccode.co_exceptiontable) {
+    ExceptionTableItem item{i.begin_->bci(), i.end_->bci() + i.end_->InstrSize(), i.jump_->bci(), i.stack_, i.lasti_};
+    MS_LOG(DEBUG) << "add item: " << item;
+    encoder.WriteItem(item);
+  }
+  return encoder.Result();
+}
+
+py::bytes EncodeLocationTable(const CodeGenerator::Code &ccode) {
+  LocationTableEncoder encoder(ccode.co_firstlineno);
+  CodeLocation loc;
+  int bci_delta = 0;
+  for (const auto &i : ccode.co_code) {
+    const CodeLocation &cur = i->location();
+    if (loc != cur) {
+      encoder.Add(bci_delta, loc);
+      loc = cur;
+      bci_delta = 0;
+    }
+    bci_delta += i->InstrSize();
+  }
+  encoder.Add(bci_delta, loc);
+  return encoder.Result();
 }
 
 static void SetNamedInstrIndex(const std::unique_ptr<Instr> &i, std::unordered_map<std::string, int> *co_names) {
@@ -217,18 +327,20 @@ static void SetNamedInstrIndex(const std::unique_ptr<Instr> &i, std::unordered_m
 #if IS_PYTHON_3_11_PLUS
   if (i->op() == LOAD_GLOBAL) {
     arg = arg << 1;
+    arg |= static_cast<bool>(i->arg() & 1);  // PUSH_NULL
   }
 #endif
 #if IS_PYTHON_3_12_PLUS
   if (i->op() == LOAD_ATTR) {
     arg = arg << 1;
+    arg |= static_cast<bool>(i->arg() & 1);  // PUSH_NULL
   }
 #endif
   i->set_arg(arg);
 }
 
 static void SetLoadConstIndex(const std::unique_ptr<Instr> &i, const py::dict &consts) {
-  if (i->op() != LOAD_CONST) {
+  if (!Opcode(i->op()).HasConst()) {
     return;
   }
   PyObject *co_consts = consts.ptr();
@@ -334,6 +446,10 @@ static std::string MakeBrkName(const std::string &co_name, int bci) {
   return std::to_string(bci) + mark + std::regex_replace(co_name, std::regex(reg_mark), "");
 }
 
+static std::unique_ptr<Instr> MakeCallFunInstrPtr(int oparg) {
+  return std::make_unique<Instr>(IS_PYTHON_3_11_PLUS ? CALL : CALL_FUNCTION, oparg);
+}
+
 py::object CodeGenerator::Transform(const Code &ccode) {
   std::unordered_map<std::string, int> names;
   py::dict consts;
@@ -343,13 +459,13 @@ py::object CodeGenerator::Transform(const Code &ccode) {
     SetNamedInstrIndex(i, &names);
     SetLoadConstIndex(i, consts);
   }
-  co_stacksize = CalculateStackSize(ccode.co_code);
+  co_stacksize = CalculateStackSize(ccode);
   if (co_stacksize < 0) {
     MS_LOG(ERROR) << "\n" << PrintInstr(ccode.co_code);
     MS_EXCEPTION_IF_CHECK_FAIL(co_stacksize >= 0, "check instruction list, computer stack size failed");
   }
 
-  std::pair<py::bytes, py::bytes> code_info = ConvertToCodeBytes(ccode.co_code, ccode.co_firstlineno);
+  std::pair<py::bytes, py::bytes> code_info = ConvertToCodeBytes(ccode);
   py::bytes co_code = std::move(code_info.first);
   py::bytes co_lnotab = std::move(code_info.second);
   py::tuple co_consts = ConstsMapToTuple(consts);
@@ -358,24 +474,32 @@ py::object CodeGenerator::Transform(const Code &ccode) {
   py::object co_freevars = ConvertVector(ccode.co_freevars);
   py::object co_cellvars = ConvertVector(ccode.co_cellvars);
   py::str co_name(AttachCodeID(ccode.co_name));
-  PyCodeObject *new_code = PyCode_New(ccode.co_argcount,        // co_argcount
-                                      ccode.co_kwonlyargcount,  // co_kwonlyargcount
-                                      ccode.co_nlocals,         // co_nlocals
-                                      co_stacksize,             // co_stacksize
-                                      ccode.co_flags,           // co_flags
-                                      co_code.ptr(),            // co_code
-                                      co_consts.ptr(),          // co_consts
-                                      co_names.ptr(),           // co_names
-                                      co_varnames.ptr(),        // co_varnames
-                                      co_freevars.ptr(),        // co_freevars
-                                      co_cellvars.ptr(),        // co_cellvars
-                                      ccode.co_filename.ptr(),  // co_filename
-                                      co_name.ptr(),            // co_name
+
 #if IS_PYTHON_3_11_PLUS
-                                      ccode.co_qualname.ptr(),         // co_qualname
-                                      ccode.co_firstlineno,            // co_firstlineno
-                                      co_lnotab.ptr(),                 // co_lnotab
-                                      ccode.co_exceptiontable.ptr());  // co_exceptiontable
+  py::bytes co_linetable = EncodeLocationTable(ccode);
+  py::bytes co_exceptiontable = EncodeExceptionTable(ccode);
+  py::str co_qualname = ccode.co_qualname.empty() ? co_name : py::str(ccode.co_qualname);
+  co_lnotab = co_linetable;
+#endif
+
+  PyCodeObject *new_code = PyCode_New(ccode.co_argcount,         // co_argcount
+                                      ccode.co_kwonlyargcount,   // co_kwonlyargcount
+                                      ccode.co_nlocals,          // co_nlocals
+                                      co_stacksize,              // co_stacksize
+                                      ccode.co_flags,            // co_flags
+                                      co_code.ptr(),             // co_code
+                                      co_consts.ptr(),           // co_consts
+                                      co_names.ptr(),            // co_names
+                                      co_varnames.ptr(),         // co_varnames
+                                      co_freevars.ptr(),         // co_freevars
+                                      co_cellvars.ptr(),         // co_cellvars
+                                      ccode.co_filename.ptr(),   // co_filename
+                                      co_name.ptr(),             // co_name
+#if IS_PYTHON_3_11_PLUS                                          // format code aligned
+                                      co_qualname.ptr(),         // co_qualname
+                                      ccode.co_firstlineno,      // co_firstlineno
+                                      co_lnotab.ptr(),           // co_linetable
+                                      co_exceptiontable.ptr());  // co_exceptiontable
 #else
                                       ccode.co_firstlineno,  // co_firstlineno
                                       co_lnotab.ptr());      // co_lnotab
@@ -384,6 +508,75 @@ py::object CodeGenerator::Transform(const Code &ccode) {
     return py::reinterpret_steal<py::object>(reinterpret_cast<PyObject *>(new_code));
   }
   throw py::error_already_set();
+}
+
+std::vector<std::unique_ptr<Instr>> CodeGenerator::ByteCodePrefix() const {
+  std::vector<std::unique_ptr<Instr>> prefix;
+  if (code_.co_freevars.size() != 0) {
+    prefix.push_back(std::make_unique<Instr>(COPY_FREE_VARS, code_.co_freevars.size()));
+  }
+  const auto make_cell = [](const std::string &name) { return std::make_unique<Instr>(MAKE_CELL, 0, name); };
+  std::transform(code_.co_cellvars.begin(), code_.co_cellvars.end(), std::back_inserter(prefix), make_cell);
+  prefix.push_back(std::make_unique<Instr>(RESUME));
+  return prefix;
+}
+
+void CodeGenerator::FixLocalOffset(int invalid_index) {
+  int new_index = code_.co_nlocals;
+  code_.co_nlocals++;
+  for (const auto &i : code_.co_code) {
+    if (Opcode(i->op()).IsLocalAccess() && i->arg() == invalid_index) {
+      i->set_arg(new_index);
+    }
+  }
+}
+
+void CodeGenerator::FixFreeOffset(const std::vector<std::string> &other_closure_names) {
+  // reset offset
+  for (const auto &i : code_.co_code) {
+    int op = i->op();
+    if (Opcode(op).HasFree()) {
+      auto iter = std::find(other_closure_names.begin(), other_closure_names.end(), i->name());
+      if (iter != other_closure_names.end()) {
+        i->set_arg(code_.co_nlocals + static_cast<int>(iter - other_closure_names.begin()));
+      } else {
+        auto var_iter = std::find(code_.co_varnames.begin(), code_.co_varnames.end(), i->name());
+        MS_EXCEPTION_IF_CHECK_FAIL(var_iter != code_.co_varnames.end(), "can't find cell var name: " + i->name());
+        i->set_arg(var_iter - code_.co_varnames.begin());
+      }
+    }
+  }
+}
+
+void CodeGenerator::FixOffset() {
+  if (code_.co_cellvars.empty() && code_.co_freevars.empty()) {
+    return;
+  }
+  // remove duplicate names
+  std::vector<std::string> closure_names;
+  closure_names.insert(closure_names.end(), code_.co_cellvars.begin(), code_.co_cellvars.end());
+  closure_names.insert(closure_names.end(), code_.co_freevars.begin(), code_.co_freevars.end());
+  if (!code_.co_cellvars.empty()) {
+    for (size_t i = 0, size = code_.co_varnames.size(); i < size; ++i) {
+      auto iter = std::find(closure_names.begin(), closure_names.end(), code_.co_varnames[i]);
+      if (iter != closure_names.end()) {
+        FixLocalOffset(i);
+        closure_names.erase(iter);
+      }
+    }
+  }
+  FixFreeOffset(closure_names);
+}
+
+py::object CodeGenerator::NewCode() {
+  EraseUnusedInstr();
+#if IS_PYTHON_3_11_PLUS
+  auto &instr = code_.co_code;
+  auto prefix = ByteCodePrefix();
+  instr.insert(instr.begin(), std::make_move_iterator(prefix.begin()), std::make_move_iterator(prefix.end()));
+  FixOffset();
+#endif
+  return Transform(code_);
 }
 
 std::vector<std::unique_ptr<Instr>> CodeGenerator::CopyInstr(const std::vector<std::unique_ptr<Instr>> &list,
@@ -397,14 +590,7 @@ std::vector<std::unique_ptr<Instr>> CodeGenerator::CopyInstr(const std::vector<s
   for (size_t bci = start_bci; bci < size; ++bci) {
     const auto &i = list[bci];
     size_t index = (size_t)i->bci() - start_bci;
-    instrs.emplace_back(std::make_unique<Instr>(i->op(), i->arg(), index, i->line()));
-    instrs.back()->set_name(i->name());
-    instrs.back()->set_cnst(i->cnst());
-    if (i->op() == LOAD_METHOD) {
-      instrs.back()->set_op(LOAD_ATTR);
-    } else if (i->op() == CALL_METHOD) {
-      instrs.back()->set_op(CALL_FUNCTION);
-    }
+    instrs.emplace_back(std::make_unique<Instr>(*i));
     if (i->extra_jump()) {
       size_t tar = i->extra_jump()->bci();
       // If the jump dest inside the loop body points to the beginning of the loop body,
@@ -445,9 +631,7 @@ std::vector<std::unique_ptr<Instr>> CodeGenerator::CopyAndReplaceInstr(
   // instructions before start_bci
   for (size_t bci = static_cast<size_t>(list.front()->bci()); bci < start_bci; ++bci) {
     const auto &i = list[bci];
-    (void)instrs.emplace_back(std::make_unique<Instr>(i->op(), i->arg(), index, i->line()));
-    instrs.back()->set_name(i->name());
-    instrs.back()->set_cnst(i->cnst());
+    (void)instrs.emplace_back(std::make_unique<Instr>(*i));
     if (i->extra_jump()) {
       size_t tar = i->extra_jump()->bci();
       if (tar > end_bci) {
@@ -461,18 +645,14 @@ std::vector<std::unique_ptr<Instr>> CodeGenerator::CopyAndReplaceInstr(
   // loop encapsulation.
   for (size_t bci = 0; bci < replacement.size(); ++bci) {
     const auto &i = replacement[bci];
-    (void)instrs.emplace_back(std::make_unique<Instr>(i->op(), i->arg(), index, i->line()));
-    instrs.back()->set_name(i->name());
-    instrs.back()->set_cnst(i->cnst());
+    (void)instrs.emplace_back(std::make_unique<Instr>(*i));
     MS_EXCEPTION_IF_CHECK_FAIL(i->extra_jump() == nullptr, "should not exist jump here");
     index++;
   }
   // instructions after end_bci
   for (size_t bci = end_bci; bci < list.size(); ++bci) {
     const auto &i = list[bci];
-    (void)instrs.emplace_back(std::make_unique<Instr>(i->op(), i->arg(), index, i->line()));
-    instrs.back()->set_name(i->name());
-    instrs.back()->set_cnst(i->cnst());
+    (void)instrs.emplace_back(std::make_unique<Instr>(*i));
     if (i->extra_jump()) {
       size_t tar = i->extra_jump()->bci();
       if (tar > end_bci) {
@@ -487,10 +667,40 @@ std::vector<std::unique_ptr<Instr>> CodeGenerator::CopyAndReplaceInstr(
   return instrs;
 }
 
-void CodeGenerator::EraseUnusedInstr(std::vector<std::unique_ptr<Instr>> *list) {
+void CodeGenerator::ResetExceptionCodeItem(InstructionList::const_iterator erased) {
+  if (code_.co_exceptiontable.empty()) {
+    return;
+  }
+  // python3.11+
+  const InstructionList &list = code_.co_code;
+  for (auto e_iter = code_.co_exceptiontable.begin(); e_iter != code_.co_exceptiontable.end(); ++e_iter) {
+    auto &i = *e_iter;
+    bool erase_item = (erased->get() == i.begin_ && erased == list.end() - 1) ||  // item begin is last instruction
+                      (erased->get() == i.end_ && erased == list.begin());        // item end is first instruction
+    if (erase_item) {
+      // maybe shouldn't reach here ?
+      MS_LOG(INFO) << "erase exception item";
+      e_iter = code_.co_exceptiontable.erase(e_iter);
+      continue;
+    }
+    if (erased->get() == i.begin_) {
+      i.begin_ = (erased + 1)->get();
+    }
+    if (erased->get() == i.end_) {
+      i.end_ = (erased - 1)->get();
+    }
+    if (erased->get() == i.jump_) {
+      MS_EXCEPTION_IF_CHECK_FAIL(erased != list.begin(), "exception item can't jump to first instruction");
+      i.jump_ = (erased + (erased == list.end() - 1 ? -1 : 1))->get();
+    }
+  }
+}
+
+void CodeGenerator::EraseUnusedInstr() {
+  InstructionList *list = &code_.co_code;
   auto NeedRemove = [](const std::vector<std::unique_ptr<Instr>>::iterator &i) {
     int op = (*i)->op();
-    if (op == NOP || op == EXTENDED_ARG) {
+    if (Opcode(op).GetClass() == Opcode::kNop) {
       return true;
     }
     if (op == JUMP_ABSOLUTE || op == JUMP_FORWARD) {  // jump to next
@@ -505,6 +715,7 @@ void CodeGenerator::EraseUnusedInstr(std::vector<std::unique_ptr<Instr>> *list) 
     if (NeedRemove(i)) {
       (*i)->set_bci(-1);
       (*i)->set_extra_jump((i + 1)->get());
+      ResetExceptionCodeItem(i);
     } else {
       (*i)->set_bci(bci);
       std::swap(*erase_iter, *i);
@@ -530,13 +741,14 @@ void CodeGenerator::EraseUnusedInstr(std::vector<std::unique_ptr<Instr>> *list) 
   list->erase(erase_iter, list->end());
 }
 
-void CodeGenerator::EraseUnusedInstr() { EraseUnusedInstr(&code_.co_code); }
-
 std::vector<std::unique_ptr<Instr>> CodeGenerator::RotStack(int stack) {
   std::vector<std::unique_ptr<Instr>> res;
   if (stack == 0) {
     return res;
-#if (PY_MAJOR_VERSION == 3) && (PY_MINOR_VERSION == 10)
+#if PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION == 11
+  } else {
+    res.push_back(std::make_unique<Instr>(SWAP, stack + 1));
+#elif PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION == 10
   } else {
     res.push_back(std::make_unique<Instr>(ROT_N, stack + 1));
 #elif PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION < 10 && PY_MINOR_VERSION >= 7
@@ -549,12 +761,13 @@ std::vector<std::unique_ptr<Instr>> CodeGenerator::RotStack(int stack) {
     res.push_back(std::make_unique<Instr>(ROT_FOUR));
 #endif
   } else {
-    MS_LOG(DEBUG) << ("too many stack value, will build tuple to process\n");
-    res.insert(res.begin(), std::make_unique<Instr>(BUILD_TUPLE, stack));
-    res.insert(res.begin(), std::make_unique<Instr>(UNPACK_SEQUENCE, stack));
-    res.insert(res.begin(), std::make_unique<Instr>(BUILD_TUPLE, stack));  // reverse tuple
-    res.push_back(std::make_unique<Instr>(ROT_TWO));
-    res.push_back(std::make_unique<Instr>(UNPACK_SEQUENCE, stack));
+    MS_LOG(DEBUG) << "Too many stack nodes, use BUILD_TUPLE and UNPACK_SEQUENCE";
+    // Assuming the elements on the stack are 2,3,4,5,1, where the left side is bottom and the right side is top of the
+    // stack, the goal is to transform it into 1,2,3,4,5.
+    res.insert(res.end(), std::make_unique<Instr>(BUILD_TUPLE, stack + 1));      // 2,3,4,5,1 -> (2,3,4,5,1)
+    res.insert(res.end(), std::make_unique<Instr>(UNPACK_SEQUENCE, stack + 1));  // -> 1,5,4,3,2
+    res.insert(res.end(), std::make_unique<Instr>(BUILD_TUPLE, stack));          // -> 1,(5,4,3,2)
+    res.insert(res.end(), std::make_unique<Instr>(UNPACK_SEQUENCE, stack));      // -> 1,2,3,4,5
 #endif
   }
 
@@ -591,10 +804,11 @@ void CodeGenerator::MarkAlive(ValueNode *node, int order) {
   }
 }
 
-void CodeGenerator::MakeSameLocal(ValueNode *node, ValueNode *other_node) {
+void CodeGenerator::MakeSameLocal(ValueNode *node, ValueNode *other_node, bool clear) {
   auto iter = locals_map_.find(node);
   if (iter != locals_map_.end()) {
     locals_map_[other_node] = iter->second;
+    clear ? (void)locals_map_.erase(iter) : ((void)0);
     return;
   }
   LoadValue(node);
@@ -621,18 +835,69 @@ int CodeGenerator::AllocLocal(ValueNode *node, int index) {
   for (auto i = used_slots.begin(); i != used_slots.end() && res == (*i); ++i, ++res) {
   }
   locals_map_.insert({node, res});
-  SetLocalsCount(res);
+  SetLocalsCount(std::max(locals_map_.size(), static_cast<size_t>(res)));
   return res;
 }
 
-void CodeGenerator::NewInstr(int op, int arg, int line) {
-  code_.co_code.emplace_back(std::make_unique<Instr>(op, arg, -1, line));
-}
-
+void CodeGenerator::NewInstr(int op, int arg, int line) { AddInstr(std::make_unique<Instr>(op, arg, -1, line)); }
 void CodeGenerator::AddInstr(std::unique_ptr<Instr> &&instr) { code_.co_code.emplace_back(std::move(instr)); }
 
 void CodeGenerator::AddInstrs(std::vector<std::unique_ptr<Instr>> &&l) {
   code_.co_code.insert(code_.co_code.end(), std::make_move_iterator(l.begin()), std::make_move_iterator(l.end()));
+}
+
+void CodeGenerator::AddInstructionWithExceptionTable(const CFG *cfg, int start, int end) {
+  AddInstrs(CopyInstr(cfg->instr_pool(), start, end));
+  CollectExceptionTableItem(cfg, start, end);
+}
+
+void CodeGenerator::CollectExceptionTableItem(const CFG *cfg, int start, int end) {
+  const auto &table = cfg->exc_table();
+  if (table.empty()) {
+    return;
+  }
+  auto iter = cfg->FindTryWithBlock(start);
+  if (iter == table.end()) {
+    iter = table.lower_bound(start);
+  }
+  /**
+   * cfg->instr_pool():   |...|copied instructions|...|
+   * this->code_.co_code: |...|copied instructions|
+   */
+  int origin_code_size = cfg->instr_pool().size();
+  int off_end = origin_code_size - end;
+  int code_size = code_.co_code.size();
+  MS_LOG(DEBUG) << "[" << start << ", " << end << ") code_size: " << code_size
+                << ", origin_code_size: " << origin_code_size;
+  MS_EXCEPTION_IF_CHECK_FAIL(static_cast<size_t>(end - start) <= code_.co_code.size(), "too less instructions");
+  for (; iter != table.end() && iter->second.end_ < end; ++iter) {
+    int new_handler = code_size - (origin_code_size - iter->second.jump_ - off_end);
+    int new_start = code_size - (origin_code_size - iter->second.begin_ - off_end);
+    int new_end = code_size - (origin_code_size - iter->second.end_ - off_end);
+    new_end--;
+    MS_EXCEPTION_IF_CHECK_FAIL(new_handler < code_size && new_start < code_size && new_end < code_size,
+                               "find an exception item out of copy instructions range");
+    code_.co_exceptiontable.push_back({code_.co_code[new_start].get(), code_.co_code[new_end].get(),
+                                       code_.co_code[new_handler].get(), iter->second.stack_, iter->second.lasti_});
+  }
+}
+
+void CodeGenerator::AddCallInstr(size_t load_args_offset, int oparg) {
+  /**
+   * if no self
+   * python3.11 ~ python3.12, call stack is [NULL, callable, args...]
+   * python3.13 call stack is [callable, NULL, args...]
+   */
+#if IS_PYTHON_3_11_PLUS
+  auto iter = code_.co_code.begin() + load_args_offset + IS_PYTHON_3_13_PLUS;
+  const auto &load_instr = *iter;
+  if (load_instr->op() == LOAD_GLOBAL) {
+    load_instr->set_arg(1);
+  } else {
+    code_.co_code.insert(iter, std::make_unique<Instr>(PUSH_NULL));
+  }
+#endif
+  AddInstr(MakeCallFunInstrPtr(oparg));
 }
 
 void CodeGenerator::LoadValue(ValueNode *node) {
@@ -643,7 +908,7 @@ void CodeGenerator::LoadValue(ValueNode *node) {
   }
   int opcode = node->GetOpcode();
   if (opcode == LOAD_DEREF) {
-    NewInstr(opcode, node->GetOparg());
+    AddInstr(std::make_unique<Instr>(opcode, node->GetOparg(), node->GetName()));
     return;
   }
   std::string key = node->GetName();
@@ -715,16 +980,33 @@ void CodeGenerator::BuildOper(ValueNode *node, int index) {
     return;
   }
 
+  if ((vm_mode_ && !node->IsVmNode()) || (!vm_mode_ && !node->IsGraphNode())) {
+    return;
+  }
+
+  int load_args_offset = code_.co_code.size();
   for (auto param : node->getInputs()) {
     LoadValue(param);
   }
-  int op = node->GetOpcode();
+#if IS_PYTHON_3_11_PLUS
+  if (node->GetType() == ValueNode::Call && static_cast<CallNode *>(node)->kw_names() != nullptr) {
+    AddInstr(std::make_unique<Instr>(KW_NAMES, 0, static_cast<CallNode *>(node)->kw_names()));
+  }
+#endif
+
+  Opcode op(node->GetOpcode());
   int arg = pijit::Opcode(op).HasArg() ? node->GetOparg() : 0;
   auto const_arg_oper_iter = const_arg_oper.find(op);
   if (const_arg_oper_iter != const_arg_oper.end()) {
     arg = const_arg_oper_iter->second;
   }
-  NewInstr(op, arg, node->GetLineNo());
+  if (op.IsCall()) {
+    AddCallInstr(load_args_offset, arg);
+    code_.co_code.back()->set_op(op);
+  } else {
+    NewInstr(op, arg, node->GetLineNo());
+  }
+  code_.co_code.back()->set_line(node->GetLineNo());
   code_.co_code.back()->set_name(node->GetName());
 
   if (not_value_oper.find(op) != not_value_oper.end()) {
@@ -744,9 +1026,7 @@ void CodeGenerator::Init() {
     ValueNode *param = nodes_->inputs[i];
     locals_map_[param] = i;
 
-    if (IsNonLocalValue(param)) {
-      MS_LOG(INFO) << "got nonlocal parameter node: " << param->ToString();
-    }
+    MS_LOG(DEBUG) << "code gen init status: local " << i << " = [" << param->ToString();
   }
 }
 
@@ -785,15 +1065,16 @@ bool IsNotNeedTrack(const std::vector<std::unique_ptr<Instr>> &list, int start =
   return iter == list.end();
 }
 
-std::vector<std::unique_ptr<Instr>> MakeFunc(const py::object &code, const std::string &name, int closures) {
+std::vector<std::unique_ptr<Instr>> MakeFunc(const py::object &code, const std::string &name,
+                                             const std::vector<std::string> &closures) {
   std::vector<std::unique_ptr<Instr>> instrs;
-  for (int i = 0; i < closures; ++i) {
-    instrs.emplace_back(std::make_unique<Instr>(LOAD_CLOSURE, i));
+  for (size_t i = 0; i < closures.size(); ++i) {
+    instrs.emplace_back(std::make_unique<Instr>(LOAD_CLOSURE, i, closures[i]));
   }
   unsigned make_oparg = 0;
-  if (closures != 0) {
+  if (closures.size() != 0) {
     make_oparg |= 0x08;
-    instrs.emplace_back(std::make_unique<Instr>(BUILD_TUPLE, closures));
+    instrs.emplace_back(std::make_unique<Instr>(BUILD_TUPLE, closures.size()));
   }
   instrs.emplace_back(std::make_unique<Instr>(LOAD_CONST, 0, code));
 #if !IS_PYTHON_3_11_PLUS
@@ -837,13 +1118,9 @@ py::object CodeBreakGenerator::MakeCapturedCode(std::vector<std::unique_ptr<Inst
   code_gen.SetFreeVariableNames(GetClosureNames(co_));
   code_gen.SetCodeName(MakeCompiledName(py::str(co_->co_name)));
   code_gen.SetFileName(py::cast<py::object>(co_->co_filename));
-#if IS_PYTHON_3_11_PLUS
-  code_gen.SetQualName(py::cast<py::object>(co_->co_qualname));
-  code_gen.SetExceptionTable(py::cast<py::object>(co_->co_exceptiontable));
-#endif
+  code_gen.SetQualName("<pijit.compile>");
 
-  code_gen.EraseUnusedInstr();
-  py::object code = CodeGenerator::Transform(code_gen.GetCode());
+  py::object code = code_gen.NewCode();
   auto parent = GetJitCompileResults(co_);
   JitCompileResults *child = CreateJitCompileResults(code.ptr());
   child->set_stat(JitCompileResults::GRAPH_CAPTURED);
@@ -867,18 +1144,14 @@ void CodeBreakGenerator::CallCapturedCode(CodeGenerator *code_gen) {
   MS_LOG(DEBUG) << "Do codegen for calling graph";
   GraphParameterBuilder param_info;
   BuildGraphParameters(code_gen->GetLocalsMap(), &param_info);
-  int flag = (param_info.vargs_ ? CO_VARARGS : 0) | (param_info.kwargs_ ? CO_VARKEYWORDS : 0);
-  py::object code = MakeCapturedCode(std::move(param_info.sort_), param_info.args_.size(), flag);
+  py::object code = MakeCapturedCode(std::move(param_info.sort_), param_info.args_.size(), 0);
 
   PyCodeWrapper co(co_);
-  int closures = co.CellVarsSize() + co.FreeVarsSize();
-  code_gen->AddInstrs(MakeFunc(code, "<pijit.compile>", closures));
+
+  int load_args_offset = code_gen->GetCode().co_code.size();
+  code_gen->AddInstrs(MakeFunc(code, "<pijit.compile>", GetClosureNames(co_)));
   code_gen->AddInstrs(std::move(param_info.load_));
-  if (flag) {
-    code_gen->NewInstr(CALL_FUNCTION_EX, static_cast<bool>(flag & CO_VARKEYWORDS));
-  } else {
-    code_gen->NewInstr(CALL_FUNCTION, param_info.args_.size());
-  }
+  code_gen->AddCallInstr(load_args_offset, param_info.args_.size());
   extra_local_ = code_gen->AllocLocal(nullptr);
   code_gen->NewInstr(STORE_FAST, extra_local_);
   code_gen->AddInstrs(std::move(param_info.dele_));
@@ -898,7 +1171,11 @@ void CodeBreakGenerator::FixInterpretOuput(CodeGenerator *code_gen) {
       }
     } else {
       code_gen->MarkAlive(captured_.outputs[0]);
-      code_gen->MakeSameLocal(nullptr, captured_.outputs[0]);
+      // The placeholder of captured_.outputs[0] is nullptr, invalid node, should be replaced.
+      auto iter = code_gen->GetLocalsMap().find(nullptr);
+      MS_EXCEPTION_IF_CHECK_FAIL(iter != code_gen->GetLocalsMap().end(), "Can't find the placeholder of output.");
+      code_gen->GetLocalsMap()[captured_.outputs[0]] = iter->second;
+      code_gen->GetLocalsMap().erase(iter);
     }
   }
   // reconstruct interpret values if need
@@ -943,7 +1220,42 @@ void CodeBreakGenerator::HandleOutputOpt(CodeGenerator *cg) {
 void CodeBreakGenerator::RestoreStack(CodeGenerator *code_gen) const {
   auto begin = interpret_.outputs.begin();
   auto end = interpret_.outputs.end() - alive_locals_.size();
-  std::for_each(begin, end, [code_gen](ValueNode *i) { code_gen->LoadValue(i); });
+
+#if IS_PYTHON_3_11_PLUS
+  const auto &break_instr = GetCFG()->instr_pool()[break_bci_];
+  int stack_count = end - begin;
+  if (Opcode(break_instr->op()).IsCall()) {
+    int index = break_instr->op() != CALL_FUNCTION_EX ? break_instr->arg() : 1 + ((break_instr->arg() & 1) ? 1 : 0);
+    MS_EXCEPTION_IF_CHECK_FAIL(index < stack_count, "error stack status, can't find callable object");
+    auto func_iter = begin + (stack_count - index - (!IS_PYTHON_3_13_PLUS));
+    for (auto iter = begin; iter != end; ++iter) {
+      bool skip_push_null_if_break_comprehension_if_cp311 = false;
+#if !IS_PYTHON_3_12_PLUS
+      // python3.11 only, use iterable object as self. Although the oparg is 0, actual number of args is 1
+      skip_push_null_if_break_comprehension_if_cp311 =
+        (*func_iter)->GetOpcode() == GET_ITER && func_iter != begin && (*(func_iter - 1))->GetOpcode() == MAKE_FUNCTION;
+#endif
+      if (iter == func_iter && !skip_push_null_if_break_comprehension_if_cp311) {
+        code_gen->NewInstr(PUSH_NULL);
+      }
+      if (*iter == &ValueNode::kStackNull) {
+        continue;
+      }
+      code_gen->LoadValue(*iter);
+    }
+    if (break_instr->cnst().ptr() != nullptr) {
+      code_gen->AddInstr(std::make_unique<Instr>(KW_NAMES, 0, break_instr->cnst()));
+    }
+    return;
+  }
+#endif
+
+  std::for_each(begin, end, [code_gen](ValueNode *i) {
+    if (i == &ValueNode::kStackNull) {
+      return;
+    }
+    code_gen->LoadValue(i);
+  });
 }
 
 void CodeBreakGenerator::RestoreLocals(CodeGenerator *code_gen, bool only_load) const {
@@ -970,7 +1282,10 @@ void CodeBreakGenerator::RestoreLocals(CodeGenerator *code_gen, bool only_load) 
 
 namespace {
 std::vector<std::unique_ptr<Instr>> MakeUntrackedCodeHelper(const std::vector<std::unique_ptr<Instr>> &instr_pool,
-                                                            int start, int argc, const std::vector<int> &alive_locals) {
+                                                            int start, int stack_count,
+                                                            const std::vector<int> &alive_locals,
+                                                            const std::vector<ValueNode *> &stack = {},
+                                                            int *argc = nullptr, bool is_call_stack_effect = false) {
   /**
    * arguments layout
    * stack value is sorted from bottom to top, locals is sorted by local index
@@ -978,18 +1293,36 @@ std::vector<std::unique_ptr<Instr>> MakeUntrackedCodeHelper(const std::vector<st
    */
 
   // restore stack and locals
-  int stack_count = argc - SizeToInt(alive_locals.size());
   MS_EXCEPTION_IF_CHECK_FAIL(stack_count >= 0, "stack_count should >= 0, but is " + std::to_string(stack_count));
 
   std::vector<std::unique_ptr<Instr>> load;
   std::vector<std::unique_ptr<Instr>> store;
+  int arg_i = 0;
+
+#if IS_PYTHON_3_11_PLUS
   for (int i = 0; i < stack_count; ++i) {
-    (void)load.emplace_back(std::make_unique<Instr>(LOAD_FAST, i));
+    if (static_cast<size_t>(i) < stack.size() && stack[i] == &ValueNode::kStackNull) {
+      load.push_back(std::make_unique<Instr>(PUSH_NULL));
+    } else {
+      load.push_back(std::make_unique<Instr>(LOAD_FAST, arg_i++));
+    }
   }
-  int index = stack_count;
-  for (auto iter = alive_locals.begin(); iter != alive_locals.end(); ++iter, ++index) {
-    (void)load.emplace_back(std::make_unique<Instr>(LOAD_FAST, index));
+  if (is_call_stack_effect && load.back()->op() == PUSH_NULL) {
+    load.back()->set_op(LOAD_FAST);
+    load.back()->set_arg(arg_i++);
+  }
+#else
+  for (int i = 0; i < stack_count; ++i) {
+    (void)load.emplace_back(std::make_unique<Instr>(LOAD_FAST, arg_i++));
+  }
+#endif
+
+  for (auto iter = alive_locals.begin(); iter != alive_locals.end(); ++iter) {
+    (void)load.emplace_back(std::make_unique<Instr>(LOAD_FAST, arg_i++));
     (void)store.emplace_back(std::make_unique<Instr>(STORE_FAST, *iter));
+  }
+  if (argc != nullptr) {
+    *argc = arg_i;
   }
 
   std::vector<std::unique_ptr<Instr>> list = std::move(load);
@@ -1004,17 +1337,21 @@ std::vector<std::unique_ptr<Instr>> MakeUntrackedCodeHelper(const std::vector<st
 }
 }  // namespace
 
-py::object CodeBreakGenerator::MakeUntrackedCode(int untracked_bci, int untracked_stack_effect) const {
-  const int argc = SizeToInt(interpret_.outputs.size()) + untracked_stack_effect;
-
-  auto list = MakeUntrackedCodeHelper(GetCFG()->instr_pool(), untracked_bci, argc, alive_locals_);
+py::object CodeBreakGenerator::MakeUntrackedCode(int untracked_bci, int untracked_stack_effect, int *argc) const {
+  const int stack_count = interpret_.outputs.size() - alive_locals_.size();
+  const int start_stack = stack_count + untracked_stack_effect;
+  bool is_call_stack_effect = Opcode(GetCFG()->instr_pool()[break_bci_]->op()).IsCall();
+  MS_LOG(DEBUG) << "start stack: " << start_stack << " stack_effect " << untracked_stack_effect
+                << " is_call_stack_effect " << is_call_stack_effect;
+  auto list = MakeUntrackedCodeHelper(GetCFG()->instr_pool(), untracked_bci, start_stack, alive_locals_,
+                                      interpret_.outputs, argc, is_call_stack_effect);
   int first_line = list[0]->line();
   int nlocals = GetCFG()->GetLocalCount();
 
   CodeGenerator::Code ccode = {
-    argc,
+    *argc,
     0,
-    std::max(argc, nlocals),
+    std::max(*argc, nlocals),
     (signed)co_->co_flags & ~(CO_VARARGS | CO_VARKEYWORDS),
     first_line,
     std::move(list),
@@ -1023,13 +1360,11 @@ py::object CodeBreakGenerator::MakeUntrackedCode(int untracked_bci, int untracke
     GetClosureNames(co_),
     MakeBrkName(PyUnicode_AsUTF8(co_->co_name), untracked_bci),
     py::reinterpret_borrow<py::object>(co_->co_filename),
-#if IS_PYTHON_3_11_PLUS
-    py::reinterpret_borrow<py::object>(co_->co_qualname),
-    py::reinterpret_borrow<py::object>(co_->co_exceptiontable),
-#endif
+    "<pijit.resume>",
   };
-  CodeGenerator::EraseUnusedInstr(&ccode.co_code);
-  py::object code = CodeGenerator::Transform(ccode);
+  CodeGenerator cg(std::move(ccode));
+  cg.CollectExceptionTableItem(GetCFG(), untracked_bci, GetCFG()->instr_pool().size());
+  py::object code = cg.NewCode();
   auto parent = GetJitCompileResults(co_);
   JitCompileResults *child = CreateJitCompileResults(code.ptr());
   child->set_stat(JitCompileResults::GRAPH_CANDIDATE);
@@ -1041,19 +1376,17 @@ py::object CodeBreakGenerator::MakeUntrackedCode(int untracked_bci, int untracke
 void CodeBreakGenerator::ReconstructStack(CodeGenerator *code_gen, int untracked_bci,
                                           int untracked_stack_effect) const {
   const auto &instr = GetCFG()->instr_pool()[break_bci_];
+  RestoreStack(code_gen);
   if (break_bci_ == untracked_bci) {
-    RestoreStack(code_gen);
     return;
   }
-  if (instr->op() != CALL_FUNCTION && instr->op() != CALL_FUNCTION_KW) {
-    RestoreStack(code_gen);
+  if (!Opcode(instr->op()).IsCall()) {
     code_gen->AddInstrs(CodeGenerator::CopyInstr(cfg_->instr_pool(), break_bci_, untracked_bci));
     return;
   }
-
-  // (chaiyouheng): replace function call, mark function to compile ...
-  RestoreStack(code_gen);
   code_gen->NewInstr(instr->op(), instr->arg(), instr->line());
+  code_gen->GetCode().co_code.back()->set_name(instr->name());
+  code_gen->GetCode().co_code.back()->set_cnst(instr->cnst());
 }
 
 void CodeBreakGenerator::BreakAtIf(CodeGenerator *code_gen) const {
@@ -1062,7 +1395,7 @@ void CodeBreakGenerator::BreakAtIf(CodeGenerator *code_gen) const {
   int stack_effect = -1;
   int stack_count = SizeToInt(interpret_.outputs.size() - alive_locals_.size());
   PyCodeWrapper co(co_);
-  int closures = co.CellVarsSize() + co.FreeVarsSize();
+  auto closures = GetClosureNames(co_);
   py::object code;
 
   MS_EXCEPTION_IF_CHECK_FAIL(stack_count >= 1, "error stack");
@@ -1072,30 +1405,32 @@ void CodeBreakGenerator::BreakAtIf(CodeGenerator *code_gen) const {
   Instr *if_instr = code_gen->GetCode().co_code.back().get();
 
   // fall-branch
-  code = MakeUntrackedCode(break_bci_ + 1, stack_effect);
+  int argc;
+  code = MakeUntrackedCode(break_bci_ + 1, stack_effect, &argc);
+  int load_args_offset = code_gen->GetCode().co_code.size();
   code_gen->AddInstrs(MakeFunc(code, "<pijit.resume>", closures));
   code_gen->AddInstrs(CodeGenerator::RotStack(stack_count + stack_effect));
   RestoreLocals(code_gen, true);
-  code_gen->NewInstr(CALL_FUNCTION, interpret_.outputs.size() + stack_effect);
+  code_gen->AddCallInstr(load_args_offset, argc);
   code_gen->NewInstr(RETURN_VALUE);
 
   // jump-branch
   stack_effect = (op == JUMP_IF_TRUE_OR_POP || op == JUMP_IF_FALSE_OR_POP) ? 0 : -1;
-  code = MakeUntrackedCode(list[break_bci_]->extra_jump()->bci(), stack_effect);
-  auto jump_branch = MakeFunc(code, "<pijit.resume>", closures);
-  if_instr->set_extra_jump(jump_branch.begin()->get());
-  code_gen->AddInstrs(std::move(jump_branch));
+  code = MakeUntrackedCode(list[break_bci_]->extra_jump()->bci(), stack_effect, &argc);
+  load_args_offset = code_gen->GetCode().co_code.size();
+  code_gen->AddInstrs(MakeFunc(code, "<pijit.resume>", closures));
   code_gen->AddInstrs(CodeGenerator::RotStack(stack_count + stack_effect));
   RestoreLocals(code_gen, true);
-  code_gen->NewInstr(CALL_FUNCTION, interpret_.outputs.size() + stack_effect);
+  code_gen->AddCallInstr(load_args_offset, argc);
   code_gen->NewInstr(RETURN_VALUE);
+  if_instr->set_extra_jump(code_gen->GetCode().co_code[load_args_offset].get());
 }
 
 void CodeBreakGenerator::BreakAtBlock(CodeGenerator *code_gen, int untracked_bci, int untracked_stack_effect) {
   RestoreStack(code_gen);
   RestoreLocals(code_gen, false);
   const auto &instr_list = GetCFG()->instr_pool();
-  code_gen->AddInstrs(CodeGenerator::CopyInstr(instr_list, break_bci_, untracked_bci));
+  code_gen->AddInstructionWithExceptionTable(GetCFG(), break_bci_, untracked_bci);
 
   BitMap alive = GetCFG()->liveness()->CollectAlive(untracked_bci);
   BitMap defined(alive.size());
@@ -1115,20 +1450,22 @@ void CodeBreakGenerator::BreakAtBlock(CodeGenerator *code_gen, int untracked_bci
   interpret_.outputs.resize(alive_locals_.size(), &ValueNode::kUnboundLocal);
   untracked_stack_effect = 0;
 
-  py::object code = MakeUntrackedCode(untracked_bci, untracked_stack_effect);
+  int argc;
+  py::object code = MakeUntrackedCode(untracked_bci, untracked_stack_effect, &argc);
   PyCodeWrapper co(co_);
-  int closures = co.CellVarsSize() + co.FreeVarsSize();
-  code_gen->AddInstrs(MakeFunc(code, "<pijit.resume>", closures));
 
+  int load_args_offset = code_gen->GetCode().co_code.size();
+  code_gen->AddInstrs(MakeFunc(code, "<pijit.resume>", GetClosureNames(co_)));
   for (auto i : alive_locals_) {
     code_gen->NewInstr(LOAD_FAST, i);
   }
-  code_gen->NewInstr(CALL_FUNCTION, interpret_.outputs.size() + untracked_stack_effect);
+  code_gen->AddCallInstr(load_args_offset, argc);
   code_gen->NewInstr(RETURN_VALUE);
 }
 
 namespace {
-py::object PackNestedFuncCodes(const std::vector<Graph *> &call_stack, int top_argc) {
+py::object PackNestedFuncCodes(const std::vector<Graph *> &call_stack, int top_argc, int bottom_untracked_bci,
+                               int bottom_stack_effect) {
   MS_ASSERT(!call_stack.empty());
   py::object code;
   int argc = 0;
@@ -1136,22 +1473,23 @@ py::object PackNestedFuncCodes(const std::vector<Graph *> &call_stack, int top_a
   std::vector<std::unique_ptr<Instr>> oper;
   // Iterate from bottom-graph to top-graph.
   for (auto iter = call_stack.rbegin(); iter != call_stack.rend(); ++iter) {
+    bool is_bottom = iter == call_stack.rbegin();
+    bool is_top = (iter + 1) == call_stack.rend();
     Graph *g = *iter;
     PyCodeWrapper co(g->GetCodeObj());
     const Graph::BreakInfo &info = g->break_info();
     const std::vector<int> &alive_locals = info.alive_locals_;
     const Instr *break_point = info.break_point_;
     const ValueNode *break_point_node = info.break_point_node_;
-    int break_bci = info.bci_;
+    int untracked_bci = is_bottom ? bottom_untracked_bci : info.bci_ + 1;
     int alive_size = SizeToInt(info.alive_nodes_.size());
     int alive_local_size = SizeToInt(alive_locals.size());
-    int stack_effect = PyCompile_OpcodeStackEffect(break_point->op(), break_point->arg());
+    int stack_effect =
+      is_bottom ? bottom_stack_effect : GetOpcodeMaxStackEffect(break_point->op(), break_point->arg(), false);
     argc += alive_size;
     offset -= alive_size;
     int activate_argc = alive_size + stack_effect;
     int stack_count = activate_argc - alive_local_size;
-    bool is_bottom = iter == call_stack.rbegin();
-    bool is_top = (iter + 1) == call_stack.rend();
     MS_LOG(INFO) << "Codegen for func '" << co.Name() << "' at \"" << co.FileName() << ":" << co.FirstLine()
                  << "\", break at line: " << break_point->line() << ", node: " << ToString(break_point_node);
 
@@ -1172,7 +1510,7 @@ py::object PackNestedFuncCodes(const std::vector<Graph *> &call_stack, int top_a
     }
     // Restore stack and alive locals, copy bytecodes after break bci.
     std::vector<std::unique_ptr<Instr>> ops =
-      MakeUntrackedCodeHelper(g->GetCFG()->instr_pool(), break_bci + 1, activate_argc, alive_locals);
+      MakeUntrackedCodeHelper(g->GetCFG()->instr_pool(), untracked_bci, activate_argc - alive_local_size, alive_locals);
 
     if (is_top) {
       // update the LOAD_FAST arg of alive locals, plus stack effect
@@ -1195,7 +1533,7 @@ py::object PackNestedFuncCodes(const std::vector<Graph *> &call_stack, int top_a
     if (!is_top) {
       MS_EXCEPTION_IF_CHECK_FAIL(co.CellVarsSize() == 0, "Cell vars size should be 0");
     }
-    CodeGenerator::EraseUnusedInstr(&ops);
+    std::string co_name = std::string(co.Name()) + "_at_" + std::to_string(untracked_bci);
     CodeGenerator::Code ccode = {
       co_argcount,
       0,
@@ -1206,19 +1544,18 @@ py::object PackNestedFuncCodes(const std::vector<Graph *> &call_stack, int top_a
       co.VarNames().cast<std::vector<std::string>>(),
       std::vector<std::string>(),  // cellvars
       GetClosureNames(co.ptr()),   // freevars
-      std::string() + co.Name() + "_at_" + std::to_string(break_bci + 1),
+      co_name,
       py::reinterpret_borrow<py::object>(co.ptr()->co_filename),
-#if IS_PYTHON_3_11_PLUS
-      py::reinterpret_borrow<py::object>(co.ptr()->co_qualname),
-      py::reinterpret_borrow<py::object>(co.ptr()->co_exceptiontable),
-#endif
+      co_name,
     };
-    code = CodeGenerator::Transform(ccode);
+    code = CodeGenerator(std::move(ccode)).NewCode();
 
     if (is_top) {
       continue;
     }
-    oper.push_back(std::make_unique<Instr>(LOAD_GLOBAL, 0, ""));  // function name will be set in the next iteration.
+    // function name will be set in the next iteration.
+    // python3.11 add PUSH_NULL
+    oper.push_back(std::make_unique<Instr>(LOAD_GLOBAL, IS_PYTHON_3_11_PLUS, ""));
     int load_offset = offset;
     for (int i = 0; i < stack_count; ++i) {
       oper.push_back(std::make_unique<Instr>(LOAD_FAST, load_offset++));
@@ -1227,7 +1564,7 @@ py::object PackNestedFuncCodes(const std::vector<Graph *> &call_stack, int top_a
     for (int i = 0; i < alive_local_size; ++i) {
       oper.push_back(std::make_unique<Instr>(LOAD_FAST, load_offset++));
     }
-    oper.push_back(std::make_unique<Instr>(CALL_FUNCTION, co_argcount));
+    oper.push_back(MakeCallFunInstrPtr(co_argcount));
   }
   if (argc != top_argc) {
     MS_LOG(INTERNAL_EXCEPTION) << "Expect argc to be " << top_argc << ", but is " << argc;
@@ -1236,19 +1573,48 @@ py::object PackNestedFuncCodes(const std::vector<Graph *> &call_stack, int top_a
 }
 }  // namespace
 
-bool CodeBreakGenerator::NeedHandleBreakAtCall() const { return is_break_at_call_ && !call_stack_.empty(); }
+bool CodeBreakGenerator::NeedHandleBreakAtCall() const {
+  return !IS_PYTHON_3_11_PLUS && is_break_at_call_ && !call_stack_.empty();
+}
 
 // Codegen for subgraph break optimization.
 void CodeBreakGenerator::BreakAtCall(CodeGenerator *cg) const {
   MS_LOG(DEBUG) << "Do codegen for subgraph break optimization";
   MS_EXCEPTION_IF_CHECK_FAIL(!call_stack_.empty(), "graphs should not be empty!");
 
-  int argc = SizeToInt(interpret_.outputs.size());
   const Instr *break_point = call_stack_.back()->break_info().break_point_;  // break point of bottom function
-  argc += PyCompile_OpcodeStackEffect(break_point->op(), break_point->arg());
+  Opcode break_op(break_point->op());
+  if (break_op.HasJump() && !break_op.IsNotFall()) {
+    BreakAtCalleeIfCondition(cg);
+    return;
+  }
 
+  int stack_effect = GetOpcodeMaxStackEffect(break_point->op(), break_point->arg(), false);
+  int argc = SizeToInt(interpret_.outputs.size()) + stack_effect;
   // Pack the uncaptured bytecodes of multiple nested functions into a new function
-  py::object code = PackNestedFuncCodes(call_stack_, argc);
+  py::object code = MakeUntrackedCodeForNestedCalls(call_stack_, argc, break_point->bci() + 1, stack_effect);
+  cg->AddInstrs(MakeFunc(code, "<pijit.resume>", GetClosureNames(co_)));
+
+  const Graph::BreakInfo &info = call_stack_.back()->break_info();
+  auto alive_local_it = interpret_.outputs.end() - SizeToInt(info.alive_locals_.size());
+  for (auto it = interpret_.outputs.begin(); it != alive_local_it; ++it) {
+    cg->LoadValue(*it);  // Restore stack.
+  }
+  // Restore break point op.
+  cg->AddInstr(std::make_unique<Instr>(break_point->op(), break_point->arg(), break_point->name()));
+  for (auto it = alive_local_it; it != interpret_.outputs.end(); ++it) {
+    cg->LoadValue(*it);  // Restore alive locals of bottom-callee-function.
+  }
+  cg->AddInstr(MakeCallFunInstrPtr(argc));
+  cg->NewInstr(RETURN_VALUE);
+}
+
+py::object CodeBreakGenerator::MakeUntrackedCodeForNestedCalls(const std::vector<Graph *> &call_stack, int top_argc,
+                                                               int untracked_bci, int stack_effect) const {
+  MS_LOG(DEBUG) << "Make code object for nested function calls, call stack depth: " << call_stack.size()
+                << ", total argc: " << top_argc << ", start bci: " << untracked_bci
+                << ", break point stack effect: " << stack_effect;
+  py::object code = PackNestedFuncCodes(call_stack_, top_argc, untracked_bci, stack_effect);
   MS_EXCEPTION_IF_NULL(code.ptr());
 
   auto parent = GetJitCompileResults(co_);
@@ -1257,30 +1623,55 @@ void CodeBreakGenerator::BreakAtCall(CodeGenerator *cg) const {
   child->set_conf(parent->conf());
   child->set_tbs(parent->tbs());
 
-  auto new_name = py::str(MakeBrkName(PyUnicode_AsUTF8(co_->co_name), break_bci_ + 1));
+  auto new_name = py::str(MakeBrkName(PyUnicode_AsUTF8(co_->co_name), untracked_bci));
   auto new_code = reinterpret_cast<PyCodeObject *>(code.ptr());
   REPLACE_PY_MEMBER(new_code->co_name, new_name.ptr());
-  if (argc != new_code->co_argcount) {
-    MS_LOG(INTERNAL_EXCEPTION) << "Expect argc to be " << argc << ", but is " << new_code->co_argcount;
+  if (top_argc != new_code->co_argcount) {
+    MS_LOG(INTERNAL_EXCEPTION) << "Expect argc to be " << top_argc << ", but is " << new_code->co_argcount;
   }
+  return code;
+}
 
-  PyCodeWrapper co(co_);
-  int closures = co.CellVarsSize() + co.FreeVarsSize();
-  cg->AddInstrs(MakeFunc(code, "<pijit.resume>", closures));
-
-  const Graph::BreakInfo &info = call_stack_.back()->break_info();
-  auto end = interpret_.outputs.end();
-  auto last_stack = end - SizeToInt(info.alive_locals_.size());
-  auto iter = interpret_.outputs.begin();
-  for (; iter != last_stack; ++iter) {
-    cg->LoadValue(*iter);
+void CodeBreakGenerator::BreakAtCalleeIfCondition(CodeGenerator *cg) const {
+  MS_EXCEPTION_IF_CHECK_FAIL(!call_stack_.empty(), "call_stack should not be empty!");
+  MS_EXCEPTION_IF_NULL(call_stack_.back());
+  const Graph::BreakInfo &break_info = call_stack_.back()->break_info();
+  MS_LOG(DEBUG) << "Graph break at condition statement, do codegen for two branches. Break point: "
+                << break_info.break_point_->ToString();
+  // Restore stack
+  int stack_count = SizeToInt(interpret_.outputs.size() - break_info.alive_locals_.size());
+  MS_EXCEPTION_IF_CHECK_FAIL(stack_count >= 1, "error stack");
+  for (auto it = interpret_.outputs.begin(); it != interpret_.outputs.begin() + stack_count; ++it) {
+    cg->LoadValue(*it);
   }
+  // Restore break point op
+  const Instr *break_point = call_stack_.back()->break_info().break_point_;  // break point of bottom function
   cg->AddInstr(std::make_unique<Instr>(break_point->op(), break_point->arg(), break_point->name()));
-  for (; iter != end; ++iter) {
-    cg->LoadValue(*iter);  // bottom function alive locals
-  }
-  cg->NewInstr(CALL_FUNCTION, argc);
-  cg->NewInstr(RETURN_VALUE);
+  Instr *if_instr = cg->GetCode().co_code.back().get();
+
+  auto MakeCodeForBranch = [this, cg, stack_count](int untracked_bci, int stack_effect, int argc) {
+    py::object code = MakeUntrackedCodeForNestedCalls(call_stack_, argc, untracked_bci, stack_effect);
+
+    cg->AddInstrs(MakeFunc(code, "<pijit.resume>", GetClosureNames(co_)));
+    cg->AddInstrs(CodeGenerator::RotStack(stack_count + stack_effect));
+    for (auto it = interpret_.outputs.begin() + stack_count; it != interpret_.outputs.end(); ++it) {
+      cg->LoadValue(*it);  // Restore bottom function alive locals
+    }
+    cg->AddInstr(MakeCallFunInstrPtr(argc));
+    cg->NewInstr(RETURN_VALUE);
+  };
+  // fall-branch
+  MS_LOG(DEBUG) << "Codegen for fall-through branch";
+  int stack_effect = -1;
+  int argc = SizeToInt(interpret_.outputs.size()) + stack_effect;
+  MakeCodeForBranch(break_point->bci() + 1, stack_effect, argc);
+  // jump-branch
+  MS_LOG(DEBUG) << "Codegen for jump branch";
+  int target_bci = SizeToInt(cg->GetCode().co_code.size());
+  stack_effect = (break_point->op() == JUMP_IF_TRUE_OR_POP || break_point->op() == JUMP_IF_FALSE_OR_POP) ? 0 : -1;
+  argc = SizeToInt(interpret_.outputs.size()) + stack_effect;
+  MakeCodeForBranch(break_point->extra_jump()->bci(), stack_effect, argc);
+  if_instr->set_extra_jump(cg->GetCode().co_code[target_bci].get());
 }
 
 void CodeBreakGenerator::CallUntrackedCode(CodeGenerator *code_gen) {
@@ -1303,47 +1694,46 @@ void CodeBreakGenerator::CallUntrackedCode(CodeGenerator *code_gen) {
   if (IsNotNeedTrack(GetCFG()->instr_pool(), std::min(untracked_bci + 1, SizeToInt(list.size())))) {
     RestoreStack(code_gen);
     RestoreLocals(code_gen, false);
-    code_gen->AddInstrs(CodeGenerator::CopyInstr(GetCFG()->instr_pool(), break_bci_));
+    code_gen->AddInstructionWithExceptionTable(GetCFG(), break_bci_, GetCFG()->instr_pool().size());
     return;
   }
   if (find_block) {
     BreakAtBlock(code_gen, untracked_bci, untracked_stack_effect);
     return;
   }
-  if (start_op == JUMP_IF_FALSE_OR_POP || start_op == JUMP_IF_TRUE_OR_POP || start_op == POP_JUMP_IF_FALSE ||
-      start_op == POP_JUMP_IF_TRUE) {
+  if (start_op.HasJump() && !start_op.IsNotFall()) {
     BreakAtIf(code_gen);
     return;
   }
   if (start_op != JUMP_ABSOLUTE && start_op != JUMP_FORWARD) {
     MS_EXCEPTION_IF_CHECK_FAIL(list[start_bci]->extra_jump() == nullptr, "unexpected jump instruction");
     // break at unsupported bytecode
-    untracked_stack_effect = PyCompile_OpcodeStackEffect(start_op, list[start_bci]->arg());
+    untracked_stack_effect = GetOpcodeMaxStackEffect(start_op, list[start_bci]->arg(), false);
     untracked_bci++;
   }
 
-  py::object code = MakeUntrackedCode(untracked_bci, untracked_stack_effect);
+  int argc;
+  py::object code = MakeUntrackedCode(untracked_bci, untracked_stack_effect, &argc);
   PyCodeWrapper co(co_);
-  int closures = co.CellVarsSize() + co.FreeVarsSize();
-  code_gen->AddInstrs(MakeFunc(code, "<pijit.resume>", closures));
+  int load_args_offset = code_gen->GetCode().co_code.size();
+  code_gen->AddInstrs(MakeFunc(code, "<pijit.resume>", GetClosureNames(co_)));
 
   ReconstructStack(code_gen, untracked_bci, untracked_stack_effect);
   RestoreLocals(code_gen, true);
 
-  code_gen->NewInstr(CALL_FUNCTION, interpret_.outputs.size() + untracked_stack_effect);
+  code_gen->AddCallInstr(load_args_offset, argc);
   code_gen->NewInstr(RETURN_VALUE);
 }
 
 py::object CodeBreakGenerator::MakeDispatchCode() {
   auto jcr = GetJitCompileResults(co_);
 
-  CodeGenerator code_gen(&interpret_);
+  CodeGenerator code_gen(&interpret_, true);
 
-  if (no_graph_ && !NeedHandleBreakAtCall()) {
+  if (IsCopyCapturedInstructions()) {
     MS_LOG(DEBUG) << "No graph captured";
-    interpret_.outputs.resize(interpret_.outputs.size() - side_effect_handler_->GetRequiredNodes().size());
-    auto stack_count = interpret_.outputs.size() - alive_locals_.size();
-    size_t output_index = 0;
+    int stack_count = interpret_.outputs.size() - alive_locals_.size();
+    int output_index = 0;
     std::vector<std::unique_ptr<Instr>> instrs;
     std::vector<ValueNode *> locals(co_->co_nlocals + stack_count, &ValueNode::kUnboundLocal);
     for (; output_index < stack_count; ++output_index) {
@@ -1371,9 +1761,6 @@ py::object CodeBreakGenerator::MakeDispatchCode() {
 
     CallCapturedCode(&code_gen);
     FixInterpretOuput(&code_gen);
-
-    side_effect_handler_->Restore(&code_gen);
-    interpret_.outputs.resize(interpret_.outputs.size() - side_effect_handler_->GetRequiredNodes().size());
   }
   CallUntrackedCode(&code_gen);
   MakeReturn(&code_gen);
@@ -1389,12 +1776,14 @@ py::object CodeBreakGenerator::MakeDispatchCode() {
   code_gen.SetLocalsCount(nlocals);
   code_gen.SetCodeName(co_name);
 
-  code_gen.EraseUnusedInstr();
-  py::object result = CodeGenerator::Transform(code_gen.GetCode());
+  py::object result = code_gen.NewCode();
   return result;
 }
 
 void CodeBreakGenerator::MakeReturn(CodeGenerator *code_gen) const {
+  if (IsCopyCapturedInstructions() && break_bci_ == -1) {
+    return;
+  }
   if (break_bci_ != -1) {
     // call untracked nodes
     return;
@@ -1422,7 +1811,7 @@ void CodeBreakGenerator::MakeReturn(CodeGenerator *code_gen) const {
 py::object CodeBreakGenerator::MakeInterpretCapturedCode() const {
   auto jcr = GetJitCompileResults(co_);
 
-  CodeGenerator code_gen(&interpret_);
+  CodeGenerator code_gen(&interpret_, true);
   code_gen.SetGlobals(globals_);
   code_gen.Init();
   code_gen.Build();
@@ -1439,8 +1828,7 @@ py::object CodeBreakGenerator::MakeInterpretCapturedCode() const {
   code_gen.SetLocalsCount(nlocals);
   code_gen.SetCodeName(co_name);
 
-  code_gen.EraseUnusedInstr();
-  py::object result = CodeGenerator::Transform(code_gen.GetCode());
+  py::object result = code_gen.NewCode();
 
   JitCompileResults *child = CreateJitCompileResults(result.ptr());
   child->set_stat(JitCompileResults::GRAPH_CAPTURED);
@@ -1465,10 +1853,6 @@ void CodeBreakGenerator::ExtendCodeInfo(CodeGenerator *cg, bool merge_kw_only) c
   cg->SetCellVariableNames(py::cast<std::vector<std::string>>(cellvars));
   cg->SetFreeVariableNames(py::cast<std::vector<std::string>>(freevars));
   cg->SetFileName(py::reinterpret_borrow<py::object>(co_->co_filename));
-#if IS_PYTHON_3_11_PLUS
-  cg->SetQualName(py::reinterpret_borrow<py::object>(co_->co_qualname));
-  cg->SetExceptionTable(py::reinterpret_borrow<py::object>(co_->co_exceptiontable));
-#endif
 }
 
 void CodeBreakGenerator::Init(const GraphAnalyzer &analyzer, Graph *graph) {
@@ -1486,11 +1870,6 @@ void CodeBreakGenerator::Init(const GraphAnalyzer &analyzer, Graph *graph) {
   outputs_optimize_.outputs = info.outputs_optimize_.outputs;
   outputs_optimize_.operations = info.outputs_optimize_.operations;
   replaced_nodes_ = info.replaced_nodes_;
-  graph_inputs_info_.args = info.graph_inputs_.args;
-  graph_inputs_info_.vargs = info.graph_inputs_.vargs;
-  graph_inputs_info_.kwargs = info.graph_inputs_.kwargs;
-  graph_inputs_info_.globals = info.graph_inputs_.globals;
-  side_effect_handler_ = graph->GetSideEffect();
   no_graph_ = captured_.operations.empty();
 
   const auto &break_info = analyzer.graph_break_info();
@@ -1516,20 +1895,8 @@ void CodeBreakGenerator::BuildGraphParameters(const std::unordered_map<ValueNode
   MS_EXCEPTION_IF_CHECK_FAIL(co_->co_nlocals == SizeToInt(interpret_.inputs.size()),
                              "interpret inputs must be same as locals");
 
-  builder->Init(graph_inputs_info_.args, graph_inputs_info_.globals, graph_inputs_info_.vargs,
-                graph_inputs_info_.kwargs);
+  builder->Init(captured_.inputs);
   builder->Build(locals);
-
-  size_t inputs_count = captured_.inputs.size();
-  captured_.inputs = builder->args_;
-  if (builder->vargs_ != nullptr) {
-    captured_.inputs.push_back(builder->vargs_);
-  }
-  if (builder->kwargs_ != nullptr) {
-    captured_.inputs.push_back(builder->kwargs_);
-  }
-  captured_.inputs.insert(captured_.inputs.end(), builder->globals_.begin(), builder->globals_.end());
-  MS_EXCEPTION_IF_CHECK_FAIL(inputs_count == captured_.inputs.size(), "error parameters");
 }
 
 std::string GraphParameterBuilder::Key(int index, ValueNode *n) {
@@ -1541,13 +1908,7 @@ std::string GraphParameterBuilder::Key(int index, ValueNode *n) {
   return s.str();
 }
 
-void GraphParameterBuilder::Init(const std::vector<ValueNode *> &args, const std::vector<ValueNode *> &globals,
-                                 ValueNode *vargs, ValueNode *kwargs) {
-  args_ = args;
-  globals_ = globals;
-  vargs_ = vargs;
-  kwargs_ = kwargs;
-}
+void GraphParameterBuilder::Init(const std::vector<ValueNode *> &args) { args_ = args; }
 
 void GraphParameterBuilder::Build(const std::unordered_map<ValueNode *, int> &locals) {
   auto Load = [&locals](ValueNode *param) {
@@ -1558,66 +1919,11 @@ void GraphParameterBuilder::Build(const std::unordered_map<ValueNode *, int> &lo
     }
     // 2.Maybe a closure variable
     if (param->GetOpcode() == LOAD_DEREF) {
-      return std::make_unique<Instr>(LOAD_DEREF, param->GetOparg());
+      return std::make_unique<Instr>(LOAD_DEREF, param->GetOparg(), param->GetName());
     }
     MS_EXCEPTION_IF_CHECK_FAIL(false, "Can't find graph parameters from interpret-locals and closures");
   };
-
-  /**
-   * graph parameter treat tuple, list, dict as constant
-   * must be unpack these parameters and pack it by graph
-   * if param is tuple or param is list:
-   *   TupleRebuild(param, &load_, &sort_, &args_)
-   * if param is dict:
-   *   DictRebuild(param, &load_, &sort_, &args_)
-   **/
   std::transform(args_.begin(), args_.end(), std::back_inserter(load_), Load);
-
-  const int argc = SizeToInt(args_.size()) + (vargs_ != nullptr) + (kwargs_ != nullptr);
-  for (size_t i = 0; i < globals_.size(); ++i) {
-    std::string name = GraphParameterBuilder::Key(i, globals_[i]);
-    load_.emplace_back(Load(globals_[i]));
-    load_.emplace_back(std::make_unique<Instr>(STORE_GLOBAL, 0, name));
-    dele_.emplace_back(std::make_unique<Instr>(DELETE_GLOBAL, 0, name));
-    sort_.emplace_back(std::make_unique<Instr>(LOAD_GLOBAL, 0, name));
-    sort_.emplace_back(std::make_unique<Instr>(STORE_FAST, argc + i));
-  }
-  if (vargs_) {
-    BuildVargs(locals);
-  }
-  if (kwargs_) {
-    BuildKwVargs(locals);
-  }
-}
-
-void GraphParameterBuilder::BuildVargs(const std::unordered_map<ValueNode *, int> &locals) {
-  auto iter = locals.find(vargs_);
-  MS_EXCEPTION_IF_CHECK_FAIL(iter != locals.end(), "can't find graph parameters from interpret locals");
-  if (args_.size() == 0) {
-    load_.push_back(std::make_unique<Instr>(LOAD_FAST, iter->second));
-    return;
-  }
-
-  load_.push_back(std::make_unique<Instr>(BUILD_LIST, args_.size()));
-  load_.push_back(std::make_unique<Instr>(LOAD_FAST, iter->second));
-#if PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION < 9
-  const int tuple_unpack_arg = 2;
-  load_.push_back(std::make_unique<Instr>(BUILD_TUPLE_UNPACK, tuple_unpack_arg));
-#else
-  load_.push_back(std::make_unique<Instr>(LIST_EXTEND, 1));
-  load_.push_back(std::make_unique<Instr>(LIST_TO_TUPLE, 0));
-#endif
-}
-
-void GraphParameterBuilder::BuildKwVargs(const std::unordered_map<ValueNode *, int> &locals) {
-  auto iter = locals.find(kwargs_);
-  MS_EXCEPTION_IF_CHECK_FAIL(iter != locals.end(), "can't find graph parameters from interpret locals");
-
-  if (vargs_ == nullptr) {
-    // only kwargs
-    load_.push_back(std::make_unique<Instr>(BUILD_TUPLE, args_.size()));
-  }
-  load_.push_back(std::make_unique<Instr>(LOAD_FAST, iter->second));
 }
 
 // e.g. while..., for..., while...else..., for...else...,
@@ -1652,7 +1958,52 @@ static int FindLoopEnd(int start, const CFG *cfg) {
   return std::max(result, target) - 1;
 }
 
-#if (PY_MAJOR_VERSION == 3) && (PY_MINOR_VERSION < 9)
+#if IS_PYTHON_3_11_PLUS
+
+static size_t FindTryWithBlockEnd(const CFG *cfg, ExceptionTable::const_iterator begin) {
+  const InstructionList &i_list = cfg->instr_pool();
+  int handler = begin->second.jump_;
+  int max_bci = i_list.size();
+  MS_EXCEPTION_IF_CHECK_FAIL(handler > 0, "exception item can't jump to first instruction");
+  if (i_list[handler - 1]->extra_jump() == nullptr) {
+    return max_bci - 1;
+  }
+  int origin_bci = i_list[handler - 1]->extra_jump()->bci();
+  int end_bci = origin_bci;
+  // for each item, find last jump
+  for (auto iter = begin; iter != cfg->exc_table().end() && iter->second.end_ < end_bci; ++iter) {
+    handler = iter->second.jump_;
+    if (i_list[handler]->op() == PUSH_EXC_INFO && handler != 0) {
+      Instr *tar = i_list[handler - 1]->extra_jump();
+      end_bci = std::max(tar ? tar->bci() : max_bci, end_bci);
+    }
+  }
+  if (origin_bci != end_bci) {
+    MS_LOG(DEBUG) << "maybe has finally block at range [" << begin->second.begin_ << "," << end_bci << ")";
+  }
+  return end_bci - 1;
+}
+
+static bool FindBlock(int start_bci, const CFG *cfg, int *end_bci, int *stack_effect) {
+  const std::vector<std::unique_ptr<Instr>> &list = cfg->instr_pool();
+  *stack_effect = 0;
+  int opcode = list[start_bci]->op();
+  auto exception_table_iter = cfg->FindTryWithBlock(start_bci);
+  if (exception_table_iter != cfg->exc_table().end()) {
+    *end_bci = FindTryWithBlockEnd(cfg, exception_table_iter);
+    return *end_bci;
+  } else if (opcode == FOR_ITER) {
+    *stack_effect = -1;
+  }
+  *end_bci = FindLoopEnd(start_bci, cfg);
+  if (list[start_bci]->op() == FOR_ITER && *end_bci == start_bci - 1) {
+    // break at FOR_ITER and it is not a loop
+    *end_bci = list[start_bci]->extra_jump()->bci() - 1;
+  }
+  return *end_bci != start_bci - 1;
+}
+
+#elif !IS_PYTHON_3_9_PLUS
 
 static size_t FindTryBlockEnd(int start_bci, const CFG *cfg) {
   const auto &list = cfg->instr_pool();
@@ -1722,7 +2073,8 @@ static int FindTryBlockEnd(int start, const CFG *cfg) {
   MS_EXCEPTION_IF_NULL(tar);
 
   size_t res = (size_t)tar->bci();
-  if (tar->op() == DUP_TOP) {
+  auto is_copy_top_op = tar->op() == DUP_TOP || (tar->op() == COPY && tar->arg() == 1);
+  if (is_copy_top_op) {
     // try block without finally
     MS_EXCEPTION_IF_CHECK_FAIL(res + 2 < list.size(), "can't find try block");
     while (res < list.size() && list[res]->op() != RERAISE) {
@@ -1781,7 +2133,25 @@ static bool FindBlock(int start_bci, const CFG *cfg, int *end_bci, int *stack_ef
 
 py::object MakeCodeFromCodeGen(const GraphBuilderPtr &builder, const GraphAnalyzerPtr &analyzer, PyObject *globals) {
   TimeRecorder time_recorder(__FUNCTION__, kPIJitConfigDefault.GetBoolConfig(GraphJitConfig::kLogPerf));
-
+  int break_bci = builder->GetGraph()->GetStopTraceBci();
+  bool skip_compile = analyzer->GetCaptureInfo().captured_.operations.empty() && break_bci == -1;
+#ifdef IS_PYTHON_3_11_PLUS
+  {
+    const auto &cfg = builder->GetGraph()->GetCFG();
+    auto iter = cfg->FindTryWithBlock(break_bci);
+    auto not_found = cfg->exc_table().end();
+    if (iter == not_found && cfg->FindExcTableItem(break_bci) != not_found) {
+      MS_LOG(INFO) << "not implemented break at try while handle exception";
+      skip_compile = true;
+    }
+  }
+#endif
+  if (skip_compile) {
+    MS_LOG(INFO) << "skip graph capture because of no graph in the function";
+    // no graph, no guard needed
+    builder->GetGraph()->RemoveAllGuardItems();
+    return PyCodeWrapper(builder->GetGraph()->GetCodeObj()).DeepCopy();
+  }
   auto graph = builder->GetGraph();
   auto cg = std::make_shared<CodeBreakGenerator>(builder, py::cast<py::dict>(globals), graph->GetCodeObj());
   cg->Init(*analyzer, graph);
@@ -1828,46 +2198,32 @@ void CodeBreakGenerator::Compile(const std::string &co_name, int co_argcount, in
                                  const py::object &stub) const {
   TimeRecorder compile_time("MindCodeCompile", kPIJitConfigDefault.GetBoolConfig(GraphJitConfig::kLogPerf));
 
-  // Compile graph.
-  FGBuilder()->ClearNodeAbstract();
-  FGBuilder()->SetGraphName(co_name);
-  auto func_graph = FGBuilder()->graph();
-  if (func_graph == nullptr) {
-    MS_LOG(EXCEPTION) << "Get function graph from function graph builder failed.";
+  auto compile_result = FGBuilder()->GetCompileResult();
+  if (compile_result.first.empty() || compile_result.second == nullptr) {
+    // Compile graph.
+    FGBuilder()->ClearNodeAbstract();
+    FGBuilder()->SetGraphName(co_name);
+    auto func_graph = FGBuilder()->graph();
+    auto origin_top_input_num = FGBuilder()->origin_top_input_num();
+    GraphCompiler::CompileInfo compile_info{py::cast<std::string>(co_->co_filename),
+                                            co_name,
+                                            co_->co_firstlineno,
+                                            co_argcount,
+                                            co_kwonlyargcount,
+                                            co_flags,
+                                            origin_top_input_num};
+    compile_result = GraphCompiler::Compile(func_graph, compile_info);
   }
-  std::string phase =
-    py::cast<std::string>(co_->co_filename) + "_" + std::to_string(co_->co_firstlineno) + "_" + co_name;
-  const auto &parameters = func_graph->parameters();
-  py::tuple args(parameters.size() - func_graph->fv_param_count());
-  size_t cur_fv_param_count = 0;
-  for (size_t i = 0; i < parameters.size(); ++i) {
-    auto para = parameters[i]->cast<ParameterPtr>();
-    MS_EXCEPTION_IF_NULL(para);
-    if (para->has_default()) {
-      cur_fv_param_count++;
-      continue;
-    }
-    auto para_abstract = para->abstract();
-    MS_EXCEPTION_IF_NULL(para_abstract);
-    phase += "_" + para_abstract->ToString();
-    auto input_obj = para->user_data<py::object>("pi_jit_py_obj");
-    MS_EXCEPTION_IF_NULL(input_obj);
-    args[i - cur_fv_param_count] = *input_obj;
-  }
-  phase += ".pi_jit";
-  auto origin_top_input_num = FGBuilder()->origin_top_input_num();
-  GraphCompiler::CompileInfo compile_info{co_name, co_argcount, co_kwonlyargcount, co_flags, origin_top_input_num};
-  CallableGraph callable = GraphCompiler::Compile(func_graph, args, py::dict(), phase, compile_info);
   // Set NativeFunc.
   auto parent = GetJitCompileResults(co_);
   if (stub.ptr() == nullptr) {
-    parent->code()->SetNativeFunc(phase, callable, nullptr);
+    parent->code()->SetNativeFunc(compile_result.first, compile_result.second, nullptr);
     parent->set_stat(JitCompileResults::GRAPH_CALLABLE);
   } else {
     JitCompileResults *child = CreateJitCompileResults(stub.ptr());
     MS_EXCEPTION_IF_CHECK_FAIL(child->code() == nullptr, "must be a new stub code");
     child->set_code(child->codehub()->AddOptTarget(OptOption::CreateOptionByPoint(child)));
-    child->code()->SetNativeFunc(phase, callable, nullptr);
+    child->code()->SetNativeFunc(compile_result.first, compile_result.second, nullptr);
     child->set_stat(JitCompileResults::GRAPH_CALLABLE);
     child->set_conf(parent->conf());
     child->set_tbs(parent->tbs());
@@ -1950,7 +2306,7 @@ py::object LoopBodyReCaptureCodeGenerator::MakeLoopBodyCode(int loopBodyStartBci
   (void)returnInstrs.emplace_back(std::make_unique<Instr>(RETURN_VALUE));
   std::move(returnInstrs.begin(), returnInstrs.end(), std::back_inserter(resultInstrs));
   auto jcr = GetJitCompileResults(co_);
-  if (jcr->conf()->GetBoolConfig(GraphJitConfig::kPrintAfterAll)) {
+  if (jcr->conf()->GetLogConfig(GraphJitConfig::kAll)) {
     std::stringstream ss;
     for (auto &instr : resultInstrs) {
       ss << instr->ToString() << std::endl;
@@ -1958,24 +2314,19 @@ py::object LoopBodyReCaptureCodeGenerator::MakeLoopBodyCode(int loopBodyStartBci
     MS_LOG(WARNING) << "Instrs of wrapped loop body:" << std::endl << ss.str();
   }
   auto varnames = py::cast<std::vector<std::string>>(PyCodeWrapper(co_).VarNames());
-  CodeGenerator::Code ccode = {
-    argc,
-    0,
-    static_cast<int>(varnames.size()),
-    (signed)co_->co_flags & ~(CO_VARARGS | CO_VARKEYWORDS),
-    first_line,
-    std::move(resultInstrs),
-    varnames,
-    std::vector<std::string>(),
-    GetClosureNames(),
-    makeLoopBodyFuncName(loopBodyStartBci, loopBodyEndBci),
-    py::reinterpret_borrow<py::object>(co_->co_filename),
-#if IS_PYTHON_3_11_PLUS
-    py::reinterpret_borrow<py::object>(co_->co_qualname),
-    py::reinterpret_borrow<py::object>(co_->co_exceptiontable),
-#endif
-  };
-  py::object code = CodeGenerator::Transform(ccode);
+  CodeGenerator::Code ccode = {argc,
+                               0,
+                               static_cast<int>(varnames.size()),
+                               (signed)co_->co_flags & ~(CO_VARARGS | CO_VARKEYWORDS),
+                               first_line,
+                               std::move(resultInstrs),
+                               varnames,
+                               std::vector<std::string>(),
+                               GetClosureNames(),
+                               makeLoopBodyFuncName(loopBodyStartBci, loopBodyEndBci),
+                               py::reinterpret_borrow<py::object>(co_->co_filename),
+                               "<pijit.loopBody>"};
+  py::object code = CodeGenerator(std::move(ccode)).NewCode();
   auto parent = GetJitCompileResults(co_);
   JitCompileResults *child = CreateJitCompileResults(code.ptr());
   child->set_stat(JitCompileResults::GRAPH_CANDIDATE);
@@ -2014,7 +2365,7 @@ bool LoopBodyReCaptureCodeGenerator::Prepare() {
   }
   std::sort(loopBodySortedBBs.begin(), loopBodySortedBBs.end(),
             [](Block *left, Block *right) { return left->id() < right->id(); });
-  if (jcr->conf()->GetBoolConfig(GraphJitConfig::kPrintAfterAll)) {
+  if (jcr->conf()->GetLogConfig(GraphJitConfig::kAll)) {
     std::stringstream ss;
     ss << "====>DUMP LOOP BB START<====" << std::endl;
     for (auto b : loopBodySortedBBs) {
@@ -2057,7 +2408,7 @@ bool LoopBodyReCaptureCodeGenerator::Prepare() {
 
 py::object LoopBodyReCaptureCodeGenerator::Build() {
   auto jcr = GetJitCompileResults(co_);
-  if (jcr->conf()->GetBoolConfig(GraphJitConfig::kPrintAfterAll)) {
+  if (jcr->conf()->GetLogConfig(GraphJitConfig::kAll)) {
     std::stringstream ss;
     ss << "Instrs Before ReCapture:" << std::endl;
     for (auto &instr : graph_->GetCFG()->instr_pool()) {
@@ -2085,12 +2436,12 @@ py::object LoopBodyReCaptureCodeGenerator::Build() {
                  [](int &local) { return std::make_unique<Instr>(LOAD_FAST, local); });
   PyCodeWrapper co(co_);
   // keep origin closures
-  int closures = co.CellVarsSize() + co.FreeVarsSize();
+  const auto &closures = GetClosureNames();
   auto func_instrs = MakeFunc(LoopBodyCode, "<pijit.loopBody>", closures);
   std::move(func_instrs.begin(), func_instrs.end(), std::back_inserter(newLoopBodyInstrs));
   auto rot_stack_instrs = CodeGenerator::RotStack(localsForInput.size() + stack_effect);
   std::move(rot_stack_instrs.begin(), rot_stack_instrs.end(), std::back_inserter(newLoopBodyInstrs));
-  (void)newLoopBodyInstrs.emplace_back(std::make_unique<Instr>(CALL_FUNCTION, stack_effect + localsForInput.size()));
+  (void)newLoopBodyInstrs.emplace_back(MakeCallFunInstrPtr(stack_effect + localsForInput.size()));
   if (!localsForOutput.empty()) {
     if (localsForOutput.size() > 1) {
       (void)newLoopBodyInstrs.emplace_back(std::make_unique<Instr>(UNPACK_SEQUENCE, localsForOutput.size()));
@@ -2101,7 +2452,7 @@ py::object LoopBodyReCaptureCodeGenerator::Build() {
   }
   std::vector<std::unique_ptr<Instr>> resultInstrs = CodeGenerator::CopyAndReplaceInstr(
     graph_->GetCFG()->instr_pool(), loopBodyStartBci_, loopBodyEndBci_, newLoopBodyInstrs);
-  if (jcr->conf()->GetBoolConfig(GraphJitConfig::kPrintAfterAll)) {
+  if (jcr->conf()->GetLogConfig(GraphJitConfig::kAll)) {
     std::stringstream ss;
     ss << "Instrs After ReCapture:" << std::endl;
     for (auto &instr : resultInstrs) {
@@ -2118,16 +2469,136 @@ py::object LoopBodyReCaptureCodeGenerator::Build() {
     std::move(resultInstrs),
     py::cast<std::vector<std::string>>(PyCodeWrapper(co_).VarNames()),
     std::vector<std::string>(),
-    GetClosureNames(),
+    closures,
     makeFuncName(loopBodyStartBci_, loopBodyEndBci_),
     py::reinterpret_borrow<py::object>(co_->co_filename),
-#if IS_PYTHON_3_11_PLUS
-    py::reinterpret_borrow<py::object>(co_->co_qualname),
-    py::reinterpret_borrow<py::object>(co_->co_exceptiontable),
-#endif
   };
-  py::object result = CodeGenerator::Transform(ccode);
+  py::object result = CodeGenerator(std::move(ccode)).NewCode();
   return result;
+}
+
+void LocationTableEncoder::WriteItemStart(int code, int len) {
+  const int flag = 1 << 7;
+  const int len_width = 3;
+  WriteByte(flag | (code << len_width) | (len - 1));
+}
+
+void LocationTableEncoder::WriteVariant(uint32_t value) {
+  const int kValidBits = 6;
+  const int kValueMask = (1 << kValidBits) - 1;
+  while (value >= (1 << kValidBits)) {
+    WriteByte((1 << kValidBits) | (value & kValueMask));
+    value >>= kValidBits;
+  }
+  WriteByte(value);
+}
+
+void LocationTableEncoder::WriteSignedVariant(int32_t value) {
+  uint32_t ui = static_cast<uint32_t>(value);
+  ui = value < 0 ? (((0 - ui) << 1) | 1) : (ui << 1);
+  WriteVariant(ui);
+}
+
+void LocationTableEncoder::NoneEntry(int offset) { WriteItemStart(kCodeLocationNone, offset); }
+
+void LocationTableEncoder::NoColumn(int offset, int line_delta) {
+  WriteItemStart(kCodeLocationNoColumns, offset);
+  WriteSignedVariant(line_delta);
+}
+
+void LocationTableEncoder::OneLineEntry(int offset, int line_delta, int column, int end_column) {
+  WriteItemStart(kCodeLocationOneLine0 + line_delta, offset);
+  WriteByte(column);
+  WriteByte(end_column);
+}
+
+void LocationTableEncoder::ShortEntry(int offset, int column, int end_column) {
+  const int kValidBits = 3;
+  const int kValueMask = (1 << kValidBits) - 1;
+  int column_value = column & kValueMask;
+  int column_group = column >> kValidBits;
+  WriteItemStart(kCodeLocationShort0 + column_group, offset);
+  WriteByte((column_value << (kValidBits + 1)) | (end_column - column));
+}
+
+void LocationTableEncoder::LongEntry(int offset, const CodeLocation &loc) {
+  WriteItemStart(kCodeLocationLong, offset);
+  WriteSignedVariant(loc.start_line_ - pre_line_);
+  WriteVariant(loc.end_line_ - loc.start_line_);
+  WriteVariant(loc.start_column_ + 1);
+  WriteVariant(loc.end_column_ + 1);
+}
+
+void LocationTableEncoder::AddEntry(int offset, const CodeLocation &loc) {
+  if (loc.start_line_ < 0) {
+    NoneEntry(offset);
+    return;
+  }
+  const int kShortMaxColValue = 80;
+  const int kShortMaxColDelta = 16;
+  const int kMaxColValue = 128;
+  const int kOneLineGroup = kCodeLocationOneLine2 - kCodeLocationOneLine0 + 1;
+
+  int line_delta = loc.start_line_ - pre_line_;
+  int col = loc.start_column_;
+  int end_col = loc.end_column_;
+  if (col < 0 || end_col < 0) {
+    if (loc.end_line_ == loc.start_line_ || loc.end_line_ == -1) {
+      NoColumn(offset, line_delta);
+      pre_line_ = loc.start_line_;
+      return;
+    }
+  } else if (loc.end_line_ == loc.start_line_) {
+    if (line_delta == 0 && col < kShortMaxColValue && end_col - col < kShortMaxColDelta && end_col >= col) {
+      ShortEntry(offset, col, end_col);
+      return;
+    }
+    if (line_delta >= 0 && line_delta < kOneLineGroup && col < kMaxColValue && end_col < kMaxColValue) {
+      OneLineEntry(offset, line_delta, col, end_col);
+      pre_line_ = loc.start_line_;
+      return;
+    }
+  }
+  LongEntry(offset, loc);
+  pre_line_ = loc.start_line_;
+}
+
+void LocationTableEncoder::Add(int bci_delta, const CodeLocation &loc) {
+  if (bci_delta == 0) {
+    return;
+  }
+  const int entry_size = 8;
+  while (bci_delta > entry_size) {
+    AddEntry(entry_size, loc);
+    bci_delta -= entry_size;
+  }
+  AddEntry(bci_delta, loc);
+}
+
+void ExceptionTableEncoder::WriteVariant(int value, int msb) {
+  const int kValidBits = 6;
+  const int kContinuationBit = 1 << kValidBits;
+  const int kValueMask = kContinuationBit - 1;
+  const int kStart = 24;
+  if (value >= (1 << kStart)) {
+    WriteByte((value >> kStart) | kContinuationBit | msb);
+    msb = 0;
+  }
+  for (int left = kStart - kValidBits; left; left -= kValidBits) {
+    if (value >= (1 << left)) {
+      WriteByte(((value >> left) & kValueMask) | kContinuationBit | msb);
+      msb = 0;
+    }
+  }
+  WriteByte((value & kValueMask) | msb);
+}
+
+void ExceptionTableEncoder::WriteItem(const ExceptionTableItem &item) {
+  const int kFlagBit = 7;
+  WriteVariant(item.begin_, (1 << kFlagBit));
+  WriteVariant(item.end_ - item.begin_, 0);
+  WriteVariant(item.jump_, 0);
+  WriteVariant((item.stack_ << 1) | (item.lasti_ ? 1 : 0), 0);
 }
 
 }  // namespace pijit

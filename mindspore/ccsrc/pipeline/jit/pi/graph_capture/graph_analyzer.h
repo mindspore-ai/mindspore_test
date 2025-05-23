@@ -55,16 +55,6 @@ class GraphAnalyzer {
       std::string ToString();
     };
 
-    struct GraphInputs {
-      std::vector<ValueNode *> args;
-      std::vector<ValueNode *> globals;
-      ValueNode *vargs = nullptr;
-      ValueNode *kwargs = nullptr;
-
-      void clear();
-      std::string ToString();
-    };
-
     /**
      * for captured inputs, it's parameters, maybe unordered.
      * for captured outputs, it's ordered by stack values and alive locals.
@@ -88,12 +78,6 @@ class GraphAnalyzer {
      * if not break graph, outputs is return value, else outputs is ordered by stack values and alive locals.
      */
     Info interpret_;
-
-    /**
-     * Store all collected graph inputs.
-     * If no graph is generated, graph_inputs_ should be empty.
-     */
-    GraphInputs graph_inputs_;
 
     bool has_grad_ = false;
 
@@ -122,13 +106,14 @@ class GraphAnalyzer {
   const GraphBreakInfo &graph_break_info() const { return graph_break_info_; }
 
  private:
+  void BeforeAnalyze();
+
   // Collect top-graph closure side-effect nodes.
   void CollectClosureSideEffect();
-  void OptimizeSideEffectRecord() const;
-  void ResetSideEffectRecord() const;
 
   // UD analyze
   void UseDefAnalyze();
+  void GraphArgumentOpt();
   bool AnalyzeTopGraphAliveNodes(const std::vector<ValueNode *> &alive_nodes);
   void UpdateCapturedOrder();
   void AnalyzeSubGraphBreakRecursive(CallNode *call_node);
@@ -142,7 +127,6 @@ class GraphAnalyzer {
   void UpdateUseDefNode();
 
   bool NeedSkipAddGraphOutput(ValueNode *node);
-
   ValueNode *MutateSequenceNode(ValueNode *node);
   ValueNode *MutateNamedtupleNode(ValueNode *tuple_node, ValueNode *namedtuple_node);
   std::pair<ValueNode *, ValueNode *> MutateDictNode(ValueNode *node);

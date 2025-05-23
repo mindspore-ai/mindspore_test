@@ -162,7 +162,6 @@ class CtrlForEnumerateIfContinue(Cell):
         return out
 
 
-@pytest.mark.skip(reason="assign add side-effect, fix later")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_control_flow_for_enumerate_if_continue():
     """
@@ -181,7 +180,7 @@ def test_control_flow_for_enumerate_if_continue():
     context.set_context(mode=context.PYNATIVE_MODE)
     pi_net = CtrlForEnumerateIfContinue(t1, t2, t3)
     # One-stage will fix it later
-    pi_jit_with_config(fn=CtrlForEnumerateIfContinue.construct)(pi_net, x)
+    pi_jit_with_config(CtrlForEnumerateIfContinue.construct)(pi_net, x)
     pi_out = pi_net(x)
     match_array(ps_out, pi_out)
 

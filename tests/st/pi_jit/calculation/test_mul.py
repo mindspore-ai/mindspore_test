@@ -83,7 +83,6 @@ def test_standard_mul_list3(func, ms_func, a, b):
     ms_res = ms_func(a[0], b[0])
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
 
-@pytest.mark.skip(reason="GetDevicePtr() error")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('func', [mul])
 @pytest.mark.parametrize('ms_func', [jit_mul])
@@ -135,7 +134,6 @@ def test_standard_mul_tuple1(func, ms_func, a, b):
     ms_res = ms_func(a[0], b[0])
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
 
-@pytest.mark.skip(reason="GetDevicePtr() error")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('func', [mul])
 @pytest.mark.parametrize('ms_func', [jit_mul])
