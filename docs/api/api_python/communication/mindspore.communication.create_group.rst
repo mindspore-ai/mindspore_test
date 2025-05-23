@@ -1,7 +1,7 @@
 mindspore.communication.create_group
 ====================================
 
-.. py:function:: mindspore.communication.create_group(group, rank_ids)
+.. py:function:: mindspore.communication.create_group(group, rank_ids, options=None)
 
     创建用户自定义的通信组实例。
 
@@ -15,6 +15,15 @@ mindspore.communication.create_group
     参数：
         - **group** (str) - 输入用户自定义的通信组实例名称，支持数据类型为str。
         - **rank_ids** (list) - 设备编号列表。
+        - **options** (GroupOptions, 可选) - 额外通信组配置参数。后端会自动选择支持的参数并在通信组初始化时生效。例如对于 `HCCL` 后端，可以指定 `hccl_config` 来应用特定的通信组初始化配置。默认值为 ``None`` 。
+
+          `GroupOptions` 被定义为一个可以实例化为python对象的类。
+
+          .. code-block::
+
+            GroupOptions {
+                hccl_config(dict)
+            }
 
     异常：
         - **TypeError** - 参数 `group` 不是字符串或参数 `rank_ids` 不是列表。

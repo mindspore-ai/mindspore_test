@@ -31,6 +31,7 @@
 namespace mindspore {
 namespace device {
 namespace ascend {
+using GroupOptions = mindspore::device::GroupOptions;
 static const std::map<CollectiveOpReduceType, HcclReduceOp> kHcomOpReduceTypeMap = {
   {device::CollectiveOpReduceType::Reduce_Max, HCCL_REDUCE_MAX},
   {device::CollectiveOpReduceType::Reduce_Min, HCCL_REDUCE_MIN},
@@ -46,7 +47,8 @@ class EXPORT_WRAPPER AscendCollectiveCommLib : public CollectiveCommunicationLib
   bool InitializeHccl();
 
   bool CreateCommunicationGroup(const std::string &group_name, const std::vector<uint32_t> &group_ranks,
-                                uint32_t local_group_rank, uint32_t local_group_size) override;
+                                uint32_t local_group_rank, uint32_t local_group_size,
+                                const GroupOptions &config = {}) override;
 
   bool CreateDeviceCommunicationGroup(const std::string &group_name, const std::vector<uint32_t> &group_ranks) override;
 
