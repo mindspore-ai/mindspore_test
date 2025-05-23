@@ -522,6 +522,9 @@ FUNCTIONS_CC_TEMPLATE = Template.load_from_file(
 FUNCTION_BODY_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/function_body.tpl'))
 
+FUNCTION_COMM_BODY_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/comm_function_body.tpl'))
+
 FUNCTIONS_H_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/functions_h.tpl'))
 
