@@ -86,10 +86,12 @@ class GroupedMatmulV4Net(Cell):
         super().__init__()
         self.gmm_v4 = grouped_matmul_v4
 
-    def construct(self, x, weight, bias=None, scale=None, offset=None, antiquant_scale=None, antiquant_offset=None,
-                  pertoken_scale=None, group_list=None, split_item=3, group_type=-1, group_list_type=0):
-        out = self.gmm_v4(x, weight, bias, scale, offset, antiquant_scale, antiquant_offset, pertoken_scale, group_list,
-                          split_item=split_item, group_type=group_type, group_list_type=group_list_type)
+    def construct(self, x, weight, bias=None, scale=None, offset=None, antiquant_scale=None,
+                  antiquant_offset=None, pertoken_scale=None, group_list=None, split_item=3,
+                  group_type=-1, group_list_type=0, output_dtype=None):
+        out = self.gmm_v4(x, weight, bias, scale, offset, antiquant_scale, antiquant_offset,
+                          pertoken_scale, group_list, split_item=split_item, group_type=group_type,
+                          group_list_type=group_list_type, output_dtype=output_dtype)
         return out
 
 
@@ -460,7 +462,8 @@ def test_ops_grouped_mamtul_v4_multi_dyn(mode):
     x = ms.mutable([Tensor(shape=(None, None), dtype=mstype.float16), Tensor(shape=(None, None), dtype=mstype.float16)])
     weight = ms.mutable([Tensor(shape=(None, None), dtype=mstype.float16),
                          Tensor(shape=(None, None), dtype=mstype.float16)])
-    gmm_v4_net.set_inputs(x, weight, None, None, None, None, None, None, None, split_item, group_type, group_list_type)
+    gmm_v4_net.set_inputs(x, weight, None, None, None, None, None, None, None, split_item,
+                          group_type, group_list_type, None)
 
     np_x0 = np.random.uniform(0.1, 2, size=[16, 256]).astype(np.float32)
     np_w0 = np.random.uniform(0.1, 1, size=[256, 128]).astype(np.float32)
@@ -480,3 +483,65 @@ def test_ops_grouped_mamtul_v4_multi_dyn(mode):
     weight2 = ms.mutable([ms.Tensor(np_w0, dtype=mstype.float16), ms.Tensor(np_w1, dtype=mstype.float16)])
     res2 = gmm_v4_net(x2, weight2, split_item=split_item, group_type=group_type)
     np.testing.assert_allclose(expect0, res2[0].asnumpy(), rtol=1e-1)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize('mode', ['KBK', 'pynative'])
+@pytest.mark.parametrize('output_dtype', [ms.float16, ms.bfloat16])
+def test_ops_grouped_mamtul_v4_a8w4(mode, output_dtype):
+    """
+    Feature: pyboost function.
+    Description: test GroupedMatmulV4 forward with a8w4.
+    Expectation: success.
+    """
+    np.random.seed(1)
+    context.set_context(device_target="Ascend")
+    if mode == 'KBK':
+        ms.set_context(mode=ms.GRAPH_MODE)
+        ms.set_context(jit_level='O0')
+    elif mode == 'pynative':
+        ms.set_context(mode=ms.PYNATIVE_MODE)
+    gmm_v4_net = GroupedMatmulV4Net()
+
+    E = 8
+    M = 32
+    K = 256
+    N = 128
+    split_item = 3
+    group_type = 0
+    group_list_type = 1
+
+    x_np = np.random.randint(-5, 5, size=(M, K)).astype(np.int8)
+    w_np = np.random.randint(-5, 5, size=(E, K, N)).astype(np.int8)
+    w_int4_np = w_np.reshape(-1) & 0x000F
+    w_int4_np = w_int4_np[0::2] | (w_int4_np[1::2] << 4)
+    w_int4_np = w_int4_np.reshape(E, K, N // 2)
+    scale_np = np.random.normal(0, 0.01, size=(E, 1, N)).astype(np.float32)
+    scale_np_uint64 = np.frombuffer(scale_np.tobytes(), dtype=np.uint32).astype(np.uint64).reshape(E, 1, N)
+    bias_np = 8 * (w_np.astype(np.float32) * scale_np).sum(axis=1)
+    pertoken_scale_np = np.random.normal(0, 0.01, (M, 1)).astype(np.float32)
+    group_list_np = np.array([1, 2, 7, 4, 4, 4, 2, 8], dtype=np.int64)
+
+    index = np.cumsum(group_list_np)
+    x_np_split = np.split(x_np, index, axis=0)
+    pertoken_scale_np_split = np.split(pertoken_scale_np, index, axis=0)
+    out_list = []
+    scale_fp32 = scale_np_uint64.astype(np.uint32)
+    scale_fp32.dtype = np.float32
+    for i in range(E):
+        mm = np.matmul(x_np_split[i].astype(np.int32), w_np[i].astype(np.int32)).astype(np.float32)
+        mm = mm * scale_fp32[i] * pertoken_scale_np_split[i]
+        out_list.append(mm)
+    expect = np.concatenate(out_list, axis=0)
+
+    x = [Tensor(x_np, ms.int8)]
+    weight = [Tensor(w_int4_np, dtype=ms.qint4x2)]
+    bias = [Tensor(bias_np, ms.float32)]
+    scale = [Tensor(scale_np_uint64, ms.uint64)]
+    pertoken_scale = [Tensor(pertoken_scale_np, ms.float32)]
+    group_list = Tensor(group_list_np, ms.int64)
+    out = gmm_v4_net(x, weight, bias=bias, scale=scale, pertoken_scale=pertoken_scale,
+                     group_list=group_list, split_item=split_item, group_type=group_type,
+                     group_list_type=group_list_type, output_dtype=output_dtype)[0]
+    cnt = expect.shape[0]
+    np.testing.assert_allclose(expect.astype(np.float32), out[:cnt].astype(ms.float32).asnumpy(), rtol=5e-3, atol=5e-3)
