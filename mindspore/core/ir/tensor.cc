@@ -852,8 +852,6 @@ size_t Tensor::GetFusionSize(const TensorPtrList &flat_tensors) {
   return fusion_size;
 }
 
-bool Tensor::is_persistent_data() const { return this->data().is_persistent_data(); }
-
 void Tensor::PinMemory(PinnedMemRegister *pin_mem_register) {
   if (pin_mem_register == nullptr) {
     return;
