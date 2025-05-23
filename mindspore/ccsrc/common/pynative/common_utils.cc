@@ -416,7 +416,7 @@ bool HookUtils::HasRegisterHook(const py::object &obj) {
   if (grad_node == nullptr) {
     return false;
   }
-  return !grad_node->py_tensor_pre_hooks().empty();
+  return !grad_node->backward_hooks().empty();
 }
 
 py::list HookUtils::GetRegisterHookList(const py::object &obj) {
@@ -428,9 +428,9 @@ py::list HookUtils::GetRegisterHookList(const py::object &obj) {
   const auto &grad_meta_data = tensor->auto_grad_meta_data();
   MS_EXCEPTION_IF_NULL(grad_meta_data);
   const auto &grad_node = grad_meta_data->UnsafeGetGradNodeImpl();
-  const auto &backward_hooks = grad_node->py_tensor_pre_hooks();
+  const auto &backward_hooks = grad_node->backward_hooks();
   for (const auto &[id, hook] : backward_hooks) {
-    auto fn = hook->hook_fn_;
+    auto fn = hook->hook_;
     if (py::isinstance<py::none>(fn)) {
       MS_LOG(DEBUG) << "Hook of Tensor[" << id << "] is None.";
       continue;
