@@ -251,6 +251,7 @@ class Positional(nn.Cell):
         self.indices_1 = Tensor(([[1]]), mstype.int32)
         self.scatterupdate = ops.TensorScatterUpdate()
         self.end = Tensor((self.pe.shape[0], 0, self.pe.shape[2]), mstype.float32)
+        self.cast = ops.Cast()
 
     def construct(self, x: Tensor, offset: int = 0):
         if not F.is_sequence_value_unknown(x.shape):
