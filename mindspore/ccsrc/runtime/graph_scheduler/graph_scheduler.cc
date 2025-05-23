@@ -801,6 +801,8 @@ void GraphScheduler::BuildAndScheduleGlobalActor() {
   // Create and schedule debug actor.
   // debugger_actor_need is true for CPU when e2e dump is enabled and for Ascend and GPU is true when debugger or dump
   // is enabled.
+  auto &json_parser = DumpJsonParser::GetInstance();
+  json_parser.Parse();
   bool debugger_actor_need = DumpJsonParser::GetInstance().e2e_dump_enabled();
 #ifdef ENABLE_DEBUGGER
   auto debugger = Debugger::GetInstance();

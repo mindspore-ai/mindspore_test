@@ -173,7 +173,6 @@ void DumpJsonParser::Parse() {
   if (already_parsed_) {
     return;
   }
-  already_parsed_ = true;
   if (!IsDumpEnabled()) {
     return;
   }
@@ -211,6 +210,7 @@ void DumpJsonParser::Parse() {
   JudgeDumpEnabled();
   CheckStatCalcModeVaild();
   ParseStatisticCategory(j);
+  already_parsed_ = true;
 }
 
 void DumpJsonParser::ParseStatisticCategory(const nlohmann::json &content) {
@@ -391,7 +391,7 @@ void DumpJsonParser::UpdateUserDumpStep(const uint32_t step) {
   cur_user_dump_iter_ += step;
 }
 
-bool DumpJsonParser::GetIterDumpFlag() const { return e2e_dump_enabled_ && IsDumpIter(cur_dump_iter_); }
+bool DumpJsonParser::GetIterDumpFlag() const { return e2e_dump_enabled_ && IsDumpIter(cur_dump_iter()); }
 
 bool DumpJsonParser::DumpEnabledForIter() const {
   const auto &dump_control = DumpControl::GetInstance();
@@ -399,7 +399,7 @@ bool DumpJsonParser::DumpEnabledForIter() const {
     MS_LOG(INFO) << (dump_control.dump_switch() ? "Dynamic switch is on, dump for every iteration." : "Dump is end.");
     return dump_control.dump_switch() && (e2e_dump_enabled_ || async_dump_enabled_);
   }
-  return (e2e_dump_enabled_ || async_dump_enabled_) && IsDumpIter(cur_dump_iter_);
+  return (e2e_dump_enabled_ || async_dump_enabled_) && IsDumpIter(cur_dump_iter());
 }
 
 /*
