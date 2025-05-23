@@ -1557,7 +1557,7 @@ void ParallelProcessor::Process() {
         StepRedistribution(cnode, node_users_map);
       }
       // insert backward ops
-      if (!IsControlFlowNode(cnode) && (has_backward || IsPynativeParallel())) {
+      if (!IsControlFlowNode(cnode) && has_backward) {
         BackwardCommunication(root, distribute_operator, cnode, sens_loss_pairs);
       }
       if (!IsControlFlowNode(cnode)) {

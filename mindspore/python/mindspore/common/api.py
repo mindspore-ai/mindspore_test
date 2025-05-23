@@ -1080,8 +1080,12 @@ def _jit_ast(hash_obj, dynamic, jit_config):
                 else:
                     setattr(func, "amp_strategy", get_curr_amp_strategy())
 
+            if isinstance(process_obj, ms.nn.Cell):
+                _init_auto_parallel_context(process_obj)
             jit_executor = _JitExecutor(func, hash_obj, None, process_obj, jit_config, dynamic)
             out = jit_executor(*args, **kwargs)
+            if isinstance(process_obj, ms.nn.Cell):
+                _clear_auto_parallel_context(process_obj)
             return out
 
         # `inspect.getfullargspec(func)` will get the specification of the decorated function by default. By set

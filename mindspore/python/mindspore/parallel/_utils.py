@@ -156,7 +156,7 @@ def _is_in_auto_parallel_mode():
 
 
 def _is_parallel_mode():
-    if not _is_initialized() or context.get_context('mode') == context.PYNATIVE_MODE:
+    if not _is_initialized():
         return False
     if os.getenv("RUN_MODE") != "predict":
         return False
@@ -171,12 +171,6 @@ def _is_in_data_parallel_mode():
 
 def _is_in_hybrid_parallel_mode():
     return _get_parallel_mode() == ms.ParallelMode.HYBRID_PARALLEL
-
-
-def _is_pynative_parallel():
-    parallel_mode = context.get_auto_parallel_context('parallel_mode')
-    return context.get_context('mode') == context.PYNATIVE_MODE and parallel_mode in (
-        context.ParallelMode.SEMI_AUTO_PARALLEL, context.ParallelMode.AUTO_PARALLEL)
 
 
 def _get_full_batch():
@@ -773,7 +767,7 @@ def _grads_divided_by_device_num_if_recomputation(grads):
     """
     If in pynative parallel and full_batch is True, divide grads by device num to ensure that the gradients is correct.
     """
-    if not _is_pynative_parallel() or not _get_full_batch():
+    if not _get_full_batch():
         return grads
 
     device_num = _get_device_num()

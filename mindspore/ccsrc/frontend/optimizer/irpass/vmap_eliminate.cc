@@ -1066,11 +1066,6 @@ bool ExpandVmapPrim::operator()(const FuncGraphPtr &, const OptimizerPtr &optimi
       vmap_fg_copy->set_flag(mindspore::kFuncGraphFlagReAutoMonad, true);
       manager->AddFuncGraph(vmap_fg_copy);
       vmap_fn_node = NewValueNode(vmap_fg_copy);
-      if (parallel::IsPynativeParallel()) {
-        auto func_graph = GetValueNode<FuncGraphPtr>(vmap_fn_node);
-        MS_EXCEPTION_IF_NULL(func_graph);
-        func_graph->set_flag(FUNC_GRAPH_FLAG_DEFER_INLINE, false);
-      }
 
       // get axis size, simultaneous correction the negative in_axes.
       auto vmap_app = user.first->cast<CNodePtr>();

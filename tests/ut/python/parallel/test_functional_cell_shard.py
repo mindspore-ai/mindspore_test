@@ -322,6 +322,7 @@ def test_ms_shard_with_out_layout_be_set_and_propagate():
     assert validator.check_node_attrs('AllReduce-0', rank_list)
 
 
+@pytest.mark.skip(reason="Disable shard pynative support.")
 def test_ms_shard_with_out_strategy_be_set_and_propagate():
     """
     Feature: Test cell.shard given layout. The set layout can be seen in shard identity and the next operator.
@@ -378,6 +379,7 @@ def test_ms_shard_with_out_strategy_be_set_and_propagate_reduce_scatter():
     assert validator.check_node_attrs('ReduceScatter-0', rank_list)
 
 
+@pytest.mark.skip(reason="Disable shard pynative support.")
 def test_ms_shard_with_layout_be_set_and_propagate_pynative():
     """
     Feature: Test ms.shard + pynative.
@@ -397,6 +399,7 @@ def test_ms_shard_with_layout_be_set_and_propagate_pynative():
     compile_net(net, x)
 
 
+@pytest.mark.skip(reason="Disable shard pynative support.")
 def test_ms_shard_function_with_parameter_exception():
     """
     Feature: Test ms.shard + pynative + function + parameter.

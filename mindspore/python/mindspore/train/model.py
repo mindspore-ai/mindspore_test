@@ -873,8 +873,8 @@ class Model:
             sink_size (int): Control the amount of data in each sink. Default: -1.
             epoch (int): Total number of iterations on the data. Default: 1.
         """
-        if context.get_context("mode") != context.GRAPH_MODE or context.get_context("device_target") != "Ascend":
-            raise RuntimeError('Pre-init process only supports GRAPH MODE and Ascend target currently.')
+        if context.get_context("device_target") != "Ascend":
+            raise RuntimeError('Pre-init process only supports Ascend target currently.')
 
         if not train_dataset and not valid_dataset:
             raise ValueError("The argument 'train_dataset' and 'valid_dataset' can not both be None or empty.")
@@ -2182,9 +2182,6 @@ class Model:
             dataset_sink_mode (bool): Determines whether to pass the data through dataset channel.
             sink_size (int): Control the amount of data in each sink.
         """
-        if context.get_context("mode") != context.GRAPH_MODE:
-            raise RuntimeError("Pre-compile process that generate parameter layout for the train network "
-                               "only supports GRAPH MODE and Ascend target currently.")
         if _get_parallel_mode() not in (ParallelMode.SEMI_AUTO_PARALLEL, ParallelMode.AUTO_PARALLEL):
             raise RuntimeError("'infer_train_layout' only supports 'semi_auto_parallel' and 'auto_parallel' "
                                "mode, but got {}.".format(_get_parallel_mode()))
@@ -2343,9 +2340,6 @@ class Model:
             >>> predict_map = model.infer_predict_layout(inputs)
         """
         _init_auto_parallel_context(self._network)
-        if context.get_context("mode") != context.GRAPH_MODE:
-            raise RuntimeError("Pre-compile process that generate parameter layout for the predict network "
-                               "only supports GRAPH MODE and Ascend target currently.")
         if _get_parallel_mode() not in (ParallelMode.SEMI_AUTO_PARALLEL, ParallelMode.AUTO_PARALLEL):
             raise RuntimeError('Infer predict layout only supports semi auto parallel and auto parallel mode.')
         _parallel_predict_check()

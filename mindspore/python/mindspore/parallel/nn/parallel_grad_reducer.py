@@ -15,7 +15,6 @@
 """parallel serialization"""
 from __future__ import absolute_import
 
-from mindspore import context
 from mindspore.nn.cell import Cell
 from mindspore.ops import functional as F, composite as C, operations as P
 import mindspore.common.dtype as mstype
@@ -139,7 +138,6 @@ class PipelineGradReducer(Cell):
     """
     def __init__(self, parameters, scale_sense=1.0, opt_shard=None):
         super(PipelineGradReducer, self).__init__(auto_prefix=False)
-        self._check_mode()
         self.accu_grads = parameters.clone(prefix="accu_grads", init="zeros")
         self.grad_reducer = Identity()
         self.degree = Tensor(1, mstype.float32)
@@ -161,9 +159,3 @@ class PipelineGradReducer(Cell):
             accu_grads = self.grad_reducer(self.accu_grads)
             new_grads = self.hyper_map(F.partial(grad_scale, self.scale_sense * self.degree), grads, accu_grads)
         return new_grads
-
-    def _check_mode(self):
-        """check parallel mode"""
-        mode = context.get_context('mode')
-        if mode != context.GRAPH_MODE:
-            raise RuntimeError(f"PipelineGradReducer only support graph mode, but get {mode}")

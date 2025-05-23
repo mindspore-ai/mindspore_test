@@ -121,7 +121,6 @@ static std::set<FuncGraphPtr> FindForwardGraph(const FuncGraphPtr &root, const s
   }
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
-  auto execution_mode = context->get_param<int>(MS_CTX_EXECUTION_MODE);
   for (auto &node : all_nodes) {
     MS_EXCEPTION_IF_NULL(node);
     if (!node->isa<CNode>()) {
@@ -133,8 +132,7 @@ static std::set<FuncGraphPtr> FindForwardGraph(const FuncGraphPtr &root, const s
     }
     auto expect_prim = GetValueNode<PrimitivePtr>(cnode->input(0));
     FuncGraphPtr fun_graph = nullptr;
-    if (expect_prim->name() == mindspore::parallel::J ||
-        ((expect_prim->name() == mindspore::parallel::SHARD) && (execution_mode == kPynativeMode))) {
+    if (expect_prim->name() == mindspore::parallel::J) {
       if (IsValueNode<FuncGraph>(cnode->inputs()[1])) {
         fun_graph = GetValueNode<FuncGraphPtr>(cnode->inputs()[1]);
       } else {

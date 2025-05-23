@@ -14,6 +14,7 @@
 # ============================================================================
 """Cell of auto parallel"""
 import os
+from mindspore import jit
 from mindspore.nn.cell import Cell
 from mindspore.parallel.shard import Layout
 from mindspore.communication.management import get_rank, get_group_size
@@ -728,5 +729,6 @@ class AutoParallel(Cell):
         self._transformer_opt_config = file_path
         ctx.ascend_config['parallel_speed_up_json_path'] = file_path
 
+    @jit
     def construct(self, *args, **kwargs):
         return self.network(*args, **kwargs)

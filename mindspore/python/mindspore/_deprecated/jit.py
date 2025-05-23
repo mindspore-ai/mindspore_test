@@ -22,7 +22,6 @@ from functools import wraps
 from mindspore import log as logger
 from mindspore.common.tensor import Tensor as PythonTensor
 from mindspore.common.api import _get_jit_hash, _process_dyn_args, _handle_func_args, _JitExecutor
-from mindspore.parallel._utils import _is_pynative_parallel
 from mindspore._c_expression.amp import get_curr_amp_strategy
 from mindspore.common._pijit_context import PIJitCaptureContext
 
@@ -175,9 +174,6 @@ def jit(fn=None, mode="PSJit", input_signature=None, hash_args=None, jit_config=
             process_obj = None
             if args and not isinstance(args[0], PythonTensor) and hasattr(args[0], func.__name__):
                 process_obj = args[0]
-            # only the function or cell instance wrapped by shard will fall into this branch
-            if _is_pynative_parallel() and func.__name__ == _PYNATIVE_PARALLEL_FUNC_NAME:
-                process_obj = hash_args
             # Handle auto mixed precision strategy.
             if not hasattr(func, "amp_strategy"):
                 if isinstance(func, types.MethodType):

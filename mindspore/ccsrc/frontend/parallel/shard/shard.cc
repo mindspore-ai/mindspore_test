@@ -242,7 +242,7 @@ static void updateStrategyType(const std::vector<ValuePtr> &layout_value_vector,
 }
 
 static CNodePtr InsertIdentityCNode(const AnfNodePtr &parameter, const FuncGraphPtr &func_graph,
-                                    const CNodePtr &to_insert_cnode, const int execution_mode) {
+                                    const CNodePtr &to_insert_cnode) {
   CNodePtr identity_cnode = nullptr;
   FuncGraphManagerPtr manager = func_graph->manager();
   // Setting strategy by insert identity CNode directly using inputs.
@@ -421,7 +421,6 @@ static void SetInputLayout(const FuncGraphPtr &func_graph, const AnfNodePtr &in_
 
     auto to_insert_nodes_set = manager->node_users()[parameter];
 
-    auto execution_mode = MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE);
     if (to_insert_nodes_set.empty()) {
       MS_LOG(INFO) << "For input: \"" << parameter->fullname_with_scope()
                    << "\", failed to find node to insert strategy. This input may not be used in computation, skip it.";
@@ -433,7 +432,7 @@ static void SetInputLayout(const FuncGraphPtr &func_graph, const AnfNodePtr &in_
       if (IsSettingStrategyByInsertIdentity(func_graph, to_insert_cnode, parameter->fullname_with_scope())) {
         continue;
       }
-      CNodePtr identity_cnode = InsertIdentityCNode(parameter, func_graph, to_insert_cnode, execution_mode);
+      CNodePtr identity_cnode = InsertIdentityCNode(parameter, func_graph, to_insert_cnode);
       int64_t layout_index = static_cast<int64_t>(i);
       if (!input_strategy.empty()) {
         Shapes current_layout = {input_strategy[layout_index]};
@@ -536,7 +535,6 @@ static bool SetStrategyForShard(const FuncGraphPtr &root, const std::vector<AnfN
   constexpr size_t kShardInStrategyIndex = 2;
   constexpr size_t kShardOutStrategyIndex = 3;
   auto set_success = false;
-  auto execution_mode = MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE);
   for (auto &node : all_nodes) {
     if (IsPrimitiveCNode(node, prim::kPrimVmap)) {
       CheckVmap(node);
@@ -552,14 +550,7 @@ static bool SetStrategyForShard(const FuncGraphPtr &root, const std::vector<AnfN
       if (func_graph->has_flag(kSharded)) {
         continue;
       }
-      if (IsEmbedShardNode(func_graph) && execution_mode == kPynativeMode) {
-        MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Nested use of shard (e.g shard(shard(...), ...) is not supported in "
-                                           << "PyNative mode currently, | FuncGraph: " << func_graph->ToString();
-      }
       // get input nodes
-      if (HasNestedMetaFg(func_graph)) {
-        return set_success;
-      }
       SetInputLayout(func_graph, in_strategy, device_num);
       auto output_value = out_strategy->cast<ValueNodePtr>()->value();
       if (!output_value->isa<None>()) {
@@ -604,48 +595,6 @@ static bool SetStrategyForShard(const FuncGraphPtr &root, const std::vector<AnfN
   return set_success;
 }
 
-void CheckIsAllParameterHasTagInPynativeShard(const AnfNodePtrList &all_nodes) {
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  if (ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) != kPynativeMode) {
-    return;
-  }
-  for (const auto shard_node : all_nodes) {
-    if (!IsPrimitiveCNode(shard_node, prim::kPrimShard)) {
-      continue;
-    }
-    auto shard_cnode = shard_node->cast<CNodePtr>();
-    MS_EXCEPTION_IF_NULL(shard_cnode);
-    auto vnode = shard_cnode->input(kIndex1)->cast<ValueNodePtr>();
-    ScopeGuard scope_guard(vnode->scope());
-    auto func_graph = GetValueNode<FuncGraphPtr>(vnode);
-    MS_EXCEPTION_IF_NULL(func_graph);
-    const auto &func_graph_nodes = func_graph->GetOrderedCnodes();
-    for (const auto &load_node : func_graph_nodes) {
-      if (!IsPrimitiveCNode(load_node, prim::kPrimLoad)) {
-        continue;
-      }
-      auto load_cnode = load_node->cast<CNodePtr>();
-      MS_EXCEPTION_IF_NULL(load_cnode);
-      auto param_input = load_cnode->input(kIndex1);
-      if (!param_input->isa<Parameter>() || !ParameterRequireGrad(param_input)) {
-        continue;
-      }
-      auto param_ptr = param_input->cast<ParameterPtr>();
-      MS_EXCEPTION_IF_NULL(param_ptr);
-      auto param_info = param_ptr->param_info();
-      MS_EXCEPTION_IF_NULL(param_info);
-      if (!param_info->is_in_pynative_shard()) {
-        MS_LOG(EXCEPTION)
-          << "In the pynative mode, when you call the ms.shard interface and the input 'fn' is of Function type, the "
-             "internal computation of fn cannot involve Parameter. Please modify your script to use nn.Cell instead of "
-             "Function. Parameter: "
-          << param_ptr->name();
-      }
-    }
-  }
-}
-
 bool Shard(const FuncGraphPtr &root, const opt::OptimizerPtr &) {
   MS_EXCEPTION_IF_NULL(root);
   MS_LOG(INFO) << "Shard pass starts.";
@@ -686,7 +635,6 @@ bool Shard(const FuncGraphPtr &root, const opt::OptimizerPtr &) {
   std::vector<AnfNodePtr> all_nodes = DeepScopedGraphSearch(ret);
   CheckGlobalDeviceManager();
   auto device_num_shard = g_device_manager->stage_device_num();
-  CheckIsAllParameterHasTagInPynativeShard(all_nodes);
   change = SetStrategyForShard(root, all_nodes, device_num_shard);
 #ifdef ENABLE_DUMP_IR
   auto context = MsContext::GetInstance();

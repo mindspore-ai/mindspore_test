@@ -72,7 +72,7 @@ def _is_in_auto_parallel_mode():
 
 def _is_parallel_mode():
     """ Whether is parallel mode """
-    if not _is_initialized() or context.get_context('mode') == context.PYNATIVE_MODE:
+    if not _is_initialized():
         return False
     if os.getenv("RUN_MODE") != "predict":
         return False

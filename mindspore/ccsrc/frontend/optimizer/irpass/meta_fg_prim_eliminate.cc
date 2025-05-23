@@ -39,8 +39,7 @@ void ExpandMetaFgPrim::GetMetaFgPrim(const AnfNodeSet &all_nodes) {
   prim_nodes_.clear();
   for (auto &node : all_nodes) {
     auto add_prim = false;
-    auto execution_mode = MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE);
-    if ((execution_mode == kGraphMode) && IsPrimitiveCNode(node, prim::kPrimShard)) {
+    if (IsPrimitiveCNode(node, prim::kPrimShard)) {
       add_prim = true;
     }
     if (IsPrimitiveCNode(node, prim_) && !CheckIfEmbedMetaFgPrim(node->cast<CNodePtr>())) {
