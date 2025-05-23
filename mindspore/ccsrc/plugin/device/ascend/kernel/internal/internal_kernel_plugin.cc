@@ -72,7 +72,8 @@ static std::unordered_map<std::string, std::vector<std::vector<std::vector<size_
   {kPrimNameMatmulSplitSiluMulOut1, {{{1}, {}}, {{1}, {}}}},
   {kPrimNameQMatmulSplitSiluFastgeluAddMulOut1, {{{0, 1}, {}}, {{1}, {}}}},
   {kPrimNameQMatmulSplitSiluMulOut1, {{{0, 1}, {}}, {{1}, {}}}},
-  {kGroupedMatmulName, {{{1}, {}}, {{1}, {}}}}};
+  {kGroupedMatmulName, {{{1}, {}}, {{1}, {}}}},
+  {"GroupedMatmulV4", {{{1}, {}}, {{1}, {}}}}};
 
 // unordered_map mean:
 // key is input_idx, value is special_format value
