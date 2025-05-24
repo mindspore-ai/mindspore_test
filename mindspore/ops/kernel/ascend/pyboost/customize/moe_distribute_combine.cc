@@ -30,12 +30,12 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 void MoeDistributeCombineAscendCustomize(
-  const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &expand_x, const BaseTensorPtr &expert_ids,
-  const BaseTensorPtr &expert_idx, const BaseTensorPtr &ep_send_count, const BaseTensorPtr &expert_scale,
+  const std::shared_ptr<OpRunner> &op, const TensorPtr &expand_x, const TensorPtr &expert_ids,
+  const TensorPtr &expert_idx, const TensorPtr &ep_send_count, const TensorPtr &expert_scale,
   const Int64ImmPtr &ep_world_size, const Int64ImmPtr &ep_rank_id, const Int64ImmPtr &moe_expert_num,
-  const std::optional<BaseTensorPtr> &tp_send_count, const std::optional<BaseTensorPtr> &x_activate_mask,
-  const std::optional<BaseTensorPtr> &activate_scale, const std::optional<BaseTensorPtr> &weight_scale,
-  const std::optional<BaseTensorPtr> &group_list, const std::optional<BaseTensorPtr> &expand_scale,
+  const std::optional<TensorPtr> &tp_send_count, const std::optional<TensorPtr> &x_activate_mask,
+  const std::optional<TensorPtr> &activate_scale, const std::optional<TensorPtr> &weight_scale,
+  const std::optional<TensorPtr> &group_list, const std::optional<TensorPtr> &expand_scale,
   const std::optional<StringImmPtr> &group_ep, const std::optional<StringImmPtr> &group_tp,
   const Int64ImmPtr &tp_world_size, const Int64ImmPtr &tp_rank_id, const Int64ImmPtr &expert_shard_type,
   const Int64ImmPtr &shard_expert_num, const Int64ImmPtr &shard_expert_rank_num, const Int64ImmPtr &global_bs,

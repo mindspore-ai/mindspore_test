@@ -28,10 +28,10 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 void MoeDistributeDispatchAscendCustomize(
-  const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &x, const BaseTensorPtr &expert_ids,
+  const std::shared_ptr<OpRunner> &op, const TensorPtr &x, const TensorPtr &expert_ids,
   const Int64ImmPtr &ep_world_size, const Int64ImmPtr &ep_rank_id, const Int64ImmPtr &moe_expert_num,
-  const std::optional<BaseTensorPtr> &expert_scales, const std::optional<BaseTensorPtr> &scales,
-  const std::optional<BaseTensorPtr> &x_activate_mask, const std::optional<StringImmPtr> &group_ep,
+  const std::optional<TensorPtr> &expert_scales, const std::optional<TensorPtr> &scales,
+  const std::optional<TensorPtr> &x_activate_mask, const std::optional<StringImmPtr> &group_ep,
   const std::optional<StringImmPtr> &group_tp, const Int64ImmPtr &tp_world_size, const Int64ImmPtr &tp_rank_id,
   const Int64ImmPtr &expert_shard_type, const Int64ImmPtr &shared_expert_num, const Int64ImmPtr &shared_expert_rank_num,
   const Int64ImmPtr &quant_mode, const Int64ImmPtr &global_bs, const Int64ImmPtr &expert_token_nums_type);
