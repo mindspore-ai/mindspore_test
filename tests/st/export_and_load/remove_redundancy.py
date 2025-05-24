@@ -15,7 +15,7 @@
 import mindspore as ms
 import mindspore.dataset as ds
 import mindspore.runtime as rt
-from mindspore import nn, ops
+from mindspore import nn, ops, Callback
 from mindspore.communication import init, get_rank
 from mindspore.common.initializer import initializer
 from mindspore.train.serialization import load_checkpoint, load_param_into_net
@@ -29,6 +29,19 @@ ms.set_auto_parallel_context(parallel_mode=ms.ParallelMode.SEMI_AUTO_PARALLEL)
 init()
 ms.set_seed(1)
 print("distribute network.", flush=True)
+
+
+class StopCallBack(Callback):
+    """End of step callback."""
+
+    def __init__(self, stop_step):
+        super().__init__()
+        self.stop_step = stop_step
+
+    def on_train_step_end(self, run_context):
+        cb_params = run_context.original_args()
+        if cb_params.cur_step_num >= self.stop_step:
+            run_context.request_stop()
 
 
 class Network(nn.Cell):
@@ -86,18 +99,20 @@ def test_remove_redundancy_save_True_load_True():
     optim = nn.SGD(net.trainable_params(), 1e-2)
     loss = nn.CrossEntropyLoss()
     rank_id = get_rank()
-    config = CheckpointConfig(remove_redundancy=True)
+    config = CheckpointConfig(remove_redundancy=True, format="safetensors")
     cbpoint_cb = ModelCheckpoint(prefix="redundancy", directory=f"./device{rank_id}_redundancy11", config=config)
     print("distribute network train.", flush=True)
     model = Model(net, loss_fn=loss, optimizer=optim)
-    model.train(1, dataset, callbacks=cbpoint_cb)
-    ckpt_path = f"./device{rank_id}_redundancy11/redundancy-1_1875.ckpt"
+    stop_cb = StopCallBack(6)
+    model.train(1, dataset, callbacks=[cbpoint_cb, stop_cb])
+    ckpt_path = f"./device{rank_id}_redundancy11/redundancy-1_5.safetensors"
 
     print("distribute network loadcheckpoint.", flush=True)
-    param_dict = load_checkpoint(ckpt_path)
+    param_dict = load_checkpoint(ckpt_path, format="safetensors", remove_redundancy=False)
     load_param_into_net(model.train_network, param_dict, remove_redundancy=True)
     print("distribute network parameter broadcast.", flush=True)
-    model.train(1, dataset)
+    stop_cb = StopCallBack(6)
+    model.train(1, dataset, callbacks=stop_cb)
 
 
 def test_remove_redundancy_save_True_load_False():
@@ -114,18 +129,19 @@ def test_remove_redundancy_save_True_load_False():
     optim = nn.SGD(net.trainable_params(), 1e-2)
     loss = nn.CrossEntropyLoss()
     rank_id = get_rank()
-    config = CheckpointConfig(remove_redundancy=True)
+    config = CheckpointConfig(remove_redundancy=True, format="safetensors")
     cbpoint_cb = ModelCheckpoint(prefix="redundancy", directory=f"./device{rank_id}_redundancy10", config=config)
     print("distribute network train.", flush=True)
     model = Model(net, loss_fn=loss, optimizer=optim)
-    model.train(1, dataset, callbacks=cbpoint_cb)
-    ckpt_path = f"./device{rank_id}_redundancy10/redundancy-1_1875.ckpt"
+    stop_cb = StopCallBack(6)
+    model.train(1, dataset, callbacks=[cbpoint_cb, stop_cb])
+    ckpt_path = f"./device{rank_id}_redundancy10/redundancy-1_5.safetensors"
 
     print("distribute network loadcheckpoint.", flush=True)
-    param_dict = load_checkpoint(ckpt_path)
-    load_param_into_net(model.train_network, param_dict, remove_redundancy=False)
+    load_checkpoint(ckpt_path, net=model.train_network, remove_redundancy=False, format="safetensors")
     print("distribute network parameter broadcast.", flush=True)
-    model.train(1, dataset)
+    stop_cb = StopCallBack(6)
+    model.train(1, dataset, callbacks=stop_cb)
 
 
 def test_remove_redundancy_save_False_load_False():
@@ -142,18 +158,20 @@ def test_remove_redundancy_save_False_load_False():
     optim = nn.SGD(net.trainable_params(), 1e-2)
     loss = nn.CrossEntropyLoss()
     rank_id = get_rank()
-    config = CheckpointConfig(remove_redundancy=False)
+    config = CheckpointConfig(remove_redundancy=False, format="safetensors")
     cbpoint_cb = ModelCheckpoint(prefix="redundancy", directory=f"./device{rank_id}_redundancy00", config=config)
     print("distribute network train.", flush=True)
     model = Model(net, loss_fn=loss, optimizer=optim)
-    model.train(1, dataset, callbacks=cbpoint_cb)
-    ckpt_path = f"./device{rank_id}_redundancy00/redundancy-1_1875.ckpt"
+    stop_cb = StopCallBack(6)
+    model.train(1, dataset, callbacks=[cbpoint_cb, stop_cb])
+    ckpt_path = f"./device{rank_id}_redundancy00/redundancy-1_5.safetensors"
 
     print("distribute network loadcheckpoint.", flush=True)
-    param_dict = load_checkpoint(ckpt_path)
+    param_dict = load_checkpoint(ckpt_path, format="safetensors")
     load_param_into_net(model.train_network, param_dict, remove_redundancy=False)
     print("distribute network parameter broadcast.", flush=True)
-    model.train(1, dataset)
+    stop_cb = StopCallBack(6)
+    model.train(1, dataset, callbacks=stop_cb)
 
 
 def test_remove_redundancy_strategy():
@@ -171,7 +189,7 @@ def test_remove_redundancy_strategy():
     optim = nn.SGD(net.trainable_params(), 1e-2)
     loss = nn.CrossEntropyLoss()
     rank_id = get_rank()
-    config = CheckpointConfig(remove_redundancy=False)
+    config = CheckpointConfig(remove_redundancy=False, format="safetensors")
     cbpoint_cb = ModelCheckpoint(prefix="redundancy", directory=f"./device{rank_id}_get_redundancy", config=config)
     print("distribute network train.", flush=True)
     model = Model(net, loss_fn=loss, optimizer=optim)
@@ -194,11 +212,12 @@ def test_no_init_parameters():
     optim = nn.SGD(net.trainable_params(), 1e-2)
     loss = nn.CrossEntropyLoss()
     rank_id = get_rank()
-    config = CheckpointConfig()
+    config = CheckpointConfig(format="safetensors")
     cbpoint_cb = ModelCheckpoint(prefix="delay", directory=f"./device{rank_id}_no_init_parameters", config=config)
     print("distribute network train.", flush=True)
     model = Model(net, loss_fn=loss, optimizer=optim)
-    model.train(1, dataset, callbacks=cbpoint_cb)
+    stop_cb = StopCallBack(6)
+    model.train(1, dataset, callbacks=[cbpoint_cb, stop_cb])
 
 
 def test_remove_redundancy_save_True_load_True_tensor_merge():
@@ -215,14 +234,15 @@ def test_remove_redundancy_save_True_load_True_tensor_merge():
     optim = nn.SGD(net.trainable_params(), 1e-2)
     loss = nn.CrossEntropyLoss()
     rank_id = get_rank()
-    config = CheckpointConfig(remove_redundancy=True)
+    config = CheckpointConfig(remove_redundancy=True, format="safetensors")
     cbpoint = ModelCheckpoint(prefix="redundancy", directory=f"./device{rank_id}_redundancy11_merge", config=config)
     print("distribute network train.", flush=True)
     model = Model(net, loss_fn=loss, optimizer=optim)
-    model.train(1, dataset, callbacks=cbpoint)
-    ckpt_path = f"./device{rank_id}_redundancy11_merge/redundancy-1_1875.ckpt"
+    stop_cb = StopCallBack(6)
+    model.train(1, dataset, callbacks=[cbpoint, stop_cb])
+    ckpt_path = f"./device{rank_id}_redundancy11_merge/redundancy-1_5.safetensors"
 
     print("distribute network loadcheckpoint.", flush=True)
-    param_dict = load_checkpoint(ckpt_path)
+    param_dict = load_checkpoint(ckpt_path, format="safetensors")
     load_param_into_net(model.train_network, param_dict, remove_redundancy=True)
     print("distribute network parameter broadcast.", flush=True)

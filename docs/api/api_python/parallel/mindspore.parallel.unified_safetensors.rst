@@ -5,6 +5,9 @@ mindspore.parallel.unified_safetensors
 
     将多个safetensors文件合并为一系列统一的safetensors文件。
 
+    .. note::
+        权重合并时，校验入参 `merge_with_redundancy` 与所合并的safetensors文件中的去冗余标志位是否不同。如果相同，按照文件的去冗余标志位进行合并。
+
     参数：
         - **src_dir** (str) - 源权重保存目录。
         - **src_strategy_file** (str) - 源权重切分策略文件。
