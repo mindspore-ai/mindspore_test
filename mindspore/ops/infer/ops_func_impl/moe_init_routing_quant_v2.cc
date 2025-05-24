@@ -83,7 +83,8 @@ void MoeInitRoutingQuantV2FuncImpl::CheckInputs(const PrimitivePtr &primitive,
     // dynamic quant, scale must be empty tensor or 2D tensor.
     if (quant_scale->IsNone()) return;
     const auto &scale_shape = quant_scale->GetShape();
-    if (scale_shape.size() != 2) {
+    auto constexpr kDim2 = 2;
+    if (scale_shape.size() != kDim2) {
       MS_EXCEPTION(ShapeError) << "For op [" << op_name << "], the  scale  must be the 2D tensor or None,"
                                << "but now get scale shape is " << ShapeVectorToStr(scale_shape);
     }
@@ -105,19 +106,18 @@ ShapeArray MoeInitRoutingQuantV2FuncImpl::GetOutputShapes(int64_t drop_pad_mode_
   } else {
     if (active_num_val == any_dim) {
       (void)out_shapes.emplace_back(std::vector<int64_t>{any_dim, h_});
-    } else {
+    } else if (active_num_val != 0) {
       // active
-      if (active_num_val) {
-        (void)out_shapes.emplace_back(std::vector<int64_t>{std::min({active_num_val, expd_row_idx_dim}), h_});
-        if ((active_num_val != any_dim) && (expd_row_idx_dim != any_dim)) {
-          dynamic_quant_scale_val = std::min({active_num_val, expd_row_idx_dim});
-        }
-      } else {
-        // dropless
-        (void)out_shapes.emplace_back(std::vector<int64_t>{expd_row_idx_dim, h_});
-        if (expd_row_idx_dim != any_dim) {
-          dynamic_quant_scale_val = expd_row_idx_dim;
-        }
+      const int64_t min_active = std::min({active_num_val, expd_row_idx_dim});
+      (void)out_shapes.emplace_back(std::vector<int64_t>{min_active, h_});
+      if ((active_num_val != any_dim) && (expd_row_idx_dim != any_dim)) {
+        dynamic_quant_scale_val = min_active;
+      }
+    } else {
+      // dropless
+      (void)out_shapes.emplace_back(std::vector<int64_t>{expd_row_idx_dim, h_});
+      if (expd_row_idx_dim != any_dim) {
+        dynamic_quant_scale_val = expd_row_idx_dim;
       }
     }
   }
@@ -163,7 +163,6 @@ ShapeArray MoeInitRoutingQuantV2FuncImpl::InferShape(const PrimitivePtr &primiti
   auto expert_capacity_val = expert_capacity.has_value() ? expert_capacity.value() : any_dim;
   auto expert_num_val = expert_num.has_value() ? expert_num.value() : any_dim;
   auto drop_pad_mode_val = drop_pad_mode.has_value() ? drop_pad_mode.value() : any_dim;
-
   if (drop_pad_mode_val == any_dim) {
     return {{any_shape}, {expd_row_idx_dim}, {expert_num_val}, {expert_num_val}, {any_dim}};
   }

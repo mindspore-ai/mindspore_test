@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "plugin/device/ascend/optimizer/ir_fusion_infer/moe_init_routing_dyn_quantv2.h"
+#include "plugin/device/ascend/optimizer/ir_fusion_infer/moe_init_routing_dyn_quantv2_fusion.h"
 
 #include <string>
 #include <vector>
@@ -70,24 +70,17 @@ static void ReplaceDynQuantV2Out(const FuncGraphPtr &graph, const FuncGraphManag
 }
 
 static void ReplaceMoeInitRoutingV2Out(const FuncGraphPtr &graph, const FuncGraphManagerPtr &mng,
-                                       const AnfNodePtr &moe_node, const AnfNodePtr &expand_idx_out,
-                                       const AnfNodePtr &cumsum_out, const AnfNodePtr &capacity_out) {
+                                       const AnfNodePtr &moe_node, const int64_t replace_idx,
+                                       const AnfNodePtr &replace_out) {
   auto moe_init_routing_out_list = GetRealNodeUsedList(graph, moe_node);
-  auto constexpr kExpandRowIdx = 1;
-  auto constexpr kCumsumOutIdx = 2;
-  auto constexpr kCapacityOutIdx = 3;
   for (const auto &out_user : *moe_init_routing_out_list) {
     auto &ori_getitem = out_user.first;
     auto item_index = common::AnfAlgo::GetInputNode(utils::cast<CNodePtr>(ori_getitem), 1);
     auto item_index_ptr = item_index->cast<ValueNodePtr>();
     MS_EXCEPTION_IF_NULL(item_index_ptr);
     auto idx = GetValue<int64_t>(item_index_ptr->value());
-    if (idx == kExpandRowIdx) {
-      (void)mng->Replace(ori_getitem, expand_idx_out);
-    } else if (idx == kCumsumOutIdx) {
-      (void)mng->Replace(ori_getitem, cumsum_out);
-    } else if (idx == kCapacityOutIdx) {
-      (void)mng->Replace(ori_getitem, capacity_out);
+    if (idx == replace_idx) {
+      (void)mng->Replace(ori_getitem, replace_out);
     }
   }
 }
@@ -109,7 +102,6 @@ static AnfNodePtr NewGetIteamOut(const FuncGraphPtr &graph, const AnfNodePtr &no
 }
 
 bool MoeInitRoutingDynQuantV2Fusion::IsSupport(const AnfNodePtr &node, const EquivPtr &equiv) const {
-  auto constexpr kScaleOutIdx = 1;
   auto x = utils::cast<AnfNodePtr>((*equiv)[x_]);
   auto drop_pad_mode = utils::cast<AnfNodePtr>((*equiv)[drop_pad_mode_]);
   const std::set<TypeId> support_dtype = {kNumberTypeFloat16, kNumberTypeBFloat16};
@@ -221,8 +213,9 @@ CNodePtr MoeInitRoutingDynQuantV2Fusion::CreateMoeInitRoutingDynQuantV2Node(cons
                                    expert_tokens_count_or_cumsum_type, expert_tokens_count_or_cumsum_shape);
   auto capacity_out = NewGetIteamOut(func_graph, node, moe_init_routing_dyn_quantv2_node, kCapacityOutIdx,
                                      expert_tokens_before_capacity_type, expert_tokens_before_capacity_shape);
-  ReplaceMoeInitRoutingV2Out(func_graph, mng, moe_init_routing_node, expand_idx_out, cumsum_out, capacity_out);
-
+  ReplaceMoeInitRoutingV2Out(func_graph, mng, moe_init_routing_node, kExpandRowIdx, expand_idx_out);
+  ReplaceMoeInitRoutingV2Out(func_graph, mng, moe_init_routing_node, kCumsumOutIdx, cumsum_out);
+  ReplaceMoeInitRoutingV2Out(func_graph, mng, moe_init_routing_node, kCapacityOutIdx, capacity_out);
   auto scale_out = NewGetIteamOut(func_graph, node, moe_init_routing_dyn_quantv2_node, kFusedScaleOutIdx,
                                   scale_out_type, scale_out_shape);
   ReplaceDynQuantV2Out(func_graph, mng, node, scale_out);
