@@ -17,15 +17,19 @@
 #ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_MOE_DISTRIBUTE_DISPATCH_H_
 #define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_MOE_DISTRIBUTE_DISPATCH_H_
 
-#include <vector>
 #include "ops/ops_func_impl/op_func_impl.h"
 
 namespace mindspore {
 namespace ops {
 class OPS_API MoeDistributeDispatchFuncImpl : public OpFuncImpl {
  public:
-  BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
-  TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
+  ShapeArray InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+  TypeIdList InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+  bool GeneralInferRegistered() const override { return true; }
+
+ private:
+  void CheckInputs(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const;
+  static constexpr size_t kInputRankSize = 2;
 };
 }  // namespace ops
 }  // namespace mindspore
