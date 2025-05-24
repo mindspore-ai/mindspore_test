@@ -308,6 +308,7 @@ class TrainFaultTolerance(Callback):
         self.device_id = context.get_context("device_id")
         self.cur_step_num = 0
         self.cur_epoch_num = 0
+        self.clean_unique_id = False
         # For TREError(Training Result Error) scene, parameter `ckpt_load_fn` must be provided to load checkpoint
         # from file for resuming training, the `ckpt_load_fn` is a function, prototype of which is:
         # `def load_checkpoint() -> tuple(dict, bool)`, the return value is a tuple containing 2 values,
@@ -321,7 +322,6 @@ class TrainFaultTolerance(Callback):
         self.learning_rate = None
         self.has_init_replica = False
         self.is_uce_rank = False
-        self.clean_unique_id = False
 
         self.assign = mindspore.ops.Assign()
         self.g_one = Parameter(Tensor([1], dtype=mstype.int32))
@@ -451,9 +451,9 @@ class TrainFaultTolerance(Callback):
             run_context (RunContext): Context of the train running. Refer to
                                       :class:`mindspore.train.RunContext` for detail.
         """
-        self._clear_unique_id()
         if self._only_enable_tre():
             return
+        self._clear_unique_id()
         if self.has_init_replica is False:
             self.has_init_replica = True
             self._set_tft_optimizer_replica(run_context)
