@@ -34,6 +34,7 @@ const char MSTX_STAGE_RANGE[] = "Range";
 
 const char MSTX_DOMAIN_COMMUNICATION[] = "communication";
 const char MSTX_DOMAIN_DEFAULT[] = "default";
+const char MSTX_DOMAIN_MSLEAKS[] = "mindsporeMemPool";
 const char MSTX_GETNEXT[] = "GetNext";
 
 class PROFILER_EXPORT MstxImpl {
@@ -52,9 +53,14 @@ class PROFILER_EXPORT MstxImpl {
   mstxDomainHandle_t DomainCreateAImpl(const char *domainName);
   void DomainDestroyImpl(mstxDomainHandle_t domain);
 
+  void MemRegionsRegisterImpl(mstxDomainHandle_t domain, mstxMemRegionsRegisterBatch_t const *desc);
+  void MemRegionsUnregisterImpl(mstxDomainHandle_t domain, mstxMemRegionsUnregisterBatch_t const *desc);
+  mstxMemHeapHandle_t MemHeapRegisterImpl(mstxDomainHandle_t domain, mstxMemHeapDesc_t const *desc);
+
   void ProfEnable();
   void ProfDisable();
   bool IsEnable();
+  bool IsMsleaksEnable();
 
  private:
   bool IsMsptiEnable();

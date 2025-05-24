@@ -254,6 +254,12 @@ class BACKEND_EXPORT DynamicMemPool {
     memory_profiler_callback_ = memory_profiler_callback;
   }
 
+  void SetMemoryMstxCallback(const std::function<void(void *, size_t)> memory_malloc_mstx_callback,
+                             const std::function<void(void *)> memory_free_mstx_callback) {
+    memory_malloc_mstx_callback_ = memory_malloc_mstx_callback;
+    memory_free_mstx_callback_ = memory_free_mstx_callback;
+  }
+
   // Set rank id getter for memory pool to generate dump path.
   virtual void SetRankIdGetter(const std::function<size_t()> &rank_id_getter) {
     if (rank_id_getter != nullptr) {
@@ -267,6 +273,8 @@ class BACKEND_EXPORT DynamicMemPool {
   std::function<void()> memory_profiler_callback_{nullptr};
   std::function<size_t()> rank_id_getter_ = []() { return SIZE_MAX; };
   std::function<void()> pipeline_callback_{nullptr};
+  std::function<void(void *, size_t)> memory_malloc_mstx_callback_{nullptr};
+  std::function<void(void *)> memory_free_mstx_callback_{nullptr};
 };
 
 // Recording information for debugging the memory allocator.

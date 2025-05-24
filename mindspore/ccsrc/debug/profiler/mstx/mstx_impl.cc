@@ -43,6 +43,25 @@ bool IsMsptiEnableImpl() {
   return ret;
 }
 
+bool IsMsleaksEnableImpl() {
+  bool ret = false;
+  const char *envVal = std::getenv("LD_PRELOAD");
+  if (envVal == nullptr) {
+    return ret;
+  }
+  static const std::string soName = "libascend_kernel_hook.so";
+  std::stringstream ss(envVal);
+  std::string path;
+  while (std::getline(ss, path, ':')) {
+    path = mindspore::profiler::Utils::RealPath(path);
+    if ((path.size() > soName.size()) && (path.substr(path.size() - soName.size()) == soName)) {
+      ret = true;
+      break;
+    }
+  }
+  return ret;
+}
+
 void InitMstxApis() {
   const char *envVal = std::getenv("ASCEND_HOME_PATH");
   if (envVal == nullptr) {
@@ -79,6 +98,11 @@ void MstxImpl::ProfDisable() {
 
 bool MstxImpl::IsMsptiEnable() {
   static bool isEnable = IsMsptiEnableImpl();
+  return isEnable;
+}
+
+bool MstxImpl::IsMsleaksEnable() {
+  static bool isEnable = IsMsleaksEnableImpl();
   return isEnable;
 }
 
@@ -182,6 +206,36 @@ void MstxImpl::DomainDestroyImpl(mstxDomainHandle_t domain) {
     return;
   }
   CALL_MSTX_API(mstxDomainDestroy, domain);
+}
+
+void MstxImpl::MemRegionsRegisterImpl(mstxDomainHandle_t domain, mstxMemRegionsRegisterBatch_t const *desc) {
+  if (domain == nullptr) {
+    return;
+  }
+  if (!IsSupportMstxApi(domain != DomainCreateAImpl(MSTX_DOMAIN_MSLEAKS))) {
+    return;
+  }
+  CALL_MSTX_API(mstxMemRegionsRegister, domain, desc);
+}
+
+void MstxImpl::MemRegionsUnregisterImpl(mstxDomainHandle_t domain, mstxMemRegionsUnregisterBatch_t const *desc) {
+  if (domain == nullptr) {
+    return;
+  }
+  if (!IsSupportMstxApi(domain != DomainCreateAImpl(MSTX_DOMAIN_MSLEAKS))) {
+    return;
+  }
+  CALL_MSTX_API(mstxMemRegionsUnregister, domain, desc);
+}
+
+mstxMemHeapHandle_t MstxImpl::MemHeapRegisterImpl(mstxDomainHandle_t domain, mstxMemHeapDesc_t const *desc) {
+  if (domain == nullptr) {
+    return nullptr;
+  }
+  if (!IsSupportMstxApi(domain != DomainCreateAImpl(MSTX_DOMAIN_MSLEAKS))) {
+    return nullptr;
+  }
+  return CALL_MSTX_API(mstxMemHeapRegister, domain, desc);
 }
 
 }  // namespace profiler

@@ -229,6 +229,10 @@ DeviceMemPtr DynamicMemPoolBestFit::AllocTensorMem(size_t size, bool from_persis
   if (memory_profiler_callback_) {
     memory_profiler_callback_();
   }
+  // report memory data to mstx
+  if (memory_malloc_mstx_callback_) {
+    memory_malloc_mstx_callback_(device_addr, align_size);
+  }
 
   if (IsNeedProfilieMemoryLog()) {
     MS_LOG(WARNING) << "Need Profile Memory, Memory pool alloc, total mem: " << TotalMemStatistics()
@@ -847,6 +851,10 @@ void DynamicMemPoolBestFit::CombineMemBuf(const DynamicMemBlockPtr &mem_block,
   // report memory data to profiler
   if (memory_profiler_callback_) {
     memory_profiler_callback_();
+  }
+  // report memory data to mstx
+  if (memory_free_mstx_callback_) {
+    memory_free_mstx_callback_(mem_buf->device_addr_);
   }
 
   if (IsNeedProfilieMemoryLog()) {
