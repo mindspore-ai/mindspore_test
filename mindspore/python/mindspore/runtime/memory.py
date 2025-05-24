@@ -14,9 +14,9 @@
 # ============================================================================
 
 """Memory interfaces."""
-
+import os
 from mindspore._c_expression import RuntimeConf, DeviceManagerConf, _memory_stats, \
-    _reset_max_mem_reserved, _reset_max_mem_allocated, DeviceContextManager, _empty_cache
+    _reset_max_mem_reserved, _reset_max_mem_allocated, DeviceContextManager, _empty_cache, _memory_replay
 from mindspore import _checkparam as Validator
 from mindspore._checkparam import args_type_check
 from mindspore import log as logger
@@ -387,3 +387,20 @@ def reset_max_memory_allocated():
     """
     device_target = ms.context.get_context("device_target")
     _reset_max_mem_allocated(device_target)
+
+def memory_replay(file_path):
+    """
+    Replay the memory operation based on the application and release order of
+    memory_block.csv.
+
+    Args:
+        file_path (str): The path of memory_block.csv.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore as ms
+        >>> ms.runtime.memory_replay("/data/memory_block.csv")
+    """
+    _memory_replay(os.path.realpath(file_path))

@@ -21,7 +21,7 @@ from mindspore.ops import operations as P
 from mindspore.common.api import _pynative_executor
 from tests.mark_utils import arg_mark
 from tests.device_utils import set_device
-
+import shutil
 import os
 
 class Net(nn.Cell):
@@ -267,3 +267,26 @@ def test_empty_cache_dryrun():
     ms.runtime.empty_cache()
     reserved_size = ms.runtime.memory_reserved()
     assert reserved_size == 0
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_memory_replay():
+    """
+    Feature: runtime memory api.
+    Description: Test runtime memory replay api.
+    Expectation: success.
+    """
+    mem_tracker_path = "test_replay_mem_tracker"
+    try:
+        cur_dir = os.path.dirname(os.path.realpath(__file__))
+        tracker_path = os.path.join(cur_dir, mem_tracker_path)
+        os.environ['MS_ALLOC_CONF'] = "enable_vmm:false"
+        cmd = "python hal_dryrun_case.py"
+        ret = os.system(cmd)
+        assert ret == 0
+        ms.runtime.memory_replay(os.path.join(tracker_path, "memory_block.csv"))
+    except Exception as e:
+        remove_dir = ["kernel_meta", "offload", tracker_path]
+        for d in remove_dir:
+            if os.path.isdir(d):
+                shutil.rmtree(d)
+        raise e

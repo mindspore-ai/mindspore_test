@@ -270,7 +270,8 @@ bool EnableAsyncInfer() {
 }
 
 bool EnableTraceMemory() {
-  static const bool enable_mem_tracker = common::IsEnableAllocConfig(common::kAllocMemoryTracker);
+  static const bool enable_mem_tracker = common::IsEnableAllocConfig(common::kAllocMemoryTracker) ||
+                                         !common::GetAllocConfigValue(common::kAllocMemoryTrackerPath).empty();
   if (enable_mem_tracker) {
     return false;
   }
