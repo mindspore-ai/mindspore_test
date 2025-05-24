@@ -21,7 +21,6 @@
 #include <memory>
 
 #include "pipeline/jit/ps/executor/executor_py.h"
-#include "pipeline/jit/ps/pipeline.h"
 #include "include/common/visible.h"
 
 namespace mindspore {

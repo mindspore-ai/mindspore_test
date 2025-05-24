@@ -1,5 +1,5 @@
 /**
- * Copyright 2022-2023 Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@
 #include "pipeline/jit/pi/graph_compiler/utils.h"
 #include "pipeline/jit/pi/graph_compiler/parser/byte_code_parser.h"
 #include "pipeline/jit/ps/executor/jit_executor_py.h"
+#include "pipeline/jit/ps/pipeline.h"
 #include "pipeline/jit/pi/utils/utils.h"
 #include "include/common/pynative/grad_state.h"
 #include "include/common/pynative/adapter.h"

@@ -23,6 +23,8 @@
 #include "frontend/optimizer/optimizer_caller.h"
 #include "frontend/optimizer/irpass.h"
 #include "frontend/optimizer/anf_visitor.h"
+#include "ir/anf.h"
+#include "ir/value.h"
 
 namespace mindspore {
 namespace opt {
@@ -31,8 +33,6 @@ namespace irpass {
 namespace {
 
 constexpr auto kFlagMonadParameterSize = "monad_parameter_size";
-
-inline bool IsMonad(const AnfNodePtr &input) { return IsValueNode<Monad>(input) || HasAbstractMonad(input); }
 
 AnfNodePtr CopyDefaultParamFromFg(const FuncGraphPtr &fg, const ParameterPtr &param, const CNodePtr &cnode) {
   MS_EXCEPTION_IF_NULL(param);
