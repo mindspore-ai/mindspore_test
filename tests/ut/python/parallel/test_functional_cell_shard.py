@@ -417,6 +417,37 @@ def test_ms_shard_function_with_parameter_exception():
         compile_net(net, x)
 
 
+def test_cell_shard_with_layout_be_set_and_propagate_defer_inline_0():
+    """
+    Feature: Test cell.shard given layout. The set layout can be seen in the shard operator.
+    Description: dev_num is 8.
+    Expectation: compile success
+    """
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation",
+                                      device_num=8, global_rank=0)
+    case_name = "test_cell_shard_with_layout_be_set_and_propagate_defer_inline_0"
+    ir_graph_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "layout_ir", case_name)
+    context.set_context(save_graphs=True, save_graphs_path=ir_graph_path)
+    layout = Layout((2, 4, 1), ("dp", "sp", "mp"))
+    in_layout1 = (layout("dp", "mp"),)
+    x = Tensor(np.ones([1024, 1024]), dtype=ms.float32)
+    net = GradWrap(NetWithLoss(ShardNet(in_layout1, shard_key="cell")))
+    in_layout2 = (layout("mp", "sp"),)
+    net.network.network.relu.shard(in_layout2)
+    compile_net(net, x)
+    file = f"{ir_graph_path}/rank_0/04_inline_*"
+    para1_str = "= Shard(.*ShardSubNet_construct"
+    in_layout1_str = (
+        '(((I64(2), I64(4), I64(1)), (I64(2), I64(0)), Bool(0), ("dp", "sp", "mp"))), None'
+    )
+    para2_str = "= Shard(.*ReLU_construct"
+    in_layout2_str = (
+        '(((I64(2), I64(4), I64(1)), (I64(0), I64(1)), Bool(0), ("dp", "sp", "mp"))), None'
+    )
+    check_layout_config(para1_str, file, in_layout1_str)
+    check_layout_config(para2_str, file, in_layout2_str)
+
+
 def test_cell_nested_shard_with_layout_be_set_and_propagate_1():
     """
     Feature: Test cell.shard given nested layout. The set layout can be seen in the shard operator.
