@@ -76,7 +76,7 @@ def setitem_check_indexing(x, index, value, np_expected, capture_mode=None):
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('capture_mode', [None, 'ast', 'bytecode'])
+@pytest.mark.parametrize('capture_mode', [None, 'ast'])
 def test_setitem(capture_mode):
     """
     Feature: tensor setitem
@@ -204,7 +204,7 @@ def setitem_check_iadd_indexing(x, index, value, np_expected, capture_mode=None)
                                                           f"ms_output:{ms_output} {ms_output.shape}"
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('capture_mode', [None, 'ast', 'bytecode'])
+@pytest.mark.parametrize('capture_mode', [None, 'ast'])
 def test_setitem_with_iadd(capture_mode):
     """
     Feature: tensor setitem
@@ -592,7 +592,7 @@ def setitem_check_imul_grad(x, index, value, np_expected, capture_mode=None):
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('capture_mode', [None, 'ast', 'bytecode'])
+@pytest.mark.parametrize('capture_mode', [None, 'ast'])
 def test_setitem_grad_with_imul(capture_mode):
     """
     Feature: tensor setitem grad

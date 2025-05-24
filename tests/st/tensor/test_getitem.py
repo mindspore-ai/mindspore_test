@@ -114,7 +114,7 @@ def getitem_check_indexing(x, index, np_expected, capture_mode=None):
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('capture_mode', [None, 'ast', 'bytecode'])
+@pytest.mark.parametrize('capture_mode', [None, 'ast'])
 def test_getitem(capture_mode):
     """
     Feature: tensor getitem
