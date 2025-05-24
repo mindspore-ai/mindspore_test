@@ -52,6 +52,9 @@ class AscendCommunicationGroup : public CommunicationGroup {
   bool SetGlobalCommInfo(uint32_t master_ip, uint32_t master_port, uint32_t total_rank_size, uint32_t node_rank,
                          uint32_t local_rank_size) override;
 
+  // Check if CANN so supports the target HCCL comm config parameters.
+  bool isSupportConfigParameter(HcclCommConfigCapability config_parameter);
+
   // Return HcclCommConfig based on users' options configuration.
   HcclCommConfig CreateHcclCommConfig();
 

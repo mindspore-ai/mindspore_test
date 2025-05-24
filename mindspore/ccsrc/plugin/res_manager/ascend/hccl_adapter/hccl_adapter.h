@@ -75,6 +75,7 @@ class ASCEND_RES_MANAGER_EXPORT HcclAdapter {
   // common
   bool InitHccl(uint32_t device_id, std::string_view rank_id, std::string_view rank_file, HcclMode hccl_mode);
   bool InitHccl(uint32_t device_id, std::string_view rank_id);
+  uint32_t HcclGetCommConfigCapability();
   HcclResult HcclSetGlobalCommInfo(uint32_t masterIp, uint32_t masterPort, uint32_t totalRankSize, uint32_t nodeId,
                                    uint32_t localRankSize);
   HcclResult HcclCommInitClusterInfoConfig(const char *rank_table, uint32_t rank_id, HcclCommConfig *config,
@@ -170,6 +171,7 @@ class ASCEND_RES_MANAGER_EXPORT HcclAdapter {
   GetAllKernelBuilderFunObj get_all_kernel_builder_ = nullptr;
   HcomDestroyFunObj hcom_destroy_ = nullptr;
 
+  HcclGetCommConfigCapabilityFunObj get_hccl_comm_config_capability_ = nullptr;
   HcclSetGlobalCommInfoFunObj set_hccl_global_comm_info_ = nullptr;
   HcclCommInitClusterInfoFunObj init_hccl_comm_ = nullptr;
   HcclCommInitClusterInfoConfigFunObj init_hccl_global_comm_ranktable_ = nullptr;
