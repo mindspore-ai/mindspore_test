@@ -25,7 +25,6 @@
 #include "actor/msg.h"
 #include "distributed/rpc/tcp/connection.h"
 #include "distributed/rpc/tcp/connection_pool.h"
-#include "distributed/rpc/tcp/event_loop.h"
 #include "distributed/rpc/tcp/event_loop_group.h"
 
 namespace mindspore {

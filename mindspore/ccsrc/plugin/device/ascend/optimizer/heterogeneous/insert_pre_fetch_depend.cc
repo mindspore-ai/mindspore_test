@@ -21,6 +21,7 @@
 #include <stack>
 
 #include "include/common/utils/anfalgo.h"
+#include "include/backend/optimizer/helper.h"
 #include "plugin/device/ascend/optimizer/heterogeneous/move_to_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/framework_ops.h"

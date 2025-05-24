@@ -30,8 +30,6 @@
 #include <utility>
 #include <unordered_map>
 
-#include "utils/hash_map.h"
-#include "utils/hash_set.h"
 #include "base/base.h"
 #include "utils/log_adapter.h"
 #include "base/base_ref.h"

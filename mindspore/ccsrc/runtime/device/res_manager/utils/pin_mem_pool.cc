@@ -19,7 +19,6 @@
 #include <algorithm>
 #include <cstdlib>
 #include "utils/log_adapter.h"
-#include "utils/ms_context.h"
 #include "utils/distributed_meta.h"
 #include "include/common/utils/offload_context.h"
 #include "include/common/utils/comm_manager.h"

@@ -15,6 +15,7 @@
  */
 
 #include "distributed/rpc/tcp/tcp_socket_operation.h"
+#include "distributed/rpc/tcp/connection.h"
 
 namespace mindspore {
 namespace distributed {

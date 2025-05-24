@@ -22,6 +22,7 @@
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "include/common/utils/anfalgo.h"
+#include "include/backend/optimizer/helper.h"
 
 namespace mindspore {
 namespace opt {

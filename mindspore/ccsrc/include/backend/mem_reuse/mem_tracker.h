@@ -26,7 +26,6 @@
 #include <tuple>
 #include "ir/tensor_storage_info.h"
 #include "mindapi/base/type_id.h"
-#include "utils/ms_context.h"
 #include "utils/ms_utils.h"
 #include "utils/log_adapter.h"
 #include "include/backend/visible.h"

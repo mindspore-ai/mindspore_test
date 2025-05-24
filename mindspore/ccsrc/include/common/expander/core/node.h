@@ -21,8 +21,8 @@
 #include <memory>
 #include <utility>
 #include "ir/anf.h"
+#include "ir/meta_grad_data.h"
 #include "include/common/visible.h"
-#include "include/common/utils/utils.h"
 
 namespace mindspore {
 namespace expander {

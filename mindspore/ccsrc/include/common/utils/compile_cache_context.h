@@ -21,9 +21,11 @@
 #include <map>
 #include <vector>
 
-#include "include/common/utils/utils.h"
 #include "include/common/visible.h"
-#include "ir/anf.h"
+#include "utils/hash_map.h"
+#include "utils/hash_set.h"
+#include "utils/log_adapter.h"
+#include "base/base.h"
 
 namespace mindspore {
 constexpr char kGraphCacheSubDir[] = "graph_cache";

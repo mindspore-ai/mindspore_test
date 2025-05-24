@@ -19,6 +19,7 @@
 #include <memory>
 
 #include "include/common/debug/anf_ir_dump.h"
+#include "include/backend/optimizer/graph_optimizer.h"
 #include "backend/common/pass/mindir/reduce_axis_update.h"
 #include "debug/profiler/profiling.h"
 

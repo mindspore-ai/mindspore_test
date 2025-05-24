@@ -19,17 +19,9 @@
 
 #include <memory>
 #include <string>
-#include "utils/hash_map.h"
-#include "ir/anf.h"
 #include "ir/func_graph.h"
-#include "ir/primitive.h"
-#include "include/backend/optimizer/pass_manager.h"
-#include "include/backend/optimizer/pattern_engine.h"
-#include "ir/graph_utils.h"
-#include "utils/ms_utils.h"
-#include "include/backend/optimizer/helper.h"
-#include "include/backend/optimizer/graph_optimizer.h"
 #include "include/backend/visible.h"
+#include "include/backend/optimizer/node_pass.h"
 
 namespace mindspore {
 namespace opt {

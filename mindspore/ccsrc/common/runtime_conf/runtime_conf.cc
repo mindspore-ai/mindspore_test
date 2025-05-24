@@ -15,7 +15,6 @@
  */
 #include "include/common/runtime_conf/runtime_conf.h"
 #include <algorithm>
-#include "utils/ms_utils.h"
 #include "utils/ms_context.h"
 
 namespace mindspore {

@@ -25,7 +25,6 @@
 #include <mutex>
 #include <vector>
 #include <optional>
-#include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
 #include "utils/device_manager_conf.h"
 
