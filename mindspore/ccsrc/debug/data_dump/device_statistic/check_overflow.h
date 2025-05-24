@@ -38,16 +38,6 @@ class BACKEND_COMMON_EXPORT CheckOverflowKernel : public StatisticKernel {
   std::vector<KernelTensor *> CheckInputs(std::vector<KernelTensor *> inputs);
   DeviceAddressPtr LaunchKernelAsync(KernelTensor *input, const std::uint32_t stream_id) = delete;
   KernelTensorPtr LaunchKernelAsync(std::vector<KernelTensor *> inputs, const std::uint32_t stream_id) override;
-  static void ClearMemoryCache() {
-    if (cache_.empty()) {
-      return;
-    }
-    cache_.clear();
-    MS_LOG(INFO) << "Clear the memory cache of overflow dump.";
-  }
-
- private:
-  static std::map<std::uint32_t, KernelTensorPtr> cache_;
 };
 
 }  // namespace datadump

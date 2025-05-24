@@ -27,8 +27,6 @@
 namespace mindspore {
 namespace datadump {
 
-std::map<std::uint32_t, KernelTensorPtr> CheckOverflowKernel::cache_;
-
 std::vector<KernelTensor *> CheckOverflowKernel::CheckInputs(std::vector<KernelTensor *> inputs) {
   std::vector<KernelTensor *> check_kernel_tensors;
   static std::set<TypeId> warning_once;
@@ -58,10 +56,7 @@ KernelTensorPtr CheckOverflowKernel::LaunchKernelAsync(std::vector<KernelTensor 
     return nullptr;
   }
 
-  if (cache_.find(stream_id) == cache_.end()) {
-    cache_[stream_id] = GetOutputDeviceAddress(kNumberTypeBool);
-  }
-  auto output_kernel_tensor = cache_[stream_id];
+  auto output_kernel_tensor = GetOutputDeviceAddress(kNumberTypeBool);
   std::vector<KernelTensor *> outputs{output_kernel_tensor.get()};
 
   MS_EXCEPTION_IF_NULL(kernel_mod_);

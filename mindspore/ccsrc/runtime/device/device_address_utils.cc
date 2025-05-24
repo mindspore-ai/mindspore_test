@@ -1297,8 +1297,8 @@ KernelTensorPtr DeviceAddressUtils::CreateWorkspaceKernelTensor(const DeviceCont
 
   auto device_address = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_address);
-  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "Dump", "WorkspaceAddress", "");
-  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "Dump", device::tracker::MemType::kWorkSpace,
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "Graph", "WorkspaceAddress", "");
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "Graph", device::tracker::MemType::kWorkSpace,
                                                  device_address->GetSize(), device_address.get());
   if (device_address->GetPtr() == nullptr &&
       !device_context->device_res_manager_->AllocateMemory(device_address.get())) {

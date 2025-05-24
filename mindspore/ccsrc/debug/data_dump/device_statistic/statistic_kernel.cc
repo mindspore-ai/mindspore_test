@@ -21,6 +21,7 @@
 #include <vector>
 #include "backend/common/backend_common_callback.h"
 #include "debug/debugger/debugger_utils.h"
+#include "debug/data_dump/device_statistic/mem_manager.h"
 #include "include/common/debug/common.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 
@@ -46,26 +47,6 @@ TensorPtr SyncDeviceToHostTensor(KernelTensorPtr kernel_tensor) {
   return out_tensor;
 }
 
-KernelTensorPtr StatisticKernel::GenerateDeviceAddress(const size_t &mem_size, const TypeId &dtype_id,
-                                                       const ShapeVector &shape) {
-  auto shape_ptr = std::make_shared<abstract::Shape>(shape);
-  auto type = std::make_shared<TensorType>(TypeIdToType(dtype_id));
-  auto tensor = AnfAlgo::CreateKernelTensor(
-    shape_ptr, type, nullptr, nullptr, mem_size, kernel::GetFormatFromEnumToStr(Format::DEFAULT_FORMAT), dtype_id,
-    shape, device_context_->device_context_key().device_name_, device_context_->device_context_key().device_id_);
-  MS_EXCEPTION_IF_NULL(tensor);
-  tensor->set_stream_id(kDefaultStreamIndex);
-  auto device_addr = tensor->device_address();
-  MS_EXCEPTION_IF_NULL(device_addr);
-  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "Dump", "OutputAddress", "");
-  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "Dump", device::tracker::MemType::kOther,
-                                                 device_addr->GetSize(), device_addr.get());
-  if (!device_context_->device_res_manager_->AllocateMemory(device_addr.get(), kDefaultStreamIndex)) {
-    MS_LOG(EXCEPTION) << "Dump allocate outputs memory failed";
-  }
-  return tensor;
-}
-
 KernelTensorPtr StatisticKernel::GetWorkSpaceDeviceAddress(const std::vector<KernelTensor *> &inputs,
                                                            const std::vector<KernelTensor *> &outputs) {
   auto ret = kernel_mod_->Resize(inputs, outputs);
@@ -77,21 +58,13 @@ KernelTensorPtr StatisticKernel::GetWorkSpaceDeviceAddress(const std::vector<Ker
     MS_VLOG(VL_DUMP) << "Statistic kernel name is " << kernel_name_ << ", workspace size is " << work_space[0]
                      << ", input shape is " << inputs[0]->GetShapeVector() << ", dtype is "
                      << TypeIdToString(inputs[0]->dtype_id());
-    constexpr char kCreateWorkspaceKernelTensorFunc[] = "CreateWorkspaceKernelTensor";
-    static const auto create_workspace_kernel_tensor =
-      backend_common::BackendCommonCallback::GetInstance()
-        .GetCallback<KernelTensorPtr, const device::DeviceContext *, size_t, const size_t &>(
-          kCreateWorkspaceKernelTensorFunc);
-    if (create_workspace_kernel_tensor) {
-      return create_workspace_kernel_tensor(device_context_, kDefaultStreamIndex, work_space[0]);
-    }
+    return DumpMemManager::GetInstance().GetWorkSpaceTensor(device_context_, stream_id_, work_space[0]);
   }
   return nullptr;
 }
 
 KernelTensorPtr StatisticKernel::GetOutputDeviceAddress(TypeId dtype_id) {
-  ShapeVector shape_vec = {};
-  return GenerateDeviceAddress(UnitSizeInBytes(dtype_id), dtype_id, shape_vec);
+  return DumpMemManager::GetInstance().GetOutputTensor(device_context_, stream_id_, dtype_id);
 }
 
 std::vector<KernelTensorPtr> StatisticKernel::GetExtraInputsDeviceAddress(KernelTensor *) {
