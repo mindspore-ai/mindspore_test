@@ -281,7 +281,7 @@ void ConditionGatherActor::FetchParameterInput(size_t start_index, OpContext<Ker
     if (parameter_index.first < start_index || parameter_index.first - start_index >= input_kernel_tensors_.size()) {
       continue;
     }
-    auto kernel_tensor = FetchParameter(parameter_index.second, context, GetAID());
+    auto kernel_tensor = FetchParameter(parameter_index.second, GetAID());
     if (kernel_tensor == nullptr) {
       std::string error_info =
         GetAID().Name() + " get graph parameter store failed: " + parameter_index.second.first.first->DebugString() +

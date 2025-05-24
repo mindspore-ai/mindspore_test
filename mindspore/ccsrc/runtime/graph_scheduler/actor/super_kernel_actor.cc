@@ -781,8 +781,8 @@ void SuperKernelActor::FetchParameterInput(const KernelActorPtr &kernel_actor, O
   for (const auto &parameter_index : kernel_actor->parameter_indexs()) {
     size_t kernel_input_index = parameter_index.first;
     bool is_first_user = kernel_actor->is_first_used_params_[kernel_input_index];
-    auto kernel_tensor = FetchParameter(parameter_index.second, context, kernel_actor->GetAID(), is_first_user,
-                                        stream_id, enable_parallel_dispatch_);
+    auto kernel_tensor = FetchParameter(parameter_index.second, kernel_actor->GetAID(), is_first_user, stream_id,
+                                        enable_parallel_dispatch_);
     const auto &device_tensor = kernel_tensor->device_address();
     MS_EXCEPTION_IF_NULL(device_tensor);
     MS_LOG(DEBUG) << "Actor: " << kernel_actor->GetAID().Name() << ", input index: " << parameter_index.first
@@ -812,7 +812,7 @@ void SuperKernelActor::FreeInputParamWithoutUser(OpContext<KernelTensor> *const 
   ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kPreLaunch, "FreeInputParamWithoutUser");
   if (enable_input_optimize_) {
     for (const auto &iter : input_params_no_user_) {
-      auto kernel_tensor = FetchParameter(iter.second, context, GetAID());
+      auto kernel_tensor = FetchParameter(iter.second, GetAID());
       MS_EXCEPTION_IF_NULL(kernel_tensor);
       auto device_tensor = kernel_tensor->device_address().get();
       MS_EXCEPTION_IF_NULL(device_tensor);
