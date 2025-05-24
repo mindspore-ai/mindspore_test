@@ -1204,8 +1204,6 @@ class Model:
         if not enable_recovery:
             self.enable_recovery = False
         else:
-            if context.get_context("mode") != context.GRAPH_MODE:
-                raise RuntimeError("Recovery for training only support graph mode currently.")
             self.enable_recovery = enable_recovery and _is_role_worker()
 
     def _check_need_load_ckpt(self, cb_params, dataset_size, sink_size=-1):

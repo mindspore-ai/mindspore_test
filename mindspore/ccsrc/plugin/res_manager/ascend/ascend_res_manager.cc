@@ -1177,9 +1177,10 @@ void AscendResManager::InitializeForGe() const {
   if (initialized_ge) {
     return;
   }
+
+  MS_LOG(INFO) << "Start initializing for ge.";
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-
   if (ms_context->get_param<bool>(MS_CTX_IS_PYNATIVE_GE_INIT)) {
     return;
   }
@@ -1199,6 +1200,7 @@ void AscendResManager::InitializeForGe() const {
     }
   }
   initialized_ge = true;
+  MS_LOG(INFO) << "End initializing for ge.";
 }
 
 MS_REGISTER_HAL_RES_MANAGER(kAscendDevice, DeviceType::kAscend, AscendResManager);

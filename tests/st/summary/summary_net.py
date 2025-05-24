@@ -132,20 +132,26 @@ def list_summary_tags(summary_dir):
     return tags
 
 
-summary_path = run_network(num_samples=10)
+def test_summary_net():
+    """
+    Feature: Test SummaryCollector in distribute trainning.
+    Description: Run Summary script, init() is not in main function.
+    Expectation: No error occur.
+    """
+    summary_path = run_network(num_samples=10)
 
-tag_list = list_summary_tags(summary_path)
+    tag_list = list_summary_tags(summary_path)
 
-expected_tag_set = {'conv1.weight/auto', 'conv2.weight/auto', 'fc1.weight/auto', 'fc1.bias/auto',
-                    'fc2.weight/auto', 'input_data/auto', 'loss/auto',
-                    'histogram', 'image', 'scalar', 'tensor'}
-assert set(expected_tag_set) == set(tag_list)
+    expected_tag_set = {'conv1.weight/auto', 'conv2.weight/auto', 'fc1.weight/auto', 'fc1.bias/auto',
+                        'fc2.weight/auto', 'input_data/auto', 'loss/auto',
+                        'histogram', 'image', 'scalar', 'tensor'}
+    assert set(expected_tag_set) == set(tag_list)
 
-# num samples is 10, batch size is 2, so step is 5, collect freq is 2,
-# SummaryCollector will collect the first step and 2th, 4th step
-tag_count = 3
-for count in Counter(tag_list).values():
-    assert count == tag_count
+    # num samples is 10, batch size is 2, so step is 5, collect freq is 2,
+    # SummaryCollector will collect the first step and 2th, 4th step
+    tag_count = 3
+    for count in Counter(tag_list).values():
+        assert count == tag_count
 
-if os.path.exists(base_summary_dir):
-    shutil.rmtree(base_summary_dir)
+    if os.path.exists(base_summary_dir):
+        shutil.rmtree(base_summary_dir)
