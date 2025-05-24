@@ -3900,7 +3900,7 @@ bool GraphBuilder::TraceRunControl(const Instr &instr) {
 
 StopTraceReason GraphBuilder::TraceRun() {
   if (graph_->Config().GetLogConfig(GraphJitConfig::kAll)) {
-    GRAPH_JIT_LOG_F("Trace %s", GetNameAndLocation(graph_));
+    GRAPH_JIT_LOG_F("Trace %s", GetNameAndLocation(graph_).c_str());
   }
   if (graph_->Config().GetLogConfig(GraphJitConfig::kBytecode)) {
     auto code = reinterpret_cast<PyObject *>(graph_->GetCodeObj());
