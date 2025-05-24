@@ -86,6 +86,9 @@ class TaskIdOnStreamManager {
       MS_LOG(WARNING) << "Launch stream id : " << stream_id << " failed, generator_ size : " << generator_.size();
       generator_.resize(stream_id + 1);
       status_.resize(stream_id + 1);
+      for (auto &vec : status_) {
+        vec.resize(stream_id + 1);
+      }
     }
     return ++generator_[stream_id].value_;
   }

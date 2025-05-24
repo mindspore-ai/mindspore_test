@@ -25,11 +25,18 @@
 
 namespace mindspore {
 namespace hal {
+StreamPy::StreamPy() {
+  device_ctx_ = GetDeviceCtx();
+  device_ctx_->device_res_manager_->set_single_op_multi_stream_enable(true);
+}
+
 StreamPy::StreamPy(int priority) {
   device_ctx_ = GetDeviceCtx();
   device_ctx_->device_res_manager_->CreateStreamWithPriority(&stream_id_, priority);
   MS_LOG(DEBUG) << "stream_id:" << stream_id_ << ", priority:" << priority;
   device_ctx_->device_res_manager_->set_single_op_multi_stream_enable(true);
+  auto &controller = device::HalResManager::GetInstance().GetMultiStreamController(device_ctx_->DeviceName());
+  controller->Refresh();
 }
 
 StreamPy::StreamPy(int priority, int stream_id) {
@@ -39,6 +46,18 @@ StreamPy::StreamPy(int priority, int stream_id) {
   if (device_ctx_->device_res_manager_->GetStream(stream_id) == nullptr) {
     MS_EXCEPTION(ValueError) << "stream_id:" << stream_id << " is not exist";
   }
+  device_ctx_->device_res_manager_->set_single_op_multi_stream_enable(true);
+}
+
+StreamPy::StreamPy(device::DeviceContext *device_ctx, const size_t &stream_id)
+    : device_ctx_(device_ctx), stream_id_(stream_id) {
+  MS_EXCEPTION_IF_NULL(device_ctx_);
+  device_ctx_->device_res_manager_->set_single_op_multi_stream_enable(true);
+}
+
+StreamPy::StreamPy(const StreamPy &stream) : device_ctx_(stream.device_ctx()), stream_id_(stream.stream_id()) {
+  MS_EXCEPTION_IF_NULL(device_ctx_);
+  device_ctx_->device_res_manager_->set_single_op_multi_stream_enable(true);
 }
 
 StreamPy::~StreamPy() { device_ctx_ = nullptr; }
