@@ -1537,7 +1537,7 @@ void OpTrace::InitInfo() {
     info << opcode_;
     info << opargs_;
     info << name_;
-    info << params_.size();
+    info << uint64_t(params_.size());
     for (auto t : params_) {
       info << t->Info();
     }
