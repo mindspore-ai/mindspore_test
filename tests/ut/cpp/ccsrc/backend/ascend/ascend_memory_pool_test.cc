@@ -342,6 +342,12 @@ class DefaultAscendMemoryPoolImpl : public DefaultAscendMemoryPool {
   size_t report_memory_pool_info_{0};
   void ReportMemoryPoolInfo() override { report_memory_pool_info_++; }
 
+  size_t report_free_memory_pool_info_to_mstx_{0};
+  void ReportMemoryPoolFreeInfoToMstx(void *ptr) override { report_free_memory_pool_info_to_mstx_++; }
+
+  size_t report_malloc_memory_pool_info_to_mstx_{0};
+  void ReportMemoryPoolMallocInfoToMstx(void *ptr, size_t size) override { report_malloc_memory_pool_info_to_mstx_++; };
+
   size_t gen_allocate_memory_time_event_{0};
   MemoryTimeEventPtr GenAllocateMemoryTimeEvent(const void *addr, size_t size, uint32_t stream_id, bool from_persistent,
                                                 bool is_persistent) override {
@@ -388,6 +394,7 @@ TEST_F(TestAscendMemoryPool, test_default_enhanced_ascend_memory_pool_proxy) {
   EXPECT_EQ(pool->actual_peak_statistics_.Get(), 0);
   EXPECT_EQ(pool->align_memory_size_.Get(), 1);
   EXPECT_EQ(pool->report_memory_pool_info_, 1);
+  EXPECT_EQ(pool->report_malloc_memory_pool_info_to_mstx_, 1);
 
   enhanced_pool->AllocContinuousTensorMem({});
   EXPECT_EQ(pool->alloc_continuous_tensor_mem_, 1);
@@ -550,6 +557,14 @@ TEST_F(TestAscendMemoryPool, test_default_enhanced_ascend_memory_pool_proxy) {
 
   enhanced_pool->ReportMemoryPoolInfo();
   EXPECT_EQ(pool->report_memory_pool_info_, 2);
+
+  void *ptr;
+  enhanced_pool->ReportMemoryPoolFreeInfoToMstx(ptr);
+  EXPECT_EQ(pool->report_free_memory_pool_info_to_mstx_, 1);
+
+  size_t size{0};
+  enhanced_pool->ReportMemoryPoolMallocInfoToMstx(ptr, size);
+  EXPECT_EQ(pool->report_malloc_memory_pool_info_to_mstx_, 2);
 
   enhanced_pool->GenAllocateMemoryTimeEvent(nullptr, 0, 0, true, true);
   EXPECT_EQ(pool->gen_allocate_memory_time_event_, 1);
