@@ -1,4 +1,4 @@
-void DoGrad${class_name}Inner(${grad_args_with_type}, const ValuePtr &output_value) {
+void DoGrad${class_name}Inner(${inner_grad_args_with_type}, const ValuePtr &output_value) {
   MS_LOG(DEBUG) << "In DoGrad${class_name}";
   static auto op_type = kernel::pyboost::GetOpTypeFromOpdef(ops::g${class_name});
   auto grad_info = std::make_shared<OpGradInfo>(op_type,
@@ -21,6 +21,7 @@ void DoGrad${class_name}(${grad_args_with_type}) {
   auto output_value = AutoGradUtil::Make${is_multi}Output(require_grad, op${view_arg});
 
   if (NeedAutoGrad()) {
+    ${convert_basic_to_value}
     DoGrad${class_name}Inner(op, ${grad_input_args_with_optional}, output_value);
   } else if (is_inplace_op) {
     PyNativeAlgo::PyBoost::BumpVersionAsync(op->outputs()[0]);

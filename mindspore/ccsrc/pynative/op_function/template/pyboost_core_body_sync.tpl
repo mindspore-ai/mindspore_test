@@ -23,11 +23,7 @@ py::object PYNATIVE_EXPORT ${func_name}_OP(const PrimitivePtr &prim, const std::
   kernel::pyboost::RequireGradGuard require_grad_guard(op_run_info->requires_grad);
 
   auto outputs = [&](){
-    // Do mixed precision and implicit cast
-    static const std::vector<std::vector<size_t>> same_type_table{${same_type}};
-    auto [${cast_args}] = PyNativeAlgo::PyBoost::SetPyBoostCastForInputs<${type_num}>(op_run_info, prim->name(),
-                                                                                      same_type_table, ${call_args});
-
+    ${implicit_cast}
     GilReleaseWithCheck no_gil;
     return kernel::pyboost::${operator_name}(${cast_args});
   }();

@@ -48,6 +48,33 @@ tensor::TensorPtr ReshapeAscendCustomize(const std::shared_ptr<OpRunner> &op, co
   MS_LOG(DEBUG) << "View Reshape Call start";
   return ReshapeCustomize(op, input_tensor, shape, op->device_context()->device_context_key_.device_name_);
 }
+tensor::TensorPtr ReshapeAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                         const std::vector<int64_t> &shape) {
+  auto old_storage_info = input_tensor->storage_info();
+  if (old_storage_info != nullptr && !old_storage_info->is_contiguous) {
+    auto storage_info_list = ops::ReshapeBasicTypeCalc(input_tensor, shape);
+    if (!storage_info_list.empty()) {
+      MS_LOG(DEBUG) << "View Uncontiguous Reshape Call start";
+      tensor::TensorPtrList outputs;
+      PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor);
+      PyBoostUtils::CreateOutputTensor(op->device_context(), input_tensor, storage_info_list, &outputs);
+
+      op->set_outputs(outputs);
+      PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([op, input_tensor]() {
+        MS_LOG(DEBUG) << "View device task Uncontiguous Reshape start";
+        auto device_context = op->device_context();
+        PyBoostUtils::MallocOpInputs(device_context, input_tensor);
+        MS_LOG(DEBUG) << "View device task Uncontiguous Reshape end";
+      }));
+
+      MS_LOG(DEBUG) << "View Uncontiguous Reshape Call end";
+      return op->output(0);
+    }
+  }
+
+  MS_LOG(DEBUG) << "View Reshape Call start";
+  return ReshapeCustomize(op, input_tensor, shape, op->device_context()->device_context_key_.device_name_);
+}
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

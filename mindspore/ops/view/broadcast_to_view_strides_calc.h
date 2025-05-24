@@ -21,7 +21,9 @@
 
 namespace mindspore {
 namespace ops {
-
+OPS_API TensorStorageInfoPtrList BroadcastToViewBasicTypeCalc(const PrimitivePtr &prim,
+                                                              const mindspore::tensor::TensorPtr &input_tensor,
+                                                              const std::vector<int64_t> &shape);
 OPS_API TensorStorageInfoPtrList BroadcastToViewCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs);
 OPS_API TensorStorageInfoPtrList BroadCastToViewStrideCalc(const OldTensorInfoPtr old_tensor_info,
                                                            const std::vector<int64_t> &input_x);

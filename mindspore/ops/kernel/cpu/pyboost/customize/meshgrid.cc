@@ -36,6 +36,13 @@ std::vector<tensor::TensorPtr> MeshgridCPUCustomize(const std::shared_ptr<OpRunn
   MS_LOG(DEBUG) << "NonZero CPU end";
   return output;
 }
+std::vector<tensor::TensorPtr> MeshgridCPUCustomize(const std::shared_ptr<OpRunner> &op,
+                                                    const ValueTuplePtr &tensors_list, const int64_t &indexing) {
+  MS_LOG(DEBUG) << "Nonzero CPU start";
+  std::vector<tensor::TensorPtr> output = MeshgridCustomizeCall(op, tensors_list, indexing, kCPUDevice);
+  MS_LOG(DEBUG) << "NonZero CPU end";
+  return output;
+}
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

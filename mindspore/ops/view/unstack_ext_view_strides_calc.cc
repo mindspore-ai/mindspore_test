@@ -23,21 +23,24 @@
 #include "utils/check_convert_utils.h"
 
 namespace mindspore::ops {
-OPS_API TensorStorageInfoPtrList UnstackExtViewCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
+TensorStorageInfoPtrList UnstackExtViewBasicTypeCalc(const tensor::TensorPtr &x_tensor, const int64_t &dim) {
+  auto type = x_tensor->Dtype();
+  (void)CheckAndConvertUtils::CheckTypeValid("input", type, common_valid_types_with_complex_and_bool, "UnstackExt");
+  auto old_tensor_info = GetOldTensorInfo(x_tensor);
+  return UnstackStridesCalc(old_tensor_info, dim);
+}
+
+TensorStorageInfoPtrList UnstackExtViewCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
   if (!inputs[kInputIndex0]->isa<tensor::Tensor>()) {
     return {};
   }
-
   auto tensor = inputs[kInputIndex0]->cast<tensor::TensorPtr>();
-  MS_EXCEPTION_IF_NULL(tensor);
   auto type = tensor->Dtype();
   (void)CheckAndConvertUtils::CheckTypeValid("input", type, common_valid_types_with_complex_and_bool, "UnstackExtView");
   auto dim_value_ptr = inputs[kInputIndex1];
   MS_EXCEPTION_IF_NULL(dim_value_ptr);
   auto dim = GetValue<int64_t>(dim_value_ptr);
-  auto old_tensor_info = GetOldTensorInfo(tensor);
-
-  return UnstackStridesCalc(old_tensor_info, dim);
+  return UnstackExtViewBasicTypeCalc(inputs[kInputIndex0]->cast<tensor::TensorPtr>(), dim);
 }
 REG_TUPLE_OUT_VIEW_STRIDES_CALC_FUN(UnstackExtView, UnstackExtViewCalc);
 

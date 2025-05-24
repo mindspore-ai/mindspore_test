@@ -20,13 +20,6 @@
 #include "view/chunk_strides_calc.h"
 
 namespace mindspore::ops {
-void ChunkInputsCheck(const PrimitivePtr &prim, const int64_t &output_num, const int64_t &axis) {
-  auto prim_name = prim->name();
-  if (output_num <= 0) {
-    MS_EXCEPTION(ValueError) << "For '" << prim_name << "', output_num must be positive, but got " << output_num << ".";
-  }
-}
-
 TensorStorageInfoPtrList ChunkStridesCalc(const OldTensorInfoPtr tensor_info, TensorStorageInfoPtr storage_info,
                                           const int64_t &chunks, const int64_t &dim) {
   auto old_shape = tensor_info->old_shape;
@@ -73,6 +66,14 @@ TensorStorageInfoPtrList ChunkStridesCalc(const OldTensorInfoPtr tensor_info, Te
     storage_info_list.emplace_back(new_storage_info);
   }
   return storage_info_list;
+}
+
+TensorStorageInfoPtrList ChunkBasicTypeCalc(const PrimitivePtr &prim, const mindspore::tensor::TensorPtr &input_tensor,
+                                            const int64_t &chunks, const int64_t &dim) {
+  MS_CHECK_VALUE(chunks > 0, CheckAndConvertUtils::FormatCheckIntegerMsg("chunks", chunks, kGreaterEqual, 1, prim));
+  auto tensor_info = GetOldTensorInfo(input_tensor);
+  auto storage_info = input_tensor->storage_info();
+  return ChunkStridesCalc(tensor_info, storage_info, chunks, dim);
 }
 
 TensorStorageInfoPtrList ChunkCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {

@@ -1,5 +1,5 @@
   MS_LOG(DEBUG) << "View ${op_name} Call start";
-  auto storage_info_list = ops::${op_name}Calc(primitive_, {${call_args}});
+  auto storage_info_list = ops::${storage_calc}Calc(primitive_, ${calc_func_args});
   if (!storage_info_list.empty()) {
     auto op = get_op();
     // Create device address for input tensors

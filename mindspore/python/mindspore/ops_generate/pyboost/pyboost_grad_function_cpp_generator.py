@@ -126,7 +126,7 @@ class PyboostGradFunctionsGenerator(BaseGenerator):
         parser_func_str = ''
         for index, arg in enumerate(op_proto.op_args):
             is_optional = pyboost_utils.is_optional_param(arg)
-            convert_type_str = pyboost_utils.get_value_convert_type_str(arg.arg_dtype, is_optional)
+            convert_type_str = pyboost_utils.get_value_convert_type_str(arg.arg_dtype, is_optional, op_proto.op_view)
             parser_func_str += convert_template.replace(arg_name=arg.arg_name, convert_func=convert_type_str,
                                                         arg_index=pyboost_utils.get_index(index))
         return parser_func_str

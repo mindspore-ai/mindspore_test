@@ -257,6 +257,11 @@ class PYBOOST_API OpRunner : public std::enable_shared_from_this<OpRunner> {
     }
   }
 
+  template <typename T>
+  void CollectTrackerTensor(const T &opt, std::vector<tensor::TensorPtr> *tensors) {
+    return;
+  }
+
   void TrackerOutputTensors(const std::vector<tensor::TensorPtr> &tensors) {
     PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([primitive = primitive_, tensors]() {
       for (const auto &tensor : tensors) {

@@ -41,21 +41,20 @@ void WeightQuantBatchMatmulV2AscendCall(const std::shared_ptr<OpRunner> &op,
                antiquant_group_size, outputs[0]);
   MS_LOG(DEBUG) << "Launch end";
 }
-ValueTuplePtr GetWeightQuantBatchMatmulPerm(const TensorPtr &weight_tensor) {
+std::vector<int64_t> GetWeightQuantBatchMatmulPerm(const TensorPtr &weight_tensor) {
   const auto &shape = weight_tensor->shape();
   int64_t size = shape.size();
-  std::vector<ValuePtr> perm(size);
+  std::vector<int64_t> perm(size);
   if (size < ops::kSize2) {
-    auto zero = std::make_shared<Int64Imm>(0);
-    perm[0] = MakeValue(zero);
-    return std::make_shared<ValueTuple>(perm);
+    perm[0] = 0;
+    return perm;
   }
-  perm[size - 1] = MakeValue(size - SizeToLong(kDim2));
-  perm[size - kDim2] = MakeValue(size - 1);
+  perm[size - 1] = size - SizeToLong(kDim2);
+  perm[size - kDim2] = size - 1;
   for (int64_t i = 0; i < size - ops::kSize2; ++i) {
-    perm[i] = MakeValue(i);
+    perm[i] = i;
   }
-  return std::make_shared<ValueTuple>(perm);
+  return perm;
 }
 }  // namespace
 tensor::TensorPtr WeightQuantBatchMatmulV2AscendCustomize(

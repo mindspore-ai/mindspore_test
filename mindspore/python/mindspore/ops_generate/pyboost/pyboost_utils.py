@@ -68,7 +68,7 @@ def get_index(index: int):
     return "kIndex" + str(index)
 
 
-def get_convert_type_str(dtype: str, optional):
+def get_convert_type_str(dtype: str, optional, use_basic_type=False):
     """
     Convert type
     """
@@ -106,16 +106,30 @@ def get_convert_type_str(dtype: str, optional):
         'list[bool]': 'ToBoolListOptional<py::list>',
         'list[tensor]': 'ToTensorListOptional<py::list>',
     }
+    basic_optional_type_convert = {
+        'tuple[int]': "ToBasicIntVectorOptional",
+        'list[int]': "ToBasicIntVectorOptional",
+        'int': "ToBasicIntOptional",
+    }
+    basic_type_convert = {
+        'tuple[int]': "ToBasicIntVector",
+        'list[int]': "ToBasicIntVector",
+        'int': "ToBasicInt",
+    }
     if optional:
+        if use_basic_type and dtype in basic_optional_type_convert:
+            return basic_optional_type_convert[dtype]
         if dtype in optional_type_convert:
             return optional_type_convert[dtype]
         raise TypeError(f"""Unsupported convert optional type {dtype} for args.""")
+    if use_basic_type and dtype in basic_type_convert:
+        return basic_type_convert[dtype]
     if dtype in native_type_convert:
         return native_type_convert[dtype]
     raise TypeError(f"""Unsupported convert type {dtype} for args.""")
 
 
-def get_input_args_type_str(dtype: str, optional):
+def get_input_args_type_str(dtype: str, optional, use_basic_type=False):
     """
     Convert type
     """
@@ -153,17 +167,52 @@ def get_input_args_type_str(dtype: str, optional):
         'list[bool]': 'std::optional<ValueTuplePtr>',
         'list[tensor]': 'std::optional<ValueTuplePtr>',
     }
+    basic_optional_type_convert = {
+        'tuple[int]': "std::optional<std::vector<int64_t>>",
+        'list[int]': "std::optional<std::vector<int64_t>>",
+        'int': "std::optional<int64_t>",
+    }
+    basic_type_convert = {
+        'tuple[int]': "std::vector<int64_t>",
+        'list[int]': "std::vector<int64_t>",
+        'int': "int64_t",
+    }
     if optional:
+        if use_basic_type and dtype in basic_optional_type_convert:
+            return basic_optional_type_convert[dtype]
         if dtype in optional_type:
             return optional_type[dtype]
         raise TypeError(f"""Unknown optional type {dtype} for args.""")
+    if use_basic_type and dtype in basic_type_convert:
+        return basic_type_convert[dtype]
     if dtype in native_type:
         return native_type[dtype]
     raise TypeError(f"""Unknown type {dtype} for args.""")
 
 
+def basic_type_convert_str(dtype: str, optional):
+    """
+    Convert type
+    """
+    optional_type = {
+        'tuple[int]': "ToBasicIntVectorOptional",
+        'list[int]': "ToBasicIntVectorOptional",
+        'int': "ToBasicIntOptional",
+    }
+    native_type = {
+        'tuple[int]': "ToBasicIntVector",
+        'list[int]': "ToBasicIntVector",
+        'int': "ToBasicInt",
+    }
+    if optional:
+        if dtype in optional_type:
+            return optional_type[dtype]
+    if dtype in native_type:
+        return native_type[dtype]
+    return ""
 
-def get_value_convert_type_str(dtype: str, optional):
+
+def get_value_convert_type_str(dtype: str, optional, use_basic_type=False):
     """
     Convert type
     """
@@ -193,10 +242,24 @@ def get_value_convert_type_str(dtype: str, optional):
         'tuple[bool]': 'ToValueTupleOptional',
         'tuple[tensor]': 'ToValueTupleOptional',
     }
+    basic_optional_type_convert = {
+        'tuple[int]': "ToBasicIntVectorOptional",
+        'list[int]': "ToBasicIntVectorOptional",
+        'int': "ToBasicIntOptional",
+    }
+    basic_type_convert = {
+        'tuple[int]': "ToBasicIntVector",
+        'list[int]': "ToBasicIntVector",
+        'int': "ToBasicInt",
+    }
     if optional:
+        if use_basic_type and dtype in basic_optional_type_convert:
+            return basic_optional_type_convert[dtype]
         if dtype in optional_type_convert:
             return optional_type_convert[dtype]
         raise TypeError(f"""Unsupported convert optional type {dtype} for args.""")
+    if use_basic_type and dtype in basic_type_convert:
+        return basic_type_convert[dtype]
     if dtype in native_type_convert:
         return native_type_convert[dtype]
     raise TypeError(f"""Unsupported convert type {dtype} for args.""")
@@ -232,7 +295,7 @@ def number_input_to_cpp_type(dtype: str):
     return types_map.get(dtype)
 
 
-def get_input_dtype(dtype: str, optional):
+def get_input_dtype(dtype: str, optional, use_basic_type=False):
     """
     Convert type
     """
@@ -267,10 +330,24 @@ def get_input_dtype(dtype: str, optional):
         'tuple[bool]': value_tuple_optional,
         'tuple[tensor]': value_tuple_optional,
     }
+    basic_optional_type_convert = {
+        'tuple[int]': "std::optional<std::vector<int64_t>>",
+        'list[int]': "std::optional<std::vector<int64_t>>",
+        'int': "std::optional<int64_t>",
+    }
+    basic_type_convert = {
+        'tuple[int]': "std::vector<int64_t>",
+        'list[int]': "std::vector<int64_t>",
+        'int': "int64_t",
+    }
     if optional:
+        if use_basic_type and dtype in basic_optional_type_convert:
+            return basic_optional_type_convert[dtype]
         if dtype in optional_type_convert:
             return optional_type_convert[dtype]
         raise TypeError(f"""Unsupported convert optional type {dtype} for args.""")
+    if use_basic_type and dtype in basic_type_convert:
+        return basic_type_convert[dtype]
     if dtype in type_convert:
         return type_convert[dtype]
     raise TypeError(f"""Unsupported convert type {dtype} for args.""")

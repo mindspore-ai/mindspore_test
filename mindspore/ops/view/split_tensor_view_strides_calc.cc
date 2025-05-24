@@ -22,6 +22,11 @@
 #include "view/split_tensor_strides_calc.h"
 
 namespace mindspore::ops {
+TensorStorageInfoPtrList SplitTensorViewBasicTypeCalc(const PrimitivePtr &prim,
+                                                      const mindspore::tensor::TensorPtr &input_tensor,
+                                                      const int64_t &split_size, const int64_t &dim) {
+  return SplitTensorBasicTypeCalc(prim, input_tensor, split_size, dim);
+}
 TensorStorageInfoPtrList SplitTensorViewCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
   return SplitTensorCalc(prim, inputs);
 }

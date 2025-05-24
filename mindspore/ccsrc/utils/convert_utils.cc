@@ -700,6 +700,15 @@ ValuePtr UpdateValueByAttrDataType(const ValuePtr &value, const std::string &att
   return ret;
 }
 
+ValueTuplePtr PackBasicTypeToValue(const std::vector<int64_t> &val) {
+  std::vector<ValuePtr> val_vec;
+  std::transform(val.begin(), val.end(), std::back_inserter(val_vec),
+                 [](int64_t e) { return std::make_shared<Int64Imm>(e); });
+  return std::make_shared<ValueTuple>(val_vec);
+}
+
+Int64ImmPtr PackBasicTypeToValue(const int64_t &val) { return std::make_shared<Int64Imm>(val); }
+
 namespace {
 size_t GetHashId(int a, int b) { return a < b ? hash_combine(a, b) : hash_combine(b, a); }
 

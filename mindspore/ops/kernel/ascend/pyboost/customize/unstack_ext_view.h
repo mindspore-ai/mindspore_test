@@ -30,6 +30,8 @@ namespace kernel {
 namespace pyboost {
 std::vector<tensor::TensorPtr> UnstackExtViewAscendCustomize(const std::shared_ptr<OpRunner> &op,
                                                              const TensorPtr &x_tensor, const Int64ImmPtr &axis);
+std::vector<tensor::TensorPtr> UnstackExtViewAscendCustomize(const std::shared_ptr<OpRunner> &op,
+                                                             const TensorPtr &x_tensor, const int64_t &axis);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore
