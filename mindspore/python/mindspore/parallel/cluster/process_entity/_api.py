@@ -80,11 +80,12 @@ class _ComputeGraphNode(_Node):
     Worker node for dynamic networking. Inherits from the Node class.
     """
 
-    def __init__(self, worker_num, sched_host, sched_port, timeout, node_id, args_list, output_file,
+    def __init__(self, worker_num, sched_host, sched_port, timeout, node_id, node_rank, args_list, output_file,
                  tail_worker_log, join, is_simulation):
         super().__init__(worker_num, sched_host, sched_port, timeout, args_list, output_file,
                          tail_worker_log, join, is_simulation)
         self.node_id = node_id
+        self.node_rank = node_rank
 
     def run(self):
         """
@@ -96,6 +97,8 @@ class _ComputeGraphNode(_Node):
         super().run()
         if self.node_id is not None:
             os.environ["MS_NODE_ID"] = str(self.node_id)
+        if self.node_rank is not None:
+            os.environ["MS_NODE_RANK"] = str(self.node_rank)
         # If simulation level is set, environment variable 'MS_ROLE' will not be set.
         if not self.is_simulation:
             os.environ["MS_ROLE"] = "MS_WORKER"
@@ -307,7 +310,8 @@ class _ProcessManager:
             else:
                 cmd = _generate_cmd_args_list(self.cmd, self.cmd_args)
             cgn = _ComputeGraphNode(self.worker_num, self.master_addr, self.master_port, self.cluster_time_out,
-                                    node_id, cmd, log_name, self.tail_worker_log, self.join, self.is_simulation)
+                                    node_id, self.node_rank, cmd, log_name, self.tail_worker_log, self.join,
+                                    self.is_simulation)
             process, tail_process = cgn.run()
             self.cgn_processes.append(process)
             self.tail_cgn_processes.append(tail_process)

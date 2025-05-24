@@ -49,7 +49,7 @@ class AscendCommunicationGroup : public CommunicationGroup {
   void *GenerateRootInfo(size_t *root_info_size) override;
 
   // Set global comm information for nslb-dp feature.
-  bool SetGlobalCommInfo(uint32_t master_ip, uint32_t master_port, uint32_t total_rank_size, uint32_t group_rank,
+  bool SetGlobalCommInfo(uint32_t master_ip, uint32_t master_port, uint32_t total_rank_size, uint32_t node_rank,
                          uint32_t local_rank_size) override;
 
   // Return HcclCommConfig based on users' options configuration.

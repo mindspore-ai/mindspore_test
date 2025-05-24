@@ -50,8 +50,8 @@ class BACKEND_COMMON_EXPORT CommunicationGroup {
   // For NCCL group, it returns a pointer to 'ncclUniqueId'. For HCCL group, it returns a pointer to 'HcclRootInfo'.
   virtual void *GenerateRootInfo(size_t *root_info_size) { return nullptr; }
 
-  virtual bool SetGlobalCommInfo(uint32_t master_ip, uint32_t master_port, uint32_t total_rank_size,
-                                 uint32_t group_rank, uint32_t local_rank_size) {
+  virtual bool SetGlobalCommInfo(uint32_t master_ip, uint32_t master_port, uint32_t total_rank_size, uint32_t node_rank,
+                                 uint32_t local_rank_size) {
     return true;
   }
 
