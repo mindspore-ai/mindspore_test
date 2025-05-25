@@ -22,6 +22,7 @@ from mindspore import nn
 from mindspore import ops
 from mindspore import Tensor
 from mindspore import context
+from mindspore.ops import auto_generate as gen
 from mindspore.common.parameter import Parameter
 from tests.mark_utils import arg_mark
 
@@ -630,3 +631,37 @@ def test_amp_jit_func():
     y = ms.Tensor(np.ones([2,]), ms.float32)
     out_graph, out_pynative = func(x, y)
     assert out_graph.dtype == ms.float16 and out_pynative.dtype == ms.float16
+
+
+class NormNet(nn.Cell):
+
+    def __init__(self):
+        super().__init__()
+        self.norm = gen.Norm()
+
+    def construct(self, x):
+        return self.norm(x)
+
+
+def func_norm(x):
+    return gen.Norm()(x)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_amp_auto_black_list_norm():
+    """
+    Feature: auto mixed precision auto mode.
+    Description: test if prim in black list(Norm) can run in fp16.
+    Expectation: success.
+    """
+    ms.set_context(mode=ms.PYNATIVE_MODE)
+    input_data = Tensor(np.ones([1, 1]), dtype=ms.float16)
+    # test with net
+    net = NormNet()
+    net = auto_mixed_precision(net, "auto")
+    out = net(input_data)
+    assert out.dtype == ms.float32
+    # test with func
+    net_func = auto_mixed_precision(func_norm, "auto")
+    out = net_func(input_data)
+    assert out.dtype == ms.float32

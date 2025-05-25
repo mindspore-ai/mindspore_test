@@ -191,7 +191,7 @@ def test_amp_auto_black_list():
     Expectation: success.
     """
     ms.set_context(mode=ms.PYNATIVE_MODE)
-    input_data = Tensor(np.ones([1, 1]), dtype=ms.float32)
+    input_data = Tensor(np.ones([1, 1]), dtype=ms.float16)
     # test with net
     net = LogNet()
     net = auto_mixed_precision(net, "auto")
