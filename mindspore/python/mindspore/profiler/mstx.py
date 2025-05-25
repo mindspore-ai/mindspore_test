@@ -78,6 +78,7 @@ class Mstx:
             ...     model = ms.train.Model(net, loss, optimizer)
             ...     # Add marker before training
             ...     mstx.mark("train start", stream)
+            ...     mstx.mark("train start", stream, "domain_name")
             ...     model.train(1, data)
             ...     # Add marker after training
             ...     mstx.mark("train end", stream)
@@ -172,9 +173,11 @@ class Mstx:
             ...     model = ms.train.Model(net, loss, optimizer)
             ...     # Start profiling range
             ...     range_id = mstx.range_start("training process", stream)
+            ...     range_id2 = mstx.range_start("training process", stream, "domain_name")
             ...     model.train(1, data)
             ...     # End profiling range
             ...     mstx.range_end(range_id)
+            ...     mstx.range_end(range_id2, "domain_name")
             >>>
             >>> if __name__ == '__main__':
             ...     # Note: mstx only supports Ascend device and cannot be used in mindspore.nn.Cell.construct
@@ -236,9 +239,9 @@ class Mstx:
 
         Examples:
             >>> # Please refer to the example in range_start
-            >>> # range_id = mstx.range_start("training process", stream)
+            >>> # range_id = mstx.range_start("training process", stream, "domain_name")
             >>> # model.train(1, data)
-            >>> # mstx.range_end(range_id)
+            >>> # mstx.range_end(range_id, "domain_name")
         """
         if not Mstx.enable or range_id == 0:
             return

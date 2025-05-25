@@ -257,6 +257,7 @@ mstxMemHeapHandle_t MstxImpl::MemHeapRegisterImpl(mstxDomainHandle_t domain, mst
     return nullptr;
   }
   return CALL_MSTX_API(mstxMemHeapRegister, domain, desc);
+}
 
 void MstxImpl::SetDomainImpl(const std::vector<std::string> &domainInclude,
                              const std::vector<std::string> &domainExclude) {
