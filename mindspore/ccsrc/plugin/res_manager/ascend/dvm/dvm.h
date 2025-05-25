@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ enum DType {
   kBFloat16,
   kFloat32,
   kInt32,
+  kInt64,
   kTypeEnd,
 };
 
@@ -43,6 +44,13 @@ enum UnaryOpType {
   kCeil,
   kTrunc,
   kUnaryOpEnd,
+};
+
+enum GroupType {
+  kSplit_M = 0,
+  kSplit_N,
+  kSplit_K,
+  kGroupTypeEnd,
 };
 
 enum BinaryOpType {
@@ -74,6 +82,7 @@ enum KernelType {
   kDynShape,
   kStaticParallel,
   kStaticMix,
+  kDynMix,
   kStaticStages,
   kEager,
   kKernelTypelEnd,
@@ -182,9 +191,14 @@ class Kernel {
   NDObject *Reshape(NDObject *input, ShapeRef *shape);
   NDObject *Copy(NDObject *input);
 
+  template <typename T>
+  NDObject *OneHot(NDObject *indices, ShapeRef *depth, int axis, T on_value, T off_value);
+
   NDObject *ElemAny(NDObject *input);
 
   NDObject *MatMul(NDObject *lhs, NDObject *rhs, bool trans_a, bool trans_b, NDObject *bias);
+  NDObject *GroupedMatMul(NDObject *lhs, NDObject *rhs, bool trans_a, bool trans_b, NDObject *bias,
+                          NDObject *group_list, GroupType group_type);
 
   // collective communication
   NDObject *AllReduce(NDObject *input, const Comm *comm);

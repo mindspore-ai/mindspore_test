@@ -22,6 +22,7 @@
 #include "common/graph_optimizer_test_framework.h"
 #include "pre_activate/common/pattern_to_pattern_pass_utils.h"
 #include "backend/common/graph_kernel/transpose_matmul_fusion.h"
+#include "backend/common/graph_kernel/convert_input_and_attr.h"
 
 namespace mindspore::graphkernel::test {
 struct TestParams {
@@ -59,7 +60,8 @@ TEST_P(TestTransposeMatMulFusion, test_transpose_matmul_fusion) {
   c.SetOutput(matmul);
 
   // run pass for ir transformation
-  RunPass(c.GetGraph(), {std::make_shared<TransposeMatmulFusion>()});
+  RunPass(c.GetGraph(), {std::make_shared<ConvertFrontEndToGraphKernel>(), std::make_shared<TransposeMatmulFusion>(),
+                         std::make_shared<ConvertGraphKernelToFrontEnd>()});
   opt::CheckPattern checker;
   checker.src_pattern_.AddVar("x1").AddVar("x2").AddVar("trans_a").AddVar("trans_b").AddCNode(
     param.op_name, {std::make_shared<Primitive>(param.op_name), "x1", "x2", "trans_a", "trans_b"});

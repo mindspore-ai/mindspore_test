@@ -36,6 +36,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
 
 namespace mindspore::graphkernel {
 namespace {
@@ -253,9 +254,13 @@ bool WhiteOpsFilter(const AnfNodePtr &node) {
     return true;
   }
   auto sub_graph = GetCNodeFuncGraph(node);
+  if (common::AnfAlgo::IsDynamicShape(node)) {
+    return false;
+  }
   auto nodes = TopoSort(sub_graph->get_return());
   auto iter = std::find_if(nodes.begin(), nodes.end(), [](const AnfNodePtr &node) {
-    return IsPrimitiveCNode(node, prim::kPrimBatchMatMul) || IsPrimitiveCNode(node, prim::kPrimMatMul);
+    return IsPrimitiveCNode(node, prim::kPrimBatchMatMul) || IsPrimitiveCNode(node, prim::kPrimMatMul) ||
+           IsPrimitiveCNode(node, prim::kPrimGroupedMatmul);
   });
   return iter == nodes.end();
 }
