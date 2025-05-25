@@ -55,6 +55,7 @@ from mindspore.profiler.analysis.viewer.ms_minddata_viewer import (
     MindDataPipelineRawViewer,
     MindDataPiplineSummaryViewer,
 )
+from mindspore.profiler.analysis.viewer.ms_operator_details_viewer import MsOperatorDetailsViewer
 from mindspore.profiler.common.util import print_msg_with_pid
 from mindspore.profiler.common.log import ProfilerLogger
 from mindspore.profiler.mstx import Mstx
@@ -274,6 +275,7 @@ class NPUProfilerAnalysis:
         task_mgr = TaskManager()
         activities = kwargs.get("activities", [])
         export_type = kwargs.get("export_type", [])
+        record_shapes = kwargs.get("record_shapes", False)
         enable_data_process = kwargs.get("data_process", False)
 
         # CANN flow parser
@@ -302,6 +304,12 @@ class NPUProfilerAnalysis:
                     MsDatasetViewer(**kwargs).save
                 )
             )
+            if record_shapes:
+                cann_flow_parsers.append(
+                    FrameworkCannRelationParser(**kwargs).register_post_hook(
+                        MsOperatorDetailsViewer(**kwargs).save
+                    )
+                )
 
         if ProfilerActivity.NPU.value in activities:
             cann_flow_parsers.append(

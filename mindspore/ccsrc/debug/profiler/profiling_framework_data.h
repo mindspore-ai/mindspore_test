@@ -38,6 +38,8 @@ using mindspore::runtime::ProfilerData;
 class PROFILER_EXPORT ProfilingFrameworkData {
  public:
   static void RecordHostProfile(std::shared_ptr<ProfilerData> data);
+  static void RecordShapesProfile(const std::string &op_name, const std::vector<std::vector<int64_t>> &input_shapes,
+                                  const std::vector<std::string> &input_types);
 
   inline static std::map<std::string, uint64_t> kernel_launch_begin_;
   inline static int32_t Device_Id{0};

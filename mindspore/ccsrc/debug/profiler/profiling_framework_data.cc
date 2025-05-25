@@ -20,6 +20,7 @@
 #include <utility>
 #include <algorithm>
 #include <mutex>
+#include <numeric>
 #include "debug/profiler/profiling.h"
 #include "debug/profiler/profiler.h"
 
@@ -42,9 +43,41 @@ void ProfilingFrameworkData::RecordHostProfile(std::shared_ptr<ProfilerData> dat
     data->op_full_name_, data->module_graph_, data->event_graph_, data->custom_info_);
   ProfilingDataDumper::GetInstance().Report(std::move(report));
 }
+
+void ProfilingFrameworkData::RecordShapesProfile(const std::string &op_name,
+                                                 const std::vector<std::vector<int64_t>> &input_shapes,
+                                                 const std::vector<std::string> &input_types) {
+  std::string input_shapes_str = "";
+  for (auto &shape_vector : input_shapes) {
+    for (auto &shape : shape_vector) {
+      input_shapes_str.append(std::to_string(shape)).append(",");
+    }
+    if (!input_shapes_str.empty() && input_shapes_str.back() == ',') {
+      input_shapes_str.pop_back();
+    }
+    input_shapes_str.append(";");
+  }
+  std::string input_type_str = std::accumulate(input_types.begin(), input_types.end(), std::string{},
+                                               [](const std::string &a, const std::string &b) { return a + b + ';'; });
+  if (!input_shapes_str.empty()) {
+    input_shapes_str.pop_back();
+  }
+  if (!input_type_str.empty()) {
+    input_type_str.pop_back();
+  }
+  std::unique_ptr<RecordShapesData> report =
+    std::make_unique<RecordShapesData>(ProfilingFrameworkData::Device_Id, op_name, input_shapes_str, input_type_str);
+  ProfilingDataDumper::GetInstance().Report(std::move(report));
+}
 #else
 void ProfilingFrameworkData::RecordHostProfile(std::shared_ptr<ProfilerData> data) {
-  MS_LOG(INTERNAL_EXCEPTION) << "profiler not support cpu windows.";
+  MS_LOG(INTERNAL_EXCEPTION) << "host profiler not support cpu windows.";
+}
+
+void ProfilingFrameworkData::RecordShapesProfile(const std::string &op_name,
+                                                 const std::vector<std::vector<int64_t>> &input_shapes,
+                                                 const std::vector<std::string> &input_types) {
+  MS_LOG(INTERNAL_EXCEPTION) << "shapes profiler not support cpu windows.";
 }
 #endif
 }  // namespace ascend

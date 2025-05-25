@@ -110,6 +110,7 @@ class PROFILER_EXPORT Profiler {
   virtual void MstxMark(const std::string &message, void *stream = nullptr) {}
   virtual int MstxRangeStart(const std::string &message, void *stream = nullptr) { return 0; }
   virtual void MstxRangeEnd(int range_id) {}
+  virtual bool EnableRecordShapes() { return false; }
   void RecordOneStepStartEndInfo();
   bool GetEnableFlag() const { return enable_flag_; }
   void EnableOpTime() { op_time_ = true; }

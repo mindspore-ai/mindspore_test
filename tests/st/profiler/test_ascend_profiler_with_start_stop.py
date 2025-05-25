@@ -16,7 +16,6 @@
 import glob
 import os
 import tempfile
-
 import numpy as np
 
 from mindspore import Tensor, context
@@ -58,6 +57,12 @@ def test_dynamic_start_stop_kbk_profiler():
             "kernel_details.csv"
         )
         FileChecker.assert_csv_no_header(kernel_details_path_step, "Step ID")
+        operator_details_path_step = os.path.join(
+            glob.glob(f"{tmpdir}/*_ascend_ms")[0],
+            "ASCEND_PROFILER_OUTPUT",
+            "operator_details.csv"
+        )
+        FileChecker.check_csv_items(operator_details_path_step, {"Name": 'Add', "Input Shapes": '1,3,3,4;1,3,3,4'})
         # Check profiler.log
         profiler_log_paths = glob.glob(f"{tmpdir}/*_ascend_ms/"
                                        f"logs/profiler_*.log")
@@ -116,6 +121,12 @@ def test_dynamic_start_stop_py_native_profiler():
             "kernel_details.csv"
         )
         FileChecker.assert_csv_no_header(kernel_details_path_step, "Step ID")
+        operator_details_path_step = os.path.join(
+            glob.glob(f"{tmpdir}/*_ascend_ms")[0],
+            "ASCEND_PROFILER_OUTPUT",
+            "operator_details.csv"
+        )
+        FileChecker.check_csv_items(operator_details_path_step, {"Name": 'Add', "Input Shapes": '1,3,3,4;1,3,3,4'})
         # Check profiler.log
         profiler_log_paths = glob.glob(f"{tmpdir}/*_ascend_ms/"
                                        f"logs/profiler_*.log")
@@ -132,6 +143,7 @@ def _dynamic_start_stop_train_profiler(tmpdir, add, context_mode, jit_level=None
                         data_process=False,
                         profile_framework="time",
                         l2_cache=True,
+                        record_shapes=True,
                         output_path=tmpdir)
     train(add)
     profiler.analyse()

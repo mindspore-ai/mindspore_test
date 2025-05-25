@@ -139,6 +139,21 @@ class PYBOOST_API OpRunner : public std::enable_shared_from_this<OpRunner> {
 
   template <typename... Args>
   void ProfileTrackerInput(const Args &... args) {
+    if (MS_UNLIKELY(mindspore::runtime::ProfilerAnalyzer::GetInstance().profiler_enable())) {
+      static auto ascend_profiler = mindspore::profiler::Profiler::GetInstance(kAscendDevice);
+      if (ascend_profiler != nullptr && ascend_profiler->EnableRecordShapes()) {
+        std::vector<tensor::TensorPtr> tensors;
+        (CollectTrackerTensor(args, &tensors), ...);
+        std::vector<ShapeVector> input_shapes;
+        std::vector<std::string> input_types;
+        for (const auto &tensor : tensors) {
+          input_shapes.emplace_back(tensor->shape_c());
+          input_types.emplace_back(tensor->Dtype()->ToString());
+        }
+        mindspore::runtime::ProfilerAnalyzer::GetInstance().RecordShapesData(primitive_->name(), input_shapes,
+                                                                             input_types);
+      }
+    }
     if (MS_LIKELY(skip_tracker_)) {
       return;
     }

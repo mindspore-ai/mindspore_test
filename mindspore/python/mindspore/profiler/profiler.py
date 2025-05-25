@@ -730,6 +730,9 @@ class Profile:
               The duration of the operator is the difference between the two timestamps.
             - False: The asynchronous way. The duration of the operator is that of sending from the CPU to the GPU.
               This method can reduce the impact of adding profiler on overall training time.
+        record_shapes (bool, optional): (Ascend only) Whether to collect operator input tensor shapes data, collect
+            when ``True`` . When using this parameter, `activities` must include ``ProfilerActivity.CPU``.
+            Default: ``False``.
         experimental_config (_ExperimentalConfig, optional): expandable parameters can be configured in this
               configuration item. For details, see :class:`mindspore.profiler._ExperimentalConfig` .
     Raises:
@@ -805,6 +808,7 @@ class Profile:
             hbm_ddr: bool = False,
             pcie: bool = False,
             sync_enable: bool = True,
+            record_shapes: bool = False,
             schedule: Schedule = None,
             on_trace_ready: Optional[Callable[..., Any]] = None,
             experimental_config: Optional[_ExperimentalConfig] = None,
@@ -818,6 +822,7 @@ class Profile:
         self._hbm_ddr = hbm_ddr
         self._pcie = pcie
         self._sync_enable = sync_enable
+        self._record_shapes = record_shapes
         self._schedule = schedule
         self._on_trace_ready = on_trace_ready
         self._experimental_config = experimental_config or _ExperimentalConfig()
@@ -834,6 +839,7 @@ class Profile:
             hbm_ddr=self._hbm_ddr,
             pcie=self._pcie,
             sync_enable=self._sync_enable,
+            record_shapes=self._record_shapes,
             data_simplification=self._experimental_config.data_simplification,
             mstx=self._experimental_config.mstx,
             export_type=self._experimental_config.export_type,

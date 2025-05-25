@@ -305,6 +305,11 @@ class ProfilerContext:
         self._profiler_params_mgr.data_simplification = value
 
     @property
+    def record_shapes(self) -> bool:
+        """Get the record shapes from ProfilerParameters."""
+        return self._profiler_params_mgr.record_shapes
+
+    @property
     def device_target(self) -> str:
         """Get device target."""
         return self._device_target

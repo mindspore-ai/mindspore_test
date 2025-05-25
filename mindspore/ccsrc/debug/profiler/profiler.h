@@ -28,6 +28,7 @@
 #include <thread>
 #include <utility>
 #include <vector>
+#include <tuple>
 #include "nlohmann/json.hpp"
 #include "utils/ms_utils.h"
 #include "utils/hash_map.h"
@@ -35,6 +36,7 @@
 #include "utils/convert_utils_base.h"
 #include "include/common/visible.h"
 #include "async/spinlock.h"
+#include "debug/profiler/profiling.h"
 
 namespace mindspore {
 namespace runtime {
@@ -246,16 +248,32 @@ static const std::map<ProfilerEvent, std::string> kProfilerEventString = {
   } while (0);
 
 // Match PROFILER_START to use.
-#define PROFILER_END(start_time, module, event, op_name, is_inner_event)                                       \
-  do {                                                                                                         \
-    if (MS_UNLIKELY(mindspore::runtime::ProfilerAnalyzer::GetInstance().profiler_enable())) {                  \
-      auto end_time = mindspore::runtime::ProfilerAnalyzer::GetInstance().GetTimeStamp();                      \
-      auto brief_name = mindspore::runtime::ProfilerAnalyzer::GetInstance().GetBriefName(op_name);             \
-      mindspore::runtime::ProfilerAnalyzer::GetInstance().RecordData(                                          \
-        std::make_shared<mindspore::runtime::ProfilerData>(module, event, op_name, brief_name, is_inner_event, \
-                                                           start_time, end_time));                             \
-    }                                                                                                          \
-  } while (0);
+#define PROFILER_END(start_time, module, event, op_name, is_inner_event, ...)                                          \
+  [&](const auto &... args) {                                                                                          \
+    if (MS_UNLIKELY(mindspore::runtime::ProfilerAnalyzer::GetInstance().profiler_enable())) {                          \
+      auto end_time = mindspore::runtime::ProfilerAnalyzer::GetInstance().GetTimeStamp();                              \
+      auto brief_name = mindspore::runtime::ProfilerAnalyzer::GetInstance().GetBriefName(op_name);                     \
+      if constexpr (sizeof...(args) > 0) {                                                                             \
+        static auto ascend_profiler = mindspore::profiler::Profiler::GetInstance(kAscendDevice);                       \
+        if (ascend_profiler != nullptr && ascend_profiler->EnableRecordShapes()) {                                     \
+          auto tuple_params = std::forward_as_tuple(args...);                                                          \
+          auto input_tensor = std::get<0>(tuple_params); /* std::vector<KernelTensor *> */                             \
+          std::string input_shape = "";                                                                                \
+          std::string input_type = "";                                                                                 \
+          std::vector<ShapeVector> input_shapes;                                                                       \
+          std::vector<std::string> input_types;                                                                        \
+          for (auto &tensor : input_tensor) {                                                                          \
+            input_shapes.emplace_back(tensor->host_shape());                                                           \
+            input_types.emplace_back(tensor->GetType()->ToString());                                                   \
+          }                                                                                                            \
+          mindspore::runtime::ProfilerAnalyzer::GetInstance().RecordShapesData(brief_name, input_shapes, input_types); \
+        }                                                                                                              \
+      }                                                                                                                \
+      mindspore::runtime::ProfilerAnalyzer::GetInstance().RecordData(                                                  \
+        std::make_shared<mindspore::runtime::ProfilerData>(module, event, op_name, brief_name, is_inner_event,         \
+                                                           start_time, end_time));                                     \
+    }                                                                                                                  \
+  }(__VA_ARGS__)
 
 // Match PROFILER_START to use.
 #define PROFILER_STAGE_END(start_time, stage)                                             \
@@ -514,6 +532,8 @@ class PROFILER_EXPORT ProfilerAnalyzer {
   bool profiler_enable() const;
   bool enable_by_env() const { return profiler_enable_; }
   void RecordData(const ProfilerDataPtr &data) noexcept;
+  void RecordShapesData(const std::string &op_name, const std::vector<std::vector<int64_t>> &input_shapes,
+                        const std::vector<std::string> &input_types) noexcept;
   void RecordFlowData(uint64_t flow_id);
   uint64_t GetTimeStamp() const noexcept;
   std::string GetBriefName(const std::string &scope_name) const;
