@@ -46,6 +46,7 @@
 #include "utils/temp_file_manager.h"
 #include "utils/system/env.h"
 #include "ir/quantization_param.h"
+#include "ir/dtype/op_dtype.h"
 
 // brief mindspore namespace.
 //
@@ -1333,6 +1334,10 @@ class MS_CORE_API Tensor : public MetaTensor {
   /// \param[in] device_info The tensor's device info.
   void set_device_info(const DeviceInfo &device_info) { device_info_ = std::make_unique<DeviceInfo>(device_info); }
 
+  ops::OP_DTYPE source_type() const { return source_type_; }
+
+  void set_source_type(ops::OP_DTYPE source_type) { source_type_ = source_type; }
+
   /// \brief Set tensor's device info.
   ///
   /// \param[in] format The input format.
@@ -1371,6 +1376,7 @@ class MS_CORE_API Tensor : public MetaTensor {
   std::vector<std::shared_ptr<QuantizationParam>> quant_params_;
 
   // pointer size 8
+  ops::OP_DTYPE source_type_{ops::OP_DTYPE::DT_BEGIN};
   mutable std::unique_ptr<DeviceInfo> device_info_;
   PinnedMemRegister *pin_mem_register_{nullptr};
 
