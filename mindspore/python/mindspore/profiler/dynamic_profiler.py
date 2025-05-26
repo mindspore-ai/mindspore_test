@@ -273,10 +273,7 @@ class DynamicProfilerMonitorBase(Callback):
         start_step = args.start_step
         stop_step = args.stop_step
 
-        if start_step == -1 or stop_step == -1:
-            return
-
-        if self._step_num < start_step:
+        if not self._is_valid_start_stop_step(self._step_num, start_step, stop_step):
             return
 
         if self._start_step != start_step or self._stop_step != stop_step:
@@ -320,6 +317,21 @@ class DynamicProfilerMonitorBase(Callback):
             }
 
             self._profiler = Profiler(**profiler_config)
+
+    def _is_valid_start_stop_step(self, step_num, start_step, stop_step):
+        """Verify whether start_step and stop_step are valid parameters."""
+        if start_step < 0 or stop_step < 0:
+            return False
+
+        if step_num < start_step:
+            return False
+
+        if step_num > stop_step != self._stop_step:
+            logger.warning("stop_step must be greater than step_num, "
+                           "but get start_step = %d, stop_step = %d, step_num = %d", start_step, stop_step, step_num)
+            return False
+
+        return True
 
     @no_exception_func()
     def _call_dyno_monitor(self, dyno_args):
@@ -378,8 +390,9 @@ class DynamicProfilerMonitorBase(Callback):
         """Init config json file"""
         if self._rank_id == 0:
             if not os.path.exists(self._cfg_json_path):
-                logger.warning("cfg_path is not exist, create default cfg json")
-                FileManager.create_json_file(self._cfg_path, DynamicProfilerConfigContext.vars,
+                logger.info("cfg_path is not exist, create default cfg json")
+                default_dy_config_context = DynamicProfilerConfigContext({})
+                FileManager.create_json_file(self._cfg_path, default_dy_config_context.vars,
                                              "profiler_config.json", indent=4)
         else:
             logger.info("rank_id is not 0, skip init cfg json")
@@ -591,6 +604,19 @@ if sys.version_info >= (3, 8):
                 - prof_path (str, optional) - Output data path of the dynamic profiler. It is the same as the interface
                   parameter `output_path`. When both are set, `prof_path` takes effect. Default value:
                   ``"./dyn_profile_data"`` .
+                - sys_io (bool, optional) - Set whether to collect NIC and RoCE data. Default value: ``False`` ,
+                  indicating that these data are not collected.
+                - sys_interconnection (bool, optional) - Set whether to collect system interconnection data,
+                  including aggregate collective communication statistics (HCCS), PCIe data, and inter-chip transmission
+                  bandwidth information. Default value: ``False`` , indicating that these data are not collected.
+                - host_sys (list, optional) - Collect the data of system class calls, storage classes and cpu usage
+                  rate on the host side, and pass in the list type. It supports passing in one or more of ``"cpu"``,
+                  ``"mem"``, ``"disk"``, ``"network"`` and ``"osrt"``. Among them, ``"cpu"`` represents the cpu
+                  utilization at the process level, ``"mem"`` represents the memory utilization at the process level,
+                  ``"disk"`` represents the disk I/O utilization at the process level, and ``"network"`` represents the
+                  network I/O utilization at the system level. ``"osrt"`` represents system-level syscall and
+                  pthreadcall. Default value: ``[]``, indicating that system class data on the host side is
+                  not collected.
 
             output_path (str, optional): (Ascend only) Output data path. Default: ``"./dyn_profile_data"`` .
             poll_interval (int, optional): (Ascend only) The polling period of the monitoring process, in seconds.

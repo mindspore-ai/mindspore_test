@@ -31,7 +31,8 @@ from mindspore.profiler.common.constant import (
     ProfilerLevel,
     ProfilerActivity,
     AicoreMetrics,
-    ExportType
+    ExportType,
+    HostSystem
 )
 from mindspore.profiler.common.profiler_output_path import ProfilerOutputPath
 from mindspore.profiler.common.profiler_parameters import ProfilerParameters
@@ -133,6 +134,8 @@ class ProfilerContext:
                     value = [ProfilerActivity(activity) for activity in profiler_parameters[param]]
                 elif param == "export_type":
                     value = [ExportType(export_type) for export_type in profiler_parameters[param]]
+                elif param == "host_sys":
+                    value = [HostSystem(host_sys) for host_sys in profiler_parameters[param]]
                 elif param == "schedule":
                     continue
                 else:

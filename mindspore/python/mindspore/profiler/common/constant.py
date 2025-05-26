@@ -217,3 +217,12 @@ class CannLibName:
 class DynoMode:
     """dyno mode"""
     DYNO_DAEMON = "KINETO_USE_DAEMON"
+
+
+class HostSystem(Enum):
+    """host system"""
+    CPU = "cpu"
+    MEM = "mem"
+    DISK = "disk"
+    NETWORK = "network"
+    OSRT = "osrt"

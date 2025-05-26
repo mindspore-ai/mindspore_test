@@ -42,6 +42,7 @@ struct AscendProfilerConfig {
   bool pcie{false};
   bool sysIo{false};
   bool sysInterconnection{false};
+  std::string hostSys;
   bool withStack{false};
   bool mstx{false};
   bool parallelStrategy{false};
@@ -57,10 +58,10 @@ struct AscendProfilerConfig {
 
   AscendProfilerConfig() = default;
   AscendProfilerConfig(uint32_t deviceId, uint32_t rankId, bool profileMemory, bool l2Cache, bool hbmDdr, bool sysIo,
-                       bool sysInterconnection, bool withStack, bool mstx, bool parallelStrategy, bool pcie,
-                       bool recordShapes, const std::string &profilerLevel, const std::string &aicoreMetrics,
-                       const std::string &outputPath, const std::string &frameworkDataPath,
-                       const std::vector<std::string> &mstxDomainInclude,
+                       bool sysInterconnection, const std::string &hostSys, bool withStack, bool mstx,
+                       bool parallelStrategy, bool pcie, bool recordShapes, const std::string &profilerLevel,
+                       const std::string &aicoreMetrics, const std::string &outputPath,
+                       const std::string &frameworkDataPath, const std::vector<std::string> &mstxDomainInclude,
                        const std::vector<std::string> &mstxDomainExclude)
       : deviceId(deviceId),
         rankId(rankId),
@@ -70,6 +71,7 @@ struct AscendProfilerConfig {
         pcie(pcie),
         sysIo(sysIo),
         sysInterconnection(sysInterconnection),
+        hostSys(hostSys),
         withStack(withStack),
         mstx(mstx),
         parallelStrategy(parallelStrategy),
@@ -90,6 +92,7 @@ struct AscendProfilerConfig {
     pcie = false;
     sysIo = false;
     sysInterconnection = false;
+    hostSys.clear();
     withStack = false;
     mstx = false;
     parallelStrategy = false;

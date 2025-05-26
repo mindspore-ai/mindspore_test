@@ -28,6 +28,7 @@ __all__ = [
     "ProfilerActivity",
     "AicoreMetrics",
     "ExportType",
+    "HostSystem",
     "DynamicProfilerMonitor",
     "mstx",
     "_ExperimentalConfig",
@@ -39,7 +40,7 @@ from mindspore.profiler.profiler import Profiler
 from mindspore.profiler.profiler import tensorboard_trace_handler
 from mindspore.profiler.schedule import Schedule as schedule
 from mindspore.profiler.envprofiler import EnvProfiler
-from mindspore.profiler.common.constant import ProfilerLevel, ProfilerActivity, AicoreMetrics, ExportType
+from mindspore.profiler.common.constant import ProfilerLevel, ProfilerActivity, AicoreMetrics, ExportType, HostSystem
 from mindspore.profiler.dynamic_profiler import DynamicProfilerMonitor
 from mindspore.profiler.experimental_config import _ExperimentalConfig
 from mindspore.profiler.profiler import Profile as profile

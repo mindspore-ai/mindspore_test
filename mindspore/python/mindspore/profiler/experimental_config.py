@@ -14,9 +14,9 @@
 # ============================================================================
 """Experimental config file."""
 
-from mindspore.profiler.common.constant import ProfilerLevel, AicoreMetrics
-
 __all__ = ["_ExperimentalConfig"]
+
+from mindspore.profiler.common.constant import ProfilerLevel, AicoreMetrics
 
 
 class _ExperimentalConfig:
@@ -82,6 +82,14 @@ class _ExperimentalConfig:
         mstx_domain_exclude (list, optional) -(Ascend only) Set the set of domain names that are not enabled when the
                   mstx switch is turned on. The name must be of str type. Default value: ``[]``, indicating that this
                   parameter is not used to control the domain.
+        host_sys (list, optional): Collect the data of system call classes on the host side.
+            Default: ``[]``.
+
+            - HostSystem.CPU: Collect the CPU utilization at the process level.
+            - HostSystem.MEM: Collect the memory utilization at the process level.
+            - HostSystem.DISK: Collect the disk I/O utilization at the process level.
+            - HostSystem.NETWORK: Collect the network I/O utilization at the system level.
+            - HostSystem.OSRT: Collect system-level syscall and pthreadcall.
 
     Raises:
         RuntimeError: When the version of CANN does not match the version of MindSpore,
@@ -154,7 +162,8 @@ class _ExperimentalConfig:
                  mstx_domain_include: list = None,
                  mstx_domain_exclude: list = None,
                  sys_io: bool = False,
-                 sys_interconnection: bool = False
+                 sys_interconnection: bool = False,
+                 host_sys: list = None
                  ):
         self._profiler_level = profiler_level
         self._aic_metrics = aic_metrics
@@ -166,29 +175,36 @@ class _ExperimentalConfig:
         self._mstx_domain_exclude = mstx_domain_exclude
         self._sys_io = sys_io
         self._sys_interconnection = sys_interconnection
+        self._host_sys = host_sys
 
     @property
     def profiler_level(self) -> ProfilerLevel:
+        """Get profiler_level."""
         return self._profiler_level
 
     @property
     def aic_metrics(self) -> AicoreMetrics:
+        """Get aic_metrics."""
         return self._aic_metrics
 
     @property
     def l2_cache(self) -> bool:
+        """Get l2_cache."""
         return self._l2_cache
 
     @property
     def mstx(self) -> bool:
+        """Get mstx."""
         return self._mstx
 
     @property
     def data_simplification(self) -> bool:
+        """Get data_simplification."""
         return self._data_simplification
 
     @property
     def export_type(self) -> list:
+        """Get export_type."""
         return self._export_type
 
     @property
@@ -206,6 +222,11 @@ class _ExperimentalConfig:
     @property
     def sys_interconnection(self) -> bool:
         return self._sys_interconnection
+
+    @property
+    def host_sys(self) -> list:
+        """Get host_sys."""
+        return self._host_sys
 
     # Setters
     @profiler_level.setter
@@ -247,3 +268,7 @@ class _ExperimentalConfig:
     @sys_interconnection.setter
     def sys_interconnection(self, value: bool):
         self._sys_interconnection = value
+
+    @host_sys.setter
+    def host_sys(self, value: list):
+        self._host_sys = value
