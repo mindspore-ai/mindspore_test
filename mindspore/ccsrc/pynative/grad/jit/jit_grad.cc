@@ -571,7 +571,11 @@ bool Jit::GetJitGradGraph(const pipeline::ResourcePtr &resource, const std::stri
   auto primal_fg = BasicClone(jit_forward_graph);
   graph_executor->SetJitPrimalFuncGraph(primal_fg, graph_phase_);
   bool is_control_flow = PyNativeAlgo::Common::IsControlFlowGraph(jit_forward_graph);
-  auto jit_output_has_dict = JitOutputHasDict(jit_forward_graph->output()->abstract());
+  const auto &output = jit_forward_graph->output();
+  MS_EXCEPTION_IF_NULL(output);
+  const auto &output_abs = output->abstract();
+  MS_EXCEPTION_IF_NULL(output_abs);
+  auto jit_output_has_dict = JitOutputHasDict(output_abs);
 
   // Get top cell recompute flag
   py::object input = resource->source_input();
