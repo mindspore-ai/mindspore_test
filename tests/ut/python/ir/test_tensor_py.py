@@ -14,6 +14,7 @@
 # ============================================================================
 """test tensor py"""
 import numpy as np
+import math
 
 import mindspore as ms
 import mindspore.common.initializer as init
@@ -146,6 +147,51 @@ def test_float8():
     a = ms.Tensor(np.ones((2, 3)), ms.hifloat8)
     assert a.shape == (2, 3)
     assert a.dtype == ms.hifloat8
+
+
+def test_float8_value():
+    """
+    Feature: Test create a tensor with type of float8.
+    Description: Check shape/type/value of tensor with type of float8.
+    Expectation: success.
+    """
+    def get_tensor_value(tensor):
+        repr_str = repr(tensor)
+        value_str = repr_str.split('value=')[1].strip().split(")")[0].strip()
+        return float(value_str)
+
+    max_val = ms.Tensor(57344, ms.float8_e5m2)
+    assert math.isclose(get_tensor_value(max_val), 57344)
+    inf_val = ms.Tensor(65535, ms.float8_e5m2)
+    assert math.isinf(get_tensor_value(inf_val))
+    nan_val = ms.Tensor(math.nan, ms.float8_e5m2)
+    assert math.isnan(get_tensor_value(nan_val))
+    min_val = ms.Tensor(math.pow(2, -16), ms.float8_e5m2)
+    assert not get_tensor_value(min_val).is_integer()
+    zero_val = ms.Tensor(math.pow(2, -17), ms.float8_e5m2)
+    assert get_tensor_value(zero_val).is_integer()
+
+    max_val = ms.Tensor(448, ms.float8_e4m3fn)
+    assert math.isclose(get_tensor_value(max_val), 448)
+    inf_val = ms.Tensor(512, ms.float8_e4m3fn)
+    assert math.isnan(get_tensor_value(inf_val))
+    nan_val = ms.Tensor(math.nan, ms.float8_e4m3fn)
+    assert math.isnan(get_tensor_value(nan_val))
+    min_val = ms.Tensor(math.pow(2, -9), ms.float8_e4m3fn)
+    assert not get_tensor_value(min_val).is_integer()
+    zero_val = ms.Tensor(math.pow(2, -10), ms.float8_e4m3fn)
+    assert get_tensor_value(zero_val).is_integer()
+
+    max_val = ms.Tensor(32768, ms.hifloat8)
+    assert math.isclose(get_tensor_value(max_val), 32768)
+    inf_val = ms.Tensor(65535, ms.hifloat8)
+    assert math.isinf(get_tensor_value(inf_val))
+    nan_val = ms.Tensor(math.nan, ms.hifloat8)
+    assert math.isnan(get_tensor_value(nan_val))
+    min_val = ms.Tensor(math.pow(2, -22), ms.hifloat8)
+    assert not get_tensor_value(min_val).is_integer()
+    zero_val = ms.Tensor(math.pow(2, -23), ms.hifloat8)
+    assert get_tensor_value(zero_val).is_integer()
 
 
 def test_tensor_method_sub():

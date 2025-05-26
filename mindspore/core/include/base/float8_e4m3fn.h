@@ -131,8 +131,8 @@ class Float8_e4m3fn {
 
  private:
   static uint8_t FromFloat32(float f32) {
-    constexpr uint32_t magic = {120 << 23};
-    constexpr uint32_t e4m3max_value = (127 + 9) << 23;
+    constexpr uint32_t magic = {121 << 23};
+    constexpr uint32_t e4m3max_value = 1087 << 20;
     constexpr Union32 e4m3max{e4m3max_value};
     constexpr uint32_t denorm_magic_value = ((127 - 7) + (23 - 3) + 1) << 23;
     constexpr Union32 denorm_magic{denorm_magic_value};
