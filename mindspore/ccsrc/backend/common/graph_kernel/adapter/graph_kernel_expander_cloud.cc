@@ -199,28 +199,28 @@ const std::vector<OpWithLevel> expand_ops_with_level_dvm = {
   {kAscendDevice, OpLevel_0, prim::kPrimOnesLike},
   {kAscendDevice, OpLevel_0, prim::kPrimZerosLike},
   {kAscendDevice, OpLevel_0, prim::kPrimReduceMean},
-  {kAscendDevice, OpLevel_1, prim::kPrimLogSoftmaxGrad},  // will be split to multiple sub graphs because of ReduceSum
+  {kAscendDevice, OpLevel_2, prim::kPrimLogSoftmaxGrad},  // will be split to multiple sub graphs because of ReduceSum
   {kAscendDevice, OpLevel_0, prim::kPrimReLU},
   {kAscendDevice, OpLevel_0, prim::kPrimReluGrad},
   {kAscendDevice, OpLevel_0, prim::kPrimAssignAdd},
   {kAscendDevice, OpLevel_0, prim::kLambApplyOptimizerAssign},
   {kAscendDevice, OpLevel_0, prim::kLambApplyWeightAssign},
   {kAscendDevice, OpLevel_0, prim::kPrimAdamApplyOneWithDecay},
-  {kAscendDevice, OpLevel_1, prim::kPrimExpandDims},
-  {kAscendDevice, OpLevel_1, prim::kPrimSqueeze},
-  {kAscendDevice, OpLevel_1, prim::kPrimApplyMomentum},
+  {kAscendDevice, OpLevel_2, prim::kPrimExpandDims},
+  {kAscendDevice, OpLevel_2, prim::kPrimSqueeze},
+  {kAscendDevice, OpLevel_2, prim::kPrimApplyMomentum},
   {kAscendDevice, OpLevel_0, prim::kPrimRepeatInterleaveInt},
   {kAscendDevice, OpLevel_0, prim::kPrimHShrink},
   {kAscendDevice, OpLevel_0, prim::kPrimHSigmoid},
   {kAscendDevice, OpLevel_0, prim::kPrimHSwish},
-  {kAscendDevice, OpLevel_1, prim::kPrimBinaryCrossEntropy},  // will split to multiple sub graphs
+  {kAscendDevice, OpLevel_2, prim::kPrimBinaryCrossEntropy},  // will split to multiple sub graphs
   {kAscendDevice, OpLevel_0, prim::kPrimErf},
   {kAscendDevice, OpLevel_0, prim::kPrimTanh},
   {kAscendDevice, OpLevel_0, prim::kPrimCosh},
   {kAscendDevice, OpLevel_0, prim::kPrimSinh},
   {kAscendDevice, OpLevel_0, prim::kPrimClampScalar},
   {kAscendDevice, OpLevel_0, prim::kPrimDivMod},
-  {kAscendDevice, OpLevel_1, prim::kPrimBCEWithLogitsLoss},  // will split to multiple sub graphs
+  {kAscendDevice, OpLevel_2, prim::kPrimBCEWithLogitsLoss},  // will split to multiple sub graphs
   // mint ops
   {kAscendDevice, OpLevel_0, prim::kPrimAddExt},
   {kAscendDevice, OpLevel_0, prim::kPrimSubExt},
@@ -232,7 +232,7 @@ const std::vector<OpWithLevel> expand_ops_with_level_dvm = {
   {kAscendDevice, OpLevel_0, prim::kPrimSoftplusExt},
   {kAscendDevice, OpLevel_0, prim::kPrimSoftplusGradExt},
   {kAscendDevice, OpLevel_0, prim::kPrimLeakyReLUExt},
-  {kAscendDevice, OpLevel_1, prim::kSoftmaxGradExt},
+  {kAscendDevice, OpLevel_2, prim::kSoftmaxGradExt},
 };
 }  // namespace
 
@@ -280,6 +280,9 @@ bool GraphKernelExpanderCloud::CanExpand(const CNodePtr &node) const {
   }
   if (GkUtils::InplaceWithViewInputs(node)) {
     return false;
+  }
+  if (is_dvm) {
+    GkUtils::CheckOpLevel(node, expand_ops_with_level_dvm, OpLevel_1);
   }
   if (!common::AnfAlgo::IsDynamicShape(node)) {
     // for static cases, the node can be expanded if this is complex op

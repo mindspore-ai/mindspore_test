@@ -108,6 +108,12 @@ class GkUtils {
   static std::vector<PrimitivePtr> FilterExcludedOps(const std::vector<PrimitivePtr> &ops);
 
   /**
+   * @brief Check if the node to be fused level <= target_level, if not, print warning.
+   */
+  static void CheckOpLevel(const AnfNodePtr &node, const std::vector<OpWithLevel> &ops_with_level,
+                           unsigned int target_level);
+
+  /**
    * @brief Check whether graphkernel supports the node
    */
   static bool IsKeepBasicNode(const AnfNodePtr &node);

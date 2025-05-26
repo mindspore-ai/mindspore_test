@@ -20,6 +20,7 @@
 #include <memory>
 #include <sstream>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 
 #include "backend/common/graph_kernel/model/graph_builder.h"
@@ -167,6 +168,22 @@ std::vector<PrimitivePtr> GkUtils::FilterExcludedOps(const std::vector<Primitive
 #else
   return ops;
 #endif
+}
+
+void GkUtils::CheckOpLevel(const AnfNodePtr &node, const std::vector<OpWithLevel> &ops_with_level,
+                           unsigned int target_level) {
+  static std::unordered_set<std::string> checked_ops;
+  auto name = AnfUtils::GetCNodeName(node);
+  if (checked_ops.find(name) == checked_ops.end()) {
+    (void)checked_ops.insert(name);
+    auto iter =
+      std::find_if(ops_with_level.begin(), ops_with_level.end(), [&node, &target_level](const OpWithLevel &item) {
+        return IsPrimitiveCNode(node, std::get<kIndex2>(item)) && std::get<kIndex1>(item) <= target_level;
+      });
+    if (iter == ops_with_level.end()) {
+      MS_LOG(WARNING) << "For Graph Kernel fusion, [" << name << "] is an experimental op.";
+    }
+  }
 }
 
 bool GkUtils::IsKeepBasicNode(const AnfNodePtr &node) {
