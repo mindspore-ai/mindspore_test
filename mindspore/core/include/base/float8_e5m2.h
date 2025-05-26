@@ -129,7 +129,7 @@ class Float8_e5m2 {
     constexpr uint32_t magic = {113 << 23};
     constexpr uint32_t f32infty_value = 255 << 23;
     constexpr Union32 f32infty{f32infty_value};
-    constexpr uint32_t e5m2max_value = (127 + 15) << 23;
+    constexpr uint32_t e5m2max_value = (127 + 16) << 23;
     constexpr Union32 e5m2max{e5m2max_value};
     constexpr uint32_t denorm_magic_value = ((127 - 15) + (23 - 2) + 1) << 23;
     constexpr Union32 denorm_magic{denorm_magic_value};

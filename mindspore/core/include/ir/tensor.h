@@ -118,6 +118,9 @@ std::unique_ptr<T[]> NewData(const U *input, size_t size) {
   auto data = std::make_unique<T[]>(size);
   if constexpr (!std::is_same<T, U>::value &&
                 (std::is_same<T, float16>::value || std::is_same<U, float16>::value ||
+                 std::is_same<T, float8_e4m3fn>::value || std::is_same<U, float8_e4m3fn>::value ||
+                 std::is_same<T, float8_e5m2>::value || std::is_same<U, float8_e5m2>::value ||
+                 std::is_same<T, hifloat8>::value || std::is_same<U, hifloat8>::value ||
                  std::is_same<T, bfloat16>::value || std::is_same<U, bfloat16>::value ||
                  std::is_same<T, ComplexStorage<float>>::value || std::is_same<U, ComplexStorage<float>>::value ||
                  std::is_same<T, ComplexStorage<double>>::value || std::is_same<U, ComplexStorage<double>>::value)) {
@@ -196,6 +199,18 @@ std::unique_ptr<T[]> CopyData(const ShapeVector &shape, void *const data, TypeId
       auto buf = static_cast<double *>(data);
       return NewData<T>(buf, size);
     }
+    case kNumberTypeFloat8E4M3FN: {
+      auto buf = static_cast<float8_e4m3fn *>(data);
+      return NewData<T>(buf, size);
+    }
+    case kNumberTypeFloat8E5M2: {
+      auto buf = static_cast<float8_e5m2 *>(data);
+      return NewData<T>(buf, size);
+    }
+    case kNumberTypeHiFloat8: {
+      auto buf = static_cast<hifloat8 *>(data);
+      return NewData<T>(buf, size);
+    }
 #ifndef KERNEL_EXECUTOR_ANDROID
     case kNumberTypeBFloat16: {
       auto buf = static_cast<bfloat16 *>(data);
@@ -244,8 +259,9 @@ class TensorStringifier {
       std::is_same<T, int16_t>::value || std::is_same<T, int32_t>::value || std::is_same<T, int64_t>::value ||
       std::is_same<T, uint16_t>::value || std::is_same<T, uint32_t>::value || std::is_same<T, uint64_t>::value ||
       std::is_same<T, float16>::value || std::is_same<T, float>::value || std::is_same<T, double>::value ||
-      std::is_same<T, ComplexStorage<float>>::value || std::is_same<T, ComplexStorage<double>>::value ||
-      std::is_same<T, bfloat16>::value;
+      std::is_same<T, float8_e4m3fn>::value || std::is_same<T, float8_e5m2>::value ||
+      std::is_same<T, hifloat8>::value || std::is_same<T, ComplexStorage<float>>::value ||
+      std::is_same<T, ComplexStorage<double>>::value || std::is_same<T, bfloat16>::value;
     static_assert(valid, "Type is invalid");
     if (data_size_ == 0) {
       return "";
@@ -582,6 +598,12 @@ TensorDataPtr MakeTensorData(TypeId data_type, Args &&... args) {
       return std::make_shared<ImplClass<float>>(std::forward<Args>(args)...);
     case kNumberTypeFloat64:
       return std::make_shared<ImplClass<double>>(std::forward<Args>(args)...);
+    case kNumberTypeFloat8E4M3FN:
+      return std::make_shared<ImplClass<float8_e4m3fn>>(std::forward<Args>(args)...);
+    case kNumberTypeFloat8E5M2:
+      return std::make_shared<ImplClass<float8_e5m2>>(std::forward<Args>(args)...);
+    case kNumberTypeHiFloat8:
+      return std::make_shared<ImplClass<hifloat8>>(std::forward<Args>(args)...);
 #ifndef KERNEL_EXECUTOR_ANDROID
     case kNumberTypeBFloat16:
       return std::make_shared<ImplClass<bfloat16>>(std::forward<Args>(args)...);
