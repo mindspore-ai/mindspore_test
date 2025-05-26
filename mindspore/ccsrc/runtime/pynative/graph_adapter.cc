@@ -128,10 +128,9 @@ bool CopyTensorData(const tensor::TensorPtr &tensor, const device::DeviceAddress
   }
 
   // Copy data from host tensor to device.
-  auto host_tensor_size = LongToSize(tensor->DataNBytes());
+  auto host_tensor_size = tensor->DataNBytes();
   auto host_tensor_type = tensor->data_type();
-  if (!device_address->SyncHostToDevice(AnfAlgo::GetRuntimePaddingShape(node, 0), host_tensor_size, host_tensor_type,
-                                        kOpFormat_DEFAULT, tensor->data_ptr())) {
+  if (!AsyncCopy(device_address.get(), tensor->device_address().get(), device_address->stream_id())) {
     std::string error_info = "SyncHostToDevice failed, node name: " + node->fullname_with_scope() +
                              ", tensor size: " + std::to_string(host_tensor_size) +
                              ", tensor type: " + std::to_string(static_cast<int>(host_tensor_type)) +
@@ -148,16 +147,10 @@ device::DeviceAddressPtr HandleAddressForHeterogeneous(const tensor::TensorPtr &
   MS_EXCEPTION_IF_NULL(value_node);
   MS_EXCEPTION_IF_NULL(device_context);
   auto device_address = std::dynamic_pointer_cast<device::DeviceAddress>(tensor->device_address());
-  if (device_address == nullptr) {
-    MS_LOG(INFO) << "Forward output " << tensor->ToString() << " device address is null";
-    device_address = CreateValueNodeAddress(value_node, device_context);
-    if (!CopyTensorData(tensor, device_address, value_node, device_context)) {
-      MS_LOG(EXCEPTION) << "CopyTensorData failed, value_node " << value_node->DebugString();
-    }
-  }
+  MS_EXCEPTION_IF_NULL(device_address);
+
   MS_EXCEPTION_IF_NULL(device_address);
   if (device_address->GetDeviceType() != device_context->GetDeviceType()) {
-    tensor->data_sync();
     auto new_device_address = CreateValueNodeAddress(value_node, device_context);
     MS_EXCEPTION_IF_NULL(new_device_address);
     if (!CopyTensorData(tensor, new_device_address, value_node, device_context)) {
@@ -536,16 +529,17 @@ void GraphAdapter::SensTensorToDevice(const KernelGraphPtr &graph, const device:
         continue;
       }
       const auto &device_address = tensor->device_address();
-      if (device_address == nullptr) {
+      MS_EXCEPTION_IF_NULL(device_address);
+      if (device_address->GetDeviceType() != device_context->GetDeviceType()) {
         UpdateValueNodeAbstractFromTensor(value_node, tensor);
         auto node_address = CreateValueNodeAddress(value_node, device_context);
         MS_EXCEPTION_IF_NULL(node_address);
-        tensor->set_device_address(node_address);
         AnfAlgo::SetOutputAddr(node_address, 0, value_node);
         MS_LOG(DEBUG) << "Start to copy sens tensor to device";
         if (!CopyTensorData(tensor, node_address, value_node, device_context)) {
           MS_LOG(EXCEPTION) << "ValueNode host to device copy failed";
         }
+        tensor->set_device_address(node_address);
       }
     }
   }
