@@ -1084,7 +1084,7 @@ KernelTensorPtr DeviceAddressUtils::CreateInputKernelTensor(const DeviceContext 
   }
 
   auto addr = tensor->device_address();
-  if (addr != nullptr) {
+  if (addr->GetDeviceType() == device_context->GetDeviceType()) {
     auto device_address = std::static_pointer_cast<device::DeviceAddress>(addr);
     MS_EXCEPTION_IF_NULL(device_address);
     if (device_address->GetPtr() != nullptr) {
@@ -1097,7 +1097,7 @@ KernelTensorPtr DeviceAddressUtils::CreateInputKernelTensor(const DeviceContext 
     }
   }
 
-  const auto &tensor_size = LongToSize(tensor->DataNBytes());
+  const auto &tensor_size = tensor->DataNBytes();
   const auto &format = GetFormatByTensorShape(device_context, tensor->shape());
   auto kernel_tensor =
     AnfAlgo::CreateKernelTensor(shape, type, nullptr, nullptr, tensor_size, kernel::GetFormatFromEnumToStr(format),
@@ -1116,9 +1116,8 @@ KernelTensorPtr DeviceAddressUtils::CreateInputKernelTensor(const DeviceContext 
   if (!device_context->device_res_manager_->AllocateMemory(device_address.get())) {
     MS_LOG(EXCEPTION) << "Allocate memory failed";
   }
-  if (!device_address->SyncHostToDevice(tensor->shape(), tensor_size, tensor->data_type(),
-                                        kernel::GetFormatFromEnumToStr(format), tensor->data_ptr())) {
-    MS_LOG(EXCEPTION) << "SyncHostToDevice failed";
+  if (!AsyncCopy(device_address.get(), addr.get(), device_address->stream_id())) {
+    MS_LOG(EXCEPTION) << "Copy host data to device failed";
   }
   MS_LOG(DEBUG) << "Create input tensor device address " << device_address << " for " << index
                 << "th input, Shape: " << shape->ToString()
