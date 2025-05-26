@@ -233,7 +233,7 @@ void MstxImpl::MemRegionsRegisterImpl(mstxDomainHandle_t domain, mstxMemRegionsR
   if (domain == nullptr) {
     return;
   }
-  if (!IsSupportMstxApi(domain != DomainCreateAImpl(MSTX_DOMAIN_MSLEAKS))) {
+  if (!IsSupportMstxApi(true)) {
     return;
   }
   CALL_MSTX_API(mstxMemRegionsRegister, domain, desc);
@@ -243,7 +243,7 @@ void MstxImpl::MemRegionsUnregisterImpl(mstxDomainHandle_t domain, mstxMemRegion
   if (domain == nullptr) {
     return;
   }
-  if (!IsSupportMstxApi(domain != DomainCreateAImpl(MSTX_DOMAIN_MSLEAKS))) {
+  if (!IsSupportMstxApi(true)) {
     return;
   }
   CALL_MSTX_API(mstxMemRegionsUnregister, domain, desc);
@@ -253,7 +253,7 @@ mstxMemHeapHandle_t MstxImpl::MemHeapRegisterImpl(mstxDomainHandle_t domain, mst
   if (domain == nullptr) {
     return nullptr;
   }
-  if (!IsSupportMstxApi(domain != DomainCreateAImpl(MSTX_DOMAIN_MSLEAKS))) {
+  if (!IsSupportMstxApi(true)) {
     return nullptr;
   }
   return CALL_MSTX_API(mstxMemHeapRegister, domain, desc);
