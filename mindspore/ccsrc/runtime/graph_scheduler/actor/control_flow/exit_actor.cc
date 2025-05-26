@@ -383,11 +383,7 @@ void ExitActor::CopyDeviceAddress(OpContext<KernelTensor> *const context) {
     new_kernel_tensor->set_device_ptr(nullptr);
     DeviceTensorPtr new_device_tensor = new_kernel_tensor->device_address();
     MS_EXCEPTION_IF_NULL(new_device_tensor);
-    MS_LOG(DEBUG) << "Actor:" << GetAID() << " create new device tensor:" << new_device_tensor
-                  << " type:" << new_device_tensor->type_id() << " by input device tensor:" << input_device_tensor
-                  << " shape:"
-                  << (kernel_tensor->GetShape() == nullptr ? "null" : kernel_tensor->GetShape()->ToString())
-                  << (kernel_tensor->GetType() == nullptr ? "null" : kernel_tensor->GetType()->ToString());
+    MS_LOG(DEBUG) << "Actor:" << GetAID() << " create new kernel tensor:" << new_kernel_tensor->ToString();
     (void)created_kernel_tensors_.emplace_back(new_kernel_tensor);
     (void)new_kernel_tensors.emplace_back(new_kernel_tensor);
     new_device_tensor->set_need_sync_user_data(input_device_tensor->need_sync_user_data());
@@ -403,8 +399,8 @@ void ExitActor::CopyDeviceAddress(OpContext<KernelTensor> *const context) {
         SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(GraphExecutionStrategy::kPipeline, *context, *device_context,
                                                     GetAID().Name(), new_device_tensor->GetSize());
       }
-      MS_LOG(DEBUG) << "Sync device address from:" << input_device_tensor->PrintInfo()
-                    << " to:" << new_device_tensor->PrintInfo() << " in actor:" << GetAID();
+      MS_LOG(DEBUG) << "Sync device address from:" << input_kernel_tensors_[i]->ToString()
+                    << " to:" << new_kernel_tensor->ToString() << " in actor:" << GetAID();
       if (!new_device_tensor->SyncDeviceToDevice(input_device_tensor)) {
         SET_OPCONTEXT_FAIL_RET_WITH_ERROR(*context, "Sync device to device failed.");
       }
@@ -425,8 +421,8 @@ void ExitActor::CopyDeviceAddress(OpContext<KernelTensor> *const context) {
                       << " and:" << new_kernel_tensors[iter->second]->device_address();
         continue;
       } else if (is_need_copy_device_tensors_[i] == CopyStat::COPY_POINTER_REF_COUNT) {
-        MS_LOG(DEBUG) << "Set pointer ref count from:" << input_device_tensor->PrintInfo()
-                      << " to:" << new_device_tensor->PrintInfo() << " for actor:" << GetAID();
+        MS_LOG(DEBUG) << "Set pointer ref count from kernel tensor:" << input_kernel_tensors_[i]->ToString()
+                      << " to:" << new_kernel_tensor->ToString() << " for actor:" << GetAID();
         new_device_tensor->set_pointer_ref_count(input_device_tensor->pointer_ref_count());
         continue;
       }

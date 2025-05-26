@@ -814,7 +814,7 @@ bool AscendDeviceAddress::AsyncDeviceToDevice(const ShapeVector & /* shape */, s
   MS_EXCEPTION_IF_NULL(stream);
   bool ret = MemcpyAsync(GetDevicePtr(), src_ptr, size, static_cast<int32_t>(ACL_MEMCPY_DEVICE_TO_DEVICE), stream);
   if (!ret) {
-    MS_LOG(ERROR) << "MemcpyAsync failed, dst device address:" << PrintInfo();
+    MS_LOG(ERROR) << "MemcpyAsync failed, dst device address:" << ToString();
     return false;
   }
   return ret;

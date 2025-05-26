@@ -213,7 +213,7 @@ void DeviceAddressUtils::CreateDeviceAddressByMapTensorNode(const DeviceContext 
   kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(node));
   auto device_address = kernel_tensor->device_address();
   MS_LOG(DEBUG) << "Create device tensor:" << device_address << " type:" << device_address->type_id()
-                << ", with kernel tensor: " << kernel_tensor->PrintInfo();
+                << ", with kernel tensor: " << kernel_tensor->ToString();
   AnfAlgo::SetOutputKernelTensor(kernel_tensor, index, node.get());
 }
 
@@ -283,7 +283,7 @@ void DeviceAddressUtils::CreateParameterDeviceAddress(const DeviceContext *devic
       kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(item));
       auto device_address = kernel_tensor->device_address();
       MS_EXCEPTION_IF_NULL(device_address);
-      MS_LOG(DEBUG) << "Create device address:" << device_address->PrintInfo() << " for item:" << item->DebugString()
+      MS_LOG(DEBUG) << "Create kernel tensor:" << kernel_tensor->ToString() << " for item:" << item->DebugString()
                     << " in graph:" << graph->ToString();
       // Set the flag of no user parameter.
       if (item->isa<Parameter>()) {
@@ -689,8 +689,8 @@ std::vector<KernelTensorPtr> DeviceAddressUtils::CreateGraphOutputKernelTensor(
       device_context->device_context_key().device_id_, cache_output_kernel_tensor->user_data());
     new_kernel_tensor->set_stream_id(stream_id);
     AnfAlgo::SetOutputKernelTensor(new_kernel_tensor, index, output_node.get());
-    MS_LOG(DEBUG) << "Create addr for node:" << common::AnfAlgo::GetNodeDebugString(output_node)
-                  << " kernel tensor:" << new_kernel_tensor;
+    MS_LOG(DEBUG) << "Create addr for node:" << output_node->DebugString()
+                  << " kernel tensor:" << new_kernel_tensor->ToString();
     output_kernel_tensor_list.push_back(new_kernel_tensor);
     edge->kernel_tensor_ = new_kernel_tensor;
   }
@@ -726,8 +726,8 @@ void DeviceAddressUtils::CreateKernelWorkspaceDeviceAddress(const DeviceContext 
         real_device_context->device_context_key().device_name_, real_device_context->device_context_key().device_id_);
       kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(kernel));
       auto device_address = kernel_tensor->device_address();
-      MS_LOG(DEBUG) << "Create addr for node:" << common::AnfAlgo::GetNodeDebugString(kernel)
-                    << " addr:" << device_address;
+      MS_LOG(DEBUG) << "Create addr for node:" << kernel->fullname_with_scope()
+                    << " kernel tensor:" << kernel_tensor->ToString();
       AnfAlgo::SetWorkspaceKernelTensor(kernel_tensor, i, kernel.get());
     }
   }
@@ -1061,7 +1061,7 @@ KernelTensorPtr DeviceAddressUtils::CreateInputKernelTensor(const DeviceContext 
       kernel_tensor->set_device_address(device_address);
       kernel_tensor->set_host_shape(tensor->shape());
       MS_LOG(DEBUG) << "Input tensor already have address " << device_address.get() << " and device Ptr "
-                    << device_address->GetPtr() << ", kernel tensor info: " << kernel_tensor->PrintInfo();
+                    << device_address->GetPtr() << ", kernel tensor info: " << kernel_tensor->ToString();
       return kernel_tensor;
     }
   }
@@ -1117,7 +1117,7 @@ KernelTensorPtr DeviceAddressUtils::CreateInputKernelTensor(const DeviceContext 
   MS_LOG(DEBUG) << "Create input scalar device address " << device_address << " for " << index
                 << "th input, Shape: " << abstract::kNoShape->ToString() << ", Type: " << type->ToString()
                 << ", Value: " << (scalar_value ? scalar_value->ToString() : "nullptr") << ", dev ptr "
-                << device_address->GetPtr() << ", kernel tensor: " << kernel_tensor;
+                << device_address->GetPtr() << ", kernel tensor: " << kernel_tensor->ToString();
   return kernel_tensor;
 }
 
@@ -1153,7 +1153,7 @@ KernelTensorPtr DeviceAddressUtils::CreateInputKernelTensor(const DeviceContext 
   MS_LOG(DEBUG) << "Create input string device address " << device_address << " for " << index
                 << "th input, Shape: " << abstract::kNoShape->ToString() << ", Type: " << type->ToString()
                 << ", Value: " << (string_imm ? string_imm->ToString() : "nullptr") << ", dev ptr "
-                << device_address->GetPtr() << ", kernel tensor: " << kernel_tensor;
+                << device_address->GetPtr() << ", kernel tensor: " << kernel_tensor->ToString();
   return kernel_tensor;
 }
 
@@ -1176,7 +1176,8 @@ KernelTensorPtr DeviceAddressUtils::CreateInputKernelTensor(const DeviceContext 
   }
   MS_LOG(DEBUG) << "Create input " << type_ptr->ToString() << " device address for " << index
                 << "th input, Shape: " << abstract::kNoShape->ToString() << ", Type: " << type->ToString()
-                << ", Value: nullptr, device address:" << device_address << ", kernel tensor: " << kernel_tensor;
+                << ", Value: nullptr, device address:" << device_address
+                << ", kernel tensor: " << kernel_tensor->ToString();
   return kernel_tensor;
 }
 
@@ -1228,7 +1229,7 @@ device::DeviceAddressPtr DeviceAddressUtils::CreateDeviceAddress(const DeviceCon
                                                    device_context->device_context_key().device_id_);
   kernel_tensor->set_stream_id(stream_id);
   device::DeviceAddressPtr device_address = kernel_tensor->device_address();
-  MS_LOG(DEBUG) << "Create tensor device address " << device_address << "Shape: " << tensor->shape()
+  MS_LOG(DEBUG) << "Create tensor device address " << kernel_tensor->ToString() << "Shape: " << tensor->shape()
                 << ", Type: " << TypeIdToType(tensor->data_type())->ToString();
   return device_address;
 }
@@ -1244,8 +1245,7 @@ KernelTensorPtr DeviceAddressUtils::CreateKernelTensor(const DeviceContext *devi
                                                    device_context->device_context_key().device_name_,
                                                    device_context->device_context_key().device_id_);
   kernel_tensor->set_stream_id(stream_id);
-  device::DeviceAddressPtr device_address = kernel_tensor->device_address();
-  MS_LOG(DEBUG) << "Create tensor device address " << device_address << "Shape: " << tensor->shape()
+  MS_LOG(DEBUG) << "Create kernel tensor " << kernel_tensor->ToString() << "Shape: " << tensor->shape()
                 << ", Type: " << TypeIdToType(tensor->data_type())->ToString() << ", kernel tensor: " << kernel_tensor;
   return kernel_tensor;
 }
@@ -1304,7 +1304,7 @@ KernelTensorPtr DeviceAddressUtils::CreateWorkspaceKernelTensor(const DeviceCont
       !device_context->device_res_manager_->AllocateMemory(device_address.get())) {
     MS_LOG(EXCEPTION) << "Allocate dynamic workspace memory failed";
   }
-  MS_LOG(DEBUG) << "Create workspace device address:" << device_address;
+  MS_LOG(DEBUG) << "Create workspace kernel tensor:" << kernel_tensor->ToString();
   return kernel_tensor;
 }
 
@@ -1349,7 +1349,7 @@ device::DeviceAddressPtr DeviceAddressUtils::ConvertContiguousDeviceAddress(
   auto new_device_address = kernel_tensor->device_address();
   new_device_address->set_device_shape(old_storage_info->shape);
   new_device_address->set_new_ref_count(SIZE_MAX);
-
+  MS_LOG(DEBUG) << "Create kernel tensor:" << kernel_tensor->ToString();
   if (is_sync) {
     // ExecuteKernelTask sync, need to wait until all tasks in queue are complete.
     runtime::Pipeline::Get().WaitForward();

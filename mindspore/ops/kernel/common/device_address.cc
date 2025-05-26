@@ -84,7 +84,7 @@ DeviceAddress::DeviceAddress(void *ptr, size_t size, const std::string &format, 
 DeviceAddress::~DeviceAddress() {
   if (IS_OUTPUT_ON(mindspore::kDebug) && address_common_ != nullptr && address_common_->pointer_ref_count_ != nullptr &&
       address_common_->pointer_ref_count_->new_ref_count() != SIZE_MAX && GetPtr() != nullptr) {
-    MS_LOG(DEBUG) << "Maybe memory leak detect in device address:" << PrintInfo();
+    MS_LOG(DEBUG) << "Maybe memory leak detect in device address:" << ToString();
   }
   if (!from_mem_pool() && deleter_ && GetDevicePtr() != nullptr) {
     deleter_(static_cast<uint8_t *>(GetDevicePtr()));
@@ -94,11 +94,11 @@ DeviceAddress::~DeviceAddress() {
   }
 }
 
-std::string DeviceAddress::PrintInfo() const {
+std::string DeviceAddress::ToString() const {
   std::ostringstream ofs;
   ofs << this << " device type:" << GetDeviceType() << " address common:" << address_common_;
   if (address_common_ != nullptr) {
-    ofs << " " << address_common_->PrintInfo();
+    ofs << " " << address_common_->ToString();
   }
   ofs << " device address deleter:" << (deleter_ != nullptr) << " flag:" << flag_
       << " need sync user data:" << need_sync_user_data_ << " user data:" << user_data_ << " is view:" << is_view_;
@@ -251,12 +251,12 @@ KernelWithIndex DeviceAddress::GetNodeIndex() const {
 
 void DeviceAddress::IncreaseNewRefCount(const std::string &op_name, size_t i) {
   address_common_->pointer_ref_count_->IncreaseNewRefCount(i);
-  MS_LOG(DEBUG) << "Op:" << op_name << " increase new ref count for device address:" << PrintInfo();
+  MS_LOG(DEBUG) << "Op:" << op_name << " increase new ref count for device address:" << ToString();
 }
 
 size_t DeviceAddress::DecreaseNewRefCount(const std::string &op_name) {
   size_t ref_count = address_common_->pointer_ref_count_->DecreaseNewRefCount();
-  MS_LOG(DEBUG) << "Op:" << op_name << " decrease new ref count for device address:" << PrintInfo();
+  MS_LOG(DEBUG) << "Op:" << op_name << " decrease new ref count for device address:" << ToString();
   return ref_count;
 }
 

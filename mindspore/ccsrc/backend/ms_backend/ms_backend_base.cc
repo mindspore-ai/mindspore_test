@@ -1661,7 +1661,7 @@ void MSBackendBase::ConstructOutputByTupleTensor(tensor::TensorPtr output_tensor
     kernel_tensor->set_stream_id(device_tensor->stream_id());
     auto split_device_tensor = kernel_tensor->device_address();
     MS_EXCEPTION_IF_NULL(split_device_tensor);
-    MS_LOG(DEBUG) << "Create device tensor:" << split_device_tensor << " type:" << device_tensor->type_id();
+    MS_LOG(DEBUG) << "Create kernel tensor:" << kernel_tensor->ToString();
     // Copy data from origin tensor to the split tensor.
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "ConstructOutputByTupleTensor",
                                                    "ConstructOutputByTupleTensor", "", false);
@@ -2039,7 +2039,7 @@ void CheckMemoryLeak(const runtime::AbstractActorPtr &actor, const KernelTensorP
   const auto &device_tensor = kernel_tensor->device_address().get();
   if (IsMemoryLeak(device_tensor)) {
     MS_LOG(EXCEPTION) << "Memory leak detected in actor:" << actor->GetAID()
-                      << " output device tensor:" << device_tensor->PrintInfo();
+                      << " output kernel tensor:" << kernel_tensor->ToString();
   }
 }
 
@@ -2050,7 +2050,7 @@ void CheckMemoryLeakV2(const runtime::KernelRunnerPtr &actor, const KernelTensor
   const auto &device_tensor = kernel_tensor->device_address().get();
   if (IsMemoryLeak(device_tensor)) {
     MS_LOG(EXCEPTION) << "Memory leak detected in actor:" << actor->GetAID()
-                      << " output device tensor:" << device_tensor->PrintInfo();
+                      << " output kernel tensor:" << kernel_tensor->ToString();
   }
 }
 
@@ -2107,8 +2107,8 @@ void StrictCheckForDeviceAddress(const runtime::ActorSet *actor_set) {
         }
         const auto &device_tensor = kernel_tensor->device_address().get();
         if (IsMemoryLeak(device_tensor)) {
-          MS_LOG(EXCEPTION) << "Memory leak detected in parameter store for device address:"
-                            << device_tensor->PrintInfo();
+          MS_LOG(EXCEPTION) << "Memory leak detected in parameter store for kernel tensor:"
+                            << kernel_tensor->ToString();
         }
       }
     }

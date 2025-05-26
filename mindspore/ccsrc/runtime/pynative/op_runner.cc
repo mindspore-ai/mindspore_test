@@ -495,7 +495,7 @@ std::vector<kernel::KernelTensor *> GetWorkspaceKernelTensorsDynamic(
     (void)workspace_kts->emplace_back(kernel_tensor);
     (void)workspaces.emplace_back(kernel_tensor.get());
     MS_LOG(DEBUG) << "workspace[" << i << "]:" << workspaces.back()->device_ptr()
-                  << " size:" << workspaces.back()->size();
+                  << " size:" << workspaces.back()->size() << " kernel tensor:" << kernel_tensor->ToString();
   }
   return workspaces;
 }

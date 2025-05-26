@@ -131,6 +131,7 @@ void MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_te
     }
     auto kernel_tensor = AnfAlgo::CreateKernelTensor(nullptr, size, kernel::GetFormatFromStrToEnum(kOpFormat_DEFAULT),
                                                      type_id, host_shape, to, device_id);
+    MS_LOG(DEBUG) << "Create kernel tensor:" << kernel_tensor->ToString();
     dst_addr = kernel_tensor->device_address();
     MS_EXCEPTION_IF_NULL(dst_addr);
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", memory::mem_pool::MemType::kPyNativeOutput,

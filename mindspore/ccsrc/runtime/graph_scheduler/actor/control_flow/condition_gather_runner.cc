@@ -244,8 +244,8 @@ void ConditionGatherRunner::UpdateRefDeviceAddress(OpContext<KernelTensor> *cons
     }
     MS_LOG(DEBUG) << "Actor:" << GetAID()
                   << " increase new ref count:" << output_kernel_tensors_[i]->device_address()->new_ref_count()
-                  << " and set ref device address:" << output_kernel_tensors_[i]->PrintInfo()
-                  << " ref input device address:" << input_kernel_tensors_[input_index]->PrintInfo();
+                  << " and set ref kernel tensor:" << output_kernel_tensors_[i]->ToString()
+                  << " ref input kernel tensor:" << input_kernel_tensors_[input_index]->ToString();
   }
   new_memory_free_list_.resize(input_free_index_.size() + output_free_index_.size());
 }

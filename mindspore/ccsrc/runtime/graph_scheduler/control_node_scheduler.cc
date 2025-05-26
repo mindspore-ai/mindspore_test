@@ -223,13 +223,9 @@ void ControlNodeScheduler::BuildGraphParameterStoreForControlNode(const GraphCom
     kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(parameter_with_index.first));
     auto new_address = kernel_tensor->device_address().get();
     MS_EXCEPTION_IF_NULL(new_address);
-    MS_LOG(DEBUG) << "Create new address for node that has no corresponding backend node:"
+    MS_LOG(DEBUG) << "Create new kernel tensor for node that has no corresponding backend node:"
                   << parameter_with_index.first->DebugString() << " index:" << parameter_with_index.second
-                  << " addr:" << new_address << " size:" << device_address->GetSize()
-                  << ", type id:" << device_address->type_id()
-                  << " type:" << (kernel_tensor->GetType() == nullptr ? "null" : kernel_tensor->GetType()->ToString())
-                  << " shape:"
-                  << (kernel_tensor->GetShape() == nullptr ? "null" : kernel_tensor->GetShape()->ToString());
+                  << " kernel tensor:" << kernel_tensor->ToString();
     AnfAlgo::SetOutputKernelTensor(kernel_tensor, parameter_with_index.second, parameter_with_index.first.get());
     cur_graph_parameter_store->Push(real_outer_idx, real_inner_idx, kernel_tensor, 0);
     (void)front_node_position_map.emplace(parameter_with_index, real_outer_idx);
@@ -301,15 +297,9 @@ void ControlNodeScheduler::BuildDataSourceActorForControlNode(
         device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
       MS_EXCEPTION_IF_NULL(kernel_tensor);
       kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(parameter_with_index.first));
-      auto new_address = kernel_tensor->device_address();
-      MS_EXCEPTION_IF_NULL(new_address);
-      MS_LOG(DEBUG) << "Create new address for node that has no corresponding backend node:"
+      MS_LOG(DEBUG) << "Create new kernel tensor for node that has no corresponding backend node:"
                     << parameter_with_index.first->DebugString() << " index:" << parameter_with_index.second
-                    << " addr:" << new_address << " size:" << device_address->GetSize()
-                    << ", type id:" << device_address->type_id()
-                    << " type:" << (kernel_tensor->GetType() == nullptr ? "null" : kernel_tensor->GetType()->ToString())
-                    << " shape:"
-                    << (kernel_tensor->GetShape() == nullptr ? "null" : kernel_tensor->GetShape()->ToString());
+                    << " kernel tensor:" << kernel_tensor->ToString();
       AnfAlgo::SetOutputKernelTensor(kernel_tensor, parameter_with_index.second, parameter_with_index.first.get());
 
       (void)node_map.emplace(parameter_with_index, control_node_ds_actor->data_node_with_indexs_.size());

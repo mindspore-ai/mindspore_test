@@ -134,14 +134,15 @@ class OPS_KERNEL_COMMON_API KernelTensor : public AbstractBase {
 
   MS_DECLARE_PARENT(KernelTensor, AbstractBase);
 
-  std::string PrintInfo() const {
+  std::string ToString() const {
     std::stringstream ofs;
-    ofs << this;
+    ofs << this << " shape:" << (GetShape() == nullptr ? "null" : GetShape()->ToString())
+        << " type:" << (GetType() == nullptr ? "null" : GetType()->ToString());
     if (device_address_ != nullptr) {
-      return ofs.str() + " device address:" + device_address_->PrintInfo();
+      return ofs.str() + " device address:" + device_address_->ToString();
     }
     if (address_common_ != nullptr) {
-      return ofs.str() + " address common:" + address_common_->PrintInfo();
+      return ofs.str() + " address common:" + address_common_->ToString();
     }
     return ofs.str() + "device address:0";
   }

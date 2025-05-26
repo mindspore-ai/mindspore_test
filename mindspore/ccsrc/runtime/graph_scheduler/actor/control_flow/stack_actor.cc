@@ -100,10 +100,7 @@ void StackActor::RunOpData(OpData<KernelTensor> *const input_data, OpContext<Ker
   MS_EXCEPTION_IF_NULL(input_data->data_);
   auto device_tensor = input_data->data_->device_address().get();
   MS_EXCEPTION_IF_NULL(device_tensor);
-  MS_LOG(DEBUG) << "Actor(" << GetAID().Name() << ") receive the input data:" << device_tensor
-                << " input index:" << device_tensor << ", size:" << device_tensor->GetSize()
-                << " ptr:" << device_tensor->GetMutablePtr() << ", flag:" << device_tensor->flag()
-                << " user data:" << device_tensor->user_data();
+  MS_LOG(DEBUG) << "Actor(" << GetAID().Name() << ") receive the input data:" << input_data->data_->ToString();
   // The parameters from the inside of the subgraph need to be put into the stack.
   if (IntToSize(input_data->index_) < input_stack_data_num_ + device_tensor_store_keys_.size() + weights_size_ +
                                         input_stack_partials_num_ + local_kernel_tensors_.size()) {

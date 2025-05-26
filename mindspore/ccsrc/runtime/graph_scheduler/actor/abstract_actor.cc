@@ -47,9 +47,7 @@ void AbstractActor::RunOpData(OpData<KernelTensor> *const input_data, OpContext<
        !TEST_FLAG(device_tensor->flag(), device::kDeviceAddressFlagNullptr))) {
     std::stringstream error_info;
     error_info << "The input_data does not have a valid ptr of actor:" << GetAID().Name()
-               << " with index:" << input_data->index_ << ", flag:" << device_tensor->flag()
-               << " device address:" << device_tensor << ", kernel tensor: " << input_data->data_
-               << " new ref count:" << device_tensor->new_ref_count();
+               << " with index:" << input_data->index_ << ", kernel tensor:" << input_data->data_->ToString();
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info.str());
   }
   auto &sequential_num = context->sequential_num_;
@@ -58,12 +56,8 @@ void AbstractActor::RunOpData(OpData<KernelTensor> *const input_data, OpContext<
   auto is_run = CheckRunningCondition(context);
   MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
     << "Actor(" << GetAID().Name() << ") receive the input op data and check running condition:" << is_run
-    << ", sequential num:" << sequential_num << ", the input data:" << input_data->data_
-    << ", device address:" << device_tensor << " input index:" << input_data->index_
-    << ", size:" << device_tensor->GetSize() << " ptr:" << device_tensor->GetMutablePtr()
-    << ", new ref count:" << device_tensor->new_ref_count() << ", flag:" << device_tensor->flag()
-    << " user data:" << device_tensor->user_data() << " from memory pool:" << device_tensor->from_mem_pool()
-    << " device type:" << device_tensor->GetDeviceType();
+    << ", sequential num:" << sequential_num << " input index:" << input_data->index_
+    << " input data:" << input_data->data_->ToString();
   if (is_run) {
     Run(context);
   }

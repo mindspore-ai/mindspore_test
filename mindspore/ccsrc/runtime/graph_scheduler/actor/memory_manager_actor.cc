@@ -176,8 +176,7 @@ void MemoryManagerActor::AllocateContinuousMemory(const std::vector<std::vector<
           device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
         kernel_tensor->set_stream_id(old_dev_addr->stream_id());
         auto new_dev_addr = kernel_tensor->device_address();
-        MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-          << "Create device tensor:" << new_dev_addr << " type:" << new_dev_addr->type_id();
+        MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "Create kernel tensor:" << kernel_tensor->ToString();
         (void)new_dev_addr->SyncDeviceToDevice(old_dev_addr.get());
         device_context->device_res_manager_->FreeMemory(old_dev_addr.get());
       }
@@ -421,7 +420,7 @@ void MemoryManagerActor::FreeMemoryByRefCount(DeviceTensor *const device_tensor,
   if (device_tensor->new_ref_count() != SIZE_MAX) {
     if (device_tensor->new_ref_count() == 0) {
       const auto &node_with_index = device_tensor->GetNodeIndex();
-      MS_LOG(EXCEPTION) << "Invalid new ref count:0 for decrease for device address:" << device_tensor->PrintInfo()
+      MS_LOG(EXCEPTION) << "Invalid new ref count:0 for decrease for device address:" << device_tensor->ToString()
                         << " node:"
                         << (node_with_index.first == nullptr
                               ? "null"
@@ -431,7 +430,7 @@ void MemoryManagerActor::FreeMemoryByRefCount(DeviceTensor *const device_tensor,
     }
 
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-      << "Op:" << op_name << " decrease new ref count for:" << device_tensor->PrintInfo();
+      << "Op:" << op_name << " decrease new ref count for:" << device_tensor->ToString();
     if ((device_tensor->DecreaseNewRefCount(op_name) == 0) && device_tensor->IsPtrValid()) {
       device_tensor->ClearUserData();
       MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
@@ -439,7 +438,8 @@ void MemoryManagerActor::FreeMemoryByRefCount(DeviceTensor *const device_tensor,
         << ".";
       if (device_tensor->deleter() != nullptr) {
         MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-          << "Free ptr:" << device_tensor->GetPtr() << " for device address:" << device_tensor;
+          << "Free ptr:" << device_tensor->GetPtr() << " for device address:" << device_tensor
+          << " op name:" << op_name;
         device_tensor->deleter()(static_cast<uint8_t *>(device_tensor->GetMutablePtr()));
         device_tensor->set_deleter(nullptr);
         device_tensor->set_ptr(nullptr);

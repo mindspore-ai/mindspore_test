@@ -109,8 +109,8 @@ void ConditionSwitchRunner::UpdateRefDeviceAddress(OpContext<KernelTensor> *cons
     }
     output_device_tensor->IncreaseNewRefCount(GetAID().Name());
     MS_LOG(DEBUG) << "Actor:" << GetAID() << " increase new ref count:" << output_device_tensor->new_ref_count()
-                  << " and set ref device address:" << output_device_tensor->PrintInfo()
-                  << " ref input device address:" << input_device_tensor->PrintInfo();
+                  << " and set ref kernel tensor:" << output_kernel_tensors_[i]->ToString()
+                  << " ref input kernel tensor:" << input_kernel_tensors_[i + 1]->ToString();
   }
 }
 

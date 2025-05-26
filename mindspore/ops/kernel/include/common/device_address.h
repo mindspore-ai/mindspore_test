@@ -88,7 +88,7 @@ class PointerRefCount {
     }
   }
 
-  std::string PrintInfo() const {
+  std::string ToString() const {
     std::ostringstream ofs;
     ofs << this << " ptr:" << ptr_ << " from mem pool:" << from_mem_pool_ << " origin ref count:" << original_ref_count_
         << " ref count:" << ref_count_ << " dynamic ref count:" << dynamic_ref_count_
@@ -246,7 +246,7 @@ struct AddressCommon {
   }
   AddressCommon &operator=(const AddressCommon &) = delete;
 
-  std::string PrintInfo() const {
+  std::string ToString() const {
     std::ostringstream ofs;
     ofs << " size:" << size_ << " tensor storage info:" << tensor_storage_info_;
     if (tensor_storage_info_ != nullptr) {
@@ -259,7 +259,7 @@ struct AddressCommon {
     if (pointer_ref_count_ == nullptr) {
       ofs << "0";
     } else {
-      ofs << pointer_ref_count_->PrintInfo();
+      ofs << pointer_ref_count_->ToString();
     }
     return ofs.str();
   }
@@ -355,7 +355,7 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
 
   virtual ~DeviceAddress();
 
-  virtual std::string PrintInfo() const;
+  virtual std::string ToString() const;
 
   virtual void CloneDeviceAddress(const DeviceAddressPtr &device_address);
 
