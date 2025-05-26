@@ -965,7 +965,7 @@ void SyncHostToDeviceFromTensor(size_t outer_index, size_t inner_index, tensor::
   const auto &device_tensor = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_tensor);
   if (graph_parameter_store->GetUserCnt(outer_index, inner_index) == 0) {
-    MS_LOG(DEBUG) << "Skip sync host to device for device tensor:" << device_tensor->PrintInfo()
+    MS_LOG(DEBUG) << "Skip sync host to device for kernel tensor:" << kernel_tensor->ToString()
                   << " outer index:" << outer_index << " inner index:" << inner_index << " for user count:0.";
     return;
   }
@@ -998,7 +998,7 @@ void SyncHostToDeviceFromTensor(size_t outer_index, size_t inner_index, tensor::
     MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
     if (!device_context->device_res_manager_->AllocateMemory(device_tensor.get(), kDefaultStreamIndex)) {
       MS_LOG(EXCEPTION) << "Allocate memory failed, outer index: " << outer_index << ", inner index: " << inner_index
-                        << ", for device tensor: " << device_tensor->PrintInfo();
+                        << ", for kernel tensor: " << kernel_tensor->ToString();
     }
   }
 
@@ -1138,10 +1138,10 @@ KernelTensorPtr PrepareParameter(const std::pair<KernelWithIndex, size_t> &param
     }
 
     // Set tensor address to kernel tensor.
-    MS_LOG(DEBUG) << "Set tensor address to kernel tensor, tensor address: " << tensor_address->PrintInfo()
-                  << ", old device address: " << ((device_tensor == nullptr) ? "nullptr" : device_tensor->PrintInfo())
+    MS_LOG(DEBUG) << "Set tensor address to kernel tensor, tensor address: " << tensor_address->ToString()
+                  << ", old device address: " << ((device_tensor == nullptr) ? "nullptr" : device_tensor->ToString())
                   << ", outer index: " << outer_index << ", inner index: " << inner_index
-                  << ", kernel tensor: " << kernel_tensor.get();
+                  << ", kernel tensor: " << kernel_tensor->ToString();
     SetNodeIndexForTensorAddress(device_tensor, tensor_address, outer_index, inner_index);
     kernel_tensor->set_device_address(tensor_address);
     UpdateDynamicShapeAndSize(tensor, kernel_tensor, outer_index, inner_index);

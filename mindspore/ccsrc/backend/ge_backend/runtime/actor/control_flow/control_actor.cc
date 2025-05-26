@@ -724,7 +724,7 @@ void ControlActor::MergeDeviceAddress(OpContext<KernelTensor> *const context,
   const auto &new_device_tensor = new_kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(new_device_tensor);
 
-  MS_LOG(DEBUG) << "Create device tensor:" << new_device_tensor->PrintInfo();
+  MS_LOG(DEBUG) << "Create device tensor:" << new_device_tensor->ToString();
   if (!res_manager->AllocateMemory(new_device_tensor.get(), kDefaultStreamIndex)) {
     SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(GraphExecutionStrategy::kPipeline, *context, GetAID().Name(),
                                                 new_device_tensor->GetSize());

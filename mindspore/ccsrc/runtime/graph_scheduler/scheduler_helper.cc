@@ -699,7 +699,7 @@ void SchedulerHelper::InsertParameterIndexsForActor(AbstractActor *const to_acto
   } else {
     MS_LOG(DEBUG) << "Insert parameter store user count to actor:" << to_actor->GetAID()
                   << " front node:" << front_node_with_idx.first->DebugString() << " out index:" << real_outer_idx
-                  << " inner index:" << real_inner_idx << " device address:" << cur_device_tensor->PrintInfo();
+                  << " inner index:" << real_inner_idx << " device address:" << cur_device_tensor->ToString();
     cur_graph_parameter_store->IncreaseUserCnt(real_outer_idx, real_inner_idx);
     cur_device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
   }

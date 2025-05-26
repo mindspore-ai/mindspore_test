@@ -683,7 +683,7 @@ bool SuperKernelActor::CopyHeterogeneousOutput(OpContext<KernelTensor> *const co
           << kernel_actor->kernel_->fullname_with_scope();
       }
       MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-        << "Free heter output address:" << dest_device_address->PrintInfo() << " for actor:" << kernel_actor->GetAID();
+        << "Free heter output address:" << dest_kernel_tensor->ToString() << " for actor:" << kernel_actor->GetAID();
       dest_device_context->device_res_manager_->FreeMemory(dest_device_address);
     }
     std::vector<KernelTensorPtr> mem_alloc_list = {dest_kernel_tensor};
@@ -727,7 +727,7 @@ void SuperKernelActor::UpdateOutputAddress(
     real_input->device_address()->IncreaseNewRefCount(GetAID().Name(), actor_output_indices.size());
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
       << "Increase ref count to:" << real_input->new_ref_count() << " increase size:" << actor_output_indices.size() - 1
-      << " for device address:" << real_input->PrintInfo() << " in actor:" << GetAID();
+      << " for kernel tensor:" << real_input->ToString() << " in actor:" << GetAID();
     for (auto actor_output_index : actor_output_indices) {
       auto data = output_data_[actor_output_index].first.get();
       MS_EXCEPTION_IF_NULL(data);
@@ -762,8 +762,8 @@ void SuperKernelActor::FetchParameterInput(const KernelRunnerPtr &kernel_actor, 
           std::lock_guard<SpinLock> locker(spin_lock);
           memory_free_lists_.back().emplace_back(kernel_actor->input_kernel_tensors_[kernel_input_index]);
           MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-            << "Add memory free list for trace:" << kernel_actor->input_kernel_tensors_[kernel_input_index]->PrintInfo()
-            << " in actor:" << GetAID();
+            << "Add memory free list for trace kernel tensor:"
+            << kernel_actor->input_kernel_tensors_[kernel_input_index]->ToString() << " in actor:" << GetAID();
         }
       }
     }
@@ -784,7 +784,7 @@ void SuperKernelActor::FreeInputParamWithoutUser(OpContext<KernelTensor> *const 
       if (device_tensor->GetDeviceType() != device_contexts_[0]->GetDeviceType()) {
         MS_LOG(DEBUG) << "Skip free ref count for no used parameter:" << iter.second.first.first->DebugString()
                       << " inner index:" << iter.second.first.second << " out index:" << iter.second.second
-                      << " device tensor:" << device_tensor->PrintInfo()
+                      << " kernel tensor:" << kernel_tensor->ToString()
                       << " device context:" << device_contexts_[0]->device_context_key().ToString()
                       << " for actor:" << GetAID();
         continue;
@@ -794,7 +794,7 @@ void SuperKernelActor::FreeInputParamWithoutUser(OpContext<KernelTensor> *const 
         MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
           << "Free ref count for no used parameter:" << iter.second.first.first->DebugString()
           << " inner index:" << iter.second.first.second << " out index:" << iter.second.second
-          << " device tensor:" << device_tensor->PrintInfo()
+          << " kernel tensor:" << kernel_tensor->ToString()
           << " device context:" << device_contexts_[0]->device_context_key().ToString() << " for actor:" << GetAID();
         MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(device_tensor, device_contexts_[0], GetAID().Name());
       }
@@ -2482,6 +2482,7 @@ void SuperKernelActor::LinkKernelActorByDeviceType(const CNodePtr &kernel, size_
     const auto input_copy_kernel_tensor =
       SchedulerHelper::CloneKernelTensorWithDeviceInfo(input_kernel_tensor, device_context);
     MS_EXCEPTION_IF_NULL(input_copy_kernel_tensor);
+    MS_LOG(DEBUG) << "Create kernel tensor:" << input_copy_kernel_tensor->ToString();
     input_copy_kernel_tensor->set_device_ptr(nullptr);
 
     auto input_copy_device_address = input_copy_kernel_tensor->device_address();

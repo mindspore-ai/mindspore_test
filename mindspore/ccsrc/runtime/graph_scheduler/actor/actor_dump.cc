@@ -1011,7 +1011,7 @@ void DumpParameterStore(std::ofstream &ofs) {
           << " user cnt:" << parameter_device_tensors[outer_index][inner_index].second.first << " device tensor:"
           << (parameter_device_tensors[outer_index][inner_index].first == nullptr
                 ? "null"
-                : parameter_device_tensors[outer_index][inner_index].first->PrintInfo())
+                : parameter_device_tensors[outer_index][inner_index].first->ToString())
           << "\n";
     }
   }

@@ -1875,7 +1875,7 @@ void GraphScheduler::BuildGraphParameterStore(const GraphCompilerInfo &graph_com
       MS_LOG(DEBUG) << "Build graph parameter :" << input_node->DebugString()
                     << " for front node:" << front_node_with_index.first->DebugString()
                     << " index:" << front_node_with_index.second << " position:" << real_outer_idx
-                    << " device tensor:" << cur_kernel_tensor->PrintInfo();
+                    << " kernel tensor:" << cur_kernel_tensor->ToString();
     }
   }
   control_node_scheduler_.BuildGraphParameterStoreForControlNode(graph_compiler_info, memory_manager_aid_);

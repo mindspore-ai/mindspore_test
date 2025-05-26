@@ -104,7 +104,7 @@ void HostQueueDataSourceActor::IncreaseNewRefCounts(OpContext<KernelTensor> *con
     MS_EXCEPTION_IF_NULL(output_kernel_tensors[position]->device_address());
     output_kernel_tensors[position]->device_address()->IncreaseNewRefCount(GetAID().Name());
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-      << "Increase new ref count for device address:" << output_kernel_tensors[position]->PrintInfo()
+      << "Increase new ref count for kernel tensor:" << output_kernel_tensors[position]->ToString()
       << " in actor:" << GetAID();
   }
 }
@@ -117,7 +117,7 @@ void HostQueueDataSourceActor::FillDataBuffer() {
     MS_EXCEPTION_IF_NULL(kernel_tensor);
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
       << "Node:" << node_with_index.first->DebugString() << " index:" << node_with_index.second
-      << " device address:" << kernel_tensor->PrintInfo();
+      << " kernel tensor:" << kernel_tensor->ToString();
     (void)kernel_tensors.emplace_back(kernel_tensor);
   }
 

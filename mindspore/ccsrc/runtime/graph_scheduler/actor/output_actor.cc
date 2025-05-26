@@ -256,8 +256,7 @@ void OutputActor::FetchParameterInput(OpContext<KernelTensor> *const context) {
       auto tensor_device_address = kernel_tensor->device_address();
       MS_EXCEPTION_IF_NULL(tensor_device_address);
       MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-        << "Create device tensor:" << tensor_device_address << ", size: " << kernel_tensor->size()
-        << " type:" << tensor_device_address->type_id() << " output node:" << output_node->fullname_with_scope()
+        << "Create kernel tensor:" << kernel_tensor->ToString() << " output node:" << output_node->fullname_with_scope()
         << " output position:" << output_position << ", origin output device tensor: " << device_tensor;
       old_to_new_device_address_[device_tensor] = tensor_device_address;
       new_tensor->set_device_address(tensor_device_address);
@@ -388,12 +387,12 @@ void OutputActor::RunOpData(OpData<KernelTensor> *const input_data, OpContext<Ke
   MS_EXCEPTION_IF_NULL(context);
   MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
     << "Actor(" << GetAID().Name() << ") receive the input op data and output position:" << input_data->index_
-    << " device tensor:" << input_data->data_ << " ptr:" << input_data->data_->device_ptr()
-    << " from memory pool:" << input_data->data_->device_address()->from_mem_pool() << " output node:"
+    << " output node:"
     << (input_data->data_->device_address()->GetNodeIndex().first == nullptr
           ? "null"
           : input_data->data_->device_address()->GetNodeIndex().first->DebugString())
-    << " index:" << input_data->data_->device_address()->GetNodeIndex().second;
+    << " index:" << input_data->data_->device_address()->GetNodeIndex().second
+    << " input data:" << input_data->data_->ToString();
   auto output_position = IntToSize(input_data->index_);
   if (output_position >= outputs_.size()) {
     std::stringstream ofs;
@@ -560,8 +559,7 @@ TensorPtr OutputActor::CreateOutputTensor(const AnfNodePtr &output_node, size_t 
     auto tensor_device_address = kernel_tensor->device_address();
     MS_EXCEPTION_IF_NULL(tensor_device_address);
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-      << "Create device tensor:" << tensor_device_address << ", size: " << kernel_tensor->size()
-      << " type:" << tensor_device_address->type_id() << " output node:" << output_node->fullname_with_scope()
+      << "Create kernel tensor:" << kernel_tensor->ToString() << " output node:" << output_node->fullname_with_scope()
       << " output index:" << output_index << " output position:" << output_position
       << ", origin output device tensor: " << device_tensor;
     tensor->set_device_address(tensor_device_address);

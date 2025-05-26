@@ -295,8 +295,8 @@ void GraphAdapter::HandleBackoffValueNode(const ValueNodePtr &value_node, const 
     MS_EXCEPTION_IF_NULL(new_device_tensor);
     new_device_tensor->SetNodeIndex(value_node, 0);
     new_device_tensor->set_from_persistent_mem(true);
-    MS_LOG(DEBUG) << "Create backoff device tensor:" << new_device_tensor << " type:" << new_device_tensor->type_id()
-                  << " for ValueNode " << value_node->ToString() << ", kernel tensor: " << kernel_tensor;
+    MS_LOG(DEBUG) << "Create backoff kernel tensor:" << kernel_tensor->ToString() << " for ValueNode "
+                  << value_node->ToString();
     runtime::SchedulerHelper::AddDeviceTensorStore(front_node, kernel_tensor);
   }
 }

@@ -96,7 +96,7 @@ void ControlActor::IncreaseNewRefCountForPartial(const OpPartialPtr &op_partial)
     MS_EXCEPTION_IF_NULL(partial_device_tensor);
     partial_device_tensor->IncreaseNewRefCount(GetAID().Name());
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-      << "Increase new ref count for device address:" << partial_device_tensor->PrintInfo() << " in actor:" << GetAID();
+      << "Increase new ref count for kernel tensor:" << partial_kernel_tensor->ToString() << " in actor:" << GetAID();
   }
 }
 
@@ -109,7 +109,7 @@ void ControlActor::IncreaseNewRefCountForRealParameter(const OpRealParameterWith
     MS_EXCEPTION_IF_NULL(partial_device_tensor);
     partial_device_tensor->IncreaseNewRefCount(GetAID().Name());
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-      << "Increase new ref count for device address:" << partial_device_tensor->PrintInfo() << " in actor:" << GetAID();
+      << "Increase new ref count for kernel tensor:" << partial_kernel_tensor->ToString() << " in actor:" << GetAID();
   }
 }
 
@@ -597,7 +597,7 @@ void ControlActor::MergeDeviceAddress(OpContext<KernelTensor> *const context,
   const auto &new_device_tensor = new_kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(new_device_tensor);
 
-  MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "Create device tensor:" << new_device_tensor->PrintInfo();
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "Create kernel tensor:" << new_kernel_tensor->ToString();
   if (!device_context->device_res_manager_->AllocateMemory(new_device_tensor.get(), kDefaultStreamIndex)) {
     SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(GraphExecutionStrategy::kPipeline, *context, *device_context,
                                                 GetAID().Name(), new_device_tensor->GetSize());
@@ -621,8 +621,7 @@ void ControlActor::MergeDeviceAddress(OpContext<KernelTensor> *const context,
   tmp_kernel_tensor->set_stream_id(addr_list[0]->device_address()->stream_id());
   const auto &tmp_device_tensor = tmp_kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(tmp_device_tensor);
-  MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-    << "Create device tensor:" << tmp_device_tensor << " type:" << tmp_device_tensor->type_id();
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "Create kernel tensor:" << tmp_kernel_tensor->ToString();
   std::shared_ptr<int64_t> max_task_id_on_stream = nullptr;
   for (size_t i = 0; i < addr_list.size(); ++i) {
     auto task_id_on_stream = addr_list[i]->task_id_on_stream();
@@ -691,7 +690,8 @@ void ControlActor::MergeEmptyAddressDeviceAddress(OpContext<KernelTensor> *const
   }
   created_kernel_tensors_.emplace_back(new_kernel_tensor);
   (*kernel_tensor) = new_kernel_tensor;
-  MS_LOG(DEBUG) << "actor:" << GetAID() << " create new device address:" << new_device_tensor << " for empty addr list";
+  MS_LOG(DEBUG) << "actor:" << GetAID() << " create new kernel tensor:" << new_kernel_tensor->ToString()
+                << " for empty addr list";
 }
 
 void ControlActor::ResetState() {

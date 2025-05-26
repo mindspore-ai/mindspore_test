@@ -496,6 +496,8 @@ void CreateDeviceTensorForFrontNode(const KernelWithIndex &front_node_with_index
       AnfAlgo::SetOutputKernelTensor(kernel_tensor, front_node_with_index.second, node.get());
       kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(node));
       address = kernel_tensor->device_address();
+      MS_LOG(INFO) << "Create kernel tensor:" << kernel_tensor->ToString()
+                   << " for node that has no corresponding backend node:" << node->DebugString();
     }
     MS_EXCEPTION_IF_NULL(address);
     address->set_new_ref_count(SIZE_MAX);
@@ -507,10 +509,9 @@ void CreateDeviceTensorForFrontNode(const KernelWithIndex &front_node_with_index
     AnfAlgo::SetOutputKernelTensor(kernel_tensor, front_node_with_index.second, node.get());
     kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(node));
     address = kernel_tensor->device_address();
+    MS_LOG(INFO) << "Create kernel tensor:" << kernel_tensor->ToString()
+                 << " for node that has no corresponding backend node:" << node->DebugString();
   }
-  MS_LOG(INFO) << "Create address for node that has no corresponding backend node:"
-               << common::AnfAlgo::GetNodeDebugString(node) << " addr:" << address << " size:" << size
-               << ", type id:" << type_id;
   AnfAlgo::SetOutputAddr(address, front_node_with_index.second, node);
 }
 

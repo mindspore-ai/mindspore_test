@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+import mindspore as ms
 from mindspore import Tensor, jit, ops, mutable, nn, lazy_inline, export, load, context
 from mindspore.common import dtype as mstype
 from mindspore.common.parameter import Parameter
@@ -1192,3 +1194,42 @@ def test_call_same_graph():
     x = Tensor(2, mstype.int32)
     ret = foo(x, x, param_a)
     assert ret
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_view_to_condition_switch():
+    """
+    Feature: Contrtol flow inline.
+    Description: View op to condition switch.
+    Expectation: Not throw exception.
+    """
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.relu = P.ReLU()
+
+        def construct(self, a, b, d):
+            l = [1, 'str', [2, 'ss']]
+            l.append(self.relu(a))
+            l.append(self.relu(b))
+            l[2].append(self.relu(d))
+            tmp = a[0, :, :, :]
+            if tmp in l[2]:
+                out = self.relu(tmp)
+            else:
+                out = tmp + 1
+            return out
+
+    input_np_a = np.arange(16).reshape(2, 2, 2, 2)
+    input_np_b = np.random.randn(2, 3, 4, 5).astype(np.float32)
+    input_np_d = np.arange(8).reshape(2, 2, 2)
+    input_me_a = Tensor(input_np_a, ms.float32)
+    input_me_b = Tensor(input_np_b)
+    input_me_d = Tensor(input_np_d, ms.float32)
+
+    context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O0"})
+    net = Net()
+    os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = "1"
+    out = net(input_me_a, input_me_b, input_me_d)
+    print(out)
+    os.environ.pop("MS_DEV_TENSOR_INDEX_BOOST")

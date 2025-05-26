@@ -83,7 +83,7 @@ void AnyTypeKernelActor::FetchInputDeviceTensor(OpContext<KernelTensor> *const c
     }
     input_kernel_tensors_[device_tensor_store_key.first] = kernel_tensor;
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-      << "Fetch device tensor store:" << kernel_tensor->PrintInfo()
+      << "Fetch device tensor store:" << kernel_tensor->ToString()
       << " by key:" << device_tensor_store_key.second->DebugString() << " index:" << device_tensor_store_key.first
       << " for actor:" << GetAID();
   }
@@ -132,7 +132,7 @@ std::string GenerateIDForGraph(const std::vector<KernelTensorPtr> &kernel_tensor
       device_tensor->user_data()->get<kernel::PyExecuteOutputUserData>(kernel::PyExecuteOutputUserData::key);
     if (user_data_obj == nullptr) {
       MS_LOG(ERROR) << "Failed to get user data from input index:" << index
-                    << " device tensor:" << device_tensor->PrintInfo();
+                    << " kernel tensor:" << kernel_tensor->ToString();
       return "FAILED";
     }
     const auto &obj = user_data_obj->obj;
@@ -359,7 +359,7 @@ void PersisitValueNode(const KernelGraphPtr &graph, const DeviceContext *device_
       MS_EXCEPTION_IF_NULL(device_tensor);
       MS_LOG(INFO) << "Fetch no device tensor store by:" << front_node->DebugString()
                    << ", type:" << real_device_context->GetDeviceType()
-                   << " node device tensor:" << device_tensor->PrintInfo();
+                   << " node device tensor:" << device_tensor->ToString();
       const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
         {input_node, 0}, nullptr, device_tensor->GetSize(), device_tensor->format(), device_tensor->type_id(),
         device_tensor->host_shape(), real_device_context->device_context_key().device_name_,
@@ -369,12 +369,10 @@ void PersisitValueNode(const KernelGraphPtr &graph, const DeviceContext *device_
       MS_EXCEPTION_IF_NULL(other_type_device_tensor);
       other_type_device_tensor->SetNodeIndex(input_node, 0);
       other_type_device_tensor->set_from_persistent_mem(true);
-      MS_LOG(DEBUG) << "Create device tensor:" << other_type_device_tensor
-                    << " type:" << other_type_device_tensor->type_id()
-                    << " device type:" << real_device_context->device_context_key().ToString()
+      MS_LOG(DEBUG) << "Create kernel tensor:" << kernel_tensor->ToString()
                     << " for value node:" << front_node->DebugString();
       DeviceTensorStore::GetInstance().Insert(const_cast<AnfNode *>(front_node.get()), kernel_tensor);
-      MS_LOG(DEBUG) << "Add device tensor store:" << other_type_device_tensor << " node:" << front_node->DebugString()
+      MS_LOG(DEBUG) << "Add device tensor store:" << kernel_tensor << " node:" << front_node->DebugString()
                     << " graph:" << graph->ToString() << ", kernel tensor: " << kernel_tensor;
       PrepareValueNode(input_node, kernel_tensor.get());
     }

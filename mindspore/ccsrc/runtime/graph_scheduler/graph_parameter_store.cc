@@ -130,7 +130,7 @@ void GraphParameterStore::ResetAddrRefCount(size_t outer_index, size_t inner_ind
         }
         device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
         MS_LOG(DEBUG) << "Parameter store set new ref count:" << user_cnt - 1
-                      << " for device address:" << device_tensor->PrintInfo();
+                      << " for kernel tensor:" << kernel_tensor_with_info.first->ToString();
       } else {
         MS_LOG(DEBUG) << "User count:0 for parameter store outer index:" << outer_index
                       << " inner index:" << inner_index << " for device address:" << device_tensor;
@@ -269,7 +269,7 @@ void GraphParameterStore::ReleaseData() {
       if (device_tensor != nullptr && device_tensor->new_ref_count() == SIZE_MAX &&
           !device_tensor->is_ptr_persisted()) {
         MS_LOG(DEBUG) << "Set store device tensor: " << device_tensor.get() << " ptr null, outer idx: " << index.first
-                      << ", inner idx: " << index.second << ", info: " << device_tensor->PrintInfo();
+                      << ", inner idx: " << index.second << ", info: " << kernel_tensor->ToString();
         release_data_info_[{position}] = {kernel_tensor->GetType(), device_tensor->GetNodeIndex()};
         kernel_tensor->set_device_address(nullptr);
       }

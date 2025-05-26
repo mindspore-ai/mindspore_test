@@ -1378,6 +1378,7 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
   auto host_tensor_address = std::dynamic_pointer_cast<DeviceTensor>(tensor->device_address());
   auto host_kernel_tensor = node_kernel_tensor->CloneKernelTensor();
   host_kernel_tensor->set_device_address(host_tensor_address);
+  MS_LOG(DEBUG) << "Create kernel tensor:" << host_kernel_tensor->ToString();
   // Use the device address of host tensor to set device tensor.
   bool is_need_sync = IsNeedSync(tensor, &is_sub_data_);
   if (host_tensor_address != device_tensor) {

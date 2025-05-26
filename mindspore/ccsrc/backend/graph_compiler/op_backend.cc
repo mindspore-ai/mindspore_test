@@ -578,6 +578,7 @@ void ViewBackend::RunViewKernelTask(const pynative::BaseOpRunInfo &base_op_run_i
       auto kernel_tensor = AnfAlgo::CreateKernelTensor(
         nullptr, address_size, Format::DEFAULT_FORMAT, input_tensor->data_type(), input_tensor->shape(),
         device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
+      MS_LOG(DEBUG) << "Create kernel tensor:" << kernel_tensor->ToString();
       kernel_tensor->SetType(std::make_shared<TensorType>(input_tensor->Dtype()));
       kernel_tensor->SetShape(std::make_shared<abstract::TensorShape>(input_tensor->shape()));
       kernel_tensor->set_stream_id(base_op_run_info.stream_id);
