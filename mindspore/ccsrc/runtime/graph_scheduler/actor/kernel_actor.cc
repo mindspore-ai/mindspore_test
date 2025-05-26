@@ -1178,6 +1178,10 @@ void KernelActor::CopyParameterDeviceTensor(KernelTensorPtr kernel_tensor, size_
     return;
   }
 
+  if (!WaitRuntimePipelineFinish(context, GetAID().Name())) {
+    MS_LOG(INFO) << "Run failed and early stop for kernel: " << kernel_->fullname_with_scope();
+    return;
+  }
   if (inputs_continuous_memory_) {
     std::string error_info = GetAID().Name() + " inputs must be continuous memory and can't be copied for index " +
                              std::to_string(input_index);
