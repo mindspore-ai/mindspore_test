@@ -71,7 +71,9 @@ class BACKEND_COMMON_EXPORT AllToAllUnifyMindIR : public PatternProcessPass {
   const AnfNodePtr Process(const FuncGraphPtr &, const AnfNodePtr &, const EquivPtr &) const override;
 
  private:
-  const CNodePtr CreateReshapeNode(const FuncGraphPtr &, const AnfNodePtr &, const ShapeVector &) const;
+  const CNodePtr CreateTransposeNode(const KernelGraphPtr &graph, const AnfNodePtr &input_node, ShapeVector shape,
+                                     ShapeVector dims) const;
+  const CNodePtr CreateReshapeNode(const KernelGraphPtr &, const AnfNodePtr &, const ShapeVector &) const;
   CNodePtr CreateSplitNode(const KernelGraphPtr &graph, const CNodePtr &all_to_all, const AnfNodePtr &input_node,
                            int64_t split_count, int64_t split_dim) const;
   CNodePtr CreateSplitNodeWithSplitDim(const KernelGraphPtr &graph, const CNodePtr &all_to_all) const;
@@ -86,6 +88,11 @@ class BACKEND_COMMON_EXPORT AllToAllUnifyMindIR : public PatternProcessPass {
                                          const CNodePtr &input_node) const;
   CNodePtr CreateConcatNodeWithDim0(const KernelGraphPtr &graph, const CNodePtr &all_to_all,
                                     const CNodePtr &input_node) const;
+  CNodePtr CreateAntecedentTransposeNode(const KernelGraphPtr &kernel_graph, const AnfNodePtr &all_to_all_input,
+                                         const ShapeVector &shape, int64_t split_count, size_t split_idx) const;
+  CNodePtr CreateSuccessorTransposeNode(const KernelGraphPtr &kernel_graph, const AnfNodePtr &new_ata,
+                                        const ShapeVector &out_shape, int64_t split_count, size_t split_idx,
+                                        size_t concat_idx) const;
   std::vector<std::string> MustExistPrimitiveName() const override;
 };
 }  // namespace opt
