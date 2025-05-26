@@ -81,7 +81,7 @@ void MstxDeviceTask::Run() {
   run_func_();
 }
 
-void MstxDispatcher::RangeStartImpl(mstxDomainHandle_t domain, const char *message, void *stream, uint64_t msRangeId) {
+void MstxDispatcher::RangeStartImpl(const std::string &domain, const char *message, void *stream, uint64_t msRangeId) {
   uint64_t taskId = MstxImpl::GetInstance().RangeStartAImpl(domain, message, stream);
   if (taskId == 0) {
     MS_LOG(WARNING) << "Failed to call mstx range start func.";
@@ -91,7 +91,7 @@ void MstxDispatcher::RangeStartImpl(mstxDomainHandle_t domain, const char *messa
   g_mstxRangeIds.insert(std::make_pair(msRangeId, taskId));
 }
 
-void MstxDispatcher::RangeEndImpl(mstxDomainHandle_t domain, uint64_t msRangeId) {
+void MstxDispatcher::RangeEndImpl(const std::string &domain, uint64_t msRangeId) {
   uint64_t taskId = 0;
   {
     std::lock_guard<std::mutex> lock(g_mstxRangeIdsMtx);
@@ -106,17 +106,17 @@ void MstxDispatcher::RangeEndImpl(mstxDomainHandle_t domain, uint64_t msRangeId)
   MstxImpl::GetInstance().RangeEndImpl(domain, taskId);
 }
 
-void MstxDispatcher::DispatchMarkTask(mstxDomainHandle_t domain, const char *message, void *stream) {
+void MstxDispatcher::DispatchMarkTask(const std::string &domain_name, const char *message, void *stream) {
   // in case input msg is released before use it, create new message
   auto msgPtr = std::make_shared<std::string>(message);
   MS_EXCEPTION_IF_NULL(msgPtr);
 
   DispatchFrontendTask(std::make_shared<MstxFrontendTask>(
-    [domain, msgPtr, stream]() {
-      auto txTask = [domain, msgPtr, stream]() {
-        runtime::OpExecutor::DispatchLaunchTask([domain, msgPtr, stream]() {
+    [domain_name, msgPtr, stream]() {
+      auto txTask = [domain_name, msgPtr, stream]() {
+        runtime::OpExecutor::DispatchLaunchTask([domain_name, msgPtr, stream]() {
           SetStreamForCurrentThread();
-          MstxImpl::GetInstance().MarkAImpl(domain, msgPtr->c_str(), stream);
+          MstxImpl::GetInstance().MarkAImpl(domain_name, msgPtr->c_str(), stream);
         });
       };
       if (!runtime::OpExecutor::NeedSync()) {
@@ -128,18 +128,18 @@ void MstxDispatcher::DispatchMarkTask(mstxDomainHandle_t domain, const char *mes
     MstxTaskType::mark));
 }
 
-void MstxDispatcher::DispatchRangeStartTask(mstxDomainHandle_t domain, const char *message, void *stream,
+void MstxDispatcher::DispatchRangeStartTask(const std::string &domain_name, const char *message, void *stream,
                                             uint64_t msRangeId) {
   // in case input msg is released before use it, create new message
   auto msgPtr = std::make_shared<std::string>(message);
   MS_EXCEPTION_IF_NULL(msgPtr);
 
   DispatchFrontendTask(std::make_shared<MstxFrontendTask>(
-    [domain, msgPtr, stream, msRangeId]() {
-      auto txTask = [domain, msgPtr, stream, msRangeId]() {
-        runtime::OpExecutor::DispatchLaunchTask([domain, msgPtr, stream, msRangeId]() {
+    [domain_name, msgPtr, stream, msRangeId]() {
+      auto txTask = [domain_name, msgPtr, stream, msRangeId]() {
+        runtime::OpExecutor::DispatchLaunchTask([domain_name, msgPtr, stream, msRangeId]() {
           SetStreamForCurrentThread();
-          RangeStartImpl(domain, msgPtr->c_str(), stream, msRangeId);
+          RangeStartImpl(domain_name, msgPtr->c_str(), stream, msRangeId);
         });
       };
       if (!runtime::OpExecutor::NeedSync()) {
@@ -151,13 +151,13 @@ void MstxDispatcher::DispatchRangeStartTask(mstxDomainHandle_t domain, const cha
     MstxTaskType::start));
 }
 
-void MstxDispatcher::DispatchRangeEndTask(mstxDomainHandle_t domain, uint64_t msRangeId) {
+void MstxDispatcher::DispatchRangeEndTask(const std::string &domain_name, uint64_t msRangeId) {
   DispatchFrontendTask(std::make_shared<MstxFrontendTask>(
-    [domain, msRangeId]() {
-      auto txTask = [domain, msRangeId]() {
-        runtime::OpExecutor::DispatchLaunchTask([domain, msRangeId]() {
+    [domain_name, msRangeId]() {
+      auto txTask = [domain_name, msRangeId]() {
+        runtime::OpExecutor::DispatchLaunchTask([domain_name, msRangeId]() {
           SetStreamForCurrentThread();
-          MstxDispatcher::RangeEndImpl(domain, msRangeId);
+          MstxDispatcher::RangeEndImpl(domain_name, msRangeId);
         });
       };
       if (!runtime::OpExecutor::NeedSync()) {
@@ -169,7 +169,7 @@ void MstxDispatcher::DispatchRangeEndTask(mstxDomainHandle_t domain, uint64_t ms
     MstxTaskType::end));
 }
 
-void MstxDispatcher::Mark(const char *message, void *stream, mstxDomainHandle_t domain) {
+void MstxDispatcher::Mark(const char *message, void *stream, const std::string &domain_name) {
   MS_LOG(INFO) << "Start to run mstx mark for message: " << message;
   if (!IsEnable()) {
     return;
@@ -177,13 +177,13 @@ void MstxDispatcher::Mark(const char *message, void *stream, mstxDomainHandle_t 
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kOther, runtime::ProfilerEvent::kExecute,
                                      MSTX_OP_NAME_MARK, false, true);
   if (stream == nullptr) {
-    MstxImpl::GetInstance().MarkAImpl(domain, message, stream);
+    MstxImpl::GetInstance().MarkAImpl(domain_name, message, stream);
   } else {
-    DispatchMarkTask(domain, message, stream);
+    DispatchMarkTask(domain_name, message, stream);
   }
 }
 
-uint64_t MstxDispatcher::RangeStart(const char *message, void *stream, mstxDomainHandle_t domain) {
+uint64_t MstxDispatcher::RangeStart(const char *message, void *stream, const std::string &domain_name) {
   MS_LOG(INFO) << "Start to run mstx range start for message: " << message;
   if (!IsEnable()) {
     return 0;
@@ -192,18 +192,18 @@ uint64_t MstxDispatcher::RangeStart(const char *message, void *stream, mstxDomai
                                      MSTX_OP_NAME_RANGE_START, false, true);
   uint64_t id = msRangeId_++;
   if (stream == nullptr) {
-    RangeStartImpl(domain, message, stream, id);
+    RangeStartImpl(domain_name, message, stream, id);
   } else {
     {
       std::lock_guard<std::mutex> lock(idStreamsMtx_);
       msRangeIdsWithStream_.insert(id);
     }
-    DispatchRangeStartTask(domain, message, stream, id);
+    DispatchRangeStartTask(domain_name, message, stream, id);
   }
   return id;
 }
 
-void MstxDispatcher::RangeEnd(uint64_t msRangeId, mstxDomainHandle_t domain) {
+void MstxDispatcher::RangeEnd(uint64_t msRangeId, const std::string &domain_name) {
   MS_LOG(INFO) << "Start to run mstx range end, id: " << msRangeId;
   if (msRangeId == 0 || !IsEnable()) {
     return;
@@ -219,9 +219,9 @@ void MstxDispatcher::RangeEnd(uint64_t msRangeId, mstxDomainHandle_t domain) {
     }
   }
   if (!rangeIdWithStream) {
-    RangeEndImpl(domain, msRangeId);
+    RangeEndImpl(domain_name, msRangeId);
   } else {
-    DispatchRangeEndTask(domain, msRangeId);
+    DispatchRangeEndTask(domain_name, msRangeId);
   }
 }
 
@@ -230,6 +230,11 @@ mstxDomainHandle_t MstxDispatcher::DomainCreate(const char *name) {
 }
 
 void MstxDispatcher::DomainDestroy(mstxDomainHandle_t domain) { MstxImpl::GetInstance().DomainDestroyImpl(domain); }
+
+void MstxDispatcher::SetDomain(const std::vector<std::string> &domainInclude,
+                               const std::vector<std::string> &domainExclude) {
+  MstxImpl::GetInstance().SetDomainImpl(domainInclude, domainExclude);
+}
 
 void MstxDispatcher::Enable() {
   MS_LOG(INFO) << "enable mstx";

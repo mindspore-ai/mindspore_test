@@ -842,6 +842,8 @@ class Profile:
             record_shapes=self._record_shapes,
             data_simplification=self._experimental_config.data_simplification,
             mstx=self._experimental_config.mstx,
+            mstx_domain_include=self._experimental_config.mstx_domain_include,
+            mstx_domain_exclude=self._experimental_config.mstx_domain_exclude,
             export_type=self._experimental_config.export_type,
             sys_io=self._experimental_config.sys_io,
             sys_interconnection=self._experimental_config.sys_interconnection,

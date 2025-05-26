@@ -107,9 +107,13 @@ class PROFILER_EXPORT Profiler {
   virtual void OpDataProducerEnd() = 0;
   virtual void RecordMemoryPoolInfo(const size_t total_allocated, const size_t total_reserved,
                                     const size_t total_active) {}
-  virtual void MstxMark(const std::string &message, void *stream = nullptr) {}
-  virtual int MstxRangeStart(const std::string &message, void *stream = nullptr) { return 0; }
-  virtual void MstxRangeEnd(int range_id) {}
+  virtual void MstxMark(const std::string &message, void *stream = nullptr,
+                        const std::string &domain_name = "default") {}
+  virtual int MstxRangeStart(const std::string &message, void *stream = nullptr,
+                             const std::string &domain_name = "default") {
+    return 0;
+  }
+  virtual void MstxRangeEnd(int range_id, const std::string &domain_name = "default") {}
   virtual bool EnableRecordShapes() { return false; }
   void RecordOneStepStartEndInfo();
   bool GetEnableFlag() const { return enable_flag_; }

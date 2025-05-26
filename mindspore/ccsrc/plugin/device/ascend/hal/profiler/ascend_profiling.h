@@ -17,6 +17,7 @@
 #include <string>
 #include <memory>
 #include <map>
+#include <vector>
 #include "acl/acl_prof.h"
 #include "include/backend/kernel_graph.h"
 #include "common/kernel.h"
@@ -51,12 +52,16 @@ struct AscendProfilerConfig {
   std::string aicoreMetrics;
   std::string outputPath;
   std::string frameworkDataPath;
+  std::vector<std::string> mstxDomainInclude;
+  std::vector<std::string> mstxDomainExclude;
 
   AscendProfilerConfig() = default;
   AscendProfilerConfig(uint32_t deviceId, uint32_t rankId, bool profileMemory, bool l2Cache, bool hbmDdr, bool sysIo,
                        bool sysInterconnection, bool withStack, bool mstx, bool parallelStrategy, bool pcie,
                        bool recordShapes, const std::string &profilerLevel, const std::string &aicoreMetrics,
-                       const std::string &outputPath, const std::string &frameworkDataPath)
+                       const std::string &outputPath, const std::string &frameworkDataPath,
+                       const std::vector<std::string> &mstxDomainInclude,
+                       const std::vector<std::string> &mstxDomainExclude)
       : deviceId(deviceId),
         rankId(rankId),
         profileMemory(profileMemory),
@@ -72,7 +77,9 @@ struct AscendProfilerConfig {
         profilerLevel(profilerLevel),
         aicoreMetrics(aicoreMetrics),
         outputPath(outputPath),
-        frameworkDataPath(frameworkDataPath) {}
+        frameworkDataPath(frameworkDataPath),
+        mstxDomainInclude(mstxDomainInclude),
+        mstxDomainExclude(mstxDomainExclude) {}
 
   void Clear() {
     deviceId = 0;
@@ -84,6 +91,7 @@ struct AscendProfilerConfig {
     sysIo = false;
     sysInterconnection = false;
     withStack = false;
+    mstx = false;
     parallelStrategy = false;
     cpuTrace = false;
     npuTrace = false;
@@ -92,6 +100,8 @@ struct AscendProfilerConfig {
     aicoreMetrics.clear();
     outputPath.clear();
     frameworkDataPath.clear();
+    mstxDomainInclude.clear();
+    mstxDomainExclude.clear();
   }
 };
 
@@ -111,9 +121,11 @@ class AscendProfiler : public Profiler {
   void StepStop() override;
   void StepProfilingEnable(const bool enable_flag) override;
   void OpDataProducerEnd() override { return; }
-  void MstxMark(const std::string &message, void *stream = nullptr) override;
-  int MstxRangeStart(const std::string &message, void *stream = nullptr) override;
-  void MstxRangeEnd(int range_id) override;
+  void MstxMark(const std::string &message, void *stream = nullptr,
+                const std::string &domain_name = "default") override;
+  int MstxRangeStart(const std::string &message, void *stream = nullptr,
+                     const std::string &domain_name = "default") override;
+  void MstxRangeEnd(int range_id, const std::string &domain_name = "default") override;
   bool EnableRecordShapes();
 
  protected:

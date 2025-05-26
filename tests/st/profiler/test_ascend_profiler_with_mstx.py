@@ -17,12 +17,12 @@ import csv
 import glob
 import os
 import tempfile
+import numpy as np
 import matplotlib.pyplot as plt
 import mindspore as ms
 from mindspore import dataset as ds
-from mindspore import context
-from mindspore import Profiler
-from mindspore.profiler import ProfilerLevel, ProfilerActivity
+from mindspore import context, Tensor, Profiler
+from mindspore.profiler import ProfilerLevel, ProfilerActivity, mstx
 from model_zoo import TinyAddNet
 from tests.mark_utils import arg_mark
 from file_check import FileChecker
@@ -30,6 +30,7 @@ from file_check import FileChecker
 DATASET_PATH = "/home/workspace/mindspore_dataset/mnist"
 
 
+# pylint: disable=protected-access
 def plot(imgs, first_origin=None):
     num_rows = 1
     num_cols = len(imgs)
@@ -44,6 +45,13 @@ def plot(imgs, first_origin=None):
         axs[0, 0].set(title='Original image')
         axs[0, 0].title.set_size(8)
     plt.tight_layout()
+
+
+def train(add):
+    """ Train add net"""
+    x = np.random.randn(1, 3, 3, 4).astype(np.float32)
+    y = np.random.randn(1, 3, 3, 4).astype(np.float32)
+    add(Tensor(x), Tensor(y))
 
 
 def check_result(result_path: str):
@@ -105,3 +113,105 @@ def test_mstx_profiler():
                                        f"logs/profiler_*.log")
         for profiler_log_path in profiler_log_paths:
             FileChecker.check_file_for_keyword(profiler_log_path, "error")
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_mstx_profiler_with_domain_include():
+    """
+    Feature: Ascend Profiler for mstx domain data
+    Description: Test Ascend Profiler for mstx domain data.
+    Expectation: The profiler successfully collects domain data and generates the expected files.
+    """
+    with tempfile.TemporaryDirectory(suffix="_mstx_profiler") as tmpdir:
+        context.set_context(mode=ms.PYNATIVE_MODE, device_target="Ascend")
+        net = TinyAddNet()
+        experimental_config = ms.profiler._ExperimentalConfig(
+            profiler_level=ProfilerLevel.LevelNone,
+            mstx=True,
+            mstx_domain_include=["default"]
+        )
+        with ms.profiler.profile(activities=[ProfilerActivity.NPU],
+                                 schedule=ms.profiler.schedule(wait=0, warmup=0, active=1, repeat=1, skip_first=0),
+                                 on_trace_ready=ms.profiler.tensorboard_trace_handler(dir_name=tmpdir),
+                                 experimental_config=experimental_config) as profiler:
+            for _ in range(1):
+                stream = ms.runtime.current_stream()
+                range_id1 = mstx.range_start("range1", stream)
+                range_id2 = mstx.range_start("range2", None, "1")
+                mstx.mark("mark1", stream)
+                mstx.mark("mark2", None, "1")
+                train(net)
+                mstx.range_end(range_id1)
+                mstx.range_end(range_id2, "1")
+                profiler.step()
+
+        trace_view_json_path = os.path.join(
+            glob.glob(f"{tmpdir}/*_ascend_ms")[0],
+            "ASCEND_PROFILER_OUTPUT",
+            "trace_view.json"
+        )
+        FileChecker.check_timeline_values(
+            trace_view_json_path,
+            "name",
+            [
+                "range1"
+            ],
+        )
+        FileChecker.check_timeline_values(
+            trace_view_json_path,
+            "name",
+            [
+                "mark1"
+            ],
+        )
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_mstx_profiler_with_domain_exclude():
+    """
+    Feature: Ascend Profiler for mstx domain data
+    Description: Test Ascend Profiler for mstx domain data.
+    Expectation: The profiler successfully collects domain data and generates the expected files.
+    """
+    with tempfile.TemporaryDirectory(suffix="_mstx_profiler") as tmpdir:
+        context.set_context(mode=ms.PYNATIVE_MODE, device_target="Ascend")
+        net = TinyAddNet()
+        experimental_config = ms.profiler._ExperimentalConfig(
+            profiler_level=ProfilerLevel.LevelNone,
+            mstx=True,
+            mstx_domain_exclude=["default"]
+        )
+        with ms.profiler.profile(activities=[ProfilerActivity.NPU],
+                                 schedule=ms.profiler.schedule(wait=0, warmup=0, active=1, repeat=1, skip_first=0),
+                                 on_trace_ready=ms.profiler.tensorboard_trace_handler(dir_name=tmpdir),
+                                 experimental_config=experimental_config) as profiler:
+            for _ in range(1):
+                stream = ms.runtime.current_stream()
+                range_id1 = mstx.range_start("range1", stream)
+                range_id2 = mstx.range_start("range2", None, "1")
+                mstx.mark("mark1", stream)
+                mstx.mark("mark2", None, "1")
+                train(net)
+                mstx.range_end(range_id1)
+                mstx.range_end(range_id2, "1")
+                profiler.step()
+
+        trace_view_json_path = os.path.join(
+            glob.glob(f"{tmpdir}/*_ascend_ms")[0],
+            "ASCEND_PROFILER_OUTPUT",
+            "trace_view.json"
+        )
+        FileChecker.check_timeline_values(
+            trace_view_json_path,
+            "name",
+            [
+                "range2"
+            ],
+        )
+        FileChecker.check_timeline_values(
+            trace_view_json_path,
+            "name",
+            [
+                "mark2"
+            ],
+        )

@@ -16,6 +16,7 @@
 #include "debug/profiler/mstx/mstx_impl.h"
 #include <sstream>
 #include <string>
+#include <vector>
 #include <unordered_map>
 #include <mutex>
 #include "debug/profiler/profiling.h"
@@ -110,16 +111,23 @@ bool MstxImpl::IsEnable() { return isProfEnable_.load() || IsMsptiEnable(); }
 
 bool MstxImpl::IsSupportMstxApi(bool withDomain) { return withDomain ? isMstxDomainSupport_ : isMstxSupport_; }
 
-void MstxImpl::MarkAImpl(mstxDomainHandle_t domain, const char *message, void *stream) {
+void MstxImpl::MarkAImpl(const std::string &domainName, const char *message, void *stream) {
   if (!IsEnable()) {
     return;
   }
-  if (!IsSupportMstxApi(domain != nullptr)) {
+  if (!IsDomainEnable(domainName)) {
+    MS_LOG(WARNING) << "Disabled domain: " << domainName;
+    return;
+  }
+  mstxDomainHandle_t domainHandle = GetDomainHandle(domainName);
+  // cppcheck-suppress *
+  if (!IsSupportMstxApi(domainHandle != nullptr)) {
     return;
   }
   uint64_t startTime = mindspore::profiler::Utils::getClockSyscnt();
-  if (domain) {
-    CALL_MSTX_API(mstxDomainMarkA, domain, message, stream);
+  // cppcheck-suppress *
+  if (domainHandle) {
+    CALL_MSTX_API(mstxDomainMarkA, domainHandle, message, stream);
   } else {
     CALL_MSTX_API(mstxMarkA, message, stream);
   }
@@ -127,17 +135,24 @@ void MstxImpl::MarkAImpl(mstxDomainHandle_t domain, const char *message, void *s
   mindspore::profiler::CollectHostInfo(MSTX_MODULE, MSTX_EVENT, MSTX_STAGE_MARK, startTime, endTime);
 }
 
-uint64_t MstxImpl::RangeStartAImpl(mstxDomainHandle_t domain, const char *message, void *stream) {
+uint64_t MstxImpl::RangeStartAImpl(const std::string &domainName, const char *message, void *stream) {
   uint64_t txTaskId = 0;
   if (!IsEnable()) {
     return txTaskId;
   }
-  if (!IsSupportMstxApi(domain != nullptr)) {
+  if (!IsDomainEnable(domainName)) {
+    MS_LOG(WARNING) << "Disabled domain: " << domainName;
+    return 0;
+  }
+  mstxDomainHandle_t domainHandle = GetDomainHandle(domainName);
+  // cppcheck-suppress *
+  if (!IsSupportMstxApi(domainHandle != nullptr)) {
     return txTaskId;
   }
   uint64_t startTime = mindspore::profiler::GetClockSyscnt();
-  if (domain) {
-    txTaskId = CALL_MSTX_API(mstxDomainRangeStartA, domain, message, stream);
+  // cppcheck-suppress *
+  if (domainHandle) {
+    txTaskId = CALL_MSTX_API(mstxDomainRangeStartA, domainHandle, message, stream);
   } else {
     txTaskId = CALL_MSTX_API(mstxRangeStartA, message, stream);
   }
@@ -151,11 +166,17 @@ uint64_t MstxImpl::RangeStartAImpl(mstxDomainHandle_t domain, const char *messag
   return txTaskId;
 }
 
-void MstxImpl::RangeEndImpl(mstxDomainHandle_t domain, uint64_t txTaskId) {
+void MstxImpl::RangeEndImpl(const std::string &domainName, uint64_t txTaskId) {
   if (!IsEnable()) {
     return;
   }
-  if (!IsSupportMstxApi(domain != nullptr)) {
+  if (!IsDomainEnable(domainName)) {
+    MS_LOG(WARNING) << "Disabled domain: " << domainName;
+    return;
+  }
+  mstxDomainHandle_t domainHandle = GetDomainHandle(domainName);
+  // cppcheck-suppress *
+  if (!IsSupportMstxApi(domainHandle != nullptr)) {
     return;
   }
   if (txTaskId == 0) {
@@ -172,8 +193,9 @@ void MstxImpl::RangeEndImpl(mstxDomainHandle_t domain, uint64_t txTaskId) {
     startTime = iter->second;
     g_mstxInfoTime.erase(iter);
   }
-  if (domain) {
-    CALL_MSTX_API(mstxDomainRangeEnd, domain, txTaskId);
+  // cppcheck-suppress *
+  if (domainHandle) {
+    CALL_MSTX_API(mstxDomainRangeEnd, domainHandle, txTaskId);
   } else {
     CALL_MSTX_API(mstxRangeEnd, txTaskId);
   }
@@ -186,7 +208,6 @@ mstxDomainHandle_t MstxImpl::DomainCreateAImpl(const char *domainName) {
     return nullptr;
   }
   std::string nameStr = std::string(domainName);
-  std::lock_guard<std::mutex> lock(g_mstxRangeIdsMtx);
   auto iter = domains_.find(nameStr);
   if (iter != domains_.end()) {
     return iter->second;
@@ -236,6 +257,38 @@ mstxMemHeapHandle_t MstxImpl::MemHeapRegisterImpl(mstxDomainHandle_t domain, mst
     return nullptr;
   }
   return CALL_MSTX_API(mstxMemHeapRegister, domain, desc);
+}
+
+void MstxImpl::SetDomainImpl(const std::vector<std::string> &domainInclude,
+                             const std::vector<std::string> &domainExclude) {
+  if (!IsSupportMstxApi(true)) {
+    return;
+  }
+  domainInclude_ = domainInclude;
+  domainExclude_ = domainExclude;
+}
+
+bool MstxImpl::IsDomainEnable(const std::string &domainName) {
+  if (domainInclude_.empty()) {
+    if (std::find(domainExclude_.begin(), domainExclude_.end(), domainName) != domainExclude_.end()) {
+      return false;
+    }
+    return true;
+  }
+  if (std::find(domainInclude_.begin(), domainInclude_.end(), domainName) != domainInclude_.end()) {
+    return true;
+  }
+  return false;
+}
+
+mstxDomainHandle_t MstxImpl::GetDomainHandle(const std::string &domainName) {
+  if (domains_.find(domainName) != domains_.end()) {
+    return domains_[domainName];
+  }
+  if (domainName == MSTX_DOMAIN_DEFAULT) {
+    return nullptr;
+  }
+  return DomainCreateAImpl(domainName.c_str());
 }
 
 }  // namespace profiler
