@@ -327,7 +327,7 @@ void CheckNodeValid(const AnfNodePtr &node) {
   }
 }
 
-void UnifyIR(const CNodePtr &cnode, bool enable_run_graph_by_single_op) {
+void UnifyIR(const CNodePtr &cnode) {
   MS_EXCEPTION_IF_NULL(cnode);
   static const std::map<std::string, std::string> kOpListToTupleNames = {
     {mindspore::kMakeListNewOpName, mindspore::kMakeTupleOpName},
@@ -347,8 +347,7 @@ void UnifyIR(const CNodePtr &cnode, bool enable_run_graph_by_single_op) {
   }
 
   // TupleGetItem --> RealTupleGetItem.
-  if (!enable_run_graph_by_single_op && op_name == mindspore::kTupleGetItemOpName &&
-      NeedConvertToRealTupleGetItem(cnode)) {
+  if (op_name == mindspore::kTupleGetItemOpName && NeedConvertToRealTupleGetItem(cnode)) {
     common::AnfAlgo::SetNodeAttr(kAttrOpAdaptationProcessed, MakeValue(true), cnode);
     cnode->set_input(0, mindspore::NewValueNode(std::make_shared<Primitive>(mindspore::kRealTupleGetItemOpName)));
     // Reset full scope name.
@@ -672,32 +671,26 @@ bool AddKernelGraphCompileInfo(const KernelGraphPtr &kernel_graph, const session
       kernel_graph->SetKernelInfoForNode(p);
     }
   }
-
-  // Run by single op will create kernel info in single op graph, so no need do this here;
-  // But, run by Actor need kernel info, so do this here
-  bool run_by_single_op = kernel_graph->has_flag(kFlagEnableRunGraphBySingleOp);
-  if (!run_by_single_op) {
-    const auto &nodes = TopoSort(kernel_graph->get_return());
-    for (const auto &node : nodes) {
-      MS_EXCEPTION_IF_NULL(node);
-      if (node->isa<CNode>()) {
-        const auto &cnode = node->cast<CNodePtr>();
-        MS_EXCEPTION_IF_NULL(cnode);
-        // Bprop cut use prim_py, no need change
-        if (auto prim = GetValueNode<PrimitivePtr>(cnode->input(kIndex0));
-            !IsPrimitiveEquals(prim, prim::kPrimBpropCut)) {
-          auto new_prim = std::make_shared<Primitive>(*prim);
-          cnode->set_input(kIndex0, NewValueNode(new_prim));
-        }
-        kernel_graph->PostNewCNode(cnode);
-      } else {
-        if (node->isa<ValueNode>()) {
-          session_ptr->CreateNewValueNode(node, kernel_graph.get());
-        }
-        // Kernel graph new value node will create kernel info
-        if (node->kernel_info() == nullptr) {
-          kernel_graph->SetKernelInfoForNode(node);
-        }
+  const auto &nodes = TopoSort(kernel_graph->get_return());
+  for (const auto &node : nodes) {
+    MS_EXCEPTION_IF_NULL(node);
+    if (node->isa<CNode>()) {
+      const auto &cnode = node->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(cnode);
+      // Bprop cut use prim_py, no need change
+      if (auto prim = GetValueNode<PrimitivePtr>(cnode->input(kIndex0));
+          !IsPrimitiveEquals(prim, prim::kPrimBpropCut)) {
+        auto new_prim = std::make_shared<Primitive>(*prim);
+        cnode->set_input(kIndex0, NewValueNode(new_prim));
+      }
+      kernel_graph->PostNewCNode(cnode);
+    } else {
+      if (node->isa<ValueNode>()) {
+        session_ptr->CreateNewValueNode(node, kernel_graph.get());
+      }
+      // Kernel graph new value node will create kernel info
+      if (node->kernel_info() == nullptr) {
+        kernel_graph->SetKernelInfoForNode(node);
       }
     }
   }
@@ -861,7 +854,6 @@ void MSBackendBase::UnifyMindIR(const FuncGraphPtr &root_graph) const {
       }
     }
   }
-  bool enable_run_graph_by_single_op = root_graph->has_flag(kFlagEnableRunGraphBySingleOp);
   const auto &graphs = root_graph->manager()->func_graphs();
   for (const auto &graph : graphs) {
     MS_EXCEPTION_IF_NULL(graph);
@@ -880,7 +872,7 @@ void MSBackendBase::UnifyMindIR(const FuncGraphPtr &root_graph) const {
 
       const auto &cnode = node->cast<CNodePtr>();
       MS_EXCEPTION_IF_NULL(cnode);
-      UnifyIR(cnode, enable_run_graph_by_single_op);
+      UnifyIR(cnode);
       for (auto &input : cnode->inputs()) {
         MS_EXCEPTION_IF_NULL(input);
         if (input->seen_ == seen || !input->isa<CNode>()) {
@@ -969,24 +961,14 @@ void MSBackendBase::CompileGraphFromSegment(const GraphSegmentPtr &segment,
     AnfNodePtrList outputs;
     std::tie(fg, inputs, outputs) = compile::TransformSegmentToAnfGraph(segment->nodes_);
 
-    GraphId graph_id;
-    if (root_graph_->has_flag(kFlagEnableRunGraphBySingleOp)) {
-      graph_id = graph_compiler_->CompileDynamicGraph(segment, outputs, device_context, backend_jit_config);
-    } else {
-      auto ms_context = MsContext::GetInstance();
-      MS_EXCEPTION_IF_NULL(ms_context);
-      auto ms_execution_mode = ms_context->get_param<int>(MS_CTX_EXECUTION_MODE);
-      graph_id =
-        graph_compiler_->CompileGraph(segment, std::make_pair(inputs, outputs), device_context, backend_jit_config,
-                                      device::RunMode::kKernelMode, ms_execution_mode == kPynativeMode);
-      auto new_fg = graph_compiler_->Fetch(graph_id);
-      MS_EXCEPTION_IF_NULL(new_fg);
-      if (new_fg->has_flag(kFlagEnableRunGraphBySingleOp)) {
-        MS_LOG(INFO)
-          << "Set kFlagEnableRunGraphBySingleOp: require the root_graph and subgraph to have the same markings ";
-        root_graph_->set_flag(kFlagEnableRunGraphBySingleOp, true);
-      }
-    }
+    auto ms_context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(ms_context);
+    auto ms_execution_mode = ms_context->get_param<int>(MS_CTX_EXECUTION_MODE);
+    GraphId graph_id =
+      graph_compiler_->CompileGraph(segment, std::make_pair(inputs, outputs), device_context, backend_jit_config,
+                                    device::RunMode::kKernelMode, ms_execution_mode == kPynativeMode);
+    auto new_fg = graph_compiler_->Fetch(graph_id);
+    MS_EXCEPTION_IF_NULL(new_fg);
     CacheFuncGraphWithKernelGraphId(segment->nodes_[0]->func_graph(), graph_id, device_context);
   } else {
     // Compile the cut node.
@@ -1011,21 +993,11 @@ void MSBackendBase::TransformGraphToActorDAG(const GraphCompilerInfo &graph_comp
 void MSBackendBase::CompileKernelGraph(const KernelGraphPtr &kernel_graph,
                                        const std::pair<AnfNodePtrList, AnfNodePtrList> &io_nodes,
                                        DeviceContext *device_context) {
-  GraphId graph_id;
-  if (root_graph_->has_flag(kFlagEnableRunGraphBySingleOp)) {
-    graph_id = graph_compiler_->CompileDynamicGraph(kernel_graph, device_context);
-  } else {
-    auto ms_context = MsContext::GetInstance();
-    MS_EXCEPTION_IF_NULL(ms_context);
-    auto ms_execution_mode = ms_context->get_param<int>(MS_CTX_EXECUTION_MODE);
-    graph_id = graph_compiler_->CompileGraph(kernel_graph, io_nodes, device_context, device::RunMode::kKernelMode,
-                                             ms_execution_mode == kPynativeMode);
-    if (graph_compiler_->Fetch(graph_id)->has_flag(kFlagEnableRunGraphBySingleOp)) {
-      MS_LOG(INFO)
-        << "Set kFlagEnableRunGraphBySingleOp: require the root_graph and subgraph to have the same markings ";
-      root_graph_->set_flag(kFlagEnableRunGraphBySingleOp, true);
-    }
-  }
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto ms_execution_mode = ms_context->get_param<int>(MS_CTX_EXECUTION_MODE);
+  GraphId graph_id = graph_compiler_->CompileGraph(kernel_graph, io_nodes, device_context, device::RunMode::kKernelMode,
+                                                   ms_execution_mode == kPynativeMode);
   CacheFuncGraphWithKernelGraphId(kernel_graph, graph_id, device_context);
 }
 
@@ -1427,13 +1399,6 @@ bool MSBackendBase::CheckEnableGraphPipeline(const std::shared_ptr<GraphCompiler
 
   bool is_pynative_bprop_graph = root_graph_->has_flag(kFlagIsPynativeBpropGraph);
   if (is_pynative_bprop_graph) {
-    return false;
-  }
-
-  bool enable_run_graph_by_single_op =
-    std::any_of(graph_compiler_info->graphs_.begin(), graph_compiler_info->graphs_.end(),
-                [](const KernelGraphPtr &graph) { return graph->has_flag(kFlagEnableRunGraphBySingleOp); });
-  if (enable_run_graph_by_single_op) {
     return false;
   }
 
@@ -1941,11 +1906,7 @@ BackendGraphId MSBackendBase::Build(const FuncGraphPtr &func_graph, const Backen
   PROF_START(WaitAllCommInit);
   (void)distributed::collective::CollectiveManager::instance()->WaitAllCommInitDone();
   PROF_END(WaitAllCommInit);
-
-  bool pynative_with_jit_call_graph = func_graph->has_flag(kFlagPyNativeWithJitCallGraph);
-  if (!pynative_with_jit_call_graph) {
-    UnifyMindIR(root_graph);
-  }
+  UnifyMindIR(root_graph);
   root_graph_ = root_graph;
   auto origin_output_node = root_graph->output();
 
