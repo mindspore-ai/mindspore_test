@@ -74,8 +74,6 @@ py::object PYNATIVE_EXPORT PyboostCustomExtBase(const PrimitivePtr &prim, const 
   } else if (op_type == OperatorType::kInplaceOp) {
     PyNativeAlgo::PyBoost::BumpVersionAsync(op->outputs()[0]);
   }
-  // Data sync in mix mode(Graph and PyNative)
-  PyNativeAlgo::PyBoost::DataSyncForGraph(op);
   kernel::pyboost::PyBoostUtils::set_cur_stream_id(old_stream_id);
   MS_LOG(DEBUG) << "Run Pyboost_CustomExt end";
   return py::reinterpret_steal<py::object>(tensor::Wrap(real_out));

@@ -405,12 +405,7 @@ class MS_CORE_API Tensor : public MetaTensor {
   /// \brief Get Tensor data pointer for c++ type
   ///
   /// \return The pointer to the object
-  void *data_c() const {
-    if (device_sync_->GetDeviceType() != device::DeviceType::kCPU) {
-      MS_LOG(EXCEPTION) << "Only cpu Tensor can access data.";
-    }
-    return device_sync_->GetMutablePtr();
-  }
+  void *data_c() const;
 
   /// \brief Get Tensor data byte-size for c++ type
   ///

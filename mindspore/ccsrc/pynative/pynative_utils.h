@@ -203,7 +203,6 @@ struct PyBoost {
     return ret;
   }
 
-  static void DataSyncForGraph(const kernel::pyboost::OpPtr &op);
   static void MarkPyBoostInputs(const OpGradInfoPtr &op_grad_info);
   static void BumpVersionAsync(const tensor::TensorPtr &tensor);
   static ValuePtr OutputToValue(const tensor::TensorPtr &output) { return output; }

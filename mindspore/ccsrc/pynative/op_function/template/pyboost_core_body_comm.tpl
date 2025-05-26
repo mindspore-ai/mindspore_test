@@ -43,8 +43,6 @@ py::object ${func_name}_OP(const PrimitivePtr &prim, const std::vector<ops::OP_D
                 // Run op
                 auto outputs = kernel::pyboost::${operator_name}_inner(${cast_args}, comm_handle, target);
                 auto op = kernel::pyboost::OpRunStatus::Get().GetLastOp();
-                // Data sync in mix mode(Graph and PyNative)
-                PyNativeAlgo::PyBoost::DataSyncForGraph(op);
                 kernel::pyboost::PyBoostUtils::set_cur_stream_id(old_stream_id);
                 tensor::SetPromise(promises, outputs);
                 MS_LOG(DEBUG) << "Run frontend task ${func_name} end";
