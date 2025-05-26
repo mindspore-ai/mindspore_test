@@ -267,7 +267,7 @@ void EinsumExtAdjustOperands(const std::vector<TensorPtr> &operands_list,
 
     for (auto &axis : perm_axis) {
       if (axis == kIdleIdx) {
-        operand = expand_dims(operand, dim);
+        operand = expand_dims_view(operand, dim);
         axis = dim++;
       }
     }

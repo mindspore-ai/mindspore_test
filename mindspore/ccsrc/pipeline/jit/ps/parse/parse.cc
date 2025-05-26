@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -2705,7 +2705,14 @@ FunctionBlockPtr Parser::ParseAugAssign(const FunctionBlockPtr &block, const py:
   py::object value_object = python_adapter::GetPyObjAttr(node, "value");
   AnfNodePtr target_node = nullptr;
 
-  const auto &ns = block->GetAstOpNameSpace(op_object);
+  py::tuple ns;
+  auto enable_augassign = common::GetCompileConfig("JIT_ENABLE_AUGASSIGN_INPLACE") == "1";
+  MS_LOG(DEBUG) << "enable_augassign: " << enable_augassign;
+  if (enable_augassign) {
+    ns = block->GetAugAssignAstOpNameSpace(op_object);
+  } else {
+    ns = block->GetAstOpNameSpace(op_object);
+  }
   auto op_node = block->MakeResolveAstOpNameSpace(ns);
 
   AnfNodePtr value_node = ParseExprNode(block, value_object);

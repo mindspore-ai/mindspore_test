@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1443,18 +1443,19 @@ using AbstractEllipsisPtr = std::shared_ptr<AbstractEllipsis>;
 /// \brief Class AbstractRefTensor describes a RefTensor's abstract value.
 class MS_CORE_API AbstractRefTensor final : public AbstractTensor {
  public:
-  // The order of these enum values determines the priority in AbstractRefTensor::Join().
-  enum class RefTensorType : char { kParameter = 0, kInplaceOp, kViewOp };
-  static std::string ToString(RefTensorType type);
-
- public:
+  struct RefTensorType {
+    bool is_parameter;
+    bool is_inplace;
+    bool is_view_input;
+    bool is_view_output;
+  };
+  static constexpr RefTensorType ref_type_value{false, false, false, false};
   /// \brief Constructor of AbstractRef.
   ///
   /// \param[in] ref_value The tensor.
   /// \param[in] ref_key_value The ref key of tensor.
-  /// \param[in] ref_type The data source of this tensor.
   AbstractRefTensor(const AbstractTensorPtr &ref_value, const ValuePtr &ref_key_value,
-                    RefTensorType ref_type = RefTensorType::kParameter);
+                    RefTensorType ref_type_val = ref_type_value);
 
   /// \brief Destructor of AbstractEllipsis.
   ~AbstractRefTensor() override = default;
@@ -1490,10 +1491,6 @@ class MS_CORE_API AbstractRefTensor final : public AbstractTensor {
 
   void set_ref_key_value(const ValuePtr &ref_key_value) { ref_key_value_ = ref_key_value; }
 
-  /// \brief Whether it is a Parameter.
-  bool is_parameter() const { return ref_type_ == RefTensorType::kParameter; }
-  RefTensorType ref_type() const { return ref_type_; }
-
   AbstractBasePtr Broaden() const override;
 
   virtual AbstractBasePtr Join(const std::shared_ptr<AbstractRefTensor> &other);
@@ -1501,10 +1498,45 @@ class MS_CORE_API AbstractRefTensor final : public AbstractTensor {
 
   AbstractBasePtr PartialBroaden() const override;
 
+  bool is_parameter() const { return ref_tensor_type_.is_parameter; }
+  bool is_inplace() const { return ref_tensor_type_.is_inplace; }
+  bool is_view() const { return ref_tensor_type_.is_view_input || ref_tensor_type_.is_view_output; }
+  bool is_view_input() const { return ref_tensor_type_.is_view_input; }
+  bool is_view_output() const { return ref_tensor_type_.is_view_output; }
+  RefTensorType ref_tensor_type() const { return ref_tensor_type_; }
+
+  void set_ref_tensor_type(const RefTensorType ref_type) {
+    ref_tensor_type_.is_parameter = ref_type.is_parameter;
+    ref_tensor_type_.is_view_input = ref_type.is_view_input;
+    ref_tensor_type_.is_view_output = ref_type.is_view_output;
+    ref_tensor_type_.is_inplace = ref_type.is_inplace;
+  }
+  void set_is_parameter(bool is_parameter_value) { ref_tensor_type_.is_parameter = is_parameter_value; }
+  void set_is_view_input(bool is_view_input_value) { ref_tensor_type_.is_view_input = is_view_input_value; }
+  void set_is_view_output(bool is_view_output_value) { ref_tensor_type_.is_view_output = is_view_output_value; }
+  void set_is_inplace(bool is_inplace_value) { ref_tensor_type_.is_inplace = is_inplace_value; }
+
+  std::string RefTensorTypeToString() const {
+    std::ostringstream buffer;
+    if (is_parameter()) {
+      buffer << ", is_parameter";
+    }
+    if (is_view_input()) {
+      buffer << ", is_view_input";
+    }
+    if (is_view_output()) {
+      buffer << ", is_view_output";
+    }
+    if (is_inplace()) {
+      buffer << ", is_inplace";
+    }
+    return buffer.str();
+  }
+
  private:
   // ref_key_value is the reference key of AbstractRef, the value can be a string value or kValueAny
   ValuePtr ref_key_value_;
-  RefTensorType ref_type_;
+  RefTensorType ref_tensor_type_ = {false, false, false, false};
 };
 using AbstractRefPtr = std::shared_ptr<AbstractRefTensor>;
 

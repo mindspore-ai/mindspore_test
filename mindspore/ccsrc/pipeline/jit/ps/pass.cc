@@ -115,6 +115,7 @@
 #include "frontend/optimizer/irpass/expand_dump_flag.h"
 #include "frontend/optimizer/irpass/symbol_engine_optimizer.h"
 #include "frontend/optimizer/irpass/add_forward_monad_depend.h"
+#include "frontend/optimizer/irpass/check_invalid_view_inplace_dout.h"
 #include "pipeline/jit/ps/pass_config.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
@@ -321,6 +322,7 @@ FuncGraphPtr JitBpropGraphPass(const ResourcePtr &resource, bool need_renormaliz
   }
 
   opt::OptPassConfig grad_graph_opt = opt::OptPassConfig({
+    irpass.reset_defer_inline_,
     irpass.inline_,
     irpass.list_to_tuple_eliminator_,
     irpass.tuple_to_list_eliminator_,
@@ -358,6 +360,44 @@ FuncGraphPtr JitBpropGraphPass(const ResourcePtr &resource, bool need_renormaliz
   }
 #endif
 
+  return lifted_fg;
+}
+
+FuncGraphPtr CheckInvalidDoutGraphPass(const ResourcePtr &resource) {
+  opt::irpass::OptimizeIRPassLib irpass;
+  OptPassGroupMap map;
+
+  (void)map.emplace_back("parameter_eliminate", opt::OptPassConfig(opt::irpass::ParameterEliminator()));
+  opt::OptPassConfig grad_graph_opt = opt::OptPassConfig({
+    irpass.inline_,
+    irpass.updatestate_useless_node_eliminater_,
+    irpass.updatestate_pure_node_eliminater_,
+    irpass.partial_eliminate_,
+    irpass.list_to_tuple_eliminator_,
+    irpass.tuple_to_list_eliminator_,
+    irpass.tuple_list_get_set_item_eliminator_,
+    irpass.tuple_list_get_item_eliminator_,
+    irpass.tuple_list_set_item_eliminator_,
+    irpass.depend_value_elim_,
+    irpass.reshape_eliminate_,
+    irpass.switch_simplify_,
+    irpass.addn_zero_filter_,
+    irpass.ad_related_special_op_eliminate_,
+    irpass.special_op_eliminate_,
+    irpass.environ_get_eliminate_,
+    irpass.environ_get_add_eliminate_,
+    irpass.environ_get_set_eliminate_,
+    irpass.environ_get_depend_swap_,
+    irpass.environ_add_const_eliminate_,
+  });
+  (void)map.emplace_back("grad_graph_opt", grad_graph_opt);
+  (void)map.emplace_back("renormalize", opt::OptPassConfig::Renormalize());
+
+  MS_EXCEPTION_IF_NULL(resource);
+  auto func_graph = resource->func_graph();
+  auto graph_opt = opt::Optimizer::MakeOptimizer("check_invalid_dout_graph", resource, map, false, false, false);
+  auto optimized_fg = graph_opt->step(func_graph, false);
+  auto lifted_fg = LiftingClone(optimized_fg);
   return lifted_fg;
 }
 
@@ -621,6 +661,7 @@ OptPassGroupMap GetOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass, cons
      {kSwitchSimplifyFlag, opt::OptPassConfig({irpass.switch_simplify_})},
      {"loop_unroll", opt::OptPassConfig({irpass.loop_unroll_before_grad_})},
      {"a_1", a_1},
+     {"invalid_dout_check", opt::OptPassConfig(opt::irpass::CheckInvalidViewInplaceDout())},
      {"recompute_prepare", recompute_prepare},
      {"updatestate_depend_eliminate", updatestate_depend_eliminate},
      {"updatestate_assign_eliminate", updatestate_assign_eliminate},
@@ -735,6 +776,7 @@ OptPassGroupMap GetJitOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass, c
     {{kSwitchSimplifyFlag, opt::OptPassConfig({irpass.switch_simplify_})},
      {"loop_unroll", opt::OptPassConfig({irpass.loop_unroll_before_grad_})},
      {"a_1", GetJitOptPassA1(irpass)},
+     {"invalid_dout_check", opt::OptPassConfig(opt::irpass::CheckInvalidViewInplaceDout())},
      {"recompute_prepare", opt::OptPassConfig({irpass.set_cell_output_no_recompute_})},
      {"updatestate_depend_eliminate", opt::OptPassConfig(opt::irpass::UpdatestateDependEliminater())},
      {"updatestate_assign_eliminate", opt::OptPassConfig(opt::irpass::UpdatestateAssignEliminater())},
@@ -969,7 +1011,6 @@ OptPassGroupMap GetJitOptPassesB(const opt::irpass::OptimizeIRPassLib &irpass) {
     (void)frontend_op_eliminate_pass_list.emplace_back(irpass.special_op_eliminate_);
   }
   opt::OptPassConfig frontend_op_eliminate = opt::OptPassConfig(frontend_op_eliminate_pass_list);
-
   std::vector<opt::SubstitutionPtr> inline_after_opt_a_pass_list = {irpass.tuple_list_get_item_eliminator_};
   if (!pynative::GradState::Get().RequiresGrad()) {
     (void)inline_after_opt_a_pass_list.emplace_back(irpass.reset_defer_inline_);
@@ -1433,6 +1474,18 @@ bool RemoveValueNodeDuplicationsPass(const ResourcePtr &resource) {
       if (IsPrimitiveEquals(prim, prim::kPrimUpdateState)) {
         continue;
       }
+      // If valuenode is used by inplace_prim.
+      bool used_by_inplace_prim = std::any_of(users.begin(), users.end(), [](const auto &user) {
+        auto cnode = dyn_cast<CNode>(user.first);
+        if (cnode == nullptr) {
+          return false;
+        }
+        auto prim = GetValueNode<PrimitivePtr>(cnode->input(0));
+        return (prim != nullptr) && prim->inplace_prim();
+      });
+      if (used_by_inplace_prim) {
+        continue;
+      }
       // For data parallel with some parameters redundant, the allreduce will share the same value node
       // which will raise an error when do allreduce fusion, so the solution is to make the allreduce's value node
       // not be removed, if we found the fusion tag.
@@ -1462,11 +1515,25 @@ bool RemoveValueNodeDuplicationsPassForJit(const ResourcePtr &resource) {
   HashCache hash_cache;
   HashValue hashes;
   // Remove duplicated value nodes across all graphs in manager
+  const auto &node_user_map = manager->node_users();
   for (auto &fg : manager->func_graphs()) {
     auto value_nodes = fg->value_nodes();
     for (const auto &value_pair : value_nodes) {
       auto prim = GetValueNode<PrimitivePtr>(value_pair.first);
       if (IsPrimitiveEquals(prim, prim::kPrimUpdateState)) {
+        continue;
+      }
+      // If valuenode is used by inplace_prim.
+      auto &users = node_user_map.at(value_pair.first);
+      bool used_by_inplace_prim = std::any_of(users.begin(), users.end(), [](const auto &user) {
+        auto cnode = dyn_cast<CNode>(user.first);
+        if (cnode == nullptr) {
+          return false;
+        }
+        auto prim = GetValueNode<PrimitivePtr>(cnode->input(0));
+        return (prim != nullptr) && prim->inplace_prim();
+      });
+      if (used_by_inplace_prim) {
         continue;
       }
       TryToDoReplace(manager.get(), value_pair.first, &hash_cache, &hashes);

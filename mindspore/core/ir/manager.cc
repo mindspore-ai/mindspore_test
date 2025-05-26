@@ -1047,6 +1047,7 @@ FuncGraphSetPtr FuncGraphParentsTotalComputer::SeekParents(const FuncGraphPtr &f
       }
     }
   }
+  parents->erase(func_graph);
   return parents;
 }
 

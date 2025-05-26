@@ -673,9 +673,9 @@ bool InferMappingGet(CallNode *call_node, GraphBuilder *unused = nullptr) {
 }
 
 static void TensorAssignValue(CallNode *call_node, GraphBuilder *parent, ValueNode *old_value, ValueNode *new_value,
-                              SideEffect::Type type, const char *name) {
+                              SideEffect::Type type, const char *name, bool need_copy = true) {
   auto old_node = old_value;
-  auto new_node = parent->MakeTensorCopy(new_value);
+  auto new_node = need_copy ? parent->MakeTensorCopy(new_value) : new_value;
 
   call_node->SetSubGraph(nullptr);
   old_value->GetVobj()->SetNextVersion(new_node->GetVobj());
@@ -684,7 +684,9 @@ static void TensorAssignValue(CallNode *call_node, GraphBuilder *parent, ValueNo
   // update frame status and record side-effect
   bool is_referenced = false;
   parent->ReplaceAll(old_node, new_node, &is_referenced);
-  parent->ReplaceAll(call_node, new_node, &is_referenced);
+  if (call_node != new_node) {
+    parent->ReplaceAll(call_node, new_node, &is_referenced);
+  }
   is_referenced = IsReferencedVariable(old_value);
   MS_LOG(INFO) << "check the node is referenced: " << is_referenced << " [" << old_value->ToString();
   if (!is_referenced) {
@@ -724,22 +726,20 @@ bool InferTensorSetItem(CallNode *call_node, GraphBuilder *builder) {
     return false;
   }
 
-  // parser setitem
-  constexpr auto meta_module = "mindspore.ops.composite.multitype_ops";
-  auto meta = py::module::import(meta_module).attr("setitem").cast<mindspore::MetaFuncGraphPtr>();
-
+  py::object method = FuncGraphBuilder::ConvertMethod("Tensor", "__setitem__");
+  MS_EXCEPTION_IF_NULL(method.ptr());
   std::vector<ValueNode *> args = {self};
   for (size_t i = 1 + is_not_method; i < call_node->getInputs().size(); ++i) {
     args.push_back(call_node->input(i));
   }
-  auto abs = builder->FGBuilder()->AddNode(meta, builder->HandleInputArgs(std::move(args)));
-  if (abs == nullptr) {
+  StopTraceReason stop_reason = StopTraceReason::kNonStopTrace;
+  builder->FGAddNode(call_node, method, builder->HandleInputArgs(std::move(args)), &stop_reason);
+  if (!call_node->has_abstract_wrapper()) {
+    MS_LOG(INFO) << "Tensor setitem infer failed";
     return false;
   }
-  call_node->set_abstract_wrapper(abs);
-  call_node->SetVobj(AObject::Convert(abs));
 
-  TensorAssignValue(call_node, builder, self, call_node, SideEffect::kBuiltinMethod, "__setitem__");
+  TensorAssignValue(call_node, builder, self, call_node, SideEffect::kBuiltinMethod, "__setitem__", false);
 
   call_node->SetInlineReason(InlineReason::kInlineFuncSpecialize);
   return true;

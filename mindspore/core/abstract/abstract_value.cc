@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@
 namespace mindspore {
 namespace abstract {
 using mindspore::common::IsEqual;
-
+constexpr auto kHasViewOutputFlag = "has_view_output";
 AbstractBase::AbstractBase(const ValuePtr &value, const TypePtr &type, const BaseShapePtr &shape)
     : value_(value), type_(type), shape_(shape) {}
 
@@ -1730,6 +1730,14 @@ AbstractBasePtr AbstractTensor::Join(const AbstractBasePtr &other) {
   auto other_type = other->BuildType();
   MS_EXCEPTION_IF_NULL(other_type);
   MS_EXCEPTION_IF_NULL(element_);
+
+  auto has_view_output1 = other->user_data<bool>(kHasViewOutputFlag);
+  auto has_view_output2 = this->user_data<bool>(kHasViewOutputFlag);
+  bool has_view_output = false;
+  if ((has_view_output1 != nullptr && *has_view_output1) || (has_view_output2 != nullptr && *has_view_output2)) {
+    has_view_output = true;
+  }
+
   if (other->isa<AbstractNegligible>()) {
     return shared_from_base<AbstractBase>();
   }
@@ -1764,7 +1772,20 @@ AbstractBasePtr AbstractTensor::Join(const AbstractBasePtr &other) {
   // Check element
   auto element = element_->Join(other_tensor->element_);
   MS_EXCEPTION_IF_NULL(element);
-  return std::make_shared<AbstractTensor>(element, res_shape);
+  auto res = std::make_shared<AbstractTensor>(element, res_shape);
+  if (has_view_output) {
+    res->set_user_data<bool>(kHasViewOutputFlag, std::make_shared<bool>(true));
+  }
+  // tensor join ref_tensor, need record the ref_type of ref_tensor.
+  auto ref_other = other->cast<AbstractRefPtr>();
+  if (ref_other != nullptr && !ref_other->is_parameter()) {
+    auto ref_res = std::make_shared<AbstractRefTensor>(res, ref_other->ref_key_value(), ref_other->ref_tensor_type());
+    if (has_view_output) {
+      ref_res->set_user_data<bool>(kHasViewOutputFlag, std::make_shared<bool>(true));
+    }
+    return ref_res;
+  }
+  return res;
 }
 
 bool AbstractTensor::equal_to(const AbstractTensor &other) const {
@@ -1811,6 +1832,11 @@ AbstractBasePtr AbstractTensor::Clone() const {
   clone->set_value(GetValueTrack());
   clone->SetSymbolicShape(this->GetSymbolicShape());
   clone->SetSymbolicValue(this->GetSymbolicValue());
+  auto has_view_output = this->user_data<bool>(kHasViewOutputFlag);
+  if (has_view_output != nullptr && *has_view_output) {
+    clone->set_user_data<bool>(kHasViewOutputFlag, std::make_shared<bool>(true));
+  }
+
   return clone;
 }
 
@@ -1846,7 +1872,13 @@ std::string AbstractTensor::ToString() const {
   MS_EXCEPTION_IF_NULL(value_track);
   buffer << type_name() << "("
          << "shape: " << shape_track->ToString() << ", element: " << element_->ToString()
-         << ", value_ptr: " << value_track << ", value: " << value_track->ToString() << ")";
+         << ", value_ptr: " << value_track << ", value: " << value_track->ToString();
+
+  auto has_view_output = this->user_data<bool>(kHasViewOutputFlag);
+  if (has_view_output != nullptr && *has_view_output) {
+    buffer << ", has_view_output";
+  }
+  buffer << ")";
   return buffer.str();
 }
 
@@ -2073,8 +2105,8 @@ AbstractBasePtr AbstractJTagged::element() { return element_; }
 std::size_t AbstractJTagged::hash() const { return hash_combine(tid(), element_->hash()); }
 
 AbstractRefTensor::AbstractRefTensor(const AbstractTensorPtr &ref_value, const ValuePtr &ref_key_value,
-                                     RefTensorType ref_type)
-    : AbstractTensor(*ref_value), ref_key_value_(ref_key_value), ref_type_(ref_type) {
+                                     RefTensorType ref_tensor_type)
+    : AbstractTensor(*ref_value), ref_key_value_(ref_key_value), ref_tensor_type_(ref_tensor_type) {
   set_type(std::make_shared<RefType>());
   MS_EXCEPTION_IF_NULL(ref_key_value);
   if (ref_key_value != kValueAny && !ref_key_value->isa<RefKey>()) {
@@ -2108,21 +2140,44 @@ AbstractBasePtr AbstractRefTensor::Join(const std::shared_ptr<AbstractRefTensor>
   }
   // Firstly, join the ref_key_value.
   auto joined_ref_key = ValueJoin(ref_key_value_, other->ref_key_value_);
-  // Secondly , join the tensor value.
+  // Secondly, join the tensor value.
   auto joined_tensor = AbstractTensor::Join(other)->cast<AbstractTensorPtr>();
   MS_EXCEPTION_IF_NULL(joined_tensor);
-  if (ref_type_ != other->ref_type_) {
-    MS_LOG(INFO) << "Joining RefTensors of different types! this: " << ToString() << ", other: " << other->ToString();
+  bool is_param = is_parameter() || other->is_parameter();
+  bool is_view_input_value = is_view_input() || other->is_view_input();
+  bool is_view_output_value = is_view_output() || other->is_view_output();
+  bool is_inplace_value = is_inplace() || other->is_inplace();
+  RefTensorType ref_tensor_type = {is_param, is_inplace_value, is_view_input_value, is_view_output_value};
+
+  auto has_view_output1 = other->user_data<bool>(kHasViewOutputFlag);
+  auto has_view_output2 = this->user_data<bool>(kHasViewOutputFlag);
+  bool has_view_output = false;
+  if ((has_view_output1 != nullptr && *has_view_output1) || (has_view_output2 != nullptr && *has_view_output2)) {
+    has_view_output = true;
   }
-  RefTensorType joined_type = ref_type_ > other->ref_type_ ? ref_type_ : other->ref_type_;
-  return std::make_shared<AbstractRefTensor>(joined_tensor, joined_ref_key, joined_type);
+  auto res_abs = std::make_shared<AbstractRefTensor>(joined_tensor, joined_ref_key, ref_tensor_type);
+  if (has_view_output) {
+    res_abs->set_user_data<bool>(kHasViewOutputFlag, std::make_shared<bool>(true));
+  }
+  return res_abs;
 }
 
 AbstractBasePtr AbstractRefTensor::Join(const AbstractBasePtr &other) {
   MS_EXCEPTION_IF_NULL(other);
+  auto has_view_output1 = other->user_data<bool>(kHasViewOutputFlag);
+  auto has_view_output2 = this->user_data<bool>(kHasViewOutputFlag);
+  bool has_view_output = false;
+  if ((has_view_output1 != nullptr && *has_view_output1) || (has_view_output2 != nullptr && *has_view_output2)) {
+    has_view_output = true;
+  }
+
   // Abstract ref join abstract ref
   if (other->isa<AbstractRefTensor>()) {
-    return AbstractRefTensor::Join(other->cast<AbstractRefPtr>());
+    auto res = AbstractRefTensor::Join(other->cast<AbstractRefPtr>());
+    if (has_view_output) {
+      res->set_user_data<bool>(kHasViewOutputFlag, std::make_shared<bool>(true));
+    }
+    return res;
   }
   if (other->isa<AbstractNegligible>()) {
     return shared_from_base<AbstractBase>();
@@ -2133,33 +2188,46 @@ AbstractBasePtr AbstractRefTensor::Join(const AbstractBasePtr &other) {
     MS_LOG(INTERNAL_EXCEPTION) << "Expect an AbstractTensor, but got:" << joined_tensor->ToString()
                                << ", other:" << other->ToString();
   }
-  return joined_tensor;
+  if (is_parameter()) {
+    if (has_view_output) {
+      joined_tensor->set_user_data<bool>(kHasViewOutputFlag, std::make_shared<bool>(true));
+    }
+    return joined_tensor;
+  }
+
+  auto new_joined_tensor = joined_tensor->cast<AbstractTensorPtr>();
+  auto joined_ref_key = ValueJoin(ref_key_value_, kValueAny);
+  auto res_abs = std::make_shared<AbstractRefTensor>(new_joined_tensor, joined_ref_key, this->ref_tensor_type());
+  if (has_view_output) {
+    res_abs->set_user_data<bool>(kHasViewOutputFlag, std::make_shared<bool>(true));
+  }
+  return res_abs;
 }
 
 AbstractBasePtr AbstractRefTensor::Clone() const {
   auto abs_tensor = AbstractTensor::Clone()->cast<AbstractTensorPtr>();
-  return std::make_shared<AbstractRefTensor>(abs_tensor, ref_key_value_, ref_type_);
+  return std::make_shared<AbstractRefTensor>(abs_tensor, ref_key_value_, this->ref_tensor_type());
 }
 
 AbstractBasePtr AbstractRefTensor::Broaden() const {
   // Always broaden for ref
   auto abs_tensor = AbstractTensor::Broaden()->cast<AbstractTensorPtr>();
   // Broaden the tensor value and keep the ref_key_value.
-  return std::make_shared<AbstractRefTensor>(abs_tensor, ref_key_value_, ref_type_);
-}
-
-std::string AbstractRefTensor::ToString(RefTensorType type) {
-  return type == RefTensorType::kParameter ? "Parameter" : type == RefTensorType::kInplaceOp ? "InplaceOp" : "ViewOP";
+  return std::make_shared<AbstractRefTensor>(abs_tensor, ref_key_value_, this->ref_tensor_type());
 }
 
 std::string AbstractRefTensor::ToString() const {
   std::ostringstream buffer;
   MS_EXCEPTION_IF_NULL(ref_key_value_);
-  buffer << type_name() << "(key: " << ref_key_value_->ToString() << ", ref_type: " << ToString(ref_type_)
-         << ", ref_value: " << AbstractTensor::ToString();
+  buffer << type_name() << "(key: " << ref_key_value_->ToString() << ", ref_value: " << AbstractTensor::ToString();
   auto value = GetValueTrack();
   if (value != nullptr) {
     buffer << ", value: " << value->ToString();
+  }
+  buffer << RefTensorTypeToString();
+  auto has_view_output = this->user_data<bool>(kHasViewOutputFlag);
+  if (has_view_output != nullptr && *has_view_output) {
+    buffer << ", has_view_output";
   }
   buffer << ")";
   return buffer.str();

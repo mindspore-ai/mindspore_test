@@ -174,6 +174,14 @@ AnfNodePtr InplaceArgsClone(const FuncGraphPtr &fprop, const FuncGraphPtr &bprop
     return umonad_param;
   }
 }
+
+AnfNodePtr CalDoutWithMask(const FuncGraphPtr &fg, const AnfNodePtr &dout_node, bool is_view_inplace) {
+  if (!is_view_inplace) {
+    return dout_node;
+  }
+  auto get_dout_tuple = std::make_shared<prim::GenerateBpropOutTuple>("get_dout_tuple");
+  return fg->NewCNodeInOrder({NewValueNode(get_dout_tuple), dout_node});
+}
 }  // namespace
 
 FuncGraphPtr KPrim::GetPrimBprop(const PrimitivePtr &prim, const ValueNodePtr &value_node,
@@ -181,7 +189,7 @@ FuncGraphPtr KPrim::GetPrimBprop(const PrimitivePtr &prim, const ValueNodePtr &v
   MS_EXCEPTION_IF_NULL(prim);
   MS_EXCEPTION_IF_NULL(value_node);
   auto iter = bprop_registry_.find(prim);
-  if (iter != bprop_registry_.end() && !iter->second->dropped()) {
+  if (iter != bprop_registry_.end() && !iter->second->dropped() && !prim->HasAttr("side_effect_backprop_mem")) {
     return iter->second;
   }
 
@@ -324,8 +332,26 @@ void SetDumpFlag(const PrimitivePtr &prim, const FuncGraphPtr &bprop_fg) {
   }
 }
 
+FuncGraphPtr AdaptBpropInput(const FuncGraphPtr &bprop_fg) {
+  auto fg = std::make_shared<FuncGraph>();
+  std::vector<AnfNodePtr> res_input = {NewValueNode(bprop_fg)};
+  size_t len = bprop_fg->parameters().size();
+  for (size_t i = 0; i < len; ++i) {
+    auto input = fg->add_parameter();
+    if (i != len - 1) {
+      (void)res_input.emplace_back(input);
+      continue;
+    }
+    auto get_dout = std::make_shared<prim::GetRealBpropOut>("get_dout_from_tuple");
+    (void)res_input.emplace_back(fg->NewCNodeInOrder({NewValueNode(get_dout), input}));
+  }
+  auto res_node = fg->NewCNodeInOrder(res_input);
+  fg->set_output(res_node);
+  return fg;
+}
+
 FuncGraphPtr KPrim::KPrimitive(const CNodePtr &cnode, const ValueNodePtr &value_node,
-                               const pipeline::ResourceBasePtr &resources) {
+                               const pipeline::ResourceBasePtr &resources, bool is_view_inplace) {
   if (!IsValueNode<Primitive>(value_node)) {
     MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, cnode) << "Primitive node is not valid.";
   }
@@ -366,7 +392,10 @@ FuncGraphPtr KPrim::KPrimitive(const CNodePtr &cnode, const ValueNodePtr &value_
     primal_attrs[kPrimalAttrForwardNodeName] = MakeValue(forward_node_primal_attr);
     primal_attrs[kPrimalAttrForwardUniqueId] = MakeValue(cnode->UniqueId());
   }
-  auto expanded_fg = BpropToK(prim, bprop_fg, nullptr, cnode, primal_attrs, primal_debug_infos);
+  if (is_view_inplace) {
+    bprop_fg = AdaptBpropInput(bprop_fg);
+  }
+  auto expanded_fg = BpropToK(prim, bprop_fg, nullptr, cnode, primal_attrs, primal_debug_infos, is_view_inplace);
   if (expanded_fg == nullptr) {
     MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, cnode)
       << "Failed convert " << prim->name()
@@ -377,11 +406,11 @@ FuncGraphPtr KPrim::KPrimitive(const CNodePtr &cnode, const ValueNodePtr &value_
     expanded_fg->set_flag(FUNC_GRAPH_FLAG_FORCE_INLINE, true);
     MS_LOG(DEBUG) << "set force_inline for fg: " << expanded_fg->ToString();
   }
-
   return expanded_fg;
 }
 
-AnfNodePtr KPrim::BuildOutput(const FuncGraphPtr &bprop_fg, const FuncGraphPtr &current_primal_fg) const {
+AnfNodePtr KPrim::BuildOutput(const FuncGraphPtr &bprop_fg, const FuncGraphPtr &current_primal_fg,
+                              bool is_view_inplace) const {
   // The primal fg may have extra parameters from lifted fv or u_monad and io_monad.
   std::vector<AnfNodePtr> extra_lifted_args;
   std::vector<AnfNodePtr> extra_monad_args;
@@ -435,9 +464,13 @@ AnfNodePtr KPrim::BuildOutput(const FuncGraphPtr &bprop_fg, const FuncGraphPtr &
     args.push_back(NewEnviron(bprop_fg));
     // The lifted parameters are put in front.
     if (!extra_lifted_args.empty()) {
-      (void)args.insert(args.cend(), extra_lifted_args.cbegin(), extra_lifted_args.cend());
+      std::transform(
+        extra_lifted_args.cbegin(), extra_lifted_args.cend(), std::back_inserter(args),
+        [bprop_fg, is_view_inplace](const AnfNodePtr &arg) { return CalDoutWithMask(bprop_fg, arg, is_view_inplace); });
     }
-    (void)args.insert(args.cend(), inputs.cbegin() + 1, inputs.cend());
+    std::transform(
+      inputs.cbegin() + 1, inputs.cend(), std::back_inserter(args),
+      [bprop_fg, is_view_inplace](const AnfNodePtr &arg) { return CalDoutWithMask(bprop_fg, arg, is_view_inplace); });
     if (!extra_monad_args.empty()) {
       (void)args.insert(args.cend(), extra_monad_args.cbegin(), extra_monad_args.cend());
     }
@@ -466,19 +499,27 @@ AnfNodePtr KPrim::BuildOutput(const FuncGraphPtr &bprop_fg, const FuncGraphPtr &
     tuple_add_func_graph->AddChecker("check_infer_inputs", checker);
   }
 
+  std::vector<AnfNodePtr> res_args{NewValueNode(prim::kPrimMakeTuple)};
   if (!extra_lifted_args.empty()) {
-    (void)extra_lifted_args.insert(extra_lifted_args.cbegin(), NewValueNode(prim::kPrimMakeTuple));
-    auto extra_tuple = NewCNode(extra_lifted_args, bprop_fg);
+    std::transform(
+      extra_lifted_args.cbegin(), extra_lifted_args.cend(), std::back_inserter(res_args),
+      [bprop_fg, is_view_inplace](const AnfNodePtr &arg) { return CalDoutWithMask(bprop_fg, arg, is_view_inplace); });
+    auto extra_tuple = NewCNode(res_args, bprop_fg);
     tuple_env = NewCNode({tuple_add_ops, tuple_env, extra_tuple}, bprop_fg);
+  }
+  auto bprop_fg_output = bprop_fg->output();
+  if (is_view_inplace) {
+    auto generate_dout_tuple = std::make_shared<prim::GenerateBpropOutTuple>("generate_bprop_out_tuple");
+    bprop_fg_output = bprop_fg->NewCNodeInOrder({NewValueNode(generate_dout_tuple), bprop_fg_output});
   }
   if (!extra_monad_args.empty()) {
     (void)extra_monad_args.insert(extra_monad_args.cbegin(), NewValueNode(prim::kPrimMakeTuple));
     auto extra_tuple = NewCNode(extra_monad_args, bprop_fg);
-    auto old_output_extra = NewCNode({tuple_add_ops, bprop_fg->output(), extra_tuple}, bprop_fg);
+    auto old_output_extra = NewCNode({tuple_add_ops, bprop_fg_output, extra_tuple}, bprop_fg);
     return NewCNode({tuple_add_ops, tuple_env, old_output_extra}, bprop_fg);
   }
 
-  return NewCNode({tuple_add_ops, tuple_env, bprop_fg->output()}, bprop_fg);
+  return NewCNode({tuple_add_ops, tuple_env, bprop_fg_output}, bprop_fg);
 }
 
 static void TransformNormalArgs(const FuncGraphManagerPtr &mng, const FuncGraphPtr &bprop_fg, const FuncGraphPtr &outer,
@@ -604,12 +645,13 @@ void KPrim::CheckBprop(const FuncGraphPtr &bprop_fg, const string &prim_to_check
   bprop_fg->set_output(bprop_out);
 }
 
-FuncGraphPtr KPrim::KUserDefinedCellBprop(const FuncGraphPtr &bprop_fg, const FuncGraphPtr &current_primal_fg) {
+FuncGraphPtr KPrim::KUserDefinedCellBprop(const FuncGraphPtr &bprop_fg, const FuncGraphPtr &current_primal_fg,
+                                          bool is_view_inplace) {
   MS_EXCEPTION_IF_NULL(bprop_fg);
   // primal_fg is FuncGraph just after convert. Refer ConvertCellObjToFuncGraph.
   // current_primal_fg is specalized and AutoMoaded primal_fg;
   auto primal_fg = bprop_fg->transforms().find("primal")->second.func_graph();
-  auto expanded_fg = BpropToK(primal_fg, bprop_fg, current_primal_fg, nullptr, {}, {});
+  auto expanded_fg = BpropToK(primal_fg, bprop_fg, current_primal_fg, nullptr, {}, {}, is_view_inplace);
   if (expanded_fg == nullptr) {
     MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, bprop_fg->return_node())
       << "Failed convert " << primal_fg->ToString()

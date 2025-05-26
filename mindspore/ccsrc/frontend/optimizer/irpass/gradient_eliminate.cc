@@ -39,9 +39,10 @@ AnfNodePtr ExpandJPrimitive(const ValueNodePtr &vnode, const pipeline::ResourceB
   return nullptr;
 }
 
-AnfNodePtrList ExpandMultiJ(const FuncGraphVector &func_graphs, const OptimizerPtr &optimizer) {
+AnfNodePtrList ExpandMultiJ(const FuncGraphVector &func_graphs, const OptimizerPtr &optimizer,
+                            const std::vector<bool> &is_view_inplace) {
   AnfNodePtrList expanded_nodes;
-  auto new_func_graphs = ad::GradMultiFuncGraph(func_graphs, optimizer, true);
+  auto new_func_graphs = ad::GradMultiFuncGraph(func_graphs, optimizer, is_view_inplace, true);
   (void)std::transform(new_func_graphs.cbegin(), new_func_graphs.cend(), std::back_inserter(expanded_nodes),
                        [](const FuncGraphPtr &new_func_graph) {
                          MS_EXCEPTION_IF_NULL(new_func_graph);
@@ -88,8 +89,10 @@ bool ExpandJPrim::operator()(const FuncGraphPtr &func_graph, const OptimizerPtr 
       func_graph->set_flag(FUNC_GRAPH_FLAG_K_GRAPH, false);
     }
   };
+  std::vector<bool> is_view_inplace;
   for (auto &j_node : prim_nodes_) {
     const auto &j_node_inp1 = j_node->input(1);
+    is_view_inplace.push_back(j_node->has_user_data("has_view_inplace_grad"));
     if (IsValueNode<FuncGraph>(j_node_inp1)) {
       auto cur_func_graph = GetValueNode<FuncGraphPtr>(j_node_inp1);
       func_graphs.push_back(cur_func_graph);
@@ -104,7 +107,7 @@ bool ExpandJPrim::operator()(const FuncGraphPtr &func_graph, const OptimizerPtr 
   }
   CloneUsedPrimalGraph(manager, &func_graphs);
 
-  auto grad_func_graphs = internal::ExpandMultiJ(func_graphs, optimizer);
+  auto grad_func_graphs = internal::ExpandMultiJ(func_graphs, optimizer, is_view_inplace);
   for (const auto &j_node_index_iter : j_node_to_index_map) {
     const auto &j_node = j_node_index_iter.first;
     (void)manager->Replace(j_node, grad_func_graphs[j_node_index_iter.second]);

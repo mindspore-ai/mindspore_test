@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,6 +45,71 @@ namespace mindspore {
 namespace abstract {
 namespace {
 constexpr auto kDependInputAbs = "depend_input_abs";
+
+FuncGraphPtr GetAbstractFuncGraph(const abstract::AbstractFuncAtomPtr &abs) {
+  if (abs->isa<abstract::FuncGraphAbstractClosure>()) {
+    auto abstract_func_graph = abs->cast<abstract::FuncGraphAbstractClosurePtr>();
+    return abstract_func_graph->func_graph();
+  }
+  if (abs->isa<abstract::PartialAbstractClosure>()) {
+    auto abstract_partial_func = abs->cast<abstract::PartialAbstractClosurePtr>();
+    auto abstract_fn = abstract_partial_func->fn();
+    if (abstract_fn != nullptr && abstract_fn->isa<abstract::FuncGraphAbstractClosure>()) {
+      auto abstract_func_graph = abstract_fn->cast<abstract::FuncGraphAbstractClosurePtr>();
+      return abstract_func_graph->func_graph();
+    }
+  }
+  return nullptr;
+}
+
+bool CheckPartialAbstractClosureInCache(const std::vector<AbstractBasePtrList> &args_vector) {
+  std::vector<FuncGraphPtr> func_graphs;
+  for (const auto &args : args_vector) {
+    MS_EXCEPTION_IF_NULL(args[0]);
+    if (!args[0]->isa<PartialAbstractClosure>()) {
+      return false;
+    }
+    auto fg = GetAbstractFuncGraph(dyn_cast<abstract::PartialAbstractClosure>(args[0]));
+    (void)func_graphs.emplace_back(fg);
+  }
+  if (func_graphs.empty()) {
+    return false;
+  }
+  // Check if func_graph is same in all cache.
+  for (size_t index = 1; index < func_graphs.size(); ++index) {
+    if (func_graphs[0] != func_graphs[index]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool CheckAbstractFuncUnionInCache(const std::vector<AbstractBasePtrList> &args_vector) {
+  std::vector<FuncGraphPtr> func_graphs;
+  for (const auto &args : args_vector) {
+    MS_EXCEPTION_IF_NULL(args[0]);
+    if (!args[0]->isa<AbstractFuncUnion>()) {
+      return false;
+    }
+    auto func_list = dyn_cast<abstract::AbstractFuncUnion>(args[0])->func_list();
+    for (auto func : func_list) {
+      auto fg = GetAbstractFuncGraph(func);
+      if (fg != nullptr) {
+        (void)func_graphs.emplace_back(fg);
+      }
+    }
+  }
+  if (func_graphs.empty()) {
+    return false;
+  }
+  // Check if func_graph is same in all cache.
+  for (size_t index = 1; index < func_graphs.size(); ++index) {
+    if (func_graphs[0] != func_graphs[index]) {
+      return false;
+    }
+  }
+  return true;
+}
 
 EvalResultPtr GetEvalResult(const AnfNodeConfigPtr &conf) {
   try {
@@ -1466,6 +1531,13 @@ std::pair<AbstractBasePtrList, AbstractBasePtr> FuncGraphSpecializer::BuildFromB
     real->SetValue(joined_args, joined_eval_result);
     eval_cache_[eval] = real;
     return std::make_pair(joined_args, joined_eval_result->abstract());
+  }
+
+  bool choose_first_cache_in_partial_cache = CheckPartialAbstractClosureInCache(args_vector);
+  bool choose_first_cache_in_func_union_cache = CheckAbstractFuncUnionInCache(args_vector);
+  if (choose_first_cache_in_partial_cache || choose_first_cache_in_func_union_cache) {
+    const auto eval_result = origin_eval_cache.get(args_vector[0]);
+    return std::make_pair(args_vector[0], eval_result->abstract());
   }
 
   std::unordered_set<AbstractBasePtrList, AbstractBasePtrListHasher, AbstractBasePtrListEqual> choices;

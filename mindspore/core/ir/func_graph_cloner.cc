@@ -322,7 +322,11 @@ void Cloner::CloneFuncGraphValueNodes(const FuncGraphPtr &func_graph, const Func
     MS_EXCEPTION_IF_NULL(cnode.first->first);
     auto user_cnode = cnode.first->first->cast_ptr<CNode>();
     MS_EXCEPTION_IF_NULL(user_cnode);
-    const auto &valuenode = user_cnode->input(IntToSize(cnode.first->second));
+    AnfNodePtr valuenode = nullptr;
+    {
+      MS_LOG_TRY_CATCH_SCOPE;
+      valuenode = user_cnode->input(IntToSize(cnode.first->second));
+    }
     if (valuenode == nullptr) {
       continue;
     }

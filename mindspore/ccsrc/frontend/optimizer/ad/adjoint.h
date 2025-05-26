@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,16 +28,26 @@ namespace mindspore {
 namespace ad {
 class Adjoint {
  public:
-  Adjoint(const AnfNodePtr &primal, const AnfNodePtr &k, const FuncGraphPtr &caller);
+  Adjoint(const AnfNodePtr &primal, const AnfNodePtr &k, const FuncGraphPtr &caller, bool is_view_inplace);
   ~Adjoint() = default;
   AnfNodePtr primal();
   AnfNodePtr k();
   void UpdateK(const AnfNodePtr &new_k);
   void RegisterKUser(const CNodePtr &user, size_t index);
   AnfNodePtr dout();
+  AnfNodePtr real_dout() const { return dout_; }
   void AccumulateDout(const AnfNodePtr &dout_factor);
   void RegisterDoutUser(const CNodePtr &user, size_t index);
   void CallDoutHole();
+  FuncGraphPtr caller() const { return caller_; }
+  bool side_effect_bprop_app_propagate() { return side_effect_bprop_app_propagate_; }
+  void set_side_effect_bprop_app_propagate(bool side_effect_bprop_app_propagate) {
+    side_effect_bprop_app_propagate_ = side_effect_bprop_app_propagate;
+  }
+  CNodePtr k_app() const { return k_app_; }
+  void set_k_app(const CNodePtr &k_app) { k_app_ = k_app; }
+  bool back_bproped() const { return back_bproped_; }
+  void set_back_bproped(bool back_bproped) { back_bproped_ = back_bproped; }
 
  private:
   AnfNodePtr primal_;
@@ -48,6 +58,10 @@ class Adjoint {
   AnfNodePtr dout_;
   AnfNodePtr dout_hole_;
   std::vector<std::pair<CNodePtr, size_t>> dout_user_;
+  bool is_view_inplace_;
+  bool back_bproped_{false};
+  bool side_effect_bprop_app_propagate_{false};
+  CNodePtr k_app_;
 };
 
 using AdjointPtr = std::shared_ptr<Adjoint>;

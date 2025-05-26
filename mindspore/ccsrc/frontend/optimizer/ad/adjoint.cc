@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2024 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,12 @@
 
 #include "ir/anf.h"
 #include "frontend/optimizer/ad/dfunctor.h"
+#include "mindspore/ccsrc/frontend/operator/composite/composite.h"
 
 namespace mindspore {
 namespace ad {
-Adjoint::Adjoint(const AnfNodePtr &primal, const AnfNodePtr &k, const FuncGraphPtr &caller)
-    : primal_(primal), caller_(caller), dout_(nullptr) {
+Adjoint::Adjoint(const AnfNodePtr &primal, const AnfNodePtr &k, const FuncGraphPtr &caller, bool is_view_inplace)
+    : primal_(primal), caller_(caller), dout_(nullptr), is_view_inplace_(is_view_inplace) {
   if (k != nullptr) {
     k_ = k;
     MS_LOG(DEBUG) << "Add adjoint for " << primal->ToString() << " " << k_->ToString();
@@ -34,7 +35,13 @@ Adjoint::Adjoint(const AnfNodePtr &primal, const AnfNodePtr &k, const FuncGraphP
     MS_LOG(DEBUG) << "Add hole for " << primal->ToString() << " " << k_->ToString();
   }
 
-  dout_hole_ = caller_->NewCNodeInFront({NewValueNode(prim::GetPythonOps("zeros_like")), k_});
+  if (!is_view_inplace_) {
+    dout_hole_ = caller_->NewCNodeInFront({NewValueNode(prim::GetPythonOps("zeros_like")), k_});
+  } else {
+    auto dout = caller_->NewCNodeInOrder({NewValueNode(prim::GetPythonOps("zeros_like")), k_});
+    auto get_dout_tuple = std::make_shared<prim::GenerateBpropOutTuple>("get_dout_tuple");
+    dout_hole_ = caller_->NewCNodeInOrder({NewValueNode(get_dout_tuple), dout});
+  }
   RegisterKUser(dout_hole_->cast<CNodePtr>(), 1);
 }
 
@@ -71,8 +78,13 @@ void Adjoint::AccumulateDout(const AnfNodePtr &dout_factor) {
   if (dout_ != nullptr) {
     MS_LOG(DEBUG) << "Update dout " << dout_->ToString() << " with dout_factor " << dout_factor->ToString();
     ScopeGuard scope_guard(std::make_shared<Scope>("Gradients/" + primal()->scope()->name()));
-    auto add = prim::GetPythonOps("hyper_add");
-    dout_ = caller_->NewCNodeInOrder({NewValueNode(add), dout_, dout_factor});
+    if (is_view_inplace_) {
+      auto accumulate_dout = std::make_shared<prim::AccumulateDout>("_accumulate_dout");
+      dout_ = caller_->NewCNodeInOrder({NewValueNode(accumulate_dout), dout_, dout_factor});
+    } else {
+      auto add = prim::GetPythonOps("hyper_add");
+      dout_ = caller_->NewCNodeInOrder({NewValueNode(add), dout_, dout_factor});
+    }
     return;
   }
   dout_ = dout_factor;

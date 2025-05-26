@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2023 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,6 +50,7 @@ using MetaFuncGraphPtr = std::shared_ptr<MetaFuncGraph>;
 namespace mindspore {
 
 constexpr auto kDumpIrParallelDetail = "1";
+constexpr auto kHasViewOutputFlag = "has_view_output";
 
 enum FormatLevel : int {
   // When setting to basic level, ir will only contains operator and operands of nodes and title of subgraph with
@@ -103,7 +104,9 @@ inline bool Skip(const MetaFuncGraphPtr &meta_func_graph) {
          meta_func_graph->isa<prim::StarredUnpackMerge>() || meta_func_graph->isa<prim::IterConverter>() ||
          meta_func_graph->isa<prim::HasNext>() || meta_func_graph->isa<prim::Next>() ||
          meta_func_graph->isa<prim::ForHalfUnrollLess>() || meta_func_graph->isa<prim::DeprecatedTensorMethod>() ||
-         meta_func_graph->isa<prim::MetaImpl>();
+         meta_func_graph->isa<prim::MetaImpl>() || meta_func_graph->isa<prim::AccumulateDout>() ||
+         meta_func_graph->isa<prim::GenerateMask>() || meta_func_graph->isa<prim::GetRealBpropOut>() ||
+         meta_func_graph->isa<prim::GenerateBpropOutTuple>() || meta_func_graph->isa<prim::GetDependDoutTuple>();
 }
 
 void GetMetaFuncGraphText(const MetaFuncGraphPtr &meta_func_graph, std::ostringstream &oss) {
@@ -313,6 +316,7 @@ void PrintNodeOutputType(std::ostringstream &buffer, const AnfNodePtr &node) {
   StringImmPtr ref_key = nullptr;
   abstract::AbstractSequencePtr sequence_abs = nullptr;
   auto abstract = node->abstract();
+  bool is_view_output = false;
   if (abstract != nullptr) {
     if (abstract->isa<abstract::AbstractTensor>()) {
       tensor_value = abstract->BuildValue();
@@ -323,34 +327,38 @@ void PrintNodeOutputType(std::ostringstream &buffer, const AnfNodePtr &node) {
       ref_key = dyn_cast<StringImm>(map_tensor->ref_key_value());
     }
     sequence_abs = dyn_cast<abstract::AbstractSequence>(abstract);
+    auto has_view_output = abstract->user_data<bool>(kHasViewOutputFlag);
+    if (has_view_output != nullptr && *has_view_output) {
+      is_view_output = true;
+    }
   }
 
   abstract::BaseShapePtr shape = dyn_cast<abstract::BaseShape>(node->Shape());
   TypePtr type = dyn_cast<Type>(node->Type());
-  if ((shape != nullptr) && (type != nullptr)) {
-    buffer << "<" << type << ", ";
-    shape->ToStringWithBuffer(buffer);
-    if (tensor_value != nullptr && tensor_value != kValueAny) {
-      buffer << ", value=...";
-    }
-    if (ref_key != nullptr) {
-      buffer << ", ref_key=" << ref_key->value();
-    }
-    PrintTupleNodeUsedFlags(buffer, sequence_abs);
-    buffer << ">";
-  } else if (type != nullptr) {
-    buffer << "<" << type;
-    if (tensor_value != nullptr && tensor_value != kValueAny) {
-      buffer << ", value=...";
-    }
-    if (ref_key != nullptr) {
-      buffer << ", ref_key=" << ref_key->value();
-    }
-    PrintTupleNodeUsedFlags(buffer, sequence_abs);
-    buffer << ">";
-  } else {
+  if (type == nullptr) {
     buffer << "<null>";
+    return;
   }
+  buffer << "<" << type;
+  if (shape != nullptr) {
+    buffer << ", ";
+    shape->ToStringWithBuffer(buffer);
+  }
+  if (tensor_value != nullptr && tensor_value != kValueAny) {
+    buffer << ", value=...";
+  }
+  if (ref_key != nullptr) {
+    buffer << ", ref_key=" << ref_key->value();
+  }
+  if (abstract->isa<abstract::AbstractRefTensor>()) {
+    const auto &ref_tensor = abstract->cast_ptr<abstract::AbstractRefTensor>();
+    buffer << ref_tensor->RefTensorTypeToString();
+  }
+  if (is_view_output) {
+    buffer << ", " << kHasViewOutputFlag;
+  }
+  PrintTupleNodeUsedFlags(buffer, sequence_abs);
+  buffer << ">";
 }
 
 void PrintNodeInputType(std::ostringstream &buffer, const AnfNodePtr &node) {

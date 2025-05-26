@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2020-2021 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,7 +51,8 @@ extern bool lift_fv_before_grad;
 // D Functor's rules to map closure object and morphisms.
 class DFunctor : public std::enable_shared_from_this<DFunctor> {
  public:
-  DFunctor(const FuncGraphPtr &primal_graph, const pipeline::ResourceBasePtr &resources, bool is_top);
+  DFunctor(const FuncGraphPtr &primal_graph, const pipeline::ResourceBasePtr &resources, bool is_top,
+           bool is_view_inplace);
   ~DFunctor() = default;
   // Map object in D category to K category.
   void MapObject();
@@ -78,8 +79,10 @@ class DFunctor : public std::enable_shared_from_this<DFunctor> {
   void MapFreeMorphism();
   void BackPropagateFv(const AnfNodePtr &fv, const AnfNodePtr &din);
   void BackPropagateSwitchLayer(const CNodePtr &cnode_morph, const CNodePtr &env);
-  void BackPropagate(const CNodePtr &cnode_morph, const CNodePtr &k_app, const AdjointPtr &node_adjoint,
-                     bool side_effect_bprop_app_propagate = false);
+  void BackPropagate(const CNodePtr &cnode_morph, const AdjointPtr &node_adjoint);
+  // Get dout_mask for ops when do BackPropagate.
+  CNodePtr CalculateDoutTuple(const CNodePtr &cnode_morph, const CNodePtr &din_tuple, const AdjointPtr &node_adjoint,
+                              int index);
   AnfNodePtr AttachFvDoutToTape(const AnfNodePtr &grad_fv);
   AnfNodePtr AttachIndirectFvDoutToTape(const AnfNodePtr &grad_fv);
   // Map CNode/Index of Primitive to K.
@@ -132,6 +135,7 @@ class DFunctor : public std::enable_shared_from_this<DFunctor> {
   bool is_top_;
   static mindspore::HashMap<FuncGraphPtr, std::shared_ptr<DFunctor>> func_graph_to_functor_;
   static mindspore::HashMap<AnfNodePtr, AdjointPtr> anfnode_to_adjoin_definition_;
+  bool is_view_inplace_;
 };
 
 // D Functor's rules to map primitive object.
@@ -141,11 +145,12 @@ class KPrim {
   ~KPrim() = default;
 
   FuncGraphPtr KPrimitive(const CNodePtr &cnode, const ValueNodePtr &value_node,
-                          const pipeline::ResourceBasePtr &resources);
+                          const pipeline::ResourceBasePtr &resources, bool is_view_inplace);
   MetaFuncGraphPtr KMetaFuncGraph(const PrimitivePtr &prim, const AnfNodePtr &node);
   // bprop_fg and primal_fg in bprop_fg's transforms are FuncGraph just after convert.
   // current_primal_fg is the specialized and AutoMonaded primal_fg.
-  FuncGraphPtr KUserDefinedCellBprop(const FuncGraphPtr &bprop_fg, const FuncGraphPtr &current_primal_fg);
+  FuncGraphPtr KUserDefinedCellBprop(const FuncGraphPtr &bprop_fg, const FuncGraphPtr &current_primal_fg,
+                                     bool is_view_inplace);
 
   bool CheckCustomVjp(const FuncGraphPtr &bprop_fg) const;
   FuncGraphPtr GetCustomVjpBprop(const FuncGraphPtr &bprop_fg) const;
@@ -166,8 +171,9 @@ class KPrim {
   template <typename T>
   FuncGraphPtr BpropToK(const T &primal, const FuncGraphPtr &bprop_fg, const FuncGraphPtr &current_primal_fg,
                         const CNodePtr &cnode, const mindspore::HashMap<std::string, ValuePtr> &primal_attrs,
-                        const std::vector<NodeDebugInfoPtr> &primal_debug_infos);
-  AnfNodePtr BuildOutput(const FuncGraphPtr &bprop_fg, const FuncGraphPtr &current_primal_fg) const;
+                        const std::vector<NodeDebugInfoPtr> &primal_debug_infos, bool is_view_inplace);
+  AnfNodePtr BuildOutput(const FuncGraphPtr &bprop_fg, const FuncGraphPtr &current_primal_fg,
+                         bool is_view_inplace) const;
   void TransformArgsForPrimitive(const FuncGraphManagerPtr &mng, const FuncGraphPtr &bprop_fg,
                                  const PrimitivePtr &primitive, const FuncGraphPtr &outer,
                                  std::vector<AnfNodePtr> *const transf_args) const;
@@ -184,7 +190,7 @@ class KPrim {
 template <typename T>
 FuncGraphPtr KPrim::BpropToK(const T &primal, const FuncGraphPtr &bprop_fg, const FuncGraphPtr &current_primal_fg,
                              const CNodePtr &cnode, const mindspore::HashMap<std::string, ValuePtr> &primal_attrs,
-                             const std::vector<NodeDebugInfoPtr> &primal_debug_infos) {
+                             const std::vector<NodeDebugInfoPtr> &primal_debug_infos, bool is_view_inplace) {
   MS_EXCEPTION_IF_NULL(primal);
   MS_EXCEPTION_IF_NULL(bprop_fg);
   CheckBprop(bprop_fg, primal->ToString());
@@ -221,7 +227,7 @@ FuncGraphPtr KPrim::BpropToK(const T &primal, const FuncGraphPtr &bprop_fg, cons
       << cloned_bprop_fg->parameters().size() << ".\n"
       << trace::GetDebugInfoStr(cloned_bprop_fg->debug_info());
   }
-  AnfNodePtr bout = BuildOutput(cloned_bprop_fg, current_primal_fg);
+  AnfNodePtr bout = BuildOutput(cloned_bprop_fg, current_primal_fg, is_view_inplace);
   cloned_bprop_fg->set_output(bout);
 
   FuncGraphPtr outer = nullptr;

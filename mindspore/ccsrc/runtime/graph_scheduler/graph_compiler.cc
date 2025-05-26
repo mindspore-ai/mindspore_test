@@ -838,6 +838,26 @@ GraphId GraphCompiler::CompileWholeGraphForGraphRunMode(const FuncGraphPtr &func
   return graph_id;
 }
 
+void SetRefInfoForKernelGraph(const KernelGraphPtr &graph) {
+  MS_EXCEPTION_IF_NULL(graph);
+  for (const auto &kernel : graph->execution_order()) {
+    MS_EXCEPTION_IF_NULL(kernel);
+    mindspore::ops::OpDefPtr op_def = mindspore::ops::GetOpDef(common::AnfAlgo::GetCNodeName(kernel));
+    if (op_def == nullptr || kernel->kernel_info() == nullptr) {
+      continue;
+    }
+    auto kernel_info = dynamic_cast<device::KernelInfo *>(kernel->kernel_info());
+    MS_EXCEPTION_IF_NULL(kernel_info);
+    for (size_t i = 0; i < op_def->returns_.size(); ++i) {
+      if (op_def->returns_[i].inplace_input_index_ != -1) {
+        MS_LOG(DEBUG) << "Add ref pair:" << i << ", " << op_def->returns_[i].inplace_input_index_
+                      << " for kernel:" << kernel->fullname_with_scope();
+        kernel_info->AddRefMap(i, op_def->returns_[i].inplace_input_index_);
+      }
+    }
+  }
+}
+
 GraphId GraphCompiler::CompileGraphImpl(const KernelGraphPtr &graph, const DeviceContext *device_context,
                                         bool run_in_pynative) const {
   MS_EXCEPTION_IF_NULL(graph);
@@ -884,7 +904,7 @@ GraphId GraphCompiler::CompileGraphImpl(const KernelGraphPtr &graph, const Devic
       cpu_executor->RebuildKernelSelectBackoffOp(graph->execution_order());
     }
 #endif
-
+    SetRefInfoForKernelGraph(graph);
     // Read the output and input ref map and set to the kernel graph.
     AnfAlgo::AddOutInRefToGraph(graph);
 

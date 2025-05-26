@@ -95,10 +95,13 @@ ValuePtr MaybeMakeEmptyTensor(const AbstractBasePtr &abs) {
     auto tensor = std::make_shared<tensor::Tensor>(tensor_type_ptr->type_id(), tensor_shape);
     if (abs->isa<abstract::AbstractRefTensor>()) {
       auto abs_ref_tensor = abs->cast<abstract::AbstractRefPtr>();
-      // We only need the parameter name, it was used to find the python Parameter object later
-      auto param_info = std::make_shared<ParamInfo>();
-      param_info->set_name(abs_ref_tensor->ref_key_value()->ToString());
-      tensor->set_param_info(param_info);
+      if (abs_ref_tensor->is_parameter()) {
+        // It is a nn.Parameter.
+        // We only need the parameter name, it was used to find the python Parameter object later
+        auto param_info = std::make_shared<ParamInfo>();
+        param_info->set_name(abs_ref_tensor->ref_key_value()->ToString());
+        tensor->set_param_info(param_info);
+      }
     }
     return tensor;
   }

@@ -17,6 +17,7 @@
 #ifndef MINDSPORE_CCSRC_FRONTEND_OPTIMIZER_AD_GRAD_H_
 #define MINDSPORE_CCSRC_FRONTEND_OPTIMIZER_AD_GRAD_H_
 
+#include <vector>
 #include "ir/anf.h"
 #include "ir/meta_func_graph.h"
 #include "frontend/optimizer/optimizer.h"
@@ -34,9 +35,10 @@ enum BpropAutoMonadLevel : int {
   kLevelWhole,
 };
 FRONTEND_EXPORT FuncGraphPtr Grad(const FuncGraphPtr &func_graph, const opt::OptimizerPtr &optimizer,
-                                  bool is_top = true, BpropAutoMonadLevel level = kLevelNone);
+                                  bool is_top = true, BpropAutoMonadLevel level = kLevelNone,
+                                  bool is_view_inplace = false);
 FuncGraphVector GradMultiFuncGraph(const FuncGraphVector &func_graphs, const opt::OptimizerPtr &optimizer,
-                                   bool is_top = true);
+                                   const std::vector<bool> &is_view_inplace, bool is_top = true);
 FuncGraphPtr Kprim(const ValueNodePtr &value_node, const pipeline::ResourceBasePtr &resources);
 MetaFuncGraphPtr Kmeta(const PrimitivePtr &prim, const pipeline::ResourceBasePtr &, const AnfNodePtr &node);
 FRONTEND_EXPORT void CleanRes();

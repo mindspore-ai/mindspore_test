@@ -558,7 +558,6 @@ bool Jit::GetJitGradGraph(const pipeline::ResourcePtr &resource, const std::stri
   pipeline::ExecutorPyPtr graph_executor = pipeline::GetExecutor(graph_phase_);
   MS_EXCEPTION_IF_NULL(graph_executor);
   MS_LOG(DEBUG) << "The phase of current pipeline graph is: " << graph_phase_;
-  // Exporting graph in PyNative mode or only running forward process no need to do this action.
   if (graph_phase_.find("export") == 0 || !GradState::Get().RequiresGrad()) {
     MS_LOG(DEBUG) << "When exporting graph or only running forward process";
     return true;
@@ -577,7 +576,9 @@ bool Jit::GetJitGradGraph(const pipeline::ResourcePtr &resource, const std::stri
   // Using adgrad to generate fprop func graph for jit function in pynative mode
   // Using cloned jit_forward_graph --> primal_fg as input
   // Ensure that the primal graph found by fprop in GradJit is not affected by subsequent compilation passes.
-  auto grad_graph = ad::Grad(primal_fg, opt::Optimizer::MakeEmptyOptimizer(resource));
+  bool is_view_inplace = resource->is_pynative_grad_view_inplace();
+  auto grad_graph = ad::Grad(primal_fg, opt::Optimizer::MakeEmptyOptimizer(resource), true,
+                             ad::BpropAutoMonadLevel::kLevelNone, is_view_inplace);
   MS_EXCEPTION_IF_NULL(grad_graph);
   graph_executor->SetJitGradGraph(grad_graph, graph_phase_);
   // Set jit compile info

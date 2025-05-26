@@ -26,7 +26,7 @@ from mindspore.common import ParameterTuple
 from tests.security_utils import security_off_wrap
 from tests.mark_utils import arg_mark
 
-context.set_context(mode=context.GRAPH_MODE)
+context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O0"})
 
 
 class _Grad(Cell):

@@ -54,6 +54,8 @@
 "mindspore/mindspore/python/mindspore/ops/composite/base.py"                                                             "protected-access"
 "mindspore/mindspore/python/mindspore/ops/composite/base.py"                                                             "not-callable"
 "mindspore/mindspore/python/mindspore/ops/composite/math_ops.py"                                                         "unused-import"
+"mindspore/mindspore/python/mindspore/ops/composite/multitype_ops/getitem_impl.py"                                       "protected-access"
+"mindspore/mindspore/python/mindspore/ops/composite/multitype_ops/setitem_impl.py"                                       "protected-access"
 "mindspore/mindspore/python/mindspore/ops/primitive.py"                                                                  "assignment-from-none"
 "mindspore/mindspore/python/mindspore/ops/primitive.py"                                                                  "protected-access"
 "mindspore/mindspore/python/mindspore/ops/_tracefunc.py"                                                                 "protected-access"
@@ -291,6 +293,8 @@
 "mindspore/tests/st/ops/test_ops_all.py"                                                                "not-callable"
 "mindspore/tests/st/nn/test_mint_conv3d_ext.py"
 "mindspore/tests/st/tensor/test_offload.py"                                                             "protected-access"
+"mindspore/tests/st/tensor/test_getitem.py"                                                             "multiple-statements"
+"mindspore/tests/st/tensor/test_setitem.py"                                                             "multiple-statements"
 
 #MindSpore Lite
 "mindspore/mindspore/ops/kernel/cpu/nnacl/experimental/HPC-generator/generator.py"                                         "redefined-builtin"

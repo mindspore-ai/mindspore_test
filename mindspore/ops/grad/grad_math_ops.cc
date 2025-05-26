@@ -1810,9 +1810,41 @@ REG_BPROP_BUILDER("LogicalAnd").SetUnusedInputs({i0, i1, i2, i3}).SetBody(Return
 
 REG_BPROP_BUILDER("LogicalOr").SetUnusedInputs({i0, i1, i2, i3}).SetBody(ReturnZeros);
 
-REG_BPROP_BUILDER("AssignAdd").SetUnusedInputs({i0, i1, i2, i3}).SetBody(ReturnZeros);
+REG_BPROP_BUILDER("AssignAdd").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto y = ib->GetInput(kIndex1);
+  auto dout = ib->GetInput(kIndex3);
+  NodePtr dy = nullptr;
+  NodePtr dx = nullptr;
 
-REG_BPROP_BUILDER("AssignSub").SetUnusedInputs({i0, i1, i2, i3}).SetBody(ReturnZeros);
+  if (x->need_compute_grad_out()) {
+    dx = dout;
+  }
+  if (y->need_compute_grad_out()) {
+    dy = dout;
+  }
+
+  std::vector<NodePtr> ret = BinopGradCommon(ib, x, y, dx, dy);
+  return {ret[kIndex0], ib->Cast(ret[kIndex1], ib->GetDtype(y))};
+});
+
+REG_BPROP_BUILDER("AssignSub").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto y = ib->GetInput(kIndex1);
+  auto dout = ib->GetInput(kIndex2);
+  NodePtr dx = nullptr;
+  NodePtr dy = nullptr;
+  if (x->need_compute_grad_out()) {
+    dx = dout;
+  }
+  if (y->need_compute_grad_out()) {
+    dy = ib->Neg(dout);
+  }
+
+  std::vector<NodePtr> ret = BinopGradCommon(ib, x, y, dx, dy);
+
+  return {ret[kIndex0], ib->Cast(ret[kIndex1], ib->GetDtype(y))};
+});
 
 REG_BPROP_BUILDER("Sin").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);

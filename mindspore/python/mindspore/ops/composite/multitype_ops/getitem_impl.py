@@ -15,6 +15,7 @@
 
 """Implementation for internal polymorphism `getitem` operations."""
 from __future__ import absolute_import
+import os
 from mindspore.ops.operations import _inner_ops as inner
 from mindspore.ops.operations import _map_tensor_ops
 from mindspore.ops.composite.multitype_ops import _compile_utils as compile_utils
@@ -286,6 +287,8 @@ def _tensor_getitem_by_number(data, number_index):
     Outputs:
         Tensor, element type is as same as the element type of data.
     """
+    if os.environ.get("MS_DEV_TENSOR_INDEX_BOOST") == "1":
+        return compile_utils._tensor_getitem(data, number_index)
     return compile_utils.tensor_index_by_number(data, number_index)
 
 
@@ -316,6 +319,8 @@ def _tensor_getitem_by_slice(data, slice_index):
     Outputs:
         Tensor, element type is the same as the element type of data.
     """
+    if os.environ.get("MS_DEV_TENSOR_INDEX_BOOST") == "1":
+        return compile_utils._tensor_getitem(data, slice_index)
     return compile_utils.tensor_index_by_slice(data, slice_index)
 
 
@@ -331,6 +336,8 @@ def _tensor_getitem_by_tensor(data, tensor_index):
     Outputs:
         Tensor, element type is the same as the element type of data.
     """
+    if os.environ.get("MS_DEV_TENSOR_INDEX_BOOST") == "1":
+        return compile_utils._tensor_getitem(data, tensor_index)
     return compile_utils.tensor_index_by_tensor(data, tensor_index)
 
 
@@ -361,6 +368,8 @@ def _tensor_getitem_by_list(data, list_index):
     Outputs:
         Tensor ,same as data.
     """
+    if os.environ.get("MS_DEV_TENSOR_INDEX_BOOST") == "1":
+        return compile_utils._tensor_getitem(data, list_index)
     return compile_utils.tensor_index_by_list(data, list_index)
 
 
@@ -376,6 +385,8 @@ def _tensor_getitem_by_tuple(data, tuple_index):
     Outputs:
         Tensor, element type is the same as the element type of data.
     """
+    if os.environ.get("MS_DEV_TENSOR_INDEX_BOOST") == "1":
+        return compile_utils._tensor_getitem(data, tuple_index)
     return compile_utils.tensor_index_by_tuple(data, tuple_index)
 
 

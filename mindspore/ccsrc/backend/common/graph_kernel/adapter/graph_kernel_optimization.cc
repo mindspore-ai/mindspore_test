@@ -316,7 +316,7 @@ PassManagerPtr GraphKernelOptimizer::PostProcess() const {
   pm->Add(std::make_shared<opt::BindValueToGraph>(), OptLevel_1);
 
   // Update side effect attr, update kernel graph ref pair(used in device address allocation)
-  pm->Add(std::make_shared<DealWithSideEffect>(), OptLevel_1, is_dvm);
+  pm->Add(std::make_shared<DealWithSideEffect>(), OptLevel_1, is_dvm || is_gpu);
 
   // add some attribute to graph kernel for further optimization
   pm->Add(std::make_shared<AddAttr>(), OptLevel_1);

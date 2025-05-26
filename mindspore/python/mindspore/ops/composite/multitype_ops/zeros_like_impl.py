@@ -213,6 +213,20 @@ def _zeros_like_env_type(x):
     return F.environ_create()
 
 
+@zeros_like_leaf.register("Slice")
+def _zeros_like_slice(x):
+    """
+    Slice.
+
+    Args:
+        x (Slice): the input
+
+    Returns:
+        x.
+    """
+    return x
+
+
 class _ZerosLike(base.ZerosLike_):
     def __init__(self, name, fn_leaf):
         """Initialize _ZerosLike."""

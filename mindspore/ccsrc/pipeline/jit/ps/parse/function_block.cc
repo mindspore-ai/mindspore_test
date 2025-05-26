@@ -324,6 +324,19 @@ AnfNodePtr FunctionBlock::ReadVariable(const std::string &var_name) {
   return phi_param;
 }
 
+// Resolve Ast operator node: augassign +=, -=, *=, /=, //=
+py::tuple FunctionBlock::GetAugAssignAstOpNameSpace(const py::object &op) {
+  auto ast = parser_.ast();
+  MS_EXCEPTION_IF_NULL(ast);
+  TraceGuard trace_guard(parser_.GetLocation(op));
+  py::tuple namespace_var = ast->CallParseModFunction(PYTHON_PARSE_GET_AUGASSIGN_AST_NAMESPACE_SYMBOL, op);
+  constexpr size_t namespace_size = 3;
+  if (namespace_var.size() != namespace_size) {
+    MS_LOG(INTERNAL_EXCEPTION) << "Resolve ast op failed, get namespace tuple size=" << namespace_var.size();
+  }
+  return namespace_var;
+}
+
 // Resolve Ast operator node
 py::tuple FunctionBlock::GetAstOpNameSpace(const py::object &op) {
   auto ast = parser_.ast();

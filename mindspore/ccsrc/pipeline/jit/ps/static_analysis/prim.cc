@@ -77,6 +77,23 @@ namespace mindspore {
 using ClassTypePtr = std::shared_ptr<parse::ClassType>;
 namespace abstract {
 using mindspore::parse::PyObjectWrapper;
+constexpr auto kHasViewOutputFlag = "has_view_output";
+
+bool NeedInfectViewOutputFlag(const AbstractBasePtrList &args) {
+  for (const auto &arg : args) {
+    if (arg->isa<abstract::AbstractRefTensor>()) {
+      const auto ref = arg->cast<abstract::AbstractRefPtr>();
+      if (ref->is_view_output()) {
+        return true;
+      }
+    }
+    auto has_view_output_flag = arg->user_data<bool>(kHasViewOutputFlag);
+    if (has_view_output_flag != nullptr && *has_view_output_flag) {
+      return true;
+    }
+  }
+  return false;
+}
 
 namespace {
 mindspore::HashSet<std::string> prims_to_skip_undetermined_infer{kMakeTupleOpName,  kMakeListOpName,   kSwitchOpName,
@@ -140,14 +157,14 @@ CNodePtr GetInputsAfterUnpackCall(const CNodePtr &source_node, const AnalysisEng
   return fg->NewCNodeInOrder(new_inputs);
 }
 
-AbstractBasePtr ConvertTensorToRef(const AbstractBasePtr &abs, AbstractRefTensor::RefTensorType type) {
+AbstractBasePtr ConvertTensorToRef(const AbstractBasePtr &abs) {
   MS_EXCEPTION_IF_NULL(abs);
   if (abs->isa<abstract::AbstractRefTensor>() || abs->isa<abstract::AbstractNone>()) {
     return abs;
   }
   auto tensor_abs = dyn_cast<abstract::AbstractTensor>(abs);
   MS_EXCEPTION_IF_NULL(tensor_abs);
-  auto ref_abs = std::make_shared<abstract::AbstractRefTensor>(tensor_abs, std::make_shared<RefKey>("None"), type);
+  auto ref_abs = std::make_shared<abstract::AbstractRefTensor>(tensor_abs, std::make_shared<RefKey>("None"));
   std::stringstream ss;
   ss << ref_abs.get();
   ref_abs->set_ref_key_value(std::make_shared<RefKey>(ss.str()));
@@ -160,8 +177,11 @@ AbstractBasePtr AddRefKeyForArgs(const AbstractBasePtr &output_abs, const Abstra
   // Convert input tensor to ref if this tensor is rw_write.
   for (const auto &index : rw_write_indexes) {
     if (!input_args[index]->isa<AbstractRefTensor>()) {
-      constexpr auto kInplaceOp = AbstractRefTensor::RefTensorType::kInplaceOp;
-      auto ref_tensor = ConvertTensorToRef(input_args[index], kInplaceOp);
+      auto ref_tensor = ConvertTensorToRef(input_args[index]);
+      if (ref_tensor->isa<abstract::AbstractRefTensor>()) {
+        ref_tensor->cast<abstract::AbstractRefPtr>()->set_is_inplace(true);
+      }
+      ref_tensor = ref_tensor->Broaden();
       input_args[index]->set_inplace_abstract(ref_tensor);
     }
   }
@@ -173,9 +193,12 @@ AbstractBasePtr AddRefKeyForArgs(const AbstractBasePtr &output_abs, const Abstra
     auto inplace_index = inplace_indexes[0];
     if (inplace_index != -1) {
       auto res_abs = input_args[inplace_index];
-      return res_abs->isa<AbstractRefTensor>() ? res_abs : res_abs->inplace_abstract();
+      MS_EXCEPTION_IF_NULL(res_abs);
+      auto cur_res = res_abs->isa<AbstractRefTensor>() ? res_abs : res_abs->inplace_abstract();
+      MS_EXCEPTION_IF_NULL(cur_res);
+      cur_res = cur_res->Broaden();
+      return cur_res;
     }
-    return output_abs;
   }
   // If output is a tuple or a list of tensors.
   AbstractBasePtrList output_list;
@@ -184,8 +207,8 @@ AbstractBasePtr AddRefKeyForArgs(const AbstractBasePtr &output_abs, const Abstra
     const auto &output_args = output_abs->cast<AbstractSequencePtr>()->elements();
     if (inplace_indexes.size() > output_args.size()) {
       MS_LOG(EXCEPTION) << "The number of outputs must be greater than the inplace_indexes."
-                        << " But got the number of outputs: " << output_args.size() << ". the number of inplace_indexes"
-                        << inplace_indexes.size();
+                        << " But got the number of outputs: " << output_args.size()
+                        << ", the number of inplace_indexes: " << inplace_indexes.size();
     }
     for (size_t i = 0; i < inplace_indexes.size(); ++i) {
       auto inplace_index = inplace_indexes[i];
@@ -193,6 +216,7 @@ AbstractBasePtr AddRefKeyForArgs(const AbstractBasePtr &output_abs, const Abstra
         auto outi_arg = input_args[inplace_index]->isa<AbstractRefTensor>()
                           ? input_args[inplace_index]
                           : input_args[inplace_index]->inplace_abstract();
+        outi_arg = outi_arg->Broaden();
         (void)output_list.emplace_back(outi_arg);
       } else {
         (void)output_list.emplace_back(output_args[i]);
@@ -827,20 +851,35 @@ void PrimitiveFunctionEvaluator::CheckArgsSizeAndType(const AbstractBasePtrList 
 AbstractBasePtr UpdateViewOpsAbstract(const AbstractBasePtr &res, const AbstractBasePtrList &args) {
   MS_EXCEPTION_IF_NULL(res);
   if (!res->isa<abstract::AbstractTensor>() && !res->isa<abstract::AbstractTuple>()) {
-    MS_LOG(EXCEPTION) << "The abstract of view operation is exception:" << res->ToString();
+    MS_LOG(EXCEPTION) << "The abstract of view operation is exception: " << res->ToString();
   }
 
-  constexpr auto kViewOp = abstract::AbstractRefTensor::RefTensorType::kViewOp;
   // Update the abstract of first input of view operation.
   auto arg0_tensor = dyn_cast<abstract::AbstractTensor>(args[0]);
-  auto new_input_arg = ConvertTensorToRef(arg0_tensor, kViewOp);
-  args[0]->set_inplace_abstract(new_input_arg);
+  AbstractBasePtr new_input_arg = ConvertTensorToRef(arg0_tensor);
+  if (arg0_tensor != nullptr && arg0_tensor->isa<abstract::AbstractRefTensor>()) {
+    const auto ref = arg0_tensor->cast<abstract::AbstractRefPtr>();
+    if (new_input_arg != nullptr && new_input_arg->isa<abstract::AbstractRefTensor>()) {
+      // Keep the original ref_type.
+      new_input_arg->cast<AbstractRefPtr>()->set_ref_tensor_type(ref->ref_tensor_type());
+    }
+  }
+  if (new_input_arg != nullptr) {
+    if (new_input_arg->isa<abstract::AbstractRefTensor>()) {
+      // Added is_view_input ref_type.
+      new_input_arg->cast<AbstractRefPtr>()->set_is_view_input(true);
+    }
+    args[0]->set_inplace_abstract(new_input_arg);
+  }
 
   // Update the abstract of view operation.
   AbstractBasePtr new_res = res;
   if (res->isa<abstract::AbstractTensor>()) {
     // The output of the view operator shares the same address with the first input of the operator.
-    new_res = ConvertTensorToRef(res, kViewOp);
+    new_res = ConvertTensorToRef(res);
+    if (new_res->isa<abstract::AbstractRefTensor>()) {
+      new_res->cast<abstract::AbstractRefPtr>()->set_is_view_output(true);
+    }
   } else if (res->isa<abstract::AbstractTuple>()) {
     // Update the elements of output.
     AbstractBasePtrList output_list;
@@ -853,10 +892,13 @@ AbstractBasePtr UpdateViewOpsAbstract(const AbstractBasePtr &res, const Abstract
         continue;
       }
       if (!ele->isa<abstract::AbstractTensor>()) {
-        MS_LOG(EXCEPTION) << "The abstract of view operation is exception:" << res->ToString();
+        MS_LOG(EXCEPTION) << "The abstract of view operation is exception: " << res->ToString();
       }
       auto ele_abs = dyn_cast<abstract::AbstractTensor>(ele);
-      auto new_ele_abs = ConvertTensorToRef(ele_abs, kViewOp);
+      auto new_ele_abs = ConvertTensorToRef(ele_abs);
+      if (new_ele_abs->isa<abstract::AbstractRefTensor>()) {
+        new_ele_abs->cast<abstract::AbstractRefPtr>()->set_is_view_output(true);
+      }
       (void)output_list.emplace_back(new_ele_abs);
       ele->set_inplace_abstract(new_ele_abs);
     }
@@ -865,7 +907,7 @@ AbstractBasePtr UpdateViewOpsAbstract(const AbstractBasePtr &res, const Abstract
     output_sequence_abs->set_elements(output_list);
     new_res = res;
   }
-  MS_LOG(DEBUG) << "The new abstract of view operation is:" << new_res->ToString();
+  MS_LOG(DEBUG) << "The new abstract of view operation is: " << new_res->ToString();
   return new_res;
 }
 
@@ -940,6 +982,10 @@ EvalResultPtr PrimitiveFunctionEvaluator::EvalPrim(const AnalysisEnginePtr &engi
   }
   abs_base = CheckAndInfer(args);
   MS_EXCEPTION_IF_NULL(abs_base);
+  bool need_infect_view_output_flag = NeedInfectViewOutputFlag(args);
+  if (need_infect_view_output_flag) {
+    abs_base->set_user_data<bool>(kHasViewOutputFlag, std::make_shared<bool>(true));
+  }
   prim_func_->EndRecordAddAttr();
   const auto &added_attrs = prim_func_->evaluate_added_attrs();
   return std::make_shared<EvalResult>(abs_base, std::make_shared<AttrValueMap>(added_attrs));
@@ -983,6 +1029,14 @@ EvalResultPtr StandardPrimEvaluator::EvalPrim(const AnalysisEnginePtr &engine, c
   const auto &inplace_indexes = inplace_input_indexes();
   abs_base = inplace_prim() ? AddRefKeyForArgs(output_abs, args, rw_write_indexes, inplace_indexes) : output_abs;
   MS_EXCEPTION_IF_NULL(abs_base);
+  // Set output's kHasViewOutputFlag according to input args
+  if (prim_->name() == kDependOpName) {
+    if (NeedInfectViewOutputFlag({args[0]})) {
+      abs_base->set_user_data<bool>(kHasViewOutputFlag, std::make_shared<bool>(true));
+    }
+  } else if (prim_->name() != kUpdateStateOpName && NeedInfectViewOutputFlag(args)) {
+    abs_base->set_user_data<bool>(kHasViewOutputFlag, std::make_shared<bool>(true));
+  }
   prim_->EndRecordAddAttr();
   const auto &added_attrs = prim_->evaluate_added_attrs();
   return std::make_shared<EvalResult>(abs_base, std::make_shared<AttrValueMap>(added_attrs));
@@ -1212,7 +1266,6 @@ EvalResultPtr InterpretGetAttrNode(const AbstractBasePtrList &args_abs_list, con
   const auto expr = debug_info->location()->expr_src();
   if (expr.empty()) {
     MS_LOG(WARNING) << "Location's expr is empty, node: " << out_node->DebugString(debug_recursive_level);
-    return nullptr;
   }
 
   constexpr auto item_index = 1;

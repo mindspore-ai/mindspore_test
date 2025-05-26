@@ -174,6 +174,7 @@ class FuncGraphBuilder {
   ///
   /// \return Return the corresponding primitive of function of the func.
   static py::object ConvertMethod(const py::object &obj);
+  static py::object ConvertMethod(const std::string &class_name, const std::string &method_name);
 
   /// \brief Get the callable python primitive, meta_func_graph or function.
   ///

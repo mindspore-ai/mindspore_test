@@ -219,9 +219,11 @@ KernelActor::KernelActor(const std::string &name, const CNodePtr &kernel, const 
   std::vector<bool> is_output_kernel(AnfAlgo::GetOutputAddressNum(kernel), false);
   is_output_kernel_.swap(is_output_kernel);
   std::iota(output_free_index_.begin(), output_free_index_.end(), 0);
+  need_ref_for_storage_info_ = (!common::AnfAlgo::IsViewNode(kernel));
   MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Input free index:" << input_free_index_
-                                       << " output free index:" << output_free_index_ << " for actor:" << GetAID()
-                                       << " kernel:" << kernel->DebugString();
+                                       << " output free index:" << output_free_index_
+                                       << " need ref storage info:" << need_ref_for_storage_info_
+                                       << " for actor:" << GetAID() << " kernel:" << kernel->DebugString();
 
   // shape depend need kernel is cnode.
   SetShapeDependInfo();
@@ -1389,7 +1391,9 @@ void KernelActor::UpdateRefDeviceAddress(OpContext<KernelTensor> *const context,
     MS_EXCEPTION_IF_NULL(output_device_tensor);
     output_device_tensor->set_pointer_ref_count(input_device_tensor->pointer_ref_count());
     output_device_tensor->IncreaseNewRefCount(GetAID().Name());
-
+    if (input_device_tensor->GetTensorStorageInfo() != nullptr && need_ref_for_storage_info_) {
+      output_device_tensor->set_tensor_storage_info(input_device_tensor->GetTensorStorageInfo());
+    }
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
       << "Actor:" << GetAID() << " increase new ref count for device address:" << output_device_tensor->PrintInfo()
       << " and input device address:" << input_device_tensor->PrintInfo();

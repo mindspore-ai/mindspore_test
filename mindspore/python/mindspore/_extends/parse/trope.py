@@ -37,6 +37,12 @@ from functools import (  # noqa
     partial
 )
 
+from mindspore.ops.composite.multitype_ops.add_impl import augassign_add
+from mindspore.ops.composite.multitype_ops.sub_impl import augassign_sub
+from mindspore.ops.composite.multitype_ops.mul_impl import augassign_mul
+from mindspore.ops.composite.multitype_ops.div_impl import augassign_div
+from mindspore.ops.composite.multitype_ops.floordiv_impl import augassign_floordiv
+
 from ...common import mutable
 
 __all__ = ['add', 'sub', 'mul', 'truediv', 'floordiv', 'mod', 'eq', 'ne', 'lt', 'gt', 'le', 'ge', 'pos', 'neg',
@@ -44,7 +50,8 @@ __all__ = ['add', 'sub', 'mul', 'truediv', 'floordiv', 'mod', 'eq', 'ne', 'lt', 
            'matmul', 'getitem', 'setitem',
            'bool', 'getattr', 'setattr', 'hasattr', 'len', 'iter', 'next', 'pow', 'range', 'map', 'zip',
            'partial', 'print', 'enumerate', 'isinstance', 'filter', 'abs', 'round', 'mutable',
-           'max', 'min', 'sum', 'list', 'tuple']
+           'max', 'min', 'sum', 'list', 'tuple',
+           'augassign_add', 'augassign_sub', 'augassign_mul', 'augassign_div', 'augassign_floordiv']
 
 
 def MakeTuple(*elts):  # pragma: no cover

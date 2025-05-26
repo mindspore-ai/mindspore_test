@@ -1171,7 +1171,9 @@ AbstractBasePtr GetDefaultValueAbstract(const ParameterPtr &param) {
   auto abs_tensor = value_abs->cast<abstract::AbstractTensorPtr>();
   MS_EXCEPTION_IF_NULL(abs_tensor);
   auto ref_key = std::make_shared<RefKey>(param->name());
-  return std::make_shared<abstract::AbstractRefTensor>(abs_tensor, ref_key);
+  auto res = std::make_shared<abstract::AbstractRefTensor>(abs_tensor, ref_key);
+  res->cast<abstract::AbstractRefPtr>()->set_is_parameter(true);
+  return res;
 }
 
 namespace {
@@ -1266,10 +1268,8 @@ bool IsCreatedByViewOp(const AnfNodePtr &node) {
   }
   auto abstract = node->abstract();
   if (abstract != nullptr && abstract->isa<abstract::AbstractRefTensor>()) {
-    constexpr auto kViewOp = abstract::AbstractRefTensor::RefTensorType::kViewOp;
-    if (abstract->cast_ptr<abstract::AbstractRefTensor>()->ref_type() == kViewOp) {
-      return true;
-    }
+    const auto ref = abstract->cast_ptr<abstract::AbstractRefTensor>();
+    return ref->is_view();
   }
   return false;
 }
@@ -1279,10 +1279,18 @@ bool IsViewInplaceNode(const AnfNodePtr &node) {
   if (node->isa<CNode>() && IsInplaceOpNode(node)) {
     auto inplace_node = node->cast_ptr<CNode>();
     const AnfNodePtrList &input_nodes = inplace_node->inputs();
-    auto it = std::find_if(input_nodes.begin() + 1, input_nodes.end(), IsCreatedByViewOp);
-    if (it != input_nodes.end()) {
-      MS_LOG(DEBUG) << "Found a view+inplace node. Inplace node: " << inplace_node->DebugString()
-                    << ", and one of its input is created by view op: " << (*it)->DebugString();
+    const auto &prim = GetCNodePrimitive(node);
+    const auto &rw_write_index = prim->rw_write_input_indexes();
+    auto iter = std::find_if(rw_write_index.begin(), rw_write_index.end(), [&input_nodes](const size_t &index) {
+      if (index + 1 >= input_nodes.size()) {
+        MS_LOG(ERROR) << "Invalid rw_write index: " << index;
+        return false;
+      }
+      return IsCreatedByViewOp(input_nodes[index + 1]);
+    });
+    if (iter != rw_write_index.end()) {
+      MS_LOG(INFO) << "Found a view+inplace node. Inplace node: " << inplace_node->DebugString()
+                   << ", and one of its input is created by view op: " << input_nodes[(*iter) + 1]->DebugString();
       return true;
     }
   }
@@ -1291,14 +1299,20 @@ bool IsViewInplaceNode(const AnfNodePtr &node) {
 
 bool FindViewInplaceNode(const AnfNodePtrList &nodes) {
   bool has_view_inplace = false;
+  std::vector<std::string> loc_str_list{};
   for (auto &node : nodes) {
     if (IsViewInplaceNode(node)) {
       has_view_inplace = true;
+      auto location_str = trace::GetDebugInfoStr(node->debug_info());
+      if (std::find(loc_str_list.begin(), loc_str_list.end(), location_str) != loc_str_list.end()) {
+        continue;
+      }
       MS_LOG(WARNING)
         << "There is an in-place modification to a Tensor view that requires gradients. However, computing gradients "
            "for in-place modified Tensor views is still an experimental feature, and the results may be inaccurate. It "
            "is recommended to replace the Tensor view here with a non-view Tensor. The code location is as follows:\n"
-        << trace::GetDebugInfoStr(node->debug_info());
+        << location_str;
+      (void)loc_str_list.emplace_back(location_str);
     }
   }
   return has_view_inplace;
