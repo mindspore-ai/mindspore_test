@@ -657,13 +657,6 @@ extern PyObject *TensorIndex_getitem_index_info(PyObject *self, PyObject *args) 
   HANDLE_MS_EXCEPTION_END
 }
 
-extern PyObject *TensorIndex_is_flattened(PyObject *self, PyObject *args) {
-  HANDLE_MS_EXCEPTION
-  // todo: delete is api.
-  return PyBool_FromLong(false);
-  HANDLE_MS_EXCEPTION_END
-}
-
 extern PyObject *TensorPython_check_stub(PyObject *self, PyObject *args) {
   HANDLE_MS_EXCEPTION
   bool result = Tensor::CheckStub();
@@ -1083,117 +1076,6 @@ extern PyObject *TensorPython_SetItem(PyObject *self, PyObject *args) {
   HANDLE_MS_EXCEPTION_END
 }
 
-extern PyObject *TensorPython_GetFlattenTensors(PyObject *self, PyObject *args, PyObject *kwargs) {
-  HANDLE_MS_EXCEPTION
-  PyObject *py_tensor_list;
-
-  if (!PyArg_ParseTuple(args, "O", &py_tensor_list)) {
-    return nullptr;
-  }
-
-  TensorPtrList tensors;
-  std::vector<TensorPy> tensorpys;
-  Py_ssize_t len = PyList_Size(py_tensor_list);
-  for (Py_ssize_t i = 0; i < len; ++i) {
-    PyObject *item = PyList_GetItem(py_tensor_list, i);
-    PyType<TensorPy> *tensor = (PyType<TensorPy> *)item;
-    tensors.push_back(tensor->value.GetTensor());
-    tensorpys.push_back(tensor->value);
-  }
-  TensorPtrList out_tensors = Tensor::GetFlattenedTensors(tensors);
-  if (out_tensors.empty()) {
-    Py_RETURN_NONE;
-  }
-  std::map<TypeId, OrderedSet<PyObject *>> chunk_map;
-  for (auto &tensorpy : tensorpys) {
-    auto owner_tensorpy = tensorpy.GetFlattenTensor().ptr();
-    auto get_normalize_type = [](TypeId id) {
-      if (id == kNumberTypeFloat) {
-        // kNumberTypeFloat is an alias of kNumberTypeFloat32.
-        return kNumberTypeFloat32;
-      }
-      return id;
-    };
-    auto chunk_dtype = get_normalize_type(tensorpy.GetDataType());
-    chunk_map[chunk_dtype].add(owner_tensorpy);
-  }
-  py::list result_tensorpys;
-  for (const auto &entry : chunk_map) {
-    const auto &chunk_tensors = entry.second;
-    for (const auto &tensor_obj : chunk_tensors) {
-      result_tensorpys.append(tensor_obj);
-    }
-  }
-  return result_tensorpys.release().ptr();
-  HANDLE_MS_EXCEPTION_END
-}
-
-extern PyObject *TensorPython_FlattenTensors(PyObject *self, PyObject *args, PyObject *kwargs) {
-  HANDLE_MS_EXCEPTION
-  PyObject *py_tensor_list = NULL;
-  PyObject *fusion_size_ori = NULL;
-  size_t fusion_size = 0;
-  static const char *kwlist[] = {"py_tensor_list", "fusion_size", nullptr};
-  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|O", const_cast<char **>(kwlist), &py_tensor_list,
-                                   &fusion_size_ori)) {
-    return nullptr;
-  }
-  if (fusion_size_ori != NULL) {
-    fusion_size = (size_t)PyLong_AsUnsignedLongLong(fusion_size_ori);
-  }
-  TensorPtrList tensors;
-  std::vector<TensorPy> tensorpys;
-  Py_ssize_t len = PyList_Size(py_tensor_list);
-  for (Py_ssize_t i = 0; i < len; ++i) {
-    PyObject *item = PyList_GetItem(py_tensor_list, i);
-    PyType<TensorPy> *tensor = (PyType<TensorPy> *)item;
-    tensors.push_back(tensor->value.GetTensor());
-    tensorpys.push_back(tensor->value);
-  }
-  TensorPtrList out_tensors = Tensor::FlattenTensors(tensors, fusion_size);
-  PyObject *resultList = PyList_New(out_tensors.size());
-  int index = 0;
-  for (auto &tensor : out_tensors) {
-    TensorPyPtr tmpTensor = std::make_shared<TensorPy>(tensor);
-    PyType<TensorPy> *result = (PyType<TensorPy> *)TensorPyType->tp_alloc(TensorPyType, 0);
-    new (&result->value) TensorPy(tmpTensor->GetTensor());
-    result->value.SetInitFinished(true);
-    PyObject *outTensor = reinterpret_cast<PyObject *>(result);
-    for (Py_ssize_t i = 0; i < len; ++i) {
-      PyObject *item = PyList_GetItem(py_tensor_list, i);
-      PyType<TensorPy> *tensorPython = (PyType<TensorPy> *)item;
-      auto flatten = Tensor::GetFlattenedTensor(tensorPython->value.GetTensor());
-      if (tensor == flatten) {
-        // need to store falttened python tensor
-        tensorPython->value.SetFlattenTensor(py::reinterpret_borrow<py::object>(outTensor));
-      }
-    }
-    PyList_SetItem(resultList, index++, outTensor);
-  }
-  return resultList;
-  HANDLE_MS_EXCEPTION_END
-}
-
-extern PyObject *TensorPython_GetFusionSize(PyObject *self, PyObject *args, PyObject *kwargs) {
-  HANDLE_MS_EXCEPTION
-  PyObject *py_tensor_list;
-
-  if (!PyArg_ParseTuple(args, "O", &py_tensor_list)) {
-    return nullptr;
-  }
-
-  TensorPtrList tensorpys;
-  Py_ssize_t len = PyList_Size(py_tensor_list);
-  for (Py_ssize_t i = 0; i < len; ++i) {
-    PyObject *item = PyList_GetItem(py_tensor_list, i);
-    PyType<TensorPy> *tensor = (PyType<TensorPy> *)item;
-    tensorpys.push_back(tensor->value.GetTensor());
-  }
-  size_t out = Tensor::GetFusionSize(tensorpys);
-  return PyLong_FromSize_t(out);
-  HANDLE_MS_EXCEPTION_END
-}
-
 extern PyObject *TensorPython_GetNewItem(PyObject *self, PyObject *args, PyObject *kwargs) {
   HANDLE_MS_EXCEPTION
   PyType<TensorPy> *tensor = (PyType<TensorPy> *)self;
@@ -1372,7 +1254,6 @@ static PyMethodDef Tensor_methods[] = {
                                 )mydelimiter"},
   {"setitem_index_info", TensorIndex_setitem_index_info, METH_STATIC | METH_VARARGS, "Set item index information."},
   {"getitem_index_info", TensorIndex_getitem_index_info, METH_STATIC | METH_VARARGS, "Get item index information."},
-  {"_is_flattened", TensorIndex_is_flattened, METH_STATIC | METH_VARARGS, "Index is flattened."},
   {"_is_test_stub", TensorPython_check_stub, METH_STATIC | METH_NOARGS, "Check if this is a test stub."},
   {"persistent_data_from_numpy", TensorPy_make_persistent_data_tensor, METH_VARARGS,
    R"mydelimiter(
@@ -1592,12 +1473,6 @@ static PyMethodDef Tensor_methods[] = {
   {"__setitem__", (PyCFunction)TensorPython_SetItem, METH_VARARGS, "Set item to TensorPy"},
   {"__getstate__", (PyCFunction)TensorPython_getstate, METH_VARARGS, "Get the state of the TensorPy object"},
   {"__setstate__", (PyCFunction)TensorPython_setstate, METH_VARARGS, "Set the state of the TensorPy object"},
-  {"_get_flattened_tensors", (PyCFunction)TensorPython_GetFlattenTensors, METH_STATIC | METH_VARARGS,
-   "Flatten the input tensors."},
-  {"_flatten_tensors", (PyCFunction)TensorPython_FlattenTensors, METH_STATIC | METH_VARARGS | METH_KEYWORDS,
-   "Flatten the input tensors."},
-  {"_get_fusion_size", (PyCFunction)TensorPython_GetFusionSize, METH_STATIC | METH_VARARGS,
-   "Flatten the input tensors."},
   {"_item", (PyCFunction)TensorPython_GetNewItem, METH_VARARGS | METH_KEYWORDS, R"mydelimiter(
                                Return the value of this tensor as standard Python number.
                                This only works for tensors with one element.

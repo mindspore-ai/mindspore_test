@@ -729,53 +729,12 @@ class MS_CORE_API Tensor : public MetaTensor {
     update_value_callback_ = update_value_callback;
   }
 
-  /// \brief Get the memory chunk pointer and offset if memory chunk for this tensor exists.
-  ///
-  /// \return The memory chunk pointer and offset, nullptr and 0 if no memory chunk exists.
-  std::pair<void *, size_t> GetChunkOffset() const;
-
-  /// \brief Reset tensors data so that they are using contiguous memory chunks grouped by data type.
-  ///
-  /// \param[in] tensors The tensors to be processed.
-  /// \param[in] fusion_size Maximum memory chunk size in bytes, 0 for unlimited.
-  ///
-  /// \return Tensors that data are pointed to each contiguous memory chunks.
-  static TensorPtrList FlattenTensors(const TensorPtrList &tensors, size_t fusion_size = 0);
-
-  /// \brief Check if FlattenTensors called for the input tensors.
-  ///
-  /// \param[in] tensors The tensors to be checked.
-  ///
-  /// \return True if FlattenTensors called for input tensors, false otherwise.
-  static bool IsFlattened(const TensorPtrList &tensors);
-
-  /// \brief Get tensors for each contiguous memory chunks used by the input tensors.
-  ///
-  /// \param[in] tensors The input tensors.
-  ///
-  /// \return Tensors that data are pointed to each contiguous memory chunks, empty if failed.
-  static TensorPtrList GetFlattenedTensors(const TensorPtrList &tensors);
-
-  /// \brief Get tensor for each contiguous memory chunks used.
-  ///
-  /// \param[in] tensor The given tensor.
-  ///
-  /// \return Tensor that data are pointed to each contiguous memory chunks, empty if failed.
-  static const TensorPtr GetFlattenedTensor(const TensorPtr &tensor);
-
   /// \brief Get tensors stub flag.
   ///
   /// \param[in] none.
   ///
   /// \return If compile with backend, return false, else return true.
   static bool CheckStub();
-
-  /// \brief Get the fusion size for the given flat tensors.
-  ///
-  /// \param[in] flat_tensors The input flat tensors.
-  ///
-  /// \return fusion size for the given flat tensors.
-  static size_t GetFusionSize(const TensorPtrList &flat_tensors);
 
   /// \brief Get the tensor compression type.
   ///

@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2022 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,11 +20,9 @@
 #include <exception>
 #include <iomanip>
 #include <functional>
-#include <memory>
 #include <utility>
 #include <algorithm>
 #include <map>
-#include <vector>
 #include "mindapi/base/type_id.h"
 #include "abstract/utils.h"
 #include "abstract/abstract_value.h"
@@ -51,99 +49,6 @@ static TypeId TypeIdOf(const TypePtr &data_type, TypeId defaultTypeId) {
 
 std::unique_ptr<DeviceInfo> CopyDeviceInfo(const std::unique_ptr<DeviceInfo> &device_info) {
   return device_info == nullptr ? nullptr : std::make_unique<DeviceInfo>(device_info);
-}
-
-// TensorSubData is the base class to provide tensor data as a segment from an owner tensor data.
-class TensorSubData : public TensorData {
- public:
-  TensorSubData(const TensorPtr &data_owner, size_t offset, size_t data_size, size_t ndim)
-      : data_owner_(data_owner), data_offset_(offset), data_size_(data_size), ndim_(ndim) {}
-
-  ~TensorSubData() override = default;
-
-  ssize_t size() const override { return static_cast<ssize_t>(data_size_); }
-
-  ssize_t nbytes() const override { return size() * itemsize(); }
-
-  ssize_t ndim() const override { return static_cast<ssize_t>(ndim_); }
-
-  bool is_sub_data() const override { return true; }
-
-  bool has_sub_data() const override { return false; }
-
-  void *data() override {
-    // Set data initialized if data() is called.
-    data_initialized_ = true;
-    auto start = static_cast<uint8_t *>(data_owner_->data().data());
-    return static_cast<void *>(start + data_offset_);
-  }
-
-  const void *const_data() const override {
-    if (!data_initialized_) {
-      // Return nullptr if data not initialized.
-      return nullptr;
-    }
-    auto start = static_cast<uint8_t *>(data_owner_->data().data());
-    return static_cast<void *>(start + data_offset_);
-  }
-
-  // Get the owner Tensor.
-  const TensorPtr &GetOwner() const { return data_owner_; }
-
-  // Data offset in bytes.
-  size_t data_offset() const { return data_offset_; }
-
- protected:
-  const TensorPtr data_owner_;
-  size_t data_offset_{0};
-  size_t data_size_{0};
-  size_t ndim_{0};
-  bool data_initialized_{false};
-};
-
-// TensorSubDataImpl implements methods that rely on T.
-template <typename T>
-class TensorSubDataImpl : public TensorSubData {
- public:
-  TensorSubDataImpl(const TensorPtr &data_owner, size_t offset, size_t data_size, size_t ndim)
-      : TensorSubData(data_owner, offset, data_size, ndim) {}
-
-  ~TensorSubDataImpl() override = default;
-
-  ssize_t itemsize() const override { return static_cast<ssize_t>(sizeof(T)); }
-
-  std::string ToString(TypeId type, const ShapeVector &shape, bool use_comma) const override {
-    TensorStringifier<T> stringifier{static_cast<const T *>(const_data()), data_size_, ndim_};
-    return stringifier.ToString(type, shape, use_comma);
-  }
-};
-
-TensorDataPtr MakeTensorSubData(const TensorPtr &owner, size_t offset, const TensorDataPtr &data) {
-  if (data->nbytes() == 0) {
-    MS_LOG(INTERNAL_EXCEPTION) << "Tensor data size is 0.";
-  }
-  auto sub_data =
-    tensor::MakeTensorData<TensorSubDataImpl>(owner->data_type(), owner, offset, data->size(), data->ndim());
-  // If tensor data is initialized, copy it.
-  if (data->const_data() != nullptr) {
-    CopyTensorData(sub_data, data);
-  }
-  return sub_data;
-}
-
-// TensorChunk holds info for a chunk.
-struct TensorChunk {
-  size_t size{0};                  // chunk size in the number of elements.
-  size_t bytes{0};                 // chunk size in bytes.
-  std::vector<TensorPtr> tensors;  // tensors belong to this chunk.
-};
-
-static TypeId normalize_type(TypeId type_id) {
-  if (type_id == kNumberTypeFloat) {
-    // kNumberTypeFloat is an alias of kNumberTypeFloat32.
-    return kNumberTypeFloat32;
-  }
-  return type_id;
 }
 
 Tensor::Tensor(const Tensor &tensor)
@@ -346,11 +251,6 @@ Tensor::Tensor(bool input, const TypePtr &data_type)
       id_(MakeId()),
       device_sync_(MakeDeviceAddress(data_type_, ShapeVector{}, MakeTensorData(data_type_, ShapeVector{}, input))) {}
 
-Tensor::Tensor(TypeId data_type, size_t data_size)
-    : Tensor(data_type, ShapeVector{static_cast<int64_t>(data_size)},
-             MakeDeviceAddress(data_type, ShapeVector{static_cast<int64_t>(data_size)},
-                               MakeTensorData(data_type, data_size, true))) {}
-
 Tensor::Tensor(TypeId origin_data_type, const ShapeVector &shape, size_t compression_data_size,
                TensorCompressionType compression_type)
     : Tensor(
@@ -376,7 +276,7 @@ bool Tensor::operator==(const Tensor &tensor) const {
   return (&tensor == this || (MetaTensor::operator==(tensor) && device_sync_ == tensor.device_sync_));
 }
 
-// Assign value to this tensor.
+// assign value to this tensor
 Tensor &Tensor::AssignValue(const Tensor &tensor) {
   if (this != &tensor) {
     ExecuteLazyTask();
@@ -725,111 +625,6 @@ bool Tensor::Offload(const std::string &file_path) {
 
 const std::string Tensor::GetOffloadFilePath() const { return offload_file_; }
 
-std::pair<void *, size_t> Tensor::GetChunkOffset() const {
-  // Get sub-data.
-  auto sub_data = std::dynamic_pointer_cast<TensorSubData>(data_ptr());
-  if (sub_data == nullptr) {
-    return {nullptr, 0};
-  }
-  // Get owner tensor from sub-data.
-  auto owner_tensor = sub_data->GetOwner();
-  MS_EXCEPTION_IF_NULL(owner_tensor);
-  return {owner_tensor->data_c(), sub_data->data_offset()};
-}
-
-static std::map<TypeId, std::vector<TensorChunk>> GroupingTensors(const TensorPtrList &tensors, size_t fusion_size) {
-  // Use std::map to keep order by type id.
-  std::map<TypeId, std::vector<TensorChunk>> group_info;
-  for (auto &tensor : tensors) {
-    MS_EXCEPTION_IF_NULL(tensor);
-    auto tensor_bytes = static_cast<size_t>(tensor->DataNBytes());
-    if ((fusion_size != 0) && (tensor_bytes > fusion_size)) {
-      MS_LOG(EXCEPTION) << "Fusion size " << fusion_size << " is too small for a tensor size " << tensor_bytes << ".";
-    }
-    auto &chunks = group_info[normalize_type(tensor->data_type())];
-    if (chunks.empty()) {
-      (void)chunks.emplace_back();
-    }
-    if ((fusion_size != 0) && (chunks.back().bytes + tensor_bytes > fusion_size)) {
-      (void)chunks.emplace_back();
-    }
-    auto &chunk = chunks.back();
-    chunk.size += tensor->DataSize();
-    chunk.bytes += tensor_bytes;
-    (void)chunk.tensors.emplace_back(tensor);
-  }
-  return group_info;
-}
-
-TensorPtrList Tensor::FlattenTensors(const TensorPtrList &tensors, size_t fusion_size) {
-  // Result tensor list.
-  TensorPtrList result_list;
-  // Grouping tensors by data type and fusion size.
-  auto group_info = GroupingTensors(tensors, fusion_size);
-  // Create chunk tensors and copy data to them.
-  for (auto &type_group : group_info) {
-    auto chunk_dtype = normalize_type(type_group.first);
-    for (auto &chunk : type_group.second) {
-      // Create chunk thensor as a lazy initialized tensor, the tensor data
-      // will be allocated when we begin to copy small tensors data into it.
-      auto chunk_tensor = std::make_shared<Tensor>(chunk_dtype, chunk.size);
-      // Reset and copy tensors data.
-      size_t offset = 0;
-      for (auto &tensor : chunk.tensors) {
-        auto sub_data = MakeTensorSubData(chunk_tensor, offset, tensor->data_ptr());
-        offset += static_cast<size_t>(sub_data->nbytes());
-        tensor->set_data(sub_data);
-      }
-      // Save chunk tensor to result list.
-      (void)result_list.emplace_back(std::move(chunk_tensor));
-    }
-  }
-  return result_list;
-}
-
-bool Tensor::IsFlattened(const TensorPtrList &tensors) {
-  // Tensor data is flattened if all tensors data are TensorSubData.
-  return std::all_of(tensors.begin(), tensors.end(), [](const TensorPtr &tensor) {
-    MS_EXCEPTION_IF_NULL(tensor);
-    auto data_ptr = tensor->data_ptr().get();
-    return dynamic_cast<TensorSubData *>(data_ptr) != nullptr;
-  });
-}
-
-const TensorPtr Tensor::GetFlattenedTensor(const TensorPtr &tensor) {
-  // Get sub-data.
-  auto sub_data = std::dynamic_pointer_cast<TensorSubData>(tensor->data_ptr());
-  if (sub_data == nullptr) {
-    MS_LOG(WARNING) << "Tensors are not flattened.";
-    return nullptr;
-  }
-  // Get owner tensor from sub-data.
-  auto owner_tensor = std::dynamic_pointer_cast<Tensor>(sub_data->GetOwner());
-  MS_EXCEPTION_IF_NULL(owner_tensor);
-  return owner_tensor;
-}
-
-TensorPtrList Tensor::GetFlattenedTensors(const TensorPtrList &tensors) {
-  // Use std::map to keep order by type id.
-  std::map<TypeId, OrderedSet<TensorPtr>> chunk_map;
-  for (auto &tensor : tensors) {
-    auto owner_tensor = GetFlattenedTensor(tensor);
-    if (owner_tensor == nullptr) {
-      return {};
-    }
-    // Add as chunk tensor by its data type.
-    auto chunk_dtype = normalize_type(tensor->data_type());
-    chunk_map[chunk_dtype].add(owner_tensor);
-  }
-  // Generate result tensor list.
-  TensorPtrList result_tensors;
-  for (auto &entry : chunk_map) {
-    auto &chunk_tensors = entry.second;
-    (void)result_tensors.insert(result_tensors.end(), chunk_tensors.begin(), chunk_tensors.end());
-  }
-  return result_tensors;
-}
-
 bool Tensor::CheckStub() {
 #if defined(WITH_BACKEND)
   return false;
@@ -862,8 +657,6 @@ size_t Tensor::GetFusionSize(const TensorPtrList &flat_tensors) {
   }
   return fusion_size;
 }
-
-bool Tensor::is_persistent_data() const { return this->data().is_persistent_data(); }
 
 void Tensor::PinMemory(PinnedMemRegister *pin_mem_register) {
   if (pin_mem_register == nullptr) {

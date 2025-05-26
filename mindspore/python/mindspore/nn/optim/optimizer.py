@@ -1,4 +1,4 @@
-# Copyright 2020-2022 Huawei Technologies Co., Ltd
+# Copyright 2020-2021 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -218,15 +218,12 @@ class Optimizer(Cell):
 
         self._unique = True
         self._target = context.get_context("device_target")
-        self._use_flattened_params = False
-        self._grad_fusion_size = 0
         self.dynamic_lr = False
         self.assignadd = P.AssignAdd()
         self.global_step = Parameter(initializer(0, [1], mindspore.int32), name='global_step')
         self.is_group = False
         self.is_group_lr = False
         self.is_group_params_ordered = False
-        self.use_parallel = False
         learning_rate = self._preprocess_single_lr(learning_rate)
         if isinstance(parameters[0], dict):
             self.is_group = True
@@ -263,11 +260,7 @@ class Optimizer(Cell):
             self.grad_centralization_flags = tuple(self.group_grad_centralization)
         else:
             self.parameters = ParameterTuple(parameters)
-            flat_params = self._get_flattened_params(parameters)
-            if self._use_flattened_params:
-                self._parameters = ParameterTuple(flat_params)
-            else:
-                self._parameters = self.parameters
+            self._parameters = self.parameters
             decay_filter = lambda x: 'beta' not in x.name and 'gamma' not in x.name
             self.decay_flags = tuple(decay_filter(x) for x in self._parameters)
             self.dynamic_decay_flags = isinstance(weight_decay, Cell)
@@ -296,28 +289,6 @@ class Optimizer(Cell):
         self._use_parallel_optimizer()
         self.enable_tuple_broaden = True
 
-    def _get_flattened_params(self, parameters):
-        """Get parameters for each contiguous memory chunks used by input parameters if they are flattened."""
-        if self.is_group:
-            # We don't use flattened parameters when parameters are grouped.
-            return parameters
-        # Check whether parameters are flattened.
-        flattened = Tensor._is_flattened(parameters)  # pylint: disable=W0212
-        if not flattened:
-            # Parameters are not flattened.
-            return parameters
-        # Try to get chunk tensors from flattened parameters.
-        chunk_tensors = Tensor._get_flattened_tensors(parameters)  # pylint: disable=W0212
-        if not chunk_tensors:
-            # Failed to get chunk tensors.
-            logger.warning("Parameters are not properly flattened, fallback to not flattened parameters.")
-            return parameters
-        # Convert chunk tensors to parameters.
-        self._use_flattened_params = True
-        self._grad_fusion_size = Tensor._get_fusion_size(chunk_tensors)  # pylint: disable=W0212
-        return [Parameter._from_tensor(t, name='_chunk_param' + str(i) + '_' + str(t.dtype))  # pylint: disable=W0212
-                for i, t in enumerate(chunk_tensors)]
-
     def _use_parallel_optimizer(self):
         """Indicates whether to use automatic parallelism."""
         if context.get_auto_parallel_context("enable_parallel_optimizer"):
@@ -331,7 +302,10 @@ class Optimizer(Cell):
                 raise RuntimeError("For 'Optimizer', parallel optimizer is not supported in {}, you should set "
                                    "parallel mode to 'data_parallel', 'semi_auto_parallel' or 'auto_parallel'."
                                    .format(_get_parallel_mode()))
-
+            else:
+                self.use_parallel = False
+        else:
+            self.use_parallel = False
         if self.use_parallel:
             if not self._support_parallel_optimizer:
                 raise RuntimeError("For 'Optimizer', parallel optimizer only support optimizer 'Lamb' and "
@@ -409,25 +383,6 @@ class Optimizer(Cell):
         Whether use distributed optimizers.
         """
         return _is_ps_mode()
-
-    def flatten_gradients(self, gradients):
-        """
-        Flatten gradients into several chunk tensors grouped by data type if network parameters are flattened.
-
-        A method to enable performance improvement by using contiguous memory for parameters and gradients.
-        User-defined optimizers based on :class:`mindspore.nn.Optimizer` should call this interface to support
-        contiguous memory for network parameters.
-
-        Args:
-            gradients (tuple[Tensor]): The gradients of network parameters.
-
-        Returns:
-            tuple[Tensor], The gradients after flattened, or the original gradients if parameters are not flattened.
-        """
-        if self._use_flattened_params:
-            flatten_concat = inner.FlattenConcat(fusion_size=self._grad_fusion_size)
-            return flatten_concat(gradients)
-        return gradients
 
     def decay_weight(self, gradients):
         """

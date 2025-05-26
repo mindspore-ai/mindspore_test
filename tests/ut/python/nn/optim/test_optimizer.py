@@ -16,11 +16,9 @@
 import numpy as np
 import pytest
 
-import mindspore as ms
 from mindspore import Tensor
 from mindspore.common.parameter import Parameter
 from mindspore.nn.optim import Optimizer, SGD, Adam, AdamWeightDecay
-from mindspore import context
 
 
 class IterableObjc:
@@ -103,99 +101,3 @@ class TestUnsupportParam():
         with pytest.raises(TypeError):
             paramsTensor = Parameter(Tensor(np.zeros([1, 2, 3])), "x")
             SGD(paramsTensor)
-
-
-def test_not_flattened_params():
-    """
-    Feature: Flatten weights.
-    Description: Optimizer with not flattened parameters.
-    Expectation: The Optimizer works as expected.
-    """
-    context.set_context(mode=context.GRAPH_MODE)
-    p1 = Parameter(Tensor([1], ms.float32), name="p1")
-    p2 = Parameter(Tensor([2], ms.float32), name="p2")
-    p3 = Parameter(Tensor([3], ms.float32), name="p3")
-    paras = [p1, p2, p3]
-    opt = Optimizer(0.1, paras)
-    assert not opt._use_flattened_params  # pylint: disable=W0212
-    assert len(opt.parameters) == 3
-    assert len(opt.cache_enable) == 3
-    assert id(opt.parameters) == id(opt._parameters)  # pylint: disable=W0212
-
-
-def test_with_flattened_params():
-    """
-    Feature: Flatten weights.
-    Description: Optimizer with flattened parameters.
-    Expectation: The Optimizer works as expected.
-    """
-    context.set_context(mode=context.GRAPH_MODE)
-    p1 = Parameter(Tensor([1], ms.float32), name="p1")
-    p2 = Parameter(Tensor([2], ms.float32), name="p2")
-    p3 = Parameter(Tensor([3], ms.float32), name="p3")
-    paras = [p1, p2, p3]
-    Tensor._flatten_tensors(paras)  # pylint: disable=W0212
-    opt = Optimizer(0.1, paras)
-    assert opt._use_flattened_params  # pylint: disable=W0212
-    assert len(opt.parameters) == 3
-    assert len(opt._parameters) == 1  # pylint: disable=W0212
-    assert len(opt.cache_enable) == 1
-    flat_param = opt._parameters[0]  # pylint: disable=W0212
-    assert flat_param.dtype == ms.float32
-    assert flat_param.shape == [3]
-    assert flat_param._size == 3  # pylint: disable=W0212
-    assert np.allclose(flat_param.asnumpy(), np.array([1, 2, 3]))
-    p1.asnumpy()[0] = 6
-    p2.asnumpy()[0] = 6
-    p3.asnumpy()[0] = 6
-    assert np.allclose(flat_param.asnumpy(), np.array([6, 6, 6]))
-
-
-def test_adam_with_flattened_params():
-    """
-    Feature: Flatten weights.
-    Description: Adam optimizer with flattened parameters.
-    Expectation: It is ok to compile the optimizer.
-    """
-    context.set_context(mode=context.GRAPH_MODE)
-    p1 = Parameter(Tensor([1], ms.float32), name="p1")
-    p2 = Parameter(Tensor([2], ms.float32), name="p2")
-    p3 = Parameter(Tensor([3], ms.float32), name="p3")
-    paras = [p1, p2, p3]
-    Tensor._flatten_tensors(paras)  # pylint: disable=W0212
-    adam = Adam(paras)
-    g1 = Tensor([0.1], ms.float32)
-    g2 = Tensor([0.2], ms.float32)
-    g3 = Tensor([0.3], ms.float32)
-    grads = (g1, g2, g3)
-    adam(grads)
-
-
-def test_adam_with_flattened_params_fusion_size():
-    """
-    Feature: Flatten weights.
-    Description: Adam optimizer with flattened parameters and fusion size.
-    Expectation: It is ok to compile the optimizer.
-    """
-    context.set_context(mode=context.GRAPH_MODE)
-    p1 = Parameter(Tensor([1], ms.float32), name="p1")
-    p2 = Parameter(Tensor([2], ms.float32), name="p2")
-    p3 = Parameter(Tensor([3], ms.float32), name="p3")
-    p4 = Parameter(Tensor([4], ms.float32), name="p4")
-    p5 = Parameter(Tensor([5], ms.float32), name="p5")
-    paras = [p1, p2, p3, p4, p5]
-    Tensor._flatten_tensors(paras, fusion_size=12)  # pylint: disable=W0212
-
-    adam = Adam(paras)
-    assert adam._use_flattened_params  # pylint: disable=W0212
-    assert adam._grad_fusion_size == 12  # pylint: disable=W0212
-    assert len(adam.parameters) == 5
-    assert len(adam._parameters) == 2  # pylint: disable=W0212
-
-    g1 = Tensor([0.1], ms.float32)
-    g2 = Tensor([0.2], ms.float32)
-    g3 = Tensor([0.3], ms.float32)
-    g4 = Tensor([0.4], ms.float32)
-    g5 = Tensor([0.5], ms.float32)
-    grads = (g1, g2, g3, g4, g5)
-    adam(grads)
