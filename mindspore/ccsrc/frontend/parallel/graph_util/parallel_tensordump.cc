@@ -246,8 +246,7 @@ void RedistributionParallelTensorDumpHandler::InsertNewTensorDump(const CNodePtr
   bool is_side_effect_tensordump = dump_cnode->inputs().size() == 4 ? true : false;
   ValuePtr v = GetValueNode(dump_cnode->input(kIndex1));
   const std::string dump_cnode_filepath = GetValue<std::string>(v);
-  const std::string name = GetInModeSuffixedDumpPath(dump_cnode_filepath);
-  ValueNodePtr name_value = NewValueNode(name);
+  ValueNodePtr name_value = NewValueNode(dump_cnode_filepath);
   CNodePtr new_dump_node;
   auto dump_cnode_prim = GetCNodePrimitive(dump_cnode);
   MS_EXCEPTION_IF_NULL(dump_cnode_prim);
@@ -267,7 +266,7 @@ void RedistributionParallelTensorDumpHandler::InsertNewTensorDump(const CNodePtr
   auto new_depend_node = func_graph->NewCNode({NewValueNode(prim::kPrimDepend), depend_prev, new_depend_kIndex2_input});
   // config new nodes attributes
   MS_EXCEPTION_IF_NULL(new_dump_prim);
-  new_dump_prim->set_instance_name(name + "_new_generate");
+  new_dump_prim->set_instance_name(dump_cnode_prim->instance_name() + "_new_generate");
   new_dump_prim->AddAttr("side_effect_io", MakeValue(is_side_effect_tensordump));
   new_dump_prim->AddAttr("channel_name", MakeValue("ms_tensor_dump"));
   // Avoid CSE optimization
@@ -442,8 +441,6 @@ void FwdCommunicationParallelTensorDumpHandler::MakeInModeBwdHookBeforeFwdComm()
     (void)fg_manager->Replace(isg_cnode, isg_input);
     (void)fg_manager->Replace(node_to_insert, isg_cnode);
     (void)fg_manager->SetEdge(isg_cnode, kIndex2, node_to_insert);
-    // Modify backward dump path
-    (void)fg_manager->SetEdge(isg_cnode, kIndex1, NewValueNode(MakeValue(GetInModeSuffixedDumpPath(ori_path))));
     node_to_insert = bwd_dump_hook;
   }
 }

@@ -47,6 +47,7 @@ def bprop_tensor_dump(file, input_x, out, dout):
 def get_bprop_dump_gradient(self):
     td = P.TensorDump()
     td.add_prim_attr("side_effect_io", False)
+    td.add_prim_attr("td_flag", True)
     def bprop(path, x, input_output, out, dout):
         tded = td(path, dout)
         fdout = F.depend(dout, tded)

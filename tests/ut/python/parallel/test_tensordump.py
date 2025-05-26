@@ -46,12 +46,12 @@ def get_tensordump_node_num(validator):
                 res += 1
     return res
 
-def get_tensordump_node_infos(graph_validator):
+def get_tensordump_node_infos(graph_validator, reserve_node='TensorDump'):
     d = graph_validator.graph_info_dict
     tensordump_node_infos = []
     for _, nodes in d.items():
         for node, node_info in nodes.items():
-            if node.startswith('TensorDump'):
+            if node.startswith(reserve_node):
                 tensordump_node_infos.append(node_info)
     return tensordump_node_infos
 
@@ -983,3 +983,42 @@ def test_redistribution_fwddump_and_bwddump():
     _ = compile_net(net, x, y, b)
     tensordump_num = check_tensordump_num_from_ir(graph_path)
     assert tensordump_num == 8
+
+
+def test_splittensor_fwddump_and_bwddump():
+    """
+    Feature: test dump with SplitTensor
+    Description: test dump with split tensor and whether 'concatnet_out.npy' will be suffixed with 'in'
+    Expectation: compile success
+    """
+    class ConcatNet(nn.Cell):
+        def __init__(self, concat_strategy, axis=0):
+            super().__init__()
+            self.concat = P.Concat(axis=axis).shard(concat_strategy)
+            self.zero_pad_size = (2, 4096, 8, 64)
+            self.zero_pad = Tensor(np.zeros(self.zero_pad_size), dtype=ms.float16)
+            self.dg = ops.DumpGradient()
+            self.no_side_effect_td_in = ops.TensorDump('in')
+            self.no_side_effect_td_in.add_prim_attr("side_effect_io", False)
+
+        def construct(self, x):
+            x = self.dg("grad_x.npy", x, 'in')
+            out = ops.depend(x, self.no_side_effect_td_in("concatnet_out.npy", x))
+            return out
+
+    graph_path = gen_save_graph_path_by_testcase(sys._getframe(0).f_code.co_name)
+    context.set_context(save_graphs=2, save_graphs_path=graph_path)
+    context.set_auto_parallel_context(device_num=8, global_rank=0, gradients_mean=True)
+    cc_stra = ((2, 1, 2, 1), (2, 1, 2, 1))
+    net = GradWrap(NetWithLoss(ConcatNet(cc_stra, axis=3)))
+    context.set_auto_parallel_context(parallel_mode='semi_auto_parallel')
+    x = Tensor(np.zeros((2, 4096, 8, 128)), dtype=ms.float16)
+    phase = compile_net(net, x)
+    validator = ParallelValidator(net, phase)
+    tensordump_num = get_tensordump_node_num(validator)
+    tensordump_node_infos = get_tensordump_node_infos(validator)
+    dump_gradient_node_infos = get_tensordump_node_infos(validator, 'DumpGradient')
+    tensordump_num = check_tensordump_num_from_ir(graph_path)
+    assert tensordump_num == 2
+    assert check_dump_path_and_attr(tensordump_node_infos, "concatnet_out_in.npy", {})
+    assert check_dump_path_and_attr(dump_gradient_node_infos, "grad_x_in.npy", {})
