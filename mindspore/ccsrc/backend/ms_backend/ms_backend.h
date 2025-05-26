@@ -44,13 +44,42 @@
 namespace mindspore {
 namespace backend {
 namespace ms_backend {
+class BACKEND_EXPORT PyBoostAdapter {
+ public:
+  PyBoostAdapter() = default;
+  ~PyBoostAdapter() = default;
+
+  static bool IsPyBoostRegistered(const std::string &device_target, const std::string &op_name) {
+    MS_EXCEPTION_IF_NULL(is_pyboost_registered_func_);
+    return is_pyboost_registered_func_(device_target, op_name);
+  }
+  static void RunPyBoostCall(runtime::OpRunnerInfo *op_runner_info, VectorRef *op_outputs) {
+    MS_EXCEPTION_IF_NULL(run_pyboost_call_func_);
+    run_pyboost_call_func_(op_runner_info, op_outputs);
+  }
+
+  static void SetIsPyBoostRegistered(const IsPyBoostRegisteredFunc &func) { is_pyboost_registered_func_ = func; }
+  static void SetRunPyBoostCallFunc(const RunPyBoostCallFunc &func) { run_pyboost_call_func_ = func; }
+
+ private:
+  inline static IsPyBoostRegisteredFunc is_pyboost_registered_func_;
+  inline static RunPyBoostCallFunc run_pyboost_call_func_;
+};
+
 class BACKEND_EXPORT MSBackend : public MSBackendBase {
  public:
   MSBackend() : MSBackendBase() {}
   ~MSBackend() override;
 
+  void SetPyBoostRegistered(const IsPyBoostRegisteredFunc &func, const RunPyBoostCallFunc &call_func) override {
+    PyBoostAdapter::SetIsPyBoostRegistered(func);
+    PyBoostAdapter::SetRunPyBoostCallFunc(call_func);
+  }
+
   // Execute all tasks in queue when lazy build is enabled in PyNative mode.
   void WaitTaskFinish() const override;
+  // Clear resource when python exit.
+  void ClearOpExecutorResource() const;
 
   // Sync default stream in PyNative mode.
   void SyncStream();
@@ -60,6 +89,9 @@ class BACKEND_EXPORT MSBackend : public MSBackendBase {
  private:
   void RunGraphByCondition(BackendGraphId graph_id, const GraphCompilerInfo &graph_compiler_info, const VectorRef &args,
                            VectorRef *outputs) override;
+  // Split complete kernel graph to single op graph in PyNative back
+  // propagation, then compile and run single op graph or pyboost op(if op registered).
+  void RunGraphBySingleOp(const GraphCompilerInfo &graph_compiler_info, const VectorRef &args, VectorRef *outputs);
 
   runtime::ActorSet *RealCompileGraphBeforeRunActor(BackendGraphId graph_id,
                                                     const GraphCompilerInfo &graph_compiler_info, const VectorRef &args,
@@ -67,12 +99,19 @@ class BACKEND_EXPORT MSBackend : public MSBackendBase {
   void RunGraphByActors(BackendGraphId graph_id, const GraphCompilerInfo &graph_compiler_info, const VectorRef &args,
                         VectorRef *outputs);
 
+  void RunMsGradGraph(const CNodePtr &kernel, const VectorRef &args, VectorRef *outputs) const;
+
   void RunActorSet(BackendGraphId graph_id, runtime::ActorSet *actor_set, const GraphCompilerInfo &graph_compiler_info,
                    const VectorRef &args, bool no_multi_graph, VectorRef *outputs);
+
+  // Cache output tensor ref count of kernels for back propagation graph in PyNative mode.
+  std::map<GraphId, std::map<KernelWithIndex, size_t>> cnode_ref_counts_;
 
   mindspore::compile::OpBackend op_backend_;
   pynative::GraphAdapter graph_adapter_;
 };
+
+using MsBackendPtr = std::shared_ptr<MSBackend>;
 }  // namespace ms_backend
 }  // namespace backend
 using BackendOpRunInfoPtr = std::shared_ptr<session::BackendOpRunInfo>;
