@@ -1310,23 +1310,6 @@ void PyBoost::UpdateStubOutput(const kernel::pyboost::OpPtr &op, const stub::Stu
   stub_output->SetValue(real_out);
 }
 
-void PyBoost::DataSyncForGraph(const kernel::pyboost::OpPtr &op) {
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  if (ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) != kPynativeMode &&
-      !runtime::OpExecutor::GetInstance().async_for_graph()) {
-    // If execution mode is Graph Mode in MsContext, the tensor will be the input of graph which will execute in Graph
-    // Mode, if the graph contain no CNode after optimization, the tensor need sync to host.
-    for (const auto &output : op->outputs()) {
-      auto device_address = std::static_pointer_cast<device::DeviceAddress>(output->device_address());
-      if (device_address == nullptr) {
-        continue;
-      }
-      output->data_sync(true);
-    }
-  }
-}
-
 PrimitivePtr PyBoost::ConvertPrimitive(const py::object &obj) {
   const auto &adapter = obj.cast<PrimitivePyAdapterPtr>();
   MS_EXCEPTION_IF_NULL(adapter);
