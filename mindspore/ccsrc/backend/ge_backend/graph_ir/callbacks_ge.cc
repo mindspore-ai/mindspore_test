@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 #include "backend/ge_backend/graph_ir/callbacks_ge.h"
-#include "pybind11/pybind11.h"
 #include "ir/param_info.h"
 #include "backend/ge_backend/graph_ir/utils.h"
 #include "pipeline/jit/ps/parse/data_converter.h"

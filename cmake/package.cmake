@@ -229,6 +229,12 @@ if(ENABLE_GPU)
 endif()
 
 if(ENABLE_D)
+    install(
+        TARGETS mindspore_graph_ir LIBRARY
+        DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
+        COMPONENT mindspore
+        NAMELINK_SKIP
+    )
     if(EXISTS ${ASCEND_NNAL_ATB_PATH})
         install(
                 TARGETS mindspore_atb_kernels mindspore_pyboost_atb_kernels LIBRARY

@@ -37,7 +37,7 @@ using DfGraphConvertorPtr = std::shared_ptr<backend::ge_backend::DfGraphConverto
 
 bool IsInitDataSetQueueNode(const AnfNodePtr &node);
 
-void ClearGeSessionAndRunner();
+BACKEND_EXPORT void ClearGeSessionAndRunner();
 BACKEND_EXPORT void InitializeAoeUtil(const std::string &aoe_job_type);
 BACKEND_EXPORT void DestroyAoeUtil();
 BACKEND_EXPORT void EnableAoeOffline();
@@ -52,7 +52,7 @@ MeTensorPtr ConvertGeTensor(const GeTensorPtr &tensor);
 MeTensorPtr ConvertGeTensor(const GeTensorPtr &tensor, const TypeId &me_type);
 
 // df graph manager
-std::shared_ptr<backend::ge_backend::GraphRunner> GetGraphRunner();
+BACKEND_EXPORT std::shared_ptr<backend::ge_backend::GraphRunner> GetGraphRunner();
 std::shared_ptr<backend::ge_backend::GraphRunner> CheckAndGetGraphRunner(
   const backend::ge_backend::RunOptions &run_options);
 BACKEND_EXPORT std::shared_ptr<::ge::Session> GetGeSession();
@@ -77,7 +77,7 @@ BACKEND_EXPORT void SetTraining(const DfGraphConvertorPtr &converter, bool train
 BACKEND_EXPORT void SetExportAir(const DfGraphConvertorPtr &converter, bool export_air);
 BACKEND_EXPORT void BuildGraph(const std::string &name, const DfGraphConvertorPtr &converter,
                                const std::map<std::string, std::shared_ptr<tensor::Tensor>> &maps);
-void GenerateBroadcastGraph(const DfGraphConvertorPtr &converter, const TensorOrderMap &tensors);
+BACKEND_EXPORT void GenerateBroadcastGraph(const DfGraphConvertorPtr &converter, const TensorOrderMap &tensors);
 BACKEND_EXPORT void GenerateCheckpointGraph(const DfGraphConvertorPtr &converter);
 BACKEND_EXPORT int ErrCode(const DfGraphConvertorPtr &converter);
 BACKEND_EXPORT void GenFakeGraph(const std::string &name, const DfGraphConvertorPtr &converter);
@@ -90,22 +90,23 @@ BACKEND_EXPORT DfGraphPtr GetBroadcastGraph(const DfGraphConvertorPtr &converter
 // new session
 BACKEND_EXPORT std::shared_ptr<::ge::Session> NewSession(const SessionOptions &sess_options);
 
-Status RunGraph(const std::shared_ptr<GraphRunner> &runner, const RunOptions &options,
-                const std::vector<GeTensorPtr> &inputs, std::vector<GeTensorPtr> *outputs);
+BACKEND_EXPORT Status RunGraph(const std::shared_ptr<GraphRunner> &runner, const RunOptions &options,
+                               const std::vector<GeTensorPtr> &inputs, std::vector<GeTensorPtr> *outputs);
 
 Status RunGraphAsync(const std::shared_ptr<GraphRunner> &runner, const RunOptions &options,
                      const std::vector<GeTensorPtr> &inputs, std::vector<GeTensorPtr> *outputs);
 
-Status RunGraphWithStreamAsync(const std::shared_ptr<GraphRunner> &runner, const RunOptions &options, void *stream,
-                               const std::vector<GeTensor> &inputs, std::vector<GeTensor> *outputs);
+BACKEND_EXPORT Status RunGraphWithStreamAsync(const std::shared_ptr<GraphRunner> &runner, const RunOptions &options,
+                                              void *stream, const std::vector<GeTensor> &inputs,
+                                              std::vector<GeTensor> *outputs);
 
-Status RegisterExternalAllocator(const std::shared_ptr<GraphRunner> &runner, const void *const stream,
-                                 GeAllocatorPtr allocator);
+BACKEND_EXPORT Status RegisterExternalAllocator(const std::shared_ptr<GraphRunner> &runner, const void *const stream,
+                                                GeAllocatorPtr allocator);
 
-Status UnregisterExternalAllocator(const std::shared_ptr<GraphRunner> &runner, const void *const stream);
+BACKEND_EXPORT Status UnregisterExternalAllocator(const std::shared_ptr<GraphRunner> &runner, const void *const stream);
 
 backend::ge_backend::Status CompileDatasetGraph(const DatasetGraphParam &param, const std::string &phase = "dataset");
-string ExportDFGraph(const std::string &file_name, const std::string &graph_name, bool is_save_to_file);
+BACKEND_EXPORT string ExportDFGraph(const std::string &file_name, const std::string &graph_name, bool is_save_to_file);
 }  // namespace backend::ge_backend
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_INCLUDE_TRANSFORM_GRAPH_IR_UTILS_H_

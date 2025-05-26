@@ -9,6 +9,7 @@ if(MSLITE_ENABLE_CONVERTER AND MSLITE_ENABLE_GRAPH_KERNEL)
     add_compile_definitions(MSLITE_ENABLE_GRAPH_KERNEL)
 endif()
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,-rpath,$ORIGIN/")
 #link_directories(${ASCEND_CANN_RUNTIME_PATH} ${ASCEND_TOOLKIT_RUNTIME_PATH})
 
 file(GLOB GE_EXECUTOR_SRC
@@ -19,8 +20,6 @@ file(GLOB GE_EXECUTOR_SRC
     ${TOP_DIR}/mindspore/lite/tools/converter/adapter/acl/mapper/*.cc
     ${TOP_DIR}/mindspore/lite/tools/converter/adapter/acl/common/utils.cc
     )
-list(APPEND GE_EXECUTOR_SRC $<TARGET_OBJECTS:_mindspore_ascend_op_adapter_obj>
-    $<TARGET_OBJECTS:_mindspore_transform_graph_ir_obj> $<TARGET_OBJECTS:_mindspore_ascend_symbol_obj>)
 
 
 add_library(ascend_ge_plugin SHARED ${GE_EXECUTOR_SRC})
@@ -41,6 +40,8 @@ find_library(ge_runner libge_runner.so ${ASCEND_CANN_RUNTIME_PATH} ${ASCEND_TOOL
 
 target_link_libraries(ascend_ge_plugin ${ge_graph} ${ge_compiler} ${acl_retr} ${acl_cblas} ${acl_dvpp}
     ${acl_runtime} ${libplatform} ${libcompress} ${libopskernel} ${libaicore_utils}
-    ${libaicpu_engine_common} ${acl} ${ge_runner} mindspore_converter mindspore_core mindspore_ops)
+    ${libaicpu_engine_common} ${acl} ${ge_runner} mindspore_converter mindspore_core mindspore_ops
+    mindspore_graph_ir)
 
 target_link_libraries(ascend_ge_plugin mindspore-extendrt)
+set_target_properties(ascend_ge_plugin PROPERTIES INSTALL_RPATH "$ORIGIN")

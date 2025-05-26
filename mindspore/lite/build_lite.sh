@@ -340,6 +340,9 @@ build_python_wheel_package() {
       if [ -f "${INSTALL_PREFIX}/${pkg_name}/runtime/lib/libtransformer-shared.so" ]; then
         cp ${INSTALL_PREFIX}/${pkg_name}/runtime/lib/libtransformer-shared.so package/mindspore_lite/lib/
       fi
+      if [ -f "${INSTALL_PREFIX}/${pkg_name}/runtime/lib/libmindspore_graph_ir.so" ]; then
+        cp ${INSTALL_PREFIX}/${pkg_name}/runtime/lib/libmindspore_graph_ir.so package/mindspore_lite/lib/
+      fi
       if [ -f "${INSTALL_PREFIX}/${pkg_name}/runtime/lib/libtensorrt_plugin.so" ]; then
         cp ${INSTALL_PREFIX}/${pkg_name}/runtime/lib/libtensorrt_plugin.so package/mindspore_lite/lib/
       fi
