@@ -326,7 +326,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
 
     def __repr__(self):
         if self.init_finished:
-            TensorPy_.data_sync(self, True)
             return TensorPy_.__repr__(self)
         return ''
 

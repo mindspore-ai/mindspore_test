@@ -27,9 +27,6 @@ py::object PYNATIVE_EXPORT ${func_name}_OP(const PrimitivePtr &prim, const std::
     GilReleaseWithCheck no_gil;
     return kernel::pyboost::${operator_name}(${cast_args});
   }();
-  auto op = kernel::pyboost::OpRunStatus::Get().GetLastOp();
-  // Data sync in mix mode(Graph and PyNative)
-  PyNativeAlgo::PyBoost::DataSyncForGraph(op);
   kernel::pyboost::PyBoostUtils::set_cur_stream_id(old_stream_id);
 
   MS_LOG(DEBUG) << "Run ${func_name} end";

@@ -571,6 +571,14 @@ DeviceSyncPtr Tensor::CallContiguousCallback() const {
   return contiguous_device_address;
 }
 
+void *Tensor::data_c() const {
+  if (device_sync_->GetDeviceType() != device::DeviceType::kCPU) {
+    MS_LOG(ERROR) << "Only cpu Tensor can access data.";
+    std::abort();
+  }
+  return device_sync_->GetMutablePtr();
+}
+
 TensorPtr Tensor::cpu() const {
   // todo: check stream id!!!
   ExecuteLazyTask();
