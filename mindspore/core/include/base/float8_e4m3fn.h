@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CORE_BASE_FLOAT8_E4M3_H_
-#define MINDSPORE_CORE_BASE_FLOAT8_E4M3_H_
+#ifndef MINDSPORE_CORE_BASE_FLOAT8_E4M3FN_H_
+#define MINDSPORE_CORE_BASE_FLOAT8_E4M3FN_H_
 
 #include <type_traits>
 #include <cmath>
@@ -25,9 +25,9 @@
 #include <limits>
 #include <functional>
 
-// Implement fp8_e4m3 for mindspore
+// Implement float8_e4m3fn for mindspore
 namespace mindspore {
-class Float8_e4m3 {
+class Float8_e4m3fn {
  public:
   static constexpr uint8_t value_mask = 0x7F;
   static constexpr uint8_t exponent_mask = 0x7C;
@@ -47,25 +47,25 @@ class Float8_e4m3 {
     float f;
   };
 
-  Float8_e4m3() = default;
-  ~Float8_e4m3() = default;
+  Float8_e4m3fn() = default;
+  ~Float8_e4m3fn() = default;
 
-  Float8_e4m3(const Float8_e4m3 &other) noexcept = default;
-  Float8_e4m3(Float8_e4m3 &&other) noexcept = default;
+  Float8_e4m3fn(const Float8_e4m3fn &other) noexcept = default;
+  Float8_e4m3fn(Float8_e4m3fn &&other) noexcept = default;
 
-  Float8_e4m3 &operator=(const Float8_e4m3 &other) noexcept = default;
-  Float8_e4m3 &operator=(Float8_e4m3 &&other) noexcept = default;
+  Float8_e4m3fn &operator=(const Float8_e4m3fn &other) noexcept = default;
+  Float8_e4m3fn &operator=(Float8_e4m3fn &&other) noexcept = default;
 
-  static Float8_e4m3 FromRaw(uint8_t v) {
-    Float8_e4m3 f;
+  static Float8_e4m3fn FromRaw(uint8_t v) {
+    Float8_e4m3fn f;
     f.value_ = v;
     return f;
   }
 
-  explicit Float8_e4m3(float f) : value_(FromFloat32(f)) {}
-  explicit Float8_e4m3(bool b) : value_(b ? true_value : 0) {}
+  explicit Float8_e4m3fn(float f) : value_(FromFloat32(f)) {}
+  explicit Float8_e4m3fn(bool b) : value_(b ? true_value : 0) {}
   template <typename T>
-  explicit Float8_e4m3(const T &v) : value_(FromFloat32(static_cast<float>(v))) {}
+  explicit Float8_e4m3fn(const T &v) : value_(FromFloat32(static_cast<float>(v))) {}
 
   uint16_t int_value() const { return value_; }
 
@@ -77,27 +77,27 @@ class Float8_e4m3 {
   explicit operator bool() const { return (value_ & value_mask) != 0; }
   explicit operator float() const { return ToFloat32(*this); }
 
-  Float8_e4m3 &operator+=(const Float8_e4m3 &b) {
+  Float8_e4m3fn &operator+=(const Float8_e4m3fn &b) {
     value_ = FromFloat32(ToFloat32(*this) + ToFloat32(b));
     return *this;
   }
 
-  Float8_e4m3 &operator-=(const Float8_e4m3 &b) {
+  Float8_e4m3fn &operator-=(const Float8_e4m3fn &b) {
     value_ = FromFloat32(ToFloat32(*this) - ToFloat32(b));
     return *this;
   }
 
-  Float8_e4m3 &operator*=(const Float8_e4m3 &b) {
+  Float8_e4m3fn &operator*=(const Float8_e4m3fn &b) {
     value_ = FromFloat32(ToFloat32(*this) * ToFloat32(b));
     return *this;
   }
 
-  Float8_e4m3 &operator/=(const Float8_e4m3 &b) {
+  Float8_e4m3fn &operator/=(const Float8_e4m3fn &b) {
     value_ = FromFloat32(ToFloat32(*this) / ToFloat32(b));
     return *this;
   }
 
-  static float ToFloat32(const Float8_e4m3 &e4m3) {
+  static float ToFloat32(const Float8_e4m3fn &e4m3fn) {
     constexpr uint32_t mu_value = 121 << 23;
     constexpr Union32 magic{mu_value};
     constexpr uint32_t exponent_adjust = ((127 - 7) << 23);
@@ -110,7 +110,7 @@ class Float8_e4m3 {
     constexpr unsigned int sign_bit_shift = 24;
     // Exponent/mantissa bits.
     Union32 f32;
-    f32.u = (static_cast<uint32_t>(e4m3.value_ & value_mask) << exponent_bits);
+    f32.u = (static_cast<uint32_t>(e4m3fn.value_ & value_mask) << exponent_bits);
     // Just the exponent.
     unsigned int exp = (shifted_exp & f32.u);
     bool is_nan = ((nan_shifted_exp & f32.u) == nan_shifted_exp);
@@ -125,14 +125,13 @@ class Float8_e4m3 {
       f32.f -= magic.f;
     }
     // Set sign bit.
-    f32.u |= ((e4m3.value_ & sign_mask) << sign_bit_shift);
+    f32.u |= ((e4m3fn.value_ & sign_mask) << sign_bit_shift);
     return f32.f;
   }
 
  private:
   static uint8_t FromFloat32(float f32) {
     constexpr uint32_t magic = {120 << 23};
-    constexpr uint32_t f32infty_value = 255 << 23;
     constexpr uint32_t e4m3max_value = (127 + 9) << 23;
     constexpr Union32 e4m3max{e4m3max_value};
     constexpr uint32_t denorm_magic_value = ((127 - 7) + (23 - 3) + 1) << 23;
@@ -154,7 +153,7 @@ class Float8_e4m3 {
     // (since there's no unsigned PCMPGTD).
     if (f.u >= e4m3max.u) {
       // Result is NaN .
-      // Attention that FP8 E4M3 format does not support representation of infinity (INF).
+      // Attention that FP8 E4M3FN format does not support representation of infinity (INF).
       result = nan_value;
     } else if (f.u < magic) {
       // (De)normalized number or zero; resulting FP16 is subnormal or zero.
@@ -163,7 +162,7 @@ class Float8_e4m3 {
       // just works.
       f.f += denorm_magic.f;
       // And one integer subtract of the bias later, we have our final float!
-      result = static_cast<uint16_t>(f.u - denorm_magic.u);
+      result = static_cast<uint8_t>(f.u - denorm_magic.u);
     } else {
       // Resulting mantissa is odd.
       unsigned int mant_odd = (f.u >> exponent_bits) & 1;
@@ -172,92 +171,94 @@ class Float8_e4m3 {
       // Rounding bias part 2;
       f.u += mant_odd;
       // Take the bits!
-      result = static_cast<uint16_t>(f.u >> exponent_bits);
+      result = static_cast<uint8_t>(f.u >> exponent_bits);
     }
     // Set sign bit.
-    result |= static_cast<uint16_t>(sign >> sign_bit_shift);
+    result |= static_cast<uint8_t>(sign >> sign_bit_shift);
     return result;
   }
 
   uint8_t value_;
 };
 
-inline Float8_e4m3 operator+(const Float8_e4m3 &a, const Float8_e4m3 &b) {
-  return Float8_e4m3(static_cast<float>(a) + static_cast<float>(b));
+inline Float8_e4m3fn operator+(const Float8_e4m3fn &a, const Float8_e4m3fn &b) {
+  return Float8_e4m3fn(static_cast<float>(a) + static_cast<float>(b));
 }
 
-inline Float8_e4m3 operator*(const Float8_e4m3 &a, const Float8_e4m3 &b) {
-  return Float8_e4m3(static_cast<float>(a) * static_cast<float>(b));
+inline Float8_e4m3fn operator*(const Float8_e4m3fn &a, const Float8_e4m3fn &b) {
+  return Float8_e4m3fn(static_cast<float>(a) * static_cast<float>(b));
 }
 
-inline Float8_e4m3 operator-(const Float8_e4m3 &a, const Float8_e4m3 &b) {
-  return Float8_e4m3(static_cast<float>(a) - static_cast<float>(b));
+inline Float8_e4m3fn operator-(const Float8_e4m3fn &a, const Float8_e4m3fn &b) {
+  return Float8_e4m3fn(static_cast<float>(a) - static_cast<float>(b));
 }
 
-inline Float8_e4m3 operator/(const Float8_e4m3 &a, const Float8_e4m3 &b) {
-  return Float8_e4m3(static_cast<float>(a) / static_cast<float>(b));
+inline Float8_e4m3fn operator/(const Float8_e4m3fn &a, const Float8_e4m3fn &b) {
+  return Float8_e4m3fn(static_cast<float>(a) / static_cast<float>(b));
 }
 
 // Division by an size_t. Do it in full float precision to avoid
-// accuracy issues in converting the denominator to Float8_e4m3.
-inline Float8_e4m3 operator/(const Float8_e4m3 &a, size_t b) {
-  return Float8_e4m3(static_cast<float>(a) / static_cast<float>(b));
+// accuracy issues in converting the denominator to Float8_e4m3fn.
+inline Float8_e4m3fn operator/(const Float8_e4m3fn &a, size_t b) {
+  return Float8_e4m3fn(static_cast<float>(a) / static_cast<float>(b));
 }
 
-inline Float8_e4m3 operator-(const Float8_e4m3 &a) {
+inline Float8_e4m3fn operator-(const Float8_e4m3fn &a) {
   constexpr uint16_t sign_mask = 0x8000;
-  return Float8_e4m3::FromRaw(a.int_value() ^ sign_mask);
+  return Float8_e4m3fn::FromRaw(a.int_value() ^ sign_mask);
 }
 
-inline bool operator==(const Float8_e4m3 &a, const Float8_e4m3 &b) {
+inline bool operator==(const Float8_e4m3fn &a, const Float8_e4m3fn &b) {
   return std::equal_to<float>()(static_cast<float>(a), static_cast<float>(b));
 }
 
-inline bool operator!=(const Float8_e4m3 &a, const Float8_e4m3 &b) {
+inline bool operator!=(const Float8_e4m3fn &a, const Float8_e4m3fn &b) {
   return std::not_equal_to<float>()(static_cast<float>(a), static_cast<float>(b));
 }
 
-inline bool operator<(const Float8_e4m3 &a, const Float8_e4m3 &b) {
+inline bool operator<(const Float8_e4m3fn &a, const Float8_e4m3fn &b) {
   return static_cast<float>(a) < static_cast<float>(b);
 }
-inline bool operator<=(const Float8_e4m3 &a, const Float8_e4m3 &b) {
+inline bool operator<=(const Float8_e4m3fn &a, const Float8_e4m3fn &b) {
   return static_cast<float>(a) <= static_cast<float>(b);
 }
-inline bool operator>(const Float8_e4m3 &a, const Float8_e4m3 &b) {
+inline bool operator>(const Float8_e4m3fn &a, const Float8_e4m3fn &b) {
   return static_cast<float>(a) > static_cast<float>(b);
 }
-inline bool operator>=(const Float8_e4m3 &a, const Float8_e4m3 &b) {
+inline bool operator>=(const Float8_e4m3fn &a, const Float8_e4m3fn &b) {
   return static_cast<float>(a) >= static_cast<float>(b);
 }
 
-inline std::ostream &operator<<(std::ostream &os, const Float8_e4m3 &v) { return (os << static_cast<float>(v)); }
+inline std::ostream &operator<<(std::ostream &os, const Float8_e4m3fn &v) { return (os << static_cast<float>(v)); }
 
 }  // namespace mindspore
 
-using Float8_e4m3 = mindspore::Float8_e4m3;
+using float8_e4m3fn = mindspore::Float8_e4m3fn;
 
 namespace std {
 template <>
-struct hash<Float8_e4m3> {
-  std::size_t operator()(const Float8_e4m3 &bf16) const noexcept { return static_cast<std::size_t>(bf16.int_value()); }
+struct hash<float8_e4m3fn> {
+  std::size_t operator()(const float8_e4m3fn &bf16) const noexcept {
+    return static_cast<std::size_t>(bf16.int_value());
+  }
 };
 
 template <>
-struct is_floating_point<Float8_e4m3> : public std::true_type {};
+struct is_floating_point<float8_e4m3fn> : public std::true_type {};
 
 template <>
-struct is_signed<Float8_e4m3> : public std::true_type {};
+struct is_signed<float8_e4m3fn> : public std::true_type {};
 
 // If std::numeric_limits<T> is specialized, should also specialize
 // std::numeric_limits<const T>, std::numeric_limits<volatile T>, and
 // std::numeric_limits<const volatile T>
 // https://stackoverflow.com/a/16519653/
 template <>
-struct numeric_limits<const mindspore::Float8_e4m3> : private numeric_limits<mindspore::Float8_e4m3> {};
+struct numeric_limits<const mindspore::Float8_e4m3fn> : private numeric_limits<mindspore::Float8_e4m3fn> {};
 template <>
-struct numeric_limits<volatile mindspore::Float8_e4m3> : private numeric_limits<mindspore::Float8_e4m3> {};
+struct numeric_limits<volatile mindspore::Float8_e4m3fn> : private numeric_limits<mindspore::Float8_e4m3fn> {};
 template <>
-struct numeric_limits<const volatile mindspore::Float8_e4m3> : private numeric_limits<mindspore::Float8_e4m3> {};
+struct numeric_limits<const volatile mindspore::Float8_e4m3fn> : private numeric_limits<mindspore::Float8_e4m3fn> {};
 }  // namespace std
 
-#endif  // MINDSPORE_CORE_BASE_FLOAT8_E4M3_H_
+#endif  // MINDSPORE_CORE_BASE_FLOAT8_E4M3FN_H_

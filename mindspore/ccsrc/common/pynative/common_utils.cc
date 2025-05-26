@@ -128,6 +128,12 @@ ValuePtr CastScalarToScalar(S in, const TypeId &type_id) {
       return MakeValue(static_cast<uint8_t>(in));
     case kNumberTypeBFloat16:
       return MakeValue(static_cast<float16>(in).int_value());
+    case kNumberTypeHiFloat8:
+      return MakeValue(static_cast<hifloat8>(in).int_value());
+    case kNumberTypeFloat8E5M2:
+      return MakeValue(static_cast<float8_e5m2>(in).int_value());
+    case kNumberTypeFloat8E4M3FN:
+      return MakeValue(static_cast<float8_e4m3fn>(in).int_value());
     default:
       MS_LOG(DEBUG) << "Not support cast to dst type: " << TypeIdToType(type_id)->ToString();
       return nullptr;

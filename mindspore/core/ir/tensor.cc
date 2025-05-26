@@ -311,6 +311,22 @@ Tensor::Tensor(float16 input, const TypePtr &data_type)
     : MetaTensor(TypeIdOf(data_type, kNumberTypeFloat16), {}),
       id_(MakeId()),
       data_(MakeTensorData(data_type_, ShapeVector{}, input)) {}
+
+Tensor::Tensor(float8_e5m2 input, const TypePtr &data_type)
+    : MetaTensor(TypeIdOf(data_type, kNumberTypeFloat8E5M2), {}),
+      id_(MakeId()),
+      data_(MakeTensorData(data_type_, ShapeVector{}, input)) {}
+
+Tensor::Tensor(float8_e4m3fn input, const TypePtr &data_type)
+    : MetaTensor(TypeIdOf(data_type, kNumberTypeFloat8E4M3FN), {}),
+      id_(MakeId()),
+      data_(MakeTensorData(data_type_, ShapeVector{}, input)) {}
+
+Tensor::Tensor(hifloat8 input, const TypePtr &data_type)
+    : MetaTensor(TypeIdOf(data_type, kNumberTypeHiFloat8), {}),
+      id_(MakeId()),
+      data_(MakeTensorData(data_type_, ShapeVector{}, input)) {}
+
 #ifndef KERNEL_EXECUTOR_ANDROID
 Tensor::Tensor(bfloat16 input, const TypePtr &data_type)
     : MetaTensor(TypeIdOf(data_type, kNumberTypeBFloat16), {}),

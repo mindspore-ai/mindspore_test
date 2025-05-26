@@ -436,6 +436,10 @@ GVAR_DEF(TypePtr, kTensorType, std::make_shared<TensorType>());
 GVAR_DEF(TypePtr, kTensorTypeFP16, std::make_shared<TensorType>(std::make_shared<Float>(16)));
 GVAR_DEF(TypePtr, kTensorTypeFP32, std::make_shared<TensorType>(std::make_shared<Float>(32)));
 GVAR_DEF(TypePtr, kTensorTypeFP64, std::make_shared<TensorType>(std::make_shared<Float>(64)));
+GVAR_DEF(TypePtr, kTensorTypeFP8E4M3FN,
+         std::make_shared<TensorType>(std::make_shared<Float>(kNumberTypeFloat8E4M3FN, 8)));
+GVAR_DEF(TypePtr, kTensorTypeFP8E5M2, std::make_shared<TensorType>(std::make_shared<Float>(kNumberTypeFloat8E5M2, 8)));
+GVAR_DEF(TypePtr, kTensorTypeHiF8, std::make_shared<TensorType>(std::make_shared<Float>(kNumberTypeHiFloat8, 8)));
 GVAR_DEF(TypePtr, kTensorTypeBF16, std::make_shared<TensorType>(std::make_shared<BFloat>(16)));
 GVAR_DEF(TypePtr, kCSRTensorType, std::make_shared<CSRTensorType>());
 GVAR_DEF(TypePtr, kCOOTensorType, std::make_shared<COOTensorType>());

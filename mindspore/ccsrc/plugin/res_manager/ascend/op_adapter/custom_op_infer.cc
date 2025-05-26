@@ -96,15 +96,28 @@ using mindspore::graphkernel::inner::NodePtr;
 using mindspore::graphkernel::inner::NodePtrList;
 
 namespace {
-TypeId ConvertGeDataType(const ge::DataType &type) {
+TypeId const ConvertGeDataType(const ge::DataType &type) {
   static std::unordered_map<ge::DataType, TypeId> ge_ms_type = {
-    {ge::DataType::DT_FLOAT16, TypeId::kNumberTypeFloat16}, {ge::DataType::DT_FLOAT, TypeId::kNumberTypeFloat32},
-    {ge::DataType::DT_DOUBLE, TypeId::kNumberTypeFloat64},  {ge::DataType::DT_INT8, TypeId::kNumberTypeInt8},
-    {ge::DataType::DT_INT16, TypeId::kNumberTypeInt16},     {ge::DataType::DT_INT32, TypeId::kNumberTypeInt32},
-    {ge::DataType::DT_INT64, TypeId::kNumberTypeInt64},     {ge::DataType::DT_UINT8, TypeId::kNumberTypeUInt8},
-    {ge::DataType::DT_UINT16, TypeId::kNumberTypeUInt16},   {ge::DataType::DT_UINT32, TypeId::kNumberTypeUInt32},
-    {ge::DataType::DT_UINT64, TypeId::kNumberTypeUInt64},   {ge::DataType::DT_BOOL, TypeId::kNumberTypeBool},
-    {ge::DataType::DT_STRING, TypeId::kObjectTypeString},   {ge::DataType::DT_BF16, TypeId::kNumberTypeBFloat16}};
+    {ge::DataType::DT_FLOAT16, TypeId::kNumberTypeFloat16},
+    {ge::DataType::DT_FLOAT, TypeId::kNumberTypeFloat32},
+    {ge::DataType::DT_DOUBLE, TypeId::kNumberTypeFloat64},
+    {ge::DataType::DT_INT8, TypeId::kNumberTypeInt8},
+    {ge::DataType::DT_INT16, TypeId::kNumberTypeInt16},
+    {ge::DataType::DT_INT32, TypeId::kNumberTypeInt32},
+    {ge::DataType::DT_INT64, TypeId::kNumberTypeInt64},
+    {ge::DataType::DT_UINT8, TypeId::kNumberTypeUInt8},
+    {ge::DataType::DT_UINT16, TypeId::kNumberTypeUInt16},
+    {ge::DataType::DT_UINT32, TypeId::kNumberTypeUInt32},
+    {ge::DataType::DT_UINT64, TypeId::kNumberTypeUInt64},
+    {ge::DataType::DT_BOOL, TypeId::kNumberTypeBool},
+    {ge::DataType::DT_STRING, TypeId::kObjectTypeString},
+    {ge::DataType::DT_BF16, TypeId::kNumberTypeBFloat16},
+#ifdef EXPERIMENT_A5
+    {ge::DataType::DT_HIFLOAT8, TypeId::kNumberTypeHiFloat8},
+    {ge::DataType::DT_FLOAT8_E5M2, TypeId::kNumberTypeFloat8E5M2},
+    {ge::DataType::DT_FLOAT8_E4M3FN, TypeId::kNumberTypeFloat8E4M3FN},
+#endif
+  };
   auto iter = ge_ms_type.find(type);
   if (iter != ge_ms_type.end()) {
     return iter->second;

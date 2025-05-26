@@ -32,6 +32,9 @@
 #include "utils/log_adapter.h"
 #include "base/float16.h"
 #include "base/bfloat16.h"
+#include "base/float8_e5m2.h"
+#include "base/float8_e4m3fn.h"
+#include "base/hifloat8.h"
 #include "utils/shape_utils.h"
 #include "utils/ms_exception.h"
 #include "ir/device_event.h"
@@ -771,6 +774,24 @@ class MS_CORE_API Tensor : public MetaTensor {
   /// \param[in] input [float16] the data for tensor.
   /// \param[in] data_type [TypeId] data type.
   explicit Tensor(float16 input, const TypePtr &data_type = nullptr);
+
+  /// \brief Create 0 dimension tensor from a float8_e5m2 scalar.
+  ///
+  /// \param[in] input [float8_e5m2] the data for tensor.
+  /// \param[in] data_type [TypeId] data type.
+  explicit Tensor(float8_e5m2 input, const TypePtr &data_type = nullptr);
+
+  /// \brief Create 0 dimension tensor from a float8_e4m3fn scalar.
+  ///
+  /// \param[in] input [float8_e4m3fn] the data for tensor.
+  /// \param[in] data_type [TypeId] data type.
+  explicit Tensor(float8_e4m3fn input, const TypePtr &data_type = nullptr);
+
+  /// \brief Create 0 dimension tensor from a hifloat8 scalar.
+  ///
+  /// \param[in] input [hifloat8] the data for tensor.
+  /// \param[in] data_type [TypeId] data type.
+  explicit Tensor(hifloat8 input, const TypePtr &data_type = nullptr);
 
   /// \brief Create 0 dimension tensor from a bfloat16 scalar.
   ///

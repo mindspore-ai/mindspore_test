@@ -74,6 +74,9 @@ TypePtr TypeIdToType(TypeId id) {
                                                                 {kNumberTypeFloat, kFloat32},
                                                                 {kNumberTypeFloat32, kFloat32},
                                                                 {kNumberTypeFloat64, kFloat64},
+                                                                {kNumberTypeFloat8E5M2, kFloat8E5M2},
+                                                                {kNumberTypeFloat8E4M3FN, kFloat8E4M3FN},
+                                                                {kNumberTypeHiFloat8, kHiFloat8},
                                                                 {kNumberTypeDouble, kFloat64},
                                                                 {kNumberTypeBFloat16, kBFloat16},
                                                                 {kNumberTypeComplex64, kComplex64},
@@ -150,6 +153,9 @@ size_t UnitSizeInBytes(TypeId id) {
     case kNumberTypeInt4:
     case kNumberTypeInt8:
     case kNumberTypeUInt8:
+    case kNumberTypeFloat8E5M2:
+    case kNumberTypeFloat8E4M3FN:
+    case kNumberTypeHiFloat8:
       bytes = sizeof(int8_t);
       break;
     case kNumberTypeInt16:
@@ -206,8 +212,16 @@ TypePtr StringToNumberType(const std::string &type_name, const std::string &num_
       MS_LOG(EXCEPTION) << "Convert type is error, type_name(" << type_name << "), num_type_name(" << num_type_name
                         << ")";
     }
-    auto bits = std::stoi(type_name.substr(num_type_name.size()));
-    type = std::make_shared<T>(bits);
+    if (type_name == "Float8E4M3FN" || type_name == "float8_e4m3fn") {
+      type = kFloat8E4M3FN;
+    } else if (type_name == "Float8E5M2" || type_name == "float8_e5m2") {
+      type = kFloat8E5M2;
+    } else if (type_name == "HiFloat8" || type_name == "hifloat8") {
+      type = kHiFloat8;
+    } else {
+      auto bits = std::stoi(type_name.substr(num_type_name.size()));
+      type = std::make_shared<T>(bits);
+    }
   }
   return type;
 }
@@ -495,6 +509,8 @@ TypePtr GetTypeByStringStarts(const std::string &type_name) {
     {"uint", [](const std::string &type_name) -> TypePtr { return StringToNumberType<UInt>(type_name, "uint"); }},
     {"Float", [](const std::string &type_name) -> TypePtr { return StringToNumberType<Float>(type_name, "Float"); }},
     {"float", [](const std::string &type_name) -> TypePtr { return StringToNumberType<Float>(type_name, "float"); }},
+    {"HiFloat", [](const std::string &type_name) -> TypePtr { return StringToNumberType<Float>(type_name, "Float"); }},
+    {"hifloat", [](const std::string &type_name) -> TypePtr { return StringToNumberType<Float>(type_name, "float"); }},
     {"BFloat", [](const std::string &type_name) -> TypePtr { return StringToNumberType<BFloat>(type_name, "BFloat"); }},
     {"bfloat", [](const std::string &type_name) -> TypePtr { return StringToNumberType<BFloat>(type_name, "bfloat"); }},
     {"Complex", [](const std::string &tname) -> TypePtr { return StringToNumberType<Complex>(tname, "Complex"); }},

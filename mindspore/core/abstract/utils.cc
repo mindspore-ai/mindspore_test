@@ -29,7 +29,8 @@ const std::map<TypeId, size_t> type_map = {
   {kNumberTypeInt32, 4},       {kNumberTypeInt64, 8},    {kNumberTypeUInt, 4},    {kNumberTypeUInt8, 1},
   {kNumberTypeUInt16, 2},      {kNumberTypeUInt32, 4},   {kNumberTypeUInt64, 8},  {kNumberTypeFloat, 4},
   {kNumberTypeFloat16, 2},     {kNumberTypeFloat32, 4},  {kNumberTypeFloat64, 8}, {kNumberTypeComplex64, 8},
-  {kNumberTypeComplex128, 16}, {kNumberTypeBFloat16, 2}, {kNumberTypeInt4, 1}};
+  {kNumberTypeComplex128, 16}, {kNumberTypeBFloat16, 2}, {kNumberTypeInt4, 1},    {kNumberTypeFloat8E4M3FN, 1},
+  {kNumberTypeFloat8E5M2, 1},  {kNumberTypeHiFloat8, 1}};
 
 ValuePtr ValueJoin(const ValuePtr &value1, const ValuePtr &value2) {
   MS_EXCEPTION_IF_NULL(value1);

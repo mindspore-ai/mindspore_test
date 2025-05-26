@@ -32,9 +32,6 @@ BaseShapePtr CastFuncImpl::InferShape(const PrimitivePtr &primitive,
 }
 
 TypePtr CastFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
-  const auto prim_name = primitive->name();
-  (void)CheckAndConvertUtils::CheckTypeValid("x", input_args[kIndex0]->GetType(),
-                                             common_valid_types_with_complex_and_bool, prim_name);
   constexpr int64_t kCastInputNumWithDtype = 2;
   if (input_args.size() == kCastInputNumWithDtype) {
     auto dtype_ptr = GetScalarValue<int64_t>(input_args[kIndex1]->GetValue());
@@ -57,8 +54,6 @@ TypePtrList CastFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePt
   const auto &x_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   const auto &input_type = x_tensor->Dtype();
-  (void)CheckAndConvertUtils::CheckTypeValid("x", input_type, common_valid_types_with_complex_and_bool,
-                                             primitive->name());
   auto input_scalar = input_values[kIndex1]->cast<Int64ImmPtr>();
   MS_EXCEPTION_IF_NULL(input_scalar);
   auto type = TypeIdToType(static_cast<TypeId>(input_scalar->value()));

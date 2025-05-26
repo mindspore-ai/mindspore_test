@@ -17,7 +17,7 @@
 #include <limits>
 #include "common/common_test.h"
 #define private public
-#include "base/fp8_e5m2.h"
+#include "base/float8_e5m2.h"
 
 namespace mindspore {
 
