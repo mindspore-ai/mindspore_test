@@ -327,7 +327,6 @@ class FTRL(Optimizer):
         params = self._parameters
         moments = self.moments
         linear = self.linear
-        grads = self.flatten_gradients(grads)
         grads = self.decay_weight(grads)
         grads = self.gradients_centralization(grads)
         grads = self.scale_grad(grads)

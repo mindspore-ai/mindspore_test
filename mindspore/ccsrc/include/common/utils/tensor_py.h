@@ -294,24 +294,6 @@ class COMMON_EXPORT TensorPy {
   /// \param[in] flag [bool] Is parameter output or not.
   void SetMSParameterOutput(bool flag);
 
-  /// \brief Reset tensors data so that they are using contiguous memory chunks grouped by data type.
-  /// \param[in] tensorpys [std::vector<std::shared_ptr<TensorPy>>] The tensorpys to be processed.
-  /// \param[in] fusion_size [size_t] Maximum memory chunk size in bytes, 0 for unlimited.
-  /// \return TensorPys that data are pointed to each contiguous memory chunks.
-  static std::vector<std::shared_ptr<TensorPy>> FlattenTensors(const std::vector<std::shared_ptr<TensorPy>> &tensorpys,
-                                                               size_t fusion_size = 0);
-
-  /// \brief Check if FlattenTensors called for the input tensors.
-  /// \param[in] tensorpys [std::vector<std::shared_ptr<TensorPy>>] The tensorpys to be checked.
-  /// \return True if FlattenTensors called for input tensorpys, false otherwise.
-  static bool IsFlattened(const std::vector<std::shared_ptr<TensorPy>> &tensorpys);
-
-  /// \brief Get tensorpys for each contiguous memory chunks used by the input tensorpys.
-  /// \param[in] tensorpys [std::vector<std::shared_ptr<TensorPy>>] The input tensorpys.
-  /// \return TensorPys that data are pointed to each contiguous memory chunks, empty if failed.
-  static std::vector<std::shared_ptr<TensorPy>> GetFlattenedTensors(
-    const std::vector<std::shared_ptr<TensorPy>> &tensorpys);
-
   /// \brief Check whether the type of tensor is complex.
   /// \return Boolean indicate whether the type of tensor is complex.
   bool IsComplex() const;
@@ -320,11 +302,6 @@ class COMMON_EXPORT TensorPy {
   /// \return Boolean indicate whether the type of tensor is signed.
   bool IsSigned() const;
 
-  /// \brief Get the fusion size for the given flat tensorpys.
-  /// \param[in] flat_tensorpys [std::vector<std::shared_ptr<TensorPy>>] The input flat tensorpys.
-  /// \return Fusion size for the given flat tensorpys.
-  static size_t GetFusionSize(const std::vector<std::shared_ptr<TensorPy>> &flat_tensorpys);
-
   /// \brief Check whether the tensor is used in auto grad.
   /// \return Boolean indicate whether the tensor is used in auto grad.
   bool HasAutoGrad() const;
@@ -332,8 +309,6 @@ class COMMON_EXPORT TensorPy {
   /// \brief Check whether the memory of tensor is contiguous.
   /// \return True if tensor memory is contiguous, false otherwise.
   bool NeedContiguous() const;
-  py::object GetFlattenTensor();
-  void SetFlattenTensor(py::object tensor);
 
   /// \brief Used for automatic gradient.
   /// \return The automatic gradient information.

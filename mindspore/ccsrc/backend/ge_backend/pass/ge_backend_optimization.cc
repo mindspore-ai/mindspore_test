@@ -116,7 +116,6 @@
 #include "backend/common/pass/convert_const_input_to_tensor_input.h"
 #include "backend/common/pass/convert_tuple_output_to_maketuple.h"
 #include "backend/common/pass/convert_unused_tuple_para_to_make_tuple.h"
-#include "backend/common/pass/flatten_concat_fission.h"
 #include "backend/common/pass/add_input_structural_for_py_execute.h"
 #include "backend/common/pass/broadcast_to_fusion.h"
 #include "backend/common/pass/add_attr_to_node/add_attr_to_node.h"
@@ -559,7 +558,6 @@ void BackendCommonOptimization(const KernelGraphPtr &kernel_graph) {
   common_pm->AddPass(std::make_shared<mindspore::opt::ConvertConstInputToTensorInputForPrint>());
   common_pm->AddPass(std::make_shared<mindspore::opt::ConvertTupleOutputToMaketuple>());
   common_pm->AddPass(std::make_shared<mindspore::opt::ConvertUnusedTupleParaToMakeTuple>());
-  common_pm->AddFusionPass(std::make_shared<mindspore::opt::FlattenConcatFission>());
   common_pm->AddPass(std::make_shared<mindspore::opt::AddInputStructuralForPyExecute>());
   common_pm->AddFusionPass(std::make_shared<mindspore::opt::BroadcastToFusion>());
   common_pm->AddPass(std::make_shared<mindspore::opt::AddAttrToNode>());
