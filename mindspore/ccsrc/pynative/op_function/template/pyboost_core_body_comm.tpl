@@ -57,8 +57,6 @@ py::object ${func_name}_OP(const PrimitivePtr &prim, const std::vector<ops::OP_D
                   op_grad_info->output_value_simple_info = op_run_info->output_value_simple_info;
                   PyNativeAlgo::PyBoost::DoGrad(op, op_grad_info, op_run_info->async_status);
                 }
-                // Data sync in mix mode(Graph and PyNative)
-                PyNativeAlgo::PyBoost::DataSyncForGraph(op);
                 kernel::pyboost::PyBoostUtils::set_cur_stream_id(old_stream_id);
                 tensor::SetPromise(promises, real_output);
                 MS_LOG(DEBUG) << "Run frontend task ${func_name} end";

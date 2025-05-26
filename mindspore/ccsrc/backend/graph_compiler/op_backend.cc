@@ -352,18 +352,6 @@ tensor::TensorPtr PostRunOp::CreateOutputTensor(const AnfNodePtr &output_node, s
   // Put device tensor into host tensor.
   tensor->set_device_address(device_tensor);
   tensor->set_sync_status(kNeedSyncDeviceToHost);
-
-  // MindRT is disabled in the multi graphs scenario
-  // Delete tensor->data_sync() when MindRT is enabled in all scenes.
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  if (ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) != kPynativeMode &&
-      !runtime::OpExecutor::GetInstance().async_for_graph()) {
-    // If execution mode is Graph Mode in MsContext, the tensor will be the input of graph which will execute in Graph
-    // Mode, if the graph contain no CNode after optimization, the tensor need sync to host.
-    tensor->data_sync(false);
-  }
-
   return tensor;
 }
 
@@ -542,17 +530,6 @@ tensor::TensorPtr PostRunOp::CreateOutputTensorDynamicImpl(const OpCompilerInfoP
   address->SetNodeIndex(output_node, output_index);
   address->set_padding_type(op_compiler_info->graph_outputs_padding_type_[idx_in_graph_outputs]);
   tensor->set_device_address(address);
-
-  // MindRT is disabled in the multi graphs scenario
-  // Delete tensor->data_sync() when MindRT is enabled in all scenes.
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  if (ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) != kPynativeMode &&
-      !runtime::OpExecutor::GetInstance().async_for_graph()) {
-    // If execution mode is Graph Mode in MsContext, the tensor will be the input of graph which will execute in Graph
-    // Mode, if the graph contain no CNode after optimization, the tensor need sync to host.
-    tensor->data_sync(false);
-  }
   return tensor;
 }
 
