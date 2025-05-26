@@ -585,7 +585,6 @@ class ThorGpu(Optimizer):
     def construct(self, gradients):
         params = self.params
         moments = self.moments
-        gradients = self.flatten_gradients(gradients)
         gradients = self.scale_grad(gradients)
         damping_step = self.gather(self.damping, self.cov_step, self.axis)
         damping_step = self.cast(damping_step, mstype.float32)
@@ -1247,7 +1246,6 @@ class ThorAscend(Optimizer):
     def construct(self, gradients):
         params = self.params
         moments = self.moments
-        gradients = self.flatten_gradients(gradients)
         gradients = self.scale_grad(gradients)
         damping_step = self.gather(self.damping, self.cov_step, self.axis)
         damping_step = self.cast(damping_step, mstype.float32)
