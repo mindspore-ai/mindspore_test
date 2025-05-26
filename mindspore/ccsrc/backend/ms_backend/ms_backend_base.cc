@@ -1985,9 +1985,6 @@ RunningStatus MSBackendBase::Run(BackendGraphId graph_id, const VectorRef &input
   MS_LOG(INFO) << "Status record: start run actor: " << graph_compiler_info.name_;
   uint64_t start_time_ = profiler::GetClockSyscnt();
   std::vector<std::vector<tensor::TensorPtr>> input_tensors;
-  if (graph_compiler_info.exist_flatten_concat_) {
-    input_tensors = GetRunGraphInputs(graph_compiler_info, inputs);
-  }
   // Release python gil.
   mindspore::ScopedLongRunning long_running;
   // Run actor DAG.

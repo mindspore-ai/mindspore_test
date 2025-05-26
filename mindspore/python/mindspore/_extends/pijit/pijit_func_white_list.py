@@ -462,10 +462,6 @@ _func_map = {
     function_id(dict.items): FUNC_KEY_DICT_ITEMS,
 
     # instancemethod
-    function_id(Tensor_._flatten_tensors): FUNC_KEY_BUILTIN_FUNC,  # pylint: disable=protected-access
-    function_id(Tensor_._is_flattened): FUNC_KEY_BUILTIN_FUNC,  # pylint: disable=protected-access
-    function_id(Tensor_._get_flattened_tensors): FUNC_KEY_BUILTIN_FUNC,  # pylint: disable=protected-access
-    function_id(Tensor_._get_fusion_size): FUNC_KEY_BUILTIN_FUNC,  # pylint: disable=protected-access
     function_id(Tensor_._is_test_stub): FUNC_KEY_BUILTIN_FUNC,  # pylint: disable=protected-access
     function_id(Tensor_.__str__): FUNC_KEY_BUILTIN_FUNC,  # pylint: disable=protected-access
     function_id(Tensor_.__repr__): FUNC_KEY_BUILTIN_FUNC,  # pylint: disable=protected-access

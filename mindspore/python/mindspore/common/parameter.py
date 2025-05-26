@@ -878,20 +878,6 @@ class Parameter(Tensor_):
             raise TypeError("The original tensor data is initialized, but the argument 'data' is not initialized."
                             "Please initialize 'data' before call this method.")
 
-    @staticmethod
-    def _from_tensor(tensor, *args, **kwargs):
-        """Create a `Parameter` that data is shared from a `Tensor`."""
-        if not isinstance(tensor, Tensor_):
-            raise TypeError(f"The type of input must be Tensor, but got {type(tensor)}.")
-        param = Tensor_.__new__(Parameter)
-        Tensor_.__init__(param, tensor)
-        param.init = None
-        param.init_mode = None
-        param.has_init = False
-        param.is_default_input_init = False
-        Parameter.__init__(param, tensor, *args, **kwargs)
-        return param
-
     @jit_forbidden_register
     def set_data(self, data, slice_shape=False):
         """

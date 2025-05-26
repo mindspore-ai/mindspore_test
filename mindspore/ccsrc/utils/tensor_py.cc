@@ -64,8 +64,7 @@ TensorPy::TensorPy(const TensorPy &input)
       parent_tensor_(input.parent_tensor_),
       index_of_parent_(input.index_of_parent_),
       symbolic_shape_(input.symbolic_shape_),
-      device_(input.device_),
-      flatten_tensor_(input.flatten_tensor_) {
+      device_(input.device_) {
   tensor_ = input.GetTensor();
 }
 
@@ -229,32 +228,6 @@ void TensorPy::SetParamInfo(const ParamInfoPtr &param_info) {
   base_tensor->set_param_info(param_info);
 }
 
-py::object TensorPy::GetFlattenTensor() { return flatten_tensor_; }
-
-void TensorPy::SetFlattenTensor(py::object tensor) {
-  if (tensor == nullptr) {
-    return;
-  }
-  flatten_tensor_ = tensor;
-}
-
-bool TensorPy::IsFlattened(const TensorPyPtrList &tensorpys) {
-  TensorPtrList tensors;
-  (void)std::transform(tensorpys.begin(), tensorpys.end(), std::back_inserter(tensors),
-                       [](const TensorPyPtr &p) { return p->GetTensor(); });
-  return Tensor::IsFlattened(tensors);
-}
-
-TensorPyPtrList TensorPy::FlattenTensors(const TensorPyPtrList &tensorpys, size_t fusion_size) {
-  TensorPyPtrList out;
-  return out;
-}
-
-TensorPyPtrList TensorPy::GetFlattenedTensors(const TensorPyPtrList &tensorpys) {
-  TensorPyPtrList result_tensorpys;
-  return result_tensorpys;
-}
-
 bool TensorPy::IsComplex() const {
   auto base_tensor = GetTensor();
   TypeId type_id = base_tensor->data_type();
@@ -290,13 +263,6 @@ bool TensorPy::IsSigned() const {
       break;
   }
   return false;
-}
-
-size_t TensorPy::GetFusionSize(const TensorPyPtrList &flat_tensorpys) {
-  TensorPtrList tensors;
-  (void)std::transform(flat_tensorpys.begin(), flat_tensorpys.end(), std::back_inserter(tensors),
-                       [](const TensorPyPtr &p) { return p->GetTensor(); });
-  return Tensor::GetFusionSize(tensors);
 }
 
 const size_t TensorPy::GetDataSize() const { return GetTensor()->DataSize(); }

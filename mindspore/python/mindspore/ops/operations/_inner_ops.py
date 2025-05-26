@@ -1413,6 +1413,7 @@ class PsROIPooling(PrimitiveWithInfer):
 
     @prim_attr_register
     def __init__(self, pooled_height, pooled_width, num_rois, spatial_scale, out_dim, group_size):
+
         """Initialize PsROIPooling"""
         validator.check_value_type("pooled_height", pooled_height, [int], self.name)
         validator.check_value_type("pooled_width", pooled_width, [int], self.name)
@@ -1725,44 +1726,6 @@ class Format(PrimitiveWithInfer):
 
         value = str_value.format(*var_value, **kwargs)
         return {'dtype': mstype.string, 'shape': [], 'value': value}
-
-
-class FlattenConcat(Primitive):
-    """
-    Flatten input tensors and concatenate them into several chunk tensors grouped by data types.
-
-    Args:
-        fusion_size (int): Maximum memory chunk size in bytes, 0 for unlimited. Default: 0.
-
-    Inputs:
-        - **tensors** (tuple[Tensor], list[Tensor]) - The input Tensors to be flattened and concatenated.
-
-    Outputs:
-        tuple[Tensor], result chunk tensors.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> from mindspore.ops.operations import _inner_ops as inner
-        >>> t1 = Tensor(np.array([1]).astype(np.float32))
-        >>> t2 = Tensor(np.array([2]).astype(np.float32))
-        >>> t3 = Tensor(np.array([3]).astype(np.float64))
-        >>> t4 = Tensor(np.array([4]).astype(np.float32))
-        >>> t5 = Tensor(np.array([5]).astype(np.float64))
-        >>> chunks = inner.FlattenConcat()([t1, t2, t2, t3, t4, t5])
-        >>> print(chunks[0].asnumpy())
-        >>> print(chunks[1].asnumpy())
-        [1. 2. 4.]
-        [3. 5.]
-    """
-
-    @prim_attr_register
-    def __init__(self, fusion_size=0):
-        """Initialize FlattenConcat"""
-        validator.check_non_negative_int(fusion_size, 'fusion_size', self.name)
-        self.fusion_size = fusion_size
-        self.add_prim_attr('fusion_size', fusion_size)
 
 
 class KMeansCentroids(PrimitiveWithInfer):

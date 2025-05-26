@@ -99,7 +99,6 @@ struct BACKEND_EXPORT GraphCompilerInfo {
         id_(backend_graph_id_++),
         need_erase_(need_erase),
         enable_graph_pipeline_(false),
-        exist_flatten_concat_(false),
         strategy_(strategy),
         is_pynative_mode_(false),
         compile_func_(std::move(compile_func)),
@@ -125,7 +124,6 @@ struct BACKEND_EXPORT GraphCompilerInfo {
   bool need_erase_;
   // Whether this root_graph can enable single op and graph pipeline or not.
   mutable bool enable_graph_pipeline_;
-  mutable bool exist_flatten_concat_;
   mutable GraphExecutionStrategy strategy_;
   bool is_pynative_mode_;
   CompileFunc compile_func_;

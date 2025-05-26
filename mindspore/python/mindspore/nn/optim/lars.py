@@ -173,7 +173,6 @@ class LARS(Optimizer):
     @jit
     def construct(self, gradients):
         params = self.parameters
-        gradients = self.flatten_gradients(gradients)
         if self.use_clip:
             lr = self._get_lr()
         else:

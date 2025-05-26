@@ -33,7 +33,6 @@
 #include "backend/common/pass/add_dynamic_shape_attr.h"
 #include "backend/common/pass/add_akg_kernel_attrs.h"
 #include "backend/common/pass/inplace_assign_for_custom_op.h"
-#include "backend/common/pass/flatten_concat_fission.h"
 #include "backend/common/optimizer/dynamic_shape/convert_custom_op.h"
 #include "backend/common/optimizer/dynamic_shape/link_custom_op.h"
 #include "backend/common/pass/convert_unused_tuple_para_to_make_tuple.h"
@@ -64,7 +63,6 @@ PassManagerPtr GetBackendCommonOptimizationPassManagerPtr() {
   common_pm->AddPass(std::make_shared<ConvertConstInputToTensorInputForPrint>());
   common_pm->AddPass(std::make_shared<ConvertTupleOutputToMaketuple>());
   common_pm->AddPass(std::make_shared<ConvertUnusedTupleParaToMakeTuple>());
-  common_pm->AddFusionPass(std::make_shared<FlattenConcatFission>());
   common_pm->AddPass(std::make_shared<AddInputStructuralForPyExecute>());
   common_pm->AddFusionPass(std::make_shared<BroadcastToFusion>());
   common_pm->AddPass(std::make_shared<AddAttrToNode>());

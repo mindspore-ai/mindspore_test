@@ -208,10 +208,6 @@ class TensorDataNumpy : public TensorData {
 
   const void *const_data() const override { return buffer()->ptr; }
 
-  bool is_sub_data() const override { return false; }
-
-  bool has_sub_data() const override { return false; }
-
   bool is_from_numpy() const override { return true; }
 
   bool is_persistent_data() const override { return is_persistent_data_; }

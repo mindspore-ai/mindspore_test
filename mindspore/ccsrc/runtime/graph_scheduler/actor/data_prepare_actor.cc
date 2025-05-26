@@ -285,38 +285,6 @@ void UpdateDeviceAddressByRefInputNode(const std::vector<KernelGraphPtr> &graphs
   }
 }
 
-bool IsNeedSync(const TensorPtr &tensor, bool *is_sub_data) {
-  if (RecoveryContext::GetInstance()->enable_recovery() &&
-      RecoveryContext::GetInstance()->need_sync_weight_to_device()) {
-    return true;
-  }
-
-  if (tensor == nullptr) {
-    return false;
-  }
-  // Sub data need sync each step
-  auto data_ptr = tensor->data_ptr();
-  auto sync_flag = (data_ptr != nullptr && data_ptr->is_sub_data());
-  if (sync_flag) {
-    *is_sub_data = sync_flag;
-  }
-  return sync_flag;
-}
-
-void SyncTensorTrunk(const std::vector<std::vector<TensorPtr>> &input_tensors) {
-  for (auto &tensors : input_tensors) {
-    for (auto &tensor : tensors) {
-      if (tensor == nullptr) {
-        continue;
-      }
-      auto data_ptr = tensor->data_ptr();
-      if (data_ptr != nullptr && data_ptr->has_sub_data()) {
-        tensor->data_sync();
-      }
-    }
-  }
-}
-
 void UpdateDataNodeDeviceAddressSize(const AnfNodePtr &input_node, const TensorPtr &input_tensor,
                                      const device::DeviceAddressPtr &device_address) {
   MS_EXCEPTION_IF_NULL(input_node);
@@ -528,24 +496,6 @@ void DataPrepareActor::UpdateDeviceAddressForDataNode(const AnfNodePtr &input_no
   }
 }
 
-void DataPrepareActor::SetInitTensorsIfNeeded(const std::vector<std::vector<TensorPtr>> &input_tensors) {
-  if (!init_tensors_.empty()) {
-    return;
-  }
-  bool need_save = std::any_of(input_tensors.begin(), input_tensors.end(), [](const std::vector<TensorPtr> &tensors) {
-    return std::any_of(tensors.begin(), tensors.end(), [](const TensorPtr &tensor) {
-      if (tensor == nullptr) {
-        return false;
-      }
-      auto data_ptr = tensor->data_ptr();
-      return data_ptr != nullptr && data_ptr->is_sub_data();
-    });
-  });
-  if (need_save) {
-    init_tensors_ = input_tensors;
-  }
-}
-
 void DataPrepareActor::PrepareDataBeforeInputOptimize(const std::vector<std::vector<TensorPtr>> &input_tensors,
                                                       const VectorRef &args, OpContext<KernelTensor> *const context,
                                                       uint64_t start_time) {
@@ -607,10 +557,6 @@ void DataPrepareActor::PrepareData(const std::vector<std::vector<TensorPtr>> &in
 
   real_strategy_ = real_strategy;
   // Convert actor running data from input tensors.
-  if (!input_tensors.empty()) {
-    SyncTensorTrunk(input_tensors);
-    SetInitTensorsIfNeeded(input_tensors);
-  }
   try {
     bool not_empty_input = !input_tensors.empty() || !args.empty();
     if (first_step_ || UCEException::GetInstance().get_uce_flag() || (enable_prepare_case() && not_empty_input)) {
@@ -1380,7 +1326,7 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
   host_kernel_tensor->set_device_address(host_tensor_address);
   MS_LOG(DEBUG) << "Create kernel tensor:" << host_kernel_tensor->ToString();
   // Use the device address of host tensor to set device tensor.
-  bool is_need_sync = IsNeedSync(tensor, &is_sub_data_);
+  bool is_need_sync = false;
   if (host_tensor_address != device_tensor) {
     if (host_tensor_address == nullptr) {
       if (device_tensor->GetDeviceType() != device_context->GetDeviceType()) {
@@ -1444,6 +1390,11 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
   host_tensor_address->SetNodeIndex(backend_node, 0);
   host_kernel_tensor->set_device_address(host_tensor_address);
   DeviceTensorStore::GetInstance().Insert(front_node.get(), host_kernel_tensor);
+
+  if (RecoveryContext::GetInstance()->enable_recovery() &&
+      RecoveryContext::GetInstance()->need_sync_weight_to_device()) {
+    is_need_sync = true;
+  }
 
   // If the ptr of device tensor is not nullptr, it indicates that the device data has been prepared.
   if (is_need_sync || (!host_tensor_address->IsPtrValid())) {

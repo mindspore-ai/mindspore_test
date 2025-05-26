@@ -326,11 +326,6 @@ bool CheckInputOptimizeCondition(const GraphCompilerInfo &graph_compiler_info) {
     return false;
   }
 
-  if (ms_context->get_param<bool>(MS_ENV_FLATTEN_WEIGHT)) {
-    MS_LOG(DEBUG) << "Flatten weight is not supported, enable input optimize failed.";
-    return false;
-  }
-
   for (const auto &graph : graphs) {
     MS_EXCEPTION_IF_NULL(graph);
     // Do not support any type currently.
@@ -1726,9 +1721,6 @@ void GraphScheduler::ProcessContinuousMemoryInfo(const ActorSetPtr &actor_set,
 
       auto &execution_order = graph->execution_order();
       for (auto &kernel : execution_order) {
-        if (common::AnfAlgo::GetCNodeName(kernel) == kFlattenConcatOpName) {
-          graph_compiler_info.exist_flatten_concat_ = true;
-        }
         if (!AnfAlgo::IsNeedContinuesMemoryOp(kernel)) {
           continue;
         }

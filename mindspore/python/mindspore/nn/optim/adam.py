@@ -1,4 +1,4 @@
-# Copyright 2020-2022 Huawei Technologies Co., Ltd
+# Copyright 2020-2021 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -32,7 +32,6 @@ from mindspore.nn.optim._dist_optimizer_registry import _register_dist_optimizer
 from mindspore.common._decorator import deprecated
 
 _adam_opt = C.MultitypeFuncGraph("adam_opt")
-_fused_adam_weight_decay = C.MultitypeFuncGraph("fused_adam_weight_decay")
 _lazy_adam_opt = C.MultitypeFuncGraph("lazy_adam_opt")
 _scaler_one = Tensor(1, mstype.int32)
 _scaler_ten = Tensor(10, mstype.float32)
@@ -445,19 +444,6 @@ def _run_off_load_opt(opt, beta1_power, beta2_power, beta1, beta2, eps, lr, grad
     return success
 
 
-@_fused_adam_weight_decay.register("Function", "Tensor", "Tensor", "Tensor", "Tensor", "Tensor", "Tensor", "Tensor",
-                                   "Tensor", "Tensor", "Bool", "Bool")
-def _run_fused_adam_weight_decay_opt(opt, beta1, beta2, eps, lr, weight_decay, param, moment1, moment2, gradient,
-                                     decay_flags, optim_filter):
-    """Apply FusedAdamWeightDecay optimizer to the weight parameter using Tensor."""
-    if optim_filter:
-        if decay_flags:
-            opt(param, moment1, moment2, lr, beta1, beta2, eps, weight_decay, P.Cast()(gradient, F.dtype(param)))
-        else:
-            opt(param, moment1, moment2, lr, beta1, beta2, eps, 0.0, P.Cast()(gradient, F.dtype(param)))
-    return True
-
-
 def _check_param_value(beta1, beta2, eps, prim_name):
     """Check the type of inputs."""
     validator.check_value_type("beta1", beta1, [float], prim_name)
@@ -835,7 +821,6 @@ class Adam(Optimizer):
         params = self._parameters
         moment1 = self.moment1
         moment2 = self.moment2
-        gradients = self.flatten_gradients(gradients)
         gradients = self.decay_weight(gradients)
         if not self.use_offload:
             gradients = self.gradients_centralization(gradients)
@@ -1025,65 +1010,28 @@ class AdamWeightDecay(Optimizer):
         self.eps = Tensor(np.array([eps]).astype(np.float32))
         self.moments1 = self._parameters.clone(prefix="adam_m", init='zeros')
         self.moments2 = self._parameters.clone(prefix="adam_v", init='zeros')
-        self.fused_opt = P.AdamWeightDecay()
-        self.use_fused_opt = True
 
     @jit(backend="ms_backend")
     def construct(self, gradients):
-        gradients = self.flatten_gradients(gradients)
         weight_decay = self.get_weight_decay()
         lr = self.get_lr()
-        self.assignadd(self.global_step, self.global_step_increase_tensor)
-
-        if self.use_fused_opt:
-            if self.is_group:
-                if self.is_group_lr:
-                    optim_result = self.hyper_map(
-                        F.partial(_fused_adam_weight_decay, self.fused_opt, self.beta1, self.beta2, self.eps),
-                        lr, weight_decay, self._parameters, self.moments1,
-                        self.moments2, gradients, self.decay_flags, self.optim_filter)
-                else:
-                    optim_result = self.hyper_map(
-                        F.partial(_fused_adam_weight_decay, self.fused_opt, self.beta1, self.beta2, self.eps, lr),
-                        weight_decay, self._parameters, self.moments1, self.moments2,
-                        gradients, self.decay_flags, self.optim_filter)
+        if self.is_group:
+            if self.is_group_lr:
+                optim_result = self.hyper_map(F.partial(_adam_opt, self.beta1, self.beta2, self.eps),
+                                              lr, weight_decay, self._parameters, self.moments1,
+                                              self.moments2, gradients, self.decay_flags, self.optim_filter)
             else:
-                optim_result = self.hyper_map(
-                    F.partial(_fused_adam_weight_decay, self.fused_opt, self.beta1, self.beta2, self.eps, lr,
-                              weight_decay),
-                    self._parameters, self.moments1, self.moments2,
-                    gradients, self.decay_flags, self.optim_filter)
-        else:
-            if self.is_group:
-                if self.is_group_lr:
-                    optim_result = self.hyper_map(F.partial(_adam_opt, self.beta1, self.beta2, self.eps),
-                                                  lr, weight_decay, self._parameters, self.moments1,
-                                                  self.moments2, gradients, self.decay_flags, self.optim_filter)
-                else:
-                    optim_result = self.hyper_map(F.partial(_adam_opt, self.beta1, self.beta2, self.eps, lr),
-                                                  weight_decay, self._parameters, self.moments1, self.moments2,
-                                                  gradients, self.decay_flags, self.optim_filter)
-            else:
-                optim_result = self.hyper_map(F.partial(_adam_opt, self.beta1, self.beta2, self.eps, lr, weight_decay),
-                                              self._parameters, self.moments1, self.moments2,
+                optim_result = self.hyper_map(F.partial(_adam_opt, self.beta1, self.beta2, self.eps, lr),
+                                              weight_decay, self._parameters, self.moments1, self.moments2,
                                               gradients, self.decay_flags, self.optim_filter)
+        else:
+            optim_result = self.hyper_map(F.partial(_adam_opt, self.beta1, self.beta2, self.eps, lr, weight_decay),
+                                          self._parameters, self.moments1, self.moments2,
+                                          gradients, self.decay_flags, self.optim_filter)
         if self.use_parallel:
             self.broadcast_params(optim_result)
 
         return optim_result
-
-    @Optimizer.target.setter
-    def target(self, value):
-        """
-        If the input value is set to "CPU", the parameters will be updated on the host using the Fused
-        optimizer operation.
-        """
-        self._set_base_target(value)
-        if value == 'CPU':
-            self.fused_opt.set_device("CPU")
-            self.use_fused_opt = True
-        else:
-            self.use_fused_opt = False
 
 
 class AdamOffload(Optimizer):
@@ -1253,7 +1201,6 @@ class AdamOffload(Optimizer):
         params = self._parameters
         moment1 = self.moment1
         moment2 = self.moment2
-        gradients = self.flatten_gradients(gradients)
         gradients = self.decay_weight(gradients)
         gradients = self.scale_grad(gradients)
         lr = self.get_lr()

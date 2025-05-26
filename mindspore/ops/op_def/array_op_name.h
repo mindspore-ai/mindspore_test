@@ -41,7 +41,6 @@ constexpr auto kUnravelIndexOpName = "UnravelIndex";
 constexpr auto kDynamicBroadcastToOpName = "DynamicBroadcastTo";
 constexpr auto kConcatOpName = "Concat";
 constexpr auto kParallelConcatOpName = "ParallelConcat";
-constexpr auto kFlattenConcatOpName = "FlattenConcat";
 constexpr auto kConjugateTransposeOpName = "ConjugateTranspose";
 constexpr auto kTransposeOpName = "Transpose";
 constexpr auto kGatherDGradOpName = "GatherDGrad";

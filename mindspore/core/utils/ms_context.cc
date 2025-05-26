@@ -659,7 +659,6 @@ void MsContext::InitBoolTypeDefaultValue() {
   set_param<bool>(MS_CTX_ENABLE_ALLREDUCE_SLICE_TO_REDUCESCATTER, false);
   set_param<bool>(MS_CTX_ENABLE_INTERLEAVE_SPLIT_CONCAT_BRANCH, false);
   set_param<bool>(MS_CTX_ENABLE_INTERLEAVE_PARALLEL_BRANCH, false);
-  set_param<bool>(MS_ENV_FLATTEN_WEIGHT, false);
 }
 
 void MsContext::InitStringTypeDefaultValue() {

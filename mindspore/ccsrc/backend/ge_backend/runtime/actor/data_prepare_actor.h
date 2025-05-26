@@ -112,8 +112,6 @@ class DataPrepareActor : public DebugAwareActor {
   void PrepareDataForControlValueNode(const KernelWithIndex &node_with_index, OpContext<KernelTensor> *const context,
                                       const ControlNodeParserPtr &parser) const;
 
-  void SetInitTensorsIfNeeded(const std::vector<std::vector<TensorPtr>> &input_tensors);
-
   void RecordGraphInputs(const std::vector<TensorPtr> &host_tensors, const std::vector<size_t> &host_param_indexes);
 
   // Remove after refact.
