@@ -30,6 +30,7 @@ conv3d_padding:
       name: Conv3DPadding
   function:
       disable: True
+  bprop_expander: False
   dispatch:
     enable: True
     Ascend: Conv3DPaddingAscend

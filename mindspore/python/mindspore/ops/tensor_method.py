@@ -1850,6 +1850,10 @@ def all_gather_matmul(
     raise NotImplementedError('all_gather_matmul only supports Ascend.')
 
 
+def conv3d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
+    raise NotImplementedError('conv3d only supports Ascend.')
+
+
 def tensor_floor_divide_(input, other):
     return _tensor_floordiv(input, other)
 
