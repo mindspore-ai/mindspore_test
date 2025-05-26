@@ -5,10 +5,10 @@ void Internal${op_name}KernelInfoAdapter::CreateKernelInfo(const std::string &ke
   if (Factory<InternalKernelInfo>::Instance().IsRegistered(kernel_name)) {
     MS_LOG(INFO) << "Supported by Internal Op: " << kernel_name;
     kernel_info_ =
-      std::dynamic_pointer_cast<InternalKernelInfo${op_name}>(Factory<InternalKernelInfo>::Instance().Create(kernel_name));
+      std::dynamic_pointer_cast<${op_name}>(Factory<InternalKernelInfo>::Instance().Create(kernel_name));
   }
   if (kernel_info_ == nullptr) {
-    MS_LOG(WARNING) << "Internal can't find Op[" << kernel_name << "]";
+    MS_LOG(ERROR) << "Internal can't find Op[" << kernel_name << "]";
     return;
   }
 }

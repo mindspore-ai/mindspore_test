@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_KERNEL_INTERNAL_PYBOOST_APPLYROTARYPOSEMB_H_
-#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_KERNEL_INTERNAL_PYBOOST_APPLYROTARYPOSEMB_H_
+#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_KERNEL_INTERNAL_PYBOOST_APPLY_ROTARY_POS_EMB_H_
+#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_KERNEL_INTERNAL_PYBOOST_APPLY_ROTARY_POS_EMB_H_
 
 #include <memory>
 #include <string>
@@ -25,10 +25,10 @@
 
 namespace mindspore {
 namespace kernel {
-class InternalKernelInfoApplyRotaryPosEmb : public InternalKernelInfo {
+class ApplyRotaryPosEmb : public InternalKernelInfo {
  public:
-  InternalKernelInfoApplyRotaryPosEmb() : InternalKernelInfo(std::move("ApplyRotaryPosEmb")) {}
-  ~InternalKernelInfoApplyRotaryPosEmb() = default;
+  ApplyRotaryPosEmb() : InternalKernelInfo(std::move("ApplyRotaryPosEmb")) {}
+  ~ApplyRotaryPosEmb() = default;
 
   void Call(const std::shared_ptr<pyboost::OpRunner> &op, const BaseTensorPtr &query_tensor,
             const BaseTensorPtr &key_tensor, const BaseTensorPtr &cos_tensor, const BaseTensorPtr &sin_tensor,
@@ -43,4 +43,4 @@ class InternalKernelInfoApplyRotaryPosEmb : public InternalKernelInfo {
 };
 }  // namespace kernel
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_KERNEL_INTERNAL_PYBOOST_APPLYROTARYPOSEMB_H_
+#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_KERNEL_INTERNAL_PYBOOST_APPLY_ROTARY_POS_EMB_H_

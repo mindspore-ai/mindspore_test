@@ -31,6 +31,7 @@ from .pyboost_internal_functions_h_generator import PyboostInternalFunctionsHead
 
 from .op_template_parser import OpTemplateParser
 
+
 class PyboostInternalFunctionsCppGenerator(BaseGenerator):
     """
     A class to generate the `functions.cc` source file, which contains internal op function definitions.
@@ -38,8 +39,8 @@ class PyboostInternalFunctionsCppGenerator(BaseGenerator):
 
     def __init__(self):
         """Initializes the PyboostInternalFunctionsCppGenerator with the necessary templates."""
-        self.PYBOOST_INTERNAL_FUNCTION_SOURCE_TEMPLATE = template.PYBOOST_INTERNAL_FUNCTION_SOURCE_TEMPLATE
-        self.PYBOOST_INTERNAL_FUNCTION_TEMPLATE = template.PYBOOST_INTERNAL_FUNCTION_TEMPLATE
+        self.pyboost_internal_functions_source_template = template.PYBOOST_INTERNAL_FUNCTION_SOURCE_TEMPLATE
+        self.pyboost_internal_functions_template = template.PYBOOST_INTERNAL_FUNCTION_TEMPLATE
         self.header_generator = PyboostInternalFunctionsHeaderGenerator()
 
     def generate(self, work_path, op_protos):
@@ -64,7 +65,7 @@ class PyboostInternalFunctionsCppGenerator(BaseGenerator):
             op_parser = OpTemplateParser(op_proto)
             call_args_after_convert, _, _ = op_parser.op_args_converter()
             call_args_with_type = self.header_generator.get_call_args_with_type(op_proto)
-            func_list.append(template.NEW_LINE + self.PYBOOST_INTERNAL_FUNCTION_TEMPLATE.replace(
+            func_list.append(template.NEW_LINE + self.pyboost_internal_functions_template.replace(
                 operator_name=operator_name,
                 op_name=op_name,
                 call_args_with_type=call_args_with_type,
@@ -72,7 +73,7 @@ class PyboostInternalFunctionsCppGenerator(BaseGenerator):
 
         if not func_list:
             return
-        pyboost_internal_op_functions_str = self.PYBOOST_INTERNAL_FUNCTION_SOURCE_TEMPLATE.replace(func_list=func_list)
+        pyboost_internal_op_functions_str = self.pyboost_internal_functions_source_template.replace(func_list=func_list)
         save_path = os.path.join(work_path, K.MS_PYBOOST_INTERNAL_FUNCTIONS_AUTO_GEN_PATH)
         file_name = "functions.cc"
         save_file(save_path, file_name, pyboost_internal_op_functions_str)

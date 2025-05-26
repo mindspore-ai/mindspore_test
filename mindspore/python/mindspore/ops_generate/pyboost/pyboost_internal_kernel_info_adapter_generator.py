@@ -36,6 +36,7 @@ from .op_template_parser import OpTemplateParser
 KERNEL_INFO_ADAPTER_REGISTER = \
 "MS_KERNEL_INFO_ADAPTER_REG(${op_name}, Internal${op_name}KernelInfoAdapter, ${op_name}KernelInfoAdapter);\n"
 
+
 class PyboostKernelInfoAdapterGenerator(BaseGenerator):
     """
     A class to generate `kernel_info_adapter.h`, `internal_kernel_info_adapter.h` and `internal_kernel_info_adapter.cc`
@@ -44,14 +45,14 @@ class PyboostKernelInfoAdapterGenerator(BaseGenerator):
 
     def __init__(self):
         """Initializes the PyboostKernelInfoAdapterGenerator with the necessary templates."""
-        self.KERNEL_INFO_ADAPTER_TEMPLATE = template.PYBOOST_KERNEL_INFO_ADAPTER_TEMPLATE
-        self.KERNEL_INFO_ADAPTER_H_TEMPLATE = template.PYBOOST_KERNEL_INFO_ADAPTER_H_TEMPLATE
-        self.INTERNAL_KERNEL_INFO_ADAPTER_TEMPLATE = template.PYBOOST_INTERNAL_KERNEL_INFO_ADAPTER_TEMPLATE
-        self.INTERNAL_KERNEL_INFO_ADAPTER_H_TEMPLATE = template.PYBOOST_INTERNAL_KERNEL_INFO_ADAPTER_H_TEMPLATE
-        self.KERNEL_INFO_ADAPTER_SINGLE_CPP_TEMPLATE = template.PYBOOST_INTERNAL_KERNEL_INFO_ADAPTER_SINGLE_CPP_TEMPLATE
-        self.KERNEL_INFO_ADAPTER_CPP_TEMPLATE = template.PYBOOST_INTERNAL_KERNEL_INFO_ADAPTER_CPP_TEMPLATE
-        self.KERNEL_INFO_ADAPTER_REGISTER_TEMPLATE = Template(KERNEL_INFO_ADAPTER_REGISTER)
-        self.MERGED_OP_HEADERS_TEMPLATE = Template(
+        self.kernel_info_adapter_template = template.PYBOOST_KERNEL_INFO_ADAPTER_TEMPLATE
+        self.kernel_info_adapter_h_template = template.PYBOOST_KERNEL_INFO_ADAPTER_H_TEMPLATE
+        self.internal_kernel_info_adapter_template = template.PYBOOST_INTERNAL_KERNEL_INFO_ADAPTER_TEMPLATE
+        self.internal_kernel_info_adapter_h_template = template.PYBOOST_INTERNAL_KERNEL_INFO_ADAPTER_H_TEMPLATE
+        self.kernel_info_adapter_single_cpp_template = template.PYBOOST_INTERNAL_KERNEL_INFO_ADAPTER_SINGLE_CPP_TEMPLATE
+        self.kernel_info_adapter_cpp_template = template.PYBOOST_INTERNAL_KERNEL_INFO_ADAPTER_CPP_TEMPLATE
+        self.kernel_info_adapter_register_template = Template(KERNEL_INFO_ADAPTER_REGISTER)
+        self.merged_op_headers_template = Template(
             "#include \"plugin/device/ascend/kernel/internal/pyboost/${operator_name}.h\"\n")
         self.header_generator = PyboostInternalFunctionsHeaderGenerator()
 
@@ -77,41 +78,41 @@ class PyboostKernelInfoAdapterGenerator(BaseGenerator):
                 continue
             if getattr(op_proto.op_dispatch, 'internal_op_ascend') == 'None':
                 continue
-            operator_name = op_proto.op_name
-            op_name = op_proto.op_class.name
             op_parser = OpTemplateParser(op_proto)
             call_args_after_convert, _, _ = op_parser.op_args_converter()
             call_args_with_type = self.header_generator.get_call_args_with_type(op_proto)
             kernel_info_adapter_list.append(
-                self.KERNEL_INFO_ADAPTER_TEMPLATE.replace(op_name=op_name, call_args_with_type=call_args_with_type))
+                self.kernel_info_adapter_template.replace(
+                    op_name=op_proto.op_class.name,
+                    call_args_with_type=call_args_with_type))
             kernel_info_adapter_list.append(template.NEW_LINE)
             internal_kernel_info_adapter_list.append(
-                self.INTERNAL_KERNEL_INFO_ADAPTER_TEMPLATE.replace(
-                    op_name=op_name,
+                self.internal_kernel_info_adapter_template.replace(
+                    op_name=op_proto.op_class.name,
                     call_args_with_type=call_args_with_type))
             internal_kernel_info_adapter_list.append(template.NEW_LINE)
             kernel_info_adapter_cpp_list.append(
-                self.KERNEL_INFO_ADAPTER_SINGLE_CPP_TEMPLATE.replace(
-                    op_name=op_name,
+                self.kernel_info_adapter_single_cpp_template.replace(
+                    op_name=op_proto.op_class.name,
                     call_args_with_type=call_args_with_type,
                     call_args_after_convert=call_args_after_convert))
             kernel_info_adapter_cpp_list.append(template.NEW_LINE)
             kernel_info_adapter_register.append(
-                self.KERNEL_INFO_ADAPTER_REGISTER_TEMPLATE.replace(op_name=op_name))
-            merged_op_headers_list.append(self.MERGED_OP_HEADERS_TEMPLATE.replace(operator_name=operator_name))
+                self.kernel_info_adapter_register_template.replace(op_name=op_proto.op_class.name))
+            merged_op_headers_list.append(self.merged_op_headers_template.replace(operator_name=op_proto.op_name))
 
         if not kernel_info_adapter_list:
             return
-        kernel_info_adapter_h_str = self.KERNEL_INFO_ADAPTER_H_TEMPLATE.replace(
+        kernel_info_adapter_h_str = self.kernel_info_adapter_h_template.replace(
             kernel_info_adapter_list=kernel_info_adapter_list)
         save_path = os.path.join(work_path, K.MS_INTERNAL_PYBOOST_GEN_PATH)
         save_file(save_path, "kernel_info_adapter.h", kernel_info_adapter_h_str)
-        internal_kernel_info_adapter_h_str = self.INTERNAL_KERNEL_INFO_ADAPTER_H_TEMPLATE.replace(
+        internal_kernel_info_adapter_h_str = self.internal_kernel_info_adapter_h_template.replace(
             internal_kernel_info_adapter_list=internal_kernel_info_adapter_list,
             merged_op_headers=merged_op_headers_list
         )
         save_file(save_path, "internal_kernel_info_adapter.h", internal_kernel_info_adapter_h_str)
-        kernel_info_adapter_cpp_str = self.KERNEL_INFO_ADAPTER_CPP_TEMPLATE.replace(
+        kernel_info_adapter_cpp_str = self.kernel_info_adapter_cpp_template.replace(
             kernel_info_adapter_cpp_list=kernel_info_adapter_cpp_list,
             kernel_info_adapter_register=kernel_info_adapter_register
         )

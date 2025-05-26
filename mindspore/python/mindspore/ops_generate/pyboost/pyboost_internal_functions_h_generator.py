@@ -31,6 +31,7 @@ from common.base_generator import BaseGenerator
 from .pyboost_utils import is_optional_param
 from .op_template_parser import OpTemplateParser
 
+
 class PyboostInternalFunctionsHeaderGenerator(BaseGenerator):
     """
     A class to generate the `functions.h` header file, which contains internal op function declarations.
@@ -38,7 +39,7 @@ class PyboostInternalFunctionsHeaderGenerator(BaseGenerator):
 
     def __init__(self):
         """Initializes the PyboostInternalFunctionsHeaderGenerator with the necessary templates."""
-        self.PYBOOST_INTERNAL_FUNCTION_HEADER_TEMPLATE = template.PYBOOST_INTERNAL_FUNCTION_HEADER_TEMPLATE
+        self.pyboost_internal_function_header_template = template.PYBOOST_INTERNAL_FUNCTION_HEADER_TEMPLATE
 
         self.pyboost_internal_func_template = Template(
             'void internal_${operator_name}(const std::shared_ptr<pyboost::OpRunner> &op, ${call_args_with_type});'
@@ -69,7 +70,7 @@ class PyboostInternalFunctionsHeaderGenerator(BaseGenerator):
         if not func_list:
             return
         pyboost_internal_func_h_str = \
-            self.PYBOOST_INTERNAL_FUNCTION_HEADER_TEMPLATE.replace(internal_func_list=func_list)
+            self.pyboost_internal_function_header_template.replace(internal_func_list=func_list)
         save_path = os.path.join(work_path, K.MS_PYBOOST_INTERNAL_FUNCTIONS_AUTO_GEN_PATH)
         file_name = "functions.h"
         save_file(save_path, file_name, pyboost_internal_func_h_str)
@@ -118,6 +119,7 @@ class PyboostInternalFunctionsHeaderGenerator(BaseGenerator):
         raise TypeError(f"""Unsupported dtype {arg_dtype} for args.""")
 
     def get_call_args_with_type(self, op_proto):
+        """Get call args with cpp type according to op proto"""
         op_parser = OpTemplateParser(op_proto)
         call_args_after_convert, _, _ = op_parser.op_args_converter()
         call_args_type = self._parse_call_args_types(op_proto.op_args)

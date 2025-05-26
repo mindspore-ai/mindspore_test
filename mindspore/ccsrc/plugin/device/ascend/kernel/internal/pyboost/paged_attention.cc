@@ -21,8 +21,8 @@
 
 namespace mindspore {
 namespace kernel {
-internal::InternalOpPtr InternalKernelInfoPagedAttention::CreateKernel(
-  const internal::InputsImmutableInfoList &inputs, const internal::OutputsImmutableInfoList &outputs) {
+internal::InternalOpPtr PagedAttention::CreateKernel(const internal::InputsImmutableInfoList &inputs,
+                                                     const internal::OutputsImmutableInfoList &outputs) {
   internal::PagedAttentionParam param;
   param.head_num = head_num_;
   param.kv_head_num = kv_head_num_;
@@ -39,19 +39,20 @@ internal::InternalOpPtr InternalKernelInfoPagedAttention::CreateKernel(
   return internal::CreatePagedAttentionOp(inputs, outputs, param, internal::kInternalPagedAttentionOpName);
 }
 
-uint64_t InternalKernelInfoPagedAttention::GenerateTilingKey(const std::string &kernel_name,
-                                                             const std::vector<BaseTensorPtr> &inputs) {
+uint64_t PagedAttention::GenerateTilingKey(const std::string &kernel_name, const std::vector<BaseTensorPtr> &inputs) {
   return CalcInternalOpTilingHash(kernel_name, inputs, q_seq_len_, kv_seq_len_);
 }
 
-void InternalKernelInfoPagedAttention::Call(
-  const std::shared_ptr<pyboost::OpRunner> &op, const BaseTensorPtr &query, const BaseTensorPtr &key_cache,
-  const std::optional<BaseTensorPtr> &value_cache, const std::optional<BaseTensorPtr> &block_tabels,
-  const std::optional<BaseTensorPtr> &context_lens, const std::optional<BaseTensorPtr> &antiquant_scale,
-  const std::optional<BaseTensorPtr> &antiquant_offset, const std::optional<BaseTensorPtr> &attn_mask,
-  const std::optional<BaseTensorPtr> &q_seq_lens, const std::optional<BaseTensorPtr> &alibi_mask,
-  const int64_t &head_num, const float &scale_value, const int64_t &kv_head_num, const int64_t &kv_cache_quant_mode,
-  const int64_t &mask_mode, const int64_t &mla_v_dim) {
+void PagedAttention::Call(const std::shared_ptr<pyboost::OpRunner> &op, const BaseTensorPtr &query,
+                          const BaseTensorPtr &key_cache, const std::optional<BaseTensorPtr> &value_cache,
+                          const std::optional<BaseTensorPtr> &block_tabels,
+                          const std::optional<BaseTensorPtr> &context_lens,
+                          const std::optional<BaseTensorPtr> &antiquant_scale,
+                          const std::optional<BaseTensorPtr> &antiquant_offset,
+                          const std::optional<BaseTensorPtr> &attn_mask, const std::optional<BaseTensorPtr> &q_seq_lens,
+                          const std::optional<BaseTensorPtr> &alibi_mask, const int64_t &head_num,
+                          const float &scale_value, const int64_t &kv_head_num, const int64_t &kv_cache_quant_mode,
+                          const int64_t &mask_mode, const int64_t &mla_v_dim) {
   std::vector<BaseTensorPtr> inputs = {query,
                                        key_cache,
                                        value_cache.has_value() ? value_cache.value() : nullptr,
@@ -87,7 +88,6 @@ void InternalKernelInfoPagedAttention::Call(
   GetOrCreateKernel(op, inputs, outputs, op_key);
   LAUNCH_INTERNAL(kernel_name_, op, internal_op_, inputs, outputs, tiling_info_);
 }
-MS_INTERNAL_KERNEL_INFO_FACTORY_REG(PagedAttention, internal::kInternalPagedAttentionOpName,
-                                    InternalKernelInfoPagedAttention);
+MS_INTERNAL_KERNEL_INFO_FACTORY_REG(PagedAttention, internal::kInternalPagedAttentionOpName, PagedAttention);
 }  // namespace kernel
 }  // namespace mindspore

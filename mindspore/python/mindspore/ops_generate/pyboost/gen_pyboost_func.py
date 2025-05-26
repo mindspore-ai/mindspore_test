@@ -123,17 +123,24 @@ def call_pyboost_functions_h_generator(work_path, op_protos):
     generator = PyboostFunctionsHeaderGenerator()
     generator.generate(work_path, op_protos)
 
+
 def call_pyboost_internal_functions_h_generator(work_path, op_protos):
+    "gen internal op functions headers"
     generator = PyboostInternalFunctionsHeaderGenerator()
     generator.generate(work_path, op_protos)
 
+
 def call_pyboost_internal_functions_cpp_generator(work_path, op_protos):
+    "gen internal op functions sources"
     generator = PyboostInternalFunctionsCppGenerator()
     generator.generate(work_path, op_protos)
 
+
 def call_pyboost_internal_kernel_info_adapter_generator(work_path, op_protos):
+    "gen kernel info adapter for internal op"
     generator = PyboostKernelInfoAdapterGenerator()
     generator.generate(work_path, op_protos)
+
 
 def call_pyboost_functions_cpp_generator(work_path, op_protos):
     generator = PyboostFunctionsGenerator()

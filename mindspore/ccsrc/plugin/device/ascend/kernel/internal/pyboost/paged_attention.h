@@ -25,10 +25,10 @@
 
 namespace mindspore {
 namespace kernel {
-class InternalKernelInfoPagedAttention : public InternalKernelInfo {
+class PagedAttention : public InternalKernelInfo {
  public:
-  InternalKernelInfoPagedAttention() : InternalKernelInfo(std::move("PagedAttention")) {}
-  ~InternalKernelInfoPagedAttention() = default;
+  PagedAttention() : InternalKernelInfo(std::move("PagedAttention")) {}
+  ~PagedAttention() = default;
 
   void Call(const std::shared_ptr<pyboost::OpRunner> &op, const BaseTensorPtr &query, const BaseTensorPtr &key_cache,
             const std::optional<BaseTensorPtr> &value_cache, const std::optional<BaseTensorPtr> &block_tabels,

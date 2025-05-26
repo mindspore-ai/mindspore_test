@@ -20,16 +20,15 @@
 
 namespace mindspore {
 namespace kernel {
-internal::InternalOpPtr InternalKernelInfoReshapeAndCache::CreateKernel(
-  const internal::InputsImmutableInfoList &inputs, const internal::OutputsImmutableInfoList &outputs) {
+internal::InternalOpPtr ReshapeAndCache::CreateKernel(const internal::InputsImmutableInfoList &inputs,
+                                                      const internal::OutputsImmutableInfoList &outputs) {
   return internal::CreateReshapeAndCacheOp(inputs, outputs, internal::kInternalReshapeAndCacheOpName);
 }
 
-void InternalKernelInfoReshapeAndCache::Call(const std::shared_ptr<pyboost::OpRunner> &op, const BaseTensorPtr &key,
-                                             const std::optional<BaseTensorPtr> &value,
-                                             const std::optional<BaseTensorPtr> &key_cache,
-                                             const std::optional<BaseTensorPtr> &value_cache,
-                                             const std::optional<BaseTensorPtr> &slot_mapping) {
+void ReshapeAndCache::Call(const std::shared_ptr<pyboost::OpRunner> &op, const BaseTensorPtr &key,
+                           const std::optional<BaseTensorPtr> &value, const std::optional<BaseTensorPtr> &key_cache,
+                           const std::optional<BaseTensorPtr> &value_cache,
+                           const std::optional<BaseTensorPtr> &slot_mapping) {
   std::vector<BaseTensorPtr> inputs = {
     key, value.has_value() ? value.value() : nullptr, key_cache.has_value() ? key_cache.value() : nullptr,
     value_cache.has_value() ? value_cache.value() : nullptr, slot_mapping.has_value() ? slot_mapping.value() : nullptr};
@@ -42,7 +41,6 @@ void InternalKernelInfoReshapeAndCache::Call(const std::shared_ptr<pyboost::OpRu
   GetOrCreateKernel(op, inputs, outputs, op_key);
   LAUNCH_INTERNAL(kernel_name_, op, internal_op_, inputs, outputs, tiling_info_);
 }
-MS_INTERNAL_KERNEL_INFO_FACTORY_REG(ReshapeAndCache, internal::kInternalReshapeAndCacheOpName,
-                                    InternalKernelInfoReshapeAndCache);
+MS_INTERNAL_KERNEL_INFO_FACTORY_REG(ReshapeAndCache, internal::kInternalReshapeAndCacheOpName, ReshapeAndCache);
 }  // namespace kernel
 }  // namespace mindspore

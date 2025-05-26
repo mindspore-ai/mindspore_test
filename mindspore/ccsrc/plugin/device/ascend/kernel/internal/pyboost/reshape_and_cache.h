@@ -25,10 +25,10 @@
 
 namespace mindspore {
 namespace kernel {
-class InternalKernelInfoReshapeAndCache : public InternalKernelInfo {
+class ReshapeAndCache : public InternalKernelInfo {
  public:
-  InternalKernelInfoReshapeAndCache() : InternalKernelInfo(std::move("ReshapeAndCache")) {}
-  ~InternalKernelInfoReshapeAndCache() = default;
+  ReshapeAndCache() : InternalKernelInfo(std::move("ReshapeAndCache")) {}
+  ~ReshapeAndCache() = default;
 
   void Call(const std::shared_ptr<pyboost::OpRunner> &op, const BaseTensorPtr &key,
             const std::optional<BaseTensorPtr> &value, const std::optional<BaseTensorPtr> &key_cache,
