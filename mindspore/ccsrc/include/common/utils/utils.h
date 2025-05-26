@@ -61,10 +61,16 @@ constexpr auto kFlagIsPynativeBpropGraph = "is_pynative_bprop_graph";
 constexpr auto kFlagPyNativeRunInGraph = "pynative_run_in_graph";
 constexpr auto kFlagNeedRenormalize = "need_renormalize";
 constexpr auto kFlagEnableZeroCopyInGraph = "enable_zero_copy_in_graph";
+constexpr auto kFlagPyNativeBpropGraphWithBpropCut = "pynative_bprop_graph_with_bprop_cut";
+constexpr auto kFlagPyNativeBpropGraphIsDynamic = "pynative_bprop_graph_is_dynamic";
+constexpr auto kFlagEnableRunGraphBySingleOp = "enable_run_graph_by_single_op";
 constexpr auto kFlagIsPyNativeBpropKernelGraph = "is_pynative_bprop_kernel_graph";
+constexpr auto kFlagPyNativeWithJitCallGraph = "pynative_with_jit_call_graph";
 constexpr auto kFlagJitCallGraph = "jit_call_graph";
+constexpr auto kFlagJitGraph = "jit_graph";
 constexpr auto kFlagSwitchInline = "switch_inline_graph";
 constexpr auto kFlagIsControlFlow = "is_control_flow";
+constexpr auto kFlagGeKernel = "ge_kernel";
 
 // custom operator func type
 constexpr auto kCustomTypeAOT = "aot";

@@ -64,6 +64,151 @@
 namespace mindspore {
 namespace backend {
 namespace ms_backend {
+namespace {
+ValuePtr GetInputofBpropCut(const std::shared_ptr<GraphCompiler> &graph_compiler, const CNodePtr &parent_node,
+                            const AnfNodePtr &input_node, const std::map<KernelWithIndex, tensor::TensorPtr> &op_output,
+                            const std::map<AnfNodePtr, size_t> &parameter_index,
+                            const std::vector<TensorPtr> &graph_inputs, InputInfo *input_info, size_t input_index) {
+  if (!IsPrimitiveCNode(input_node, prim::kPrimMakeTuple)) {
+    auto real_input = common::AnfAlgo::VisitKernel(input_node, 0).first;
+    MS_EXCEPTION_IF_NULL(real_input);
+    ValuePtr value = nullptr;
+    if (!real_input->isa<ValueNode>()) {
+      if (real_input->abstract() != nullptr && real_input->abstract()->isa<abstract::AbstractSparseTensor>()) {
+        value = TensorListToSparseTensor(real_input->abstract(), graph_inputs);
+      } else {
+        value = graph_compiler->GetSingleOpInputTensorByIndex(parent_node, op_output, parameter_index, graph_inputs,
+                                                              input_info, input_index);
+      }
+      MS_EXCEPTION_IF_NULL(value);
+    } else {
+      const auto &value_node = real_input->cast<ValueNodePtr>();
+      MS_EXCEPTION_IF_NULL(value_node);
+      value = value_node->value();
+      MS_EXCEPTION_IF_NULL(value);
+    }
+    return value;
+  }
+  auto cnode = input_node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
+
+  std::vector<ValuePtr> args_tuple;
+  for (size_t i = 1; i < cnode->size(); ++i) {
+    auto input = cnode->inputs()[i];
+    auto value =
+      GetInputofBpropCut(graph_compiler, cnode, input, op_output, parameter_index, graph_inputs, input_info, i - 1);
+    MS_EXCEPTION_IF_NULL(value);
+    (void)args_tuple.emplace_back(value);
+  }
+  auto arg = std::make_shared<ValueTuple>(args_tuple);
+  return arg;
+}
+
+ValuePtr GetFrontArgByParameter(const std::vector<AnfNodePtr> &origin_paramters, const VectorRef &front_args,
+                                const AnfNodePtr &front_node) {
+  const auto &iter = std::find(origin_paramters.begin(), origin_paramters.end(), front_node);
+  const size_t index = static_cast<size_t>(iter - origin_paramters.begin());
+  // If the parameter is not found in the parameters of the root graph, it means that it is the input of the subgraph,
+  // and there is no need to input a tensor.
+  if (index >= front_args.size()) {
+    MS_LOG(EXCEPTION) << "Position out of front args range, position value is " << index << " and args size is "
+                      << front_args.size() << ".";
+  }
+  auto value = utils::cast<ValuePtr>(front_args[index]);
+  MS_EXCEPTION_IF_NULL(value);
+  return value;
+}
+
+void GetControlOpInput(const std::shared_ptr<GraphCompiler> &graph_compiler,
+                       const std::vector<AnfNodePtr> &origin_paramters, const VectorRef &front_args,
+                       const CNodePtr &front_cnode, const CNodePtr &backend_cnode,
+                       const std::map<KernelWithIndex, tensor::TensorPtr> &op_output_map,
+                       const std::map<AnfNodePtr, size_t> &parameter_index,
+                       const std::vector<tensor::TensorPtr> &graph_inputs, InputInfo *input_info, VectorRef *args) {
+  MS_EXCEPTION_IF_NULL(front_cnode);
+  MS_EXCEPTION_IF_NULL(backend_cnode);
+  MS_EXCEPTION_IF_NULL(graph_compiler);
+  MS_EXCEPTION_IF_NULL(args);
+  auto front_size = front_cnode->size();
+  auto back_size = backend_cnode->size();
+  if (front_size != back_size) {
+    MS_LOG(EXCEPTION) << "Bpropcut op front cnode size: " << front_size << ", back cnode size:" << back_size
+                      << ", bpropcut op should not flatten";
+  }
+  for (size_t index = 1; index < back_size; ++index) {
+    auto input_node = backend_cnode->input(index);
+    MS_EXCEPTION_IF_NULL(input_node);
+    ValuePtr value = nullptr;
+    if (input_node->isa<Parameter>() && input_node->abstract() != nullptr &&
+        input_node->abstract()->isa<abstract::AbstractSequence>()) {
+      auto front_input_node = front_cnode->input(index);
+      value = GetFrontArgByParameter(origin_paramters, front_args, front_input_node);
+    } else {
+      value = GetInputofBpropCut(graph_compiler, backend_cnode, input_node, op_output_map, parameter_index,
+                                 graph_inputs, input_info, index - 1);
+    }
+    MS_EXCEPTION_IF_NULL(value);
+    (void)args->emplace_back(value);
+  }
+}
+
+void RunControlOperator(const std::shared_ptr<GraphCompiler> &graph_compiler,
+                        const std::vector<AnfNodePtr> &origin_paramters, const VectorRef &front_args,
+                        const KernelGraphPtr &graph, const CNodePtr &kernel,
+                        const std::map<KernelWithIndex, tensor::TensorPtr> &op_output_map,
+                        const std::map<AnfNodePtr, size_t> &parameter_index,
+                        const std::vector<tensor::TensorPtr> &graph_inputs, InputInfo *input_info,
+                        VectorRef *op_outputs) {
+  MS_EXCEPTION_IF_NULL(graph);
+  MS_EXCEPTION_IF_NULL(kernel);
+  MS_EXCEPTION_IF_NULL(op_outputs);
+  AnfNodePtr front_node = graph->GetFrontAnfByBackendAnf(kernel);
+  if (front_node == nullptr && graph->has_flag(kFlagIsPyNativeBpropKernelGraph)) {
+    front_node = kernel;
+  }
+  MS_EXCEPTION_IF_NULL(front_node);
+  if (!front_node->isa<CNode>()) {
+    MS_LOG(EXCEPTION) << "The front node of bprop_cut is not CNode";
+  }
+  CNodePtr cnode = front_node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
+  const std::vector<AnfNodePtr> &node_inputs = cnode->inputs();
+  if (node_inputs.empty()) {
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "The inputs of node[" << cnode->fullname_with_scope() << "] is empty";
+  }
+
+  const AnfNodePtr &fn = node_inputs.at(0);
+  if (!IsValueNode<Primitive>(fn)) {
+    MS_LOG_WITH_NODE(EXCEPTION, kernel) << "The input[0] of kernel[" << kernel->fullname_with_scope()
+                                        << "] is not a ValueNode of Primitive";
+  }
+
+  PrimitivePtr prim = GetValueNode<PrimitivePtr>(fn);
+  MS_EXCEPTION_IF_NULL(prim);
+  if (prim->name() == kBpropCutOpName) {
+    VectorRef args;
+    GetControlOpInput(graph_compiler, origin_paramters, front_args, cnode, kernel, op_output_map, parameter_index,
+                      graph_inputs, input_info, &args);
+    py::gil_scoped_acquire acquire;
+    BaseRef out = python_adapter::PyAdapterCallback::RunPrimitivePyHookFunction(prim, args);
+    // Convert pyobject output to tensor.
+    if (utils::isa<PyObjectRef>(out)) {
+      PyObjectRef py_ref = utils::cast<PyObjectRef>(out);
+      auto out_py_tuple = py_ref.object_;
+      std::vector<ValuePtr> output_tensors;
+      ConvertPyObjectToCTensor(out_py_tuple, &output_tensors);
+      // If bprop change grad, kernel abstract need update for its users
+      std::vector<abstract::AbstractBasePtr> output_tensor_abs;
+      for (auto &tensor : output_tensors) {
+        (void)output_tensor_abs.emplace_back(tensor->ToAbstract()->Broaden());
+        (void)op_outputs->elements_.emplace_back(std::move(tensor));
+      }
+      kernel->set_abstract(std::make_shared<abstract::AbstractTuple>(output_tensor_abs));
+    }
+  }
+}
+}  // namespace
+
 MSBackend::~MSBackend() {
   GilReleaseWithCheck gil_release;
   runtime::Pipeline::Get().frontend_stage()->Wait();
@@ -257,9 +402,125 @@ void MSBackend::RunActorSet(BackendGraphId graph_id, runtime::ActorSet *actor_se
   MS_LOG(INFO) << "Status record: end run actor: " << graph_id;
 }
 
+void MSBackend::RunMsGradGraph(const CNodePtr &kernel, const VectorRef &args, VectorRef *outputs) const {
+  MS_EXCEPTION_IF_NULL(kernel);
+  auto jit_call_graph = kernel->user_data<pynative::JitCallGraph>();
+  MS_EXCEPTION_IF_NULL(jit_call_graph);
+  *outputs = jit_call_graph->Run(args);
+}
+
+void MSBackend::RunGraphBySingleOp(const GraphCompilerInfo &graph_compiler_info, const VectorRef &args,
+                                   VectorRef *outputs) {
+  WaitTaskFinish();
+  WaitMultiStream(graph_compiler_info);
+  CreateTensorArgs(args, graph_compiler_info);
+  WaitTaskFinish();
+
+  MS_LOG(INFO) << "Status record: begin run graph by single op";
+  MS_EXCEPTION_IF_NULL(graph_compiler_);
+  const auto &graphs = graph_compiler_info.graphs_;
+  auto inputs = GetRunGraphInputs(graph_compiler_info, args);
+  for (size_t graph_index = 0; graph_index < graphs.size(); ++graph_index) {
+    const auto &graph = graphs[graph_index];
+    MS_EXCEPTION_IF_NULL(graph);
+    std::map<KernelWithIndex, tensor::TensorPtr> op_output_map;
+    std::map<AnfNodePtr, size_t> parameter_index;
+    GraphOutputInfo graph_output_info;
+    graph_output_info.graph_outputs = outputs;
+    graph_compiler_->GetParamAndOutputIndex(graph, inputs[graph_index], outputs, &parameter_index,
+                                            &graph_output_info.output_indexes);
+
+    std::map<KernelWithIndex, size_t> cnode_ref_count;
+    auto iter = cnode_ref_counts_.find(graph->graph_id());
+    if (iter == cnode_ref_counts_.end()) {
+      graph_compiler_->CalculateRefCount(graph, &cnode_ref_count);
+      (void)cnode_ref_counts_.emplace(graph->graph_id(), cnode_ref_count);
+    } else {
+      cnode_ref_count = iter->second;
+    }
+
+    MS_EXCEPTION_IF_NULL(graph_compiler_info.root_func_graph_);
+    if (graph_compiler_info.root_func_graph_->has_flag(kFlagIsPynativeBpropGraph)) {
+      // Cache forward op output value node tensor ref count of kernels for back propagation graph in PyNative mode.
+      std::map<std::string, size_t> forward_op_output_tensor_id;
+      graph_compiler_->CalculateForwardOpOutputCount(graph, inputs[graph_index], &forward_op_output_tensor_id,
+                                                     parameter_index);
+      op_backend_.set_forward_tensor_ref_count(forward_op_output_tensor_id);
+    }
+
+    GilReleaseWithCheck gil_release;
+    auto is_dynamic = graph_compiler_info.root_func_graph_->has_flag(kFlagPyNativeBpropGraphIsDynamic);
+    bool has_bprop_cut = graph_compiler_info.root_func_graph_->has_flag(kFlagPyNativeBpropGraphWithBpropCut);
+    auto ms_context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(ms_context);
+    const std::string &device_target = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+    for (const auto &kernel : graph->execution_order()) {
+      MS_EXCEPTION_IF_NULL(kernel);
+      MS_LOG(DEBUG) << "Split and run op " << kernel->fullname_with_scope();
+      InputInfo input_info;
+      VectorRef op_outputs;
+      if (has_bprop_cut && common::AnfAlgo::IsBpropCutOpExecInBackend(kernel)) {
+        const auto &origin_parameters = graph_compiler_info.origin_parameters_order_;
+        RunControlOperator(graph_compiler_, origin_parameters, args, graph, kernel, op_output_map, parameter_index,
+                           inputs[graph_index], &input_info, &op_outputs);
+        // Execute remaining lazy tasks before PyNative hook exit.
+        WaitTaskFinish();
+      } else if (common::AnfAlgo::HasNodeAttr(kAttrJitCallNode, kernel)) {
+        graph_compiler_->GetSingleOpInputTensors(kernel, op_output_map, parameter_index, inputs[graph_index], false,
+                                                 &input_info);
+        VectorRef input_args;
+        (void)std::transform(input_info.input_values.begin(), input_info.input_values.end(),
+                             std::back_inserter(input_args.elements_),
+                             [](ValuePtr &value) { return std::move(value); });
+
+        RunMsGradGraph(kernel, input_args, &op_outputs);
+        WaitTaskFinish();
+      } else {
+        const auto &primitive = common::AnfAlgo::GetCNodePrimitive(kernel);
+        MS_EXCEPTION_IF_NULL(primitive);
+        if (PyBoostAdapter::IsPyBoostRegistered(device_target, primitive->name())) {
+          MS_LOG(DEBUG) << "Run " << primitive->name() << " by pyboost";
+          graph_compiler_->GetSingleOpInputTensors(kernel, op_output_map, parameter_index, inputs[graph_index], true,
+                                                   &input_info);
+          runtime::OpRunnerInfo op_runner_info{
+            primitive, device_target, input_info.input_values, input_info.input_abs, {}, kernel->abstract()};
+          PyBoostAdapter::RunPyBoostCall(&op_runner_info, &op_outputs);
+        } else {
+          MS_LOG(DEBUG) << "Run " << primitive->name() << " by single op graph";
+          session::BackendOpRunInfoPtr op_run_info;
+          graph_compiler_->GetSingleOpInputTensors(kernel, op_output_map, parameter_index, inputs[graph_index], false,
+                                                   &input_info);
+          graph_compiler_->GetSingleOpRunInfoAndGraphInfo(kernel, input_info, is_dynamic, &op_run_info,
+                                                          &graph_output_info);
+          if (is_dynamic) {
+            op_run_info->op_prim = std::make_shared<Primitive>(*op_run_info->op_prim);
+            AnfAlgo::SetDynamicAttrToPrim(op_run_info->op_prim);
+          }
+          op_backend_.Run(op_run_info, device_name_, device_id_, &op_outputs);
+        }
+      }
+
+      graph_compiler_->UpdateRefCount(input_info.input_kernel, &cnode_ref_count, &op_output_map);
+
+      graph_output_info.graph_output_tensors.clear();
+      graph_compiler_->RecoverGraphOutput(kernel, op_outputs, cnode_ref_count, &op_output_map, &graph_output_info);
+    }
+    WaitTaskFinish();
+  }
+  python_adapter::PyAdapterCallback::ProcessUnPairedCellHook(true);
+  MS_LOG(INFO) << "Status record: end run graph by single op";
+}
+
 void MSBackend::RunGraphByCondition(BackendGraphId graph_id, const GraphCompilerInfo &graph_compiler_info,
                                     const VectorRef &args, VectorRef *outputs) {
-  RunGraphByActors(graph_id, graph_compiler_info, args, outputs);
+  bool enable_run_graph_by_single_op =
+    std::any_of(graph_compiler_info.graphs_.begin(), graph_compiler_info.graphs_.end(),
+                [](const KernelGraphPtr &graph) { return graph->has_flag(kFlagEnableRunGraphBySingleOp); });
+  if (enable_run_graph_by_single_op) {
+    RunGraphBySingleOp(graph_compiler_info, args, outputs);
+  } else {
+    RunGraphByActors(graph_id, graph_compiler_info, args, outputs);
+  }
 }
 
 void MSBackend::WaitTaskFinish() const {
@@ -267,6 +528,8 @@ void MSBackend::WaitTaskFinish() const {
                                      runtime::kDefaultOpName);
   runtime::Pipeline::Get().WaitAll();
 }
+
+void MSBackend::ClearOpExecutorResource() const { runtime::OpExecutor::GetInstance().Reset(); }
 
 void MSBackend::SyncStream() {
   const auto &device_context =
