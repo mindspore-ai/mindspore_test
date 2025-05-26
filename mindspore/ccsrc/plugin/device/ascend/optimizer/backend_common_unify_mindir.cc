@@ -85,7 +85,7 @@
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/matmul_sigmoid_cast_add_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/matmul_elemwise_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/remove_fa_tensor_to_tuple_ops.h"
-#include "plugin/device/ascend/optimizer/ir_fusion_infer/moe_init_routing_dyn_quantv2.h"
+#include "plugin/device/ascend/optimizer/ir_fusion_infer/moe_init_routing_dyn_quantv2_fusion.h"
 #include "utils/phase.h"
 #include "backend/common/pass/ir_fusion/batchmatmul_reducescatter_alltoall_fusion.h"
 #include "backend/common/pass/ir_fusion/alltoall_allgather_batch_matmul_fusion.h"
