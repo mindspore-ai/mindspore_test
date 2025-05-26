@@ -256,7 +256,8 @@ Status SharedMemoryQueue::Serialize(const TensorRow &in_row) {
       } else {
         auto ret_memcpy = memcpy(reinterpret_cast<char *>(shm_addr_) + offset,
                                  reinterpret_cast<char *>(item->GetMutableBuffer()), data_len);
-        CHECK_FAIL_RETURN_UNEXPECTED(ret_memcpy == item->GetMutableBuffer(), "memcpy the data type of Tensor failed.");
+        CHECK_FAIL_RETURN_UNEXPECTED(ret_memcpy == reinterpret_cast<char *>(shm_addr_) + offset,
+                                     "memcpy the data type of Tensor failed.");
       }
       offset += static_cast<uint64_t>(data_len);
     }
