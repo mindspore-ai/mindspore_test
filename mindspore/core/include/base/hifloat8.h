@@ -221,7 +221,7 @@ class HiFloat8 {
     Union32 f;
     f.f = f32;
 
-    if ((f.u && f32_value_mask) == f32_zero_value) {
+    if ((f.u & f32_value_mask) == f32_zero_value) {
       return zero_value;
     }
 
