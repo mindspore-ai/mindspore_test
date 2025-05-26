@@ -49,16 +49,36 @@ import mindspore.common._monad as monad
 __all__ = ['Parameter', 'ParameterTuple']
 
 PARAMETER_NAME_DEFAULT = "Parameter"
+_GENERATED_PARAMETER_NAME_PREFIX = PARAMETER_NAME_DEFAULT + '#'
 PARAMETER_NAME_PREFIX_MAX_LEN = 1024
+
+_PARAMETER_NAME_ID = 0
+
+
+def _generate_parameter_name():
+    global _PARAMETER_NAME_ID
+    name = _GENERATED_PARAMETER_NAME_PREFIX + str(_PARAMETER_NAME_ID)
+    _PARAMETER_NAME_ID += 1
+    return name
+
+
+def _is_parameter_generated(param_name):
+    if not param_name or not isinstance(param_name, str):
+        return False
+    return param_name.startswith(_GENERATED_PARAMETER_NAME_PREFIX)
+
 
 # Global variable for parameter unique key.
 _GLOBAL_PARAMETER_KEY = -1
 
 # Global variable to mark the hook of parameter is updated
 _parameter_hook_updated = True
+
+
 def set_parameter_hook_updated(value):
     global _parameter_hook_updated
     _parameter_hook_updated = value
+
 
 def parameter_hook_updated():
     global _parameter_hook_updated
@@ -496,11 +516,11 @@ class Parameter(Tensor_):
                 the default value `PARAMETER_NAME_DEFAULT` is used.
         """
         if name_ is None:
-            name_ = PARAMETER_NAME_DEFAULT
+            name_ = _generate_parameter_name()
         elif isinstance(name_, str):
             name_ = name_.strip()
             if name_ == '':
-                name_ = PARAMETER_NAME_DEFAULT
+                name_ = _generate_parameter_name()
             if len(name_) > PARAMETER_NAME_PREFIX_MAX_LEN:
                 raise ValueError("The length of the '{}' name should be less than {}.".
                                  format(name_, PARAMETER_NAME_PREFIX_MAX_LEN))
@@ -938,7 +958,6 @@ class Parameter(Tensor_):
             init_data_args += (slice_index, layout[2], layout[5])
         return init_data_args
 
-
     def init_data(self, layout=None, set_sliced=False):
         """
         Initialize the parameter's data.
@@ -1029,7 +1048,6 @@ class Parameter(Tensor_):
             >>> x._offload()
         """
         return Tensor_._offload(self, True)
-
 
     def _load(self):
         r"""
@@ -1159,7 +1177,6 @@ class ParameterTuple(tuple):
                 _clone_hash_table(x.name, x.key, x1.name, x1.key)
                 _insert_accumu_init_info(x1.name, init_to_value(init))
         return ParameterTuple(new)
-
 
     def __parameter_tuple__(self):
         """For parse check."""
