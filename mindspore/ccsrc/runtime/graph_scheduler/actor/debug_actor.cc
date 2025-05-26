@@ -51,6 +51,10 @@ void DebugActor::DebugPreLaunch(const AnfNodePtr &node, const std::vector<Kernel
   MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(op_context);
 }
+namespace {
+static const char kTensorDumpFlag[] = "td_flag";
+static const char kNameSeparator[] = "|";
+}  // namespace
 
 /*
  * Feature group: Dump, Online debugger.
@@ -159,10 +163,24 @@ void DebugActor::AscendKbkDump(const CNodePtr &cnode, const std::vector<KernelTe
       read_data = CheckReadData(cnode);
     }
     if ((read_data && e2e_dump_enabled) || !sync_ok) {
+      string scope_name;
+      if (common::AnfAlgo::HasNodeAttr(kTensorDumpFlag, cnode)) {
+        scope_name = cnode->fullname_with_scope();
+        auto first_input = cnode->input(1);
+        MS_EXCEPTION_IF_NULL(first_input);
+        auto input_value = GetValueNode<StringImmPtr>(first_input);
+        MS_EXCEPTION_IF_NULL(input_value);
+        string input_str = input_value->value();
+        string new_scope_name = input_str + kNameSeparator + scope_name;
+        cnode->set_fullname_with_scope(new_scope_name);
+      }
       if (dump_json_parser.e2e_sync_dump_enabled()) {
         ReadDataAndDump(cnode, input_kernel_tensors, output_kernel_tensors, exec_order_, device_context, abnormal_dump);
       } else {
         DumpDataViaCallback(cnode, input_kernel_tensors, output_kernel_tensors, device_context);
+      }
+      if (common::AnfAlgo::HasNodeAttr(kTensorDumpFlag, cnode)) {
+        cnode->set_fullname_with_scope(scope_name);
       }
 
       if (!sync_ok) {
