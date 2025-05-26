@@ -1,7 +1,7 @@
 mindspore.Tensor.min
 ====================
 
-.. py:method:: mindspore.Tensor.min()
+.. py:method:: mindspore.Tensor.min() -> Tensor
 
     返回输入Tensor的最小值。
 
@@ -28,7 +28,7 @@ mindspore.Tensor.min
         - **TypeError** - 如果 `dim` 不是int类型。
         - **TypeError** - 如果输入Tensor的数据类型为Complex。
 
-    .. py:method:: mindspore.Tensor.min(axis=None, keepdims=False, *, initial=None, where=True, return_indices=False)
+    .. py:method:: mindspore.Tensor.min(axis=None, keepdims=False, *, initial=None, where=True, return_indices=False) -> Tensor
         :noindex:
 
     返回Tensor元素中的最小值或沿 `axis` 轴方向上的最小值。

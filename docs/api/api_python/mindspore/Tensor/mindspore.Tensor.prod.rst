@@ -1,7 +1,7 @@
 mindspore.Tensor.prod
 =====================
 
-.. py:method:: mindspore.Tensor.prod(dim=None, keepdim=False, dtype=None)
+.. py:method:: mindspore.Tensor.prod(dim=None, keepdim=False, dtype=None) -> Tensor
 
     默认情况下，使用指定维度的所有元素的乘积代替该维度的其他元素，以移除该维度。也可仅缩小该维度大小至1。 `keepdim` 控制输出和输入的维度是否相同。
 
@@ -23,7 +23,7 @@ mindspore.Tensor.prod
         - **TypeError** - `keepdim` 不是bool类型。
         - **ValueError** - `dim` 超出范围。
 
-    .. py:method:: mindspore.Tensor.prod(axis=None, keep_dims=False, dtype=None)
+    .. py:method:: mindspore.Tensor.prod(axis=None, keep_dims=False, dtype=None) -> Tensor
         :noindex:
 
     详情请参考 :func:`mindspore.ops.prod`。

@@ -1,7 +1,7 @@
 mindspore.Tensor.scatter\_
 ==========================
 
-.. py:method:: mindspore.Tensor.scatter_(dim, index, src)
+.. py:method:: mindspore.Tensor.scatter_(dim, index, src) -> Tensor
 
     根据 `index` 使用 `src` 中的值更新当前张量 `self` 。
 
@@ -44,7 +44,7 @@ mindspore.Tensor.scatter\_
         - **RuntimeError** - 存在一个维度 `d` 使得 `index.size(d) > src.size(d)`。
         - **RuntimeError** - 存在一个维度 `d` 使得 `index.size(d) > self.size(d)`。
 
-    .. py:method:: mindspore.Tensor.scatter_(dim, index, src, *, reduce)
+    .. py:method:: mindspore.Tensor.scatter_(dim, index, src, *, reduce) -> Tensor
         :noindex:
 
     根据 `index` 使用 `src` 中的值更新当前张量 `self` 。
@@ -91,7 +91,7 @@ mindspore.Tensor.scatter\_
         - **RuntimeError** - 存在一个维度 `d` 使得 `index.size(d) > src.size(d)`。
         - **RuntimeError** - 存在一个维度 `d` 使得 `index.size(d) > self.size(d)`。
 
-    .. py:method:: mindspore.Tensor.scatter_(dim, index, value)
+    .. py:method:: mindspore.Tensor.scatter_(dim, index, value) -> Tensor
         :noindex:
 
     根据 `index` 使用 `value` 更新当前张量 `self` 。
@@ -129,7 +129,7 @@ mindspore.Tensor.scatter\_
         - **RuntimeError** - `index` 不为空且秩与 `self` 不一致。
         - **RuntimeError** - 存在一个维度 `d` 使得 `index.size(d) > self.size(d)`。
 
-    .. py:method:: mindspore.Tensor.scatter_(dim, index, value, *, reduce)
+    .. py:method:: mindspore.Tensor.scatter_(dim, index, value, *, reduce) -> Tensor
         :noindex:
 
     根据 `index` 使用 `value` 更新当前张量 `self` 。

@@ -1,7 +1,7 @@
 mindspore.Tensor.new_full
 ==========================
 
-.. py:method:: mindspore.Tensor.new_full(size, fill_value, *, dtype=None)
+.. py:method:: mindspore.Tensor.new_full(size, fill_value, *, dtype=None) -> Tensor
 
     返回一个大小为 `size` 的Tensor，填充值为 `fill_value`。
 

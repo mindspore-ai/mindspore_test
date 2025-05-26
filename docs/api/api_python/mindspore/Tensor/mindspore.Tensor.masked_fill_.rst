@@ -1,7 +1,7 @@
 mindspore.Tensor.masked_fill\_
 ===============================
 
-.. py:method:: mindspore.Tensor.masked_fill_(mask, value)
+.. py:method:: mindspore.Tensor.masked_fill_(mask, value) -> Tensor
 
     :func:`mindspore.Tensor.masked_fill` 的in-place版本。
 

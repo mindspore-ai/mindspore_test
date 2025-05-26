@@ -1,7 +1,7 @@
 mindspore.Tensor.new_ones
 ==========================
 
-.. py:method:: mindspore.Tensor.new_ones(size, dtype=None)
+.. py:method:: mindspore.Tensor.new_ones(size, dtype=None) -> Tensor
 
     返回一个大小为 `size` 的Tensor，填充值为1。
 

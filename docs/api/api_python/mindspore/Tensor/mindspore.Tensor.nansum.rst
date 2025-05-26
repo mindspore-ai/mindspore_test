@@ -1,7 +1,7 @@
 mindspore.Tensor.nansum
 =======================
 
-.. py:method:: mindspore.Tensor.nansum(dim=None, keepdim=False, *, dtype=None)
+.. py:method:: mindspore.Tensor.nansum(dim=None, keepdim=False, *, dtype=None) -> Tensor
 
     计算输入Tensor指定维度元素的和，将非数字(NaNs)处理为零。
 
@@ -31,7 +31,7 @@ mindspore.Tensor.nansum
         - **TypeError** - `self` 的数据类型或 `dtype` 是complex类型。
         - **ValueError** - `dim` 不在[-rank(self), rank(self))。
 
-    .. py:method:: mindspore.Tensor.nansum(axis=None, keepdims=False, *, dtype=None)
+    .. py:method:: mindspore.Tensor.nansum(axis=None, keepdims=False, *, dtype=None) -> Tensor
         :noindex:
 
     计算输入Tensor指定维度元素的和，将非数字(NaNs)处理为零。

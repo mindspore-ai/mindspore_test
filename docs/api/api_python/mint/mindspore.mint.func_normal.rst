@@ -1,7 +1,7 @@
 mindspore.mint.normal
 =======================
 
-.. py:function:: mindspore.mint.normal(mean, std, *, generator=None)
+.. py:function:: mindspore.mint.normal(mean, std, *, generator=None) -> Tensor
 
     根据正态（高斯）随机数分布生成随机数。
 
@@ -19,7 +19,7 @@ mindspore.mint.normal
     异常：
         - **TypeError** - 如果 `mean` 或 `std` 不是Union[float, Tensor]。
     
-    .. py:function:: mindspore.mint.normal(mean, std=1.0)
+    .. py:function:: mindspore.mint.normal(mean, std=1.0) -> Tensor
         :noindex:
 
     与上面接口类似。但所有生成的元素共享同一个标准差。
@@ -31,7 +31,7 @@ mindspore.mint.normal
     返回：
         Tensor，输出tensor的shape和 `mean` 的shape相同。
 
-    .. py:function:: mindspore.mint.normal(mean, std, size)
+    .. py:function:: mindspore.mint.normal(mean, std, size) -> Tensor
         :noindex:
 
     与上面接口类似。但所有生成的元素共享同一个均值和标准差。输出Tensor的大小由 `size` 指定。

@@ -1,7 +1,7 @@
 mindspore.Tensor.median
 =======================
 
-.. py:method:: mindspore.Tensor.median(axis=-1, keepdims=False)
+.. py:method:: mindspore.Tensor.median(axis=-1, keepdims=False) -> Tensor
 
     输出Tensor指定维度上的中值与索引。
 
@@ -21,7 +21,7 @@ mindspore.Tensor.median
         - **TypeError** - `keepdims` 不是bool。
         - **ValueError** - `axis` 的范围不在[-dims, dims - 1]， `dims` 表示 `x` 的维度长度。
 
-    .. py:method:: mindspore.Tensor.median()
+    .. py:method:: mindspore.Tensor.median() -> Tensor
         :noindex:
     
     返回输入的中位数。
@@ -29,7 +29,7 @@ mindspore.Tensor.median
     返回：
         - **y** (Tensor) - 输出中值。
 
-    .. py:method:: mindspore.Tensor.median(dim=-1, keepdim=False)
+    .. py:method:: mindspore.Tensor.median(dim=-1, keepdim=False) -> Tensor
         :noindex:
     
     输出指定维度 `dim` 上的中值与其对应的索引。如果 `dim` 为None，则计算Tensor中所有元素的中值。

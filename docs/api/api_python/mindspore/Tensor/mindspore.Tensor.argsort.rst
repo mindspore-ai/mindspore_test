@@ -1,7 +1,7 @@
 mindspore.Tensor.argsort
 =========================
 
-.. py:method:: mindspore.Tensor.argsort(axis=-1, descending=False)
+.. py:method:: mindspore.Tensor.argsort(axis=-1, descending=False) -> Tensor
 
     按指定顺序对 `self` 沿给定维度进行排序，并返回排序后的索引。
 
@@ -12,7 +12,7 @@ mindspore.Tensor.argsort
     返回：
         Tensor，排序后 `self` 的索引。数据类型为int32。
 
-    .. py:method:: mindspore.Tensor.argsort(dim=-1, descending=False, stable=False)
+    .. py:method:: mindspore.Tensor.argsort(dim=-1, descending=False, stable=False) -> Tensor
         :noindex:
 
     按指定顺序对 `self` 沿给定维度进行排序，并返回排序后的索引。

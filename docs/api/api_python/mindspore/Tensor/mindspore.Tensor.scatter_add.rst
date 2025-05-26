@@ -1,7 +1,7 @@
 mindspore.Tensor.scatter_add
 ============================
 
-.. py:method:: mindspore.Tensor.scatter_add(dim, index, src)
+.. py:method:: mindspore.Tensor.scatter_add(dim, index, src) -> Tensor
 
     将 `src` 中所有的元素添加到 `self` 中 `index` 指定的索引处。
     其中 `dim` 控制scatter_add操作的轴。
@@ -35,7 +35,7 @@ mindspore.Tensor.scatter_add
         - **ValueError** - 除了 `dim` 指定的维度， `index` 的任意维的size大于 `self` 对应维度的size。
         - **ValueError** - `src` 任意维度size小于 `index` 对应维度的size。
 
-    .. py:method:: mindspore.Tensor.scatter_add(indices, updates)
+    .. py:method:: mindspore.Tensor.scatter_add(indices, updates) -> Tensor
         :noindex:
     
     根据指定的更新值 `updates` 和输入索引 `indices` ，通过相加运算更新输入Tensor的值。当同一索引有不同值时，更新的结果将是所有值的总和。此操作与 :func:`mindspore.ops.scatter_nd_add` 类似，但更新后的结果是返回一个新的输出Tensor，而不是直接更新 `self` 。

@@ -1,7 +1,7 @@
 mindspore.Tensor.isclose
 ========================
 
-.. py:method:: mindspore.Tensor.isclose(other, rtol=1e-05, atol=1e-08, equal_nan=False)
+.. py:method:: mindspore.Tensor.isclose(other, rtol=1e-05, atol=1e-08, equal_nan=False) -> Tensor
 
     返回一个bool类型的Tensor，表示 `input` 的每个元素与 `other` 的对应元素在给定容忍度内是否“接近”。其中“接近”的数学公式为：
 
@@ -17,7 +17,7 @@ mindspore.Tensor.isclose
     返回：
         Tensor。shape与广播后的shape相同，数据类型是bool。
 
-    .. py:method:: mindspore.Tensor.isclose(x2, rtol=1e-05, atol=1e-08, equal_nan=False)
+    .. py:method:: mindspore.Tensor.isclose(x2, rtol=1e-05, atol=1e-08, equal_nan=False) -> Tensor
         :noindex:
 
     返回一个bool类型的Tensor，表示 `input` 的每个元素与 `x2` 的对应元素在给定容忍度内是否“接近”。其中“接近”的数学公式为：

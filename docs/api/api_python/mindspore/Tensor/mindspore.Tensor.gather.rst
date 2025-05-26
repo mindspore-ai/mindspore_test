@@ -1,7 +1,7 @@
 mindspore.Tensor.gather
 =======================
 
-.. py:method:: mindspore.Tensor.gather(dim, index)
+.. py:method:: mindspore.Tensor.gather(dim, index) -> Tensor
 
     返回输入Tensor在指定 `index` 对应的元素组成的切片。公式如下：
 
@@ -31,7 +31,7 @@ mindspore.Tensor.gather
         - **ValueError** - `index` 的值不在有效范围。
         - **TypeError** - `index` 的数据类型非法。
 
-    .. py:method:: mindspore.Tensor.gather(input_indices, axis, batch_dims=0)
+    .. py:method:: mindspore.Tensor.gather(input_indices, axis, batch_dims=0) -> Tensor
         :noindex:
 
     返回输入Tensor在指定 `axis` 上 `input_indices` 索引对应的元素组成的切片。

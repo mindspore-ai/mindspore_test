@@ -1,7 +1,7 @@
 mindspore.Tensor.any
 ====================
 
-.. py:method:: mindspore.Tensor.any(axis=None, keep_dims=False)
+.. py:method:: mindspore.Tensor.any(axis=None, keep_dims=False) -> Tensor
 
     检查指定维度上是否含有 `True`。
 
@@ -12,7 +12,7 @@ mindspore.Tensor.any
     返回：
         Tensor
 
-    .. py:method:: mindspore.Tensor.any(dim=None, keepdim=False)
+    .. py:method:: mindspore.Tensor.any(dim=None, keepdim=False) -> Tensor
         :noindex:
 
     检查指定维度上是否含有 `True`。

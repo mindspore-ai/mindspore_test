@@ -1,7 +1,7 @@
 mindspore.mint.nn.functional.pixel_shuffle
 ==========================================
 
-.. py:function:: mindspore.mint.nn.functional.pixel_shuffle(input, upscale_factor)
+.. py:function:: mindspore.mint.nn.functional.pixel_shuffle(input, upscale_factor) -> Tensor
 
     根据上采样系数重排Tensor中的元素。
 

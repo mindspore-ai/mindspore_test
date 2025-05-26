@@ -1,7 +1,7 @@
 mindspore.mint.remainder
 ========================
 
-.. py:function:: mindspore.mint.remainder(input, other)
+.. py:function:: mindspore.mint.remainder(input, other) -> Tensor
 
     逐元素计算 `input` 除以 `other` 后的余数。结果与除数同号且绝对值小于除数的绝对值。
 

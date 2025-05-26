@@ -1,7 +1,7 @@
 mindspore.Tensor.dot
 ====================
 
-.. py:method:: mindspore.Tensor.dot(other)
+.. py:method:: mindspore.Tensor.dot(other) -> Tensor
 
     计算两个1DTensor的点积。
 

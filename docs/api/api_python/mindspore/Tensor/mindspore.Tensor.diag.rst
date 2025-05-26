@@ -1,11 +1,11 @@
 mindspore.Tensor.diag
 =====================
 
-.. py:method:: mindspore.Tensor.diag()
+.. py:method:: mindspore.Tensor.diag() -> Tensor
 
     详情请参考 :func:`mindspore.ops.diag`。
 
-    .. py:method:: mindspore.Tensor.diag(diagonal=0)
+    .. py:method:: mindspore.Tensor.diag(diagonal=0) -> Tensor
         :noindex:
 
     如果 `input` 是向量（1-D 张量），则返回一个二维张量，其中 input 的元素作为对角线。

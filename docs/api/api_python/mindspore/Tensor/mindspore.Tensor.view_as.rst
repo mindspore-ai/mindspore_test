@@ -1,7 +1,7 @@
 mindspore.Tensor.view_as
 ========================
 
-.. py:method:: mindspore.Tensor.view_as(other)
+.. py:method:: mindspore.Tensor.view_as(other) -> Tensor
 
     根据 `other` 的shape改变原 `self` Tensor的shape。
 

@@ -1,7 +1,7 @@
 mindspore.Tensor.matmul
 =======================
 
-.. py:method:: mindspore.Tensor.matmul(tensor2)
+.. py:method:: mindspore.Tensor.matmul(tensor2) -> Tensor
 
     计算两个数组的矩阵乘积。
 

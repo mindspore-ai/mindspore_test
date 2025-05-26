@@ -1,7 +1,7 @@
 mindspore.mint.randint
 ======================
 
-.. py:function:: mindspore.mint.randint(low=0, high, size, *, generator=None, dtype=None)
+.. py:function:: mindspore.mint.randint(low=0, high, size, *, generator=None, dtype=None) -> Tensor
 
     返回一个Tensor，shape和dtype由输入决定，其元素为 [ `low` , `high` ) 区间的随机整数。
 

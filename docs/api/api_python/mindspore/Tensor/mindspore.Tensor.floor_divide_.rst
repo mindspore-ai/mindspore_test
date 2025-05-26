@@ -1,7 +1,7 @@
 mindspore.Tensor.floor_divide\_
 ===============================
 
-.. py:method:: mindspore.Tensor.floor_divide_(other)
+.. py:method:: mindspore.Tensor.floor_divide_(other) -> Tensor
 
     按元素将 `self` Tensor除以 `other` Tensor，并向下取整。
 

@@ -1,7 +1,7 @@
 mindspore.Tensor.transpose
 ==========================
 
-.. py:method:: mindspore.Tensor.transpose(dim0, dim1)
+.. py:method:: mindspore.Tensor.transpose(dim0, dim1) -> Tensor
 
     通过给定的维度对输入Tensor进行转置。
 
@@ -19,7 +19,7 @@ mindspore.Tensor.transpose
         - **TypeError** - 如果 `dim0` 或者 `dim1` 的数据类型不是int。
         - **ValueError** - 如果 `dim0` 或者 `dim1` 的数值超出了范围：:math:`[-ndim, ndim-1]` 。
 
-    .. py:method:: mindspore.Tensor.transpose(*axes)
+    .. py:method:: mindspore.Tensor.transpose(*axes) -> Tensor
         :noindex:
 
     根据指定的排列对输入的Tensor进行数据重排。

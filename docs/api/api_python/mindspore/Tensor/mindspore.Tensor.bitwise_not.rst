@@ -1,7 +1,7 @@
 mindspore.Tensor.bitwise_not
 =============================
 
-.. py:method:: mindspore.Tensor.bitwise_not()
+.. py:method:: mindspore.Tensor.bitwise_not() -> Tensor
 
     逐元素对当前Tensor进行位取反。
 

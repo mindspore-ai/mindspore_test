@@ -1,7 +1,7 @@
 mindspore.Tensor.select
 =======================
 
-.. py:method:: mindspore.Tensor.select(dim, index)
+.. py:method:: mindspore.Tensor.select(dim, index) -> Tensor
 
     沿着选定的维度在给定的索引处进行切片。
 
@@ -15,7 +15,7 @@ mindspore.Tensor.select
     返回：
         Tensor。
 
-    .. py:method:: mindspore.Tensor.select(condition, y)
+    .. py:method:: mindspore.Tensor.select(condition, y) -> Tensor
         :noindex:
 
     根据条件判断Tensor中的元素的值，来决定输出中的相应元素是从 `self` （如果元素值为True）还是从 `y` （如果元素值为False）中选择。

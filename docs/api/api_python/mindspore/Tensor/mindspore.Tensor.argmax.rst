@@ -1,7 +1,7 @@
 mindspore.Tensor.argmax
 =======================
 
-.. py:method:: mindspore.Tensor.argmax(axis=None, keepdims=False)
+.. py:method:: mindspore.Tensor.argmax(axis=None, keepdims=False) -> Tensor
 
     返回tensor在指定轴上的最大值索引。
 
@@ -12,7 +12,7 @@ mindspore.Tensor.argmax
     返回：
         Tensor
 
-    .. py:method:: mindspore.Tensor.argmax(dim=None, keepdim=False)
+    .. py:method:: mindspore.Tensor.argmax(dim=None, keepdim=False) -> Tensor
         :noindex:
 
     返回tensor在指定轴上的最大值索引。
