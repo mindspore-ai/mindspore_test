@@ -188,7 +188,6 @@ class BACKEND_EXPORT MemoryTrackerEnabled : public MemTracker {
 
   bool IsEnabled() override { return true; }
 
-  std::tuple<std::string, std::string, std::string> GetPath(size_t rank_id);
   MemoryTrackerEnabled(const MemoryTrackerEnabled &) = delete;
   MemoryTrackerEnabled &operator=(const MemoryTrackerEnabled &) = delete;
 
@@ -200,6 +199,8 @@ class BACKEND_EXPORT MemoryTrackerEnabled : public MemTracker {
                         const std::string &file_name, size_t line_num);
   std::map<DeviceMemPtr, MemBlockInfoPtr>::iterator FindMemBlock(DeviceMemPtr device_ptr, const std::string &file_name,
                                                                  size_t line_num);
+  void DumpMemoryBlock(size_t rank_id);
+  void DumpTaskFile(size_t rank_id);
   std::mutex mutex_;
   int64_t time_stamp_ = 0;
   int64_t nested_num_ = 0;

@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <cstdint>
 #include <fstream>
 #include <numeric>
 
@@ -662,10 +663,10 @@ std::vector<MemBuf *> AbstractDynamicMemPool::DoFreePartTensorMems(const std::ve
     }
   }
 
-  std::set<size_t> processed_keep_addrs;
+  std::set<std::uintptr_t> processed_keep_addrs;
   for (size_t i = 0; i < keep_addrs.size(); i++) {
     auto keep_addr = keep_addrs[i];
-    size_t keep_addr_to_size = reinterpret_cast<size_t>(keep_addr);
+    std::uintptr_t keep_addr_to_size = reinterpret_cast<std::uintptr_t>(keep_addr);
     if (processed_keep_addrs.count(keep_addr_to_size) > 0) {
       MS_LOG(INFO) << "Duplicate keep address : " << keep_addr << ".";
       continue;
@@ -679,10 +680,10 @@ std::vector<MemBuf *> AbstractDynamicMemPool::DoFreePartTensorMems(const std::ve
     auto iter = --it;
     auto mem_buf = iter->second.first;
     auto allocator = iter->second.second;
-    size_t base_start = reinterpret_cast<size_t>(mem_buf->addr_);
-    size_t base_end = base_start + mem_buf->size_;
-    size_t keep_start = keep_addr_to_size;
-    size_t keep_end = keep_start + keep_addr_sizes[i];
+    std::uintptr_t base_start = reinterpret_cast<std::uintptr_t>(mem_buf->addr_);
+    std::uintptr_t base_end = base_start + mem_buf->size_;
+    std::uintptr_t keep_start = keep_addr_to_size;
+    std::uintptr_t keep_end = keep_start + keep_addr_sizes[i];
     // Since free part tensor mem may double free keep addr, continue for these keep addrs.
     if (keep_start >= base_end) {
       MS_LOG(WARNING) << "Check range error, base start : " << base_start << ", base end : " << base_end
@@ -703,7 +704,7 @@ std::vector<MemBuf *> AbstractDynamicMemPool::DoFreePartTensorMems(const std::ve
         new MemBuf(keep_addr_sizes[i], keep_addr, mem_buf->stream_id_, mem_buf->mem_block_, mem_buf->status_);
       keep_mem_buf->Link(mem_buf, mem_buf->next_);
       (void)addr_mem_buf_allocators_.emplace(keep_addr, std::make_pair(keep_mem_buf, allocator));
-      size_t prev_remain_size = keep_start - base_start;
+      std::uintptr_t prev_remain_size = keep_start - base_start;
       mem_buf->size_ = prev_remain_size;
     }
     (void)mem_bufs.emplace_back(keep_mem_buf);
