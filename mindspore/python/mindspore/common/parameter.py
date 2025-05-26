@@ -55,14 +55,17 @@ PARAMETER_NAME_PREFIX_MAX_LEN = 1024
 _GLOBAL_PARAMETER_KEY = -1
 
 # Global variable to mark the hook of parameter is updated
-_parameter_hook_updated = True
+_PARAMETER_HOOK_UPDATED = True
+
+
 def set_parameter_hook_updated(value):
-    global _parameter_hook_updated
-    _parameter_hook_updated = value
+    global _PARAMETER_HOOK_UPDATED
+    _PARAMETER_HOOK_UPDATED = value
+
 
 def parameter_hook_updated():
-    global _parameter_hook_updated
-    return _parameter_hook_updated
+    global _PARAMETER_HOOK_UPDATED
+    return _PARAMETER_HOOK_UPDATED
 
 
 def _is_in_auto_parallel_mode():
