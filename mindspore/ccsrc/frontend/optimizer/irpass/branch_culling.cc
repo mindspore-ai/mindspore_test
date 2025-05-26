@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2021 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,8 +29,13 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/hash_map.h"
 #include "ir/func_graph.h"
+#include "ir/func_graph_cloner.h"
 #include "frontend/operator/ops.h"
+#include "frontend/optimizer/irpass.h"
+#include "frontend/optimizer/pattern_matcher.h"
+#include "pipeline/jit/ps/parse/resolve.h"
 #include "include/common/utils/convert_utils.h"
+#include "include/common/utils/utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
@@ -641,6 +646,43 @@ void ConvertSwitchReplacement::TransformSwitchBranchReplace(const AnfNodePtr &no
   (void)fg->manager()->Replace(node, new_node);
 }
 
+AnfNodePtr SwitchSimplify::operator()(const OptimizerPtr &, const AnfNodePtr &node) {
+  PatternNode<AnfNodePtr> cond;
+  PatternNode<AnfNodePtr> true_br;
+  PatternNode<AnfNodePtr> false_br;
+  auto SwitchSimplLambda = [&node, &cond, &true_br, &false_br]() -> AnfNodePtr {
+    auto value_ptr = GetValueNode(cond.GetNode(node));
+    bool cond_value = false;
+    if (value_ptr->isa<BoolImm>()) {
+      cond_value = GetValue<bool>(value_ptr);
+    } else {
+      MS_LOG_WITH_NODE(EXCEPTION, node) << "The condition of branch must be a bool tensor value or a bool scalar value,"
+                                        << " not support this condition value: " << value_ptr->ToString();
+    }
+
+    MS_LOG(DEBUG) << "condition value: " << value_ptr->ToString() << ", cond: " << cond_value
+                  << ", node: " << node->DebugString();
+    AnfNodePtr branch_node;
+    if (cond_value) {
+      branch_node = true_br.GetNode(node);
+    } else {
+      branch_node = false_br.GetNode(node);
+    }
+    auto fg = GetValuePtr<FuncGraph>(branch_node);
+    if (fg != nullptr) {
+      MS_LOG(DEBUG) << "No recursive, " << fg->ToString();
+      fg->set_flag(FUNC_GRAPH_FLAG_NO_RECURSIVE, true);
+    }
+    return branch_node;
+  };
+
+  auto IsDeterminateCondition = [](const AnfNodePtr &node) -> bool { return IsValueNode<BoolImm>(node); };
+  MATCH_REPLACE_LAMBDA_IF(node, PPrimitive(prim::kPrimSwitch, cond, true_br, false_br), SwitchSimplLambda,
+                          cond.CheckFunc(IsDeterminateCondition, node));
+
+  return nullptr;
+}
+
 AnfNodePtr CompareSwitchSimplify::operator()(const OptimizerPtr &, const AnfNodePtr &node) {
   PatternNode<AnfNodePtr> cond;
   PatternNode<AnfNodePtr> true_br;
@@ -698,6 +740,64 @@ AnfNodePtr CompareSwitchSimplify::operator()(const OptimizerPtr &, const AnfNode
   MATCH_REPLACE_LAMBDA_IF(node, PPrimitive(prim::kPrimSwitch, cond, true_br, false_br), CompareSwitchSimplifyLambda,
                           cond.CheckFunc(ConstantCompareLambda, node));
 
+  return nullptr;
+}
+
+AnfNodePtr FloatTupleGetItemSwitch::operator()(const OptimizerPtr &, const AnfNodePtr &node) {
+  PatternNode<AnfNodePtr> cond;
+  PatternNode<AnfNodePtr> true_br;
+  PatternNode<AnfNodePtr> false_br;
+  PatternNode<AnfNodePtr> x;
+  MATCH_REPLACE_IF(node, PPrimitive(prim::kPrimTupleGetItem, PPrimitive(prim::kPrimSwitch, cond, true_br, false_br), x),
+                   PPrimitive(prim::kPrimSwitch, cond, PPrimitive(prim::kPrimTupleGetItem, true_br, x),
+                              PPrimitive(prim::kPrimTupleGetItem, false_br, x)),
+                   x.CheckFunc(IsVNode, node));
+  return nullptr;
+}
+
+AnfNodePtr FloatEnvironGetSwitch::operator()(const OptimizerPtr &, const AnfNodePtr &node) {
+  PatternNode<AnfNodePtr> cond;
+  PatternNode<AnfNodePtr> true_br;
+  PatternNode<AnfNodePtr> false_br;
+  PatternNode<AnfNodePtr> x;
+  PatternNode<AnfNodePtr> x2;
+  MATCH_REPLACE(node, PPrimitive(prim::kPrimEnvironGet, PPrimitive(prim::kPrimSwitch, cond, true_br, false_br), x, x2),
+                PPrimitive(prim::kPrimSwitch, cond, PPrimitive(prim::kPrimEnvironGet, true_br, x, x2),
+                           PPrimitive(prim::kPrimEnvironGet, false_br, x, x2)));
+
+  return nullptr;
+}
+
+bool ConvertSwitchReplacement::operator()(const FuncGraphPtr &root, const OptimizerPtr &) const {
+  auto manager = root->manager();
+  MS_EXCEPTION_IF_NULL(manager);
+  auto all_nodes = manager->all_nodes();
+
+  bool change = false;
+  for (auto &node : all_nodes) {
+    if (CheckSwitchWrapNode(node)) {
+      TransformSwitchBranchReplace(node);
+      change = true;
+    }
+  }
+  return change;
+}
+
+AnfNodePtr ExchangeSwitchDependValue::operator()(const OptimizerPtr &, const AnfNodePtr &node) {
+  if (!node->isa<CNode>() || node->func_graph() == nullptr) {
+    return nullptr;
+  }
+  ScopePtr scope = node->cast<CNodePtr>()->scope();
+  ScopeGuard scope_guard(scope);
+
+  PatternNode<AnfNodePtr> cond;
+  PatternNode<AnfNodePtr> true_br;
+  PatternNode<AnfNodePtr> false_br;
+  PatternNode<AnfNodePtr> v;
+  PatternNode<AnfNodePtr> x;
+  MATCH_REPLACE_IF(node, PPrimitive(prim::kPrimSwitch, PPrimitive(prim::kPrimDepend, v, x), true_br, false_br),
+                   PPrimitive(prim::kPrimDepend, PPrimitive(prim::kPrimSwitch, v, true_br, false_br), x),
+                   IsVNode(v.GetNode(node)));
   return nullptr;
 }
 }  // namespace irpass

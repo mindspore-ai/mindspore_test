@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2022 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,10 @@
 #ifndef MINDSPORE_CCSRC_FRONTEND_OPTIMIZER_IRPASS_H_
 #define MINDSPORE_CCSRC_FRONTEND_OPTIMIZER_IRPASS_H_
 
-#include <memory>
-
-#include "frontend/optimizer/optimizer.h"
-#include "mindspore/ops/op_def/structure_ops.h"
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "base/base.h"
+#include "frontend/ir/primitive_py.h"
 #include "frontend/optimizer/opt.h"
-#include "frontend/optimizer/anf_visitor.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "ops/op_def.h"
 
 namespace mindspore {

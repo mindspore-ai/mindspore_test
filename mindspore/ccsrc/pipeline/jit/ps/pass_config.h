@@ -29,6 +29,10 @@
 
 namespace mindspore {
 namespace opt {
+
+bool FilterPass(const std::string &pass_key);
+void UpdateRunningPasses(const std::string &pass_key);
+
 class FRONTEND_EXPORT PassConfigure {
  public:
   void Clear() {

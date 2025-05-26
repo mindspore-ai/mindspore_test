@@ -31,6 +31,7 @@
 #include "ir/value.h"
 #include "ir/map_tensor.h"
 #include "ir/func_graph_cloner.h"
+#include "pipeline/jit/ps/action.h"
 #include "pipeline/jit/ps/fallback.h"
 #include "pipeline/jit/ps/parse/data_converter.h"
 #include "pipeline/jit/ps/parse/parse.h"

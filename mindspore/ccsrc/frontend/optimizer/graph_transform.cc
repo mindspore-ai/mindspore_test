@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2022 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,12 +15,14 @@
  */
 
 #include "frontend/optimizer/graph_transform.h"
+
 #include <vector>
 #include <algorithm>
-#include "mindspore/ops/op_def/sequence_ops.h"
-#include "ir/graph_utils.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+
 #include "include/common/utils/anfalgo.h"
+#include "ir/graph_utils.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 /* namespace to support opt */

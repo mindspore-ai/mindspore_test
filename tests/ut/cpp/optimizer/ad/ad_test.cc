@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@
 #include "ir/func_graph_cloner.h"
 #include "utils/log_adapter.h"
 #include "ir/graph_utils.h"
+#include "pipeline/jit/ps/action.h"
 #include "pipeline/jit/ps/resource.h"
 #include "pipeline/jit/ps/parse/parse.h"
 #include "include/common/debug/draw.h"

@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2019-2022 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@
 
 #include <memory>
 
-#include "utils/hash_map.h"
 #include "include/common/utils/cse.h"
 
 #include "frontend/optimizer/optimizer.h"
@@ -32,13 +31,10 @@ namespace opt {
 // Common subexpression elimination.
 class CSEPass : public CSE {
  public:
-  explicit CSEPass(bool report_changes = true) : CSE(), report_changes_(report_changes) {}
+  explicit CSEPass(bool report_changes = true);
   virtual ~CSEPass() = default;
 
-  bool operator()(const FuncGraphPtr &root, const OptimizerPtr &optimizer) {
-    bool chg = Cse(root, optimizer->resource()->manager());
-    return chg && report_changes_;
-  }
+  bool operator()(const FuncGraphPtr &root, const OptimizerPtr &optimizer);
 
  private:
   bool report_changes_;

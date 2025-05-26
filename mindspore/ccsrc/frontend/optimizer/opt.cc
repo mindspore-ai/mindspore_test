@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2023 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@
 #include <algorithm>
 #include <utility>
 
+#include "include/common/debug/draw.h"
+#include "include/common/debug/anf_ir_dump.h"
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "utils/hash_map.h"
 #include "ir/anf.h"
