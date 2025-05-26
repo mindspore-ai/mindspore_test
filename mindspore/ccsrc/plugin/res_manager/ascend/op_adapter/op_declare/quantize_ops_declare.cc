@@ -62,7 +62,8 @@ INPUT_ATTR_MAP(QuantBatchMatmulV3) = {{7, ATTR_DESC(transpose_x1, AnyTraits<bool
                                       {8, ATTR_DESC(transpose_x2, AnyTraits<bool>())},
                                       {9, ATTR_DESC(dtype, AnyTraits<GEType>(), AnyTraits<int64_t>())}};
 OUTPUT_MAP(QuantBatchMatmulV3) = {{0, OUTPUT_DESC(y)}};
-REG_ADPT_DESC(QuantBatchMatmulV3, kNameQuantBatchMatmul, ADPT_DESC(QuantBatchMatmulV3))
+REG_ADPT_DESC(QuantBatchMatmul, kNameQuantBatchMatmul, ADPT_DESC(QuantBatchMatmulV3))
+REG_ADPT_DESC(QuantBatchMatmulV3, kNameQuantBatchMatmulV3, ADPT_DESC(QuantBatchMatmulV3))
 
 // QuantConv2D
 INPUT_MAP(QuantConv2D) = {
