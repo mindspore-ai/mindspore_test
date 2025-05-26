@@ -1,7 +1,7 @@
 mindspore.Tensor.all
 ====================
 
-.. py:method:: mindspore.Tensor.all(axis=None, keep_dims=False)
+.. py:method:: mindspore.Tensor.all(axis=None, keep_dims=False) -> Tensor
 
     检查指定维度上是否所有元素均为 `True`。
 
@@ -12,7 +12,7 @@ mindspore.Tensor.all
     返回：
         Tensor
 
-    .. py:method:: mindspore.Tensor.all(dim=None, keepdim=False)
+    .. py:method:: mindspore.Tensor.all(dim=None, keepdim=False) -> Tensor
         :noindex:
 
     检查指定维度上是否所有元素均为 `True`。

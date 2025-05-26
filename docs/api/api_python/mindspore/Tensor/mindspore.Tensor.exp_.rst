@@ -1,7 +1,7 @@
 mindspore.Tensor.exp\_
 ======================
 
-.. py:method:: mindspore.Tensor.exp_()
+.. py:method:: mindspore.Tensor.exp_() -> Tensor
 
     原地更新版本的 :func:`mindspore.Tensor.exp`。
 

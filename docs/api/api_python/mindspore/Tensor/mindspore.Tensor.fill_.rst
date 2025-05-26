@@ -1,7 +1,7 @@
 mindspore.Tensor.fill\_
 =========================
 
-.. py:method:: mindspore.Tensor.fill_(value)
+.. py:method:: mindspore.Tensor.fill_(value) -> Tensor
 
     用指定的值填充 `self` 。
 

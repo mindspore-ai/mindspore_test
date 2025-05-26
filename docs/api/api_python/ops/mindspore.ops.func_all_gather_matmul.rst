@@ -2,7 +2,7 @@ mindspore.ops.all_gather_matmul
 ===============================
 
 .. py:function:: mindspore.ops.all_gather_matmul(input, x2, group, world_size, *, bias=None, gather_index=0,\
-                                                 gather_output=True, comm_turn=0, trans_input=False, trans_x2=False)
+                                                 gather_output=True, comm_turn=0, trans_input=False, trans_x2=False) -> Tensor
 
     TP 切分场景下，实现 allgather 和 matmul 的融合，融合算子内部实现通信和计算流水并行。
 

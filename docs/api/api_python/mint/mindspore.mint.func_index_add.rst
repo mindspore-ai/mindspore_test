@@ -1,7 +1,7 @@
 mindspore.mint.index_add
 ========================
 
-.. py:function:: mindspore.mint.index_add(input, dim, index, source, alpha=1)
+.. py:function:: mindspore.mint.index_add(input, dim, index, source, alpha=1) -> Tensor
 
     根据 `index` 中的索引顺序，将 `alpha` 乘以 `source` 的元素累加到 `input` 中。例如，如果 ``dim == 0``，``index[i] == j``，且 ``alpha = -1``，那么 `source` 的第 ``i`` 行将从 `input` 的第 ``j`` 行中被减去。`source` 的第 `dim` 维度必须与 `index` 的长度相同，且所有其他维度必须与 `input` 匹配，否则将引发错误。对于一个三维张量，输出定义如下：
 

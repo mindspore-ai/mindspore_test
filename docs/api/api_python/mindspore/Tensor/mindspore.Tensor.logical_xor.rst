@@ -1,7 +1,7 @@
 mindspore.Tensor.logical_xor
 ============================
 
-.. py:method:: mindspore.Tensor.logical_xor(other)
+.. py:method:: mindspore.Tensor.logical_xor(other) -> Tensor
 
     逐元素计算两个Tensor的逻辑异或运算。
 

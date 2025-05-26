@@ -1,7 +1,7 @@
 mindspore.Tensor.remainder
 ===========================
 
-.. py:method:: mindspore.Tensor.remainder(other)
+.. py:method:: mindspore.Tensor.remainder(other) -> Tensor
 
     逐元素计算 `self` 除以 `other` 后的余数。结果与除数同号且绝对值小于除数的绝对值。
 
@@ -25,7 +25,7 @@ mindspore.Tensor.remainder
         - **TypeError** - 如果 `self` 和 `other` 不是以下类型之一：(Tensor, Tensor)，(Tensor, Number)，(Tensor, bool)，(Number, Tensor) 或 (bool, Tensor)。
         - **ValueError** - 如果 `self` 和 `other` 不能被广播。
 
-    .. py:method:: mindspore.Tensor.remainder(divisor)
+    .. py:method:: mindspore.Tensor.remainder(divisor) -> Tensor
         :noindex:
 
     逐元素计算第一个元素除以第二个元素的余数。

@@ -1,7 +1,7 @@
 mindspore.Tensor.max
 ====================
 
-.. py:method:: mindspore.Tensor.max()
+.. py:method:: mindspore.Tensor.max() -> Tensor
 
     返回输入Tensor的最大值。
 

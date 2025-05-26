@@ -1,7 +1,7 @@
 mindspore.mint.floor_divide
 ===========================
 
-.. py:function:: mindspore.mint.floor_divide(input, other)
+.. py:function:: mindspore.mint.floor_divide(input, other) -> Tensor
 
     按元素将第一个输入Tensor除以第二个输入Tensor，并向下取整。
 

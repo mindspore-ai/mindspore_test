@@ -1,7 +1,7 @@
 mindspore.mint.greater_equal
 ==============================
 
-.. py:function:: mindspore.mint.greater_equal(input, other)
+.. py:function:: mindspore.mint.greater_equal(input, other) -> Tensor
 
     按元素比较输入参数 :math:`input >= other` 的值，输出结果为bool值。
 

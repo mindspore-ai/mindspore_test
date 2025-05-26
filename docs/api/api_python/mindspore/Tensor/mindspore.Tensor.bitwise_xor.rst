@@ -1,7 +1,7 @@
 mindspore.Tensor.bitwise_xor
 ============================
 
-.. py:method:: mindspore.Tensor.bitwise_xor(other)
+.. py:method:: mindspore.Tensor.bitwise_xor(other) -> Tensor
 
     逐元素执行两个Tensor的异或运算。
 

@@ -1,7 +1,7 @@
 mindspore.Tensor.expand_as
 ==========================
 
-.. py:method:: mindspore.Tensor.expand_as(other)
+.. py:method:: mindspore.Tensor.expand_as(other) -> Tensor
 
     将输入张量的shape扩展为另一个输入张量的shape。
     输出张量的维度必须遵守广播规则，即输入张量的shape维度小于或者等于另一个输入张量的shape维度。
@@ -16,7 +16,7 @@ mindspore.Tensor.expand_as
         - **TypeError** - 如果另一个输入 `other` 不是张量。
         - **ValueError** - 如果 `self` 和 `other` 的shape不兼容。
 
-    .. py:method:: mindspore.Tensor.expand_as(x)
+    .. py:method:: mindspore.Tensor.expand_as(x) -> Tensor
         :noindex:
 
     将输入张量的维度扩展为目标张量的维度。

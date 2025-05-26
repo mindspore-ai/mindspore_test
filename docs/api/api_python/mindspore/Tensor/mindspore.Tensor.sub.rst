@@ -1,7 +1,7 @@
 mindspore.Tensor.sub
 ====================
 
-.. py:method:: mindspore.Tensor.sub(other, *, alpha=1)
+.. py:method:: mindspore.Tensor.sub(other, *, alpha=1) -> Tensor
 
     对 `other` 缩放 `alpha` 后与 `input` 相减。
 
@@ -27,7 +27,7 @@ mindspore.Tensor.sub
         - **TypeError** - 如果 `alpha` 是浮点类型，但是 `self` 和 `other` 却不是浮点类型。
         - **TypeError** - 如果 `alpha` 是bool类型，但是 `self` 和 `other` 却不是bool类型。
 
-    .. py:method:: mindspore.Tensor.sub(y)
+    .. py:method:: mindspore.Tensor.sub(y) -> Tensor
         :noindex:
 
     详情请参考 :func:`mindspore.ops.sub` 。

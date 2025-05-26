@@ -1,11 +1,11 @@
 mindspore.Tensor.std
 ====================
 
-.. py:method:: mindspore.Tensor.std(axis=None, ddof=0, keepdims=False)
+.. py:method:: mindspore.Tensor.std(axis=None, ddof=0, keepdims=False) -> Tensor
 
     详情请参考 :func:`mindspore.ops.std`。
 
-    .. py:method:: mindspore.Tensor.std(dim=None, *, correction=1, keepdim=False)
+    .. py:method:: mindspore.Tensor.std(dim=None, *, correction=1, keepdim=False) -> Tensor
         :noindex:
 
     计算指定维度 `dim` 上的标准差。 `dim` 可以是单个维度或维度列表，也可以是 `None` ，表示移除所有维度。

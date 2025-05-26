@@ -1,7 +1,7 @@
 mindspore.mint.max
 ===================
 
-.. py:function:: mindspore.mint.max(input)
+.. py:function:: mindspore.mint.max(input) -> Tensor
 
     返回输入Tensor的最大值。
 
@@ -32,7 +32,7 @@ mindspore.mint.max
         - **TypeError** - 如果 `keepdim` 不是bool类型。
         - **TypeError** - 如果 `dim` 不是int类型。
 
-    .. py:function:: mindspore.mint.max(input, other)
+    .. py:function:: mindspore.mint.max(input, other) -> Tensor
         :noindex:
 
     详情请参考 :func:`mindspore.mint.maximum`。

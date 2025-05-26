@@ -1,7 +1,7 @@
 mindspore.Tensor.scatter
 ============================
 
-.. py:method:: mindspore.Tensor.scatter(dim, index, src)
+.. py:method:: mindspore.Tensor.scatter(dim, index, src) -> Tensor
 
     根据指定索引将 `src` 中的值更新到 `self` 中，并返回输出。
     对于一个3D的Tensor, 输出形式如下所示：
@@ -33,7 +33,7 @@ mindspore.Tensor.scatter
         - **TypeError** - `self` 的数据类型和 `src` 的数据类型不一致。
         - **RuntimeError** - `index` 中存在负数。
 
-    .. py:method:: mindspore.Tensor.scatter(axis, index, src)
+    .. py:method:: mindspore.Tensor.scatter(axis, index, src) -> Tensor
         :noindex:
 
     根据指定索引将 `src` 中的值更新到 `self` 中，并返回输出。

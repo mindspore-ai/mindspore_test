@@ -1,7 +1,7 @@
 mindspore.Tensor.bitwise_or
 ===========================
 
-.. py:method:: mindspore.Tensor.bitwise_or(other)
+.. py:method:: mindspore.Tensor.bitwise_or(other) -> Tensor
 
     逐元素执行两个Tensor的或运算。
 

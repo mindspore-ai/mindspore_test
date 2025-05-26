@@ -1,6 +1,6 @@
 mindspore.mint.sum
 ==================
-.. py:function:: mindspore.mint.sum(input, *, dtype=None)
+.. py:function:: mindspore.mint.sum(input, *, dtype=None) -> Tensor
 
     计算Tensor所有元素的和。
 
@@ -16,7 +16,7 @@ mindspore.mint.sum
     异常：
         - **TypeError** - `input` 不是Tensor类型。
 
-    .. py:function:: mindspore.mint.sum(input, dim, keepdim=False, *, dtype=None)
+    .. py:function:: mindspore.mint.sum(input, dim, keepdim=False, *, dtype=None) -> Tensor
         :noindex:
 
     计算Tensor指定维度元素的和。

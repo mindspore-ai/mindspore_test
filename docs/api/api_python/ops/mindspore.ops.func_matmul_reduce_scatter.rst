@@ -2,7 +2,7 @@ mindspore.ops.matmul_reduce_scatter
 ===================================
 
 .. py:function:: mindspore.ops.matmul_reduce_scatter(input, x2, group, world_size, *, reduce_op='sum', bias=None,\
-                                                     comm_turn=0, trans_input=False, trans_x2=False)
+                                                     comm_turn=0, trans_input=False, trans_x2=False) -> Tensor
 
     TP 切分场景下，实现 matmul 和 reducescatter 的融合，融合算子内部实现通信和计算流水并行。
 

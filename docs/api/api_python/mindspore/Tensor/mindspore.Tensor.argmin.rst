@@ -1,7 +1,7 @@
 mindspore.Tensor.argmin
 =======================
 
-.. py:method:: mindspore.Tensor.argmin(axis=None, keepdims=False)
+.. py:method:: mindspore.Tensor.argmin(axis=None, keepdims=False) -> Tensor
 
     返回tensor在指定轴上的最小值索引。
 
@@ -12,7 +12,7 @@ mindspore.Tensor.argmin
     返回：
         Tensor
 
-    .. py:method:: mindspore.Tensor.argmin(dim=None, keepdim=False)
+    .. py:method:: mindspore.Tensor.argmin(dim=None, keepdim=False) -> Tensor
         :noindex:
 
     返回tensor在指定轴上的最小值索引。

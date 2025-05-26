@@ -1,7 +1,7 @@
 mindspore.mint.mean
 ===================
 
-.. py:function:: mindspore.mint.mean(input, *, dtype=None)
+.. py:function:: mindspore.mint.mean(input, *, dtype=None) -> Tensor
 
     移除输入所有维度，返回 `input` 中所有元素的平均值。
 
@@ -17,7 +17,7 @@ mindspore.mint.mean
     异常：
         - **TypeError** - `input` 不是Tensor。
 
-    .. py:function:: mindspore.mint.mean(input, dim, keepdim=False, *, dtype=None)
+    .. py:function:: mindspore.mint.mean(input, dim, keepdim=False, *, dtype=None) -> Tensor
         :noindex:
 
     默认情况下，移除输入所有维度，返回 `input` 中所有元素的平均值。也可仅缩小指定维度 `dim` 大小至1。 `keepdim` 控制输出和输入的维度是否相同。

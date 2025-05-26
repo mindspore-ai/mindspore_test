@@ -1,7 +1,7 @@
 mindspore.mint.lerp
 ===================
 
-.. py:function:: mindspore.mint.lerp(input, end, weight)
+.. py:function:: mindspore.mint.lerp(input, end, weight) -> Tensor
 
     基于权重参数计算两个Tensor之间的线性插值。
 

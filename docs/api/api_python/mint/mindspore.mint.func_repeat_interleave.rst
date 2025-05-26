@@ -1,7 +1,7 @@
 mindspore.mint.repeat_interleave
 ================================
 
-.. py:function:: mindspore.mint.repeat_interleave(input, repeats, dim=None, *, output_size=None)
+.. py:function:: mindspore.mint.repeat_interleave(input, repeats, dim=None, *, output_size=None) -> Tensor
 
     沿着轴重复Tensor的元素，类似 :func:`mindspore.numpy.repeat`。
 

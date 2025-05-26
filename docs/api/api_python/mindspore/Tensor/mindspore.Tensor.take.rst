@@ -1,7 +1,7 @@
 mindspore.Tensor.take
 =====================
 
-.. py:method:: mindspore.Tensor.take(indices, axis=None, mode='clip')
+.. py:method:: mindspore.Tensor.take(indices, axis=None, mode='clip') -> Tensor
 
     在指定维度上获取Tensor中的元素。
 
@@ -22,7 +22,7 @@ mindspore.Tensor.take
     异常：
         - **ValueError** - `axis` 超出范围，或 `mode` 被设置为 ``'raise'`` 、 ``'wrap'`` 和 ``'clip'`` 以外的值。
 
-    .. py:method:: mindspore.Tensor.take(index)
+    .. py:method:: mindspore.Tensor.take(index) -> Tensor
         :noindex:
 
     选取给定索引 `index` 处的 `self` 元素。

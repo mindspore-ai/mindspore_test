@@ -1,7 +1,7 @@
 mindspore.Tensor.mm
 ===================
 
-.. py:method:: mindspore.Tensor.mm(mat2)
+.. py:method:: mindspore.Tensor.mm(mat2) -> Tensor
 
     计算两个矩阵的乘积。
 

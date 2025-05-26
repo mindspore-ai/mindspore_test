@@ -1,7 +1,7 @@
 mindspore.Tensor.narrow
 =======================
 
-.. py:method:: mindspore.Tensor.narrow(dim, start, length)
+.. py:method:: mindspore.Tensor.narrow(dim, start, length) -> Tensor
 
     沿着指定的轴，从指定的起始位置获取指定长度的Tensor。
 

@@ -1,7 +1,7 @@
 mindspore.Tensor.allclose
 =========================
 
-.. py:method:: mindspore.Tensor.allclose(other, rtol=1e-05, atol=1e-08, equal_nan=False)
+.. py:method:: mindspore.Tensor.allclose(other, rtol=1e-05, atol=1e-08, equal_nan=False) -> Tensor
 
     返回一个布尔型标量，表示 `self` 的每个元素均与 `other` 的对应元素在给定容忍度内“接近”。其中“接近”的数学公式为：
 

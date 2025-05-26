@@ -1,7 +1,7 @@
 mindspore.Tensor.var
 ====================
 
-.. py:method:: mindspore.Tensor.var(axis=None, ddof=0, keepdims=False)
+.. py:method:: mindspore.Tensor.var(axis=None, ddof=0, keepdims=False) -> Tensor
 
     在指定维度上的方差。
 

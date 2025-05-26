@@ -1,7 +1,7 @@
 mindspore.mint.all
 ==================
 
-.. py:function:: mindspore.mint.all(input)
+.. py:function:: mindspore.mint.all(input) -> Tensor
 
     检查是否所有元素均为 `True`。
 
@@ -11,7 +11,7 @@ mindspore.mint.all
     返回：
         Tensor
 
-    .. py:function:: mindspore.mint.all(input, dim, keepdim=False)
+    .. py:function:: mindspore.mint.all(input, dim, keepdim=False) -> Tensor
         :noindex:
 
     检查指定维度上是否所有元素均为 `True`。

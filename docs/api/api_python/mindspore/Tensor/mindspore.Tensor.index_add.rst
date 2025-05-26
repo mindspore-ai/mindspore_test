@@ -1,7 +1,7 @@
 mindspore.Tensor.index_add
 ==========================
 
-.. py:method:: mindspore.Tensor.index_add(indices, y, axis, use_lock=True, check_index_bound=True)
+.. py:method:: mindspore.Tensor.index_add(indices, y, axis, use_lock=True, check_index_bound=True) -> Tensor
 
     将Tensor `y` 加到Parameter或Tensor `self` 的指定 `axis` 轴和指定 `indices` 位置。要求 `axis` 轴的取值范围
     为[0, len(self.dim) - 1]， `indices` 中元素的取值范围为[0, self.shape[axis] - 1]。
@@ -27,7 +27,7 @@ mindspore.Tensor.index_add
         - **ValueError** - 除 `axis` 轴外， `self` shape和 `y` shape的大小不一致。
 
 
-    .. py:method:: mindspore.Tensor.index_add(dim, index, source, *, alpha=1)
+    .. py:method:: mindspore.Tensor.index_add(dim, index, source, *, alpha=1) -> Tensor
         :noindex:
 
     详情请参考 :func:`mindspore.ops.index_add`。

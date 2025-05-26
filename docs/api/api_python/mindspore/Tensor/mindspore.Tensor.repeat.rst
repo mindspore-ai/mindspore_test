@@ -35,7 +35,7 @@ mindspore.Tensor.repeat
         - **RuntimeError** - `repeats` 的元素个数或 `self` 的维度数超过8。
         - **TypeError** - `repeats` 参数类型错误。
 
-    .. py:method:: mindspore.Tensor.repeat(repeats)
+    .. py:method:: mindspore.Tensor.repeat(repeats) -> Tensor
         :noindex:
 
     对张量的每一维度按照指定的重复次数复制其中的元素。
