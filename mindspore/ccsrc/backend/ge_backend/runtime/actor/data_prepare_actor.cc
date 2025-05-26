@@ -78,18 +78,9 @@ void SyncTensorData(const TensorPtr &host_tensor, const DeviceTensorPtr &device_
                       << ", device address addr: " << device_tensor->GetPtr();
     }
   }
-
-  ShapeVector host_shape = {};
-  // GetRuntimePaddingShape doesn't support the value tuple node.
-  if (!node->isa<ValueNode>()) {
-    host_shape = AnfAlgo::GetRuntimePaddingShape(node, 0);
-  }
   // Copy data from host tensor to device.
   auto host_tensor_size = LongToSize(host_tensor->DataNBytes());
   auto host_tensor_type = host_tensor->data_type();
-  if (node->isa<ValueNode>()) {
-    host_shape = host_tensor->shape();
-  }
   if (!SyncCopy(device_tensor.get(), host_tensor->device_address().get(), kDefaultStreamIndex)) {
     std::string error_info = "SyncHostToDevice failed, node name: " + node->fullname_with_scope() +
                              ", host tensor size: " + std::to_string(host_tensor_size) +
@@ -530,8 +521,7 @@ void DataPrepareActor::RecordGraphInputs(const std::vector<TensorPtr> &host_tens
     auto param_index = host_param_indexes[i];
     const auto &origin_parameter = graph_compiler_info_->origin_parameters_order_[param_index];
     // host_tensor must not be nullptr
-    llm_manager.add_graph_input(origin_parameter->fullname_with_scope(),
-                                std::static_pointer_cast<DeviceTensor>(host_tensor->device_address()));
+    llm_manager.add_graph_input(origin_parameter->fullname_with_scope(), host_tensor->device_address());
   }
 }
 
