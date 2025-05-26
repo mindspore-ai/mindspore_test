@@ -123,7 +123,8 @@ static std::unordered_map<std::string, std::vector<std::vector<std::vector<size_
   {kGroupedMatmulName, {{{1}, {}}, {{1}, {}}}},
   {kMlaPreprocessName, {{{5, 18}, {}}, {{5, 18}, {}}}},
   {kGroupedMatmulV4Name, {{{1}, {}}, {{1}, {}}}},
-  {kGroupedMatmulV4TransposeName, {{{1}, {}}, {{1}, {}}}}};
+  {kGroupedMatmulV4TransposeName, {{{1}, {}}, {{1}, {}}}},
+  {kBatchMatMulOpName, {{{1}, {}}, {{1}, {}}}}};
 
 // unordered_map mean:
 // key is input_idx, value is special_format value
