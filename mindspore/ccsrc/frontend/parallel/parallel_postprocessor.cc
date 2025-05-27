@@ -50,6 +50,7 @@
 #include "frontend/parallel/graph_util/graph_info.h"
 #include "frontend/parallel/graph_util/node_info.h"
 #include "frontend/parallel/graph_util/graph_utils.h"
+#include "frontend/parallel/graph_util/parallel_tensordump.h"
 #include "frontend/parallel/tensor_layout/prime_generator.h"
 #include "frontend/parallel/graph_util/pipeline_split_utils.h"
 #include "frontend/parallel/graph_util/fold_pipeline_split_utils.h"
@@ -720,6 +721,30 @@ void ParallelPostprocessor::PipelinePostProcessStep2() {
   }
 }
 
+static void DecorateDumpPathIfDumpOps(const AnfNodePtrList &all_nodes, const FuncGraphManagerPtr &manager) {
+  // For TensorDump and DumpGradient, If dump mode is 'in', suffix 'in' for path.
+  // For example: dumppath.npy -> dumppath_in.npy.
+  for (const AnfNodePtr &node : all_nodes) {
+    if (IsSomePrimitive(node->cast<CNodePtr>(), DUMPGRADIENT)) {
+      CNodePtr dump_gradient = node->cast<CNodePtr>();
+      const std::string hook_mode = GetDumpHookInputOutputAttr(dump_gradient);
+      if (hook_mode != IN_MODE) {
+        continue;
+      }
+      const std::string ori_path = GetValue<std::string>(GetValueNode(dump_gradient->input(kIndex1)));
+      (void)manager->SetEdge(dump_gradient, kIndex1, NewValueNode(MakeValue(GetInModeSuffixedDumpPath(ori_path))));
+    } else if (IsSomePrimitive(node->cast<CNodePtr>(), TENSORDUMP)) {
+      CNodePtr tensordump = node->cast<CNodePtr>();
+      std::string dump_mode = GetDumpInputOutputAttr(tensordump);
+      if (dump_mode != IN_MODE) {
+        continue;
+      }
+      const std::string ori_path = GetValue<std::string>(GetValueNode(tensordump->input(kIndex1)));
+      (void)manager->SetEdge(tensordump, kIndex1, NewValueNode(MakeValue(GetInModeSuffixedDumpPath(ori_path))));
+    }
+  }
+}
+
 void ParallelPostprocessor::Process() {
   auto root = processor_context_->root;
   auto manager = processor_context_->manager;
@@ -741,7 +766,7 @@ void ParallelPostprocessor::Process() {
   if (StrategyCheckpoint::GetInstance().SaveCheckPointOn()) {
     CheckpointStrategy(all_nodes_after_pp, root);
   }
-
+  DecorateDumpPathIfDumpOps(all_nodes_after_pp, manager);
   auto comm_group = FindCommonMirrorGroup(root);
   StrategyCheckpoint::GetInstance().set_common_mirror_group(comm_group);
 

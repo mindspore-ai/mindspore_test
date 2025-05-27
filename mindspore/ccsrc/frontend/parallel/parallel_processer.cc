@@ -64,6 +64,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_v.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "include/common/utils/anfalgo.h"
 
 using mindspore::tensor::Tensor;
@@ -571,6 +572,9 @@ static void ForwardCommunicationForMultiOut(OperatorVector forward_op, const CNo
 
   // step2:traverse op_list and insert node
   for (size_t index = 0; index < forward_op.size(); ++index) {
+    FwdCommDumpHandlerPtr fwd_dump_handler =
+      std::make_shared<FwdCommunicationParallelTensorDumpHandler>(node_to_insert[index]);
+    fwd_dump_handler->CollectDumpNodes(node_to_insert[index], true);
     std::string instance_name_base = FORWARD_OP;
     std::string instance_name = instance_name_base + "_" + CreateInstanceName(node, index);
     std::vector<AnfNodePtr> forward_input = CreateInput(forward_op[index], node_to_insert[index], instance_name);
@@ -587,6 +591,8 @@ static void ForwardCommunicationForMultiOut(OperatorVector forward_op, const CNo
     }
     forward_input[0]->set_scope(scope);
     (void)manager->Replace(node_to_insert[index], forward_node);  // using Replace function to insert node
+    (void)fwd_dump_handler->MakeInModeBwdHookBeforeFwdComm();
+    (void)fwd_dump_handler->MakeOutModeDumpBeforeFwdComm();
   }
 }
 
@@ -595,13 +601,15 @@ static CNodePtr SkipTrivialNodesMoveUp(CNodePtr node) {
   MS_EXCEPTION_IF_NULL(node);
   while (True) {
     if (IsPrimitiveCNode(node, prim::kPrimLoad) || IsInTrivialNodeList(node) || IsInAllGatherNodeList(node)) {
-      if (IsPrimitiveCNode(node->input(1), prim::kPrimMicroStepAllGather) && !ParallelContext::GetInstance()->zero3()) {
+      size_t index = IsPrimitiveCNode(node, prim::kPrimDumpGradient) ? kDumpGradientSkipIndex : 1;
+      if (IsPrimitiveCNode(node->input(index), prim::kPrimMicroStepAllGather) &&
+          !ParallelContext::GetInstance()->zero3()) {
         return node;
       }
-      if (node->input(1)->isa<Parameter>()) {
+      if (node->input(index)->isa<Parameter>()) {
         return node;
       }
-      node = node->input(1)->cast<CNodePtr>();
+      node = node->input(index)->cast<CNodePtr>();
     } else {
       MS_LOG_WITH_NODE(EXCEPTION, node) << "The node " << node->fullname_with_scope()
                                         << " is a abnormal node in inserting mirror node.";
@@ -1373,7 +1381,8 @@ void ParallelProcessor::StepRedistribution(const CNodePtr &cnode, const NodeUser
   }
   // Insert Redistribution nodes between pre_nodes and next_nodes
   for (auto &pre_node : pre_nodes) {
-    ParallelTensorDumpHandler parallel_tensordump_handler(pre_nodes, next_nodes);
+    RedistributionDumpHandlerPtr redistribution_dump_handler =
+      std::make_shared<RedistributionParallelTensorDumpHandler>(pre_nodes, next_nodes, manager);
     for (auto &next_node : next_nodes) {
       MS_LOG(INFO) << "===========Do Redistribution start============" << std::endl
                    << pre_node->fullname_with_scope() << "->" << next_node.first.first->fullname_with_scope() << "("
@@ -1381,7 +1390,7 @@ void ParallelProcessor::StepRedistribution(const CNodePtr &cnode, const NodeUser
       Redistribution(next_node.first, pre_node, next_node.second);
       MS_LOG(INFO) << "===========Do Redistribution end  ============";
     }
-    parallel_tensordump_handler.HandleParallelTensorDump();
+    (void)redistribution_dump_handler->HandleDumpAfterRedistributionNode();
     for (const auto &next_node : next_nodes) {
       if (!next_node.first.first->has_user_data(FUNC_PARAM)) {
         continue;
@@ -1467,6 +1476,8 @@ void ParallelProcessor::ForwardCommunication(OperatorVector forward_op, const CN
   std::reverse(forward_op.begin(), forward_op.end());
 
   // step2:traverse op_list and insert node
+  FwdCommDumpHandlerPtr fwd_dump_handler = std::make_shared<FwdCommunicationParallelTensorDumpHandler>(node_to_insert);
+  fwd_dump_handler->CollectDumpNodes(node_to_insert, true);
   for (size_t index = 0; index < forward_op.size(); ++index) {
     std::string instance_name_base = FORWARD_OP;
     std::string instance_name = instance_name_base + "_" + CreateInstanceName(node, index);
@@ -1485,6 +1496,8 @@ void ParallelProcessor::ForwardCommunication(OperatorVector forward_op, const CN
     forward_input[0]->set_scope(scope);
     (void)manager->Replace(node_to_insert, forward_node);  // using Replace function to insert node
   }
+  (void)fwd_dump_handler->MakeInModeBwdHookBeforeFwdComm();
+  (void)fwd_dump_handler->MakeOutModeDumpBeforeFwdComm();
 }
 
 void ParallelProcessor::InsertForwardOps(const OperatorInfoPtr &distribute_operator, const CNodePtr &cnode) {

@@ -27,6 +27,7 @@
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_z.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "frontend/optimizer/pattern_matcher.h"
 #include "frontend/optimizer/anf_visitor.h"
@@ -164,6 +165,15 @@ void CheckBpropEliminater::Visit(const AnfNodePtr &node) {
   if (x_ == nullptr) {
     x_ = node;
   }
+}
+
+// {prim::DumpGradient, X, Y, Z} -> Y
+AnfNodePtr DumpGradientEliminater::operator()(const OptimizerPtr &, const AnfNodePtr &node) {
+  if (!IsPrimitiveCNode(node, prim::kPrimDumpGradient) || node->func_graph() == nullptr) {
+    return nullptr;
+  }
+  const CNodePtr dump_gradient_cnode = node->cast<CNodePtr>();
+  return dump_gradient_cnode->input(kIndex2);
 }
 
 // {prim::kPrimMiniStepAllGather, X, Z} -> {prim::kPrimAllGather, X}

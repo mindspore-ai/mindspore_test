@@ -105,6 +105,12 @@ class CheckBpropEliminater : public AnfVisitor {
   AnfNodePtr x_{nullptr};
 };
 
+// {prim::DumpGradient, X, Y} -> Y
+class DumpGradientEliminater : public AnfVisitor {
+ public:
+  AnfNodePtr operator()(const OptimizerPtr &, const AnfNodePtr &node) override;
+};
+
 // {prim::kPrimMiniStepAllGather, X, Z} -> {prim::kPrimAllGather, X}
 class MiniStepAllGatherPass : public AnfVisitor {
  public:
