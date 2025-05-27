@@ -14,6 +14,8 @@
 # ============================================================================
 """_add_attr"""
 
+__all__ = ["_add_attr"]
+
 from typing import Callable
 import mindspore as ms
 from mindspore._c_expression import AddAttr_
@@ -36,13 +38,12 @@ class AddAttr(AddAttr_):
         if (not isinstance(fn, Callable)) or isinstance(fn, Primitive):
             raise TypeError(f"the parameter 'fn' must be callable type except Primitive, but got:{type(fn)}")
 
-        if self.addattr_fn is not None and self.addattr_fn == fn and \
-           self.fn is not None and self.fn == fn and \
-           self.attrs_dict is not None and self.attrs_dict == kwargs:
+        if self._is_attr_set(fn, kwargs):
             return self.addattr_fn
 
         add_attr_ = AddAttr()
         attr_kv_pair = tuple(kwargs.items())
+
         @ms.common.jit
         def add_attr_fn(*args):
             return add_attr_(fn, attr_kv_pair)(*args)
@@ -52,7 +53,11 @@ class AddAttr(AddAttr_):
         self.attrs_dict = kwargs
         return self.addattr_fn
 
-def _add_attr(fn, **kwargs):
-    return  AddAttr()(fn, **kwargs)
+    def _is_attr_set(self, fn, kwargs):
+        return self.addattr_fn is not None and self.addattr_fn == fn and \
+               self.fn is not None and self.fn == fn and \
+               self.attrs_dict is not None and self.attrs_dict == kwargs
 
-__all__ = ["_add_attr"]
+
+def _add_attr(fn, **kwargs):
+    return AddAttr()(fn, **kwargs)
