@@ -27,6 +27,7 @@
 #include "ir/meta_grad_data.h"
 #include "ir/tensor.h"
 #include "include/common/utils/hook.h"
+#include "pynative/grad/hook_py.h"
 
 namespace mindspore {
 namespace session {
@@ -224,6 +225,20 @@ class COMMON_EXPORT BackwardNode : public std::enable_shared_from_this<BackwardN
   /// \param id
   void RemoveBackwardHook(uint64_t id) { (void)backward_hooks_.erase(id); }
 
+  unsigned AddCppTensorHook(std::unique_ptr<CppTensorBackwardNodePreHook> &&hook) {
+    unsigned index = backward_hooks_.size();
+    cpp_tensor_pre_hooks_.emplace_back(std::move(hook));
+    return index;
+  }
+
+  void RemoveCppTensorHook(const unsigned idx) {
+    if (idx >= cpp_tensor_pre_hooks_.size()) {
+      MS_LOG(EXCEPTION) << "Index out of range";
+    } else {
+      cpp_tensor_pre_hooks_[idx] = nullptr;
+    }
+  }
+
   /// check next edges is all not defined.
   /// \return true
   bool IsEmpty();
@@ -265,6 +280,10 @@ class COMMON_EXPORT BackwardNode : public std::enable_shared_from_this<BackwardN
   /// \return backward_hooks
   const std::map<uint64_t, TensorBackwardHookPtr> &backward_hooks() const { return backward_hooks_; }
 
+  const std::vector<std::unique_ptr<CppTensorBackwardNodePreHook>> &cpp_tensor_pre_hooks() const {
+    return cpp_tensor_pre_hooks_;
+  }
+
   /// \brief The sequence number of current node.
   ///
   /// \return sequence number
@@ -290,6 +309,7 @@ class COMMON_EXPORT BackwardNode : public std::enable_shared_from_this<BackwardN
   std::function<void(const std::string &op_name)> check_func_{nullptr};
   // Tensor hooks
   std::map<uint64_t, TensorBackwardHookPtr> backward_hooks_{};
+  std::vector<std::unique_ptr<CppTensorBackwardNodePreHook>> cpp_tensor_pre_hooks_{};
   size_t seq_id_;
   size_t output_size_;
 };
