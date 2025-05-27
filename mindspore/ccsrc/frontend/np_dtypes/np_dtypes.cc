@@ -1123,22 +1123,22 @@ int NpType_ArgMin(void *data, npy_intp n, npy_intp *min_ind, void *arr) {
 template <typename T>
 PyArray_DescrProto GetNpDescrProto() {
   return {
-    PyObject_HEAD_INIT(nullptr)
-    /*typeobj=*/nullptr,
-    /*kind=*/NpTypeDescr<T>::kind,
-    /*type=*/NpTypeDescr<T>::type,
-    /*byteorder=*/NpTypeDescr<T>::byte_order,
-    /*flags=*/NPY_NEEDS_PYAPI | NPY_USE_SETITEM,
-    /*type_num=*/0,
-    /*elsize=*/sizeof(T),
-    /*alignment=*/alignof(T),
-    /*subarray=*/nullptr,
-    /*fields=*/nullptr,
-    /*names=*/nullptr,
-    /*f=*/&NpTypeDescr<T>::arr_funcs,
-    /*metadata=*/nullptr,
-    /*c_metadata=*/nullptr,
-    /*hash=*/-1,
+    PyObject_HEAD_INIT(nullptr)         // PyObject_HEAD
+    nullptr,                            // typeobj
+    NpTypeDescr<T>::kind,               // kind
+    NpTypeDescr<T>::type,               // type
+    NpTypeDescr<T>::byte_order,         // byteorder
+    NPY_NEEDS_PYAPI | NPY_USE_SETITEM,  // flags
+    0,                                  // type_num
+    sizeof(T),                          // elsize
+    alignof(T),                         // alignment
+    nullptr,                            // subarray
+    nullptr,                            // fields
+    nullptr,                            // names
+    &NpTypeDescr<T>::arr_funcs,         // f
+    nullptr,                            // metadata
+    nullptr,                            // c_metadata
+    -1,                                 // hash
   };
 }
 
