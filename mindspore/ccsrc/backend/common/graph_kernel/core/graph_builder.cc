@@ -171,8 +171,7 @@ bool ConvertTensorToParameter(const FuncGraphPtr &fg, AnfNodePtrList *inputs_ptr
       }
       auto type_id = tensor->data_type();
       // data is nullptr means uninitialized.
-      if (tensor->data().const_data() == nullptr || tensor->DataSize() > 1 ||
-          !IsFiniteScalar(tensor->data_c(), type_id) ||
+      if (tensor->unsafe_data() == nullptr || tensor->DataSize() > 1 || !IsFiniteScalar(tensor->data_c(), type_id) ||
           (type_id == kNumberTypeBool && GraphKernelFlags::GetInstance().kernel_generator == "DVM")) {
         (void)value_nodes.insert(tnode);
       }

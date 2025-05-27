@@ -1490,15 +1490,15 @@ class TensorData : public MetaTensorData {
       return true;
     }
     // Tensor::data_sync need WaitAll pipeline, it's too expensive
-    auto data = tensor_ptr->data_ptr();
-    if (data_ptr_ == nullptr || reinterpret_cast<const uint8_t *>(data->const_data()) == nullptr) {
+    if (data_ptr_ == nullptr || tensor_ptr->device_address()->GetMutablePtr() == nullptr) {
       // If not data_sync, check data size, but shape and dtype is checked, here return true.
       // Got a tensor which is guard to constant value, but actually it's not synchronized and maybe not constant.
       // return false and mutable it as graph parameter if need.
-      return data_len_ == size_t(data->nbytes());
-    } else if (data_len_ == size_t(data->nbytes())) {
+      return data_len_ == tensor_ptr->DataNBytes();
+    } else if (data_len_ == tensor_ptr->DataNBytes()) {
       // if has data_sync, check data
-      return memcmp(data_ptr_.get(), reinterpret_cast<const uint8_t *>(data->const_data()), data_len_) == 0;
+      return memcmp(data_ptr_.get(), reinterpret_cast<const uint8_t *>(tensor_ptr->device_address()->GetMutablePtr()),
+                    data_len_) == 0;
     }
     return false;
   }
@@ -1540,16 +1540,16 @@ class TensorData : public MetaTensorData {
       compression_type_ = TensorCompressionType::kNoCompression;
     }
     if (specialized_) {
-      tensor_ptr->data_sync(true);
-      auto data = tensor_ptr->data_ptr();
-      data_len_ = size_t(data->nbytes());
+      auto cpu_tensor = tensor_ptr->cpu();
+      data_len_ = size_t(cpu_tensor->DataNBytes());
       data_ptr_ = std::make_unique<uint8_t[]>(data_len_);
       if (data_ptr_ != nullptr) {
-        memcpy_s(data_ptr_.get(), data_len_, reinterpret_cast<uint8_t *>(data->data()), data_len_);
+        memcpy_s(data_ptr_.get(), data_len_, reinterpret_cast<uint8_t *>(cpu_tensor->device_address()->GetMutablePtr()),
+                 data_len_);
       }
     } else {
       data_ptr_.reset(nullptr);
-      data_len_ = size_t(tensor_ptr->data_ptr()->nbytes());
+      data_len_ = size_t(tensor_ptr->DataNBytes());
     }
   }
 

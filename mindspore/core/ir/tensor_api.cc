@@ -1,0 +1,28 @@
+/**
+ * Copyright 2025 Huawei Technologies Co., Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include "ir/tensor_api.h"
+
+#include "ir/tensor.h"
+#include "ir/device_address_maker.h"
+
+namespace mindspore {
+namespace tensor {
+TensorPtr empty(TypeId data_type, const ShapeVector &shape, device::DeviceType device_type) {
+  return std::make_shared<Tensor>(data_type, shape, MakeDeviceAddress(data_type, shape, true, device_type));
+}
+}  // namespace tensor
+}  // namespace mindspore

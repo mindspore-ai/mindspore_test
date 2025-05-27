@@ -24,8 +24,12 @@ namespace ms::pynative {
 void *GetHostDataPtr(const ms::Tensor &t) {
   auto tensor_ptr = t.tensor();
   MS_EXCEPTION_IF_NULL(tensor_ptr);
-  auto &tensor_data = tensor_ptr->data();
-  return tensor_data.const_data() != nullptr ? tensor_data.data() : nullptr;
+  auto device_address = tensor_ptr->device_address();
+  MS_EXCEPTION_IF_NULL(device_address);
+  if (device_address->GetDeviceType() == mindspore::device::DeviceType::kCPU) {
+    return device_address->GetMutablePtr();
+  }
+  return nullptr;
 }
 
 atb::Tensor AtbTensor(const ms::Tensor &t) {

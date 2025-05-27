@@ -225,7 +225,7 @@ GeTensorPtr ConvertStringTensor(const MeTensorPtr &tensor, const std::string &fo
   py::gil_scoped_acquire gil;
   auto py_array = python_adapter::PyAdapterCallback::TensorToNumpy(*tensor);
   auto buf = py_array.request();
-  auto data_ptr = static_cast<char *>(tensor->data().data());
+  auto data_ptr = static_cast<char *>(tensor->device_address()->GetMutablePtr());
   size_t single_char_offset = 4;
 
   if (buf.format.back() == 'w') {
