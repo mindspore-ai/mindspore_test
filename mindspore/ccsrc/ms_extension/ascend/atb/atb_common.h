@@ -57,7 +57,7 @@ class EXTENSION_API AtbOpRunner : public PyboostRunner {
    */
   template <typename ParamType>
   void Init(const ParamType &param) {
-    op_ = atb::OpParamCache<ParamType>::getInstance().getOperation(param, op_name());
+    op_ = atb::AtbContextManager::GetInstance().GetOperation(param, op_name());
   }
 
  private:
