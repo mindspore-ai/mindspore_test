@@ -51,6 +51,9 @@ class DynamicProfilerConfigContext:
         self._prof_path = None
         self._mstx_domain_include = []
         self._mstx_domain_exclude = []
+        self._host_sys = []
+        self._sys_io = False
+        self._sys_interconnection = False
         self._is_dyno = DynamicProfilerUtils.is_dyno_mode()
         self._parse(json_data)
         self._check_params_type()
@@ -73,8 +76,11 @@ class DynamicProfilerConfigContext:
         self._parse_prof_path(json_data)
         self._aic_metrics = json_data.get("aic_metrics", "AiCoreNone")
         self._analyse_mode = json_data.get("analyse_mode", -1)
-        self._mstx_domain_include = json_data.get("mstx_domain_include", [])
-        self._mstx_domain_exclude = json_data.get("mstx_domain_exclude", [])
+        self._parse_mstx_domain_include(json_data)
+        self._parse_mstx_domain_exclude(json_data)
+        self._parse_host_sys(json_data)
+        self._parse_sys_io(json_data)
+        self._parse_sys_interconnection(json_data)
         self._parallel_strategy = json_data.get("parallel_strategy", False)
         self._is_valid = json_data.get("is_valid", False)
 
@@ -175,7 +181,7 @@ class DynamicProfilerConfigContext:
             data_simplification = json_data.get("data_simplification", "")
             self._data_simplification = self.BOOL_MAP.get(data_simplification.lower(), False)
         else:
-            self._data_simplification = json_data.get("data_simplification", False)
+            self._data_simplification = json_data.get("data_simplification", True)
 
     def _parse_l2_cache(self, json_data):
         """ Parse the l2_cach from JSON data."""
@@ -213,6 +219,55 @@ class DynamicProfilerConfigContext:
         else:
             self._prof_path = json_data.get("prof_path", None)
 
+    def _parse_host_sys(self, json_data):
+        """ Parse the host_sys from JSON data."""
+        if self._is_dyno:
+            host_sys = json_data.get("host_sys", None)
+            self._host_sys = [] if host_sys is None or host_sys == "None" else \
+                [item.strip() for item in host_sys.split(',')]
+        else:
+            self._host_sys = json_data.get("host_sys", [])
+
+    def _parse_sys_io(self, json_data):
+        """ Parse the sys_io from JSON data."""
+        if self._is_dyno:
+            sys_io = json_data.get("sys_io", False)
+            if isinstance(sys_io, str):
+                self._sys_io = self.BOOL_MAP.get(sys_io.lower(), False)
+            else:
+                self._sys_io = False
+        else:
+            self._sys_io = json_data.get("sys_io", False)
+
+    def _parse_sys_interconnection(self, json_data):
+        """ Parse the sys_interconnection from JSON data."""
+        if self._is_dyno:
+            sys_interconnection = json_data.get("sys_interconnection", False)
+            if isinstance(sys_interconnection, str):
+                self._sys_interconnection = self.BOOL_MAP.get(sys_interconnection.lower(), False)
+            else:
+                self._sys_interconnection = False
+        else:
+            self._sys_interconnection = json_data.get("sys_interconnection", False)
+
+    def _parse_mstx_domain_include(self, json_data):
+        """ Parse the mstx_domain_include from JSON data."""
+        if self._is_dyno:
+            mstx_domain_include = json_data.get("mstx_domain_include", None)
+            self._mstx_domain_include = [] if mstx_domain_include is None or mstx_domain_include == "None" else \
+                [item.strip() for item in mstx_domain_include.split(',')]
+        else:
+            self._mstx_domain_include = json_data.get("mstx_domain_include", [])
+
+    def _parse_mstx_domain_exclude(self, json_data):
+        """ Parse the mstx_domain_exclude from JSON data."""
+        if self._is_dyno:
+            mstx_domain_exclude = json_data.get("mstx_domain_exclude", None)
+            self._mstx_domain_exclude = [] if mstx_domain_exclude is None or mstx_domain_exclude == "None" else \
+                [item.strip() for item in mstx_domain_exclude.split(',')]
+        else:
+            self._mstx_domain_exclude = json_data.get("mstx_domain_exclude", [])
+
     def _check_params_type(self):
         """ Check and enforce parameter types with lower complexity."""
         # Check non-special parameters. {Parameter name: (expected type, default value)}
@@ -234,7 +289,10 @@ class DynamicProfilerConfigContext:
             '_is_valid': (bool, False),
             '_record_shapes': (bool, False),
             '_mstx_domain_include': (list, []),
-            '_mstx_domain_exclude': (list, [])
+            '_mstx_domain_exclude': (list, []),
+            '_host_sys': (list, []),
+            '_sys_io': (bool, False),
+            '_sys_interconnection': (bool, False)
         }
 
         def _is_valid_type(value, expected_type):
@@ -345,6 +403,8 @@ class DynamicProfilerConfigContext:
         not_supported_args = ['_is_valid']
         res = {}
         for key, value in self.__dict__.items():
+            if key in ['_json_dict', '_is_dyno']:
+                continue
             if key not in not_supported_args:
                 res[key.replace('_', '', 1)] = value
         return res
@@ -381,6 +441,11 @@ class DynamicProfilerConfigContext:
             "l2_cache": self._l2_cache,
             "analyse": self._analyse,
             "record_shapes": self._record_shapes,
+            "mstx_domain_include": self._mstx_domain_include,
+            "mstx_domain_exclude": self._mstx_domain_exclude,
+            "sys_io": self._sys_io,
+            "sys_interconnection": self._sys_interconnection,
+            "host_sys": self._host_sys,
             "is_valid": self._is_valid
         }
 
@@ -550,3 +615,20 @@ class DynamicProfilerConfigContext:
             return [ExportType.Text, ExportType.Db]
 
         return [ExportType.Text]
+
+    def _convert_host_sys(self, host_systems):
+        """ Convert host_sys to real args in Profiler."""
+        if not host_systems:
+            return None
+
+        converted_host_systems = []
+        for host_system in host_systems:
+            try:
+                converted_host_sys = HostSystem(host_system)
+                converted_host_systems.append(converted_host_sys)
+            except ValueError:
+                logger.warning(f"'{host_system}' is not a valid HostSystem member. "
+                               f"will be reset to default: 'None'.")
+                return None
+
+        return converted_host_systems

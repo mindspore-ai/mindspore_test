@@ -21,7 +21,8 @@ from mindspore.profiler.common.constant import (
     ProfilerLevel,
     ProfilerActivity,
     AicoreMetrics,
-    ExportType
+    ExportType,
+    HostSystem
 )
 from mindspore.profiler.schedule import Schedule
 
@@ -47,6 +48,7 @@ class ProfilerParameters:
         "pcie": (bool, False),
         "sys_io": (bool, False),
         "sys_interconnection": (bool, False),
+        "host_sys": (list, []),
         "sync_enable": (bool, True),
         "data_simplification": (bool, True),
         "record_shapes": (bool, False),
@@ -77,13 +79,9 @@ class ProfilerParameters:
         params = {}
         params["is_set_schedule"] = self.is_set_schedule
         for param, (_, _) in self.PARAMS.items():
-            if param == "profiler_level":
+            if param in ["profiler_level", "aic_metrics"]:
                 params[param] = getattr(self, param).value
-            elif param == "aic_metrics":
-                params[param] = getattr(self, param).value
-            elif param == "activities":
-                params[param] = [item.value for item in getattr(self, param)]
-            elif param == "export_type":
+            elif param in ["activities", "export_type", "host_sys"]:
                 params[param] = [item.value for item in getattr(self, param)]
             elif param == "schedule":
                 params[param] = getattr(self, param).to_dict()
@@ -109,6 +107,7 @@ class ProfilerParameters:
             "pcie": self.pcie,
             "sys_io": self.sys_io,
             "sys_interconnection": self.sys_interconnection,
+            "host_sys": ",".join([item.value for item in self.host_sys]) if self.host_sys else "",
             "parallel_strategy": self.parallel_strategy,
             "profiler_level": self.profiler_level.value,
             "with_stack": self.with_stack,
@@ -155,6 +154,8 @@ class ProfilerParameters:
                     setattr(self, key, self._check_and_get_export_type(value))
                 elif key == "mstx_domain_include" or key == "mstx_domain_exclude":
                     setattr(self, key, self._check_and_get_mstx_domain(key, value))
+                elif key == "host_sys":
+                    setattr(self, key, self._check_and_get_host_sys(value, expected_type, default_value))
                 # 检查可迭代类型
                 elif isinstance(expected_type, type) and issubclass(expected_type, (list, tuple, set)):
                     if not (isinstance(value, expected_type) and
@@ -291,6 +292,22 @@ class ProfilerParameters:
                 logger.warning(f"{list_name} has value {domain_name} is not str or is empty, reset to [].")
                 return []
         return list(set(domain_list))
+
+    def _check_and_get_host_sys(self, host_sys, expected_type, default_value):
+        """
+        Check host system.
+        """
+        if not host_sys:
+            return default_value
+
+        if not (isinstance(host_sys, expected_type) and
+                all(isinstance(item, HostSystem) for item in host_sys)):
+            logger.warning(
+                f"For Profiler, 'host_sys' value is Invalid, reset to {default_value}."
+            )
+            return default_value
+
+        return set(host_sys)
 
     def __getattr__(self, name):
         """

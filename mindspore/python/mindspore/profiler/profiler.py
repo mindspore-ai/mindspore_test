@@ -847,6 +847,7 @@ class Profile:
             export_type=self._experimental_config.export_type,
             sys_io=self._experimental_config.sys_io,
             sys_interconnection=self._experimental_config.sys_interconnection,
+            host_sys=self._experimental_config.host_sys,
             schedule=self._schedule,
             on_trace_ready=self._on_trace_ready,
         )
