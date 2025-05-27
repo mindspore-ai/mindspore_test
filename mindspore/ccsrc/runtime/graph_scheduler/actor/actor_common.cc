@@ -441,10 +441,11 @@ bool Copy(const DeviceTensor *dst_device_tensor, const DeviceTensor *src_device_
 
   // Exist the size alignment in some device, so get the min device size.
   size_t copy_size = std::min(src_device_tensor->GetSize(), dst_device_tensor->GetSize());
+  auto skip_h2d = UCEException::GetInstance().is_reboot_node();
 
   if (dst_device_tensor->GetDeviceType() == src_device_tensor->GetDeviceType()) {
     return dst_device_tensor->SyncDeviceToDevice(src_device_tensor);
-  } else if (src_device_tensor->GetDeviceType() == device::DeviceType::kCPU) {
+  } else if ((src_device_tensor->GetDeviceType() == device::DeviceType::kCPU) && !skip_h2d) {
     // CPU device tensor copy to other device tensor.
     return dst_device_tensor->SyncHostToDevice(copy_size, src_device_tensor->GetPtr());
   } else if (dst_device_tensor->GetDeviceType() == device::DeviceType::kCPU) {

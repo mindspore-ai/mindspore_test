@@ -245,5 +245,13 @@ void PreLaunchComm::PreLaunchCommKernel(runtime::ActorSet *actor_set) {
   Launch(hccl_nodes_vec_send_before_bucket, SORTED_BY_SEND_REVERSE);
   Launch(hccl_nodes_vec_receive_after_bucket, SORTED_BY_RECV_SEQUENTAIL);
 }
+
+void PreLaunchComm::CachePreLaunchOrder(uint32_t graph_id) { (void)orders_.emplace_back(graph_id); }
+std::vector<uint32_t> PreLaunchComm::GetPreLaunchOrder(bool force_launch) {
+  if (force_launch) {
+    is_pre_launch_comm_.clear();
+  }
+  return orders_;
+}
 }  // namespace runtime
 }  // namespace mindspore

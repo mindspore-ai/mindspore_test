@@ -124,7 +124,7 @@ void UpdateTracker(const std::string &task_name, const AnfNodePtr &node, const s
 
 void SyncTensorData(const TensorPtr &host_tensor, const KernelTensorPtr &kernel_tensor, const AnfNodePtr &node,
                     const DeviceContext *device_context, OpContext<KernelTensor> *const context,
-                    GraphExecutionStrategy strategy) {
+                    GraphExecutionStrategy strategy, bool skip_h2d = false) {
   MS_EXCEPTION_IF_NULL(host_tensor);
   MS_EXCEPTION_IF_NULL(kernel_tensor);
   MS_EXCEPTION_IF_NULL(node);
@@ -191,9 +191,9 @@ void SyncTensorData(const TensorPtr &host_tensor, const KernelTensorPtr &kernel_
     }
     if (taken_over_by_swap_manager) {
       SetStorageInfo(real_host_tensor, kernel_tensor, device_context, node);
-    } else if (!device_tensor->SyncHostToDevice(host_shape, host_tensor_size, host_tensor_type,
-                                                real_host_tensor->device_info().host_format_,
-                                                real_host_tensor->data_ptr())) {
+    } else if (!skip_h2d && !device_tensor->SyncHostToDevice(host_shape, host_tensor_size, host_tensor_type,
+                                                             real_host_tensor->device_info().host_format_,
+                                                             real_host_tensor->data_ptr())) {
       std::string error_info = "SyncHostToDevice failed, node name: " + node->fullname_with_scope() +
                                ", host tensor size: " + std::to_string(host_tensor_size) +
                                ", host tensor type: " + std::to_string(static_cast<int>(host_tensor_type)) +
@@ -1449,7 +1449,8 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
   if (is_need_sync || (!host_tensor_address->IsPtrValid())) {
     MS_LOG(INFO) << "Prepare device data for weight node:" << backend_node->DebugString()
                  << ", device type:" << host_tensor_address->GetDeviceType();
-    SyncTensorData(tensor, host_kernel_tensor, backend_node, device_context, context, real_strategy_);
+    SyncTensorData(tensor, host_kernel_tensor, backend_node, device_context, context, real_strategy_,
+                   UCEException::GetInstance().is_reboot_node());
   }
 
   // Allocate another device memory and copy data from host tensor to another device(if exist).
@@ -1517,7 +1518,8 @@ void DataPrepareActor::PrepareDeviceTensorStoreForControlNode(const ControlNodeP
       tensor->set_device_address(kernel_tensor->device_address());
       auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
         {kernel_tensor->device_address()->device_name(), kernel_tensor->device_address()->device_id()});
-      SyncTensorData(tensor, kernel_tensor, node, device_context, context, GraphExecutionStrategy::kPipeline);
+      SyncTensorData(tensor, kernel_tensor, node, device_context, context, GraphExecutionStrategy::kPipeline,
+                     UCEException::GetInstance().is_reboot_node());
     } else {
       if (host_tensor_address->GetSize() != kernel_tensor->device_address()->GetSize()) {
         MS_LOG(WARNING) << "Please check the size of parameter:" << front_parameter->fullname_with_scope()
