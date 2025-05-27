@@ -148,7 +148,7 @@ class KernelRunner {
   // Update the output ref count of graph output kernel.
   void UpdateGraphOutputRefCount(OpContext<KernelTensor> *const context);
   // Update the input device tensors to the memory free list.
-  void UpdateMemoryFreeList(OpContext<KernelTensor> *const context);
+  virtual void UpdateMemoryFreeList(OpContext<KernelTensor> *const context);
 
   void ResizeKernelMod();
 

@@ -49,6 +49,7 @@ class ConditionSwitchRunner : public KernelRunner {
   void ExecuteInferShapeTask(OpContext<KernelTensor> *const context) override;
   void ExecuteResizeKernelModTask(OpContext<KernelTensor> *const context) override;
   void ExecuteLaunchKernelTask(OpContext<KernelTensor> *const context) override;
+  void UpdateMemoryFreeList(OpContext<KernelTensor> *const context) override;
 
  private:
   void FetchParameterInput(OpContext<KernelTensor> *const context);
