@@ -3808,7 +3808,6 @@ class Cell(Cell_):
 
         for fn in self._backward_pre_hook.values():
             ret = fn(self, new_grad_output)
-            # output = ret
             if ret is not None:
                 if not isinstance(ret, tuple):
                     output = (ret,)

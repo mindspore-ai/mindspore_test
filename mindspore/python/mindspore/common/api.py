@@ -78,6 +78,7 @@ def _cells_hook_hash(fn, obj):
     Generate cells hook hash.
     """
     fn_set = set({})
+
     def collect_cell_free_var(fn, cells_set):
         if not fn or not hasattr(fn, "__closure__") or not fn.__closure__:
             return
@@ -114,11 +115,13 @@ def _cells_hook_hash(fn, obj):
         hash_value += cell.modify_hook
     return hash_value
 
+
 def _real_phase(phase, obj):
     real_phase = phase + '.' + str(obj.create_time) + '.' + str(id(obj)) + '.' + obj.arguments_key
     if hasattr(obj, "cells_hook_hash") and obj.cells_hook_hash:
         real_phase += "." + str(obj.cells_hook_hash)
     return real_phase
+
 
 def _check_recompile_args(compile_args, kwargs):
     """Check recompile of graph"""
@@ -592,9 +595,11 @@ def _get_parameter_ids(args, kwargs):
             parameter_ids += str(id(value))
     return parameter_ids
 
+
 def _get_tensor_hook_key(tensor):
     """Get the hook key of Tensor/Parameter"""
     return ".".join(map(str, map(id, tensor.hooks())))
+
 
 def _get_hook_key(*args, **kwargs):
     """Get the hook key of Tensors/Parameters"""
