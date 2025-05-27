@@ -17,6 +17,7 @@ import mindspore.nn as nn
 from mindspore import context, Tensor, jit
 from mindspore import Parameter
 from mindspore.common import dtype as mstype
+from mindspore._extends.parse import compile_config
 from tests.mark_utils import arg_mark
 
 
@@ -42,6 +43,8 @@ def test_augassign_backend():
     Description: Support augassign inplace in kbk mode.
     Expectation: Run success.
     """
+    compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '1'
+
     net0 = Net()
     net0.construct = jit(net0.construct, backend='GE')
     graph_output_ge = net0()
@@ -57,3 +60,5 @@ def test_augassign_backend():
     context.set_context(mode=context.PYNATIVE_MODE)
     pynative_output = Net()()
     assert graph_output == pynative_output
+
+    compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '0'
