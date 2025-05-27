@@ -1,4 +1,4 @@
-# Copyright 2020-2022 Huawei Technologies Co., Ltd
+# Copyright 2020 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@ from mindspore.nn import Cell
 from mindspore import ops
 from mindspore.ops import operations as P
 from mindspore.ops import prim_attr_register
-from mindspore.ops.operations import _inner_ops as inner
 from mindspore.ops.primitive import PrimitiveWithInfer
 from mindspore.ops.signature import sig_rw, sig_dtype, make_sig
 
@@ -371,25 +370,6 @@ class RangeNet(Cell):
         return self.range_ops(start, limit, delta)
 
 
-class NetForFlattenConcat(Cell):
-    def __init__(self):
-        super(NetForFlattenConcat, self).__init__()
-        self.flatten_concat = inner.FlattenConcat()
-
-    def construct(self, x1, x2, x3):
-        return self.flatten_concat([x1, x2, x3])
-
-
-class MaskedFillFunc(Cell):
-    def __init__(self):
-        super(MaskedFillFunc, self).__init__()
-        self.maskedfill_ = ops.function.masked_fill
-
-    def construct(self, x, mask, value):
-        y = self.maskedfill_(x, mask, value)
-        return y
-
-
 test_case_array_ops = [
     ('CustNet1', {
         'block': CustNet1(),
@@ -450,11 +430,6 @@ test_case_array_ops = [
     ('Aminmax', {
         'block': AminmaxFunc(),
         'desc_inputs': [Tensor(np.array([1., 2., 4., 3.]), ms.float32)]}),
-    ('FlattenConcat', {
-        'block': NetForFlattenConcat(),
-        'desc_inputs': [Tensor(np.array([1], np.float32)),
-                        Tensor(np.array([2], np.float32)),
-                        Tensor(np.array([3], np.float64))]}),
     ('MaskedFill', {
         'block': MaskedFillFunc(),
         'desc_inputs': [Tensor(np.array([[3.0, 2.0, 1.0]]), mstype.float32),

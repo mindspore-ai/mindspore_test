@@ -72,7 +72,7 @@ class DataPrepareActor : public DebugAwareActor {
   void Init() override;
   void Run(OpContext<KernelTensor> *const context) override {
     VectorRef empty_args;
-    PrepareData(init_tensors_, empty_args, context, GraphExecutionStrategy::kPipeline);
+    PrepareData({}, empty_args, context, GraphExecutionStrategy::kPipeline);
   }
 
  private:
@@ -126,8 +126,6 @@ class DataPrepareActor : public DebugAwareActor {
                                      const device::DeviceAddressPtr &host_tensor_address,
                                      const DeviceContext *device_context, OpContext<KernelTensor> *context) const;
 
-  void SetInitTensorsIfNeeded(const std::vector<std::vector<TensorPtr>> &input_tensors);
-
   void RecordGraphInputs(const std::vector<TensorPtr> &host_tensors, const std::vector<size_t> &host_param_indexes);
 
   // Preprocess before prepare data for data prepare actor.
@@ -148,7 +146,7 @@ class DataPrepareActor : public DebugAwareActor {
     auto ms_context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(ms_context);
     static const bool enable_infer_boost = ms_context->IsEnableInferBoost();
-    return !tensors_need_reprepare_[this].empty() || (has_parameter_input_ && !enable_infer_boost) || is_sub_data_ ||
+    return !tensors_need_reprepare_[this].empty() || (has_parameter_input_ && !enable_infer_boost) ||
            has_heter_weights_;
   }
 
@@ -158,7 +156,6 @@ class DataPrepareActor : public DebugAwareActor {
   HostQueueDSActorPtr host_data_source_actor_;
   HostTensorQueuePtr host_tensor_queue_;
   bool has_continuous_memory_;
-  std::vector<std::vector<TensorPtr>> init_tensors_;
 
   // Record the address modified input nodes to refresh the ref node.
   std::set<AnfNode *> address_modified_input_nodes_;

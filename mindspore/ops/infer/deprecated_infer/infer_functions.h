@@ -144,8 +144,6 @@ OPS_API AbstractBasePtr InferImplMapUniform(const AnalysisEnginePtr &, const Pri
                                             const AbstractBasePtrList &args_abs_list);
 OPS_API AbstractBasePtr InferImplSequenceMask(const AnalysisEnginePtr &, const PrimitivePtr &primitive,
                                               const AbstractBasePtrList &args_abs_list);
-OPS_API AbstractBasePtr InferImplFlattenConcat(const AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                               const AbstractBasePtrList &args_abs_list);
 OPS_API AbstractBasePtr InferImplLoad(const AnalysisEnginePtr &, const PrimitivePtr &primitive,
                                       const AbstractBasePtrList &args_abs_list);
 OPS_API AbstractBasePtr InferImplTransData(const AnalysisEnginePtr &, const PrimitivePtr &primitive,

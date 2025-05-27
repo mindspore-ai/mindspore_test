@@ -202,7 +202,6 @@ class AdaMax(Optimizer):
 
     @jit
     def construct(self, gradients):
-        gradients = self.flatten_gradients(gradients)
         gradients = self.decay_weight(gradients)
         gradients = self.gradients_centralization(gradients)
         gradients = self.scale_grad(gradients)

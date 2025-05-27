@@ -141,33 +141,6 @@ void ValueTupleToValue(const ValuePtr &value, std::vector<ValuePtr> *const value
   }
 }
 
-bool IsNeedSync(const TensorPtr &tensor, bool *is_sub_data) {
-  if (tensor == nullptr) {
-    return false;
-  }
-  // Sub data need sync each step
-  auto data_ptr = tensor->data_ptr();
-  auto sync_flag = (data_ptr != nullptr && data_ptr->is_sub_data());
-  if (sync_flag) {
-    *is_sub_data = sync_flag;
-  }
-  return sync_flag;
-}
-
-void SyncTensorTrunk(const std::vector<std::vector<TensorPtr>> &input_tensors) {
-  for (auto &tensors : input_tensors) {
-    for (auto &tensor : tensors) {
-      if (tensor == nullptr) {
-        continue;
-      }
-      auto data_ptr = tensor->data_ptr();
-      if (data_ptr != nullptr && data_ptr->has_sub_data()) {
-        tensor->data_sync();
-      }
-    }
-  }
-}
-
 void UpdateDataNodeDeviceAddressSize(const AnfNodePtr &input_node, const TensorPtr &input_tensor,
                                      const device::DeviceAddressPtr &device_address) {
   MS_EXCEPTION_IF_NULL(input_node);
@@ -311,24 +284,6 @@ void DataPrepareActor::UpdateDeviceAddressForDataNode(const AnfNodePtr &input_no
   }
 }
 
-void DataPrepareActor::SetInitTensorsIfNeeded(const std::vector<std::vector<TensorPtr>> &input_tensors) {
-  if (!init_tensors_.empty()) {
-    return;
-  }
-  bool need_save = std::any_of(input_tensors.begin(), input_tensors.end(), [](const std::vector<TensorPtr> &tensors) {
-    return std::any_of(tensors.begin(), tensors.end(), [](const TensorPtr &tensor) {
-      if (tensor == nullptr) {
-        return false;
-      }
-      auto data_ptr = tensor->data_ptr();
-      return data_ptr != nullptr && data_ptr->is_sub_data();
-    });
-  });
-  if (need_save) {
-    init_tensors_ = input_tensors;
-  }
-}
-
 void DataPrepareActor::PrepareData(const std::vector<std::vector<TensorPtr>> &input_tensors, const VectorRef &args,
                                    OpContext<KernelTensor> *const context, GraphExecutionStrategy real_strategy) {
   MS_EXCEPTION_IF_NULL(context);
@@ -336,11 +291,6 @@ void DataPrepareActor::PrepareData(const std::vector<std::vector<TensorPtr>> &in
   PROFILER_START(start_time);
   MS_LOG(DEBUG) << "Data prepare actor(" << GetAID().Name() << ") prepares data.";
   real_strategy_ = real_strategy;
-  // Convert actor running data from input tensors.
-  if (!input_tensors.empty()) {
-    SyncTensorTrunk(input_tensors);
-    SetInitTensorsIfNeeded(input_tensors);
-  }
   try {
     bool not_empty_input = !input_tensors.empty() || !args.empty();
     if (first_step_ || (enable_prepare_case() && not_empty_input)) {
@@ -951,7 +901,7 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
   auto host_kernel_tensor = node_kernel_tensor->CloneKernelTensor();
   host_kernel_tensor->set_device_address(host_tensor_address);
   // Use the device address of host tensor to set device tensor.
-  bool is_need_sync = IsNeedSync(tensor, &is_sub_data_);
+  bool is_need_sync = false;
   if (host_tensor_address != device_tensor) {
     auto ms_context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(ms_context);
