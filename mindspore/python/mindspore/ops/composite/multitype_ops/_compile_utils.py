@@ -292,7 +292,7 @@ def _process_dim_in_multi_dim_index(prev_result, orig_tensor, index, dim, indexe
         orig_dim += 1
         dim += 1
     elif isinstance(index, EllipsisType):
-        ellipsis_dims = (F.rank(orig_tensor) - indexed_dims)
+        ellipsis_dims = F.rank(orig_tensor) - indexed_dims
         orig_dim += ellipsis_dims
         dim += ellipsis_dims
     elif index is None:
@@ -334,10 +334,11 @@ def _process_multi_dim_index(self, indexes, remain_indexes, indexed_dims):
     for i, index in enumerate(indexes):
         if isinstance(index, (list, tuple, np.ndarray)):
             index = Tensor(index)
-        if isinstance(index, Tensor) and F.dtype(index) in (mstype.int8, mstype.int16, mstype.uint16, mstype.uint32,
-                                                            mstype.uint64):
-            # only uint8, int32 and int64 are supported by IndexOp
-            index = F.cast(index, mstype.int64)
+            if isinstance(index, Tensor) and \
+                F.dtype(index) in (mstype.int8, mstype.int16, mstype.uint16, mstype.uint32,
+                                   mstype.uint64, mstype.float16, mstype.float32, mstype.float64):
+                # only uint8, int32 and int64 are supported by IndexOp
+                index = F.cast(index, mstype.int64)
         self_viewed, dim, remain_indexes, orig_dim, need_index_prim = _process_dim_in_multi_dim_index(
             self_viewed, self, index, dim, indexed_dims, i, remain_indexes, orig_dim, need_index_prim)
     return self_viewed, remain_indexes, need_index_prim

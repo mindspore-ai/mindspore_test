@@ -134,6 +134,9 @@ def test_getitem(capture_mode):
         np_expected = np_x[index]
         getitem_check_indexing(ms_x, index, np_expected, capture_mode)
 
+    np_expected = np.empty(shape=(0, 3, 4), dtype=np.int64)
+    getitem_check_indexing(ms_x, [], np_expected, capture_mode)
+
     # Numpy index
     if capture_mode is None:
         numpy_indices = [np.array(0), np.array(True), np.array(False)]
@@ -160,6 +163,7 @@ def test_getitem(capture_mode):
     # Fancy index
     fancy_indices = [([0, 1], [0, 1]),
                      (Tensor([0, 1]), Tensor([0, 1])),
+                     ([0.0, 1.0], [0.0, 1.0]),
                      ([0, 1], 0, [0, 1]),
                      (Tensor([0, 1]), Tensor(0), Tensor([0, 1])),
                      (0, [0, 1], [0, 1]),
@@ -174,6 +178,7 @@ def test_getitem(capture_mode):
                      (Tensor([0, 1]), ..., Tensor([0, 1]))]
 
     np_expecteds = [np.array([[0, 1, 2, 3], [16, 17, 18, 19]]),
+                    np.array([[0, 1, 2, 3], [16, 17, 18, 19]]),
                     np.array([[0, 1, 2, 3], [16, 17, 18, 19]]),
                     np.array([0, 13]),
                     np.array([0, 13]),
