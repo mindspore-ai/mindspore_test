@@ -47,9 +47,6 @@ struct FunctionContext {
   // The input of apply function
   ValuePtrList inputs;
 
-  // The output of forward function
-  ValuePtr outputs;
-
   // The output of forward function in flatten format
   ValuePtrList flatten_outputs;
 

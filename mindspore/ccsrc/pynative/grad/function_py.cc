@@ -15,6 +15,7 @@
  */
 
 #include "pynative/grad/function_py.h"
+#include <string>
 #include <unordered_map>
 #include <utility>
 #include "utils/log_adapter.h"
@@ -25,12 +26,14 @@
 #include "include/common/utils/convert_utils_py.h"
 #include "include/common/pynative/grad_state.h"
 #include "include/common/pynative/common_utils.h"
+#include "pyboost/functions/auto_grad_guard.h"
+#include "pyboost/functions/auto_generate/functions.h"
 
 namespace mindspore {
 namespace pynative {
 namespace autograd {
 namespace {
-ValuePtr ConvertOutputTensorList(const py::object &obj) {
+ValuePtrList ConvertOutputTensorList(const py::object &obj) {
   py::tuple tuple = py::cast<py::tuple>(obj);
   ValuePtrList res;
   res.reserve(tuple.size());
@@ -43,7 +46,15 @@ ValuePtr ConvertOutputTensorList(const py::object &obj) {
       res.emplace_back(tensor);
     }
   }
-  return std::make_shared<ValueTuple>(res);
+  return res;
+}
+
+TensorPtr view_as_self_with_no_grad(const TensorPtr &self) {
+  kernel::pyboost::OpStatus status{false, false, 0,
+                                   MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET)};
+  kernel::pyboost::OpRunStatus::Get().set_run_info(std::move(status));
+  kernel::pyboost::RequireGradGuard require_grad_guard(false);
+  return kernel::pyboost::view(self, self->shape());
 }
 }  // namespace
 
@@ -197,7 +208,7 @@ void CleanBackwardUnusedTensorDeviceAddress(const std::shared_ptr<FunctionContex
 void ConstructContextAfterForward(const std::shared_ptr<FunctionContext> &context, const FunctionPtr &ctx,
                                   const py::object &outputs) {
   // Convert output object to tensors.
-  context->outputs = ConvertOutputTensorList(outputs);
+  context->flatten_outputs = ConvertOutputTensorList(outputs);
   MS_LOG(DEBUG) << "function base info, has dirty_tensors: " << static_cast<bool>(ctx->dirty_tensors())
                 << "has non_differentiable" << static_cast<bool>(ctx->non_differentiable());
   // Convert object use decided to tensors.
@@ -221,8 +232,6 @@ void ConstructContextAfterForward(const std::shared_ptr<FunctionContext> &contex
     }
   }
   context->input_base_tensors = input_base_tensors;
-  (void)AutoGradUtil::SetValueGradInfo(context->outputs, InputType::kOpOutput);
-  context->flatten_outputs = CommonUtils::FlattenTensorSeqInValue(context->outputs);
 }
 
 py::object FunctionBase::saved_tensors() const {
@@ -270,12 +279,12 @@ py::object FunctionBase::apply(const py::object &cls, const py::args &inputs) {
   runtime::Pipeline::Get().WaitFrontend();
   runtime::Pipeline::Get().WaitBpropStage();  // wait to get inputs value
   for (size_t i = 0; i < inputs.size(); ++i) {
-    auto base_tensor = tensor::ConvertToTensor(inputs[i]);
-    if (base_tensor != nullptr) {
+    const auto tensor = tensor::ConvertToTensor(inputs[i]);
+    if (tensor != nullptr) {
       (void)is_tensor_input.emplace_back(true);
-      base_tensor->set_need_pipeline_sync(true);
-      need_grad_input[i] = AutoGradUtil::NeedGrad(base_tensor) ? py::bool_(true) : py::bool_(false);
-      (void)context->inputs.emplace_back(base_tensor);
+      tensor->set_need_pipeline_sync(true);
+      need_grad_input[i] = AutoGradUtil::NeedGrad(tensor) ? py::bool_(true) : py::bool_(false);
+      (void)context->inputs.emplace_back(tensor);
     } else {
       (void)is_tensor_input.emplace_back(false);
       need_grad_input[i] = py::bool_(false);
@@ -303,46 +312,60 @@ py::object FunctionBase::apply(const py::object &cls, const py::args &inputs) {
       return outputs;
     }
   }
+
+  runtime::Pipeline::Get().WaitFrontend();
+
   ConstructContextAfterForward(context, ctx, outputs);
-  ValuePtrList flatten_outputs = context->flatten_outputs;
-  TensorPtrSet non_diff_tensors = context->non_diff_tensors;
+  auto &flatten_outputs = context->flatten_outputs;
+  const auto &non_diff_tensors = context->non_diff_tensors;
+  const auto &input_tensor_set = context->input_base_tensors;
+  const auto &dirty_tensor_set = context->dirty_tensors;
+
+  size_t num_output = (py::cast<py::tuple>(outputs)).size();
+  py::tuple output_ret(num_output);
+  MS_LOG(DEBUG) << "Output info, modified: " << modified << ", num_output: " << num_output;
+  for (size_t i = 0; i < num_output; ++i) {
+    if (flatten_outputs[i]->isa<tensor::Tensor>()) {
+      auto tensor = flatten_outputs[i]->cast<tensor::TensorPtr>();
+      bool is_diff = non_diff_tensors.count(tensor) == 0;
+      if (!is_diff) {
+        // For tensor not need grad, we should clean grad meta data.
+        tensor = std::make_shared<tensor::Tensor>(*tensor);
+        tensor->set_auto_grad_meta_data(nullptr);
+        output_ret[i] = CValueToPybindObj(tensor);
+      } else {
+        if (input_tensor_set.count(tensor) > 0) {
+          if (dirty_tensor_set.count(tensor) == 0) {
+            tensor = view_as_self_with_no_grad(tensor);
+            flatten_outputs[i] = tensor;
+          }
+        }
+        AutoGradUtil::SetValueGradInfo(tensor, InputType::kOpOutput);
+        output_ret[i] = CValueToPybindObj(tensor);
+      }
+    } else {
+      output_ret[i] = (py::cast<py::tuple>(outputs))[i];
+    }
+  }
+
   // Clean device address to reduce the occupation of resources.
   CleanBackwardUnusedTensorDeviceAddress(context);
   // Generate saved nodes， and clear saved tensor.
   ctx->GenerateSavedNodes(context);
+
   const auto &forward_executor = pynative_executor->forward_executor();
-  runtime::Pipeline::Get().WaitFrontend();
   if (forward_executor->enable_async()) {
     auto task = [new_context = std::move(context)]() mutable { (void)CallCustomPyFunction(new_context); };
     grad_executor->DispatchGradQueueTask(std::move(task));
   } else {
     (void)CallCustomPyFunction(context);
   }
-  size_t num_output = (py::cast<py::tuple>(outputs)).size();
-  py::tuple output_ret(num_output);
-  MS_LOG(DEBUG) << "Output info, modified: " << modified << ", num_output: " << num_output;
-  for (size_t i = 0; i < num_output; ++i) {
-    if (flatten_outputs[i]->isa<tensor::Tensor>()) {
-      auto base_tensor = flatten_outputs[i]->cast<tensor::TensorPtr>();
-      bool is_diff = non_diff_tensors.count(base_tensor) == 0;
-      if (!is_diff) {
-        // For tensor not need grad, we should clean grad meta data.
-        base_tensor = std::make_shared<tensor::Tensor>(*base_tensor);
-        base_tensor->set_auto_grad_meta_data(nullptr);
-        output_ret[i] = CValueToPybindObj(base_tensor);
-      } else {
-        output_ret[i] = CValueToPybindObj(flatten_outputs[i]);
-      }
-    } else {
-      output_ret[i] = (py::cast<py::tuple>(outputs))[i];
-    }
-  }
+
   MS_LOG(DEBUG) << "Leave apply function.";
   if (modified) {
     return output_ret[0];
-  } else {
-    return output_ret;
   }
+  return output_ret;
 }
 
 void FunctionBase::GenerateSavedNodes(const std::shared_ptr<FunctionContext> &ctx) {
