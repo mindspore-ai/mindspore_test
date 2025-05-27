@@ -53,7 +53,7 @@ class AscendCommunicationGroup : public CommunicationGroup {
                          uint32_t local_rank_size) override;
 
   // Check if CANN so supports the target HCCL comm config parameters.
-  bool isSupportConfigParameter(HcclCommConfigCapability config_parameter);
+  bool IsSupportConfigParameter(HcclCommConfigCapability config_parameter);
 
   // Return HcclCommConfig based on users' options configuration.
   HcclCommConfig CreateHcclCommConfig();
