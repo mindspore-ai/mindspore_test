@@ -124,6 +124,27 @@ void ConditionSwitchActor::ExecuteResizeKernelModTask(OpContext<KernelTensor> *c
   Async(kernel_async_launch_aid_, &KernelAsyncLaunchActor::LaunchKernel, context, this);
 }
 
+void ConditionSwitchActor::UpdateMemoryFreeList(OpContext<KernelTensor> *const context) {
+  // Set input device address to memory free list by free index.
+  for (size_t free_list_index = 0; free_list_index < input_free_index_.size(); ++free_list_index) {
+    size_t input_list_index = input_free_index_[free_list_index];
+    if (free_list_index >= new_memory_free_list_.size() || input_list_index >= input_kernel_tensors_.size() ||
+        input_list_index >= pre_input_kernel_tensors_.size()) {
+      MS_LOG(EXCEPTION) << "Invalid free position:" << free_list_index
+                        << " free list size:" << new_memory_free_list_.size() << " or input index:" << input_list_index
+                        << " input size:" << input_kernel_tensors_.size()
+                        << " pre input size:" << pre_input_kernel_tensors_.size() << " for actor:" << GetAID();
+    }
+    new_memory_free_list_[free_list_index] =
+      (pre_input_kernel_tensors_[input_list_index] == nullptr ? input_kernel_tensors_[input_list_index]
+                                                              : pre_input_kernel_tensors_[input_list_index]);
+    MS_LOG(DEBUG) << "Add new memory free list for input index:" << input_list_index
+                  << " input kernel tensor:" << input_kernel_tensors_[input_list_index]
+                  << " and pre input kernel tensor:" << pre_input_kernel_tensors_[input_list_index]
+                  << " for kernel actor:" << GetAID();
+  }
+}
+
 void ConditionSwitchActor::ExecuteLaunchKernelTask(OpContext<KernelTensor> *const context) {
   ProfilerRecorder profiler(ProfilerModule::kKernel, ProfilerEvent::kKernelLaunch, GetAID().Name());
   MS_EXCEPTION_IF_NULL(kernel_);
@@ -157,9 +178,12 @@ void ConditionSwitchActor::ExecuteLaunchKernelTask(OpContext<KernelTensor> *cons
                         << " total input size:" << input_kernel_tensors_.size()
                         << " for node:" << kernel_->DebugString() << " for actor:" << GetAID();
     }
-    new_memory_free_list_.emplace_back(input_kernel_tensors_[input_index]);
-    MS_LOG(DEBUG) << "Add decrease new ref count for kernel tensor:" << input_kernel_tensors_[input_index]
-                  << " in actor:" << GetAID();
+    auto free_kernel_tensor =
+      (pre_input_kernel_tensors_[input_index] == nullptr ? input_kernel_tensors_[input_index]
+                                                         : pre_input_kernel_tensors_[input_index]);
+    new_memory_free_list_.emplace_back(free_kernel_tensor);
+    MS_LOG(DEBUG) << "Add decrease new ref count for kernel tensor:" << free_kernel_tensor << " in actor:" << GetAID();
+    pre_input_kernel_tensors_[input_index] = nullptr;
   }
   if (branch_output_free_index_.find(branch_names_[index]) != branch_output_free_index_.end()) {
     for (size_t output_index : branch_output_free_index_[branch_names_[index]]) {

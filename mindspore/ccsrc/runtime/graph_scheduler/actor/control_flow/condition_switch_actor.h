@@ -52,6 +52,7 @@ class ConditionSwitchActor : public KernelActor {
   void ExecuteLaunchKernelTask(OpContext<KernelTensor> *const context) override;
   void FetchInput(OpContext<KernelTensor> *const context);
   void SendOutput(OpContext<KernelTensor> *const context, size_t index);
+  void UpdateMemoryFreeList(OpContext<KernelTensor> *const context) override;
 
  private:
   void FetchParameterInput(OpContext<KernelTensor> *const context);
