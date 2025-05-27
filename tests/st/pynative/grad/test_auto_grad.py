@@ -20,6 +20,8 @@ from mindspore.ops import composite as C
 from mindspore import Tensor, Parameter
 from mindspore import nn
 from mindspore import ops
+from mindspore.common.api import _pynative_executor
+from mindspore.ops.composite import GradOperation
 from tests.mark_utils import arg_mark
 
 
@@ -381,3 +383,29 @@ def test_auto_grad_none_add_net():
     net = NoneAddNet()
     grad = mindspore.grad(net)(x)
     assert np.allclose(grad.asnumpy(), np.array([8.], dtype=np.float32), 0.00001, 0.00001)
+
+
+def first_grad_net(x):
+    return x * x
+
+
+def nested_grad_net(x):
+    grad_param = GradOperation(True, True, False)
+    _pynative_executor.set_grad_flag(True)
+    _pynative_executor.check_run(grad_param, first_grad_net, None, None, True, x, create_graph=False)
+    _pynative_executor.new_graph(first_grad_net, x)
+    output = first_grad_net(x)
+    _pynative_executor.end_graph(first_grad_net, output, x)
+    grads = _pynative_executor.grad(first_grad_net, grad_param, None, None, x)
+    return grads + x
+
+
+def test_check_run_first_order_net():
+    """
+    Feature: Test auto grad check run.
+    Description: Test auto grad check run.
+    Expectation: Success.
+    """
+    x = Tensor([2], mindspore.float32)
+    grad = mindspore.grad(nested_grad_net)(x)
+    assert np.allclose(grad.asnumpy(), np.array([1.0], dtype=np.float32), 0.00001, 0.00001)

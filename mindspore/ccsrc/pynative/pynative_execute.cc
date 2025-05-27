@@ -219,8 +219,8 @@ bool PyNativeExecutor::IsHighOrder() const { return grad_executor()->IsHighOrder
 
 py::object PyNativeExecutor::CheckAlreadyRun(const prim::GradOperationPtr &grad, const py::object &obj,
                                              const py::object &weights, const py::object &grad_hash_id,
-                                             const py::args &args) const {
-  return grad_executor()->CheckAlreadyRun(grad, obj, weights, grad_hash_id, args);
+                                             const py::args &args, const py::kwargs &kwargs) const {
+  return grad_executor()->CheckAlreadyRun(grad, obj, weights, grad_hash_id, args, kwargs);
 }
 
 void PyNativeExecutor::NewGraph(const py::object &obj, const py::args &args) const {
