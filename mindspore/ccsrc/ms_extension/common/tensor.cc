@@ -39,10 +39,12 @@ Tensor::Tensor(const mindspore::ValuePtr &value) {
 void *Tensor::GetDataPtr() const {
   auto t = tensor();
   MS_EXCEPTION_IF_NULL(t);
-  if (t->device_address() == nullptr) {
+  auto device_address = t->device_address();
+  MS_EXCEPTION_IF_NULL(device_address);
+  if (device_address->GetDeviceType() == mindspore::device::DeviceType::kCPU) {
     return nullptr;
   }
-  int64_t offset = static_cast<int64_t>(t->data().itemsize()) * t->storage_offset();
+  int64_t offset = static_cast<int64_t>(t->DataItemSize()) * t->storage_offset();
   return static_cast<void *>(static_cast<int8_t *>(t->device_address()->GetMutablePtr()) + offset);
 }
 

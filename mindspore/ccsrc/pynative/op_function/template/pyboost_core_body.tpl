@@ -24,7 +24,7 @@ py::object PYNATIVE_EXPORT ${func_name}_OP(const PrimitivePtr &prim, const std::
 
         auto outputs = kernel::pyboost::${operator_name}(${cast_args});
         kernel::pyboost::PyBoostUtils::set_cur_stream_id(old_stream_id);
-
+        (void)kernel::pyboost::OpRunStatus::Get().GetLastOp();
         tensor::SetPromise(promises, outputs);
       }, [promises]() {
         tensor::SetException(promises);

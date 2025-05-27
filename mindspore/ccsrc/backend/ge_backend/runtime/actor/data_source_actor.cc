@@ -200,7 +200,7 @@ void HostQueueDataSourceActor::OnMemoryAllocFinish(OpContext<KernelTensor> *cons
         }
         continue;
       }
-      if (host_tensor->data_ptr() == nullptr && device_tensor->GetSize() == 0) {
+      if (host_tensor->device_address() == nullptr && device_tensor->GetSize() == 0) {
         MS_LOG(INFO) << "Empty tuple sync";
         continue;
       }

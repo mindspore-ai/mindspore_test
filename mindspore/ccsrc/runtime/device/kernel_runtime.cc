@@ -1021,18 +1021,8 @@ void KernelRuntime::AssignValueNodeTensor(const ValueNodePtr &value_node, const 
       }
     }
     AnfAlgo::SetOutputAddr(address, output_idx, value_node);
-    size_t tensor_size = LongToSize(tensor->DataNBytes());
-    std::string format = "DefaultFormat";
-    if (tensor->isa<tensor::Tensor>()) {
-      format = std::dynamic_pointer_cast<tensor::Tensor>(tensor)->device_info().host_format_;
-    }
-    if (!address->SyncHostToDevice(AnfAlgo::GetRuntimePaddingShape(value_node, 0), tensor_size, tensor->data_type(),
-                                   format, tensor->data_ptr())) {
-      MS_EXCEPTION(NotExistsError) << "ValueNode SyncHostToDevice fail!" << value_node->DebugString()
-                                   << "node format is" << AnfAlgo::GetOutputFormat(value_node, output_idx)
-                                   << "node dtype is "
-                                   << common::AnfAlgo::GetOutputInferDataType(value_node, output_idx);
-    }
+    // todo: remove
+    std::abort();
   }
 }
 
@@ -1501,10 +1491,9 @@ void KernelRuntime::InitGraphInputTensors(const std::shared_ptr<MemScheduler> &m
       device_address->set_ptr(nullptr);
     }
     if (need_sync) {
-      const auto &shape = AnfAlgo::GetRuntimePaddingShape(input_node, 0);
       if (device_address->GetPtr() != nullptr) {
-        (void)device_address->SyncHostToDevice(shape, LongToSize(tensor->DataNBytes()), tensor->data_type(),
-                                               tensor->device_info().host_format_, tensor->data_ptr());
+        // todo: remove
+        std::abort();
       } else {
         mem_scheduler->AddMemNeedInit(device_address.get());
       }

@@ -1647,11 +1647,7 @@ void GEBackend::SyncTensorData(const tensor::TensorPtr &host_tensor,
         MS_LOG(EXCEPTION) << "Invalid index:" << index << " for map tensor:" << host_tensor->ToString();
     }
   };
-  ShapeVector host_shape = {};
-  // GetRuntimePaddingShape doesn't support the value tuple node.
-  if (!node->isa<ValueNode>()) {
-    host_shape = AnfAlgo::GetRuntimePaddingShape(node, 0);
-  }
+
   auto get_tensor_num = (host_tensor->isa<tensor::MapTensor>() ? kMapTensorNum : kNormalTensorNum);
   for (size_t i = 0; i < get_tensor_num; ++i) {
     const auto &real_host_tensor = get_tensor_by_index(i);
@@ -1659,11 +1655,7 @@ void GEBackend::SyncTensorData(const tensor::TensorPtr &host_tensor,
     // Copy data from host tensor to device.
     auto host_tensor_size = LongToSize(real_host_tensor->DataNBytes());
     auto host_tensor_type = real_host_tensor->data_type();
-    if (node->isa<ValueNode>()) {
-      host_shape = real_host_tensor->shape();
-    }
-    if (!device_tensor->SyncHostToDevice(host_shape, host_tensor_size, host_tensor_type,
-                                         real_host_tensor->device_info().host_format_, real_host_tensor->data_ptr())) {
+    if (!SyncCopy(device_tensor.get(), real_host_tensor->device_address().get(), kDefaultStreamIndex)) {
       MS_LOG(EXCEPTION) << "SyncHostToDevice failed, node name: " + node->fullname_with_scope() +
                              ", host tensor size: " + std::to_string(host_tensor_size) +
                              ", host tensor type: " + std::to_string(static_cast<int>(host_tensor_type)) +

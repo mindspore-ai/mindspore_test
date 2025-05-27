@@ -235,7 +235,7 @@ void CopyHostTensorToKernelTensor(const tensor::TensorPtr &host_tensor, const ke
     }
     return;
   }
-  if (host_tensor->data_ptr() == nullptr && device_tensor->GetSize() == 0) {
+  if (host_tensor->device_address() == nullptr && device_tensor->GetSize() == 0) {
     MS_LOG(INFO) << "Empty tuple sync";
     return;
   }

@@ -18,6 +18,7 @@
 #include <vector>
 #include <map>
 #include <functional>
+#include "ir/tensor_api.h"
 namespace mindspore {
 tensor::TensorPtr TensorConstructUtils::CreateZerosTensor(const TypePtr &type, const std::vector<int64_t> &shape) {
   MS_EXCEPTION_IF_NULL(type);
@@ -40,7 +41,7 @@ tensor::TensorPtr TensorConstructUtils::CreateOnesTensor(const TypePtr &type, co
                                                          bool skip_exception) {
   MS_EXCEPTION_IF_NULL(type);
   auto type_id = ExtractTypeId(type);
-  tensor::TensorPtr tensor = std::make_shared<tensor::Tensor>(type_id, shape);
+  tensor::TensorPtr tensor = tensor::empty(type_id, shape, device::DeviceType::kCPU);
   const size_t &mem_size = LongToSize(tensor->ElementsNum());
   auto tensor_data = tensor->data_c();
   std::map<TypeId, std::function<void()>> type_dict{

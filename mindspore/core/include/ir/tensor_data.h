@@ -68,7 +68,7 @@ class MS_CORE_API TensorData {
   /// \brief Get const data pointer.
   ///
   /// \return Const data pointer.
-  virtual const void *const_data() const = 0;
+  virtual void *const_data() const = 0;
 
   /// \brief Get whether this tensor data is from numpy.
   ///
@@ -286,13 +286,13 @@ class TensorStringifier {
 
   std::string ToString(TypeId, const ShapeVector &shape, bool use_comma) const {
     constexpr auto valid =
-        std::is_same<T, bool>::value || std::is_same<T, uint8_t>::value || std::is_same<T, int8_t>::value ||
-            std::is_same<T, int16_t>::value || std::is_same<T, int32_t>::value || std::is_same<T, int64_t>::value ||
-            std::is_same<T, uint16_t>::value || std::is_same<T, uint32_t>::value || std::is_same<T, uint64_t>::value ||
-            std::is_same<T, float16>::value || std::is_same<T, float>::value || std::is_same<T, double>::value ||
-            std::is_same<T, float8_e4m3fn>::value || std::is_same<T, float8_e5m2>::value ||
-            std::is_same<T, hifloat8>::value || std::is_same<T, ComplexStorage<float>>::value ||
-            std::is_same<T, ComplexStorage<double>>::value || std::is_same<T, bfloat16>::value;
+      std::is_same<T, bool>::value || std::is_same<T, uint8_t>::value || std::is_same<T, int8_t>::value ||
+      std::is_same<T, int16_t>::value || std::is_same<T, int32_t>::value || std::is_same<T, int64_t>::value ||
+      std::is_same<T, uint16_t>::value || std::is_same<T, uint32_t>::value || std::is_same<T, uint64_t>::value ||
+      std::is_same<T, float16>::value || std::is_same<T, float>::value || std::is_same<T, double>::value ||
+      std::is_same<T, float8_e4m3fn>::value || std::is_same<T, float8_e5m2>::value ||
+      std::is_same<T, hifloat8>::value || std::is_same<T, ComplexStorage<float>>::value ||
+      std::is_same<T, ComplexStorage<double>>::value || std::is_same<T, bfloat16>::value;
     static_assert(valid, "Type is invalid");
     if (data_size_ == 0) {
       return "";
@@ -564,7 +564,7 @@ class TensorDataImpl : public TensorData {
 
   const std::string file_path() const override { return file_path_; }
 
-  const void *const_data() const override {
+  void *const_data() const override {
     // May return nullptr if data not initialized.
     if (ref_mem_) {
       return external_data_;

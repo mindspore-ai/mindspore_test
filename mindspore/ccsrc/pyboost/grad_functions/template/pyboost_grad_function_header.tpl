@@ -45,7 +45,7 @@ void ChangeInputToAttr(const PrimitivePtr &prim, const ValuePtr &input_names, co
       }
       if (value->isa<tensor::Tensor>()) {
         auto tensor = value->cast<tensor::TensorPtr>();
-        if (tensor->data().const_data() == nullptr && !tensor->has_user_data(kTensorValueIsEmpty)) {
+        if (tensor->unsafe_data() == nullptr && !tensor->has_user_data(kTensorValueIsEmpty)) {
           return;
         }
       }

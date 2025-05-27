@@ -53,9 +53,9 @@ std::vector<int64_t> GetTensorValue(const AnfNodePtr &node) {
   }
   auto tensor_ptr = ori_value->cast<tensor::TensorPtr>();
   std::vector<int64_t> value;
-  auto element_size = tensor_ptr->data().size();
+  auto element_size = tensor_ptr->DataSize();
   auto *data = static_cast<int64_t *>(tensor_ptr->data_c());
-  for (auto i = 0; i < element_size; i++) {
+  for (size_t i = 0; i < element_size; i++) {
     value.push_back(data[i]);
   }
   return value;

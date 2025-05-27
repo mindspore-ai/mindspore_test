@@ -24,6 +24,7 @@
 #include <set>
 #include <deque>
 #include <vector>
+#include "ir/tensor_api.h"
 #include "common/kernel_build_info.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"
@@ -277,7 +278,7 @@ tensor::TensorPtr CreateTensorWithValueTuple(const ValueTuplePtr &value_tuple_pt
     }
   }
   std::vector<int64_t> tensor_shape = {SizeToLong(values.size())};
-  tensor::TensorPtr tensor = std::make_shared<tensor::Tensor>(type_ptr->type_id(), tensor_shape);
+  tensor::TensorPtr tensor = tensor::empty(type_ptr->type_id(), tensor_shape, device::DeviceType::kCPU);
   MS_EXCEPTION_IF_NULL(tensor);
   tensor::DeviceInfo device_info{kOpFormat_DEFAULT, type_ptr};
   tensor->set_device_info(device_info);
@@ -679,7 +680,7 @@ ValueNodePtr CreateShapeValueNode(const FuncGraphPtr &func_graph, const ShapeVec
     // create Tensor
     int64_t shape_dim = SizeToLong(shape.size());
     std::vector<int64_t> shape_vec_shape = {shape_dim};
-    auto shape_tensor = std::make_shared<tensor::Tensor>(kNumberTypeInt64, shape_vec_shape);
+    auto shape_tensor = tensor::empty(kNumberTypeInt64, shape_vec_shape, device::DeviceType::kCPU);
     MS_EXCEPTION_IF_NULL(shape_tensor);
     auto data_ptr = shape_tensor->data_c();
     MS_EXCEPTION_IF_NULL(data_ptr);

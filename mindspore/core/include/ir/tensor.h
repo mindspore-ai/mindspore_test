@@ -433,22 +433,10 @@ class MS_CORE_API Tensor : public MetaTensor {
 
   std::string DataToString(bool use_comma) const;
 
-  /// \brief Get the internal data object.
+  /// \brief Get the internal data ptr. The ptr maybe null if the data is not initialized.
   ///
-  /// \return The reference to internal data object.
-  TensorData &data();
-
-  /// \brief Get the internal data shared pointer.
-  ///
-  /// return The reference to internal data object.
-  const TensorDataPtr &data_ptr() const;
-
-  /// \brief Get the internal data object.
-  ///
-  /// \return The reference to internal data object.
-  const TensorData &data() const;
-
-  void set_data(const TensorDataPtr &data);
+  /// \return The ptr in device_address of Tensor.
+  void *unsafe_data();
 
   TypeId set_data_type(TypeId data_type) override;
 

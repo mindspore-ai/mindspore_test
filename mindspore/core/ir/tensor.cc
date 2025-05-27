@@ -94,6 +94,7 @@ Tensor::Tensor(const Tensor &tensor, TypeId data_type)
       init_flag_(tensor.init_flag_),
       cache_enable_(tensor.cache_enable_),
       copy_done_flag_(tensor.copy_done_flag_) {
+  MS_LOG(ERROR) << "Not support change tensor data type";
   std::abort();
 }
 
@@ -354,9 +355,30 @@ bool Tensor::ValueEqual(const Tensor &tensor) const {
   return (&tensor == this || (MetaTensor::operator==(tensor) && TensorEqual(*this, tensor)));
 }
 
-TypeId Tensor::set_data_type(TypeId data_type) { std::abort(); }
+TypeId Tensor::set_data_type(TypeId data_type) {
+  if (data_type != data_type_) {
+    MS_EXCEPTION_IF_NULL(device_sync_);
+    if (device_sync_->GetDeviceType() != device::DeviceType::kCPU) {
+      auto cpu_tensor = cpu();
+      device_sync_ = cpu_tensor->device_address();
+    }
+    auto new_dtype_address = MakeDeviceAddress(data_type, shape_, true);
+    if (!SyncCopy(new_dtype_address.get(), device_sync_.get(), device_sync_->stream_id())) {
+      MS_LOG(EXCEPTION) << "Sync copy failed";
+    }
+    device_sync_ = new_dtype_address;
+    id_ = MakeId();
+    return MetaTensor::set_data_type(data_type);
+  }
+  return data_type;
+}
 
-size_t Tensor::set_shape(const ShapeVector &shape) { std::abort(); }
+size_t Tensor::set_shape(const ShapeVector &shape) {
+  if (DataSize() != SizeOf(shape)) {
+    device_sync_ = MakeDeviceAddress(data_type_, shape, true);
+  }
+  return MetaTensor::set_shape(shape);
+}
 
 std::string Tensor::GetShapeAndDataTypeInfo() const {
   std::ostringstream buf;
@@ -492,15 +514,17 @@ TensorPtr Tensor::cpu() const {
   if (device_address->GetDeviceType() == device::DeviceType::kCPU) {
     return std::make_shared<Tensor>(data_type_, shape_, device_address);
   }
-  auto dst = MakeDeviceAddress(data_type_, shape_);
+  auto dst = MakeDeviceAddress(data_type_, shape_, true);
   SyncCopy(dst.get(), device_address.get(), device_address->stream_id());
   return std::make_shared<Tensor>(data_type_, shape_, dst);
 }
 
 bool Tensor::to_device() {
   if (to_device_callback_ == nullptr) {
+    MS_LOG(DEBUG) << "No callback found.";
     return true;
   }
+  MS_LOG(DEBUG) << "Run callback.";
   bool ret = to_device_callback_();
   to_device_callback_ = nullptr;
   return ret;
@@ -551,13 +575,7 @@ std::string Tensor::DataToString(bool use_comma) const {
   return GetTensorDataString(data_type_, shape_, device_sync_->GetMutablePtr(), DataSize(), DataDim(), use_comma);
 }
 
-TensorData &Tensor::data() { std::abort(); }
-
-const TensorDataPtr &Tensor::data_ptr() const { std::abort(); }
-
-const TensorData &Tensor::data() const { std::abort(); }
-
-void Tensor::set_data(const TensorDataPtr &data) { std::abort(); }
+void *Tensor::unsafe_data() { return device_address()->GetMutablePtr(); }
 
 void Tensor::ExecuteUpdateValueCallback() const {
   if (update_value_callback_ != nullptr) {

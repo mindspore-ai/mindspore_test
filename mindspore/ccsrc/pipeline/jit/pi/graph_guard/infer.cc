@@ -793,7 +793,7 @@ bool IsParameterObject(const py::handle &handle) {
 bool CheckTensorDataInitialized(const py::object &py_tensor) {
   if (tensor::IsTensorPy(py_tensor)) {
     auto tensor = tensor::ConvertToTensor(py_tensor);
-    return tensor->data().const_data() != nullptr;
+    return tensor->unsafe_data() != nullptr;
   }
 
   return false;
