@@ -155,7 +155,7 @@ DynamicMemPoolBestFit::~DynamicMemPoolBestFit() {
   stream_pair_addresses_.clear();
 }
 
-void DynamicMemPoolBestFit::Initialize(size_t init_size, size_t increase_size, size_t /*max_size*/) {
+void DynamicMemPoolBestFit::Initialize(size_t init_size, size_t increase_size, size_t /* max_size */) {
   if (init_size == 0) {
     MS_LOG(INFO) << "Skip initialization of memory pool since init size is not configured.";
     return;

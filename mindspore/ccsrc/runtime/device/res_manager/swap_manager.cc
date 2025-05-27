@@ -115,7 +115,7 @@ void SwapManager::FreeDeviceMemory(void *ptr) {
   device_memory_pool_->FreeTensorMem(ptr);
 }
 
-void *SwapManager::AllocHostMemorySimply(const size_t &size, uint32_t /*stream_id*/) {
+void *SwapManager::AllocHostMemorySimply(const size_t &size, uint32_t /* stream_id */) {
   MS_EXCEPTION_IF_NULL(pin_mem_pool_);
   return pin_mem_pool_->AllocPinMem(size);
 }
@@ -177,7 +177,7 @@ bool SwapManager::FileToHostMemory(void *host_memory, const std::string &file_na
   }
 }
 
-bool SwapManager::EnoughFileSpace(const size_t &size, uint32_t /*stream_id*/) {
+bool SwapManager::EnoughFileSpace(const size_t &size, uint32_t /* stream_id */) {
   return current_used_file_size_ + size <= max_file_size_;
 }
 

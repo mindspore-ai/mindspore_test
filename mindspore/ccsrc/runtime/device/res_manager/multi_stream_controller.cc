@@ -31,6 +31,9 @@ struct AtomicWrapper {
   explicit AtomicWrapper(const std::atomic<T> &value) : value_(value.load()) {}
   AtomicWrapper(const AtomicWrapper &other) : value_(other.value_.load()) {}
   AtomicWrapper &operator=(const AtomicWrapper &other) {
+    if (this == &other) {
+      return *this;
+    }
     value_.store(other.value_.load());
     return *this;
   }
