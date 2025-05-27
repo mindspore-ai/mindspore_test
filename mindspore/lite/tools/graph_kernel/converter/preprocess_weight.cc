@@ -110,7 +110,7 @@ AnfNodePtr SubstituteConv2D::InferWeightValue(const AnfNodePtr &node) {
   if (tensor == nullptr) {
     return nullptr;
   }
-  if (tensor->data().const_data() == nullptr) {
+  if (tensor->unsafe_data() == nullptr) {
     return nullptr;
   }
   if (tensor->data_type() != kNumberTypeFloat32) {
@@ -182,7 +182,7 @@ AnfNodePtr MatmulPackB::InferValue(const AnfNodePtr &node) {
   if (tensor == nullptr) {
     return node;
   }
-  if (tensor->data().const_data() == nullptr) {
+  if (tensor->unsafe_data() == nullptr) {
     return node;
   }
 

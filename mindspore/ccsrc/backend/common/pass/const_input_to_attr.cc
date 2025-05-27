@@ -198,7 +198,7 @@ CNodePtr ConstInputToAttr(const CNodePtr &cnode, const mindspore::HashSet<size_t
       auto value = value_node->value();
       if (value->isa<tensor::Tensor>()) {
         auto tensor = value->cast<tensor::TensorPtr>();
-        if (tensor->data().const_data() == nullptr && !tensor->has_user_data(kTensorValueIsEmpty)) {
+        if (tensor->unsafe_data() == nullptr && !tensor->has_user_data(kTensorValueIsEmpty)) {
           need_update = false;
           break;
         }

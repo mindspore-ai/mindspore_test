@@ -40,7 +40,7 @@ tensor::TensorPtr TransValueToInt32(const AnfNodePtr &input) {
   auto tensor = ori_value->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(tensor);
   // case1: tensor no (data & empty)
-  if (tensor->data().const_data() == nullptr && !tensor->has_user_data(kTensorValueIsEmpty)) {
+  if (tensor->unsafe_data() == nullptr && !tensor->has_user_data(kTensorValueIsEmpty)) {
     MS_LOG(INFO) << "Const input data ptr is null and no empty tensor.";
     return nullptr;
   }
@@ -54,7 +54,7 @@ tensor::TensorPtr TransValueToInt32(const AnfNodePtr &input) {
   tensor::TensorPtr new_tensor = std::make_shared<tensor::Tensor>(kInt32->type_id(), tensor->shape());
   auto *ori_data = static_cast<int64_t *>(tensor->data_c());
   auto *new_data = static_cast<int32_t *>(new_tensor->data_c());
-  for (int i = 0; i < SizeToInt(tensor->data().size()); ++i) {
+  for (int i = 0; i < SizeToInt(tensor->DataSize()); ++i) {
     new_data[i] = static_cast<int32_t>(ori_data[i]);
   }
   // add device info

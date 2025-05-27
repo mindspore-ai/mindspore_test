@@ -47,19 +47,21 @@ DeviceAddressMakerFunc GetDeviceAddressMaker(device::DeviceType device_target) {
   return maker;
 }
 
-DeviceSyncPtr MakeDeviceAddress(TypeId data_type, const ShapeVector &shape) {
+DeviceSyncPtr MakeDeviceAddress(TypeId data_type, const ShapeVector &shape, bool init, device::DeviceType device_type) {
   // todo: set allocator
   auto tensor_data = tensor::MakeTensorData(data_type, shape);
-  return DeviceAddressMaker(tensor_data->data(), data_type, shape)
+  return DeviceAddressMaker(init ? tensor_data->data() : tensor_data->const_data(), data_type, shape)
     .set_deleter([tensor_data](void *) {})
-    .set_maker(GetDeviceAddressMaker(device::DeviceType::kCPU))
+    .set_maker(GetDeviceAddressMaker(device_type))
     .make_device_address();
 }
 
-DeviceSyncPtr MakeDeviceAddress(TypeId data_type, const ShapeVector &shape, const tensor::TensorDataPtr &tensor_data) {
-  return DeviceAddressMaker(tensor_data->data(), data_type, shape)
+DeviceSyncPtr MakeDeviceAddress(TypeId data_type, const ShapeVector &shape, const tensor::TensorDataPtr &tensor_data,
+                                device::DeviceType device_type) {
+  // Just GET data ptr of tensor_data and don't init the data.
+  return DeviceAddressMaker(tensor_data->const_data(), data_type, shape)
     .set_deleter([tensor_data](void *) {})
-    .set_maker(GetDeviceAddressMaker(device::DeviceType::kCPU))
+    .set_maker(GetDeviceAddressMaker(device_type))
     .make_device_address();
 }
 }  // namespace mindspore

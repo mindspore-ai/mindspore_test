@@ -86,7 +86,7 @@ bool ValueDependOpUtils::IsConstInput(const AnfNodePtr &node) {
             return false;
           }
           auto tensor = value->cast<tensor::TensorPtr>();
-          if (tensor != nullptr && tensor->data().const_data() == nullptr) {
+          if (tensor != nullptr && tensor->unsafe_data() == nullptr) {
             return false;
           }
         }
