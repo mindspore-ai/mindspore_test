@@ -36,6 +36,8 @@
 #include "utils/phase.h"
 #include "utils/ms_context.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_q.h"
 
 namespace mindspore::kernel {
 namespace {
@@ -58,6 +60,45 @@ static const std::unordered_map<mindspore::internal::LogLevel, mindspore::MsLogL
   {mindspore::internal::LogLevel::WARNING, mindspore::MsLogLevel::kWarning},
   {mindspore::internal::LogLevel::ERROR, mindspore::MsLogLevel::kError},
   {mindspore::internal::LogLevel::EXCEPTION, mindspore::MsLogLevel::kException}};
+
+// {{{prefill input indices}, {prefill output indices}}, {{decode input indices}, {decode output indices}}}
+using IndexTable = std::vector<std::vector<std::vector<size_t>>>;
+using GetNzIndicesFunc = std::function<IndexTable(const AnfNodePtr &node)>;
+
+static IndexTable GroupedMatmulV4NzIndicesGetter(const AnfNodePtr &node) {
+  auto x_dtype = common::AnfAlgo::GetPrevNodeOutputInferDataType(node, 0);
+  auto weight_dtype = common::AnfAlgo::GetPrevNodeOutputInferDataType(node, 1);
+  if (x_dtype == kNumberTypeInt8 && (weight_dtype == kNumberTypeInt8 || weight_dtype == kNumberTypeInt4)) {
+    auto x_shape = common::AnfAlgo::GetPrevNodeOutputInferShape(node, 0);
+    auto weight_shape = common::AnfAlgo::GetPrevNodeOutputInferShape(node, 1);
+    constexpr auto kRankTwo = 2;
+    constexpr auto kRankThree = 3;
+    if (x_shape.size() == kRankTwo && weight_shape.size() == kRankThree) {
+      // only trans weight to NZ when trans_a and tras_b is false
+      if (x_shape[1] == weight_shape[1] && weight_shape[1] != weight_shape[2]) {
+        return {{{1}, {}}, {{1}, {}}};
+      }
+    }
+  }
+
+  return {{{}, {}}, {{}, {}}};
+}
+
+IndexTable MlaNzIndicesGetter(const AnfNodePtr &node) {
+  constexpr auto kCtkvIndex = 2;
+  auto ctkv_dtype = common::AnfAlgo::GetPrevNodeOutputInferDataType(node, kCtkvIndex);
+  if (ctkv_dtype == kNumberTypeInt8) {
+    return {{{}, {}}, {{2, 3}, {}}};
+  }
+
+  return {{{}, {}}, {{}, {}}};
+}
+
+static std::unordered_map<std::string, GetNzIndicesFunc> kNzIndicesGetterMap = {
+  {prim::kPrimGroupedMatmulV4->name(), GroupedMatmulV4NzIndicesGetter},
+  {prim::kPrimMla->name(), MlaNzIndicesGetter},
+};
+
 // unordered_map vector<vector<vector<size_t>>> represents:
 // list[op_name][0] for phase prefill, list[op_name][1] for phase increment;
 // list[op_name][][0] for input indices, list[op_name][][0] for output indices.
@@ -72,8 +113,7 @@ static std::unordered_map<std::string, std::vector<std::vector<std::vector<size_
   {kPrimNameMatmulSplitSiluMulOut1, {{{1}, {}}, {{1}, {}}}},
   {kPrimNameQMatmulSplitSiluFastgeluAddMulOut1, {{{0, 1}, {}}, {{1}, {}}}},
   {kPrimNameQMatmulSplitSiluMulOut1, {{{0, 1}, {}}, {{1}, {}}}},
-  {kGroupedMatmulName, {{{1}, {}}, {{1}, {}}}},
-  {"GroupedMatmulV4", {{{1}, {}}, {{1}, {}}}}};
+  {kGroupedMatmulName, {{{1}, {}}, {{1}, {}}}}};
 
 // unordered_map mean:
 // key is input_idx, value is special_format value
@@ -300,6 +340,57 @@ bool CheckOpSupprtNzFormatOnly(const bool &enable_internal_op, const std::string
          (op_name == kMatMulOpName || op_name == kQuantLinearSparseName || op_name == kQuantBatchMatmulName);
 }
 
+static void UpdateFormat(const AnfNodePtr &node, std::vector<std::string> *input_formats,
+                         std::vector<std::string> *output_formats) {
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  const auto soc_version = context_ptr->ascend_soc_version();
+  auto phase = PhaseManager::GetInstance().phase();
+  auto phase_idx = static_cast<size_t>(IsDecodePhase(phase));
+  auto op_name = AnfUtils::GetCNodeName(node);
+
+  if (soc_version == kAscendVersion310p) {
+    UpdateNzFormatOpsList(node);
+    auto ms_context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(ms_context);
+    auto enable_op_list = ms_context->ms_internal_enable_custom_kernel_list();
+    auto enable_op = (std::find(enable_op_list.begin(), enable_op_list.end(), op_name) != enable_op_list.end());
+    auto support_nz_format_only = CheckOpSupprtNzFormatOnly(enable_op, op_name);
+    auto format_idx_iter = kNzFormatOpsList.find(op_name);
+    if (format_idx_iter != kNzFormatOpsList.end()) {
+      auto input_nz_format_idx = format_idx_iter->second[phase_idx][0];
+      auto output_nz_format_idx = format_idx_iter->second[phase_idx][1];
+      if (CheckMatMulWeightIsUnAlign(node) || support_nz_format_only) {
+        input_nz_format_idx.push_back(0);
+        output_nz_format_idx.push_back(0);
+      }
+
+      for (const auto &input_idx : input_nz_format_idx) {
+        input_formats->at(input_idx) = kOpFormat_FRAC_NZ;
+      }
+      for (const auto &output_idx : output_nz_format_idx) {
+        output_formats->at(output_idx) = kOpFormat_FRAC_NZ;
+      }
+      MS_LOG(INFO) << "Trans format to NZ for op in pahse: " << phase << ", " << op_name
+                   << ". nz input indices: " << input_nz_format_idx << ", nz output indices: " << output_nz_format_idx;
+    }
+  } else if (soc_version == kAscendVersion910b || soc_version == kAscendVersion910_93) {
+    auto nz_indices_getter = kNzIndicesGetterMap.find(op_name);
+    if (nz_indices_getter != kNzIndicesGetterMap.end()) {
+      auto input_nz_format_idx = nz_indices_getter->second(node)[phase_idx][0];
+      auto output_nz_format_idx = nz_indices_getter->second(node)[phase_idx][1];
+      for (const auto &input_idx : input_nz_format_idx) {
+        input_formats->at(input_idx) = kOpFormat_FRAC_NZ;
+      }
+      for (const auto &output_idx : output_nz_format_idx) {
+        output_formats->at(output_idx) = kOpFormat_FRAC_NZ;
+      }
+      MS_LOG(INFO) << "Trans format to NZ for op with new path in pahse: " << phase << ", " << op_name
+                   << ". nz input indices: " << input_nz_format_idx << ", nz output indices: " << output_nz_format_idx;
+    }
+  }
+}
+
 void InternalKernelPlugin::GetValidKernelBuildInfoWithInternalFormat(const AnfNodePtr &node,
                                                                      std::vector<std::string> *input_formats,
                                                                      std::vector<std::string> *output_formats) {
@@ -308,35 +399,8 @@ void InternalKernelPlugin::GetValidKernelBuildInfoWithInternalFormat(const AnfNo
   MS_EXCEPTION_IF_NULL(output_formats);
 
   size_t input_num = common::AnfAlgo::GetInputTensorNum(node);
-  UpdateNzFormatOpsList(node);
 
-  auto phase = PhaseManager::GetInstance().phase();
-  auto phase_idx = static_cast<size_t>(IsDecodePhase(phase));
-  auto op_name = AnfUtils::GetCNodeName(node);
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto enable_op_list = ms_context->ms_internal_enable_custom_kernel_list();
-  auto enable_op = (std::find(enable_op_list.begin(), enable_op_list.end(), op_name) != enable_op_list.end());
-  auto support_nz_format_only = CheckOpSupprtNzFormatOnly(enable_op, op_name);
-
-  auto format_idx_iter = kNzFormatOpsList.find(op_name);
-  if (format_idx_iter != kNzFormatOpsList.end()) {
-    auto input_nz_format_idx = format_idx_iter->second[phase_idx][0];
-    auto output_nz_format_idx = format_idx_iter->second[phase_idx][1];
-    if (CheckMatMulWeightIsUnAlign(node) || support_nz_format_only) {
-      input_nz_format_idx.push_back(0);
-      output_nz_format_idx.push_back(0);
-    }
-
-    for (const auto &input_idx : input_nz_format_idx) {
-      input_formats->at(input_idx) = kOpFormat_FRAC_NZ;
-    }
-    for (const auto &output_idx : output_nz_format_idx) {
-      output_formats->at(output_idx) = kOpFormat_FRAC_NZ;
-    }
-    MS_LOG(INFO) << "Trans format to NZ for op: " << op_name << ". nz input indices: " << input_nz_format_idx
-                 << ", nz output indices: " << output_nz_format_idx;
-  }
+  UpdateFormat(node, input_formats, output_formats);
 
   std::vector<size_t> special_inputs;
   std::vector<int64_t> special_format_inputs;
