@@ -123,6 +123,9 @@ class _ComputeGraphNode(_Node):
         return subprocess.Popen(['/usr/bin/tail', '-f', self.output_file])
 
     def enable_tail_worker_log(self):
+        """
+        Get valid rank ID for tailing the corresponding worker log.
+        """
         tail_worker_log_list = []
         if self.tail_worker_log != "-1":
             tail_worker_log_list.extend([int(num) for num in self.tail_worker_log.split(',')])
