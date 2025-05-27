@@ -276,16 +276,6 @@ Value Range:
 STRICT_CHECK_PARENT_CONTEXT = ''
 
 """
-Name: CELL_PARAMETER_HOOK
-Function: Whether to enable cell parameter hook.
-          Cell parameter hook is an experimental api that may be deleted later.
-Value Range:
-    1: Enable
-    Default: Disable
-"""
-CELL_PARAMETERS_HOOK = ''
-
-"""
 Name: CHECK_BPROP
 Function: Whether to check back propagation nodes. The checking ensures that the shape and dtype of
           back propagation node outputs is the same as input parameters.
@@ -411,7 +401,6 @@ __all__ = [
     "ENABLE_RECOMPUTE_BEFORE_INLINE",
     "STRICT_CHECK_PARENT_CONTEXT",
     "AUTO_PASSES_OPTIMIZE_PATH",
-    "CELL_PARAMETERS_HOOK",
     "CHECK_BPROP",
     "GRAD_FOR_SCALAR",
     "DEBUG_LEVEL",

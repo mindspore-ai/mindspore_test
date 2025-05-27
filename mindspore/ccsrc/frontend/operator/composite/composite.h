@@ -221,8 +221,7 @@ class FRONTEND_EXPORT GradOperation : public MetaFuncGraph {
                        const AnfNodePtr &weights, const AnfNodePtr &position, const FuncGraphPtr &forward_graph,
                        bool is_weights_none) const;
   CNodePtr SetNodeByParameter(const CNodePtr &grad, const FuncGraphPtr &fg) const;
-  CNodePtr AddBackwardCallbackToFuncGraph(const FuncGraphPtr &k_child, const FuncGraphPtr &forward_graph,
-                                          const CNodePtr &fv_bprop) const;
+
   AbstractBasePtr weight_value_;
 };
 using GradOperationPtr = std::shared_ptr<GradOperation>;

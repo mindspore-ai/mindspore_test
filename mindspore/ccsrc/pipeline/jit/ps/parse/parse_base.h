@@ -196,13 +196,7 @@ const char STAGE_NAME[] = "_pipeline_stage";
 const char SEGMENT_NAME[] = "_pipeline_segment";
 
 // Define python cell attributes and methods
-const char CELL_PARAMETERS_FORWARD_HOOK[] = "_parameters_forward_hook";
-const char CELL_PARAMETERS_BACKWARD_HOOK[] = "_parameters_backward_hook";
 const char CELL_PARAMETERS_AND_NAMES[] = "parameters_and_names";
-const char CELL_CELLS_AND_NAMES[] = "cells_and_names";
-
-// Define ref tensor user data keys.
-const char REF_TENSOR_BACKWARD_HOOK[] = "backward_hook";
 
 // Define the Namespace name.
 const char RESOLVE_NAMESPACE_NAME_AST[] = "Ast";                   // For ast type namespace.

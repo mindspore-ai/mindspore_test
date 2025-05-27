@@ -157,8 +157,7 @@ class Cell(Cell_):
     IGNORE_LIST = ['_scope', '_cell_init_args', '_auto_prefix', '_cells', '_params', '_create_time',
                    '_func_graph_flags', '_parameter_layout_dict', '_params_list', '_phase', '_bprop_debug',
                    '_forward_pre_hook', '_forward_hook', '_backward_pre_hook', '_backward_hook',
-                   '_cell_backward_pre_hook', '_cell_backward_hook', '_param_prefix',
-                   'requires_grad', 'cell_type', '_parameters_forward_hook', '_parameters_backward_hook']
+                   '_cell_backward_pre_hook', '_cell_backward_hook', '_param_prefix', 'requires_grad', 'cell_type']
     total_instance_count = 0
     _buffers: Dict[str, Optional[Tensor]]
     global_cells = weakref.WeakKeyDictionary()
@@ -229,10 +228,6 @@ class Cell(Cell_):
         super().__setattr__("_cell_backward_pre_hook", None)
         super().__setattr__("_cell_backward_hook", None)
         super().__setattr__("_is_recursion_hook", False)
-
-        # parameters hook
-        super().__setattr__("_parameters_forward_hook", None)
-        super().__setattr__("_parameters_backward_hook", None)
 
         super().__setattr__("cell_type", None)
         super().__setattr__("_has_config_recompute", False)
@@ -3700,92 +3695,6 @@ class Cell(Cell_):
             self._jit_config_dict = network.jit_config_dict
         if hasattr(network, "_amp_level"):
             self._amp_level = getattr(network, "_amp_level")
-
-    def _register_parameters_hook(self, forward_hook=None, backward_hook=None, all=False):
-        """
-        Register the forward hook for parameters and register the backward hook for the corresponding gradient.
-
-        .. warning::
-            This is an experimental prototype that is subject to change and/or deletion.
-
-        Note:
-            - The `_register_parameters_hook(forward_hook, backward_hook)` only work in graph mode
-            - The `forward_hook` must be defined as the following code.
-              `parameters`: the tuple of the trainble parameters of the Cell, each element in the tuple shuould be
-               in the format of `(param_name, Parameter)`.
-            - The `forward_hook` should have the following signature:
-              forward_hook(parameters) -> None.
-            - The `backward_hook` must be defined as the following code.
-              `gradients`: the tuple of the gradients corresponding to the trainble parameters of the Cell, each
-               element in the tuple shuould be in the format of `(param_name, gradient)`.
-            - The `backward_hook` should have the following signature:
-              backward_hook(parameters) -> New gradients.
-
-        Args:
-            forward_hook (function, optional): Python function or ``None``, Forward hook function. Default: ``None``
-            backward_hook (function, optional): Python function or ``None``, Backward hook function. Default ``None``
-            all (bool, optional): bool, whether to set hooks for all sub cells recursively. Default: ``False``
-
-        Returns:
-            None
-
-        Raises:
-            RuntimeError: If the `forward_hook` or `backward_hook ` has unspoorted syntax under GRAPH MODE.
-            TypeError: If the `forward_hook` or `backward_hook` is not defined as required.
-
-        Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-        Examples:
-            >>> import mindspore as ms
-            >>> from mindspore import Tensor, nn, ops, Parameter
-            >>>
-            >>> ms.set_context(mode=ms.GRAPH_MODE)
-            >>> def parameter_hook(parameters):
-            ...     print("--- enter parameter hook ---")
-            ...     for name, param in parameters:
-            ...         print (name, param)
-            ...     print("--- leave parameter hook ---")
-            ...
-            >>> def gradient_hook(gradients):
-            ...     print("--- enter gradient hook ---")
-            ...     outs = []
-            ...     for name, gradient in gradients:
-            ...         print(name, gradient)
-            ...         outs.append(gradient * 2) # double gradient
-            ...     print("--- leave gradient hook ---")
-            ...     return outs
-            ...
-            >>> class Net(nn.Cell):
-            ...     def __init__(self)
-            ...         super(Net, self).__init__()
-            ...         self.w = Parameter(Tensor(np.array([3.0], np.float32)), name='w')
-            ...     def construct(self, x):
-            ...         return self.w * x
-            ...
-            >>> grad = ops.GradOperation(get_by_list=True)
-            >>> net = Net()
-            >>> net._register_parameters_hook(forward_hook=parameter_hook, backward_hook=gradient_hook)
-            >>> x = Tensor(np.array([4.0]).astype(np.float32))
-            >>> output = grad(net, net.trainable_params())(x)
-            --- enter parameter hook ---
-            w
-            Tensor(shape=[1], dtype=Float32, value=[ 3.00000000e+00])
-            --- leave parameter hook ---
-            --- enter gradient hook ---
-            w
-            Tensor(shape=[1], dtype=Float32, value=[ 4.00000000e+00])
-            --- leave gradient hook ---
-            >>> print("doubled grad: ", output)
-            doubled grad: (Tensor(shape=[1], dtype=Float32, value=[ 8.00000000e+00]),)
-        """
-        if not all:
-            self._parameters_forward_hook = forward_hook
-            self._parameters_backward_hook = backward_hook
-        else:
-            for _, cell in self.cells_and_names():
-                cell._parameters_forward_hook = forward_hook
-                cell._parameters_backward_hook = backward_hook
 
 
 class GraphCell(Cell):
