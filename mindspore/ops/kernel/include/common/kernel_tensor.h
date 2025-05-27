@@ -137,7 +137,8 @@ class OPS_KERNEL_COMMON_API KernelTensor : public AbstractBase {
   std::string ToString() const {
     std::stringstream ofs;
     ofs << this << " shape:" << (GetShape() == nullptr ? "null" : GetShape()->ToString())
-        << " type:" << (GetType() == nullptr ? "null" : GetType()->ToString());
+        << " type:" << (GetType() == nullptr ? "null" : GetType()->ToString())
+        << " value:" << (value_ == nullptr ? "null" : value_->ToString());
     if (device_address_ != nullptr) {
       return ofs.str() + " device address:" + device_address_->ToString();
     }
