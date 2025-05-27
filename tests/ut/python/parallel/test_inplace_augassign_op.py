@@ -17,6 +17,7 @@ import mindspore.nn as nn
 from mindspore import Tensor, context
 from mindspore.common.api import _cell_graph_executor
 from mindspore.ops import composite as C
+from mindspore._extends.parse import compile_config
 from tests.ut.python.ops.test_math_ops import VirtualLoss
 
 grad_all = C.GradOperation(get_all=True)
@@ -116,9 +117,13 @@ def test_inplace_augassign(network):
     Description: augassign net with strategy in semi auto parallel.
     Expectation: compile done without error.
     """
+    compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '1'
+
     context.set_auto_parallel_context(device_num=64, global_rank=15)
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
     net = GradWrap(NetWithLoss(network()))
 
     x = Tensor(5.0)
     compile_net(net, x)
+
+    compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '0'
