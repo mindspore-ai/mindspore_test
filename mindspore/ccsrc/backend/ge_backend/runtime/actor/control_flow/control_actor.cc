@@ -480,7 +480,7 @@ void ControlActor::CreateHeterDeviceTensor(KernelTensor *const node_kernel_tenso
                 << " type:" << input_device_tensor->GetDeviceType() << " for copy actor:" << GetAID();
   DeviceTensorCopyStore::GetInstance().Insert(new_device_tensor.get(), input_device_tensor);
 
-  if (!Copy(new_device_tensor.get(), input_device_tensor)) {
+  if (!SyncCopy(new_device_tensor.get(), input_device_tensor, kDefaultStreamIndex)) {
     std::string error_info =
       "The formal parameter: " + node->DebugString() + " position:" + std::to_string(index) + " copy failed.";
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
