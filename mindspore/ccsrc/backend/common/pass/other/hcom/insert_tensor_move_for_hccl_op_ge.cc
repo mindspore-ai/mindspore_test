@@ -50,6 +50,7 @@ bool IsCareNode(const AnfNodePtr &node, const FuncGraphManagerPtr &manager, size
     return true;
   }
   auto cnode = node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
   if (IsOneOfPrimitive(cnode->input(kAnfPrimitiveIndex), kVirtualPrims)) {
     return false;
   }
