@@ -83,6 +83,8 @@ CollectiveManager::~CollectiveManager() {
   host_comm_lib_instance_ = nullptr;
   device_comm_lib_instance_ = nullptr;
   comm_lib_instance_ = nullptr;
+  group_infos_.clear();
+  inited_groups_.clear();
 }
 
 std::shared_ptr<CollectiveManager> CollectiveManager::instance() {
@@ -1194,6 +1196,20 @@ void CollectiveManager::SetDistributedMeta() {
   DistributedMeta::GetInstance()->set_global_rank_size(global_rank_size_);
   DistributedMeta::GetInstance()->set_local_rank_id(local_rank_id_);
   DistributedMeta::GetInstance()->set_local_rank_size(local_rank_size_);
+}
+
+void CollectiveManager::CacheInitedGroups(const std::string &name) {
+  MS_LOG(WARNING) << "Cache inited group: " << name;
+  std::unique_lock<std::mutex> result_lock(cache_mutes_);
+  (void)inited_groups_.emplace_back(name);
+  MS_LOG(WARNING) << "Cache inited group: " << name << " end.";
+}
+
+void CollectiveManager::ClearCacheInitedGroups() { inited_groups_.clear(); }
+
+size_t CollectiveManager::InitedGroupSize() {
+  std::unique_lock<std::mutex> result_lock(cache_mutes_);
+  return inited_groups_.size();
 }
 }  // namespace collective
 }  // namespace distributed

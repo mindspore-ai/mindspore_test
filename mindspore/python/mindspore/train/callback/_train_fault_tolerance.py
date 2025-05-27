@@ -25,7 +25,7 @@ from mindspore.communication import get_rank, get_group_size
 from mindspore import log as logger
 from mindspore.train.serialization import _get_cur_rank_dp
 from mindspore._c_expression import _repair_device, _stop_device, _tft_sem_post, _tft_sem_enable
-from mindspore._c_expression import _rebuild_world_group, _rebuild_sub_group, _finalize_comm
+from mindspore._c_expression import _rebuild_world_group, _rebuild_sub_group, _finalize_comm, _pre_launch_send_recv
 from mindspore._c_expression import clean_tdt_channel
 from mindspore._c_expression import send_recv, reset_params
 from mindspore._c_expression import CollectiveManager
@@ -110,7 +110,7 @@ def _tft_exit_cb(ctx):
 
 def _tft_repair_callback(step, need_rebuild, error_ranks, repair_info, args, cb_ctx):
     """ Callback used for TFT repair function."""
-    logger.warning("Enter _tft_repair_callback repair type: {}".format(repair_info["repair_type"]))
+    logger.warning(f"Enter _tft_repair_callback repair type: {repair_info['repair_type']}")
     if (repair_info["repair_type"] in (cb_ctx.tft.RepairType.RT_UCE_HIGHLEVEL.value,
                                        cb_ctx.tft.RepairType.RT_UCE_LOWLEVEL.value)):
         logger.warning("Enter _tft_repair_callback uce REPARI_DEVICE device_id : {}".format(cb_ctx.device_id))
@@ -138,7 +138,7 @@ def _tft_repair_callback(step, need_rebuild, error_ranks, repair_info, args, cb_
 
 def _tft_clean_callback(is_uce_error, args, ctx):
     """ Callback used for TFT clean function."""
-    logger.warning("Enter _tft_clean_callback")
+    logger.warning(f"Enter _tft_clean_callback, device id:{ctx.device_id}")
     ret = 0
     if is_uce_error:
         _get_uce_mem_info(ctx.device_id)
@@ -154,12 +154,16 @@ def _tft_clean_callback(is_uce_error, args, ctx):
     logger.warning("Enter _tft_clean_callback resume_hccl_comm")
     CollectiveManager.get_instance().resume_hccl_comm()
     logger.warning("Finish _tft_clean_callback, ret: {}".format(ret))
+    if ctx.tft.tft_get_repair_type() == "recover":
+        logger.warning(f"Destroy hcom")
+        _finalize_comm()
+        logger.warning(f"Destroy hcom end")
     return ret
 
 
 def _tft_stop_callback(args, cb_ctx):
     """ Callback used for TFT stop function."""
-    logger.warning("Enter _tft_stop_callback device_id: {}".format(cb_ctx.device_id))
+    logger.warning(f"Enter _tft_stop_callback device_id: {cb_ctx.device_id}")
     _stop_device(cb_ctx.device_id)
     if (not cb_ctx.is_uce_rank) and (not cb_ctx._is_params_consistent()):  # pylint: disable=W0212
         raise RuntimeError("Can't stop device, because training parameters are left in inconsistent state!")
@@ -167,16 +171,18 @@ def _tft_stop_callback(args, cb_ctx):
     if cb_ctx.tft.tft_get_repair_type() == "recover":
         logger.warning(f"Reset limit step")
         cb_ctx.tft.tft_reset_limit_step()
-    logger.info("Finish _tft_stop_callback")
+    logger.warning("Finish _tft_stop_callback")
 
 
 def _tft_rebuild_sub_groups(fault_ranks, args, ctx):
     """Callback used for TFT Rebuild Group function."""
-    logger.warning(f"Enter _tft_rebuild_sub_groups, device id: ".format(ctx.device_id))
-    _finalize_comm()
+    logger.warning(f"Enter _tft_rebuild_sub_groups, device id: {ctx.device_id}")
     _rebuild_world_group()
     _rebuild_sub_group()
     _set_recovery_context(is_arf=True)
+    logger.warning(f"try to pre launch send recv before real launch")
+    _pre_launch_send_recv(context.get_context('device_id'))
+    logger.warning(f"Pre launch send recv before real launch end")
     logger.warning("Enter _tft_rebuild_sub_groups ok ")
 
 
