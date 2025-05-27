@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "kernel/ascend/opapi/aclnn/all_to_all_all_gather_batchmatmul_aclnn_kernel.h"
 #include <cstdint>
 #include <string>
 #include "include/common/utils/utils.h"
 #include "mindspore/ops/ops_utils/op_constants.h"
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "kernel/ascend/opapi/aclnn/all_to_all_all_gather_batchmatmul_aclnn_kernel.h"
 #include "kernel/ascend/acl_ir/op_api_util.h"
 namespace mindspore {
 namespace kernel {

@@ -3013,7 +3013,7 @@ def broadcast_object_list(object_list, src=0, group=None, device=None):
         offset = 0
         for i, item in enumerate(object_size):
             obj_size = item
-            obj_view = object_tensor[offset : offset + obj_size]
+            obj_view = object_tensor[offset: offset + obj_size]
             offset += obj_size
             object_list[i] = _tensor_to_object(obj_view, obj_size)
 
