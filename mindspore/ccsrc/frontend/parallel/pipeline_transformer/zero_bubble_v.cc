@@ -413,6 +413,20 @@ std::queue<BorderPair> ZeroBubbleV::GetTargetBorder(const std::vector<BorderPair
   return border_q;
 }
 
+void ZeroBubbleV::ReorderShardedParam(const BorderVecPtr &exec_order) {
+  if (fwd_params_.empty()) {
+    return;
+  }
+  std::sort(fwd_params_.begin(), fwd_params_.end(), SortFuncInsideMicro);
+  std::sort(bwd_params_.begin(), bwd_params_.end(), SortFuncInsideMicro);
+  auto prior = fwd_params_.back();
+  auto last = exec_order->front().first;
+  ControlOrder(prior, last);
+  auto prior2 = exec_order->back().second;
+  auto last2 = bwd_params_.front();
+  ControlOrder(prior2, last2);
+}
+
 void ZeroBubbleV::ProcessStep1(const PipelineState &state, BorderVecPtr exec_order) {
   // step1: nF0
   const int64_t steps = (stage_num_ - stage_ - 1) * 2;
@@ -655,6 +669,7 @@ void ZeroBubbleV::Reorder() {
 
   start_index = exec_order->size();
   ProcessStep8(state, exec_order);
+  ReorderShardedParam(exec_order);
 
   end_index = exec_order->size();
   MarkDualPipePhase(*exec_order, phase_tag, start_index, end_index, kIndex8);

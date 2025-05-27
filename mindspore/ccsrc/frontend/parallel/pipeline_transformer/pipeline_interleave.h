@@ -104,6 +104,7 @@ class PipelinePostProcess {
 
  private:
   void LabelInterleaveIndex();
+  void RemoveMonadNodeBetweenStage(const CNodePtr &cnode);
   void RemoveMonadNode(const FuncGraphPtr &fg, int64_t chunk);
   std::vector<AnfNodePtr> PartitionChunkGraph(const FuncGraphPtr &fg, int64_t chunk);
   std::vector<AnfNodePtr> PartitionVShapeChunkGraph(const std::vector<AnfNodePtr> &sends);
