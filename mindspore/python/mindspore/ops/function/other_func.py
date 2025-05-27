@@ -15,6 +15,7 @@
 """Defines other operators with functional form."""
 from mindspore.ops import operations as P
 from mindspore.ops.auto_generate import rotary_position_embedding
+from mindspore.ops.auto_generate import moe_distribute_dispatch, moe_distribute_combine
 from mindspore.ops.auto_generate.gen_ops_prim import moe_init_routing_v2_op
 
 partial_ = P.Partial()
@@ -268,6 +269,8 @@ __all__ = [
     'partial',
     'rotary_position_embedding',
     'move_to',
-    'moe_init_routing_v2'
+    'moe_init_routing_v2',
+    'moe_distribute_dispatch',
+    'moe_distribute_combine'
 ]
 __all__.sort()

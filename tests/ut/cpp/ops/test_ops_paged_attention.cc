@@ -62,7 +62,13 @@ TEST_P(TestPagedAttention, DynShape) {
   auto alibi_mask = std::make_shared<abstract::AbstractNone>();
   auto q_seq_lens = std::make_shared<abstract::AbstractNone>();
   auto query_shape = std::make_shared<abstract::Shape>(param.query_shape);
-  auto expect_shape = query_shape;
+  auto expect_shape = ShapeVector(param.query_shape.begin(), param.query_shape.end() - 1);
+  if (IsDynamicShape(param.query_shape)) {
+    expect_shape.push_back(abstract::Shape::kShapeDimAny);
+  } else {
+    expect_shape.push_back(param.query_shape.back());
+  }
+  auto expect_shape_ptr = std::make_shared<abstract::Shape>(expect_shape);
   auto expect_type = param.query_type;
   auto num_head = param.num_head->ToAbstract();
   auto scale_value = param.scale_value->ToAbstract();
@@ -81,7 +87,7 @@ TEST_P(TestPagedAttention, DynShape) {
   auto out_shape = func_impl.InferShape(
     prim, {query, key_cache, value_cache, block_tables, context_lens, antiquant_scale, antiquant_offset, attn_mask,
            q_seq_lens, alibi_mask, num_head, scale_value, kv_head, kv_cache_quant_mode, mask_mode, mla_v_dim});
-  ASSERT_TRUE(*out_shape == *expect_shape);
+  ASSERT_TRUE(*out_shape == *expect_shape_ptr);
 }
 
 INSTANTIATE_TEST_CASE_P(TestPagedAttention, TestPagedAttention,

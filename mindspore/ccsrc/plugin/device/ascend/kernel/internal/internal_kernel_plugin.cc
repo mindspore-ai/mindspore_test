@@ -67,7 +67,8 @@ static std::unordered_map<std::string, std::vector<std::vector<std::vector<size_
   {kPagedAttentionOpName, {{{0, 1, 2, 7}, {0}}, {{0, 1, 2, 7}, {0}}}},
   {kFlashAttentionScoreOpName, {{{0, 1, 2, 6}, {3}}, {{0, 1, 2, 6}, {3}}}},
   {kReshapeAndCacheOpName, {{{2, 3}, {}}, {{2, 3}, {}}}},
-  {kGroupedMatmulName, {{{1}, {}}, {{1}, {}}}}};
+  {kGroupedMatmulName, {{{1}, {}}, {{1}, {}}}},
+  {"GroupedMatmulV4", {{{1}, {}}, {{1}, {}}}}};
 
 // unordered_map mean:
 // key is input_idx, value is special_format value
@@ -328,6 +329,8 @@ void InternalKernelPlugin::GetValidKernelBuildInfoWithInternalFormat(const AnfNo
     for (const auto &output_idx : output_nz_format_idx) {
       output_formats->at(output_idx) = kOpFormat_FRAC_NZ;
     }
+    MS_LOG(INFO) << "Trans format to NZ for op: " << op_name << ". nz input indices: " << input_nz_format_idx
+                 << ", nz output indices: " << output_nz_format_idx;
   }
 
   std::vector<size_t> special_inputs;
