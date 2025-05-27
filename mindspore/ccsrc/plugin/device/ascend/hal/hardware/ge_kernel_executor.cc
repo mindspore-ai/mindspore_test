@@ -1366,6 +1366,38 @@ bool GeKernelExecutor::LaunchKernel(const CNodePtr &kernel, const std::vector<Ke
   return true;
 }
 
+bool GeKernelExecutor::LaunchKernelHP(const CNodePtr &kernel, const std::vector<KernelTensor *> &inputs,
+                                      const std::vector<KernelTensor *> &workspace,
+                                      const std::vector<KernelTensor *> &outputs, KernelMod *kernel_mod,
+                                      void *stream) const {
+  uint64_t start_time = 0;
+  PROFILER_START(start_time);
+  if (nop_op_to_memcpy_.find(kernel) != nop_op_to_memcpy_.end()) {
+    if (!MemoryCopyAsync(kernel, inputs, outputs, stream)) {
+      MS_LOG(ERROR) << "Memory copy failed for kernel " << kernel->fullname_with_scope();
+      return false;
+    }
+  } else {
+    if (silentcheck::ascend::SilentChecker::IsNpuAsdEnable() &&
+        !silentcheck::ascend::SilentChecker::GetInstance().IsCommOpInputNotSupport() &&
+        kernel->HasPrimalAttr(silentcheck::kAttrSilentCheckOpType)) {
+      MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Launch silent check for " << kernel->fullname_with_scope();
+      silentcheck::ascend::SilentChecker::GetInstance().ExecuteCheck(kernel_mod, inputs[0], stream);
+    }
+
+    bool ret = kernel_mod->Launch(inputs, workspace, outputs, stream);
+    if (!ret) {
+      MS_LOG(ERROR) << "Launch kernel failed, kernel full name: " << kernel->fullname_with_scope();
+      SetUceError();
+      SetArfError();
+      return false;
+    }
+  }
+  PROFILER_END(start_time, runtime::ProfilerModule::kKernel, runtime::ProfilerEvent::kKernelLaunch,
+               kernel->fullname_with_scope(), false);
+  return true;
+}
+
 void GeKernelExecutor::SetUceError() const {
   if (UCEException::IsEnableUCE() && aclrt_get_last_error != nullptr) {
     auto error_code = aclrt_get_last_error(thread_level);

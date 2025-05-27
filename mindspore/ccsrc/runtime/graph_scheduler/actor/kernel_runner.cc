@@ -33,6 +33,7 @@
 #include "include/backend/debug/execute_order_tracker/execute_order_tracker.h"
 #include "include/backend/distributed/recovery/recovery_context.h"
 #include "include/backend/distributed/collective/collective_manager.h"
+#include "include/common/runtime_conf/runtime_conf.h"
 #include "backend/common/optimizer/dynamic_shape/dynamic_shape_helper.h"
 #include "kernel/framework_utils.h"
 #include "mindspore/ops/op_def/framework_ops.h"
@@ -260,6 +261,10 @@ KernelRunner::KernelRunner(const std::string &name, const CNodePtr &kernel, cons
                 << " kernel:" << kernel->DebugString();
   // shape depend need kernel is cnode.
   SetShapeDependInfo();
+
+  enable_uce_ = UCEException::IsEnableUCE();
+  enable_arf_ = UCEException::GetInstance().enable_arf();
+  is_high_perf_mode_ = IsRunHighPerfMode();
 }
 
 void KernelRunner::Init() {
@@ -835,6 +840,37 @@ void KernelRunner::SendMemoryAllocReq(OpContext<KernelTensor> *const context) {
   }
 }
 
+void KernelRunner::SendMemoryAllocReqHP(OpContext<KernelTensor> *const context) {
+  if (device_contexts_[0]->device_res_manager_->swap_manager() != nullptr) {
+    MS_EXCEPTION_IF_NULL(kernel_info_);
+    for (const auto &out_in : kernel_info_->out_in_ref_map()) {
+      const auto &input_kernel_tensor = input_kernel_tensors_[out_in.second];
+      MS_EXCEPTION_IF_NULL(input_kernel_tensor);
+      const auto &input_device_tensor = input_kernel_tensor->device_address();
+      MS_EXCEPTION_IF_NULL(input_device_tensor);
+      const auto &ptr = input_device_tensor->GetValidPtr(kDefaultStreamIndex);
+      MS_EXCEPTION_IF_NULL(output_kernel_tensors_[out_in.first]);
+      const auto &output_device_tensor = output_kernel_tensors_[out_in.first]->device_address();
+      if (ptr == nullptr || output_device_tensor == nullptr || output_device_tensor->GetPtr() != nullptr) {
+        continue;
+      }
+      // Pointer in DeviceAddress which is reference output may not be updated to the same as the reference input
+      // which is swapped out.
+      MS_LOG(DEBUG) << "Set device ptr of " << out_in.first << "th ref output the same as input " << out_in.second
+                    << ": " << ptr;
+      output_device_tensor->set_ptr(ptr);
+    }
+  }
+  MemoryManagerActor::GetInstance()->AllocateMemoryHP(&memory_alloc_list_, device_contexts_[0], context, GetAID());
+
+  if (ActorDispatcher::enable_trace_dynamic_memory()) {
+    if (IsRunningFailed(context)) {
+      return;
+    }
+    TraceDynamicMemory();
+  }
+}
+
 void KernelRunner::SendMemoryFreeReq(OpContext<KernelTensor> *const context) {
   MemoryManagerActor::GetInstance()->FreeMemory(&new_memory_free_list_, device_contexts_[0], context, GetAID());
   // Free the address that is the temp store for kernel input copy.
@@ -1263,7 +1299,36 @@ void KernelRunner::ExecuteResizeKernelModTask(OpContext<KernelTensor> *const con
   Async(kernel_async_launch_aid_, &KernelAsyncLaunchActor::LaunchKernelV2, context, this);
 }
 
+bool KernelRunner::IsRunHighPerfMode() {
+  // These high performance checking flag should be confirmed in compilation phase.
+  // They should not be changed in runtime phase so that we could reach optimal performance by avoiding condition
+  // judgement.
+  std::vector<bool> conditions = {
+    common::IsEnableRuntimeConfig(common::kRuntimeDisableHPMode),
+    debug_aid_ != nullptr,
+    recorder_aid_ != nullptr,
+    EnableExecuteOrderDump(),
+    device::tracker::MemTrackerManager::GetInstance().IsEnabled(),
+    device::tracker::MemTrackerManager::GetInstance().enable_memory_debug_info(),
+    UCEException::IsEnableUCE(),
+    mindspore::runtime::RuntimeConf::GetInstance()->launch_blocking(),
+    common::GetEnv("MS_ENABLE_CKPT_D2H_ASYNC") == "1",
+    IsNeedProfilieMemoryLog(),
+  };
+  // When this function returns false, it means performance is not cirtical in this context.
+  // Otherwise runtime will launch kernels with high performance.
+  return std::all_of(conditions.begin(), conditions.end(), [](bool c) { return !c; });
+}
+
 void KernelRunner::ExecuteLaunchKernelTask(OpContext<KernelTensor> *const context) {
+  if (is_high_perf_mode_) {
+    ExecuteLaunchKernelTaskHP(context);
+  } else {
+    ExecuteLaunchKernelTaskDebug(context);
+  }
+}
+
+void KernelRunner::ExecuteLaunchKernelTaskDebug(OpContext<KernelTensor> *const context) {
   if (MS_UNLIKELY(IsRunningFailed(context))) {
     MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Run failed and early stop launch kernel: "
                                          << kernel_->fullname_with_scope();
@@ -1311,6 +1376,66 @@ void KernelRunner::ExecuteLaunchKernelTask(OpContext<KernelTensor> *const contex
     SetMemInfoForRdr();
     ActorDispatcher::Send(*recorder_aid_, &RecorderActor::RecordInfo, kernel_->fullname_with_scope(), &mem_info_,
                           device_contexts_[0], context);
+  }
+
+  if (is_dynamic_shape_ && kernel_mod_->IsNeedUpdateOutputShapeAndSize()) {
+    kernel_mod_->UpdateOutputShapeAndSize(input_launch_tensors_, output_launch_tensors_);
+  }
+
+  if (MS_UNLIKELY(kernel_mod_->need_user_data())) {
+    for_each(output_kernel_tensors_.begin(), output_kernel_tensors_.end(),
+             [](auto &kernel_tensor) { kernel_tensor->set_need_sync_user_data(true); });
+  }
+
+  if ((modifiable_ref_input_indexes_.size() != 0) || (modifiable_ref_output_indexes_.size() != 0)) {
+    RefreshDeviceTensorCopyStore(context);
+  }
+
+  // 3. Fix ref count.
+  if (!ActorDispatcher::enable_use_trace_memory()) {
+    if (new_memory_free_list_.size() > 0 && copy_output_kernel_tensors_.empty()) {
+      SendMemoryFreeReq(context);
+    }
+  }
+}
+
+void KernelRunner::ExecuteLaunchKernelTaskHP(OpContext<KernelTensor> *const context) {
+  if (MS_UNLIKELY(IsRunningFailed(context))) {
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Run failed and early stop launch kernel: "
+                                         << kernel_->fullname_with_scope();
+    return;
+  }
+
+  // 1. Allocate memory.
+  if (!ActorDispatcher::enable_use_trace_memory()) {
+    if (!memory_alloc_list_.empty()) {
+      SendMemoryAllocReqHP(context);
+    }
+  } else if (!max_ref_cnt_output_list_.empty()) {
+    // Allocate dynamic memory for graph output.
+    MemoryManagerActor::GetInstance()->AllocateMemory(&max_ref_cnt_output_list_, device_contexts_[0], context,
+                                                      GetAID());
+  }
+
+  if (MS_UNLIKELY(IsRunningFailed(context))) {
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Run failed and early stop launch kernel: "
+                                         << kernel_->fullname_with_scope();
+    return;
+  }
+
+  // For performance, Only kernel need user data (such as PyExecute op) need call 'PreLaunchKernel', the
+  // 'PreLaunchKernel' will be removed in the future.
+  if (MS_UNLIKELY(ActorDispatcher::has_kernel_need_user_data())) {
+    PreLaunchKernel(context);
+  }
+
+  // 2. Launch kernel if need.
+  device_contexts_[0]->device_res_manager_->BindDeviceToCurrentThread(false);
+
+  if (!LaunchKernelHP(context, IsSkippedLaunch(kernel_, nullptr))) {
+    MS_LOG_WITH_NODE(EXCEPTION, kernel_) << "#umsg#Kernel error:#umsg#Launch kernel failed: " +
+                                              kernel_->fullname_with_scope()
+                                         << trace::DumpSourceLines(kernel_);
   }
 
   if (is_dynamic_shape_ && kernel_mod_->IsNeedUpdateOutputShapeAndSize()) {
@@ -1537,6 +1662,68 @@ bool KernelRunner::LaunchKernel(OpContext<KernelTensor> *const context, bool is_
     ret = LaunchKernelWithDebug(context, is_skip_launch);
     ProcessMultiStreamAfterKernelLaunch(context);
   }
+  RecoverInputs();
+  return ret;
+}
+
+bool KernelRunner::LaunchKernelHP(OpContext<KernelTensor> *const context, bool is_skip_launch) {
+  static KernelCache &cache = KernelCache::GetInstance();
+  if (cache.need_add) {
+    cache.Add(kernel_);
+  }
+
+  if (MS_UNLIKELY(skip_launch_shape_related_op_)) {
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Skip launch real make tuple kernel: " << kernel_->fullname_with_scope()
+                                         << " input kernel tensor: " << input_kernel_tensors_;
+    return true;
+  }
+
+  // Check the skipped launch condition.
+  if (is_launch_skipped_) {
+    MS_EXCEPTION_IF_CHECK_FAIL((input_kernel_tensors_.size() >= 1), "The inputs size is wrong.");
+    MS_EXCEPTION_IF_CHECK_FAIL((output_kernel_tensors_.size() >= 1), "The outputs size is wrong.");
+    auto &input_device_tensor = input_kernel_tensors_[0]->device_address();
+    auto &output_device_tensor = output_kernel_tensors_[0]->device_address();
+    if (input_device_tensor->GetPtr() == output_device_tensor->GetPtr()) {
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Skipped launch kernel: " << kernel_->fullname_with_scope();
+      return true;
+    } else {
+      MS_LOG(ERROR) << "Input address:" << input_device_tensor->GetPtr()
+                    << " and output address:" << output_device_tensor->GetPtr()
+                    << " are not equal of skipped launch actor: " << GetAID().Name();
+      return false;
+    }
+  }
+  // Make tensor contiguous if needed
+  if (need_check_tensor_contiguous_) {
+    ConvertInputContiguous(context);
+  }
+
+  // Cpu not support stream lock with LaunchKernel.
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Begin launch kernel: " << kernel_->fullname_with_scope();
+  bool ret = true;
+  if (!ActorDispatcher::enable_multi_stream() || is_multi_stream_process_skipped_) {
+    if (!is_skip_launch) {
+      ret = device_contexts_[0]->GetKernelExecutor(false)->LaunchKernelHP(
+        kernel_, input_launch_tensors_, workspace_launch_tensors_, output_launch_tensors_, kernel_mod_, stream_);
+    }
+  } else {
+    auto &multi_stream_controller =
+      device::HalResManager::GetInstance().GetMultiStreamController(device_contexts_[0]->DeviceName());
+    if (!ActorDispatcher::enable_async_launch_kernel()) {
+      std::lock_guard<std::mutex> lock(multi_stream_controller->GetStreamMutex(kernel_info_->stream_id()));
+      ProcessMultiStreamBeforeKernelLaunch(context);
+      ret = device_contexts_[0]->GetKernelExecutor(false)->LaunchKernelHP(
+        kernel_, input_launch_tensors_, workspace_launch_tensors_, output_launch_tensors_, kernel_mod_, stream_);
+      ProcessMultiStreamAfterKernelLaunch(context);
+    } else {
+      ProcessMultiStreamBeforeKernelLaunch(context);
+      ret = device_contexts_[0]->GetKernelExecutor(false)->LaunchKernelHP(
+        kernel_, input_launch_tensors_, workspace_launch_tensors_, output_launch_tensors_, kernel_mod_, stream_);
+      ProcessMultiStreamAfterKernelLaunch(context);
+    }
+  }
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "End launch kernel: " << kernel_->fullname_with_scope();
   RecoverInputs();
   return ret;
 }
@@ -1878,6 +2065,27 @@ void KernelRunner::FetchInputByTensorStore(std::vector<KernelTensor *> *const in
       (*memory_free_tensors)[device_tensor_store_key.first] = kernel_tensor;
     }
   }
+}
+
+bool KernelRunner::IsRunningFailed(const OpContext<KernelTensor> *context) {
+  if (enable_uce_ || enable_arf_) {
+    if (UCEException::GetInstance().get_force_stop_flag() && !UCEException::GetInstance().get_has_throw_error()) {
+      if (context->error_info_.empty()) {
+        const_cast<OpContext<KernelTensor> *>(context)->error_info_ =
+          std::string(UCEException::GetInstance().GetForceStopErrorMsg());
+        MS_LOG(EXCEPTION) << UCEException::GetInstance().GetForceStopErrorMsg();
+      }
+    }
+    if (UCEException::GetInstance().get_uce_flag() && !UCEException::GetInstance().get_has_throw_error()) {
+      if (context->error_info_.empty()) {
+        const_cast<OpContext<KernelTensor> *>(context)->error_info_ =
+          std::string(UCEException::GetInstance().GetUceErrorMsg());
+        MS_LOG(EXCEPTION) << UCEException::GetInstance().GetUceErrorMsg();
+      }
+    }
+  }
+
+  return context->is_error_;
 }
 }  // namespace runtime
 }  // namespace mindspore

@@ -51,10 +51,8 @@ std::string GenerateAclInitJsonPath() {
 }  // namespace
 static thread_local aclrtContext thread_local_rt_context{nullptr};
 
-AscendHalManager &AscendHalManager::GetInstance() {
-  static AscendHalManager instance{};
-  return instance;
-}
+AscendHalManager AscendHalManager::instance_{};
+AscendHalManager &AscendHalManager::GetInstance() { return instance_; }
 
 void AscendHalManager::InitDevice(uint32_t device_id) {
   MS_LOG(INFO) << "Enter SetRtDevice, current initialize device number:" << initialized_device_set_.size();

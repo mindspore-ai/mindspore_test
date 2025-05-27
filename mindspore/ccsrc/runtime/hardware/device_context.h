@@ -488,6 +488,12 @@ class BACKEND_COMMON_EXPORT KernelExecutor {
                             KernelMod *kernel_mod, void *stream) const {
     MS_LOG(EXCEPTION) << "Unimplemented interface.";
   }
+  // This is a high performance version of 'LaunchKernel', which will be called in performance-critical scenario.
+  virtual bool LaunchKernelHP(const CNodePtr &kernel, const std::vector<KernelTensor *> &inputs,
+                              const std::vector<KernelTensor *> &workspace, const std::vector<KernelTensor *> &outputs,
+                              KernelMod *kernel_mod, void *stream) const {
+    MS_LOG(EXCEPTION) << "Unimplemented interface.";
+  }
 
   // Unify the MindIR, the default behavior uses the common unified MindIR.
   virtual void UnifyMindIR(const KernelGraphPtr &graph) const {};

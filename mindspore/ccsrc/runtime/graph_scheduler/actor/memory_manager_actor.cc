@@ -77,6 +77,42 @@ void MemoryManagerActor::AllocateMemory(const std::vector<KernelTensorPtr> *allo
   }
 }
 
+void MemoryManagerActor::AllocateMemoryHP(const std::vector<KernelTensorPtr> *alloc_list,
+                                          const DeviceContext *device_context,
+                                          OpContext<KernelTensor> *const op_context, const AID &from_aid) {
+  for (auto &kernel_tensor : *alloc_list) {
+    MS_EXCEPTION_IF_NULL(kernel_tensor);
+    auto device_tensor = kernel_tensor->device_address().get();
+    MS_EXCEPTION_IF_NULL(device_tensor);
+    // Unused device address need skip to reduce memory use.
+    if (device_tensor->IsNotNeedAllocWOLock()) {
+      continue;
+    }
+
+    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, from_aid.Name(), memory::mem_pool::MemType::kKernel,
+                                                   device_tensor->GetSize(), device_tensor);
+    try {
+      bool success = false;
+      if (device_tensor->continuous_device_addresses() == nullptr) {
+        success = device_context->device_res_manager_->AllocateMemory(device_tensor, kDefaultStreamIndex);
+      } else {
+        device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, from_aid.Name(), "ContinuousMemory", "", false);
+        MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+          << "Allocate continuous memory, device address : " << device_tensor << ".";
+        success = AllocateContinuousMemory(kernel_tensor.get(), device_context, from_aid);
+      }
+
+      if (!success) {
+        SetOpContextMemoryAllocFail(from_aid.Name(), device_context, device_tensor->GetSize(), op_context);
+        return;
+      }
+    } catch (const std::exception &e) {
+      SetOpContextMemoryAllocFail(from_aid.Name(), device_context, device_tensor->GetSize(), op_context);
+      return;
+    }
+  }
+}
+
 bool MemoryManagerActor::AllocateContinuousMemory(KernelTensor *kernel_tensor, const DeviceContext *device_context,
                                                   const AID &from_aid) {
   MS_EXCEPTION_IF_NULL(kernel_tensor);

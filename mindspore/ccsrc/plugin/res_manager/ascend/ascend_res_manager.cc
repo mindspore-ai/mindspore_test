@@ -289,9 +289,9 @@ void RegisterLoadCollectiveCallback(const std::function<CollectiveCommunicationL
 void AscendResManager::Initialize() {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  device_id_ = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   if (initialized_) {
-    AscendHalManager::GetInstance().SetContextForce(device_id);
+    AscendHalManager::GetInstance().SetContextForce(device_id_);
     return;
   }
 
@@ -301,7 +301,7 @@ void AscendResManager::Initialize() {
   }
 
   // init device
-  AscendHalManager::GetInstance().InitDevice(device_id);
+  AscendHalManager::GetInstance().InitDevice(device_id_);
   AscendStreamMng::GetInstance().CreateDefaultStream();
 
   if (!(IS_VLOG_ON(VL_RUNTIME_FRAMEWORK_MEMORY_ALLOCATE_CHECK))) {
@@ -313,15 +313,14 @@ void AscendResManager::Initialize() {
   mem_manager_->Initialize();
   swap_manager_ = std::make_shared<SwapManager>(kDefaultStreamIndex, &AscendMemoryPool::GetInstance(),
                                                 &AscendPinMemPool::GetInstance());
+
+  enable_memory_tracker_ = device::tracker::MemTrackerManager::GetInstance().IsEnabled();
   initialized_ = true;
 }
 
 void AscendResManager::Destroy() {
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   if (!initialized_) {
-    AscendHalManager::GetInstance().SetContextForce(device_id);
+    AscendHalManager::GetInstance().SetContextForce(device_id_);
     return;
   }
 
@@ -338,7 +337,7 @@ void AscendResManager::Destroy() {
   }
   (void)ErrorManagerAdapter::Finalize();
 
-  AscendHalManager::GetInstance().ResetDevice(device_id);
+  AscendHalManager::GetInstance().ResetDevice(device_id_);
 
   initialized_ = false;
 }
@@ -354,10 +353,7 @@ bool AscendResManager::AllocateMemory(DeviceAddress *const &address, uint32_t st
     return false;
   }
 
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  AscendHalManager::GetInstance().SetContext(device_id);
+  AscendHalManager::GetInstance().SetContext(device_id_);
 
   void *device_ptr = nullptr;
 
@@ -368,8 +364,7 @@ bool AscendResManager::AllocateMemory(DeviceAddress *const &address, uint32_t st
   const auto &hete_info = address->heterogeneous_info();
 
   if (hete_info != nullptr) {
-    static std::string name = "Alloc memory";
-    address->IncreaseNewRefCount(name);
+    address->IncreaseNewRefCount();
     return AllocateForHete(address, hete_info);
   }
   device_ptr = mem_manager_->MallocMemFromMemPool(address->GetSize(), address->from_persistent_mem(),
@@ -380,10 +375,8 @@ bool AscendResManager::AllocateMemory(DeviceAddress *const &address, uint32_t st
 
   address->set_ptr(device_ptr);
   address->set_from_mem_pool(true);
-  static std::string name = "Alloc memory";
-  address->IncreaseNewRefCount(name);
-  static bool enable_memory_tracker = device::tracker::MemTrackerManager::GetInstance().IsEnabled();
-  if (enable_memory_tracker) {
+  address->IncreaseNewRefCount();
+  if (enable_memory_tracker_) {
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(BindDevicePtr, address, device_ptr);
   }
   return true;
@@ -407,30 +400,21 @@ bool AscendResManager::AllocateForHete(mindspore::device::DeviceAddress *const &
       MS_LOG(ERROR) << "Memory leak detected!";
       return false;
     }
-    auto ms_context = MsContext::GetInstance();
-    MS_EXCEPTION_IF_NULL(ms_context);
-    auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    auto file_name = swap_manager_->GetSwapFileName(device_id);
+    auto file_name = swap_manager_->GetSwapFileName(device_id_);
     swap_manager_->CreateFile(file_name, address->GetSize());
     hete_info->file_name_ = file_name;
   }
   return true;
 }
 void *AscendResManager::AllocateMemory(size_t size, uint32_t stream_id) const {
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  AscendHalManager::GetInstance().SetContext(device_id);
+  AscendHalManager::GetInstance().SetContext(device_id_);
 
   MS_EXCEPTION_IF_NULL(mem_manager_);
   return mem_manager_->MallocMemFromMemPool(size, false, false, stream_id);
 }
 
 void *AscendResManager::AllocateStaticMemory(size_t size, uint32_t stream_id) const {
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  AscendHalManager::GetInstance().SetContext(device_id);
+  AscendHalManager::GetInstance().SetContext(device_id_);
 
   return mem_manager_->MallocMemFromMemPool(size, true, false, stream_id);
 }
@@ -567,10 +551,7 @@ void AscendResManager::SwapOut(const void *device_ptr, void *host_ptr, size_t me
 
 std::vector<void *> AscendResManager::AllocateContinuousMemory(const std::vector<size_t> &size_list,
                                                                uint32_t stream_id) const {
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  AscendHalManager::GetInstance().SetContext(device_id);
+  AscendHalManager::GetInstance().SetContext(device_id_);
 
   MS_EXCEPTION_IF_NULL(mem_manager_);
   std::vector<size_t> aligned_size_list;
@@ -690,24 +671,20 @@ void AscendResManager::SetDebugKernel() const {
 }
 
 bool AscendResManager::BindDeviceToCurrentThread(bool force_bind) const {
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-
   static thread_local std::once_flag is_set;
-  std::call_once(is_set, [this, device_id]() {
-    auto ret = CALL_ASCEND_API(aclrtSetDevice, static_cast<int32_t>(device_id));
+  std::call_once(is_set, [this]() {
+    auto ret = CALL_ASCEND_API(aclrtSetDevice, static_cast<int32_t>(device_id_));
     if (ret != ACL_ERROR_NONE) {
-      MS_LOG(EXCEPTION) << "Device " << device_id << " call aclrtSetDevice failed, ret:" << static_cast<int>(ret);
+      MS_LOG(EXCEPTION) << "Device " << device_id_ << " call aclrtSetDevice failed, ret:" << static_cast<int>(ret);
     }
     SetDeterministic();
     SetDebugKernel();
   });
 
   if (force_bind) {
-    AscendHalManager::GetInstance().SetContextForce(device_id);
+    AscendHalManager::GetInstance().SetContextForce(device_id_);
   } else {
-    AscendHalManager::GetInstance().SetContext(device_id);
+    AscendHalManager::GetInstance().SetContext(device_id_);
   }
 
   return true;
@@ -794,11 +771,7 @@ bool AscendResManager::SyncStream(size_t stream_id) const {
 }
 
 bool AscendResManager::SyncAllStreams() const {
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  AscendHalManager::GetInstance().SetContext(device_id);
-
+  AscendHalManager::GetInstance().SetContext(device_id_);
   return AscendStreamMng::GetInstance().SyncAllStreams();
 }
 
@@ -1165,10 +1138,7 @@ bool AscendResManager::LaunchCallback(std::function<void(void)> callback_func, s
 
     // ResetStreamAndCtx
     AscendStreamMng::GetInstance().DestroyAllStreams();
-    auto ms_context = MsContext::GetInstance();
-    MS_EXCEPTION_IF_NULL(ms_context);
-    auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    AscendHalManager::GetInstance().ResetContext(device_id);
+    AscendHalManager::GetInstance().ResetContext(device_id_);
     AscendStreamMng::GetInstance().CreateDefaultStream();
     return false;
   }

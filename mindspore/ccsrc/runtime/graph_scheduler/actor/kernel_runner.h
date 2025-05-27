@@ -63,6 +63,7 @@ class KernelRunner {
 
   // The memory related operation interface.
   void SendMemoryAllocReq(OpContext<KernelTensor> *const context);
+  void SendMemoryAllocReqHP(OpContext<KernelTensor> *const context);
   void SendMemoryFreeReq(OpContext<KernelTensor> *const context);
 
   const CNodePtr &kernel() const { return kernel_; }
@@ -76,12 +77,21 @@ class KernelRunner {
 
   void set_enable_async_infer(bool enable_async_infer) { enable_async_infer_ = enable_async_infer; }
 
+  // Collect conditions to judge whether running with high performance mode.
+  bool IsRunHighPerfMode();
+
   // Really do infer shape and update kernel tensor shape.
   virtual void ExecuteInferShapeTask(OpContext<KernelTensor> *const context);
   // Really do resize kernel mod and update new size into output and workspace kernel tensors.
   virtual void ExecuteResizeKernelModTask(OpContext<KernelTensor> *const context);
   // Really do launch kernel with memory allocate and free.
   virtual void ExecuteLaunchKernelTask(OpContext<KernelTensor> *const context);
+
+  // Two methods implement 'ExecuteLaunchKernelTask' in different scenarios:
+  // 'ExecuteLaunchKernelTaskDebug' is called when debug info should be collected like dump or profiler.
+  // 'ExecuteLaunchKernelTaskHP' is called in high performance mode, when is_high_perf_mode_ flag is set to true.
+  void ExecuteLaunchKernelTaskDebug(OpContext<KernelTensor> *const context);
+  void ExecuteLaunchKernelTaskHP(OpContext<KernelTensor> *const context);
 
   void set_stream_send_actor(KernelRunner *stream_send_actor) { stream_send_actor_ = stream_send_actor; }
 
@@ -133,12 +143,16 @@ class KernelRunner {
   const std::vector<bool> &is_weight() const { return is_weight_; }
   KernelTransformType type() const { return type_; }
 
+  bool HighPerfMode();
+
  protected:
   virtual void Init();
   void SendRecorderInfo(OpContext<KernelTensor> *const context) const;
 
   // Do kernel launching in this method after 'PreLaunchKernel' and 'PostLaunchKernel'.
-  virtual bool LaunchKernel(OpContext<KernelTensor> *const context, bool is_skip_launch = false);
+  bool LaunchKernel(OpContext<KernelTensor> *const context, bool is_skip_launch = false);
+  // This is a high performance version of 'LaunchKernel', which will be called in performance-critical scenario.
+  bool LaunchKernelHP(OpContext<KernelTensor> *const context, bool is_skip_launch = false);
   // Handle the ref op, set input addr to output addr.
   virtual void UpdateRefDeviceAddress(OpContext<KernelTensor> *const context, bool increase_ref_count);
   // Execute kernel actor multi stream produre to make sure safety of memory before kernel launch.
@@ -204,6 +218,8 @@ class KernelRunner {
   // The dependent parameter stores, the dependent expression is pair<index, ParameterInfo>.
   // Index is the input position, ParameterInfo is used to fetch args and device tensor.
   std::vector<std::pair<size_t, ParameterInfo>> parameter_indexs_;
+
+  bool is_high_perf_mode_{true};
 
   // The info of kernel.
   CNodePtr kernel_;
@@ -285,6 +301,8 @@ class KernelRunner {
   bool need_check_tensor_contiguous_{false};
   // Flag for kernel actor should insert event for parameter.
   bool insert_input_event_{false};
+  bool enable_uce_{false};
+  bool enable_arf_{false};
 
  protected:
   friend class GraphScheduler;
@@ -321,6 +339,8 @@ class KernelRunner {
   void SetShapeDependInfo();
   void DispatchDebugActor(OpContext<KernelTensor> *const context);
   bool LaunchKernelWithDebug(OpContext<KernelTensor> *const context, const bool skip_launch);
+
+  bool IsRunningFailed(const OpContext<KernelTensor> *context);
 
   // The real input number of kernel launch.
   size_t real_input_num_;

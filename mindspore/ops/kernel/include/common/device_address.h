@@ -444,6 +444,7 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   KernelWithIndex GetNodeIndex() const;
 
   void IncreaseNewRefCount(const std::string &op_name, size_t i = 1);
+  void IncreaseNewRefCount(size_t i = 1);
   size_t DecreaseNewRefCount(const std::string &op_name);
   void set_new_ref_count(size_t new_ref_count) const;
   size_t new_ref_count() const;
@@ -478,6 +479,7 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   // Return whether DeviceAddress has a valid ptr.
   virtual bool IsPtrValid() const;
   bool IsNotNeedAlloc() const;
+  bool IsNotNeedAllocWOLock() const;
 
   using SyncUserDataHandler = void (*)(DeviceAddress *const device_address);
   // Return the valid device ptr.

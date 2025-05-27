@@ -44,6 +44,8 @@ class MemoryManagerActor : public ActorBase {
   // The process entry of memory alloc.
   void AllocateMemory(const std::vector<KernelTensorPtr> *alloc_list, const DeviceContext *device_context,
                       OpContext<KernelTensor> *const op_context, const AID &from_aid);
+  void AllocateMemoryHP(const std::vector<KernelTensorPtr> *alloc_list, const DeviceContext *device_context,
+                        OpContext<KernelTensor> *const op_context, const AID &from_aid);
   bool AllocateContinuousMemory(KernelTensor *kernel_tensor, const DeviceContext *device_context, const AID &from_aid);
   // The process entry of continuous memory alloc, the size of alloc_list_list, size_list_list, total_size_list and
   // device_contexts must be equal.
