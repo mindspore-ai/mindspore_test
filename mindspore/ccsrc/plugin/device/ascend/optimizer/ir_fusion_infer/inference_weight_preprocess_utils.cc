@@ -134,10 +134,10 @@ bool CheckFusionValid(const CNodePtr &matmul, int64_t *k, const int trans_a_pos,
   MS_EXCEPTION_IF_NULL(trans_b_node);
   bool trans_a = GetValue<bool>(trans_a_node);
   bool trans_b = GetValue<bool>(trans_b_node);
-  if (trans_a != false) {
+  if (trans_a) {
     return false;
   }
-  if (trans_b != true) {
+  if (!trans_b) {
     return false;
   }
   auto weight_node = inputs[kIndex2]->cast<CNodePtr>();

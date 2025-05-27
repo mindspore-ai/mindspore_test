@@ -139,6 +139,8 @@ VectorRef MatMulAllReduceFusion::DefineQuantBatchMatmulAllReducePattern() const 
 
 PrimitivePtr MatMulAllReduceFusion::CreateMatMulAllReducePrim(const PrimitivePtr &allreduce_prim,
                                                               const PrimitivePtr &matmul_prim) const {
+  MS_CHECK_TRUE_RET(allreduce_prim != nullptr, {});
+  MS_CHECK_TRUE_RET(matmul_prim != nullptr, {});
   auto matmul_allreduce_prim = prim::kPrimMatMulAllReduce->Clone();
   MS_CHECK_TRUE_RET(matmul_allreduce_prim, {});
   // add attr
