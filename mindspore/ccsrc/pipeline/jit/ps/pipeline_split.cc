@@ -270,6 +270,17 @@ bool PipelineSplit(const ResourcePtr &res) {
   if (parallel::ParallelInit() != parallel::SUCCESS) {
     MS_LOG(EXCEPTION) << "parallel init failed.";
   }
+
+  // temp solution, PipelineSplit pass rely on virtualdataset, but virtualdataset won't be inserted until
+  // StepAutoParallel pass if ms.shard/ms.parallel.shard used
+  MS_EXCEPTION_IF_NULL(root);
+  AnfNodePtr ret = root->get_return();
+  MS_EXCEPTION_IF_NULL(ret);
+  std::vector<AnfNodePtr> all_nodes = DeepScopedGraphSearch(ret);
+  if (!HasVirtualDataset(all_nodes)) {
+    InsertVirtualDataset(root, all_nodes);
+  }
+
   auto is_pp_interleave = parallel_context->pipeline_interleave();
   if (is_pp_interleave) {
     return PipelineInterleaved(manager, root, stage, gen_mask_not_fusion);
