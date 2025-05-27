@@ -43,7 +43,7 @@ inline TensorPtr KernelTensor2Tensor(KernelTensorPtr kernel_tensor) {
 
   TensorPtr out_tensor = std::make_shared<Tensor>(host_type, host_shape);
   MS_EXCEPTION_IF_NULL(out_tensor);
-  size_t host_size = LongToSize(out_tensor->data().nbytes());
+  size_t host_size = out_tensor->DataNBytes();
   if (host_size == 0) {
     MS_LOG(WARNING) << "kernel tensor size is 0, skip it.";
     return out_tensor;

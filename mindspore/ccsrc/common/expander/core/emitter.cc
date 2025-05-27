@@ -185,7 +185,7 @@ NodePtr Emitter::Reshape(const NodePtr &node, const NodePtr &shape) {
     auto value = node->BuildValue();
     MS_EXCEPTION_IF_NULL(value);
     auto tensor = value->cast<tensor::TensorPtr>();
-    if (tensor != nullptr && tensor->data().const_data() != nullptr) {
+    if (tensor != nullptr && tensor->unsafe_data() != nullptr) {
       const auto &tensor_shape = tensor->shape_c();
       auto update_shape = CalReshapeRealDstShape(tensor_shape, dst_shape);
       if (tensor_shape == update_shape) {
