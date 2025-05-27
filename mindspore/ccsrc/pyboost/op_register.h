@@ -71,6 +71,58 @@ class OpRegister {
 #define CREATE_PYBOOST_OP(NAME, DEVICE)                                                  \
   mindspore::kernel::pyboost::OpFactory<mindspore::kernel::pyboost::NAME>::Get().Create( \
     DEVICE, kernel::pyboost::PyBoostUtils::cur_stream_id());
+
+// for internal op
+template <typename T>
+class PYBOOST_API InternalOpFactory {
+ public:
+  using OpCreator = std::function<std::shared_ptr<T>()>;
+  static InternalOpFactory<T> &Get();
+
+  void Register(const std::string &device, OpCreator &&func) {
+    MS_LOG(DEBUG) << "Reg for internal op " << typeid(T).name() << " on device " << device;
+    auto ret = op_creator_.try_emplace(device, func);
+    if (!ret.second) {
+      MS_LOG(WARNING) << "Duplicate op creator for " << typeid(T).name() << " on device " << device;
+    }
+  }
+
+  std::shared_ptr<T> Create(const std::string &device, uint32_t stream_id);
+
+  bool IsRegistered(const std::string &device) const { return op_creator_.find(device) != op_creator_.end(); }
+  std::map<std::string, OpCreator> &op_creator() { return op_creator_; }
+
+ private:
+  InternalOpFactory() = default;
+  ~InternalOpFactory() = default;
+  DISABLE_COPY_AND_ASSIGN(InternalOpFactory);
+  std::map<std::string, OpCreator> op_creator_;
+};
+
+template <typename T>
+class InternalOpRegister {
+ public:
+  using OpCreator = std::function<std::shared_ptr<T>()>;
+  InternalOpRegister(const std::string &device, OpCreator &&fun) {
+    InternalOpFactory<T>::Get().Register(device, std::move(fun));
+  }
+  ~InternalOpRegister() = default;
+};
+
+#define MS_REG_PYBOOST_INTERNAL_OP(DEVICE, clazz)                                                   \
+  static_assert(std::is_base_of<OpRunner, clazz>::value, " must be base of OpRunner");              \
+  static const InternalOpRegister<clazz> g_internal##clazz##DEVICE##_##_PyBoost_reg(#DEVICE, []() { \
+    return std::make_shared<Internal##clazz##DEVICE>(prim::kPrim##clazz,                            \
+                                                     runtime::OpRunner::GetDeviceContext(#DEVICE)); \
+  });
+
+#define CREATE_PYBOOST_INTERNAL_OP(NAME, DEVICE)                                                 \
+  mindspore::kernel::pyboost::InternalOpFactory<mindspore::kernel::pyboost::NAME>::Get().Create( \
+    DEVICE, kernel::pyboost::PyBoostUtils::cur_stream_id())
+
+#define CREATE_PYBOOST_SELECTED_OP(NAME, DEVICE)                                                          \
+  kernel::pyboost::PyBoostUtils::IsEnableInternalKernel(#NAME) ? CREATE_PYBOOST_INTERNAL_OP(NAME, DEVICE) \
+                                                               : CREATE_PYBOOST_OP(NAME, DEVICE)
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

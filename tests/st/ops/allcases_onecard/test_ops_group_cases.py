@@ -96,7 +96,7 @@ ops_group_cases_registry_level0 = [
     [test_ops_add_layer_norm.test_add_layer_norm, ("ascend910b",), 72,
      ((ms.float32, ms.float16, ms.bfloat16), (ms.GRAPH_MODE, ms.PYNATIVE_MODE), (True, False))],
     [test_ops_add_rms_norm.test_add_rms_norm_forward_backward, ("ascend910b",), 32, (('pynative', 'KBK'),)],
-    [test_ops_apply_rotary_pos_emb.test_apply_rotary_pos_emb_case0, ("ascend910b",), 86, (('KBK',),)],
+    [test_ops_apply_rotary_pos_emb.test_apply_rotary_pos_emb_case0, ("ascend910b",), 86, (('GE',),)],
     [test_ops_conv2d.test_conv2d_forward, ("ascend910b",), 8, ((ms.GRAPH_MODE, ms.PYNATIVE_MODE),)],
     [test_ops_conv3d_ext.test_ops_conv3d_default, ("ascend910b",), 32, ((ms.PYNATIVE_MODE, ms.GRAPH_MODE),)],
     [test_ops_conv3d_ext.test_ops_conv3d_batchfy, ("ascend910b",), 32, ((ms.PYNATIVE_MODE, ms.GRAPH_MODE),)],

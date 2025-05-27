@@ -119,6 +119,12 @@ class FunctionsGenerator(BaseGenerator):
         self.clone_inplace_input_template = Template(
             'GetCloneFunc()(op, prim::kPrim${class_name}, device_target, {${grad_args}});'
         )
+        self.create_aclnn_op_template = Template(
+            'auto op = CREATE_PYBOOST_OP(${class_name}, device_target);'
+        )
+        self.create_internal_op_template = Template(
+            'auto op = CREATE_PYBOOST_SELECTED_OP(${class_name}, device_target);'
+        )
 
     def generate(self, work_path, op_protos):
         """
@@ -171,8 +177,12 @@ class FunctionsGenerator(BaseGenerator):
                                                                  return_type=return_type_str,
                                                                  return_type_with_handle=return_type_with_handle)
             return comm_body
+        create_op_str = self.create_aclnn_op_template.replace(class_name=op_proto.op_class.name)
+        if getattr(op_proto.op_dispatch, 'internal_op_ascend') != 'None':
+            create_op_str = self.create_internal_op_template.replace(class_name=op_proto.op_class.name)
         return self.FUNCTION_BODY_TEMPLATE.replace(op_name=op_proto.op_name,
                                                    class_name=op_proto.op_class.name,
+                                                   create_op=create_op_str,
                                                    input_args=input_args,
                                                    clone_func=clone_func_str,
                                                    input_args_with_type=input_args_with_type,

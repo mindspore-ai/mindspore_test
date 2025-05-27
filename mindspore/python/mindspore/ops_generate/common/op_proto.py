@@ -112,10 +112,12 @@ class OpDispatch:
         gpu (str): The dispatch type for the GPU.
     """
 
-    def __init__(self, enable=False, is_comm_op=False, ascend='default', cpu='default', gpu='default'):
+    def __init__(self, enable=False, is_comm_op=False, ascend='default',
+                 internal_op_ascend='None', cpu='default', gpu='default'):
         self.enable = enable
         self.is_comm_op = is_comm_op
         self.ascend = ascend
+        self.internal_op_ascend = internal_op_ascend
         self.cpu = cpu
         self.gpu = gpu
 
@@ -401,9 +403,10 @@ def get_op_dispatch(op_name, op_data):
             f'The dispatch enable value should be bool, but get {type(enable)}, op name is {op_name}.')
     is_comm_op = op_dispatch.get('is_comm_op', False)
     ascend = op_dispatch.get('Ascend', 'default')
+    internal_op_ascend = op_dispatch.get('InternalOpAscend', 'None')
     cpu = op_dispatch.get('CPU', 'default')
     gpu = op_dispatch.get('GPU', 'default')
-    return OpDispatch(enable, is_comm_op, ascend, cpu, gpu)
+    return OpDispatch(enable, is_comm_op, ascend, internal_op_ascend, cpu, gpu)
 
 
 def get_op_class(op_name, op_data) -> OpClass:

@@ -28,6 +28,9 @@ from .pyboost_functions_h_generator import PyboostFunctionsHeaderGenerator
 from .pyboost_functions_cpp_generator import PyboostFunctionsGenerator
 from .pyboost_functions_impl_cpp_generator import PyboostFunctionsImplGenerator
 from .pyboost_grad_function_cpp_generator import PyboostGradFunctionsGenerator
+from .pyboost_internal_functions_h_generator import PyboostInternalFunctionsHeaderGenerator
+from .pyboost_internal_functions_cpp_generator import PyboostInternalFunctionsCppGenerator
+from .pyboost_internal_kernel_info_adapter_generator import PyboostKernelInfoAdapterGenerator
 from .pyboost_native_grad_functions_generator import (
     PyboostGradFunctionsHeaderGenerator,
     PyboostGradFunctionsCppGenerator,
@@ -36,6 +39,7 @@ from .pyboost_op_cpp_code_generator import (
     PyboostCommonOpHeaderGenerator,
     PyboostOpFunctionGenerator,
     PyboostOpHeaderGenerator,
+    PyboostInternalOpHeaderGenerator,
     delete_residual_files,
     PyboostOpRegisterCppCodeGenerator,
 )
@@ -69,6 +73,9 @@ def gen_pyboost_code(resource_mgr):
     call_pyboost_functions_h_generator(work_path, op_protos)
     call_pyboost_functions_cpp_generator(work_path, op_protos)
     call_pyboost_overload_functions_cpp_generator(work_path, op_protos, mint_func_protos, alias_func_mapping)
+    call_pyboost_internal_functions_h_generator(work_path, op_protos)
+    call_pyboost_internal_functions_cpp_generator(work_path, op_protos)
+    call_pyboost_internal_kernel_info_adapter_generator(work_path, op_protos)
     call_pyboost_grad_functions_cpp_generator(work_path, op_protos)
     call_pyboost_native_grad_functions_generator(work_path, op_protos)
     call_pyboost_op_cpp_code_generator(work_path, op_protos)
@@ -118,6 +125,24 @@ def call_pyboost_functions_h_generator(work_path, op_protos):
     generator.generate(work_path, op_protos)
 
 
+def call_pyboost_internal_functions_h_generator(work_path, op_protos):
+    "gen internal op functions headers"
+    generator = PyboostInternalFunctionsHeaderGenerator()
+    generator.generate(work_path, op_protos)
+
+
+def call_pyboost_internal_functions_cpp_generator(work_path, op_protos):
+    "gen internal op functions sources"
+    generator = PyboostInternalFunctionsCppGenerator()
+    generator.generate(work_path, op_protos)
+
+
+def call_pyboost_internal_kernel_info_adapter_generator(work_path, op_protos):
+    "gen kernel info adapter for internal op"
+    generator = PyboostKernelInfoAdapterGenerator()
+    generator.generate(work_path, op_protos)
+
+
 def call_pyboost_functions_cpp_generator(work_path, op_protos):
     impl_generator = PyboostFunctionsImplGenerator()
     impl_generator.generate(work_path, op_protos)
@@ -163,7 +188,10 @@ def call_PyboostCommonOpCppCodeGenerator(work_path, op_protos):
 
 
 def call_PyboostOpHeaderGenerator(work_path, op_protos):
+    """ generate pyboost op headers """
     generator = PyboostOpHeaderGenerator('ascend')
+    generator.generate(work_path, op_protos)
+    generator = PyboostInternalOpHeaderGenerator('ascend')
     generator.generate(work_path, op_protos)
 
     generator = PyboostOpHeaderGenerator('gpu')
