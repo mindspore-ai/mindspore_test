@@ -27,7 +27,7 @@ LLMManager &LLMManager::GetInstance() noexcept {
   return instance;
 }
 
-device::DeviceAddressPtr LLMManager::get_graph_input(const std::string &name) {
+DeviceSyncPtr LLMManager::get_graph_input(const std::string &name) {
   auto it = graph_inputs_map_.find(name);
   if (it == graph_inputs_map_.end()) {
     return nullptr;
@@ -35,9 +35,7 @@ device::DeviceAddressPtr LLMManager::get_graph_input(const std::string &name) {
   return it->second;
 }
 
-void LLMManager::add_graph_input(const std::string &name, device::DeviceAddressPtr tensor) {
-  graph_inputs_map_[name] = tensor;
-}
+void LLMManager::add_graph_input(const std::string &name, DeviceSyncPtr tensor) { graph_inputs_map_[name] = tensor; }
 
 void LLMManager::reset_graph_inputs() { graph_inputs_map_.clear(); }
 

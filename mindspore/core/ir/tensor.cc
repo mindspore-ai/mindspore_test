@@ -69,7 +69,6 @@ Tensor::Tensor(const Tensor &tensor)
       is_forward_output_(tensor.is_forward_output_),
       need_pipeline_sync_(tensor.need_pipeline_sync_),
       init_flag_(tensor.init_flag_),
-      need_release_device_mem_(tensor.need_release_device_mem_),
       cache_enable_(tensor.cache_enable_),
       copy_done_flag_(tensor.copy_done_flag_) {
   user_data_ = tensor.user_data_;
@@ -93,7 +92,6 @@ Tensor::Tensor(const Tensor &tensor, TypeId data_type)
       is_forward_output_(tensor.is_forward_output_),
       need_pipeline_sync_(tensor.need_pipeline_sync_),
       init_flag_(tensor.init_flag_),
-      need_release_device_mem_(tensor.need_release_device_mem_),
       cache_enable_(tensor.cache_enable_),
       copy_done_flag_(tensor.copy_done_flag_) {
   std::abort();
@@ -115,7 +113,6 @@ Tensor &Tensor::operator=(const Tensor &tensor) {
   base_shape_ptr_ = tensor.base_shape_ptr_;
   auto_grad_meta_data_ = tensor.auto_grad_meta_data_;
   init_flag_ = tensor.init_flag_;
-  need_release_device_mem_ = tensor.need_release_device_mem_;
   cache_enable_ = tensor.cache_enable_;
   cache_tensor_ptr_ = tensor.cache_tensor_ptr_;
   hashmap_tensor_ptr_ = tensor.hashmap_tensor_ptr_;
@@ -285,7 +282,6 @@ Tensor &Tensor::AssignValue(const Tensor &tensor) {
     }
 
     device_info_ = CopyDeviceInfo(tensor.device_info_);
-    need_release_device_mem_ = tensor.need_release_device_mem_;
 
     // Need execute callback when update host value of Tensor.
     ExecuteUpdateValueCallback();
@@ -626,25 +622,6 @@ bool Tensor::CheckStub() {
   }
   return true;
 #endif
-}
-
-size_t Tensor::GetFusionSize(const TensorPtrList &flat_tensors) {
-  size_t fusion_size = 0;
-  std::map<TypeId, size_t> type_groups;
-  for (auto &tensor : flat_tensors) {
-    MS_EXCEPTION_IF_NULL(tensor);
-    auto tensor_bytes = static_cast<size_t>(tensor->DataNBytes());
-    if (tensor_bytes > fusion_size) {
-      fusion_size = tensor_bytes;
-    }
-    ++type_groups[tensor->data_type()];
-  }
-  const bool only_one_chunk_for_each_type =
-    std::all_of(type_groups.begin(), type_groups.end(), [](auto const &e) { return e.second == 1; });
-  if (only_one_chunk_for_each_type) {
-    return 0;
-  }
-  return fusion_size;
 }
 
 void Tensor::PinMemory(PinnedMemRegister *pin_mem_register) {
