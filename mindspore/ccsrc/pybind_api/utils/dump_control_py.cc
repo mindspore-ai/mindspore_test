@@ -34,7 +34,7 @@ void RegDumpControl(py::module *m) {
          [](const std::vector<size_t> &v) { TensorDumpStepManager::GetInstance().SetDumpStep(v); })
     .def("_tensordump_process_file",
          [](const std::string &filename, const std::string &dtype) -> std::string {
-           return TensorDumpStepManager::GetInstance().ProcessFileName(filename, dtype, kPynativeMode);
+           return TensorDumpStepManager::GetInstance().ProcessFileName(filename, dtype, kCallFromPython);
          })
     .def(
       "_dump_step", [](const std::uint32_t step) { DumpControl::GetInstance().UpdateUserDumpStep(step); },

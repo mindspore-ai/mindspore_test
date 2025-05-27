@@ -25,6 +25,10 @@
 #include "include/common/visible.h"
 
 namespace mindspore {
+namespace dump {
+
+inline constexpr int kCallFromCXX = 0;
+inline constexpr int kCallFromPython = 1;
 
 class DUMP_EXPORT TensorDumpStepManager {
  public:
@@ -34,7 +38,7 @@ class DUMP_EXPORT TensorDumpStepManager {
   }
   ~TensorDumpStepManager() = default;
   void SetDumpStep(const std::vector<size_t> &);
-  std::string ProcessFileName(const std::string &, const std::string &, const int = kGraphMode);
+  std::string ProcessFileName(const std::string &, const std::string &, const int = kCallFromCXX);
   void SetAclDumpCallbackReg(void *);
 
  private:
@@ -50,7 +54,7 @@ class DUMP_EXPORT TensorDumpStepManager {
   std::set<size_t> valid_steps_;
   void *aclDumpCallbackReg_;
 };
-
+}  // namespace dump
 }  // namespace mindspore
 
 #endif
