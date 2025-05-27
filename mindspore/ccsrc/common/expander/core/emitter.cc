@@ -263,7 +263,8 @@ NodePtr Emitter::Tile(const NodePtr &node, const NodePtr &dims) {
     return Emit(kTileOpName, {node, tuple_multiples});
   }
   bool is_all_one = std::all_of(multiples_list.begin(), multiples_list.end(), [](int64_t shp) { return shp == 1; });
-  if (is_all_one && node->shape().size() >= multiples_list.size()) {
+  if ((is_all_one && node->shape().size() >= multiples_list.size()) ||
+      (node->shape().size() == 0 && multiples_list.size() == 0)) {
     return node;
   }
   return Emit(kTileOpName, {node, dims});
