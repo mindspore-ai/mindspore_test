@@ -1688,6 +1688,27 @@ void PipelinePostProcess::ElimGraphStage() {
   }
 }
 
+void PipelinePostProcess::RemoveMonadNodeBetweenStage(const CNodePtr &cnode) {
+  auto node_users = manager_->node_users()[cnode];
+  for (const auto &user_node_pair : node_users) {
+    auto user_cnode = user_node_pair.first->cast<CNodePtr>();
+    for (const auto &input : user_cnode->inputs()) {
+      if (IsPrimitiveCNode(input, prim::kPrimReceive)) {
+        auto monad_node = NewValueNode(kUMonad);
+        monad_node->set_abstract(kUMonad->ToAbstract());
+        auto abs = cnode->abstract();
+        MS_EXCEPTION_IF_NULL(abs);
+        if (abs->isa<abstract::AbstractIOMonad>()) {
+          monad_node = NewValueNode(kIOMonad);
+          monad_node->set_abstract(kIOMonad->ToAbstract());
+        }
+        (void)manager_->SetEdge(user_node_pair.first, user_node_pair.second, monad_node);
+        break;
+      }
+    }
+  }
+}
+
 void PipelinePostProcess::RemoveMonadNode(const FuncGraphPtr &fg, int64_t chunk) {
   auto all_nodes = DeepScopedGraphSearch(fg->get_return());
   auto node_users_map = manager_->node_users();
@@ -1697,6 +1718,7 @@ void PipelinePostProcess::RemoveMonadNode(const FuncGraphPtr &fg, int64_t chunk)
     }
     auto cnode = node->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(cnode);
+    RemoveMonadNodeBetweenStage(cnode);
     auto abs = cnode->abstract();
     MS_EXCEPTION_IF_NULL(abs);
     auto stage_info = cnode->user_data<NodeStageInfo>();
