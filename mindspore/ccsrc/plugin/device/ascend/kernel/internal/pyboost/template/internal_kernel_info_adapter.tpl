@@ -7,5 +7,5 @@ class Internal${op_name}KernelInfoAdapter : public ${op_name}KernelInfoAdapter {
   void CreateKernelInfo(const std::string &kernel_name) override;
 
  private:
-  std::shared_ptr<InternalKernelInfo${op_name}> kernel_info_{nullptr};
+  std::shared_ptr<${op_name}> kernel_info_{nullptr};
 };

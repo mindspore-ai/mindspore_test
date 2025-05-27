@@ -25,10 +25,10 @@
 
 namespace mindspore {
 namespace kernel {
-class InternalKernelInfoFlashAttentionScore : public InternalKernelInfo {
+class FlashAttentionScore : public InternalKernelInfo {
  public:
-  InternalKernelInfoFlashAttentionScore() : InternalKernelInfo(std::move("FlashAttentionScore")) {}
-  ~InternalKernelInfoFlashAttentionScore() = default;
+  FlashAttentionScore() : InternalKernelInfo(std::move("FlashAttentionScore")) {}
+  ~FlashAttentionScore() = default;
 
   void Call(const std::shared_ptr<pyboost::OpRunner> &op, const BaseTensorPtr &query, const BaseTensorPtr &key,
             const BaseTensorPtr &value, const std::optional<BaseTensorPtr> &real_shift,

@@ -20,8 +20,8 @@
 
 namespace mindspore {
 namespace kernel {
-internal::InternalOpPtr InternalKernelInfoFlashAttentionScore::CreateKernel(
-  const internal::InputsImmutableInfoList &inputs, const internal::OutputsImmutableInfoList &outputs) {
+internal::InternalOpPtr FlashAttentionScore::CreateKernel(const internal::InputsImmutableInfoList &inputs,
+                                                          const internal::OutputsImmutableInfoList &outputs) {
   internal::FlashAttentionScoreParam param;
   param.head_num = head_num_;
   param.inner_precise = inner_precise_;
@@ -37,19 +37,21 @@ internal::InternalOpPtr InternalKernelInfoFlashAttentionScore::CreateKernel(
   return internal::CreateFlashAttentionScoreOp(inputs, outputs, param, internal::kInternalFlashAttentionScoreOpName);
 }
 
-uint64_t InternalKernelInfoFlashAttentionScore::GenerateTilingKey(const std::string &kernel_name,
-                                                                  const std::vector<BaseTensorPtr> &inputs) {
+uint64_t FlashAttentionScore::GenerateTilingKey(const std::string &kernel_name,
+                                                const std::vector<BaseTensorPtr> &inputs) {
   return CalcInternalOpTilingHash(kernel_name, inputs, q_seq_len_, kv_seq_len_);
 }
 
-void InternalKernelInfoFlashAttentionScore::Call(
-  const std::shared_ptr<pyboost::OpRunner> &op, const BaseTensorPtr &query, const BaseTensorPtr &key,
-  const BaseTensorPtr &value, const std::optional<BaseTensorPtr> &real_shift,
-  const std::optional<BaseTensorPtr> &drop_mask, const std::optional<BaseTensorPtr> &padding_mask,
-  const std::optional<BaseTensorPtr> &attn_mask, const std::vector<int64_t> &prefix,
-  const std::vector<int64_t> &actual_seq_len, const std::vector<int64_t> &actual_seq_kvlen, const int64_t &head_num,
-  const float &keep_prob, const float &scale_value, const int64_t &pre_tokens, const int64_t &next_tokens,
-  const int64_t &inner_precise, const int64_t &input_layout, const int64_t &sparse_mode) {
+void FlashAttentionScore::Call(const std::shared_ptr<pyboost::OpRunner> &op, const BaseTensorPtr &query,
+                               const BaseTensorPtr &key, const BaseTensorPtr &value,
+                               const std::optional<BaseTensorPtr> &real_shift,
+                               const std::optional<BaseTensorPtr> &drop_mask,
+                               const std::optional<BaseTensorPtr> &padding_mask,
+                               const std::optional<BaseTensorPtr> &attn_mask, const std::vector<int64_t> &prefix,
+                               const std::vector<int64_t> &actual_seq_len, const std::vector<int64_t> &actual_seq_kvlen,
+                               const int64_t &head_num, const float &keep_prob, const float &scale_value,
+                               const int64_t &pre_tokens, const int64_t &next_tokens, const int64_t &inner_precise,
+                               const int64_t &input_layout, const int64_t &sparse_mode) {
   std::vector<BaseTensorPtr> inputs = {query, key, value, real_shift.has_value() ? real_shift.value() : nullptr,
                                        attn_mask.has_value() ? attn_mask.value() : nullptr};
   std::vector<BaseTensorPtr> outputs = {op->outputs()[kIndex3]};
@@ -79,6 +81,6 @@ void InternalKernelInfoFlashAttentionScore::Call(
   LAUNCH_INTERNAL(kernel_name_, op, internal_op_, inputs, outputs, tiling_info_);
 }
 MS_INTERNAL_KERNEL_INFO_FACTORY_REG(FlashAttentionScore, internal::kInternalFlashAttentionScoreOpName,
-                                    InternalKernelInfoFlashAttentionScore);
+                                    FlashAttentionScore);
 }  // namespace kernel
 }  // namespace mindspore
