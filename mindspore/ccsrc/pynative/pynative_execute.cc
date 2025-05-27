@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2022 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@
 #include "runtime/pynative/op_runner.h"
 #include "runtime/pynative/lazy_fusion.h"
 #include "debug/profiler/profiler.h"
+#include "debug/profiler/profiling.h"
 #include "ir/cell.h"
 #include "include/common/utils/stub_tensor.h"
 #include "include/common/utils/python_utils.h"

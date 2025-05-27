@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2024 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/base.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/hash_map.h"
@@ -391,6 +392,17 @@ bool ReplaceUpdateStateForLoad(const FuncGraphPtr &fg, const std::vector<AnfNode
   return change;
 }
 }  // namespace
+
+bool AutoMonadEliminator::operator()(const FuncGraphPtr &root, const OptimizerPtr &optimizer) const {
+  auto manager = optimizer->manager();
+  MS_EXCEPTION_IF_NULL(manager);
+  manager->AddFuncGraph(root);
+
+  // Never report change.
+  (void)ReplaceAutoMonadNode(manager);
+  (void)EliminateAutoMonadNode(manager);
+  return false;
+}
 
 // Node1{primLoad,X,Y1},...,Node{Node's input != X},...,Node2{primLoad,X,Y2},... =>
 // Node1{primLoad,X,Y1},...,Node{Nodes' input != X},...,Node1,...

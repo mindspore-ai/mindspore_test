@@ -1,5 +1,7 @@
 /**
- * Copyright 2021-2025 Huawei Technologies Co., Ltd
+ * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
+ *
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,26 +16,21 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_FRONTEND_OPTIMIZER_AUTO_MONAD_ELIMINATOR_H_
-#define MINDSPORE_CCSRC_FRONTEND_OPTIMIZER_AUTO_MONAD_ELIMINATOR_H_
+#include "frontend/optimizer/cse_pass.h"
 
-#include "base/base.h"
-#include "ir/manager.h"
+#include "include/common/utils/cse.h"
 #include "frontend/optimizer/optimizer.h"
 
 namespace mindspore {
+/* namespace to support opt */
 namespace opt {
-class AutoMonadEliminator {
- public:
-  AutoMonadEliminator() = default;
-  virtual ~AutoMonadEliminator() = default;
-  bool operator()(const FuncGraphPtr &root, const OptimizerPtr &optimizer) const;
 
- private:
-  bool ReplaceAutoMonadNode(const FuncGraphManagerPtr &manager) const;
-  bool EliminateAutoMonadNode(const FuncGraphManagerPtr &manager) const;
-};
+CSEPass::CSEPass(bool report_changes) : CSE(), report_changes_(report_changes) {}
+
+bool CSEPass::operator()(const FuncGraphPtr &root, const OptimizerPtr &optimizer) {
+  bool chg = Cse(root, optimizer->resource()->manager());
+  return chg && report_changes_;
+}
+
 }  // namespace opt
 }  // namespace mindspore
-
-#endif  // MINDSPORE_CCSRC_FRONTEND_OPTIMIZER_AUTO_MONAD_ELIMINATOR_H_
