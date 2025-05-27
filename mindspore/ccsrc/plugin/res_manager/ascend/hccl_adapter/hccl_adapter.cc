@@ -162,6 +162,7 @@ void HcclAdapter::InitPlugin() {
   }
   init_hcom_graph_adapter_ = DlsymFuncObj(InitHcomGraphAdapter, plugin_handle_);
   finalize_hcom_graph_adapter_ = DlsymFuncObj(FinalizeHcomGraphAdapter, plugin_handle_);
+  get_hccl_comm_config_capability_ = DlsymFuncObj(HcclGetCommConfigCapability, plugin_handle_);
   get_hccl_kernel_info_store_ = DlsymFuncObj(GetHcclKernelInfoStore, plugin_handle_);
   get_all_kernel_builder_ = DlsymFuncObj(GetAllKernelBuilder, plugin_handle_);
   init_hccl_comm_ = DlsymFuncObj(HcclCommInitClusterInfo, plugin_handle_);
@@ -210,6 +211,7 @@ void HcclAdapter::FinalizePlugin() {
   init_hccl_global_comm_ranktable_ = nullptr;
   init_hccl_sub_comm_ranktable_ = nullptr;
   finalize_hcom_graph_adapter_ = nullptr;
+  get_hccl_comm_config_capability_ = nullptr;
   get_hccl_kernel_info_store_ = nullptr;
   get_all_kernel_builder_ = nullptr;
   init_hccl_comm_ = nullptr;
@@ -649,6 +651,11 @@ bool HcclAdapter::FinalizeKernelInfoStore() {
   init_kernel_info_store_ = false;
   MS_LOG(INFO) << "Destroy hccl kernel info store success.";
   return true;
+}
+
+uint32_t HcclAdapter::HcclGetCommConfigCapability() {
+  MS_EXCEPTION_IF_NULL(get_hccl_comm_config_capability_);
+  return get_hccl_comm_config_capability_();
 }
 
 HcclResult HcclAdapter::HcclSetGlobalCommInfo(uint32_t masterIp, uint32_t masterPort, uint32_t totalRankSize,

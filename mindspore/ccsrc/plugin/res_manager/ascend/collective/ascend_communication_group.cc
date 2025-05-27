@@ -263,6 +263,10 @@ bool AscendCommunicationGroup::SetGlobalCommInfo(uint32_t master_ip, uint32_t ma
   return true;
 }
 
+bool AscendCommunicationGroup::isSupportConfigParameter(HcclCommConfigCapability config_parameter) {
+  return config_parameter < hccl::HcclAdapter::GetInstance().HcclGetCommConfigCapability();
+}
+
 const HcclComm &AscendCommunicationGroup::hccl_communicator() const { return comm_; }
 
 std::string AscendCommunicationGroup::inner_comm_name() const { return inner_comm_name_; }
