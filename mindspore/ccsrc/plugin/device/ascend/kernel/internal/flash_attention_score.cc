@@ -47,7 +47,7 @@ bool InternalFlashAttentionScore::UpdateSeqLen(const std::vector<KernelTensor *>
     auto &llm_manager = LLMManager::GetInstance();
     bool get_from_graph_input = false;
     for (const auto &tensor_name : {"q_seq_lens", "actual_seq_qlen"}) {
-      auto seq_length_tensor = std::static_pointer_cast<DeviceAddress>(llm_manager.get_graph_input(tensor_name));
+      auto seq_length_tensor = std::dynamic_pointer_cast<DeviceAddress>(llm_manager.get_graph_input(tensor_name));
       if (seq_length_tensor != nullptr && seq_length_tensor->GetSize() != 0) {
         q_need_recreate = GetSeqLenFromGraphAndCheckUpadate(kernel_name_, {tensor_name}, &param_.q_seq_len);
         get_from_graph_input = true;

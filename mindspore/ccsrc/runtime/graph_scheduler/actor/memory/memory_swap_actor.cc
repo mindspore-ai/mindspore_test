@@ -79,11 +79,12 @@ void MemorySwapActor::AllocDeviceContinuousMem(const std::vector<DeviceTensor *>
     // If data already exists in device, copy it to continuous memory and release the original data.
     if (device_tensors[i]->status() == device::DeviceAddressStatus::kInDevice &&
         device_tensors[i]->GetPtr() != nullptr) {
-      const auto original_ptr = device_tensors[i]->GetMutablePtr();
+      auto original_ptr = device_tensors[i]->GetMutablePtr();
       device_tensors[i]->set_ptr(device_ptrs[i]);
       // SyncDeviceToDevice do not need shape vector.
-      if (!device_tensors[i]->SyncDeviceToDevice({}, device_tensors[i]->GetSize(), device_tensors[i]->type_id(),
-                                                 original_ptr, device_tensors[i]->format())) {
+      auto tensor = std::make_shared<tensor::Tensor>(device_tensors[i]->type_id(), ShapeVector{}, original_ptr,
+                                                     device_tensors[i]->GetSize());
+      if (!SyncCopy(device_tensors[i], tensor->device_address().get(), kDefaultStreamIndex)) {
         MS_LOG(EXCEPTION) << "Copy data for continuous memory failed, src addr: " << original_ptr << ", dst addr: "
                           << ", size: " << device_tensors[i]->GetSize();
       }

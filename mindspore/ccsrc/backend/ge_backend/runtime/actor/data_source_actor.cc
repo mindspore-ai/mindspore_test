@@ -212,10 +212,7 @@ void HostQueueDataSourceActor::OnMemoryAllocFinish(OpContext<KernelTensor> *cons
           SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "SyncHostToDevice failed.");
         }
       } else {
-        if (!device_tensor->SyncHostToDevice(
-              AnfAlgo::GetRuntimePaddingShape(data_node_with_indexs_[i].first, data_node_with_indexs_[i].second),
-              LongToSize(host_tensor->DataNBytes()), host_tensor->data_type(), host_tensor->device_info().host_format_,
-              host_tensor->data_ptr())) {
+        if (!SyncCopy(device_tensor.get(), host_tensor->device_address().get(), kDefaultStreamIndex)) {
           SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "SyncHostToDevice failed.");
         }
       }
