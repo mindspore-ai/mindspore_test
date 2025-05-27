@@ -1112,9 +1112,8 @@ KernelTensorPtr PrepareParameter(const std::pair<KernelWithIndex, size_t> &param
                 << ", inner index:" << inner_index << ", front node: " << front_node.first->DebugString();
   auto tensor = graph_parameter_store->FetchTensor(outer_index, front_node);
   MS_EXCEPTION_IF_NULL(tensor);
-  auto tensor_address = std::static_pointer_cast<DeviceTensor>(tensor->device_address());
-
   // Prepare data if got tensor address.
+  auto tensor_address = std::static_pointer_cast<DeviceTensor>(tensor->device_address());
   if (tensor_address != nullptr) {
     graph_parameter_store->SetDeviceTensorPrepared(outer_index, inner_index, true);
     tensor_address->set_new_ref_count(SIZE_MAX);
