@@ -92,10 +92,10 @@ from mindspore.ops.auto_generate import avg_pool3d_ext_op
 # 19
 
 # 20
-
+from mindspore.ops.functional_overload import conv3d as conv3d_op
 from mindspore.ops.auto_generate.gen_ops_prim import embedding_op, MaxPoolWithIndices, \
     PromptFlashAttention, MaxPoolWithMask
-from mindspore.ops.auto_generate.gen_ops_prim import conv3d_ext_op, conv3d_padding_op, conv2d_ext_op, \
+from mindspore.ops.auto_generate.gen_ops_prim import conv2d_ext_op, \
     conv2d_padding_op, conv1d_ext_op, conv1d_padding_op, speed_fusion_attention_op
 from mindspore.common.generator import default_generator
 from mindspore.ops.auto_generate import hardshrink, hardsigmoid, hardswish
@@ -7447,12 +7447,7 @@ def conv3d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups
         (12, 26, 59, 47, 5)
     """
 
-    if isinstance(padding, (tuple, list, int)):
-        return conv3d_ext_op(input, weight, bias, stride, padding, dilation, groups)
-    if isinstance(padding, str):
-        return conv3d_padding_op(input, weight, bias, stride, padding, dilation, groups)
-    raise TypeError(f"For conv3d, the parameter 'padding' must be a tuple/list " \
-                    f"or a string, but got {type(padding)}")
+    return conv3d_op(input, weight, bias, stride, padding, dilation, groups)
 
 
 @_primexpr

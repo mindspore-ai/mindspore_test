@@ -27,7 +27,7 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-namespace conv1d_ext {
+namespace {
 bool Conv1DBatchify(const ShapeVector &input_shape, const int64_t num_spatial_dims, const std::string &func_name) {
   const auto dim_count_no_batch = num_spatial_dims + 1;
   const auto dim_count_batch = dim_count_no_batch + 1;
@@ -39,7 +39,7 @@ bool Conv1DBatchify(const ShapeVector &input_shape, const int64_t num_spatial_di
   }
   return is_batched;
 }
-}  // namespace conv1d_ext
+}  // namespace
 
 tensor::TensorPtr Conv1DExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
                                            const TensorPtr &weight_tensor, const std::optional<TensorPtr> &bias_tensor,
@@ -49,7 +49,7 @@ tensor::TensorPtr Conv1DExtAscendCustomize(const std::shared_ptr<OpRunner> &op, 
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor, weight_tensor, bias_tensor);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
   auto input_shape = input_tensor->shape();
-  auto is_batchify = conv1d_ext::Conv1DBatchify(input_shape, 1, "conv1d");
+  auto is_batchify = Conv1DBatchify(input_shape, 1, "conv1d");
 
   BoolImmPtr transposed_imm = std::make_shared<BoolImm>(false);
   ValueTuplePtr output_padding_vector_1d_imm =
