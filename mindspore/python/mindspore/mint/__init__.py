@@ -33,7 +33,7 @@ from mindspore.ops.function.array_func import zeros_like_ext as zeros_like
 from mindspore.ops.function.array_func import unique_ext as unique
 from mindspore.ops.function.array_func import chunk_ext as chunk
 from mindspore.ops.functional_overload import empty
-from mindspore.ops.function.array_func import empty_like
+from mindspore.ops.functional_overload import empty_like
 from mindspore.ops.function.math_func import isclose
 from mindspore.ops.auto_generate import abs
 from mindspore.ops.auto_generate import clone

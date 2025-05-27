@@ -230,11 +230,18 @@ REG_STRING_TO_ENUM_SPECIAL(mode, StrToEnumMap{{"REDUCED", LinalgQrMode::REDUCED}
 
 // FlipMode
 REG_STRING_TO_ENUM_SPECIAL(approximate, StrToEnumMap{{"NONE", Approximate::NONE}, {"TANH", Approximate::TANH}});
+
+// Device
+StrToEnumMap StrToDeviceMap = {{"Ascend", Device::DEVICE_ASCEND},
+                               {"npu", Device::DEVICE_NPU_LOWER},
+                               {"CPU", Device::DEVICE_CPU},
+                               {"cpu", Device::DEVICE_CPU_LOWER}};
+REG_STRING_TO_ENUM_SPECIAL(device, StrToDeviceMap);
 }  // namespace
 
 int64_t StringToEnumImpl(const std::string &op_name, const std::string &arg_name, const std::string &enum_string) {
   const auto &string_to_enum_map = reg_string_to_enum_helper.GetValues(arg_name);
-  const auto enum_val_iter = string_to_enum_map.find(StrToUpper(enum_string));
+  const auto enum_val_iter = string_to_enum_map.find(arg_name == "device" ? enum_string : StrToUpper(enum_string));
   if (enum_val_iter == string_to_enum_map.end()) {
     MS_EXCEPTION(ValueError) << "Failed to convert the value \"" << enum_string << "\" of input '" << arg_name
                              << "' of '" << op_name << "' to enum.";

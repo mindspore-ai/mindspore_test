@@ -294,6 +294,8 @@ NodePtr Emitter::ZerosLike(const NodePtr &node) {
     } else if (v->isa<Monad>()) {
       return Tensor(0);
     }
+  } else if (node->dtype()->type_id() == kObjectTypeString) {
+    return Tensor(0);
   }
 
   auto abs = node->abstract();

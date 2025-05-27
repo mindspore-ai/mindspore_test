@@ -110,9 +110,6 @@ from mindspore.ops.auto_generate import take, tensor_scatter_elements as tensor_
 from mindspore.ops.auto_generate.gen_ops_prim import scatter_add_ext_op, gather_d_op, slice_op, tril_ext_op
 from mindspore.ops.operations.manually_defined import tile, rank, scalar_cast
 from mindspore.ops.auto_generate.pyboost_inner_prim import _PyboostOneHotExtPrim
-from mindspore._c_expression import pyboost_empty
-from mindspore._c_expression import pyboost_empty_like
-from mindspore._c_expression import pyboost_new_empty
 
 arg_max_with_value_ = ArgMaxWithValue()
 arg_min_with_value_ = ArgMinWithValue()
@@ -515,92 +512,6 @@ def reverse(x, axis):
         ``Ascend`` ``GPU`` ``CPU``
     """
     return flip(x, axis)
-
-
-def empty(*size, dtype=None, device=None):
-    r"""
-    Creates a tensor with uninitialized data, whose shape, dtype and device are described by the argument `size`,
-    `dtype` and `device` respectively.
-
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
-
-    Args:
-        size (Union[tuple[int], list[int], int]): The specified shape of output tensor. Only positive integer or
-            tuple or list containing positive integers are allowed.
-
-    Keyword Args:
-        dtype (:class:`mindspore.dtype`, optional): The specified type of output tensor. If `dtype` is ``None`` ,
-            `mindspore.float32` will be used. Default: ``None`` .
-        device (string, optional): The specified device of the output tensor. Support ``CPU`` and ``Ascend``. If
-            `device = None`, the value set by :func:`mindspore.set_device` will be used. Default ``None``.
-
-    Returns:
-        Tensor, whose dtype and size are defined by input.
-
-    Raises:
-        TypeError: If `size` is neither an int nor a tuple or list of int.
-
-    Supported Platforms:
-        ``Ascend``
-
-    Examples:
-        >>> import mindspore
-        >>> from mindspore import ops
-        >>> output = ops.empty((2, 3), dtype=mindspore.float32)
-        >>> print(output)
-        [[0. 0. 0.]
-         [0. 0. 0.]]
-    """
-
-    return pyboost_empty([size, dtype, device])
-
-def empty_like(input, *, dtype=None, device=None):
-    r"""
-    Returns an uninitialized Tensor with the same shape as the `input`. Its dtype is specified by `dtype` and its
-    device is specified by `device`.
-
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
-
-    Args:
-        input (Tensor): Tensor of any dimension.
-
-    Keyword Args:
-        dtype (:class:`mindspore.dtype`, optional): The specified dtype of the output tensor. If `dtype = None`, the
-            tensor will have the same dtype as input `input`. Default ``None``.
-        device (string, optional): The specified device of the output tensor. Support ``CPU`` and ``Ascend``. If
-            `device = None`, the tensor will have the same device as input `input` and if the device of the input
-            tensor is not defined, the value set by :func:`mindspore.set_device` will be used. Default ``None``.
-
-    Returns:
-        Tensor, has the same shape, type and device as `input` but with uninitialized data (May be a random value).
-
-    Raises:
-        TypeError: If `input` is not a Tensor.
-
-    Supported Platforms:
-        ``Ascend``
-
-    Examples:
-        >>> import mindspore
-        >>> from mindspore import ops, Tensor
-        >>> x = Tensor([[1, 2, 3], [4, 5, 6]])
-        >>> output1 = ops.empty_like(x)
-        >>> print(output1)
-        [[0 0 0]
-         [0 0 0]]
-        >>> output2 = ops.empty_like(x, dtype=mindspore.float64)
-        >>> print(output2)
-        [[0. 0. 0.]
-         [0. 0. 0.]]
-    """
-
-    return pyboost_empty_like([input, dtype, device])
-
-
-def new_empty(input, size, dtype, device):
-    return pyboost_new_empty([input, size, dtype, device])
 
 
 def ravel(input):

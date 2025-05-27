@@ -1,0 +1,42 @@
+new_empty:
+    description: |
+        new_empty(size, *, dtype=None, device=None) -> Tensor
+
+        Returns an uninitialized Tensor. Its shape is specified by `size`, its dtype is specified by `dtype` and its
+        device is specified by `device`.
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+        Args:
+            size (Union[tuple[int], list[int], int]): The specified shape of output tensor. Only positive integer or
+                tuple or list containing positive integers are allowed.
+
+        Keyword Args:
+            dtype (:class:`mindspore.dtype`, optional): The specified dtype of the output tensor. If `dtype = None`,
+                the tensor will have the same dtype as `self`. Default ``None``.
+            device (string, optional): The specified device of the output tensor. In PyNative mode, ``"Ascend"``, ``"npu"``,
+                ``"cpu"`` and ``"CPU"`` are supported. In graph mode O0, ``"Ascend"`` and ``"npu"`` are supported. If `device = None`,
+                the value set by :func:`mindspore.set_device` will be used. Default ``None``.
+
+        Returns:
+            Tensor, whose shape, dtype and device are defined by input but with uninitialized data (May be a random value).
+
+        Raises:
+            TypeError: If `size` is neither an int nor a tuple or list of int.
+
+        Supported Platforms:
+            ``Ascend`` ``CPU``
+
+        Examples:
+            >>> import mindspore
+            >>> from mindspore import Tensor
+            >>> x = Tensor([[1, 2, 3], [4, 5, 6]])
+            >>> output1 = x.new_empty((2, 3))
+            >>> print(output1)
+            [[0 0 0]
+             [0 0 0]]
+            >>> output2 = x.new_empty((2, 3), dtype=mindspore.float64)
+            >>> print(output2)
+            [[0. 0. 0.]
+             [0. 0. 0.]]

@@ -33,7 +33,6 @@ from mindspore.ops.operations.nn_ops import AdaptiveMaxPool2D
 from mindspore.ops.operations.math_ops import Roll
 from mindspore.ops.composite.math_ops import mm
 from mindspore.ops.function.math_func import dot
-from mindspore.ops.function.array_func import new_empty
 from mindspore.ops import auto_generate
 from mindspore.ops.auto_generate import cast
 from mindspore.ops._utils.arg_dtype_cast import DtypeToEnum
@@ -383,7 +382,6 @@ setattr(tensor_operator_registry, 'nanmedian', nanmedian)
 setattr(tensor_operator_registry, 'csr_to_coo', csr_to_coo)
 setattr(tensor_operator_registry, 'zeros', zeros)
 setattr(tensor_operator_registry, 'ones', ones)
-setattr(tensor_operator_registry, 'new_empty', new_empty)
 setattr(tensor_operator_registry, 'unsorted_segment_min', unsorted_segment_min)
 setattr(tensor_operator_registry, 'unsorted_segment_max', unsorted_segment_max)
 setattr(tensor_operator_registry, 'unsorted_segment_prod', unsorted_segment_prod)

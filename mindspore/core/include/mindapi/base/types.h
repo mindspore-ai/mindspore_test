@@ -143,6 +143,13 @@ enum NormMode : int64_t { BACKWARD = 0, FORWARD = 1, ORTHO = 2 };
 
 enum DriverName : int64_t { GELS = 0, GELSY = 1, GELSD = 2, GELSS = 3 };
 
+enum Device : int64_t {
+  DEVICE_ASCEND = 0,
+  DEVICE_NPU_LOWER = 1,
+  DEVICE_CPU = 2,
+  DEVICE_CPU_LOWER = 3,
+};
+
 // float is a float64 in python. But for some historical reason, python float is converted to float32 in
 using pyfloat = float;
 using pyint = int32_t;
