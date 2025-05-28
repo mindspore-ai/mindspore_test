@@ -924,7 +924,7 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
                    << ", device tensor type:" << device_tensor->GetDeviceType();
       // The fake heterogeneous scenario.
       if (DeviceTensorStore::GetInstance().Fetch(front_node.get()).size() == 1) {
-        tensor->data_sync();
+        tensor = tensor->cpu();
         host_tensor_address = device_tensor;
         is_need_sync = true;
       }
