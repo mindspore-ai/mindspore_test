@@ -296,7 +296,7 @@ def uniform_(input, from_=0, to=1, *, generator=None):
     Returns:
         Tensor, with the same shape and dtype as `input` tensor.
 
-   Raises:
+    Raises:
         TypeError: If `input` is not a Tensor.
         TypeError: If dtype of `input` is not one of: bool, int8, int16, int32, int64, uint8, float16, float32, float64,
             bfloat16.
