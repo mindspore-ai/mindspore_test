@@ -172,11 +172,11 @@ std::vector<uint8_t> AscendMemoryTimeEvent::encode() {
   std::vector<uint8_t> tlv_result;
   uint16_t data_type = static_cast<uint16_t>(profiler::ascend::OpRangeDataType::NAME);
   for (size_t i = 0; i < sizeof(uint16_t); i++) {
-    (void)tlv_result.emplace_back(data_type >> (i * kByteOffset) & 0xff);
+    (void)tlv_result.emplace_back((data_type >> (i * kByteOffset)) & 0xff);
   }
   uint32_t length = result.size();
   for (size_t i = 0; i < sizeof(uint32_t); i++) {
-    (void)tlv_result.emplace_back(length >> (i * kByteOffset) & 0xff);
+    (void)tlv_result.emplace_back((length >> (i * kByteOffset)) & 0xff);
   }
   tlv_result.insert(tlv_result.end(), result.cbegin(), result.cend());
   return tlv_result;

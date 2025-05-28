@@ -62,8 +62,8 @@ class RES_EXPORT SwapManager {
   void *AllocDeviceMemorySimply(const size_t &size, uint32_t stream_id = kDefaultStreamIndex);
   std::vector<void *> AllocDeviceContinuousMemSimply(const std::vector<size_t> &size_list,
                                                      uint32_t stream_id = kDefaultStreamIndex);
-  void *AllocHostMemorySimply(const size_t &size, uint32_t /*stream_id*/);
-  bool EnoughFileSpace(const size_t &size, uint32_t /*stream_id*/);
+  void *AllocHostMemorySimply(const size_t &size, uint32_t /* stream_id */);
+  bool EnoughFileSpace(const size_t &size, uint32_t /* stream_id */);
 
   template <class Input, class Output>
   bool TryAllocate(std::queue<const DeviceAddress *> queue, const Input &input, uint32_t stream_id,

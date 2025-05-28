@@ -469,12 +469,15 @@ void AbstractDynamicMemPool::ReleaseDeviceRes() {
   mem_stat_.Reset();
 }
 
-// Allocation follow steps below:
-//  1 align size
-//  2 find from current allocator, if failed transfer to 3
-//  3 find from another allocator, if failed transfer to 4
-//  4 do eager free and find from current allocator again, if failed transfer to 5
-//  5 expand block
+/**
+ * @brief Alloc tensor mem.
+ * Allocation follow steps below:
+ *    1 align size
+ *    2 find from current allocator, if failed transfer to 3
+ *    3 find from another allocator, if failed transfer to 4
+ *    4 do eager free and find from current allocator again, if failed transfer to 5
+ *    5 expand block
+ */
 DeviceMemPtr AbstractDynamicMemPool::AllocTensorMem(size_t size, bool from_persistent_mem, bool, uint32_t stream_id) {
   size_t align_size = AlignMemorySize(size);
   LockGuard lock(lock_);
@@ -489,10 +492,13 @@ DeviceMemPtr AbstractDynamicMemPool::AllocTensorMem(size_t size, bool from_persi
   return mem_buf_allocator.first->addr_;
 }
 
-// Strategy when vmm is disable:
-//    Persistent memory:  First malloc form its own pool, if fails, try to malloc from common pool.
-//    Common memory:  First malloc from its own pool, if fails, it will try to expand the pool.
-//                    If the expansion fails, try to malloc from persistent pool.
+/**
+ * @brief Alloc mem buf.
+ * Strategy when vmm is disable:
+ *    Persistent memory:  First malloc form its own pool, if fails, try to malloc from common pool.
+ *    Common memory:  First malloc from its own pool, if fails, it will try to expand the pool.
+ *                    If the expansion fails, try to malloc from persistent pool.
+ */
 std::pair<MemBuf *, MemBufAllocator *> AbstractDynamicMemPool::AllocMemBuf(size_t align_size, bool from_persistent_mem,
                                                                            uint32_t stream_id) {
   auto allocator = GetMemBufAllocator(align_size, from_persistent_mem, stream_id);
