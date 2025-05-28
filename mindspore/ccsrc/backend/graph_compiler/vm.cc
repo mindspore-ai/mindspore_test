@@ -29,7 +29,7 @@
 namespace mindspore {
 namespace compile {
 
-enum SwitchCondStatus {
+enum class SwitchCondStatus {
   kCondOk = 0,
   kCondAlreadyRun,
 };

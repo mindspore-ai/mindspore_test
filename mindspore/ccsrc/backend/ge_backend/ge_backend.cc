@@ -408,6 +408,13 @@ void UnifyIR(const CNodePtr &cnode) {
                  << ", debug name:" << cnode->DebugString();
   }
 }
+
+void CheckOutputIdx(size_t output_position, size_t output_tensors_size) {
+  if (output_position >= output_tensors_size) {
+    MS_LOG(INTERNAL_EXCEPTION) << "#dmsg#Runtime error info:#dmsg#The output position is out of range: "
+                               << output_position;
+  }
+}
 }  // namespace
 mindspore::HashSet<const tensor::Tensor *> GEBackend::weights_need_reprepare_ = {};
 BackendGraphId GEBackend::backend_graph_id_ = 0;
@@ -1391,10 +1398,8 @@ void GEBackend::ConstructOutputs(const AnfNodePtr &output_node, const std::vecto
     VectorRef output_tuple;
     for (size_t i = 0; i < outputs_num; ++i) {
       MS_LOG(DEBUG) << "output index:" << i;
-      if (*output_position >= output_tensors.size()) {
-        MS_LOG(INTERNAL_EXCEPTION) << "#dmsg#Runtime error info:#dmsg#The output position is out of range: "
-                                   << *output_position;
-      }
+      CheckOutputIdx(*output_position, output_tensors.size());
+
       auto &output_tensor = output_tensors[*output_position];
       MS_EXCEPTION_IF_NULL(output_tensor);
       auto &tensor_shape = output_tensor->base_shape_ptr();
@@ -1410,10 +1415,7 @@ void GEBackend::ConstructOutputs(const AnfNodePtr &output_node, const std::vecto
     outputs->emplace_back(std::move(output_tuple));
   } else {
     for (size_t i = 0; i < outputs_num; ++i) {
-      if (*output_position >= output_tensors.size()) {
-        MS_LOG(INTERNAL_EXCEPTION) << "#dmsg#Runtime error info:#dmsg#The output position is out of range: "
-                                   << *output_position;
-      }
+      CheckOutputIdx(*output_position, output_tensors.size());
       outputs->emplace_back(output_tensors[*output_position]);
       ++(*output_position);
     }
@@ -1484,7 +1486,6 @@ void GEBackend::ConstructInputsRefMode(const KernelGraphPtr &func_graph, const V
   auto inputs = func_graph->inputs();
   MS_EXCEPTION_IF_CHECK_FAIL(inputs.size() == args.size(), "The args size is not equal to graph inputs size.");
   for (size_t i = 0; i < inputs.size(); ++i) {
-    MS_EXCEPTION_IF_NULL(inputs[i]);
     std::vector<tensor::TensorPtr> flatten_tensors;
     auto params = common::AnfAlgo::GetAllOutput(inputs[i]);
     for (size_t j = 0; j < params.size(); ++j) {
@@ -1497,7 +1498,6 @@ void GEBackend::ConstructInputsRefMode(const KernelGraphPtr &func_graph, const V
       }
       // for refmode, weight copy to device just once
       auto parameter = params[j]->cast<ParameterPtr>();
-      MS_EXCEPTION_IF_NULL(parameter);
       if (is_weight_init_[parameter] && weights_need_reprepare_.empty()) {
         continue;
       }
@@ -1515,6 +1515,10 @@ void GEBackend::ConstructInputsRefMode(const KernelGraphPtr &func_graph, const V
 
       UpdateInputsShapeAndSize(parameter, device_tensor, flatten_tensors[j]);
       CheckContiguousTensor(flatten_tensors[j]);
+
+      if (host_tensor_address == device_tensor) {
+        continue;
+      }
       // in different backend object, but has init, skip
       if (common::AnfAlgo::IsParameterWeight(parameter)) {
         is_weight_init_[parameter] = true;
@@ -1522,9 +1526,6 @@ void GEBackend::ConstructInputsRefMode(const KernelGraphPtr &func_graph, const V
         SetTensorUpdateCallback(flatten_tensors[j]);
 
         device_tensor->set_is_ptr_persisted(true);
-        if (host_tensor_address == device_tensor) {
-          continue;
-        }
 
         if (host_tensor_address == nullptr) {
           // host is nullptr -> set & copy_to_device
@@ -1547,10 +1548,6 @@ void GEBackend::ConstructInputsRefMode(const KernelGraphPtr &func_graph, const V
           is_need_sync = false;
         }
       } else {
-        if (host_tensor_address == device_tensor) {
-          continue;
-        }
-
         if (host_tensor_address != nullptr) {
           if (host_tensor_address->GetPtr() == device_tensor->GetPtr()) {
             continue;

@@ -54,7 +54,7 @@ bool DropoutGenMaskDepend::Run(const FuncGraphPtr &func_graph) {
     MS_EXCEPTION_IF_NULL(mask_cnode);
     auto inputs = mask_cnode->inputs();
     if (inputs.size() - 1 <= kInputIndex1) {
-      MS_EXCEPTION(IndexError) << "For DropoutGenMask, the num of inputs is " << inputs.size() - 1 << ", expect 2";
+      MS_EXCEPTION(IndexError) << "For DropoutGenMask, the num of inputs is " << (inputs.size() - 1) << ", expect 2";
     }
     auto input_node = inputs[kInputIndex1];
     if (IsValueNode<ValueSequence>(input_node)) {

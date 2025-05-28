@@ -425,6 +425,7 @@ Status ShardIndexGenerator::GenerateRowData(int shard_no, const std::map<int, in
     // offset in current raw data page
     auto cur_raw_page_offset = static_cast<uint64_t>(blob_ids.second);
     uint64_t cur_blob_page_offset = 0;
+    MS_EXCEPTION_IF_NULL(blob_page_ptr);
     for (unsigned int i = blob_page_ptr->GetStartRowID(); i < blob_page_ptr->GetEndRowID(); ++i) {
       std::vector<std::tuple<std::string, std::string, std::string>> row_data;
       row_data.emplace_back(":ROW_ID", "INTEGER", std::to_string(i));

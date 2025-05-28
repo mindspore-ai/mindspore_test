@@ -37,6 +37,4 @@ bool AddATBKernelMod::Launch(const std::vector<KernelTensor *> &inputs, const st
   device::ascend::Launch(op_, param_setter_.variant_pack, workspace[0]->device_ptr(), workspace_size_list_, stream_ptr);
   return true;
 }
-
-// MS_ATB_KERNEL_FACTORY_REG(Add, AddATBKernelMod);
 }  // namespace mindspore::kernel
