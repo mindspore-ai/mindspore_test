@@ -127,7 +127,7 @@ bool MoeInitRoutingDynQuantV2Fusion::IsSupport(const AnfNodePtr &node, const Equ
   auto constexpr kDim2 = 2;
   if (smooth_scale_dtype != kMetaTypeNone &&
       (smooth_scale_dtype != kNumberTypeFloat32 || scale_shape.size() != kDim2)) {
-    MS_LOG(INFO) <<R "(when smooth_scale is not None, only type Float32 and shape 2D are supported, )"
+    MS_LOG(INFO) << "(when smooth_scale is not None, only type Float32 and shape 2D are supported, )"
                  << "but got smooth_scale_dtype = )" << smooth_scale_dtype
                  << ", scale_shape size = " << scale_shape.size();
     return false;

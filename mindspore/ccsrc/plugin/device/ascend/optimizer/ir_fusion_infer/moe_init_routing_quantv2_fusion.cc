@@ -136,6 +136,12 @@ bool MoeInitRoutingQuantV2Fusion::IsSupport(const AnfNodePtr &node, const EquivP
     return false;
   }
 
+  auto offset_type = common::AnfAlgo::GetPrevNodeOutputInferDataType(node, kOffsetOutIdx);
+  if (offset_type != kNumberTypeFloat32) {
+    MS_LOG(INFO) << " offset dtype should be float32, but now offset dtype  is " << offset_type;
+    return false;
+  }
+
   return true;
 }
 
@@ -169,17 +175,14 @@ CNodePtr MoeInitRoutingQuantV2Fusion::CreateMoeInitRoutingQuantV2Node(const Func
 
   auto tuple_getitem_0 = common::AnfAlgo::GetInputNode(utils::cast<CNodePtr>(node), 0);
   auto moe_init_routing_node = common::AnfAlgo::GetInputNode(utils::cast<CNodePtr>(tuple_getitem_0), 0);
-  auto expand_x_out_type = common::AnfAlgo::GetOutputInferDataType(moe_init_routing_node, 0);
+  auto scale_type = common::AnfAlgo::GetPrevNodeOutputInferDataType(node, kScaleOutIdx);
 
   AnfNodePtr scale_node = scale;
   AnfNodePtr offset_node = offset;
-  if (expand_x_out_type != kNumberTypeFloat32) {
+  if (scale_type != kNumberTypeFloat32) {
     auto scale_fp32 = ConvertWeightsToNewType(scale);
-    auto offset_fp32 = ConvertWeightsToNewType(offset);
     kernel_graph->AddValueNodeToGraph(scale_fp32);
-    kernel_graph->AddValueNodeToGraph(offset_fp32);
     scale_node = utils::cast<AnfNodePtr>(scale_fp32);
-    offset_node = utils::cast<AnfNodePtr>(offset_fp32);
   }
   auto quant_mode = kernel_graph->NewValueNode(MakeValue((int64_t)(0)));
   kernel_graph->AddValueNodeToGraph(quant_mode);
@@ -242,7 +245,7 @@ CNodePtr MoeInitRoutingQuantV2Fusion::CreateMoeInitRoutingQuantV2Node(const Func
   auto output_node = y_out->cast<CNodePtr>();
   auto expand_idx_out = NewGetIteamOut(func_graph, node, moe_init_routing_quantv2_node, kExpandRowIdx,
                                        expanded_row_idx_type, expanded_row_idx_shape);
-  auto cumsum_out = NewGetIteamOut(func_ + graph, node, moe_init_routing_quantv2_node, kCumsumOutIdx,
+  auto cumsum_out = NewGetIteamOut(func_graph, node, moe_init_routing_quantv2_node, kCumsumOutIdx,
                                    expert_tokens_count_or_cumsum_type, expert_tokens_count_or_cumsum_shape);
   auto capacity_out = NewGetIteamOut(func_graph, node, moe_init_routing_quantv2_node, kCapacityOutIdx,
                                      expert_tokens_before_capacity_type, expert_tokens_before_capacity_shape);

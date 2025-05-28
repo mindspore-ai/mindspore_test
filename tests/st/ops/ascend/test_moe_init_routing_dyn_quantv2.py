@@ -184,12 +184,16 @@ class TestMoeInitRoutingV2:
         else:
             self.ms_inputs["expert_idx"] = np.random.randint(
                 0, MAX_EXPERT_NUM, size=(num_rows, k)).astype(np.int32)
+        if self.inputs["smooth_scale"] is not None:
+            self.ms_inputs["smooth_scale"] = np.random.randn(1, h).astype(np_dtype)
         self.np_out = moe_init_routing_v2_exec(*tuple(self.ms_inputs.values()))
 
     def cal_ms_out(self):
         self.ms_inputs["x"] = ms.Tensor(self.ms_inputs["x"], self.dtype)
         self.ms_inputs["expert_idx"] = ms.Tensor(
             self.ms_inputs["expert_idx"], ms.int32)
+        if self.ms_inputs["smooth_scale"] is not None:
+            self.ms_inputs["smooth_scale"] = ms.Tensor(self.ms_inputs["smooth_scale"], ms.float32)
         self.ms_out = self.net(*tuple(self.ms_inputs.values()))
 
     def compare(self):
@@ -340,7 +344,8 @@ def test_moe_init_routing_v2_case1(mode, dtype, is_dyn):
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE])
 @pytest.mark.parametrize('dtype', [ms.float16, ms.bfloat16])
 @pytest.mark.parametrize('is_dyn', [False, True])
-def test_moe_init_routing_v2_case2(mode, dtype, is_dyn):
+@pytest.mark.parametrize('scale', [None, 1])
+def test_moe_init_routing_v2_case2(mode, dtype, is_dyn, scale):
     """
     Feature: Test the moe_init_routing_v2 forward in dropless mode
     Description: Test the moe_init_routing_v2 ops in Ascend backend
@@ -364,7 +369,7 @@ def test_moe_init_routing_v2_case2(mode, dtype, is_dyn):
             "drop_pad_mode": 0,
             "expert_tokens_count_or_cumsum_flag": 0,
             "expert_tokens_before_capacity_flag": False,
-            "smooth_scale": None
+            "smooth_scale": scale
         }
     }
 
