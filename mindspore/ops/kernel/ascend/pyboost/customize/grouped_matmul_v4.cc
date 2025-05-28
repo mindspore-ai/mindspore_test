@@ -40,7 +40,7 @@ void UnifyWeightShape(const std::vector<TensorPtr> &ori_weights, std::vector<Ten
       }
       auto new_weight = std::make_shared<Tensor>(*ori_weight);
       auto ori_weight_shape = ori_weight->shape();
-      ori_weight_shape.back() *= 2;
+      ori_weight_shape.back() *= kSizeTwo;
       (void)new_weight->set_shape(ori_weight_shape);
       (void)new_weights->emplace_back(new_weight);
     } else {
