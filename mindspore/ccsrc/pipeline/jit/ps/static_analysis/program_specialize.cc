@@ -1537,6 +1537,7 @@ std::pair<AbstractBasePtrList, AbstractBasePtr> FuncGraphSpecializer::BuildFromB
   bool choose_first_cache_in_func_union_cache = CheckAbstractFuncUnionInCache(args_vector);
   if (choose_first_cache_in_partial_cache || choose_first_cache_in_func_union_cache) {
     const auto eval_result = origin_eval_cache.get(args_vector[0]);
+    MS_EXCEPTION_IF_NULL(eval_result);
     return std::make_pair(args_vector[0], eval_result->abstract());
   }
 

@@ -368,6 +368,7 @@ void SetFlagInner(const AnfNodePtr &node, const std::map<AnfNodePtr, AnfNodePtr>
 void SetFlagForInplaceNodesUpdateStateUseOnly(const FuncGraphPtr &func_graph,
                                               const std::map<AnfNodePtr, AnfNodePtr> &need_grad_map) {
   const auto &output = func_graph->output();
+  MS_EXCEPTION_IF_NULL(output);
   if (!output->isa<CNode>()) {
     return;
   }

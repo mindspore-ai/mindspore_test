@@ -1496,6 +1496,7 @@ class AutoMonadConverter {
 
   // Check has UpdateState user
   bool CheckHasUpdateStateUsers(const CNodePtr &cnode) const {
+    MS_EXCEPTION_IF_NULL(cnode);
     auto fg = cnode->func_graph();
     MS_EXCEPTION_IF_NULL(fg);
     auto manager = Manage(fg, false);
@@ -1525,6 +1526,7 @@ class AutoMonadConverter {
   // %0 = AllReduce(x)
   // %1 = Depend(x, %0)
   bool CheckHasOtherUsers(const CNodePtr &cnode) const {
+    MS_EXCEPTION_IF_NULL(cnode);
     auto fg = cnode->func_graph();
     MS_EXCEPTION_IF_NULL(fg);
     auto manager = Manage(fg, false);

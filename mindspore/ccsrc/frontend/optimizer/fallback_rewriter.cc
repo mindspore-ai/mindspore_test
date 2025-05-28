@@ -2635,6 +2635,7 @@ class AfterOptARewriter : public BaseRewriter {
   AnfNodePtr ConvertInterpretedObjectValue(const ValueNodePtr &node, const parse::InterpretedObjectPtr &value) const {
     // Convert InterpretedObject value node to PyExecute CNode.
     const auto interpreted_value = dyn_cast<parse::InterpretedObject>(value);
+    MS_EXCEPTION_IF_NULL(interpreted_value);
     const std::string &key = interpreted_value->name();
     return fallback::ConvertPyObjectToPyExecute(root_graph_, key, interpreted_value->obj(), node, true);
   }

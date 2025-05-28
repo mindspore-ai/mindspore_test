@@ -215,6 +215,7 @@ bool ExistEnvironGet(const FuncGraphManagerPtr &manager) {
 // new_maketuple = maketuple(..., attach1, attach2, ..., attach_n-1)
 // new_updatestate = updatestate(umonad, new_maketuple)
 AnfNodePtr EliminateUpdateStateMakeTupleWithUselessEnv(const CNodePtr &update_state, const CNodePtr &make_tuple) {
+  MS_EXCEPTION_IF_NULL(make_tuple);
   std::vector<AnfNodePtr> env_nodes;
   std::vector<AnfNodePtr> new_maketuple_inputs{NewValueNode(prim::kPrimMakeTuple)};
   size_t input_size = make_tuple->size();

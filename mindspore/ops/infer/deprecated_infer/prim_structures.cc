@@ -55,6 +55,7 @@ void ProcessUnpackDict(const AbstractTuplePtr &key_tuple, const AbstractTuplePtr
 
   auto unpack_keys = key_elements[0];
   auto unpack_keys_tuple = unpack_keys->cast<AbstractTuplePtr>();
+  MS_EXCEPTION_IF_NULL(unpack_keys_tuple);
   const auto &unpack_keys_elements = unpack_keys_tuple->elements();
 
   auto unpack_values = value_elements[0];
