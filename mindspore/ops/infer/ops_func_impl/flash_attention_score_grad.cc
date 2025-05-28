@@ -85,7 +85,7 @@ void CheckFlashAttentionScoreGradAttnMaskShape(const AbstractBasePtr &attn_mask,
     CheckFlashAttentionScoreGradInputShape(
       attn_mask, {kInputFASGradAttnMaskCompressionDim, kInputFASGradAttnMaskCompressionDim}, op_name, "attn_mask");
   } else {
-    auto is_attn_mask_optional = sparse_mode == kFAGSparseDefaultMask;
+    auto is_attn_mask_optional = (sparse_mode == kFAGSparseDefaultMask || sparse_mode == kFAGSparseAllMask);
     CheckFlashAttentionScoreGradInputShape(attn_mask,
                                            {{batch_size, q_head_num, q_seq_len, kv_seq_len},
                                             {batch_size, 1, q_seq_len, kv_seq_len},
