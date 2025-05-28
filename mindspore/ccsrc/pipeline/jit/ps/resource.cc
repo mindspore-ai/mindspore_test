@@ -621,6 +621,12 @@ BuiltInTypeMap &GetAttrMap() {
        {"permit_filter_value", prim::kPrimMapTensorGetPermitFilterValue},  // F.map_tensor_get_permit_filter_value
        {"evict_filter_value", prim::kPrimMapTensorGetEvictFilterValue},    // F.map_tensor_get_evict_filter_value
      }},
+    {kObjectTypeSlice,
+     {
+       {"start", std::string("slice_get_start")},
+       {"stop", std::string("slice_get_stop")},
+       {"step", std::string("slice_get_step")},
+     }},
   };
   return attr_map;
 }

@@ -13,10 +13,11 @@
 # limitations under the License.
 # ==============================================================================
 import pytest
+import os
 import numpy as np
 import mindspore as ms
 import mindspore.nn as nn
-from mindspore import context
+from mindspore import context, Tensor
 from mindspore.ops import operations as P
 from tests.mark_utils import arg_mark
 
@@ -140,3 +141,40 @@ def test_graph_view_out_tensormove():
     y2 = x2 * 2
     z = x2 * 3 + y2
     assert np.allclose(out_graph.asnumpy(), z.asnumpy(), rtol=10e-4, atol=10e-4)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_setitem_simple_case():
+    """
+    Feature: Support tensor slice forward execute.
+    Description: Support tensor slice forward execute.
+    Expectation: Run success.
+    """
+
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.n = 2
+
+        def construct(self, x, y):
+            x[y.shape[0]:y.shape[1]] = x[0:y.shape[0]]
+            out = x
+            return out * self.n
+
+    try:
+        os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
+        context.set_context(mode=1)
+        np_x = np.random.rand(6, 3, 4)
+        np_y = np.random.rand(2, 4)
+        # Run in pynative mode
+        net = Net()
+        out_expect = net(Tensor(np_x, dtype=ms.float32), Tensor(np_y, dtype=ms.int32))
+        # Run in jit execute mode
+        net.construct = ms.jit(net.construct, backend="ms_backend")
+        d = Tensor(None, dtype=ms.float32)
+        dy = Tensor(shape=[None, None], dtype=ms.int32)
+        net.set_inputs(d, dy)
+        out = net(Tensor(np_x, dtype=ms.float32), Tensor(np_y, dtype=ms.int32))
+        assert np.allclose(out_expect.asnumpy(), out.asnumpy())
+    finally:
+        del os.environ["MS_DEV_TENSOR_INDEX_BOOST"]

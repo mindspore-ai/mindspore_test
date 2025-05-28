@@ -4603,3 +4603,18 @@ def zero_(input):
     Return a tensor filled with zeros.
     """
     return F.zero_(input)
+
+
+def slice_get_start(slice_node):
+    """Using SliceGetItem to get slice_node.start"""
+    return F.SliceGetItem(slice_node, "start")
+
+
+def slice_get_stop(slice_node):
+    """Using SliceGetItem to get slice_node.stop"""
+    return F.SliceGetItem(slice_node, "stop")
+
+
+def slice_get_step(slice_node):
+    """Using SliceGetItem to get slice_node.step"""
+    return F.SliceGetItem(slice_node, "step")
