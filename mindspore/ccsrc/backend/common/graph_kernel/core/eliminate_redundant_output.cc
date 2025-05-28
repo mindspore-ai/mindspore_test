@@ -63,6 +63,7 @@ bool GetGraphKernelGetitemList(const FuncGraphManagerPtr &mng, const AnfNodePtr 
   auto func_graph = GetCNodeFuncGraph(node);
   MS_EXCEPTION_IF_NULL(func_graph);
   auto output = func_graph->output();
+  MS_EXCEPTION_IF_NULL(output);
   if (!IsPrimitiveCNode(output, prim::kPrimMakeTuple)) {
     MS_LOG_WITH_NODE(EXCEPTION, output) << "The output should be a MakeTuple, but got "
                                         << output->fullname_with_scope();

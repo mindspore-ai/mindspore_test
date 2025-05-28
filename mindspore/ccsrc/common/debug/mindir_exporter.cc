@@ -546,6 +546,8 @@ bool IrExportBuilder::BuildParameters(const FuncGraphPtr &func_graph, mind_ir::G
 
 bool IrExportBuilder::SetQuantizationParamToAttrProto(const std::shared_ptr<QuantizationParam> &quantization_param,
                                                       mind_ir::TensorProto_QuantParamProto *const quant_param_proto) {
+  MS_EXCEPTION_IF_NULL(quantization_param);
+  MS_EXCEPTION_IF_NULL(quant_param_proto);
   quant_param_proto->set_quant_algo_name(quantization_param->quant_algo_name());
   auto quant_param_attrs = quantization_param->attrs();
   for (auto &quant_param_attr : quant_param_attrs) {

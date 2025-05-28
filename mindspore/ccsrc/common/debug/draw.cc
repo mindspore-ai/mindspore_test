@@ -389,12 +389,14 @@ static void DrawValueNode(Graphviz *const graph_obj, const ValueNodePtr &node) {
     graph_obj->buffer() << value_node_str;
   } else {
     std::ostringstream ss;
+    MS_EXCEPTION_IF_NULL(node);
     ss << node->value()->ToString();
     std::string s = ReplaceAll(ss.str(), ", ", "<br/>");
     graph_obj->buffer() << s;
     ValuePtr value = node->value();
     if (value->isa<Primitive>()) {
       PrimitivePtr primitive = value->cast<PrimitivePtr>();
+      MS_EXCEPTION_IF_NULL(primitive);
       graph_obj->buffer() << "</td></tr>"
                           << "<tr><td align='left'>";
       if (!primitive->instance_name().empty()) {
