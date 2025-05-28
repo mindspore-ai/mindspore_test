@@ -69,6 +69,7 @@ class DeviceSync {
     return true;
   }
 
+  virtual size_t GetSize() const = 0;
   virtual void *GetMutablePtr() const = 0;
   virtual const uint32_t stream_id() const = 0;
   virtual void ClearDeviceMemory() = 0;

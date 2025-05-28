@@ -393,7 +393,7 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
 
   const void *GetPtr() const;
   void set_ptr(void *ptr);
-  size_t GetSize() const;
+  size_t GetSize() const override;
   void SetSize(size_t size);
 
   std::string format() const;

@@ -447,7 +447,7 @@ KernelTensorValuePtr ConvertValueToKernelTensorValue(const ValuePtr &value) {
   } else if (value->isa<tensor::Tensor>()) {
     auto tensor_ptr = value->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(tensor_ptr);
-    return std::make_shared<KernelTensorValue>(tensor_ptr->data_ptr(), tensor_ptr->type());
+    return std::make_shared<KernelTensorValue>(tensor_ptr->device_address(), tensor_ptr->type());
   } else if (value->isa<StringImm>()) {
     auto string_ptr = value->cast<StringImmPtr>();
     MS_EXCEPTION_IF_NULL(string_ptr);
