@@ -37,6 +37,7 @@
 #include "ir/kernel_info_dev.h"
 #include "ir/primitive.h"
 #include "mindspore/ops/op_def/array_op_name.h"
+#include "mindspore/ops/op_def/math_op_name.h"
 #include "mindspore/ops/op_def/other_op_name.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "utils/anf_utils.h"

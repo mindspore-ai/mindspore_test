@@ -116,6 +116,11 @@ void AddStreamIdByGroup(const AnfNodePtr &node, DeviceResManager *device_res_man
       AnfAlgo::SetStreamId(kDefaultStreamIndex, node.get());
       common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kDefaultStreamIndex), node);
     }
+  } else if (common::AnfAlgo::IsLcclCommunicationOp(cnode)) {
+    AnfAlgo::SetStreamId(kDefaultStreamIndex, node.get());
+    common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kDefaultStreamIndex), node);
+    MS_LOG(INFO) << "Set stream id by default for node " << node->fullname_with_scope()
+                 << ", because it is an LCCL operator.";
   } else {
     auto prim = GetCNodePrimitive(cnode);
     MS_EXCEPTION_IF_NULL(prim);
