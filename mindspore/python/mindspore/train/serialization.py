@@ -1288,7 +1288,6 @@ def _load_into_param_dict(ckpt_file_name, parameter_dict, specify_prefix, filter
                     param_data = Tensor_.convert_bytes_to_tensor(new_data, tuple(dims), ms_type)
                     parameter = Parameter(param_data, name=element.tag)
                     parameter_dict[element.tag] = parameter
-                    _offload_if_config(parameter)
 
         logger.info("Loading checkpoint files process is finished.")
         return remove_redundancy

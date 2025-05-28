@@ -29,7 +29,6 @@
 #include "utils/hash_set.h"
 #include "runtime/graph_scheduler/control_node_scheduler.h"
 #include "runtime/graph_scheduler/any_type_graph_scheduler.h"
-#include "runtime/graph_scheduler/mem_swap_scheduler.h"
 #include "runtime/graph_scheduler/actor/actor_set.h"
 #include "runtime/graph_scheduler/graph_compiler.h"
 #include "runtime/graph_scheduler/actor/actor_dump.h"
@@ -267,9 +266,6 @@ class BACKEND_EXPORT GraphScheduler {
   ControlNodeScheduler control_node_scheduler_;
   // If there is an any type input in graph, it will be used to transform it.
   AnyTypeGraphScheduler any_type_graph_scheduler_;
-
-  // Build and link swap actor when memory offload is enabled.
-  MemSwapScheduler swap_node_scheduler_;
 
 #ifdef ENABLE_RPC_ACTOR
   // Return whether the actor set has rpc actors.

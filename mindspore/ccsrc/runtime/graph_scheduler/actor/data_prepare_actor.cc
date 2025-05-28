@@ -56,17 +56,19 @@ bool IsDataTakenOverByMemOffload(const DeviceContext *device_context, const Devi
   if (device_context->GetDeviceType() == device::DeviceType::kCPU || device_tensor->GetSize() == 0) {
     return false;
   }
+  if (device_context->device_res_manager_ == nullptr ||
+      device_context->device_res_manager_->swap_manager() == nullptr) {
+    return false;
+  }
   const auto &hete_info = device_tensor->heterogeneous_info();
   if (hete_info != nullptr && hete_info->need_alloc_hete_res_ != NeedAllocateHeteRes::NoNeedHeteRes) {
     return true;
   }
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  return ms_context->get_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD);
+  return false;
 }
 
-device::StorageInfo GetStorageInfo(const TensorPtr &host_tensor, const DeviceTensorPtr &device_tensor,
-                                   const DeviceContext *device_context) {
+std::pair<void *, std::string> GetStorageInfo(const TensorPtr &host_tensor, const DeviceTensorPtr &device_tensor,
+                                              const DeviceContext *device_context) {
   MS_EXCEPTION_IF_NULL(host_tensor);
   MS_EXCEPTION_IF_NULL(device_tensor);
   MS_EXCEPTION_IF_NULL(device_context);
@@ -100,17 +102,12 @@ device::StorageInfo GetStorageInfo(const TensorPtr &host_tensor, const DeviceTen
 void SetStorageInfo(const TensorPtr &host_tensor, const KernelTensorPtr &kernel_tensor,
                     const DeviceContext *device_context, const AnfNodePtr &node) {
   const auto &device_tensor = kernel_tensor->device_address();
-  const auto storage_info = GetStorageInfo(host_tensor, device_tensor, device_context);
+  const auto &storage_info = GetStorageInfo(host_tensor, device_tensor, device_context);
   const auto hete_info = kernel_tensor->heterogeneous_info();
-  const bool is_param_offload =
-    hete_info != nullptr && hete_info->need_alloc_hete_res_ != NeedAllocateHeteRes::NoNeedHeteRes;
-  if (!is_param_offload) {
-    device_tensor->SetStorageInfo(storage_info);
-  } else {
-    MS_LOG(INFO) << "No need sync for heterogeneous device tensor, node name: " << node->fullname_with_scope();
-    hete_info->host_ptr_ = storage_info.host_ptr_;
-    hete_info->file_name_ = storage_info.file_name_;
-  }
+  MS_EXCEPTION_IF_NULL(hete_info);
+  MS_LOG(INFO) << "No need sync for heterogeneous device tensor, node name: " << node->fullname_with_scope();
+  hete_info->host_ptr_ = storage_info.first;
+  hete_info->file_name_ = storage_info.second;
 }
 
 void UpdateTracker(const std::string &task_name, const AnfNodePtr &node, const std::string &graph_str,

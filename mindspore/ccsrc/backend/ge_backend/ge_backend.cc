@@ -2091,8 +2091,7 @@ std::shared_ptr<mindspore::ge_backend::runtime::GraphCompilerInfo> GEBackend::Co
   auto strategy = mindspore::ge_backend::runtime::GraphExecutionStrategy::kPipeline;
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
-  if (mindspore::runtime::RuntimeConf::GetInstance()->mem_optimize_level() != kOptimizeO0 ||
-      context_ptr->get_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD)) {
+  if (mindspore::runtime::RuntimeConf::GetInstance()->mem_optimize_level() != kOptimizeO0) {
     strategy = mindspore::ge_backend::runtime::GraphExecutionStrategy::kPipelineWithExecutionOrder;
   }
 

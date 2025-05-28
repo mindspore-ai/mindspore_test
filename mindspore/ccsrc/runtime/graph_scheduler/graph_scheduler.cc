@@ -1470,7 +1470,6 @@ ActorSetPtr GraphScheduler::Build(const GraphCompilerInfo &graph_compiler_info) 
   actor_set->loop_count_actor_ = BuildLoopCountActor(graph_compiler_info);
   actor_set->output_actor_ = BuildOutputActor(graph_compiler_info);
   actor_set->control_actors_ = control_node_scheduler_.Build(graph_compiler_info, memory_manager_aid_);
-  actor_set->swap_actors_ = swap_node_scheduler_.Build(graph_compiler_info, recorder_aid_);
 
 #ifdef ENABLE_RPC_ACTOR
   MS_EXCEPTION_IF_NULL(rpc_node_scheduler_);
@@ -1601,13 +1600,6 @@ void GraphScheduler::LinkControlArrowForNoInputArrowActor(const ActorSet *actor_
     MS_EXCEPTION_IF_NULL(fusion_actor);
     (void)actors.emplace_back(static_cast<AbstractActorPtr>(fusion_actor));
   }
-  for (auto &swap_actors : actor_set->swap_actors_) {
-    (void)std::for_each(swap_actors.cbegin(), swap_actors.cend(), [&](const MemSwapActorPtr &swap_actor) {
-      if (swap_actor != nullptr) {
-        (void)actors.emplace_back(static_cast<AbstractActorPtr>(swap_actor));
-      }
-    });
-  }
   if (actor_set->loop_count_actor_ != nullptr) {
     (void)actors.emplace_back(static_cast<AbstractActorPtr>(actor_set->loop_count_actor_));
   }
@@ -1693,7 +1685,6 @@ void GraphScheduler::Link(ActorSet *actor_set, const GraphCompilerInfo &graph_co
       graph_compiler_info.control_node_parser_ != nullptr && graph_compiler_info.control_node_parser_->IsInited()) {
     control_node_scheduler_.Link(actor_set, graph_compiler_info);
   }
-  swap_node_scheduler_.Link(graph_compiler_info, actor_set);
 
 #ifdef ENABLE_RPC_ACTOR
   // Link inter-process arrows for rpc actors.
@@ -1715,13 +1706,10 @@ void GraphScheduler::ProcessContinuousMemoryInfo(const ActorSetPtr &actor_set,
       MS_EXCEPTION_IF_NULL(graph);
       auto ms_context = MsContext::GetInstance();
       MS_EXCEPTION_IF_NULL(ms_context);
-      // Memory swap strategy will take over the continuous memory.
-      const bool enable_mem_offload =
-        ms_context->get_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD) && !graph->is_dynamic_shape();
       // Somas will take over the continuous memory.
       const bool using_somas =
         (graph->is_graph_run_mode() && !EnableKbkSubGraphExecute()) || (graph->somas_whole_block_size() != 0);
-      if (enable_mem_offload || using_somas) {
+      if (using_somas) {
         continue;
       }
 
@@ -1785,9 +1773,7 @@ void GraphScheduler::Optimize(const ActorSetPtr &actor_set, const GraphCompilerI
     optimizer->AddPass(std::make_shared<MemoryActorInsert>());
   }
   optimizer->AddPass(std::make_shared<InvalidDataArrowElimination>());
-  if (!ms_context->get_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD)) {
-    optimizer->AddPass(std::make_shared<MultiActorFusion>());
-  }
+  optimizer->AddPass(std::make_shared<MultiActorFusion>());
   optimizer->AddPass(std::make_shared<BatchDataArrowFusion>());
   optimizer->Optimize(actor_set);
   control_node_scheduler_.Optimize(actor_set, graph_compiler_info);

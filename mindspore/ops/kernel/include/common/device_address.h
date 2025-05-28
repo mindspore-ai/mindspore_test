@@ -303,12 +303,6 @@ using HeterogeneousInfoPtr = std::shared_ptr<HeterogeneousInfo>;
 namespace device {
 using KernelWithIndex = std::pair<AnfNodePtr, size_t>;
 using TensorPtr = std::shared_ptr<tensor::Tensor>;
-struct StorageInfo {
-  void *host_ptr_{nullptr};
-  std::string file_name_{""};
-  bool host_ptr_mutable_{true};
-  bool file_name_mutable_{true};
-};
 
 enum class StorageType { kDevice, kHost, kFile };
 
@@ -489,7 +483,7 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
     if (!need_sync_user_data_ || user_data() == nullptr) {
       return;
     }
-    std::lock_guard<std::recursive_mutex> lock(ptr_mutex_);
+    std::lock_guard<std::mutex> lock(ptr_mutex_);
     auto sync_handler = user_data()->get<SyncUserDataHandler>(kSyncUserDataHandler);
     if (sync_handler == nullptr) {
       MS_LOG(WARNING) << "For device address:" << this << ", the sync user data handler is null.";
@@ -499,30 +493,7 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
     need_sync_user_data_ = false;
   }
 
-  // Offload data from device to host and free device memory
-  virtual bool Offload(size_t) { MS_LOG(EXCEPTION) << "Not implemented."; }
-
-  // Load data from host to device and free host memory
-  virtual bool Load(size_t) { MS_LOG(EXCEPTION) << "Not implemented."; }
-
-  // Move data to destination hardware and free resource on source hardware
-  virtual bool MoveTo(StorageType, bool, size_t) { MS_LOG(EXCEPTION) << "Not implemented."; }
-
-  virtual bool Wait() const { MS_LOG(EXCEPTION) << "Not implemented."; }
-
-  // Set host ptr data offloaded to
-  virtual void SetOffloadPtr(void *) {}
-
-  // Get offloaded host ptr
-  virtual void *GetOffloadPtr() const { return nullptr; }
-
-  virtual void SetStorageInfo(const StorageInfo &) {}
-  virtual StorageInfo GetStorageInfo() const { return StorageInfo(); }
-
   virtual void Swap(DeviceAddress *other);
-
-  virtual void set_swappable(bool) {}
-  virtual bool swappable() { return false; }
 
   // Get user data maintained by the DeviceAddress.
   const UserDataPtr &user_data() const override;
@@ -583,7 +554,7 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   // We need to release the device memory when the reference count of the device address in bprop graph is 0.
   std::vector<std::weak_ptr<ValueNode>> held_by_nodes_;
   // Thread lock for ptr_.
-  mutable std::recursive_mutex ptr_mutex_;
+  mutable std::mutex ptr_mutex_;
 
   bool from_persistent_mem_{false};
   bool need_recycle_{false};

@@ -68,9 +68,6 @@ void RunGraphTask::Run() {
     return;
   }
   graph->ResetGraphRunningStatus();
-  if (AnfUtils::UseMemScheduler()) {
-    graph->SetOutputNodeToTensor(node_to_tensor_);
-  }
   try {
     session_->LoadInputs(graph_id_, input_tensors_);
     session_->RunGraphImpl(graph_id_, input_tensors_, &outputs_);
