@@ -19,14 +19,11 @@ This module defines the `OpsPrimitiveHGenerator` class, which creates C++ header
 containing definitions for operator primitives based on provided operator prototypes.
 """
 
-import os
-
 import common.gen_constants as K
 import common.gen_utils as gen_utils
 import common.template as template
 from common.base_generator import BaseGenerator
 from pyboost import pyboost_utils
-
 
 OP_PRIM_OP_DEF_H = """
 #ifndef MINDSPORE_CORE_OPS_GEN_OPS_PRIMITIVE_${suffix}_H_
@@ -41,7 +38,6 @@ $ops_prim_gen
 }  // namespace mindspore::prim
 #endif  // MINDSPORE_CORE_OPS_GEN_OPS_PRIMITIVE_${suffix}_H_
 """
-
 
 OP_PRIM_OP_DEF_CC = """
 

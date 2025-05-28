@@ -457,5 +457,4 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         raise TypeError("Only support pyboost or python_method.")
 
     def _get_arg_handler_processor(self, func_name, op_proto):
-        op_parser = OpTemplateParser(op_proto)
-        return op_parser.get_arg_handler_processor(func_name, op_proto, is_tensor_api=True)
+        return OpTemplateParser.get_arg_handler_processor(func_name, op_proto, is_tensor_api=True)

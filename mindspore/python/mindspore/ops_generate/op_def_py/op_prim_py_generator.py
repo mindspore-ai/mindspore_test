@@ -142,7 +142,10 @@ class OpPrimPyGenerator(BaseGenerator):
                 # step1.3: get args set prim arg expression:
                 assign_str = self._get_assign_str_by_type_it(op_proto.op_class.name, arg)
                 if arg.arg_handler:
-                    assign_str = f"""        self._set_prim_arg_with_handler("{arg.arg_name}", {assign_str}, {arg.arg_handler})"""
+                    assign_str = (
+                        f'        self._set_prim_arg_with_handler('
+                        f'"{arg.arg_name}", {assign_str}, {arg.arg_handler})'
+                    )
                 else:
                     assign_str = f"""        self._set_prim_arg("{arg.arg_name}", {assign_str})"""
                 args_assign.append(assign_str)
