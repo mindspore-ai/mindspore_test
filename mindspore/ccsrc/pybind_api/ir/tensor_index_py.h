@@ -127,11 +127,11 @@ class Slice final {
       : Slice(std::min(slice.start_, dim_size), std::min(slice.stop_, dim_size), slice.step_,
               std::min(slice.dim_size_, dim_size), slice.start_init_by_none_, slice.stop_init_by_none_) {}
 
-  static inline int64_t GetTensorData(const TensorPtr &tensor) {
+  static inline int64_t GetTensorData(TensorPtr &tensor) {
     MS_EXCEPTION_IF_NULL(tensor);
     const auto &device_address = tensor->device_address();
     if (device_address != nullptr) {
-      tensor->data_sync();
+      tensor = tensor->cpu();
     }
     if (!tensor->shape().empty()) {
       MS_EXCEPTION(TypeError) << "Only integer scalar tensors can be converted to a scalar index";

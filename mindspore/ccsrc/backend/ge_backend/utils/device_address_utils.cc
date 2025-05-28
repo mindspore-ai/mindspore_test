@@ -332,7 +332,7 @@ device::DeviceAddressPtrList DeviceAddressUtils::CreateDeviceAddressForTensorVal
         (void)address_list.emplace_back(output_address);
         return address_list;
       }
-      tensor->data_sync();
+      auto cpu_tensor = tensor->cpu();
     }
   }
 

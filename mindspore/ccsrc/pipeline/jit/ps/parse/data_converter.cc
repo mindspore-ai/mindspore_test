@@ -1406,7 +1406,8 @@ static inline void *GetTensorDataPtr(const tensor::TensorPtr &tensor) {
   const auto &device_address = tensor->device_address();
   if (device_address != nullptr) {
     // Before get data, sync form device address should be performed first
-    tensor->data_sync();
+    auto cpu_tensor = tensor->cpu();
+    return cpu_tensor->data_c();
   }
   return tensor->data_c();
 }

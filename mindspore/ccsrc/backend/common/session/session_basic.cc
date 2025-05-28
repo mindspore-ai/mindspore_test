@@ -1000,7 +1000,7 @@ void SessionBasic::CreateOutputTensors(const GraphId &graph_id, const std::vecto
   }
 }
 
-void SessionBasic::UpdateOutputTensors(const VectorRef *outputs,
+void SessionBasic::UpdateOutputTensors(VectorRef *outputs,
                                        const std::map<tensor::TensorPtr, session::KernelWithIndex> &tensor_to_node,
                                        std::map<DeviceAddressPtr, DeviceAddressPtr> *) {
   auto context_ptr = MsContext::GetInstance();
@@ -1009,7 +1009,8 @@ void SessionBasic::UpdateOutputTensors(const VectorRef *outputs,
     return;
   }
   MS_EXCEPTION_IF_NULL(outputs);
-  for (const auto &item : *outputs) {
+  for (size_t i = 0; i < outputs->size(); ++i) {
+    auto &item = (*outputs)[i];
     if (utils::isa<VectorRefPtr>(item)) {
       const auto &vector_ref = utils::cast<VectorRef>(item);
       std::map<DeviceAddressPtr, DeviceAddressPtr> new_to_old_device_address;
@@ -1033,9 +1034,10 @@ void SessionBasic::UpdateOutputTensors(const VectorRef *outputs,
         }
       }
       if (tensor->NeedSyncDeviceToHostImmediately()) {
-        tensor->data_sync(false);
-        tensor->set_device_address(nullptr);
-        tensor->set_sync_status(kNeedSyncHostToDevice);
+        auto cpu_tensor = tensor->cpu();
+        cpu_tensor->set_device_address(nullptr);
+        cpu_tensor->set_sync_status(kNeedSyncHostToDevice);
+        (*outputs)[i] = cpu_tensor;
       }
     }
   }
@@ -1268,8 +1270,8 @@ void SessionBasic::ProcessInputTensorsForHeterogeneous(const std::string &cur_ta
     auto device_address = std::dynamic_pointer_cast<device::DeviceAddress>(tensor->device_address());
     if (device_address != nullptr) {
       if (device_address->GetDeviceType() != device::GetDeviceTypeByName(cur_target)) {
-        tensor->data_sync();
-        tensor->set_device_address(nullptr);
+        auto cpu_tensor = tensor->cpu();
+        cpu_tensor->set_device_address(nullptr);
       }
     }
   }

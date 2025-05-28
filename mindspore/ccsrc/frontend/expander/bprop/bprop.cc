@@ -192,9 +192,9 @@ class PynativeIRBuilder : public IrBuilder {
             auto v = inputs[i]->BuildValue();
             auto tensor = v->cast<tensor::TensorPtr>();
             if (tensor != nullptr) {
-              tensor->data_sync();
+              tensor = tensor->cpu();
             }
-            inputs[i]->abstract()->set_value(v);
+            inputs[i]->abstract()->set_value(tensor);
           }
         }
       }

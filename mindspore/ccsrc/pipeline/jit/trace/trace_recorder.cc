@@ -86,11 +86,13 @@ CNodePtr GenerateCNode(const FuncGraphPtr &func_graph, const PrimitivePtr &prim,
   return func_graph->NewCNodeInOrder(node_inputs);
 }
 
-void SyncTensor(const py::object &obj) {
+py::object SyncTensor(const py::object &obj) {
   if (tensor::IsTensorPy(obj)) {
     const auto &tensor = tensor::ConvertToTensor(obj);
     MS_EXCEPTION_IF_NULL(tensor);
-    tensor->data_sync();
+    auto cpu_tensor = tensor->cpu();
+    py::object new_obj = py::cast(cpu_tensor);
+    return new_obj;
   } else if (py::isinstance<py::tuple>(obj)) {
     const py::tuple &obj_tuple = py::cast<py::tuple>(obj);
     for (size_t i = 0; i < obj_tuple.size(); ++i) {
@@ -102,6 +104,7 @@ void SyncTensor(const py::object &obj) {
       SyncTensor(obj_list[i]);
     }
   }
+  return obj;
 }
 
 DebugInfoPtr GenerateDebugInfos(const py::list &file_names, const py::list &linenos, const std::string &name = "") {
@@ -491,8 +494,7 @@ py::object TraceRecorder::RunGraph(const py::object &phase, const py::tuple &arg
     res = graph_executor->Run(args, phase);
   }
   if (IS_OUTPUT_ON(mindspore::kDebug)) {
-    SyncTensor(res);
-    MS_LOG(DEBUG) << "return res: " << py::str(res);
+    MS_LOG(DEBUG) << "return res: " << py::str(SyncTensor(res));
   }
   return res;
 }
