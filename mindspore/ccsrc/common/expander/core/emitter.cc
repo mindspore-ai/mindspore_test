@@ -54,8 +54,8 @@ std::pair<bool, std::vector<int64_t>> GetIntList(const NodePtr &node) {
       auto tensor = value_ptr->cast<tensor::TensorPtr>();
       MS_EXCEPTION_IF_NULL(tensor);
       // In pynative mode, need data sync before get tensor value, otherwise the tensor value may be undefined.
-      tensor->data_sync();
-      return std::make_pair(true, CheckAndConvertUtils::CheckTensorIntValue("value", value_ptr, "GetIntList"));
+      auto cpu_tensor = tensor->cpu();
+      return std::make_pair(true, CheckAndConvertUtils::CheckTensorIntValue("value", cpu_tensor, "GetIntList"));
     }
   }
   return std::make_pair(false, std::vector<int64_t>{});

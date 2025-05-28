@@ -413,30 +413,30 @@ void MemCopyFromCacheToHost(void *hashmap_addr, void *host_addr, void *cache_add
 
 void TensorPybind::FlushFromCache(const Tensor &tensor) {
   py::gil_scoped_release gil_release;
-  tensor.data_sync();
+  tensor::TensorPtr cpu_tensor = tensor.cpu();
 
-  if (tensor.cache_enable()) {
-    MS_LOG(INFO) << tensor.ToString() << " is cache enable.";
-    auto hashmap_tensor_ptr = tensor.hashmap_tensor_ptr();
-    auto cache_tensor_ptr = tensor.cache_tensor_ptr();
+  if (cpu_tensor->cache_enable()) {
+    MS_LOG(INFO) << cpu_tensor->ToString() << " is cache enable.";
+    auto hashmap_tensor_ptr = cpu_tensor->hashmap_tensor_ptr();
+    auto cache_tensor_ptr = cpu_tensor->cache_tensor_ptr();
     if (hashmap_tensor_ptr != nullptr && cache_tensor_ptr != nullptr) {
-      hashmap_tensor_ptr->data_sync();
-      cache_tensor_ptr->data_sync();
+      hashmap_tensor_ptr = hashmap_tensor_ptr->cpu();
+      cache_tensor_ptr = cache_tensor_ptr->cpu();
       auto hashmap_size = hashmap_tensor_ptr->shape_c()[0];
-      auto host_shape = tensor.shape_c();
+      auto host_shape = cpu_tensor->shape_c();
       auto cache_shape = cache_tensor_ptr->shape_c();
       if (host_shape.size() != 2 && cache_shape.size() != 2 && host_shape[1] != cache_shape[1]) {
         MS_LOG(EXCEPTION) << "Got host shape and cache shape invalid."
                           << "host shape:" << host_shape << ", cache shape:" << cache_shape;
       }
-      auto host_data_max_size = static_cast<size_t>(tensor.Size());
+      auto host_data_max_size = static_cast<size_t>(cpu_tensor->Size());
       auto cache_data_max_size = static_cast<size_t>(cache_tensor_ptr->Size());
       auto hashmap_data_type = hashmap_tensor_ptr->data_type();
       if (hashmap_data_type == TypeId::kNumberTypeInt32) {
-        MemCopyFromCacheToHost<int32_t>(hashmap_tensor_ptr->data_c(), tensor.data_c(), cache_tensor_ptr->data_c(),
+        MemCopyFromCacheToHost<int32_t>(hashmap_tensor_ptr->data_c(), cpu_tensor->data_c(), cache_tensor_ptr->data_c(),
                                         host_data_max_size, cache_data_max_size, hashmap_size, host_shape[1]);
       } else if (hashmap_data_type == TypeId::kNumberTypeInt64) {
-        MemCopyFromCacheToHost<int32_t>(hashmap_tensor_ptr->data_c(), tensor.data_c(), cache_tensor_ptr->data_c(),
+        MemCopyFromCacheToHost<int32_t>(hashmap_tensor_ptr->data_c(), cpu_tensor->data_c(), cache_tensor_ptr->data_c(),
                                         host_data_max_size, cache_data_max_size, hashmap_size, host_shape[1]);
       } else {
         MS_LOG(ERROR) << "Hashmap dtype only suppotr int32, in64.";
@@ -451,8 +451,8 @@ py::bytes TensorPybind::GetBytes(const Tensor &tensor) {
     const_cast<Tensor &>(tensor).set_copy_done_flag(false);
     return py::bytes(static_cast<const char *>(tensor.data_c()), tensor.Size());
   }
-  tensor.data_sync();
-  return py::bytes(static_cast<const char *>(tensor.data_c()), tensor.Size());
+  auto cpu_tensor = tensor.cpu();
+  return py::bytes(static_cast<const char *>(cpu_tensor->data_c()), cpu_tensor->Size());
 }
 
 void CopyFromBuffer(char *dst, size_t dst_size, const char *src, size_t src_size, TypeId data_type) {
@@ -565,10 +565,10 @@ py::object RecursiveToList(void *data, const std::vector<int64_t> &shape, const 
 }
 
 py::object TensorPybind::ToList(const TensorPtr &tensor) {
-  tensor->data_sync();
-  auto tensor_shape = tensor->shape();
-  auto data = tensor->data_c();
-  auto data_type = tensor->data_type();
+  tensor::TensorPtr new_tensor = tensor->cpu();
+  auto tensor_shape = new_tensor->shape();
+  auto data = new_tensor->data_c();
+  auto data_type = new_tensor->data_type();
   int index = 0;
 
   return RecursiveToList(data, tensor_shape, data_type, &index, 0);
@@ -694,9 +694,9 @@ void TensorPybind::Offload(const TensorPtr &tensor, bool release) {
     device_address->SyncDeviceToHost(device_address->GetSize(), tensor->data_c());
     device_address->ClearDeviceMemory();
   } else {
-    tensor->data_sync();
+    auto cpu_tensor = tensor->cpu();
     // Release device address of graph output tensor.
-    const_cast<TensorPtr &>(tensor)->set_device_address(nullptr);
+    const_cast<TensorPtr &>(cpu_tensor)->set_device_address(nullptr);
   }
 }
 

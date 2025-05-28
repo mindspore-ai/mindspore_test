@@ -160,7 +160,7 @@ void CPUSession::LoadInputData(const std::shared_ptr<KernelGraph> &kernel_graph,
       continue;
     }
     if (std::dynamic_pointer_cast<device::DeviceAddress>(tensor_address)->GetDeviceType() != device::DeviceType::kCPU) {
-      tensor->data_sync(false);
+      auto cpu_tensor = tensor->cpu();
     }
   }
 }
@@ -191,7 +191,7 @@ void CPUSession::SetOutputFlags(const VectorRef &base_ref) {
     } else if (utils::isa<tensor::TensorPtr>(base_ref[i])) {
       auto tensor_ptr = utils::cast<std::shared_ptr<tensor::Tensor>>(base_ref[i]);
       MS_EXCEPTION_IF_NULL(tensor_ptr);
-      tensor_ptr->data_sync(false);
+      auto cpu_tensor_ptr = tensor_ptr->cpu();
     }
   }
 }

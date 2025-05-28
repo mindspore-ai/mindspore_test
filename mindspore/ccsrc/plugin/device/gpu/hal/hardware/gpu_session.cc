@@ -415,12 +415,13 @@ void GPUSession::ExecuteGraph(const std::shared_ptr<KernelGraph> &kernel_graph) 
   }
 }
 
-void GPUSession::UpdateOutputTensors(const VectorRef *outputs,
+void GPUSession::UpdateOutputTensors(VectorRef *outputs,
                                      const std::map<tensor::TensorPtr, session::KernelWithIndex> &tensor_to_node,
                                      std::map<DeviceAddressPtr, DeviceAddressPtr> *new_to_old_device_address) {
   MS_EXCEPTION_IF_NULL(outputs);
   MS_EXCEPTION_IF_NULL(new_to_old_device_address);
-  for (const auto &item : *outputs) {
+  for (size_t i = 0; i < outputs->size(); ++i) {
+    auto &item = (*outputs)[i]
     if (utils::isa<VectorRefPtr>(item)) {
       const auto &vector_ref = utils::cast<VectorRef>(item);
       UpdateOutputTensors(&vector_ref, tensor_to_node, new_to_old_device_address);
@@ -486,9 +487,10 @@ void GPUSession::UpdateOutputTensors(const VectorRef *outputs,
         }
       }
       if (tensor->NeedSyncDeviceToHostImmediately()) {
-        tensor->data_sync(false);
-        tensor->set_device_address(nullptr);
-        tensor->set_sync_status(kNeedSyncHostToDevice);
+        auto cpu_tensor = tensor->cpu();
+        cpu_tensor->set_device_address(nullptr);
+        cpu_tensor->set_sync_status(kNeedSyncHostToDevice);
+        (*outputs)[i] = cpu_tensor;
       }
     }
   }

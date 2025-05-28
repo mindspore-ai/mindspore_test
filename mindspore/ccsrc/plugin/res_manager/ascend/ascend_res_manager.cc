@@ -118,8 +118,8 @@ Format GetFormat(const tensor::TensorPtr &tensor) {
       MS_EXCEPTION_IF_NULL(src_device_address);
       format = FromStrToEnum(src_device_address->format());
     } else {
-      tensor->data_sync();
-      tensor->set_device_address(nullptr);
+      auto cpu_tensor = tensor->cpu();
+      cpu_tensor->set_device_address(nullptr);
     }
   }
   return format;
