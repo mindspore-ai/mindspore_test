@@ -274,7 +274,9 @@ bool FastHeuristic::Eval(vector<BlockTensor> *block_tensors_v, const std::shared
       if (p->Next() != nullptr) {
         p = p->Next();
       } else if (bpushed == false) {  // something went wrong
-        MS_LOG(WARNING) << "Internal Error: Could not allocate memory for tensor: " << tensor->index_;
+        if (tensor) {
+          MS_LOG(WARNING) << "Internal Error: Could not allocate memory for tensor: " << tensor->index_;
+        }
         return false;
       }
     }

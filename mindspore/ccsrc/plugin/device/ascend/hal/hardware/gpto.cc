@@ -627,7 +627,6 @@ SchedulingOutput MemAwareScheduler(const SchedulingInput &input,
 
   // Preprocessing: values computation for necessary sorting
   ComputeBottomLevelAndWeightedLength(*tasks);
-  // ComputeDepthAndTopLevel(*tasks); // already called earlier, necessary for nested conditional blocks
   if (gpto_mode == kCompComm || gpto_mode == kCompCubeComm || gpto_mode == kCompCommGroup) {
     ComputePredComm(*tasks);
   }

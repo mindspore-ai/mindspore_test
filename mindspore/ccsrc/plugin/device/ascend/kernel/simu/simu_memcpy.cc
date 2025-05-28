@@ -32,7 +32,7 @@ bool SimuMemcpyKernel::Launch(const std::vector<KernelTensor *> &inputs, const s
   auto output_size = outputs[0]->size();
   auto size = input_size > output_size ? output_size : input_size;
 
-  auto offset = 0;
+  size_t offset = 0;
   auto device_ptr = static_cast<int8_t *>(outputs[0]->device_ptr());
   while (offset + size <= output_size) {
     auto cp_ret = CALL_ASCEND_API(aclrtMemcpyAsync, device_ptr + offset, size, inputs[0]->device_ptr(), size,

@@ -116,7 +116,7 @@ def _check_hccl():
     except Exception as e:
         logger.error(f"Check hccl failed: {e}")
         raise RuntimeError("\"hccl\" wheel was not installed correctly. For details, refer to the installation "
-                           "guidelines: https://www.mindspore.cn/install")
+                           "guidelines: https://www.mindspore.cn/install") from e
 
 
 def init(backend_name=None):
