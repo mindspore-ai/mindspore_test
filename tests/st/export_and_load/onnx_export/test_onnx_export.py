@@ -905,3 +905,100 @@ def test_export_sumext():
         os.remove(onnx_file)
     else:
         raise RuntimeError(f"Export operator SumExt to ONNX failed!")
+
+
+class SiLUNet(nn.Cell):
+    def __init__(self):
+        super().__init__()
+        self.silu = nn.SiLU()
+
+    def construct(self, x):
+        return self.silu(x)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_export_silu():
+    """
+    Feature: Export nn.SiLU to onnx
+    Description: Export nn.SiLU to onnx
+    Expectation: success
+    """
+    np_x = np.ones(shape=[2, 3, 4]).astype(np.float32)
+    x = Tensor(np_x)
+    net = SiLUNet()
+    ms_output = net(x)
+    onnx_file = './silu_onnx.onnx'
+    export(net, x, file_name=onnx_file, file_format='ONNX')
+    if os.path.isfile(onnx_file):
+        session = ort.InferenceSession(onnx_file)
+        inputs = {"x": np_x}
+        output = session.run(None, inputs)[0]
+        assert np.array_equal(ms_output.asnumpy(), output), f" ms:{ms_output}, onnx:{output}"
+        os.remove(onnx_file)
+    else:
+        raise RuntimeError(f"Export operator SiLU to ONNX failed!")
+
+
+class SoftmaxNet(nn.Cell):
+    def __init__(self):
+        super().__init__()
+        self.softmax = nn.Softmax(axis=1)
+
+    def construct(self, x):
+        return self.softmax(x)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_export_softmax():
+    """
+    Feature: Export nn.Softmax to onnx
+    Description: Export nn.Softmax to onnx
+    Expectation: success
+    """
+    np_x = np.random.uniform(low=0, high=1, size=(1, 3, 640)).astype(np.float32)
+    x = Tensor(np_x)
+    net = SoftmaxNet()
+    ms_output = net(x)
+    onnx_file = './softmax_onnx.onnx'
+    export(net, x, file_name=onnx_file, file_format='ONNX')
+    if os.path.isfile(onnx_file):
+        session = ort.InferenceSession(onnx_file)
+        inputs = {"x": np_x}
+        output = session.run(None, inputs)[0]
+        assert np.allclose(ms_output.asnumpy(), output, rtol=1e-4, atol=1e-4), f" ms:{ms_output}, onnx:{output}"
+        os.remove(onnx_file)
+    else:
+        raise RuntimeError(f"Export operator Softmax to ONNX failed!")
+
+
+class MulsNet(nn.Cell):
+    def __init__(self):
+        super().__init__()
+        self.y = 3.0
+
+    def construct(self, x):
+        z = x * self.y
+        return z
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_export_muls():
+    """
+    Feature: Export Muls to onnx
+    Description: Export Muls to onnx
+    Expectation: success
+    """
+    np_x = np.random.uniform(low=0, high=1, size=(1, 3, 640)).astype(np.float32)
+    x = Tensor(np_x)
+    net = MulsNet()
+    ms_output = net(x)
+    onnx_file = './muls_onnx.onnx'
+    export(net, x, file_name=onnx_file, file_format='ONNX')
+    if os.path.isfile(onnx_file):
+        session = ort.InferenceSession(onnx_file)
+        inputs = {"x": np_x}
+        output = session.run(None, inputs)[0]
+        assert np.array_equal(ms_output.asnumpy(), output), f" ms:{ms_output}, onnx:{output}"
+        os.remove(onnx_file)
+    else:
+        raise RuntimeError(f"Export operator Muls to ONNX failed!")
