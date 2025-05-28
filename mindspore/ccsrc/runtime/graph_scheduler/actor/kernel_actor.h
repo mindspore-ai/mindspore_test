@@ -173,7 +173,7 @@ class KernelActor : public DebugAwareActor {
   // Update the output ref count of graph output kernel.
   void UpdateGraphOutputRefCount(OpContext<KernelTensor> *const context);
   // Update the input device tensors to the memory free list.
-  void UpdateMemoryFreeList(OpContext<KernelTensor> *const context);
+  virtual void UpdateMemoryFreeList(OpContext<KernelTensor> *const context);
   // Execute infer shape, resize and launch kernel by runtime pipeline which executes by KernelAsyncInferActor,
   // KernelAsyncResizeActor and KernelAsyncLaunchActor.
   void RunWithMultiPipeline(OpContext<KernelTensor> *const context);
