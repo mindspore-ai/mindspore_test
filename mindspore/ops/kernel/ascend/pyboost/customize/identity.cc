@@ -93,7 +93,6 @@ void IdentityCustomizeCallWithoutContigous(const std::shared_ptr<OpRunner> &op, 
     runtime::DeviceAddressUtils::ProcessCrossStreamAddress(prim::kPrimIdentity->name(), device_context, op->stream_id(),
                                                            input_kernel_tensors, output_kernel_tensors);
     auto output_address = std::dynamic_pointer_cast<device::DeviceAddress>(outputs[0]->device_address());
-    output_address->SetStorageInfo(input_x_address->GetStorageInfo());
     output_address->set_ptr(launch_device_address->GetMutablePtr());
     MS_LOG(DEBUG) << "Run device task Identity end";
   }));

@@ -121,8 +121,6 @@ class MS_CORE_API AnfUtils {
   // Judge whether node's monad output should be skipped. Currently this method returns true in one scenarios:
   // 1. The node is a RpcRecv node with monad type output.
   static bool NeedJumpMonadOutput(const AnfNodePtr &node);
-
-  static bool UseMemScheduler();
 };
 }  // namespace mindspore
 #endif  // MINDSPORE_CORE_UTILS_ANF_UTILS_H_

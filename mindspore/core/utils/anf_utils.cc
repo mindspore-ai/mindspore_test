@@ -645,15 +645,4 @@ bool AnfUtils::NeedJumpMonadOutput(const AnfNodePtr &node) {
   }
   return false;
 }
-
-bool AnfUtils::UseMemScheduler() {
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
-  if (!context_ptr->get_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD)) {
-    return false;
-  }
-  // Not use MemScheduler when running single op
-  return (!context_ptr->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_INFER) &&
-          (context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE) != kPynativeMode));
-}
 }  // namespace mindspore

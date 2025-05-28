@@ -22,36 +22,35 @@
 #include "common/device_address.h"
 #include "runtime/hardware/device_context.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
-#include "runtime/device/res_manager/loadable_device_address.h"
 
 using ShapeVecotr = std::vector<int>;
 
 namespace mindspore {
 namespace device {
 namespace gpu {
-class GPUDeviceAddress : public LoadableDeviceAddress {
+class GPUDeviceAddress : public DeviceAddress {
  public:
-  GPUDeviceAddress() : LoadableDeviceAddress() { SetDevicePtrDeleter(); }
-  GPUDeviceAddress(void *ptr, size_t size) : LoadableDeviceAddress(ptr, size) { SetDevicePtrDeleter(); }
+  GPUDeviceAddress() : DeviceAddress() { SetDevicePtrDeleter(); }
+  GPUDeviceAddress(void *ptr, size_t size) : DeviceAddress(ptr, size) { SetDevicePtrDeleter(); }
   GPUDeviceAddress(void *ptr, size_t size, const string &format, TypeId type_id)
-      : LoadableDeviceAddress(ptr, size, format, type_id) {
+      : DeviceAddress(ptr, size, format, type_id) {
     SetDevicePtrDeleter();
   }
   GPUDeviceAddress(void *ptr, size_t size, const std::string &format, TypeId type_id, const KernelWithIndex &node_index)
-      : LoadableDeviceAddress(ptr, size, format, type_id, node_index) {
+      : DeviceAddress(ptr, size, format, type_id, node_index) {
     SetDevicePtrDeleter();
   }
   GPUDeviceAddress(void *ptr, size_t size, const std::string &format, TypeId type_id, const std::string &device_name,
                    uint32_t device_id)
-      : LoadableDeviceAddress(ptr, size, format, type_id, device_name, device_id) {
+      : DeviceAddress(ptr, size, format, type_id, device_name, device_id) {
     SetDevicePtrDeleter();
   }
   GPUDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector, const Format &format, TypeId type_id,
                    const std::string &device_name, uint32_t device_id, uint32_t stream_id)
-      : LoadableDeviceAddress(ptr, size, shape_vector, format, type_id, device_name, device_id, stream_id) {
+      : DeviceAddress(ptr, size, shape_vector, format, type_id, device_name, device_id, stream_id) {
     SetDevicePtrDeleter();
   }
-  ~GPUDeviceAddress() override;
+  ~GPUDeviceAddress() override = default;
 
   void ClearDeviceMemory() override;
   DeviceType GetDeviceType() const override { return DeviceType::kGPU; }
@@ -95,9 +94,7 @@ class GPUDeviceAddress : public LoadableDeviceAddress {
   bool AsyncHostToDevice(size_t size, const void *host_ptr, size_t stream_id) const override;
 
   bool AsyncDeviceToHost(size_t size, void *host_ptr, size_t stream_id) const override;
-
-  bool CopyDeviceToHost(void *dst, const void *src, size_t size, bool async, size_t stream_id) const override;
-  bool CopyHostToDevice(void *dst, const void *src, size_t size, bool async, size_t stream_id) const override;
+  
   bool AsyncDeviceToDevice(const ShapeVector &shape, size_t size, TypeId type, const void *src_ptr,
                            const std::string &format, size_t stream_id = SIZE_MAX) const override;
 
@@ -109,8 +106,6 @@ class GPUDeviceAddress : public LoadableDeviceAddress {
     MS_EXCEPTION_IF_NULL(res_manager);
     return res_manager;
   }
-  bool CopyBetweenHostDevice(void *dst, const void *src, size_t size, bool async, size_t stream_id,
-                             bool host_to_device) const;
 
   // Set a device pointer destructor to kernel tensor, used to release resource reclaiming of the device pointer
   // automatically when DeviceAddress destructed.

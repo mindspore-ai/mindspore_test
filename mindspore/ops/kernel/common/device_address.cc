@@ -127,19 +127,12 @@ void DeviceAddress::CloneDeviceAddress(const DeviceAddressPtr &device_address) {
   }
 }
 
-const void *DeviceAddress::GetPtr() const {
-  std::lock_guard<std::recursive_mutex> lock(ptr_mutex_);
-  return GetDevicePtr();
-}
+const void *DeviceAddress::GetPtr() const { return GetDevicePtr(); }
 
 void DeviceAddress::set_ptr(void *ptr) {
-  std::lock_guard<std::recursive_mutex> lock(ptr_mutex_);
   address_common_->pointer_ref_count_->set_ptr(ptr);
   if (ptr != nullptr) {
-    const auto &storage_info = GetStorageInfo();
-    if (storage_info.host_ptr_ == nullptr && storage_info.file_name_.empty()) {
-      status_ = DeviceAddressStatus::kInDevice;
-    }
+    status_ = DeviceAddressStatus::kInDevice;
   }
 }
 
@@ -197,10 +190,7 @@ void DeviceAddress::set_status(DeviceAddressStatus status) { status_ = status; }
 
 DeviceAddressStatus DeviceAddress::status() const { return status_; }
 
-void *DeviceAddress::GetMutablePtr() const {
-  std::lock_guard<std::recursive_mutex> lock(ptr_mutex_);
-  return GetDevicePtr();
-}
+void *DeviceAddress::GetMutablePtr() const { return GetDevicePtr(); }
 
 const ShapeVector &DeviceAddress::GetShapeVector() const { return address_common_->shape_vector_; }
 
@@ -333,8 +323,13 @@ int32_t DeviceAddress::DecreaseDynamicRefCount(const std::string &op_object) {
 }
 
 bool DeviceAddress::IsPtrValid() const {
-  std::lock_guard<std::recursive_mutex> lock(ptr_mutex_);
-  return GetDevicePtr() != nullptr;
+  if (GetDevicePtr() != nullptr) {
+    return true;
+  }
+  if (hete_info_ == nullptr) {
+    return false;
+  }
+  return hete_info_->host_ptr_ != nullptr || !hete_info_->file_name_.empty();
 }
 
 bool DeviceAddress::IsNotNeedAlloc() const {
@@ -350,7 +345,7 @@ void *DeviceAddress::GetValidPtr(size_t) {
   if (user_data() == nullptr || (!need_sync_user_data_)) {
     return GetDevicePtr();
   }
-  std::lock_guard<std::recursive_mutex> lock(ptr_mutex_);
+  std::lock_guard<std::mutex> lock(ptr_mutex_);
   if (!need_sync_user_data_) {
     return GetDevicePtr();
   }

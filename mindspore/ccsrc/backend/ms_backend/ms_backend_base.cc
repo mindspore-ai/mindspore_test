@@ -1214,8 +1214,7 @@ std::shared_ptr<GraphCompilerInfo> MSBackendBase::ConstructGraphCompilerInfo(
   auto strategy = runtime::GraphExecutionStrategy::kPipeline;
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
-  if (runtime::RuntimeConf::GetInstance()->mem_optimize_level() != kOptimizeO0 ||
-      context_ptr->get_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD)) {
+  if (runtime::RuntimeConf::GetInstance()->mem_optimize_level() != kOptimizeO0) {
     strategy = runtime::GraphExecutionStrategy::kPipelineWithExecutionOrder;
   }
   auto compile_func = [graph_compiler = this->graph_compiler_, backend_jit_config](

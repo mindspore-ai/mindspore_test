@@ -53,7 +53,6 @@ from mindspore.train.serialization import _exec_save, load, export_split_mindir,
     _generate_front_info_for_param_data_file, _get_data_file, _encrypt_data, _split_save, _save_mindir_together, \
     _load_into_param_dict
 from mindspore.parallel import _cost_model_context
-from mindspore.parallel._offload_context import offload_context
 from mindspore.parallel._utils import _is_in_data_parallel_mode
 from mindspore.run_check._check_version import check_version_and_env_config
 from mindspore.dataset.callback.ds_callback import DSCallback, WaitedDSCallback
@@ -495,7 +494,6 @@ _func_map = {
     function_id(Stream.__repr__): FUNC_KEY_PIJIT_CONSTEXPR,
     function_id(get_rank_size): FUNC_KEY_PIJIT_CONSTEXPR,
     function_id(get_rank_id): FUNC_KEY_PIJIT_CONSTEXPR,
-    function_id(offload_context): FUNC_KEY_PIJIT_CONSTEXPR,
     function_id(_is_in_data_parallel_mode): FUNC_KEY_PIJIT_CONSTEXPR,
     function_id(check_version_and_env_config): FUNC_KEY_PIJIT_CONSTEXPR,
     function_id(Tensor.tolist): FUNC_KEY_PIJIT_CONSTEXPR,

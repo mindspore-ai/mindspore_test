@@ -40,10 +40,6 @@ void GeDeviceResManager::Initialize() {
   res_manager->Initialize();
   mem_manager_ = res_manager->mem_manager();
   MS_EXCEPTION_IF_NULL(mem_manager_);
-
-  if (ms_context->get_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD)) {
-    MS_LOG(WARNING) << "mem offload is not supported in ge.";
-  }
   initialized_ = true;
 }
 

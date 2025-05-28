@@ -148,11 +148,7 @@ def _offload_if_config(data):
     Args:
         data: The parameter data to offload.
     """
-    if not context.get_context("memory_offload") or data is None:
-        return
-
-    offload_context = context.get_offload_context()
-    if offload_context.get("offload_param", None) != "disk":
+    if data is None:
         return
 
     data_size_threshold = 512
@@ -240,10 +236,8 @@ class Parameter(Tensor_):
         device(str): Only Ascend device target is supported. It is used to specify the device which the parameter is
             stored. By default, the parameter will be stored on NPU while computing. When the device is specified as
             ``"CPU"``, the parameter will be loaded into the device when it needs to be used, and unloaded to the CPU
-            after use. It takes effext only when `memory_offload` is ``"ON"``, `jit_level` is not ``"O2"`` and
-            `memory_optimize_level` is ``O0`` in :func:`mindspore.set_context`.
-            Less device memory is needed when device is
-            specified as ``"CPU"``.
+            after use. It takes effext only when `jit_level` is not ``"O2"`` and `memory_optimize_level` is ``O0``
+            in :func:`mindspore.set_context`. Less device memory is needed when device is specified as ``"CPU"``.
 
     Examples:
         >>> import numpy as np
@@ -282,8 +276,6 @@ class Parameter(Tensor_):
         obj.is_default_input_init = init_data_flag
         if obj.has_init:
             obj.init_mode = default_input
-        else:
-            _offload_if_config(obj)
         return obj
 
     def __reduce_ex__(self, _):
@@ -985,7 +977,6 @@ class Parameter(Tensor_):
             self._inited_param = obj
         obj.init_mode = None
         obj.sliced = set_sliced
-        _offload_if_config(obj)
         return obj
 
     def register_hook(self, hook_fn):

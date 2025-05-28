@@ -359,10 +359,6 @@ bool EnableRuntimePipeline() {
 
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  if (ms_context->get_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD)) {
-    return false;
-  }
-
   if (ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kCPUDevice) {
     return false;
   }
@@ -970,6 +966,23 @@ void SyncHostToDeviceFromTensor(size_t outer_index, size_t inner_index, tensor::
     device_tensor->IncreaseNewRefCount(from_aid.Name());
     MS_LOG(DEBUG) << from_aid.Name() << " input size is 0, outer index" << outer_index
                   << ", inner index: " << inner_index << ", address: " << device_tensor << ".";
+    return;
+  }
+
+  const auto &hete_info = device_tensor->heterogeneous_info();
+  if (hete_info != nullptr && hete_info->need_alloc_hete_res_ != NeedAllocateHeteRes::NoNeedHeteRes) {
+    if (tensor->data_type() != device_tensor->type_id()) {
+      MS_LOG(EXCEPTION) << "Data type of host tensor[" << tensor->data_type() << " is different from device["
+                        << device_tensor->type_id() << "], which can not be offloaded.";
+    }
+    if (tensor->device_info().host_format_ != device_tensor->format()) {
+      MS_LOG(EXCEPTION) << "Data format of host tensor[" << tensor->device_info().host_format_
+                        << " is different from device[" << device_tensor->format() << "], which can not be offloaded.";
+    }
+    hete_info->host_ptr_ = tensor->data_c();
+    hete_info->file_name_ = tensor->GetOffloadFilePath();
+    MS_LOG(DEBUG) << "Set heterogeneous info for offloaded tensor, host ptr:" << hete_info->host_ptr_
+                  << ", file name: " << hete_info->file_name_;
     return;
   }
 

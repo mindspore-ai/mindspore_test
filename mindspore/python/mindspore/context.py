@@ -33,13 +33,12 @@ from mindspore.parallel._auto_parallel_context import _set_auto_parallel_context
     _reset_auto_parallel_context
 from mindspore.parallel._ps_context import _set_ps_context, _get_ps_context, _reset_ps_context, \
     _need_reset_device_target_for_ps
-from mindspore.parallel._offload_context import _set_offload_context, _get_offload_context
 from mindspore.hal.device import is_initialized
 from mindspore.common import api
 
 __all__ = ['GRAPH_MODE', 'PYNATIVE_MODE', 'STRICT', 'COMPATIBLE', 'LAX', 'set_context', 'get_context',
            'set_auto_parallel_context', 'get_auto_parallel_context', 'reset_auto_parallel_context', 'ParallelMode',
-           'set_ps_context', 'get_ps_context', 'reset_ps_context', 'set_offload_context', 'get_offload_context']
+           'set_ps_context', 'get_ps_context']
 
 GRAPH_MODE = 0
 PYNATIVE_MODE = 1
@@ -261,22 +260,6 @@ class _Context:
             raise ValueError(f"For 'context.set_context', the argument 'exec_order' must be one of "
                              f"{exec_order_modes}, but got {exec_order}.")
         self.set_param(ms_ctx_param.exec_order, exec_order)
-
-    def set_memory_offload(self, memory_offload):
-        """
-        Enable memory offload or not, support "ON", "OFF".
-
-        Args:
-            memory_offload (str): "ON", "OFF"
-        """
-        memory_offload_options = ["ON", "OFF"]
-        if memory_offload not in memory_offload_options:
-            raise ValueError(f"For 'context.set_context', the argument 'memory_offload' must be one of "
-                             f"{memory_offload_options}, but got {memory_offload}.")
-        if memory_offload == "ON":
-            self.set_param(ms_ctx_param.memory_offload, True)
-        else:
-            self.set_param(ms_ctx_param.memory_offload, False)
 
     def set_deterministic(self, deterministic):
         """
@@ -691,7 +674,6 @@ class _Context:
         'memory_optimize_level': set_memory_optimize_level,
         'exec_order': set_exec_order,
         'op_timeout': set_op_timeout,
-        'memory_offload': set_memory_offload,
         'deterministic': set_deterministic,
         'ascend_config': set_ascend_config,
         'jit_syntax_level': set_jit_syntax_level,
@@ -1270,65 +1252,6 @@ def reset_auto_parallel_context():
     api.ms_compile_cache.clear()
 
 
-@args_type_check(offload_config=dict)
-def set_offload_context(offload_config):
-    r"""
-    Configure heterogeneous training detailed parameters to adjust the offload strategy, this api will be deprecated
-    and removed in future versions.
-
-    Note:
-        The offload configuration is only used if the memory offload feature is enabled
-        via mindspore.set_context(memory_offload="ON"), and the memory_optimize_level must be set to O0. On the Ascend
-        hardware platform, the graph compilation level must be O0.
-
-    Args:
-        offload_config (dict): A dict contains the keys and values for setting the offload context
-            configure.It supports the following keys.
-
-            - offload_path (str):  The path of offload, relative paths are supported. Default: ``"./offload"``.
-            - offload_cpu_size (str):  The cpu memory size for offload. The format is "xxGB".
-            - offload_disk_size (str): The disk size for offload. The format is "xxGB"
-            - hbm_ratio (float): The ratio that can be used based on the maximum device memory.
-              The range is (0,1], Default: ``1.0``.
-            - cpu_ratio (float): The ratio that can be used based on the maximum host memory.
-              The range is (0,1], Default: ``1.0``.
-            - enable_pinned_mem (bool): The flag of whether enabling Pinned Memory. Default: ``True``.
-            - enable_aio (bool): The flag of whether enabling aio. Default: ``True``.
-            - aio_block_size (str): The size of aio block. The format is "xxGB".
-            - aio_queue_depth (int): The depth of aio queue.
-            - offload_param (str):  The param for offload destination, cpu or disk, Default: ``""``.
-            - offload_checkpoint (str):  The checkpoint for offload destination, only valid if recompute is turned on,
-              cpu or disk, Default: ``""``.
-            - auto_offload (bool): The flag of whether auto offload. Default: ``True``.
-            - host_mem_block_size (str): The memory block size of host memory pool. The format is "xxGB"
-
-    Raises:
-        ValueError: If input key is not attribute in auto parallel context.
-
-    Examples:
-        >>> from mindspore import context
-        >>> context.set_offload_context(offload_config={"offload_param":"cpu"})
-    """
-    _set_offload_context(offload_config)
-
-
-def get_offload_context():
-    """
-    Gets the offload configuration parameters, this api will be deprecated and removed in future versions.
-
-    Configure through interface mindspore.set_offload_context(). If the user is not set, the default configuration is
-    obtained.
-
-    Returns:
-        Dict, heterogeneous training offload detailed configuration parameters.
-
-    Examples:
-        >>> from mindspore import context
-        >>> offload_config = context.get_offload_context()
-    """
-    return _get_offload_context()
-
-
 def _check_target_specific_cfgs(device, arg_key):
     """Checking whether a config is suitable for a specified device"""
     device_cfgs = {
@@ -1404,8 +1327,7 @@ def _check_context_deprecated(key):
                                                      mindspore.device_context.gpu.op_precision.conv_fprop_algo(),
                                                      mindspore.device_context.gpu.op_precision.conv_wgrad_algo(),
                                                      mindspore.device_context.gpu.op_precision.conv_dgrad_algo()''',
-                               'runtime_num_threads': 'api mindspore.device_context.cpu.op_tuning.threads_num()',
-                               'memory_offload': "`device` parameter of `mindspore.Parameter`"}
+                               'runtime_num_threads': 'api mindspore.device_context.cpu.op_tuning.threads_num()'}
     invalid_context_dict = {
         'exception_dump': {'version': '2.6', 'interface': 'device_context.ascend.op_debug.aclinit_config()'}
     }
@@ -1472,9 +1394,6 @@ def set_context(**kwargs):
         inter_op_parallel_num(int): The thread number of op parallel at the same time.
             Default ``0`` . This parameter will be deprecated and removed in future versions.
             Please use the api :func:`mindspore.runtime.dispatch_threads_num` instead.
-        memory_offload (str): Whether to enable the memory offload function. Default ``"OFF"`` .
-            This parameter will be deprecated and removed in future versions. Please use the api
-            :func:`mindspore.nn.Cell.offload` instead.
         disable_format_transform (bool): Whether to disable the automatic format transform function from NCHW
             to NHWC. Default ``False`` . This parameter will be deprecated and removed in future versions. Please
             use the related parameter of :func:`mindspore.jit` instead.
@@ -1599,7 +1518,6 @@ def set_context(**kwargs):
         >>> ms.set_context(inter_op_parallel_num=4)
         >>> ms.set_context(disable_format_transform=True)
         >>> ms.set_context(memory_optimize_level='O0')
-        >>> ms.set_context(memory_offload='ON')
         >>> ms.set_context(deterministic='ON')
         >>> ms.set_context(ascend_config={"precision_mode": "force_fp16", "jit_compile": True,
         ...                "atomic_clean_policy": 1, "op_precision_mode": "./op_precision_config_file",
