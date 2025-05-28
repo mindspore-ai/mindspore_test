@@ -1439,6 +1439,57 @@ void OperatorInfo::DynamicShapeCheckStrategyLog() {
                 << ", but the divisor info of inputs is " << ShapesToString(inputs_divisor_);
 }
 
+Status OperatorInfo::InferByStrategy(const StrategyPtr &in_strategy, const StrategyPtr &out_strategy) {
+  DivisorsReplaceShapes();  // in dynamic shape, using divisors replace to shapes before CheckStrategy
+  // must be after InferAttrs()
+  if (CheckStrategy(in_strategy) != SUCCESS) {
+    DynamicShapeCheckStrategyLog();
+    FILTER_LOG(is_auto_parallel_) << name_ << ": CheckStrategy failed.";
+    return FAILED;
+  }
+  ResumeShapes();  // in dynamic shape, resume shapes after CheckStrategy
+
+  if (is_dynamic_shape_ && CheckStrategyForDynamicShape(in_strategy) != SUCCESS) {
+    MS_LOG(ERROR) << name_ << ": Check strategy for dynamic shape failed";
+    return FAILED;
+  }
+  strategy_ = in_strategy;
+
+  set_out_strategy(out_strategy);
+  if (out_strategy && CheckOutputStrategy(out_strategy) != SUCCESS) {
+    if (is_in_layout_propagation_) {
+      MS_LOG(INFO) << name_ << ": The output strategy is invalid";
+      return FAILED;
+    }
+    MS_LOG(ERROR) << name_ << ": The output strategy is invalid";
+    return FAILED;
+  }
+
+  if (InferDevMatrixShape() != SUCCESS) {
+    MS_LOG(ERROR) << name_ << ": InferDevMatrixShape failed.";
+    return FAILED;
+  }
+
+  used_devices_ = std::accumulate(dev_matrix_shape_.begin(), dev_matrix_shape_.end(), 1, std::multiplies<int64_t>());
+
+  // must be after InferDevMatrixShape
+  if (InferRepeatedCalcInfo() != SUCCESS) {
+    MS_LOG(ERROR) << name_ << ": InferRepeatedCalcInfo failed.";
+    return FAILED;
+  }
+
+  // if repeated calculation, need to set the repeated_calc_num as the last dimension of dev-matrix for layout
+  SetRepeatedCalcDevMatrix();
+
+  if (InferTensorMap() != SUCCESS) {
+    MS_LOG(ERROR) << name_ << ": InferTensorMap failed.";
+    return FAILED;
+  }
+
+  ResetTensorMapIfRepeatedCalc();
+  return SUCCESS;
+}
+
 // auto insert repeated_calculation_num for dev_matrix_shape when repeated_calculation_num > 1
 Status OperatorInfo::InitForCostModelWithAutoRepeatCalc(const StrategyPtr &in_strategy,
                                                         const StrategyPtr &out_strategy) {
@@ -1458,53 +1509,9 @@ Status OperatorInfo::InitForCostModelWithAutoRepeatCalc(const StrategyPtr &in_st
 
   // if layout is configured, no need to check strategy and infer dev matrix
   if (!is_layout_config_) {
-    DivisorsReplaceShapes();  // in dynamic shape, using divisors replace to shapes before CheckStrategy
-    // must be after InferAttrs()
-    if (CheckStrategy(in_strategy) != SUCCESS) {
-      DynamicShapeCheckStrategyLog();
-      FILTER_LOG(is_auto_parallel_) << name_ << ": CheckStrategy failed.";
+    if (InferByStrategy(in_strategy, out_strategy) != SUCCESS) {
       return FAILED;
     }
-    ResumeShapes();  // in dynamic shape, resume shapes after CheckStrategy
-
-    if (is_dynamic_shape_ && CheckStrategyForDynamicShape(in_strategy) != SUCCESS) {
-      MS_LOG(ERROR) << name_ << ": Check strategy for dynamic shape failed";
-      return FAILED;
-    }
-    strategy_ = in_strategy;
-
-    set_out_strategy(out_strategy);
-    if (out_strategy && CheckOutputStrategy(out_strategy) != SUCCESS) {
-      if (is_in_layout_propagation_) {
-        MS_LOG(INFO) << name_ << ": The output strategy is invalid";
-        return FAILED;
-      }
-      MS_LOG(ERROR) << name_ << ": The output strategy is invalid";
-      return FAILED;
-    }
-
-    if (InferDevMatrixShape() != SUCCESS) {
-      MS_LOG(ERROR) << name_ << ": InferDevMatrixShape failed.";
-      return FAILED;
-    }
-
-    used_devices_ = std::accumulate(dev_matrix_shape_.begin(), dev_matrix_shape_.end(), 1, std::multiplies<int64_t>());
-
-    // must be after InferDevMatrixShape
-    if (InferRepeatedCalcInfo() != SUCCESS) {
-      MS_LOG(ERROR) << name_ << ": InferRepeatedCalcInfo failed.";
-      return FAILED;
-    }
-
-    // if repeated calculation, need to set the repeated_calc_num as the last dimension of dev-matrix for layout
-    SetRepeatedCalcDevMatrix();
-
-    if (InferTensorMap() != SUCCESS) {
-      MS_LOG(ERROR) << name_ << ": InferTensorMap failed.";
-      return FAILED;
-    }
-
-    ResetTensorMapIfRepeatedCalc();
   } else {
     if (InferOutputTensorMap() != SUCCESS) {
       MS_LOG(ERROR) << name_ << ": InferOutputTensorMap failed.";

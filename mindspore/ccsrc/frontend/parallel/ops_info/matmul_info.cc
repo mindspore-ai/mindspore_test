@@ -371,6 +371,37 @@ Status MatMul::CheckOutputStrategy(const StrategyPtr &out_strategy) {
   return SUCCESS;
 }
 
+Status BatchMatMulInfo::Init(const StrategyPtr &in_strategy, const StrategyPtr &out_strategy,
+                             const std::vector<std::shared_ptr<TensorLayout>> &in_tensor_layouts,
+                             const std::vector<std::shared_ptr<TensorLayout>> &out_tensor_layouts) {
+  if (in_tensor_layouts.empty() && out_strategy && in_strategy) {
+    ResetQueueMember();
+    if (InferAttrs() != SUCCESS) {
+      MS_LOG(ERROR) << name_ << ": InferAttrs failed.";
+      return FAILED;
+    }
+    if (InferByStrategy(in_strategy, out_strategy) != SUCCESS) {
+      return FAILED;
+    }
+    std::vector<std::shared_ptr<TensorLayout>> in_tensor_layouts_by_stra;
+    std::vector<std::shared_ptr<TensorLayout>> out_tensor_layouts_by_stra;
+    for (size_t i = 0; i < inputs_shape_.size(); ++i) {
+      std::shared_ptr<TensorLayout> in_tensor_layout_by_stra = std::make_shared<TensorLayout>();
+      std::vector<Shape> input_extended_tensor_map;
+      for (size_t j = 0; j < inputs_tensor_map_[i].size(); ++j) {
+        input_extended_tensor_map.push_back({inputs_tensor_map_[i][j]});
+      }
+      in_tensor_layout_by_stra->InitFromExtendVector(dev_matrix_shape_, input_extended_tensor_map, inputs_shape_[i]);
+      in_tensor_layouts_by_stra.push_back(in_tensor_layout_by_stra);
+    }
+
+    return InitWithTensorLayout(in_tensor_layouts_by_stra, out_tensor_layouts_by_stra);
+  }
+  return MatMul::Init(in_strategy, out_strategy, in_tensor_layouts, out_tensor_layouts);
+}
+
+Status BatchMatMulInfo::CheckOutputStrategy(const StrategyPtr &out_strategy) { return SUCCESS; }
+
 Status MatMulBase::InferDevMatrixShape() {
   Strategies stra = strategy_->GetInputDim();
   Dimensions mat_a_strategy = stra.at(0);
@@ -710,6 +741,13 @@ Status MatMul::CheckOutputLayout() {
     return SUCCESS;
   }
   output_infer_tensor_layout_ = InferOutputLayout();
+  if (out_strategy_ != nullptr) {
+    auto output_infer_stra = output_infer_tensor_layout_.shard_strategy();
+    auto output_shard = out_strategy_->GetInputDim().front();
+    if (output_infer_stra == output_shard) {
+      return SUCCESS;
+    }
+  }
   if (output_infer_tensor_layout_ == out_layout) {
     MS_LOG(INFO)
       << "output tensor layout infer by input tensor layout is same with user configured output tensor layout.";
@@ -726,11 +764,26 @@ Status MatMul::CheckOutputLayout() {
   }
   auto output_extended_tensor_map = output_infer_tensor_layout_.tensor_map_before();
   auto axis_map = input_layout0.tensor_map_before()[axis0];
-  (void)output_extended_tensor_map[0].insert(output_extended_tensor_map[0].end(), axis_map.begin(), axis_map.end());
+  if (output_extended_tensor_map.size() < SIZE_TWO) {
+    MS_LOG(ERROR) << "MatMul infer output tensor map failed, output_extended_tensor_map: "
+                  << output_extended_tensor_map;
+    return FAILED;
+  }
+  size_t n_dim = output_extended_tensor_map.size() - SIZE_TWO;
+  (void)output_extended_tensor_map[n_dim].insert(output_extended_tensor_map[n_dim].end(), axis_map.begin(),
+                                                 axis_map.end());
   TensorLayout reduce_scatter_out_layout;
   reduce_scatter_out_layout.InitFromExtendVector(output_infer_tensor_layout_.device_arrangement_origin().array(),
                                                  output_extended_tensor_map,
                                                  output_infer_tensor_layout_.tensor_shape_before().array());
+  if (out_strategy_ != nullptr) {
+    auto output_infer_stra = reduce_scatter_out_layout.shard_strategy();
+    auto output_shard = out_strategy_->GetInputDim().front();
+    if (output_infer_stra == output_shard) {
+      forward_reduce_scatter_ = true;
+      return SUCCESS;
+    }
+  }
   if (reduce_scatter_out_layout != out_layout) {
     if (is_in_layout_propagation_) {
       MS_LOG(INFO) << name_ << ": The user configured output layout dose not match the inferred output layout";

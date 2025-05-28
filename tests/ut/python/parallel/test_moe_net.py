@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 from mindspore import context, Parameter
+from mindspore.parallel.shard import Layout
 from mindspore.common.api import _cell_graph_executor
 from mindspore.common.initializer import initializer
 from mindspore.nn import Cell, TrainOneStepCell, Momentum
@@ -79,7 +80,8 @@ class Linear(Cell):
 
 
 class MoEFFNet(Cell):
-    def __init__(self, hidden_size, ffn_hidden_size, expert_num, dp, ep, mp, sp, has_bias=True, transpose_b=False):
+    def __init__(self, hidden_size, ffn_hidden_size, expert_num, dp, ep, mp, sp, has_bias=True, transpose_b=False,
+                 bmm_output_sharding=False):
         super(MoEFFNet, self).__init__()
         input_size = hidden_size
         output_size = ffn_hidden_size
@@ -111,13 +113,26 @@ class MoEFFNet(Cell):
         if transpose_b:
             self.mapping.shard(strategy_matmul=((dp, ep, 1, 1), (ep, mp, 1)),
                                strategy_bias=((dp, ep, 1, mp), (1, ep, 1, mp)))
-            self.projection.shard(strategy_matmul=((dp, ep, 1, mp), (ep, 1, mp)),
-                                  strategy_bias=((dp, ep, mp, 1), (1, ep, 1, 1)))
+            if not bmm_output_sharding:
+                self.projection.shard(strategy_matmul=((dp, ep, 1, mp), (ep, 1, mp)),
+                                      strategy_bias=((dp, ep, mp, 1), (1, ep, 1, 1)))
+            else:
+                layout = Layout((dp, ep, mp), ("dp", "ep", "mp"))
+                bmm_input_layout = (layout("dp", "ep", "None", "mp"), layout("ep", "None", "mp"))
+                bmm_output_layout = (layout("dp", "ep", ("None", "mp"), "None"),)
+                self.projection.shard(strategy_matmul=bmm_input_layout,
+                                      strategy_bias=((dp, ep, mp, 1), (1, ep, 1, 1)),
+                                      out_strategy_matmul=bmm_output_layout)
         else:
             self.mapping.shard(strategy_matmul=((dp, ep, 1, 1), (ep, 1, mp)),
                                strategy_bias=((dp, ep, 1, mp), (1, ep, 1, mp)))
-            self.projection.shard(strategy_matmul=((dp, ep, 1, mp), (ep, mp, 1)),
-                                  strategy_bias=((dp, ep, mp, 1), (1, ep, 1, 1)))
+            if not bmm_output_sharding:
+                self.projection.shard(strategy_matmul=((dp, ep, 1, mp), (ep, mp, 1)),
+                                      strategy_bias=((dp, ep, mp, 1), (1, ep, 1, 1)))
+            else:
+                self.projection.shard(strategy_matmul=((dp, ep, 1, mp), (ep, mp, 1)),
+                                      strategy_bias=((dp, ep, mp, 1), (1, ep, 1, 1)),
+                                      out_strategy_matmul=((dp, ep, mp, 1),))
         self.shape = ops.Shape()
         self.reshape = ops.Reshape()
         self.stride_slice_ep = ops.StridedSlice().shard(((ep, 1, 1, 1),))
