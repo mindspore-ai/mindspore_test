@@ -1714,7 +1714,7 @@ void AnfRuntimeAlgorithm::InferShape(const CNodePtr &node, std::map<uint32_t, te
         MS_EXCEPTION_IF_NULL(tensor_ptr);
         if (!SkipDataSync(node, *depend_tensors)) {
           // sync data from device to host
-          tensor_ptr->data_sync();
+          tensor_ptr = tensor_ptr->cpu();
         }
         // cppcheck-suppress unreadVariable
         auto lock = AnfUtils::GetAbstractLock(real_input.get());

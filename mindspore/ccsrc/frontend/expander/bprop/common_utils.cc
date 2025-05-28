@@ -41,8 +41,8 @@ std::vector<int64_t> GetIntList(const ValuePtr &value) {
   if (value->isa<tensor::Tensor>()) {
     auto tensor = value->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(tensor);
-    tensor->data_sync();
-    return CheckAndConvertUtils::CheckTensorIntValue("tensor", value, "bprop");
+    auto cpu_tensor = tensor->cpu();
+    return CheckAndConvertUtils::CheckTensorIntValue("tensor", cpu_tensor, "bprop");
   } else {
     return CheckAndConvertUtils::CheckIntOrTupleInt("value", value, "bprop");
   }

@@ -81,8 +81,8 @@ std::vector<int64_t> GetIntList(const NodePtr &node) {
     auto tensor = value_ptr->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(tensor);
     // In pynative mode, need data sync before get tensor value, otherwise the tensor value may be undefined.
-    tensor->data_sync();
-    return CheckAndConvertUtils::CheckTensorIntValue("value", value_ptr, "GetIntList");
+    auto cpu_tensor = tensor->cpu();
+    return CheckAndConvertUtils::CheckTensorIntValue("value", cpu_tensor, "GetIntList");
   }
   return std::vector<int64_t>{};
 }
@@ -100,9 +100,9 @@ std::string PrintDebugInfo(std::vector<T> items, const std::string &info_header 
     if (items[i]->template isa<tensor::Tensor>()) {
       auto tensor = items[i]->template cast<tensor::TensorPtr>();
       auto grad = std::make_shared<tensor::Tensor>(*tensor);
-      grad->data_sync();
+      auto cpu_grad = grad->cpu();
       buf << i << "th: "
-          << "ptr " << items[i].get() << ", " << grad->ToStringRepr() << ", ";
+          << "ptr " << items[i].get() << ", " << cpu_grad->ToStringRepr() << ", ";
     } else {
       buf << i << "th: "
           << "ptr " << items[i].get() << ", " << items[i]->ToString() << ", ";
@@ -154,7 +154,7 @@ void SetDependValue(const PrimitivePtr &primitive, const NodePtrList &inputs) {
     const auto value = inputs[index]->Value();
     auto tensor = value->cast<tensor::TensorPtr>();
     if (tensor != nullptr) {
-      tensor->data_sync();
+      auto cpu_tensor = tensor->cpu();
     }
     abstract->set_value(value);
   }
@@ -168,11 +168,11 @@ bool ParseCond(const NodePtr &cond) {
   }
   if (cond_val->isa<tensor::Tensor>()) {
     auto tensor = cond_val->cast<tensor::TensorPtr>();
-    tensor->data_sync();
-    size_t data_size = tensor->DataSize();
-    auto tensor_type = tensor->Dtype();
+    auto cpu_tensor = tensor->cpu();
+    size_t data_size = cpu_tensor->DataSize();
+    auto tensor_type = cpu_tensor->Dtype();
     if (tensor_type->type_id() == kNumberTypeBool) {
-      auto data_c = reinterpret_cast<bool *>(tensor->data_c());
+      auto data_c = reinterpret_cast<bool *>(cpu_tensor->data_c());
       MS_EXCEPTION_IF_NULL(data_c);
       return std::all_of(data_c, data_c + data_size, [](const bool &data) { return static_cast<bool>(data); });
     }
