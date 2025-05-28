@@ -386,7 +386,7 @@ class GradWrap(Cell):
 
 
 @arg_mark(plat_marks=['platform_gpu'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_pynative_resnet50_recompute_with_hook_and_mixed_precision():
