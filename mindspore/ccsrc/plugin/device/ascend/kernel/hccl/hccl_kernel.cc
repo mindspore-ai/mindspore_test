@@ -102,7 +102,7 @@ HcclKernel::HcclKernel()
       comm_(nullptr),
       use_lccl_{false} {}
 
-bool isSupportLccl(const std::string &group_name, const std::string &kernel_name,
+bool IsSupportLccl(const std::string &group_name, const std::string &kernel_name,
                    const std::unordered_set<std::string> &lccl_enabled_groups) {
 #ifdef ENABLE_INTERNAL_KERNELS
   bool enable_lccl = device::ascend::AscendHalManager::GetInstance().EnableLccl();
@@ -161,7 +161,7 @@ bool HcclKernel::Init(const std::vector<KernelTensor *> &inputs, const std::vect
 #ifdef ENABLE_INTERNAL_KERNELS
     std::unordered_set<std::string> lccl_enabled_groups =
       MultiAscendCollectiveCommLib::GetInstance().GetLcclEnabledGroups();
-    use_lccl_ = isSupportLccl(group_, kernel_name_, lccl_enabled_groups);
+    use_lccl_ = IsSupportLccl(group_, kernel_name_, lccl_enabled_groups);
     if (use_lccl_) {
       LoadLcclLibrary();
     } else {
