@@ -187,7 +187,8 @@ bool DeviceEmbeddingOperation::MemcpyHostToDeviceAsync(void *dst, const void *sr
   kernel_tensor->set_stream_id(stream_id);
   auto device_address = kernel_tensor->device_address();
   MS_ERROR_IF_NULL(device_address);
-  RETURN_IF_FALSE_WITH_LOG(device_address->AsyncHostToDevice({}, size, kTypeUnknown, host_ptr, stream_id),
+  auto tensor = std::make_shared<tensor::Tensor>(kTypeUnknown, ShapeVector{}, const_cast<void *>(host_ptr), size);
+  RETURN_IF_FALSE_WITH_LOG(AsyncCopy(device_address.get(), tensor->device_address().get(), stream_id),
                            "Async memcpy host to device failed.");
 
   return true;
@@ -201,7 +202,7 @@ bool DeviceEmbeddingOperation::MemcpyDeviceToHostAsync(void *dst, const void *sr
   MS_ERROR_IF_NULL(device_context->device_res_manager_);
 
   void *device_ptr = const_cast<void *>(src);
-  void *host_ptr = dst;
+  const void *host_ptr = dst;
 
   auto kernel_tensor = AnfAlgo::CreateKernelTensor(device_ptr, size, Format::DEFAULT_FORMAT, kTypeUnknown,
                                                    ShapeVector(), device_context->device_context_key().device_name_,
@@ -209,7 +210,8 @@ bool DeviceEmbeddingOperation::MemcpyDeviceToHostAsync(void *dst, const void *sr
   kernel_tensor->set_stream_id(stream_id);
   auto device_address = kernel_tensor->device_address();
   MS_ERROR_IF_NULL(device_address);
-  RETURN_IF_FALSE_WITH_LOG(device_address->AsyncDeviceToHost({}, size, kTypeUnknown, host_ptr, stream_id),
+  auto tensor = std::make_shared<tensor::Tensor>(kTypeUnknown, ShapeVector{}, const_cast<void *>(host_ptr), size);
+  RETURN_IF_FALSE_WITH_LOG(AsyncCopy(device_address.get(), tensor->device_address().get(), stream_id),
                            "Async memcpy device to host failed.");
 
   return true;
@@ -278,7 +280,8 @@ ValueNodePtr DeviceEmbeddingOperation::NewValueNode(int64_t value, const DeviceC
   MS_EXCEPTION_IF_NULL(address);
 
   // Sync tensor value.
-  MS_EXCEPTION_IF_CHECK_FAIL(address->AsyncHostToDevice({}, tensor_size, output_type_id, tensor->data_c(), stream_id),
+  auto new_tensor = std::make_shared<tensor::Tensor>(output_type_id, ShapeVector{}, tensor->data_c(), tensor_size);
+  MS_EXCEPTION_IF_CHECK_FAIL(AsyncCopy(address.get(), new_tensor->device_address().get(), stream_id),
                              "Async memcpy host to device failed.");
   MS_EXCEPTION_IF_CHECK_FAIL(device_context->device_res_manager_->SyncStream(stream_id), "Synchronize stream failed.");
 
