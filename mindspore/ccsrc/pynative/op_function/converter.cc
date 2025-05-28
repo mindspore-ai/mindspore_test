@@ -544,13 +544,16 @@ std::optional<std::vector<int64_t>> ConvertTensorToIntVector(const py::object &o
     return std::nullopt;
   }
   auto size = tensor->DataSize();
-  std::vector<int64_t> value_list;
   if (tensor->device_address() != nullptr) {
     tensor->data_sync();
   }
-  auto data = static_cast<int64_t *>(tensor->data_c());
-  std::transform(data, data + size, std::back_inserter(value_list), [](int64_t num) { return num; });
-  return value_list;
+  if (data_type == kNumberTypeInt64) {
+    auto data = static_cast<int64_t *>(tensor->data_c());
+    return std::vector<int64_t>(data, data + size);
+  } else {
+    auto data = static_cast<int32_t *>(tensor->data_c());
+    return std::vector<int64_t>(data, data + size);
+  }
 }
 
 static const std::unordered_map<int32_t, OpIntVectorConvertFunc> kIntVectorConverters = {

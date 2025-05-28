@@ -55,3 +55,19 @@ def test_reshape_bfloat16(mode):
     reshape = Net()
     output = reshape(x, shape)
     assert output.shape == shape
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize('mode', [context.PYNATIVE_MODE])
+def test_reshape_tensor_tensor(mode):
+    """
+    Feature: test Reshape ops.
+    Description: test input shape is tensor.
+    Expectation: compare the result with exception value.
+    """
+    context.set_context(mode=mode)
+    x = Tensor(np.ones([2, 6]), dtype=mstype.float32)
+    shape = Tensor([3, 4], dtype=mstype.int32)
+    reshape = Net()
+    output = reshape(x, shape)
+    assert output.shape == (3, 4)
