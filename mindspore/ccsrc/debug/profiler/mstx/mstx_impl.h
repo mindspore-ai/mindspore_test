@@ -84,24 +84,24 @@ class PROFILER_EXPORT MstxImpl {
   do {                                                                                                   \
     mindspore::profiler::MstxImpl::GetInstance().DomainCreateAImpl(domainName);                          \
     rangeId = mindspore::profiler::MstxImpl::GetInstance().RangeStartAImpl(domainName, message, stream); \
-  } while (0);
+  } while (0)
 
 #define MSTX_END(rangeId, domainName)                                               \
   do {                                                                              \
     mindspore::profiler::MstxImpl::GetInstance().DomainCreateAImpl(domainName);     \
     mindspore::profiler::MstxImpl::GetInstance().RangeEndImpl(domainName, rangeId); \
-  } while (0);
+  } while (0)
 
 #define MSTX_START_WITHOUT_DOMAIN(rangeId, message, stream)                                                          \
   do {                                                                                                               \
     rangeId = mindspore::profiler::MstxImpl::GetInstance().RangeStartAImpl(mindspore::profiler::MSTX_DOMAIN_DEFAULT, \
                                                                            message, stream);                         \
-  } while (0);
+  } while (0)
 
 #define MSTX_END_WITHOUT_DOMAIN(rangeId)                                                                          \
   do {                                                                                                            \
     mindspore::profiler::MstxImpl::GetInstance().RangeEndImpl(mindspore::profiler::MSTX_DOMAIN_DEFAULT, rangeId); \
-  } while (0);
+  } while (0)
 
 }  // namespace profiler
 }  // namespace mindspore

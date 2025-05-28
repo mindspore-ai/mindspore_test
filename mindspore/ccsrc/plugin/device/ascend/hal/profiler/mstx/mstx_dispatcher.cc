@@ -23,12 +23,12 @@
 #include "debug/profiler/profiler.h"
 #include "pynative/pynative_utils.h"
 #include "pynative/forward/forward_task.h"
-#include "plugin/device/ascend/hal/profiler/mstx/mstx_dispatcher.h"
-#include "plugin/res_manager/ascend/hccl_adapter/plugin/hccl_plugin.h"
 #include "runtime/pynative/task/device_task.h"
 #include "runtime/pynative/op_executor.h"
 #include "runtime/device/kernel_runtime_manager.h"
 #include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
+#include "plugin/res_manager/ascend/hccl_adapter/plugin/hccl_plugin.h"
+#include "plugin/device/ascend/hal/profiler/mstx/mstx_dispatcher.h"
 
 namespace mindspore {
 namespace profiler {
