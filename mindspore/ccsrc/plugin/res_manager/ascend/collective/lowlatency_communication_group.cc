@@ -20,6 +20,14 @@
 namespace mindspore {
 namespace device {
 namespace ascend {
+std::vector<int> convertVectorUint32ToInt32(const std::vector<uint32_t> &global_ranks) {
+  std::vector<int> outputs;
+  for (auto &global_rank : global_ranks) {
+    CHECK_RET((global_rank < INT_MAX), true, "The input global rank exceeds the limitation.");
+    outputs.push_back(static_cast<int>(global_rank));
+  }
+  return outputs;
+}
 
 LowlatencyCommunicationGroup::LowlatencyCommunicationGroup(const std::string &name,
                                                            const std::vector<uint32_t> &group_ranks,
@@ -42,8 +50,8 @@ bool LowlatencyCommunicationGroup::Initialize(void *root_info) {
   uint32_t group_rank = GetGroupRank(global_rank_);
 
   // ADDING INPUT GROUP_RANKS
-  int group_rank_int = static_cast<int>(group_ranks_[0]);
-  lcal_comm_ = std::make_shared<LcalComm>(group_rank, size_, group_rank_int);
+  std::vector<int> group_ranks_int = convertVectorUint32ToInt32(group_ranks_);
+  lcal_comm_ = std::make_shared<LcalComm>(group_rank, size_, group_ranks_int);
   CHECK_IF_NULL(lcal_comm_);
   if (lcal_comm_->Init() != LCAL_SUCCESS) {
     return false;

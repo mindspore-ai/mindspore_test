@@ -773,16 +773,13 @@ bool MsContext::IsEnableInferBoost() {
   enable_infer_boost_ = false;
   const auto &jit_config = PhaseManager::GetInstance().jit_config();
   auto iter = jit_config.find("infer_boost");
-  if ((iter != jit_config.end() && iter->second == "on") || get_param<std::string>(MS_CTX_INFER_BOOST) == "on") {
+  auto global_infer_boost = get_param<std::string>(MS_CTX_INFER_BOOST);
+  if (common::GetEnv("MS_ENABLE_INTERNAL_KERNELS") == "on") {
     enable_infer_boost_ = true;
-  } else if (common::GetEnv("MS_ENABLE_INTERNAL_KERNELS") == "on") {
+    MS_LOG(INFO) << "'MS_ENABLE_INTERNAL_KERNELS' will be deprecated in the next version. Please use "
+                    "`set_context(jit_config={'jit_level': 'O0', 'infer_boost': 'on'})` instead";
+  } else if ((iter != jit_config.end() && iter->second == "on") || global_infer_boost == "on") {
     enable_infer_boost_ = true;
-    static bool print_warning_once = true;
-    if (print_warning_once) {
-      print_warning_once = false;
-      MS_LOG(WARNING) << "'MS_ENABLE_INTERNAL_KERNELS' will be deprecated in the next version. Please use "
-                         "`set_context(jit_config={'jit_level': 'O0', 'infer_boost': 'on'})` instead";
-    }
   }
 
   if (enable_infer_boost_) {
