@@ -276,9 +276,6 @@ void DeviceAddressUtils::CreateParameterDeviceAddress(const DeviceContext *devic
   }
 
   // Create device address for anf node in nodes_list
-  const auto &ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  const auto enable_offload = ms_context->get_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD);
   for (const auto &item : nodes_list) {
     MS_EXCEPTION_IF_NULL(item);
     const auto &real_device_context = device::FetchRealDeviceContext(item, device_context);
@@ -319,9 +316,7 @@ void DeviceAddressUtils::CreateParameterDeviceAddress(const DeviceContext *devic
                        << " is not used in the graph " << graph->graph_id();
           device_address->UpdateFlag(device::kDeviceAddressFlagNotUsed);
         }
-        if (enable_offload) {
-          SetHeteInfoForParamDeviceAddress(input_param, kernel_tensor);
-        }
+        SetHeteInfoForParamDeviceAddress(input_param, kernel_tensor);
       }
       device_address->SetNodeIndex(item, index);
       device_address->set_from_persistent_mem(item->isa<Parameter>());

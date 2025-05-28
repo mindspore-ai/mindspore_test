@@ -182,13 +182,6 @@ std::vector<AbstractActorPtr> SchedulerHelper::CollectActors(const ActorSet *act
     MS_EXCEPTION_IF_NULL(fusion_actor);
     (void)actors.emplace_back(static_cast<AbstractActorPtr>(fusion_actor));
   }
-  for (auto &swap_actors : actor_set->swap_actors_) {
-    (void)std::for_each(swap_actors.cbegin(), swap_actors.cend(), [&](const MemSwapActorPtr &swap_actor) {
-      if (swap_actor != nullptr) {
-        (void)actors.emplace_back(static_cast<AbstractActorPtr>(swap_actor));
-      }
-    });
-  }
   if (actor_set->loop_count_actor_ != nullptr) {
     (void)actors.emplace_back(static_cast<AbstractActorPtr>(actor_set->loop_count_actor_));
   }
@@ -1552,7 +1545,6 @@ void SchedulerHelper::DumpActorSet(const ActorSet *actor_set, std::ofstream &ofs
   DumpOutputActor(actor_set->output_actor_, ofs);
   DumpFusionActors(actor_set->fusion_actors_, ofs);
   DumpControlActors(actor_set->control_actors_, ofs);
-  DumpSwapActors(actor_set->swap_actors_, ofs);
 }
 
 void SchedulerHelper::DumpFormatActorSet(const ActorSet *actor_set, std::ofstream &ofs) {
