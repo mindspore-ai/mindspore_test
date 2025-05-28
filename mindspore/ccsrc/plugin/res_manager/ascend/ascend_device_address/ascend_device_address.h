@@ -21,7 +21,6 @@
 #include <vector>
 #include <memory>
 #include "common/device_address.h"
-#include "runtime/device/res_manager/loadable_device_address.h"
 #include "plugin/res_manager/ascend/mem_manager/ascend_memory_pool.h"
 #include "ir/dtype.h"
 #include "utils/shape_utils.h"
@@ -31,34 +30,34 @@ namespace mindspore {
 namespace device {
 class LaunchKernel;
 namespace ascend {
-class ASCEND_RES_MANAGER_EXPORT AscendDeviceAddress : public LoadableDeviceAddress {
+class ASCEND_RES_MANAGER_EXPORT AscendDeviceAddress : public DeviceAddress {
  public:
-  AscendDeviceAddress() : LoadableDeviceAddress() { SetDevicePtrDeleter(); }
-  explicit AscendDeviceAddress(void *ptr, size_t size) : LoadableDeviceAddress(ptr, size) { SetDevicePtrDeleter(); }
+  AscendDeviceAddress() : DeviceAddress() { SetDevicePtrDeleter(); }
+  explicit AscendDeviceAddress(void *ptr, size_t size) : DeviceAddress(ptr, size) { SetDevicePtrDeleter(); }
   explicit AscendDeviceAddress(void *ptr, size_t size, const std::string &device_name, uint32_t device_id)
-      : LoadableDeviceAddress(ptr, size, device_name, device_id) {
+      : DeviceAddress(ptr, size, device_name, device_id) {
     SetDevicePtrDeleter();
   }
   explicit AscendDeviceAddress(void *ptr, size_t size, const std::string &format, TypeId type_id,
                                const std::string &device_name, uint32_t device_id)
-      : LoadableDeviceAddress(ptr, size, format, type_id, device_name, device_id) {
+      : DeviceAddress(ptr, size, format, type_id, device_name, device_id) {
     SetDevicePtrDeleter();
   }
   AscendDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector, const Format &format, TypeId type_id,
                       const std::string &device_name, uint32_t device_id, uint32_t stream_id)
-      : LoadableDeviceAddress(ptr, size, shape_vector, format, type_id, device_name, device_id, stream_id) {
+      : DeviceAddress(ptr, size, shape_vector, format, type_id, device_name, device_id, stream_id) {
     SetDevicePtrDeleter();
   }
   explicit AscendDeviceAddress(void *ptr, size_t size, const std::string &format, TypeId type_id,
                                const KernelWithIndex &node_index, const std::string &device_name, uint32_t device_id)
-      : LoadableDeviceAddress(ptr, size, format, type_id, node_index, device_name, device_id) {
+      : DeviceAddress(ptr, size, format, type_id, node_index, device_name, device_id) {
     SetDevicePtrDeleter();
   }
   explicit AscendDeviceAddress(void *ptr, size_t size, const std::string &format, TypeId type_id)
-      : LoadableDeviceAddress(ptr, size, format, type_id) {
+      : DeviceAddress(ptr, size, format, type_id) {
     SetDevicePtrDeleter();
   }
-  ~AscendDeviceAddress() override;
+  ~AscendDeviceAddress() override = default;
 
   DeviceAddressPtr CloneDeviceAddress() override;
 
@@ -112,13 +111,6 @@ class ASCEND_RES_MANAGER_EXPORT AscendDeviceAddress : public LoadableDeviceAddre
   // Asynchronously copy device memory to host side.
   bool AsyncDeviceToHost(const ShapeVector &shape, size_t size, TypeId type, void *host_ptr, size_t stream_id) const;
 
-  bool CopyDeviceToHost(void *dst, const void *src, size_t size, bool async, size_t stream_id) const override;
-  bool CopyHostToDevice(void *dst, const void *src, size_t size, bool async, size_t stream_id) const override;
-
-  bool DeviceToFileDirectly(void *ptr, size_t size, const std::string &file_name, size_t stream_id) const override;
-
-  bool FileToDeviceDirectly(void *ptr, size_t size, const std::string &file_name, size_t stream_id) const override;
-
   void DeviceToDevice(void *dst, void *src, size_t size, size_t stream_id) const;
   bool AsyncDeviceToDevice(const ShapeVector &shape, size_t size, TypeId type, const void *src_ptr,
                            const std::string &format, size_t stream_id = SIZE_MAX) const override;
@@ -150,10 +142,6 @@ class ASCEND_RES_MANAGER_EXPORT AscendDeviceAddress : public LoadableDeviceAddre
   void BindDevice() const;
   void CopyHostToDevice(const void *src, uint64_t size, const tensor::TensorDataPtr &tensor_data) const;
   void CopyDeviceToHost(void *dst, uint64_t size, bool sync_on_demand = false) const;
-  bool CopyBetweenHostDevice(void *dst, const void *src, size_t size, bool async, size_t stream_id,
-                             bool host_to_device) const;
-  bool CopyBetweenFileDeviceDirectly(void *ptr, const std::string &file_name, size_t size, size_t stream_id,
-                                     bool file_to_device) const;
 
   // The 'const' for this class is irrational, but I abide by it
   int64_t GetGroupsWithCache() const;

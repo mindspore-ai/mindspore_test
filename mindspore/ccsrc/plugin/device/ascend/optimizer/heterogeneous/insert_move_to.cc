@@ -30,11 +30,6 @@ namespace opt {
 constexpr auto kParamterDiskUserDataName = "parameter_device";
 
 bool InsertMoveTo::Run(const FuncGraphPtr &graph) {
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  if (!ms_context->get_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD)) {
-    return false;
-  }
   Init(graph);
   // 1. Insert MoveTo and MoveAssign for offloaded parameter.
   bool changed = HandleParameter();

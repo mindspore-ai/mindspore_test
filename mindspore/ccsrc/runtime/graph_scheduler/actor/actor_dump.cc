@@ -454,13 +454,6 @@ void DumpKernelActorV2(const KernelRunner *actor, std::ofstream &ofs) {
   }
 }
 
-void DumpSwapActor(const MemorySwapActor *actor, std::ofstream &ofs) {
-  MS_EXCEPTION_IF_NULL(actor);
-  ofs << "\tactor_name:" << actor->GetAID().Name() << "\tactor_id:" << actor->actor_id() << "\n";
-  DumpAbstractActor(actor, ofs);
-  ofs << "\n";
-}
-
 void DumpSuperKernelActor(const SuperKernelActor *actor, std::ofstream &ofs) {
   MS_EXCEPTION_IF_NULL(actor);
   ofs << "\tactor_name:" << actor->GetAID().Name() << "\tactor_id:" << actor->actor_id() << "\n";
@@ -978,21 +971,6 @@ void DumpKernelActors(const std::vector<KernelActorPtr> &actors, std::ofstream &
   for (const auto &kernel_actor : actors) {
     DumpKernelActor(kernel_actor.get(), ofs);
     ofs << "\n";
-  }
-}
-
-void DumpSwapActors(const std::vector<std::vector<MemSwapActorPtr>> &actors, std::ofstream &ofs) {
-  size_t swap_actor_num = 0;
-  (void)std::for_each(actors.cbegin(), actors.cend(),
-                      [&swap_actor_num](const std::vector<MemSwapActorPtr> &actor) { swap_actor_num += actor.size(); });
-  ofs << "\n\n[Swap actors:" << swap_actor_num << "]\n";
-  for (const auto &as : actors) {
-    for (const auto &swap_actor : as) {
-      if (swap_actor == nullptr) {
-        continue;
-      }
-      DumpSwapActor(swap_actor.get(), ofs);
-    }
   }
 }
 
