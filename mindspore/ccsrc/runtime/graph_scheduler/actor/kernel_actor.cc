@@ -1178,6 +1178,8 @@ void KernelActor::CopyParameterDeviceTensor(KernelTensorPtr kernel_tensor, size_
     return;
   }
 
+  uint64_t start_time = 0;
+  PROFILER_START(start_time);
   if (!WaitRuntimePipelineFinish(context, GetAID().Name())) {
     MS_LOG(INFO) << "Run failed and early stop for kernel: " << kernel_->fullname_with_scope();
     return;
@@ -1269,6 +1271,8 @@ void KernelActor::CopyParameterDeviceTensor(KernelTensorPtr kernel_tensor, size_
   if (modifiable_ref_input_indexes_.count(input_index) > 0) {
     UpdateDeviceTensorCopyStore(new_device_tensor.get(), device_tensor.get(), input_index);
   }
+  PROFILER_END(start_time, runtime::ProfilerModule::kKernel, runtime::ProfilerEvent::kPreLaunch,
+               "CopyParameterDeviceTensor", false);
 }
 
 void KernelActor::UpdateInputDeviceTensor(const OpData<KernelTensor> *input_data,

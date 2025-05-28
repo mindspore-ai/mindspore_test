@@ -320,10 +320,12 @@ bool CheckInputOptimizeCondition(const GraphCompilerInfo &graph_compiler_info) {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   if (!ms_context->IsKByKExecutorMode()) {
+    MS_LOG(DEBUG) << "Context is not kbk executor mode, enable input optimize failed.";
     return false;
   }
 
   if (ms_context->get_param<bool>(MS_ENV_FLATTEN_WEIGHT)) {
+    MS_LOG(DEBUG) << "Flatten weight is not supported, enable input optimize failed.";
     return false;
   }
 
@@ -331,6 +333,7 @@ bool CheckInputOptimizeCondition(const GraphCompilerInfo &graph_compiler_info) {
     MS_EXCEPTION_IF_NULL(graph);
     // Do not support any type currently.
     if (graph->is_any_type_input() || !graph->enable_input_optimize()) {
+      MS_LOG(DEBUG) << "Any type is not supported, enable input optimize failed.";
       return false;
     }
   }
@@ -360,6 +363,7 @@ bool CheckInputOptimizeCondition(const GraphCompilerInfo &graph_compiler_info) {
           auto kernel = node->cast<CNodePtr>();
           return IsKernelNotSupportKbkSubGraphMode(kernel);
         })) {
+      MS_LOG(DEBUG) << "Summary node is not supported, enable input optimize failed.";
       return false;
     }
   }
@@ -3980,7 +3984,9 @@ void GraphScheduler::DumpDeviceTensorStore(const GraphCompilerInfo &graph_compil
     }
   }
 
-  ofs << "[Graph parameter stores]\n";
+  if (EnableInputOptimize()) {
+    ofs << "[Graph parameter stores]\n";
+  }
   for (const auto &graph : graph_compiler_info.graphs_) {
     MS_EXCEPTION_IF_NULL(graph);
     ofs << "\tgraph_id:" << graph->graph_id() << "\tis_graph_run_mode:" << graph->is_graph_run_mode()
