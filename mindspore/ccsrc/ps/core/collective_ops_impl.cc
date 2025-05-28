@@ -379,6 +379,7 @@ bool CollectiveOpsImpl::RingAllGather(const void *sendbuff, void *recvbuff, size
       MS_LOG(ERROR) << "CollectiveWait " << recv_req_id << " failed.";
       return false;
     }
+    MS_EXCEPTION_IF_NULL(recv_str);
     ret = Memcpy(recv_chunk, chunk_sizes[recv_chunk_index] * sizeof(T), recv_str->data(), recv_str->size());
     if (ret != EOK) {
       MS_LOG(ERROR) << "Memcpy error, errorno(" << ret << ")"
@@ -439,6 +440,7 @@ bool CollectiveOpsImpl::Broadcast(const void *sendbuff, void *recvbuff, size_t c
       MS_LOG(ERROR) << "CollectiveWait " << recv_req_id << " failed.";
       return false;
     }
+    MS_EXCEPTION_IF_NULL(recv_str);
     int ret = Memcpy(recvbuff, count * sizeof(T), recv_str->data(), recv_str->size());
     if (ret != EOK) {
       MS_LOG(ERROR) << "Memcpy error, errorno(" << ret << ")"
@@ -544,6 +546,7 @@ bool CollectiveOpsImpl::Gather(const void *sendbuff, void *recvbuff, size_t coun
           MS_LOG(ERROR) << "CollectiveWait " << recv_req_id << " failed.";
           return false;
         }
+        MS_EXCEPTION_IF_NULL(recv_str);
         int ret = Memcpy(recv_chunk, count * sizeof(T), recv_str->data(), recv_str->size());
         if (ret != EOK) {
           MS_LOG(ERROR) << "Memcpy error, errorno(" << ret << ")"
@@ -612,6 +615,7 @@ bool CollectiveOpsImpl::Scatter(const void *sendbuff, void *recvbuff, size_t cou
       MS_LOG(ERROR) << "CollectiveWait " << recv_req_id << " failed.";
       return false;
     }
+    MS_EXCEPTION_IF_NULL(recv_str);
     int ret = Memcpy(recvbuff, count * sizeof(T), recv_str->data(), recv_str->size());
     if (ret != EOK) {
       MS_LOG(ERROR) << "Memcpy error, errorno(" << ret << ")"
