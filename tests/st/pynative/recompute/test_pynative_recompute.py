@@ -386,7 +386,7 @@ class GradWrap(Cell):
 
 
 @arg_mark(plat_marks=['platform_gpu'],
-          level_mark='level1',
+          level_mark='level0',
           card_mark='onecard',
           essential_mark='essential')
 def test_pynative_resnet50_recompute_with_hook_and_mixed_precision():
@@ -395,7 +395,7 @@ def test_pynative_resnet50_recompute_with_hook_and_mixed_precision():
     Description: Each block is set recompute by the cell recompute api.
     Expectation: Run successfully and the memory usage is reduced.
     """
-    context.set_context(mode=context.PYNATIVE_MODE, device_target="GPU")
+    context.set_context(mode=context.PYNATIVE_MODE, device_target="GPU", max_device_memory="7GB")
 
     batch_size = 32
     num_classes = 10
