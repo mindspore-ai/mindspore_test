@@ -47,6 +47,9 @@ static AbstractBasePtr MakeAbstract(const ShapeVector &shape, const TypeId type,
   if (value == mindspore::kNone) {
     return std::make_shared<abstract::AbstractNone>();
   }
+  if (shape.empty() && value != nullptr && value != kValueAny) {
+    return std::make_shared<abstract::AbstractScalar>(value);
+  }
   auto abs = abstract::MakeAbstract(shape, type);
   if (value) {
     abs->set_value(value);
@@ -267,30 +270,32 @@ TEST_P(GeneralInferTest, test_infer) {
   const auto &expect_types = ToTypeName(param.expected_output.types);
   const bool expect_throw = param.expect_throw;
 
+  const auto prim = std::make_shared<Primitive>(op_type);
+  const auto op_def = GetOpDef(op_type);
+  ASSERT_NE(op_def, nullptr) << "OpDef not defined for " << op_type;
+  ASSERT_NO_THROW(process_params(arg_params, op_def)) << "Param check failed";
+
   // MetaOp infer test
   bool is_meta_impl = prim::RegMetaImplFactory::GetInstance().IsMetaImpl(op_type);
   if (is_meta_impl) {
     UT::InitPythonPath();  // required by RunMetaImpl();
     const auto &abstracts = params_to_abstracts(arg_params);
-    const auto &out_abs = prim::RunMetaImpl(abstracts, op_type);
+    const auto &out_abs = prim::RunMetaImpl(abstracts, prim);
     ASSERT_NE(out_abs, nullptr) << "MetaImpl returns nullptr as output for" << op_type;
     ShapeArray infer_shapes;
     std::vector<TypeId> infer_types;
     get_shape_and_type_from_abs(out_abs, infer_shapes, infer_types, op_type);
     EXPECT_EQ(expect_shapes, infer_shapes) << "Inferred wrong shape for MetaOp infer.";
     EXPECT_EQ(expect_types, ToTypeName(infer_types)) << "Inferred wrong type for MetaOp infer.";
-    GTEST_SKIP() << "MetaOp infer test case end.";
+    SUCCEED() << "MetaOp infer test case end.";
+    return;
   }
 
-  const auto prim = std::make_shared<Primitive>(op_type);
-  const auto op_def = GetOpDef(op_type);
-  ASSERT_NE(op_def, nullptr) << "OpDef not defined for " << op_type;
   const auto &op_func = op_def->func_impl_;
   ASSERT_TRUE(op_func.GeneralInferRegistered()) << "GeneralInfer not registered for " << op_type;
 
   InferInfoPtrList value_infos;
   InferInfoPtrList abstract_infos;
-  ASSERT_NO_THROW(process_params(arg_params, op_def)) << "Param check failed";
   bool is_dynamic = is_dynamic_case(arg_params);
   ASSERT_NO_THROW(params_to_infos(arg_params, op_def, value_infos, abstract_infos, is_dynamic))
     << "Convert param to InferInfo failed.";
