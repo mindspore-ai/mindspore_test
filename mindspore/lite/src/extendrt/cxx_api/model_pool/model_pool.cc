@@ -750,15 +750,14 @@ Status ModelPool::CreateWorkers(const char *graph_buf, size_t size, const ModelP
                  << " | worker bind core list: " << model_pool_config[i]->context->GetThreadAffinityCoreList()
                  << " | worker thread num: " << model_pool_config[i]->context->GetThreadNum()
                  << " | inter op parallel num: " << model_pool_config[i]->context->GetInterOpParallelNum();
-    if (i == 0) {
-      model_worker->InitModelWorker(graph_buf, size, model_pool_config[i], predict_task_queue_, &create_worker_success,
-                                    model_type);
-      thread_ = std::thread(&ModelWorker::Run, model_worker);
-      model_worker->WaitCreateWorkerDone();
-    } else {
-      InitWorkerManager::GetInstance()->InitModelWorker(model_worker, graph_buf, size, model_pool_config[i],
-                                                        predict_task_queue_, &create_worker_success, model_type);
+    model_worker->InitModelWorker(graph_buf, size, model_pool_config[i], predict_task_queue_, &create_worker_success,
+                                  model_type);
+    if (!create_worker_success) {
+      MS_LOG(ERROR) << "Create work init failed.";
+      return kLiteError;
     }
+    threads_.push_back(std::thread(&ModelWorker::Run, model_worker));
+    model_worker->WaitCreateWorkerDone();
     if (all_model_workers_.find(task_queue_id) != all_model_workers_.end()) {
       all_model_workers_[task_queue_id].push_back(model_worker);
     } else {
@@ -1173,8 +1172,10 @@ ModelPool::~ModelPool() {
       }
     }
   }
-  if (thread_.joinable()) {
-    thread_.join();
+  for (size_t i = 0; i < threads_.size(); i++) {
+    if (threads_[i].joinable()) {
+      threads_[i].join();
+    }
   }
   MS_LOG(INFO) << "delete model pool task.";
   if (tasks_ != nullptr) {
