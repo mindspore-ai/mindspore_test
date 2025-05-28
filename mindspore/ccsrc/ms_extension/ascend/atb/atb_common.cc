@@ -16,7 +16,6 @@
 
 #include "ms_extension/ascend/atb/atb_common.h"
 #include <map>
-#include <unordered_map>
 #include "ms_extension/common/tensor.h"
 #include "ir/tensor.h"
 
@@ -48,36 +47,6 @@ atb::Tensor AtbTensor(const ms::Tensor &t) {
   return a;
 }
 
-class AtbContextManager {
- public:
-  static AtbContextManager &GetInstance() {
-    static AtbContextManager instance;
-    return instance;
-  }
-  atb::Context *GetContext(void *stream) {
-    auto &ctx = ctx_map_[stream];
-    if (ctx == nullptr) {
-      auto st = atb::CreateContext(&ctx);
-      CHECK_ATB_RET("", st, CreateContext);
-      st = ctx->SetExecuteStream(static_cast<aclrtStream>(stream));
-      CHECK_ATB_RET("", st, SetExecuteStream);
-    }
-    return ctx;
-  }
-  ~AtbContextManager() {
-    for (auto &iter : ctx_map_) {
-      auto st = atb::DestroyContext(iter.second);
-      CHECK_ATB_RET("", st, DestroyContext);
-    }
-  }
-  AtbContextManager(const AtbContextManager &) = delete;
-  AtbContextManager &operator=(const AtbContextManager &) = delete;
-
- private:
-  AtbContextManager() = default;
-  std::unordered_map<void *, atb::Context *> ctx_map_;
-};
-
 size_t AtbOpRunner::CalcWorkspace() {
   for (size_t i = 0; i < _inputs_.size(); i++) {
     variant_pack_.inTensors.push_back(_inputs_[i].is_defined() ? AtbTensor(_inputs_[i]) : atb::Tensor());
@@ -85,7 +54,7 @@ size_t AtbOpRunner::CalcWorkspace() {
   for (size_t i = 0; i < _outputs_.size(); i++) {
     variant_pack_.outTensors.push_back(AtbTensor(_outputs_[i]));
   }
-  context_ = AtbContextManager::GetInstance().GetContext(stream());
+  context_ = atb::AtbContextManager::GetInstance().GetContext(stream());
   MS_EXCEPTION_IF_NULL(context_);
 
   workspace_size_ = 0;

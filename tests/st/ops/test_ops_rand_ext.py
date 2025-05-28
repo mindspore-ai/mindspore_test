@@ -58,7 +58,7 @@ def run_randint_like_default_low_overload(tensor, high, dtype=None):
     return randint_like_ext(tensor, high, dtype=dtype)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['pynative', 'kbk'])
 def test_rand_call(mode):
     """
