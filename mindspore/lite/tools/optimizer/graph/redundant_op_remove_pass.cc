@@ -65,6 +65,7 @@ int ReplaceUpdateStateWithMonad(const FuncGraphPtr &func_graph, const CNodePtr &
   }
   if (utils::isa<ValueNode>(first_input)) {
     auto value_node = first_input->cast<ValueNodePtr>();
+    MS_CHECK_TRUE_RET(value_node != nullptr, RET_ERROR);
     MS_CHECK_TRUE_RET(value_node->value() != nullptr, RET_ERROR);
     if (utils::isa<Monad>(value_node->value())) {
       monad_input = first_input;
@@ -72,6 +73,7 @@ int ReplaceUpdateStateWithMonad(const FuncGraphPtr &func_graph, const CNodePtr &
   }
   if (utils::isa<ValueNode>(second_input)) {
     auto value_node = second_input->cast<ValueNodePtr>();
+    MS_CHECK_TRUE_RET(value_node != nullptr, RET_ERROR);
     MS_CHECK_TRUE_RET(value_node->value() != nullptr, RET_ERROR);
     if (utils::isa<Monad>(value_node->value())) {
       monad_input = second_input;
@@ -95,12 +97,14 @@ int ProcessInputIsMonad(const FuncGraphPtr &func_graph, const CNodePtr &cnode) {
   auto first_input = cnode->input(1);
   MS_CHECK_TRUE_MSG(first_input != nullptr, RET_ERROR, "first_input is nullptr!");
   if (CheckPrimitiveType(first_input, prim::kPrimTranspose)) {
+    MS_CHECK_TRUE_MSG(cnode->input(1)->cast<CNodePtr>() != nullptr, RET_ERROR, "cnode input is nullptr!");
     first_input = cnode->input(1)->cast<CNodePtr>()->input(1);
     MS_CHECK_TRUE_MSG(first_input != nullptr, RET_ERROR, "first_input is nullptr");
   }
   auto second_input = cnode->input(kInputIndexTwo);
   MS_CHECK_TRUE_MSG(second_input != nullptr, RET_ERROR, "second_input is nullptr!");
   if (CheckPrimitiveType(second_input, prim::kPrimTranspose)) {
+    MS_CHECK_TRUE_MSG(cnode->input(kInputIndexTwo)->cast<CNodePtr>() != nullptr, RET_ERROR, "cnode input is nullptr!");
     second_input = cnode->input(kInputIndexTwo)->cast<CNodePtr>()->input(1);
     MS_CHECK_TRUE_MSG(second_input != nullptr, RET_ERROR, "second_input is nullptr");
   }
