@@ -14,38 +14,16 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_FUSED_ADD_TOPK_DIV_H_
-#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_FUSED_ADD_TOPK_DIV_H_
-#include <map>
-#include <vector>
-#include <memory>
+#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_MOE_DISTRIBUTE_COMBINE_H_
+#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_MOE_DISTRIBUTE_COMBINE_H_
 
-#include "ops/base_operator.h"
-#include "mindapi/base/types.h"
-#include "ops/primitive_c.h"
-#include "abstract/abstract_value.h"
-#include "mindspore/ops/op_def/op_name.h"
+#include <vector>
+
 #include "ops/ops_func_impl/op_func_impl.h"
 
 namespace mindspore {
 namespace ops {
-enum FusedAddTopKDivInputIndex : size_t {
-  kFusedAddTopKDivXIndex = 0,
-  kFusedAddTopKDivAddNumIndex,
-  kFusedAddTopKDivGroupNumIndex,
-  kFusedAddTopKDivGroupTopKIndex,
-  kFusedAddTopKDivNIndex,
-  kFusedAddTopKDivKIndex,
-  kFusedAddTopKDivActivateTypeIndex,
-  kFusedAddTopKDivIsNormIndex,
-  kFusedAddTopKDivScaleIndex,
-  kFusedAddTopKDivMappingNumIndex,
-  kFusedAddTopKDivMappingTableIndex,
-  kFusedAddTopKDivEnableExpertMappingIndex,
-  kFusedAddTopKDivInputsNum,
-};
-
-class OPS_API FusedAddTopKDivFuncImpl : public OpFuncImpl {
+class OPS_API MoeDistributeCombineFuncImpl : public OpFuncImpl {
  public:
   BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
   TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
@@ -53,4 +31,4 @@ class OPS_API FusedAddTopKDivFuncImpl : public OpFuncImpl {
 }  // namespace ops
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_FUSED_ADD_TOPK_DIV_H_
+#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_MOE_DISTRIBUTE_COMBINE_H_
