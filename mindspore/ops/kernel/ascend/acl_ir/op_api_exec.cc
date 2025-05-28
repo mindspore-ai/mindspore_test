@@ -35,6 +35,7 @@ static std::mutex init_mutex;
 static std::shared_mutex rw_opapi_mutex;
 static bool aclnn_init = false;
 OPS_ASCEND_API std::vector<std::pair<void *, std::string>> opapi_lib_handle;
+OPS_ASCEND_API std::set<std::string> sync_launch_api = {};
 
 void *GetOpApiFunc(const char *api_name) {
   static thread_local std::unordered_map<std::string, void *> opapi_cache;

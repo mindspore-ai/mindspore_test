@@ -58,11 +58,11 @@ using CacheTuple = std::tuple<uint64_t, aclOpExecutor *, ProcessCache, size_t>;
     auto iter = hash_map_.find(hash_id_##FUNC_NAME##_);                                                              \
     size_t cur_workspace = 0;                                                                                        \
     if (iter != hash_map_.end()) {                                                                                   \
-      MS_LOG(DEBUG) << "op " << op_type_##FUNC_NAME##_ << " hit cache with hash id: " << hash_id_##FUNC_NAME##_;     \
+      MS_LOG(INFO) << "Op " << op_type_##FUNC_NAME##_ << " hit cache with hash id: " << hash_id_##FUNC_NAME##_;      \
       hash_cache_.splice(hash_cache_.begin(), hash_cache_, iter->second);                                            \
       cur_workspace = std::get<3>(hash_cache_.front());                                                              \
     } else {                                                                                                         \
-      MS_LOG(DEBUG) << "op " << op_type_##FUNC_NAME##_ << " miss cache with hash id: " << hash_id_##FUNC_NAME##_;    \
+      MS_LOG(INFO) << "Op " << op_type_##FUNC_NAME##_ << " miss cache with hash id: " << hash_id_##FUNC_NAME##_;     \
       auto [workspace, executor, cache, fail_cache] = GEN_EXECUTOR_FOR_RESIZE(op_type_##FUNC_NAME##_, args...);      \
       cur_workspace = workspace;                                                                                     \
       if (!fail_cache) {                                                                                             \
@@ -132,11 +132,11 @@ using CacheTuple = std::tuple<uint64_t, aclOpExecutor *, ProcessCache, size_t>;
     size_t cur_workspace = 0;                                                                                   \
     auto iter = hash_map_.find(hash_id_);                                                                       \
     if (iter != hash_map_.end()) {                                                                              \
-      MS_LOG(DEBUG) << "op " << op_type_ << " hit cache with hash id: " << hash_id_;                            \
+      MS_LOG(INFO) << "op " << op_type_ << " hit cache with hash id: " << hash_id_;                             \
       hash_cache_.splice(hash_cache_.begin(), hash_cache_, iter->second);                                       \
       cur_workspace = std::get<3>(hash_cache_.front());                                                         \
     } else {                                                                                                    \
-      MS_LOG(DEBUG) << "op " << op_type_ << " miss cache with hash id: " << hash_id_;                           \
+      MS_LOG(INFO) << "op " << op_type_ << " miss cache with hash id: " << hash_id_;                            \
       auto [workspace, executor, cache, fail_cache] = GEN_EXECUTOR_FOR_RESIZE(op_type_, args...);               \
       cur_workspace = workspace;                                                                                \
       if (!fail_cache) {                                                                                        \
@@ -196,11 +196,27 @@ using CacheTuple = std::tuple<uint64_t, aclOpExecutor *, ProcessCache, size_t>;
   }                                                                                                             \
                                                                                                                 \
   template <typename... Args>                                                                                   \
-  void RunOpSync(void *stream_ptr, const std::vector<KernelTensor *> &workspace, const Args &... args) {        \
-    aclOpExecutor *executor = executor_;                                                                        \
-    if (executor == nullptr) {                                                                                  \
-      std::tie(executor, std::ignore) = GetExecutor(args...);                                                   \
+  std::tuple<aclOpExecutor *, ProcessCache, std::function<void()>> GetSyncExecutor(const Args &... args) {      \
+    auto iter = hash_map_.find(hash_id_);                                                                       \
+    if (capacity_ == 0 || hash_id_ == 0 || iter == hash_map_.end()) {                                           \
+      aclOpExecutor *executor;                                                                                  \
+      ProcessCache cache_func_ptr;                                                                              \
+      std::function<void()> release_func;                                                                       \
+      std::tie(std::ignore, executor, cache_func_ptr, release_func) = GEN_EXECUTOR(op_type_, args...);          \
+      return std::make_tuple(executor, cache_func_ptr, release_func);                                           \
     }                                                                                                           \
+    const auto &cur_run = *(iter->second);                                                                      \
+    const auto &cache_func_ptr = std::get<2>(cur_run);                                                          \
+    UPDATE_TENSOR_FOR_LAUNCH(cache_func_ptr, args...);                                                          \
+    const auto &executor = std::get<1>(cur_run);                                                                \
+    return std::make_tuple(executor, cache_func_ptr, nullptr);                                                  \
+  }                                                                                                             \
+                                                                                                                \
+  template <typename... Args>                                                                                   \
+  std::vector<ShapeVector> RunOpSync(void *stream_ptr, const std::vector<KernelTensor *> &workspace,            \
+                                     const Args &... args) {                                                    \
+    REGISTER_SYNC_OP(op_type_);                                                                                 \
+    auto [executor, cache_func_ptr, release_func] = GetSyncExecutor(args...);                                   \
     if (workspace_size_list_.empty()) {                                                                         \
       RUN_OP_API_SYNC(op_type_, nullptr, 0, executor, stream_ptr);                                              \
     } else {                                                                                                    \
@@ -214,6 +230,11 @@ using CacheTuple = std::tuple<uint64_t, aclOpExecutor *, ProcessCache, size_t>;
       }                                                                                                         \
       RUN_OP_API_SYNC(op_type_, workspace_tensor->device_ptr(), workspace_size_list_[0], executor, stream_ptr); \
     }                                                                                                           \
+    const auto &all_acl_tensor = cache_func_ptr(device::ascend::ProcessCacheType::kGetOutputShape, {});         \
+    if (release_func) {                                                                                         \
+      release_func();                                                                                           \
+    }                                                                                                           \
+    return all_acl_tensor;                                                                                      \
   }
 
 class EmptyKernelTensor {
