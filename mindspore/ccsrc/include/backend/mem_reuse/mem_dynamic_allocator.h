@@ -198,8 +198,7 @@ class BACKEND_EXPORT DynamicMemPoolBestFit : virtual public DynamicMemPool {
   void SetMemAllocUintSize(size_t common_size, size_t persist_size = kDynamicMemAllocUnitSize);
 
   // Extract detailed block information
-  std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>> ExtractBlocksListInfo(
-    const MemStatusManagerPtr &mem_mng) const;
+  DeviceMemInfo ExtractBlocksListInfo(const MemStatusManagerPtr &mem_mng) const;
 
   // The statistics information.
   size_t TotalMemStatistics() const override;
@@ -211,14 +210,11 @@ class BACKEND_EXPORT DynamicMemPoolBestFit : virtual public DynamicMemPool {
   size_t MaxMemAllocatedStatistics() const override;
   size_t MaxMemReservedStatistics() const override;
   size_t ActualPeakStatistics() const override;
-  std::unordered_map<std::string, std::size_t> BlockCountsStatistics() const override;
-  std::unordered_map<std::string, std::size_t> BlockUnitSizeStatistics() const override;
-  std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>> CommonMemBlocksInfoStatistics()
-    const override;
-  std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>> PersistentMemBlocksInfoStatistics()
-    const override;
+  std::map<std::string, std::size_t> GetBlockStatistics() const override;
+  BlocksInfoPair GetBlocksInfo() const override;
   void ResetMaxMemReserved() override;
   void ResetMaxMemAllocated() override;
+  void ResetPeakMemoryStats() override;
 
   // Display the brief state information of memory block and memory buf.
   void DumpDynamicMemPoolStateInfo() override;

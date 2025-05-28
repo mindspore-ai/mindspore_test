@@ -38,7 +38,6 @@ struct MemUceInfo {
   size_t retSize = 0;
 };
 
-using DeviceMemInfo = std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>;
 class ASCEND_RES_MANAGER_EXPORT AscendResManager : public HalResBase {
  public:
   explicit AscendResManager(const ResKey &res_key) : HalResBase(res_key) { Initialize(); }
@@ -91,14 +90,11 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public HalResBase {
   size_t GetTotalEagerFreeMemStatistics() const override;
   size_t GetUsedMemPeakStatistics() const override;
   size_t GetReservedMemPeakStatistics() const override;
-  std::unordered_map<std::string, std::size_t> GetBlockCountsStatistics() const override;
-  std::unordered_map<std::string, std::size_t> GetBlockUnitSizeStatistics() const override;
-  std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>> GetCommonMemBlocksInfoStatistics()
-    const override;
-  std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>
-  GetPersistentMemBlocksInfoStatistics() const override;
+  std::map<std::string, std::size_t> GetBlockStatistics() const override;
+  BlocksInfoPair GetBlocksInfo() const override;
   void ResetMaxMemoryReserved() override;
   void ResetMaxMemoryAllocated() override;
+  void ResetPeakMemoryStats() override;
 
   size_t EmptyCache() override;
 

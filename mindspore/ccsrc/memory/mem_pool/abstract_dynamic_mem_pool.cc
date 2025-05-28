@@ -1145,10 +1145,11 @@ size_t AbstractDynamicMemPool::ActualPeakStatistics() const {
   return peak_size;
 }
 
-std::unordered_map<std::string, std::size_t> AbstractDynamicMemPool::BlockCountsStatistics() const {
+std::map<std::string, std::size_t> AbstractDynamicMemPool::GetBlockStatistics() const {
   LockGuard lock(lock_);
   size_t persistent_block_count = 0;
   size_t common_block_count = 0;
+
   for (const auto &iter : stream_id_allocators_) {
     if (iter.first.first) {
       persistent_block_count += iter.second->mem_blocks_.size();
@@ -1156,54 +1157,38 @@ std::unordered_map<std::string, std::size_t> AbstractDynamicMemPool::BlockCounts
       common_block_count += iter.second->mem_blocks_.size();
     }
   }
-  std::unordered_map<std::string, size_t> block_counts;
-  block_counts[kPersistentMemPoolType] = persistent_block_count;
-  block_counts[kCommonMemPoolType] = common_block_count;
-  return block_counts;
+  std::map<std::string, size_t> block_stats;
+  block_stats[kPersistentMemPoolCounts] = persistent_block_count;
+  block_stats[kCommonMemPoolCounts] = common_block_count;
+  block_stats[kPersistentMemPoolUnitSize] = persist_unit_size_;
+  block_stats[kCommonMemPoolUnitSize] = common_unit_size_;
+  return block_stats;
 }
 
-std::unordered_map<std::string, std::size_t> AbstractDynamicMemPool::BlockUnitSizeStatistics() const {
+BlocksInfoPair AbstractDynamicMemPool::GetBlocksInfo() const {
   LockGuard lock(lock_);
-  std::unordered_map<std::string, size_t> block_units;
-  block_units[kPersistentMemPoolType] = persist_unit_size_;
-  block_units[kCommonMemPoolType] = common_unit_size_;
-  return block_units;
-}
-
-std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>
-AbstractDynamicMemPool::CommonMemBlocksInfoStatistics() const {
-  LockGuard lock(lock_);
-  std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>> block_infos;
+  DeviceMemInfo common_block_infos;
+  DeviceMemInfo persist_block_infos;
   for (const auto &iter : stream_id_allocators_) {
     if (!iter.first.first) {
       const auto &mem_blocks = iter.second->mem_blocks_;
       for (const auto mem_block : mem_blocks) {
-        std::unordered_map<std::string, size_t> block_info;
-        block_info[kBlockMemorySize] = mem_block->size_;
-        block_info[kBlockStreamId] = mem_block->stream_id_;
-        block_infos[(std::string *)(mem_block->addr_)] = block_info;
+        std::map<std::string, size_t> common_block_info;
+        common_block_info[kBlockMemorySize] = mem_block->size_;
+        common_block_info[kBlockStreamId] = mem_block->stream_id_;
+        common_block_infos[(std::string *)(mem_block->addr_)] = common_block_info;
       }
-    }
-  }
-  return block_infos;
-}
-
-std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>
-AbstractDynamicMemPool::PersistentMemBlocksInfoStatistics() const {
-  LockGuard lock(lock_);
-  std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>> block_infos;
-  for (const auto &iter : stream_id_allocators_) {
-    if (iter.first.first) {
+    } else {
       const auto &mem_blocks = iter.second->mem_blocks_;
       for (const auto mem_block : mem_blocks) {
-        std::unordered_map<std::string, size_t> block_info;
-        block_info[kBlockMemorySize] = mem_block->size_;
-        block_info[kBlockStreamId] = mem_block->stream_id_;
-        block_infos[(std::string *)(mem_block->addr_)] = block_info;
+        std::map<std::string, size_t> persist_block_info;
+        persist_block_info[kBlockMemorySize] = mem_block->size_;
+        persist_block_info[kBlockStreamId] = mem_block->stream_id_;
+        persist_block_infos[(std::string *)(mem_block->addr_)] = persist_block_info;
       }
     }
   }
-  return block_infos;
+  return std::make_pair(common_block_infos, persist_block_infos);
 }
 
 void AbstractDynamicMemPool::ResetMaxMemReserved() {
@@ -1213,6 +1198,12 @@ void AbstractDynamicMemPool::ResetMaxMemReserved() {
 
 void AbstractDynamicMemPool::ResetMaxMemAllocated() {
   LockGuard lock(lock_);
+  mem_stat_.iter_used_peak_size_ = mem_stat_.used_size_;
+}
+
+void AbstractDynamicMemPool::ResetPeakMemoryStats() {
+  LockGuard lock(lock_);
+  mem_stat_.iter_alloc_peak_size_ = IsEnableVmm() ? GetVmmUsedMemSize() : mem_stat_.alloc_size_;
   mem_stat_.iter_used_peak_size_ = mem_stat_.used_size_;
 }
 

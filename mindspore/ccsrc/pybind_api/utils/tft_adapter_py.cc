@@ -28,7 +28,7 @@ namespace mindspore {
 using DeviceContext = mindspore::device::DeviceContext;
 using DeviceContextPtr = std::shared_ptr<DeviceContext>;
 using DeviceTensorStore = mindspore::runtime::DeviceTensorStore;
-using DeviceMemInfo = std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>;
+using DeviceMemInfo = std::map<device::DeviceMemPtr, std::map<std::string, size_t>>;
 namespace {
 DeviceContextPtr GetDeviceCtx() {
   const auto &device_name = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
@@ -136,8 +136,9 @@ std::string GetUceProcessStrategyForKbk(const DeviceMemInfo &persistent_mem_bloc
 std::string GetUceProcessStrategy() {
   auto device_ctx = GetDeviceCtx();
   MS_EXCEPTION_IF_NULL(device_ctx->device_res_manager_);
-  auto persistent_mem_blocks_info = device_ctx->device_res_manager_->GetPersistentMemBlocksInfoStatistics();
-  auto common_mem_blocks_info = device_ctx->device_res_manager_->GetCommonMemBlocksInfoStatistics();
+  auto mem_block_info_pair = device_ctx->device_res_manager_->GetBlocksInfo();
+  auto common_mem_blocks_info = mem_block_info_pair.first;
+  auto persistent_mem_blocks_info = mem_block_info_pair.second;
   auto mem_uce_addr = device_ctx->device_res_manager_->GetMemUceAddr();
   return GetUceProcessStrategyForKbk(persistent_mem_blocks_info, common_mem_blocks_info, mem_uce_addr);
 }

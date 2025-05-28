@@ -15,11 +15,10 @@
 
 """Hardware memory interfaces."""
 from mindspore._c_expression import _memory_stats, _reset_max_mem_reserved, _reset_max_mem_allocated, _empty_cache, \
-    DeviceContextManager
+    DeviceContextManager, _get_total_reserved_memory, _get_total_allocated_memory, _get_max_reserved_memory, \
+    _get_max_allocated_memory, _reset_peak_memory_stats
 from mindspore import log as logger
-import mindspore as ms
 from .device import _check_inputs_validation, is_initialized
-
 
 function_memory_status = {'memory_stats': False, 'memory_reserved': False, 'max_memory_reserved': False,
                           'empty_cache': False, 'reset_peak_memory_stats': False, 'memory_summary': False,
@@ -98,7 +97,7 @@ def memory_reserved(device_target=None):
             "WARN_DEPRECATED: The usage of mindspore.hal.memory_reserved() is deprecated."
             " Please use mindspore.runtime.memory_reserved()"
         )
-    return _memory_stats(device_target).get("total_reserved_memory", 0)
+    return _get_total_reserved_memory(device_target)
 
 
 @_check_inputs_validation
@@ -132,17 +131,7 @@ def max_memory_reserved(device_target=None):
             "WARN_DEPRECATED: The usage of mindspore.hal.max_memory_reserved() is deprecated."
             " Please use mindspore.runtime.max_memory_reserved()"
         )
-    return _memory_stats(device_target).get("max_reserved_memory", 0)
-
-
-def _is_initialized(device_target):
-    """
-    Returns whether specified backend is initialized.
-    """
-    _device_context = _device_context_mgr.get_device_context(device_target)
-    if _device_context is None:
-        return False
-    return _device_context.initialized()
+    return _get_max_reserved_memory(device_target)
 
 @_check_inputs_validation
 def empty_cache():
@@ -159,11 +148,7 @@ def empty_cache():
     """
     if not function_memory_status['empty_cache']:
         function_memory_status['empty_cache'] = True
-    device_target = ms.context.get_context("device_target")
-    if not _is_initialized(device_target):
-        logger.warning(f"Backend {device_target} is not initialized yet.")
-        return
-    _empty_cache(device_target)
+    _empty_cache()
 
 
 @_check_inputs_validation
@@ -197,8 +182,7 @@ def reset_peak_memory_stats(device_target=None):
             "WARN_DEPRECATED: The usage of mindspore.hal.reset_peak_memory_stats() is deprecated."
             " Please use mindspore.runtime.reset_peak_memory_stats()"
         )
-    _reset_max_mem_reserved(device_target)
-    _reset_max_mem_allocated(device_target)
+    _reset_peak_memory_stats(device_target)
 
 
 @_check_inputs_validation
@@ -288,7 +272,7 @@ def memory_allocated(device_target=None):
             "WARN_DEPRECATED: The usage of mindspore.hal.memory_allocated() is deprecated."
             " Please use mindspore.runtime.memory_allocated()"
         )
-    return _memory_stats(device_target).get("total_allocated_memory", 0)
+    return _get_total_allocated_memory(device_target)
 
 
 @_check_inputs_validation
@@ -322,7 +306,7 @@ def max_memory_allocated(device_target=None):
             "WARN_DEPRECATED: The usage of mindspore.hal.max_memory_allocated() is deprecated."
             " Please use mindspore.runtime.max_memory_allocated()"
         )
-    return _memory_stats(device_target).get("max_allocated_memory", 0)
+    return _get_max_allocated_memory(device_target)
 
 
 @_check_inputs_validation

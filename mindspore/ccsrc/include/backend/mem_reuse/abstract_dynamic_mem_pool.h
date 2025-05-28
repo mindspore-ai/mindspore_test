@@ -372,14 +372,11 @@ class BACKEND_EXPORT AbstractDynamicMemPool : virtual public DynamicMemPool {
   size_t MaxMemAllocatedStatistics() const override;
   size_t MaxMemReservedStatistics() const override;
   size_t ActualPeakStatistics() const override;
-  std::unordered_map<std::string, std::size_t> BlockCountsStatistics() const override;
-  std::unordered_map<std::string, std::size_t> BlockUnitSizeStatistics() const override;
-  std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>> CommonMemBlocksInfoStatistics()
-    const override;
-  std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>> PersistentMemBlocksInfoStatistics()
-    const override;
+  std::map<std::string, std::size_t> GetBlockStatistics() const override;
+  BlocksInfoPair GetBlocksInfo() const override;
   void ResetMaxMemReserved() override;
   void ResetMaxMemAllocated() override;
+  void ResetPeakMemoryStats() override;
 
   const bool IsEnableVmm() const override { return enable_vmm_; }
 

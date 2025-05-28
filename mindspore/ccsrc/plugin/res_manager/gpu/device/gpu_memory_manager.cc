@@ -13,8 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include "plugin/res_manager/gpu/device/gpu_memory_manager.h"
+
+#include <map>
 #include "plugin/res_manager/gpu/device/gpu_memory_allocator.h"
 #include "utils/ms_context.h"
 #include "include/common/utils/convert_utils.h"
@@ -62,20 +63,11 @@ size_t GPUMemoryManager::GetUsedMemPeakStatistics() const {
 size_t GPUMemoryManager::GetReservedMemPeakStatistics() const {
   return GPUMemoryAllocator::GetInstance().MaxMemReservedStatistics();
 }
-std::unordered_map<std::string, std::size_t> GPUMemoryManager::GetBlockCountsStatistics() const {
-  return GPUMemoryAllocator::GetInstance().BlockCountsStatistics();
+std::map<std::string, std::size_t> GPUMemoryManager::GetBlockStatistics() const {
+  return GPUMemoryAllocator::GetInstance().GetBlockStatistics();
 }
-std::unordered_map<std::string, std::size_t> GPUMemoryManager::GetBlockUnitSizeStatistics() const {
-  return GPUMemoryAllocator::GetInstance().BlockUnitSizeStatistics();
-}
-std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>
-GPUMemoryManager::GetCommonMemBlocksInfoStatistics() const {
-  return GPUMemoryAllocator::GetInstance().CommonMemBlocksInfoStatistics();
-}
-std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>
-GPUMemoryManager::GetPersistentMemBlocksInfoStatistics() const {
-  return GPUMemoryAllocator::GetInstance().PersistentMemBlocksInfoStatistics();
-}
+
+BlocksInfoPair GPUMemoryManager::GetBlocksInfo() const { return GPUMemoryAllocator::GetInstance().GetBlocksInfo(); }
 void GPUMemoryManager::ResetMaxMemoryReserved() { GPUMemoryAllocator::GetInstance().ResetMaxMemReserved(); }
 void GPUMemoryManager::ResetMaxMemoryAllocated() { GPUMemoryAllocator::GetInstance().ResetMaxMemAllocated(); }
 
