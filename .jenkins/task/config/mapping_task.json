@@ -46,6 +46,7 @@
     "DIR_ARRAY": [
       "build.bat",
       "CMakeLists.txt",
+      "mindspore/core/CMakeLists.txt",
       "mindspore/core/mindrt/CMakeLists.txt",
       "include/c_api",
       ".gitignore",
@@ -158,6 +159,7 @@
       "build.bat",
       ".gitignore",
       "include/c_api",
+      "mindspore/core/CMakeLists.txt",
       "mindspore/core/mindrt/CMakeLists.txt",
       ".gitattributes",
       "mindspore/lite/include/train/",
@@ -216,6 +218,7 @@
   "Compile_CPU_X86_MacOS": {
     "DIR_ARRAY": [
       "build.sh",
+      "mindspore/core/CMakeLists.txt",
       "CMakeLists.txt",
       ".gitignore",
       "third_party",
@@ -319,6 +322,7 @@
   "Compile_Ascend_ARM_CentOS": {
     "DIR_ARRAY": [
       "version.txt",
+      "mindspore/core/CMakeLists.txt",
       "build.sh",
       "graphengine",
       "mstt",
@@ -465,6 +469,7 @@
   "Compile_GPU_X86_CentOS_Cuda11.6": {
     "DIR_ARRAY": [
       "build.sh",
+      "mindspore/core/CMakeLists.txt",
       "CMakeLists.txt",
       ".gitignore",
       "third_party",
@@ -584,6 +589,7 @@
   "Compile_CPU_X86_CentOS": {
     "DIR_ARRAY": [
       "build.sh",
+      "mindspore/core/CMakeLists.txt",
       "CMakeLists.txt",
       ".gitignore",
       "third_party",
@@ -698,6 +704,7 @@
   "Compile_UT": {
     "DIR_ARRAY": [
       "build.sh",
+      "mindspore/core/CMakeLists.txt",
       "graphengine",
       "mstt",
       "CMakeLists.txt",
@@ -823,6 +830,7 @@
   "Compile_Lite_X86_CLOUD_FUSION_TRITON": {
     "DIR_ARRAY": [
       "build.sh",
+      "mindspore/core/CMakeLists.txt",
       "mindspore/lite/build_lite.sh",
       "graphengine",
       ".gitignore",
@@ -926,6 +934,7 @@
   "Compile_Lite_ARM64_CLOUD_FUSION_TRITON": {
     "DIR_ARRAY": [
       "build.sh",
+      "mindspore/core/CMakeLists.txt",
       "mindspore/lite/build_lite.sh",
       "graphengine",
       ".gitignore",
@@ -1025,6 +1034,7 @@
   "Compile_Lite_Java": {
     "DIR_ARRAY": [
       "build.sh",
+      "mindspore/core/CMakeLists.txt",
       "mindspore/lite/build_lite.sh",
       ".gitignore",
       "cmake",
@@ -1066,6 +1076,7 @@
   "Compile_Lite_ARM64": {
     "DIR_ARRAY": [
       "build.sh",
+      "mindspore/core/CMakeLists.txt",
       "mindspore/lite/build_lite.sh",
       ".gitignore",
       "cmake",
@@ -1120,6 +1131,7 @@
   "Compile_Lite_ARM64_CROP": {
     "DIR_ARRAY": [
       "build.sh",
+      "mindspore/core/CMakeLists.txt",
       "mindspore/lite/build_lite.sh",
       ".gitignore",
       "cmake",
@@ -1163,6 +1175,7 @@
   "Compile_Lite_ARM64_Linux": {
     "DIR_ARRAY": [
       "build.sh",
+      "mindspore/core/CMakeLists.txt",
       "mindspore/lite/build_lite.sh",
       ".gitignore",
       "cmake",
@@ -1233,6 +1246,7 @@
   "Compile_Lite_X86": {
     "DIR_ARRAY": [
       "build.sh",
+      "mindspore/core/CMakeLists.txt",
       "mindspore/lite/build_lite.sh",
       ".gitignore",
       "cmake",
@@ -1330,6 +1344,7 @@
   "Compile_Lite_X86_SSE": {
     "DIR_ARRAY": [
       "build.sh",
+      "mindspore/core/CMakeLists.txt",
       "mindspore/lite/build_lite.sh",
       ".gitignore",
       "cmake",
@@ -1381,6 +1396,7 @@
   "Compile_Lite_X86_AVX": {
     "DIR_ARRAY": [
       "build.sh",
+      "mindspore/core/CMakeLists.txt",
       "mindspore/lite/build_lite.sh",
       ".gitignore",
       "cmake",
@@ -1465,6 +1481,7 @@
   "Compile_Lite_X86_AVX512": {
     "DIR_ARRAY": [
       "build.sh",
+      "mindspore/core/CMakeLists.txt",
       "mindspore/lite/build_lite.sh",
       ".gitignore",
       "cmake",
@@ -1513,6 +1530,7 @@
   "Compile_Lite_X86_ASAN": {
     "DIR_ARRAY": [
       "build.sh",
+      "mindspore/core/CMakeLists.txt",
       "mindspore/lite/build_lite.sh",
       ".gitignore",
       "cmake",
