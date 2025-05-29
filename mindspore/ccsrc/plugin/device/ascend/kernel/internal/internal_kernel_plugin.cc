@@ -94,9 +94,12 @@ IndexTable MlaNzIndicesGetter(const AnfNodePtr &node) {
   return {{{}, {}}, {{}, {}}};
 }
 
+IndexTable QbmmNzIndicesGetter(const AnfNodePtr &node) { return {{{1}, {}}, {{1}, {}}}; }
+
 static std::unordered_map<std::string, GetNzIndicesFunc> kNzIndicesGetterMap = {
   {prim::kPrimGroupedMatmulV4->name(), GroupedMatmulV4NzIndicesGetter},
   {prim::kPrimMla->name(), MlaNzIndicesGetter},
+  {prim::kPrimQuantBatchMatmul->name(), QbmmNzIndicesGetter},
 };
 
 // unordered_map vector<vector<vector<size_t>>> represents:
@@ -340,8 +343,9 @@ bool CheckOpSupprtNzFormatOnly(const bool &enable_internal_op, const std::string
          (op_name == kMatMulOpName || op_name == kQuantLinearSparseName || op_name == kQuantBatchMatmulName);
 }
 
-static void UpdateFormat(const AnfNodePtr &node, std::vector<std::string> *input_formats,
+static bool UpdateFormat(const AnfNodePtr &node, std::vector<std::string> *input_formats,
                          std::vector<std::string> *output_formats) {
+  bool changed = false;
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
   const auto soc_version = context_ptr->ascend_soc_version();
@@ -371,10 +375,17 @@ static void UpdateFormat(const AnfNodePtr &node, std::vector<std::string> *input
       for (const auto &output_idx : output_nz_format_idx) {
         output_formats->at(output_idx) = kOpFormat_FRAC_NZ;
       }
+      changed = true;
       MS_LOG(INFO) << "Trans format to NZ for op in pahse: " << phase << ", " << op_name
                    << ". nz input indices: " << input_nz_format_idx << ", nz output indices: " << output_nz_format_idx;
     }
   } else if (soc_version == kAscendVersion910b || soc_version == kAscendVersion910_93) {
+    static auto nz_ops = "," + common::GetEnv("MS_INTERNAL_ENABLE_NZ_OPS") + ",";
+    if (nz_ops.find("," + op_name + ",") == std::string::npos) {
+      MS_LOG(INFO) << "NZ is not enabled for " << op_name;
+      return changed;
+    }
+
     auto nz_indices_getter = kNzIndicesGetterMap.find(op_name);
     if (nz_indices_getter != kNzIndicesGetterMap.end()) {
       auto input_nz_format_idx = nz_indices_getter->second(node)[phase_idx][0];
@@ -385,10 +396,15 @@ static void UpdateFormat(const AnfNodePtr &node, std::vector<std::string> *input
       for (const auto &output_idx : output_nz_format_idx) {
         output_formats->at(output_idx) = kOpFormat_FRAC_NZ;
       }
+      changed = true;
       MS_LOG(INFO) << "Trans format to NZ for op with new path in pahse: " << phase << ", " << op_name
                    << ". nz input indices: " << input_nz_format_idx << ", nz output indices: " << output_nz_format_idx;
+    } else {
+      MS_LOG(INFO) << "There is no NZ indices for " << op_name;
     }
   }
+
+  return changed;
 }
 
 void InternalKernelPlugin::GetValidKernelBuildInfoWithInternalFormat(const AnfNodePtr &node,
@@ -400,7 +416,10 @@ void InternalKernelPlugin::GetValidKernelBuildInfoWithInternalFormat(const AnfNo
 
   size_t input_num = common::AnfAlgo::GetInputTensorNum(node);
 
-  UpdateFormat(node, input_formats, output_formats);
+  auto changed = UpdateFormat(node, input_formats, output_formats);
+  if (!changed) {
+    return;
+  }
 
   std::vector<size_t> special_inputs;
   std::vector<int64_t> special_format_inputs;
