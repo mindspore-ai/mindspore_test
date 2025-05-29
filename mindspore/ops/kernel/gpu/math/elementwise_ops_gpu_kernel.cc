@@ -304,7 +304,7 @@ bool ElementwiseOpsGpuKernel::BinaryLaunchKernel(const std::vector<kernel::Kerne
 }
 #define MS_ELEWISE_KERNEL_FACTORY_REG_BY_CREATOR(kernel)       \
   MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeGpuKernelMod, kernel, \
-                                   []() { return std::make_shared<ElementwiseOpsGpuKernel>(#kernel); });
+                                   []() { return std::make_shared<ElementwiseOpsGpuKernel>(#kernel); })
 
 MS_ELEWISE_KERNEL_FACTORY_REG_BY_CREATOR(Sin);
 MS_ELEWISE_KERNEL_FACTORY_REG_BY_CREATOR(Cos);

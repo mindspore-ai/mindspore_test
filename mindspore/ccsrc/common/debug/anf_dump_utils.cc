@@ -29,6 +29,7 @@ std::string GetAbstractFuncStr(const abstract::AbstractFunctionPtr &abs) {
   }
   if (abs->isa<abstract::PartialAbstractClosure>()) {
     const auto &abstract_partial_func = abs->cast<abstract::PartialAbstractClosurePtr>();
+    MS_EXCEPTION_IF_NULL(abstract_partial_func);
     const auto &abstract_fn = abstract_partial_func->fn();
     if (abstract_fn->isa<abstract::FuncGraphAbstractClosure>()) {
       const auto &abstract_func_graph = abstract_fn->cast<abstract::FuncGraphAbstractClosurePtr>();

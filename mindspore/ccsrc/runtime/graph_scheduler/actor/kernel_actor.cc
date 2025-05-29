@@ -142,7 +142,7 @@ void AddNodeToGraphTracker(const CNodePtr cnode, const std::string &actor_name) 
     std::unordered_map<std::string, std::string> attrs = {{device::tracker::kGroup, group_name},
                                                           {device::tracker::kCommRank, comm_ranks_str}};
 
-    auto get_rank = [&](const std::string &attr_name) -> uint32_t {
+    auto get_rank = [&cnode, &comm_ranks](const std::string &attr_name) -> uint32_t {
       uint32_t rank_value = std::numeric_limits<uint32_t>::max();
       if (common::AnfAlgo::HasNodeAttr(attr_name, cnode)) {
         int64_t rank_attr = common::AnfAlgo::GetNodeAttr<int64_t>(cnode, attr_name);

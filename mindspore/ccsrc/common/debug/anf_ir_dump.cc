@@ -182,6 +182,7 @@ void GetPrimitiveText(const PrimitivePtr &prim, std::ostringstream &oss) {
   if (prim->isa<prim::DoSignaturePrimitive>()) {
     auto do_signature = dyn_cast<prim::DoSignaturePrimitive>(prim);
     auto &func = do_signature->function();
+    MS_EXCEPTION_IF_NULL(func);
     if (func->isa<Primitive>()) {
       auto sig_prim = dyn_cast<Primitive>(func);
       oss << func->ToString() << sig_prim->GetAttrsText();
@@ -766,6 +767,7 @@ void DumpOperateAttrs(const AnfNodePtr &op, const std::shared_ptr<SubGraphIRInfo
 
   if (IsValueNode<Primitive>(op)) {
     PrimitivePtr primitive = GetValueNode<PrimitivePtr>(op);
+    MS_EXCEPTION_IF_NULL(primitive);
     if (!primitive->instance_name().empty()) {
       gsub->buffer << " {";
       gsub->buffer << "instance name: ";

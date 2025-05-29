@@ -453,7 +453,7 @@ bool Common::CheckIfPrintIrPass(const std::string &pass_name) {
 }
 
 struct GlogLogDirRegister {
-  GlogLogDirRegister() {
+  GlogLogDirRegister() noexcept {
     const char *logtostderr = common::EnvHelper::GetInstance()->GetEnv("GLOG_logtostderr");
     const char *log_dir = common::EnvHelper::GetInstance()->GetEnv("GLOG_log_dir");
     if (logtostderr != nullptr && log_dir != nullptr) {
