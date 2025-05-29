@@ -46,6 +46,69 @@ def test_pyboost_atb_swiglu():
     np.allclose(output.asnumpy(), expect, 1e-3, 1e-3)
 
 
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_pyboost_atb_rope():
+    """
+    Feature: CustomOpBuilder.
+    Description: Custom atb op.
+    Expectation: success.
+    """
+    ms.set_device("Ascend")
+    ntokens = 4
+    head_size = 8
+    hiddenSizeQ = 16
+    hiddenSizeK = 16
+
+    cosCacheNeox = None
+    sinCacheNeox = None
+    cosCache = None
+    sinCache = None
+    sequenceLength = None
+    previousTokenCount = -1
+
+    def run_bencmkark(my_ops, positions, query, key, head_size, cos_sin_cache, is_neox_style):
+        nonlocal cosCacheNeox
+        nonlocal sinCacheNeox
+        nonlocal cosCache
+        nonlocal sinCache
+        nonlocal sequenceLength
+        nonlocal previousTokenCount
+        if cosCache is None or sinCache is None:
+            cosSinChunks = cos_sin_cache.chunk(2, -1)
+            cosCache = cosSinChunks[0].repeat_interleave(2, 1)
+            sinCache = cosSinChunks[1].repeat_interleave(2, 1)
+            cosCacheNeox = cosSinChunks[0].repeat((1, 2))
+            sinCacheNeox = cosSinChunks[1].repeat((1, 2))
+        flatPositions = positions.flatten()
+        currentTokenCount = flatPositions.shape[0]
+        cos = cosCacheNeox.index_select(0, flatPositions) if is_neox_style else cosCache.index_select(0, flatPositions)
+        sin = sinCacheNeox.index_select(0, flatPositions) if is_neox_style else sinCache.index_select(0, flatPositions)
+        if sequenceLength is None or currentTokenCount != previousTokenCount:
+            previousTokenCount = currentTokenCount
+            sequenceLength = ms.Tensor([1], dtype=ms.int32)
+        rotaryCoeff = 2 if is_neox_style else head_size
+        my_ops.rope_native_atb(query, key, cos, sin, sequenceLength, rotaryCoeff)
+
+    my_ops = CustomOpBuilder("atb_rope", "jit_test_files/atb_rope.cpp", enable_atb=True).load()
+    np.random.seed(100)
+    const_positions = ms.Tensor(np.array([0, 2, 4, 6], dtype=np.int32))
+    np_query = np.random.rand(ntokens, hiddenSizeQ).astype(np.float16)
+    np_key = np.random.rand(ntokens, hiddenSizeK).astype(np.float16)
+    const_cos_sin_cache = ms.Tensor(np.random.rand(ntokens * 2, head_size).astype(np.float32))
+
+    run_query = ms.Tensor(np_query)
+    run_key = ms.Tensor(np_key)
+    benchmark_query = ms.Tensor(np_query)
+    benchmark_key = ms.Tensor(np_key)
+
+    my_ops.npu_rope(const_positions, run_query, run_key, head_size, const_cos_sin_cache, False)
+    run_bencmkark(my_ops, const_positions, benchmark_query, benchmark_key, head_size, const_cos_sin_cache, False)
+    my_ops.npu_rope(const_positions, run_query, run_key, head_size, const_cos_sin_cache, True)
+    run_bencmkark(my_ops, const_positions, benchmark_query, benchmark_key, head_size, const_cos_sin_cache, True)
+    assert np.allclose(run_query.asnumpy(), benchmark_query.asnumpy(), 1e-3, 1e-3)
+    assert np.allclose(run_key.asnumpy(), benchmark_key.asnumpy(), 1e-3, 1e-3)
+
+
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_pyboost_aclnn():
     """
@@ -60,3 +123,28 @@ def test_pyboost_aclnn():
     expect = np.sum(np.abs(x), 1, keepdims=True)
     output = my_ops.npu_abs_reduce_sum(ms.Tensor(x), (1,), True)
     assert np.allclose(output.asnumpy(), expect, 1e-3, 1e-3)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_pyboost_tensor_api():
+    """
+    Feature: CustomOpBuilder.
+    Description: Custom op use tensor api.
+    Expectation: success.
+    """
+    ms.set_device("Ascend")
+    my_ops = CustomOpBuilder("tensor_api", "jit_test_files/tensor_api.cpp", backend="Ascend").load()
+
+    x = ms.Tensor(np.random.random((3, 4, 5)).astype(np.float16))
+    x_slice = x[:, 1:3, :]
+    out = my_ops.reshape_fp32(x_slice, [-1, 5])
+    expect = x_slice.reshape((-1, 5)).astype(ms.float32)
+    assert np.allclose(out.asnumpy(), expect.asnumpy(), 1e-3, 1e-3)
+
+    assert np.allclose(my_ops.tensor_int(100, "int32").asnumpy(), np.array([100], np.int32), 1e-3, 1e-3)
+    assert np.allclose(my_ops.tensor_double(3.14, "float16").asnumpy(), np.array([3.14], np.float16), 1e-3, 1e-3)
+    assert np.allclose(my_ops.tensor_int_list([1, 2, 3], "int64").asnumpy(), np.array([1, 2, 3], np.int64), 1e-3, 1e-3)
+    assert np.allclose(my_ops.tensor_double_list(
+        [1.1, 2.2, 3.3], "float32").asnumpy(), np.array([1.1, 2.2, 3.3], np.float32), 1e-3, 1e-3)
+    assert np.allclose(my_ops.ones([3, 4], "float16").asnumpy(), np.ones([3, 4], np.float16), 1e-3, 1e-3)
+    assert np.allclose(my_ops.zeros([3, 4], "float32").asnumpy(), np.zeros([3, 4], np.float32), 1e-3, 1e-3)

@@ -15,6 +15,7 @@
  */
 
 #include "ms_extension/common/tensor.h"
+#include <algorithm>
 #include <functional>
 #include "ir/tensor.h"
 #include "mindspore/ccsrc/include/common/utils/tensor_utils.h"
@@ -22,8 +23,22 @@
 #include "mindspore/ccsrc/pipeline/jit/ps/parse/data_converter.h"
 #include "frontend/ir/tensor_py.h"
 #include "include/common/utils/stub_tensor.h"
+#include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"
 
 namespace ms {
+namespace {
+inline mindspore::Int64ImmPtr MakeI64Value(int64_t v) { return std::make_shared<mindspore::Int64Imm>(v); }
+inline mindspore::ValueTuplePtr MakeI64Tuple(const std::vector<int64_t> &v) {
+  return mindspore::MakeValue(v)->cast<mindspore::ValueTuplePtr>();
+}
+inline std::vector<Tensor> ToTensorList(const std::vector<mindspore::tensor::TensorPtr> &tensors) {
+  std::vector<Tensor> outs;
+  outs.reserve(tensors.size());
+  (void)std::transform(tensors.begin(), tensors.end(), std::back_inserter(outs), [](auto &t) { return Tensor(t); });
+  return outs;
+}
+}  // namespace
+
 Tensor::RealTensorHolder::RealTensorHolder(const mindspore::ValuePtr &value)
     : value_(value), tensor_(value->cast<mindspore::tensor::TensorPtr>()) {}
 
@@ -103,6 +118,62 @@ void Tensor::ConvertStubNodeToTensor() const {
     // release the stub node object.
     _tensor_holder_->value_ = nullptr;
   }
+}
+
+void Tensor::AssignTensor(const Tensor &src) const { tensor()->AssignValue(*(src.tensor())); }
+
+Tensor Tensor::cast(TypeId dtype) const {
+  return Tensor(mindspore::kernel::pyboost::cast(tensor(), MakeI64Value(static_cast<int64_t>(dtype))));
+}
+
+std::vector<Tensor> Tensor::chunk(int64_t chunks, int64_t dim) const {
+  return ToTensorList(mindspore::kernel::pyboost::chunk(tensor(), chunks, dim));
+}
+
+Tensor Tensor::contiguous() const { return Tensor(mindspore::kernel::pyboost::contiguous(tensor())); }
+
+Tensor Tensor::flatten(int64_t start_dim, int64_t end_dim) const {
+  return Tensor(mindspore::kernel::pyboost::flatten_ext(tensor(), MakeI64Value(start_dim), MakeI64Value(end_dim)));
+}
+
+Tensor Tensor::index_select(int64_t dim, const Tensor &index) const {
+  return Tensor(mindspore::kernel::pyboost::index_select(tensor(), MakeI64Value(dim), index.tensor()));
+}
+
+Tensor Tensor::reshape(const std::vector<int64_t> &shape) const {
+  return Tensor(mindspore::kernel::pyboost::reshape(tensor(), shape));
+}
+
+Tensor Tensor::repeat(const std::vector<int64_t> &repeats) const {
+  return Tensor(mindspore::kernel::pyboost::repeat(tensor(), MakeI64Tuple(repeats)));
+}
+
+Tensor Tensor::repeat_interleave(const Tensor &repeats, const std::optional<int64_t> &dim,
+                                 const std::optional<int64_t> &output_size) const {
+  std::optional<mindspore::Int64ImmPtr> dim_opt = std::nullopt;
+  std::optional<mindspore::Int64ImmPtr> output_size_opt = std::nullopt;
+  if (dim.has_value()) {
+    dim_opt = MakeI64Value(dim.value());
+  }
+  if (output_size.has_value()) {
+    output_size_opt = MakeI64Value(output_size.value());
+  }
+  return Tensor(
+    mindspore::kernel::pyboost::repeat_interleave_tensor(tensor(), repeats.tensor(), dim_opt, output_size_opt));
+}
+
+Tensor Tensor::repeat_interleave(int64_t repeats, const std::optional<int64_t> &dim,
+                                 const std::optional<int64_t> &output_size) const {
+  std::optional<mindspore::Int64ImmPtr> dim_opt = std::nullopt;
+  std::optional<mindspore::Int64ImmPtr> output_size_opt = std::nullopt;
+  if (dim.has_value()) {
+    dim_opt = MakeI64Value(dim.value());
+  }
+  if (output_size.has_value()) {
+    output_size_opt = MakeI64Value(output_size.value());
+  }
+  return Tensor(
+    mindspore::kernel::pyboost::repeat_interleave_int(tensor(), MakeI64Value(repeats), dim_opt, output_size_opt));
 }
 }  // namespace ms
 
