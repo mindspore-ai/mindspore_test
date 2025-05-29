@@ -21,6 +21,7 @@
 #include <tuple>
 #include <string>
 #include <memory>
+#include <utility>
 #include "ms_extension/common/tensor.h"
 #include "mindspore/ccsrc/debug/profiler/profiler.h"
 #include "mindspore/ccsrc/include/common/utils/tensor_utils.h"
@@ -182,7 +183,7 @@ class EXTENSION_EXPORT PyboostRunner : public std::enable_shared_from_this<Pyboo
    * @throws If the function execution or promise setting fails, the exception is propagated.
    */
   template <int OUT_NUM, typename FuncType, typename... Args>
-  static py::object Call(FuncType func, Args &&... args) {
+  static typename std::enable_if<(OUT_NUM > 0), py::object>::type Call(FuncType func, Args &&... args) {
     auto op_name = inner::GetFunctionName(typeid(FuncType).name());
     mindspore::runtime::ProfilerRecorder profiler(mindspore::runtime::ProfilerModule::kPynative,
                                                   mindspore::runtime::ProfilerEvent::kRunOp, op_name);
@@ -196,6 +197,18 @@ class EXTENSION_EXPORT PyboostRunner : public std::enable_shared_from_this<Pyboo
       },
       [promises]() { mindspore::tensor::SetException(promises); }));
     return py::reinterpret_steal<py::object>(mindspore::tensor::TransformOutput(py_output));
+  }
+
+  template <int OUT_NUM, typename FuncType, typename... Args>
+  static typename std::enable_if<(OUT_NUM == 0), py::object>::type Call(FuncType func, Args &&... args) {
+    auto op_name = inner::GetFunctionName(typeid(FuncType).name());
+    mindspore::runtime::ProfilerRecorder profiler(mindspore::runtime::ProfilerModule::kPynative,
+                                                  mindspore::runtime::ProfilerEvent::kRunOp, op_name);
+    mindspore::pynative::DispatchOp(std::make_shared<mindspore::pynative::PassthroughFrontendTask>([=]() {
+      inner::ConvertStubNodeToTensor(args...);
+      func(args...);  // Call the function without return value
+    }));
+    return py::none();
   }
 
   /**
