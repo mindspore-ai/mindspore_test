@@ -1695,9 +1695,8 @@ REG_BPROP_BUILDER("TopkExt").FreeUselessValues_IO({i0, i3, i4}, {i0}).SetBody(BO
   auto indices = ib->TupleGetItem(out, kIndex1);
   auto dout0 = ib->TupleGetItem(dout, kIndex0);
   auto dim = ib->GetInput(kIndex2);
-  auto zeros = ib->Emit("ZerosLikeExt", {input_x, ib->Value(static_cast<int64_t>(ib->GetDtypeId(input_x)))});
-  auto reduce = ib->Value(static_cast<int64_t>(Reduce::REDUCE_NONE));
-  auto out_grad = ib->Emit("Scatter", {zeros, dim, indices, dout0, reduce});
+  auto out_grad = ib->Emit("ZerosLikeExt", {input_x, ib->Value(static_cast<int64_t>(ib->GetDtypeId(input_x)))});
+  (void)ib->Emit("InplaceScatterSrc", {out_grad, dim, indices, dout0});
   return {out_grad, ib->OutZeros(ib->GetInput(kIndex1)), ib->OutZeros(ib->GetInput(kIndex2)),
           ib->OutZeros(ib->GetInput(kIndex3)), ib->OutZeros(ib->GetInput(kIndex4))};
 });
