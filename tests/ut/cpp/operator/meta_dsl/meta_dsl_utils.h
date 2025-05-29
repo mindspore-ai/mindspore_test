@@ -19,6 +19,7 @@
 
 #include "ir/manager.h"
 #include "ir/graph_utils.h"
+#include "ir/core_ops_primitive.h"
 #include "common/common_test.h"
 #include "pipeline/jit/ps/action.h"
 #include "pipeline/jit/ps/resource.h"
@@ -30,17 +31,14 @@
 #include "mindspore/ccsrc/frontend/operator/meta_dsl/common/meta_impl.h"
 
 namespace mindspore::prim {
-MetaImplPtr CreateMetaImpl(const std::string &name) {
-  return RegMetaImplFactory::GetInstance().CreateMetaImpl(name);
-}
+MetaImplPtr CreateMetaImpl(const std::string &name) { return RegMetaImplFactory::GetInstance().CreateMetaImpl(name); }
 
-inline FuncGraphPtr NewFuncGraph(const MetaImplPtr &meta, const AbstractBasePtrList &abs_list) {
+inline FuncGraphPtr NewFuncGraph(const ValuePtr &op, const AbstractBasePtrList &abs_list) {
   // Create FuncGraph.
   FuncGraphPtr fg = std::make_shared<FuncGraph>();
   std::vector<FuncGraphPtr> graphs{fg};
   auto func_graph_manager = std::make_shared<FuncGraphManager>(graphs);
-  meta->set_manager(func_graph_manager);
-  AnfNodePtrList inputs{NewValueNode(meta)};
+  AnfNodePtrList inputs{NewValueNode(op)};
   for (size_t i = 0; i < abs_list.size(); ++i) {
     auto param = fg->add_parameter();
     (void)inputs.emplace_back(param);
@@ -52,9 +50,8 @@ inline FuncGraphPtr NewFuncGraph(const MetaImplPtr &meta, const AbstractBasePtrL
   return pipeline::Renormalize(resource, fg, abs_list);
 }
 
-inline AbstractBasePtr RunMetaImpl(const std::vector<AbstractBasePtr> &args, const std::string &op_type) {
-  auto op = CreateMetaImpl(op_type);
-  MS_EXCEPTION_IF_NULL(op);
+inline AbstractBasePtr RunMetaImpl(const std::vector<AbstractBasePtr> &args, const PrimitivePtr &prim) {
+  auto op = std::make_shared<DoSignaturePrimitive>(prim->name(), prim);
   auto fg = NewFuncGraph(op, args);
   MS_EXCEPTION_IF_NULL(fg);
   return fg->return_node()->abstract();
