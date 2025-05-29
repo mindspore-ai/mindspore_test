@@ -70,6 +70,11 @@ bool InternalMla::UpdateParam(const std::vector<KernelTensor *> &inputs, const s
   return true;
 }
 
+uint64_t InternalMla::GenerateTilingKey(const std::vector<KernelTensor *> &inputs) {
+  // User defined CacheKey, the inputs should include all the factors which will affect tiling result.
+  return InternalTilingCache::GenerateKey(kernel_name_, inputs, param_.q_seq_len, param_.kv_seq_len);
+}
+
 MS_INTERNAL_KERNEL_FACTORY_REG(Mla, internal::kInternalMLAOpName, InternalMla);
 REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(Mla, INPUT_NUM_8, INDEX_0, INDEX_1, INDEX_2, INDEX_3, INDEX_4, INDEX_5, INDEX_6,
                                      INDEX_7);
