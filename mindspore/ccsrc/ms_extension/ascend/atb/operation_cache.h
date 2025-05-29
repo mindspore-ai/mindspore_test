@@ -27,14 +27,14 @@
 #include "atb/atb_infer.h"
 #include "ms_extension/pynative/pyboost_extension.h"
 
-#define CHECK_ATB_RET(op, st, func)                                                                       \
-  do {                                                                                                    \
-    if (st != 0) {                                                                                        \
-      MS_LOG(EXCEPTION) << "ATB function [" #func "] result error. st=" << st << ", op is " << op         \
-                        << ". See atb logs in \"~/atb/log\" for more details, refer to atb documents at " \
-                           "https://www.hiascend.com/document";                                           \
-    }                                                                                                     \
-  } while (0);
+#define CHECK_ATB_RET(op, st, func)                                                                              \
+  do {                                                                                                           \
+    if (st != 0) {                                                                                               \
+      MS_LOG(EXCEPTION) << "ATB function [" #func "] result error. st=" << st << ", op is " << op                \
+                        << ". Set environ variable 'export ASDOPS_LOG_PATH=1' and see atb logs in \"~/atb/log\"" \
+                           " for more details, refer to atb documents at https://www.hiascend.com/document";     \
+    }                                                                                                            \
+  } while (0)
 
 namespace atb {
 constexpr int g_hash_buf_size = 8192;

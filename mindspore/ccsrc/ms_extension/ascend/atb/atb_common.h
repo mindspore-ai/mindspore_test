@@ -60,6 +60,9 @@ class EXTENSION_API AtbOpRunner : public PyboostRunner {
     op_ = atb::AtbContextManager::GetInstance().GetOperation(param, op_name());
   }
 
+ protected:
+  void _Run() override;
+
  private:
   atb::VariantPack variant_pack_;
   uint64_t workspace_size_{0};
