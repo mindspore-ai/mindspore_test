@@ -117,12 +117,11 @@ class TftHandle:
         tft_register_mindx_callback('report_result', report_result)
         logger.warning('Stub register mindx func success.')
 
-    def init(self, config=None, **kwargs):
+    def init(self, **kwargs):
         """
         TFT handle init fun. Mainly used to initialize the mindio component.
 
         Args:
-            config (Dict): configs or the training model running. If ARF is not used, this parameter can be None.
             **kwargs: Reserved parameters.
         """
         tft_env = os.getenv("MS_ENABLE_TFT", "")
@@ -181,14 +180,10 @@ class TftHandle:
             logger.warning("tft report reboot init finish ")
             tft.tft_report_error(tft.ReportState.RS_INIT_FINISH.value)
             _set_recovery_context(is_reboot_node=True)
-            if config is None:
-                raise ValueError(
-                    f"Param 'config' can not be None when using ARF, and 'config' should be a dict type.")
-            logger.warning("tft reboot node no need load checkpoint when using ARF.")
-            config["arf_skip_load"] = True
             ret = tft.tft_wait_next_action()
             if ret != tft.Action.RETRY.value:
                 raise RuntimeError(f"ARF init failed!")
+            logger.warning("tft reboot success.")
 
 
 _tft_handler = TftHandle()

@@ -712,6 +712,7 @@ PYBIND11_MODULE(_c_expression, m) {
     .def("create_group", &CollectiveManager::CreateCommunicationGroup, "Create collective group.",
          pybind11::arg("group_name"), pybind11::arg("rank_list"), pybind11::arg("options") = GroupOptions())
     .def("destroy_group", &CollectiveManager::DestroyCommunicationGroup, "Destroy collective group.")
+    .def("remove_group_info", &CollectiveManager::RemoveGroupInfoForARF, "Remove group info for arf.")
     .def("get_group_map", &CollectiveManager::get_group_map, "Get the group map")
     .def("get_local_rank_id", &CollectiveManager::GetLocalRankId, "Get the node rank id.")
     .def("get_local_group_size", &CollectiveManager::GetLocalGroupSize, "Get the node rank id.")

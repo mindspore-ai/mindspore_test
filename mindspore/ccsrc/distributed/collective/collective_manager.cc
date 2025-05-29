@@ -441,6 +441,12 @@ bool CollectiveManager::DestroyCommunicationGroup(const std::string &group_name)
   return true;
 }
 
+void CollectiveManager::RemoveGroupInfoForARF(const std::string &group_name) {
+  (void)group_infos_.erase(std::remove_if(group_infos_.begin(), group_infos_.end(),
+                                          [group_name](const auto &p) { return p.first == group_name; }),
+                           group_infos_.end());
+}
+
 std::string CollectiveManager::GetCommName(const std::string &group_name) {
   WaitCommInitDone(group_name);
   if (!common::GetEnv(kSimulationLevel).empty()) {

@@ -274,6 +274,7 @@ def _handle_tft(func):
                     cb_initial_step = _calc_cb_initial_step(initial_epoch, initial_step, *args, **kwargs)
                     if not self.enable_tre:
                         kwargs["initial_step"] = cb_initial_step
+                        self._initial_step = 0
                     # reset all accu grads to zero
                     obj._reset_acc_grads()
                     logger.warning(
@@ -443,6 +444,11 @@ def _set_with_processed_inputs(network, inputs):
             "Reset inputs from a process inputs, should be a list/tuple or a dict, but got %s!" % str(inputs))
 
 
+def _check_tft_reset_dataset():
+    env_tft = os.getenv("MS_ENABLE_TFT", "")
+    return any([v in env_tft for v in ["TRE:1", "UCE:1", "ARF:1"]])
+
+
 class Model:
     """
     High-Level API for training or inference.
@@ -562,6 +568,7 @@ class Model:
         self.batch_num = -1
         self.enable_tre = "TRE:1" in os.getenv("MS_ENABLE_TFT", "")
         self._initial_step = None
+        self._need_reset_data = _check_tft_reset_dataset()
         _clear_auto_parallel_context(self._network)
 
     def _check_for_graph_cell(self, kwargs):
@@ -761,7 +768,7 @@ class Model:
             logger.info("Begin to connect network with dataset.")
             network = connect_network_with_dataset(network, dataset_helper)
 
-        if (_get_recovery_context("enable_recovery") or self.enable_tre) and is_train:
+        if (_get_recovery_context("enable_recovery") or self._need_reset_data) and is_train:
             _set_training_dataset(dataset_helper)
 
         network.set_train(is_train)

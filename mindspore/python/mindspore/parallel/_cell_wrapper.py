@@ -26,7 +26,7 @@ from mindspore.ops.operations.comm_ops import AllGather
 from mindspore.communication import GlobalComm, get_rank
 from mindspore.common import jit
 from mindspore.communication import create_group, destroy_group, get_group_size
-from mindspore.communication._comm_helper import _get_group_map
+from mindspore.communication._comm_helper import _get_group_map, _remove_group_info
 from mindspore.train._utils import get_parameter_redundancy, remove_param_redundancy
 from mindspore.parallel.shard import Layout
 
@@ -189,6 +189,7 @@ def _communicate_allreduce(allreduce_input, group_map, group):
         real_param.set_data(communicator(Tensor(real_param)), real_param.sliced)
     if is_manual_communication_group:
         destroy_group(group_name)
+        _remove_group_info(group_name)
 
 
 def _create_allreduce_input(params, group, net_param_dict, total_param_loaded, param_not_load, cur_rank):
