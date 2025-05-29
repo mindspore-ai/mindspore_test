@@ -51,7 +51,7 @@ conv3d:
         - weight -- Filters of shape :math:`(C_{out}, C_{in} / groups, kd, kh, kw)`. The value of :math:`kh`
           and :math:`kw` is in the range [1, 511]. The remaining values are in the range [1, int32_max].
           And :math:`kh*kw*k0` is less 65536 (k0 is 16. If data type is float32, k0 is 8).
-        - bias -- Bias Tensor with shape :math:`(C_{out})`. The shape must equal the first dimension of the weight.
+        - bias -- Bias Tensor with shape :math:`(C_{out})`. The shape must equal to the first dimension of the weight.
         - stride -- The distance of kernel moving. It can be an int number or
           tuple (noted by :math:`(stride_d, stride_h, stride_w)`). stride_h and stride_w are in the range [1, 63].
           stride_d is in the range [1, 255].
@@ -66,8 +66,8 @@ conv3d:
         - :math:`H_{out} = (H_{in} + PadUp + PadDown - ((kh - 1) * DilationH + 1)) / StrideH + 1` .
         - :math:`W_{out} = (W_{in} + PadLeft + PadRight - ((kw - 1) * DilationW + 1)) / StrideW + 1` .
         - :math:`D_{out} = (D_{in} + PadFront + PadBack - ((kd - 1) * DilationD + 1)) / StrideD + 1` .
-        - :math:`(D_{in}+PadFront+PadBack - ((kd-1)*DilationD+1)) /% StrideD <= PadBack` .
-        - :math:`(H_{in}+PadUp+PadDown - ((kh-1)*Dilationh+1)) /% StrideH <= PadDown` .
+        - :math:`(D_{in}+PadFront+PadBack - ((kd-1)*DilationD+1)) \% StrideD <= PadBack` .
+        - :math:`(H_{in}+PadUp+PadDown - ((kh-1)*Dilationh+1)) \% StrideH <= PadDown` .
         - :math:`stride_d <= kernel_d` .
         - :math:`PadUp < kh` and :math:`PadDown < kh` . When `padding` = ``'valid'``, both PadUp and PadDown are zeros.
           When `padding` = ``'same'``, pad can be calculated by

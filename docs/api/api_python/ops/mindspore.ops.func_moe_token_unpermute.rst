@@ -7,7 +7,6 @@ mindspore.ops.moe_token_unpermute
 
     .. warning::
         - 仅支持 Atlas A2 训练系列产品。
-        - 当前版本下，输入 `permuted_tokens` 和 `probs` 仅支持bfloat16类型。
         - `sorted_indices` 必须不存在重复值，否则结果未定义。
 
     参数：

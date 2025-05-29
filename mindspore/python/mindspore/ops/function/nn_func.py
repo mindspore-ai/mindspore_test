@@ -7379,8 +7379,8 @@ def conv3d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups
     - :math:`H_{out} = (H_{in} + PadUp + PadDown - ((kh - 1) * DilationH + 1)) / StrideH + 1` .
     - :math:`W_{out} = (W_{in} + PadLeft + PadRight - ((kw - 1) * DilationW + 1)) / StrideW + 1` .
     - :math:`D_{out} = (D_{in} + PadFront + PadBack - ((kd - 1) * DilationD + 1)) / StrideD + 1` .
-    - :math:`(D_{in}+PadFront+PadBack - ((kd-1)*DilationD+1)) /% StrideD <= PadBack` .
-    - :math:`(H_{in}+PadUp+PadDown - ((kh-1)*Dilationh+1)) /% StrideH <= PadDown` .
+    - :math:`(D_{in}+PadFront+PadBack - ((kd-1)*DilationD+1)) \% StrideD <= PadBack` .
+    - :math:`(H_{in}+PadUp+PadDown - ((kh-1)*Dilationh+1)) \% StrideH <= PadDown` .
     - :math:`stride_d <= kernel_d` .
     - :math:`PadUp < kh` and :math:`PadDown < kh` . When `padding` = ``'valid'``, both PadUp and PadDown are zeros.
       When `padding` = ``'same'``, pad can be calculated by
