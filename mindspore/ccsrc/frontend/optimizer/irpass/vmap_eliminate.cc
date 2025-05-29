@@ -658,6 +658,7 @@ AnfNodePtr HandleVmapCellList(const FuncGraphPtr &top_func_graph, const CNodePtr
   AnfNodePtr vmap_fn_node = nullptr;
   auto cell_list_node = vmap_node->input(1);
   CNodePtr cnode = cell_list_node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cell_list_node);
   auto inputs_size = cnode->size();
   if (inputs_size != (cell_size + 1)) {
     MS_EXCEPTION_WITH_NODE(ValueError, vmap_node)

@@ -63,6 +63,7 @@ enum FormatLevel : int {
 };
 
 void GetMultitypeFuncGraphText(const prim::MultitypeFuncGraphPtr &mt_func_graph, std::ostringstream &oss) {
+  MS_EXCEPTION_IF_NULL(mt_func_graph);
   auto py_funcs = mt_func_graph->GetPyFunctions();
   if (py_funcs.empty()) {
     oss << "";

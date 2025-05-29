@@ -154,8 +154,7 @@ static int GetOpcodeMaxStackEffect(int op, int arg, bool jump) {
   }
 #endif
 
-  int off;
-  off = PyCompile_OpcodeStackEffect(op, arg);
+  int off = PyCompile_OpcodeStackEffect(op, arg);
   if (op == NOP || op == EXTENDED_ARG) {
     return 0;
   }
