@@ -461,7 +461,7 @@ class Primitive(Primitive_):
 
             - If the computation involves something like randomization or global variable, the equivalence
               is not guaranteed currently.
-            - Not supported in pynative mode
+            - Should only be used in Graph mode or in gradient functions that are decorated by @jit.
 
         Args:
             mode (bool): Specifies whether the primitive is recomputed. Default: ``True`` .
@@ -484,6 +484,7 @@ class Primitive(Primitive_):
             ...         super(GradNet,self).__init__()
             ...         self.network = network
             ...         self.grad = ops.GradOperation()
+            ...     @jit
             ...     def construct(self, x):
             ...         g_out = self.grad(self.network)(x)
             ...         return g_out
@@ -495,8 +496,6 @@ class Primitive(Primitive_):
             >>> print(a)
             [0. 0.5]
         """
-        if context.get_context("mode") == context.PYNATIVE_MODE:
-            raise TypeError("Recompute is not supported in pynative mode currently.")
         Validator.check_bool(mode)
         self.add_prim_attr("recompute", mode)
         return self
