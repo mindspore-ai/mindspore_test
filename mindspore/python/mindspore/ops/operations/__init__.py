@@ -55,7 +55,7 @@ from .comm_ops import (AllGather, AllReduce, Reduce, NeighborExchange, NeighborE
                        Broadcast, CollectiveGather, CollectiveScatter, Barrier, Send, Receive, BatchISendIRecv,
                        _MirrorOperator, _MirrorMiniStepOperator, _MiniStepAllGather, ReduceOp, _VirtualDataset,
                        _VirtualOutput, _VirtualDiv, _GetTensorSlice, _VirtualAdd, _VirtualAssignAdd, _VirtualAccuGrad,
-                       _HostAllGather, _HostReduceScatter, _MirrorMicroStepOperator, _MicroStepAllGather,
+                       _HostAllGather, _HostReduceScatter, _MirrorMicroStepOperator, _MicroStepAllGather, AlltoAllVC,
                        _VirtualPipelineEnd, AlltoAllV, ReduceScatter, _VirtualAssignKvCache, AllGatherV, ReduceScatterV)
 from .control_ops import GeSwitch, Merge
 from .custom_ops import (Custom, CustomOpBuilder)
@@ -406,6 +406,7 @@ __all__ = [
     "AllReduce",
     "AllGatherV",
     "ReduceScatterV",
+    "AlltoAllVC",
     "Reduce",
     "_AllSwap",
     "ReduceScatter",

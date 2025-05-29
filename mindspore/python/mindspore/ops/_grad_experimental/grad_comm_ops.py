@@ -29,7 +29,7 @@ from mindspore.common.sparse_tensor import RowTensorInner
 from mindspore.ops.composite.multitype_ops.zeros_like_impl import zeros_like
 from mindspore.ops.operations.comm_ops import (AllGather, _MiniStepAllGather, _HostAllGather, AllReduce,
                                                NeighborExchange, AlltoAll, AlltoAllV, NeighborExchangeV2,
-                                               Broadcast, AllGatherV, ReduceScatterV,
+                                               Broadcast, AlltoAllVC, AllGatherV, ReduceScatterV,
                                                _GetTensorSlice, _MirrorOperator, _MirrorMiniStepOperator, ReduceOp,
                                                ReduceScatter, _HostReduceScatter, _VirtualDiv, _VirtualAdd, _AllSwap,
                                                _VirtualAssignAdd, _VirtualAccuGrad, _MirrorMicroStepOperator,
@@ -651,6 +651,21 @@ def get_bprop_all_to_all_v(self):
     def bprop(x, send_numel_list, recv_numel_list, out, dout):
         dx = all_to_all_v_grad(dout, recv_numel_list, send_numel_list)
         return (dx, zeros_like(send_numel_list), zeros_like(recv_numel_list))
+
+    return bprop
+
+
+@bprop_getters.register(AlltoAllVC)
+def get_bprop_all_to_all_v_c(self):
+    """Generate bprop for AlltoAllVC."""
+    all_to_all_v_c_grad = AlltoAllVC(self.group, self.block_size, transpose=True)
+    if hasattr(self, "instance_name") and self.instance_name:
+        instance_name = "grad" + self.instance_name
+        all_to_all_v_c_grad.set_prim_instance_name(instance_name)
+
+    def bprop(x, send_count_matrix, out, dout):
+        dx = all_to_all_v_c_grad(dout, send_count_matrix)
+        return (dx, zeros_like(send_count_matrix))
 
     return bprop
 
