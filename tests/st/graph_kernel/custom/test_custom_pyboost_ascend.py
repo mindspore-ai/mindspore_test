@@ -21,14 +21,14 @@ from tests.mark_utils import arg_mark
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
-def test_pyboost_atb():
+def test_pyboost_atb_swiglu():
     """
     Feature: CustomOpBuilder.
     Description: Custom atb op.
     Expectation: success.
     """
     ms.set_device("Ascend")
-    my_ops = CustomOpBuilder("atb_ops", "jit_test_files/atb_swiglu.cpp", enable_atb=True).load()
+    my_ops = CustomOpBuilder("atb_swiglu", "jit_test_files/atb_swiglu.cpp", enable_atb=True).load()
     # the second dim of x should be >= 32
     x = np.array([[0.561, 0.684, 0.329, 0.8447, 0.2815, 0.0716, 0.3472, 0.04404,
                    0.9565, 0.9033, 0.3567, 0.33, 0.2467, 0.2993, 0.0109, 0.9243,
@@ -55,7 +55,7 @@ def test_pyboost_aclnn():
     """
 
     ms.set_device("Ascend")
-    my_ops = CustomOpBuilder("my_ops", ['jit_test_files/pyboost_aclnn_sum.cpp'], backend="Ascend").load()
+    my_ops = CustomOpBuilder("aclnn_op", ['jit_test_files/pyboost_aclnn_sum.cpp'], backend="Ascend").load()
     x = np.random.rand(4, 5, 6).astype(np.float32)
     expect = np.sum(np.abs(x), 1, keepdims=True)
     output = my_ops.npu_abs_reduce_sum(ms.Tensor(x), (1,), True)
