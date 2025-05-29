@@ -152,7 +152,7 @@ void AclStreamAssign::AssignStream(
     MS_LOG(INFO) << "Not stream assign when pynative forward.";
     return;
   }
-  std::set<uint32_t> stream_ids;
+  uint32_t max_stream_id = kDefaultStreamIndex;
   for (const auto &node : kernels) {
     if (AnfAlgo::IsKernelSelectBackoffOp(node)) {
       continue;
@@ -191,9 +191,9 @@ void AclStreamAssign::AssignStream(
       MS_LOG(INFO) << "Set stream id by group for node " << node->fullname_with_scope();
       AddStreamIdByGroup(node, device_res_manager);
     }
-    stream_ids.insert(AnfAlgo::GetStreamId(node));
+    max_stream_id = std::max(max_stream_id, AnfAlgo::GetStreamId(node));
   }
-  kernel_graph->set_enable_multi_stream(stream_ids.size() > 1);
+  kernel_graph->set_enable_multi_stream(max_stream_id != kDefaultStreamIndex);
 
   for (size_t i = 1; i < kernels.size(); ++i) {
     if (common::AnfAlgo::GetCNodeName(kernels[i - 1]) == kMemSetOpName) {
