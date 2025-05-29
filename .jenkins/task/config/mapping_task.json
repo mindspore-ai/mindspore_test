@@ -1020,6 +1020,7 @@
       ".gitattributes",
       "setup.py",
       "mindspore/lite/cmake",
+      "mindspore/lite/java/src/main/java/com/mindspore/config/NativeLibrary.java",
       "mindspore/lite/tools/providers/triton/backend/src",
       "mindspore/core/mindrt/CMakeLists.txt",
       "mindspore/lite/CMakeLists.txt",
