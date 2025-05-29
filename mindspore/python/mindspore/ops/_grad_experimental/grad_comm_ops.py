@@ -16,6 +16,7 @@
 """Generate bprop for comm ops"""
 from __future__ import division
 from __future__ import absolute_import
+import os
 from mindspore import Tensor, Parameter
 import mindspore.common.dtype as mstype
 from mindspore.ops import functional as F
@@ -237,7 +238,6 @@ def get_bprop_mirror_micro_step_operator(self):
     allgather for sparse feature.
     """
     group = self.group
-    global_rank = get_rank()
     dev_num = self.dev_num
     mean_flag = self.mean_flag
     param_name = " "
@@ -271,6 +271,9 @@ def get_bprop_mirror_micro_step_operator(self):
     dump_local_norm = ms.get_auto_parallel_context("dump_local_norm")
     dump_local_norm_path = ms.get_auto_parallel_context("dump_local_norm_path")
     dump_device_local_norm = ms.get_auto_parallel_context("dump_device_local_norm")
+    if dump_local_norm_path:
+        global_rank = get_rank()
+        file = os.path.join(dump_local_norm_path, "rank_" + str(global_rank), "local_norm__" + param_name)
     if dump_device_local_norm:
         # init _squared _squared_device_local_norm
         squared_device_local_norm = get_squared_device_local_norm_param()
@@ -280,8 +283,7 @@ def get_bprop_mirror_micro_step_operator(self):
             squared_norm = reduce_sum(square((z)))
             if dump_local_norm:
                 if dump_local_norm_path:
-                    z = F.depend(z, tensor_dump(dump_local_norm_path + "/rank_" + str(global_rank) +
-                                                "/local_norm__" + param_name, sqrt(squared_norm)))
+                    z = F.depend(z, tensor_dump(file, sqrt(squared_norm)))
                 else:
                     z = F.depend(z, ln_print("dump local norm: ", param_name, sqrt(squared_norm)))
             if dump_device_local_norm:
@@ -337,13 +339,15 @@ def get_bprop_all_gather(self):
     dump_local_norm_path = ms.get_auto_parallel_context("dump_local_norm_path")
     dump_device_local_norm = ms.get_auto_parallel_context("dump_device_local_norm")
     if param_name and (dump_local_norm or dump_device_local_norm):
-        global_rank = get_rank()
         cast = P.Cast()
         ln_print = P.Print()
         tensor_dump = P.TensorDump()
         reduce_sum = P.ReduceSum(keep_dims=False)
         square = P.Square()
         sqrt = P.Sqrt()
+    if dump_local_norm_path:
+        global_rank = get_rank()
+        file = os.path.join(dump_local_norm_path, "rank_" + str(global_rank), "local_norm__" + param_name)
     if dump_device_local_norm:
         # init _squared _squared_device_local_norm
         squared_device_local_norm = get_squared_device_local_norm_param()
@@ -353,8 +357,7 @@ def get_bprop_all_gather(self):
             squared_norm = reduce_sum(square((dout)))
             if dump_local_norm:
                 if dump_local_norm_path:
-                    dout = F.depend(dout, tensor_dump(dump_local_norm_path + "/rank_" + str(global_rank) +
-                                                      "/local_norm__" + param_name, sqrt(squared_norm)))
+                    dout = F.depend(dout, tensor_dump(file, sqrt(squared_norm)))
                 else:
                     dout = F.depend(dout, ln_print("dump local norm: ", param_name, sqrt(squared_norm)))
             if dump_device_local_norm:
@@ -431,7 +434,6 @@ def get_bprop_micro_step_all_gather(self):
         if self.instance_name:
             instance_name = "grad_" + self.instance_name
             reduce_scatter.set_prim_instance_name(instance_name)
-    global_rank = get_rank()
     cast = P.Cast()
     dtype = P.DType()
     out_tensor = Tensor(1.0, mstype.float16)
@@ -444,6 +446,9 @@ def get_bprop_micro_step_all_gather(self):
     dump_local_norm = ms.get_auto_parallel_context("dump_local_norm")
     dump_local_norm_path = ms.get_auto_parallel_context("dump_local_norm_path")
     dump_device_local_norm = ms.get_auto_parallel_context("dump_device_local_norm")
+    if dump_local_norm_path:
+        global_rank = get_rank()
+        file = os.path.join(dump_local_norm_path, "rank_" + str(global_rank), "local_norm__" + param_name)
     if dump_device_local_norm:
         # init _squared _squared_device_local_norm
         squared_device_local_norm = get_squared_device_local_norm_param()
@@ -461,8 +466,7 @@ def get_bprop_micro_step_all_gather(self):
             squared_norm = reduce_sum(square((z)))
             if dump_local_norm:
                 if dump_local_norm_path:
-                    z = F.depend(z, tensor_dump(dump_local_norm_path + "/rank_" + str(global_rank) +
-                                                "/local_norm__" + param_name, sqrt(squared_norm)))
+                    z = F.depend(z, tensor_dump(file, sqrt(squared_norm)))
                 else:
                     z = F.depend(z, ln_print("dump local norm: ", param_name, sqrt(squared_norm)))
             if dump_device_local_norm:
@@ -718,11 +722,13 @@ def get_bprop_mirror_operator(self):
     dump_local_norm = ms.get_auto_parallel_context("dump_local_norm")
     dump_local_norm_path = ms.get_auto_parallel_context("dump_local_norm_path")
     dump_device_local_norm = ms.get_auto_parallel_context("dump_device_local_norm")
+    if dump_local_norm_path:
+        global_rank = get_rank()
+        file = os.path.join(dump_local_norm_path, "rank_" + str(global_rank), "local_norm__" + param_name)
     if dump_device_local_norm:
         # init _squared _squared_device_local_norm
         squared_device_local_norm = get_squared_device_local_norm_param()
     if dev_num > 1:
-        global_rank = get_rank()
         dev_num_r = 1.0 / dev_num
         all_reduce = AllReduce(group=group)
         all_gather = AllGather(group=group)
@@ -750,8 +756,7 @@ def get_bprop_mirror_operator(self):
             squared_norm = reduce_sum(square((dout)))
             if dump_local_norm:
                 if dump_local_norm_path:
-                    dout = F.depend(dout, tensor_dump(dump_local_norm_path + "/rank_" + str(global_rank) +
-                                                      "/local_norm__" + param_name, sqrt(squared_norm)))
+                    dout = F.depend(dout, tensor_dump(file, sqrt(squared_norm)))
                 else:
                     dout = F.depend(dout, ln_print("dump local norm: ", param_name, sqrt(squared_norm)))
             if dump_device_local_norm:

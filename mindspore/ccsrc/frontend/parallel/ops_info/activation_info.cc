@@ -850,6 +850,7 @@ ParameterPtr DropoutExtInfo::GetSeedParameter(const CNodePtr &generator_cnode) c
     MS_LOG_WITH_NODE(EXCEPTION, generator_cnode) << "input[2] should be a CNode";
   }
   auto make_tuple_cnode = make_tuple->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(make_tuple_cnode);
   if (make_tuple_cnode->size() != SIZE_FOUR) {
     MS_LOG_WITH_NODE(EXCEPTION, make_tuple_cnode) << "Size should be 4, but get " << make_tuple_cnode->size();
   }
