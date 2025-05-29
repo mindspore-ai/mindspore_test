@@ -153,6 +153,7 @@ void PyboostRunner::_DispatchLaunchTask() {
     mindspore::runtime::ProfilerRecorder profiler(mindspore::runtime::ProfilerModule::kPynative,
                                                   mindspore::runtime::ProfilerEvent::kPyNativeLaunchTask,
                                                   runner->op_name(), false);
+    runner->_device_context_->device_res_manager_->BindDeviceToCurrentThread(false);
     runner->LaunchKernel();
     if (mindspore::runtime::RuntimeConf::GetInstance()->launch_blocking()) {
       if (!runner->_device_context_->device_res_manager_->SyncAllStreams()) {
