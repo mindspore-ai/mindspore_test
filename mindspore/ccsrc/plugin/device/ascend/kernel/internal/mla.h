@@ -37,6 +37,7 @@ class InternalMla : public InternalKernelMod {
                                        const std::vector<KernelTensor *> &ms_inputs,
                                        const std::vector<KernelTensor *> &ms_outputs) override;
   bool UpdateParam(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
+  uint64_t GenerateTilingKey(const std::vector<KernelTensor *> &inputs) override;
 
  private:
   bool created_flag_{false};
