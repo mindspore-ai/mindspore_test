@@ -18,6 +18,7 @@
 #include <string>
 #include <vector>
 #include <set>
+#include <functional>
 
 #include "backend/common/pass/common/gllo_utils.h"
 #include "mindspore/ops/op_def/nn_ops.h"
@@ -89,6 +90,55 @@ static AnfNodePtr NewGetIteamOut(const FuncGraphPtr &graph, const AnfNodePtr &no
   return item_cnode;
 }
 
+bool MoeInitRoutingQuantV2Fusion::IsSupport(const AnfNodePtr &node, const EquivPtr &equiv) const {
+  auto x = utils::cast<AnfNodePtr>((*equiv)[x_]);
+  const std::set<TypeId> support_dtype = {kNumberTypeFloat16, kNumberTypeBFloat16, kNumberTypeFloat32};
+  if (!CheckSupportDataType(x, support_dtype)) {
+    MS_LOG(INFO) << "MoeInitRoutingDynQuantV2Fusion only support type float16, bfloat16, float32";
+    return false;
+  }
+
+  auto drop_pad_mode = utils::cast<AnfNodePtr>((*equiv)[drop_pad_mode_]);
+  auto drop_pad_mode_cnode = drop_pad_mode->cast<ValueNodePtr>();
+  if (drop_pad_mode_cnode == nullptr) {
+    MS_LOG(INFO) << "drop_pad_mode_cnode is not a value node";
+    return false;
+  }
+
+  auto drop_pad_mode_value = GetValue<int64_t>(drop_pad_mode_cnode->value());
+  if (drop_pad_mode_value == 1) {
+    MS_LOG(INFO) << "MoeInitRoutingDynQuantV2Fusion do not support Drop/Pad Mode";
+    return false;
+  }
+
+  auto scale_cnode = utils::cast<AnfNodePtr>((*equiv)[scale_]);
+  if (scale_cnode == nullptr) {
+    MS_LOG(INFO) << "scale_cnode is not a value node";
+    return false;
+  }
+
+  auto offset_cnode = utils::cast<AnfNodePtr>((*equiv)[offset_]);
+  if (offset_cnode == nullptr) {
+    MS_LOG(INFO) << "offset_cnode is not a value node";
+    return false;
+  }
+
+  auto smooth_scale_shape = common::AnfAlgo::GetPrevNodeOutputInferShape(node, kScaleOutIdx);
+  if (smooth_scale_shape.size() != 1) {
+    MS_LOG(INFO) << "do not support fusion when smooth_scale shape isn't a 1D tensor, smooth_scale_shape = "
+                 << smooth_scale_shape;
+    return false;
+  }
+
+  auto offset_shape = common::AnfAlgo::GetPrevNodeOutputInferShape(node, kOffsetOutIdx);
+  if (offset_shape.size() != 1) {
+    MS_LOG(INFO) << "do not support fusion when smooth_scale shape isn't a 1D tensor, offset_shape = " << offset_shape;
+    return false;
+  }
+
+  return true;
+}
+
 CNodePtr MoeInitRoutingQuantV2Fusion::CreateMoeInitRoutingQuantV2Node(const FuncGraphPtr &func_graph,
                                                                       const AnfNodePtr &node,
                                                                       const EquivPtr &equiv) const {
@@ -114,6 +164,8 @@ CNodePtr MoeInitRoutingQuantV2Fusion::CreateMoeInitRoutingQuantV2Node(const Func
   auto drop_pad_mode = utils::cast<AnfNodePtr>((*equiv)[drop_pad_mode_]);
   auto expert_tokens_count_or_cumsum_flag = utils::cast<AnfNodePtr>((*equiv)[expert_tokens_count_or_cumsum_flag_]);
   auto expert_tokens_before_capacity_flag = utils::cast<AnfNodePtr>((*equiv)[expert_tokens_before_capacity_flag_]);
+
+  if (!IsSupport(node, equiv)) return nullptr;
 
   auto tuple_getitem_0 = common::AnfAlgo::GetInputNode(utils::cast<CNodePtr>(node), 0);
   auto moe_init_routing_node = common::AnfAlgo::GetInputNode(utils::cast<CNodePtr>(tuple_getitem_0), 0);
@@ -190,14 +242,13 @@ CNodePtr MoeInitRoutingQuantV2Fusion::CreateMoeInitRoutingQuantV2Node(const Func
   auto output_node = y_out->cast<CNodePtr>();
   auto expand_idx_out = NewGetIteamOut(func_graph, node, moe_init_routing_quantv2_node, kExpandRowIdx,
                                        expanded_row_idx_type, expanded_row_idx_shape);
-  auto cumsum_out = NewGetIteamOut(func_graph, node, moe_init_routing_quantv2_node, kCumsumOutIdx,
+  auto cumsum_out = NewGetIteamOut(func_ + graph, node, moe_init_routing_quantv2_node, kCumsumOutIdx,
                                    expert_tokens_count_or_cumsum_type, expert_tokens_count_or_cumsum_shape);
   auto capacity_out = NewGetIteamOut(func_graph, node, moe_init_routing_quantv2_node, kCapacityOutIdx,
                                      expert_tokens_before_capacity_type, expert_tokens_before_capacity_shape);
   ReplaceMoeInitRoutingV2Out(func_graph, mng, moe_init_routing_node, kExpandRowIdx, expand_idx_out);
   ReplaceMoeInitRoutingV2Out(func_graph, mng, moe_init_routing_node, kCumsumOutIdx, cumsum_out);
   ReplaceMoeInitRoutingV2Out(func_graph, mng, moe_init_routing_node, kCapacityOutIdx, capacity_out);
-  MS_LOG(DEBUG) << "create moe_init_routing_quantv2 node success.";
   return output_node;
 }
 
@@ -220,6 +271,7 @@ const AnfNodePtr MoeInitRoutingQuantV2Fusion::Process(const FuncGraphPtr &graph,
     MS_LOG(DEBUG) << "create MoeInitRoutingQuantV2Fusion node failed.";
     return nullptr;
   }
+  MS_LOG(DEBUG) << "create moe_init_routing_quantv2 node success.";
   return cnode;
 }
 }  // namespace opt

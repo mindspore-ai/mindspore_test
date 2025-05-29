@@ -15,18 +15,17 @@
 import numpy as np
 import pytest
 import mindspore as ms
+import mindspore.common.dtype as mstype
 from mindspore import context
 from mindspore.nn import Cell
-from mindspore import ops
-import mindspore.common.dtype as mstype
-from tests.mark_utils import arg_mark
 from mindspore.ops.operations._infer_ops import QuantV2
 from mindspore.ops.auto_generate.gen_ops_prim import moe_init_routing_v2_op
 from mindspore import Parameter
-
+from tests.mark_utils import arg_mark
 
 SUPPORTED_DTYPE = [ms.float16, ms.bfloat16, ms.float32]
 MAX_EXPERT_NUM = 1024
+
 
 def adapter_capacity(sorted_row_idx, sorted_expert_idx, capacity):
     count = 0
@@ -41,21 +40,38 @@ def adapter_capacity(sorted_row_idx, sorted_expert_idx, capacity):
                 sorted_expert_idx[i] = -1
                 sorted_row_idx[i] = -1
 
-def moe_init_routing_v2_exec(x, expert_idx, active_num, expert_capacity, expert_num, drop_pad_mode,
-                             expert_tokens_count_or_cumsum_flag, expert_tokens_before_capacity_flag,
-                             quant_scale, quant_offset, sqrt_mode, rounding_mode, dst_type):
+
+def moe_init_routing_v2_exec(
+        x,
+        expert_idx,
+        active_num,
+        expert_capacity,
+        expert_num,
+        drop_pad_mode,
+        expert_tokens_count_or_cumsum_flag,
+        expert_tokens_before_capacity_flag,
+        quant_scale,
+        quant_offset,
+        sqrt_mode,
+        rounding_mode,
+        dst_type):
     num_rows = x.shape[0]
     hidden_size = x.shape[-1]
     k = expert_idx.shape[-1]
-    sorted_row_idx = np.argsort(expert_idx.reshape((-1,)), axis=-1, kind="stable")
+    sorted_row_idx = np.argsort(
+        expert_idx.reshape(
+            (-1,)), axis=-1, kind="stable")
     sorted_expert_idx = np.sort(expert_idx.reshape((-1,)), axis=-1)
     if drop_pad_mode == 1 and expert_num <= 0:
-        raise Exception("[Error] expert_num must be greater than 0 when drop pad mode is enabled")
+        raise Exception(
+            "[Error] expert_num must be greater than 0 when drop pad mode is enabled")
 
     expert_tokens_count_or_cumsum = None
     expert_tokens_before_capacity = None
     # expert_token_idx
-    expert_idx_hist, _ = np.histogram(sorted_expert_idx, bins=expert_num, range=(0, expert_num - 1))
+    expert_idx_hist, _ = np.histogram(
+        sorted_expert_idx, bins=expert_num, range=(
+            0, expert_num - 1))
     expert_token_idx = np.cumsum(expert_idx_hist)
     if drop_pad_mode == 1 and expert_tokens_before_capacity_flag:
         expert_tokens_before_capacity = expert_idx_hist.astype("int32")
@@ -66,7 +82,8 @@ def moe_init_routing_v2_exec(x, expert_idx, active_num, expert_capacity, expert_
 
     if drop_pad_mode == 0:
         expanded_row_idx = np.zeros(sorted_row_idx.shape, dtype=np.int32)
-        expanded_row_idx[sorted_row_idx] = np.arange(sorted_row_idx.shape[-1], dtype=np.int32)
+        expanded_row_idx[sorted_row_idx] = np.arange(
+            sorted_row_idx.shape[-1], dtype=np.int32)
 
         if active_num == 0:
             active_num = num_rows * k
@@ -83,7 +100,8 @@ def moe_init_routing_v2_exec(x, expert_idx, active_num, expert_capacity, expert_
                 if last_expert_id != sorted_expert_idx[i]:
                     offset = 0
                     last_expert_id = sorted_expert_idx[i]
-                sort_row_tmp[sorted_expert_idx[i] * expert_capacity + offset] = sorted_row_idx[i]
+                sort_row_tmp[sorted_expert_idx[i] *
+                             expert_capacity + offset] = sorted_row_idx[i]
                 offset = offset + 1
 
         # expanded_row_idx
@@ -93,20 +111,25 @@ def moe_init_routing_v2_exec(x, expert_idx, active_num, expert_capacity, expert_
                 expanded_row_idx[val] = i
 
         # expanded_x
-        expanded_x = np.full((expert_num * expert_capacity, hidden_size), 0, dtype=x.dtype)
+        expanded_x = np.full(
+            (expert_num * expert_capacity, hidden_size), 0, dtype=x.dtype)
         for i, val in enumerate(sort_row_tmp):
             if val != -1:
                 expanded_x[i] = x[val // k]
-        expanded_x = expanded_x.reshape(expert_num, expert_capacity, hidden_size)
-    
+        expanded_x = expanded_x.reshape(
+            expert_num, expert_capacity, hidden_size)
+
     y = np.around(expanded_x * quant_scale + quant_offset)
     y = y.astype(np.int8)
 
     if expert_tokens_count_or_cumsum is not None:
-        return y, expanded_row_idx.astype("int32"), expert_tokens_count_or_cumsum
+        return y, expanded_row_idx.astype(
+            "int32"), expert_tokens_count_or_cumsum
     if expert_tokens_before_capacity is not None:
-        return y, expanded_row_idx.astype("int32"), expert_tokens_before_capacity
+        return y, expanded_row_idx.astype(
+            "int32"), expert_tokens_before_capacity
     return y, expanded_row_idx.astype("int32")
+
 
 class MoeInitRoutingQuantV2Net(Cell):
     def __init__(self):
@@ -114,20 +137,40 @@ class MoeInitRoutingQuantV2Net(Cell):
         self.moe = moe_init_routing_v2_op
         self.quant = QuantV2()
 
-    def construct(self, x, expert_idx, active_num, expert_capacity, expert_num, drop_pad_mode,
-                  expert_tokens_count_or_cumsum_flag, expert_tokens_before_capacity_flag,
-                  quant_scale, quant_offset, sqrt_mode, rounding_mode, dst_type):
-        expand_x, expand_row_idx, cumsum_out, capacity_out = self.moe(x, expert_idx, active_num, expert_capacity, expert_num,
-                                                               drop_pad_mode, expert_tokens_count_or_cumsum_flag,
-                                                               expert_tokens_before_capacity_flag)
-        y = self.quant(expand_x, quant_scale, quant_offset, sqrt_mode, rounding_mode, dst_type)
+    def construct(
+            self,
+            x,
+            expert_idx,
+            active_num,
+            expert_capacity,
+            expert_num,
+            drop_pad_mode,
+            expert_tokens_count_or_cumsum_flag,
+            expert_tokens_before_capacity_flag,
+            quant_scale,
+            quant_offset,
+            sqrt_mode,
+            rounding_mode,
+            dst_type):
+        expand_x, expand_row_idx, cumsum_out, capacity_out = self.moe(x, expert_idx, active_num,
+                                                                      expert_capacity, expert_num,
+                                                                      drop_pad_mode, expert_tokens_count_or_cumsum_flag,
+                                                                      expert_tokens_before_capacity_flag)
+        y = self.quant(
+            expand_x,
+            quant_scale,
+            quant_offset,
+            sqrt_mode,
+            rounding_mode,
+            dst_type)
         if drop_pad_mode == 1 and expert_tokens_before_capacity_flag:
             return y, expand_row_idx, capacity_out
         if drop_pad_mode == 0 and expert_tokens_count_or_cumsum_flag == 1:
             return y, expand_row_idx, cumsum_out
-        elif drop_pad_mode == 0 and expert_tokens_count_or_cumsum_flag == 2:
+        if drop_pad_mode == 0 and expert_tokens_count_or_cumsum_flag == 2:
             return y, expand_row_idx, cumsum_out
         return y, expand_row_idx
+
 
 class TestMoeInitRoutingV2:
     def __init__(self, test_inputs: dict):
@@ -155,47 +198,63 @@ class TestMoeInitRoutingV2:
         np_dtype = np.float16
         if self.dtype == ms.bfloat16 or self.dtype == ms.float32:
             np_dtype = np.float32
-        self.ms_inputs["x"] = np.random.uniform(-1, 1, size=(num_rows, h)).astype(np_dtype)
-        if self.ms_inputs["drop_pad_mode"] == 1 or (self.ms_inputs["drop_pad_mode"] == 0 and \
-                                                    self.ms_inputs["expert_tokens_count_or_cumsum_flag"] > 0):
-            self.ms_inputs["expert_idx"] = np.random.randint(0, self.ms_inputs["expert_num"], \
-                                                             size=(num_rows, k)).astype(np.int32)
+        self.ms_inputs["x"] = np.random.uniform(-1,
+                                                1, size=(num_rows, h)).astype(np_dtype)
+        if self.ms_inputs["drop_pad_mode"] == 1 or (
+                self.ms_inputs["drop_pad_mode"] == 0 and self.ms_inputs["expert_tokens_count_or_cumsum_flag"] > 0):
+            self.ms_inputs["expert_idx"] = np.random.randint(
+                0, self.ms_inputs["expert_num"], size=(
+                    num_rows, k)).astype(
+                        np.int32)
         else:
-            self.ms_inputs["expert_idx"] = np.random.randint(0, MAX_EXPERT_NUM, size=(num_rows, k)).astype(np.int32)
-        self.ms_inputs["scale"] = np.random.uniform(-100, 100, size=(1,)).astype(np_dtype)
-        self.ms_inputs["offset"] = np.random.uniform(-10, 10, size=(1,)).astype(np_dtype)
+            self.ms_inputs["expert_idx"] = np.random.randint(
+                0, MAX_EXPERT_NUM, size=(num_rows, k)).astype(np.int32)
+        self.ms_inputs["scale"] = np.random.uniform(
+            -100, 100, size=(1,)).astype(np_dtype)
+        self.ms_inputs["offset"] = np.random.uniform(
+            -10, 10, size=(1,)).astype(np_dtype)
         self.np_out = moe_init_routing_v2_exec(*tuple(self.ms_inputs.values()))
 
     def cal_ms_out(self):
         self.ms_inputs["x"] = ms.Tensor(self.ms_inputs["x"], self.dtype)
-        self.ms_inputs["expert_idx"] = ms.Tensor(self.ms_inputs["expert_idx"], ms.int32)
-        self.ms_inputs["scale"] = Parameter(ms.Tensor(self.ms_inputs["scale"], self.dtype), name='scale')
-        self.ms_inputs["offset"] = Parameter(ms.Tensor(self.ms_inputs["offset"], self.dtype), name='offset')
+        self.ms_inputs["expert_idx"] = ms.Tensor(
+            self.ms_inputs["expert_idx"], ms.int32)
+        self.ms_inputs["scale"] = Parameter(
+            ms.Tensor(
+                self.ms_inputs["scale"],
+                self.dtype),
+            name='scale')
+        self.ms_inputs["offset"] = Parameter(
+            ms.Tensor(
+                self.ms_inputs["offset"],
+                self.dtype),
+            name='offset')
         self.ms_out = self.net(*tuple(self.ms_inputs.values()))
 
     def compare(self):
         for np_out, ms_out in zip(self.np_out, self.ms_out):
             if self.dtype == ms.bfloat16:
-                np.testing.assert_allclose(ms_out.float().asnumpy(), np_out, atol=1)
+                np.testing.assert_allclose(
+                    ms_out.float().asnumpy(), np_out, atol=1)
             else:
                 np.testing.assert_allclose(ms_out.asnumpy(), np_out, atol=1)
         print(f"test success for {self.case_name}")
 
     def set_ms_inputs(self):
         self.ms_inputs = {
-            "x": None, # tensor
-            "expert_idx": None, # tensor
-            "active_num": None, # int
-            "expert_capacity": None, # int
-            "expert_num": None, # int
-            "drop_pad_mode": None, # int
-            "expert_tokens_count_or_cumsum_flag": None, # int
-            "expert_tokens_before_capacity_flag": None, # bool
-            "scale": None, # tensor
-            "offset": None, # tensor
-            "sqrt_mode": None, # bool
-            "rounding_mode": None, # int
-            "dst_type": None, # typeid
+            "x": None,  # tensor
+            "expert_idx": None,  # tensor
+            "active_num": None,  # int
+            "expert_capacity": None,  # int
+            "expert_num": None,  # int
+            "drop_pad_mode": None,  # int
+            "expert_tokens_count_or_cumsum_flag": None,  # int
+            "expert_tokens_before_capacity_flag": None,  # bool
+            "scale": None,  # tensor
+            "offset": None,  # tensor
+            "sqrt_mode": None,  # bool
+            "rounding_mode": None,  # int
+            "dst_type": None,  # typeid
         }
         self.ms_inputs["active_num"] = self.inputs["active_num"]
         self.ms_inputs["expert_capacity"] = self.inputs["expert_capacity"]
@@ -210,8 +269,11 @@ class TestMoeInitRoutingV2:
             x_shape = [None, None]
             expert_idx_shape = [None, None]
             self.ms_inputs["x"] = ms.Tensor(shape=x_shape, dtype=self.dtype)
-            self.ms_inputs["expert_idx"] = ms.Tensor(shape=expert_idx_shape, dtype=ms.int32)
-            self.net.set_inputs(x=self.ms_inputs["x"], expert_idx=self.ms_inputs["expert_idx"])
+            self.ms_inputs["expert_idx"] = ms.Tensor(
+                shape=expert_idx_shape, dtype=ms.int32)
+            self.net.set_inputs(
+                x=self.ms_inputs["x"],
+                expert_idx=self.ms_inputs["expert_idx"])
             self.ms_inputs["x"] = None
             self.ms_inputs["expert_idx"] = None
 
@@ -222,8 +284,12 @@ class TestMoeInitRoutingV2:
             context.set_context(mode=ms.PYNATIVE_MODE)
         elif self.mode == ms.GRAPH_MODE:
             context.set_context(mode=ms.GRAPH_MODE)
-            context.set_context(jit_config={"jit_level": "O0", "infer_boost": "on"})
-            context.set_context(save_graphs=True, save_graphs_path="./moe_init_routing_quantv2")
+            context.set_context(
+                jit_config={
+                    "jit_level": "O0",
+                    "infer_boost": "on"})
+            context.set_context(save_graphs=True,
+                                save_graphs_path="./moe_init_routing_quantv2")
         else:
             raise Exception("[Error] unsupported mode.")
 
@@ -248,7 +314,10 @@ description = {
 }
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'],
+          level_mark='level1',
+          card_mark='onecard',
+          essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE, ms.GRAPH_MODE])
 @pytest.mark.parametrize('dtype', [ms.float16, ms.bfloat16, ms.float32])
 def test_moe_init_routing_v2_case0(mode, dtype):
@@ -286,7 +355,10 @@ def test_moe_init_routing_v2_case0(mode, dtype):
     TestMoeInitRoutingV2(test_inputs)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'],
+          level_mark='level1',
+          card_mark='onecard',
+          essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE, ms.GRAPH_MODE])
 @pytest.mark.parametrize('dtype', [ms.float16, ms.bfloat16, ms.float32])
 def test_moe_init_routing_v2_case1(mode, dtype):
@@ -325,7 +397,10 @@ def test_moe_init_routing_v2_case1(mode, dtype):
     TestMoeInitRoutingV2(test_inputs)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'],
+          level_mark='level1',
+          card_mark='onecard',
+          essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE, ms.GRAPH_MODE])
 @pytest.mark.parametrize('dtype', [ms.float16, ms.bfloat16, ms.float32])
 def test_moe_init_routing_v2_case2(mode, dtype):
@@ -363,7 +438,10 @@ def test_moe_init_routing_v2_case2(mode, dtype):
     TestMoeInitRoutingV2(test_inputs)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'],
+          level_mark='level1',
+          card_mark='onecard',
+          essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE, ms.GRAPH_MODE])
 @pytest.mark.parametrize('dtype', [ms.float16, ms.bfloat16, ms.float32])
 def test_moe_init_routing_v2_case3(mode, dtype):
@@ -402,7 +480,10 @@ def test_moe_init_routing_v2_case3(mode, dtype):
     TestMoeInitRoutingV2(test_inputs)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'],
+          level_mark='level1',
+          card_mark='onecard',
+          essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE, ms.GRAPH_MODE])
 @pytest.mark.parametrize('dtype', [ms.float16, ms.bfloat16, ms.float32])
 def test_moe_init_routing_v2_case4(mode, dtype):
@@ -434,13 +515,15 @@ def test_moe_init_routing_v2_case4(mode, dtype):
             "sqrt_mode": False,
             "rounding_mode": "Round",
             "dst_type": mstype.int8,
-        }
-    }
+        }}
 
     TestMoeInitRoutingV2(test_inputs)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'],
+          level_mark='level1',
+          card_mark='onecard',
+          essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE, ms.GRAPH_MODE])
 @pytest.mark.parametrize('dtype', [ms.float16, ms.bfloat16, ms.float32])
 def test_moe_init_routing_v2_case5(mode, dtype):

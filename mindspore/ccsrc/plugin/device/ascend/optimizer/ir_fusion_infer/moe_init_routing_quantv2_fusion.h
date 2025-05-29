@@ -45,6 +45,7 @@ class MoeInitRoutingQuantV2Fusion : public PatternProcessPass {
   CNodePtr CreateMoeInitRoutingQuantV2Node(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
                                            const EquivPtr &equiv) const;
   std::vector<std::string> MustExistPrimitiveName() const override;
+  bool IsSupport(const AnfNodePtr &node, const EquivPtr &equiv) const;
   VarPtr x_;
   VarPtr expert_idx_;
   VarPtr active_num_;
@@ -55,6 +56,12 @@ class MoeInitRoutingQuantV2Fusion : public PatternProcessPass {
   VarPtr expert_tokens_before_capacity_flag_;
   VarPtr scale_;
   VarPtr offset_;
+
+  static constexpr int32_t kExpandRowIdx = 1;
+  static constexpr int32_t kCumsumOutIdx = 2;
+  static constexpr int32_t kCapacityOutIdx = 3;
+  static constexpr int32_t kScaleOutIdx = 1;
+  static constexpr int32_t kOffsetOutIdx = 2;
 };
 }  // namespace opt
 }  // namespace mindspore
