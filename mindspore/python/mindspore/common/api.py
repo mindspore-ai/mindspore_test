@@ -1050,7 +1050,6 @@ def _jit_ast(hash_obj, dynamic, jit_config):
 
         if hasattr(func, "__wrapped_by_jit__"):
             logger.warning(f"The func {func} should be wrapped by jit only once.")
-        setattr(func, "__wrapped_by_jit__", True)
 
         if hash_obj is None or not _is_inner_func(func):
             hash_obj = int(time.time() * 1e9)
@@ -1079,6 +1078,7 @@ def _jit_ast(hash_obj, dynamic, jit_config):
         # `__signature__` for the decorated function, `inspect.getfullargspec(func)` will get the specification of
         # original `func`.
         staging_specialize.__signature__ = inspect.signature(func)
+        setattr(staging_specialize, "__wrapped_by_jit__", True)
         return staging_specialize
 
     return wrap_func

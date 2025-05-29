@@ -111,7 +111,6 @@ class PIJitCaptureContext:
 
         if hasattr(fn, "__wrapped_by_jit__"):
             logger.warning(f"The fn {fn} should be wrapped by jit only once.")
-        setattr(fn, "__wrapped_by_jit__", True)
 
         module = inspect.getmodule(fn.__code__)
         if module is not None and module.__name__.startswith("mindspore"):
@@ -123,7 +122,9 @@ class PIJitCaptureContext:
         if fn.__code__ is _fn.__code__:
             fn = fn.__closure__[0].cell_contents.fn
         self.fn = fn
-        return functools.wraps(fn)(_fn)
+        wrap_fn = functools.wraps(fn)(_fn)
+        setattr(wrap_fn, "__wrapped_by_jit__", True)
+        return wrap_fn
 
     def __enter__(self):
         pi_jit_set_context(self.fn, *self._init_arg)
