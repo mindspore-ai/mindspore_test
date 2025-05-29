@@ -12,5 +12,5 @@ matmul_split_silu_mul_out1:
   function:
     disable: True
   returns:
-    output0:
+    output:
       dtype: tensor
