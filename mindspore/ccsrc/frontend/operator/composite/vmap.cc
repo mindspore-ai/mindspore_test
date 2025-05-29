@@ -284,6 +284,7 @@ FuncGraphPtr VmapMatchOutAxis::GenerateFuncGraph(const AbstractBasePtrList &args
   auto axis_size = fg_->add_parameter();
 
   auto inputs_abstract_sequence = dyn_cast<abstract::AbstractSequence>(inputs_abstract);
+  MS_EXCEPTION_IF_NULL(inputs_abstract_sequence);
   auto inputs_abstract_elements = inputs_abstract_sequence->elements();
   auto inputs_abstract_elements_size = inputs_abstract_elements.size();
   if (inputs_abstract_elements_size == 0) {

@@ -167,5 +167,5 @@ static T DlsymAscend(void *handle, const char *symbol_name) {
   return symbol;
 }
 
-#define DlsymAscendFuncObj(func_name, plugin_handle) DlsymAscend<func_name##FunPtr>(plugin_handle, k##func_name##Name);
+#define DlsymAscendFuncObj(func_name, plugin_handle) DlsymAscend<func_name##FunPtr>(plugin_handle, k##func_name##Name)
 #endif  // MINDSPORE_CCSRC_UTILS_DLOPEN_MACRO_H
