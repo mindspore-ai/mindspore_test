@@ -46,7 +46,7 @@
   default:
 #define MS_ASSERT_TRUE(cond) \
   MS_AMBIGUOUS_ELSE_BLOCKER_ \
-  if ((cond))                \
+  if (cond)                  \
     ;                        \
   else                       \
     MS_LOG(EXCEPTION)
