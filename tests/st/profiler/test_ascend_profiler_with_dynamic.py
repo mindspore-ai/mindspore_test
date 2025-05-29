@@ -350,6 +350,7 @@ def test_net_with_dynamic_profiler_step():
         "profile_memory": True,
         "parallel_strategy": True,
         "data_simplification": False,
+        "analyse": True
     }
     with tempfile.TemporaryDirectory(suffix="_step_profiler") as tmpdir:
         cfg_path = os.path.join(tmpdir, "profiler_config.json")
