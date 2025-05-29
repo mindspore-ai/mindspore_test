@@ -18,6 +18,7 @@ import os
 import pytest
 import mindspore.context as context
 from mindspore import Tensor, nn, JitConfig
+from mindspore import Parameter
 import mindspore as ms
 import mindspore.ops as ops
 import mindspore.ops.operations as P
@@ -226,6 +227,18 @@ class NetBool(nn.Cell):
         return y3
 
 
+class SelectNet(nn.Cell):
+    def __init__(self, shape):
+        super(SelectNet, self).__init__()
+        self.param = Parameter(Tensor(np.ones(shape), dtype=ms.float16), "param")
+
+    def construct(self, x0, x1, x2, x3):
+        y0 = ops.Add()(x0, x1)
+        y1 = ops.Select()(x2, x3, y0)
+        y2 = ops.Assign()(self.param, y1)
+        return y2
+
+
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_dvm_bool():
     """
@@ -233,20 +246,36 @@ def test_dvm_bool():
     Description: test dvm boolean data type
     Expectation: the result match with expect
     """
-    np.random.seed(1)
+
+    def case1():
+        np.random.seed(1)
+        x0 = np.random.normal(0, 1, (3, 1, 1, 1)).astype(np.float16)
+        x1 = np.random.normal(0, 1, (3, 1, 1, 1)).astype(np.float16)
+        x2 = np.array(True)
+        x3 = np.random.normal(0, 1, (3, 1, 1, 1)).astype(np.float16)
+        x4 = np.random.normal(0, 1, (3, 1, 1, 1)).astype(np.float16)
+        with AssertGKEnable(True):
+            net = NetBool()
+            output = net(Tensor(x0), Tensor(x1), Tensor(x2), Tensor(x3), Tensor(x4))
+            output = output.asnumpy()
+        expect = x1 * x3
+        assert np.allclose(expect, output, 1e-3, 1e-3)
+
+    def case2():
+        x0 = np.random.normal(0, 1, (1, 4, 8192, 96)).astype(np.float16)
+        x1 = np.random.normal(0, 1, (1, 4, 8192, 96)).astype(np.float16)
+        x2 = np.random.randint(2, size=(1,), dtype=bool)
+        x3 = np.random.normal(0, 1, (1, 4, 8192, 96)).astype(np.float16)
+        net = SelectNet((1, 4, 8192, 96))
+        _ = net(Tensor(x0), Tensor(x1), Tensor(x2), Tensor(x3))
+        output = net.param.asnumpy()
+        expect = np.select(x2, x3, x0 + x1)
+        assert np.allclose(expect, output, 1e-3, 1e-3)
+
     context.set_context(mode=context.GRAPH_MODE)
     context.set_context(jit_config={"jit_level": "O1"})
-    x0 = np.random.normal(0, 1, (3, 1, 1, 1)).astype(np.float16)
-    x1 = np.random.normal(0, 1, (3, 1, 1, 1)).astype(np.float16)
-    x2 = np.array(True)
-    x3 = np.random.normal(0, 1, (3, 1, 1, 1)).astype(np.float16)
-    x4 = np.random.normal(0, 1, (3, 1, 1, 1)).astype(np.float16)
-    with AssertGKEnable(True):
-        net = NetBool()
-        output = net(Tensor(x0), Tensor(x1), Tensor(x2), Tensor(x3), Tensor(x4))
-        output = output.asnumpy()
-    expect = x1 * x3
-    assert np.allclose(expect, output, 1e-3, 1e-3)
+    case1()
+    case2()
 
 
 class NetPow(nn.Cell):
