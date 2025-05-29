@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2024 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -499,6 +499,18 @@ class OrderEnforcer {
       auto user_cnode = user_node->cast<CNodePtr>();
       if (IsPrimitiveCNode(user_cnode, prim::kPrimUpdateState)) {
         continue;
+      }
+      // Do not insert TensorMove for the load which user is MakeTuple, and the MakeTuple only used by UpdateState.
+      if (IsPrimitiveCNode(user_cnode, prim::kPrimMakeTuple)) {
+        auto node_users_iter = node_users.find(user_cnode);
+        if (node_users_iter != node_users.end()) {
+          bool only_used_by_updatestate =
+            std::all_of(node_users_iter->second.begin(), node_users_iter->second.end(),
+                        [](const auto &pair) { return IsPrimitiveCNode(pair.first, prim::kPrimUpdateState); });
+          if (only_used_by_updatestate) {
+            continue;
+          }
+        }
       }
       const auto &weak_inputs = user_cnode->weak_inputs();
       size_t ref_key_times = 0;
