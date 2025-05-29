@@ -81,7 +81,8 @@ TensorStorageInfoPtrList ViewBasicTypeCalc(const PrimitivePtr &prim, const tenso
     MS_EXCEPTION(ValueError) << "For primitive[" << prim->name()
                              << "], the component of shape can't be less than -1, but got " << shape;
   }
-  return ViewCalcImpl(input_tensor, shape);
+  auto old_tensor_info = GetOldTensorInfo(input_tensor);
+  return ViewStridesCalc(old_tensor_info, shape);
 }
 
 TensorStorageInfoPtrList ViewCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
