@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -107,7 +107,10 @@ const AnfNodePtr QMatmulElemFusion::Process(const FuncGraphPtr &func_graph, cons
     MS_LOG(INFO) << "Currently, do not support to fuse qbmm(pertoken) with add.";
     return nullptr;
   }
-  CheckIOValid();
+  if (!CheckIOValid()) {
+    MS_LOG(ERROR) << "Node type don't match";
+    return nullptr;
+  }
   auto cnode = CreateQbmmElemNode(func_graph, node, equiv);
   return cnode;
 }

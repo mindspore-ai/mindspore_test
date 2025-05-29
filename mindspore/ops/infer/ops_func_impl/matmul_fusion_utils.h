@@ -36,6 +36,9 @@ class MatmulFusionUtils {
   static BaseShapePtr InferenceMultiMatmulInferShape(const PrimitivePtr &primitive,
                                                      const std::vector<AbstractBasePtr> &input_args);
 
+  static BaseShapePtr InferenceMultiMatmulInferShapeFused(const PrimitivePtr &primitive,
+                                                          const std::vector<AbstractBasePtr> &input_args);
+
   static TuplePtr InferenceMultiMatmulInferType(const PrimitivePtr &primitive,
                                                 const std::vector<AbstractBasePtr> &input_args);
 

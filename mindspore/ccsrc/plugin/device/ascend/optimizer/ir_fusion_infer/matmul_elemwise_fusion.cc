@@ -91,8 +91,9 @@ const AnfNodePtr MatmulElemFusion::Process(const FuncGraphPtr &func_graph, const
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   auto const &soc_version = ms_context->ascend_soc_version();
-  if (!soc_version.empty() && soc_version != "ascend910b" && soc_version != "ascend910_93" &&
-      soc_version != "ascend310p") {
+  const std::vector<std::string> valid_soc_version{"ascend910b", "ascend910_93", "ascend310p"};
+  if (!soc_version.empty() &&
+      (std::find(valid_soc_version.begin(), valid_soc_version.end(), soc_version) == valid_soc_version.end())) {
     return nullptr;
   }
   auto enable_op_list = ms_context->ms_internal_enable_custom_kernel_list();

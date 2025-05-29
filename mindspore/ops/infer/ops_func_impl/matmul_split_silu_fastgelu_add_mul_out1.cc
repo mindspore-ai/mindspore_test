@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,41 +26,7 @@ namespace ops {
 
 BaseShapePtr MatmulSplitSiluFastgeluAddMulOut1FuncImpl::InferShape(
   const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
-  auto op_name = primitive->name();
-  auto x_shape = CheckAndConvertUtils::ConvertShapePtrToShapeMap(input_args[kInputIndex0]->GetShape())[kShape];
-  auto w_shape = CheckAndConvertUtils::ConvertShapePtrToShapeMap(input_args[kInputIndex1]->GetShape())[kShape];
-  if (IsDynamicRank(x_shape) || IsDynamicRank(w_shape)) {
-    MS_LOG(EXCEPTION) << "For " << op_name << ", dynamic rank is not supported";
-  }
-  constexpr size_t kSize2 = 2;
-  constexpr size_t kSize3 = 3;
-  const size_t x_rank = x_shape.size();
-  const size_t w_rank = w_shape.size();
-  MS_CHECK_VALUE(x_rank == kSize3,
-                 CheckAndConvertUtils::FormatCommMsg("For '" + primitive->name() + "', x_rank should be 3."));
-
-  MS_CHECK_VALUE(w_rank == kSize2,
-                 CheckAndConvertUtils::FormatCommMsg("For '" + primitive->name() + "', w_rank should be 2."));
-
-  auto b = x_shape[0];  // in matmul, m = b * s
-  auto s = x_shape[1];
-  auto k = x_shape[2];
-  auto k0 = w_shape[1];
-  MS_CHECK_VALUE(k == k0, CheckAndConvertUtils::FormatCommMsg(
-                            "For '" + primitive->name() + "', the K axis of all inputs must have the same length."));
-
-  MS_CHECK_VALUE(primitive->HasAttr("n_lens"),
-                 CheckAndConvertUtils::FormatCommMsg("For '" + primitive->name() + "', op must have attr 'n_lens'."));
-
-  std::vector<int64_t> n_len_list = GetValue<std::vector<int64_t>>(primitive->GetAttr("n_lens"));
-  MS_CHECK_VALUE(
-    (n_len_list.size() == kSize2 || n_len_list.size() == kSize3),
-    CheckAndConvertUtils::FormatCommMsg("For '" + primitive->name() + "', attr 'n_lens' must have 2 or 3 value."));
-
-  ShapeVector output_0_shape = {b, s, n_len_list[kIndex0]};
-  std::vector<BaseShapePtr> shape_lists;
-  (void)shape_lists.emplace_back(std::make_shared<abstract::TensorShape>(output_0_shape));
-  return std::make_shared<abstract::TupleShape>(shape_lists);
+  return MatmulFusionUtils::InferenceMultiMatmulInferShapeFused(primitive, input_args);
 }
 
 TypePtr MatmulSplitSiluFastgeluAddMulOut1FuncImpl::InferType(const PrimitivePtr &primitive,
