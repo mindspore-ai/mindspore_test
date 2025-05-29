@@ -261,7 +261,7 @@ class SomasRegister {
   ~SomasRegister() = default;
 };
 
-#define REG_SOMAS(S, T, C) static const somas::SomasRegister g_##S##_reg(T, []() { return std::make_shared<C>(); });
+#define REG_SOMAS(S, T, C) static const somas::SomasRegister g_##S##_reg(T, []() { return std::make_shared<C>(); })
 }  // namespace somas
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_COMMON_SOMAS_SOMAS_H_
