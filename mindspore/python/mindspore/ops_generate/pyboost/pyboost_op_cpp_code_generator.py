@@ -1167,8 +1167,8 @@ def delete_residual_files(work_path, op_protos):
     all_operator_name = []
     for op_proto in op_protos:
         all_operator_name.append(op_proto.op_name)
-    code_generate_path_list = [f"{K.MS_OPS_KERNEL_PATH}/{device}/pyboost/auto_generate/" for device in
-                               ["ascend", "gpu", "cpu"]]
+    devices = ["ascend", "gpu", "cpu"]
+    code_generate_path_list = [f"{K.MS_OPS_KERNEL_PATH}/{device}/pyboost/auto_generate/" for device in devices]
     code_generate_path_list.append(
         f"{K.MS_COMMON_PYBOOST_KERNEL_PATH}/auto_generate/")
     for code_generate_path in code_generate_path_list:

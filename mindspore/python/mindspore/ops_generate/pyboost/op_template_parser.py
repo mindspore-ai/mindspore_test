@@ -319,14 +319,6 @@ class OpTemplateParser:
 
         return op_outputs, call_outputs
 
-    def _is_input_arg(self, arg_name, op_name):
-        res = False
-        if op_name in K.INPUT_NAME_MAP and arg_name == K.INPUT_NAME_MAP[op_name]:
-            res = True
-        elif op_name not in K.INPUT_NAME_MAP and arg_name in K.INPUT_ARGS_NAME:
-            res = True
-        return res
-
     def generate_signature_str(self, kw_only_args=None, varargs=None, *, is_tensor_api: bool) -> str:
         """
         Generates a single function signature string for the given operation prototype.
@@ -351,7 +343,7 @@ class OpTemplateParser:
         for arg in self.op_proto.op_args:
             arg_name = arg.arg_name
 
-            if is_tensor_api and self._is_input_arg(arg_name, op_name):
+            if is_tensor_api and _is_input_arg(arg_name, op_name):
                 continue
 
             single_arg = ''
@@ -390,7 +382,8 @@ class OpTemplateParser:
 
         return args_str + ')"'
 
-    def get_arg_handler_processor(self, func_name, op_proto, *, is_tensor_api):
+    @staticmethod
+    def get_arg_handler_processor(func_name, op_proto, *, is_tensor_api):
         """
         Generates argument handler processing code for the given function prototype.
 
@@ -526,3 +519,12 @@ parse_args.arg_list_[${idx}]))->value());\n"
             convert_args_str += arg_convert_template.replace(index=idx,
                                                              des_type=arg_type_str[:-3])
         return convert_args_str[:-2]
+
+
+def _is_input_arg(arg_name, op_name):
+    res = False
+    if op_name in K.INPUT_NAME_MAP and arg_name == K.INPUT_NAME_MAP[op_name]:
+        res = True
+    elif op_name not in K.INPUT_NAME_MAP and arg_name in K.INPUT_ARGS_NAME:
+        res = True
+    return res

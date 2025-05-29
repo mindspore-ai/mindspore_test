@@ -15,6 +15,10 @@
 """cell"""
 from __future__ import absolute_import
 
+__all__ = [
+    "register_cell_buffer_registration_hook",
+]
+
 import inspect
 import os
 import time
@@ -57,11 +61,6 @@ from mindspore.parallel._utils import _init_auto_parallel_context, _clear_auto_p
 from mindspore._check_jit_forbidden_api import jit_forbidden_register
 from mindspore.common._register_for_recompute import recompute_registry
 
-
-__all__ = [
-    "register_cell_buffer_registration_hook",
-]
-
 _global_buffer_registration_hooks: Dict[int, Callable] = OrderedDict()
 _EXTRA_STATE_KEY_SUFFIX = "_extra_state"
 
@@ -97,7 +96,6 @@ def register_cell_buffer_registration_hook(hook: Callable[..., None],):
     handle = _RemovableHandle(_global_buffer_registration_hooks)
     _global_buffer_registration_hooks[handle.id] = hook
     return handle
-
 
 
 class Cell(Cell_):
@@ -355,7 +353,6 @@ class Cell(Cell_):
         if self._lazy_forward_hook_with_kwargs is None:
             super().__setattr__("_lazy_forward_hook_with_kwargs", OrderedDict())
         return self._lazy_forward_hook_with_kwargs
-
 
     @property
     def _user_parameters(self):
@@ -3070,7 +3067,6 @@ class Cell(Cell_):
             OrderedDict([('param_a', Parameter (name=param_a, shape=(3,), dtype=Int64, requires_grad=True)), \
             ('buffer_a', Tensor(shape=[3], dtype=Int64, value= [4, 5, 6]))])
         """
-        # TODO: Remove `args` and the parsing logic when BC allows.
         if args:
             # DeprecationWarning is ignored by default
             warnings.warn(
@@ -3123,7 +3119,7 @@ class Cell(Cell_):
 
         It should have the following signature:
 
-        hook(cell, state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs) -> None  # noqa: B950
+        hook(cell, state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs) -> None
 
         Args:
             hook (Callable): The hook function before `load_state_dict` is called.

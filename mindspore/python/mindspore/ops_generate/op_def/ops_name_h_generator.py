@@ -19,14 +19,11 @@ This module defines the `OpsNameHGenerator` class, which produces C++ code to de
 constants for operator names based on given prototypes.
 """
 
-import os
-
 import common.gen_constants as K
 import common.gen_utils as gen_utils
 import common.template as template
 from common.base_generator import BaseGenerator
 from pyboost import pyboost_utils
-
 
 OP_NAME_OP_DEF = """
 #ifndef MINDSPORE_CORE_OP_NAME_${suffix}_H_
