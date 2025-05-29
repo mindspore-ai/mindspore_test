@@ -69,7 +69,7 @@ static inline void UnifyWeightShape(const std::vector<KernelTensor *> &ori_weigh
       }
       auto new_w = w->CloneKernelTensor();
       auto w_shape = w->GetShapeVector();
-      w_shape.back() *= 2;
+      w_shape.back() *= kSizeTwo;
       new_w->SetShapeVector(w_shape);
       new_weights_shared_ptr->emplace_back(new_w);
       new_weights_raw_ptr->emplace_back(new_w.get());

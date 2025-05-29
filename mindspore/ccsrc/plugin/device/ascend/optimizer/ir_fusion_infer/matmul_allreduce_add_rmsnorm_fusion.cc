@@ -141,8 +141,7 @@ AnfNodePtr NewTransposeNode(const FuncGraphPtr &func_graph, const AnfNodePtr &x2
 
   std::vector<TypeId> transpose_types;
   std::vector<BaseShapePtr> transpose_shapes;
-  ShapeVector x2_shape_vector;
-  x2_shape_vector = x2->Shape()->GetShapeVector();
+  ShapeVector x2_shape_vector = x2->Shape()->GetShapeVector();
   std::reverse(x2_shape_vector.begin(), x2_shape_vector.end());
   auto transpose_shape = x2->Shape()->Clone();
   MS_EXCEPTION_IF_NULL(transpose_shape);

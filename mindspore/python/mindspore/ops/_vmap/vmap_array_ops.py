@@ -1527,14 +1527,13 @@ def get_meshgrid_vmap_rule(prim, axis_size):
 
         if not isinstance(inputs_bdim, (tuple)):
             _raise_value_error("The inputs of P.Meshgrid is not tuple.")
-        args = inputs_bdim
-        if len(args) <= 1:
+        if len(inputs_bdim) <= 1:
             _raise_value_error(
                 "The input number of P.Meshgrid must be greater than 1.")
 
         output_shape = []
         ones_shape = []
-        for each_arg in args:
+        for each_arg in inputs_bdim:
             x, bdim = each_arg
             if bdim is None:
                 _raise_value_error(
@@ -1548,22 +1547,16 @@ def get_meshgrid_vmap_rule(prim, axis_size):
         output_shape.insert(0, axis_size)
         ones_shape.insert(0, axis_size)
 
-        indexing, _ = indexing_bdim
-
-        if indexing == Indexing.xy.value:
+        if indexing_bdim[0] == Indexing.xy.value:
             output_shape[1], output_shape[2] = output_shape[2], output_shape[1]
-        shape = tuple(output_shape)
-
-        input_0, _ = args[0]
-        dtype = F.dtype(input_0)
-        ones_tensor = F.fill(dtype, shape, 1)
+        ones_tensor = F.fill(F.dtype(inputs_bdim[0][0]), tuple(output_shape), 1)
 
         index = 0
         vals_out_tuple = ()
-        for each_arg in args:
+        for each_arg in inputs_bdim:
             x, bdim = each_arg
             x = _bdim_at_front(x, bdim, axis_size)
-            shape_index = (1 - index) if (index <= 1 and indexing == Indexing.xy.value) else index
+            shape_index = (1 - index) if (index <= 1 and indexing_bdim[0] == Indexing.xy.value) else index
             ones_shape[shape_index + 1] = output_shape[shape_index + 1]
             x = P.Reshape()(x, tuple(ones_shape))
             output = P.Mul()(x, ones_tensor)
