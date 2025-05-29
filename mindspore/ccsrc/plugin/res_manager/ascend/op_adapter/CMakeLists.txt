@@ -1,4 +1,4 @@
-set(ADAPTER_PATH ${TOP_DIR}/mindspore/ccsrc/plugin/res_manager/ascend/op_adapter/)
+set(ADAPTER_PATH ${CMAKE_CURRENT_SOURCE_DIR})
 if(ENABLE_D OR ENABLE_ACL)
     set(op_proto_src_gen_script "${CMAKE_CURRENT_BINARY_DIR}/op_proto/generate_op_proto.cmake")
     file(WRITE ${op_proto_src_gen_script} ""

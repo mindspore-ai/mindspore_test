@@ -23,8 +23,8 @@
 #if !defined(_WIN32) && !defined(_WIN64)
 #include "extendrt/cxx_api/dlutils.h"
 #endif
-#include "utils/crypto.h"
 #include "extendrt/cxx_api/file_utils.h"
+#include "src/common/crypto.h"
 
 namespace mindspore {
 static Status RealPath(const std::string &file, std::string *realpath_str) {
@@ -151,8 +151,8 @@ Status Serialization::Load(const void *model_data, size_t data_size, ModelType m
         }
       } else {
         size_t plain_data_size;
-        auto plain_data = mindspore::Decrypt(&plain_data_size, reinterpret_cast<const unsigned char *>(model_data),
-                                             data_size, dec_key.key, dec_key.len, CharToString(dec_mode));
+        auto plain_data = lite::Decrypt(&plain_data_size, reinterpret_cast<const unsigned char *>(model_data),
+                                        data_size, dec_key.key, dec_key.len, CharToString(dec_mode));
         if (plain_data == nullptr) {
           err_msg << "Load model failed. Please check the valid of dec_key and dec_mode.";
           MS_LOG(ERROR) << err_msg.str();

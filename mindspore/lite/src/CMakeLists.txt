@@ -390,7 +390,7 @@ if(MSLITE_ENABLE_ACL)
 endif()
 
 add_library(mindspore-lite SHARED $<TARGET_OBJECTS:lite_src_mid>)
-target_link_libraries(mindspore-lite lite_src_common_mid)
+target_link_libraries(mindspore-lite lite_src_common_mid securec)
 set_target_properties(mindspore-lite PROPERTIES CLEAN_DIRECT_OUTPUT 1)
 
 if(APPLE)

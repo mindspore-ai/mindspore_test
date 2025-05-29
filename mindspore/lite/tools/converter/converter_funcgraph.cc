@@ -144,7 +144,7 @@ FuncGraphPtr ConverterFuncGraph::Load(const std::shared_ptr<ConverterPara> &para
     manager = MakeManager();
     manager->AddFuncGraph(func_graph, true);
   }
-  InferFuncGraphLoaded(func_graph);
+  InferFuncGraphLoaded(func_graph, true);
   bool is_original = IsOriginalFuncGraph(func_graph);
   if (is_original) {
     func_graph->set_attr("graph_name", MakeValue("main_graph"));

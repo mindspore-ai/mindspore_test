@@ -37,7 +37,7 @@ class MindIREngine {
   MindIREngine(const MindIREngine &) = delete;
   MindIREngine &operator=(const MindIREngine &) = delete;
 
-  bool InferShape(const AbstractBasePtrList &args);
+  bool InferShape(const AbstractBasePtrList &args, bool is_lite = false);
 
   void SetException(bool flag) { raise_exception_ = flag; }
 
@@ -45,17 +45,19 @@ class MindIREngine {
   using AbstractBasePtrListPtr = std::shared_ptr<AbstractBasePtrList>;
 
   void Init(const AbstractBasePtrList &args);
-  AbstractBasePtr InferPrimitiveShape(const PrimitivePtr &prim, const AbstractBasePtrList &args_abs_list) const;
-  void EvalCommonPrimitive(const PrimitivePtr &prim, const CNodePtr &node, const AbstractBasePtrListPtr &args);
+  AbstractBasePtr InferPrimitiveShape(const PrimitivePtr &prim, const AbstractBasePtrList &args_abs_list,
+                                      bool is_lite = false) const;
+  void EvalCommonPrimitive(const PrimitivePtr &prim, const CNodePtr &node, const AbstractBasePtrListPtr &args,
+                           bool is_lite = false);
   void EvalPartialPrimitive(const CNodePtr &node, const AbstractBasePtrListPtr &args);
   void EvalReturnPrimitive(const CNodePtr &node);
   void InferParameter(const AnfNodePtr &node);
   void InferValueNode(const AnfNodePtr &node);
-  void InferCNode(const AnfNodePtr &node);
+  void InferCNode(const AnfNodePtr &node, bool is_lite = false);
   void EvalAbstractFunction(const abstract::AbstractFuncAtomPtr &func, const CNodePtr &node,
-                            const AbstractBasePtrListPtr &args);
+                            const AbstractBasePtrListPtr &args, bool is_lite = false);
   void EvalPrimitiveAbastract(const abstract::PrimitiveAbstractClosurePtr &func, const CNodePtr &node,
-                              const AbstractBasePtrListPtr &args);
+                              const AbstractBasePtrListPtr &args, bool is_lite = false);
   void EvalFuncGraphAbastract(const abstract::FuncGraphAbstractClosurePtr &func, const CNodePtr &node,
                               const AbstractBasePtrListPtr &args);
   void EvalPartialAbastract(const abstract::PartialAbstractClosurePtr &func, const CNodePtr &node,
@@ -77,14 +79,14 @@ class MindIREngine {
 };
 
 // Infer the root function graph.
-bool MindIREngine::InferShape(const AbstractBasePtrList &args) {
+bool MindIREngine::InferShape(const AbstractBasePtrList &args, bool is_lite) {
   Init(args);
   while (!ready_.empty()) {
     auto current = ready_.front();
     MS_EXCEPTION_IF_NULL(current);
     ready_.pop_front();
     if (current->isa<CNode>()) {
-      InferCNode(current);
+      InferCNode(current, is_lite);
     } else if (current->isa<ValueNode>()) {
       InferValueNode(current);
     } else if (current->isa<Parameter>()) {
@@ -155,7 +157,6 @@ void MindIREngine::Init(const AbstractBasePtrList &args) {
   MS_LOG(DEBUG) << "Finish init. Size of nodes:" << manager->all_nodes().size();
 }
 
-#if !defined(BUILD_LITE)
 void CheckInferInput(const PrimitivePtr &prim, const AbstractBasePtrList &args_abs_list) {
   const auto &name = prim->name();
   for (size_t i = 0; i < args_abs_list.size(); ++i) {
@@ -164,27 +165,25 @@ void CheckInferInput(const PrimitivePtr &prim, const AbstractBasePtrList &args_a
     }
   }
 }
-#endif
 
 // Infer primitive using C++ implement.
-AbstractBasePtr MindIREngine::InferPrimitiveShape(const PrimitivePtr &prim,
-                                                  const AbstractBasePtrList &args_abs_list) const {
+AbstractBasePtr MindIREngine::InferPrimitiveShape(const PrimitivePtr &prim, const AbstractBasePtrList &args_abs_list,
+                                                  bool is_lite) const {
   MS_EXCEPTION_IF_NULL(prim);
-#if !defined(BUILD_LITE)
-  // For lite, there are MindIR with old primitives that attributes are not converted to inputs.
-  // This would cause input number check fail.
-  CheckInferInput(prim, args_abs_list);
-#endif
+  if (!is_lite) {
+    // For lite, there are MindIR with old primitives that attributes are not converted to inputs.
+    // This would cause input number check fail.
+    CheckInferInput(prim, args_abs_list);
+  }
   try {
     MS_LOG_TRY_CATCH_SCOPE;
     // For Lite, the op is with old format, it will fail in new infer function, so skip it.
-#ifndef BUILD_LITE
-    auto abstract_optional = abstract::InferAbstractByFuncImpl(prim, args_abs_list);
-    if (abstract_optional.has_value()) {
-      return abstract_optional.value();
+    if (!is_lite) {
+      auto abstract_optional = abstract::InferAbstractByFuncImpl(prim, args_abs_list);
+      if (abstract_optional.has_value()) {
+        return abstract_optional.value();
+      }
     }
-#endif
-
     auto found = abstract::GetPrimitiveInferImpl(prim);
     if (found.has_value()) {
       auto infer = found.value();
@@ -192,12 +191,12 @@ AbstractBasePtr MindIREngine::InferPrimitiveShape(const PrimitivePtr &prim,
         return infer.InferShapeAndType(nullptr, prim, args_abs_list);
       }
     } else {
-#if !defined(BUILD_LITE)
-      auto infer_res = abstract::InferAbstractByFuncImpl(prim, args_abs_list);
-      if (infer_res.has_value()) {
-        return infer_res.value();
+      if (!is_lite) {
+        auto infer_res = abstract::InferAbstractByFuncImpl(prim, args_abs_list);
+        if (infer_res.has_value()) {
+          return infer_res.value();
+        }
       }
-#endif
     }
 
     if (raise_exception_) {
@@ -220,7 +219,7 @@ AbstractBasePtr MindIREngine::InferPrimitiveShape(const PrimitivePtr &prim,
 }
 
 void MindIREngine::EvalCommonPrimitive(const PrimitivePtr &prim, const CNodePtr &node,
-                                       const AbstractBasePtrListPtr &args) {
+                                       const AbstractBasePtrListPtr &args, bool is_lite) {
   // Save MakeTuple cnode abstract by its own abstract when MakeTuple have an abstract of
   // AbstractCSRTensor/AbstractCOOTensor that can not be inferred by its Infer Functions.
   if (prim->name() == prim::kPrimMakeTuple->name()) {
@@ -241,7 +240,7 @@ void MindIREngine::EvalCommonPrimitive(const PrimitivePtr &prim, const CNodePtr 
   }
 
   // Call C++ infer
-  auto result = InferPrimitiveShape(prim, args_abs_list);
+  auto result = InferPrimitiveShape(prim, args_abs_list, is_lite);
   if (result == nullptr) {
     MS_LOG(INFO) << node->ToString()
                  << " can't be inferred shape. It will keep the previous value with danger. Prim: " << prim->ToString();
@@ -365,7 +364,7 @@ void MindIREngine::SaveNodeInferResult(const AnfNodePtr &node, const AbstractBas
 }
 
 void MindIREngine::EvalPrimitiveAbastract(const abstract::PrimitiveAbstractClosurePtr &func, const CNodePtr &node,
-                                          const AbstractBasePtrListPtr &args) {
+                                          const AbstractBasePtrListPtr &args, bool is_lite) {
   MS_EXCEPTION_IF_NULL(func);
   auto prim = func->prim();
   // Return Primitive
@@ -379,7 +378,7 @@ void MindIREngine::EvalPrimitiveAbastract(const abstract::PrimitiveAbstractClosu
     return;
   }
   // common Primitive
-  EvalCommonPrimitive(prim, node, args);
+  EvalCommonPrimitive(prim, node, args, is_lite);
 }
 
 bool MindIREngine::CheckCNodeNotReady(const CNodePtr &node) {
@@ -507,12 +506,12 @@ AbstractBasePtr MindIREngine::GetCNodeOperatorAbstract(const AnfNodePtr &node) {
 
 // If args is nullPtr, it is called by InferCNode, else it is called recursively by EvalPartialAbastract.
 void MindIREngine::EvalAbstractFunction(const abstract::AbstractFuncAtomPtr &func, const CNodePtr &node,
-                                        const AbstractBasePtrListPtr &args) {
+                                        const AbstractBasePtrListPtr &args, bool is_lite) {
   MS_EXCEPTION_IF_NULL(func);
   if (func->isa<abstract::PrimitiveAbstractClosure>()) {
     // C++ Primitive
     auto prim = func->cast<abstract::PrimitiveAbstractClosurePtr>();
-    EvalPrimitiveAbastract(prim, node, args);
+    EvalPrimitiveAbastract(prim, node, args, is_lite);
   } else if (func->isa<abstract::FuncGraphAbstractClosure>()) {
     // FuncGraph
     auto funcGraph = func->cast<abstract::FuncGraphAbstractClosurePtr>();
@@ -547,7 +546,7 @@ void MindIREngine::UpdateReady(const AnfNodePtr &node) {
   }
 }
 
-void MindIREngine::InferCNode(const AnfNodePtr &node) {
+void MindIREngine::InferCNode(const AnfNodePtr &node, bool is_lite) {
   auto cnode = node->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(cnode);
   if (CheckCNodeNotReady(cnode)) {
@@ -572,14 +571,14 @@ void MindIREngine::InferCNode(const AnfNodePtr &node) {
   };
   func->Visit(build_fuction);
   for (const auto &abstractFunc : abstractFuncList) {
-    EvalAbstractFunction(abstractFunc, cnode, nullptr);
+    EvalAbstractFunction(abstractFunc, cnode, nullptr, is_lite);
   }
 }
 }  // namespace
-bool InferMindir(const FuncGraphPtr &root, const AbstractBasePtrList &args, bool raise_exception) {
+bool InferMindir(const FuncGraphPtr &root, const AbstractBasePtrList &args, bool raise_exception, bool is_lite) {
   auto engine = std::make_shared<MindIREngine>(root);
   engine->SetException(raise_exception);
-  return engine->InferShape(args);
+  return engine->InferShape(args, is_lite);
 }
 
 bool ValidMindir(const FuncGraphPtr &root) {
@@ -593,7 +592,7 @@ bool ValidMindir(const FuncGraphPtr &root) {
   return true;
 }
 
-void InferFuncGraphLoaded(const FuncGraphPtr &root) {
+void InferFuncGraphLoaded(const FuncGraphPtr &root, bool is_lite) {
   abstract::AbstractBasePtrList func_args;
   const auto &inputs = root->get_inputs();
   (void)std::transform(inputs.begin(), inputs.end(), std::back_inserter(func_args),
@@ -604,6 +603,6 @@ void InferFuncGraphLoaded(const FuncGraphPtr &root) {
                          }
                          return arg->abstract();
                        });
-  (void)InferMindir(root, func_args);
+  (void)InferMindir(root, func_args, false, is_lite);
 }
 }  // namespace mindspore
