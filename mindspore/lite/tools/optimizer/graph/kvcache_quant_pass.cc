@@ -178,10 +178,8 @@ STATUS KVCacheQuantPass::RemoveOp(const FuncGraphPtr &func_graph, const AnfNodeP
   return lite::RET_OK;
 }
 
-// Pattern:
-// Mul -> Add -> Round -> Cast
-// Replace:
-// Mul -> Add -> Quant
+// Pattern:Mul -> Add -> Round -> Cast
+// Replace:Mul -> Add -> Quant
 STATUS KVCacheQuantPass::RunQuantPass(const FuncGraphPtr &func_graph, const FuncGraphManagerPtr &manager) {
   CHECK_NULL_RETURN(func_graph);
   CHECK_NULL_RETURN(manager);
@@ -217,10 +215,8 @@ STATUS KVCacheQuantPass::RunQuantPass(const FuncGraphPtr &func_graph, const Func
   return lite::RET_OK;
 }
 
-// Pattern:
-// Cast -> Add -> Mul
-// Replace:
-// AntiQuant -> Add -> Mul
+// Pattern:Cast -> Add -> Mul
+// Replace:AntiQuant -> Add -> Mul
 STATUS KVCacheQuantPass::RunAntiQuantPass(const FuncGraphPtr &func_graph, const FuncGraphManagerPtr &manager) {
   CHECK_NULL_RETURN(func_graph);
   CHECK_NULL_RETURN(manager);

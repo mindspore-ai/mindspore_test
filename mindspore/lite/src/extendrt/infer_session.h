@@ -64,7 +64,6 @@ class InferSession : public std::enable_shared_from_this<InferSession> {
   ///
   /// \param[in] model_data Define the buffer read from a model file.
   /// \param[in] data_size Define bytes number of model buffer.
-  ///
   /// \return Status.
   virtual Status CompileGraph(const void *model_data, size_t data_size, uint32_t *graph_id) {
     (void)model_data;
