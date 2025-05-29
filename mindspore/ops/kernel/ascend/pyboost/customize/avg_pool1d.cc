@@ -23,7 +23,6 @@
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 
-#include "kernel/ascend/pyboost/auto_generate/expand_dims.h"
 #include "kernel/ascend/pyboost/auto_generate/avg_pool2d.h"
 #include "mindspore/ccsrc/pyboost/auto_generate/reshape.h"
 

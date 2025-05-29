@@ -1705,10 +1705,6 @@ def tensor_sinc(input):
     return sinc(input)
 
 
-def tensor_unsqueeze(input, dim):
-    return
-
-
 def deprecated_tensor_unsqueeze(input, dim):
     return unsqueeze(input, dim)
 
@@ -1916,3 +1912,6 @@ def tensor_gmm(x, weight, *, bias=None, group_list=None, group_type=0, group_lis
 
 def raise_func(*args, **kwargs):
     raise NotImplementedError("this func has not been implemented.")
+
+def tensor_broadcast_to(input, shape):
+    return F.broadcast_to(input, shape)

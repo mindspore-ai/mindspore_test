@@ -1,0 +1,37 @@
+narrow:
+  description: |
+    narrow(input, dim, start, length) -> Tensor
+    
+    Obtains a tensor of a specified length at a specified start position along a specified axis.
+
+    Args:
+        input (Tensor): the tensor to narrrow.
+        dim (int): the axis along which to narrow.
+        start (Union[int, Tensor]): the starting dimension.
+        length (int): the distance to the ending dimension.
+
+    Returns:
+        Tensor, the narrowed tensor.
+    
+    Raises:
+        ValueError: The rank of `input` is 0.
+        ValueError: The value of `dim` is out of range [-self.ndim, self.ndim).
+        ValueError: The value of `start` is out of range [-self.shape[dim], self.shape[dim]].
+        ValueError: The value of `length` is out of range [0, self.shape[dim] - start].
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import Tensor, ops
+        >>> x = Tensor([[1, 2, 3], [4, 5, 6], [7, 8, 9]], mindspore.int32)
+        >>> output = ops.functional_overload.narrow(x, 0, 0, 2)
+        >>> print(output)
+        [[ 1 2 3]
+         [ 4 5 6]]
+        >>> output = ops.functional_overload.narrow(x, 1, 1, 2)
+        >>> print(output)
+        [[ 2 3]
+         [ 5 6]
+         [ 8 9]]

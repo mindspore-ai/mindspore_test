@@ -89,7 +89,7 @@ tensor::TensorPtr PixelShuffleCustomize(const std::shared_ptr<OpRunner> &op, con
                                          -4,   /* 1st upscale_factor */
                                          -1,   /* w */
                                          -3}); /* 2nd upscale_factor */
-  const auto input_permuted = transpose(input_reshaped, permutation);
+  const auto input_permuted = transpose_view(input_reshaped, permutation);
 
   // Finally, upscale by collapsing (h, upscale_factor) -> a single dim (oh)
   // and (w, upscale_factor) -> a single dim (ow).

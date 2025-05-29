@@ -1,6 +1,6 @@
 mindspore.Tensor.broadcast_to
 =============================
 
-.. py:method:: mindspore.Tensor.broadcast_to(shape)
+.. py:method:: mindspore.Tensor.broadcast_to(shape) -> Tensor
 
-    详情请参考 :func:`mindspore.ops.broadcast_to`。
+    详情请参考 :func:`mindspore.mint.broadcast_to`。

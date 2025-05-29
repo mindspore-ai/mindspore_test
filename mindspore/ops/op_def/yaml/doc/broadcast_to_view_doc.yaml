@@ -54,7 +54,7 @@ broadcast_to_view:
                         location.
 
         Supported Platforms:
-            ``Ascend``
+            ``Ascend`` ``GPU`` ``CPU``
 
         Examples:
             >>> import numpy as np

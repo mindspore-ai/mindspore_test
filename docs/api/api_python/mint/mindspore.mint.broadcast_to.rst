@@ -1,7 +1,7 @@
 mindspore.mint.broadcast_to
 =============================
 
-.. py:function:: mindspore.mint.broadcast_to(input, shape)
+.. py:function:: mindspore.mint.broadcast_to(input, shape) -> Tensor
 
     将输入的shape广播到目标shape。输入维度必须小于等于目标维度，设输入shape为 :math:`(x_1, x_2, ..., x_m)`，目标shape为 :math:`(*, y_1, y_2, ..., y_m)`，其中 :math:`*` 为任意额外的维度。广播规则如下：
 

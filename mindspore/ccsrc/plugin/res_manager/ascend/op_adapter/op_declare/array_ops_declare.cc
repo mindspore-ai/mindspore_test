@@ -132,6 +132,7 @@ ATTR_INPUT_MAP(ExpandDims) = {{"axis", "axis"}};
 ATTR_MAP(ExpandDims) = EMPTY_ATTR_MAP;
 OUTPUT_MAP(ExpandDims) = {{0, OUTPUT_DESC(y)}};
 REG_ADPT_DESC(ExpandDims, kNameExpandDims, ADPT_DESC(ExpandDims))
+REG_ADPT_DESC(ExpandDimsView, prim::kPrimExpandDimsView->name(), ADPT_DESC(ExpandDims))
 
 // Squeeze
 INPUT_MAP(Squeeze) = {{1, INPUT_DESC(x)}};

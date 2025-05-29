@@ -562,6 +562,7 @@ void TransposeFwdCpuKernelMod::TransposeDims(const T *in_data, T *out_data, int6
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Transpose, TransposeFwdCpuKernelMod);
+MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, TransposeView, TransposeFwdCpuKernelMod);
 }  // namespace transpose_cpu
 }  // namespace kernel
 }  // namespace mindspore

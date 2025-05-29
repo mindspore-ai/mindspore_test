@@ -1,0 +1,33 @@
+unsqueeze:
+  description: |
+    unsqueeze(input, dim) -> Tensor
+
+    Returns a new tensor with a dimension of size one inserted at the
+    specified position.
+
+    The returned tensor shares the same underlying data with `input`.
+
+    A `dim` value within the range :math:`[-input.dim() - 1, input.dim() + 1)`
+    can be used. Negative `dim` will insert the new dimension at
+    the position of :math:`dim = dim + input.dim() + 1`.
+
+    Args:
+        input (Tensor): the input tensor.
+        dim (int): the position of the newly inserted dimension.
+
+    Returns:
+        Tensor, whose shape is :math:`(1, n_1, n_2, ..., n_R)` if the
+        value of `dim` is 0. It has the same data type as `input`.
+  
+    Supported Platforms:
+        ``Ascend``
+    
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import ops, Tensor
+        >>> import numpy as np
+        >>> input_tensor = Tensor(np.array([[2, 2], [2, 2]]), mindspore.float32)
+        >>> output = ops.functional_overload.unsqueeze(input_tensor, dim=0)
+        >>> print(output)
+        [[[2. 2.]
+          [2. 2.]]]

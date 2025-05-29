@@ -93,7 +93,7 @@ BeginFunction(PixelShuffle, input, upscale_factor) {
     permutation = Call(Prim(SequenceAdd), permutation,
                        Tuple(end, ScalarAdd(end, Value(3)), ScalarAdd(end, Value(1)), ScalarAdd(end, Value(4)),
                              ScalarAdd(end, Value(2))));
-    auto input_permuted = Call(Prim(Transpose), input_reshaped, permutation);
+    auto input_permuted = Call(Prim(TransposeView), input_reshaped, permutation);
 
     // Finally, upscale by collapsing (h, upscale_factor) -> a single dim (oh)
     // and (w, upscale_factor) -> a single dim (ow).

@@ -31,7 +31,7 @@ from mindspore.ops.function.array_func import ones_like_ext as ones_like
 from mindspore.ops.function.array_func import full_ext as full
 from mindspore.ops.function.array_func import zeros_like_ext as zeros_like
 from mindspore.ops.function.array_func import unique_ext as unique
-from mindspore.ops.function.array_func import chunk_ext as chunk
+from mindspore.ops.functional_overload import chunk
 from mindspore.ops.functional_overload import empty
 from mindspore.ops.functional_overload import empty_like
 from mindspore.ops.function.math_func import isclose
@@ -61,7 +61,7 @@ from mindspore.ops.auto_generate import cumsum_ext as cumsum
 from mindspore.ops.auto_generate import stack_ext as stack
 
 # 7
-from mindspore.ops.function.array_func import unsqueeze
+from mindspore.ops.functional_overload import unsqueeze
 # 8
 from mindspore.ops.auto_generate import transpose_ext_view as transpose
 from mindspore.ops.auto_generate import batch_norm_elemt
@@ -166,7 +166,7 @@ from mindspore.ops.function.random_func import normal_ext as normal
 # 56
 from mindspore.ops.function.math_func import norm_ext as norm
 # 57
-from mindspore.ops.functional import broadcast_to
+from mindspore.ops.functional_overload import broadcast_to
 # 58
 from mindspore.ops.functional_overload import greater_equal, ge
 
@@ -219,7 +219,7 @@ from mindspore.ops.auto_generate import index_select_ext as index_select
 # 82
 from mindspore.ops.auto_generate import cummin_ext as cummin
 # 83
-from mindspore.ops.auto_generate import narrow
+from mindspore.ops.functional_overload import narrow
 # 84
 
 # 85
@@ -389,7 +389,6 @@ from mindspore.ops import triu
 from mindspore.ops.auto_generate import mm_ext as mm
 
 # 382
-from mindspore.ops.function.math_func import dstack
 
 # 501
 from mindspore.ops.function.math_func import addbmm_ext as addbmm
@@ -466,7 +465,7 @@ from mindspore.ops.functional_overload import add
 from mindspore.ops.functional_overload import sub
 
 # 739
-from mindspore.ops.function.array_func import hstack
+from mindspore.ops.auto_generate.gen_ops_prim import transpose_view_op
 
 # 826
 from mindspore.ops.functional_overload import floor_divide
@@ -1232,7 +1231,7 @@ def permute(input, dims):
           [ 8. 11.]
           [ 9. 12.]]]
     """
-    return ops.functional.permute(input, dims)
+    return transpose_view_op(input, dims)
 
 
 def split(tensor, split_size_or_sections, dim=0):
@@ -1605,6 +1604,113 @@ def cdist(x1, x2, p=2.0, compute_mode='use_mm_for_euclid_dist_if_necessary'):
           [1.4142137 1.4142137]]]
     """
     return cdist_(x1, x2, p)
+
+
+def dstack(tensors):
+    r"""
+    Stacks tensors along the third axis.
+
+    1-D tensors :math:`(N,)` should be reshaped to :math:`(1,N,1)`.
+    2-D tensors :math:`(M,N)` should be reshaped to :math:`(M,N,1)` before concatenation.
+
+    Args:
+        tensors (Union[list[Tensor], tuple[Tensor]]): A sequence of tensors.
+            The tensors must have the same shape along all but the third axis.
+            1-D or 2-D tensors must have the same shape.
+
+    Returns:
+        Stacked Tensor, will be at least 3-D.
+        The output shape is similar to the output of `numpy.dstack()` function.
+
+    Raises:
+        ValueError: If `tensors` is empty.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import Tensor, mint
+        >>> x1 = Tensor(np.arange(1, 7).reshape(2, 3))
+        >>> x2 = Tensor(np.arange(7, 13).reshape(2, 3))
+        >>> out = mint.dstack([x1, x2])
+        >>> print(out.asnumpy())
+        [[[ 1.  7.]
+          [ 2.  8.]
+          [ 3.  9.]]
+         [[ 4. 10.]
+          [ 5. 11.]
+          [ 6. 12.]]]
+    """
+    if not isinstance(tensors, (tuple, list)):
+        raise TypeError(f"For 'dstack', 'tensors' must be list or tuple of tensors, but got {type(tensors)}")
+    if not tensors:
+        raise TypeError(f"For 'dstack', 'tensors' can not be empty.")
+    trans_tensors = ()
+    for tensor in tensors:
+        if not isinstance(tensor, Tensor):
+            raise TypeError(f"For 'dstack', each elements of 'tensors' must be Tensor, but got {type(tensor)}")
+        if tensor.ndim == 0:
+            tensor = reshape(tensor, (1, 1, 1))
+        elif tensor.ndim == 1:
+            tensor = unsqueeze(unsqueeze(tensor, 0), 2)
+        elif tensor.ndim == 2:
+            tensor = unsqueeze(tensor, 2)
+        trans_tensors += (tensor,)
+    if not trans_tensors:
+        raise ValueError("For 'dstack', at least one tensor is needed to concatenate.")
+    return cat(trans_tensors, 2)
+
+
+def hstack(tensors):
+    """
+    Stacks tensors in sequence horizontally.
+    This is equivalent to concatenation along the second axis, except for 1-D tensors
+    where it concatenates along the first axis.
+
+    .. note::
+        Dynamic rank input of 8-D tensors with type float64 is not supported in `graph mode (mode=mindspore.GRAPH_MODE)
+        <https://www.mindspore.cn/tutorials/en/master/compile/static_graph.html>`_.
+
+    Args:
+        tensors (Union[tuple[Tensor], list[Tensor]]): A sequence of tensors. The
+            tensors must have the same shape along all but the second axis, except
+            1-D tensors which can be any length.
+
+    Returns:
+        Stacked Tensor, formed by stacking the given tensors.
+
+    Raises:
+        ValueError: If `tensors` is empty.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> from mindspore import Tensor, mint
+        >>> x1 = Tensor([1, 1, 1])
+        >>> x2 = Tensor([2, 2, 2])
+        >>> output = mint.hstack((x1, x2))
+        >>> print(output)
+        [1. 1. 1. 2. 2. 2.]
+    """
+    if not isinstance(tensors, (list, tuple)):
+        raise TypeError(
+            f"For hstack, the input must be list or tuple, but got {type(tensors)}.")
+
+    tuple_of_tensor = ()
+    for tensor in tensors:
+        if not isinstance(tensor, Tensor):
+            raise TypeError(
+                f"For hstack, the input element must be tensor, but got {type(tensor)}.")
+        if tensor.ndim < 1:
+            tensor = unsqueeze(tensor, 0)
+        tuple_of_tensor += (tensor,)
+    if not tuple_of_tensor:
+        raise ValueError(
+            "For hstack, the input must have at least 1 tensor, but got 0.")
+    dim = 0 if tuple_of_tensor[0].ndim == 1 else 1
+    return cat(tuple_of_tensor, dim)
 
 
 __all__ = [

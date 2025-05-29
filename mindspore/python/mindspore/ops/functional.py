@@ -19,7 +19,7 @@
 from mindspore.common._register_for_tensor import tensor_operator_registry
 from mindspore.ops import _constants
 from mindspore.ops.function import *
-from mindspore.ops.function.array_func import chunk_ext, zero_
+from mindspore.ops.function.array_func import zero_
 from mindspore.ops.function.math_func import all, argmax_ext, float_power_ext, erfinv_, tanh_, bernoulli_ext
 from mindspore.ops.function.random_func import random_, uniform_ext, uniform_, normal_, exponential_
 from mindspore.ops import operations as P
@@ -34,7 +34,7 @@ from mindspore.ops.operations.math_ops import Roll
 from mindspore.ops.composite.math_ops import mm
 from mindspore.ops.function.math_func import dot
 from mindspore.ops import auto_generate
-from mindspore.ops.auto_generate import cast
+from mindspore.ops.auto_generate import cast, broadcast_to_view
 from mindspore.ops._utils.arg_dtype_cast import DtypeToEnum
 from mindspore.ops.operations.manually_defined.ops_def import scalar_div, scalar_mod, scalar_add, scalar_mul, \
     scalar_sub, scalar_gt, scalar_ge, scalar_le, scalar_lt, scalar_eq, scalar_floordiv, scalar_log, scalar_pow, \
@@ -420,7 +420,7 @@ setattr(tensor_operator_registry, 'byte', _cast)
 setattr(tensor_operator_registry, 'cholesky', cholesky)
 setattr(tensor_operator_registry, 'cholesky_inverse', cholesky_inverse)
 setattr(tensor_operator_registry, 'cholesky_solve', cholesky_solve)
-setattr(tensor_operator_registry, 'expand', broadcast_to)
+setattr(tensor_operator_registry, 'expand', broadcast_to_view)
 setattr(tensor_operator_registry, 'tensortotuple', TensorToTuple)
 setattr(tensor_operator_registry, 'cumprod', cumprod)
 setattr(tensor_operator_registry, 'diff', diff)

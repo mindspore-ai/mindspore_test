@@ -19,7 +19,7 @@ from tests.mark_utils import arg_mark
 
 import mindspore as ms
 import mindspore.nn as nn
-import mindspore.ops as ops
+import mindspore.ops as mint
 
 
 class Net(nn.Cell):
@@ -40,7 +40,7 @@ def test_is_contiguous_false(mode):
     """
     ms.set_context(mode=mode)
     x = ms.Tensor([[1, 2, 3], [4, 5, 6]], dtype=ms.float32)
-    y = ops.transpose(x, (1, 0))
+    y = mint.permute(x, (1, 0))
     net = Net()
     output = net(y)
     assert np.allclose(output, False)
@@ -78,7 +78,7 @@ def test_is_contiguous_true(mode):
     """
     ms.set_context(mode=mode)
     x = ms.Tensor([[1, 2, 3], [4, 5, 6]], dtype=ms.float32)
-    y = ops.transpose(x, (1, 0))
+    y = mint.permute(x, (1, 0))
     z = y.contiguous()
     net = Net()
     output = net(z)

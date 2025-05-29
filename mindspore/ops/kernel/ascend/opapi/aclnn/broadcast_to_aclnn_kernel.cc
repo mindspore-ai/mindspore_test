@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "kernel/ascend/opapi/aclnn/broadcastto_aclnn_kernel.h"
+#include "kernel/ascend/opapi/aclnn/broadcast_to_aclnn_kernel.h"
 #include <utility>
 
 namespace mindspore {

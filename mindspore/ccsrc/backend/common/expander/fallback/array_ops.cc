@@ -405,10 +405,8 @@ REG_FALLBACK_BUILDER("SplitWithSize").SetBody(BODYFUNC(ib) {
   return SplitWithSizeFallbackFunc(ib, input, ib->GetInput(kIndex1), dim_val);
 });
 
-REG_FALLBACK_BUILDER("Chunk").SetBody(BODYFUNC(ib) {
-  auto in_tensor = ib->GetInput(kIndex0);
-  auto chunks = ib->GetInput(kIndex1);
-  auto dims = ib->GetInput(kIndex2);
+NodePtrList ChunkFallBack(FallbackIRBuilder *ib, const NodePtr &in_tensor, const NodePtr &chunks, const NodePtr &dims,
+                          const std::string &op_name) {
   auto dim_value_ptr = dims->BuildValue();
   if (dim_value_ptr->isa<ValueAny>()) {
     MS_EXCEPTION(ValueError) << "For `Chunk` op, the `dims` only supports constant value for now!";
@@ -416,20 +414,21 @@ REG_FALLBACK_BUILDER("Chunk").SetBody(BODYFUNC(ib) {
   auto dim_value = GetValue<int64_t>(dim_value_ptr);
   auto chunks_value_ptr = chunks->BuildValue();
   if (chunks_value_ptr->isa<ValueAny>()) {
-    MS_EXCEPTION(ValueError) << "For `Chunk` op, the variable `chunks` only supports constant value for now!";
+    MS_EXCEPTION(ValueError) << "For `" << op_name
+                             << "` op, the variable `chunks` only supports constant value for now!";
   }
   auto chunks_value = GetValue<int64_t>(chunks_value_ptr);
   const auto &input_shape = in_tensor->shape();
   if (IsDynamicRank(input_shape)) {
-    MS_EXCEPTION(ValueError)
-      << "For `Chunk` op, the variable `input` is with dynamic rank, which is unsupported for now!";
+    MS_EXCEPTION(ValueError) << "For `" << op_name
+                             << "` op, variable `input` is with dynamic rank, which is unsupported for now!";
   }
   if (dim_value < 0) {
     dim_value += SizeToLong(input_shape.size());
   }
   if (input_shape[dim_value] == abstract::Shape::kShapeDimAny) {
-    MS_EXCEPTION(ValueError)
-      << "For `Chunk` op, the target dim of `input` is with dynamic shape, which is unsupported for now!";
+    MS_EXCEPTION(ValueError) << "For `" << op_name
+                             << "` op, the target dim of `input` is with dynamic shape, which is unsupported for now!";
   }
   int64_t dim_size = input_shape[dim_value];
   int64_t split_size = (dim_size + chunks_value - 1) / chunks_value;
@@ -440,6 +439,20 @@ REG_FALLBACK_BUILDER("Chunk").SetBody(BODYFUNC(ib) {
   } else {
     return SplitTensorFallbackFunc(ib, in_tensor, ib->Value(split_size), dim_value);
   }
+}
+
+REG_FALLBACK_BUILDER("Chunk").SetBody(BODYFUNC(ib) {
+  auto in_tensor = ib->GetInput(kIndex0);
+  auto chunks = ib->GetInput(kIndex1);
+  auto dims = ib->GetInput(kIndex2);
+  return ChunkFallBack(ib, in_tensor, chunks, dims, "Chunk");
+});
+
+REG_FALLBACK_BUILDER("ChunkView").SetBody(BODYFUNC(ib) {
+  auto in_tensor = ib->GetInput(kIndex0);
+  auto chunks = ib->GetInput(kIndex1);
+  auto dims = ib->GetInput(kIndex2);
+  return ChunkFallBack(ib, in_tensor, chunks, dims, "ChunkView");
 });
 
 REG_FALLBACK_BUILDER("InsertGemV2InBackward").SetBody(BODYFUNC(ib) { return {ib->GetInput(kIndex0)}; });

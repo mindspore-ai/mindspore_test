@@ -35,6 +35,7 @@ constexpr auto kReshape = "Reshape";
 constexpr auto kFlatten = "Flatten";
 constexpr auto kFlattenGrad = "FlattenGrad";
 constexpr auto kExpandDims = "ExpandDims";
+constexpr auto kExpandDimsView = "ExpandDimsView";
 constexpr auto kSqueeze = "Squeeze";
 }  // namespace
 
@@ -223,6 +224,7 @@ std::vector<KernelAttr> MemcpyCpuKernelMod::GetOpSupport() {
     {kFlatten, common_valid_types_with_bool_complex_},
     {kFlattenGrad, common_two_valid_types_with_bool_complex_},
     {kExpandDims, expand_dims_valid_types_},
+    {kExpandDimsView, expand_dims_valid_types_},
     {kSqueeze, squeeze_valid_types_},
   };
 
@@ -240,6 +242,8 @@ MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, FlattenGrad,
                                  []() { return std::make_shared<MemcpyCpuKernelMod>(kFlattenGrad); });
 MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, ExpandDims,
                                  []() { return std::make_shared<MemcpyCpuKernelMod>(kExpandDims); });
+MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, ExpandDimsView,
+                                 []() { return std::make_shared<MemcpyCpuKernelMod>(kExpandDimsView); });
 MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, Squeeze,
                                  []() { return std::make_shared<MemcpyCpuKernelMod>(kSqueeze); });
 }  // namespace memcpy_cpu

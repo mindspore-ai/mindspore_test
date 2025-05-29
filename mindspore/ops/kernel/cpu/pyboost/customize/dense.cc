@@ -17,7 +17,7 @@
 #include "mindspore/ops/kernel/cpu/pyboost/customize/dense.h"
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
-#include "mindspore/ops/kernel/cpu/pyboost/auto_generate/transpose.h"
+#include "mindspore/ops/kernel/cpu/pyboost/auto_generate/transpose_view.h"
 #include "mindspore/ops/kernel/cpu/pyboost/auto_generate/contiguous.h"
 #include "mindspore/ops/kernel/cpu/pyboost/auto_generate/matmul_ext.h"
 #include "mindspore/ops/kernel/cpu/pyboost/auto_generate/add.h"
@@ -49,7 +49,7 @@ void DenseCPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &inp
   OpRunner::InferOpOutput(op, input_tensor, weight_tensor, bias_tensor);
   auto device_context = op->device_context();
   const auto &device_name = device_context->device_context_key_.device_name_;
-  auto transpose_op = CREATE_PYBOOST_OP(Transpose, device_name);
+  auto transpose_op = CREATE_PYBOOST_OP(TransposeView, device_name);
   auto contiguous_op = CREATE_PYBOOST_OP(Contiguous, device_name);
   auto perm = GetTransposePerm(weight_tensor);
   auto matmul_op = CREATE_PYBOOST_OP(MatMulExt, device_name);
