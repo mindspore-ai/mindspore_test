@@ -19,6 +19,7 @@
 
 #include <string.h>
 #include <unordered_map>
+#include <map>
 #include <mutex>
 #include <memory>
 #include <string>
@@ -47,7 +48,7 @@ EXTENSION_EXPORT int &g_hash_offset_ref();
     return;                                                                         \
   }                                                                                 \
   memcpy(g_hash_buf_ptr() + g_hash_offset_ref(), data_expression, size_expression); \
-  g_hash_offset_ref() += size_expression;
+  g_hash_offset_ref() += size_expression
 
 EXTENSION_EXPORT uint64_t calc_hash_id();
 
@@ -92,15 +93,72 @@ uint64_t computeHash(const T &obj) {
   return calc_hash_id();
 }
 
-// api
-template <typename ParamType>
-class OpParamCache {
+class EXTENSION_EXPORT OpParamCacheBase {
  public:
-  static OpParamCache &getInstance() {
-    static OpParamCache instance;
-    return instance;
+  virtual ~OpParamCacheBase() = default;
+};
+
+class EXTENSION_EXPORT AtbContextManager {
+  template <typename ParamType>
+  class OpParamCache;
+
+ public:
+  static AtbContextManager &GetInstance() {
+    static AtbContextManager ins;
+    return ins;
   }
 
+  atb::Context *GetContext(void *stream) {
+    std::lock_guard<std::mutex> lock(ctx_mutex_);
+    auto &ctx = ctx_map_[stream];
+    if (ctx == nullptr) {
+      auto st = atb::CreateContext(&ctx);
+      CHECK_ATB_RET("", st, CreateContext);
+      st = ctx->SetExecuteStream(static_cast<aclrtStream>(stream));
+      CHECK_ATB_RET("", st, SetExecuteStream);
+    }
+    return ctx;
+  }
+
+  template <typename ParamType>
+  atb::Operation *GetOperation(const ParamType &param, const std::string &name) {
+    auto cache = GetOperationCache(param);
+    MS_EXCEPTION_IF_NULL(cache);
+    return cache->getOperation(param, name);
+  }
+
+  ~AtbContextManager() {
+    // all operations must be freed before context
+    op_param_caches_.clear();
+    std::lock_guard<std::mutex> lock(ctx_mutex_);
+    for (auto &iter : ctx_map_) {
+      auto st = atb::DestroyContext(iter.second);
+      CHECK_ATB_RET("", st, DestroyContext);
+    }
+  }
+  AtbContextManager(const AtbContextManager &) = delete;
+  AtbContextManager &operator=(const AtbContextManager &) = delete;
+
+ private:
+  template <typename ParamType>
+  OpParamCache<ParamType> *GetOperationCache(const ParamType &param) {
+    std::lock_guard<std::mutex> lock(op_mutex_);
+    auto type_idx = std::type_index(typeid(ParamType));
+    if (op_param_caches_.find(type_idx) == op_param_caches_.end()) {
+      op_param_caches_[type_idx] = std::make_unique<OpParamCache<ParamType>>();
+    }
+    return static_cast<OpParamCache<ParamType> *>(op_param_caches_[type_idx].get());
+  }
+  AtbContextManager() = default;
+  std::map<void *, atb::Context *> ctx_map_;
+  std::map<std::type_index, std::unique_ptr<OpParamCacheBase>> op_param_caches_;
+  mutable std::mutex ctx_mutex_;
+  mutable std::mutex op_mutex_;
+};
+
+template <typename ParamType>
+class AtbContextManager::OpParamCache : public OpParamCacheBase {
+ public:
   atb::Operation *getOperation(const ParamType &param, const std::string &name) {
     uint64_t hashValue = computeHash(param);
     {
@@ -118,11 +176,7 @@ class OpParamCache {
     }
   }
 
- private:
-  OpParamCache() = default;
-  OpParamCache(const OpParamCache &) = delete;
-  OpParamCache &operator=(const OpParamCache &) = delete;
-  ~OpParamCache() {
+  ~OpParamCache() override {
     std::lock_guard<std::mutex> lock(mutex_);
     for (auto &opItem : op_map_) {
       DestroyOperation(opItem.second);
