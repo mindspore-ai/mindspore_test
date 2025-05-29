@@ -26,6 +26,8 @@
       "mindspore/core/mindrt/OWNERS",
       "mindspore/ccsrc/plugin/res_manager/ascend/collective/OWNERS",
       "mindspore/ccsrc/plugin/res_manager/OWNERS",
+      "mindspore/ccsrc/runtime/OWNERS",
+      "mindspore/ccsrc/transform/OWNERS",
       "LICENSE",
       "NOTICE",
       "SECURITY.md",
