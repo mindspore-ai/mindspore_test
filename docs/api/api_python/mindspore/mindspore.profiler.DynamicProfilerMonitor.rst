@@ -24,7 +24,7 @@ mindspore.profiler.DynamicProfilerMonitor
           - mstx_domain_include (list, 可选) - mstx开关打开时设置使能的domain名称集合，且名称必须是str类型。默认值：``[]`` ，表示不使用该参数控制domain。该参数与mstx_domain_exclude参数互斥，不能同时设置。如果都设置，只有mstx_domain_include参数生效。
           - mstx_domain_exclude (list, 可选) - mstx开关打开时设置不使能的domain名称集合，且名称必须是str类型。默认值：``[]`` ，表示不使用该参数控制domain。
           - record_shapes (bool, 可选) - 设置是否采集算子输入tensor的shape信息，true代表采集，false代表不采集。默认值false，表示不采集算子输入tensor的shape信息。
-          - prof_path (str, 可选) - 动态Profiler的输出文件路径。与接口参数`output_path`作用相同，两者同时配置时以`prof_path`为准。默认值：``"./dyn_profile_data"`` 。
+          - prof_path (str, 可选) - 动态Profiler的输出文件路径。与接口参数 `output_path` 作用相同，两者同时配置时以 `prof_path` 为准。默认值：``"./dyn_profile_data"`` 。
           - sys_io (bool, 可选) - 设置是否采集NIC和RoCE数据。默认值： ``False`` ，表示不采集这些数据。
           - sys_interconnection (bool, 可选) - 设置是否采集系统互连数据，包括集合通信带宽数据（HCCS）、PCIe数据以及片间传输带宽信息。默认值： ``False`` ，表示不采集这些数据。
           - host_sys(list, 可选) - 采集host侧系统类调用，以及存储类和cpu使用率的数据，传入list类型，支持传入 ``"cpu"`` 、 ``"mem"`` 、 ``"disk"`` 、 ``"network"`` 、 ``"osrt"`` 中的一个或多个，其中 ``"cpu"`` 代表进程级别的cpu利用率， ``"mem"`` 代表进程级别的内存利用率， ``"disk"`` 代表进程级别的磁盘I/O利用率， ``"network"`` 代表系统级别的网络I/O利用率， ``"osrt"`` 代表系统级别的syscall和pthreadcall。默认值： ``[]`` ，表示不采集host侧系统类数据。

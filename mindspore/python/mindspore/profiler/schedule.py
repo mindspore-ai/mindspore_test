@@ -83,8 +83,14 @@ class Schedule:
             must be greater than or equal to 0. Default value: ``0``.
         repeat (int, optional): The number of times to repeat the cycle.
             If repeat is set to 0, the Profiler will determine the repeat value based on the number of times the model
-            is trained, which will generate one more performance data with incomplete collection. The data in the last
-            step is abnormal data that users do not need to pay attention to. Default value: ``0``.
+            is trained, for example, if the total training steps are 100, wait+active+warmup=10, skip_first=10,
+            Then repeat=(100-10)/10=9, indicating that the execution is repeated 9 timeswhich will
+            generate one more performance data with incomplete collection. The data in the last step is abnormal data
+            that users do not need to pay attention to. Suggest configuring integers greater than 0. When using
+            cluster analysis tools or MindStudio Insight to view, it is recommended to configure it as 1;
+            If the setting is greater than 1, the collected performance data folder needs to be divided into repeat and
+            other parts, placed in different folders for re-parsing, and classified according to the timestamp order in
+            the folder name. Default value: ``0``.
         skip_first (int, optional): The number of steps to skip at the beginning. Must be greater than or equal to 0.
             Default value: ``0``
 
