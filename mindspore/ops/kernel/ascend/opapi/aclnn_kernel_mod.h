@@ -36,6 +36,8 @@
 #include "kernel/ascend/acl_ir/op_api_util.h"
 #include "utils/ms_utils.h"
 #include "plugin/res_manager/ascend/mem_manager/ascend_memory_manager.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "runtime/hardware/device_context_manager.h"
 #include "kernel/ascend/opapi/aclnn_kernel_utils.h"
 #include "kernel/ascend/visible.h"
 
@@ -49,30 +51,65 @@ using AclUtil = device::ascend::AclUtil;
 using ProcessCache = device::ascend::ProcessCache;
 using CacheTuple = std::tuple<uint64_t, aclOpExecutor *, ProcessCache, size_t>;
 
+extern mindspore::HashMap<uint64_t, std::list<CacheTuple>::iterator> hash_map;
+extern std::list<CacheTuple> hash_cache;
+extern size_t capacity;
+extern bool is_set_capacity;
+extern std::shared_mutex cache_mutex;
+
 #define DEFINE_GET_WORKSPACE_FOR_OPS(OP_TYPE, FUNC_NAME)                                                             \
   std::string op_type_##FUNC_NAME##_ = #OP_TYPE;                                                                     \
   uint64_t hash_id_##FUNC_NAME##_{0};                                                                                \
+  aclOpExecutor *executor_##FUNC_NAME##_{nullptr};                                                                   \
+  CallBackFunc release_func_##FUNC_NAME##_{nullptr};                                                                 \
   template <typename... Args>                                                                                        \
   void GetWorkspaceForResize##FUNC_NAME(const Args &... args) {                                                      \
-    hash_id_##FUNC_NAME##_ = device::ascend::AclnnHash(op_type_##FUNC_NAME##_, args...);                             \
-    auto iter = hash_map_.find(hash_id_##FUNC_NAME##_);                                                              \
     size_t cur_workspace = 0;                                                                                        \
-    if (iter != hash_map_.end()) {                                                                                   \
-      MS_LOG(DEBUG) << "op " << op_type_##FUNC_NAME##_ << " hit cache with hash id: " << hash_id_##FUNC_NAME##_;     \
-      hash_cache_.splice(hash_cache_.begin(), hash_cache_, iter->second);                                            \
-      cur_workspace = std::get<3>(hash_cache_.front());                                                              \
+    if (capacity == 0) {                                                                                             \
+      if (is_dynamic_) {                                                                                             \
+        hash_id_##FUNC_NAME##_ = 0;                                                                                  \
+      } else {                                                                                                       \
+        std::tie(cur_workspace, std::ignore, std::ignore) = GEN_EXECUTOR_CUST(op_type_##FUNC_NAME##_, args...);      \
+        if (cur_workspace != 0) {                                                                                    \
+          ops_workspace_size_map_[#FUNC_NAME] = {ops_workspace_size_idx_, cur_workspace};                            \
+          ++ops_workspace_size_idx_;                                                                                 \
+          (void)workspace_size_list_.emplace_back(cur_workspace);                                                    \
+        }                                                                                                            \
+      }                                                                                                              \
+      return;                                                                                                        \
+    }                                                                                                                \
+    std::optional<std::list<CacheTuple>::iterator> found_iter;                                                       \
+    hash_id_##FUNC_NAME##_ = device::ascend::AclnnHash(op_type_##FUNC_NAME##_, args...);                             \
+    {                                                                                                                \
+      std::shared_lock read_lock(cache_mutex);                                                                       \
+      if (auto iter = hash_map.find(hash_id_##FUNC_NAME##_); iter != hash_map.end()) {                               \
+        found_iter = iter->second;                                                                                   \
+      }                                                                                                              \
+    }                                                                                                                \
+    if (found_iter) {                                                                                                \
+      MS_LOG(INFO) << "op " << op_type_##FUNC_NAME##_ << " hit cache with hash id: " << hash_id_##FUNC_NAME##_;      \
+      MS_VLOG(VL_ACLNN_OP) << "op " << op_type_##FUNC_NAME##_                                                        \
+                           << " hit cache with hash id: " << hash_id_##FUNC_NAME##_;                                 \
+      std::unique_lock write_lock(cache_mutex);                                                                      \
+      hash_cache.splice(hash_cache.begin(), hash_cache, *found_iter);                                                \
+      cur_workspace = std::get<3>(hash_cache.front());                                                               \
     } else {                                                                                                         \
-      MS_LOG(DEBUG) << "op " << op_type_##FUNC_NAME##_ << " miss cache with hash id: " << hash_id_##FUNC_NAME##_;    \
+      MS_LOG(INFO) << "op " << op_type_##FUNC_NAME##_ << " miss cache with hash id: " << hash_id_##FUNC_NAME##_;     \
+      MS_VLOG(VL_ACLNN_OP) << "op " << op_type_##FUNC_NAME##_                                                        \
+                           << " miss cache with hash id: " << hash_id_##FUNC_NAME##_;                                \
       auto [workspace, executor, cache, fail_cache] = GEN_EXECUTOR_FOR_RESIZE(op_type_##FUNC_NAME##_, args...);      \
       cur_workspace = workspace;                                                                                     \
       if (!fail_cache) {                                                                                             \
-        hash_cache_.emplace_front(hash_id_##FUNC_NAME##_, executor, cache, workspace);                               \
-        hash_map_[hash_id_##FUNC_NAME##_] = hash_cache_.begin();                                                     \
-        if (hash_cache_.size() > capacity_) {                                                                        \
-          hash_map_.erase(std::get<0>(hash_cache_.back()));                                                          \
-          auto release_func = std::get<2>(hash_cache_.back());                                                       \
+        std::unique_lock write_lock(cache_mutex);                                                                    \
+        hash_cache.emplace_front(hash_id_##FUNC_NAME##_, executor, cache, workspace);                                \
+        hash_map[hash_id_##FUNC_NAME##_] = hash_cache.begin();                                                       \
+        if (hash_cache.size() > capacity) {                                                                          \
+          auto release_data = std::move(hash_cache.back());                                                          \
+          hash_map.erase(std::get<0>(release_data));                                                                 \
+          hash_cache.pop_back();                                                                                     \
+          write_lock.unlock();                                                                                       \
+          auto release_func = std::get<2>(release_data);                                                             \
           release_func(device::ascend::ProcessCacheType::kReleaseParamsAndExecutor, {});                             \
-          hash_cache_.pop_back();                                                                                    \
         }                                                                                                            \
       } else {                                                                                                       \
         hash_id_##FUNC_NAME##_ = 0;                                                                                  \
@@ -89,15 +126,18 @@ using CacheTuple = std::tuple<uint64_t, aclOpExecutor *, ProcessCache, size_t>;
                                                                                                                      \
   template <typename... Args>                                                                                        \
   std::pair<aclOpExecutor *, std::function<void()>> GetExecutor##FUNC_NAME(const Args &... args) {                   \
-    auto iter = hash_map_.find(hash_id_##FUNC_NAME##_);                                                              \
-    if (capacity_ == 0 || hash_id_##FUNC_NAME##_ == 0 || iter == hash_map_.end()) {                                  \
+    std::shared_lock read_lock(cache_mutex);                                                                         \
+    auto iter = hash_map.find(hash_id_##FUNC_NAME##_);                                                               \
+    if (hash_id_##FUNC_NAME##_ == 0 || iter == hash_map.end()) {                                                     \
+      read_lock.unlock();                                                                                            \
       aclOpExecutor *executor;                                                                                       \
       std::function<void()> release_func;                                                                            \
       std::tie(std::ignore, executor, release_func, hash_id_##FUNC_NAME##_, std::ignore) =                           \
         GEN_EXECUTOR_BOOST(op_type_##FUNC_NAME##_, hash_id_##FUNC_NAME##_, args...);                                 \
       return std::make_pair(executor, release_func);                                                                 \
     }                                                                                                                \
-    const auto &cur_run = *(iter->second);                                                                           \
+    const auto cur_run = *(iter->second);                                                                            \
+    read_lock.unlock();                                                                                              \
     UPDATE_TENSOR_FOR_LAUNCH(std::get<2>(cur_run), args...);                                                         \
     const auto &executor = std::get<1>(cur_run);                                                                     \
     return std::make_pair(executor, nullptr);                                                                        \
@@ -105,6 +145,37 @@ using CacheTuple = std::tuple<uint64_t, aclOpExecutor *, ProcessCache, size_t>;
                                                                                                                      \
   template <typename... Args>                                                                                        \
   void RunOp##FUNC_NAME(void *stream_ptr, const std::vector<KernelTensor *> &workspace, const Args &... args) {      \
+    if (capacity == 0) {                                                                                             \
+      size_t ws_size = 0;                                                                                            \
+      std::tie(ws_size, executor_##FUNC_NAME##_, release_func_##FUNC_NAME##_, hash_id_##FUNC_NAME##_, std::ignore) = \
+        GEN_EXECUTOR_BOOST(op_type_##FUNC_NAME##_, hash_id_##FUNC_NAME##_, args...);                                 \
+      if (ws_size == 0) {                                                                                            \
+        RUN_OP_API_ASYNC(op_type_##FUNC_NAME##_, nullptr, 0, executor_##FUNC_NAME##_, stream_ptr,                    \
+                         release_func_##FUNC_NAME##_);                                                               \
+      } else {                                                                                                       \
+        if (is_dynamic_) {                                                                                           \
+          static device::DeviceContext *device_context =                                                             \
+            device::DeviceContextManager::GetInstance().GetDeviceContext("Ascend").get();                            \
+          auto ws_ptr = std::make_shared<kernel::MemBlock>(device_context, ws_size, stream_ptr);                     \
+          RUN_OP_API_ASYNC(op_type_##FUNC_NAME##_, ws_ptr->ptr_, ws_size, executor_##FUNC_NAME##_, stream_ptr,       \
+                           release_func_##FUNC_NAME##_);                                                             \
+        } else {                                                                                                     \
+          const auto &iter = ops_workspace_size_map_.find(#FUNC_NAME);                                               \
+          if (iter == ops_workspace_size_map_.end()) {                                                               \
+            MS_LOG(EXCEPTION) << "Fialed to get workspace size for " << #FUNC_NAME;                                  \
+          }                                                                                                          \
+          auto workspace_size_idx = iter->second.first;                                                              \
+          auto workspace_size = iter->second.second;                                                                 \
+          if (workspace.empty() || workspace.size() <= workspace_size_idx) {                                         \
+            MS_LOG(EXCEPTION) << "Failed to allocate workspace tensor!";                                             \
+          }                                                                                                          \
+          auto workspace_tensor = workspace[workspace_size_idx];                                                     \
+          RUN_OP_API_ASYNC(op_type_##FUNC_NAME##_, workspace_tensor->device_ptr(), workspace_size,                   \
+                           executor_##FUNC_NAME##_, stream_ptr, release_func_##FUNC_NAME##_);                        \
+        }                                                                                                            \
+      }                                                                                                              \
+      return;                                                                                                        \
+    }                                                                                                                \
     auto [executor, release_func] = GetExecutor##FUNC_NAME(args...);                                                 \
     const auto &iter = ops_workspace_size_map_.find(#FUNC_NAME);                                                     \
     if (iter == ops_workspace_size_map_.end()) {                                                                     \
@@ -125,95 +196,140 @@ using CacheTuple = std::tuple<uint64_t, aclOpExecutor *, ProcessCache, size_t>;
     }                                                                                                                \
   }
 
-#define DEFINE_GET_WORKSPACE_FOR_RESIZE()                                                                       \
-  template <typename... Args>                                                                                   \
-  void GetWorkspaceForResize(const Args &... args) {                                                            \
-    hash_id_ = device::ascend::AclnnHash(op_type_, args...);                                                    \
-    size_t cur_workspace = 0;                                                                                   \
-    auto iter = hash_map_.find(hash_id_);                                                                       \
-    if (iter != hash_map_.end()) {                                                                              \
-      MS_LOG(DEBUG) << "op " << op_type_ << " hit cache with hash id: " << hash_id_;                            \
-      hash_cache_.splice(hash_cache_.begin(), hash_cache_, iter->second);                                       \
-      cur_workspace = std::get<3>(hash_cache_.front());                                                         \
-    } else {                                                                                                    \
-      MS_LOG(DEBUG) << "op " << op_type_ << " miss cache with hash id: " << hash_id_;                           \
-      auto [workspace, executor, cache, fail_cache] = GEN_EXECUTOR_FOR_RESIZE(op_type_, args...);               \
-      cur_workspace = workspace;                                                                                \
-      if (!fail_cache) {                                                                                        \
-        hash_cache_.emplace_front(hash_id_, executor, cache, workspace);                                        \
-        hash_map_[hash_id_] = hash_cache_.begin();                                                              \
-        if (hash_cache_.size() > capacity_) {                                                                   \
-          hash_map_.erase(std::get<0>(hash_cache_.back()));                                                     \
-          auto release_func = std::get<2>(hash_cache_.back());                                                  \
-          release_func(device::ascend::ProcessCacheType::kReleaseParamsAndExecutor, {});                        \
-          hash_cache_.pop_back();                                                                               \
-        }                                                                                                       \
-      } else {                                                                                                  \
-        hash_id_ = 0;                                                                                           \
-        cache(device::ascend::ProcessCacheType::kReleaseParamsAndExecutor, {});                                 \
-      }                                                                                                         \
-    }                                                                                                           \
-                                                                                                                \
-    if (cur_workspace != 0) {                                                                                   \
-      std::vector<size_t> workspace_size_list = {cur_workspace};                                                \
-      SetWorkspaceSizeList(workspace_size_list);                                                                \
-    }                                                                                                           \
-  }                                                                                                             \
-                                                                                                                \
-  template <typename... Args>                                                                                   \
-  std::pair<aclOpExecutor *, std::function<void()>> GetExecutor(const Args &... args) {                         \
-    auto iter = hash_map_.find(hash_id_);                                                                       \
-    if (capacity_ == 0 || hash_id_ == 0 || iter == hash_map_.end()) {                                           \
-      aclOpExecutor *executor;                                                                                  \
-      std::function<void()> release_func;                                                                       \
-      std::tie(std::ignore, executor, release_func, hash_id_, std::ignore) =                                    \
-        GEN_EXECUTOR_BOOST(op_type_, hash_id_, args...);                                                        \
-      return std::make_pair(executor, release_func);                                                            \
-    }                                                                                                           \
-    const auto &cur_run = *(iter->second);                                                                      \
-    UPDATE_TENSOR_FOR_LAUNCH(std::get<2>(cur_run), args...);                                                    \
-    const auto &executor = std::get<1>(cur_run);                                                                \
-    return std::make_pair(executor, nullptr);                                                                   \
-  }                                                                                                             \
-                                                                                                                \
-  template <typename... Args>                                                                                   \
-  void RunOp(void *stream_ptr, const std::vector<KernelTensor *> &workspace, const Args &... args) {            \
-    auto [executor, release_func] = GetExecutor(args...);                                                       \
-    if (workspace_size_list_.empty()) {                                                                         \
-      RUN_OP_API_ASYNC(op_type_, nullptr, 0, executor, stream_ptr, release_func);                               \
-    } else {                                                                                                    \
-      if (workspace.empty()) {                                                                                  \
-        MS_LOG(EXCEPTION) << "Failed to allocate workspace tensor!";                                            \
-      }                                                                                                         \
-      auto workspace_tensor = workspace[0];                                                                     \
-      if (workspace_tensor->size() != workspace_size_list_[0]) {                                                \
-        MS_LOG(EXCEPTION) << "Please check 'GetWorkSpaceInfo' and 'Launch' func. Expected workspace size is"    \
-                          << workspace_size_list_[0] << ", but get " << workspace_tensor->size();               \
-      }                                                                                                         \
-      RUN_OP_API_ASYNC(op_type_, workspace_tensor->device_ptr(), workspace_size_list_[0], executor, stream_ptr, \
-                       release_func);                                                                           \
-    }                                                                                                           \
-  }                                                                                                             \
-                                                                                                                \
-  template <typename... Args>                                                                                   \
-  void RunOpSync(void *stream_ptr, const std::vector<KernelTensor *> &workspace, const Args &... args) {        \
-    aclOpExecutor *executor = executor_;                                                                        \
-    if (executor == nullptr) {                                                                                  \
-      std::tie(executor, std::ignore) = GetExecutor(args...);                                                   \
-    }                                                                                                           \
-    if (workspace_size_list_.empty()) {                                                                         \
-      RUN_OP_API_SYNC(op_type_, nullptr, 0, executor, stream_ptr);                                              \
-    } else {                                                                                                    \
-      if (workspace.empty()) {                                                                                  \
-        MS_LOG(EXCEPTION) << "Failed to allocate workspace tensor!";                                            \
-      }                                                                                                         \
-      auto workspace_tensor = workspace[0];                                                                     \
-      if (workspace_tensor->size() != workspace_size_list_[0]) {                                                \
-        MS_LOG(EXCEPTION) << "Please check 'GetWorkSpaceInfo' and 'Launch' func. Expected workspace size is"    \
-                          << workspace_size_list_[0] << ", but get " << workspace_tensor->size();               \
-      }                                                                                                         \
-      RUN_OP_API_SYNC(op_type_, workspace_tensor->device_ptr(), workspace_size_list_[0], executor, stream_ptr); \
-    }                                                                                                           \
+#define DEFINE_GET_WORKSPACE_FOR_RESIZE()                                                                        \
+  template <typename... Args>                                                                                    \
+  void GetWorkspaceForResize(const Args &... args) {                                                             \
+    size_t cur_workspace = 0;                                                                                    \
+    if (capacity == 0) {                                                                                         \
+      if (is_dynamic_) {                                                                                         \
+        hash_id_ = 0;                                                                                            \
+      } else {                                                                                                   \
+        std::tie(cur_workspace, std::ignore, std::ignore) = GEN_EXECUTOR_CUST(op_type_, args...);                \
+        if (cur_workspace != 0) {                                                                                \
+          std::vector<size_t> workspace_size_list = {cur_workspace};                                             \
+          SetWorkspaceSizeList(workspace_size_list);                                                             \
+        }                                                                                                        \
+      }                                                                                                          \
+      return;                                                                                                    \
+    }                                                                                                            \
+    std::optional<std::list<CacheTuple>::iterator> found_iter;                                                   \
+    hash_id_ = device::ascend::AclnnHash(op_type_, args...);                                                     \
+    {                                                                                                            \
+      std::shared_lock read_lock(cache_mutex);                                                                   \
+      if (auto iter = hash_map.find(hash_id_); iter != hash_map.end()) {                                         \
+        found_iter = iter->second;                                                                               \
+      }                                                                                                          \
+    }                                                                                                            \
+    if (found_iter) {                                                                                            \
+      MS_LOG(INFO) << "op " << op_type_ << " hit cache with hash id: " << hash_id_;                              \
+      MS_VLOG(VL_ACLNN_OP) << "op " << op_type_ << " hit cache with hash id: " << hash_id_;                      \
+      std::unique_lock write_lock(cache_mutex);                                                                  \
+      hash_cache.splice(hash_cache.begin(), hash_cache, *found_iter);                                            \
+      cur_workspace = std::get<3>(hash_cache.front());                                                           \
+    } else {                                                                                                     \
+      MS_LOG(INFO) << "op " << op_type_ << " miss cache with hash id: " << hash_id_;                             \
+      MS_VLOG(VL_ACLNN_OP) << "op " << op_type_ << " miss cache with hash id: " << hash_id_;                     \
+      auto [workspace, executor, cache, fail_cache] = GEN_EXECUTOR_FOR_RESIZE(op_type_, args...);                \
+      cur_workspace = workspace;                                                                                 \
+      if (!fail_cache) {                                                                                         \
+        std::unique_lock write_lock(cache_mutex);                                                                \
+        hash_cache.emplace_front(hash_id_, executor, cache, workspace);                                          \
+        hash_map[hash_id_] = hash_cache.begin();                                                                 \
+        if (hash_cache.size() > capacity) {                                                                      \
+          auto release_data = std::move(hash_cache.back());                                                      \
+          hash_map.erase(std::get<0>(release_data));                                                             \
+          hash_cache.pop_back();                                                                                 \
+          write_lock.unlock();                                                                                   \
+          auto release_func = std::get<2>(release_data);                                                         \
+          release_func(device::ascend::ProcessCacheType::kReleaseParamsAndExecutor, {});                         \
+        }                                                                                                        \
+      } else {                                                                                                   \
+        hash_id_ = 0;                                                                                            \
+        cache(device::ascend::ProcessCacheType::kReleaseParamsAndExecutor, {});                                  \
+      }                                                                                                          \
+    }                                                                                                            \
+                                                                                                                 \
+    if (cur_workspace != 0) {                                                                                    \
+      std::vector<size_t> workspace_size_list = {cur_workspace};                                                 \
+      SetWorkspaceSizeList(workspace_size_list);                                                                 \
+    }                                                                                                            \
+  }                                                                                                              \
+                                                                                                                 \
+  template <typename... Args>                                                                                    \
+  std::pair<aclOpExecutor *, std::function<void()>> GetExecutor(const Args &... args) {                          \
+    std::shared_lock read_lock(cache_mutex);                                                                     \
+    auto iter = hash_map.find(hash_id_);                                                                         \
+    if (hash_id_ == 0 || iter == hash_map.end()) {                                                               \
+      read_lock.unlock();                                                                                        \
+      aclOpExecutor *executor;                                                                                   \
+      std::function<void()> release_func;                                                                        \
+      std::tie(std::ignore, executor, release_func, hash_id_, std::ignore) =                                     \
+        GEN_EXECUTOR_BOOST(op_type_, hash_id_, args...);                                                         \
+      return std::make_pair(executor, release_func);                                                             \
+    }                                                                                                            \
+    const auto cur_run = *(iter->second);                                                                        \
+    read_lock.unlock();                                                                                          \
+    UPDATE_TENSOR_FOR_LAUNCH(std::get<2>(cur_run), args...);                                                     \
+    const auto &executor = std::get<1>(cur_run);                                                                 \
+    return std::make_pair(executor, nullptr);                                                                    \
+  }                                                                                                              \
+                                                                                                                 \
+  template <typename... Args>                                                                                    \
+  void RunOp(void *stream_ptr, const std::vector<KernelTensor *> &workspace, const Args &... args) {             \
+    if (capacity == 0) {                                                                                         \
+      size_t ws_size = 0;                                                                                        \
+      std::tie(ws_size, executor_, release_func_, hash_id_, std::ignore) =                                       \
+        GEN_EXECUTOR_BOOST(op_type_, hash_id_, args...);                                                         \
+      if (ws_size == 0) {                                                                                        \
+        RUN_OP_API_ASYNC(op_type_, nullptr, 0, executor_, stream_ptr, release_func_);                            \
+      } else {                                                                                                   \
+        if (is_dynamic_) {                                                                                       \
+          static device::DeviceContext *device_context =                                                         \
+            device::DeviceContextManager::GetInstance().GetDeviceContext("Ascend").get();                        \
+          auto ws_ptr = std::make_shared<kernel::MemBlock>(device_context, ws_size, stream_ptr);                 \
+          RUN_OP_API_ASYNC(op_type_, ws_ptr->ptr_, ws_size, executor_, stream_ptr, release_func_);               \
+        } else {                                                                                                 \
+          RUN_OP_API_ASYNC(op_type_, workspace[0]->device_ptr(), ws_size, executor_, stream_ptr, release_func_); \
+        }                                                                                                        \
+      }                                                                                                          \
+      return;                                                                                                    \
+    }                                                                                                            \
+    auto [executor, release_func] = GetExecutor(args...);                                                        \
+    if (workspace_size_list_.empty()) {                                                                          \
+      RUN_OP_API_ASYNC(op_type_, nullptr, 0, executor, stream_ptr, release_func);                                \
+    } else {                                                                                                     \
+      if (workspace.empty()) {                                                                                   \
+        MS_LOG(EXCEPTION) << "Failed to allocate workspace tensor!";                                             \
+      }                                                                                                          \
+      auto workspace_tensor = workspace[0];                                                                      \
+      if (workspace_tensor->size() != workspace_size_list_[0]) {                                                 \
+        MS_LOG(EXCEPTION) << "Please check 'GetWorkSpaceInfo' and 'Launch' func. Expected workspace size is"     \
+                          << workspace_size_list_[0] << ", but get " << workspace_tensor->size();                \
+      }                                                                                                          \
+      RUN_OP_API_ASYNC(op_type_, workspace_tensor->device_ptr(), workspace_size_list_[0], executor, stream_ptr,  \
+                       release_func);                                                                            \
+    }                                                                                                            \
+  }                                                                                                              \
+                                                                                                                 \
+  template <typename... Args>                                                                                    \
+  void RunOpSync(void *stream_ptr, const std::vector<KernelTensor *> &workspace, const Args &... args) {         \
+    aclOpExecutor *executor = executor_;                                                                         \
+    if (executor == nullptr) {                                                                                   \
+      std::tie(executor, std::ignore) = GetExecutor(args...);                                                    \
+    }                                                                                                            \
+    if (workspace_size_list_.empty()) {                                                                          \
+      RUN_OP_API_SYNC(op_type_, nullptr, 0, executor, stream_ptr);                                               \
+    } else {                                                                                                     \
+      if (workspace.empty()) {                                                                                   \
+        MS_LOG(EXCEPTION) << "Failed to allocate workspace tensor!";                                             \
+      }                                                                                                          \
+      auto workspace_tensor = workspace[0];                                                                      \
+      if (workspace_tensor->size() != workspace_size_list_[0]) {                                                 \
+        MS_LOG(EXCEPTION) << "Please check 'GetWorkSpaceInfo' and 'Launch' func. Expected workspace size is"     \
+                          << workspace_size_list_[0] << ", but get " << workspace_tensor->size();                \
+      }                                                                                                          \
+      RUN_OP_API_SYNC(op_type_, workspace_tensor->device_ptr(), workspace_size_list_[0], executor, stream_ptr);  \
+    }                                                                                                            \
   }
 
 class EmptyKernelTensor {
@@ -235,16 +351,48 @@ class EmptyKernelTensor {
   KernelTensor *tensor_;
 };
 
+struct MemBlock {
+  MemBlock(device::DeviceContext *device_context, size_t size, void *stream) {
+    auto stream_id = device::ascend::AscendStreamMng::GetInstance().GetStreamId(stream);
+    ptr_ = device_context->device_res_manager_->AllocateMemory(size, stream_id);
+    if (ptr_ == nullptr) {
+      MS_LOG(EXCEPTION) << "Alloc failed, size:" << size << ", stream_id:" << stream_id;
+    }
+    device_context_ = device_context;
+  }
+  ~MemBlock() { device_context_->device_res_manager_->FreeMemory(ptr_); }
+  void *ptr_;
+  const device::DeviceContext *device_context_;
+};
+
 class OPS_ASCEND_API AclnnKernelMod : public KernelMod {
  public:
   explicit AclnnKernelMod(std::string &&op_type) : op_type_(std::move(op_type)) {
-    auto capaticy_from_user = ops::GetCacheCapaticy();
-    if (capaticy_from_user >= 0) {
-      capacity_ = LongToSize(capaticy_from_user);
-      MS_LOG(INFO) << "Set aclnn cache queue length of kbyk to " << capacity_;
+    if (!is_set_capacity) {
+      std::unique_lock write_lock(cache_mutex);
+      is_set_capacity = true;
+      auto capaticy_from_user = ops::GetCacheCapaticy();
+      if (capaticy_from_user >= 0) {
+        capacity = LongToSize(capaticy_from_user);
+        MS_LOG(INFO) << "Set aclnn cache queue length of kbyk to " << capacity;
+        MS_VLOG(VL_ACLNN_OP) << "Set aclnn cache queue length of kbyk to " << capacity;
+      }
     }
   }
-  ~AclnnKernelMod();
+
+  ~AclnnKernelMod() {
+    if (hash_cache.empty()) {
+      return;
+    }
+
+    std::unique_lock write_lock(cache_mutex);
+    (void)std::for_each(hash_cache.begin(), hash_cache.end(), [&](CacheTuple &item) {
+      auto cache = std::get<kIndex2>(item);
+      cache(device::ascend::ProcessCacheType::kReleaseParamsAndExecutor, {});
+    });
+    hash_cache.clear();
+    hash_map.clear();
+  }
 
   bool Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);
   int Resize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);
@@ -274,10 +422,7 @@ class OPS_ASCEND_API AclnnKernelMod : public KernelMod {
     }
   }
 
-  void SetDynamic(bool is_dynamic) {
-    std::lock_guard<std::mutex> lock(mtx_);
-    is_dynamic_ = is_dynamic;
-  }
+  void SetDynamic(bool is_dynamic) { is_dynamic_ = is_dynamic; }
 
   void ClearOpsWorkSpaceList() {
     ops_workspace_size_idx_ = 0;
@@ -296,16 +441,10 @@ class OPS_ASCEND_API AclnnKernelMod : public KernelMod {
   CallBackFunc release_func_{nullptr};
   std::string op_type_;
   uint64_t hash_id_{0};
-  std::unordered_set<uint64_t> cache_hash_;
   std::unordered_map<std::string, std::pair<size_t, size_t>> ops_workspace_size_map_;
   size_t ops_workspace_size_idx_{0};
   static bool is_dynamic_;
-  std::mutex mtx_;
-  std::unordered_map<uint64_t, std::list<CacheTuple>::iterator> hash_map_;
-  std::list<CacheTuple> hash_cache_;
-  size_t capacity_{1024};
 
-  static constexpr size_t kWsSizeIndex = 0;
   static constexpr size_t kHashIdIndex = 3;
 };
 

@@ -280,7 +280,8 @@ enum VLogLevel : int {
   VL_USER_CUSTOM = NUM_ALIGN(COMPONENT_START + (NUM_SUBMODUES - 1) * COMPONENT_RANGE,
                              COMPONENT_START),  // start of user defined vlog level
   VL_DISP_VLOG_TAGS = VL_USER_CUSTOM,           // print already used vlog tags
-  VL_CUSTOM_OP                                  // index 20001
+  VL_CUSTOM_OP,                                 // index 20001
+  VL_ACLNN_OP,                                  // index 20002
 };
 
 /// \brief Get sub-module name by the module id.

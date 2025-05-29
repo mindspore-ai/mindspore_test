@@ -292,10 +292,12 @@ class ApiCachePool {
     auto process_cache = device::ascend::ProcessCache(nullptr);                                                        \
     if (sync_launch_api.find(std::string(api_name)) == sync_launch_api.end() &&                                        \
         HitCache(api_name, executor_addr, workspace_size_addr, args...)) {                                             \
-      MS_LOG(DEBUG) << "gen executor aclnn cache hit.";                                                                \
+      MS_LOG(INFO) << api_name << " gen executor hit cache.";                                                          \
+      MS_VLOG(VL_ACLNN_OP) << api_name << " gen executor hit cache.";                                                  \
       return std::make_tuple(workspace_size, executor, process_cache, release_func);                                   \
     }                                                                                                                  \
-    MS_LOG(DEBUG) << "gen executor aclnn cache miss.";                                                                 \
+    MS_LOG(INFO) << api_name << " gen executor miss cache.";                                                           \
+    MS_VLOG(VL_ACLNN_OP) << api_name << " gen executor miss cache.";                                                   \
     auto init_mem_func = device::ascend::OpApiDefaultResource::GetInstance().init_mem_func();                          \
     if (init_mem_func) {                                                                                               \
       init_mem_func(nullptr, false);                                                                                   \
@@ -360,8 +362,12 @@ class ApiCachePool {
     device::ascend::aclOpExecutor **executor_addr = &executor;                                                         \
     uint64_t new_hash_id = hash_id;                                                                                    \
     if (HitCacheSingle(api_name, executor_addr, workspace_size_addr, &new_hash_id, args...)) {                         \
+      MS_LOG(INFO) << api_name << " gen executor hit cache, hash id: " << new_hash_id;                                 \
+      MS_VLOG(VL_ACLNN_OP) << api_name << " gen executor hit cache, hash id: " << new_hash_id;                         \
       return std::make_tuple(workspace_size, executor, release_func, new_hash_id, true);                               \
     }                                                                                                                  \
+    MS_LOG(INFO) << api_name << " gen executor miss cache, hash id: " << new_hash_id;                                  \
+    MS_VLOG(VL_ACLNN_OP) << api_name << " gen executor miss cache, hash id: " << new_hash_id;                          \
     auto init_mem_func = device::ascend::OpApiDefaultResource::GetInstance().init_mem_func();                          \
     if (init_mem_func) {                                                                                               \
       init_mem_func(nullptr, false);                                                                                   \

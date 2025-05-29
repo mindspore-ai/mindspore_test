@@ -15,6 +15,7 @@
  */
 #ifndef MINDSPORE_OPS_KERNEL_ASCEND_OPAPI_CUSTOM_ACLNN_KERNEL_MOD_H_
 #define MINDSPORE_OPS_KERNEL_ASCEND_OPAPI_CUSTOM_ACLNN_KERNEL_MOD_H_
+#include <list>
 #include <vector>
 #include <string>
 #include <utility>
@@ -62,27 +63,37 @@ class CustomAclnnKernelMod : public AclnnKernelMod {
   void GetWorkspaceForResize(const Args &... args) {
     hash_id_ = device::ascend::AclnnHash(op_type_, args...);
     size_t cur_workspace = 0;
-    if (hash_map_.count(hash_id_)) {
-      hash_cache_.splice(hash_cache_.begin(), hash_cache_, hash_map_[hash_id_]);
-      cur_workspace = std::get<kWorkspaceIndex>(hash_cache_.front());
+    std::optional<std::list<CacheTuple>::iterator> found_iter;
+    {
+      std::shared_lock read_lock(cache_mutex);
+      if (auto iter = hash_map.find(hash_id_); iter != hash_map.end()) {
+        found_iter = iter->second;
+      }
+    }
+    if (found_iter) {
+      std::unique_lock write_lock(cache_mutex);
+      hash_cache.splice(hash_cache.begin(), hash_cache, *found_iter);
+      cur_workspace = std::get<kWorkspaceIndex>(hash_cache.front());
     } else {
       auto [workspace, executor, cache, fail_cache] = GEN_CUSTOM_EXECUTOR_FOR_RESIZE(op_type_, args...);
       cur_workspace = workspace;
       if (!fail_cache) {
-        hash_cache_.emplace_front(hash_id_, executor, cache, workspace);
-        hash_map_[hash_id_] = hash_cache_.begin();
+        std::unique_lock write_lock(cache_mutex);
+        hash_cache.emplace_front(hash_id_, executor, cache, workspace);
+        hash_map[hash_id_] = hash_cache.begin();
+        if (hash_cache.size() > capacity) {
+          auto release_data = std::move(hash_cache.back());
+          hash_map.erase(std::get<0>(release_data));
+          hash_cache.pop_back();
+          write_lock.unlock();
+          auto release_func = std::get<2>(release_data);
+          release_func(device::ascend::ProcessCacheType::kReleaseParamsAndExecutor, {});
+        }
       } else {
         hash_id_ = 0;
         cache(device::ascend::ProcessCacheType::kReleaseParamsAndExecutor, {});
       }
     }
-    if (hash_cache_.size() > capacity_) {
-      hash_map_.erase(std::get<0>(hash_cache_.back()));
-      auto release_func = std::get<kReleaseFuncIndex>(hash_cache_.back());
-      release_func(device::ascend::ProcessCacheType::kReleaseParamsAndExecutor, {});
-      hash_cache_.pop_back();
-    }
-
     if (cur_workspace != 0) {
       std::vector<size_t> workspace_size_list = {cur_workspace};
       SetWorkspaceSizeList(workspace_size_list);
@@ -110,13 +121,16 @@ class CustomAclnnKernelMod : public AclnnKernelMod {
 
   template <typename... Args>
   std::pair<aclOpExecutor *, std::function<void()>> GetExecutor(const Args &... args) {
-    if (hash_id_ == 0 || !hash_map_.count(hash_id_)) {
+    std::shared_lock read_lock(cache_mutex);
+    if (hash_id_ == 0 || !hash_map.count(hash_id_)) {
+      read_lock.unlock();
       aclOpExecutor *executor;
       std::function<void()> release_func;
       std::tie(std::ignore, executor, std::ignore, release_func) = GEN_CUSTOM_EXECUTOR(op_type_, args...);
       return std::make_pair(executor, release_func);
     }
-    const auto &cur_run = *hash_map_[hash_id_];
+    const auto cur_run = *hash_map[hash_id_];
+    read_lock.unlock();
     UPDATE_TENSOR_FOR_LAUNCH(std::get<kReleaseFuncIndex>(cur_run), args...);
     const auto &executor = std::get<1>(cur_run);
     return std::make_pair(executor, nullptr);

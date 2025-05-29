@@ -76,6 +76,10 @@ class COMMON_EXPORT RuntimeConf {
     group_launch_thread_num_ = group_launch_thread_num;
     kernel_group_num_ = kernel_group_num;
     conf_status_[kKernelLaunchGroupConf] = true;
+    // MS aclnn cache is conflict with group launch, use CANN cache instead.
+    auto origin_conf = common::GetEnv(common::kRuntimeConf);
+    auto new_conf = origin_conf.empty() ? "aclnn_cache_queue_length:0" : origin_conf + ",aclnn_cache_queue_length:0";
+    common::SetEnv(common::kRuntimeConf, new_conf.c_str());
   }
   bool IsKernelLaunchGroupConfigured() { return conf_status_.count(kKernelLaunchGroupConf); }
   uint32_t group_launch_thread_num() { return group_launch_thread_num_; }

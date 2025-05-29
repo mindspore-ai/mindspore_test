@@ -25,8 +25,13 @@
 
 namespace mindspore {
 namespace kernel {
-bool AclnnKernelMod::is_dynamic_ = false;
+mindspore::HashMap<uint64_t, std::list<CacheTuple>::iterator> hash_map;
+std::list<CacheTuple> hash_cache;
+size_t capacity{10000};
+bool is_set_capacity{false};
+std::shared_mutex cache_mutex;
 
+bool AclnnKernelMod::is_dynamic_ = false;
 bool AclnnKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
   MS_LOG(DEBUG) << "AclnnKernelMod Init";
   return true;
@@ -54,13 +59,6 @@ std::vector<size_t> AclnnKernelMod::GetLaunchIgnoredInputAddressIdx() const {
     return launch_ignored_input_addr_idx.at(kernel_name_);
   }
   return {};
-}
-
-AclnnKernelMod::~AclnnKernelMod() {
-  (void)std::for_each(hash_cache_.begin(), hash_cache_.end(), [&](CacheTuple &item) {
-    auto cache = std::get<kIndex2>(item);
-    cache(device::ascend::ProcessCacheType::kReleaseParamsAndExecutor, {});
-  });
 }
 }  // namespace kernel
 }  // namespace mindspore
