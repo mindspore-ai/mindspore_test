@@ -1,0 +1,30 @@
+# operator swiglu_quant
+swiglu_quant:
+  args:
+    input:
+      dtype: tensor
+    smooth_scale:
+      dtype: tensor
+      default: None
+    offset:
+      dtype: tensor
+      default: None
+    group_index:
+      dtype: tensor
+      default: None
+    activate_left:
+      dtype: bool
+    quant_mode:
+      dtype: int
+      arg_handler: str_to_enum
+  returns:
+    y:
+      dtype: tensor
+    scale:
+      dtype: tensor
+  function:
+    disable: True
+  class:
+    disable: True
+  dispatch:
+    enable: True

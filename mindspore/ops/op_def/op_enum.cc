@@ -235,6 +235,11 @@ REG_STRING_TO_ENUM_SPECIAL(mode, StrToEnumMap{{"REDUCED", LinalgQrMode::REDUCED}
 
 // FlipMode
 REG_STRING_TO_ENUM_SPECIAL(approximate, StrToEnumMap{{"NONE", Approximate::NONE}, {"TANH", Approximate::TANH}});
+
+// QuantMode
+REG_STRING_TO_ENUM_SPECIAL(quant_mode, StrToEnumMap{{"STATIC", QuantMode::STATIC},
+                                                    {"DYNAMIC", QuantMode::DYNAMIC},
+                                                    {"DYNAMIC_MSD", QuantMode::DYNAMIC_MSD}});
 }  // namespace
 
 int64_t StringToEnumImpl(const std::string &op_name, const std::string &arg_name, const std::string &enum_string) {

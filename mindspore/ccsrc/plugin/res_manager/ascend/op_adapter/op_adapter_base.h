@@ -302,6 +302,18 @@ class AscendQuantRoundMode {
   }
 };
 
+class AscendQuantMode {
+ public:
+  static std::string ConvertEnumToString(int64_t id) {
+    static const std::vector<std::string> quant_mode = {"static", "dynamic", "dynamic_msd"};
+    if (id < 0 || id >= static_cast<int64_t>(quant_mode.size())) {
+      MS_LOG(EXCEPTION) << "Invalid AscendQuant mode " << id;
+      return "";
+    }
+    return quant_mode[id];
+  }
+};
+
 class ASCEND_RES_MANAGER_EXPORT FASInputLayoutMode {
  public:
   static std::string ConvertEnumToString(int64_t id) {

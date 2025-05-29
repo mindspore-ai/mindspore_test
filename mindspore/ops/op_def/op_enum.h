@@ -76,6 +76,8 @@ enum FlipMode : int64_t { BITFLIP = 0, BITFLIP_DESIGNED = 1, MULTIPLY = 2, MULTI
 enum LinalgQrMode : int64_t { REDUCED = 0, COMPLETE = 1, R = 2 };
 
 enum Approximate : int64_t { NONE = 0, TANH = 1 };
+
+enum QuantMode : int64_t { STATIC = 0, DYNAMIC = 1, DYNAMIC_MSD = 2 };
 }  // namespace ops
 }  // namespace mindspore
 #endif  //  MINDSPORE_CORE_OPS_ENUM_H_
