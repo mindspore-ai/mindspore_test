@@ -321,10 +321,8 @@ class KernelRunner {
   void FetchOutputDeviceTensor(OpContext<KernelTensor> *const context);
   void FetchWorkspaceDeviceTensor();
   // Need copy when the data type or format between real parameters and formal parameters are inconsistent.
-  void CopyInputDeviceTensor(KernelTensorPtr device_tensor, size_t input_index, OpContext<KernelTensor> *const context);
-  // Use for graph parameter.
-  void CopyParameterDeviceTensor(KernelTensorPtr kernel_tensor, size_t input_index,
-                                 OpContext<KernelTensor> *const context, size_t stream_id);
+  void CopyInputDeviceTensor(KernelTensorPtr device_tensor, size_t input_index, bool is_infer_boost_parameter,
+                             OpContext<KernelTensor> *const context);
   // The processing before kernel launch: update the info of kernel launch.
   void PreLaunchKernel(OpContext<KernelTensor> *const context);
   // Back refresh the dynamic device tensor stores that have been triggered copy.
