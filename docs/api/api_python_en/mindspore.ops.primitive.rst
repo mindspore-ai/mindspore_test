@@ -620,6 +620,7 @@ Please see the `msrun start up \
     mindspore.ops.AllReduce
     mindspore.ops.AlltoAll
     mindspore.ops.AlltoAllV
+    mindspore.ops.AlltoAllVC
     mindspore.ops.Barrier
     mindspore.ops.Broadcast
     mindspore.ops.CollectiveGather

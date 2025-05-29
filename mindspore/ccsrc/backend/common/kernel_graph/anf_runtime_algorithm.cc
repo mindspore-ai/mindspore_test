@@ -2051,6 +2051,7 @@ bool AnfRuntimeAlgorithm::IsNeedContinuesMemoryOp(const AnfNodePtr &kernel) {
     kAlltoAllVOpName,
     kAllGatherVOpName,
     kReduceScatterVOpName,
+    kAlltoAllVCOpName,
   };
   bool flag =
     (common::AnfAlgo::IsNaiveCommunicationOp(kernel)) && (names.count(common::AnfAlgo::GetCNodeName(kernel)) == 0);

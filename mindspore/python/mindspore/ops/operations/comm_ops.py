@@ -1940,7 +1940,7 @@ class BatchISendIRecv(PrimitiveWithInfer):
 
 
 class AlltoAllV(PrimitiveWithInfer):
-    """
+    r"""
     AllToAllV which support uneven scatter and gather compared with AllToAll.
 
     Note:
@@ -2013,6 +2013,10 @@ class AlltoAllV(PrimitiveWithInfer):
         rank 1:
         [1. 2. 5]
 
+    Tutorial Examples:
+        - `Distributed Set Communication Primitives - AlltoAllV
+          <https://www.mindspore.cn/docs/en/master/api_python/samples/ops/communicate_ops.html#alltoallv>`_
+
     """
 
     @prim_attr_register
@@ -2022,6 +2026,94 @@ class AlltoAllV(PrimitiveWithInfer):
         self.add_prim_attr('group', self.group)
         validator.check_value_type("block_size", block_size, [int], self.name)
         self.add_prim_attr('block_size', self.block_size)
+
+
+class AlltoAllVC(PrimitiveWithInfer):
+    r"""
+    AllToAllVC passes in the sending and receiving parameters of all ranks through the input parameter
+    `send_count_matrix`. Compared to AllToAllV, AllToAllVC does not require the aggregation of all rank
+    sending and receiving parameters, thus offering superior performance.
+
+    Note:
+        Only one-dimensional input is supported; the input data must be flattened into a one-dimensional
+        array before using this interface.
+
+    Args:
+        group (str, optional): The communication group to work on. Default: ``GlobalComm.WORLD_COMM_GROUP``, which
+            means ``"hccl_world_group"`` in Ascend.
+        block_size (int, optional): The basic units for splitting and gathering numel by `send_count_matrix`.
+            Default: ``1``.
+        transpose (bool, optional): Indicates whether the `send_count_matrix` needs to undergo a transpose
+            operation, this parameter is used in reverse calculation scenarios. Default: ``False``.
+
+    Inputs:
+        - **input_x** (Tensor) - flatten tensor to scatter. The shape of tensor is :math:`(x_1)`.
+        - **send_count_matrix** (Union[list[int], Tensor]) - The sending and receiving parameters of
+          all ranks, :math:`\text{send_count_matrix}[i*\text{rank_size}+j]` represents the amount of data sent by
+          rank i to rank j, and the basic unit is the number of bytes of Tensor's dtype. Among them, `rank_size`
+          indicates the size of the communication group.
+
+    Outputs:
+        Tensor. Flattened and concatenated tensor gather from remote ranks.
+        If gather result is empty, it will return a Tensor with shape `()`, and value has no actual meaning.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        .. note::
+            Before running the following examples, you need to configure the communication environment variables.
+
+            For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
+            without any third-party or configuration file dependencies.
+
+            Please see the `msrun start up
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
+            for more details.
+
+            This example should be run with 2 devices.
+
+        >>> from mindspore.ops import AlltoAllVC
+        >>> import mindspore.nn as nn
+        >>> from mindspore.communication import init, get_rank
+        >>> from mindspore import Tensor
+        >>>
+        >>> init()
+        >>> rank = get_rank()
+        >>> class Net(nn.Cell):
+        ...     def __init__(self):
+        ...         super(Net, self).__init__()
+        ...         self.all_to_all_v_c = AlltoAllVC()
+        ...
+        ...     def construct(self, x, send_count_matrix):
+        ...         return self.all_to_all_v_c(x, send_count_matrix)
+        >>> send_count_matrix = Tensor([[0, 3], [3, 0]])
+        >>> send_tensor = Tensor([0, 1, 2.]) * rank
+        >>> net = Net()
+        >>> output = net(send_tensor, send_count_matrix)
+        >>> print(output)
+        rank 0:
+        [0. 1. 2]
+        rank 1:
+        [0. 0. 0]
+
+    Tutorial Examples:
+        - `Distributed Set Communication Primitives - AlltoAllVC
+          <https://www.mindspore.cn/docs/en/master/api_python/samples/ops/communicate_ops.html#alltoallvc>`_
+
+    """
+
+    @prim_attr_register
+    def __init__(self, group=GlobalComm.WORLD_COMM_GROUP, block_size=1, transpose=False):
+        self.group = GlobalComm.WORLD_COMM_GROUP if group is None else _get_group(group)
+        self.rank_size = get_group_size(self.group)
+        self.add_prim_attr('rank_size', self.rank_size)
+        self.add_prim_attr('group', self.group)
+        self.rank_id = get_rank(_get_group(self.group))
+        self.add_prim_attr('rank_id', self.rank_id)
+        validator.check_value_type("block_size", block_size, [int], self.name)
+        self.add_prim_attr('block_size', self.block_size)
+        self.add_prim_attr('transpose', self.transpose)
 
 
 class AllGatherV(PrimitiveWithInfer):
