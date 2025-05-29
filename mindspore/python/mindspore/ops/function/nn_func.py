@@ -4485,7 +4485,7 @@ def _nllloss_nd(input, target, weight=None, ignore_index=-100, reduction='mean')
     if input_dim != 1 and input.shape[0] != target.shape[0]:
         raise ValueError(f"input bacth_size should be equal to target batch_size, but got {input.shape[0]} and "
                          f"{target.shape[0]}")
-    if input_dim == 1 or input_dim == 2:
+    if input_dim in [1, 2]:
         return nllloss_impl(input, target, weight, reduction, ignore_index)[0]
     if input_dim == 4:
         return nllloss_2d_op(input, target, weight, reduction, ignore_index)[0]

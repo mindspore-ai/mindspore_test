@@ -523,6 +523,7 @@ ValueNodePtr KernelGraph::NewValueNode(const tensor::TensorPtr &input_tensor) {
 }
 
 ValueNodePtr KernelGraph::NewValueNode(const ValuePtr &input_value) {
+  MS_EXCEPTION_IF_NULL(input_value);
   if (input_value->isa<tensor::Tensor>()) {
     return NewValueNode(input_value->cast<tensor::TensorPtr>());
   }

@@ -792,7 +792,9 @@ void UnfoldKernelBuildInfo(const CNodePtr &kernel_node) {
   std::vector<TypeId> unfold_output_dtypes;
   std::vector<std::string> unfold_input_formats;
   std::vector<std::string> unfold_output_formats;
-  auto Append = [&](bool in_or_out, size_t index) {
+  auto Append = [&unfold_input_dtypes, &unfold_input_formats, &unfold_output_dtypes, &unfold_output_formats,
+                 input_dtypes, input_formats, output_dtypes, output_formats, input_num,
+                 output_num](bool in_or_out, size_t index) {
     if (in_or_out) {
       MS_EXCEPTION_IF_CHECK_FAIL((input_num > index), "Input index is out of range.");
       unfold_input_dtypes.push_back(input_dtypes[index]);
@@ -803,7 +805,7 @@ void UnfoldKernelBuildInfo(const CNodePtr &kernel_node) {
       unfold_output_formats.push_back(output_formats[index]);
     }
   };
-  auto RepeatAppend = [&](bool in_or_out, size_t index, size_t times) {
+  auto RepeatAppend = [Append](bool in_or_out, size_t index, size_t times) {
     while (times > 0) {
       Append(in_or_out, index);
       times--;

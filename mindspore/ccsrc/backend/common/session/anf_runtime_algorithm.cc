@@ -86,7 +86,7 @@ std::string PrintKernelFormatAndType(const std::string &fmt, const TypeId &type,
 }
 
 [[maybe_unused]] struct AnfDumpHandlerRegister {
-  AnfDumpHandlerRegister() {
+  AnfDumpHandlerRegister() noexcept {
     AnfDumpHandler::SetPrintInputTypeShapeFormatHandler([](const std::shared_ptr<AnfNode> &node) -> std::string {
       if (node == nullptr) {
         return "";

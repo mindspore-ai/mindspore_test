@@ -129,12 +129,12 @@ class ExecuteOrder:
             comm_str = ",".join(self.comm_rank)
             return f"{self.primitive}_{self.group}_({comm_str})"
 
-        if self.primitive == "Send" or self.primitive == "DistCommIsend" or self.primitive == "InnerCommIsend":
+        if self.primitive in ["Send", "DistCommIsend", "InnerCommIsend"]:
             # Unique base key of the Send operation.
             return f"Send_Receive_{self.group}_({rank})->({self.dest_rank})_{self.input_shape}"
 
-        if self.primitive == "Receive" or self.primitive == "DistCommIrecv" or self.primitive == "InnerCommIrecv":
-            # Unique base key of the reception operation
+        if self.primitive in ["Receive", "DistCommIrecv", "InnerCommIrecv"]:
+            # Unique base key of the Recv operation
             return f"Send_Receive_{self.group}_({self.src_rank})->({rank})_{self.output_shape}"
 
         # Other operations, such as broadCast
@@ -368,23 +368,22 @@ class RankFolderParser:
 
 def modify_execute_orders(execute_orders_map: dict) -> dict:
     """
-     Modify and generate unique execution order keys for each rank.
+    Modify and generate unique execution order keys for each rank.
 
-     This function processes a mapping of execution orders grouped by ranks. For each order,
-     it generates a unique key by combining a base key and a counter, ensuring all orders
-     are uniquely identifiable. The result is a dictionary where the keys are rank identifiers
-     and the values are lists of unique execution order keys.
+    This function processes a mapping of execution orders grouped by ranks. For each order,
+    it generates a unique key by combining a base key and a counter, ensuring all orders
+    are uniquely identifiable. The result is a dictionary where the keys are rank identifiers
+    and the values are lists of unique execution order keys.
 
-     Args:
-         execute_orders_map (dict): A dictionary where keys are rank identifiers (e.g., "rank_0")
-                                    and values are lists of ExecuteOrder objects. If a rank has no
-                                    orders, its value may be `None`.
+    Args:
+        execute_orders_map (dict): A dictionary where keys are rank identifiers (e.g., "rank_0")
+                                and values are lists of ExecuteOrder objects. If a rank has no
+                                orders, its value may be `None`.
 
-     Returns:
-         dict: A dictionary where keys are rank identifiers and values are lists of unique string
-               keys representing the modified execution orders for each rank.
-
-     """
+    Returns:
+        dict: A dictionary where keys are rank identifiers and values are lists of unique string
+            keys representing the modified execution orders for each rank.
+    """
     result = {}
 
     for rank, execute_orders in execute_orders_map.items():
@@ -414,26 +413,25 @@ def modify_execute_orders(execute_orders_map: dict) -> dict:
 
 def parse_and_validate(data: dict, all_rank: bool = True):
     """
-     Parse and validate execution orders in a directed graph structure.
+    Parse and validate execution orders in a directed graph structure.
 
-     This function checks the integrity and consistency of a given dataset, ensuring all required
-     keys are present and correctly referenced. It also validates the structure of the input data
-     and parses string values to extract meaningful components.
+    This function checks the integrity and consistency of a given dataset, ensuring all required
+    keys are present and correctly referenced. It also validates the structure of the input data
+    and parses string values to extract meaningful components.
 
-     Args:
-         data (dict): A dictionary where keys are string identifiers and values are lists of strings.
-                      Each value represents a dependency or reference to other keys.
-         all_rank (bool): If True, checks that all elements referenced in the data are present as keys
-                          in the dictionary. If False, only checks intersections.
+    Args:
+        data (dict): A dictionary where keys are string identifiers and values are lists of strings.
+                    Each value represents a dependency or reference to other keys.
+        all_rank (bool): If True, checks that all elements referenced in the data are present as keys
+                        in the dictionary. If False, only checks intersections.
 
-     Returns:
-         None: Log error messages to the console if validation fails, otherwise completes silently.
+    Returns:
+        None: Log error messages to the console if validation fails, otherwise completes silently.
 
-     Raises:
-         ValueError: Raised indirectly if `parse_elements` encounters malformed input strings.
-         TypeError: Raised indirectly if data contains unexpected types.
-
-     """
+    Raises:
+        ValueError: Raised indirectly if `parse_elements` encounters malformed input strings.
+        TypeError: Raised indirectly if data contains unexpected types.
+    """
     def parse_elements(value: str, max_groups: int = 2) -> set:
         """Extract unique elements inside the first one or two parentheses from a string."""
         groups = re.findall(r'\((.*?)\)', value)
