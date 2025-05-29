@@ -767,8 +767,8 @@ void SuperKernelActor::FetchParameterInput(const KernelRunnerPtr &kernel_actor, 
       }
     }
 
-    kernel_actor->CopyParameterDeviceTensor(kernel_actor->input_kernel_tensors_[parameter_index.first],
-                                            parameter_index.first, context, stream_id);
+    kernel_actor->CopyInputDeviceTensor(kernel_actor->input_kernel_tensors_[parameter_index.first],
+                                        parameter_index.first, context);
   }
 }
 
