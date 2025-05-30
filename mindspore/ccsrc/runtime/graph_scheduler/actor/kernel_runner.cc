@@ -791,8 +791,8 @@ void *KernelRunner::GetSomasDevicePtr(size_t offset) const {
 
 void KernelRunner::TraceDynamicMemory() {
   for (size_t i = 0; i < output_kernel_tensors_.size(); i++) {
-    if (!is_output_kernel_[i]) {
-      const auto &kernel_tensor = output_kernel_tensors_[i];
+    const auto &kernel_tensor = output_kernel_tensors_[i];
+    if (!is_output_kernel_[i] && kernel_tensor->pointer_ref_count()->new_ref_count() != SIZE_MAX) {
       MemoryTraceManager::GetInstance().AddKernelMemoryTraceBlock(
         std::make_shared<KernelMemoryTraceBlock>(kernel_, kernel_tensor->device_ptr(), kernel_tensor->size(),
                                                  kOutputMem, i, kernel_tensor.get()),
