@@ -83,6 +83,10 @@
 #include "utils/numa_interface.h"
 #endif
 
+#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
+#include "include/common/utils/signal_util.h"
+#endif
+
 #ifdef ENABLE_RPC_ACTOR
 #include "runtime/graph_scheduler/embedding_cache_scheduler.h"
 #include "runtime/graph_scheduler/actor/rpc/mux_send_actor.h"
@@ -1165,6 +1169,11 @@ void RefreshGraphParameterStore(ActorSet *const actor_set, const VectorRef &args
 
 void GraphScheduler::Run(ActorSet *const actor_set, const std::vector<std::vector<TensorPtr>> &input_tensors,
                          const VectorRef &args, GraphExecutionStrategy strategy) {
+#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
+  if (!RegisterGlobalSignalHandler(DefaultIntHandler)) {
+    MS_EXCEPTION(RuntimeError) << "Failed to register the callback signal handling.";
+  }
+#endif
   // If spin is turned on in the configuration, it will be turned off when entering RunGraph.
   if (runtime::Pipeline::Get().frontend_stage()->Spin() && !is_shut_spin_ && is_bind_core_) {
     runtime::Pipeline::Get().SetSpin(false);
