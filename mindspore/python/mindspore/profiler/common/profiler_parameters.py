@@ -249,6 +249,15 @@ class ProfilerParameters:
             warnings.warn("when 'ProfilerActivity.CPU' is not set in 'activities', 'Record_shapes' cannot be set to "
                           "True, reset to 'False'.")
 
+        if not self.__dict__.get('mstx') and self.__dict__.get('mstx_domain_include') and \
+            self.__dict__.get('mstx_domain_exclude'):
+            self.mstx_domain_include = []
+            self.mstx_domain_exclude = []
+            warnings.warn(
+                "when 'mstx' is set to 'False', 'mstx_domain_include' and 'mstx_domain_exclude' cannot be set, "
+                "reset them to '[]'."
+            )
+
         if self.__dict__.get('mstx_domain_include') and self.__dict__.get('mstx_domain_exclude'):
             self.mstx_domain_exclude = []
             warnings.warn(
