@@ -703,10 +703,9 @@ bool SuperKernelActor::CopyHeterogeneousOutput(OpContext<KernelTensor> *const co
     }
     if (!ref_output_kernel_tensors.empty()) {
       MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-        << "Add device tensor copy store for device address:" << src_device_address
-        << " type:" << src_device_address->GetDeviceType() << " and " << dest_device_address
-        << " type:" << dest_device_address->GetDeviceType() << " for actor:" << GetAID();
-      DeviceTensorCopyStore::GetInstance().Insert(src_device_address, dest_device_address);
+        << "Add kernel tensor copy store for :" << src_kernel_tensor->ToString() << " and "
+        << dest_kernel_tensor->ToString() << " for actor:" << GetAID();
+      KernelTensorCopyStore::GetInstance().Insert(src_kernel_tensor.get(), dest_kernel_tensor.get());
     }
   }
   if (kernel_actor->new_memory_free_list_.size() > 0) {
@@ -796,7 +795,8 @@ void SuperKernelActor::FreeInputParamWithoutUser(OpContext<KernelTensor> *const 
           << " inner index:" << iter.second.first.second << " out index:" << iter.second.second
           << " kernel tensor:" << kernel_tensor->ToString()
           << " device context:" << device_contexts_[0]->device_context_key().ToString() << " for actor:" << GetAID();
-        MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(device_tensor, device_contexts_[0], GetAID().Name());
+        MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(kernel_tensor.get(), device_contexts_[0],
+                                                                GetAID().Name());
       }
     }
   }

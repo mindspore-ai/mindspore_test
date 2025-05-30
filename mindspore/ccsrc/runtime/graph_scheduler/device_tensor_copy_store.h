@@ -21,24 +21,24 @@
 #include <set>
 #include "utils/hash_map.h"
 #include "utils/ms_utils.h"
-#include "common/device_address.h"
+#include "common/kernel_tensor.h"
 
 namespace mindspore {
 namespace runtime {
-using DeviceTensor = mindspore::device::DeviceAddress;
+using KernelTensor = mindspore::kernel::KernelTensor;
 
 // The device tensor mainly includes address ptr, size and reference count,
 // which represents the basic data structure of kernel launch and transfers between actors.
 // Some device tensors (such as ref real parameters) need be refreshed in the running,
 // so they are more suitable for store and can be obtained when they are refreshed copy by actor.
-class DeviceTensorCopyStore {
+class KernelTensorCopyStore {
  public:
-  static DeviceTensorCopyStore &GetInstance() {
-    static DeviceTensorCopyStore instance;
+  static KernelTensorCopyStore &GetInstance() {
+    static KernelTensorCopyStore instance;
     return instance;
   }
 
-  void Insert(DeviceTensor *const key, DeviceTensor *const value) {
+  void Insert(KernelTensor *const key, KernelTensor *const value) {
     MS_EXCEPTION_IF_NULL(key);
     MS_EXCEPTION_IF_NULL(value);
     if (key->pointer_ref_count() == nullptr || value->pointer_ref_count() == nullptr ||
@@ -49,7 +49,7 @@ class DeviceTensorCopyStore {
     auto key_iter = copy_device_tensors_.find(key->pointer_ref_count());
     auto value_iter = copy_device_tensors_.find(value->pointer_ref_count());
     if (key_iter == copy_device_tensors_.end() && value_iter == copy_device_tensors_.end()) {
-      auto container = std::make_shared<std::set<DeviceTensor *>>();
+      auto container = std::make_shared<std::set<KernelTensor *>>();
       container->emplace(key);
       container->emplace(value);
       copy_device_tensors_[key->pointer_ref_count()] = container;
@@ -74,7 +74,7 @@ class DeviceTensorCopyStore {
     }
   }
 
-  std::shared_ptr<std::set<DeviceTensor *>> Fetch(DeviceTensor *const key) const {
+  std::shared_ptr<std::set<KernelTensor *>> Fetch(KernelTensor *const key) const {
     MS_EXCEPTION_IF_NULL(key);
     std::shared_lock<std::shared_mutex> lock(map_mutex_);
     const auto &iter = copy_device_tensors_.find(key->pointer_ref_count());
@@ -87,7 +87,7 @@ class DeviceTensorCopyStore {
 
   void Clear() { copy_device_tensors_.clear(); }
 
-  void Clear(DeviceTensor *const addr) {
+  void Clear(KernelTensor *const addr) {
     std::shared_lock<std::shared_mutex> lock(map_mutex_);
     if (copy_device_tensors_.find(addr->pointer_ref_count()) == copy_device_tensors_.end()) {
       return;
@@ -96,7 +96,7 @@ class DeviceTensorCopyStore {
     copy_device_tensors_.erase(addr->pointer_ref_count());
   }
 
-  void Replace(DeviceTensor *const old_addr, DeviceTensor *const new_addr) {
+  void Replace(KernelTensor *const old_addr, KernelTensor *const new_addr) {
     if (copy_device_tensors_.find(old_addr->pointer_ref_count()) == copy_device_tensors_.end()) {
       return;
     }
@@ -105,14 +105,14 @@ class DeviceTensorCopyStore {
   }
 
  private:
-  DeviceTensorCopyStore() = default;
-  ~DeviceTensorCopyStore() = default;
-  DISABLE_COPY_AND_ASSIGN(DeviceTensorCopyStore);
+  KernelTensorCopyStore() = default;
+  ~KernelTensorCopyStore() = default;
+  DISABLE_COPY_AND_ASSIGN(KernelTensorCopyStore);
 
   // The data storage of device tensor which need be back refreshed dynamically.
   // It is created and removed dynamically in the running.
   // Key is the dest device tensor, value is the source device tensors which provide copy data to dest device tensor.
-  mindspore::HashMap<PointerRefCountPtr, std::shared_ptr<std::set<DeviceTensor *>>> copy_device_tensors_;
+  mindspore::HashMap<PointerRefCountPtr, std::shared_ptr<std::set<KernelTensor *>>> copy_device_tensors_;
   // Read/Write lock for map.
   mutable std::shared_mutex map_mutex_;
 };

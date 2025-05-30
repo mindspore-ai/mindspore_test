@@ -638,8 +638,8 @@ void GraphScheduler::Clear() {
 void GraphScheduler::ClearActorData(const ActorSet *actor_set) {
   MS_EXCEPTION_IF_NULL(actor_set);
 
-  // Clear the member of DeviceTensorCopyStore.
-  DeviceTensorCopyStore::GetInstance().Clear();
+  // Clear the member of KernelTensorCopyStore.
+  KernelTensorCopyStore::GetInstance().Clear();
 
   // Clear the output tensors of output actor.
   if (actor_set->output_actor_ != nullptr) {

@@ -127,12 +127,9 @@ void HostQueueDataSourceActor::FillDataBuffer() {
                         << " device tensor size:" << kernel_tensors.size() << " for data source actor.";
     }
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-      << "Add device tensor copy store for device address:" << kernel_tensors[pair.second]->device_address().get()
-      << " type:" << kernel_tensors[pair.second]->device_address()->GetDeviceType() << " and "
-      << kernel_tensors[pair.first]->device_address()
-      << " type:" << kernel_tensors[pair.first]->device_address()->GetDeviceType() << " for actor:" << GetAID();
-    DeviceTensorCopyStore::GetInstance().Insert(kernel_tensors[pair.second]->device_address().get(),
-                                                kernel_tensors[pair.first]->device_address().get());
+      << "Add device tensor copy store for kernel tensor:" << kernel_tensors[pair.second]->ToString() << " and "
+      << kernel_tensors[pair.first]->ToString() << " for actor:" << GetAID();
+    KernelTensorCopyStore::GetInstance().Insert(kernel_tensors[pair.second].get(), kernel_tensors[pair.first].get());
   }
 
   buffers_.push(kernel_tensors);

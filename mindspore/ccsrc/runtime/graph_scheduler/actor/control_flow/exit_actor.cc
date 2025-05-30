@@ -50,26 +50,26 @@ void ExitActor::Init() {
                                       << " is dynamic check:" << is_need_dynamic_checks_;
 }
 
-void ClearDeviceTensorCopyStore(const std::map<KernelWithIndex, KernelWithIndex> &ref_out_in_map,
+void ClearKernelTensorCopyStore(const std::map<KernelWithIndex, KernelWithIndex> &ref_out_in_map,
                                 const std::string &actor_name) {
   for (const auto &pair : ref_out_in_map) {
     if (pair.first.first == nullptr || pair.second.first == nullptr) {
       continue;
     }
-    if (pair.first.first->isa<CNode>() && AnfAlgo::OutputAddrExist(pair.first.first, pair.first.second, false)) {
-      DeviceTensorCopyStore::GetInstance().Clear(
-        AnfAlgo::GetMutableOutputAddr(pair.first.first, pair.first.second, false).get());
+    if (pair.first.first->isa<CNode>() && AnfAlgo::ExistOutputKernelTensor(pair.first.first, pair.first.second)) {
+      KernelTensorCopyStore::GetInstance().Clear(
+        AnfAlgo::GetOutputKernelTensor(pair.first.first, pair.first.second, false).get());
       MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-        << "Device tensor copy store clear device address:"
-        << AnfAlgo::GetMutableOutputAddr(pair.first.first, pair.first.second, false)
+        << "Kernel tensor copy store clear kernel tensor:"
+        << AnfAlgo::GetOutputKernelTensor(pair.first.first, pair.first.second, false)
         << " node:" << pair.first.first->fullname_with_scope() << " in actor:" << actor_name;
     }
-    if (pair.second.first->isa<CNode>() && AnfAlgo::OutputAddrExist(pair.second.first, pair.second.second, false)) {
-      DeviceTensorCopyStore::GetInstance().Clear(
-        AnfAlgo::GetMutableOutputAddr(pair.second.first, pair.second.second, false).get());
+    if (pair.second.first->isa<CNode>() && AnfAlgo::ExistOutputKernelTensor(pair.second.first, pair.second.second)) {
+      KernelTensorCopyStore::GetInstance().Clear(
+        AnfAlgo::GetOutputKernelTensor(pair.second.first, pair.second.second, false).get());
       MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-        << "Device tensor copy store clear device address:"
-        << AnfAlgo::GetMutableOutputAddr(pair.second.first, pair.second.second, false)
+        << "Kernel tensor copy store clear kernel tensor:"
+        << AnfAlgo::GetOutputKernelTensor(pair.second.first, pair.second.second, false)
         << " node:" << pair.second.first->fullname_with_scope() << " in actor:" << actor_name;
     }
   }
@@ -85,7 +85,7 @@ void ExitActor::FetchInput(OpContext<KernelTensor> *const context) {
 
   ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kPreLaunch, GetAID().Name());
   CopyDeviceAddress(context);
-  ClearDeviceTensorCopyStore(ref_out_in_map_, GetAID().Name());
+  ClearKernelTensorCopyStore(ref_out_in_map_, GetAID().Name());
   if (output_branch_dynamic_len_index_.find(output_branch_id_) == output_branch_dynamic_len_index_.end()) {
     auto data_iter = output_branch_data_.find(output_branch_id_);
     if (data_iter != output_branch_data_.end()) {
@@ -428,7 +428,10 @@ void ExitActor::CopyDeviceAddress(OpContext<KernelTensor> *const context) {
       }
       // Move the device ptr from input_device_tensor to new_device_tensor.
       input_device_tensor->Swap(new_device_tensor.get());
-      DeviceTensorCopyStore::GetInstance().Replace(input_device_tensor, new_device_tensor.get());
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+        << "Kernel tensor copy store replace kernel tensor:" << input_kernel_tensors_[i]->ToString()
+        << " to:" << new_kernel_tensor->ToString() << " for actor:" << GetAID();
+      KernelTensorCopyStore::GetInstance().Replace(input_kernel_tensors_[i].get(), new_kernel_tensor.get());
       if (new_device_tensor->deleter() == nullptr) {
         new_device_tensor->set_from_mem_pool(true);
       }
