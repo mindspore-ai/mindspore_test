@@ -26,7 +26,6 @@
 #include "frontend/expander/bprop/bprop_irbuilder.h"
 #include "grad/grad_utils.h"
 #include "include/common/expander/core/node.h"
-#include "include/common/utils/utils.h"
 #include "ir/functor.h"
 #include "op_def/op_enum.h"
 #include "op_def/math_ops.h"
@@ -66,8 +65,8 @@ double PowFetchScalarValue(const ValuePtr &value_ptr, const std::string &arg_nam
 }
 }  // namespace
 NodePtrList AddnGradFunc(BpropBuilder *ib) {
-  auto dout = ib->GetInput(kIndex2);
-  auto x_abs = ib->GetInput(kIndex0)->abstract();
+  auto dout = ib->GetInput(i2);
+  auto x_abs = ib->GetInput(i0)->abstract();
   MS_EXCEPTION_IF_NULL(x_abs);
   auto x_seq_ptr = x_abs->cast<abstract::AbstractSequencePtr>();
   MS_EXCEPTION_IF_NULL(x_seq_ptr);
@@ -80,7 +79,7 @@ NodePtrList AddnGradFunc(BpropBuilder *ib) {
 }
 
 bool CloneInplaceInputFuncForInplaceDiv(const PynativeCallback &cb) {
-  if (!cb.IsNotRequiresGrad(kIndex1)) {
+  if (!cb.IsNotRequiresGrad(i1)) {
     return true;
   }
   return false;
@@ -88,7 +87,7 @@ bool CloneInplaceInputFuncForInplaceDiv(const PynativeCallback &cb) {
 
 void FreeTensorOfInplaceDivTensor(const PynativeCallback &cb) {
   auto &inputs = *cb.GetInputs();
-  if (inputs[kIndex1]->isa<tensor::Tensor>() && cb.IsNotRequiresGrad(kIndex1)) {
+  if (inputs[i1]->isa<tensor::Tensor>() && cb.IsNotRequiresGrad(i1)) {
     cb.FreeDeviceAddress(&inputs[0]);
     MS_LOG(DEBUG) << "Clear device address for inputs[0] of" << cb.opname();
   }
@@ -96,9 +95,9 @@ void FreeTensorOfInplaceDivTensor(const PynativeCallback &cb) {
 }
 
 NodePtrList IgammaBpropExpanderDyn(BpropBuilder *ib) {
-  auto a = ib->GetInput(kIndex0);
-  auto x = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto a = ib->GetInput(i0);
+  auto x = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   auto sa = ib->Shape(a);
   auto sx = ib->Shape(x);
   auto rax = ib->BroadcastGradientArgs(sa, sx);
@@ -114,8 +113,8 @@ NodePtrList IgammaBpropExpanderDyn(BpropBuilder *ib) {
 }
 
 NodePtrList IgammaBpropExpander(BpropBuilder *ib) {
-  auto a = ib->GetInput(kIndex0);
-  auto x = ib->GetInput(kIndex1);
+  auto a = ib->GetInput(i0);
+  auto x = ib->GetInput(i1);
   auto sa = ib->GetShape(a);
   auto sx = ib->GetShape(x);
   if (IsDynamic(sa) || IsDynamic(sx)) {
@@ -128,7 +127,7 @@ NodePtrList IgammaBpropExpander(BpropBuilder *ib) {
   auto lgamma = ib->Emit("Lgamma", {a});
   auto partial_x = ib->Exp(
     ib->Sub((ib->Add((ib->Neg(x)), (ib->Mul((ib->Sub(a, (ib->Tensor(1, ib->GetDtype(a))))), (ib->Log(x)))))), lgamma));
-  auto dout = ib->GetInput(kIndex3);
+  auto dout = ib->GetInput(i3);
   NodePtr r1 = nullptr;
   NodePtr r2 = nullptr;
   if (!ra.empty()) {
@@ -212,23 +211,23 @@ NodePtrList MinimumMaximumGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr
 }
 
 NodePtrList CumMaxMinGrad(BpropBuilder *ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto axis = ib->GetInput(kIndex1);
-  auto out = ib->GetInput(kIndex2);
-  auto indices = ib->TupleGetItem(out, kIndex1);
+  auto x = ib->GetInput(i0);
+  auto axis = ib->GetInput(i1);
+  auto out = ib->GetInput(i2);
+  auto indices = ib->TupleGetItem(out, i1);
 
-  auto dout = ib->GetInput(kIndex3);
-  auto dout0 = ib->TupleGetItem(dout, kIndex0);
+  auto dout = ib->GetInput(i3);
+  auto dout0 = ib->TupleGetItem(dout, i0);
   auto zero_cum = ib->Emit("ZerosLikeExt", {x, ib->Value(static_cast<int64_t>(ib->GetDtypeId(x)))});
   return {ib->Emit("ScatterAddExt", {zero_cum, axis, indices, dout0}), ib->OutZeros(axis)};
 }
 
 NodePtrList IndexAddGrad(BpropBuilder *ib) {
-  auto dim = ib->GetInput(kIndex1);
-  auto index = ib->GetInput(kIndex2);
-  auto source = ib->GetInput(kIndex3);
-  auto alpha = ib->GetInput(kIndex4);
-  auto dout = ib->GetInput(kIndex6);
+  auto dim = ib->GetInput(i1);
+  auto index = ib->GetInput(i2);
+  auto source = ib->GetInput(i3);
+  auto alpha = ib->GetInput(i4);
+  auto dout = ib->GetInput(i6);
   if (source->need_compute_grad_out()) {
     NodePtr dsource;
     if (ib->GetShape(source).size() > 0) {
@@ -256,11 +255,11 @@ ShapeVector MatrixDeterminantInferFunc(const ShapeArray &inputs, const HashSet<s
 }
 
 NodePtrList BpropAddcCommon(BpropBuilder *ib, const std::string &op_name) {
-  auto input_data = ib->GetInput(kIndex0);
-  auto x1 = ib->GetInput(kIndex1);
-  auto x2 = ib->GetInput(kIndex2);
-  auto value = ib->GetInput(kIndex3);
-  auto dout = ib->GetInput(kIndex5);
+  auto input_data = ib->GetInput(i0);
+  auto x1 = ib->GetInput(i1);
+  auto x2 = ib->GetInput(i2);
+  auto value = ib->GetInput(i3);
+  auto dout = ib->GetInput(i5);
   auto dinput_data = dout;
   auto dout_typeptr = ib->GetDtype(dout);
 
@@ -298,10 +297,10 @@ NodePtrList BpropAddcCommon(BpropBuilder *ib, const std::string &op_name) {
   auto tmp_dvalue = BinopGradCommon(ib, inner_out, value, dout, dvalue);
   dvalue = tmp_dvalue[1];
 
-  dinput_data = ib->Cast(dinput_data, ib->GetDtype(ib->GetInput(kIndex0)));
-  dx1 = ib->Cast(dx1, ib->GetDtype(ib->GetInput(kIndex1)));
-  dx2 = ib->Cast(dx2, ib->GetDtype(ib->GetInput(kIndex2)));
-  dvalue = ib->Cast(dvalue, ib->GetDtype(ib->GetInput(kIndex3)));
+  dinput_data = ib->Cast(dinput_data, ib->GetDtype(ib->GetInput(i0)));
+  dx1 = ib->Cast(dx1, ib->GetDtype(ib->GetInput(i1)));
+  dx2 = ib->Cast(dx2, ib->GetDtype(ib->GetInput(i2)));
+  dvalue = ib->Cast(dvalue, ib->GetDtype(ib->GetInput(i3)));
 
   return {dinput_data, dx1, dx2, dvalue};
 }
@@ -384,9 +383,9 @@ class ReduceStdShapeCalc : public ShapeCalcFunctor {
 REG_FUNCTOR("ShapeCalc_ReduceStd", ReduceStdShapeCalc);
 
 NodePtrList FminFmaxGrad(BpropBuilder *ib, bool if_fmin) {
-  auto x1 = ib->GetInput(kIndex0);
-  auto x2 = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto x1 = ib->GetInput(i0);
+  auto x2 = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   auto x1_dtype = ib->GetDtype(x1);
   auto x2_dtype = ib->GetDtype(x2);
   x1 = ib->Cast(x1, kFloat32);
@@ -493,8 +492,8 @@ NodePtr MeanExtGrad(BpropBuilder *ib, const NodePtr &input, NodePtr axis, const 
 
 DEF_PURE_SHAPE_CALC(g_addbmm_shapecalc)
   .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
-    auto batch1_shape = inputs.at(kIndex0);
-    auto batch2_shape = inputs.at(kIndex1);
+    auto batch1_shape = inputs.at(i0);
+    auto batch2_shape = inputs.at(i1);
     ShapeVector ret_shape(batch1_shape.begin(), batch1_shape.end());
     ret_shape.back() = *(batch2_shape.end() - 1);
     return {ret_shape};
@@ -511,8 +510,8 @@ DEF_PURE_SHAPE_CALC(g_fft_dct_axis2tuple)
     if (inputs.size() != input_num) {
       MS_LOG_EXCEPTION << "ShapeCalc[g_fft_dct_axis2tuple] expect 2 inputs, but got " << inputs.size() << "inputs";
     }
-    auto x_shape = inputs.at(kIndex0);
-    auto axis = inputs.at(kIndex1)[0];
+    auto x_shape = inputs.at(i0);
+    auto axis = inputs.at(i1)[0];
 
     axis = NormalizeAxis(axis, x_shape.size());
     std::vector<int64_t> res{axis};
@@ -522,8 +521,8 @@ DEF_PURE_SHAPE_CALC(g_fft_dct_axis2tuple)
 
 DEF_PURE_SHAPE_CALC(g_fft_dct_axes)
   .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
-    auto x_shp = inputs.at(kIndex0);
-    auto s_v = inputs.at(kIndex1);
+    auto x_shp = inputs.at(i0);
+    auto s_v = inputs.at(i1);
 
     std::vector<int64_t> res;
     for (size_t i = 0; i < s_v.size(); i++) {
@@ -532,7 +531,7 @@ DEF_PURE_SHAPE_CALC(g_fft_dct_axes)
     return {res};
   })
   .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &) -> std::vector<int64_t> {
-    auto s_shape = inputs.at(kIndex1);
+    auto s_shape = inputs.at(i1);
     return {IsDynamicRank(s_shape) ? -1 : SizeToLong(s_shape.size())};
   });
 
@@ -542,7 +541,7 @@ DEF_PURE_SHAPE_CALC(g_fft_shape_dim)
     if (inputs.size() != input_num) {
       MS_LOG_EXCEPTION << "ShapeCalc[g_fft_shape_dim] expect 1 inputs, but got " << inputs.size() << "inputs";
     }
-    auto x_shape = inputs.at(kIndex0);
+    auto x_shape = inputs.at(i0);
 
     std::vector<int64_t> input_shape;
     std::vector<int64_t> input_size;
@@ -560,8 +559,8 @@ DEF_PURE_SHAPE_CALC(g_fft_shape_dim)
 
 DEF_PURE_SHAPE_CALC(g_fft_axes_shape)
   .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
-    auto x_shp = inputs.at(kIndex0);
-    auto axes_v = inputs.at(kIndex1);
+    auto x_shp = inputs.at(i0);
+    auto axes_v = inputs.at(i1);
 
     int64_t axis;
     std::vector<int64_t> res;
@@ -573,14 +572,14 @@ DEF_PURE_SHAPE_CALC(g_fft_axes_shape)
     return {res};
   })
   .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &) -> std::vector<int64_t> {
-    auto axes_shape = inputs.at(kIndex1);
+    auto axes_shape = inputs.at(i1);
     return {IsDynamicRank(axes_shape) ? -1 : SizeToLong(axes_shape.size())};
   });
 
 DEF_PURE_SHAPE_CALC(g_fft_cmpt_double_n_dim)
   .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
-    auto dout_shp = inputs.at(kIndex0);
-    auto axes_v = inputs.at(kIndex1);
+    auto dout_shp = inputs.at(i0);
+    auto axes_v = inputs.at(i1);
 
     std::vector<int64_t> res;
 
@@ -619,11 +618,11 @@ NodePtr FFTNormReverse(BpropBuilder *ib, NodePtr norm) {
 }
 
 NodePtrList FFTGradCommon(BpropBuilder *ib, const std::string &op_name) {
-  auto x = ib->GetInput(kIndex0);
-  auto n = ib->GetInput(kIndex1);
-  auto dim = ib->GetInput(kIndex2);
-  auto norm = ib->GetInput(kIndex3);
-  auto dout = ib->GetInput(kIndex5);
+  auto x = ib->GetInput(i0);
+  auto n = ib->GetInput(i1);
+  auto dim = ib->GetInput(i2);
+  auto norm = ib->GetInput(i3);
+  auto dout = ib->GetInput(i5);
 
   norm = FFTNormReverse(ib, norm);
 
@@ -763,12 +762,12 @@ void FreeTensorsOfMul(const PynativeCallback &cb) {
   // For operators like Mul, the dx ONLY rely on y, and dy ONLY rely on x.
   // so if y is a valuenode, the dy is useless, we can free x in ahead.
   auto &inputs = *cb.GetInputs();
-  if (cb.IsNotRequiresGrad(kIndex0) && inputs[kIndex1]->isa<tensor::Tensor>()) {
-    cb.FreeDeviceAddress(&inputs[kIndex1]);
+  if (cb.IsNotRequiresGrad(i0) && inputs[i1]->isa<tensor::Tensor>()) {
+    cb.FreeDeviceAddress(&inputs[i1]);
     MS_LOG(DEBUG) << "Clear device address for inputs[1] of " << cb.opname();
   }
-  if (cb.IsNotRequiresGrad(kIndex1) && inputs[kIndex0]->isa<tensor::Tensor>()) {
-    cb.FreeDeviceAddress(&inputs[kIndex0]);
+  if (cb.IsNotRequiresGrad(i1) && inputs[i0]->isa<tensor::Tensor>()) {
+    cb.FreeDeviceAddress(&inputs[i0]);
     MS_LOG(DEBUG) << "Clear device address for inputs[0] of " << cb.opname();
   }
 }
@@ -776,21 +775,21 @@ void FreeTensorsOfMul(const PynativeCallback &cb) {
 void FreeTensorsOfBaddbmm(const PynativeCallback &cb) {
   cb.FreeOutputDeviceAddress();
   auto &inputs = *cb.GetInputs();
-  cb.FreeDeviceAddress(&inputs[kIndex0]);
-  if (cb.IsNotRequiresGrad(kIndex1) && inputs[kIndex2]->isa<tensor::Tensor>()) {
-    cb.FreeDeviceAddress(&inputs[kIndex2]);
+  cb.FreeDeviceAddress(&inputs[i0]);
+  if (cb.IsNotRequiresGrad(i1) && inputs[i2]->isa<tensor::Tensor>()) {
+    cb.FreeDeviceAddress(&inputs[i2]);
     MS_LOG(DEBUG) << "Clear device address for inputs[2] of " << cb.opname();
   }
-  if (cb.IsNotRequiresGrad(kIndex2) && inputs[kIndex1]->isa<tensor::Tensor>()) {
-    cb.FreeDeviceAddress(&inputs[kIndex1]);
+  if (cb.IsNotRequiresGrad(i2) && inputs[i1]->isa<tensor::Tensor>()) {
+    cb.FreeDeviceAddress(&inputs[i1]);
     MS_LOG(DEBUG) << "Clear device address for inputs[1] of " << cb.opname();
   }
 }
 
 void FreeTensorsOfDiv(const PynativeCallback &cb) {
-  cb.FreeInputDeviceAddress({kIndex0});
+  cb.FreeInputDeviceAddress({i0});
   // For operators like Div, the dy does not rely on output node, so if y is a valuenode, we can free output.
-  if (cb.IsNotRequiresGrad(kIndex1)) {
+  if (cb.IsNotRequiresGrad(i1)) {
     cb.FreeOutputDeviceAddress();
   }
 }
@@ -890,8 +889,8 @@ inline std::pair<size_t, size_t> GMMBackwardParamsCheck(const std::string &op_na
   auto num_x = FetchNumOfSequenceTensor(x, op_name, "x");
   auto num_w = FetchNumOfSequenceTensor(weight, op_name, "weight");
 
-  CheckValueOfInt64Scalar(split_item, op_name, "split_item", SizeToLong(kIndex3));
-  CheckValueOfInt64Scalar(group_type, op_name, "group_type", SizeToLong(kIndex0));
+  CheckValueOfInt64Scalar(split_item, op_name, "split_item", SizeToLong(i3));
+  CheckValueOfInt64Scalar(group_type, op_name, "group_type", SizeToLong(i0));
 
   auto is_none_func = [](const NodePtr &node) {
     auto type = node->abstract()->BuildType();
@@ -923,7 +922,7 @@ inline NodePtr GMMBiasBackward(BpropBuilder *ib, const NodePtr &bias, const std:
 }
 
 bool CloneInplaceInputFuncForInplaceMul(const PynativeCallback &cb) {
-  if (!cb.IsNotRequiresGrad(kIndex1)) {
+  if (!cb.IsNotRequiresGrad(i1)) {
     return true;
   }
   return false;
@@ -934,22 +933,22 @@ void FreeTensorsOfInplaceMul(const PynativeCallback &cb) {
   // For operators like Mul, the dx ONLY rely on y, and dy ONLY rely on x.
   // so if y is a valuenode, the dy is useless, we can free x in ahead.
   auto &inputs = *cb.GetInputs();
-  if (cb.IsNotRequiresGrad(kIndex0) && inputs[kIndex1]->isa<tensor::Tensor>()) {
-    cb.FreeDeviceAddress(&inputs[kIndex1]);
+  if (cb.IsNotRequiresGrad(i0) && inputs[i1]->isa<tensor::Tensor>()) {
+    cb.FreeDeviceAddress(&inputs[i1]);
     MS_LOG(DEBUG) << "Clear device address for inputs[1] of " << cb.opname();
   }
-  if (cb.IsNotRequiresGrad(kIndex1) && inputs[kIndex0]->isa<tensor::Tensor>()) {
-    cb.FreeDeviceAddress(&inputs[kIndex0]);
+  if (cb.IsNotRequiresGrad(i1) && inputs[i0]->isa<tensor::Tensor>()) {
+    cb.FreeDeviceAddress(&inputs[i0]);
     MS_LOG(DEBUG) << "Clear device address for inputs[0] of " << cb.opname();
   }
 }
 
 REG_BPROP_BUILDERS_BEGIN(GradMathOps)
 REG_BPROP_BUILDER("MatMul").FreeUselessValues(FreeTensorsOfMul).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto w = ib->GetInput(kIndex1);
-  auto trans_a = ib->GetInput(kIndex2);
-  auto trans_b = ib->GetInput(kIndex3);
+  auto x = ib->GetInput(i0);
+  auto w = ib->GetInput(i1);
+  auto trans_a = ib->GetInput(i2);
+  auto trans_b = ib->GetInput(i3);
   auto ta_opt = mindspore::GetScalarValue<bool>(trans_a->BuildValue());
   auto tb_opt = mindspore::GetScalarValue<bool>(trans_b->BuildValue());
 
@@ -961,7 +960,7 @@ REG_BPROP_BUILDER("MatMul").FreeUselessValues(FreeTensorsOfMul).SetBody(BODYFUNC
 
   auto x_type = ib->GetDtype(x);
   auto w_type = ib->GetDtype(w);
-  auto dout = ib->GetInput(kIndex5);
+  auto dout = ib->GetInput(i5);
   NodePtr dx;
   NodePtr dw;
 
@@ -1020,9 +1019,9 @@ REG_BPROP_BUILDER("MatMul").FreeUselessValues(FreeTensorsOfMul).SetBody(BODYFUNC
 
 DEF_PURE_SHAPE_CALC(g_matmul_ext_bprop_shapecalc)
   .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
-    auto &input_shape = inputs.at(kIndex0);
-    auto &weight_shape = inputs.at(kIndex1);
-    auto &output_grad_shape = inputs.at(kIndex2);
+    auto &input_shape = inputs.at(i0);
+    auto &weight_shape = inputs.at(i1);
+    auto &output_grad_shape = inputs.at(i2);
     ShapeVector modified_input_shape = input_shape;
     ShapeVector modified_weight_shape = weight_shape;
     ShapeVector modified_output_grad_shape = output_grad_shape;
@@ -1057,9 +1056,9 @@ DEF_PURE_SHAPE_CALC(g_matmul_ext_bprop_shapecalc)
     auto weight_permutation_rank = -1LL;
 
     if (!IsDynamicRank(inputs[0]) && !IsDynamicRank(inputs[1])) {
-      auto &input_shape = inputs.at(kIndex0);
-      auto &weight_shape = inputs.at(kIndex1);
-      auto &output_grad_shape = inputs.at(kIndex2);
+      auto &input_shape = inputs.at(i0);
+      auto &weight_shape = inputs.at(i1);
+      auto &output_grad_shape = inputs.at(i2);
       input_rank = SizeToLong(input_shape.size());
       weight_rank = SizeToLong(weight_shape.size());
       output_grad_rank = SizeToLong(output_grad_shape.size());
@@ -1078,9 +1077,9 @@ DEF_PURE_SHAPE_CALC(g_matmul_ext_bprop_shapecalc)
   });
 
 REG_BPROP_BUILDER("MatMulExt").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
-  auto x_origin = ib->GetInput(kIndex0);
-  auto w_origin = ib->GetInput(kIndex1);
-  auto dout_origin = ib->GetInput(kIndex3);
+  auto x_origin = ib->GetInput(i0);
+  auto w_origin = ib->GetInput(i1);
+  auto dout_origin = ib->GetInput(i3);
   auto x_origin_shape = x_origin->shape();
   auto w_origin_shape = w_origin->shape();
   bool is_x_empty = IsShapeNone(x_origin_shape);
@@ -1152,9 +1151,9 @@ REG_BPROP_BUILDER("MatMulExt").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("Mm").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
-  auto input = ib->GetInput(kIndex0);
-  auto mat2 = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto input = ib->GetInput(i0);
+  auto mat2 = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   NodePtr dx;
   NodePtr dw;
   if (input->need_compute_grad_out()) {
@@ -1173,20 +1172,20 @@ REG_BPROP_BUILDER("Mm").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("GroupedMatmul").SetUnusedInputs({i2, i3, i4, i5, i6, i12}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto weight = ib->GetInput(kIndex1);
-  auto bias = ib->GetInput(kIndex2);
-  auto group_list = ib->GetInput(kIndex7);
-  auto split_item = ib->GetInput(kIndex8);
-  auto group_type = ib->GetInput(kIndex9);
-  auto transpose_a = ib->GetInput(kIndex10);
-  auto transpose_b = ib->GetInput(kIndex11);
-  auto dout = ib->GetInput(kIndex13);
+  auto x = ib->GetInput(i0);
+  auto weight = ib->GetInput(i1);
+  auto bias = ib->GetInput(i2);
+  auto group_list = ib->GetInput(i7);
+  auto split_item = ib->GetInput(i8);
+  auto group_type = ib->GetInput(i9);
+  auto transpose_a = ib->GetInput(i10);
+  auto transpose_b = ib->GetInput(i11);
+  auto dout = ib->GetInput(i13);
   // none_params
-  auto scale = ib->GetInput(kIndex3);
-  auto offset = ib->GetInput(kIndex4);
-  auto antiquant_scale = ib->GetInput(kIndex5);
-  auto antiquant_offset = ib->GetInput(kIndex6);
+  auto scale = ib->GetInput(i3);
+  auto offset = ib->GetInput(i4);
+  auto antiquant_scale = ib->GetInput(i5);
+  auto antiquant_offset = ib->GetInput(i6);
 
   const std::string op_name = "GroupedMatmul";
   auto transpose_a_opt = GetScalarValue<bool>(transpose_a->BuildValue());
@@ -1241,18 +1240,18 @@ REG_BPROP_BUILDER("GroupedMatmul").SetUnusedInputs({i2, i3, i4, i5, i6, i12}).Se
 });
 
 REG_BPROP_BUILDER("GroupedMatmulV2").SetUnusedInputs({i2, i3, i4, i5, i6, i10}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto weight = ib->GetInput(kIndex1);
-  auto bias = ib->GetInput(kIndex2);
-  auto group_list = ib->GetInput(kIndex7);
-  auto split_item = ib->GetInput(kIndex8);
-  auto group_type = ib->GetInput(kIndex9);
-  auto dout = ib->GetInput(kIndex11);
+  auto x = ib->GetInput(i0);
+  auto weight = ib->GetInput(i1);
+  auto bias = ib->GetInput(i2);
+  auto group_list = ib->GetInput(i7);
+  auto split_item = ib->GetInput(i8);
+  auto group_type = ib->GetInput(i9);
+  auto dout = ib->GetInput(i11);
   // none params
-  auto scale = ib->GetInput(kIndex3);
-  auto offset = ib->GetInput(kIndex4);
-  auto antiquant_scale = ib->GetInput(kIndex5);
-  auto antiquant_offset = ib->GetInput(kIndex6);
+  auto scale = ib->GetInput(i3);
+  auto offset = ib->GetInput(i4);
+  auto antiquant_scale = ib->GetInput(i5);
+  auto antiquant_offset = ib->GetInput(i6);
 
   const std::string op_name = "GroupedMatmulV2";
   const std::string none_params = "scale, offset, antiquant_scale and antiquant_offset";
@@ -1261,8 +1260,8 @@ REG_BPROP_BUILDER("GroupedMatmulV2").SetUnusedInputs({i2, i3, i4, i5, i6, i10}).
 
   auto gradients = ib->Emit("GmmBackward", {dout, x, weight, group_list, ib->Value<int64_t>(0)});
   auto split_nodes = GMMSplitTuple(ib, gradients, {num_x, num_w});
-  auto dx = split_nodes[kIndex0];
-  auto dw = split_nodes[kIndex1];
+  auto dx = split_nodes[i0];
+  auto dw = split_nodes[i1];
   auto dbias = GMMBiasBackward(ib, bias, op_name);
 
   return {dx,
@@ -1278,19 +1277,19 @@ REG_BPROP_BUILDER("GroupedMatmulV2").SetUnusedInputs({i2, i3, i4, i5, i6, i10}).
 });
 
 REG_BPROP_BUILDER("GroupedMatmulV4").SetUnusedInputs({i2, i3, i4, i5, i6, i7, i9, i10, i11, i16}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto weight = ib->GetInput(kIndex1);
-  auto bias = ib->GetInput(kIndex2);
-  auto group_list = ib->GetInput(kIndex8);
-  auto split_item = ib->GetInput(kIndex12);
-  auto group_type = ib->GetInput(kIndex13);
-  auto group_list_type = ib->GetInput(kIndex14);
-  auto act_type = ib->GetInput(kIndex15);
-  auto dout = ib->GetInput(kIndex17);
+  auto x = ib->GetInput(i0);
+  auto weight = ib->GetInput(i1);
+  auto bias = ib->GetInput(i2);
+  auto group_list = ib->GetInput(i8);
+  auto split_item = ib->GetInput(i12);
+  auto group_type = ib->GetInput(i13);
+  auto group_list_type = ib->GetInput(i14);
+  auto act_type = ib->GetInput(i15);
+  auto dout = ib->GetInput(i17);
   // none params
   std::vector<NodePtr> check_params;
-  for (size_t i = kIndex3; i < kIndex12; i++) {
-    if (i == kIndex8) {
+  for (size_t i = i3; i < i12; i++) {
+    if (i == i8) {
       continue;
     }
     check_params.push_back(ib->GetInput(i));
@@ -1304,8 +1303,8 @@ REG_BPROP_BUILDER("GroupedMatmulV4").SetUnusedInputs({i2, i3, i4, i5, i6, i7, i9
 
   auto dx_and_dw = ib->Emit("GmmV2Backward", {dout, x, weight, group_list, group_list_type});
   auto split_nodes = GMMSplitTuple(ib, dx_and_dw, {num_x, num_w});
-  auto dx = split_nodes[kIndex0];
-  auto dw = split_nodes[kIndex1];
+  auto dx = split_nodes[i0];
+  auto dw = split_nodes[i1];
   auto dbias = GMMBiasBackward(ib, bias, op_name);
 
   const auto &group_list_shape = group_list->shape();
@@ -1318,19 +1317,19 @@ REG_BPROP_BUILDER("GroupedMatmulV4").SetUnusedInputs({i2, i3, i4, i5, i6, i7, i9
 
   std::vector<NodePtr> gradients{dx, dw, dbias};
   const auto &inputs = ib->GetInputs();
-  std::transform(inputs.begin() + kIndex3, inputs.begin() + kIndex8, std::back_inserter(gradients),
+  std::transform(inputs.begin() + i3, inputs.begin() + i8, std::back_inserter(gradients),
                  [&ib](const NodePtr &node) { return ib->OutZeros(node); });
   gradients.push_back(std::move(dgroup_list));
-  std::transform(inputs.begin() + kIndex9, inputs.begin() + kIndex16, std::back_inserter(gradients),
+  std::transform(inputs.begin() + i9, inputs.begin() + i16, std::back_inserter(gradients),
                  [&ib](const NodePtr &node) { return ib->OutZeros(node); });
 
   return gradients;
 });
 
 REG_BPROP_BUILDER("Add").FreeUselessValues_IO({}, {}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto y = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto x = ib->GetInput(i0);
+  auto y = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   NodePtr dx = nullptr;
   NodePtr dy = nullptr;
   if (x->need_compute_grad_out()) {
@@ -1343,11 +1342,11 @@ REG_BPROP_BUILDER("Add").FreeUselessValues_IO({}, {}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("AddExt").FreeUselessValues_IO({i0, i1}, {}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto y = ib->GetInput(kIndex1);
-  auto alpha = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto y = ib->GetInput(i1);
+  auto alpha = ib->GetInput(i2);
 
-  auto dout = ib->GetInput(kIndex4);
+  auto dout = ib->GetInput(i4);
   NodePtr dx = nullptr;
   NodePtr dy = nullptr;
 
@@ -1374,10 +1373,10 @@ REG_BPROP_BUILDER("AddExt").FreeUselessValues_IO({i0, i1}, {}).SetBody(BODYFUNC(
 });
 
 REG_BPROP_BUILDER("AddScalar").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
-  auto input = ib->GetInput(kIndex0);
-  auto other = ib->GetInput(kIndex1);
-  auto alpha = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex4);
+  auto input = ib->GetInput(i0);
+  auto other = ib->GetInput(i1);
+  auto alpha = ib->GetInput(i2);
+  auto dout = ib->GetInput(i4);
 
   auto dtype_input = ib->GetDtype(input);
   bool is_complex_input = (*dtype_input) == (*kComplex64) || (*dtype_input) == (*kComplex128);
@@ -1393,10 +1392,10 @@ REG_BPROP_BUILDER("AddScalar").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("InplaceAddsExt").SetUnusedInputs({i0, i1, i2, i3}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto y = ib->GetInput(kIndex1);
-  auto alpha = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex4);
+  auto x = ib->GetInput(i0);
+  auto y = ib->GetInput(i1);
+  auto alpha = ib->GetInput(i2);
+  auto dout = ib->GetInput(i4);
   NodePtr dx = nullptr;
 
   if (x->need_compute_grad_out()) {
@@ -1409,10 +1408,10 @@ REG_BPROP_BUILDER("InplaceAddsExt").SetUnusedInputs({i0, i1, i2, i3}).SetBody(BO
 });
 
 REG_BPROP_BUILDER("InplaceAddExt").SetUnusedInputs({i0, i1, i3}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto y = ib->GetInput(kIndex1);
-  auto alpha = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex4);
+  auto x = ib->GetInput(i0);
+  auto y = ib->GetInput(i1);
+  auto alpha = ib->GetInput(i2);
+  auto dout = ib->GetInput(i4);
   NodePtr dy = nullptr;
   NodePtr dx = nullptr;
 
@@ -1441,9 +1440,9 @@ REG_BPROP_BUILDER("InplaceMul")
   .FreeUselessValues(FreeTensorsOfInplaceMul)
   .CloneInplaceInput(CloneInplaceInputFuncForInplaceMul)
   .SetBody(BODYFUNC(ib) {
-    auto x = ib->GetInput(kIndex0);
-    auto y = ib->GetInput(kIndex1);
-    auto dout = ib->GetInput(kIndex3);
+    auto x = ib->GetInput(i0);
+    auto y = ib->GetInput(i1);
+    auto dout = ib->GetInput(i3);
     NodePtr bc_dx = nullptr;
     NodePtr bc_dy = nullptr;
     if (x->need_compute_grad_out()) {
@@ -1456,17 +1455,17 @@ REG_BPROP_BUILDER("InplaceMul")
   });
 
 REG_BPROP_BUILDER("InplaceMuls").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
-  auto y = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto y = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   auto dx = ib->Emit("Muls", {dout, y});
   return {dx, ib->OutZeros(y)};
 });
 
 REG_BPROP_BUILDER("SubScalar").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
-  auto input = ib->GetInput(kIndex0);
-  auto other = ib->GetInput(kIndex1);
-  auto alpha = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex4);
+  auto input = ib->GetInput(i0);
+  auto other = ib->GetInput(i1);
+  auto alpha = ib->GetInput(i2);
+  auto dout = ib->GetInput(i4);
 
   auto dtype_input = ib->GetDtype(input);
   bool is_complex_input = (*dtype_input) == (*kComplex64) || (*dtype_input) == (*kComplex128);
@@ -1482,11 +1481,11 @@ REG_BPROP_BUILDER("SubScalar").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("SubExt").FreeUselessValues_IO({i0, i1}, {}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto y = ib->GetInput(kIndex1);
-  auto alpha = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto y = ib->GetInput(i1);
+  auto alpha = ib->GetInput(i2);
 
-  auto dout = ib->GetInput(kIndex4);
+  auto dout = ib->GetInput(i4);
   NodePtr dx = nullptr;
   NodePtr dy = nullptr;
 
@@ -1513,9 +1512,9 @@ REG_BPROP_BUILDER("SubExt").FreeUselessValues_IO({i0, i1}, {}).SetBody(BODYFUNC(
 });
 
 REG_BPROP_BUILDER("Mul").FreeUselessValues(FreeTensorsOfMul).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto y = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto x = ib->GetInput(i0);
+  auto y = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   auto x_dtype_id = ib->GetDtypeId(x);
   if (x_dtype_id == kNumberTypeComplex64 || x_dtype_id == kNumberTypeComplex128) {
     MS_EXCEPTION(TypeError) << "For 'Mul', gradient not support for complex type currently.";
@@ -1532,9 +1531,9 @@ REG_BPROP_BUILDER("Mul").FreeUselessValues(FreeTensorsOfMul).SetBody(BODYFUNC(ib
 });
 
 REG_BPROP_BUILDER("Muls").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto alpha = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto x = ib->GetInput(i0);
+  auto alpha = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   auto x_dtype = ib->GetDtype(x);
 
   NodePtr bc_dx = nullptr;
@@ -1543,9 +1542,9 @@ REG_BPROP_BUILDER("Muls").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("Sub").FreeUselessValues_IO({i0, i1}, {}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto y = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto x = ib->GetInput(i0);
+  auto y = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   NodePtr dx = nullptr;
   NodePtr dy = nullptr;
   if (x->need_compute_grad_out()) {
@@ -1558,10 +1557,10 @@ REG_BPROP_BUILDER("Sub").FreeUselessValues_IO({i0, i1}, {}).SetBody(BODYFUNC(ib)
 });
 
 REG_BPROP_BUILDER("InplaceSubExt").SetUnusedInputs({i0, i1, i3}).SetBody(BODYFUNC(ib) {
-  auto input = ib->GetInput(kIndex0);
-  auto other = ib->GetInput(kIndex1);
-  auto alpha = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex4);
+  auto input = ib->GetInput(i0);
+  auto other = ib->GetInput(i1);
+  auto alpha = ib->GetInput(i2);
+  auto dout = ib->GetInput(i4);
   NodePtr input_bc = nullptr;
   NodePtr other_bc = nullptr;
 
@@ -1595,10 +1594,10 @@ REG_BPROP_BUILDER("InplaceSubExt").SetUnusedInputs({i0, i1, i3}).SetBody(BODYFUN
 });
 
 REG_BPROP_BUILDER("InplaceSubScalar").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
-  auto input = ib->GetInput(kIndex0);
-  auto other = ib->GetInput(kIndex1);
-  auto alpha = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex4);
+  auto input = ib->GetInput(i0);
+  auto other = ib->GetInput(i1);
+  auto alpha = ib->GetInput(i2);
+  auto dout = ib->GetInput(i4);
   NodePtr input_bc = nullptr;
 
   input_bc = ib->Cast(dout, ib->GetDtype(input));
@@ -1606,17 +1605,17 @@ REG_BPROP_BUILDER("InplaceSubScalar").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC
 });
 
 REG_BPROP_BUILDER("FmodTensor").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
-  auto input = ib->GetInput(kIndex0);
-  auto other = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto input = ib->GetInput(i0);
+  auto other = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   auto self_div = ib->DivMod(input, other, ops::RoundingMode::TRUNC);
   auto other_dout = ib->Neg(ib->Mul(dout, self_div));
   return BinopGradCommon(ib, input, other, dout, other_dout);
 });
 
 REG_BPROP_BUILDER("FmodScalar").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
-  auto other = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto other = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   return {dout, ib->OutZeros(other)};
 });
 
@@ -1624,9 +1623,9 @@ REG_BPROP_BUILDER("InplaceDiv")
   .FreeUselessValues(FreeTensorOfInplaceDivTensor)
   .CloneInplaceInput(CloneInplaceInputFuncForInplaceDiv)
   .SetBody(BODYFUNC(ib) {
-    auto input = ib->GetInput(kIndex0);
-    auto other = ib->GetInput(kIndex1);
-    auto dout = ib->GetInput(kIndex3);
+    auto input = ib->GetInput(i0);
+    auto other = ib->GetInput(i1);
+    auto dout = ib->GetInput(i3);
     NodePtr bc_input = nullptr;
     NodePtr bc_other = nullptr;
     if (input->need_compute_grad_out()) {
@@ -1656,9 +1655,9 @@ REG_BPROP_BUILDER("InplaceDiv")
   });
 
 REG_BPROP_BUILDER("InplaceDivs").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
-  auto input = ib->GetInput(kIndex0);
-  auto other = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto input = ib->GetInput(i0);
+  auto other = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
 
   NodePtr bc_input = nullptr;
   auto other_type = ib->GetDtypeId(other);
@@ -1672,10 +1671,10 @@ REG_BPROP_BUILDER("InplaceDivs").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) 
 });
 
 REG_BPROP_BUILDER("InplaceDivMod").SetUnusedInputs({i0, i1, i3}).SetBody(BODYFUNC(ib) {
-  auto input = ib->GetInput(kIndex0);
-  auto other = ib->GetInput(kIndex1);
-  auto rounding_mode = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex4);
+  auto input = ib->GetInput(i0);
+  auto other = ib->GetInput(i1);
+  auto rounding_mode = ib->GetInput(i2);
+  auto dout = ib->GetInput(i4);
 
   NodePtr bc_input = nullptr;
   NodePtr bc_other = nullptr;
@@ -1693,10 +1692,10 @@ REG_BPROP_BUILDER("InplaceDivMod").SetUnusedInputs({i0, i1, i3}).SetBody(BODYFUN
 });
 
 REG_BPROP_BUILDER("InplaceDivMods").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
-  auto input = ib->GetInput(kIndex0);
-  auto other = ib->GetInput(kIndex1);
-  auto rounding_mode = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex4);
+  auto input = ib->GetInput(i0);
+  auto other = ib->GetInput(i1);
+  auto rounding_mode = ib->GetInput(i2);
+  auto dout = ib->GetInput(i4);
 
   NodePtr bc_input = nullptr;
   bc_input = ib->ZerosLikeExt(dout, ib->Value(static_cast<int64_t>(ib->GetDtypeId(input))));
@@ -1705,10 +1704,10 @@ REG_BPROP_BUILDER("InplaceDivMods").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(i
 });
 
 REG_BPROP_BUILDER("Div").FreeUselessValues(FreeTensorsOfDiv).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto y = ib->GetInput(kIndex1);
-  auto out = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex3);
+  auto x = ib->GetInput(i0);
+  auto y = ib->GetInput(i1);
+  auto out = ib->GetInput(i2);
+  auto dout = ib->GetInput(i3);
   NodePtr bc_dx = nullptr;
   NodePtr bc_dy = nullptr;
   auto x_dtype_id = ib->GetDtypeId(x);
@@ -1719,30 +1718,30 @@ REG_BPROP_BUILDER("Div").FreeUselessValues(FreeTensorsOfDiv).SetBody(BODYFUNC(ib
   auto result = BinopGradCommon(ib, x, y, bc_dx, bc_dy);
   bool is_complex = (x_dtype_id == kNumberTypeComplex64 || x_dtype_id == kNumberTypeComplex128);
   if (is_complex) {
-    result[kIndex0] = ib->Conj(result[kIndex0]);
-    result[kIndex1] = y->need_compute_grad_out() ? ib->Conj(result[kIndex1]) : ib->OutZeros(y);
+    result[i0] = ib->Conj(result[i0]);
+    result[i1] = y->need_compute_grad_out() ? ib->Conj(result[i1]) : ib->OutZeros(y);
   }
   return result;
 });
 
 REG_BPROP_BUILDER("Divs").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
-  auto other = ib->GetInput(kIndex1);
-  auto grad = ib->GetInput(kIndex3);
+  auto other = ib->GetInput(i1);
+  auto grad = ib->GetInput(i3);
   auto dinput = ib->Divs(grad, other);
   return {dinput, ib->OutZeros(other)};
 });
 
 REG_BPROP_BUILDER("DivMod").FreeUselessValues_O().SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto y = ib->GetInput(kIndex1);
-  auto rounding_mode = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto y = ib->GetInput(i1);
+  auto rounding_mode = ib->GetInput(i2);
 
   auto mode_type = rounding_mode->abstract()->BuildType();
   MS_EXCEPTION_IF_NULL(mode_type);
 
   if (mode_type->isa<TypeNone>()) {
-    auto out = ib->GetInput(kIndex3);
-    auto dout = ib->GetInput(kIndex4);
+    auto out = ib->GetInput(i3);
+    auto dout = ib->GetInput(i4);
 
     NodePtr bc_dx = nullptr;
     NodePtr bc_dy = nullptr;
@@ -1757,8 +1756,8 @@ REG_BPROP_BUILDER("DivMod").FreeUselessValues_O().SetBody(BODYFUNC(ib) {
     auto x_dtype_id = ib->GetDtypeId(x);
     bool is_complex = (x_dtype_id == kNumberTypeComplex64 || x_dtype_id == kNumberTypeComplex128);
     if (is_complex) {
-      result[kIndex0] = x->need_compute_grad_out() ? ib->Conj(result[kIndex0]) : ib->OutZeros(x);
-      result[kIndex1] = y->need_compute_grad_out() ? ib->Conj(result[kIndex1]) : ib->OutZeros(y);
+      result[i0] = x->need_compute_grad_out() ? ib->Conj(result[i0]) : ib->OutZeros(x);
+      result[i1] = y->need_compute_grad_out() ? ib->Conj(result[i1]) : ib->OutZeros(y);
     }
     result.emplace_back(ib->OutZeros(rounding_mode));
     return result;
@@ -1768,10 +1767,10 @@ REG_BPROP_BUILDER("DivMod").FreeUselessValues_O().SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("DivMods").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
-  auto input = ib->GetInput(kIndex0);
-  auto other = ib->GetInput(kIndex1);
-  auto rounding_mode = ib->GetInput(kIndex2);
-  auto grad = ib->GetInput(kIndex4);
+  auto input = ib->GetInput(i0);
+  auto other = ib->GetInput(i1);
+  auto rounding_mode = ib->GetInput(i2);
+  auto grad = ib->GetInput(i4);
 
   auto mode_type = rounding_mode->abstract()->BuildType();
   MS_EXCEPTION_IF_NULL(mode_type);
@@ -1811,9 +1810,9 @@ REG_BPROP_BUILDER("LogicalAnd").SetUnusedInputs({i0, i1, i2, i3}).SetBody(Return
 REG_BPROP_BUILDER("LogicalOr").SetUnusedInputs({i0, i1, i2, i3}).SetBody(ReturnZeros);
 
 REG_BPROP_BUILDER("AssignAdd").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto y = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto x = ib->GetInput(i0);
+  auto y = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   NodePtr dy = nullptr;
   NodePtr dx = nullptr;
 
@@ -1825,13 +1824,13 @@ REG_BPROP_BUILDER("AssignAdd").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib
   }
 
   std::vector<NodePtr> ret = BinopGradCommon(ib, x, y, dx, dy);
-  return {ret[kIndex0], ib->Cast(ret[kIndex1], ib->GetDtype(y))};
+  return {ret[i0], ib->Cast(ret[i1], ib->GetDtype(y))};
 });
 
 REG_BPROP_BUILDER("AssignSub").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto y = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto y = ib->GetInput(i1);
+  auto dout = ib->GetInput(i2);
   NodePtr dx = nullptr;
   NodePtr dy = nullptr;
   if (x->need_compute_grad_out()) {
@@ -1843,26 +1842,26 @@ REG_BPROP_BUILDER("AssignSub").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib
 
   std::vector<NodePtr> ret = BinopGradCommon(ib, x, y, dx, dy);
 
-  return {ret[kIndex0], ib->Cast(ret[kIndex1], ib->GetDtype(y))};
+  return {ret[i0], ib->Cast(ret[i1], ib->GetDtype(y))};
 });
 
 REG_BPROP_BUILDER("Sin").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto dout = ib->GetInput(i2);
   auto dx = ib->Mul(dout, ib->Cos(x));
   return {dx};
 });
 
 REG_BPROP_BUILDER("Asin").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto dout = ib->GetInput(i2);
   auto dx = ib->Emit("AsinGrad", {x, dout});
   return {dx};
 });
 
 REG_BPROP_BUILDER("AsinExt").FreeUselessValues_O().SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto dout = ib->GetInput(i2);
   auto x_dtype_id = ib->GetDtypeId(x);
   NodePtr dx;
   if (x_dtype_id == kNumberTypeComplex64 || x_dtype_id == kNumberTypeComplex128) {
@@ -1874,9 +1873,9 @@ REG_BPROP_BUILDER("AsinExt").FreeUselessValues_O().SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("AsinGrad").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto grad = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto x = ib->GetInput(i0);
+  auto grad = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   NodePtr d2x;
   if (x->need_compute_grad_out()) {
     auto one = ib->Tensor(1, ib->GetDtype(x));
@@ -1890,15 +1889,15 @@ REG_BPROP_BUILDER("AsinGrad").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("Asinh").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
-  auto out = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex2);
+  auto out = ib->GetInput(i1);
+  auto dout = ib->GetInput(i2);
   auto dx = ib->Emit("AsinhGrad", {out, dout});
   return {dx};
 });
 
 REG_BPROP_BUILDER("AsinhExt").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto dout = ib->GetInput(i2);
   auto x_dtype_id = ib->GetDtypeId(x);
   NodePtr dx;
   if (x_dtype_id == kNumberTypeComplex64 || x_dtype_id == kNumberTypeComplex128) {
@@ -1910,10 +1909,10 @@ REG_BPROP_BUILDER("AsinhExt").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("AsinhGrad").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
-  auto y = ib->GetInput(kIndex0);
-  auto grad = ib->GetInput(kIndex1);
-  auto out = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex3);
+  auto y = ib->GetInput(i0);
+  auto grad = ib->GetInput(i1);
+  auto out = ib->GetInput(i2);
+  auto dout = ib->GetInput(i3);
   NodePtr dy;
   if (y->need_compute_grad_out()) {
     auto minus_one = ib->Tensor(-1.0, ib->GetDtype(out));
@@ -1927,30 +1926,30 @@ REG_BPROP_BUILDER("AsinhGrad").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("Sinh").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto dout = ib->GetInput(i2);
   auto conj_x = ib->Conj(x);
   auto dx = ib->Mul((ib->Emit("Cosh", {conj_x})), dout);
   return {dx};
 });
 
 REG_BPROP_BUILDER("Cos").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto dout = ib->GetInput(i2);
   auto dx = ib->Mul(dout, (ib->Neg(ib->Sin(x))));
   return {dx};
 });
 
 REG_BPROP_BUILDER("ACos").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto dout = ib->GetInput(i2);
   auto dx = ib->Emit("ACosGrad", {x, dout});
   return {dx};
 });
 
 REG_BPROP_BUILDER("AcosExt").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto dout = ib->GetInput(i2);
   auto x_dtype_id = ib->GetDtypeId(x);
   NodePtr dx;
   if (x_dtype_id == kNumberTypeComplex64 || x_dtype_id == kNumberTypeComplex128) {
@@ -1962,9 +1961,9 @@ REG_BPROP_BUILDER("AcosExt").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("ACosGrad").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto grad = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto x = ib->GetInput(i0);
+  auto grad = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   NodePtr d2x;
   if (x->need_compute_grad_out()) {
     auto one = ib->Tensor(1, ib->GetDtype(x));
@@ -1978,15 +1977,15 @@ REG_BPROP_BUILDER("ACosGrad").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("Acosh").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
-  auto out = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex2);
+  auto out = ib->GetInput(i1);
+  auto dout = ib->GetInput(i2);
   auto dx = ib->Emit("AcoshGrad", {out, dout});
   return {dx};
 });
 
 REG_BPROP_BUILDER("AcoshExt").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto dout = ib->GetInput(i2);
   auto x_dtype_id = ib->GetDtypeId(x);
   NodePtr dx;
   if (x_dtype_id == kNumberTypeComplex64 || x_dtype_id == kNumberTypeComplex128) {
@@ -1998,10 +1997,10 @@ REG_BPROP_BUILDER("AcoshExt").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("AcoshGrad").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
-  auto y = ib->GetInput(kIndex0);
-  auto grad = ib->GetInput(kIndex1);
-  auto out = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex3);
+  auto y = ib->GetInput(i0);
+  auto grad = ib->GetInput(i1);
+  auto out = ib->GetInput(i2);
+  auto dout = ib->GetInput(i3);
   auto dy = y->need_compute_grad_out()
               ? ib->RealDiv((ib->Mul((ib->Mul(dout, out)), ib->Tensor(-1.0, ib->GetDtype(out)))), (ib->Tanh(y)))
               : ib->OutZeros(y);
@@ -2010,30 +2009,30 @@ REG_BPROP_BUILDER("AcoshGrad").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("Cosh").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto dout = ib->GetInput(i2);
   auto conj_x = ib->Conj(x);
   auto dx = ib->Mul((ib->Emit("Sinh", {conj_x})), dout);
   return {dx};
 });
 
 REG_BPROP_BUILDER("Abs").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto dout = ib->GetInput(i2);
   auto dx = ib->Mul(dout, ib->Sign(x));
   return {dx};
 });
 
 REG_BPROP_BUILDER("Conj").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
-  auto dout = ib->GetInput(kIndex2);
+  auto dout = ib->GetInput(i2);
   auto dx = ib->Conj(dout);
   return {dx};
 });
 
 REG_BPROP_BUILDER("ScalarCast").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto t = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto x = ib->GetInput(i0);
+  auto t = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   if (x->abstract()->isa<abstract::AbstractTensor>()) {
     auto dx = ib->Emit("ScalarToTensor", {dout, ib->Value<int64_t>(ib->GetDtype(x)->type_id())});
     return {dx, ib->OutZeros(t)};
@@ -2047,9 +2046,9 @@ REG_BPROP_BUILDER("Sign").SetUnusedInputs({i0, i1, i2}).SetBody(ReturnZeros);
 REG_BPROP_BUILDER("Round").SetUnusedInputs({i0, i1, i2}).SetBody(ReturnZeros);
 
 REG_BPROP_BUILDER("Atan2").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto y = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto x = ib->GetInput(i0);
+  auto y = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   auto tmp = ib->RealDiv(dout, (ib->Add((ib->Square(x)), (ib->Square(y)))));
   NodePtr bc_dx = nullptr;
   NodePtr bc_dy = nullptr;
@@ -2063,9 +2062,9 @@ REG_BPROP_BUILDER("Atan2").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("Atan2Ext").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto y = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto x = ib->GetInput(i0);
+  auto y = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
 
   auto tmp = ib->Div(dout, ib->AddExt(ib->Square(x), ib->Square(y), ib->Value<int64_t>(1)));
 
@@ -2081,23 +2080,23 @@ REG_BPROP_BUILDER("Atan2Ext").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("BesselI0e").SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto out = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto out = ib->GetInput(i1);
+  auto dout = ib->GetInput(i2);
   auto dx = ib->Mul(dout, (ib->Sub((ib->Emit("BesselI1e", {x})), (ib->Mul((ib->Sign(x)), out)))));
   return {dx};
 });
 
 REG_BPROP_BUILDER("Atan").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto dout = ib->GetInput(i2);
   auto dx = ib->Emit("AtanGrad", {x, dout});
   return {dx};
 });
 
 REG_BPROP_BUILDER("AtanExt").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto dout = ib->GetInput(i2);
   auto x_dtype_id = ib->GetDtypeId(x);
   NodePtr dx;
   if (x_dtype_id == kNumberTypeComplex64 || x_dtype_id == kNumberTypeComplex128) {
@@ -2109,9 +2108,9 @@ REG_BPROP_BUILDER("AtanExt").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("AtanGrad").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto out = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex3);
+  auto x = ib->GetInput(i0);
+  auto out = ib->GetInput(i2);
+  auto dout = ib->GetInput(i3);
   auto dgrad = ib->Emit("AtanGrad", {x, dout});
   auto dx = x->need_compute_grad_out() ? ib->Mul((ib->Mul((ib->Mul(out, dgrad)), ib->Tensor(-2.0, ib->GetDtype(x)))), x)
                                        : ib->OutZeros(x);
@@ -2119,8 +2118,8 @@ REG_BPROP_BUILDER("AtanGrad").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("Log1p").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto dout = ib->GetInput(i2);
   auto x_1p = ib->Add(x, ib->Tensor(1, ib->GetDtype(x)));
   TypeId exp_type = ib->GetDtypeId(x);
   if (exp_type == kNumberTypeComplex64 || exp_type == kNumberTypeComplex128) {
@@ -2131,9 +2130,9 @@ REG_BPROP_BUILDER("Log1p").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("LogAddExp").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto y = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto x = ib->GetInput(i0);
+  auto y = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   auto exp_x_y_1p = ib->Add(ib->Exp(ib->Sub(x, y)), ib->Tensor(1, ib->GetDtype(x)));
   auto exp_y_x_1p = ib->Add(ib->Exp(ib->Sub(y, x)), ib->Tensor(1, ib->GetDtype(x)));
   auto dx = ib->Div(dout, exp_y_x_1p);
@@ -2142,9 +2141,9 @@ REG_BPROP_BUILDER("LogAddExp").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("LogAddExp2").FreeUselessValues_O({}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto y = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto x = ib->GetInput(i0);
+  auto y = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   auto exp_x_y_1p = ib->Add(ib->Emit("PowScalarTensor", {ib->Value(2), ib->Sub(x, y)}), ib->Tensor(1, ib->GetDtype(x)));
   auto exp_y_x_1p = ib->Add(ib->Emit("PowScalarTensor", {ib->Value(2), ib->Sub(y, x)}), ib->Tensor(1, ib->GetDtype(x)));
   auto dx = ib->Div(dout, exp_y_x_1p);
@@ -2153,11 +2152,11 @@ REG_BPROP_BUILDER("LogAddExp2").FreeUselessValues_O({}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("LogSumExp").SetBody(BODYFUNC(ib) {
-  auto input = ib->GetInput(kIndex0);
-  auto dim = ib->GetInput(kIndex1);
-  auto keepdim = ib->GetInput(kIndex2);
-  auto out = ib->GetInput(kIndex3);
-  auto dout = ib->GetInput(kIndex4);
+  auto input = ib->GetInput(i0);
+  auto dim = ib->GetInput(i1);
+  auto keepdim = ib->GetInput(i2);
+  auto out = ib->GetInput(i3);
+  auto dout = ib->GetInput(i4);
 
   NodePtr dx;
   auto keepdim_opt = mindspore::GetScalarValue<bool>(keepdim->BuildValue());
@@ -2173,8 +2172,8 @@ REG_BPROP_BUILDER("LogSumExp").SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("Erf").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto dout = ib->GetInput(i2);
   auto half_root_pi = ib->Tensor(2 / sqrt(pi), ib->GetDtype(x));
   auto x_square = ib->Square(x);
   auto dx = ib->Mul((ib->Mul(dout, half_root_pi)), (ib->Exp(ib->Neg(x_square))));
@@ -2182,8 +2181,8 @@ REG_BPROP_BUILDER("Erf").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("Erfc").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto dout = ib->GetInput(i2);
   auto half_root_pi = ib->Tensor(-2 / sqrt(pi), ib->GetDtype(x));
   auto x_square = ib->Emit("Square", {x});
   auto dx = ib->Mul((ib->Mul(dout, half_root_pi)), (ib->Exp(ib->Emit("Neg", {x_square}))));
@@ -2191,10 +2190,10 @@ REG_BPROP_BUILDER("Erfc").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("Pow").SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto power = ib->GetInput(kIndex1);
-  auto out = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex3);
+  auto x = ib->GetInput(i0);
+  auto power = ib->GetInput(i1);
+  auto out = ib->GetInput(i2);
+  auto dout = ib->GetInput(i3);
   auto x_dtype_id = ib->GetDtypeId(x);
   if (x_dtype_id == kNumberTypeComplex64 || x_dtype_id == kNumberTypeComplex128) {
     MS_EXCEPTION(TypeError) << "For 'Pow', gradient not support for complex type currently.";
@@ -2213,10 +2212,10 @@ REG_BPROP_BUILDER("Pow").SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("PowScalarTensor").SetBody(BODYFUNC(ib) {
-  auto input = ib->GetInput(kIndex0);
-  auto exponent = ib->GetInput(kIndex1);
-  auto out = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex3);
+  auto input = ib->GetInput(i0);
+  auto exponent = ib->GetInput(i1);
+  auto out = ib->GetInput(i2);
+  auto dout = ib->GetInput(i3);
 
   NodePtr dexponent{nullptr};
   auto input_ptr = input->BuildValue();
@@ -2249,9 +2248,9 @@ REG_BPROP_BUILDER("PowScalarTensor").SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("PowTensorScalar").FreeUselessValues_O({}).SetBody(BODYFUNC(ib) {
-  auto input_x = ib->GetInput(kIndex0);
-  auto exponent = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto input_x = ib->GetInput(i0);
+  auto exponent = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
 
   NodePtr grad_input{nullptr};
   auto exponent_ptr = exponent->BuildValue();
@@ -2283,8 +2282,8 @@ REG_BPROP_BUILDER("PowTensorScalar").FreeUselessValues_O({}).SetBody(BODYFUNC(ib
 });
 
 REG_BPROP_BUILDER("Exp").FreeUselessValues_I({i0}).SetBody(BODYFUNC(ib) {
-  auto out = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex2);
+  auto out = ib->GetInput(i1);
+  auto dout = ib->GetInput(i2);
   TypeId exp_type = ib->GetDtypeId(out);
   if (exp_type == kNumberTypeComplex64 || exp_type == kNumberTypeComplex128) {
     out = ib->Conj(out);
@@ -2294,8 +2293,8 @@ REG_BPROP_BUILDER("Exp").FreeUselessValues_I({i0}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("InplaceExp").FreeUselessValues_I({i0}).SetBody(BODYFUNC(ib) {
-  auto out = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex2);
+  auto out = ib->GetInput(i1);
+  auto dout = ib->GetInput(i2);
   TypeId exp_type = ib->GetDtypeId(out);
   if (exp_type == kNumberTypeComplex64 || exp_type == kNumberTypeComplex128) {
     out = ib->Conj(out);
@@ -2305,8 +2304,8 @@ REG_BPROP_BUILDER("InplaceExp").FreeUselessValues_I({i0}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("Expm1").FreeUselessValues_I({}).SetBody(BODYFUNC(ib) {
-  auto out = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex2);
+  auto out = ib->GetInput(i1);
+  auto dout = ib->GetInput(i2);
   TypeId exp_type = ib->GetDtypeId(out);
   if (exp_type == kNumberTypeComplex64 || exp_type == kNumberTypeComplex128) {
     out = ib->Conj(out);
@@ -2318,9 +2317,9 @@ REG_BPROP_BUILDER("Expm1").FreeUselessValues_I({}).SetBody(BODYFUNC(ib) {
 
 REG_BPROP_BUILDER("Exp2").SetBody(BODYFUNC(ib) {
   constexpr const float LOG_2 = 0.693147;
-  auto x = ib->GetInput(kIndex0);
-  auto out = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto out = ib->GetInput(i1);
+  auto dout = ib->GetInput(i2);
 
   // dx = dout * ln2 * 2^x -> dx = dout * ln2 * out
   auto dx = ib->Mul(dout, ib->Mul(out, ib->Tensor(LOG_2, ib->GetDtype(out))));
@@ -2328,36 +2327,36 @@ REG_BPROP_BUILDER("Exp2").SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("Minimum").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto y = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto x = ib->GetInput(i0);
+  auto y = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   return MinimumMaximumGrad(ib, x, y, dout, true);
 });
 
 REG_BPROP_BUILDER("Maximum").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto y = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto x = ib->GetInput(i0);
+  auto y = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   return MinimumMaximumGrad(ib, x, y, dout, false);
 });
 
 REG_BPROP_BUILDER("CumSum").SetUnusedInputs({i0, i4}).SetBody(BODYFUNC(ib) {
-  auto axis = ib->GetInput(kIndex1);
-  auto exclusive = ib->GetInput(kIndex2);
-  auto reverse = ib->GetInput(kIndex3);
-  auto dout = ib->GetInput(kIndex5);
+  auto axis = ib->GetInput(i1);
+  auto exclusive = ib->GetInput(i2);
+  auto reverse = ib->GetInput(i3);
+  auto dout = ib->GetInput(i5);
   return {ib->CumSum(dout, axis, GetValue<bool>(exclusive->BuildValue()), !GetValue<bool>(reverse->BuildValue())),
           ib->OutZeros(axis), ib->OutZeros(exclusive), ib->OutZeros(reverse)};
 });
 
 REG_BPROP_BUILDER("CumsumExt").FreeUselessValues_IO({i0, i2}, {}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
+  auto x = ib->GetInput(i0);
   auto x_shape = ib->GetShape(x);
   auto num_elements =
     std::accumulate(x_shape.begin(), x_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
-  auto dim = ib->GetInput(kIndex1);
-  auto dtype = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex4);
+  auto dim = ib->GetInput(i1);
+  auto dtype = ib->GetInput(i2);
+  auto dout = ib->GetInput(i4);
   auto dim_value_ptr = dim->BuildValue();
   auto dim_opt = mindspore::GetScalarValue<int64_t>(dim_value_ptr);
   int64_t dim_value;
@@ -2383,33 +2382,33 @@ REG_BPROP_BUILDER("Cummin").FreeUselessValues_IO({i0}, {i0}).SetBody(BODYFUNC(ib
 REG_BPROP_BUILDER("CumminExt").FreeUselessValues_IO({i0}, {i0}).SetBody(BODYFUNC(ib) { return CumMaxMinGrad(ib); });
 
 REG_BPROP_BUILDER("MulNoNan").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto y = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto x = ib->GetInput(i0);
+  auto y = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   auto x_shape = ib->Shape(x);
   auto y_shape = ib->Shape(y);
   auto dx = ib->MulNoNan(dout, y);
   auto dy = ib->MulNoNan(x, dout);
   auto bc_axis = ib->BroadcastGradientArgs(x, y);
-  auto broadcast_x = bc_axis[kIndex0];
-  auto broadcast_y = bc_axis[kIndex1];
+  auto broadcast_x = bc_axis[i0];
+  auto broadcast_y = bc_axis[i1];
   dx = x->need_compute_grad_out() ? ib->Reshape(ib->ReduceSum(dx, broadcast_x, false, true), x_shape) : ib->OutZeros(x);
   dy = y->need_compute_grad_out() ? ib->Reshape(ib->ReduceSum(dy, broadcast_y, false, true), y_shape) : ib->OutZeros(y);
   return {dx, dy};
 });
 
 REG_BPROP_BUILDER("BesselI0").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto dout = ib->GetInput(i2);
   auto bessel_i1 = ib->Emit("BesselI1", {x});
   auto dx = ib->Mul(dout, bessel_i1);
   return {dx};
 });
 
 REG_BPROP_BUILDER("BesselI1").SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto out = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto out = ib->GetInput(i1);
+  auto dout = ib->GetInput(i2);
   auto bessel_i0 = ib->Emit("BesselI0", {x});
   auto zero = ib->ZerosLike(x);
   auto one = ib->Fill(1.0, ib->Shape(x), ib->GetDtype(x)->type_id());
@@ -2419,17 +2418,17 @@ REG_BPROP_BUILDER("BesselI1").SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("BesselJ0").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto dout = ib->GetInput(i2);
   auto bessel_j1 = ib->Emit("BesselJ1", {x});
   auto dx = ib->Mul(ib->Neg(dout), bessel_j1);
   return {dx};
 });
 
 REG_BPROP_BUILDER("BesselJ1").SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto out = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto out = ib->GetInput(i1);
+  auto dout = ib->GetInput(i2);
   auto bessel_j0 = ib->Emit("BesselJ0", {x});
   auto zero = ib->ZerosLike(x);
   auto zero_p5 = ib->Fill(0.5, ib->Shape(x), ib->GetDtype(x)->type_id());
@@ -2439,17 +2438,17 @@ REG_BPROP_BUILDER("BesselJ1").SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("BesselK0").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto dout = ib->GetInput(i2);
   auto bessel_k1 = ib->Emit("BesselK1", {x});
   auto dx = ib->Mul(ib->Neg(dout), bessel_k1);
   return {dx};
 });
 
 REG_BPROP_BUILDER("BesselK1").SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto out = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto out = ib->GetInput(i1);
+  auto dout = ib->GetInput(i2);
   auto bessel_k0 = ib->Emit("BesselK0", {x});
   auto dout_dx = ib->Neg(ib->Add(bessel_k0, (ib->Div(out, x))));
   auto dx = ib->Mul(dout, dout_dx);
@@ -2457,18 +2456,18 @@ REG_BPROP_BUILDER("BesselK1").SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("BesselK0e").SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto out = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto out = ib->GetInput(i1);
+  auto dout = ib->GetInput(i2);
   auto bessel_k1e = ib->Emit("BesselK1e", {x});
   auto dx = ib->Mul(dout, (ib->Sub(out, bessel_k1e)));
   return {dx};
 });
 
 REG_BPROP_BUILDER("BesselK1e").SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto out = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto out = ib->GetInput(i1);
+  auto dout = ib->GetInput(i2);
   auto bessel_k0e = ib->Emit("BesselK0e", {x});
   auto one = ib->Tensor(1, ib->GetDtype(x));
   auto dout_dx = ib->Sub((ib->Mul(out, (ib->Sub(one, (ib->Reciprocal(x)))))), bessel_k0e);
@@ -2477,17 +2476,17 @@ REG_BPROP_BUILDER("BesselK1e").SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("BesselY0").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto dout = ib->GetInput(i2);
   auto bessel_y1 = ib->Emit("BesselY1", {x});
   auto dx = ib->Mul(ib->Neg(dout), bessel_y1);
   return {dx};
 });
 
 REG_BPROP_BUILDER("BesselY1").SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto out = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto out = ib->GetInput(i1);
+  auto dout = ib->GetInput(i2);
   auto bessel_y0 = ib->Emit("BesselY0", {x});
   auto dout_dx = ib->Sub(bessel_y0, (ib->Div(out, x)));
   auto dx = ib->Mul(dout, dout_dx);
@@ -2499,9 +2498,9 @@ REG_BPROP_BUILDER("AddN").SetUnusedInputs({i0, i1}).SetBody(AddnGradFunc);
 REG_BPROP_BUILDER("AccumulateNV2").SetUnusedInputs({i0, i1}).SetBody(AddnGradFunc);
 
 REG_BPROP_BUILDER("Tan").SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto out = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto out = ib->GetInput(i1);
+  auto dout = ib->GetInput(i2);
   auto x_dtype_id = ib->GetDtypeId(x);
   NodePtr dx;
   if (x_dtype_id == kNumberTypeComplex64 || x_dtype_id == kNumberTypeComplex128) {
@@ -2513,9 +2512,9 @@ REG_BPROP_BUILDER("Tan").SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("BesselI1e").SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto out = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto out = ib->GetInput(i1);
+  auto dout = ib->GetInput(i2);
   auto x_dtype = ib->GetDtype(x);
   auto zeros = ib->ZerosLike(x);
   auto eps = GetEps(ib, x_dtype);
@@ -2528,8 +2527,8 @@ REG_BPROP_BUILDER("BesselI1e").SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("Atanh").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto dout = ib->GetInput(i2);
   auto x_dtype = ib->GetDtype(x);
   auto x_dtype_id = x_dtype->type_id();
   NodePtr dx;
@@ -2542,8 +2541,8 @@ REG_BPROP_BUILDER("Atanh").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("Inv").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
-  auto out = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex2);
+  auto out = ib->GetInput(i1);
+  auto dout = ib->GetInput(i2);
   auto dx = ib->Emit(prim::kPrimInvGrad->name(), {out, dout});
   return {dx};
 });
@@ -2554,19 +2553,19 @@ REG_BPROP_BUILDER("LinSpaceExt").SetUnusedInputs({i0, i1, i2, i3, i4, i5}).SetBo
 REG_BPROP_BUILDER("DynamicQuantExt").SetUnusedInputs({i0, i1, i2, i3}).SetBody(ReturnZeros);
 
 REG_BPROP_BUILDER("IndexAdd").SetUnusedInputs({i0, i2, i3}).SetBody(BODYFUNC(ib) {
-  auto indices = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex4);
+  auto indices = ib->GetInput(i1);
+  auto dout = ib->GetInput(i4);
   auto axis = ib->EmitValue(ib->GetAttr(kAttrAxis));
   auto dy = ib->Gather(dout, indices, axis);
   return {dout, ib->OutZeros(indices), dy};
 });
 
 REG_BPROP_BUILDER("InplaceIndexPut").SetUnusedInputs({i0, i4}).SetBody(BODYFUNC(ib) {
-  auto input = ib->GetInput(kIndex0);
-  auto indices = ib->GetInput(kIndex1);
-  auto values = ib->GetInput(kIndex2);
-  auto accumulate = ib->GetInput(kIndex3);
-  auto dout = ib->GetInput(kIndex5);
+  auto input = ib->GetInput(i0);
+  auto indices = ib->GetInput(i1);
+  auto values = ib->GetInput(i2);
+  auto accumulate = ib->GetInput(i3);
+  auto dout = ib->GetInput(i5);
   // Indices is tuple[tensor]
   std::vector<ShapeVector> indices_shapes = indices->shapes();
   auto indices_nums = indices_shapes.size();
@@ -2579,7 +2578,7 @@ REG_BPROP_BUILDER("InplaceIndexPut").SetUnusedInputs({i0, i4}).SetBody(BODYFUNC(
     values_grad = ib->Emit("Index", {dout, indices});
     auto values_shape = ib->Shape(values);
     auto values_grad_shape = ib->Shape(values_grad);
-    auto bc_values = ib->BroadcastGradientArgs(values, values_grad)[kIndex0];
+    auto bc_values = ib->BroadcastGradientArgs(values, values_grad)[i0];
     auto bc_values_shape_ptr = bc_values->GetShape();
     // Dynamic if op need control flow
     if (bc_values_shape_ptr->isa<abstract::DynamicSequenceShape>()) {
@@ -2637,19 +2636,19 @@ REG_BPROP_BUILDER("InplaceIndexPut").SetUnusedInputs({i0, i4}).SetBody(BODYFUNC(
 });
 
 REG_BPROP_BUILDER("IndexSelect").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib) {
-  auto input = ib->GetInput(kIndex0);
-  auto axis = ib->GetInput(kIndex1);
-  auto index = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex4);
+  auto input = ib->GetInput(i0);
+  auto axis = ib->GetInput(i1);
+  auto index = ib->GetInput(i2);
+  auto dout = ib->GetInput(i4);
   auto zeros = ib->ZerosLikeExt(input, ib->Value(static_cast<int64_t>(ib->GetDtypeId(dout))));
   auto dx = ib->Emit("InplaceIndexAddExt", {zeros, axis, index, dout, ib->Value<int64_t>(1LL)});
   return {dx, ib->OutZeros(axis), ib->OutZeros(index)};
 });
 
 REG_BPROP_BUILDER("Logit").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto eps = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto x = ib->GetInput(i0);
+  auto eps = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   auto dx = ib->Emit("LogitGrad", {dout, x, eps});
   return {dx, ib->OutZeros(eps)};
 });
@@ -2671,11 +2670,11 @@ DEF_PURE_SHAPE_CALC(g_cdist)
     return {IsDynamicRank(dout_shape) ? -1 : static_cast<int64_t>(dout_shape.size())};
   });
 REG_BPROP_BUILDER("Cdist").SetBody(BODYFUNC(ib) {
-  auto input_x = ib->GetInput(kIndex0);
-  auto input_y = ib->GetInput(kIndex1);
-  auto p = ib->GetInput(kIndex2);
-  auto out = ib->GetInput(kIndex3);
-  auto dout = ib->GetInput(kIndex4);
+  auto input_x = ib->GetInput(i0);
+  auto input_y = ib->GetInput(i1);
+  auto p = ib->GetInput(i2);
+  auto out = ib->GetInput(i3);
+  auto dout = ib->GetInput(i4);
   auto res = ib->ShapeCalc(g_cdist, {dout})[0];
   auto dout_transpose = ib->TransposeView(dout, res);
   auto out_transpose = ib->TransposeView(out, res);
@@ -2688,9 +2687,9 @@ REG_BPROP_BUILDER("Cdist").SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("LuUnpack").SetUnusedInputs({i1, i2}).SetBody(BODYFUNC(ib) {
-  auto lu_data = ib->GetInput(kIndex0);
-  auto lu_pivots = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto lu_data = ib->GetInput(i0);
+  auto lu_pivots = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   auto tmp = ib->Emit(
     "LuUnpackGrad", {ib->TupleGetItem(dout, 1), ib->TupleGetItem(dout, 2), lu_data},
     {{"L_grad_flag", MakeValue(true)}, {"U_grad_flag", MakeValue(true)}, {"cust_aicpu", MakeValue("LuUnpackGrad")}});
@@ -2701,9 +2700,9 @@ REG_BPROP_BUILDER("LuUnpack").SetUnusedInputs({i1, i2}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("Sinc").SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto out = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto out = ib->GetInput(i1);
+  auto dout = ib->GetInput(i2);
   auto product = ib->Mul(ib->Tensor(pi, ib->GetDtype(x)), x);
   auto dx = ib->Div((ib->Mul((ib->Sub((ib->Cos(product)), out)), dout)), x);
   TypeId x_type = ib->GetDtypeId(x);
@@ -2717,8 +2716,8 @@ REG_BPROP_BUILDER("Sinc").SetBody(BODYFUNC(ib) {
 
 DEF_PURE_SHAPE_CALC(g_cumprod_axis2tuple)
   .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
-    auto x_shape = inputs.at(kIndex0);
-    auto axis = inputs.at(kIndex1)[0];
+    auto x_shape = inputs.at(i0);
+    auto axis = inputs.at(i1)[0];
 
     auto normal_axis = NormalizeAxis(axis, x_shape.size());
     std::vector<int64_t> res;
@@ -2728,13 +2727,13 @@ DEF_PURE_SHAPE_CALC(g_cumprod_axis2tuple)
   .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &) -> std::vector<int64_t> { return {1}; });
 
 REG_BPROP_BUILDER("CumProd").FreeUselessValues_O({}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
+  auto x = ib->GetInput(i0);
   auto x_shape = ib->GetShape(x);
-  auto axis = ib->GetInput(kIndex1);
-  auto exclusive = ib->GetInput(kIndex2);
-  auto reverse = ib->GetInput(kIndex3);
-  auto out = ib->GetInput(kIndex4);
-  auto dout = ib->GetInput(kIndex5);
+  auto axis = ib->GetInput(i1);
+  auto exclusive = ib->GetInput(i2);
+  auto reverse = ib->GetInput(i3);
+  auto out = ib->GetInput(i4);
+  auto dout = ib->GetInput(i5);
   auto axis_value_ptr = axis->BuildValue();
   auto axis_opt = mindspore::GetScalarValue<int64_t>(axis_value_ptr);
   // dynamic axis
@@ -2789,8 +2788,8 @@ REG_BPROP_BUILDER("GreaterEqual").SetUnusedInputs({i0, i1, i2, i3}).SetBody(Retu
 REG_BPROP_BUILDER("GreaterEqualScalar").SetUnusedInputs({i0, i1, i2, i3}).SetBody(ReturnZeros);
 
 REG_BPROP_BUILDER("MatrixInverse").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
-  auto out = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex2);
+  auto out = ib->GetInput(i1);
+  auto dout = ib->GetInput(i2);
   auto out_shape = ib->GetShape(out);
   auto dx = out;
   if (out_shape.size() == 2) {
@@ -2804,8 +2803,8 @@ REG_BPROP_BUILDER("MatrixInverse").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("MatrixInverseExt").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
-  auto out = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex2);
+  auto out = ib->GetInput(i1);
+  auto dout = ib->GetInput(i2);
   auto out_shape = ib->GetShape(out);
   auto dx = out;
   if (out_shape.size() == 2) {
@@ -2819,19 +2818,19 @@ REG_BPROP_BUILDER("MatrixInverseExt").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib)
 });
 
 REG_BPROP_BUILDER("Neg").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
-  auto dout = ib->GetInput(kIndex2);
+  auto dout = ib->GetInput(i2);
   return {-dout};
 });
 
 REG_BPROP_BUILDER("RealDiv").FreeUselessValues(FreeTensorsOfDiv).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto y = ib->GetInput(kIndex1);
+  auto x = ib->GetInput(i0);
+  auto y = ib->GetInput(i1);
   auto x_dtype_id = ib->GetDtypeId(x);
   if (x_dtype_id == kNumberTypeComplex64 || x_dtype_id == kNumberTypeComplex128) {
     MS_EXCEPTION(TypeError) << "For 'RealDiv', gradient not support for complex type currently.";
   }
-  auto out = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex3);
+  auto out = ib->GetInput(i2);
+  auto dout = ib->GetInput(i3);
   auto bc_dx = ib->RealDiv(dout, y);
   NodePtr bc_dy = nullptr;
   if (y->need_compute_grad_out()) {
@@ -2841,10 +2840,10 @@ REG_BPROP_BUILDER("RealDiv").FreeUselessValues(FreeTensorsOfDiv).SetBody(BODYFUN
 });
 
 REG_BPROP_BUILDER("DivNoNan").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto y = ib->GetInput(kIndex1);
-  auto out = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex3);
+  auto x = ib->GetInput(i0);
+  auto y = ib->GetInput(i1);
+  auto out = ib->GetInput(i2);
+  auto dout = ib->GetInput(i3);
   auto bc_dx = ib->DivNoNan(dout, y);
   NodePtr bc_dy = nullptr;
   if (y->need_compute_grad_out()) {
@@ -2854,9 +2853,9 @@ REG_BPROP_BUILDER("DivNoNan").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("Xdivy").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto y = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto x = ib->GetInput(i0);
+  auto y = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   auto x_dtype = ib->GetDtype(x);
   NodePtr bc_dx = nullptr;
   NodePtr bc_dy = nullptr;
@@ -2879,9 +2878,9 @@ REG_BPROP_BUILDER("InplaceFloorDivide").SetUnusedInputs({i0, i1, i2, i3}).SetBod
 REG_BPROP_BUILDER("InplaceFloorDivides").SetUnusedInputs({i0, i1, i2, i3}).SetBody(ReturnZeros);
 
 REG_BPROP_BUILDER("FloorMod").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto y = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto x = ib->GetInput(i0);
+  auto y = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   NodePtr bc_dx = nullptr;
   NodePtr bc_dy = nullptr;
   if (x->need_compute_grad_out()) {
@@ -2895,37 +2894,37 @@ REG_BPROP_BUILDER("FloorMod").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("RemainderTensorScalar").FreeUselessValues_IO({}, {}).SetBody(BODYFUNC(ib) {
-  auto input = ib->GetInput(kIndex0);
-  auto other = ib->GetInput(kIndex1);
-  auto dout = ib->Cast(ib->GetInput(kIndex3), ib->GetDtype(input));
+  auto input = ib->GetInput(i0);
+  auto other = ib->GetInput(i1);
+  auto dout = ib->Cast(ib->GetInput(i3), ib->GetDtype(input));
   return {dout, ib->OutZeros(other)};
 });
 
 REG_BPROP_BUILDER("RemainderTensorTensor").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
-  auto input = ib->GetInput(kIndex0);
-  auto other = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto input = ib->GetInput(i0);
+  auto other = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   NodePtr d_input = dout;
   NodePtr d_other = nullptr;
   if (other->need_compute_grad_out()) {
     d_other = (-dout) * (ib->DivMod(input, other, ops::RoundingMode::FLOOR));
   }
   const auto &grads = BinopGradCommon(ib, input, other, d_input, d_other);
-  d_input = input->need_compute_grad_out() ? ib->Cast(grads[kIndex0], ib->GetDtype(input)) : nullptr;
-  d_other = other->need_compute_grad_out() ? ib->Cast(grads[kIndex1], ib->GetDtype(other)) : nullptr;
+  d_input = input->need_compute_grad_out() ? ib->Cast(grads[i0], ib->GetDtype(input)) : nullptr;
+  d_other = other->need_compute_grad_out() ? ib->Cast(grads[i1], ib->GetDtype(other)) : nullptr;
   return {d_input, d_other};
 });
 
 REG_BPROP_BUILDER("RemainderScalarTensor").SetUnusedInputs({i0, i1, i2, i3}).SetBody(ReturnZeros);
 
 REG_BPROP_BUILDER("InplaceRemainderTensorScalar").FreeUselessValues_IO({}, {}).SetBody(BODYFUNC(ib) {
-  auto other = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto other = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   return {dout, ib->OutZeros(other)};
 });
 
 inline static bool CloneInplaceInputFuncForInplaceRemainderTensorTensor(const PynativeCallback &cb) {
-  if (!cb.IsNotRequiresGrad(kIndex1)) {
+  if (!cb.IsNotRequiresGrad(i1)) {
     return true;
   }
   return false;
@@ -2935,9 +2934,9 @@ REG_BPROP_BUILDER("InplaceRemainderTensorTensor")
   .SetUnusedInputs({i2})
   .CloneInplaceInput(CloneInplaceInputFuncForInplaceRemainderTensorTensor)
   .SetBody(BODYFUNC(ib) {
-    auto input = ib->GetInput(kIndex0);
-    auto other = ib->GetInput(kIndex1);
-    auto dout = ib->GetInput(kIndex3);
+    auto input = ib->GetInput(i0);
+    auto other = ib->GetInput(i1);
+    auto dout = ib->GetInput(i3);
     NodePtr d_input = dout;
     NodePtr d_other = nullptr;
     if (other->need_compute_grad_out()) {
@@ -2950,9 +2949,9 @@ REG_BPROP_BUILDER("InplaceRemainderTensorTensor")
 REG_BPROP_BUILDER("TruncateDiv").SetUnusedInputs({i0, i1, i2, i3}).SetBody(ReturnZeros);
 
 REG_BPROP_BUILDER("TruncateMod").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto y = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto x = ib->GetInput(i0);
+  auto y = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   NodePtr bc_dx = nullptr;
   NodePtr bc_dy = nullptr;
   if (x->need_compute_grad_out()) {
@@ -2965,9 +2964,9 @@ REG_BPROP_BUILDER("TruncateMod").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("Mod").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto y = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto x = ib->GetInput(i0);
+  auto y = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   NodePtr bc_dx = nullptr;
   NodePtr bc_dy = nullptr;
   if (x->need_compute_grad_out()) {
@@ -2981,9 +2980,9 @@ REG_BPROP_BUILDER("Mod").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("Xlogy").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto y = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto x = ib->GetInput(i0);
+  auto y = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   auto x_dtype = ib->GetDtype(x);
   NodePtr bc_dx = nullptr;
   NodePtr bc_dy = nullptr;
@@ -3003,9 +3002,9 @@ REG_BPROP_BUILDER("Xlogy").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
 
 REG_BPROP_BUILDER("XLogYScalarSelf").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   // input, other, out, dout
-  auto x = ib->GetInput(kIndex0);
-  auto y = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto x = ib->GetInput(i0);
+  auto y = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   NodePtr bc_dx = ib->OutZeros(x);
   x = ib->ScalarToTensor(x, ib->GetDtype(y));
   NodePtr bc_dy = ib->Div(x, y) * dout;
@@ -3014,9 +3013,9 @@ REG_BPROP_BUILDER("XLogYScalarSelf").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) 
 
 REG_BPROP_BUILDER("XLogYScalarOther").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   // input, other, out, dout
-  auto x = ib->GetInput(kIndex0);
-  auto y = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto x = ib->GetInput(i0);
+  auto y = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   auto x_dtype = ib->GetDtype(x);
   auto not_zero_x = ib->Cast(ib->NotEqual(x, ib->Tensor(0.0, x_dtype)), x_dtype);
   NodePtr bc_dx = ib->Emit("XLogYScalarOther", {not_zero_x, y}) * dout;
@@ -3025,17 +3024,17 @@ REG_BPROP_BUILDER("XLogYScalarOther").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib)
 });
 
 REG_BPROP_BUILDER("Sqrt").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
-  auto out = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex2);
+  auto out = ib->GetInput(i1);
+  auto dout = ib->GetInput(i2);
   auto dx = ib->Emit("SqrtGrad", {out, dout});
   return {dx};
 });
 
 REG_BPROP_BUILDER("SqrtGrad").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
-  auto y = ib->GetInput(kIndex0);
-  auto grad = ib->GetInput(kIndex1);
-  auto out = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex3);
+  auto y = ib->GetInput(i0);
+  auto grad = ib->GetInput(i1);
+  auto out = ib->GetInput(i2);
+  auto dout = ib->GetInput(i3);
   auto gy = ib->RealDiv(dout, y);
   auto dy = y->need_compute_grad_out() ? (-gy) * out : ib->OutZeros(y);
   NodePtr dgrad;
@@ -3049,16 +3048,16 @@ REG_BPROP_BUILDER("SqrtGrad").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("Rsqrt").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
-  auto out = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex2);
+  auto out = ib->GetInput(i1);
+  auto dout = ib->GetInput(i2);
   auto dx = ib->Emit("RsqrtGrad", {out, dout});
   return {dx};
 });
 
 REG_BPROP_BUILDER("RsqrtGrad").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
-  auto y = ib->GetInput(kIndex0);
-  auto grad = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto y = ib->GetInput(i0);
+  auto grad = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   NodePtr dy;
   if (y->need_compute_grad_out()) {
     auto grad_dtype = ib->GetDtype(grad);
@@ -3071,49 +3070,49 @@ REG_BPROP_BUILDER("RsqrtGrad").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("Reciprocal").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
-  auto out = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex2);
+  auto out = ib->GetInput(i1);
+  auto dout = ib->GetInput(i2);
   auto dtype = ib->GetDtypeId(out);
   bool is_complex = (dtype == kNumberTypeComplex64 || dtype == kNumberTypeComplex128);
   return {is_complex ? -dout * ib->Conj(out * out) : -dout * (out * out)};
 });
 
 REG_BPROP_BUILDER("Log").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto dout = ib->GetInput(i2);
   return {ib->Div(dout, x)};
 });
 
 REG_BPROP_BUILDER("InplaceLog").CloneInplaceInput().SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto dout = ib->GetInput(i2);
   return {ib->Div(dout, x)};
 });
 
 REG_BPROP_BUILDER("Log2").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto dout = ib->GetInput(i2);
   double denominator = 0.6931471805599453;
   return {ib->Div(dout, ib->Emit("Muls", {x, ib->Value<double>(denominator)}))};
 });
 
 REG_BPROP_BUILDER("Log10").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto dout = ib->GetInput(i2);
   double denominator = 2.3025850929940456;
   return {ib->Div(dout, ib->Emit("Muls", {x, ib->Value<double>(denominator)}))};
 });
 
 REG_BPROP_BUILDER("Floor").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto dout = ib->GetInput(i2);
   auto zeros = ib->Emit("ZerosLikeExt", {dout, ib->Value(static_cast<int64_t>(ib->GetDtypeId(x)))});
   return {zeros};
 });
 
 REG_BPROP_BUILDER("InplaceFloor").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto dout = ib->GetInput(i2);
   auto zeros = ib->ZerosLikeExt(dout, ib->Value(static_cast<int64_t>(ib->GetDtypeId(x))));
   return {zeros};
 });
@@ -3121,34 +3120,34 @@ REG_BPROP_BUILDER("InplaceFloor").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC
 REG_BPROP_BUILDER("Ceil").SetUnusedInputs({i0, i1, i2}).SetBody(ReturnZeros);
 
 REG_BPROP_BUILDER("Square").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto dout = ib->GetInput(i2);
   auto dx = dout * x * ib->Tensor(2.0, ib->GetDtype(x));
   return {dx};
 });
 
 REG_BPROP_BUILDER("SquaredDifference").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto y = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto x = ib->GetInput(i0);
+  auto y = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   auto dx = dout * (x - y) * ib->Tensor(2.0, ib->GetDtype(x));
   return {BinopGradCommon(ib, x, y, dx, -dx)};
 });
 
 REG_BPROP_BUILDER("SquareSumAll").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto y = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto x = ib->GetInput(i0);
+  auto y = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   NodePtr dx;
   if (x->need_compute_grad_out()) {
-    auto dout_0 = ib->TupleGetItem(dout, kIndex0);
+    auto dout_0 = ib->TupleGetItem(dout, i0);
     dx = dout_0 * x * ib->Tensor(2.0, ib->GetDtype(x));
   } else {
     dx = ib->OutZeros(x);
   }
   NodePtr dy;
   if (y->need_compute_grad_out()) {
-    auto dout_1 = ib->TupleGetItem(dout, kIndex1);
+    auto dout_1 = ib->TupleGetItem(dout, i1);
     dy = dout_1 * y * ib->Tensor(2.0, ib->GetDtype(y));
   } else {
     dy = ib->OutZeros(y);
@@ -3157,10 +3156,10 @@ REG_BPROP_BUILDER("SquareSumAll").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("Hypot").SetBody(BODYFUNC(ib) {
-  auto x1 = ib->GetInput(kIndex0);
-  auto x2 = ib->GetInput(kIndex1);
-  auto out = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex3);
+  auto x1 = ib->GetInput(i0);
+  auto x2 = ib->GetInput(i1);
+  auto out = ib->GetInput(i2);
+  auto dout = ib->GetInput(i3);
   auto x1_f32 = ib->Cast(x1, kFloat32);
   auto x2_f32 = ib->Cast(x2, kFloat32);
   auto out_f32 = ib->Cast(out, kFloat32);
@@ -3180,16 +3179,16 @@ REG_BPROP_BUILDER("Hypot").SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("Trunc").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto dout = ib->GetInput(i2);
   auto zeros = ib->Emit("ZerosLikeExt", {dout, ib->Value(static_cast<int64_t>(ib->GetDtypeId(x)))});
   return {zeros};
 });
 
 REG_BPROP_BUILDER("Ger").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
-  auto input_x = ib->GetInput(kIndex0);
-  auto input_y = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto input_x = ib->GetInput(i0);
+  auto input_y = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   ShapeVector axis = {1};
   NodePtr dx;
   if (input_x->need_compute_grad_out()) {
@@ -3211,18 +3210,18 @@ REG_BPROP_BUILDER("Ger").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("Cross").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
-  auto input = ib->GetInput(kIndex0);
-  auto other = ib->GetInput(kIndex1);
-  auto dim = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex4);
+  auto input = ib->GetInput(i0);
+  auto other = ib->GetInput(i1);
+  auto dim = ib->GetInput(i2);
+  auto dout = ib->GetInput(i4);
 
   auto input_type_id = ib->GetDtypeId(input);
   bool is_complex = (input_type_id == kNumberTypeComplex64 || input_type_id == kNumberTypeComplex128);
   if (input->need_compute_grad_out() && is_complex) {
-    other = ib->Conj(ib->GetInput(kIndex1));
+    other = ib->Conj(ib->GetInput(i1));
   }
   if (other->need_compute_grad_out() && is_complex) {
-    input = ib->Conj(ib->GetInput(kIndex0));
+    input = ib->Conj(ib->GetInput(i0));
   }
   auto dinput = input->need_compute_grad_out() ? ib->Emit("Cross", {other, dout, dim}) : ib->OutZeros(input);
   auto dother = other->need_compute_grad_out() ? ib->Emit("Cross", {dout, input, dim}) : ib->OutZeros(other);
@@ -3232,9 +3231,9 @@ REG_BPROP_BUILDER("Cross").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("Median").SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto out = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto out = ib->GetInput(i1);
+  auto dout = ib->GetInput(i2);
   auto dx =
     ib->Cast(ib->Emit("MedianGrad", {ib->TupleGetItem(dout, 0), x, ib->TupleGetItem(out, 0), ib->TupleGetItem(out, 1)},
                       {{"global_median", ib->GetAttr("global_median")},
@@ -3245,43 +3244,43 @@ REG_BPROP_BUILDER("Median").SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("MedianExt").SetBody(BODYFUNC(ib) {
-  auto dx = ReduceExtOpGrad(ib, ib->GetInput(kIndex0), ib->GetInput(kIndex1), ib->GetInput(kIndex2));
+  auto dx = ReduceExtOpGrad(ib, ib->GetInput(i0), ib->GetInput(i1), ib->GetInput(i2));
   return {dx};
 });
 REG_BPROP_BUILDER("Max").SetBody(BODYFUNC(ib) {
-  auto dx = ReduceExtOpGrad(ib, ib->GetInput(kIndex0), ib->GetInput(kIndex1), ib->GetInput(kIndex2));
+  auto dx = ReduceExtOpGrad(ib, ib->GetInput(i0), ib->GetInput(i1), ib->GetInput(i2));
   return {dx};
 });
 REG_BPROP_BUILDER("Min").SetBody(BODYFUNC(ib) {
-  auto dx = ReduceExtOpGrad(ib, ib->GetInput(kIndex0), ib->GetInput(kIndex1), ib->GetInput(kIndex2));
+  auto dx = ReduceExtOpGrad(ib, ib->GetInput(i0), ib->GetInput(i1), ib->GetInput(i2));
   return {dx};
 });
 
 REG_BPROP_BUILDER("MedianDim").FreeUselessValues_IO({i0}, {i0}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto axis = ib->GetInput(kIndex1);
-  auto keep_dims = ib->GetInput(kIndex2);
-  auto out = ib->GetInput(kIndex3);
-  auto dout = ib->GetInput(kIndex4);
+  auto x = ib->GetInput(i0);
+  auto axis = ib->GetInput(i1);
+  auto keep_dims = ib->GetInput(i2);
+  auto out = ib->GetInput(i3);
+  auto dout = ib->GetInput(i4);
   auto dx = MeidanDimGrad(ib, x, axis, keep_dims, out, dout);
   return {dx, ib->OutZeros(axis), ib->OutZeros(keep_dims)};
 });
 
 REG_BPROP_BUILDER("Trace").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto dout = ib->GetInput(i2);
   auto shape = ib->Shape(x, true);
   auto dx = ib->Emit("TraceGrad", {dout, shape});
   return {dx};
 });
 
 REG_BPROP_BUILDER("TraceV2").SetUnusedInputs({i5}).SetBody(BODYFUNC(ib) {
-  auto input = ib->GetInput(kIndex0);
-  auto offset = ib->GetInput(kIndex1);
-  auto axis1 = ib->GetInput(kIndex2);
-  auto axis2 = ib->GetInput(kIndex3);
-  auto dtype = ib->GetInput(kIndex4);
-  auto dout = ib->GetInput(kIndex6);
+  auto input = ib->GetInput(i0);
+  auto offset = ib->GetInput(i1);
+  auto axis1 = ib->GetInput(i2);
+  auto axis2 = ib->GetInput(i3);
+  auto dtype = ib->GetInput(i4);
+  auto dout = ib->GetInput(i6);
   auto shape = ib->Shape(input, true);
   auto dx = ib->Emit("TraceV2Grad", {dout, shape, offset, axis1, axis2});
   return {dx, ib->OutZeros(offset), ib->OutZeros(axis1), ib->OutZeros(axis2), ib->OutZeros(dtype)};
@@ -3289,20 +3288,20 @@ REG_BPROP_BUILDER("TraceV2").SetUnusedInputs({i5}).SetBody(BODYFUNC(ib) {
 
 DEF_PURE_SHAPE_CALC(g_trace_ext_shapecalc)
   .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
-    auto input_shape = inputs.at(kIndex0);
+    auto input_shape = inputs.at(i0);
     return {input_shape};
   })
   .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &unknown_inputs) -> std::vector<int64_t> {
-    if (IsDynamicRank(inputs.at(kIndex0))) {
+    if (IsDynamicRank(inputs.at(i0))) {
       return {-1};
     }
-    return {SizeToLong(inputs.at(kIndex0).size())};
+    return {SizeToLong(inputs.at(i0).size())};
   });
 
 REG_BPROP_BUILDER("TraceExt").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto out = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto out = ib->GetInput(i1);
+  auto dout = ib->GetInput(i2);
   auto shape = ib->GetShape(x);
   auto dtype_id = ib->GetDtypeId(out);
   NodePtr eye = nullptr;
@@ -3328,9 +3327,9 @@ REG_BPROP_BUILDER("TraceExt").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("Erfinv").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto out = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto out = ib->GetInput(i1);
+  auto dout = ib->GetInput(i2);
   auto x_type = ib->GetDtype(x);
   auto pow = ib->Exp(ib->PowTensorScalar(out, ib->Value(2)));
   auto dx = ib->Mul(ib->Mul(ib->Tensor(sqrt(pi) / 2, x_type), pow), dout);
@@ -3338,16 +3337,16 @@ REG_BPROP_BUILDER("Erfinv").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
 });
 
 inline static bool CloneInplaceInputFuncForInplaceErfinv(const PynativeCallback &cb) {
-  if (!cb.IsNotRequiresGrad(kIndex0)) {
+  if (!cb.IsNotRequiresGrad(i0)) {
     return true;
   }
   return false;
 }
 
 REG_BPROP_BUILDER("InplaceErfinv").CloneInplaceInput(CloneInplaceInputFuncForInplaceErfinv).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto out = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto out = ib->GetInput(i1);
+  auto dout = ib->GetInput(i2);
   auto x_type = ib->GetDtype(x);
   auto exp_self_erfinv_pow_2 = ib->Exp(ib->PowTensorScalar(out, ib->Value(2)));
   auto dx = ib->Mul(ib->Mul(ib->Tensor(sqrt(pi) / 2, x_type), exp_self_erfinv_pow_2), dout);
@@ -3357,19 +3356,19 @@ REG_BPROP_BUILDER("InplaceErfinv").CloneInplaceInput(CloneInplaceInputFuncForInp
 REG_BPROP_BUILDER("Bernoulli").FreeUselessValues_IO({}, {}).SetBody(ReturnZeros);
 
 REG_BPROP_BUILDER("BernoulliExt").FreeUselessValues_IO({i0, i1, i2}, {}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto seed = ib->GetInput(kIndex1);
-  auto offset = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto seed = ib->GetInput(i1);
+  auto offset = ib->GetInput(i2);
   auto dx = ib->Emit("ZerosLikeExt", {x, ib->Value(static_cast<int64_t>(ib->GetDtypeId(x)))});
   return {dx, ib->OutZeros(seed), ib->OutZeros(offset)};
 });
 
 REG_BPROP_BUILDER("ReduceSum").SetUnusedInputs({i0, i4}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto axis = ib->GetInput(kIndex1);
-  auto keep_dims = ib->GetInput(kIndex2);
-  auto skip_mode = ib->GetInput(kIndex3);
-  auto dout = ib->GetInput(kIndex5);
+  auto x = ib->GetInput(i0);
+  auto axis = ib->GetInput(i1);
+  auto keep_dims = ib->GetInput(i2);
+  auto skip_mode = ib->GetInput(i3);
+  auto dout = ib->GetInput(i5);
   auto dx =
     SumGrad(ib, x, axis, dout, GetValue<bool>(keep_dims->BuildValue()), GetValue<bool>(skip_mode->BuildValue()));
   return {dx, ib->OutZeros(axis), ib->OutZeros(keep_dims), ib->OutZeros(skip_mode)};
@@ -3394,14 +3393,14 @@ DEF_PURE_SHAPE_CALC(g_reduce_prod)
   });
 
 REG_BPROP_BUILDER("ReduceProd").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
+  auto x = ib->GetInput(i0);
   auto x_dtype_id = ib->GetDtypeId(x);
   if (x_dtype_id == kNumberTypeComplex64 || x_dtype_id == kNumberTypeComplex128) {
     MS_EXCEPTION(TypeError) << "For 'ReduceProd', gradient not support for complex type currently.";
   }
-  auto axis = ib->GetInput(kIndex1);
-  auto keep_dims = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex4);
+  auto axis = ib->GetInput(i1);
+  auto keep_dims = ib->GetInput(i2);
+  auto dout = ib->GetInput(i4);
   if (ib->GetRank(x) == 0) {
     return {dout, ib->OutZeros(axis), ib->OutZeros(keep_dims)};
   }
@@ -3422,11 +3421,11 @@ REG_BPROP_BUILDER("ReduceProd").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("ReduceMax").SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto axis = ib->GetInput(kIndex1);
-  auto keep_dims = ib->GetInput(kIndex2);
-  auto out = ib->GetInput(kIndex3);
-  auto dout = ib->GetInput(kIndex4);
+  auto x = ib->GetInput(i0);
+  auto axis = ib->GetInput(i1);
+  auto keep_dims = ib->GetInput(i2);
+  auto out = ib->GetInput(i3);
+  auto dout = ib->GetInput(i4);
   auto x_dtype_id = ib->GetDtypeId(x);
   if (x_dtype_id == kNumberTypeComplex64 || x_dtype_id == kNumberTypeComplex128) {
     MS_EXCEPTION(TypeError) << "For 'ReduceMax', gradient not support for complex type currently.";
@@ -3446,11 +3445,11 @@ REG_BPROP_BUILDER("ReduceMax").SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("ReduceMin").SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto axis = ib->GetInput(kIndex1);
-  auto keep_dims = ib->GetInput(kIndex2);
-  auto out = ib->GetInput(kIndex3);
-  auto dout = ib->GetInput(kIndex4);
+  auto x = ib->GetInput(i0);
+  auto axis = ib->GetInput(i1);
+  auto keep_dims = ib->GetInput(i2);
+  auto out = ib->GetInput(i3);
+  auto dout = ib->GetInput(i4);
   auto x_dtype_id = ib->GetDtypeId(x);
   if (x_dtype_id == kNumberTypeComplex64 || x_dtype_id == kNumberTypeComplex128) {
     MS_EXCEPTION(TypeError) << "For 'ReduceMin', gradient not support for complex type currently.";
@@ -3470,15 +3469,15 @@ REG_BPROP_BUILDER("ReduceMin").SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("ReduceMean").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
+  auto x = ib->GetInput(i0);
   auto x_dtype_id = ib->GetDtypeId(x);
   if (x_dtype_id == kNumberTypeComplex64 || x_dtype_id == kNumberTypeComplex128) {
     MS_EXCEPTION(TypeError) << "For 'ReduceMean', gradient not support for complex type currently.";
   }
-  auto axis = ib->GetInput(kIndex1);
-  auto keep_dims = ib->GetInput(kIndex2);
-  auto out = ib->GetInput(kIndex3);
-  auto dout = ib->GetInput(kIndex4);
+  auto axis = ib->GetInput(i1);
+  auto keep_dims = ib->GetInput(i2);
+  auto out = ib->GetInput(i3);
+  auto dout = ib->GetInput(i4);
   auto grad = SumGrad(ib, x, axis, dout, GetValue<bool>(keep_dims->BuildValue()));
   NodePtr div_shape_node;
   if (IsDynamic(ib->GetShape(x)) || IsDynamic(ib->GetShape(out))) {
@@ -3498,61 +3497,61 @@ REG_BPROP_BUILDER("ReduceMean").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("ArgMaxWithValue").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto axis = ib->GetInput(kIndex1);
-  auto keep_dims = ib->GetInput(kIndex2);
-  auto out = ib->GetInput(kIndex3);
-  auto dout = ib->GetInput(kIndex4);
+  auto x = ib->GetInput(i0);
+  auto axis = ib->GetInput(i1);
+  auto keep_dims = ib->GetInput(i2);
+  auto out = ib->GetInput(i3);
+  auto dout = ib->GetInput(i4);
   auto dx = ArgminOrArgmaxGrad(ib, x, axis, keep_dims, out, dout, true);
   return {dx, ib->OutZeros(axis), ib->OutZeros(keep_dims)};
 });
 
 REG_BPROP_BUILDER("ArgMinWithValue").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto axis = ib->GetInput(kIndex1);
-  auto keep_dims = ib->GetInput(kIndex2);
-  auto out = ib->GetInput(kIndex3);
-  auto dout = ib->GetInput(kIndex4);
+  auto x = ib->GetInput(i0);
+  auto axis = ib->GetInput(i1);
+  auto keep_dims = ib->GetInput(i2);
+  auto out = ib->GetInput(i3);
+  auto dout = ib->GetInput(i4);
   auto dx = ArgminOrArgmaxGrad(ib, x, axis, keep_dims, out, dout, false);
   return {dx, ib->OutZeros(axis), ib->OutZeros(keep_dims)};
 });
 
 REG_BPROP_BUILDER("MaxDim").FreeUselessValues_IO({i0}, {i0}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto axis = ib->GetInput(kIndex1);
-  auto keep_dims = ib->GetInput(kIndex2);
-  auto out = ib->GetInput(kIndex3);
-  auto dout = ib->GetInput(kIndex4);
+  auto x = ib->GetInput(i0);
+  auto axis = ib->GetInput(i1);
+  auto keep_dims = ib->GetInput(i2);
+  auto out = ib->GetInput(i3);
+  auto dout = ib->GetInput(i4);
   auto dx = ArgminOrArgmaxGrad(ib, x, axis, keep_dims, out, dout, true, true);
   return {dx, ib->OutZeros(axis), ib->OutZeros(keep_dims)};
 });
 
 REG_BPROP_BUILDER("MinDim").FreeUselessValues_IO({i0}, {i0}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto axis = ib->GetInput(kIndex1);
-  auto keep_dims = ib->GetInput(kIndex2);
-  auto out = ib->GetInput(kIndex3);
-  auto dout = ib->GetInput(kIndex4);
+  auto x = ib->GetInput(i0);
+  auto axis = ib->GetInput(i1);
+  auto keep_dims = ib->GetInput(i2);
+  auto out = ib->GetInput(i3);
+  auto dout = ib->GetInput(i4);
   auto dx = ArgminOrArgmaxGrad(ib, x, axis, keep_dims, out, dout, false, true);
   return {dx, ib->OutZeros(axis), ib->OutZeros(keep_dims)};
 });
 
 REG_BPROP_BUILDER("ComplexAbs").SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto out = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto out = ib->GetInput(i1);
+  auto dout = ib->GetInput(i2);
   return {ib->DivNoNan(ib->Mul(ib->Complex(dout, ib->ZerosLike(dout)), x), ib->Complex(out, ib->ZerosLike(out)))};
 });
 
 REG_BPROP_BUILDER("Real").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
-  auto dout = ib->GetInput(kIndex2);
+  auto dout = ib->GetInput(i2);
   auto zero = ib->ZerosLike(dout);
   return {ib->Complex(dout, zero)};
 });
 
 REG_BPROP_BUILDER("Imag").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto dout = ib->GetInput(i2);
   auto zero = ib->ZerosLike(dout);
   auto x_dtype_id = ib->GetDtypeId(x);
   auto dx = ib->Complex(zero, dout);
@@ -3563,10 +3562,10 @@ REG_BPROP_BUILDER("Imag").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("Betainc").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
-  auto input_a = ib->GetInput(kIndex0);
-  auto input_b = ib->GetInput(kIndex1);
-  auto input_x = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex4);
+  auto input_a = ib->GetInput(i0);
+  auto input_b = ib->GetInput(i1);
+  auto input_x = ib->GetInput(i2);
+  auto dout = ib->GetInput(i4);
   auto sx = ib->Shape(input_x);
   auto log_beta =
     ib->Emit("Lgamma", {input_a}) + ib->Emit("Lgamma", {input_b}) - ib->Emit("Lgamma", {ib->Add(input_a, input_b)});
@@ -3580,9 +3579,9 @@ REG_BPROP_BUILDER("Betainc").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
 
 DEF_PURE_SHAPE_CALC(g_matrix_determinant).SetCalc(MatrixDeterminantShapeFunc).SetInfer(MatrixDeterminantInferFunc);
 REG_BPROP_BUILDER("LogMatrixDeterminant").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto out = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto out = ib->GetInput(i1);
+  auto dout = ib->GetInput(i2);
   auto x_adj_inv = ib->Emit("MatrixInverse", {x}, {{"adjoint", MakeValue(true)}});
   auto res = ib->ShapeCalc(g_matrix_determinant, {ib->TupleGetItem(out, 1)})[0];
   auto multipliers = ib->Reshape(ib->TupleGetItem(dout, 1), res);
@@ -3591,9 +3590,9 @@ REG_BPROP_BUILDER("LogMatrixDeterminant").SetUnusedInputs({i1}).SetBody(BODYFUNC
 });
 
 REG_BPROP_BUILDER("MatrixDeterminant").SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto out = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto out = ib->GetInput(i1);
+  auto dout = ib->GetInput(i2);
   auto x_adj_inv = ib->Emit("MatrixInverse", {x}, {{"adjoint", MakeValue(true)}});
   auto res = ib->ShapeCalc(g_matrix_determinant, {out})[0];
   auto multipliers = ib->Reshape(ib->Mul(dout, out), res);
@@ -3603,9 +3602,9 @@ REG_BPROP_BUILDER("MatrixDeterminant").SetBody(BODYFUNC(ib) {
 
 REG_BPROP_BUILDER("MatrixPower").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   auto n = GetValue<int64_t>(ib->GetAttr("n"));
-  auto x = ib->GetInput(kIndex0);
-  auto out = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto out = ib->GetInput(i1);
+  auto dout = ib->GetInput(i2);
   dout = ib->Cast(dout, kFloat32);
   x = ib->Cast(x, kFloat32);
   auto power = n;
@@ -3632,9 +3631,9 @@ REG_BPROP_BUILDER("MatrixPower").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
 
 REG_BPROP_BUILDER("MatrixSolve").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   auto adjoint = GetValue<bool>(ib->GetAttr("adjoint"));
-  auto input_a = ib->GetInput(kIndex0);
-  auto out = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex3);
+  auto input_a = ib->GetInput(i0);
+  auto out = ib->GetInput(i2);
+  auto dout = ib->GetInput(i3);
   if (ib->GetDtypeId(out) == kNumberTypeFloat64) {
     out = ib->Cast(out, kFloat32);
   }
@@ -3674,14 +3673,14 @@ DEF_PURE_SHAPE_CALC(g_matrix_exp)
     auto shape_x = inputs.at(0);
     auto x_len = shape_x.size();
     auto input_perm = Range(SizeToLong(x_len));
-    input_perm[x_len - kDim2] = SizeToLong(x_len - kDim1);
-    input_perm[x_len - kDim1] = SizeToLong(x_len - kDim2);
-    auto n = shape_x[x_len - kDim1];
+    input_perm[x_len - i2] = SizeToLong(x_len - i1);
+    input_perm[x_len - i1] = SizeToLong(x_len - i2);
+    auto n = shape_x[x_len - i1];
     ShapeVector begins(x_len, 0);
-    begins[x_len - kDim1] = n;
+    begins[x_len - i1] = n;
     auto sizes = shape_x;
-    sizes[x_len - kDim1] = n;
-    sizes[x_len - kDim2] = n;
+    sizes[x_len - i1] = n;
+    sizes[x_len - i2] = n;
     return {input_perm, begins, sizes};
   })
   .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &) -> std::vector<int64_t> {
@@ -3691,8 +3690,8 @@ DEF_PURE_SHAPE_CALC(g_matrix_exp)
   });
 
 REG_BPROP_BUILDER("MatrixExp").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto dout = ib->GetInput(i2);
   auto res = ib->ShapeCalc(g_matrix_exp, {x});
   auto input_perm = res[0];
   auto begins = res[1];
@@ -3708,9 +3707,9 @@ REG_BPROP_BUILDER("MatrixExp").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("Mv").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto vec = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto x = ib->GetInput(i0);
+  auto vec = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   ShapeVector perm = {1, 0};
 
   // self: ger(dout, vec.conj())
@@ -3721,19 +3720,19 @@ REG_BPROP_BUILDER("Mv").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("Complex").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto y = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto x = ib->GetInput(i0);
+  auto y = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   auto dx = x->need_compute_grad_out() ? ib->Real(dout) : ib->OutZeros(x);
   auto dy = y->need_compute_grad_out() ? ib->Imag(dout) : ib->OutZeros(y);
   return {dx, dy};
 });
 
 REG_BPROP_BUILDER("CholeskyInverse").SetBody(BODYFUNC(ib) {
-  auto input_x = ib->GetInput(kIndex0);
-  auto upper = ib->GetInput(kIndex1);
-  auto out = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex3);
+  auto input_x = ib->GetInput(i0);
+  auto upper = ib->GetInput(i1);
+  auto out = ib->GetInput(i2);
+  auto dout = ib->GetInput(i3);
   ShapeVector input_perm = {1, 0};
   NodePtr dx;
   auto DealWithUpper = [&upper, &dx, &ib, &input_x](const NodePtr &common_term) {
@@ -3762,10 +3761,10 @@ REG_BPROP_BUILDER("CholeskyInverse").SetBody(BODYFUNC(ib) {
 
 REG_BPROP_BUILDER("CholeskySolve").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
   auto upper = GetValue<bool>(ib->GetAttr("upper"));
-  auto x1 = ib->GetInput(kIndex0);
-  auto x2 = ib->GetInput(kIndex1);
-  auto out = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex3);
+  auto x1 = ib->GetInput(i0);
+  auto x2 = ib->GetInput(i1);
+  auto out = ib->GetInput(i2);
+  auto dout = ib->GetInput(i3);
   auto flag = 0;
   auto shape_x1 = ib->GetShape(x1);
   auto len_x1 = shape_x1.size();
@@ -3813,9 +3812,9 @@ REG_BPROP_BUILDER("CholeskySolve").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("NextAfter").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
-  auto x1 = ib->GetInput(kIndex0);
-  auto x2 = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto x1 = ib->GetInput(i0);
+  auto x2 = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   auto dout_type = ib->GetDtype(dout);
   auto x1_type = ib->GetDtype(x1);
   if (x1_type->type_id() == kNumberTypeFloat64) {
@@ -3837,14 +3836,14 @@ REG_BPROP_BUILDER("NextAfter").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("LinalgVectorNorm").SetBody(BODYFUNC(ib) {
-  auto input = ib->GetInput(kIndex0);
+  auto input = ib->GetInput(i0);
   auto input_shape = ib->GetShape(input);
-  auto ord = ib->GetInput(kIndex1);
-  auto dim = ib->GetInput(kIndex2);
-  auto keepdim = ib->GetInput(kIndex3);
-  auto dtype = ib->GetInput(kIndex4);
-  auto out = ib->GetInput(kIndex5);
-  auto dout = ib->GetInput(kIndex6);
+  auto ord = ib->GetInput(i1);
+  auto dim = ib->GetInput(i2);
+  auto keepdim = ib->GetInput(i3);
+  auto dtype = ib->GetInput(i4);
+  auto out = ib->GetInput(i5);
+  auto dout = ib->GetInput(i6);
   if (ord->BuildValue()->ContainsValueAny()) {
     MS_EXCEPTION(ValueError) << "For gradient of `LinalgVectorNorm`, `ord` must be constant!";
   }
@@ -3853,14 +3852,14 @@ REG_BPROP_BUILDER("LinalgVectorNorm").SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("Norm").SetBody(BODYFUNC(ib) {
-  auto input = ib->GetInput(kIndex0);
+  auto input = ib->GetInput(i0);
   auto input_shape = ib->GetShape(input);
-  auto p = ib->GetInput(kIndex1);
-  auto dim = ib->GetInput(kIndex2);
-  auto keepdim = ib->GetInput(kIndex3);
-  auto dtype = ib->GetInput(kIndex4);
-  auto out = ib->GetInput(kIndex5);
-  auto dout = ib->GetInput(kIndex6);
+  auto p = ib->GetInput(i1);
+  auto dim = ib->GetInput(i2);
+  auto keepdim = ib->GetInput(i3);
+  auto dtype = ib->GetInput(i4);
+  auto out = ib->GetInput(i5);
+  auto dout = ib->GetInput(i6);
   if (p->BuildValue()->ContainsValueAny()) {
     MS_EXCEPTION(ValueError) << "For gradient of `Norm`, `p` must be constant!.";
   }
@@ -3869,14 +3868,14 @@ REG_BPROP_BUILDER("Norm").SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("LpNormV2").SetUnusedInputs({i4}).SetBody(BODYFUNC(ib) {
-  auto input = ib->GetInput(kIndex0);
+  auto input = ib->GetInput(i0);
   auto input_shape = ib->GetShape(input);
-  auto p = ib->GetInput(kIndex1);
-  auto dim = ib->GetInput(kIndex2);
-  auto keepdim = ib->GetInput(kIndex3);
-  auto epsilon = ib->GetInput(kIndex4);
-  auto out = ib->GetInput(kIndex5);
-  auto dout = ib->GetInput(kIndex6);
+  auto p = ib->GetInput(i1);
+  auto dim = ib->GetInput(i2);
+  auto keepdim = ib->GetInput(i3);
+  auto epsilon = ib->GetInput(i4);
+  auto out = ib->GetInput(i5);
+  auto dout = ib->GetInput(i6);
   auto dim_type = dim->abstract()->BuildType();
   if (p->BuildValue()->ContainsValueAny()) {
     MS_EXCEPTION(ValueError) << "For gradient of `LpNormV2`, `p` must be constant!";
@@ -3886,10 +3885,10 @@ REG_BPROP_BUILDER("LpNormV2").SetUnusedInputs({i4}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("Lerp").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
-  auto start = ib->GetInput(kIndex0);
-  auto end = ib->GetInput(kIndex1);
-  auto weight = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex4);
+  auto start = ib->GetInput(i0);
+  auto end = ib->GetInput(i1);
+  auto weight = ib->GetInput(i2);
+  auto dout = ib->GetInput(i4);
   auto dout_type = ib->GetDtype(dout);
   NodePtr sub_w, dstart, dend, dweight;
   dend = ib->Mul(dout, weight);
@@ -3906,10 +3905,10 @@ REG_BPROP_BUILDER("Lerp").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("LerpScalar").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
-  auto start = ib->GetInput(kIndex0);
-  auto end = ib->GetInput(kIndex1);
-  auto weight = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex4);
+  auto start = ib->GetInput(i0);
+  auto end = ib->GetInput(i1);
+  auto weight = ib->GetInput(i2);
+  auto dout = ib->GetInput(i4);
   auto val = GetScalarValue<float>(weight->BuildValue());
   NodePtr dstart = val.has_value() ? ib->Emit("Muls", {dout, ib->Value<float>(1.0 - static_cast<double>(val.value()))})
                                    : ib->Emit("Muls", {dout, ib->ScalarSub(ib->Value<float>(1.0), weight)});
@@ -3976,11 +3975,11 @@ REG_BPROP_BUILDER("TridiagonalMatMul").SetUnusedInputs({i4}).SetBody(BODYFUNC(ib
     (void)perm.emplace_back(rank - 2);
     return ib->TransposeView(x, perm);
   };
-  auto superdiag = ib->GetInput(kIndex0);
-  auto maindiag = ib->GetInput(kIndex1);
-  auto subdiag = ib->GetInput(kIndex2);
-  auto rhs = ib->GetInput(kIndex3);
-  auto dout = ib->GetInput(kIndex5);
+  auto superdiag = ib->GetInput(i0);
+  auto maindiag = ib->GetInput(i1);
+  auto subdiag = ib->GetInput(i2);
+  auto rhs = ib->GetInput(i3);
+  auto dout = ib->GetInput(i5);
   auto superdiag_type = ib->GetDtype(superdiag);
   auto superdiag_conj = MatrixTranspose(ib, superdiag);
   auto maindiag_conj = MatrixTranspose(ib, maindiag);
@@ -4003,9 +4002,9 @@ REG_BPROP_BUILDER("TridiagonalMatMul").SetUnusedInputs({i4}).SetBody(BODYFUNC(ib
 });
 
 REG_BPROP_BUILDER("AddV2").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto y = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto x = ib->GetInput(i0);
+  auto y = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   NodePtr bc_dx = nullptr;
   NodePtr bc_dy = nullptr;
   if (x->need_compute_grad_out()) {
@@ -4020,12 +4019,12 @@ REG_BPROP_BUILDER("AddV2").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
 REG_BPROP_BUILDER("Addcdiv").SetUnusedInputs({i4}).SetBody(BODYFUNC(ib) { return BpropAddcCommon(ib, "Addcdiv"); });
 
 REG_BPROP_BUILDER("AddcdivExt").SetBody(BODYFUNC(ib) {
-  auto input = ib->GetInput(kIndex0);
-  auto tensor1 = ib->GetInput(kIndex1);
-  auto tensor2 = ib->GetInput(kIndex2);
-  auto value = ib->GetInput(kIndex3);
-  auto out = ib->GetInput(kIndex4);
-  auto dout = ib->GetInput(kIndex5);
+  auto input = ib->GetInput(i0);
+  auto tensor1 = ib->GetInput(i1);
+  auto tensor2 = ib->GetInput(i2);
+  auto value = ib->GetInput(i3);
+  auto out = ib->GetInput(i4);
+  auto dout = ib->GetInput(i5);
 
   auto shape = ib->GetShape(tensor2);
   auto dtype = ib->GetDtype(tensor2)->type_id();
@@ -4054,24 +4053,24 @@ REG_BPROP_BUILDER("AddcdivExt").SetBody(BODYFUNC(ib) {
 REG_BPROP_BUILDER("Addcmul").SetUnusedInputs({i4}).SetBody(BODYFUNC(ib) { return BpropAddcCommon(ib, "Addcmul"); });
 
 REG_BPROP_BUILDER("AddcmulExt").SetUnusedInputs({}).SetBody(BODYFUNC(ib) {
-  auto input_data = ib->GetInput(kIndex0);
-  auto x = ib->GetInput(kIndex1);
-  auto y = ib->GetInput(kIndex2);
-  auto value = ib->GetInput(kIndex3);
-  auto inner_out = ib->GetInput(kIndex4);
-  auto dout = ib->GetInput(kIndex5);
+  auto input_data = ib->GetInput(i0);
+  auto x = ib->GetInput(i1);
+  auto y = ib->GetInput(i2);
+  auto value = ib->GetInput(i3);
+  auto inner_out = ib->GetInput(i4);
+  auto dout = ib->GetInput(i5);
   auto dinput_data = dout;
   auto dout_typeptr = ib->GetDtype(dout);
   if (input_data->need_compute_grad_out()) {
-    dinput_data = BinopGradCommon(ib, inner_out, input_data, dout, dinput_data)[kIndex1];
+    dinput_data = BinopGradCommon(ib, inner_out, input_data, dout, dinput_data)[i1];
   } else {
     dinput_data = ib->OutZeros(input_data);
   }
   auto dx = x->need_compute_grad_out()
-              ? BinopGradCommon(ib, inner_out, x, dout, ib->Mul(dout, ib->Emit("Muls", {y, value})))[kIndex1]
+              ? BinopGradCommon(ib, inner_out, x, dout, ib->Mul(dout, ib->Emit("Muls", {y, value})))[i1]
               : ib->OutZeros(x);
   auto dy = y->need_compute_grad_out()
-              ? BinopGradCommon(ib, inner_out, y, dout, ib->Mul(dout, ib->Emit("Muls", {x, value})))[kIndex1]
+              ? BinopGradCommon(ib, inner_out, y, dout, ib->Mul(dout, ib->Emit("Muls", {x, value})))[i1]
               : ib->OutZeros(y);
   return {dinput_data, dx, dy, ib->OutZeros(value)};
 });
@@ -4080,9 +4079,9 @@ REG_BPROP_BUILDER("LpNorm").SetBody(BODYFUNC(ib) {
   auto p = GetValue<int64_t>(ib->GetAttr("p"));
   auto keep_dims = GetValue<bool>(ib->GetAttr("keep_dims"));
   auto axis = GetIntList(ib->GetAttr("axis"));
-  auto input_x = ib->GetInput(kIndex0);
-  auto out = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex2);
+  auto input_x = ib->GetInput(i0);
+  auto out = ib->GetInput(i1);
+  auto dout = ib->GetInput(i2);
   auto input_x_shape = ib->GetShape(input_x);
   if ((!keep_dims) && (!input_x_shape.empty())) {
     for (const auto &i : axis) {
@@ -4115,8 +4114,8 @@ REG_BPROP_BUILDER("Renorm").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   float ext = 1e-07;
   auto dim = GetIntList(ib->GetAttr("dim"))[0];
   auto max_norm = GetValue<float>(ib->GetAttr("maxnorm"));
-  auto input_x = ib->GetInput(kIndex0);
-  auto dout = ib->GetInput(kIndex2);
+  auto input_x = ib->GetInput(i0);
+  auto dout = ib->GetInput(i2);
   auto shape = ib->GetShape(input_x);
   int64_t new_dim = dim >= 0 ? dim : (SizeToLong(shape.size()) + dim);
   std::vector<int64_t> dims;
@@ -4168,12 +4167,12 @@ DEF_PURE_SHAPE_CALC(g_reduce_std)
   });
 
 REG_BPROP_BUILDER("ReduceStd").SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto axis = ib->GetInput(kIndex1);
-  auto unbiased = ib->GetInput(kIndex2);
-  auto keep_dims = ib->GetInput(kIndex3);
-  auto out = ib->GetInput(kIndex4);
-  auto dout = ib->GetInput(kIndex5);
+  auto x = ib->GetInput(i0);
+  auto axis = ib->GetInput(i1);
+  auto unbiased = ib->GetInput(i2);
+  auto keep_dims = ib->GetInput(i3);
+  auto out = ib->GetInput(i4);
+  auto dout = ib->GetInput(i5);
   auto std_d = ib->TupleGetItem(dout, 0);
   auto std = ib->TupleGetItem(out, 0);
   auto mean_d = ib->TupleGetItem(dout, 1);
@@ -4241,10 +4240,10 @@ REG_BPROP_BUILDER("ReduceStd").SetBody(BODYFUNC(ib) {
 
 REG_BPROP_BUILDER("CumulativeLogsumexp").SetBody(BODYFUNC(ib) {
   // this dsl has pression error
-  auto x = ib->GetInput(kIndex0);
-  auto axis = ib->GetInput(kIndex1);
-  auto out = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex3);
+  auto x = ib->GetInput(i0);
+  auto axis = ib->GetInput(i1);
+  auto out = ib->GetInput(i2);
+  auto dout = ib->GetInput(i3);
   bool reverse = GetValue<bool>(ib->GetAttr("reverse"));
   NodePtr dtype_min = nullptr;
   if ((ib->GetDtype(x))->type_id() == TypeId::kNumberTypeFloat16) {
@@ -4286,17 +4285,17 @@ REG_BPROP_BUILDER("Igammac").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("Einsum").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto dout = ib->GetInput(i2);
   auto dx = ib->Emit("EinsumGrad", {x, dout}, {{"equation", ib->GetAttr("equation")}});
   return {dx};
 });
 
 REG_BPROP_BUILDER("BatchMatMul").SetUnusedInputs({i4}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto w = ib->GetInput(kIndex1);
-  auto trans_a = ib->GetInput(kIndex2);
-  auto trans_b = ib->GetInput(kIndex3);
+  auto x = ib->GetInput(i0);
+  auto w = ib->GetInput(i1);
+  auto trans_a = ib->GetInput(i2);
+  auto trans_b = ib->GetInput(i3);
   auto ta_opt = mindspore::GetScalarValue<bool>(trans_a->BuildValue());
   auto tb_opt = mindspore::GetScalarValue<bool>(trans_b->BuildValue());
 
@@ -4305,7 +4304,7 @@ REG_BPROP_BUILDER("BatchMatMul").SetUnusedInputs({i4}).SetBody(BODYFUNC(ib) {
   }
   auto ta = ta_opt.value();
   auto tb = tb_opt.value();
-  auto dout = ib->GetInput(kIndex5);
+  auto dout = ib->GetInput(i5);
 
   NodePtr dx = nullptr;
   if (x->need_compute_grad_out()) {
@@ -4331,9 +4330,9 @@ REG_BPROP_BUILDER("BatchMatMul").SetUnusedInputs({i4}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("BatchMatMulExt").FreeUselessValues_O({}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto w = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto x = ib->GetInput(i0);
+  auto w = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   NodePtr dx;
   NodePtr dw;
   if (x->need_compute_grad_out()) {
@@ -4357,10 +4356,10 @@ REG_BPROP_BUILDER("Eps").SetUnusedInputs({i0, i1, i2}).SetBody(ReturnZeros);
 
 REG_BPROP_BUILDER("EuclideanNorm").SetBody(BODYFUNC(ib) {
   auto keep_dims = GetValue<bool>(ib->GetAttr("keep_dims"));
-  auto x = ib->GetInput(kIndex0);
-  auto axes = ib->GetInput(kIndex1);
-  auto out = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex3);
+  auto x = ib->GetInput(i0);
+  auto axes = ib->GetInput(i1);
+  auto out = ib->GetInput(i2);
+  auto dout = ib->GetInput(i3);
   auto scale_v = ib->RealDiv(dout, out);
   if ((!keep_dims) && (ib->GetShape(x).size() > 0)) {
     scale_v = ib->ExpandDimsView(scale_v, axes);
@@ -4371,9 +4370,9 @@ REG_BPROP_BUILDER("EuclideanNorm").SetBody(BODYFUNC(ib) {
 REG_BPROP_BUILDER("MatrixTriangularSolve").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   auto adjoint_a = GetValue<bool>(ib->GetAttr("adjoint"));
   auto lower_a = GetValue<bool>(ib->GetAttr("lower"));
-  auto matrix = ib->GetInput(kIndex0);
-  auto out = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex3);
+  auto matrix = ib->GetInput(i0);
+  auto out = ib->GetInput(i2);
+  auto dout = ib->GetInput(i3);
   auto grad_rhs = ib->Emit("MatrixTriangularSolve", {matrix, dout},
                            {{"lower", MakeValue(lower_a)}, {"adjoint", MakeValue(!adjoint_a)}});
   NodePtr grad_rhs_temp;
@@ -4418,35 +4417,35 @@ REG_BPROP_BUILDER("MatrixTriangularSolve").SetUnusedInputs({i1}).SetBody(BODYFUN
 });
 
 REG_BPROP_BUILDER("TriangularSolve").FreeUselessValues_O({i1}).SetBody(BODYFUNC(ib) {
-  auto b = ib->GetInput(kIndex0);
-  auto A = ib->GetInput(kIndex1);
-  auto upper = ib->GetInput(kIndex2);
-  auto transpose = ib->GetInput(kIndex3);
-  auto unitriangular = ib->GetInput(kIndex4);
-  auto out = ib->GetInput(kIndex5);
-  auto dout = ib->GetInput(kIndex6);
+  auto b = ib->GetInput(i0);
+  auto A = ib->GetInput(i1);
+  auto upper = ib->GetInput(i2);
+  auto transpose = ib->GetInput(i3);
+  auto unitriangular = ib->GetInput(i4);
+  auto out = ib->GetInput(i5);
+  auto dout = ib->GetInput(i6);
   NodePtr grad_b = nullptr;
   NodePtr grad_A = nullptr;
-  auto grad_x = ib->TupleGetItem(dout, kIndex0);
-  auto grad_m = ib->TupleGetItem(dout, kIndex1);
-  auto x = ib->TupleGetItem(out, kIndex0);
+  auto grad_x = ib->TupleGetItem(dout, i0);
+  auto grad_m = ib->TupleGetItem(dout, i1);
+  auto x = ib->TupleGetItem(out, i0);
 
   auto transpose_opt = mindspore::GetScalarValue<bool>(transpose->BuildValue());
   if (!transpose_opt.has_value()) {
     auto true_branch = [&](Emitter *e) -> NodePtrList {
       return {e->TupleGetItem(
-        e->Emit("TriangularSolve", {grad_x, e->Conj(A), upper, e->Value<bool>(false), unitriangular}), kIndex0)};
+        e->Emit("TriangularSolve", {grad_x, e->Conj(A), upper, e->Value<bool>(false), unitriangular}), i0)};
     };
     auto false_branch = [&](Emitter *e) -> NodePtrList {
       return {e->TupleGetItem(
-        e->Emit("TriangularSolve", {grad_x, e->Conj(A), upper, e->Value<bool>(true), unitriangular}), kIndex0)};
+        e->Emit("TriangularSolve", {grad_x, e->Conj(A), upper, e->Value<bool>(true), unitriangular}), i0)};
     };
     auto transpose_opt_true = ib->Equal(transpose, ib->Value<bool>(true));
     grad_b = ib->Conditional(transpose_opt_true, true_branch, false_branch);
   } else {
     grad_b = ib->TupleGetItem(
       ib->Emit("TriangularSolve", {grad_x, ib->Conj(A), upper, ib->Value<bool>(!transpose_opt.value()), unitriangular}),
-      kIndex0);
+      i0);
   }
   if (A->need_compute_grad_out()) {
     if (!transpose_opt.has_value()) {
@@ -4502,11 +4501,11 @@ REG_BPROP_BUILDER("TriangularSolve").FreeUselessValues_O({i1}).SetBody(BODYFUNC(
 });
 
 REG_BPROP_BUILDER("NanToNum").FreeUselessValues_IO({i1, i2, i3}, {}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto nan = ib->GetInput(kIndex1);
-  auto posinf = ib->GetInput(kIndex2);
-  auto neginf = ib->GetInput(kIndex3);
-  auto dout = ib->GetInput(kIndex5);
+  auto x = ib->GetInput(i0);
+  auto nan = ib->GetInput(i1);
+  auto posinf = ib->GetInput(i2);
+  auto neginf = ib->GetInput(i3);
+  auto dout = ib->GetInput(i5);
   auto dx = ib->Mul(dout, (ib->IsFinite(x)));
   return {dx, ib->OutZeros(nan), ib->OutZeros(posinf), ib->OutZeros(neginf)};
 });
@@ -4516,8 +4515,8 @@ REG_BPROP_BUILDER("Fmin").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) { return Fm
 REG_BPROP_BUILDER("Fmax").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) { return FminFmaxGrad(ib, false); });
 
 REG_BPROP_BUILDER("Angle").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto dout = ib->GetInput(i2);
   auto re = ib->Real(x);
   auto im = ib->Imag(x);
   re = ib->Complex(im, re);
@@ -4528,24 +4527,24 @@ REG_BPROP_BUILDER("Angle").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("Lgamma").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto dout = ib->GetInput(i2);
   auto dx = ib->Mul(dout, ib->Emit(kDigammaOpName, {x}));
   return {dx};
 });
 
 REG_BPROP_BUILDER("Digamma").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   auto a = ib->Tensor(1, kInt64);
-  auto x = ib->GetInput(kIndex0);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto dout = ib->GetInput(i2);
   auto dx = ib->Mul(dout, ib->Emit(kPolygammaOpName, {a, x}));
   return {dx};
 });
 
 REG_BPROP_BUILDER("Polygamma").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
-  auto a = ib->GetInput(kIndex0);
-  auto x = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto a = ib->GetInput(i0);
+  auto x = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   auto one = ib->Tensor(1);
   a = ib->Add(a, one);
   NodePtr dx;
@@ -4560,14 +4559,14 @@ REG_BPROP_BUILDER("Polygamma").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("Cholesky").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
-  auto upper_input = ib->GetInput(kIndex1);
+  auto upper_input = ib->GetInput(i1);
   auto upper_input_value = upper_input->BuildValue();
   if (upper_input_value->ContainsValueAny()) {
     MS_EXCEPTION(ValueError) << "Input `upper` does not support variable in GRAPH_MODE currently.";
   }
   auto upper = GetValue<bool>(upper_input_value);
-  auto out = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex3);
+  auto out = ib->GetInput(i2);
+  auto dout = ib->GetInput(i3);
   if (upper) {
     out = MatrixTranspose(ib, out);
     dout = MatrixTranspose(ib, dout);
@@ -4577,39 +4576,39 @@ REG_BPROP_BUILDER("Cholesky").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("InplaceIndexAdd").SetUnusedInputs({i0, i2, i3}).SetBody(BODYFUNC(ib) {
-  auto indices = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex4);
+  auto indices = ib->GetInput(i1);
+  auto dout = ib->GetInput(i4);
   return {dout, ib->OutZeros(indices), ib->Gather(dout, indices, ib->EmitValue(ib->GetAttr("axis")))};
 });
 
 REG_BPROP_BUILDER("Addmm").SetUnusedInputs({i5}).SetBody(BODYFUNC(ib) {
-  auto input = ib->GetInput(kIndex0);
-  auto mat1 = ib->GetInput(kIndex1);
-  auto mat2 = ib->GetInput(kIndex2);
-  auto beta = ib->GetInput(kIndex3);
-  auto alpha = ib->GetInput(kIndex4);
-  auto dout = ib->GetInput(kIndex6);
+  auto input = ib->GetInput(i0);
+  auto mat1 = ib->GetInput(i1);
+  auto mat2 = ib->GetInput(i2);
+  auto beta = ib->GetInput(i3);
+  auto alpha = ib->GetInput(i4);
+  auto dout = ib->GetInput(i6);
   NodePtr input_grad{nullptr};
   auto input_type = ib->GetDtype(input);
   if (input->need_compute_grad_out()) {
     input_grad = MaybeMultiply(ib, input_type, dout, beta, "beta");
     auto input_shape = ib->Shape(input);
     auto bc_axis = ib->BroadcastGradientArgs(input, dout);
-    auto bc_axis_shape_ptr = bc_axis[kIndex0]->GetShape();
+    auto bc_axis_shape_ptr = bc_axis[i0]->GetShape();
     if (bc_axis_shape_ptr->isa<abstract::DynamicSequenceShape>()) {
       auto true_branch = [&input_grad, &bc_axis, &input_shape](Emitter *e) -> NodePtrList { return {input_grad}; };
       auto false_branch = [&input_grad, &bc_axis, &input_shape](Emitter *e) -> NodePtrList {
-        return {e->Reshape(e->Emit("SumExt", {input_grad, bc_axis[kIndex0], e->Value(false), e->EmitValue(kNone)}),
-                           input_shape)};
+        return {
+          e->Reshape(e->Emit("SumExt", {input_grad, bc_axis[i0], e->Value(false), e->EmitValue(kNone)}), input_shape)};
       };
-      auto cond = ib->Equal(ib->Emit("sequence_len", {bc_axis[kIndex0]}), ib->Value<int64_t>(0));
+      auto cond = ib->Equal(ib->Emit("sequence_len", {bc_axis[i0]}), ib->Value<int64_t>(0));
       input_grad = ib->Conditional(cond, true_branch, false_branch);
     } else {
       auto bc_axis_shape = bc_axis_shape_ptr->cast<abstract::TupleShapePtr>();
       MS_EXCEPTION_IF_NULL(bc_axis_shape);
       if (bc_axis_shape->size() > 0) {
-        input_grad = ib->Reshape(
-          ib->Emit("SumExt", {input_grad, bc_axis[kIndex0], ib->Value(false), ib->EmitValue(kNone)}), input_shape);
+        input_grad = ib->Reshape(ib->Emit("SumExt", {input_grad, bc_axis[i0], ib->Value(false), ib->EmitValue(kNone)}),
+                                 input_shape);
       }
     }
   } else {
@@ -4629,34 +4628,34 @@ REG_BPROP_BUILDER("IndexAddExt").SetUnusedInputs({i0, i5}).SetBody(BODYFUNC(ib) 
 REG_BPROP_BUILDER("InplaceIndexAddExt").SetUnusedInputs({i0, i5}).SetBody(BODYFUNC(ib) { return IndexAddGrad(ib); });
 
 REG_BPROP_BUILDER("InplaceAddmm").SetUnusedInputs({i0, i3, i5}).SetBody(BODYFUNC(ib) {
-  auto mat1 = ib->GetInput(kIndex1);
-  auto mat2 = ib->GetInput(kIndex2);
+  auto mat1 = ib->GetInput(i1);
+  auto mat2 = ib->GetInput(i2);
   auto mat1_t_conj = ib->Conj(ib->TransposeView(mat1, {1, 0}));
   auto mat2_t_conj = ib->Conj(ib->TransposeView(mat2, {1, 0}));
-  auto aplha_conj = ib->Conj(ib->GetInput(kIndex4));
+  auto aplha_conj = ib->Conj(ib->GetInput(i4));
   auto aplha_tensor = ib->ScalarToTensor(aplha_conj, ib->GetDtype(mat1));
-  auto dout = ib->GetInput(kIndex6);
+  auto dout = ib->GetInput(i6);
   auto dmat1 = ib->Mul(ib->MatMul(dout, mat2_t_conj), aplha_tensor);
   auto dmat2 = ib->Mul(ib->MatMul(mat1_t_conj, dout), aplha_tensor);
   return {ib->OutZeros(dout), dmat1, dmat2, ib->OutZeros(aplha_conj), ib->OutZeros(aplha_conj)};
 });
 
 REG_BPROP_BUILDER("Zeta").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto q = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto x = ib->GetInput(i0);
+  auto q = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   auto dq =
     ib->Mul((ib->Mul((ib->Neg(x)), (ib->Emit("Zeta", {ib->Add(x, (ib->Tensor(1, ib->GetDtype(x)))), q})))), dout);
   return {ib->OutZeros(x), dq};
 });
 
 REG_BPROP_BUILDER("Addmv").SetUnusedInputs({i5}).SetBody(BODYFUNC(ib) {
-  auto input = ib->GetInput(kIndex0);
-  auto mat = ib->GetInput(kIndex1);
-  auto vec = ib->GetInput(kIndex2);
-  auto beta = ib->GetInput(kIndex3);
-  auto alpha = ib->GetInput(kIndex4);
-  auto dout = ib->GetInput(kIndex6);
+  auto input = ib->GetInput(i0);
+  auto mat = ib->GetInput(i1);
+  auto vec = ib->GetInput(i2);
+  auto beta = ib->GetInput(i3);
+  auto alpha = ib->GetInput(i4);
+  auto dout = ib->GetInput(i6);
 
   NodePtr input_grad{nullptr};
   auto input_type = ib->GetDtype(input);
@@ -4664,21 +4663,21 @@ REG_BPROP_BUILDER("Addmv").SetUnusedInputs({i5}).SetBody(BODYFUNC(ib) {
     input_grad = MaybeMultiply(ib, input_type, dout, beta, "beta");
     auto input_shape = ib->Shape(input);
     auto bc_axis = ib->BroadcastGradientArgs(input, dout);
-    auto bc_axis_shape_ptr = bc_axis[kIndex0]->GetShape();
+    auto bc_axis_shape_ptr = bc_axis[i0]->GetShape();
     if (bc_axis_shape_ptr->isa<abstract::DynamicSequenceShape>()) {
       auto true_branch = [&input_grad, &bc_axis, &input_shape](Emitter *e) -> NodePtrList { return {input_grad}; };
       auto false_branch = [&input_grad, &bc_axis, &input_shape](Emitter *e) -> NodePtrList {
-        return {e->Reshape(e->Emit("SumExt", {input_grad, bc_axis[kIndex0], e->Value(false), e->EmitValue(kNone)}),
-                           input_shape)};
+        return {
+          e->Reshape(e->Emit("SumExt", {input_grad, bc_axis[i0], e->Value(false), e->EmitValue(kNone)}), input_shape)};
       };
-      auto cond = ib->Equal(ib->Emit("sequence_len", {bc_axis[kIndex0]}), ib->Value<int64_t>(0));
+      auto cond = ib->Equal(ib->Emit("sequence_len", {bc_axis[i0]}), ib->Value<int64_t>(0));
       input_grad = ib->Conditional(cond, true_branch, false_branch);
     } else {
       auto bc_axis_shape = bc_axis_shape_ptr->cast<abstract::TupleShapePtr>();
       MS_EXCEPTION_IF_NULL(bc_axis_shape);
       if (bc_axis_shape->size() > 0) {
-        input_grad = ib->Reshape(
-          ib->Emit("SumExt", {input_grad, bc_axis[kIndex0], ib->Value(false), ib->EmitValue(kNone)}), input_shape);
+        input_grad = ib->Reshape(ib->Emit("SumExt", {input_grad, bc_axis[i0], ib->Value(false), ib->EmitValue(kNone)}),
+                                 input_shape);
       }
     }
   } else {
@@ -4695,40 +4694,40 @@ REG_BPROP_BUILDER("Addmv").SetUnusedInputs({i5}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("Addbmm").SetUnusedInputs({i5}).SetBody(BODYFUNC(ib) {
-  auto input = ib->GetInput(kIndex0);
-  auto batch1 = ib->GetInput(kIndex1);
-  auto batch2 = ib->GetInput(kIndex2);
-  auto beta = ib->GetInput(kIndex3);
-  auto alpha = ib->GetInput(kIndex4);
-  auto dout = ib->GetInput(kIndex6);
+  auto input = ib->GetInput(i0);
+  auto batch1 = ib->GetInput(i1);
+  auto batch2 = ib->GetInput(i2);
+  auto beta = ib->GetInput(i3);
+  auto alpha = ib->GetInput(i4);
+  auto dout = ib->GetInput(i6);
   NodePtr input_grad{nullptr};
   auto input_type = ib->GetDtype(input);
   if (input->need_compute_grad_out()) {
     input_grad = MaybeMultiply(ib, input_type, dout, beta, "beta");
     auto input_shape = ib->Shape(input);
     auto bc_axis = ib->BroadcastGradientArgs(input, dout);
-    auto bc_axis_shape_ptr = bc_axis[kIndex0]->GetShape();
+    auto bc_axis_shape_ptr = bc_axis[i0]->GetShape();
     if (bc_axis_shape_ptr->isa<abstract::DynamicSequenceShape>()) {
       auto true_branch = [&input_grad, &bc_axis, &input_shape](Emitter *e) -> NodePtrList { return {input_grad}; };
       auto false_branch = [&input_grad, &bc_axis, &input_shape](Emitter *e) -> NodePtrList {
-        return {e->Reshape(e->Emit("SumExt", {input_grad, bc_axis[kIndex0], e->Value(false), e->EmitValue(kNone)}),
-                           input_shape)};
+        return {
+          e->Reshape(e->Emit("SumExt", {input_grad, bc_axis[i0], e->Value(false), e->EmitValue(kNone)}), input_shape)};
       };
-      auto cond = ib->Equal(ib->Emit("sequence_len", {bc_axis[kIndex0]}), ib->Value<int64_t>(0));
+      auto cond = ib->Equal(ib->Emit("sequence_len", {bc_axis[i0]}), ib->Value<int64_t>(0));
       input_grad = ib->Conditional(cond, true_branch, false_branch);
     } else {
       auto bc_axis_shape = bc_axis_shape_ptr->cast<abstract::TupleShapePtr>();
       MS_EXCEPTION_IF_NULL(bc_axis_shape);
       if (bc_axis_shape->size() > 0) {
-        input_grad = ib->Reshape(
-          ib->Emit("SumExt", {input_grad, bc_axis[kIndex0], ib->Value(false), ib->EmitValue(kNone)}), input_shape);
+        input_grad = ib->Reshape(ib->Emit("SumExt", {input_grad, bc_axis[i0], ib->Value(false), ib->EmitValue(kNone)}),
+                                 input_shape);
       }
     }
   } else {
     input_grad = ib->OutZeros(input);
   }
   auto grad_unsqueeze = ib->ExpandDimsView(dout, 0);
-  auto expand_shape = ib->ShapeCalc(g_addbmm_shapecalc, {batch1, batch2})[kIndex0];
+  auto expand_shape = ib->ShapeCalc(g_addbmm_shapecalc, {batch1, batch2})[i0];
   auto grad_unsqueeze_expand = ib->Emit("BroadcastToView", {grad_unsqueeze, expand_shape});
   auto batch1_grad =
     batch1->need_compute_grad_out()
@@ -4742,33 +4741,33 @@ REG_BPROP_BUILDER("Addbmm").SetUnusedInputs({i5}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("Baddbmm").FreeUselessValues(FreeTensorsOfBaddbmm).SetBody(BODYFUNC(ib) {
-  auto input = ib->GetInput(kIndex0);
-  auto batch1 = ib->GetInput(kIndex1);
-  auto batch2 = ib->GetInput(kIndex2);
-  auto beta = ib->GetInput(kIndex3);
-  auto alpha = ib->GetInput(kIndex4);
-  auto dout = ib->GetInput(kIndex6);
+  auto input = ib->GetInput(i0);
+  auto batch1 = ib->GetInput(i1);
+  auto batch2 = ib->GetInput(i2);
+  auto beta = ib->GetInput(i3);
+  auto alpha = ib->GetInput(i4);
+  auto dout = ib->GetInput(i6);
   NodePtr input_grad{nullptr};
   auto input_type = ib->GetDtype(input);
   if (input->need_compute_grad_out()) {
     input_grad = MaybeMultiply(ib, input_type, dout, beta, "beta");
     auto input_shape = ib->Shape(input);
     auto bc_axis = ib->BroadcastGradientArgs(input, dout);
-    auto bc_axis_shape_ptr = bc_axis[kIndex0]->GetShape();
+    auto bc_axis_shape_ptr = bc_axis[i0]->GetShape();
     if (bc_axis_shape_ptr->isa<abstract::DynamicSequenceShape>()) {
       auto true_branch = [&input_grad, &bc_axis, &input_shape](Emitter *e) -> NodePtrList { return {input_grad}; };
       auto false_branch = [&input_grad, &bc_axis, &input_shape](Emitter *e) -> NodePtrList {
-        return {e->Reshape(e->Emit("SumExt", {input_grad, bc_axis[kIndex0], e->Value(false), e->EmitValue(kNone)}),
-                           input_shape)};
+        return {
+          e->Reshape(e->Emit("SumExt", {input_grad, bc_axis[i0], e->Value(false), e->EmitValue(kNone)}), input_shape)};
       };
-      auto cond = ib->Equal(ib->Emit("sequence_len", {bc_axis[kIndex0]}), ib->Value<int64_t>(0));
+      auto cond = ib->Equal(ib->Emit("sequence_len", {bc_axis[i0]}), ib->Value<int64_t>(0));
       input_grad = ib->Conditional(cond, true_branch, false_branch);
     } else {
       auto bc_axis_shape = bc_axis_shape_ptr->cast<abstract::TupleShapePtr>();
       MS_EXCEPTION_IF_NULL(bc_axis_shape);
       if (bc_axis_shape->size() > 0) {
-        input_grad = ib->Reshape(
-          ib->Emit("SumExt", {input_grad, bc_axis[kIndex0], ib->Value(false), ib->EmitValue(kNone)}), input_shape);
+        input_grad = ib->Reshape(ib->Emit("SumExt", {input_grad, bc_axis[i0], ib->Value(false), ib->EmitValue(kNone)}),
+                                 input_shape);
       }
     }
   } else {
@@ -4784,15 +4783,15 @@ REG_BPROP_BUILDER("Baddbmm").FreeUselessValues(FreeTensorsOfBaddbmm).SetBody(BOD
 });
 
 NodePtrList DiagonalGrad(BpropBuilder *ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto offset_node = ib->GetInput(kIndex1);
-  auto dim1_node = ib->GetInput(kIndex2);
-  auto dim2_node = ib->GetInput(kIndex3);
+  auto x = ib->GetInput(i0);
+  auto offset_node = ib->GetInput(i1);
+  auto dim1_node = ib->GetInput(i2);
+  auto dim2_node = ib->GetInput(i3);
   auto offset = GetValue<int64_t>(offset_node->BuildValue());
   auto dim1 = GetValue<int64_t>(dim1_node->BuildValue());
   auto dim2 = GetValue<int64_t>(dim2_node->BuildValue());
-  auto out = ib->GetInput(kIndex4);
-  auto dout = ib->GetInput(kIndex5);
+  auto out = ib->GetInput(i4);
+  auto dout = ib->GetInput(i5);
   auto x_shape = ib->GetShape(x);
   if (IsDynamicRank(x_shape)) {
     MS_LOG_EXCEPTION << "Diagonal doesn't support dynamic rank now, because it need rank of x to do transpose";
@@ -4831,10 +4830,10 @@ REG_BPROP_BUILDER("Diagonal").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) { retur
 REG_BPROP_BUILDER("DiagonalView").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) { return DiagonalGrad(ib); });
 
 REG_BPROP_BUILDER("DiagExt").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto diagonal = ib->GetInput(kIndex1);
-  auto out = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex3);
+  auto x = ib->GetInput(i0);
+  auto diagonal = ib->GetInput(i1);
+  auto out = ib->GetInput(i2);
+  auto dout = ib->GetInput(i3);
   auto x_shape = ib->GetShape(x);
   auto ndimension = x_shape.size();
   MS_ASSERT(ndimension == 1 || ndimension == 2);
@@ -4865,16 +4864,16 @@ REG_BPROP_BUILDER("DiagExt").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("Polar").FreeUselessValues_I({}).SetBody(BODYFUNC(ib) {
-  auto input_abs = ib->GetInput(kIndex0);
-  auto input_angle = ib->GetInput(kIndex1);
-  auto out = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex3);
+  auto input_abs = ib->GetInput(i0);
+  auto input_angle = ib->GetInput(i1);
+  auto out = ib->GetInput(i2);
+  auto dout = ib->GetInput(i3);
   auto grad_conj = ib->Emit("Conj", {dout});
   NodePtr grad_abs, grad_angle;
   if (input_abs->need_compute_grad_out()) {
     auto broadcast_axes = ib->BroadcastGradientArgs(dout, input_abs);
     MS_EXCEPTION_IF_CHECK_FAIL(!broadcast_axes.empty(), "BroadcastGradientArgs out should not be empty!");
-    auto reduction_axes = broadcast_axes[kIndex1];
+    auto reduction_axes = broadcast_axes[i1];
     NodePtr grad_abs_full = ib->Mul(grad_conj, ib->Sign(out));
     NodePtr reduced_grad_abs = ib->ReduceSum(grad_abs_full, reduction_axes, true, true);
     auto abs_shape_node = ib->Shape(input_abs);
@@ -4891,7 +4890,7 @@ REG_BPROP_BUILDER("Polar").FreeUselessValues_I({}).SetBody(BODYFUNC(ib) {
     auto result_mul_1_j = ib->Mul(out, i);
     auto broadcast_axes = ib->BroadcastGradientArgs(dout, input_angle);
     MS_EXCEPTION_IF_CHECK_FAIL(!broadcast_axes.empty(), "BroadcastGradientArgs out should not be empty!");
-    auto reduction_axes = broadcast_axes[kIndex1];
+    auto reduction_axes = broadcast_axes[i1];
     NodePtr grad_angle_full = ib->Mul(grad_conj, result_mul_1_j);
     NodePtr reduced_grad_angle = ib->ReduceSum(grad_angle_full, reduction_axes, true, true);
     auto angle_shape_node = ib->Shape(input_angle);
@@ -4904,9 +4903,9 @@ REG_BPROP_BUILDER("Polar").FreeUselessValues_I({}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("TridiagonalSolve").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
-  auto diagonals = ib->GetInput(kIndex0);
-  auto out = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex3);
+  auto diagonals = ib->GetInput(i0);
+  auto out = ib->GetInput(i2);
+  auto dout = ib->GetInput(i3);
   constexpr int64_t kLast2 = -2;
   constexpr int64_t k2 = 2;
   auto diag1 = ib->StridedSlice(diagonals, {{kLast2, {1}}});
@@ -4946,11 +4945,11 @@ REG_BPROP_BUILDER("FFTN").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib) { 
 REG_BPROP_BUILDER("IFFTN").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib) { return FFTGradCommon(ib, "FFTN"); });
 
 REG_BPROP_BUILDER("HFFT").SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto n = ib->GetInput(kIndex1);
-  auto dim = ib->GetInput(kIndex2);
-  auto norm = ib->GetInput(kIndex3);
-  auto dout = ib->GetInput(kIndex5);
+  auto x = ib->GetInput(i0);
+  auto n = ib->GetInput(i1);
+  auto dim = ib->GetInput(i2);
+  auto norm = ib->GetInput(i3);
+  auto dout = ib->GetInput(i5);
 
   norm = FFTNormReverse(ib, norm);
   auto n_type = n->abstract()->BuildType();
@@ -4975,11 +4974,11 @@ REG_BPROP_BUILDER("HFFT").SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("HFFT2").SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto s = ib->GetInput(kIndex1);
-  auto dim = ib->GetInput(kIndex2);
-  auto norm = ib->GetInput(kIndex3);
-  auto dout = ib->GetInput(kIndex5);
+  auto x = ib->GetInput(i0);
+  auto s = ib->GetInput(i1);
+  auto dim = ib->GetInput(i2);
+  auto norm = ib->GetInput(i3);
+  auto dout = ib->GetInput(i5);
 
   norm = FFTNormReverse(ib, norm);
   // step2：Get the gradient.
@@ -5003,11 +5002,11 @@ REG_BPROP_BUILDER("HFFT2").SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("HFFTN").SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto s = ib->GetInput(kIndex1);
-  auto dim = ib->GetInput(kIndex2);
-  auto norm = ib->GetInput(kIndex3);
-  auto dout = ib->GetInput(kIndex5);
+  auto x = ib->GetInput(i0);
+  auto s = ib->GetInput(i1);
+  auto dim = ib->GetInput(i2);
+  auto norm = ib->GetInput(i3);
+  auto dout = ib->GetInput(i5);
 
   norm = FFTNormReverse(ib, norm);
   // step1：Get the optional input.
@@ -5038,11 +5037,11 @@ REG_BPROP_BUILDER("HFFTN").SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("IHFFT").SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto n = ib->GetInput(kIndex1);
-  auto dim = ib->GetInput(kIndex2);
-  auto norm = ib->GetInput(kIndex3);
-  auto dout = ib->GetInput(kIndex5);
+  auto x = ib->GetInput(i0);
+  auto n = ib->GetInput(i1);
+  auto dim = ib->GetInput(i2);
+  auto norm = ib->GetInput(i3);
+  auto dout = ib->GetInput(i5);
 
   auto n_type = n->abstract()->BuildType();
   if (n_type->isa<TypeNone>()) {
@@ -5064,11 +5063,11 @@ REG_BPROP_BUILDER("IHFFT").SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("IHFFT2").SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto s = ib->GetInput(kIndex1);
-  auto dim = ib->GetInput(kIndex2);
-  auto norm = ib->GetInput(kIndex3);
-  auto dout = ib->GetInput(kIndex5);
+  auto x = ib->GetInput(i0);
+  auto s = ib->GetInput(i1);
+  auto dim = ib->GetInput(i2);
+  auto norm = ib->GetInput(i3);
+  auto dout = ib->GetInput(i5);
 
   auto s_type = s->abstract()->BuildType();
   if (s_type->isa<TypeNone>()) {
@@ -5091,11 +5090,11 @@ REG_BPROP_BUILDER("IHFFT2").SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("IHFFTN").SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto s = ib->GetInput(kIndex1);
-  auto dim = ib->GetInput(kIndex2);
-  auto norm = ib->GetInput(kIndex3);
-  auto dout = ib->GetInput(kIndex5);
+  auto x = ib->GetInput(i0);
+  auto s = ib->GetInput(i1);
+  auto dim = ib->GetInput(i2);
+  auto norm = ib->GetInput(i3);
+  auto dout = ib->GetInput(i5);
 
   auto s_type = s->abstract()->BuildType();
   auto dim_type = dim->abstract()->BuildType();
@@ -5122,11 +5121,11 @@ REG_BPROP_BUILDER("IHFFTN").SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("RFFT").SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto n = ib->GetInput(kIndex1);
-  auto dim = ib->GetInput(kIndex2);
-  auto norm = ib->GetInput(kIndex3);
-  auto dout = ib->GetInput(kIndex5);
+  auto x = ib->GetInput(i0);
+  auto n = ib->GetInput(i1);
+  auto dim = ib->GetInput(i2);
+  auto norm = ib->GetInput(i3);
+  auto dout = ib->GetInput(i5);
 
   norm = FFTNormReverse(ib, norm);
 
@@ -5150,11 +5149,11 @@ REG_BPROP_BUILDER("RFFT").SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("RFFT2").SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto s = ib->GetInput(kIndex1);
-  auto dim = ib->GetInput(kIndex2);
-  auto norm = ib->GetInput(kIndex3);
-  auto dout = ib->GetInput(kIndex5);
+  auto x = ib->GetInput(i0);
+  auto s = ib->GetInput(i1);
+  auto dim = ib->GetInput(i2);
+  auto norm = ib->GetInput(i3);
+  auto dout = ib->GetInput(i5);
 
   norm = FFTNormReverse(ib, norm);
 
@@ -5177,11 +5176,11 @@ REG_BPROP_BUILDER("RFFT2").SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("RFFTN").SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto s = ib->GetInput(kIndex1);
-  auto dim = ib->GetInput(kIndex2);
-  auto norm = ib->GetInput(kIndex3);
-  auto dout = ib->GetInput(kIndex5);
+  auto x = ib->GetInput(i0);
+  auto s = ib->GetInput(i1);
+  auto dim = ib->GetInput(i2);
+  auto norm = ib->GetInput(i3);
+  auto dout = ib->GetInput(i5);
 
   norm = FFTNormReverse(ib, norm);
 
@@ -5208,11 +5207,11 @@ REG_BPROP_BUILDER("RFFTN").SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("IRFFT").SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto n = ib->GetInput(kIndex1);
-  auto dim = ib->GetInput(kIndex2);
-  auto norm = ib->GetInput(kIndex3);
-  auto dout = ib->GetInput(kIndex5);
+  auto x = ib->GetInput(i0);
+  auto n = ib->GetInput(i1);
+  auto dim = ib->GetInput(i2);
+  auto norm = ib->GetInput(i3);
+  auto dout = ib->GetInput(i5);
 
   norm = FFTNormReverse(ib, norm);
   auto n_type = n->abstract()->BuildType();
@@ -5235,11 +5234,11 @@ REG_BPROP_BUILDER("IRFFT").SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("IRFFT2").SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto s = ib->GetInput(kIndex1);
-  auto dim = ib->GetInput(kIndex2);
-  auto norm = ib->GetInput(kIndex3);
-  auto dout = ib->GetInput(kIndex5);
+  auto x = ib->GetInput(i0);
+  auto s = ib->GetInput(i1);
+  auto dim = ib->GetInput(i2);
+  auto norm = ib->GetInput(i3);
+  auto dout = ib->GetInput(i5);
 
   norm = FFTNormReverse(ib, norm);
   auto s_type = s->abstract()->BuildType();
@@ -5265,11 +5264,11 @@ REG_BPROP_BUILDER("IRFFT2").SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("IRFFTN").SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto s = ib->GetInput(kIndex1);
-  auto dim = ib->GetInput(kIndex2);
-  auto norm = ib->GetInput(kIndex3);
-  auto dout = ib->GetInput(kIndex5);
+  auto x = ib->GetInput(i0);
+  auto s = ib->GetInput(i1);
+  auto dim = ib->GetInput(i2);
+  auto norm = ib->GetInput(i3);
+  auto dout = ib->GetInput(i5);
 
   norm = FFTNormReverse(ib, norm);
   auto s_type = s->abstract()->BuildType();
@@ -5299,14 +5298,14 @@ REG_BPROP_BUILDER("IRFFTN").SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("FFTShift").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
-  auto dim = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto dim = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   return {ib->Emit("IFFTShift", {dout, dim}), ib->OutZeros(dim)};
 });
 
 REG_BPROP_BUILDER("IFFTShift").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
-  auto dim = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto dim = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   return {ib->Emit("FFTShift", {dout, dim}), ib->OutZeros(dim)};
 });
 
@@ -5319,10 +5318,10 @@ DEF_PURE_SHAPE_CALC(g_correlate)
     if (inputs.size() != input_num) {
       MS_LOG_EXCEPTION << "ShapeCalc[g_correlate] expect 4 inputs, but got " << inputs.size() << "inputs";
     }
-    auto a_size = inputs.at(kIndex0)[0];
-    auto v_size = inputs.at(kIndex1)[0];
-    auto dout_size = inputs.at(kIndex2)[0];
-    auto mode_value = inputs.at(kIndex3)[0];
+    auto a_size = inputs.at(i0)[0];
+    auto v_size = inputs.at(i1)[0];
+    auto dout_size = inputs.at(i2)[0];
+    auto mode_value = inputs.at(i3)[0];
 
     std::vector<int64_t> size_arr;
     size_arr.emplace_back(a_size + v_size - 1);
@@ -5343,10 +5342,10 @@ DEF_PURE_SHAPE_CALC(g_correlate)
   });
 
 REG_BPROP_BUILDER("Correlate").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
-  auto a = ib->GetInput(kIndex0);
-  auto v = ib->GetInput(kIndex1);
-  auto mode = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex4);
+  auto a = ib->GetInput(i0);
+  auto v = ib->GetInput(i1);
+  auto mode = ib->GetInput(i2);
+  auto dout = ib->GetInput(i4);
 
   // step1: if dtype of a/v is not float or complex, cast a, v dtyte as to dout dtype
   static const std::vector<TypeId> complex_or_float = {
@@ -5395,13 +5394,13 @@ REG_BPROP_BUILDER("Correlate").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("DCT").SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto type = ib->GetInput(kIndex1);
-  auto n = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto type = ib->GetInput(i1);
+  auto n = ib->GetInput(i2);
   auto n_type = n->abstract()->BuildType();
-  auto axis = ib->GetInput(kIndex3);
-  auto norm = ib->GetInput(kIndex4);
-  auto dout = ib->GetInput(kIndex6);
+  auto axis = ib->GetInput(i3);
+  auto norm = ib->GetInput(i4);
+  auto dout = ib->GetInput(i6);
 
   auto x_shape_dim = ib->ShapeCalc(g_fft_shape_dim, {x});
   auto axis_to_tuple = ib->ShapeCalc(g_fft_dct_axis2tuple, {x, axis}, {1})[0];
@@ -5430,12 +5429,12 @@ REG_BPROP_BUILDER("DCT").SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("DCTN").SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto type = ib->GetInput(kIndex1);
-  auto s = ib->GetInput(kIndex2);
-  auto axes = ib->GetInput(kIndex3);
-  auto norm = ib->GetInput(kIndex4);
-  auto dout = ib->GetInput(kIndex6);
+  auto x = ib->GetInput(i0);
+  auto type = ib->GetInput(i1);
+  auto s = ib->GetInput(i2);
+  auto axes = ib->GetInput(i3);
+  auto norm = ib->GetInput(i4);
+  auto dout = ib->GetInput(i6);
 
   auto x_shape_dim = ib->ShapeCalc(g_fft_shape_dim, {x});
 
@@ -5473,12 +5472,12 @@ REG_BPROP_BUILDER("DCTN").SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("IDCT").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto type = ib->GetInput(kIndex1);
-  auto n = ib->GetInput(kIndex2);
-  auto axis = ib->GetInput(kIndex3);
-  auto norm = ib->GetInput(kIndex4);
-  auto dout = ib->GetInput(kIndex6);
+  auto x = ib->GetInput(i0);
+  auto type = ib->GetInput(i1);
+  auto n = ib->GetInput(i2);
+  auto axis = ib->GetInput(i3);
+  auto norm = ib->GetInput(i4);
+  auto dout = ib->GetInput(i6);
 
   // step2：Get the gradient.
   auto grad_dout = ib->Emit("DCT", {dout, type, n, axis, norm});
@@ -5499,12 +5498,12 @@ REG_BPROP_BUILDER("IDCT").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("IDCTN").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto type = ib->GetInput(kIndex1);
-  auto s = ib->GetInput(kIndex2);
-  auto axes = ib->GetInput(kIndex3);
-  auto norm = ib->GetInput(kIndex4);
-  auto dout = ib->GetInput(kIndex6);
+  auto x = ib->GetInput(i0);
+  auto type = ib->GetInput(i1);
+  auto s = ib->GetInput(i2);
+  auto axes = ib->GetInput(i3);
+  auto norm = ib->GetInput(i4);
+  auto dout = ib->GetInput(i6);
 
   // step2：Get the gradient.
   auto grad_dout = ib->Emit("DCTN", {dout, type, s, axes, norm});
@@ -5525,36 +5524,36 @@ REG_BPROP_BUILDER("IDCTN").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("MeanExt").SetUnusedInputs({i0, i4}).SetBody(BODYFUNC(ib) {
-  auto input = ib->GetInput(kIndex0);
-  auto axis = ib->GetInput(kIndex1);
-  auto keep_dims = ib->GetInput(kIndex2);
-  auto dtype = ib->GetInput(kIndex3);
-  auto out = ib->GetInput(kIndex4);
-  auto dout = ib->GetInput(kIndex5);
+  auto input = ib->GetInput(i0);
+  auto axis = ib->GetInput(i1);
+  auto keep_dims = ib->GetInput(i2);
+  auto dtype = ib->GetInput(i3);
+  auto out = ib->GetInput(i4);
+  auto dout = ib->GetInput(i5);
 
   auto dx = MeanExtGrad(ib, input, axis, keep_dims, out, dout);
   return {dx, ib->OutZeros(axis), ib->OutZeros(keep_dims), ib->OutZeros(dtype)};
 });
 
 REG_BPROP_BUILDER("Std").SetBody(BODYFUNC(ib) {
-  auto input = ib->GetInput(kIndex0);
-  auto axis = ib->GetInput(kIndex1);
-  auto correction = ib->GetInput(kIndex2);
-  auto keep_dims = ib->GetInput(kIndex3);
-  auto out = ib->GetInput(kIndex4);
-  auto dout = ib->GetInput(kIndex5);
+  auto input = ib->GetInput(i0);
+  auto axis = ib->GetInput(i1);
+  auto correction = ib->GetInput(i2);
+  auto keep_dims = ib->GetInput(i3);
+  auto out = ib->GetInput(i4);
+  auto dout = ib->GetInput(i5);
 
   auto grad = StdGrad(ib, input, axis, correction, keep_dims, out, dout);
   return {grad, ib->OutZeros(axis), ib->OutZeros(correction), ib->OutZeros(keep_dims)};
 });
 
 REG_BPROP_BUILDER("Std").SetBody(BODYFUNC(ib) {
-  auto input = ib->GetInput(kIndex0);
-  auto axis = ib->GetInput(kIndex1);
-  auto correction = ib->GetInput(kIndex2);
-  auto keep_dims = ib->GetInput(kIndex3);
-  auto out = ib->GetInput(kIndex4);
-  auto dout = ib->GetInput(kIndex5);
+  auto input = ib->GetInput(i0);
+  auto axis = ib->GetInput(i1);
+  auto correction = ib->GetInput(i2);
+  auto keep_dims = ib->GetInput(i3);
+  auto out = ib->GetInput(i4);
+  auto dout = ib->GetInput(i5);
 
   auto grad_var = ib->Emit("Div", {dout, ib->Emit("Muls", {out, ib->Value<float>(2.0)})});
   auto equal_zero = ib->Equal(out, ib->Tensor(0, ib->GetDtype(out)));
@@ -5565,11 +5564,11 @@ REG_BPROP_BUILDER("Std").SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("SumExt").SetUnusedInputs({i0, i4}).SetBody(BODYFUNC(ib) {
-  auto input = ib->GetInput(kIndex0);
-  auto axis = ib->GetInput(kIndex1);
-  auto keep_dims = ib->GetInput(kIndex2);
-  auto dtype = ib->GetInput(kIndex3);
-  auto dout = ib->GetInput(kIndex5);
+  auto input = ib->GetInput(i0);
+  auto axis = ib->GetInput(i1);
+  auto keep_dims = ib->GetInput(i2);
+  auto dtype = ib->GetInput(i3);
+  auto dout = ib->GetInput(i5);
 
   auto axis_type = axis->abstract()->BuildType();
   MS_EXCEPTION_IF_NULL(axis_type);
@@ -5592,19 +5591,19 @@ REG_BPROP_BUILDER("SumExt").SetUnusedInputs({i0, i4}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("StdMean").SetUnusedInputs({}).SetBody(BODYFUNC(ib) {
-  auto input = ib->GetInput(kIndex0);
-  auto dim = ib->GetInput(kIndex1);
-  auto correction = ib->GetInput(kIndex2);
-  auto keepdim = ib->GetInput(kIndex3);
-  auto out = ib->GetInput(kIndex4);
-  auto dout = ib->GetInput(kIndex5);
+  auto input = ib->GetInput(i0);
+  auto dim = ib->GetInput(i1);
+  auto correction = ib->GetInput(i2);
+  auto keepdim = ib->GetInput(i3);
+  auto out = ib->GetInput(i4);
+  auto dout = ib->GetInput(i5);
 
-  auto std_out = ib->TupleGetItem(out, kIndex0);
-  auto std_dout = ib->TupleGetItem(dout, kIndex0);
+  auto std_out = ib->TupleGetItem(out, i0);
+  auto std_dout = ib->TupleGetItem(dout, i0);
   auto std_grad = StdGrad(ib, input, dim, correction, keepdim, std_out, std_dout);
 
-  auto mean_out = ib->TupleGetItem(out, kIndex1);
-  auto mean_dout = ib->TupleGetItem(dout, kIndex1);
+  auto mean_out = ib->TupleGetItem(out, i1);
+  auto mean_dout = ib->TupleGetItem(dout, i1);
   auto mean_grad = MeanExtGrad(ib, input, dim, keepdim, mean_out, mean_dout);
 
   auto std_mean_grad = ib->Add(std_grad, mean_grad);
@@ -5612,19 +5611,19 @@ REG_BPROP_BUILDER("StdMean").SetUnusedInputs({}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("VarMean").SetUnusedInputs({}).SetBody(BODYFUNC(ib) {
-  auto input = ib->GetInput(kIndex0);
-  auto dim = ib->GetInput(kIndex1);
-  auto correction = ib->GetInput(kIndex2);
-  auto keepdim = ib->GetInput(kIndex3);
-  auto out = ib->GetInput(kIndex4);
-  auto dout = ib->GetInput(kIndex5);
+  auto input = ib->GetInput(i0);
+  auto dim = ib->GetInput(i1);
+  auto correction = ib->GetInput(i2);
+  auto keepdim = ib->GetInput(i3);
+  auto out = ib->GetInput(i4);
+  auto dout = ib->GetInput(i5);
 
-  auto var_out = ib->TupleGetItem(out, kIndex0);
-  auto var_dout = ib->TupleGetItem(dout, kIndex0);
+  auto var_out = ib->TupleGetItem(out, i0);
+  auto var_dout = ib->TupleGetItem(dout, i0);
   auto var_grad = VarGrad(ib, input, dim, var_dout, correction, keepdim);
 
-  auto mean_out = ib->TupleGetItem(out, kIndex1);
-  auto mean_dout = ib->TupleGetItem(dout, kIndex1);
+  auto mean_out = ib->TupleGetItem(out, i1);
+  auto mean_dout = ib->TupleGetItem(dout, i1);
   auto mean_grad = MeanExtGrad(ib, input, dim, keepdim, mean_out, mean_dout);
 
   auto var_mean_grad = ib->Add(var_grad, mean_grad);
@@ -5632,11 +5631,11 @@ REG_BPROP_BUILDER("VarMean").SetUnusedInputs({}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("Nansum").SetUnusedInputs({i4}).SetBody(BODYFUNC(ib) {
-  auto input = ib->GetInput(kIndex0);
-  auto axis = ib->GetInput(kIndex1);
-  auto keep_dims = ib->GetInput(kIndex2);
-  auto dtype = ib->GetInput(kIndex3);
-  auto dout = ib->GetInput(kIndex5);
+  auto input = ib->GetInput(i0);
+  auto axis = ib->GetInput(i1);
+  auto keep_dims = ib->GetInput(i2);
+  auto dtype = ib->GetInput(i3);
+  auto dout = ib->GetInput(i5);
 
   auto axis_type = axis->abstract()->BuildType();
   MS_EXCEPTION_IF_NULL(axis_type);
@@ -5683,18 +5682,18 @@ DEF_PURE_SHAPE_CALC(g_prod_ext)
   });
 
 REG_BPROP_BUILDER("ProdExt").SetBody(BODYFUNC(ib) {
-  auto input = ib->GetInput(kIndex0);
+  auto input = ib->GetInput(i0);
   auto input_dtype = ib->GetDtype(input);
   auto input_dtype_id = ib->GetDtypeId(input);
   if (input_dtype_id == kNumberTypeComplex64 || input_dtype_id == kNumberTypeComplex128) {
     MS_EXCEPTION(TypeError) << "For 'ProdExt', gradient not support for complex type currently.";
   }
-  auto axis = ib->GetInput(kIndex1);
-  auto keep_dims = ib->GetInput(kIndex2);
-  auto dtype = ib->GetInput(kIndex3);
-  auto out = ib->GetInput(kIndex4);
+  auto axis = ib->GetInput(i1);
+  auto keep_dims = ib->GetInput(i2);
+  auto dtype = ib->GetInput(i3);
+  auto out = ib->GetInput(i4);
   auto out_dtype = ib->GetDtype(out);
-  auto dout = ib->GetInput(kIndex5);
+  auto dout = ib->GetInput(i5);
   auto dout_dtype = ib->GetDtype(dout);
   auto dx = input;
   if (ib->GetRank(input) == 0) {
@@ -5723,14 +5722,14 @@ REG_BPROP_BUILDER("ProdExt").SetBody(BODYFUNC(ib) {
     auto one_zero_true_branch = [&](Emitter *e) -> NodePtrList {
       auto res = e->ShapeCalc(g_prod_ext, {input, e->Value<std::vector<int64_t>>({})}, {1});
 
-      auto grad = e->Tile(e->Reshape(dout, res[kIndex0]), res[kIndex1]);
-      auto permuted = e->TransposeView(input, res[kIndex3]);
+      auto grad = e->Tile(e->Reshape(dout, res[i0]), res[i1]);
+      auto permuted = e->TransposeView(input, res[i3]);
       auto permuted_shape = e->Shape(permuted);
-      auto reshaped = e->Reshape(permuted, res[kIndex2]);
+      auto reshaped = e->Reshape(permuted, res[i2]);
       auto left = e->CumProd(reshaped, e->Value<int64_t>(0), true, false);
       auto right = e->CumProd(reshaped, e->Value<int64_t>(0), true, true);
       auto y = e->Reshape(e->Mul(left, right), permuted_shape);
-      auto out = e->Mul(e->TransposeView(y, res[kIndex4]), grad);
+      auto out = e->Mul(e->TransposeView(y, res[i4]), grad);
       return {e->Cast(e->Reshape(out, e->Shape(input)), input_dtype)};
     };
     dx = ib->Conditional(has_one_zero, one_zero_true_branch, all_false_branch);
@@ -5740,15 +5739,15 @@ REG_BPROP_BUILDER("ProdExt").SetBody(BODYFUNC(ib) {
     if (!keep_dims_opt.has_value()) {
       auto true_branch = [&out, &dout](Emitter *e) -> NodePtrList { return {out, dout}; };
       auto false_branch = [&out, &dout, &res](Emitter *e) -> NodePtrList {
-        return {e->Reshape(out, res[kIndex0]), e->Reshape(dout, res[kIndex0])};
+        return {e->Reshape(out, res[i0]), e->Reshape(dout, res[i0])};
       };
       auto keep_dims_true = ib->Equal(keep_dims, ib->Value<bool>(true));
       auto cond_out = ib->Conditional(keep_dims_true, true_branch, false_branch);
-      out = ib->TupleGetItem(cond_out, kIndex0);
-      dout = ib->TupleGetItem(cond_out, kIndex1);
+      out = ib->TupleGetItem(cond_out, i0);
+      dout = ib->TupleGetItem(cond_out, i1);
     } else {
-      out = keep_dims_opt.value() ? out : ib->Reshape(out, res[kIndex0]);
-      dout = keep_dims_opt.value() ? dout : ib->Reshape(dout, res[kIndex0]);
+      out = keep_dims_opt.value() ? out : ib->Reshape(out, res[i0]);
+      dout = keep_dims_opt.value() ? dout : ib->Reshape(dout, res[i0]);
     }
 
     auto zero_input = ib->ZerosLikeExt(input, ib->EmitValue(kNone));
@@ -5760,14 +5759,14 @@ REG_BPROP_BUILDER("ProdExt").SetBody(BODYFUNC(ib) {
       return {e->Cast(e->Mul(dout, e->Cast(e->Div(out, e->Cast(input, out_dtype)), dout_dtype)), input_dtype)};
     };
     auto no_zero_false_branch = [&](Emitter *e) -> NodePtrList {
-      auto grad = e->Tile(dout, res[kIndex1]);
-      auto permuted = e->TransposeView(input, res[kIndex3]);
+      auto grad = e->Tile(dout, res[i1]);
+      auto permuted = e->TransposeView(input, res[i3]);
       auto permuted_shape = e->Shape(permuted);
-      auto reshaped = e->Reshape(permuted, res[kIndex2]);
+      auto reshaped = e->Reshape(permuted, res[i2]);
       auto left = e->CumProd(reshaped, e->Value<int64_t>(0), true, false);
       auto right = e->CumProd(reshaped, e->Value<int64_t>(0), true, true);
       auto y = e->Reshape(e->Mul(left, right), permuted_shape);
-      auto out = e->Mul(e->TransposeView(y, res[kIndex4]), grad);
+      auto out = e->Mul(e->TransposeView(y, res[i4]), grad);
       return {e->Cast(e->Reshape(out, e->Shape(input)), input_dtype)};
     };
     dx = ib->Conditional(has_no_zero, no_zero_true_branch, no_zero_false_branch);
@@ -5777,9 +5776,9 @@ REG_BPROP_BUILDER("ProdExt").SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("Outer").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
-  auto input = ib->GetInput(kIndex0);
-  auto vec2 = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto input = ib->GetInput(i0);
+  auto vec2 = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   ShapeVector after_shape = {-1, 1};
   auto reshape_input = ib->Reshape(input, after_shape);
   NodePtr bc_dinput = nullptr;
@@ -5796,12 +5795,12 @@ REG_BPROP_BUILDER("Outer").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("MultiScaleDeformableAttn").SetUnusedInputs({i5}).SetBody(BODYFUNC(ib) {
-  auto value = ib->GetInput(kIndex0);
-  auto shape = ib->GetInput(kIndex1);
-  auto offset = ib->GetInput(kIndex2);
-  auto locations_trans = ib->GetInput(kIndex3);
-  auto weight = ib->GetInput(kIndex4);
-  auto grad_output = ib->GetInput(kIndex6);
+  auto value = ib->GetInput(i0);
+  auto shape = ib->GetInput(i1);
+  auto offset = ib->GetInput(i2);
+  auto locations_trans = ib->GetInput(i3);
+  auto weight = ib->GetInput(i4);
+  auto grad_output = ib->GetInput(i6);
 
   auto grad_out =
     ib->Emit("MultiScaleDeformableAttnGrad", {value, shape, offset, locations_trans, weight, grad_output});
@@ -5813,9 +5812,9 @@ REG_BPROP_BUILDER("MultiScaleDeformableAttn").SetUnusedInputs({i5}).SetBody(BODY
 });
 
 REG_BPROP_BUILDER("Dot").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
-  auto input = ib->GetInput(kIndex0);
-  auto other = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto input = ib->GetInput(i0);
+  auto other = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   NodePtr grad_input = nullptr;
   NodePtr grad_other = nullptr;
   if (input->need_compute_grad_out()) {
@@ -5832,11 +5831,11 @@ REG_BPROP_BUILDER("Dot").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("Var").SetUnusedInputs({i4}).SetBody(BODYFUNC(ib) {
-  auto input = ib->GetInput(kIndex0);
-  auto dim = ib->GetInput(kIndex1);
-  auto correction = ib->GetInput(kIndex2);
-  auto keepdim = ib->GetInput(kIndex3);
-  auto dout = ib->GetInput(kIndex5);
+  auto input = ib->GetInput(i0);
+  auto dim = ib->GetInput(i1);
+  auto correction = ib->GetInput(i2);
+  auto keepdim = ib->GetInput(i3);
+  auto dout = ib->GetInput(i5);
 
   auto grad = VarGrad(ib, input, dim, dout, correction, keepdim);
 
@@ -5844,8 +5843,8 @@ REG_BPROP_BUILDER("Var").SetUnusedInputs({i4}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("Frac").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto dout = ib->GetInput(i2);
   return {dout};
 });
 REG_BPROP_BUILDER("BitwiseNot").FreeUselessValues_IO({i0}, {}).SetBody(ReturnZeros);

@@ -15,18 +15,16 @@
  */
 #include "frontend/expander/bprop/bprop_irbuilder.h"
 #include "grad/grad_utils.h"
-#include "include/common/utils/utils.h"
 #include "mindspore/ops/op_def/array_op_name.h"
 #include "mindspore/ops/op_def/array_ops.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore::expander::bprop {
 REG_BPROP_BUILDERS_BEGIN(GradClipOps)
 REG_BPROP_BUILDER("ClipByNorm").SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto clip_norm = ib->GetInput(kIndex1);
-  auto out = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex3);
+  auto x = ib->GetInput(i0);
+  auto clip_norm = ib->GetInput(i1);
+  auto out = ib->GetInput(i2);
+  auto dout = ib->GetInput(i3);
   auto cast_x = ib->Cast(x, kFloat32);
   auto cast_clip_norm = ib->Cast(clip_norm, kFloat32);
   auto square_out = ib->Square(cast_x);
@@ -59,10 +57,10 @@ REG_BPROP_BUILDER("ClipByNorm").SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("ClampTensor").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto min = ib->GetInput(kIndex1);
-  auto max = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex4);
+  auto x = ib->GetInput(i0);
+  auto min = ib->GetInput(i1);
+  auto max = ib->GetInput(i2);
+  auto dout = ib->GetInput(i4);
   auto zero = ib->Tensor(0, ib->GetDtype(dout));
   bool min_type_none = ib->GetDtype(min)->isa<TypeNone>();
   bool max_type_none = ib->GetDtype(max)->isa<TypeNone>();
@@ -84,28 +82,28 @@ REG_BPROP_BUILDER("ClampTensor").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
     auto is_gt_max = ib->LogicalOr(ib->Greater(x, max), ib->Less(max, min));
     auto dint = {ib->Select(is_in_Interval, dout, zero), ib->Select(is_lt_min, dout, zero),
                  ib->Select(is_gt_max, dout, zero)};
-    auto dmin = BinopGradCommon(ib, x, min, *(dint.begin() + kIndex0), *(dint.begin() + kIndex1))[kIndex1];
-    auto dmax = BinopGradCommon(ib, x, max, *(dint.begin() + kIndex0), *(dint.begin() + kIndex2))[kIndex1];
-    return {*(dint.begin() + kIndex0), dmin, dmax};
+    auto dmin = BinopGradCommon(ib, x, min, *(dint.begin() + i0), *(dint.begin() + i1))[i1];
+    auto dmax = BinopGradCommon(ib, x, max, *(dint.begin() + i0), *(dint.begin() + i2))[i1];
+    return {*(dint.begin() + i0), dmin, dmax};
   }
   if (!min_type_none) {
     auto dint = {ib->Select(ib->GreaterEqual(x, min), dout, zero), ib->Select(ib->Less(x, min), dout, zero)};
-    auto dmin = BinopGradCommon(ib, x, min, *(dint.begin() + kIndex0), *(dint.begin() + kIndex1))[kIndex1];
-    return {*(dint.begin() + kIndex0), dmin, ib->OutZeros(max)};
+    auto dmin = BinopGradCommon(ib, x, min, *(dint.begin() + i0), *(dint.begin() + i1))[i1];
+    return {*(dint.begin() + i0), dmin, ib->OutZeros(max)};
   }
   if (!max_type_none) {
     auto dint = {ib->Select(ib->LessEqual(x, max), dout, zero), ib->Select(ib->Greater(x, max), dout, zero)};
-    auto dmax = BinopGradCommon(ib, x, max, *(dint.begin() + kIndex0), *(dint.begin() + kIndex1))[kIndex1];
-    return {*(dint.begin() + kIndex0), ib->OutZeros(min), dmax};
+    auto dmax = BinopGradCommon(ib, x, max, *(dint.begin() + i0), *(dint.begin() + i1))[i1];
+    return {*(dint.begin() + i0), ib->OutZeros(min), dmax};
   }
   return {dout, ib->OutZeros(min), ib->OutZeros(max)};
 });
 
 REG_BPROP_BUILDER("ClampScalar").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto min = ib->GetInput(kIndex1);
-  auto max = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex4);
+  auto x = ib->GetInput(i0);
+  auto min = ib->GetInput(i1);
+  auto max = ib->GetInput(i2);
+  auto dout = ib->GetInput(i4);
   auto zero = ib->Tensor(0, ib->GetDtype(dout));
   bool min_type_none = ib->GetDtype(min)->isa<TypeNone>();
   bool max_type_none = ib->GetDtype(max)->isa<TypeNone>();
@@ -138,10 +136,10 @@ REG_BPROP_BUILDER("ClampScalar").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("InplaceClampTensor").SetUnusedInputs({i3}).CloneInplaceInput().SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto min = ib->GetInput(kIndex1);
-  auto max = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex4);
+  auto x = ib->GetInput(i0);
+  auto min = ib->GetInput(i1);
+  auto max = ib->GetInput(i2);
+  auto dout = ib->GetInput(i4);
   auto zero = ib->Tensor(0, ib->GetDtype(dout));
   bool min_type_none = ib->GetDtype(min)->isa<TypeNone>();
   bool max_type_none = ib->GetDtype(max)->isa<TypeNone>();
@@ -165,10 +163,10 @@ REG_BPROP_BUILDER("InplaceClampTensor").SetUnusedInputs({i3}).CloneInplaceInput(
 });
 
 REG_BPROP_BUILDER("InplaceClampScalar").SetUnusedInputs({i3}).CloneInplaceInput().SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto min = ib->GetInput(kIndex1);
-  auto max = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex4);
+  auto x = ib->GetInput(i0);
+  auto min = ib->GetInput(i1);
+  auto max = ib->GetInput(i2);
+  auto dout = ib->GetInput(i4);
   auto zero = ib->Tensor(0, ib->GetDtype(dout));
   bool min_type_none = ib->GetDtype(min)->isa<TypeNone>();
   bool max_type_none = ib->GetDtype(max)->isa<TypeNone>();

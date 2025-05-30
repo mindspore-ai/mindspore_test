@@ -17,10 +17,9 @@
 #include <tuple>
 #include "frontend/expander/bprop/bprop_irbuilder.h"
 #include "grad/grad_utils.h"
-#include "include/common/utils/utils.h"
 #include "utils/ms_context.h"
 #include "mindspore/ops/op_def/array_op_name.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 
 namespace mindspore::expander::bprop {
 namespace {
@@ -64,7 +63,7 @@ NodePtr CsrMulDiv(BpropBuilder *ib, const NodePtr &indptr, const NodePtr &indice
       new_y = ib->Tensor(GetValue<bool>(v));
     }
   }
-  if (ib->GetSize(new_y) == 1 && ib->GetShape(new_y).size() <= kDim2) {
+  if (ib->GetSize(new_y) == 1 && ib->GetShape(new_y).size() <= i2) {
     // y is scalar
     if (op_name == "CSRMul") {
       return ib->Reshape(ib->Mul(values, new_y), ib->GetShape(values));
@@ -112,10 +111,10 @@ ShapeVector InferOutShape(const ShapeVector &sh1, const ShapeVector &sh2) {
 }
 
 NodePtrList CommonSparseSegmentBprop(BpropBuilder *ib, const std::string &grad_op, bool with_segments) {
-  auto x = ib->GetInput(kIndex0);
-  auto indices = ib->GetInput(kIndex1);
-  auto segment_ids = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(with_segments ? kIndex5 : kIndex4);
+  auto x = ib->GetInput(i0);
+  auto indices = ib->GetInput(i1);
+  auto segment_ids = ib->GetInput(i2);
+  auto dout = ib->GetInput(with_segments ? i5 : i4);
   auto shape_x = ib->GetShape(x);
   auto output_dim0 = ib->Tensor(shape_x[0], kInt32);
   if (ib->GetDtypeId(indices) != kNumberTypeInt32) {
@@ -125,16 +124,16 @@ NodePtrList CommonSparseSegmentBprop(BpropBuilder *ib, const std::string &grad_o
   auto dx = ib->Emit(grad_op, {dout, indices, segment_ids, output_dim0});
   NodePtrList result = {dx, ib->OutZeros(indices), ib->OutZeros(segment_ids)};
   if (with_segments) {
-    (void)result.emplace_back(ib->OutZeros(ib->GetInput(kIndex3)));
+    (void)result.emplace_back(ib->OutZeros(ib->GetInput(i3)));
   }
   return result;
 }
 
 NodePtrList CommonSparseSegmentBpropDefault(BpropBuilder *ib, bool with_segments) {
-  auto x = ib->GetInput(kIndex0);
-  auto indices = ib->GetInput(kIndex1);
-  auto segment_ids = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(with_segments ? kIndex5 : kIndex4);
+  auto x = ib->GetInput(i0);
+  auto indices = ib->GetInput(i1);
+  auto segment_ids = ib->GetInput(i2);
+  auto dout = ib->GetInput(with_segments ? i5 : i4);
   auto shape_x = ib->GetShape(x);
   segment_ids = ib->Cast(segment_ids, kInt32);
   auto input0 = ib->Gather(dout, segment_ids, ib->Tensor(0, kInt64));
@@ -144,17 +143,17 @@ NodePtrList CommonSparseSegmentBpropDefault(BpropBuilder *ib, bool with_segments
   dx = ib->Cast(dx, ib->GetDtype(dout));
   NodePtrList result = {dx, ib->OutZeros(indices), ib->OutZeros(segment_ids)};
   if (with_segments) {
-    (void)result.emplace_back(ib->OutZeros(ib->GetInput(kIndex3)));
+    (void)result.emplace_back(ib->OutZeros(ib->GetInput(i3)));
   }
   return result;
 }
 
 NodePtrList BpropSparseDenseCwiseCommon(BpropBuilder *ib, const std::string &op_name) {
-  auto x1_indices = ib->GetInput(kIndex0);
-  auto x1_values = ib->GetInput(kIndex1);
-  auto x1_shape = ib->GetInput(kIndex2);
-  auto x2 = ib->GetInput(kIndex3);
-  auto dout = ib->GetInput(kIndex5);
+  auto x1_indices = ib->GetInput(i0);
+  auto x1_values = ib->GetInput(i1);
+  auto x1_shape = ib->GetInput(i2);
+  auto x2 = ib->GetInput(i3);
+  auto dout = ib->GetInput(i5);
   auto x2_shape = ib->GetShape(x2);
   auto scaling = ib->RealDiv(x1_shape, ib->Tensor(x2_shape));
   auto scaled_indices = ib->RealDiv(x1_indices, scaling);
@@ -190,16 +189,16 @@ NodePtr BpropCSRMulDivCommon(BpropBuilder *ib, const NodePtr &indices, const Nod
 }  // namespace
 REG_BPROP_BUILDERS_BEGIN(GradSparseOps)
 REG_BPROP_BUILDER("SparseToDense").SetUnusedInputs({i1, i2, i3}).SetBody(BODYFUNC(ib) {
-  auto indices = ib->GetInput(kIndex0);
-  auto dense_shape = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex4);
+  auto indices = ib->GetInput(i0);
+  auto dense_shape = ib->GetInput(i2);
+  auto dout = ib->GetInput(i4);
   return {ib->OutZeros(indices), ib->GatherNd(dout, indices), ib->OutZeros(dense_shape)};
 });
 
 REG_BPROP_BUILDER("SparseToDenseV2").SetUnusedInputs({i1, i2, i3, i4}).SetBody(BODYFUNC(ib) {
-  auto indices = ib->GetInput(kIndex0);
-  auto output_shape = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex5);
+  auto indices = ib->GetInput(i0);
+  auto output_shape = ib->GetInput(i1);
+  auto dout = ib->GetInput(i5);
   auto sparse_values_grad = ib->GatherNd(dout, indices);
   auto default_value_grad = ib->ReduceSum(dout) - ib->ReduceSum(sparse_values_grad);
   return {ib->OutZeros(indices), ib->OutZeros(output_shape), sparse_values_grad, default_value_grad};
@@ -208,11 +207,11 @@ REG_BPROP_BUILDER("SparseToDenseV2").SetUnusedInputs({i1, i2, i3, i4}).SetBody(B
 REG_BPROP_BUILDER("SparseTensorDenseMatmul").SetUnusedInputs({i4}).SetBody(BODYFUNC(ib) {
   auto adj_s = ib->GetAttr<bool>("adjoint_st");
   auto adj_d = ib->GetAttr<bool>("adjoint_dt");
-  auto indices = ib->GetInput(kIndex0);
-  auto values = ib->GetInput(kIndex1);
-  auto dense_shape = ib->GetInput(kIndex2);
-  auto dense = ib->GetInput(kIndex3);
-  auto dout = ib->GetInput(kIndex5);
+  auto indices = ib->GetInput(i0);
+  auto values = ib->GetInput(i1);
+  auto dense_shape = ib->GetInput(i2);
+  auto dense = ib->GetInput(i3);
+  auto dout = ib->GetInput(i5);
   auto dense_grad = ib->Emit("SparseTensorDenseMatmul", {indices, values, dense_shape, dout},
                              {{"adjoint_st", MakeValue(!adj_s)}, {"adjoint_dt", MakeValue(false)}});
   ShapeVector perm = {1, 0};
@@ -233,8 +232,8 @@ REG_BPROP_BUILDER("SparseTensorDenseMatmul").SetUnusedInputs({i4}).SetBody(BODYF
   auto split_indices =
     ib->Emit(kSplitOpName, {indices, ib->EmitValue(MakeValue(axis)), ib->EmitValue(MakeValue(output_num))},
              {{"num_split", MakeValue(output_num)}});
-  auto rows = ib->ReduceSum(ib->TupleGetItem(split_indices, kIndex0), {axis});
-  auto cols = ib->ReduceSum(ib->TupleGetItem(split_indices, kIndex1), {axis});
+  auto rows = ib->ReduceSum(ib->TupleGetItem(split_indices, i0), {axis});
+  auto cols = ib->ReduceSum(ib->TupleGetItem(split_indices, i1), {axis});
   auto zero = ib->Value<int64_t>(0);
   NodePtr parts_a = nullptr;
   if (adj_s) {
@@ -253,15 +252,15 @@ REG_BPROP_BUILDER("SparseTensorDenseMatmul").SetUnusedInputs({i4}).SetBody(BODYF
 });
 
 REG_BPROP_BUILDER("SparseAdd").FreeUselessValues_IO({i1, i2, i4, i5, i6}, {i1, i2}).SetBody(BODYFUNC(ib) {
-  auto x1_indices = ib->GetInput(kIndex0);
-  auto x1_values = ib->GetInput(kIndex1);
-  auto x1_shape = ib->GetInput(kIndex2);
-  auto x2_indices = ib->GetInput(kIndex3);
-  auto x2_values = ib->GetInput(kIndex4);
-  auto x2_shape = ib->GetInput(kIndex5);
-  auto thresh = ib->GetInput(kIndex6);
-  auto out = ib->GetInput(kIndex7);
-  auto dout = ib->GetInput(kIndex8);
+  auto x1_indices = ib->GetInput(i0);
+  auto x1_values = ib->GetInput(i1);
+  auto x1_shape = ib->GetInput(i2);
+  auto x2_indices = ib->GetInput(i3);
+  auto x2_values = ib->GetInput(i4);
+  auto x2_shape = ib->GetInput(i5);
+  auto thresh = ib->GetInput(i6);
+  auto out = ib->GetInput(i7);
+  auto dout = ib->GetInput(i8);
   auto tmp = ib->Emit("SparseAddGrad", {ib->TupleGetItem(dout, 1), x1_indices, x2_indices, ib->TupleGetItem(out, 0)});
   auto dx1 = ib->TupleGetItem(tmp, 0);
   auto dx2 = ib->TupleGetItem(tmp, 1);
@@ -276,11 +275,11 @@ REG_BPROP_BUILDER("SparseAdd").FreeUselessValues_IO({i1, i2, i4, i5, i6}, {i1, i
 });
 
 REG_BPROP_BUILDER("CSRReduceSum").SetUnusedInputs({i2, i5}).SetBody(BODYFUNC(ib) {
-  auto indptr = ib->GetInput(kIndex0);
-  auto indices = ib->GetInput(kIndex1);
-  auto shape = ib->GetInput(kIndex3);
-  auto axis = ib->GetInput(kIndex4);
-  auto dout = ib->GetInput(kIndex6);
+  auto indptr = ib->GetInput(i0);
+  auto indices = ib->GetInput(i1);
+  auto shape = ib->GetInput(i3);
+  auto axis = ib->GetInput(i4);
+  auto dout = ib->GetInput(i6);
   auto shape_vec = GetIntList(shape);
   auto output_shape_kept_dims = ReduceShape(shape_vec, GetIntList(axis));
   auto tile_scaling = TupleDiv(shape_vec, output_shape_kept_dims);
@@ -291,12 +290,12 @@ REG_BPROP_BUILDER("CSRReduceSum").SetUnusedInputs({i2, i5}).SetBody(BODYFUNC(ib)
 });
 
 REG_BPROP_BUILDER("CSRMV").SetUnusedInputs({i5}).SetBody(BODYFUNC(ib) {
-  auto indptr = ib->GetInput(kIndex0);
-  auto indices = ib->GetInput(kIndex1);
-  auto values = ib->GetInput(kIndex2);
-  auto dense_shape = ib->GetInput(kIndex3);
-  auto dense = ib->GetInput(kIndex4);
-  auto dout = ib->GetInput(kIndex6);
+  auto indptr = ib->GetInput(i0);
+  auto indices = ib->GetInput(i1);
+  auto values = ib->GetInput(i2);
+  auto dense_shape = ib->GetInput(i3);
+  auto dense = ib->GetInput(i4);
+  auto dout = ib->GetInput(i6);
   auto indices_shape = ib->GetShape(indices);
   auto rows = ib->CSR2COO(indptr, ib->Value(indices_shape.at(0)));
   auto idx_dtype = ib->GetDtype(rows);
@@ -322,12 +321,12 @@ REG_BPROP_BUILDER("CSRMV").SetUnusedInputs({i5}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("CSRMul").SetUnusedInputs({i5}).SetBody(BODYFUNC(ib) {
-  auto indptr = ib->GetInput(kIndex0);
-  auto indices = ib->GetInput(kIndex1);
-  auto values = ib->GetInput(kIndex2);
-  auto shape = ib->GetInput(kIndex3);
-  auto dense = ib->GetInput(kIndex4);
-  auto dout = ib->GetInput(kIndex6);
+  auto indptr = ib->GetInput(i0);
+  auto indices = ib->GetInput(i1);
+  auto values = ib->GetInput(i2);
+  auto shape = ib->GetInput(i3);
+  auto dense = ib->GetInput(i4);
+  auto dout = ib->GetInput(i6);
   auto csr_tensor_grad_value = CsrMulDiv(ib, indptr, indices, dout, shape, dense, "CSRMul");
   auto dense_grad_value = ib->Mul(dout, values);
   auto dense_shape = ib->GetShape(dense);
@@ -347,13 +346,13 @@ REG_BPROP_BUILDER("CSRMul").SetUnusedInputs({i5}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("CSRDiv").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
-  auto indptr = ib->GetInput(kIndex0);
-  auto indices = ib->GetInput(kIndex1);
-  auto shape_node = ib->GetInput(kIndex3);
+  auto indptr = ib->GetInput(i0);
+  auto indices = ib->GetInput(i1);
+  auto shape_node = ib->GetInput(i3);
   auto shape = GetIntList(shape_node);
-  auto dense = ib->GetInput(kIndex4);
-  auto out = ib->GetInput(kIndex5);
-  auto dout = ib->GetInput(kIndex6);
+  auto dense = ib->GetInput(i4);
+  auto out = ib->GetInput(i5);
+  auto dout = ib->GetInput(i6);
   auto dense_shape = ib->GetShape(dense);
   constexpr size_t batch_dim_csr_start = 2;
   int64_t batch_dim_dense_start_i =
@@ -398,97 +397,97 @@ REG_BPROP_BUILDER("CSR2COO").SetUnusedInputs({i0, i1, i2, i3}).SetBody(ReturnZer
 REG_BPROP_BUILDER("COO2CSR").SetUnusedInputs({i0, i1, i2, i3}).SetBody(ReturnZeros);
 
 REG_BPROP_BUILDER("MakeCOOTensor").SetUnusedInputs({i0, i1, i2, i3}).SetBody(BODYFUNC(ib) {
-  auto indices = ib->GetInput(kIndex0);
-  auto dout = ib->GetInput(kIndex4);
-  auto dout_values = ib->TupleGetItem(dout, kIndex1);
+  auto indices = ib->GetInput(i0);
+  auto dout = ib->GetInput(i4);
+  auto dout_values = ib->TupleGetItem(dout, i1);
   return {ib->OutZeros(indices), dout_values};
 });
 
 REG_BPROP_BUILDER("COOTensorGetIndices").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
-  auto coo_tensor = ib->GetInput(kIndex0);
-  auto dout = ib->GetInput(kIndex2);
-  auto coo_tensor_values = ib->TupleGetItem(coo_tensor, kIndex1);
-  auto coo_tensor_shape = ib->TupleGetItem(coo_tensor, kIndex2);
+  auto coo_tensor = ib->GetInput(i0);
+  auto dout = ib->GetInput(i2);
+  auto coo_tensor_values = ib->TupleGetItem(coo_tensor, i1);
+  auto coo_tensor_shape = ib->TupleGetItem(coo_tensor, i2);
   return {ib->MakeTuple({dout, ib->ZerosLike(coo_tensor_values), coo_tensor_shape})};
 });
 
 REG_BPROP_BUILDER("COOTensorGetValues").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
-  auto coo_tensor = ib->GetInput(kIndex0);
-  auto dout = ib->GetInput(kIndex2);
-  auto coo_tensor_indices = ib->TupleGetItem(coo_tensor, kIndex0);
-  auto coo_tensor_shape = ib->TupleGetItem(coo_tensor, kIndex2);
+  auto coo_tensor = ib->GetInput(i0);
+  auto dout = ib->GetInput(i2);
+  auto coo_tensor_indices = ib->TupleGetItem(coo_tensor, i0);
+  auto coo_tensor_shape = ib->TupleGetItem(coo_tensor, i2);
   return {ib->MakeTuple({ib->ZerosLike(coo_tensor_indices), dout, coo_tensor_shape})};
 });
 
 REG_BPROP_BUILDER("COOTensorGetDenseShape").SetUnusedInputs({i0, i1, i2}).SetBody(ReturnZeros);
 
 REG_BPROP_BUILDER("MakeCSRTensor").SetUnusedInputs({i0, i1, i2, i3, i4}).SetBody(BODYFUNC(ib) {
-  auto indptr = ib->GetInput(kIndex0);
-  auto indices = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex5);
-  auto dout_values = ib->TupleGetItem(dout, kIndex2);
-  auto dout_shape = ib->TupleGetItem(dout, kIndex3);
+  auto indptr = ib->GetInput(i0);
+  auto indices = ib->GetInput(i1);
+  auto dout = ib->GetInput(i5);
+  auto dout_values = ib->TupleGetItem(dout, i2);
+  auto dout_shape = ib->TupleGetItem(dout, i3);
   return {ib->OutZeros(indptr), ib->OutZeros(indices), dout_values, dout_shape};
 });
 
 REG_BPROP_BUILDER("CSRTensorGetIndptr").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
-  auto csr_tensor = ib->GetInput(kIndex0);
-  auto dout = ib->GetInput(kIndex2);
-  auto csr_tensor_indices = ib->TupleGetItem(csr_tensor, kIndex1);
-  auto csr_tensor_values = ib->TupleGetItem(csr_tensor, kIndex2);
-  auto csr_tensor_shape = ib->TupleGetItem(csr_tensor, kIndex3);
+  auto csr_tensor = ib->GetInput(i0);
+  auto dout = ib->GetInput(i2);
+  auto csr_tensor_indices = ib->TupleGetItem(csr_tensor, i1);
+  auto csr_tensor_values = ib->TupleGetItem(csr_tensor, i2);
+  auto csr_tensor_shape = ib->TupleGetItem(csr_tensor, i3);
   return {ib->MakeTuple({dout, ib->ZerosLike(csr_tensor_indices), ib->ZerosLike(csr_tensor_values), csr_tensor_shape})};
 });
 
 REG_BPROP_BUILDER("CSRTensorGetIndices").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
-  auto csr_tensor = ib->GetInput(kIndex0);
-  auto dout = ib->GetInput(kIndex2);
-  auto csr_tensor_indptr = ib->TupleGetItem(csr_tensor, kIndex0);
-  auto csr_tensor_values = ib->TupleGetItem(csr_tensor, kIndex2);
-  auto csr_tensor_shape = ib->TupleGetItem(csr_tensor, kIndex3);
+  auto csr_tensor = ib->GetInput(i0);
+  auto dout = ib->GetInput(i2);
+  auto csr_tensor_indptr = ib->TupleGetItem(csr_tensor, i0);
+  auto csr_tensor_values = ib->TupleGetItem(csr_tensor, i2);
+  auto csr_tensor_shape = ib->TupleGetItem(csr_tensor, i3);
   return {ib->MakeTuple({ib->ZerosLike(csr_tensor_indptr), dout, ib->ZerosLike(csr_tensor_values), csr_tensor_shape})};
 });
 
 REG_BPROP_BUILDER("CSRTensorGetValues").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
-  auto csr_tensor = ib->GetInput(kIndex0);
-  auto dout = ib->GetInput(kIndex2);
-  auto csr_tensor_indptr = ib->TupleGetItem(csr_tensor, kIndex0);
-  auto csr_tensor_indices = ib->TupleGetItem(csr_tensor, kIndex1);
-  auto csr_tensor_shape = ib->TupleGetItem(csr_tensor, kIndex3);
+  auto csr_tensor = ib->GetInput(i0);
+  auto dout = ib->GetInput(i2);
+  auto csr_tensor_indptr = ib->TupleGetItem(csr_tensor, i0);
+  auto csr_tensor_indices = ib->TupleGetItem(csr_tensor, i1);
+  auto csr_tensor_shape = ib->TupleGetItem(csr_tensor, i3);
   return {ib->MakeTuple({ib->ZerosLike(csr_tensor_indptr), ib->ZerosLike(csr_tensor_indices), dout, csr_tensor_shape})};
 });
 
 REG_BPROP_BUILDER("CSRTensorGetDenseShape").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
-  auto csr_tensor = ib->GetInput(kIndex0);
+  auto csr_tensor = ib->GetInput(i0);
   return {ib->OutZeros(csr_tensor)};
 });
 
 REG_BPROP_BUILDER("CSRSparseMatrixToDense").SetUnusedInputs({i5}).SetBody(BODYFUNC(ib) {
-  auto shape = ib->GetInput(kIndex0);
-  auto batch = ib->GetInput(kIndex1);
-  auto indptr = ib->GetInput(kIndex2);
-  auto indices = ib->GetInput(kIndex3);
-  auto values = ib->GetInput(kIndex4);
-  auto dout = ib->GetInput(kIndex6);
+  auto shape = ib->GetInput(i0);
+  auto batch = ib->GetInput(i1);
+  auto indptr = ib->GetInput(i2);
+  auto indices = ib->GetInput(i3);
+  auto values = ib->GetInput(i4);
+  auto dout = ib->GetInput(i6);
   auto tmp = ib->Emit("CSRSparseMatrixToSparseTensor", {shape, batch, indptr, indices, values});
-  auto res = ib->Emit("DenseToCSRSparseMatrix", {dout, ib->TupleGetItem(tmp, kIndex0)});
-  return {ib->TupleGetItem(res, kIndex0), ib->TupleGetItem(res, kIndex1), ib->TupleGetItem(res, kIndex2),
-          ib->TupleGetItem(res, kIndex3), ib->TupleGetItem(res, kIndex4)};
+  auto res = ib->Emit("DenseToCSRSparseMatrix", {dout, ib->TupleGetItem(tmp, i0)});
+  return {ib->TupleGetItem(res, i0), ib->TupleGetItem(res, i1), ib->TupleGetItem(res, i2), ib->TupleGetItem(res, i3),
+          ib->TupleGetItem(res, i4)};
 });
 
 REG_BPROP_BUILDER("DenseToCSRSparseMatrix").FreeUselessValues_IO({i0, i1}, {i0, i4}).SetBody(BODYFUNC(ib) {
-  auto indices = ib->GetInput(kIndex1);
-  auto out = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex3);
-  auto batch_ptr = ib->TupleGetItem(out, kIndex1);
-  auto row_ptr = ib->TupleGetItem(out, kIndex2);
-  auto col_ind = ib->TupleGetItem(out, kIndex3);
-  auto dvalue = ib->TupleGetItem(dout, kIndex4);
-  auto dense_shape = ib->GetShape(ib->GetInput(kIndex0));
-  auto is_default_rank = (dense_shape.size() == kDim2);
-  auto batch_size = is_default_rank ? 1 : dense_shape.at(kIndex0);
-  auto num_rows = is_default_rank ? dense_shape.at(kIndex0) : dense_shape.at(kIndex1);
-  auto num_cols = is_default_rank ? dense_shape.at(kIndex1) : dense_shape.at(kIndex2);
+  auto indices = ib->GetInput(i1);
+  auto out = ib->GetInput(i2);
+  auto dout = ib->GetInput(i3);
+  auto batch_ptr = ib->TupleGetItem(out, i1);
+  auto row_ptr = ib->TupleGetItem(out, i2);
+  auto col_ind = ib->TupleGetItem(out, i3);
+  auto dvalue = ib->TupleGetItem(dout, i4);
+  auto dense_shape = ib->GetShape(ib->GetInput(i0));
+  auto is_default_rank = (dense_shape.size() == i2);
+  auto batch_size = is_default_rank ? 1 : dense_shape.at(i0);
+  auto num_rows = is_default_rank ? dense_shape.at(i0) : dense_shape.at(i1);
+  auto num_cols = is_default_rank ? dense_shape.at(i1) : dense_shape.at(i2);
   auto indices_type = ib->GetDtypeId(indices);
   std::vector<int64_t> sh;
   if (is_default_rank) {
@@ -509,11 +508,11 @@ REG_BPROP_BUILDER("DenseToCSRSparseMatrix").FreeUselessValues_IO({i0, i1}, {i0, 
 });
 
 REG_BPROP_BUILDER("SparseSoftmax").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
-  auto indices = ib->GetInput(kIndex0);
-  auto values = ib->GetInput(kIndex1);
-  auto shape = ib->GetInput(kIndex2);
-  auto out = ib->GetInput(kIndex3);
-  auto dout = ib->GetInput(kIndex4);
+  auto indices = ib->GetInput(i0);
+  auto values = ib->GetInput(i1);
+  auto shape = ib->GetInput(i2);
+  auto out = ib->GetInput(i3);
+  auto dout = ib->GetInput(i4);
   auto default_values = ib->Tensor(0, ib->GetDtype(values));
   auto out_dout = ib->Mul(out, dout);
   constexpr int64_t max_length = 1000000;
@@ -526,19 +525,19 @@ REG_BPROP_BUILDER("SparseSoftmax").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("SparseTensorToCSRSparseMatrix").SetUnusedInputs({i0, i1, i2, i3}).SetBody(BODYFUNC(ib) {
-  auto dout = ib->GetInput(kIndex4);
+  auto dout = ib->GetInput(i4);
   auto dx = ib->Emit("CSRSparseMatrixToSparseTensor",
-                     {ib->TupleGetItem(dout, kIndex0), ib->TupleGetItem(dout, kIndex1), ib->TupleGetItem(dout, kIndex2),
-                      ib->TupleGetItem(dout, kIndex3), ib->TupleGetItem(dout, kIndex4)});
-  return {ib->TupleGetItem(dx, kIndex0), ib->TupleGetItem(dx, kIndex1), ib->TupleGetItem(dx, kIndex2)};
+                     {ib->TupleGetItem(dout, i0), ib->TupleGetItem(dout, i1), ib->TupleGetItem(dout, i2),
+                      ib->TupleGetItem(dout, i3), ib->TupleGetItem(dout, i4)});
+  return {ib->TupleGetItem(dx, i0), ib->TupleGetItem(dx, i1), ib->TupleGetItem(dx, i2)};
 });
 
 REG_BPROP_BUILDER("CSRSparseMatrixToSparseTensor").SetUnusedInputs({i0, i1, i2, i3, i4, i5}).SetBody(BODYFUNC(ib) {
-  auto dout = ib->GetInput(kIndex6);
-  auto dx = ib->Emit("SparseTensorToCSRSparseMatrix", {ib->TupleGetItem(dout, kIndex0), ib->TupleGetItem(dout, kIndex1),
-                                                       ib->TupleGetItem(dout, kIndex2)});
-  return {ib->TupleGetItem(dx, kIndex0), ib->TupleGetItem(dx, kIndex1), ib->TupleGetItem(dx, kIndex2),
-          ib->TupleGetItem(dx, kIndex3), ib->TupleGetItem(dx, kIndex4)};
+  auto dout = ib->GetInput(i6);
+  auto dx = ib->Emit("SparseTensorToCSRSparseMatrix",
+                     {ib->TupleGetItem(dout, i0), ib->TupleGetItem(dout, i1), ib->TupleGetItem(dout, i2)});
+  return {ib->TupleGetItem(dx, i0), ib->TupleGetItem(dx, i1), ib->TupleGetItem(dx, i2), ib->TupleGetItem(dx, i3),
+          ib->TupleGetItem(dx, i4)};
 });
 
 REG_BPROP_BUILDER("SparseSegmentSqrtN").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
@@ -564,9 +563,9 @@ REG_BPROP_BUILDER("SparseSegmentSumWithNumSegments").SetUnusedInputs({i0, i3}).S
 });
 
 REG_BPROP_BUILDER("SparseTensorDenseAdd").SetUnusedInputs({i1, i2, i3, i4}).SetBody(BODYFUNC(ib) {
-  auto x1_indices = ib->GetInput(kIndex0);
-  auto x1_shape = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex5);
+  auto x1_indices = ib->GetInput(i0);
+  auto x1_shape = ib->GetInput(i2);
+  auto dout = ib->GetInput(i5);
   return {ib->OutZeros(x1_indices), ib->GatherNd(dout, x1_indices), ib->OutZeros(x1_shape), dout};
 });
 
@@ -575,9 +574,9 @@ REG_BPROP_BUILDER("SparseSegmentMeanWithNumSegments").SetUnusedInputs({i0, i3, i
 });
 
 REG_BPROP_BUILDER("SparseReorder").SetUnusedInputs({i1, i3}).SetBody(BODYFUNC(ib) {
-  auto indices = ib->GetInput(kIndex0);
-  auto shape = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex4);
+  auto indices = ib->GetInput(i0);
+  auto shape = ib->GetInput(i2);
+  auto dout = ib->GetInput(i4);
   auto num_entries = ib->GetShape(indices)[0];
   auto start = ib->Tensor(0, kInt32);
   auto limit = ib->Tensor(LongToInt(num_entries), kInt32);
@@ -604,9 +603,9 @@ REG_BPROP_BUILDER("SparseDenseCwiseDiv").SetUnusedInputs({i4}).SetBody(BODYFUNC(
 });
 
 REG_BPROP_BUILDER("RaggedTensorToSparse").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
-  auto rt_nested_splits = ib->GetInput(kIndex0);
-  auto rt_dense_values = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto rt_nested_splits = ib->GetInput(i0);
+  auto rt_dense_values = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   auto re_nested_spilts_shape = ib->GetShape(rt_dense_values);
   auto ragged_values_grad = ib->Reshape(ib->TupleGetItem(dout, 1), re_nested_spilts_shape);
   NodePtrList d_all = {ib->OutZeros(rt_nested_splits), ragged_values_grad};

@@ -17,8 +17,6 @@
 #include <map>
 #include "frontend/expander/bprop/bprop_irbuilder.h"
 #include "grad/grad_utils.h"
-#include "include/common/utils/utils.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
 #include "ops_utils/op_utils.h"
 #include "mindspore/ops/op_def/op_enum.h"
 
@@ -45,10 +43,10 @@ NodePtr DoMatMul(BpropBuilder *ib, const NodePtr &x, const NodePtr &y) {
     auto true_case = [&x, &y](Emitter *e) -> NodePtrList { return {e->BatchMatMul(x, y)}; };
     auto false_case = [&x, &y](Emitter *e) -> NodePtrList { return {e->MatMul(x, y)}; };
     auto rank = ib->Emit("Rank", {x});
-    auto cond = ib->Emit("scalar_gt", {rank, ib->Value(static_cast<int64_t>(kDim2))});
+    auto cond = ib->Emit("scalar_gt", {rank, ib->Value(static_cast<int64_t>(i2))});
     return ib->Conditional(cond, true_case, false_case);
   }
-  if (shape.size() > kDim2) {
+  if (shape.size() > i2) {
     return ib->BatchMatMul(x, y);
   }
   return ib->MatMul(x, y);
@@ -105,7 +103,7 @@ NodePtr TrilImInvAdjSkew_dyn(Emitter *e, const NodePtr &x) {
 REG_BPROP_BUILDERS_BEGIN(GradLinalgOps)
 DEF_PURE_SHAPE_CALC(dynamic_calc_svd_m_n_idx)
   .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
-    auto a_shape = inputs.at(kIndex0);
+    auto a_shape = inputs.at(i0);
     if (a_shape.size() < 2) {
       MS_LOG_EXCEPTION << "The rank of input `A` is " << std::to_string(a_shape.size())
                        << " less than 2, which is invalid.";
@@ -120,8 +118,8 @@ DEF_PURE_SHAPE_CALC(dynamic_calc_svd_m_n_idx)
 
 DEF_PURE_SHAPE_CALC(dynamic_calc_strided_slice_0_m)
   .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
-    auto a_shape = inputs.at(kIndex0);
-    auto uv_shape = inputs.at(kIndex1);
+    auto a_shape = inputs.at(i0);
+    auto uv_shape = inputs.at(i1);
 
     auto m = a_shape[a_shape.size() - 2];
     auto n = a_shape[a_shape.size() - 1];
@@ -135,8 +133,8 @@ DEF_PURE_SHAPE_CALC(dynamic_calc_strided_slice_0_m)
     ShapeVector step_strides(uv_shape.size(), 1);
     auto zero = MakeValue<int64_t>(0);
     auto dim = SizeToLong(uv_shape.size()) - 1;
-    begin_strides[dim] = slice[kIndex0];
-    end_strides[dim] = slice[kIndex1];
+    begin_strides[dim] = slice[i0];
+    end_strides[dim] = slice[i1];
     if (end_strides[dim] == LLONG_MAX) {
       MS_EXCEPTION(ValueError) << "For StridedSlice, end_strides[" << dim << "] is too large.";
     }
@@ -144,8 +142,8 @@ DEF_PURE_SHAPE_CALC(dynamic_calc_strided_slice_0_m)
     return {begin_strides, end_strides, step_strides};
   })
   .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &unknown_inputs) -> std::vector<int64_t> {
-    auto a_shape = inputs.at(kIndex0);
-    auto uv_shape = inputs.at(kIndex1);
+    auto a_shape = inputs.at(i0);
+    auto uv_shape = inputs.at(i1);
     if (IsDynamicRank(a_shape) || IsDynamicRank(uv_shape) || !unknown_inputs.empty()) {
       return {-1, -1, -1};
     }
@@ -155,8 +153,8 @@ DEF_PURE_SHAPE_CALC(dynamic_calc_strided_slice_0_m)
 
 DEF_PURE_SHAPE_CALC(dynamic_calc_strided_slice_m_n)
   .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
-    auto a_shape = inputs.at(kIndex0);
-    auto uv_shape = inputs.at(kIndex1);
+    auto a_shape = inputs.at(i0);
+    auto uv_shape = inputs.at(i1);
 
     auto m = a_shape[a_shape.size() - 2];
     auto n = a_shape[a_shape.size() - 1];
@@ -170,8 +168,8 @@ DEF_PURE_SHAPE_CALC(dynamic_calc_strided_slice_m_n)
     ShapeVector step_strides(uv_shape.size(), 1);
     auto zero = MakeValue<int64_t>(0);
     auto dim = SizeToLong(uv_shape.size()) - 1;
-    begin_strides[dim] = slice[kIndex0];
-    end_strides[dim] = slice[kIndex1];
+    begin_strides[dim] = slice[i0];
+    end_strides[dim] = slice[i1];
     if (end_strides[dim] == LLONG_MAX) {
       MS_EXCEPTION(ValueError) << "For StridedSlice, end_strides[" << dim << "] is too large.";
     }
@@ -179,8 +177,8 @@ DEF_PURE_SHAPE_CALC(dynamic_calc_strided_slice_m_n)
     return {begin_strides, end_strides, step_strides};
   })
   .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &unknown_inputs) -> std::vector<int64_t> {
-    auto a_shape = inputs.at(kIndex0);
-    auto uv_shape = inputs.at(kIndex1);
+    auto a_shape = inputs.at(i0);
+    auto uv_shape = inputs.at(i1);
     if (IsDynamicRank(a_shape) || IsDynamicRank(uv_shape) || !unknown_inputs.empty()) {
       return {-1, -1, -1};
     }
@@ -189,10 +187,10 @@ DEF_PURE_SHAPE_CALC(dynamic_calc_strided_slice_m_n)
   });
 
 NodePtrList GetDynamicUv(BpropBuilder *ib, const NodePtr &uv, const NodePtr &m, const NodePtr &n) {
-  auto u_true_case = [&uv](Emitter *e) -> NodePtrList { return {e->TupleGetItem(uv, kIndex2)}; };
-  auto v_true_case = [&uv](Emitter *e) -> NodePtrList { return {e->TupleGetItem(uv, kIndex1)}; };
-  auto u_false_case = [&uv](Emitter *e) -> NodePtrList { return {e->TupleGetItem(uv, kIndex1)}; };
-  auto v_false_case = [&uv](Emitter *e) -> NodePtrList { return {e->TupleGetItem(uv, kIndex2)}; };
+  auto u_true_case = [&uv](Emitter *e) -> NodePtrList { return {e->TupleGetItem(uv, i2)}; };
+  auto v_true_case = [&uv](Emitter *e) -> NodePtrList { return {e->TupleGetItem(uv, i1)}; };
+  auto u_false_case = [&uv](Emitter *e) -> NodePtrList { return {e->TupleGetItem(uv, i1)}; };
+  auto v_false_case = [&uv](Emitter *e) -> NodePtrList { return {e->TupleGetItem(uv, i2)}; };
   auto cond = ib->Emit("scalar_gt", {m, n});
   auto u = ib->Conditional(cond, u_true_case, u_false_case);
   auto v = ib->Conditional(cond, v_true_case, v_false_case);
@@ -204,7 +202,7 @@ NodePtr ControlFlowMatMul(Emitter *e, const NodePtr &x, const NodePtr &y) {
   if (IsDynamicRank(shape)) {
     return e->BatchMatMul(x, y);
   }
-  if (shape.size() > kDim2) {
+  if (shape.size() > i2) {
     return e->BatchMatMul(x, y);
   }
   return e->MatMul(x, y);
@@ -232,14 +230,14 @@ NodePtr ControlFlowMatrixTranspose(Emitter *e, const NodePtr &x) {
     return e->TransposeView(x, e->TensorToTuple(perm));
   }
   auto dim = shape.size();
-  if (dim < kDim2) {
+  if (dim < i2) {
     MS_LOG_EXCEPTION << "For MatrixTranspose, input's ndim " << dim << " is less or equal to 2, which is invalid";
   }
   std::vector<int64_t> perm(dim);
   for (size_t i = 0; i < dim; i++) {
     perm[i] = static_cast<int64_t>(i);
   }
-  std::swap(perm[dim - kIndex2], perm[dim - kIndex1]);
+  std::swap(perm[dim - i2], perm[dim - i1]);
   return e->TransposeView(x, perm);
 }
 
@@ -248,17 +246,17 @@ NodePtr ControlFlowAdjoint(Emitter *e, const NodePtr &x) { return ControlFlowMat
 NodePtr SvdBpropDynamic(BpropBuilder *ib, const NodePtr &a, const NodePtr &out, const NodePtr &dout,
                         bool full_matrices) {
   auto m_n_idx = ib->ShapeCalc(dynamic_calc_svd_m_n_idx, {a})[0];
-  auto m = ib->TupleGetItem(m_n_idx, kIndex0);
-  auto n = ib->TupleGetItem(m_n_idx, kIndex1);
+  auto m = ib->TupleGetItem(m_n_idx, i0);
+  auto n = ib->TupleGetItem(m_n_idx, i1);
 
-  auto s = ib->TupleGetItem(out, kIndex0);
-  auto ds = ib->TupleGetItem(dout, kIndex0);
+  auto s = ib->TupleGetItem(out, i0);
+  auto ds = ib->TupleGetItem(dout, i0);
   auto uv = GetDynamicUv(ib, out, m, n);
   auto duv = GetDynamicUv(ib, dout, m, n);
-  auto u = uv[kIndex0];
-  auto v = uv[kIndex1];
-  auto du = duv[kIndex0];
-  auto dv = duv[kIndex1];
+  auto u = uv[i0];
+  auto v = uv[i1];
+  auto du = duv[i0];
+  auto dv = duv[i1];
 
   auto s_mat = MatrixDiag(ib, s);
   auto s2 = ib->Square(s);
@@ -270,11 +268,11 @@ NodePtr SvdBpropDynamic(BpropBuilder *ib, const NodePtr &a, const NodePtr &out, 
   auto s_inv_mat = MatrixDiag(ib, SafeReciprocal(ib, s));
 
   auto strides_slice_v1 = ib->ShapeCalc(dynamic_calc_strided_slice_0_m, {a, v});
-  auto v1 = ib->StridedSlice(v, strides_slice_v1[kIndex0], strides_slice_v1[kIndex1], strides_slice_v1[kIndex2],
+  auto v1 = ib->StridedSlice(v, strides_slice_v1[i0], strides_slice_v1[i1], strides_slice_v1[i2],
                              ib->Value<int64_t>(0LL), ib->Value<int64_t>(0LL), ib->Value<int64_t>(0LL),
                              ib->Value<int64_t>(0LL), ib->Value<int64_t>(0LL));
   auto strides_slice_dv1 = ib->ShapeCalc(dynamic_calc_strided_slice_0_m, {a, dv});
-  auto dv1 = ib->StridedSlice(dv, strides_slice_dv1[kIndex0], strides_slice_dv1[kIndex1], strides_slice_dv1[kIndex2],
+  auto dv1 = ib->StridedSlice(dv, strides_slice_dv1[i0], strides_slice_dv1[i1], strides_slice_dv1[i2],
                               ib->Value<int64_t>(0LL), ib->Value<int64_t>(0LL), ib->Value<int64_t>(0LL),
                               ib->Value<int64_t>(0LL), ib->Value<int64_t>(0LL));
   auto u_gu = DoMatMul(ib, Adjoint(ib, u), du);
@@ -292,13 +290,13 @@ NodePtr SvdBpropDynamic(BpropBuilder *ib, const NodePtr &a, const NodePtr &out, 
     auto term2_nous = e->Sub(gv1t, ControlFlowMatMul(e, gv1t_v1, ControlFlowAdjoint(e, v1)));
     if (full_matrices) {
       auto strides_slice_v2 = e->ShapeCalc(dynamic_calc_strided_slice_m_n, {a, v});
-      auto v2 = e->Emit("StridedSlice", {v, strides_slice_v2[kIndex0], strides_slice_v2[kIndex1],
-                                         strides_slice_v2[kIndex2], e->Value<int64_t>(0LL), e->Value<int64_t>(0LL),
-                                         e->Value<int64_t>(0LL), e->Value<int64_t>(0LL), e->Value<int64_t>(0LL)});
+      auto v2 = e->Emit("StridedSlice", {v, strides_slice_v2[i0], strides_slice_v2[i1], strides_slice_v2[i2],
+                                         e->Value<int64_t>(0LL), e->Value<int64_t>(0LL), e->Value<int64_t>(0LL),
+                                         e->Value<int64_t>(0LL), e->Value<int64_t>(0LL)});
       auto strides_slice_dv2 = e->ShapeCalc(dynamic_calc_strided_slice_m_n, {a, dv});
-      auto dv2 = e->Emit("StridedSlice", {dv, strides_slice_dv2[kIndex0], strides_slice_dv2[kIndex1],
-                                          strides_slice_dv2[kIndex2], e->Value<int64_t>(0LL), e->Value<int64_t>(0LL),
-                                          e->Value<int64_t>(0LL), e->Value<int64_t>(0LL), e->Value<int64_t>(0LL)});
+      auto dv2 = e->Emit("StridedSlice", {dv, strides_slice_dv2[i0], strides_slice_dv2[i1], strides_slice_dv2[i2],
+                                          e->Value<int64_t>(0LL), e->Value<int64_t>(0LL), e->Value<int64_t>(0LL),
+                                          e->Value<int64_t>(0LL), e->Value<int64_t>(0LL)});
 
       auto v1t_gv2 = ControlFlowMatMul(e, ControlFlowAdjoint(e, v1), dv2);
       term2_nous = e->Sub(term2_nous, ControlFlowMatMul(e, v1t_gv2, ControlFlowAdjoint(e, v2)));
@@ -384,11 +382,11 @@ NodePtr SvdBpropStatic(BpropBuilder *ib, const NodePtr &a, const ShapeVector &a_
 }
 
 REG_BPROP_BUILDER("Svd").SetBody(BODYFUNC(ib) {
-  auto a = ib->GetInput(kIndex0);
-  auto full_matrices = ib->GetInput(kIndex1);
-  auto compute_uv = ib->GetInput(kIndex2);
-  auto out = ib->GetInput(kIndex3);
-  auto dout = ib->GetInput(kIndex4);
+  auto a = ib->GetInput(i0);
+  auto full_matrices = ib->GetInput(i1);
+  auto compute_uv = ib->GetInput(i2);
+  auto out = ib->GetInput(i3);
+  auto dout = ib->GetInput(i4);
   auto full_matrices_opt = GetScalarValue<bool>(full_matrices->BuildValue());
   auto compute_uv_opt = GetScalarValue<bool>(compute_uv->BuildValue());
   if (!full_matrices_opt.has_value() || !compute_uv_opt.has_value()) {
@@ -398,10 +396,10 @@ REG_BPROP_BUILDER("Svd").SetBody(BODYFUNC(ib) {
   NodePtr da = nullptr;
   if (!compute_uv_opt.value()) {
     auto tmp = ib->Emit("Svd", {a, ib->Value<bool>(false), ib->Value<bool>(true)});
-    auto u = ib->TupleGetItem(tmp, kIndex1);
-    auto v = ib->TupleGetItem(tmp, kIndex2);
-    da = DoMatMul(
-      ib, u, DoMatMul(ib, MatrixDiag(ib, ib->Cast(ib->TupleGetItem(dout, kIndex0), ib->GetDtype(a))), Adjoint(ib, v)));
+    auto u = ib->TupleGetItem(tmp, i1);
+    auto v = ib->TupleGetItem(tmp, i2);
+    da = DoMatMul(ib, u,
+                  DoMatMul(ib, MatrixDiag(ib, ib->Cast(ib->TupleGetItem(dout, i0), ib->GetDtype(a))), Adjoint(ib, v)));
     return {da, ib->OutZeros(full_matrices), ib->OutZeros(compute_uv)};
   }
 
@@ -415,10 +413,10 @@ REG_BPROP_BUILDER("Svd").SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("LstsqV2").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
-  auto a = ib->GetInput(kIndex0);
-  auto b = ib->GetInput(kIndex1);
-  auto driver = ib->GetInput(kIndex2);
-  auto grad_outs = ib->GetInput(kIndex4);
+  auto a = ib->GetInput(i0);
+  auto b = ib->GetInput(i1);
+  auto driver = ib->GetInput(i2);
+  auto grad_outs = ib->GetInput(i4);
   auto grad_solution = ib->TupleGetItem(grad_outs, 0);
   auto grads = ib->Emit("LstsqV2Grad", {grad_solution, a, b});
   auto grad_a = ib->TupleGetItem(grads, 0);
@@ -428,9 +426,9 @@ REG_BPROP_BUILDER("LstsqV2").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
 
 DEF_PURE_SHAPE_CALC(dynamic_resize_r_shape)
   .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
-    auto r_shape = inputs.at(kIndex0);
-    auto m_ = inputs.at(kIndex1)[0];
-    auto n_ = inputs.at(kIndex2)[0];
+    auto r_shape = inputs.at(i0);
+    auto m_ = inputs.at(i1)[0];
+    auto n_ = inputs.at(i2)[0];
     ShapeVector resize_shape(r_shape.begin(), r_shape.end());
     if (resize_shape[resize_shape.size() - 1] <= 0) {
       MS_LOG_EXCEPTION << "Error, R mat will be empty a tensor.";
@@ -440,14 +438,14 @@ DEF_PURE_SHAPE_CALC(dynamic_resize_r_shape)
     return {resize_shape};
   })
   .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &) -> std::vector<int64_t> {
-    auto new_shape = inputs.at(kIndex0);
+    auto new_shape = inputs.at(i0);
     int64_t rank = IsDynamicRank(new_shape) ? -1 : SizeToLong(new_shape.size());
     return {rank};
   });
 
 DEF_PURE_SHAPE_CALC(dynamic_cal_m_n)
   .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
-    auto a_shape = inputs.at(kIndex0);
+    auto a_shape = inputs.at(i0);
     if (a_shape.size() < 2) {
       MS_LOG_EXCEPTION << "The rank of input `A` is " << std::to_string(a_shape.size())
                        << " less than 2, which is invalid.";
@@ -461,7 +459,7 @@ DEF_PURE_SHAPE_CALC(dynamic_cal_m_n)
 
 REG_BPROP_BUILDER("LinalgQr").SetBody(BODYFUNC(ib) {
   // A.shape = (*, M, N)
-  auto a_mat = ib->GetInput(kIndex0);
+  auto a_mat = ib->GetInput(i0);
   auto dtype = ib->GetDtype(a_mat);
   auto dtype_id = ib->GetDtypeId(a_mat);
   if (dtype_id == kNumberTypeComplex64 || dtype_id == kNumberTypeComplex128) {
@@ -473,7 +471,7 @@ REG_BPROP_BUILDER("LinalgQr").SetBody(BODYFUNC(ib) {
     MS_LOG_EXCEPTION << "For gradient of 'LinalgQr' ops, the dimension of input must greater than or equal to 2.";
   }
 
-  auto mode_node = ib->GetInput(kIndex1);
+  auto mode_node = ib->GetInput(i1);
   auto mode = GetScalarValue<int64_t>(mode_node->BuildValue());
   if (!mode.has_value()) {
     MS_EXCEPTION(ValueError) << "For gradient of 'LinalgQr', 'mode' should not be empty.";
@@ -484,8 +482,8 @@ REG_BPROP_BUILDER("LinalgQr").SetBody(BODYFUNC(ib) {
     MS_LOG_EXCEPTION << "In LinalgQr backward, 'r' mode is unsupported. Please use 'reduced' or 'complete'.";
   }
 
-  auto out = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex3);
+  auto out = ib->GetInput(i2);
+  auto dout = ib->GetInput(i3);
   auto q_mat = ib->TupleGetItem(out, 0);
   auto r_mat = ib->TupleGetItem(out, 1);
   auto dq = ib->TupleGetItem(dout, 0);
