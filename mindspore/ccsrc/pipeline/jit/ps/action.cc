@@ -1795,6 +1795,7 @@ void ProcessCanNotInline(const FuncGraphPtr &func_graph, const std::shared_ptr<M
         continue;
       }
       auto cnode = node->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(cnode);
       if (IsCellReuse(cnode->input(0))) {
         micro_num++;
       }

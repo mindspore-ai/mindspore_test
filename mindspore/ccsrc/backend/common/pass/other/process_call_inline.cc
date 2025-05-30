@@ -32,6 +32,7 @@ bool CheckCallInline(const CNodePtr &cnode) {
   }
   auto call_graph = cnode->input(kIndex1);
   auto sub_kernel_graph = session::AnfRuntimeAlgorithm::GetValueNodeKernelGraph(call_graph);
+  MS_EXCEPTION_IF_NULL(sub_kernel_graph);
   return sub_kernel_graph->need_inline();
 }
 }  // namespace

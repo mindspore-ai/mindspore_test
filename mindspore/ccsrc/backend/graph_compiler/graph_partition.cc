@@ -27,6 +27,7 @@
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ccsrc/runtime/hardware/device_context.h"
 #include "utils/anf_utils.h"
+#include "utils/log_adapter.h"
 #include "utils/ms_context.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
@@ -752,13 +753,18 @@ bool IsNeedInline(const CNodePtr &cnode) {
       MS_EXCEPTION_IF_NULL(call_graph);
       auto graph_out = call_graph->output();
       MS_EXCEPTION_IF_NULL(graph_out);
-      auto partial = graph_out->cast<CNodePtr>()->input(idx + 1);
+      auto graph_out_cnode = graph_out->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(graph_out_cnode);
+      auto partial = graph_out_cnode->input(idx + 1);
       MS_EXCEPTION_IF_NULL(partial);
       if (!IsPrimitiveCNode(partial, prim::kPrimPartial)) {
         MS_LOG(EXCEPTION) << "There is no backward graph corresponding to the forward graph. Please remove the "
                              "@lazy_inline decorator and try again";
       }
-      auto partial_graph = GetValueNode<FuncGraphPtr>(partial->cast<CNodePtr>()->input(1));
+      auto partial_cnode = partial->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(partial_cnode);
+      auto partial_graph = GetValueNode<FuncGraphPtr>(partial_cnode->input(1));
+      MS_EXCEPTION_IF_NULL(partial_graph);
       partial_graph->set_flag(FUNC_GRAPH_FLAG_CELL_REUSE, true);
       return true;
     }
@@ -789,7 +795,8 @@ bool GraphPartition::IsCut(const AnfNodePtr &node) {
       if (common::AnfAlgo::HasNodeAttr(kAttrJitCallNode, cnode)) {
         return false;
       }
-      if (IsPrimitiveCNode(fn, prim::kPrimSwitch) && fn->cast<CNodePtr>()->HasPrimalAttr(kAttrNotCut)) {
+      auto fn_cnode = fn->cast<CNodePtr>();
+      if (IsPrimitiveCNode(fn, prim::kPrimSwitch) && fn_cnode != nullptr && fn_cnode->HasPrimalAttr(kAttrNotCut)) {
         return false;
       }
       return true;

@@ -3718,6 +3718,7 @@ AnfNodePtr KernelGraphMgr::DoInline(const FuncGraphPtr &func_graph, const FuncGr
       auto new_cnode = new_node->cast<CNodePtr>();
       MS_EXCEPTION_IF_NULL(new_cnode);
       auto prim = common::AnfAlgo::GetCNodePrimitive(new_cnode);
+      MS_EXCEPTION_IF_NULL(prim);
       new_cnode->set_input(0, NewValueNode(std::make_shared<Primitive>(prim->name())));
       common::AnfAlgo::CopyNodeAttrs(ori_node, new_cnode);
       new_cnode->set_attrs(call_node->attrs());
