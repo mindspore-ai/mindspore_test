@@ -36,8 +36,6 @@
 #include "debug/profiler/profiling.h"
 #include "mindspore/ops/op_def/nn_op_name.h"
 #include "debug/data_dump/overflow_counter.h"
-#include "debug/hooker/hook_debugger.h"
-#include "debug/hooker/deprecated_env.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
 
@@ -207,17 +205,6 @@ void DebugActor::DebugOnStepBegin(const std::vector<KernelGraphPtr> &graphs,
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
   device_ctx_ = device_contexts[0];
-  if (common::AnfAlgo::IsBackendGe()) {
-    hooker::CheckDeprecatedDumpEnv();
-    auto profiler = profiler::Profiler::GetInstance(kAscendDevice);
-    if ((profiler == nullptr || !profiler->IsInitialized()) &&
-        device_ctx_->GetDeviceType() == device::DeviceType::kAscend) {
-      auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-      auto &hookDebugger = hooker::HookDebugger::GetInstance();
-      hookDebugger.HookOnStepBegin(device_id, graphs, step_count_, false);
-    }
-    return;
-  }
   if (DumpJsonParser::GetInstance().e2e_dump_enabled() && !graphs.empty()) {
     // First graph is the dataset graph when dataset_sink_mode = True
     auto graph = graphs[0];
@@ -285,8 +272,6 @@ void DebugActor::DebugOnStepEnd(OpContext<KernelTensor> *const, const AID *, int
     dump_flag_ = false;
   }
 
-  auto &hookDebugger = hooker::HookDebugger::GetInstance();
-  hookDebugger.HookOnStepEnd();
   device_ctx_->device_res_manager_->SyncAllStreams();
   std::lock_guard<std::mutex> locker(debug_mutex_);
 
@@ -298,10 +283,6 @@ void DebugActor::DebugOnStepEnd(OpContext<KernelTensor> *const, const AID *, int
 #ifdef ENABLE_DEBUGGER
   auto debugger = Debugger::GetInstance();
   if (debugger != nullptr) {
-    if (common::AnfAlgo::IsBackendGe()) {
-      MS_LOG(INFO) << "Not kernel mode, skip post actions.";
-      return;
-    }
     // Reset exec_order for the next step
     exec_order_ = 0;
     debugger->Debugger::PostExecuteGraphDebugger();

@@ -67,9 +67,6 @@
 #ifdef ENABLE_DEBUGGER
 #include "include/backend/debug/debugger/debugger.h"
 #endif
-#ifndef ENABLE_SECURITY
-#include "debug/hooker/hook_debugger.h"
-#endif
 #include "debug/profiler/profiling.h"
 #include "include/common/debug/common.h"
 #include "include/backend/distributed/recovery/recovery_context.h"
@@ -801,13 +798,6 @@ void GraphScheduler::BuildAndScheduleGlobalActor() {
   auto debugger = Debugger::GetInstance();
   MS_EXCEPTION_IF_NULL(debugger);
   if (debugger->DebuggerBackendEnabled()) {
-    debugger_actor_need = true;
-  }
-#endif
-#ifndef ENABLE_SECURITY
-  // If dump hooker tool is enabled
-  auto &hookDebugger = hooker::HookDebugger::GetInstance();
-  if (hookDebugger.IsHookerEnabled()) {
     debugger_actor_need = true;
   }
 #endif

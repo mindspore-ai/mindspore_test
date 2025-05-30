@@ -34,9 +34,6 @@ endif()
 
 list(APPEND _DEBUG_SRC_LIST
         "${CMAKE_CURRENT_SOURCE_DIR}/execute_order_tracker/execute_order_tracker.cc"
-        "${CMAKE_CURRENT_SOURCE_DIR}/hooker/hook_debugger.cc"
-        "${CMAKE_CURRENT_SOURCE_DIR}/hooker/adapter.cc"
-        "${CMAKE_CURRENT_SOURCE_DIR}/hooker/deprecated_env.cc"
     )
 
 list(APPEND _DEBUG_SRC_LIST
@@ -54,10 +51,6 @@ if(NOT CMAKE_SYSTEM_NAME MATCHES "Windows")
     list(APPEND _DEBUG_SRC_LIST
         "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/e2e_dump.cc"
         "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/tensor_statistic.cc"
-        )
-    list(APPEND _DEBUG_SRC_LIST
-        "${CMAKE_CURRENT_SOURCE_DIR}/hooker/acl_data_adapter.cc"
-        "${CMAKE_CURRENT_SOURCE_DIR}/hooker/hook_dynamic_loader.cc"
         )
     file(GLOB_RECURSE _DEVICE_STATISTIC_LIST "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/device_statistic/*.cc")
 endif()
