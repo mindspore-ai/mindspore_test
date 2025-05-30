@@ -24,6 +24,7 @@
 #include "ir/anf.h"
 #include "ir/tensor.h"
 #include "pynative/base.h"
+#include "mindspore/core/include/ir/manager.h"
 
 namespace mindspore {
 namespace ad {
@@ -47,6 +48,9 @@ class BpropGenerator {
   void set_forward_output_abs(const abstract::AbstractBasePtr &forward_abs);
 
  private:
+  void ReusePrimalCNode(const FuncGraphPtr &k_fg, const FuncGraphPtr &top_fg);
+  void ReuseCustomBpropForwardOutput(const FuncGraphPtr &k_fg, const FuncGraphPtr &top_fg);
+
   FuncGraphPtr fprop_graph_;
   FuncGraphPtr forward_graph_;
   FuncGraphPtr basic_graph_;

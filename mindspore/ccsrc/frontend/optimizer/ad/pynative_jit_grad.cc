@@ -264,6 +264,23 @@ py::object HandleForwardResult(const BaseRef &forward_result, const FuncGraphPtr
     return ret_tuple[kIndex0];
   }
 }
+
+bool IsValidAbstract(const AbstractBasePtr &prim_abstract) {
+  if (prim_abstract == nullptr) {
+    return false;
+  } else if (prim_abstract->isa<abstract::AbstractRefTensor>()) {
+    const auto ref_abs = prim_abstract->cast_ptr<abstract::AbstractRefTensor>();
+    MS_EXCEPTION_IF_NULL(ref_abs);
+    return !ref_abs->is_view() && !ref_abs->is_inplace();
+  } else if (prim_abstract->isa<abstract::AbstractTensor>()) {
+    return true;
+  } else if (prim_abstract->isa<abstract::AbstractSequence>()) {
+    const auto &elements = prim_abstract->cast<abstract::AbstractSequencePtr>()->elements();
+    return std::all_of(elements.begin(), elements.end(),
+                       [](const AbstractBasePtr &element) { return IsValidAbstract(element); });
+  }
+  return false;
+}
 }  // namespace
 
 std::pair<bool, FuncGraphPtr> GetBpropGraphWithParamalization(const pynative::GradParamPtr &grad_param) {
@@ -468,6 +485,57 @@ void CheckBpropGraphHasInvalidDout(const std::string &cache_key, const std::vect
   check_invalid_dout_bprop_graph.insert(check_dout_key);
 }
 
+void BpropGenerator::ReuseCustomBpropForwardOutput(const FuncGraphPtr &k_fg, const FuncGraphPtr &top_fg) {
+  const auto &forward_fg_iter = k_fg->transforms().find("custom_bprop_primal");
+  if (forward_fg_iter == k_fg->transforms().end()) {
+    return;
+  }
+  auto primal_forward_fg = forward_fg_iter->second.func_graph();
+  for (auto node : TopoSort(top_fg->output())) {
+    if (node == nullptr) {
+      continue;
+    }
+    auto forward_output = node->cast<CNodePtr>();
+    if (forward_output == nullptr) {
+      continue;
+    }
+    if (GetValueNode<FuncGraphPtr>(forward_output->input(0)) != primal_forward_fg) {
+      continue;
+    }
+    auto &forward_output_abs = forward_output->abstract();
+    MS_EXCEPTION_IF_NULL(forward_output_abs);
+    MS_LOG(INFO) << "Reuse custom bprop's forward output node: " << forward_output->DebugString()
+                 << ", with index: " << fprop_sub_fgs_.size();
+    (void)fprop_sub_fgs_.emplace_back(k_fg);
+    (void)replace_nodes_.emplace_back(forward_output);
+    (void)replace_nodes_abs_.emplace_back(forward_output_abs);
+  }
+}
+
+void BpropGenerator::ReusePrimalCNode(const FuncGraphPtr &k_fg, const FuncGraphPtr &top_fg) {
+  // Find primal cnode for this fprop
+  const auto &primal_cnode_iter = k_fg->transforms().find("primal_cnode");
+  if (primal_cnode_iter == k_fg->transforms().end()) {
+    return;
+  }
+  // Filter control flow graph and unsupported prim
+  const auto &primal_cnode = primal_cnode_iter->second.primal_cnode();
+  MS_EXCEPTION_IF_NULL(primal_cnode);
+  if (primal_cnode->func_graph() != top_fg || IsUnSupportPrim(primal_cnode)) {
+    return;
+  }
+  // Process primal abstract
+  const auto &prim_abstract = primal_cnode->abstract();
+  if (!IsValidAbstract(prim_abstract)) {
+    return;
+  }
+  MS_LOG(INFO) << "Reuse forward output node: " << primal_cnode->DebugString()
+               << ", with index: " << fprop_sub_fgs_.size();
+  (void)fprop_sub_fgs_.emplace_back(k_fg);
+  (void)replace_nodes_.emplace_back(primal_cnode);
+  (void)replace_nodes_abs_.emplace_back(prim_abstract);
+}
+
 void BpropGenerator::Init() {
   basic_graph_ = std::make_shared<FuncGraph>();
   basic_graph_->debug_info()->set_name("bprop_builder");
@@ -519,27 +587,8 @@ void BpropGenerator::Init() {
     if (k_fg->has_flag(opt::irpass::kFlagNeedCheckViewInplaceDoutBprop)) {
       basic_graph_->set_flag(opt::irpass::kFlagNeedCheckViewInplaceDoutBprop, true);
     }
-    // Find primal cnode for this fprop
-    const auto &primal_cnode_iter = k_fg->transforms().find("primal_cnode");
-    if (primal_cnode_iter == k_fg->transforms().end()) {
-      continue;
-    }
-    // Filter control flow graph and unsupported prim
-    const auto &primal_cnode = primal_cnode_iter->second.primal_cnode();
-    MS_EXCEPTION_IF_NULL(primal_cnode);
-    if (primal_cnode->func_graph() != primal_fg || IsUnSupportPrim(primal_cnode)) {
-      continue;
-    }
-    // Process primal abstract
-    const auto &prim_abstract = primal_cnode->abstract();
-    if (!prim_abstract || !prim_abstract->isa<abstract::AbstractTensor>()) {
-      continue;
-    }
-    MS_LOG(DEBUG) << "Reuse forward output node: " << primal_cnode->DebugString()
-                  << ", with index: " << fprop_sub_fgs_.size();
-    (void)fprop_sub_fgs_.emplace_back(k_fg);
-    (void)replace_nodes_.emplace_back(primal_cnode);
-    (void)replace_nodes_abs_.emplace_back(prim_abstract);
+    ReuseCustomBpropForwardOutput(k_fg, primal_fg);
+    ReusePrimalCNode(k_fg, primal_fg);
   }
   MS_LOG(INFO) << "Finish init generating basic bprop func graph for " << fprop_graph_->ToString() << ", there are "
                << fprop_sub_fgs_.size() << " forward nodes could be reused.";

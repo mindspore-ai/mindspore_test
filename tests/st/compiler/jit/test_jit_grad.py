@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+import os
+import shutil
+import subprocess
 import pytest
 import numpy as np
 from mindspore.common import Tensor, Parameter
@@ -489,6 +492,50 @@ def test_jit_grad_with_custom_bprop():
                           [4.2, 2.4, 6.6]]).astype(np.float32)
     assert np.allclose(output[0].asnumpy(), expect_dx)
     assert np.allclose(output[1].asnumpy(), expect_dy)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_jit_grad_with_out_cell_custom_bprop_node_reuse():
+    """
+    Feature: Custom cell bprop.
+    Description: Test grad jit scene for custom cell bprop.
+    Expectation: Success.
+    """
+    class NetInner(nn.Cell):
+        def construct(self, x, y):
+            z = x * y
+            z = z * y
+            return z
+
+        def bprop(self, x, y, out, dout):
+            x_dout = x - out
+            y_dout = x - y
+            return x_dout, y_dout, out, dout
+
+    class Net(nn.Cell):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.block = NetInner()
+
+        @jit
+        def construct(self, x, y):
+            return self.block(x, y)
+
+    save_graphs_path = "./test_jit_grad_cell_custom_bprop"
+    context.set_context(save_graphs=True, save_graphs_path=save_graphs_path)
+
+    grad_all = ops.GradOperation(get_all=True)
+    output = grad_all(Net())(Tensor(1, mstype.float32), Tensor(2, mstype.float32))
+
+    para = '= PrimFunc_Mul(%'
+    output = subprocess.check_output(
+        ["grep -r '%s' %s | wc -l" % (para, os.path.join(save_graphs_path, "opt_backward_[0-9]*.ir"))],
+        shell=True)
+    out = str(output, 'utf-8').strip()
+    assert out == "0"
+
+    if os.path.exists(save_graphs_path):
+        shutil.rmtree(save_graphs_path)
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')

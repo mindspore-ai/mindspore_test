@@ -284,14 +284,6 @@ void CheckInvalidDoutFromElementsUseFlag(const FuncGraphPtr &func_graph, bool ne
   // If passed, just return
   // If has invalid dout, do second check to avoid incorrect element_use_flag
 
-#ifdef ENABLE_DUMP_IR
-  auto context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context);
-  if (context->CanDump(kIntroductory)) {
-    DumpIR("opt_check_invalid_dout_before_first_check" + func_graph->ToString() + ".ir", func_graph);
-  }
-#endif
-
   if (!CheckInvalidDoutOfBprop(func_graph, false)) {
     return;
   }
@@ -300,6 +292,14 @@ void CheckInvalidDoutFromElementsUseFlag(const FuncGraphPtr &func_graph, bool ne
   if (need_clone) {
     check_func_graph = BasicClone(func_graph);
   }
+
+#ifdef ENABLE_DUMP_IR
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  if (context->CanDump(kIntroductory)) {
+    DumpIR("opt_check_invalid_dout_after_first_check" + check_func_graph->ToString() + ".ir", check_func_graph);
+  }
+#endif
 
   // Remark element use flag and remove unused nodes until not change
   bool is_changed = true;
