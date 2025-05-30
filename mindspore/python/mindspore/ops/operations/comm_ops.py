@@ -300,7 +300,7 @@ class AllGather(PrimitiveWithInfer):
 
     Outputs:
         Tensor. If the number of devices in the group is N,
-        then the shape of output is :math:`(N, x_1, x_2, ..., x_R)`.
+        then the shape of output is :math:`(N*x_1, x_2, ..., x_R)`.
 
     Raises:
         TypeError: If `group` is not a str.
