@@ -28,11 +28,12 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
+
 namespace mindspore::graphkernel {
 bool IsMatMul(const AnfNodePtr &node) {
-  return IsPrimitiveCNode(node, prim::kPrimMatMul) || IsPrimitiveCNode(node, prim::kPrimBatchMatMul) ||
-         (IsPrimitiveCNode(node, prim::kPrimGroupedMatmul) &&
-          StaticShapeCluster::CanClusterableOp(node, StaticShapeCluster::GetClusterOps()));
+  return (IsPrimitiveCNode(node, prim::kPrimMatMul) || IsPrimitiveCNode(node, prim::kPrimBatchMatMul) ||
+          IsPrimitiveCNode(node, prim::kPrimGroupedMatmul)) &&
+         StaticShapeCluster::CanClusterableOp(node, StaticShapeCluster::GetClusterOps());
 }
 
 bool IsTargetTranspose(const AnfNodePtr &input) {
@@ -108,6 +109,10 @@ bool TransposeMatmulFusion::Run(const FuncGraphPtr &func_graph) {
         bool ori_trans = GetValue<bool>(prim->GetAttr(attr_name));
         prim->set_attr(attr_name, MakeValue<bool>(trans ^ ori_trans));
         matmul->set_input(i, trans_node->cast<CNodePtr>()->input(kIndex1));
+        if (cb->IsUseDeviceInfo()) {
+          auto build_info = AnfAlgo::GetSelectKernelBuildInfo(node);
+          AnfAlgo::SetSelectKernelBuildInfo(build_info, matmul.get());
+        }
       }
     }
   }

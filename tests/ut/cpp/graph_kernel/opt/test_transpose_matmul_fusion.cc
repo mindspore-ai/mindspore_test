@@ -45,6 +45,7 @@ TEST_P(TestTransposeMatMulFusion, test_transpose_matmul_fusion) {
   const auto &param = GetParam();
   // construct graph, set abstract and kernel info.
   ConstructGraph c;
+  SetGraphKernelFlags("--enable_cluster_ops=BatchMatMul,MatMul");
   AnfNodePtr x1 = c.NewTensorInput("x1", kFloat16, param.shape_a);
   AnfNodePtr x2 = c.NewTensorInput("x2", kFloat16, param.shape_b);
   auto x3 = c.NewValueNode(MakeValue<bool>(param.ori_trans_a));
@@ -79,11 +80,11 @@ TEST_P(TestTransposeMatMulFusion, test_transpose_matmul_fusion) {
 
 INSTANTIATE_TEST_CASE_P(
   TestTransposeMatMulCases, TestTransposeMatMulFusion,
-  testing::Values(TestParams{"MatMul", {128, 256}, {512, 256}, {1, 0}, false, false, false, true},
-                  TestParams{"MatMul", {256, 256}, {256, 256}, {1, 0}, false, false, true, false},
-                  TestParams{"MatMul", {256, 256}, {256, 256}, {1, 0}, false, true, false, true},
-                  TestParams{"MatMul", {256, 256}, {256, 256}, {1, 0}, true, false, true, false},
-                  TestParams{"BatchMatMul", {4, 128, 256}, {1, 512, 256}, {0, 2, 1}, false, false, false, true},
+  testing::Values(TestParams{"MatMul", {1280, 2560}, {5120, 2560}, {1, 0}, false, false, false, true},
+                  TestParams{"MatMul", {2560, 2560}, {2560, 2560}, {1, 0}, false, false, true, false},
+                  TestParams{"MatMul", {2560, 2560}, {2560, 2560}, {1, 0}, false, true, false, true},
+                  TestParams{"MatMul", {2560, 2560}, {2560, 2560}, {1, 0}, true, false, true, false},
+                  TestParams{"BatchMatMul", {4, 1280, 2560}, {1, 5120, 2560}, {0, 2, 1}, false, false, false, true},
                   TestParams{
-                    "BatchMatMul", {3, 4, 128, 256}, {1, 4, 512, 256}, {0, 1, 3, 2}, false, false, false, true}));
+                    "BatchMatMul", {3, 4, 1280, 2560}, {1, 4, 5120, 2560}, {0, 1, 3, 2}, false, false, false, true}));
 }  // namespace mindspore::graphkernel::test
