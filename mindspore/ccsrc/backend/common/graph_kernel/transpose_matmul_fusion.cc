@@ -31,9 +31,9 @@
 
 namespace mindspore::graphkernel {
 bool IsMatMul(const AnfNodePtr &node) {
-  return (IsPrimitiveCNode(node, prim::kPrimMatMul) || IsPrimitiveCNode(node, prim::kPrimBatchMatMul) ||
-          IsPrimitiveCNode(node, prim::kPrimGroupedMatmul)) &&
-         StaticShapeCluster::CanClusterableOp(node, StaticShapeCluster::GetClusterOps());
+  return IsPrimitiveCNode(node, prim::kPrimMatMul) || IsPrimitiveCNode(node, prim::kPrimBatchMatMul) ||
+         (IsPrimitiveCNode(node, prim::kPrimGroupedMatmul) &&
+          StaticShapeCluster::CanClusterableOp(node, StaticShapeCluster::GetClusterOps()));
 }
 
 bool IsTargetTranspose(const AnfNodePtr &input) {
@@ -89,6 +89,7 @@ bool TransposeMatmulFusion::Run(const FuncGraphPtr &func_graph) {
   MS_EXCEPTION_IF_NULL(mng);
   auto cb = Callback::Instance();
   MS_EXCEPTION_IF_NULL(cb);
+  bool changed = false;
   auto nodes = TopoSort(func_graph->get_return());
   for (const auto &node : nodes) {
     if (!IsMatMul(node)) {
@@ -99,23 +100,27 @@ bool TransposeMatmulFusion::Run(const FuncGraphPtr &func_graph) {
     }
     auto matmul = node->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(matmul);
-    auto prim = GetCNodePrimitive(matmul);
-    MS_EXCEPTION_IF_NULL(prim);
+
     for (size_t i = kIndex1; i < kIndex3; i++) {
       auto trans_node = matmul->input(i);
       bool trans = IsTargetTranspose(trans_node);
       if (trans) {
+        auto prim = GetCNodePrimitive(matmul);
+        MS_EXCEPTION_IF_NULL(prim);
+        changed = true;
         auto attr_name = i == kIndex1 ? kTransposeA : kTransposeB;
         bool ori_trans = GetValue<bool>(prim->GetAttr(attr_name));
-        prim->set_attr(attr_name, MakeValue<bool>(trans ^ ori_trans));
-        matmul->set_input(i, trans_node->cast<CNodePtr>()->input(kIndex1));
-        if (cb->IsUseDeviceInfo()) {
-          auto build_info = AnfAlgo::GetSelectKernelBuildInfo(node);
-          AnfAlgo::SetSelectKernelBuildInfo(build_info, matmul.get());
-        }
+        auto new_prim = prim->Clone();
+        new_prim->set_attr(attr_name, MakeValue<bool>(trans ^ ori_trans));
+        matmul->set_input(0, NewValueNode(new_prim));
+        mng->SetEdge(matmul, i, trans_node->cast<CNodePtr>()->input(kIndex1));
       }
     }
   }
-  return true;
+  if (changed) {
+    mng->RemoveRoots();
+    mng->KeepRoots({func_graph});
+  }
+  return changed;
 }
 }  // namespace mindspore::graphkernel
