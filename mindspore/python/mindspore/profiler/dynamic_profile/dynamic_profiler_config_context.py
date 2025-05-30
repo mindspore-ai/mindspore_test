@@ -21,6 +21,7 @@ from mindspore.profiler.common.constant import (
     ProfilerLevel,
     AicoreMetrics,
     ExportType,
+    HostSystem
 )
 from mindspore.profiler.dynamic_profile.dynamic_profiler_utils import DynamicProfilerUtils
 
@@ -416,6 +417,7 @@ class DynamicProfilerConfigContext:
         self._activities = self._convert_activities(self._activities)
         self._aic_metrics = self._convert_aic_metrics(self._aic_metrics)
         self._export_type = self._convert_export_type(self._export_type)
+        self._host_sys = self._convert_host_sys(self._host_sys)
         not_supported_args = ['_start_step', '_stop_step', '_analyse_mode', '_is_valid']
         res = {}
         for key, value in self.__dict__.items():
