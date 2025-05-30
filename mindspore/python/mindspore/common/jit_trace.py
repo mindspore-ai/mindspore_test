@@ -143,7 +143,6 @@ def _jit_trace():
 
         if hasattr(fn, "__wrapped_by_jit__"):
             logger.warning(f"The fn {fn} should be wrapped by jit only once.")
-        setattr(fn, "__wrapped_by_jit__", True)
 
         @wraps(fn)
         def jit_trace_wrap(*args, **kwargs):
@@ -183,6 +182,7 @@ def _jit_trace():
             return output
 
         jit_trace_wrap.__trace_func__ = True
+        setattr(jit_trace_wrap, "__wrapped_by_jit__", True)
         return jit_trace_wrap
 
     return wrap_func
