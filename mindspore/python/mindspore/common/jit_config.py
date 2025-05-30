@@ -97,7 +97,7 @@ class JitConfig:
         self.jit_config_dict["debug_level"] = debug_level
         self.jit_config_dict["infer_boost"] = infer_boost
         if "backend" not in self.jit_config_dict:
-            if jit_level == "O0" or jit_level == "O1":
+            if jit_level in ["O0", "O1"]:
                 self.jit_config_dict["backend"] = "ms_backend"
             elif jit_level == "O2":
                 self.jit_config_dict["backend"] = "GE"
