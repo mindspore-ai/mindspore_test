@@ -82,14 +82,8 @@ void SpeedFusionAttentionGradAscendCustomize(
   auto prefix_array = ConvertValueTupleToVector<int64_t>(prefix);
   auto actual_seq_qlen_array = ConvertValueTupleToVector<int64_t>(actual_seq_qlen);
   auto actual_seq_kvlen_array = ConvertValueTupleToVector<int64_t>(actual_seq_kvlen);
-  std::optional<std::vector<int64_t>> q_start_idx_array = std::nullopt;
-  std::optional<std::vector<int64_t>> kv_start_idx_array = std::nullopt;
-  if (q_start_idx.has_value()) {
-    q_start_idx_array.emplace(ConvertValueTupleToVector<int64_t>(q_start_idx.value()));
-  }
-  if (kv_start_idx.has_value()) {
-    kv_start_idx_array.emplace(ConvertValueTupleToVector<int64_t>(kv_start_idx.value()));
-  }
+  auto q_start_idx_array = ConvertValueTupleToVector<int64_t>(q_start_idx);
+  auto kv_start_idx_array = ConvertValueTupleToVector<int64_t>(kv_start_idx);
 
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), query, key, value, dy, pse, dropout_mask,
                                 padding_mask, atten_mask, softmax_max, softmax_sum, softmax_in, attention_in);
