@@ -245,7 +245,12 @@ class MultiheadAttention(Cell):
 class TransformerEncoderLayer(Cell):
     r"""
     Transformer Encoder Layer. This is an implementation of the single layer of the transformer
-    encoder layer, including multihead attention and feedward layer.
+    encoder layer, mainly including Multi-Head Attention, Feed Forward, Add and LayerNorm layer.
+
+    The TransformerEncoderLayer structure is shown in the following figure:
+
+    .. image:: ../images/TransformerEncoderLayer.png
+        :align: center
 
     Args:
         d_model (int): The number of features in the input tensor.
