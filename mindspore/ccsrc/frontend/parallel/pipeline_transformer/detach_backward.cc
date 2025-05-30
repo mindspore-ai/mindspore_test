@@ -186,12 +186,12 @@ std::vector<size_t> DetachBackward::HandleBwdGraphOutputs(
   const std::vector<AnfNodePtr> &parameters, size_t partial_input_size) {
   auto output = fg->output();
   const auto &dx_out_inputs = out_inputs.first;
-  if (!is_dw_fg && dx_out_inputs.size() > 1) {
+  if (!is_dw_fg && !dx_out_inputs.empty()) {
     auto make_tuple = CreateMakeTuple(fg, dx_out_inputs);
     manager_->Replace(output, make_tuple);
   }
   const auto &dw_out_inputs = out_inputs.second;
-  if (is_dw_fg && dw_out_inputs.size() > 1) {
+  if (is_dw_fg && !dw_out_inputs.empty()) {
     auto make_tuple = CreateMakeTuple(fg, dw_out_inputs);
     manager_->Replace(output, make_tuple);
     manager_->SetParameters(fg, parameters);

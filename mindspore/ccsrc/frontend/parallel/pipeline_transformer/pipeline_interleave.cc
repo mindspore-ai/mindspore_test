@@ -1514,6 +1514,9 @@ std::vector<AnfNodePtr> PipelinePostProcess::PartitionVShapeChunkGraph(const std
       continue;
     }
     auto recv_c = node->cast<CNodePtr>();
+    if (recv_c->HasPrimalAttr(PIPELINE_PARAM)) {
+      continue;
+    }
     auto is_v_shape = GetValue<bool>(recv_c->GetPrimalAttr(V_SHAPE));
     if (!is_v_shape) {
       continue;
@@ -1521,6 +1524,9 @@ std::vector<AnfNodePtr> PipelinePostProcess::PartitionVShapeChunkGraph(const std
     auto recv_tag = GetValue<int64_t>(recv_c->GetPrimalAttr(ORDER));
     for (const auto &send : sends) {
       auto send_c = send->cast<CNodePtr>();
+      if (send_c->HasPrimalAttr(PIPELINE_PARAM)) {
+        continue;
+      }
       auto send_tag = GetValue<int64_t>(send_c->GetPrimalAttr(ORDER));
       if (recv_tag != send_tag) {
         continue;
@@ -1536,6 +1542,10 @@ std::vector<AnfNodePtr> PipelinePostProcess::PartitionVShapeChunkGraph(const std
   std::vector<AnfNodePtr> out_input = {NewValueNode(prim::kPrimMakeTuple)};
   for (const auto &send : sends) {
     auto send_c = send->cast<CNodePtr>();
+    if (send_c->HasPrimalAttr(PIPELINE_PARAM)) {
+      out_input.emplace_back(send);
+      continue;
+    }
     auto is_v_shape = GetValue<bool>(send_c->GetPrimalAttr(V_SHAPE));
     if (is_v_shape) {
       continue;
