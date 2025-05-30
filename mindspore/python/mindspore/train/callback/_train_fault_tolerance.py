@@ -460,7 +460,7 @@ class TrainFaultTolerance(Callback):
         """
         if self._only_enable_tre():
             return
-        self._clear_unique_id()
+
         if self.has_init_replica is False:
             self.has_init_replica = True
             self._set_tft_optimizer_replica(run_context)
@@ -477,6 +477,9 @@ class TrainFaultTolerance(Callback):
         else:
             raise ValueError("TFT feature need optimizer or network's optimizer!")
         self.tft.tft_end_updating_os(cb_params.cur_step_num + self.initial_step)
+        if cb_params.is_arf:
+            self.clean_unique_id = False
+        self._clear_unique_id()
         logger.info("END Set optimizer finish step status to TFT.")
 
     def on_train_begin(self, run_context):
