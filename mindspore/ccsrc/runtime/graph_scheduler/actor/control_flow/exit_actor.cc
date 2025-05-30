@@ -56,20 +56,20 @@ void ClearDeviceTensorCopyStore(const std::map<KernelWithIndex, KernelWithIndex>
     if (pair.first.first == nullptr || pair.second.first == nullptr) {
       continue;
     }
-    if (pair.first.first->isa<CNode>() && AnfAlgo::OutputAddrExist(pair.first.first, pair.first.second, false)) {
-      DeviceTensorCopyStore::GetInstance().Clear(
-        AnfAlgo::GetMutableOutputAddr(pair.first.first, pair.first.second, false).get());
+    if (pair.first.first->isa<CNode>() && AnfAlgo::ExistOutputKernelTensor(pair.first.first, pair.first.second)) {
+      KernelTensorCopyStore::GetInstance().Clear(
+        AnfAlgo::GetOutputKernelTensor(pair.first.first, pair.first.second, false).get());
       MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
         << "Device tensor copy store clear device address:"
-        << AnfAlgo::GetMutableOutputAddr(pair.first.first, pair.first.second, false)
+        << AnfAlgo::GetOutputKernelTensor(pair.first.first, pair.first.second, false)
         << " node:" << pair.first.first->fullname_with_scope() << " in actor:" << actor_name;
     }
-    if (pair.second.first->isa<CNode>() && AnfAlgo::OutputAddrExist(pair.second.first, pair.second.second, false)) {
-      DeviceTensorCopyStore::GetInstance().Clear(
-        AnfAlgo::GetMutableOutputAddr(pair.second.first, pair.second.second, false).get());
+    if (pair.second.first->isa<CNode>() && AnfAlgo::ExistOutputKernelTensor(pair.second.first, pair.second.second)) {
+      KernelTensorCopyStore::GetInstance().Clear(
+        AnfAlgo::GetOutputKernelTensor(pair.second.first, pair.second.second, false).get());
       MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
         << "Device tensor copy store clear device address:"
-        << AnfAlgo::GetMutableOutputAddr(pair.second.first, pair.second.second, false)
+        << AnfAlgo::GetOutputKernelTensor(pair.second.first, pair.second.second, false)
         << " node:" << pair.second.first->fullname_with_scope() << " in actor:" << actor_name;
     }
   }
@@ -357,8 +357,8 @@ void ExitActor::CopyDeviceAddress(OpContext<KernelTensor> *const context) {
   std::vector<KernelTensorPtr> new_kernel_tensors;
   for (size_t i = 0; i < input_kernel_tensors_.size(); ++i) {
     auto input_device_tensor =
-      input_kernel_tensors_[i] == nullptr ? nullptr : input_kernel_tensors_[i]->device_address().get();
-    if (!IsNeedCopyDeviceAddress(input_device_tensor, i)) {
+      input_kernel_tensors_[i] == nullptr ? nullptr : input_kernel_tensors_[i]->device_address();
+    if (!IsNeedCopyDeviceAddress(input_device_tensor.get(), i)) {
       (void)new_kernel_tensors.emplace_back(input_kernel_tensors_[i]);
       continue;
     }
@@ -405,7 +405,7 @@ void ExitActor::CopyDeviceAddress(OpContext<KernelTensor> *const context) {
       }
       MS_LOG(DEBUG) << "Sync device address from:" << input_device_tensor->PrintInfo()
                     << " to:" << new_device_tensor->PrintInfo() << " in actor:" << GetAID();
-      if (!SyncCopy(new_device_tensor.get(), input_device_tensor, kDefaultStreamIndex)) {
+      if (!SyncCopy(new_device_tensor, input_device_tensor, kDefaultStreamIndex)) {
         SET_OPCONTEXT_FAIL_RET_WITH_ERROR(*context, "Sync device to device failed.");
       }
     } else {
@@ -432,7 +432,7 @@ void ExitActor::CopyDeviceAddress(OpContext<KernelTensor> *const context) {
       }
       // Move the device ptr from input_device_tensor to new_device_tensor.
       input_device_tensor->Swap(new_device_tensor.get());
-      DeviceTensorCopyStore::GetInstance().Replace(input_device_tensor, new_device_tensor.get());
+      KernelTensorCopyStore::GetInstance().Replace(input_kernel_tensors_[i].get(), new_kernel_tensor.get());
       if (new_device_tensor->deleter() == nullptr) {
         new_device_tensor->set_from_mem_pool(true);
       }

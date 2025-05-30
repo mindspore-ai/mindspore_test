@@ -47,6 +47,7 @@ namespace ascend {
 class AscendKernelRuntime;
 class AscendRuntimeCore;
 class AscendMemoryManager;
+class AscendResManager;
 class DataDumper;
 namespace tasksink {
 class TaskGenerator;
@@ -56,6 +57,7 @@ namespace gpu {
 class GPUKernelRuntime;
 class GPUMemoryManager;
 class GPUDeviceContext;
+class GPUResManager;
 }  // namespace gpu
 }  // namespace device
 class SingleOpInferSession;
@@ -627,9 +629,11 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   friend class mindspore::device::gpu::GPUKernelRuntime;
   friend class mindspore::device::gpu::GPUMemoryManager;
   friend class mindspore::device::gpu::GPUDeviceContext;
+  friend class mindspore::device::gpu::GPUResManager;
   friend class mindspore::device::ascend::AscendKernelRuntime;
   friend class mindspore::device::ascend::AscendRuntimeCore;
   friend class mindspore::device::ascend::AscendMemoryManager;
+  friend class mindspore::device::ascend::AscendResManager;
   friend class mindspore::device::ascend::DataDumper;
   friend class mindspore::SingleOpInferSession;
   friend class mindspore::RuntimeUtils;

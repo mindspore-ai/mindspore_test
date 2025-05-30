@@ -96,6 +96,7 @@ class GPUDeviceAddress : public LoadableDeviceAddress {
                            const std::string &format, size_t stream_id = SIZE_MAX) const override;
 
  private:
+  friend class GPUResManager;
   HalResBase *GetHalRes() const {
     device::ResKey res_key{device::GetDeviceTypeByName(device_name()), device_id()};
     auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);

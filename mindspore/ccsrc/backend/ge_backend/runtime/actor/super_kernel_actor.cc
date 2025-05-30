@@ -457,7 +457,7 @@ bool SuperKernelActor::CopyInputData(const OpContext<KernelTensor> *context, con
       continue;
     }
     MS_EXCEPTION_IF_NULL(input_kernel_tensor);
-    auto input_device_tensor = input_kernel_tensors_[i]->device_address().get();
+    auto input_device_tensor = input_kernel_tensors_[i]->device_address();
     MS_EXCEPTION_IF_NULL(input_device_tensor);
     UpdateShape(input_nodes[i], node_device_kernel_tensor, input_kernel_tensor, type_);
     node_device_tensor->set_user_data(input_device_tensor->user_data());
@@ -491,13 +491,13 @@ bool SuperKernelActor::CopyInputData(const OpContext<KernelTensor> *context, con
                  << " to device address:" << copy_device_tensor << " ptr:" << copy_device_tensor->GetPtr()
                  << " size:" << copy_device_tensor->GetSize() << ", type:" << copy_device_tensor->GetDeviceType()
                  << ", is ref node need copy back:" << is_parameters_need_copy_[i] << " for actor:" << GetAID();
-    if (!SyncCopy(copy_device_tensor.get(), input_device_tensor, kDefaultStreamIndex)) {
+    if (!SyncCopy(copy_device_tensor, input_device_tensor, kDefaultStreamIndex)) {
       MS_LOG(ERROR) << "Copy data failed for actor:" << GetAID() << " input index:" << i;
       continue;
     }
 
     if (is_parameters_need_copy_[i]) {
-      ref_node_addr_map_[copy_device_tensor.get()] = input_device_tensor;
+      ref_node_addr_map_[copy_device_tensor] = input_device_tensor;
     }
   }
   return true;

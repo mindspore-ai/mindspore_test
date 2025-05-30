@@ -195,7 +195,7 @@ void HostQueueDataSourceActor::OnMemoryAllocFinish(OpContext<KernelTensor> *cons
         if (tensor_device_address == device_tensor) {
           continue;
         }
-        if (!SyncCopy(device_tensor.get(), tensor_device_address.get(), kDefaultStreamIndex)) {
+        if (!SyncCopy(device_tensor, tensor_device_address, kDefaultStreamIndex)) {
           SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "Copy data failed.");
         }
         continue;
@@ -208,11 +208,11 @@ void HostQueueDataSourceActor::OnMemoryAllocFinish(OpContext<KernelTensor> *cons
       if (enable_async_copy) {
         MS_LOG(INFO) << "Index :" << i
                      << ", data_node_with_indexs_[i].first : " << data_node_with_indexs_[i].first->DebugString();
-        if (!AsyncCopy(device_tensor.get(), host_tensor->device_address().get(), kDefaultStreamIndex)) {
+        if (!AsyncCopy(device_tensor, host_tensor->device_address(), kDefaultStreamIndex)) {
           SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "SyncHostToDevice failed.");
         }
       } else {
-        if (!SyncCopy(device_tensor.get(), host_tensor->device_address().get(), kDefaultStreamIndex)) {
+        if (!SyncCopy(device_tensor, host_tensor->device_address(), kDefaultStreamIndex)) {
           SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "SyncHostToDevice failed.");
         }
       }

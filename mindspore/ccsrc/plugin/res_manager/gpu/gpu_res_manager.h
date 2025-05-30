@@ -20,6 +20,7 @@
 #include <string>
 #include <unordered_map>
 #include <memory>
+#include <cuda_runtime_api.h>
 #include "runtime/device/res_manager/hal_res_base.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
 #include "runtime/device/res_manager/swap_manager.h"
@@ -31,7 +32,6 @@ namespace gpu {
 #define RECOMMEND_SM 7
 #define BASE 10.0
 using DeviceMemInfo = std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>;
-
 class GPUResManager : public HalResBase {
  public:
   explicit GPUResManager(const ResKey &res_key) : HalResBase(res_key) {}
@@ -57,8 +57,10 @@ class GPUResManager : public HalResBase {
                                        TypeId type_id, const std::string &device_name, uint32_t device_id,
                                        uint32_t stream_id, const UserDataPtr &user_data = nullptr) const override;
 
-  bool SyncCopy(const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync, size_t stream_id) const override;
-  bool AsyncCopy(const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync, size_t stream_id) const override;
+  bool SyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+                size_t stream_id) const override;
+  bool AsyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+                 size_t stream_id) const override;
 
   std::pair<std::vector<size_t>, std::vector<size_t>> AllocDeviceMemoryForTensorList(
     const std::vector<tensor::TensorPtr> &tensor_list, bool enable_mem_align) override;
@@ -121,6 +123,22 @@ class GPUResManager : public HalResBase {
   void ResetMaxMemoryReserved() override;
   void ResetMaxMemoryAllocated() override;
   bool InitDevice();
+
+ private:
+  bool SyncDeviceToHost(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+                        size_t stream_id) const;
+  bool SyncHostToDevice(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+                        size_t stream_id) const;
+  bool SyncDeviceToDevice(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+                          size_t stream_id) const;
+  bool AsyncDeviceToHost(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+                         size_t stream_id) const;
+  bool AsyncHostToDevice(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+                         size_t stream_id) const;
+  bool AsyncDeviceToDevice(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+                           size_t stream_id) const;
+  bool Copy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id,
+            cudaMemcpyKind copy_type) const;
 
  private:
   std::shared_ptr<SwapManager> swap_manager_{nullptr};

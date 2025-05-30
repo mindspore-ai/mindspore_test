@@ -954,9 +954,7 @@ void DeviceAddressUtils::CreateInputTensorAddress(const DeviceContext *device_co
   device_address->set_from_persistent_mem(tensor->is_parameter());
   device_address->set_new_ref_count(SIZE_MAX);
 
-  auto h2d = [addr, device_address]() {
-    return AsyncCopy(device_address.get(), addr.get(), device_address->stream_id());
-  };
+  auto h2d = [addr, device_address]() { return AsyncCopy(device_address, addr, device_address->stream_id()); };
   // keep origin device_address and execute in another thread.
   tensor->set_to_device(std::move(h2d));
 
@@ -1072,7 +1070,7 @@ KernelTensorPtr DeviceAddressUtils::CreateInputKernelTensor(const DeviceContext 
   if (!device_context->device_res_manager_->AllocateMemory(device_address.get())) {
     MS_LOG(EXCEPTION) << "Allocate memory failed";
   }
-  if (!AsyncCopy(device_address.get(), addr.get(), device_address->stream_id())) {
+  if (!AsyncCopy(device_address, addr, device_address->stream_id())) {
     MS_LOG(EXCEPTION) << "Copy host data to device failed";
   }
   MS_LOG(DEBUG) << "Create input tensor device address " << device_address << " for " << index

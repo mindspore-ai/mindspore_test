@@ -635,11 +635,11 @@ void ControlActor::MergeDeviceAddress(OpContext<KernelTensor> *const context,
     }
     bool ret = false;
     if (addr_list[i]->device_address()->device_name() == addr_list[0]->device_address()->device_name()) {
-      ret = SyncCopy(tmp_device_tensor.get(), addr_list[i]->device_address().get(), kDefaultStreamIndex);
+      ret = SyncCopy(tmp_device_tensor, addr_list[i]->device_address(), kDefaultStreamIndex);
     } else if (addr_list[0]->device_address()->device_name() == kCPUDevice) {
-      ret = SyncCopy(tmp_device_tensor.get(), addr_list[i]->device_address().get(), kDefaultStreamIndex);
+      ret = SyncCopy(tmp_device_tensor, addr_list[i]->device_address(), kDefaultStreamIndex);
     } else if (addr_list[i]->device_address()->device_name() == kCPUDevice) {
-      ret = SyncCopy(tmp_device_tensor.get(), addr_list[i]->device_address().get(), kDefaultStreamIndex);
+      ret = SyncCopy(tmp_device_tensor, addr_list[i]->device_address(), kDefaultStreamIndex);
     } else {
       MS_LOG(ERROR) << "Invalid device name for addr1:" << addr_list[0]->device_address()
                     << " name:" << addr_list[0]->device_address()->device_name()

@@ -130,7 +130,7 @@ Tensor &Tensor::operator=(const Tensor &tensor) {
 }
 
 template <template <class> class ImplClass = TensorDataImpl, typename... Args>
-TensorDataPtr MakeData(TypeId data_type, Args &&... args) {
+TensorDataPtr MakeData(TypeId data_type, Args &&...args) {
   return MakeTensorData(data_type, args...);
 }
 
@@ -499,7 +499,7 @@ TensorPtr Tensor::cpu() const {
     return std::make_shared<Tensor>(data_type_, shape_, device_address);
   }
   auto dst = MakeDeviceAddress(data_type_, shape_, true);
-  SyncCopy(dst.get(), device_address.get(), device_address->stream_id());
+  SyncCopy(dst, device_address, device_address->stream_id());
   return std::make_shared<Tensor>(data_type_, shape_, dst);
 }
 
