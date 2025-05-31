@@ -1478,56 +1478,13 @@ REG_BPROP_BUILDER("Dense").FreeUselessValues_IO({i2}, {}).SetBody(BODYFUNC(ib) {
   auto dout = ib->GetInput(i4);
   auto dtype = ib->GetDtype(x);
   bool is_complex = (*dtype) == (*kComplex64) || (*dtype) == (*kComplex128);
-  NodePtr dx, dw, db;
+  bool no_bias = ib->GetDtype(b)->isa<TypeNone>();
 
-  if (!IsDynamic(x->shape()) && !IsDynamic(w->shape())) {
-    if (ib->GetRank(x) == 1 && ib->GetRank(w) == 1) {
-      if (x->need_compute_grad_out()) {
-        if (is_complex) {
-          dx = ib->Mul(dout, ib->Emit("Conj", {w}));
-        } else {
-          dx = ib->Mul(dout, w);
-        }
-      } else {
-        dx = ib->OutZeros(x);
-      }
-      if (w->need_compute_grad_out()) {
-        if (is_complex) {
-          dw = ib->Mul(dout, ib->Emit("Conj", {x}));
-        } else {
-          dw = ib->Mul(dout, x);
-        }
-      } else {
-        dw = ib->OutZeros(w);
-      }
-      db = b->need_compute_grad_out() ? dout : ib->OutZeros(b);
-      return {dx, dw, db};
-    } else if (ib->GetRank(x) == 2 && ib->GetRank(w) == 1) {
-      if (x->need_compute_grad_out()) {
-        ShapeVector dout_reshape = {dout->shape()[0], 1};
-        ShapeVector w_reshape = {1, w->shape()[0]};
-        dx = ib->Mul(ib->Reshape(dout, dout_reshape), ib->Reshape(w, w_reshape));
-        if (is_complex) {
-          dx = ib->Emit("Conj", {dx});
-        }
-      } else {
-        dx = ib->OutZeros(x);
-      }
-      if (w->need_compute_grad_out()) {
-        dw = ib->Emit("MatMulExt", {ib->TransposeView(x, ib->Value(ShapeVector{1, 0})), dout});
-        if (is_complex) {
-          dw = ib->Emit("Conj", {dw});
-        }
-      } else {
-        dw = ib->OutZeros(w);
-      }
-      db = b->need_compute_grad_out() ? dout : ib->OutZeros(b);
-      return {dx, dw, db};
-    }
-  }
+  NodePtr dx = nullptr;
+  NodePtr dw = nullptr;
+  NodePtr db = nullptr;
 
   NodePtrList ret_shape = ib->ShapeCalc(g_dense_shapecalc0, {x, w, b, dout});
-
   const auto &x_2d_shape = ret_shape[i0];
   const auto &w_2d_shape = ret_shape[i1];
   const auto &dout_2d_shape = ret_shape[i2];
@@ -1542,7 +1499,7 @@ REG_BPROP_BUILDER("Dense").FreeUselessValues_IO({i2}, {}).SetBody(BODYFUNC(ib) {
   }
   if (x->need_compute_grad_out()) {
     w = ib->Reshape(w, w_2d_shape);
-    dx = ib->MatMul(dout, w, false, false);
+    dx = no_bias ? ib->MatMulExt(dout, w) : ib->MatMul(dout, w, false, false);
     if (is_complex) {
       dx = ib->Emit("Conj", {dx});
     }
@@ -1553,7 +1510,8 @@ REG_BPROP_BUILDER("Dense").FreeUselessValues_IO({i2}, {}).SetBody(BODYFUNC(ib) {
 
   if (w->need_compute_grad_out()) {
     x = ib->Reshape(x, x_2d_shape);
-    dw = ib->MatMul(dout, x, true, false);
+    dw = no_bias ? ib->MatMulExt(ib->Emit("TransposeView", {dout, ib->Value(ShapeVector{1, 0})}), x)
+                 : ib->MatMul(dout, x, true, false);
     if (is_complex) {
       dw = ib->Emit("Conj", {dw});
     }

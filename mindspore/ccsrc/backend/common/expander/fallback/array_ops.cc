@@ -465,5 +465,11 @@ REG_FALLBACK_BUILDER("UnstackExtView").SetBody(BODYFUNC(ib) {
   auto output_tuple = ib->Emit("Unstack", {input}, {{"num", MakeValue(num)}, {"axis", MakeValue(axis->BuildValue())}});
   return {output_tuple};
 });
+
+REG_FALLBACK_BUILDER("TransposeView").SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto perm = ib->GetInput(kIndex1);
+  return {ib->Transpose(input, perm)};
+});
 }  // namespace expander
 }  // namespace mindspore
