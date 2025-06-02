@@ -887,3 +887,43 @@ def test_llama2_dp8mp1pp1op():
         check_log(log_path, check_pair)
     check_peak_memory(log_path, "14350")
     check_compile_time(log_path, 15)
+
+
+def test_llama2_dp2mp4pp2vpp4op_1f1b_mte():
+    """
+    Feature: test llama2_cell_dp2mp4pp2vpp4op_1f1b_mte
+    Description: test llama2_cell_dp2mp4pp2vpp4op_1f1b_mte
+    Expectation: st pass
+    """
+    os.environ["MS_ENABLE_LCCL"] = "on"
+    case_name = "llama2_cell_dp2mp4pp2vpp4op_1f1b_mte"
+    rank_list = "0,8"
+    # wait for fixing
+    llama2_config = LLMConfig(case_name, data_parallel=2, model_parallel=4, pipeline_stage=2,
+                              micro_batch_num=2, batch_size=1, pp_interleave_num=4,
+                              pipeline_interleave=True, pipeline_scheduler="1f1b",
+                              num_layers=8, recompute=False, use_seq_parallel=True,
+                              parallel_speed_up_json={
+                                  'enable_grad_comm_opt': 'false',
+                                  'enable_opt_shard_comm_opt': 'false',
+                                  'compute_communicate_fusion_level': 3})
+    output_file, file_path = prepare_testcase_env(case_name, llama2_config)
+    sh_path = os.path.split(os.path.realpath(__file__))[0]
+    os.system(f"bash {sh_path}/run_llm_dryrun.sh 16 {rank_list} {file_path} {output_file} {case_name} pp")
+    check_pair = {"Training Over": 1}
+    real_log_path = log_path_preprocess(output_file, rank_list, case_name)
+    for log_path in real_log_path:
+        check_log(log_path, check_pair)
+        check_compile_time(log_path, 15)
+    check_peak_memory(real_log_path[0], "5622") # 5111 * 110%
+    check_peak_memory(real_log_path[1], "5620") # 5109 * 110%
+    graph_path = graph_path_preprocess(llama2_config.save_graphs_path, rank_list)
+    # stage 0
+    ops_check_pairs_0 = {"AllGatherMatmul(": 32, "MatmulReduceScatter(": 16}
+    after_inline_name_0 = find_graph_file_name(graph_path[0], "hwopt_d_after_inline_graph")
+    check_graph(graph_path[0], after_inline_name_0, ops_check_pairs_0)
+
+    # stage 1
+    after_inline_name_1 = find_graph_file_name(graph_path[1], "hwopt_d_after_inline_graph")
+    ops_check_pairs_1 = {"AllGatherMatmul(": 32, "MatmulReduceScatter(": 16}
+    check_graph(graph_path[1], after_inline_name_1, ops_check_pairs_1)

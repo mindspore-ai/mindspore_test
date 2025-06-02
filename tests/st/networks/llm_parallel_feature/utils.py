@@ -365,7 +365,7 @@ def update_parallel_speed_up_json(case_name, net_config, yaml_path, deepseekv3=F
                 print(f"Failed to update {key} to {value} in {file_path}")
                 return False
     # 3. insert the parallel_speed_up.json to the yaml file
-    insert_json = (r"""sed -i '/memory_optimize_level:/a\  ascend_config:\n    parallel_speed_up_json_path: "{}"' {}"""
+    insert_json = (r"""sed -i '/max_device_memory:/a\  ascend_config:\n    parallel_speed_up_json_path: "{}"' {}"""
                    .format(file_path, yaml_path))
     status, _ = subprocess.getstatusoutput(insert_json)
     if status != 0:
@@ -807,7 +807,8 @@ def replace_deepseekv3_config(net_config, file_path):
         'enable_parallel_optimizer: True', 'vocab_emb_dp: True',
         'full_batch: True', 'num_layers 61', 'micro_batch_num 2',
         'data_parallel: 2', 'model_parallel: 2', 'pipeline_stage: 2', 'expert_parallel: 2', 'recompute: True',
-        'select_recompute: False', 'offset: 0', "enable_deredundency: False", "npu_nums_per_device: 8"
+        'select_recompute: False', 'offset: 0', "enable_deredundency: False", "npu_nums_per_device: 8",
+        'save_graphs: False', 'save_graphs_path: "./graph"'
     ]
 
     new_list = [
@@ -823,7 +824,8 @@ def replace_deepseekv3_config(net_config, file_path):
         f'select_recompute: {net_config.select_recompute}',
         f'offset: {net_config.offset}',
         f'enable_deredundency: {net_config.enable_deredundency}',
-        f'npu_nums_per_device: {net_config.npu_nums_per_device}'
+        f'npu_nums_per_device: {net_config.npu_nums_per_device}',
+        f'save_graphs: {net_config.save_graphs}', f'save_graphs_path: "{net_config.save_graphs_path}"'
     ]
 
     if len(old_list) != len(new_list):

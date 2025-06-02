@@ -33,6 +33,7 @@
 #include "plugin/device/ascend/kernel/host/host_kernel_metadata.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_build.h"
 #include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
+#include "plugin/res_manager/ascend/collective/multi_ascend_collective_comm_lib.h"
 #include "common/kernel_build_info.h"
 #include "kernel/ascend/acl_ir/acl_helper.h"
 #include "kernel/ascend/acl_ir/op_api_util.h"
@@ -343,9 +344,31 @@ bool SetMatchKernelInfo(const CNodePtr &kernel_node, const std::vector<kernel::K
   return find_valid;
 }
 
+static std::set<std::string> lcoc_support_kernels = {"AllGatherMatmul", "MatMulAllReduce", "MatmulReduceScatter"};
+bool isSupportLcoc(const std::string &group_name, const std::string &op_name) {
+#ifdef ENABLE_INTERNAL_KERNELS
+  if (group_name.empty()) {
+    return false;
+  }
+  if (!device::ascend::AscendHalManager::GetInstance().EnableLccl()) {
+    return false;
+  }
+  if (lcoc_support_kernels.find(op_name) == lcoc_support_kernels.end()) {
+    return false;
+  }
+  std::unordered_set<std::string> lccl_enabled_groups =
+    MultiAscendCollectiveCommLib::GetInstance().GetLcclEnabledGroups();
+  if (lccl_enabled_groups.find(group_name) == lccl_enabled_groups.end()) {
+    return false;
+  }
+  return true;
+#endif
+  return false;
+}
+
 static std::once_flag kAclnnEnableListInit;
 static std::unordered_set<std::string> kAclnnEnableList;
-bool ReadAclnnEnableEnv(const std::string &op_name) {
+bool ReadAclnnEnableEnv(const std::string &op_name, const std::string &group_name) {
   static auto enable_aclnn_env = common::GetEnv("MS_ENABLE_ACLNN");
   if (enable_aclnn_env == "1") {
     return kernel::IsRegisteredAclnnOp(op_name);
@@ -373,20 +396,14 @@ bool ReadAclnnEnableEnv(const std::string &op_name) {
 
   static std::set<std::string> kAscendcKernelList = {"AllFinite",
                                                      "AllGatherMatmul",
+                                                     "MatMulAllReduce",
                                                      "MatmulReduceScatter",
                                                      "QuantBatchMatmulAllReduce",
                                                      "AlltoAllAllGatherBatchMatMul",
                                                      "BatchMatMulReduceScatterAlltoAll"};
   //  In the current kbk, MatMulAllReduce can also be implemented using LCCL operator.
-  bool enable_lccl = device::ascend::AscendHalManager::GetInstance().EnableLccl();
-  if (!enable_lccl) {
-    kAscendcKernelList = {"AllFinite",
-                          "AllGatherMatmul",
-                          "MatMulAllReduce",
-                          "MatmulReduceScatter",
-                          "AlltoAllAllGatherBatchMatMul",
-                          "BatchMatMulReduceScatterAlltoAll",
-                          "QuantBatchMatmulAllReduce"};
+  if (isSupportLcoc(group_name, op_name)) {
+    return false;
   }
 
   if (kAscendcKernelList.count(op_name) != 0) {
@@ -732,8 +749,8 @@ bool IsEnableAclnn(const KernelGraphPtr &kernel_graph, const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(kernel_graph);
   MS_EXCEPTION_IF_NULL(node);
 
+  auto primitive = GetCNodePrimitive(node);
   if (IsPrimitiveCNode(node, prim::kPrimCustom)) {
-    auto primitive = GetCNodePrimitive(node);
     auto op_type = GetValue<std::string>(primitive->GetAttr("reg_op_name"));
     op_type = kernel::AddPrefixForCustomNode(op_type, primitive->GetAttr("custom_aclop") != nullptr);
     auto op_api_func = device::ascend::GetOpApiFunc(op_type.c_str());
@@ -761,6 +778,10 @@ bool IsEnableAclnn(const KernelGraphPtr &kernel_graph, const AnfNodePtr &node) {
   }
 
   if (kernel::IsEnabledAclnnDispatch(op_name)) {
+    bool enable_lccl = device::ascend::AscendHalManager::GetInstance().EnableLccl();
+    if (enable_lccl && lcoc_support_kernels.count(op_name) != 0) {
+      return false;
+    }
     if (!kernel::IsRegisteredAclnnOp(op_name)) {
       if (kernel::IsViewOp(op_name)) {
         MS_LOG(INFO) << "Kernel " << node->fullname_with_scope() << " is view op and not support aclnn";
@@ -777,7 +798,14 @@ bool IsEnableAclnn(const KernelGraphPtr &kernel_graph, const AnfNodePtr &node) {
     return true;
   }
 
-  bool ret = ReadAclnnEnableEnv(op_name);
+  std::string group = "";
+  if (primitive->HasAttr(kAttrGroup)) {
+    auto group_attr = primitive->GetAttr(kAttrGroup);
+    if (group_attr != nullptr && group_attr->isa<StringImm>()) {
+      group = GetValue<std::string>(group_attr);
+    }
+  }
+  bool ret = ReadAclnnEnableEnv(op_name, group);
   kIsEnableAclnnMap.insert({op_name, ret});
   return ret;
 }

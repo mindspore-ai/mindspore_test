@@ -24,6 +24,7 @@
 #include "mindspore/ops/op_def/ascend_op_name.h"
 #include "mindspore/ops/op_def/nn_optimizer_op_name.h"
 #include "mindspore/ops/op_def/lite_op_name.h"
+#include "mindspore/ops/op_def/math_op_name.h"
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/other_ops.h"
@@ -1284,7 +1285,7 @@ bool AnfAlgo::IsCommunicationOp(const std::string &prim_name) {
     kReceiveOpName,         kAlltoAllOpName,        kAllToAllOpName,  kAllToAllvOpName,         kMuxReceiveOpName,
     kMuxSendOpName,         kMoeDistributeDispatch, kBarrierOpName,   kCollectiveScatterOpName, kCollectiveGatherOpName,
     kMatMulAllReduceOpName, kBatchISendIRecvOpName, kAlltoAllVOpName, kAlltoAllVGEOpName,       kAllGatherVOpName,
-    kReduceScatterVOpName,  kMoeDistributeCombine,  kReduceOpName};
+    kReduceScatterVOpName,  kMoeDistributeCombine,  kReduceOpName,    kAllGatherMatmulOpName,   kMatmulReduceScatterOpName};
   return (kCommunicationOpNames.find(prim_name) != kCommunicationOpNames.end());
 }
 

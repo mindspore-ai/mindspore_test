@@ -133,7 +133,8 @@ bool InsertTensorMoveForHcclOpGe::NeedInsertTensorMoveForSpecialCase(const AnfNo
   if (IsPrimitiveCNode(cur_node, prim::kPrimReceive)) {
     return false;
   }
-  if (IsPrimitiveCNode(cur_node, prim::kPrimAlltoAllVGE) || IsPrimitiveCNode(cur_node, prim::kPrimAllToAll)) {
+  if (IsOneOfPrimitiveCNode(cur_node, {prim::kPrimAlltoAllVGE, prim::kPrimAllToAll, prim::kPrimMatmulReduceScatter,
+                                       prim::kPrimAllGatherMatmul})) {
     return false;
   }
   // visited skip nop node.
@@ -161,7 +162,8 @@ bool InsertTensorMoveForHcclOpGe::NeedInsertTensorMove(const FuncGraphPtr &graph
   if (tuple) {
     return false;
   }
-  if (IsPrimitiveCNode(cur_node, prim::kPrimAlltoAllVGE) || IsPrimitiveCNode(cur_node, prim::kPrimAllToAll)) {
+  if (IsOneOfPrimitiveCNode(cur_node, {prim::kPrimAlltoAllVGE, prim::kPrimAllToAll, prim::kPrimMatmulReduceScatter,
+                                       prim::kPrimAllGatherMatmul})) {
     return false;
   }
   if (IsNodeOutPutUsedByOtherRealKernel(graph, input, input_idx, cur_node)) {

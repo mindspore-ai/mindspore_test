@@ -142,6 +142,9 @@ PassManagerPtr GetBackendCommonUnifyMindIRPassManager() {
   pm->AddPass(std::make_shared<opt::SyncBnSplit>());
   pm->AddPass(std::make_shared<opt::SyncBnGradSplit>());
   pm->AddPass(std::make_shared<opt::AvgPoolGradForGE>());
+  pm->AddFusionPass(std::make_shared<opt::MatmulReduceScatterFusion>());
+  pm->AddFusionPass(std::make_shared<opt::AllGatherMatmulFusion>());
+  pm->AddFusionPass(std::make_shared<opt::MatMulAllReduceFusion>());
   pm->AddPass(std::make_shared<opt::AddAttrToDump>());
   pm->AddPass(std::make_shared<opt::AscendMindIROpAdapter>());
   return pm;

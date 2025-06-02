@@ -451,3 +451,62 @@ def test_deepseekv3_cell_dp2mp2ep2pp2mb4gas1bs1_8p_bmm_performance():
     assert step_time_pass, \
         f"Training average step time is larger than the excepted average step time," \
         f"where training average step time is {average_step_time},  excepted step time is {excepted_average_step_time}."
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='allcards', essential_mark='essential')
+def test_deepseekv3_cell_dp2mp2ep2pp2mb4gas1bs1_mte_8p_gptdataset():
+    """
+    Feature: test deepseekv3 cell dp2mp2ep4pp2mb4gas1bs1 mte 8p gptdataset
+    Description: test deepseekv3 cell dp2mp2ep4pp2mb4gas1bs1 mte 8p gptdataset
+    Expectation: st pass
+    """
+    case_name = "deepseekv3_cell_dp2mp2ep2pp2mb4gas1bs1_8p_gptdataset"
+    sh_path = os.path.split(os.path.realpath(__file__))[0]
+    file_path = f"{sh_path}/pretrain_deepseek3_mte_gptdataset.yaml"
+    device_num = 8
+    master_port = 7125
+    hccl_if_base_port = 63375
+
+    os.makedirs(os.path.join(sh_path, case_name), exist_ok=True)
+    clear_directory(f"{sh_path}/{case_name}")
+
+    env_cmd = 'export MS_DEV_RUNTIME_CONF="memory_statistics:True";'
+    env_cmd += 'export MS_MEMORY_STATISTIC=1'
+    os.system(f"{env_cmd};bash {sh_path}/run_llm.sh {device_num} {file_path} \
+    {case_name} {master_port} {hccl_if_base_port} pp gpt")
+
+    # check train over
+    check_pair = {"Training Over": 1}
+    real_log_path = log_path_preprocess(case_name, device_num)
+    for log_path in real_log_path:
+        check_log(log_path, check_pair)
+        # self-test results: 745M, memory should be lower than 745 * 110%=820M
+        check_peak_memory(log_path, "820")
+
+    # check loss
+    # set the training log path
+    log_file_path = f'{sh_path}/{case_name}/worker_7.log'
+
+    # extract training loss
+    loss_list = extract_losses_from_log(log_file_path)
+
+    # set golden_loss
+    golden_loss = [12.029, 11.965, 11.790, 11.805, 11.954, 11.733]
+
+    if_equal = golden_loss == loss_list
+    assert if_equal, \
+        f"Training loss is different from the golden loss, " \
+        f"where training loss: {loss_list}, golden_loss: {golden_loss}."
+
+    # check per step time
+    # self-test results: 170ms, step time should be lower than 170+20=190ms
+    excepted_average_step_time = 200
+
+    # extract training step time
+    average_step_time = extract_average_step_time_from_log(log_file_path)
+
+    # check if the step time is lower than the excepted_average_step_time
+    step_time_pass = excepted_average_step_time > average_step_time
+    assert step_time_pass, \
+        f"Training average step time is larger than the excepted average step time," \
+        f"where training average step time is {average_step_time},  excepted step time is {excepted_average_step_time}."

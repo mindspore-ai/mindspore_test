@@ -103,6 +103,14 @@ std::vector<TypeId> AllGatherMatmulFuncImpl::InferType(const PrimitivePtr &primi
     MS_LOG(EXCEPTION) << op_name << ": bias must be None.";
   }
 
+  // Set group attribute to primitive
+  if (!primitive->HasAttr(kAttrGroup)) {
+    auto group = input_infos[kAllGatherMatmulInputGroupIndex]->GetScalarValue<std::string>();
+    if (group.has_value()) {
+      (void)primitive->AddAttr(kAttrGroup, MakeValue(group.value()));
+    }
+  }
+
   return {input_type, input_type};
 }
 }  // namespace ops
