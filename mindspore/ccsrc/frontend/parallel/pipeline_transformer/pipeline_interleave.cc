@@ -393,7 +393,84 @@ void PipelineInterleave::LabelGenMaskFusion() {
   }
 }
 
+FuncGraphPtr GetShardedFuncGraph(const CNodePtr &cnode) {
+  const size_t kShardInputSize = 6;
+  if (cnode->size() < kShardInputSize) {
+    return nullptr;
+  }
+  AnfNodePtr input0 = cnode->input(0);
+  if (!input0->isa<ValueNode>()) {
+    return nullptr;
+  }
+  auto val_node0 = input0->cast<ValueNodePtr>();
+  auto prim_val0 = GetValueNode<PrimitivePtr>(val_node0);
+  if (prim_val0 != nullptr && prim_val0->name() != prim::kPrimShard->name()) {
+    return nullptr;
+  }
+  AnfNodePtr input1 = cnode->input(1);
+  if (!input1->isa<ValueNode>()) {
+    return nullptr;
+  }
+  auto val_node1 = input1->cast<ValueNodePtr>();
+  FuncGraphPtr wrapped_fg = GetValueNode<FuncGraphPtr>(val_node1);
+  return wrapped_fg;
+}
+
+void ContainsStageInSubGraph(const FuncGraphPtr &sub_graph, const std::vector<FuncGraphPtr> &shard_subgraph_list,
+                             const std::string &error_msg) {
+  if (sub_graph->stage() != -1) {
+    MS_LOG(EXCEPTION) << error_msg << "a sub cell '" << sub_graph->ToString() << "' with pipeline stage "
+                      << sub_graph->stage() << " is not supported yet. Please Check!";
+  }
+  auto value_nodes = sub_graph->value_nodes();
+  for (const auto &value_pair : value_nodes) {
+    auto node = value_pair.first;
+    if (!IsValueNode<FuncGraph>(node)) {
+      continue;
+    }
+    auto nested_fg = GetValueNode<FuncGraphPtr>(node);
+    if (nested_fg == nullptr) {
+      continue;
+    }
+    if (std::find(shard_subgraph_list.begin(), shard_subgraph_list.end(), nested_fg) != shard_subgraph_list.end()) {
+      continue;
+    }
+    MS_LOG(INFO) << "[sub_graph] " << sub_graph->ToString() << ", [nested_fg] " << nested_fg->ToString();
+    ContainsStageInSubGraph(nested_fg, shard_subgraph_list, error_msg);
+  }
+}
+
+void TraverseAndCheckShard(const FuncGraphManagerPtr &manager) {
+  std::vector<FuncGraphPtr> shard_subgraph_list;
+  auto all_graphs = manager->func_graphs();
+  for (const auto &fg : all_graphs) {
+    for (const auto &node : fg->nodes()) {
+      if (!node->isa<CNode>()) {
+        continue;
+      }
+      auto cnode = node->cast<CNodePtr>();
+      auto wrapped_fg = GetShardedFuncGraph(cnode);
+      if (wrapped_fg == nullptr) {
+        continue;
+      }
+      if (wrapped_fg->stage() != -1) {
+        MS_LOG(EXCEPTION) << "For sharded cell '" << wrapped_fg->ToString() << ", "
+                          << "pipeline stage " << wrapped_fg->stage() << " is not supported yet. Please Check!";
+      }
+      if (std::find(shard_subgraph_list.begin(), shard_subgraph_list.end(), wrapped_fg) == shard_subgraph_list.end()) {
+        shard_subgraph_list.push_back(wrapped_fg);
+      }
+    }
+  }
+
+  for (const auto &shard_subgraph : shard_subgraph_list) {
+    const std::string error_msg = "For sharded cell '" + shard_subgraph->ToString() + "', ";
+    ContainsStageInSubGraph(shard_subgraph, shard_subgraph_list, error_msg);
+  }
+}
+
 void PipelineInterleave::Coloring() {
+  TraverseAndCheckShard(manager_);
   auto need_coloring = true;
   std::set<int64_t> stage_set;
   if (!IsTraining(manager_)) {

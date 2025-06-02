@@ -21,6 +21,7 @@ import mindspore.nn as nn
 from mindspore import Tensor, Parameter, context
 from mindspore.ops import operations as P
 from mindspore.ops import composite as C
+from mindspore.parallel.auto_parallel import AutoParallel
 from mindspore.parallel.shard import Layout
 from parallel.utils.utils import ParallelValidator, check_layout_config, compile_net
 from tests.ut.python.ops.test_math_ops import VirtualLoss
@@ -550,3 +551,82 @@ def test_cell_nested_and_repeated_shard_with_layout_be_set_and_propagate_3():
     )
     check_layout_config(para1_str, file, in_layout3_str)
     check_layout_config(para2_str, file, in_strategy4_str)
+
+
+class MatMulNet(nn.Cell):
+    def __init__(self):
+        super().__init__()
+        self.matmul = P.MatMul()
+
+    def construct(self, x, w):
+        x = self.matmul(x, w)
+        return x
+
+
+class AddNet(nn.Cell):
+    def __init__(self):
+        super().__init__()
+        self.add = P.Add()
+
+    def construct(self, x, w):
+        x = self.add(x, w)
+        return x
+
+
+class AddMatmulNet(nn.Cell):
+    def __init__(self, matmul_weight_shape, add_weight_shape, **kwargs):
+        super().__init__()
+        self.matmul_weight = Parameter(Tensor(np.ones(matmul_weight_shape), ms.float32), name="matmul_weight")
+        self.add_weight = Parameter(Tensor(np.ones(add_weight_shape), ms.float32), name="add_weight")
+        self.matmul = MatMulNet()
+        self.add = AddNet()
+
+    def construct(self, x):
+        x = self.matmul(x, self.matmul_weight)
+        x = self.add(x, self.add_weight)
+        return x
+
+
+def test_cell_shard_pp_interleave_4():
+    """
+    Feature: Test cell.shard with given layout and make shard on a pipeline_cell.
+    Description: dev_num is 8.
+    Expectation: compile with value error raised.
+    """
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation",
+                                      device_num=8, global_rank=0)
+    setup_function()
+    case_name = "test_cell_shard_pp_interleave_4"
+    ir_graph_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "layout_ir", case_name)
+    context.set_context(save_graphs=True, save_graphs_path=ir_graph_path)
+    layout = Layout((2, 4, 1), ("dp", "sp", "mp"))
+    in_layout1 = (layout("dp", "mp"),)
+    withlosscell = NetWithLoss(AddMatmulNet(matmul_weight_shape=(128, 128), add_weight_shape=(1, 128)))
+    pipeline_cell = nn.PipelineCell(withlosscell, micro_size=2, stage_config={"network.matmul": 0, "network.add": 1})
+    with pytest.raises(ValueError) as error_info:
+        pipeline_cell.shard(in_layout1)
+    assert "For 'PipelineCell', no 'shard' " in str(error_info.value)
+
+
+def test_cell_shard_pp_interleave_5():
+    """
+    Feature: Test cell.shard with given layout and make shard outside a sub cell of pipeline stage.
+    Description: dev_num is 8.
+    Expectation: compile with runtime error raised.
+    """
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation",
+                                      device_num=8, global_rank=0)
+    case_name = "test_cell_shard_pp_interleave_5"
+    ir_graph_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "layout_ir", case_name)
+    context.set_context(save_graphs=True, save_graphs_path=ir_graph_path)
+    x = Tensor(np.ones([128, 128]), dtype=ms.float32)
+    net_2 = AddMatmulNet(matmul_weight_shape=(128, 128), add_weight_shape=(1, 128))
+    withlosscell = NetWithLoss(net_2)
+    pipeline_cell = nn.PipelineCell(withlosscell, micro_size=4, stage_config={"network.matmul": 0, "network.add": 1})
+    pipeline_net = AutoParallel(pipeline_cell, parallel_mode="auto_parallel")
+    pipeline_net.pipeline(stages=2, interleave=True)
+    pipeline_net.dataset_strategy("full_batch")
+    withlosscell.shard(in_strategy=((1, 2),))
+    with pytest.raises(RuntimeError) as error_info:
+        compile_net(pipeline_net, x)
+    assert "For sharded cell " in str(error_info.value)

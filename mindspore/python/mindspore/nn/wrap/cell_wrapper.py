@@ -988,6 +988,8 @@ class PipelineCell(Cell):
             raise KeyError("For 'PipelineCell', the argument 'segment_config' : {} is not "
                            "found in 'network' : {}".format(config_dict, network))
 
+    def shard(self, in_strategy, out_strategy=None, parameter_plan=None, device="Ascend", level=0):
+        raise ValueError("For 'PipelineCell', no 'shard' on 'PipelineCell' is allowed.")
 
     def construct(self, *inputs):
         ret = None
