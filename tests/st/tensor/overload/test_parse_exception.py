@@ -18,7 +18,7 @@ from tests.mark_utils import arg_mark
 import mindspore as ms
 ms.set_context(mode=ms.PYNATIVE_MODE)
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'], level_mark='level0',
+@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 def test_extra_args_exception():
     """
@@ -33,7 +33,7 @@ def test_extra_args_exception():
     assert "takes 0 positional arguments but 1 was given" in str(raise_info.value)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'], level_mark='level0',
+@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 def test_missing_args_exception():
     """
@@ -48,7 +48,7 @@ def test_missing_args_exception():
     assert "missing 1 required positional argument: 'other'" in str(raise_info.value)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'], level_mark='level0',
+@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 def test_type_error_exception():
     """
@@ -74,7 +74,7 @@ but found type of float at pos 0" in str(raise_info.value)
     assert "argument 'keepdims' (position 2) must be bool, not int" in str(raise_info.value)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'], level_mark='level0',
+@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 def test_kw_args_exception():
     """
@@ -89,7 +89,7 @@ def test_kw_args_exception():
     assert "got an unexpected keyword argument 'il'" in str(raise_info.value)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'], level_mark='level0',
+@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 def test_multiple_sig_exception():
     """
