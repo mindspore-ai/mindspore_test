@@ -17,6 +17,7 @@ import numpy as np
 import mindspore.nn as nn
 from mindspore import Tensor
 from mindspore import context
+from mindspore import jit, ops
 from mindspore.ops import GradOperation
 from tests.mark_utils import arg_mark
 from tests.st.pynative.hook.common import assert_jit_grad_net_by_grad_op
@@ -340,3 +341,61 @@ def test_pynative_backward_pre_hook_with_backward_hook_multi_register():
     expect_grad = Tensor(np.ones([1]).astype(np.float32) * 2)
     assert np.allclose(grad[0].asnumpy(), expect_grad.asnumpy(), 0.000001, 0.000001)
     assert np.allclose(grad[1].asnumpy(), expect_grad.asnumpy(), 0.000001, 0.000001)
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_jit_backward_pre_hook_with_wrong_number_of_output():
+    """
+    Feature: PyNative hook function with jit.
+    Description: Test PyNative hook function with jit.
+    Expectation: Raise error.
+    """
+    class GradOfAllInputs(nn.Cell):
+        def __init__(self, net):
+            super().__init__()
+            self.net = net
+            self.grad_op = ops.GradOperation(get_all=True)
+
+        @jit
+        def construct(self, *inputs):
+            grad_net = self.grad_op(self.net)
+            return grad_net(*inputs)
+
+
+    class InnerNet(nn.Cell):
+        def __init__(self):
+            super(InnerNet, self).__init__()
+            self.mul = MulNet()
+            self.handle = self.mul.register_backward_pre_hook(double_pback)
+
+        def construct(self, x, y):
+            x = x + x
+            x = self.mul(x, y)
+            return x
+
+    class MulNet(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.mul = ops.Mul()
+            self.relu = nn.ReLU()
+
+        def construct(self, x, y):
+            x = self.mul(x, y)
+            x = self.relu(x)
+            return x
+
+    def double_pback(cell, grad_output):
+        return grad_output*2
+
+    input1_np = np.array([2.0, 3.0, 4.0]).astype(np.float32)
+    input2_np = np.array([2.0, 3.0, 4.0]).astype(np.float32)
+    input1_ms = Tensor(input1_np)
+    input2_ms = Tensor(input2_np)
+    ms_net = InnerNet()
+    grad_net = GradOfAllInputs(ms_net)
+    with pytest.raises(TypeError) as err:
+        grad_net(input1_ms, input2_ms)
+        assert "The backward pre hook return value size is" in str(err.value)
