@@ -20,7 +20,7 @@ from tests.mark_utils import arg_mark
 
 
 @arg_mark(plat_marks=['cpu_linux', 'platform_gpu', 'platform_ascend910b'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_pynative_pipeline():
