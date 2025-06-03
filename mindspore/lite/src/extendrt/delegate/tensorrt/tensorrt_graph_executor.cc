@@ -79,7 +79,7 @@ tensor::TensorPtr GetConstNodeValue(AnfNodePtr input_node) {
   }
   if (value->isa<tensor::Tensor>()) {
     auto tensor = value->cast<tensor::TensorPtr>();
-    if (tensor == nullptr || tensor->data().const_data() == nullptr) {
+    if (tensor == nullptr || tensor->unsafe_data() == nullptr) {
       return nullptr;
     }
     return tensor;

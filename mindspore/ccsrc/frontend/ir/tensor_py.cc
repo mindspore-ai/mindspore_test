@@ -195,7 +195,7 @@ class TensorDataNumpy : public TensorData {
   /// Data pointer.
   void *data() override { return buffer_data(); }
 
-  const void *const_data() const override { return buffer()->ptr; }
+  void *const_data() const override { return buffer()->ptr; }
 
   bool is_from_numpy() const override { return true; }
 

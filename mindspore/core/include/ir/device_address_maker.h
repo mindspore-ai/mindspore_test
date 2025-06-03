@@ -64,9 +64,11 @@ class MS_CORE_API DeviceAddressMaker {
   DeviceAddressMakerFunc maker_;
 };
 
-MS_CORE_API DeviceSyncPtr MakeDeviceAddress(TypeId data_type, const ShapeVector &shape);
+MS_CORE_API DeviceSyncPtr MakeDeviceAddress(TypeId data_type, const ShapeVector &shape, bool init = false,
+                                            device::DeviceType device_type = device::DeviceType::kCPU);
 MS_CORE_API DeviceSyncPtr MakeDeviceAddress(TypeId data_type, const ShapeVector &shape,
-                                            const tensor::TensorDataPtr &tensor_data);
+                                            const tensor::TensorDataPtr &tensor_data,
+                                            device::DeviceType device_type = device::DeviceType::kCPU);
 
 }  // namespace mindspore
 

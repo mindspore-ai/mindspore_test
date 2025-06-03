@@ -216,7 +216,7 @@ int LiteTensorExtractor::GetCNodeConstInputToAbstract(const CNodePtr &cnode, con
     }
     auto input_tensor = shape_value->cast<tensor::TensorPtr>();
     MS_CHECK_FALSE(input_tensor == nullptr, RET_ERROR);
-    if (input_tensor->data().const_data() != nullptr) {
+    if (input_tensor->unsafe_data() != nullptr) {
       MS_LOG(DEBUG) << "abstract already have const data.";
       continue;
     }

@@ -153,7 +153,7 @@ bool ConvertConstInputToAttr(const CNodePtr &cnode, const std::map<size_t, std::
       if (value->isa<tensor::Tensor>()) {
         auto tensor = value->cast<tensor::TensorPtr>();
         MS_EXCEPTION_IF_NULL(tensor);
-        if (tensor->data().const_data() == nullptr && !tensor->has_user_data(kTensorValueIsEmpty)) {
+        if (tensor->unsafe_data() == nullptr && !tensor->has_user_data(kTensorValueIsEmpty)) {
           MS_LOG(DEBUG) << "Const input data ptr is null from op " << cnode->fullname_with_scope() << "'s input " << i;
           return false;
         }

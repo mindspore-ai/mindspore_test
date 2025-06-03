@@ -1683,17 +1683,17 @@ class TensorData : public MetaTensorData {
   bool CheckTensorData(const mindspore::tensor::TensorPtr &tensor_ptr) const {
     bool ret = false;
     if (specialized_) {
-      auto data = tensor_ptr->data_ptr();
-      if (data_ptr_ == nullptr || reinterpret_cast<uint8_t *>(data->data()) == nullptr) {
-        ret = data_len_ == size_t(data->nbytes());
-      } else if (data_len_ == size_t(data->nbytes())) {
-        ret = memcmp(data_ptr_.get(), reinterpret_cast<uint8_t *>(data->data()), data_len_) == 0;
+      if (data_ptr_ == nullptr ||
+          reinterpret_cast<uint8_t *>(tensor_ptr->device_address()->GetMutablePtr()) == nullptr) {
+        ret = data_len_ == size_t(tensor_ptr->DataNBytes());
+      } else if (data_len_ == size_t(tensor_ptr->DataNBytes())) {
+        ret = memcmp(data_ptr_.get(), reinterpret_cast<uint8_t *>(tensor_ptr->device_address()->GetMutablePtr()),
+                     data_len_) == 0;
       } else {
         ret = false;
       }
     } else {
-      auto data = tensor_ptr->data_ptr();
-      ret = data_len_ == size_t(data->nbytes());
+      ret = data_len_ == size_t(tensor_ptr->DataNBytes());
     }
     return ret;
   }
@@ -1731,16 +1731,16 @@ class TensorData : public MetaTensorData {
       qptr->set_attrs(quant->attrs());
     }
     if (specialized_) {
-      tensor_ptr->data_sync(true);
-      auto data = tensor_ptr->data_ptr();
-      data_len_ = size_t(data->nbytes());
+      auto cpu_tensor = tensor_ptr->cpu();
+      data_len_ = size_t(cpu_tensor->DataNBytes());
       data_ptr_ = std::make_unique<uint8_t[]>(data_len_);
       if (data_ptr_ != nullptr) {
-        memcpy_s(data_ptr_.get(), data_len_, reinterpret_cast<uint8_t *>(data->data()), data_len_);
+        memcpy_s(data_ptr_.get(), data_len_, reinterpret_cast<uint8_t *>(cpu_tensor->device_address()->GetMutablePtr()),
+                 data_len_);
       }
     } else {
       data_ptr_.reset(nullptr);
-      data_len_ = size_t(tensor_ptr->data_ptr()->nbytes());
+      data_len_ = size_t(tensor_ptr->DataNBytes());
     }
   }
 

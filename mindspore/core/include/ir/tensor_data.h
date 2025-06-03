@@ -65,7 +65,7 @@ class MS_CORE_API TensorData {
   /// \brief Get const data pointer.
   ///
   /// \return Const data pointer.
-  virtual const void *const_data() const = 0;
+  virtual void *const_data() const = 0;
 
   /// \brief Get whether this tensor data is from numpy.
   ///
@@ -533,7 +533,7 @@ class TensorDataImpl : public TensorData {
 
   const std::string file_path() const override { return file_path_; }
 
-  const void *const_data() const override {
+  void *const_data() const override {
     // May return nullptr if data not initialized.
     if (ref_mem_) {
       return external_data_;
