@@ -681,12 +681,12 @@ std::string CSRTensor::ToString() const {
   MS_EXCEPTION_IF_NULL(indices_);
   MS_EXCEPTION_IF_NULL(indptr_);
   auto dtype = values_->Dtype();
-  values_->data_sync(true);
-  indices_->data_sync(true);
-  indptr_->data_sync(true);
+  auto values_cpu = values_->cpu();
+  auto indices_cpu = indices_->cpu();
+  auto indptr_cpu = indptr_->cpu();
   buf << "CSRTensor(shape=" << ShapeToString(shape_) << ", dtype=" << dtype->ToString() << ", indptr=";
-  buf << indptr_->ToString() << ", indices=" << indices_->ToString() << ", values=";
-  buf << values_->ToString() << ")";
+  buf << indptr_cpu->ToString() << ", indices=" << indices_cpu->ToString() << ", values=";
+  buf << values_cpu->ToString() << ")";
   return buf.str();
 }
 
@@ -758,11 +758,11 @@ std::string COOTensor::ToString() const {
   std::ostringstream buf;
   MS_EXCEPTION_IF_NULL(indices_);
   MS_EXCEPTION_IF_NULL(values_);
-  indices_->data_sync(true);
-  values_->data_sync(true);
+  auto indices_cpu = indices_->cpu();
+  auto values_cpu = values_->cpu();
   auto dtype = values_->Dtype();
   buf << "COOTensor(shape=" << ShapeToString(shape_) << ", dtype=" << dtype->ToString()
-      << ", indices=" << indices_->ToString() << ", values=" << values_->ToString() << ")";
+      << ", indices=" << indices_cpu->ToString() << ", values=" << values_cpu->ToString() << ")";
   return buf.str();
 }
 

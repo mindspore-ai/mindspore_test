@@ -51,8 +51,8 @@ void SpeedFusionAttentionGradAscendCustomize(
 
   std::optional<TensorPtr> dropout_mask = std::nullopt;
   auto numels_tensor = numels.value();
-  numels_tensor->data_sync();
-  int64_t numels_value = *static_cast<int64_t *>(numels_tensor->data_c());
+  auto numels_tensor_cpu = numels_tensor->cpu();
+  int64_t numels_value = *static_cast<const int64_t *>(numels_tensor_cpu->data_c());
   double keep_prob_value = static_cast<double>(GetValue<float>(keep_prob));
   if (keep_prob_value > 0.0 && keep_prob_value < 1.0) {
     auto p = std::make_shared<FP32Imm>(static_cast<float>(1 - keep_prob_value));

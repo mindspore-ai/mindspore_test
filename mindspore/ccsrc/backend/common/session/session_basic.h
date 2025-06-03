@@ -236,9 +236,6 @@ class BACKEND_COMMON_EXPORT SessionBasic : public KernelGraphMgr, public std::en
     MS_LOG(INFO) << "Call default LoadInputData with input size: " << inputs_const.size();
   }
 
-  void UpdateOutputs(const std::shared_ptr<KernelGraph> &kernel_graph, VectorRef *const outputs,
-                     const std::vector<tensor::TensorPtr> &input_tensors,
-                     std::map<tensor::TensorPtr, session::KernelWithIndex> *tensor_to_node) const;
   // create graph output for RunOp
   void CreateOutputNode(const CNodePtr &cnode, const std::shared_ptr<KernelGraph> &graph) const;
 
