@@ -44,9 +44,8 @@ tensor::TensorPtr InnerNonZeroAscendCustomize(const std::shared_ptr<OpRunner> &o
   PyBoostUtils::MallocOpInputs(device_context, input_tensor);
   // Malloc for output tensors
   PyBoostUtils::MallocOpOutputs(device_context, outputs);
-  auto return_values = LAUNCH_ACLNN_SYNC(aclnnNonzeroV2, device_context, op->stream_id(), input_tensor, outputs[0]);
-  const auto &cache_func_ptr = std::get<kIndex2>(return_values);
-  auto all_acl_tensor = cache_func_ptr(device::ascend::ProcessCacheType::kGetOutputShape, {});
+  const auto &all_acl_tensor =
+    LAUNCH_ACLNN_SYNC(aclnnNonzeroV2, device_context, op->stream_id(), input_tensor, outputs[0]);
 
   // update shape
   auto output_real_shape = all_acl_tensor[kIndex1];
@@ -58,12 +57,6 @@ tensor::TensorPtr InnerNonZeroAscendCustomize(const std::shared_ptr<OpRunner> &o
   simple_infer_ptr->shape_vector_ = ShapeArray{output_real_shape};
   op->UpdateOutputShape(outputs[kIndex0], output_real_shape);
   MS_LOG(DEBUG) << "InnerNonZero Ascend end";
-
-  const auto &release_func = std::get<kIndex3>(return_values);
-  if (release_func) {
-    release_func();
-  }
-
   return op->output(0);
 }
 }  // namespace pyboost

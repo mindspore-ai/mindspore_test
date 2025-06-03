@@ -192,6 +192,7 @@ using CacheTuple = std::tuple<uint64_t, mindspore::device::ascend::aclOpExecutor
     static std::mutex mutex_;                                                                                 \
     static int64_t capaticy_from_user = ops::GetCacheCapaticy();                                              \
     static bool not_set_capaticy = true;                                                                      \
+    REGISTER_SYNC_OP(aclnn_name);                                                                             \
     if (capaticy_from_user >= 0 && not_set_capaticy) {                                                        \
       capacity_ = LongToSize(capaticy_from_user);                                                             \
       not_set_capaticy = false;                                                                               \
@@ -214,7 +215,13 @@ using CacheTuple = std::tuple<uint64_t, mindspore::device::ascend::aclOpExecutor
     if (!device::ascend::AscendStreamMng::GetInstance().SyncStream(stream_ptr)) {                             \
       MS_LOG(EXCEPTION) << "SyncStream failed for op " << aclnn_name;                                         \
     }                                                                                                         \
-    return return_values;                                                                                     \
+    const auto &cache_func_ptr = std::get<kIndex2>(return_values);                                            \
+    const auto &all_acl_tensor = cache_func_ptr(device::ascend::ProcessCacheType::kGetOutputShape, {});       \
+    const auto &release_func = std::get<kIndex3>(return_values);                                              \
+    if (release_func) {                                                                                       \
+      release_func();                                                                                         \
+    }                                                                                                         \
+    return all_acl_tensor;                                                                                    \
   }                                                                                                           \
   (#aclnn_api, device_context, stream_id, __VA_ARGS__)
 

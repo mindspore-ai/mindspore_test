@@ -48,12 +48,9 @@ std::tuple<tensor::TensorPtr, tensor::TensorPtr, tensor::TensorPtr> UniqueDimAsc
   // Malloc for output tensors
   PyBoostUtils::MallocOpOutputs(device_context, outputs);
   // Run sync
-  auto return_value =
+  const auto &all_acl_tensor =
     LAUNCH_ACLNN_SYNC(aclnnUniqueDim, device_context, stream_id, input_tensor, sorted_imm, return_inverse_imm, dim_imm,
                       outputs[kIndex0], outputs[kIndex1], outputs[kIndex2]);
-  const auto &cache_func_ptr = std::get<kIndex2>(return_value);
-  auto all_acl_tensor = cache_func_ptr(device::ascend::ProcessCacheType::kGetOutputShape, {});
-
   // update shape
   auto output_real_shape0 = all_acl_tensor[kIndex4];
   auto output_real_shape1 = all_acl_tensor[kIndex5];
@@ -64,12 +61,6 @@ std::tuple<tensor::TensorPtr, tensor::TensorPtr, tensor::TensorPtr> UniqueDimAsc
   op->UpdateOutputShape(op->output(kIndex1), output_real_shape1);
   op->UpdateOutputShape(op->output(kIndex2), output_real_shape2);
   MS_LOG(DEBUG) << "Run device task unique_dim end";
-
-  const auto &release_func = std::get<kIndex3>(return_value);
-  if (release_func) {
-    release_func();
-  }
-
   return std::make_tuple(op->output(kIndex0), op->output(kIndex1), op->output(kIndex2));
 }
 }  // namespace pyboost

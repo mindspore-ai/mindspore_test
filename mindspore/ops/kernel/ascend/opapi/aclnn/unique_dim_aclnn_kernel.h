@@ -39,6 +39,9 @@ class UniqueDimAscend : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
   std::vector<ShapeVector> output_shapes_;
+  bool sorted_;
+  bool return_inverse_;
+  int64_t dim_;
 };
 }  // namespace unique_dim
 }  // namespace kernel
