@@ -3818,7 +3818,11 @@ class Cell(Cell_):
             new_grad_output = output
 
         if not isinstance(grad_output, tuple):
-            return new_grad_output[0]
+            if len(new_grad_output) == 1:
+                return new_grad_output[0]
+            raise TypeError(
+                "The backward pre hook return value size is {} not equal to input size 1".format(
+                    len(new_grad_output)))
 
         if len(new_grad_output) != len(grad_output):
             raise TypeError(
