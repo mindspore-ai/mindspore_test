@@ -55,7 +55,7 @@ def ops_adds_binary_case2(input_binary_data=None, output_binary_data=None):
     assert np.allclose(grad_output.asnumpy(), output_binary_data[1], 1e-04, 1e-4)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0',
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_ops_add_binary_cases(context_mode):

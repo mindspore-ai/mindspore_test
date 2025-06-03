@@ -2088,7 +2088,7 @@ def test_resize_performance():
     assert (time.time() - s) < 5.0  # Probably around 4.43 seconds
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_basic_transforms_dvpp():
     """
     Feature: Test DVPP basic transforms

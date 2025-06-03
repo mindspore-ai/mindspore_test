@@ -233,7 +233,7 @@ def test_matmul_biasadd_1024_1024_1024_False_False_float16():
     matmul_biasadd(1024, 1024, 1024, trans_a=False, trans_b=False, mstype=ms.float16)
 
 
-@pytest.mark.level0
+@pytest.mark.level1
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.env_onecard
 @pytest.mark.parametrize('m', [1, 32, 256, 512, 1024, 4096])
