@@ -87,6 +87,7 @@ def test_ascend_pynative_mode_profiler_with_static_shape_all_parameters_on():
         with mindspore.profiler.profile(data_process=True,
                                         profile_memory=True,
                                         hbm_ddr=True,
+                                        record_shapes=True,
                                         schedule=mindspore.profiler.schedule(wait=0, warmup=0,
                                                                              active=1, repeat=1, skip_first=0),
                                         on_trace_ready=mindspore.profiler.tensorboard_trace_handler(dir_name=tmpdir),
@@ -124,6 +125,7 @@ def test_ascend_kbk_mode_profiler_with_static_shape_all_parameters_on():
         with mindspore.profiler.profile(data_process=True,
                                         profile_memory=True,
                                         hbm_ddr=True,
+                                        record_shapes=True,
                                         schedule=mindspore.profiler.schedule(wait=0, warmup=0,
                                                                              active=1, repeat=1, skip_first=0),
                                         on_trace_ready=mindspore.profiler.tensorboard_trace_handler(dir_name=tmpdir),
@@ -236,6 +238,11 @@ def check_ascend_profiler_pynative_files(profiler_path: str, rank_id: int):
     FileChecker.check_csv_items(operate_memory_path, {
         "Name": ["*Add*", "*Sqrt*", "*LayerNorm*"]
     })
+    operator_details_path = os.path.join(ascend_profiler_output_path, "operator_details.csv")
+    FileChecker.check_csv_items(operator_details_path, {
+        "Name": ["Split", "Transpose", "MatMulExt"],
+        "Input Shapes": ["6,2;;", "2,2;2", "1,1,2;2,2"]
+    })
 
 
 def check_ascend_profiler_kbk_files(profiler_path: str, rank_id: int):
@@ -246,4 +253,9 @@ def check_ascend_profiler_kbk_files(profiler_path: str, rank_id: int):
     operate_memory_path = os.path.join(ascend_profiler_output_path, "operator_memory.csv")
     FileChecker.check_csv_items(operate_memory_path, {
         "Name": ["*Add*", "*MatMul*", "*LayerNorm*"]
+    })
+    operator_details_path = os.path.join(ascend_profiler_output_path, "operator_details.csv")
+    FileChecker.check_csv_items(operator_details_path, {
+        "Name": ["Split", "Transpose", "MatMulExt"],
+        "Input Shapes": ["6,2;;", "2,2;2", "1,1,2;2,2"]
     })
