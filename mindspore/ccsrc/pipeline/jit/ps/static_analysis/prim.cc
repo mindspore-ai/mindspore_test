@@ -2247,6 +2247,18 @@ bool IsGetAttrNode(const AnfNodePtr &op_node) {
   return symbol_node != nullptr && symbol_node->symbol() == "getattr";
 }
 
+bool IsPrimitiveAbstract(const AnfNodePtr &op_node, const AnalysisEnginePtr &engine, const AnfNodeConfigPtr &out_conf) {
+  auto eval_func = [&engine, &out_conf](const AnfNodePtr &node) {
+    AnfNodeConfigPtr config = engine->MakeConfig(node, out_conf->context(), out_conf->func_graph());
+    MS_EXCEPTION_IF_NULL(config);
+    const auto &eval_result = config->ObtainEvalResult();
+    MS_EXCEPTION_IF_NULL(eval_result);
+    return eval_result->abstract();
+  };
+  auto op_abs = eval_func(op_node);
+  MS_EXCEPTION_IF_NULL(op_abs);
+  return op_abs->isa<PrimitiveAbstractClosure>();
+}
 }  // namespace
 
 EvalResultPtr PrimitiveArgsToInputsEvaluator::EvalPrim(const AnalysisEnginePtr &engine,
@@ -2272,7 +2284,7 @@ EvalResultPtr PrimitiveArgsToInputsEvaluator::EvalPrim(const AnalysisEnginePtr &
     (void)std::copy(cnode->weak_inputs().begin() + index_data, cnode->weak_inputs().end(),
                     std::back_inserter(partial_inputs));
     new_node = ConvertArgsToInputs(prim_, partial_inputs, fg, engine, out_conf);
-  } else if (IsGetAttrNode(op_node)) {
+  } else if (IsGetAttrNode(op_node) && !IsPrimitiveAbstract(op_node, engine, out_conf)) {
     // The input may be a GetAttr node, such as x.abs(): {{prim::kPrimGetAttr, x, abs}} -> {prim::kPrimAbs, x}
     auto op_cnode = op_node->cast<CNodePtr>();
     AnfNodeWeakPtrList getattr_inputs;

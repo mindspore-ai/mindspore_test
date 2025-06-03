@@ -51,8 +51,7 @@ inline FuncGraphPtr NewFuncGraph(const ValuePtr &op, const AbstractBasePtrList &
 }
 
 inline AbstractBasePtr RunMetaImpl(const std::vector<AbstractBasePtr> &args, const PrimitivePtr &prim) {
-  auto op = std::make_shared<DoSignaturePrimitive>(prim->name(), prim);
-  auto fg = NewFuncGraph(op, args);
+  auto fg = NewFuncGraph(prim, args);
   MS_EXCEPTION_IF_NULL(fg);
   return fg->return_node()->abstract();
 }
