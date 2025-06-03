@@ -130,8 +130,8 @@ py::object CheckAndConvertToScalar(const tensor::TensorPtr &tensor, const Abstra
   if (abs == nullptr || !abs->isa<abstract::AbstractScalar>()) {
     return py::none();
   }
-  tensor->data_sync();
-  auto *data = tensor->data_c();
+  auto tensor_cpu = tensor->cpu();
+  auto *data = tensor_cpu->data_c();
   auto type = abs->BuildType()->type_id();
   switch (type) {
     case kNumberTypeBool:
@@ -891,8 +891,8 @@ ShapeVector ConvertToShapeVector(const VectorRef &value_list, size_t index) {
     if (tensorptr->DataDim() != 0) {
       MS_LOG(EXCEPTION) << "Element must be scalar!";
     }
-    tensorptr->data_sync(false);
-    return *(static_cast<int64_t *>(tensorptr->data_c()));
+    auto tensor_cpu = tensorptr->cpu();
+    return *(static_cast<const int64_t *>(tensor_cpu->data_c()));
   };
 
   if (utils::isa<tensor::Tensor>(ref)) {
