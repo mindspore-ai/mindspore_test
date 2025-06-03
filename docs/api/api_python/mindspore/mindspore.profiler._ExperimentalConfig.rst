@@ -1,7 +1,7 @@
 mindspore.profiler._ExperimentalConfig
 =======================================
 
-.. py:class:: mindspore.profiler._ExperimentalConfig(profiler_level: ProfilerLevel = ProfilerLevel.Level0, aic_metrics: AicoreMetrics = AicoreMetrics.AiCoreNone, l2_cache: bool = False, mstx: bool = False, data_simplification: bool = True, export_type: list = None, sys_io: bool = False, sys_interconnection: bool = False)
+.. py:class:: mindspore.profiler._ExperimentalConfig(profiler_level: ProfilerLevel = ProfilerLevel.Level0, aic_metrics: AicoreMetrics = AicoreMetrics.AiCoreNone, l2_cache: bool = False, mstx: bool = False, data_simplification: bool = True, export_type: list = None, mstx_domain_include: list = None, mstx_domain_exclude: list = None, sys_io: bool = False, sys_interconnection: bool = False, host_sys: list = None)
 
     在使用profile进行模型性能数据采集时，配置可扩展的参数。
 
@@ -30,10 +30,10 @@ mindspore.profiler._ExperimentalConfig
 
           - ExportType.Text：导出text类型的数据。
           - ExportType.Db：导出db类型的数据。
-        - **sys_io** (bool, 可选) - （仅限Ascend）是否收集NIC和RoCE数据，当值为 ``True`` 时，收集这些数据。默认值： ``False`` 。
-        - **sys_interconnection** (bool, 可选) - （仅限Ascend）是否收集系统互连数据，包括集合通信带宽数据（HCCS）、PCIe数据以及片间传输带宽信息，当值为 ``True`` 时，收集这些数据。默认值： ``False`` 。
         - **mstx_domain_include** (list, 可选) - （仅限Ascend）mstx开关打开时设置使能的domain名称集合，且名称必须是str类型。默认值：``[]`` ，表示不使用该参数控制domain。该参数与mstx_domain_exclude参数互斥，不能同时设置。如果都设置，只有mstx_domain_include参数生效。
         - **mstx_domain_exclude** (list, 可选) - （仅限Ascend）mstx开关打开时设置不使能的domain名称集合，且名称必须是str类型。默认值：``[]`` ，表示不使用该参数控制domain。
+        - **sys_io** (bool, 可选) - （仅限Ascend）是否收集NIC和RoCE数据，当值为 ``True`` 时，收集这些数据。默认值： ``False`` 。
+        - **sys_interconnection** (bool, 可选) - （仅限Ascend）是否收集系统互连数据，包括集合通信带宽数据（HCCS）、PCIe数据以及片间传输带宽信息，当值为 ``True`` 时，收集这些数据。默认值： ``False`` 。
         - **host_sys** (list, 可选) - 表示采集host侧系统类调用类、存储类、cpu占用率数据。默认值： ``[]`` ，表示不采集host侧系统类数据。
 
           - HostSystem.CPU：收集进程级别的CPU利用率。
