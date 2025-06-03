@@ -25,9 +25,8 @@ import multiprocessing
 from mindspore import log as logger
 from mindspore.train import Callback
 from mindspore.profiler import Profiler, tensorboard_trace_handler, schedule
-from mindspore.profiler.parser.ascend_analysis.file_manager import FileManager
-from mindspore.profiler.parser.ascend_analysis.path_manager import PathManager
-from mindspore.profiler.profiler_interface import ProfilerInterface
+from mindspore.profiler.common.file_manager import FileManager
+from mindspore.profiler.common.path_manager import PathManager
 from mindspore.profiler.dynamic_profile.dynamic_profiler_config_context import DynamicProfilerConfigContext
 from mindspore.profiler.dynamic_profile.dynamic_monitor_proxy import MsDynamicMonitorProxySingleton
 from mindspore.profiler.dynamic_profile.dynamic_profiler_utils import DynamicProfilerUtils
@@ -392,8 +391,9 @@ class DynamicProfilerMonitorBase(Callback):
             if not os.path.exists(self._cfg_json_path):
                 logger.info("cfg_path is not exist, create default cfg json")
                 default_dy_config_context = DynamicProfilerConfigContext({})
-                FileManager.create_json_file(self._cfg_path, default_dy_config_context.vars,
-                                             "profiler_config.json", indent=4)
+                PathManager.make_dir_safety(self._cfg_path)
+                config_file_path = os.path.join(self._cfg_path, "profiler_config.json")
+                FileManager.create_json_file(config_file_path, default_dy_config_context.vars, indent=4)
         else:
             logger.info("rank_id is not 0, skip init cfg json")
         print_msg(f"Init config json file: {self._cfg_json_path}")

@@ -14,13 +14,14 @@
 # ============================================================================
 """ms operator details viewer"""
 import os
+import struct
 from abc import ABC
 from enum import Enum
 from typing import Dict, Any
 
 from mindspore.profiler.common.file_manager import FileManager
 from mindspore.profiler.analysis.viewer.base_viewer import BaseViewer
-from mindspore.profiler.parser.ascend_analysis.tlv_decoder import TLVDecoder
+from mindspore.profiler.common.tlv_decoder import TLVDecoder
 from mindspore.profiler.common.log import ProfilerLogger
 
 
@@ -44,7 +45,8 @@ class BaseEvent(ABC):
 class OperatorDetailsEvent(BaseEvent):
     """Operator details event."""
 
-    FIX_DATA_SIZE = 0
+    FIX_DATA_FORMAT = ""
+    FIX_DATA_SIZE = struct.calcsize(FIX_DATA_FORMAT)
 
     @property
     def name(self):
@@ -103,9 +105,10 @@ class MsOperatorDetailsViewer(BaseViewer):
             self._logger.warning("Fwk binary file %s does not exist.", fwk_file_path)
             return False
         raw_bin_data = FileManager.read_file_content(fwk_file_path, mode="rb")
-        self._operator_details_events = TLVDecoder.decode(
-            raw_bin_data, OperatorDetailsEvent, OperatorDetailsEvent.FIX_DATA_SIZE
+        operator_details_decode_data = TLVDecoder.decode(
+            raw_bin_data, OperatorDetailsEvent.FIX_DATA_FORMAT, OperatorDetailsEvent.FIX_DATA_SIZE
         )
+        self._operator_details_events = [OperatorDetailsEvent(data) for data in operator_details_decode_data]
         self._logger.info("Read fwk binary file done, %d events", len(self._operator_details_events))
         return True
 

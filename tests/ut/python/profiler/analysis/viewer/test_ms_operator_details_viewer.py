@@ -44,13 +44,12 @@ class TestMsOperatorDetailsViewer(unittest.TestCase):
 
     @patch('os.path.isfile')
     @patch.object(FileManager, 'read_file_content')
-    @patch('mindspore.profiler.parser.ascend_analysis.tlv_decoder.TLVDecoder.decode')
+    @patch('mindspore.profiler.common.tlv_decoder.TLVDecoder.decode')
     def test_read_fwk_binary_file_should_success_when_correct(self, mock_decode, mock_read, mock_isfile):
         """Test reading framework binary file successfully."""
         mock_isfile.return_value = True
         mock_read.return_value = b'sample_binary_data'
-        mock_decode.return_value = [MagicMock(name="op1", input_shapes="[32,256]")]
-
+        mock_decode.return_value = [{0: "op1", 1: "[32,256]"}]
         self.viewer._read_fwk_binary_file()
 
         mock_read.assert_called_with(os.path.join(self.framework_path, "mindspore.record_shapes"), mode="rb")
