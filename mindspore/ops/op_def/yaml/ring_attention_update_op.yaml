@@ -1,0 +1,35 @@
+#operator ring_attention_update
+ring_attention_update:
+  args:
+    prev_attn_out:
+      dtype: tensor
+    prev_softmax_max:
+      dtype: tensor
+    prev_softmax_sum:
+      dtype: tensor
+    cur_attn_out:
+      dtype: tensor
+    cur_softmax_max:
+      dtype: tensor
+    cur_softmax_sum:
+      dtype: tensor
+    actual_seq_qlen:
+      dtype: tensor
+      default: None
+      type_cast: list[int], tuple[int]
+    layout:
+      dtype: int
+      default: "'SBH'"
+      arg_handler: str_to_enum
+  returns:
+    attn_out:
+      dtype: tensor
+    softmax_max:
+      dtype: tensor
+    softmax_sum:
+      dtype: tensor
+  dispatch:
+    enable: True
+    Ascend: RingAttentionUpdateAscend
+    CPU: None
+    GPU: None

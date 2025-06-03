@@ -546,7 +546,6 @@ std::tuple<bool, ShapeArray, std::vector<std::vector<size_t>>> GetConstInputs(
       if (auto sequence_abs = abs->cast<abstract::AbstractSequencePtr>(); sequence_abs != nullptr) {
         auto begin_idx = const_args.size();
         auto is_const = ops::TryGetShapeArg(sequence_abs, &const_args, &pos_idx);
-
         if (is_const) {
           for (size_t j = begin_idx; j < const_args.size(); ++j) {
             is_const = valid_func ? valid_func(j, const_args[j]) : !IsDynamic(const_args[j]);

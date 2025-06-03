@@ -481,6 +481,7 @@ from .nn_func import (
     max_pool3d,
     moe_token_permute,
     moe_token_unpermute,
+    ring_attention_update,
     batch_norm,
     add_rms_norm,
     rms_norm,
