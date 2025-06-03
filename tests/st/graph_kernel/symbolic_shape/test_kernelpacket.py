@@ -43,7 +43,7 @@ def run_with_log(test_case, log_file):
         raise RuntimeError("{}\n case {} run failed!".format(e, test_case))
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_reshape():
     """
     Feature: KernelPacket
@@ -63,7 +63,7 @@ def test_reducesum():
     run_with_log("kernelpacket_cases.py::test_reducesum", "test_reducesum.log")
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_fuse_host_ops():
     """
     Feature: KernelPacket
