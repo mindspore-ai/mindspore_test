@@ -53,9 +53,10 @@ enum JitSyntaxLevel : int {
 };
 
 enum JitStatus : int {
-  kNotJit,        // Not Jit.
-  kJitCompiling,  // Jit Compiling.
-  kJitRunning,    // Jit Running.
+  kNotJit,          // Not Jit.
+  kJitCompiling,    // Jit Compiling.
+  kGraphCompiling,  // JIt Compiling with graph mode.
+  kJitRunning,      // Jit Running.
 };
 
 enum DebugLevel : int {

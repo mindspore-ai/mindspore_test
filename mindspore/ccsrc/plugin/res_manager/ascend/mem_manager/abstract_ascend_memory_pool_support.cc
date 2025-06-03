@@ -59,9 +59,9 @@ void AbstractAscendMemoryPoolSupport::SetMemPoolBlockSize(size_t available_devic
   }
 
   // set by default configuration
-  const auto graph_mode = (ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) == kGraphMode);
-  const bool is_graph_run_mode = ms_context->get_param<bool>(MS_CTX_ENABLE_TASK_SINK);
-  if (graph_mode && is_graph_run_mode) {
+  static bool disable_ge_kernel = IsDisableGeKernel();
+  auto is_ge = common::AnfAlgo::IsBackendGe();
+  if (disable_ge_kernel && is_ge) {
     SetMemAllocUintSize(ASCEND_COMMON_POOL_ALLOC_UNIT_SIZE_FOR_GRAPH_RUN_MODE,
                         ASCEND_COMMON_POOL_ALLOC_UNIT_SIZE_FOR_GRAPH_RUN_MODE);
   } else {

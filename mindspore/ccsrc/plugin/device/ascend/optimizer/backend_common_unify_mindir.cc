@@ -104,10 +104,7 @@ PassManagerPtr GetBackendCommonUnifyMindIRPassManager() {
 
   // Since the SparseSoftmaxCrossEntropyWithLogits operator can only use AICPU and has poor execution performance,
   // it does not take effect for the time being.
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  bool graph_mode = ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) == kGraphMode;
-  if (graph_mode) {
+  if (IsJit()) {
     pm->AddPass(std::make_shared<opt::GradSparseSoftmaxCrossEntropyWithLogitsUnifyMindIR>());
     pm->AddPass(std::make_shared<opt::GradSparseSoftmaxCrossEntropyWithLogitsUnifyMindIRV2>());
     pm->AddPass(std::make_shared<opt::SparseSoftmaxCrossEntropyWithLogitsUnifyMindIR>());

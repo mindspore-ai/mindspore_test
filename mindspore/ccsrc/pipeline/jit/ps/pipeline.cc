@@ -1152,7 +1152,7 @@ void GraphExecutorPy::CleanCompileRes(const ResourcePtr &resource) {
 
 bool GraphExecutorPy::CompileInner(const FuncGraphPtr &graph, const py::tuple &args, const py::dict &kwargs,
                                    const std::string &phase, bool trace_flag) {
-  JitCompilingScope jit_compiling_scope;
+  GraphCompilingScope jit_compiling_scope;
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   ms_context->SetCellReuseLevel(CellReuseLevel::kNoCellReuse);
@@ -1203,7 +1203,7 @@ bool GraphExecutorPy::CompileInner(const FuncGraphPtr &graph, const py::tuple &a
 
 bool GraphExecutorPy::CompileInner(const py::object &source, const py::tuple &args, const py::dict &kwargs,
                                    const py::object &phase) {
-  JitCompilingScope jit_compiling_scope;
+  GraphCompilingScope jit_compiling_scope;
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   ms_context->SetCellReuseLevel(CellReuseLevel::kNoCellReuse);

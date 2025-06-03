@@ -94,8 +94,7 @@ void SetWeightFormat(const AnfNodePtr &real_input_node, std::vector<string> outp
   // In PyNative mode, the weight data will be copied to the device in the first step,
   // and there will be no HostToDeviceCopy in the follow-up. If host format conversion is disabled,
   // the TransData operator will be executed in each subsequent step, resulting in poor performance.
-  if (disable_convert && (context_ptr->get_param<bool>(MS_CTX_ENABLE_LOOP_SINK) ||
-                          context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode)) {
+  if (disable_convert) {
     disable_convert = trans::kFormatWithTransFunc.find(output_format[0]) == trans::kFormatWithTransFunc.end();
   }
   // if not find in host convert format map means the host has not registered the convert function of this format
@@ -137,9 +136,6 @@ void SetWeightFormat(const AnfNodePtr &real_input_node, std::vector<string> outp
 
 bool RefreshCastAndParamWeightFormat(const AnfNodePtr &input_node, const string &format) {
   MS_EXCEPTION_IF_NULL(input_node);
-  if (MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
-    return false;
-  }
   if (!input_node->isa<CNode>()) {
     return false;
   }

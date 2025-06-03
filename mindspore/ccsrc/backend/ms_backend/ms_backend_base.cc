@@ -242,11 +242,6 @@ bool EnableKBKCompileCache(const FuncGraphPtr &func_graph, const device::DeviceT
     MS_LOG(INFO) << "Disable backend compile cache by context no cache";
     return false;
   }
-  auto context_ptr = MsContext::GetInstance();
-  if (context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
-    MS_LOG(INFO) << "Disable backend compile cache by no graph execution mode.";
-    return false;
-  }
   MS_LOG(INFO) << "Enable backend compile cache.";
   return true;
 }
@@ -273,11 +268,6 @@ bool ExportCompileCacheKBK(const FuncGraphPtr &func_graph, const device::DeviceT
   }
   if (context.UseCompileCache()) {
     MS_LOG(INFO) << "Compile cache: disable by compile cache context.";
-    return false;
-  }
-  auto context_ptr = MsContext::GetInstance();
-  if (context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
-    MS_LOG(INFO) << "Compile cache: disable by not graph execution mode.";
     return false;
   }
   return true;
@@ -644,15 +634,6 @@ void BuildSymbolEngine(const FuncGraphPtr &func_graph) {
     DumpIR(file_name, func_graph, true, kWholeStack);
   }
 #endif
-}
-
-bool NeedCheckMultiTarget(const FuncGraphPtr &func_graph, int ms_execution_mode) {
-  if (ms_execution_mode == kGraphMode) {
-    return true;
-  }
-  MS_EXCEPTION_IF_NULL(func_graph);
-  bool is_control_flow = !func_graph->func_graphs_used_total().empty();
-  return is_control_flow;
 }
 
 void AddGraphDynamicShapeAttr(const KernelGraphPtr &kernel_graph) {
@@ -1028,8 +1009,7 @@ void MSBackendBase::CompileGraph(const FuncGraphPtr &func_graph, const BackendJi
     auto ms_context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(ms_context);
     auto backend_name = ms_context->backend_policy();
-    const bool pynative_mode = (ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode);
-    auto &cut_list = pynative_mode ? compile::GetControlOps() : compile::GetMsNonlinearOps();
+    auto &cut_list = compile::GetMsNonlinearOps();
     auto graph_partition = std::make_shared<GraphPartition>(cut_list, backend_name);
     MS_EXCEPTION_IF_NULL(graph_partition);
     const auto &segments = graph_partition->Partition(func_graph);
@@ -1949,9 +1929,7 @@ BackendGraphId MSBackendBase::Build(const FuncGraphPtr &func_graph, const Backen
     PROF_START(CompileSubGraph);
     bool is_dynamic_graph = common::AnfAlgo::IsDynamicShapeFuncGraph(func_graph);
     MS_LOG(INFO) << func_graph->ToString() << ", is_dynamic_graph: " << is_dynamic_graph;
-    if (NeedCheckMultiTarget(func_graph, ms_execution_mode)) {
-      ProcessNotSupportCnode(func_graph, device_context->GetDeviceType(), mindspore::device::DeviceType::kCPU);
-    }
+    ProcessNotSupportCnode(func_graph, device_context->GetDeviceType(), mindspore::device::DeviceType::kCPU);
     BuildSymbolEngine(func_graph);
     CompileSubGraph(func_graph, backend_jit_config);
     PROF_END(CompileSubGraph);
