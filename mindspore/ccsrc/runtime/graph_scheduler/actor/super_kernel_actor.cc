@@ -1001,7 +1001,7 @@ void SuperKernelActor::DispatchParallelLaunchKernels(size_t index, OpContext<Ker
 
       if (!kernel_actor->is_launch_skipped_) {
         MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Begin launch kernel: " << kernel_actor->kernel_->fullname_with_scope();
-        auto ret = device_contexts_[0]->GetKernelExecutor(false)->LaunchKernel(
+        auto ret = device_contexts_[0]->GetKernelExecutor(false)->LaunchKernelHP(
           kernel_actor->kernel_, kernel_actor->input_launch_tensors_, kernel_actor->workspace_launch_tensors_,
           kernel_actor->output_launch_tensors_, kernel_actor->kernel_mod_, real_stream);
         if (!ret) {
@@ -1755,8 +1755,10 @@ void SuperKernelActor::BuildKernelActors() {
 
     auto ref_input_indexes = FetchModifiableRefInputIndex(kernel);
     auto ref_output_indexes = FetchModifiableRefOutputIndex(kernel, graph_);
-    const auto &real_device_context = device::FetchRealDeviceContext(kernel, device_contexts_[0]);
+    auto real_device_context =
+      const_cast<device::DeviceContext *>(device::FetchRealDeviceContext(kernel, device_contexts_[0]));
     MS_EXCEPTION_IF_NULL(real_device_context);
+    KernelAsyncLaunchActor::GetInstance()->AddDeviceContext(real_device_context);
     if (IsRpcActor(kernel)) {
       MS_LOG(EXCEPTION) << "Can not launch a sub graph which contains rpc kernel by kbk.";
     } else if (IsInnerControlFlowActor(kernel)) {

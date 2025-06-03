@@ -220,6 +220,8 @@ void InsertEventForInput(uint32_t stream_id, const DeviceContext *device_context
 using distributed::collective::CollectiveManager;
 using distributed::recovery::RecoveryContext;
 
+bool KernelRunner::is_high_perf_mode_ = true;
+
 KernelRunner::KernelRunner(const std::string &name, const CNodePtr &kernel, const DeviceContext *device_context,
                            const AID &memory_manager_aid, const AID *debug_aid, const AID *recorder_aid,
                            GraphExecutionStrategy strategy, const std::set<size_t> &modifiable_ref_input_indexes,
@@ -264,7 +266,7 @@ KernelRunner::KernelRunner(const std::string &name, const CNodePtr &kernel, cons
 
   enable_uce_ = UCEException::IsEnableUCE();
   enable_arf_ = UCEException::GetInstance().enable_arf();
-  is_high_perf_mode_ = IsRunHighPerfMode();
+  KernelRunner::is_high_perf_mode_ = IsRunHighPerfMode();
 }
 
 void KernelRunner::Init() {
@@ -1305,7 +1307,7 @@ bool KernelRunner::IsRunHighPerfMode() {
   // They should not be changed in runtime phase so that we could reach optimal performance by avoiding condition
   // judgement.
   std::vector<bool> conditions = {
-    common::IsEnableRuntimeConfig(common::kRuntimeDisableHPMode),
+    common::IsDisableRuntimeConfig(common::kRuntimeHPMode),
     debug_aid_ != nullptr,
     recorder_aid_ != nullptr,
     EnableExecuteOrderDump(),
@@ -1322,7 +1324,7 @@ bool KernelRunner::IsRunHighPerfMode() {
 }
 
 void KernelRunner::ExecuteLaunchKernelTask(OpContext<KernelTensor> *const context) {
-  if (is_high_perf_mode_) {
+  if (KernelRunner::is_high_perf_mode_) {
     ExecuteLaunchKernelTaskHP(context);
   } else {
     ExecuteLaunchKernelTaskDebug(context);
@@ -1358,9 +1360,6 @@ void KernelRunner::ExecuteLaunchKernelTaskDebug(OpContext<KernelTensor> *const c
   if (MS_UNLIKELY(ActorDispatcher::has_kernel_need_user_data())) {
     PreLaunchKernel(context);
   }
-
-  // 2. Launch kernel if need.
-  device_contexts_[0]->device_res_manager_->BindDeviceToCurrentThread(false);
 
   if (MS_UNLIKELY(debug_aid_ != nullptr)) {
     ActorDispatcher::SendSync(*debug_aid_, &DebugActor::DebugPreLaunch, kernel_, input_kernel_tensors_,
@@ -1429,9 +1428,6 @@ void KernelRunner::ExecuteLaunchKernelTaskHP(OpContext<KernelTensor> *const cont
   if (MS_UNLIKELY(ActorDispatcher::has_kernel_need_user_data())) {
     PreLaunchKernel(context);
   }
-
-  // 2. Launch kernel if need.
-  device_contexts_[0]->device_res_manager_->BindDeviceToCurrentThread(false);
 
   if (!LaunchKernelHP(context, IsSkippedLaunch(kernel_, nullptr))) {
     MS_LOG_WITH_NODE(EXCEPTION, kernel_) << "#umsg#Kernel error:#umsg#Launch kernel failed: " +
