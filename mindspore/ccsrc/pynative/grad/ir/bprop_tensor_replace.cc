@@ -175,32 +175,6 @@ void UpdateForwardOutputTensorInfo(const std::string &op_info, const ValuePtr &v
   }
 }
 
-void UpdatePipelineTopCellFowardTensor(const TensorReplaceInfo &ir_replace_info,
-                                       const TensorReplaceInfo &cur_replace_info) {
-  // Do update for ir top cell, and set it for actor running
-  size_t replace_num = 0;
-  for (const auto &[op_info, forward_output] : cur_replace_info.op_info_with_forward_output) {
-    UpdateForwardOutputTensorInfo(op_info, forward_output, ir_replace_info);
-    ++replace_num;
-  }
-  if (replace_num != ir_replace_info.need_replace_size) {
-    MS_LOG(EXCEPTION) << "Get replace forward output num " << replace_num << ", but need replace num is "
-                      << ir_replace_info.need_replace_size;
-  }
-}
-
-bool StoreForwardOutputWithOpInfo(const OpInfoWithTensorObject &op_info_with_tensor_object, const std::string &op_info,
-                                  const ValuePtr &v, TensorReplaceInfo *replace_info) {
-  // Use first ir top cell do opinfo replace
-  const auto it = op_info_with_tensor_object.find(op_info);
-  if (it == op_info_with_tensor_object.end()) {
-    MS_LOG(DEBUG) << "Can not find op info " << op_info << " in ir top cell, no need do replace";
-    return false;
-  }
-  replace_info->op_info_with_forward_output[op_info] = v;
-  return true;
-}
-
 void SaveForwardOutputTensorInfo(const FuncGraphPtr &func_graph, bool need_save_tensor_info,
                                  TensorReplaceInfo *replace_info) {
   // Get all tensors obj in value node of bprop graph

@@ -33,7 +33,7 @@ std::vector<int64_t> ConvertActualSeqLengthsToVector(const std::optional<tensor:
     return std::vector<int64_t>();
   }
   auto tensor = tensor_opt.value();
-  tensor->data_sync();
+  auto tensor_cpu = tensor->cpu();
   TypeId tensor_type_id = static_cast<TypeId>(tensor->data_type_c());
   if (tensor_type_id != TypeId::kNumberTypeInt64 && tensor_type_id != TypeId::kNumberTypeInt32) {
     MS_LOG(EXCEPTION) << "Data type of actual seq length must be Int64 or Int32, "

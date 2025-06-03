@@ -47,10 +47,6 @@ void SetIdWithOpInfo(const ValuePtr &v, const std::string &op_info, size_t out_i
                      TensorIdWithOpInfo *id_with_op_info);
 void UpdateForwardOutputTensorInfo(const std::string &op_info, const ValuePtr &v,
                                    const TensorReplaceInfo &replace_info);
-bool StoreForwardOutputWithOpInfo(const OpInfoWithTensorObject &op_info_with_tensor_object, const std::string &op_info,
-                                  const ValuePtr &v, TensorReplaceInfo *replace_info);
-void UpdatePipelineTopCellFowardTensor(const TensorReplaceInfo &ir_replace_info,
-                                       const TensorReplaceInfo &cur_replace_info);
 void SaveForwardOutputTensorInfo(const FuncGraphPtr &func_graph, bool need_save_tensor_info,
                                  TensorReplaceInfo *replace_info);
 }  // namespace pynative
