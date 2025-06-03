@@ -155,6 +155,9 @@ void SetDependValue(const PrimitivePtr &primitive, const NodePtrList &inputs) {
     auto tensor = value->cast<tensor::TensorPtr>();
     if (tensor != nullptr) {
       auto cpu_tensor = tensor->cpu();
+      inputs[index]->SetValue(cpu_tensor);
+      abstract->set_value(cpu_tensor);
+      continue;
     }
     abstract->set_value(value);
   }

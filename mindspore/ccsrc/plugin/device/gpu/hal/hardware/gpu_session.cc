@@ -415,13 +415,12 @@ void GPUSession::ExecuteGraph(const std::shared_ptr<KernelGraph> &kernel_graph) 
   }
 }
 
-void GPUSession::UpdateOutputTensors(VectorRef *outputs,
+void GPUSession::UpdateOutputTensors(const VectorRef *outputs,
                                      const std::map<tensor::TensorPtr, session::KernelWithIndex> &tensor_to_node,
                                      std::map<DeviceAddressPtr, DeviceAddressPtr> *new_to_old_device_address) {
   MS_EXCEPTION_IF_NULL(outputs);
   MS_EXCEPTION_IF_NULL(new_to_old_device_address);
-  for (size_t i = 0; i < outputs->size(); ++i) {
-    auto &item = (*outputs)[i]
+  for (const auto &item : *outputs) {
     if (utils::isa<VectorRefPtr>(item)) {
       const auto &vector_ref = utils::cast<VectorRef>(item);
       UpdateOutputTensors(&vector_ref, tensor_to_node, new_to_old_device_address);
@@ -487,10 +486,8 @@ void GPUSession::UpdateOutputTensors(VectorRef *outputs,
         }
       }
       if (tensor->NeedSyncDeviceToHostImmediately()) {
-        auto cpu_tensor = tensor->cpu();
-        cpu_tensor->set_device_address(nullptr);
-        cpu_tensor->set_sync_status(kNeedSyncHostToDevice);
-        (*outputs)[i] = cpu_tensor;
+        MS_LOG(ERROR) << "Deprecated code is called. Execution aborted.";
+        std::abort();
       }
     }
   }

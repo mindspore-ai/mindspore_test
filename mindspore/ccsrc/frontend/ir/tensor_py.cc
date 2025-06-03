@@ -565,10 +565,10 @@ py::object RecursiveToList(void *data, const std::vector<int64_t> &shape, const 
 }
 
 py::object TensorPybind::ToList(const TensorPtr &tensor) {
-  tensor::TensorPtr new_tensor = tensor->cpu();
-  auto tensor_shape = new_tensor->shape();
-  auto data = new_tensor->data_c();
-  auto data_type = new_tensor->data_type();
+  tensor::TensorPtr cpu_tensor = tensor->cpu();
+  auto tensor_shape = cpu_tensor->shape();
+  auto data = cpu_tensor->data_c();
+  auto data_type = cpu_tensor->data_type();
   int index = 0;
 
   return RecursiveToList(data, tensor_shape, data_type, &index, 0);
@@ -580,9 +580,9 @@ py::object TensorPybind::Item(const TensorPtr &tensor) {
     MS_EXCEPTION(ValueError) << "The tensor should have only one element, but got " << tensor_element_count << ","
                              << " more than one element is ambiguous.";
   }
-  auto tensor_cpu = tensor->cpu();
-  auto data_type = tensor_cpu->data_type();
-  auto data = tensor_cpu->data_c();
+  auto cpu_tensor = tensor->cpu();
+  auto data_type = cpu_tensor->data_type();
+  auto data = cpu_tensor->data_c();
   switch (data_type) {
     case TypeId::kNumberTypeInt8:
       return py::int_(py::cast(*static_cast<const int8_t *>(data)));
@@ -615,9 +615,11 @@ py::object TensorPybind::Item(const TensorPtr &tensor) {
       return py::bool_(py::cast(*static_cast<const bool *>(data)));
     case TypeId::kNumberTypeComplex64:
     case TypeId::kNumberTypeComplex:
-      return py::cast(std::complex<double>{(*static_cast<const float *>(data)), (*(static_cast<const float *>(data) + 1))});
+      return py::cast(
+        std::complex<double>{(*static_cast<const float *>(data)), (*(static_cast<const float *>(data) + 1))});
     case TypeId::kNumberTypeComplex128:
-      return py::cast(std::complex<long double>{(*static_cast<const double *>(data)), (*(static_cast<const double *>(data) + 1))});
+      return py::cast(
+        std::complex<long double>{(*static_cast<const double *>(data)), (*(static_cast<const double *>(data) + 1))});
     default:
       MS_EXCEPTION(TypeError) << "Not support tensor data type: " << data_type << ".";
       break;
@@ -696,7 +698,7 @@ void TensorPybind::Offload(const TensorPtr &tensor, bool release) {
   } else {
     auto cpu_tensor = tensor->cpu();
     // Release device address of graph output tensor.
-    const_cast<TensorPtr &>(cpu_tensor)->set_device_address(nullptr);
+    const_cast<TensorPtr &>(cpu_tensor)->set_device_address(cpu_tensor->device_address());
   }
 }
 

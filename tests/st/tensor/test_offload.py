@@ -39,7 +39,7 @@ def test_data_sync_after_offload(mode):
     z = y + 1
     z._offload()
     y._offload()
-    y.data_sync(True)
+    y.cpu()
 
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],

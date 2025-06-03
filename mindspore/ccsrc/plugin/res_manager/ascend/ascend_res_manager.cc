@@ -119,7 +119,7 @@ Format GetFormat(const tensor::TensorPtr &tensor) {
       format = FromStrToEnum(src_device_address->format());
     } else {
       auto cpu_tensor = tensor->cpu();
-      cpu_tensor->set_device_address(nullptr);
+      tensor->set_device_address(cpu_tensor->device_address());
     }
   }
   return format;

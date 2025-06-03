@@ -95,9 +95,9 @@ struct Common {
         auto tensor = items[i]->template cast<tensor::TensorPtr>();
         auto grad = std::make_shared<tensor::Tensor>(*tensor);
         auto norm_val = CaculateGradNorm(grad);
-        norm_val->data_sync();
+        auto norm_val_cpu = norm_val->cpu();
         buf << i << "th: "
-            << "ptr " << items[i].get() << ", " << norm_val->ToStringRepr() << ", ";
+            << "ptr " << items[i].get() << ", " << norm_val_cpu->ToStringRepr() << ", ";
       } else {
         buf << i << "th: "
             << "ptr " << items[i].get() << ", " << items[i]->ToString() << ", ";

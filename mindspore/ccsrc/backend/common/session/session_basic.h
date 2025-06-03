@@ -190,7 +190,7 @@ class BACKEND_COMMON_EXPORT SessionBasic : public KernelGraphMgr, public std::en
   // When the device address of the node is used as the output of the graph, the device address will be passed
   // to the output tensor, and the output node will recreate a new device address. This third parameter records
   // the relationship between the new and old device address.
-  virtual void UpdateOutputTensors(VectorRef *outputs,
+  virtual void UpdateOutputTensors(const VectorRef *outputs,
                                    const std::map<tensor::TensorPtr, session::KernelWithIndex> &tensor_to_node,
                                    std::map<DeviceAddressPtr, DeviceAddressPtr> *);
   virtual void FinalOptimize(const KernelGraphPtr &graph) const;
@@ -215,8 +215,6 @@ class BACKEND_COMMON_EXPORT SessionBasic : public KernelGraphMgr, public std::en
 
   void RunGraphImpl(const GraphId &graph_id, const std::vector<tensor::TensorPtr> &inputs, VectorRef *outputs);
 
-  void ProcessInputTensorsForHeterogeneous(const std::string &cur_target,
-                                           const std::vector<tensor::TensorPtr> &input_tensors) const;
   virtual void SetSummaryNodes(KernelGraph *graph);
 
   void LoadInputs(const GraphId &graph_id, const std::vector<tensor::TensorPtr> &inputs_const) const {

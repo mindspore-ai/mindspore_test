@@ -1430,33 +1430,8 @@ void KernelRuntime::SyncNodeOutputTensors(const std::shared_ptr<MemScheduler> &m
 
 void KernelRuntime::SyncNodeOutputTensor(const std::shared_ptr<MemScheduler> &mem_scheduler,
                                          const KernelWithIndex &node_output_index, const session::KernelGraph &graph) {
-  MS_EXCEPTION_IF_NULL(mem_scheduler);
-  if (node_output_index.first == nullptr) {
-    return;
-  }
-  auto device_address = AnfAlgo::GetMutableOutputAddr(node_output_index, true);
-  auto tensor = graph.GetNodeOutputTensor(node_output_index);
-  if (tensor == nullptr) {
-    return;
-  }
-  if (device_address == nullptr) {
-    tensor->data_sync(false);
-    tensor->set_device_address(nullptr);
-    tensor->set_sync_status(kNeedSyncHostToDevice);
-    return;
-  }
-  if (!SyncStream()) {
-    MS_LOG(EXCEPTION) << "SyncStream failed";
-  }
-  auto origin_ptr = device_address->GetDevicePtr();
-  if (device_address->GetDevicePtr() == nullptr) {
-    device_address->SetDevicePtr(mem_scheduler->GetOrMalloc(device_address.get(), device_address->GetSize()));
-  }
-  tensor->set_device_address(device_address);
-  tensor->data_sync(false);
-  tensor->set_device_address(nullptr);
-  device_address->SetDevicePtr(origin_ptr);
-  tensor->set_sync_status(kNeedSyncHostToDevice);
+  MS_LOG(ERROR) << "Deprecated code is called. Execution aborted.";
+  std::abort();
 }
 
 void KernelRuntime::InitGraphInputTensors(const std::shared_ptr<MemScheduler> &mem_scheduler,
@@ -1484,8 +1459,8 @@ void KernelRuntime::InitGraphInputTensors(const std::shared_ptr<MemScheduler> &m
     if (tensor->NeedSyncHostToDevice()) {
       need_sync = true;
     } else if (tensor_address != device_address) {
-      tensor->data_sync(false);
-      need_sync = true;
+      MS_LOG(ERROR) << "Deprecated code is called. Execution aborted.";
+      std::abort();
     }
     if (mem_scheduler->HasDeviceMem(device_address.get())) {
       device_address->set_ptr(nullptr);

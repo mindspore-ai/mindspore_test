@@ -31,22 +31,22 @@ std::vector<int64_t> FiasConvertTensorToVector(const std::string &prim_name, con
     return std::vector<int64_t>();
   }
   auto tensor = tensor_opt.value();
-  auto tensor_cpu = tensor->cpu();
-  TypeId tensor_type_id = static_cast<TypeId>(tensor_cpu->data_type_c());
+  auto cpu_tensor = tensor->cpu();
+  TypeId tensor_type_id = static_cast<TypeId>(cpu_tensor->data_type_c());
   if (tensor_type_id != TypeId::kNumberTypeInt64 && tensor_type_id != TypeId::kNumberTypeInt32) {
     MS_EXCEPTION(TypeError) << "For " << prim_name << ", the input " << tensor_name
                             << " for conversion to int array must be of type Int32 or Int64,"
                             << " but got " << TypeIdToString(tensor_type_id);
   }
   std::vector<int64_t> converted_sequence;
-  size_t elem_num = tensor_cpu->DataSize();
+  size_t elem_num = cpu_tensor->DataSize();
   if (tensor_type_id == TypeId::kNumberTypeInt64) {
-    const int64_t *elem_ptr = static_cast<const int64_t *>(tensor_cpu->data_c());
+    const int64_t *elem_ptr = static_cast<const int64_t *>(cpu_tensor->data_c());
     for (size_t i = 0; i < elem_num; i++) {
       converted_sequence.push_back(elem_ptr[i]);
     }
   } else {
-    const int32_t *elem_ptr = static_cast<const int32_t *>(tensor_cpu->data_c());
+    const int32_t *elem_ptr = static_cast<const int32_t *>(cpu_tensor->data_c());
     for (size_t i = 0; i < elem_num; i++) {
       converted_sequence.push_back(elem_ptr[i]);
     }
