@@ -39,6 +39,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace lite {
 namespace {
@@ -112,7 +113,7 @@ AnfNodePtr CloneParameterAndValueNode(const CNodePtr &cnode, size_t index, const
   }
   std::shared_ptr<tensor::Tensor> tensor_info;
   if (static_cast<TensorCompressionType>(data_info.compress_type_) == TensorCompressionType::kNoCompression) {
-    tensor_info = std::make_shared<tensor::Tensor>(static_cast<TypeId>(data_info.data_type_), shape_vec);
+    tensor_info = tensor::empty(static_cast<TypeId>(data_info.data_type_), shape_vec, device::DeviceType::kCPU);
   } else {
     tensor_info =
       std::make_shared<tensor::Tensor>(static_cast<TypeId>(data_info.data_type_), shape_vec, data_info.data_.size(),

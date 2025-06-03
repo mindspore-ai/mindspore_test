@@ -26,6 +26,7 @@
 #include "tools/common/tensor_util.h"
 #include "nnacl/op_base.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace lite {
 namespace {
@@ -55,7 +56,7 @@ STATUS OnnxConstantParser::AddDataInfoAttr(const onnx::TensorProto &onnx_const_t
       return RET_ERROR;
     }
     std::vector<int64_t> shape_vector(onnx_const_tensor.dims().begin(), onnx_const_tensor.dims().end());
-    tensor_info = std::make_shared<tensor::Tensor>(data_type, shape_vector);
+    tensor_info = tensor::empty(data_type, shape_vector, device::DeviceType::kCPU);
     MS_CHECK_TRUE_MSG(tensor_info != nullptr, RET_ERROR, "create tensor_info return nullptr");
     std::vector<int> shape;
     std::transform(shape_vector.begin(), shape_vector.end(), std::back_inserter(shape),

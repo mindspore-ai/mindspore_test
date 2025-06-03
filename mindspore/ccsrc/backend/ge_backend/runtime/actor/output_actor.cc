@@ -19,6 +19,7 @@
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace ge_backend {
 namespace runtime {
@@ -309,7 +310,7 @@ TensorPtr OutputActor::CreateOutputTensor(const AnfNodePtr &output_node, size_t 
     ShapeVector shape = {0};
     TypeId type_id = (output_kernel_tensor->dtype_id() == TypeId::kTypeUnknown ? TypeId::kNumberTypeInt64
                                                                                : output_kernel_tensor->dtype_id());
-    const auto &tensor = std::make_shared<tensor::Tensor>(type_id, shape);
+    const auto &tensor = tensor::empty(type_id, shape, device::DeviceType::kCPU);
     tensor->set_base_shape(output_shape);
     return tensor;
   }
@@ -336,7 +337,7 @@ TensorPtr OutputActor::CreateOutputTensor(const AnfNodePtr &output_node, size_t 
   // when infer type is not equal to device type.
   auto type_id = common::AnfAlgo::GetOutputInferDataType(output_node, output_index);
   const auto &shape = output_kernel_tensor->GetShapeVector();
-  auto tensor = std::make_shared<tensor::Tensor>(type_id, shape);
+  auto tensor = tensor::empty(type_id, shape, device::DeviceType::kCPU);
   MS_EXCEPTION_IF_NULL(tensor);
   // Set tensor base shape for restoring the tuple output when output node is dynamic sequence.
   if (common::AnfAlgo::IsDynamicSequence(output_node)) {

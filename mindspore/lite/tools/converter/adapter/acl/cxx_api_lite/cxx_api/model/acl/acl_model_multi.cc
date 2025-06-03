@@ -28,6 +28,7 @@
 #include "cxx_api/model/acl/acl_vm/ms_tensor_ref.h"
 #include "cxx_api/model/acl/acl_vm/acl_vm.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 API_MODEL_REG(Ascend310, AclModelMulti);
 
@@ -184,7 +185,7 @@ void AclModelMulti::SetInputs() {
       auto elem = tensor_abs->element();
       MS_EXCEPTION_IF_NULL(elem);
       auto type_id = elem->BuildType()->type_id();
-      auto tensor = std::make_shared<tensor::Tensor>(type_id, tensor_shape->shape());
+      auto tensor = tensor::empty(type_id, tensor_shape->shape(), device::DeviceType::kCPU);
 
       std::vector<int64_t> shape = tensor->shape_c();
       auto input_tensor = MSTensor::CreateTensor(input_param->name(), static_cast<DataType>(tensor->data_type_c()),

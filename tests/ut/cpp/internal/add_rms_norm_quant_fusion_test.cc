@@ -23,6 +23,7 @@
 #include "ir/tensor.h"
 #include "pre_activate/common/pattern_to_pattern_pass_utils.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 
 using tensor::Tensor;
@@ -55,13 +56,13 @@ TEST_F(AddRmsNormQuantFusionUT, AddRmsNormQuantFusionTest) {
   auto monod = c.NewValueNode(kUMonad);
   ParamInfoPtr param_info = std::make_shared<ParamInfo>();
 
-  auto scale_value = std::make_shared<Tensor>(kNumberTypeFloat16, ShapeVector({1}));
+  auto scale_value = tensor::empty(kNumberTypeFloat16, ShapeVector({1}), device::DeviceType::kCPU);
   scale_value->set_param_info(param_info);
   auto scale_para = c.NewTensorInput("scale_para", kFloat16, {1});
   scale_para->set_default_param(scale_value);
   auto scale = c.NewCNode("Load", {scale_para, monod}, {});
 
-  auto offset_value = std::make_shared<Tensor>(kNumberTypeInt8, ShapeVector({1}));
+  auto offset_value = tensor::empty(kNumberTypeInt8, ShapeVector({1}), device::DeviceType::kCPU);
   offset_value->set_param_info(param_info);
   auto offset_para = c.NewTensorInput("input_1", kInt8, {1});
   offset_para->set_default_param(offset_value);

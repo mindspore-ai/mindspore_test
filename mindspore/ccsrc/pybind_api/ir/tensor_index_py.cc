@@ -333,6 +333,7 @@ py::array TensorIndex::MakeNdArray(const py::object &a, int64_t dim_size) {
   return new_array;
 }
 
+#include "ir/tensor_api.h"
 namespace Convert {
 string ConvertTypeToString(const TensorIndex &index) {
   if (index.IsNone())
@@ -789,7 +790,7 @@ void TensorIndex::TensorGetitemByTupleInner(const TensorIndex &index, int64_t di
     PyType<TensorPy> *tensorPytype = ConvertPyObject2TensorPyType(tensor_index);
     if (!TensorGetitemByTupleParseTensorIndex(data_shape, tensor_index, tuple_index_new, tensor_indexes,
                                               tensor_positions, false)) {
-      TensorPtr new_tensor_index = std::make_shared<Tensor>(kNumberTypeInt32, ShapeVector({0}));
+      TensorPtr new_tensor_index = tensor::empty(kNumberTypeInt32, ShapeVector({0}), device::DeviceType::kCPU);
       py::object tensorPytypeNew = PackTensorToPyObject(new_tensor_index);
       for (int j = 0; j < tensorPytype->value.DataDim(); j++) {
         tensor_positions->emplace_back(tuple_index_new->size());

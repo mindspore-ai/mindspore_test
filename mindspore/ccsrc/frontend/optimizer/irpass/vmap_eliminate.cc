@@ -42,6 +42,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_v.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace opt {
 namespace irpass {
@@ -621,7 +622,7 @@ void GenerateStackedParams(const FuncGraphPtr &top_fg, size_t cell_size, const s
     }
     ShapeVector stacked_shape(tensor_shape);
     (void)stacked_shape.insert(stacked_shape.begin(), cell_size);
-    tensor::TensorPtr stacked_param_tensor = std::make_shared<tensor::Tensor>(tensor_type, stacked_shape);
+    tensor::TensorPtr stacked_param_tensor = tensor::empty(tensor_type, stacked_shape, device::DeviceType::kCPU);
     MS_EXCEPTION_IF_NULL(stacked_param_tensor);
     ParamInfoPtr param_info = std::make_shared<ParamInfo>();
     param_info->set_name(param_name);

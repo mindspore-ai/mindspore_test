@@ -21,6 +21,7 @@
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "runtime/device/device_address_utils.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
@@ -36,7 +37,7 @@ std::vector<TensorPtr> ConvertEmptyTensor(const ValueTuplePtr &tuple) {
     if (shape.size() == kSize9 && std::all_of(shape.begin(), shape.end(), [](int i) { return i == 0; })) {
       auto type_id = tensor->data_type();
       std::vector<int64_t> empty_shape({0});
-      result.push_back(std::make_shared<tensor::Tensor>(type_id, empty_shape));
+      result.push_back(tensor::empty(type_id, empty_shape, device::DeviceType::kCPU));
     } else {
       result.push_back(tensor);
     }

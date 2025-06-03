@@ -23,6 +23,7 @@
 #include "abstract/abstract_value.h"
 #include "ops_utils/op_constants.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace ops {
 template <typename T>
@@ -68,7 +69,7 @@ class MinimumFrontendFuncImpl : public OpFrontendFuncImpl {
 
     auto data_size = x1_tensor->DataSize();
     auto dtype = x1_tensor->data_type();
-    auto result_tensor = std::make_shared<tensor::Tensor>(dtype, x1_shape);
+    auto result_tensor = tensor::empty(dtype, x1_shape, device::DeviceType::kCPU);
     MS_EXCEPTION_IF_NULL(result_tensor);
     auto iter = minimum_impl_list.find(dtype);
     if (iter == minimum_impl_list.end()) {

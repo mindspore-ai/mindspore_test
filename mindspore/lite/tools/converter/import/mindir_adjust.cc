@@ -31,6 +31,7 @@
 #include "infer/fake_quant_param.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace lite {
 namespace {
@@ -204,7 +205,7 @@ int MindirAdjust::ValueNodeInt64Convert(AnfNodePtr anf_node) {
       MS_CHECK_TRUE_MSG(utils::cast<abstract::ShapePtr>(abstract_tensor->BuildShape()) != nullptr, RET_NULL_PTR,
                         "Failed to cast pointer.");
       auto shape_vector = utils::cast<abstract::ShapePtr>(abstract_tensor->BuildShape())->shape();
-      auto dest_tensor_info = std::make_shared<tensor::Tensor>(kNumberTypeInt32, shape_vector);
+      auto dest_tensor_info = tensor::empty(kNumberTypeInt32, shape_vector, device::DeviceType::kCPU);
       MS_CHECK_TRUE_MSG(dest_tensor_info != nullptr, RET_NULL_PTR, "dest_tensor_info is nullptr.");
       MS_CHECK_TRUE_MSG(dest_tensor_info->data_c() != nullptr, RET_ERROR, "dest_tensor_info->data_c() is nullptr");
       MS_CHECK_TRUE_MSG(dest_tensor_info->DataNBytes() >= static_cast<int>(sizeof(int32_t)), RET_ERROR,

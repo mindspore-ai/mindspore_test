@@ -53,6 +53,7 @@
 #include "tools/converter/parser/einsum_adjust.h"
 
 using mindspore::converter::kFmkTypeOnnx;
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace lite {
 namespace {
@@ -272,7 +273,7 @@ STATUS BuildParameterNode(const ParameterPtr &parameter_node, const onnx::Tensor
       return RET_ERROR;
     }
   } else {
-    tensor_info = std::make_shared<tensor::Tensor>(data_type, shape_vector);
+    tensor_info = tensor::empty(data_type, shape_vector, device::DeviceType::kCPU);
     MS_CHECK_TRUE_MSG(tensor_info != nullptr, RET_NULL_PTR, "create tensor_info return nullptr");
     std::vector<int> shape;
     std::transform(shape_vector.begin(), shape_vector.end(), std::back_inserter(shape),

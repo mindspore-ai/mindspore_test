@@ -23,6 +23,7 @@
 #include "abstract/ops/primitive_infer_map.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace ops {
 namespace {
@@ -81,9 +82,9 @@ TEST_P(TestMSELossExtSimpleInfer, simple_infer) {
 
   auto prim = std::make_shared<Primitive>(op_name);
   ASSERT_NE(prim, nullptr);
-  auto input = std::make_shared<tensor::Tensor>(param.input_type->type_id(), param.input_shape);
+  auto input = tensor::empty(param.input_type->type_id(), param.input_shape, device::DeviceType::kCPU);
   ASSERT_NE(input, nullptr);
-  auto target = std::make_shared<tensor::Tensor>(param.target_type->type_id(), param.target_shape);
+  auto target = tensor::empty(param.target_type->type_id(), param.target_shape, device::DeviceType::kCPU);
   ASSERT_NE(input, nullptr);
   ValuePtrList input_values;
   input_values.emplace_back(input);

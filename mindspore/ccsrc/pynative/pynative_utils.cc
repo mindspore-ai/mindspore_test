@@ -50,6 +50,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace pynative {
 namespace PyNativeAlgo {
@@ -549,7 +550,8 @@ ValuePtr Common::CreatOutputTensorValueByAbstract(const abstract::AbstractBasePt
       return CreateNonTensorByAbstract(abs);
     }
     for (size_t i = 0; i < abs_seq->size(); ++i) {
-      (void)out.emplace_back(std::make_shared<tensor::Tensor>(type_id, GetShapeFromAbstract(abs_seq->elements()[i])));
+      (void)out.emplace_back(
+        tensor::empty(type_id, GetShapeFromAbstract(abs_seq->elements()[i]), device::DeviceType::kCPU));
     }
     return std::make_shared<ValueTuple>(out);
   }
@@ -557,7 +559,7 @@ ValuePtr Common::CreatOutputTensorValueByAbstract(const abstract::AbstractBasePt
     MS_LOG(DEBUG) << "Get non tensor output";
     return CreateNonTensorByAbstract(abs);
   }
-  return std::make_shared<tensor::Tensor>(type_id, GetShapeFromAbstract(abs));
+  return tensor::empty(type_id, GetShapeFromAbstract(abs), device::DeviceType::kCPU);
 }
 
 void Common::ReplaceCNodeWithValueNode(const FuncGraphPtr &bprop_graph) {

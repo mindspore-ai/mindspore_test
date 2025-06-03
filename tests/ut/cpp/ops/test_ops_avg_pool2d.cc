@@ -30,6 +30,7 @@
 #include "ops/test_value_utils.h"
 #include "ops/test_ops_cmp_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "ir/tensor_api.h"
 
 namespace mindspore::ops {
 struct AvgPool2DParams {
@@ -75,7 +76,7 @@ TEST_P(TestAvgPool2D, dyn_shape) {
 
   // if static, test simple infer
   if (param.is_static) {
-    auto input = std::make_shared<tensor::Tensor>(kNumberTypeFloat32, param.input_shape);
+    auto input = tensor::empty(kNumberTypeFloat32, param.input_shape, device::DeviceType::kCPU);
     std::vector<ValuePtr> input_valus{input,           param.kernel_size, param.stride,    param.padding,
                                       param.ceil_mode, count_include_pad, divisor_override};
     auto expect_shape = ShapeArray{param.out_shape};

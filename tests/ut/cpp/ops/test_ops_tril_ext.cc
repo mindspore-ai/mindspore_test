@@ -27,6 +27,7 @@
 #include "ops/test_value_utils.h"
 #include "ops/test_ops_cmp_utils.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace ops {
 struct TrilExtShapeParams {
@@ -65,7 +66,7 @@ INSTANTIATE_TEST_CASE_P(
 class TestTrilExtSimpleInfer : public TestOps, public testing::WithParamInterface<TrilExtShapeParams> {};
 TEST_P(TestTrilExtSimpleInfer, simple_infer) {
   const auto &param = GetParam();
-  auto x = std::make_shared<tensor::Tensor>(param.x_type->type_id(), param.x_shape);
+  auto x = tensor::empty(param.x_type->type_id(), param.x_shape, device::DeviceType::kCPU);
   TrilExtFuncImpl tril_ext_func_impl;
   auto prim = std::make_shared<Primitive>("TrilExt");
   ASSERT_NE(prim, nullptr);

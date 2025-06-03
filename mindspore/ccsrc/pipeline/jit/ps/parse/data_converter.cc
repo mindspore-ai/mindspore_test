@@ -44,6 +44,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace parse {
 namespace {
@@ -1331,7 +1332,8 @@ ValuePtr ConvertSequenceBoolToTensor(const py::object &obj) {
     return nullptr;
   }
 
-  auto tensor = std::make_shared<tensor::Tensor>(kNumberTypeBool, ShapeVector({static_cast<int64_t>(seq.size())}));
+  auto tensor =
+    tensor::empty(kNumberTypeBool, ShapeVector({static_cast<int64_t>(seq.size())}), device::DeviceType::kCPU);
   auto data = static_cast<bool *>(tensor->data_c());
   for (size_t it = 0; it < seq.size(); ++it) {
     if (!py::isinstance<py::bool_>(seq[it])) {

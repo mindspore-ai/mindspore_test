@@ -35,6 +35,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 const PrimitivePtr kPrimMakeTupleV2 = std::make_shared<Primitive>("make_tuple");
 ValuePtr FuncGraphUtils::GetNodeValuePtr(AnfNodePtr input_node) {
@@ -326,7 +327,7 @@ void FuncGraphUtils::GetFuncGraphInputsInfo(const FuncGraphPtr &func_graph, std:
     auto name = FuncGraphUtils::GetTensorName(tensor);
     auto data_type = FuncGraphUtils::GetTensorDataType(tensor);
     auto shape = FuncGraphUtils::GetTensorShape(tensor);
-    auto ms_tensor = std::make_shared<tensor::Tensor>(static_cast<TypeId>(data_type), shape);
+    auto ms_tensor = tensor::empty(static_cast<TypeId>(data_type), shape, device::DeviceType::kCPU);
     ms_tensor->set_name(name);
     inputs->push_back(ms_tensor);
     inputs_name->push_back(name);
@@ -349,7 +350,7 @@ void FuncGraphUtils::GetFuncGraphOutputsInfo(const FuncGraphPtr &func_graph, std
     auto name = FuncGraphUtils::GetTensorName(tensor);
     auto data_type = FuncGraphUtils::GetTensorDataType(tensor);
     auto shape = FuncGraphUtils::GetTensorShape(tensor);
-    auto ms_tensor = std::make_shared<tensor::Tensor>(static_cast<TypeId>(data_type), shape);
+    auto ms_tensor = tensor::empty(static_cast<TypeId>(data_type), shape, device::DeviceType::kCPU);
     ms_tensor->set_name(name);
     outputs->push_back(ms_tensor);
     output_names->push_back(name);

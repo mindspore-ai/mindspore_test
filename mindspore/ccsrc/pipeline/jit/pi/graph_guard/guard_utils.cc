@@ -28,6 +28,7 @@
 #include "pipeline/jit/pi/python_adapter/pydef.h"
 #include "include/common/utils/tensor_py.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace pijit {
 

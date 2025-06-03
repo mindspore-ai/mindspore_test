@@ -29,6 +29,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/kernel_info.h"
 #include "common/oplib/oplib.h"
+#include "ir/tensor_api.h"
 
 namespace mindspore::opt {
 namespace {
@@ -41,7 +42,7 @@ tensor::TensorPtr CreateTensor(T seed) {
   TensorTypePtr tensor_type = std::make_shared<TensorType>(kInt64);
   MS_EXCEPTION_IF_NULL(tensor_type);
   tensor::DeviceInfo device_info{kOpFormat_DEFAULT, tensor_type};
-  tensor::TensorPtr indices_tensor = std::make_shared<tensor::Tensor>(type->type_id(), indices_shape);
+  tensor::TensorPtr indices_tensor = tensor::empty(type->type_id(), indices_shape, device::DeviceType::kCPU);
   MS_EXCEPTION_IF_NULL(indices_tensor);
   indices_tensor->set_device_info(device_info);
   // 2 set value of tensor

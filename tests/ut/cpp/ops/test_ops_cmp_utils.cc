@@ -22,6 +22,7 @@
 #include "abstract/abstract_value.h"
 #include "ops/ops_func_impl/simple_infer.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace ops {
 namespace {
@@ -210,7 +211,7 @@ void TestOpFuncImplSimpleInferWithEltwiseOpParams(const OpFuncImplPtr &infer_imp
     MS_LOG(ERROR) << prim_name << " has not simple infer implementation!";
     ASSERT_TRUE(False);
   }
-  auto x = std::make_shared<tensor::Tensor>(param.x_type->type_id(), param.x_shape);
+  auto x = tensor::empty(param.x_type->type_id(), param.x_shape, device::DeviceType::kCPU);
   ASSERT_NE(x, nullptr);
   ValuePtrList input_values{std::move(x)};
   for (const auto &attr : param.attr_list) {
@@ -250,7 +251,7 @@ void TestOpFuncImplSimpleInferWithMultiInputOpParams(const OpFuncImplPtr &infer_
       MS_LOG(INFO) << "Skip dynamic case when doing simple infer.";
       return;
     }
-    auto input = std::make_shared<tensor::Tensor>(param.in_type_list[idx]->type_id(), param.in_shape_array[idx]);
+    auto input = tensor::empty(param.in_type_list[idx]->type_id(), param.in_shape_array[idx], device::DeviceType::kCPU);
     input_values.push_back(std::move(input));
   }
   for (auto attr : param.attr_list) {

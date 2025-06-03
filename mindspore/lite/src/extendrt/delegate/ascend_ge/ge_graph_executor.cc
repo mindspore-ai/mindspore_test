@@ -1412,7 +1412,7 @@ bool GeGraphExecutor::GetOneRealInputs(const FuncGraphPtr &anf_graph, std::vecto
         MS_LOG(ERROR) << "Cannot find input " << input_name << " in input_shape " << input_shape_str;
         return false;
       }
-      input = std::make_shared<tensor::Tensor>(input->data_type(), it->second);
+      input = tensor::empty(input->data_type(), it->second, device::DeviceType::kCPU);
     } else if (GeDynamicUtils::IsDynamicInputShapes({input->shape_c()})) {
       MS_LOG(ERROR) << "Input " << i << " is dynamic shape " << input->shape_c()
                     << ", but there is no input shape specified in AscendDeviceInfo or config file";

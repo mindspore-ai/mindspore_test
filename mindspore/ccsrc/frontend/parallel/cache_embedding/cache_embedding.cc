@@ -49,6 +49,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace parallel {
 using ParamMap = mindspore::HashMap<ParameterPtr, ParameterPtr>;
@@ -67,7 +68,7 @@ ParamMap AddCacheParameters(const FuncGraphPtr &graph, const ParamSet &parameter
       auto type_id = data_element_type->type_id();
       auto cache_shape = param_info->cache_shape();
       auto ori_param_name = param->name();
-      auto new_tensor = std::make_shared<tensor::Tensor>(type_id, cache_shape);
+      auto new_tensor = tensor::empty(type_id, cache_shape, device::DeviceType::kCPU);
       ParamInfoPtr new_param_info = std::make_shared<ParamInfo>();
       auto cache_name = ori_param_name + "_cache";
       new_param_info->set_name(cache_name);
@@ -271,7 +272,7 @@ AnfNodePtr InitHashMap(const FuncGraphPtr &func_graph, const int64_t host_size, 
   // init new tensor
   size_t hashmap_size = static_cast<size_t>(cache_size * kEmptyRate);
   std::vector<int64_t> host_shape{static_cast<int64_t>(hashmap_size), 4};
-  auto new_tensor = std::make_shared<tensor::Tensor>(type_id, host_shape);
+  auto new_tensor = tensor::empty(type_id, host_shape, device::DeviceType::kCPU);
   size_t byte_size = new_tensor->Size();
   if (type_id == TypeId::kNumberTypeInt64) {
     InitHashMapData<int64_t>(new_tensor->data_c(), host_size, cache_size, hashmap_size, byte_size);
@@ -287,7 +288,7 @@ AnfNodePtr InitHashMap(const FuncGraphPtr &func_graph, const int64_t host_size, 
 
 AnfNodePtr InitStep(const FuncGraphPtr &func_graph, TypeId type_id) {
   std::vector<int64_t> host_shape{1};
-  auto new_tensor = std::make_shared<tensor::Tensor>(type_id, host_shape);
+  auto new_tensor = tensor::empty(type_id, host_shape, device::DeviceType::kCPU);
   ParamInfoPtr new_param_info = std::make_shared<ParamInfo>();
   std::string step_name = "cache_step";
   new_param_info->set_name(step_name);
@@ -543,7 +544,7 @@ AnfNodePtr CreateOutputNodeParam(const FuncGraphPtr &graph, const AnfNodePtr &or
   auto ori_input_shp = ori_input->Shape();
   auto input_shp = ori_input_shp->cast<abstract::ShapePtr>();
   auto input_shape = input_shp->shape();
-  auto new_tensor = std::make_shared<tensor::Tensor>(ori_input_type_id, input_shape);
+  auto new_tensor = tensor::empty(ori_input_type_id, input_shape, device::DeviceType::kCPU);
   ParamInfoPtr new_param_info = std::make_shared<ParamInfo>();
   auto new_param_name = name + "_pipe";
   new_param_info->set_name(new_param_name);

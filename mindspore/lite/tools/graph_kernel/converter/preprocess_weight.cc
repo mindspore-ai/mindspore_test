@@ -21,6 +21,7 @@
 #include "utils/anf_utils.h"
 #include "backend/common/graph_kernel/core/graph_kernel_callback.h"
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
+#include "ir/tensor_api.h"
 
 namespace mindspore::graphkernel {
 constexpr size_t kConv2dDataIndex = 1;
@@ -124,7 +125,7 @@ AnfNodePtr SubstituteConv2D::InferWeightValue(const AnfNodePtr &node) {
   IndexCalc old_shape_calc({c_out_o, c_out_i, h_len, w_len, c_in_o, c_in_i});
   ShapeVector new_shape = {c_out_o, c_in_o, h_len, w_len, c_in_i, c_out_i};
   IndexCalc new_shape_calc(new_shape);
-  auto new_tensor = std::make_shared<tensor::Tensor>(tensor->data_type(), new_shape);
+  auto new_tensor = tensor::empty(tensor->data_type(), new_shape, device::DeviceType::kCPU);
   auto new_data = new_tensor->data_c();
   auto old_data = tensor->data_c();
   for (int64_t coo = 0; coo < c_out_o; coo++) {
@@ -224,7 +225,7 @@ tensor::TensorPtr MatmulPackB::PackB(const tensor::TensorPtr &tensor, const Shap
   if (transpose) {
     std::swap(height, width);
   }
-  auto new_tensor = std::make_shared<tensor::Tensor>(tensor->data_type(), std::vector{height, width});
+  auto new_tensor = tensor::empty(tensor->data_type(), std::vector{height, width}, device::DeviceType::kCPU);
   auto *new_tensor_iter = static_cast<float *>(new_tensor->data_c());
   int64_t width_offset = 0;
   for (auto pack : pack_size) {

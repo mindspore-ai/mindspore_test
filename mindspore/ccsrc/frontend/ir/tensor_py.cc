@@ -37,6 +37,7 @@
 #include "runtime/device/move_to.h"
 #include "ir/device_address_maker.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace tensor {
 namespace {
@@ -496,7 +497,7 @@ TensorPtr TensorPybind::ConvertBytesToTensor(const py::bytes &bytes_obj, const p
     shape.push_back(dims[i].cast<int>());
   }
   TypeId data_type = type_ptr ? type_ptr->type_id() : TypeId::kTypeUnknown;
-  tensor::TensorPtr tensor = std::make_shared<tensor::Tensor>(data_type, shape);
+  tensor::TensorPtr tensor = tensor::empty(data_type, shape, device::DeviceType::kCPU);
   const char *tensor_buf = PYBIND11_BYTES_AS_STRING(bytes_obj.ptr());
   char *tensor_data_buf = reinterpret_cast<char *>(tensor->data_c());
   CopyFromBuffer(tensor_data_buf, tensor->Size(), tensor_buf, PYBIND11_BYTES_SIZE(bytes_obj.ptr()), data_type);
@@ -804,7 +805,7 @@ uintptr_t TensorPybind::DataPtr(const TensorPtr &tensor) {
 TensorPtr TensorPybind::MoveTo(const Tensor &self, const std::string &to, bool blocking) {
   py::gil_scoped_release gil_release;
   MS_LOG(INFO) << "Try move tensor to " << to;
-  auto target_tensor = std::make_shared<tensor::Tensor>(self.data_type(), self.shape());
+  auto target_tensor = tensor::empty(self.data_type(), self.shape(), device::DeviceType::kCPU);
   target_tensor->set_device_address(nullptr);
   bool return_self = false;
   // make sure op execute end before data copy
@@ -925,11 +926,11 @@ TensorPtr TensorPyImpl::InitTensorByShape(const py::dict &input, const TypePtr &
   if (input.contains("shape") &&
       (py::isinstance<py::list>(input["shape"]) || py::isinstance<py::tuple>(input["shape"]))) {
     TypeId data_type = dtype != nullptr ? dtype->type_id() : TypeId::kNumberTypeFloat64;
-    return std::make_shared<Tensor>(data_type, GetShapeFromTuple(input["shape"]));
+    return tensor::empty(data_type, GetShapeFromTuple(input["shape"]), device::DeviceType::kCPU);
   }
   ShapeVector shape = GetShapeFromPython(input);
   TypeId data_type = dtype != nullptr ? dtype->type_id() : kTypeUnknown;
-  return std::make_shared<Tensor>(data_type, shape);
+  return tensor::empty(data_type, shape, device::DeviceType::kCPU);
 }
 
 TensorPtr TensorPyImpl::InitTensor(const py::dict &input) {

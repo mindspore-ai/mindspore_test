@@ -41,6 +41,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace parallel {
 // One dimensional shape placeholder.
@@ -72,8 +73,8 @@ ValueNodePtr CreateFakeValueNode(const AnfNodePtr &origin_node) {
   abstract::AbstractTensorPtr origin_abstract = origin_node->abstract()->cast<abstract::AbstractTensorPtr>();
 
   MS_EXCEPTION_IF_NULL(origin_abstract);
-  tensor::TensorPtr fake_tensor = std::make_shared<tensor::Tensor>(origin_abstract->element()->BuildType()->type_id(),
-                                                                   origin_abstract->shape()->shape());
+  tensor::TensorPtr fake_tensor = tensor::empty(origin_abstract->element()->BuildType()->type_id(),
+                                                origin_abstract->shape()->shape(), device::DeviceType::kCPU);
   MS_EXCEPTION_IF_NULL(fake_tensor);
   fake_tensor->set_base_shape(origin_abstract->shape()->Clone());
 
@@ -98,8 +99,8 @@ AnfNodePtr CreateOutputNode(const FuncGraphPtr &func_graph, const AnfNodePtr &or
       if (!tensor_abstract) {
         MS_LOG_WITH_NODE(EXCEPTION, origin_output) << "Only support to replace tuple with all tensor elements.";
       }
-      auto fake_tensor = std::make_shared<tensor::Tensor>(tensor_abstract->element()->BuildType()->type_id(),
-                                                          tensor_abstract->shape()->shape());
+      auto fake_tensor = tensor::empty(tensor_abstract->element()->BuildType()->type_id(),
+                                       tensor_abstract->shape()->shape(), device::DeviceType::kCPU);
       MS_EXCEPTION_IF_NULL(fake_tensor);
       new_elements_abs.push_back(fake_tensor->ToAbstract());
       new_elements_values.push_back(fake_tensor);
@@ -441,7 +442,7 @@ CNodePtr PsEmbeddingCacheInserter::CreateRecvNode() const {
   MS_EXCEPTION_IF_NULL(input_indices);
   input_indices->set_abstract(
     std::make_shared<abstract::AbstractTensor>(kInt32, std::make_shared<abstract::Shape>(kOneDimDynamicShape)));
-  auto fake_input_indices_tensor = std::make_shared<tensor::Tensor>(kNumberTypeInt32, kOneDimShape);
+  auto fake_input_indices_tensor = tensor::empty(kNumberTypeInt32, kOneDimShape, device::DeviceType::kCPU);
   input_indices->set_default_param(fake_input_indices_tensor);
 
   // The update values input.
@@ -449,14 +450,14 @@ CNodePtr PsEmbeddingCacheInserter::CreateRecvNode() const {
   MS_EXCEPTION_IF_NULL(update_values);
   update_values->set_abstract(
     std::make_shared<abstract::AbstractTensor>(kFloat32, std::make_shared<abstract::Shape>(kTwoDimsDynamicShape)));
-  auto fake_update_values_tensor = std::make_shared<tensor::Tensor>(kNumberTypeFloat32, kTwoDimsShape);
+  auto fake_update_values_tensor = tensor::empty(kNumberTypeFloat32, kTwoDimsShape, device::DeviceType::kCPU);
   update_values->set_default_param(fake_update_values_tensor);
 
   // The service id input, used to choose service to execute.
   ParameterPtr service_id = root_graph_->add_parameter();
   MS_EXCEPTION_IF_NULL(service_id);
   service_id->set_abstract(std::make_shared<abstract::AbstractTensor>(kInt32, kOneDimShape));
-  auto fake_id_tensor = std::make_shared<tensor::Tensor>(kNumberTypeInt32, kOneDimDynamicShape);
+  auto fake_id_tensor = tensor::empty(kNumberTypeInt32, kOneDimDynamicShape, device::DeviceType::kCPU);
   service_id->set_default_param(fake_id_tensor);
 
   // 2. Create a RpcRecv node.

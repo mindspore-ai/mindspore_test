@@ -75,6 +75,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace session {
 MS_REG_SESSION(kSessionBasic, SessionBasic);
@@ -143,11 +144,11 @@ BaseRef CreateNodeOutputTensor(const session::KernelWithIndex &node_output_pair,
   if (is_internal_output) {
     tensor = graph->GetInternalOutputTensor(node, output_index);
     if (tensor == nullptr) {
-      tensor = std::make_shared<tensor::Tensor>(type_id, shape);
+      tensor = tensor::empty(type_id, shape, device::DeviceType::kCPU);
       graph->AddInternalOutputTensor(node, output_index, tensor);
     }
   } else {
-    tensor = std::make_shared<tensor::Tensor>(type_id, shape);
+    tensor = tensor::empty(type_id, shape, device::DeviceType::kCPU);
   }
   MS_EXCEPTION_IF_NULL(tensor);
   if (is_internal_output) {
@@ -1058,7 +1059,7 @@ void SessionBasic::GetModelInputsInfo(uint32_t graph_id, std::vector<tensor::Ten
       auto input_shape = AnfAlgo::GetOutputDeviceShape(parameter, 0);
       auto kernel_build_info = AnfAlgo::GetSelectKernelBuildInfo(parameter);
       auto data_type = kernel_build_info->GetOutputDeviceType(0);
-      auto ms_tensor = std::make_shared<tensor::Tensor>(data_type, input_shape);
+      auto ms_tensor = tensor::empty(data_type, input_shape, device::DeviceType::kCPU);
       (void)inputs->emplace_back(ms_tensor);
       (void)inputs_name->emplace_back(parameter->name());
     }

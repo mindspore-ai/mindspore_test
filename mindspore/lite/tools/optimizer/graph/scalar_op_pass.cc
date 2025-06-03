@@ -35,6 +35,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "ir/tensor_api.h"
 
 /* This pass changes the following pattern(s).
 
@@ -119,7 +120,7 @@ ValueNodePtr ScalarOpPass::GenerateScalarValueTensor(const FuncGraphPtr &func_gr
   }
   int32_t scalar_value = *reinterpret_cast<int32_t *>(data_info.data_.data());
   ShapeVector const_data_shape = {1};
-  tensor::TensorPtr const_data_tensor = std::make_shared<tensor::Tensor>(kNumberTypeInt32, const_data_shape);
+  tensor::TensorPtr const_data_tensor = tensor::empty(kNumberTypeInt32, const_data_shape, device::DeviceType::kCPU);
   auto *val = static_cast<int32_t *>(const_data_tensor->data_c());
   *val = scalar_value;
   auto const_value_node = NewValueNode(const_data_tensor);

@@ -24,6 +24,7 @@
 #include "src/common/file_utils.h"
 #include "utils/ms_utils_secure.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace lite {
 namespace {
@@ -111,7 +112,7 @@ tensor::TensorPtr OnnxNodeParser::CopyOnnxTensorData(const onnx::TensorProto &on
     return nullptr;
   }
   std::vector<int64_t> shape_vector(onnx_const_tensor.dims().begin(), onnx_const_tensor.dims().end());
-  auto tensor_info = std::make_shared<tensor::Tensor>(data_type, shape_vector);
+  auto tensor_info = tensor::empty(data_type, shape_vector, device::DeviceType::kCPU);
   if (tensor_info == nullptr) {
     MS_LOG(ERROR) << "new a tensor::Tensor failed, data type: " << data_type << ", shape: " << shape_vector;
     return nullptr;

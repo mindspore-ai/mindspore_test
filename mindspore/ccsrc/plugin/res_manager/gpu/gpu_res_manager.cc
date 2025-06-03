@@ -31,6 +31,7 @@
 #include "include/backend/data_queue/data_queue_mgr.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "runtime/device/res_manager/tensor_array.h"
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace device {
 namespace gpu {
@@ -277,7 +278,7 @@ tensor::TensorPtr GPUResManager::GetSliceByTensorListIndexHandle(const std::vect
   size_t size = std::accumulate(after_padding_size.begin() + start, after_padding_size.begin() + end - 1,
                                 before_padding_size[end - 1]);
   ShapeVector shape = {int64_t(size / UnitSizeInBytes(tensor_list[start]->data_type()))};
-  auto tensor = std::make_shared<tensor::Tensor>(tensor_list[start]->data_type(), shape);
+  auto tensor = tensor::empty(tensor_list[start]->data_type(), shape, device::DeviceType::kCPU);
   MS_EXCEPTION_IF_NULL(tensor_list[start]->device_address());
   auto ptr = tensor_list[start]->device_address()->GetMutablePtr();
 
@@ -299,7 +300,7 @@ tensor::TensorPtr GPUResManager::GetSliceByPaddingShapeHandle(const tensor::Tens
   auto type_size = UnitSizeInBytes(type_id);
   size_t tensor_size = (end - start) * type_size;
   ShapeVector shape = {static_cast<int64_t>(end - start)};
-  auto tensor = std::make_shared<tensor::Tensor>(type_id, shape);
+  auto tensor = tensor::empty(type_id, shape, device::DeviceType::kCPU);
   MS_EXCEPTION_IF_NULL(first_tensor->device_address());
   auto ptr = first_tensor->device_address()->GetMutablePtr();
   auto offset_size = start * type_size;

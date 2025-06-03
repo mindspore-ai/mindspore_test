@@ -23,6 +23,7 @@
 #include "tools/converter/quantizer/quantize_util.h"
 #include "tools/lite_exporter/fetch_content.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_o.h"
+#include "ir/tensor_api.h"
 
 namespace mindspore::lite::quant {
 AnfNodePtr SplitSharedBias::CloneParameterNode(const CNodePtr &cnode, size_t index, const FuncGraphPtr &func_graph,
@@ -50,7 +51,7 @@ AnfNodePtr SplitSharedBias::CloneParameterNode(const CNodePtr &cnode, size_t ind
   }
   std::shared_ptr<tensor::Tensor> tensor_info;
   if (static_cast<TensorCompressionType>(data_info.compress_type_) == TensorCompressionType::kNoCompression) {
-    tensor_info = std::make_shared<tensor::Tensor>(static_cast<TypeId>(data_info.data_type_), shape_vec);
+    tensor_info = tensor::empty(static_cast<TypeId>(data_info.data_type_), shape_vec, device::DeviceType::kCPU);
   } else {
     tensor_info =
       std::make_shared<tensor::Tensor>(static_cast<TypeId>(data_info.data_type_), shape_vec, data_info.data_.size(),

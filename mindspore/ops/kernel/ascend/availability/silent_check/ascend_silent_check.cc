@@ -59,6 +59,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_n.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace silentcheck {
 namespace ascend {
@@ -422,11 +423,11 @@ void DynamicSilentChecker::DoSilentCheck(const std::string &op_name, const std::
 
 DynamicCheckStatePtr DynamicSilentChecker::CreateDynamicCheckState(const TensorPtr &input_grad) {
   auto state = std::make_shared<DynamicCheckState>();
-  state->step = std::make_shared<tensor::Tensor>(kNumberTypeInt64, ShapeVector{1});
+  state->step = tensor::empty(kNumberTypeInt64, ShapeVector{1}, device::DeviceType::kCPU);
   if (HasApiSilentCheckV3()) {
-    state->avg = std::make_shared<tensor::Tensor>(input_grad->data_type(), ShapeVector{1});
+    state->avg = tensor::empty(input_grad->data_type(), ShapeVector{1}, device::DeviceType::kCPU);
   } else {
-    state->sfda = std::make_shared<tensor::Tensor>(kNumberTypeFloat32, ShapeVector{3});
+    state->sfda = tensor::empty(kNumberTypeFloat32, ShapeVector{3}, device::DeviceType::kCPU);
   }
   return state;
 }

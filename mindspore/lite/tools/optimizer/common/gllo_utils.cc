@@ -57,6 +57,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace opt {
 namespace {
@@ -860,7 +861,7 @@ ParameterPtr BuildParameterNode(const FuncGraphPtr &func_graph, const tensor::Te
   }
   param_node->set_name(node_name);
   param_node->debug_info()->set_name(node_name);
-  auto tensor_info_new = std::make_shared<tensor::Tensor>(data_type, shape_vector);
+  auto tensor_info_new = tensor::empty(data_type, shape_vector, device::DeviceType::kCPU);
   if (tensor_info_new == nullptr) {
     MS_LOG(ERROR) << "new tensor::Tensor failed.";
     return nullptr;

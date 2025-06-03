@@ -21,6 +21,7 @@
 #include "include/common/debug/anf_ir_dump.h"
 #include "pre_activate/common/pattern_to_pattern_pass_utils.h"
 #include "utils/phase.h"
+#include "ir/tensor_api.h"
 
 namespace mindspore {
 namespace opt {
@@ -43,8 +44,8 @@ TEST_F(QbmmAddFusionUT, QbmmAddFusionTest) {
   auto input_3 = c.NewTensorInput("input_3", kFloat16, {1024}); // bias: should have data
   ShapeVector sv = {1024};
   ParamInfoPtr param_info = std::make_shared<ParamInfo>(); // fake
-  tensor::TensorPtr tensor2 = std::make_shared<tensor::Tensor>(kNumberTypeInt64, sv);
-  tensor::TensorPtr tensor3 = std::make_shared<tensor::Tensor>(kNumberTypeFloat16, sv);
+  tensor::TensorPtr tensor2 = tensor::empty(kNumberTypeInt64, sv, device::DeviceType::kCPU);
+  tensor::TensorPtr tensor3 = tensor::empty(kNumberTypeFloat16, sv, device::DeviceType::kCPU);
   tensor2->set_param_info(param_info);
   tensor3->set_param_info(param_info);
   input_2->set_default_param(tensor2);

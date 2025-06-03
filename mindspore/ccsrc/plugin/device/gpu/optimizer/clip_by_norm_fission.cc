@@ -29,6 +29,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_o.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_z.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace opt {
 namespace {
@@ -149,7 +150,7 @@ AnfNodePtr ClipByNormFission::CreateReduceSumNode(const FuncGraphPtr &func_graph
 AnfNodePtr ClipByNormFission::CreateConstantNode(const FuncGraphPtr &func_graph, const AnfNodePtr &inp,
                                                  const ShapeVector &shape_vec, const TypeId &type_id,
                                                  const std::string &op_name) const {
-  auto tensor = std::make_shared<tensor::Tensor>(type_id, shape_vec);
+  auto tensor = tensor::empty(type_id, shape_vec, device::DeviceType::kCPU);
   MS_EXCEPTION_IF_NULL(func_graph);
   auto kernel_graph = func_graph->cast<KernelGraphPtr>();
   MS_EXCEPTION_IF_NULL(kernel_graph);

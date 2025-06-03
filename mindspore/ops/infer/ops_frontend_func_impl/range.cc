@@ -22,6 +22,7 @@
 #include "utils/log_adapter.h"
 #include "abstract/abstract_value.h"
 #include "ops_utils/op_constants.h"
+#include "ir/tensor_api.h"
 
 namespace mindspore::ops {
 namespace {
@@ -67,7 +68,7 @@ ValuePtr RangeImpl(const TypeId dtype, const std::vector<AbstractBasePtr> &input
     auto [out_num, out_shape] = InferShape<T>(start, limit, delta);
 
     // make tensor
-    auto tensor = std::make_shared<tensor::Tensor>(dtype, out_shape);
+    auto tensor = tensor::empty(dtype, out_shape, device::DeviceType::kCPU);
 
     // assign value
     auto output = static_cast<T *>(tensor->data_c());

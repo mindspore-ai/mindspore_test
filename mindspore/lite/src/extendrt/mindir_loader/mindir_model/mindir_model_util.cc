@@ -25,6 +25,7 @@
 #include "nnacl/op_base.h"
 #include "src/common/common.h"
 #include "src/common/log_util.h"
+#include "ir/tensor_api.h"
 
 namespace mindspore::infer::mindir {
 static mindspore::HashMap<int, TypeId> kDefaultValueSwitchMap{
@@ -85,7 +86,7 @@ mindspore::ValuePtr MindirModelUtil::MakeValueFromTensorAttribute(const mind_ir:
   for (int i = 0; i < tensor_proto.dims_size(); i++) {
     shape.push_back(tensor_proto.dims(i));
   }
-  tensor::TensorPtr tensor = std::make_shared<tensor::Tensor>(kDefaultValueSwitchMap[attr_tensor_type], shape);
+  tensor::TensorPtr tensor = tensor::empty(kDefaultValueSwitchMap[attr_tensor_type], shape, device::DeviceType::kCPU);
 
   MS_EXCEPTION_IF_NULL(tensor);
   const std::string &tensor_buf = tensor_proto.raw_data();

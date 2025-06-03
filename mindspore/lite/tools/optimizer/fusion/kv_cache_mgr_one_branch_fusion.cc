@@ -73,7 +73,7 @@ const BaseRef KVCacheMgrOneBranchFusion::DefinePattern() const {
 
 tensor::TensorPtr KVCacheMgrOneBranchFusion::ConstData(int32_t padding_length) const {
   std::vector<int64_t> shp = {padding_length};
-  tensor::TensorPtr const_data = std::make_shared<tensor::Tensor>(kInt32->type_id(), shp);
+  tensor::TensorPtr const_data = tensor::empty(kInt32->type_id(), shp, device::DeviceType::kCPU);
   MS_CHECK_TRUE_RET(const_data != nullptr && const_data->data_c() != nullptr, nullptr);
   auto *val = static_cast<int32_t *>(const_data->data_c());
   for (int i = 0; i < padding_length; ++i) {

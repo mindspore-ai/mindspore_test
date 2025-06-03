@@ -30,6 +30,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "ir/tensor_api.h"
 
 namespace mindspore::graphkernel {
 namespace {
@@ -169,7 +170,7 @@ AnfNodePtr ConvertBFloat16::CastTensor(const ValueNodePtr &value_node) {
   auto *src_data = reinterpret_cast<bfloat16 *>(tensor->data_c());
   MS_EXCEPTION_IF_NULL(src_data);
   // create float32 tensor
-  auto new_tensor = std::make_shared<tensor::Tensor>(kNumberTypeFloat32, tensor->shape());
+  auto new_tensor = tensor::empty(kNumberTypeFloat32, tensor->shape(), device::DeviceType::kCPU);
   MS_EXCEPTION_IF_NULL(new_tensor);
   auto *dst_data = reinterpret_cast<float *>(new_tensor->data_c());
   MS_EXCEPTION_IF_NULL(dst_data);

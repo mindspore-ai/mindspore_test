@@ -25,6 +25,7 @@
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
@@ -41,7 +42,7 @@ void DistCommReduceScatterAscendCustomize(const std::shared_ptr<OpRunner> &op, c
   input_shape[0] = static_cast<int64_t>(input_shape[0] * rank_size_imm);
 
   TensorPtr input_tensor =
-    std::make_shared<tensor::Tensor>(static_cast<TypeId>(other_tensor->data_type_c()), input_shape);
+    tensor::empty(static_cast<TypeId>(other_tensor->data_type_c()), input_shape, device::DeviceType::kCPU);
   PyBoostUtils::PrepareOpInputs(op->device_context(), kDefaultStreamIndex, other_tensor, scatter_tensors, input_tensor);
 
   auto run_func = [op, other_tensor, input_tensor, rank_size_imm, op_type, group, scatter_tensors]() {

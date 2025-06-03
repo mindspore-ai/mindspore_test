@@ -20,6 +20,7 @@
 #include "tools/common/graph_util.h"
 #include "abstract/utils.h"
 #include "nnacl/op_base.h"
+#include "ir/tensor_api.h"
 
 namespace mindspore::lite {
 namespace {
@@ -76,14 +77,14 @@ tensor::TensorPtr CreateTensorInfo(const void *data, size_t data_size, const std
   tensor::TensorPtr tensor_info = nullptr;
   if (shape.empty() && data_size == mindspore::abstract::TypeIdSize(data_type)) {
     ShapeVector scalar_shape = {1};
-    tensor_info = std::make_shared<tensor::Tensor>(data_type, scalar_shape);
+    tensor_info = tensor::empty(data_type, scalar_shape, device::DeviceType::kCPU);
     if (tensor_info == nullptr) {
       MS_LOG(ERROR) << "new tensor init failed";
       return nullptr;
     }
     tensor_info->set_shape({});
   } else {
-    tensor_info = std::make_shared<tensor::Tensor>(data_type, shape);
+    tensor_info = tensor::empty(data_type, shape, device::DeviceType::kCPU);
   }
   if (tensor_info == nullptr) {
     MS_LOG(ERROR) << "new tensor init failed";

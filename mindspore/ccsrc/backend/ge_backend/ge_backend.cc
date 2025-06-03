@@ -74,6 +74,7 @@
 #include "plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
 #include "plugin/res_manager/ascend/collective/hccl_watch_dog_thread.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace backend {
 namespace ge_backend {
@@ -1594,7 +1595,8 @@ void GEBackend::ConstructOutputs(const KernelGraphPtr &func_graph, std::vector<t
       continue;
     }
 
-    auto out_tensor = std::make_shared<tensor::Tensor>(output_addr->type_id(), output_kernel_tensor->GetShapeVector());
+    auto out_tensor =
+      tensor::empty(output_addr->type_id(), output_kernel_tensor->GetShapeVector(), device::DeviceType::kCPU);
 
     auto kernel_tensor = AnfAlgo::CreateKernelTensor(
       nullptr, output_addr->GetSize(), kernel::GetFormatFromStrToEnum(output_addr->format()), output_addr->type_id(),

@@ -33,6 +33,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace opt {
 namespace {
@@ -293,7 +294,7 @@ AnfNodePtr CreateValueNodeOfDeviceNumReciprocal(const FuncGraphPtr &graph, const
   const float device_num_reciprocal = 1.0 / device_num;
 
   std::vector<int64_t> device_num_shape = {};
-  auto device_num_reciprocal_tensor = std::make_shared<tensor::Tensor>(kNumberTypeFloat32, device_num_shape);
+  auto device_num_reciprocal_tensor = tensor::empty(kNumberTypeFloat32, device_num_shape, device::DeviceType::kCPU);
   MS_EXCEPTION_IF_NULL(device_num_reciprocal_tensor);
   auto data_ptr = device_num_reciprocal_tensor->data_c();
   MS_EXCEPTION_IF_NULL(data_ptr);

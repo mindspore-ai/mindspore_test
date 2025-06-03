@@ -33,6 +33,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "ir/tensor_api.h"
 
 /*
     DropoutGenMask：
@@ -128,7 +129,7 @@ AnfNodePtr CreateKeepProbValueNode(const FuncGraphPtr &func_graph, const AnfNode
   MS_LOG(DEBUG) << "Keep_prob value: " << keep_prob;
 
   std::vector<int64_t> keep_prob_shape = {};
-  auto keep_prob_tensor = std::make_shared<tensor::Tensor>(type_id, keep_prob_shape);
+  auto keep_prob_tensor = tensor::empty(type_id, keep_prob_shape, device::DeviceType::kCPU);
   MS_EXCEPTION_IF_NULL(keep_prob_tensor);
   auto data_ptr = keep_prob_tensor->data_c();
   MS_EXCEPTION_IF_NULL(data_ptr);

@@ -63,6 +63,7 @@
 #include "pybind11/pybind11.h"
 
 #include "utils/phase.h"
+#include "ir/tensor_api.h"
 
 namespace mindspore {
 // namespace to support intermediate representation definition
@@ -695,11 +696,11 @@ void GraphExecutorPy::ConvertObjectToTensors(const py::dict &dict,
 
     if (py::isinstance<py::float_>(item.second.attr("data"))) {
       // convert float to tensor with shape([1])
-      tensor = std::make_shared<Tensor>(kNumberTypeFloat32, std::vector<int64_t>({1}));
+      tensor = tensor::empty(kNumberTypeFloat32, std::vector<int64_t>({1}), device::DeviceType::kCPU);
       *(static_cast<float *>(tensor->data_c())) = py::cast<float>(item.second.attr("data"));
     } else if (py::isinstance<py::int_>(item.second.attr("data"))) {
       // convert int64_t to tensor with shape([1])
-      tensor = std::make_shared<Tensor>(kNumberTypeInt32, std::vector<int64_t>({1}));
+      tensor = tensor::empty(kNumberTypeInt32, std::vector<int64_t>({1}), device::DeviceType::kCPU);
       *(static_cast<float *>(tensor->data_c())) = py::cast<float>(item.second.attr("data"));
     } else if (tensor::IsTensorPy(item.second.attr("data"))) {
       // cast tensor

@@ -27,6 +27,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace ops {
 namespace {
@@ -110,7 +111,7 @@ TEST_P(TestReduceExtendSimpleInfer, simple_infer) {
 
   auto prim = std::make_shared<Primitive>(op_name);
   ASSERT_NE(prim, nullptr);
-  auto input = std::make_shared<tensor::Tensor>(param.input_type->type_id(), param.input_shape);
+  auto input = tensor::empty(param.input_type->type_id(), param.input_shape, device::DeviceType::kCPU);
   ASSERT_NE(input, nullptr);
   ValuePtrList input_values;
   input_values.push_back(std::move(input));
