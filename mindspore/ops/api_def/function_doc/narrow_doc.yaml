@@ -7,7 +7,7 @@ narrow:
     Args:
         input (Tensor): the tensor to narrrow.
         dim (int): the axis along which to narrow.
-        start (Union[int, Tensor]): the starting dimension.
+        start (Union[int, Tensor[int]]): the starting dimension.
         length (int): the distance to the ending dimension.
 
     Returns:
