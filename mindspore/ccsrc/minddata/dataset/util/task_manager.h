@@ -25,7 +25,6 @@
 #include <memory>
 #include <string>
 #include <set>
-#include "minddata/dataset/util/allocator.h"
 #include "minddata/dataset/util/intrp_service.h"
 #include "minddata/dataset/util/lock.h"
 #include "minddata/dataset/util/services.h"

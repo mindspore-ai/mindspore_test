@@ -22,7 +22,6 @@
 #include <mutex>
 #include <string>
 
-#include "minddata/dataset/util/intrp_resource.h"
 #include "minddata/dataset/util/intrp_service.h"
 
 namespace mindspore {
