@@ -68,7 +68,7 @@ def ops_multi_scale_deformable_attn_case2(input_binary_data=None, output_binary_
     assert np.allclose(output[1].asnumpy(), output_binary_data[2], 1e-06, 1e-06)
     assert np.allclose(output[2].asnumpy(), output_binary_data[3], 1e-06, 1e-06)
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0',
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_ops_msda_binary_cases(context_mode):
