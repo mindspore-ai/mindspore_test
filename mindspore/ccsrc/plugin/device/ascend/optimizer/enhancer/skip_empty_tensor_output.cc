@@ -22,6 +22,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/optimizer/helper.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace opt {
 namespace {
@@ -39,7 +40,7 @@ size_t GetAllEmptyTensorOutputNum(const AnfNodePtr &node) {
 
 AnfNodePtr CreateEmptyTensorValueNode(const KernelGraphPtr &graph, const TypeId &type_id,
                                       const ShapeVector &output_shape) {
-  auto empty_tensor = std::make_shared<tensor::Tensor>(type_id, output_shape);
+  auto empty_tensor = tensor::empty(type_id, output_shape, device::DeviceType::kCPU);
   return graph->NewValueNode(empty_tensor);
 }
 

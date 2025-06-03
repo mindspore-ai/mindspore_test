@@ -21,6 +21,7 @@
 #include "ops/test_ops_cmp_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace ops {
 struct ScatterValueParams {
@@ -50,9 +51,9 @@ TEST_P(TestScatterValue, scatter_value_dyn_shape) {
   DoFuncImplInferAndCompare<ScatterValueFuncImpl>(kNameScatterValue, input_args, expect_shape, expect_type);
 
   // simple infer
-  auto x_val = std::make_shared<tensor::Tensor>(param.x_dtype->type_id(), param.x_shape);
+  auto x_val = tensor::empty(param.x_dtype->type_id(), param.x_shape, device::DeviceType::kCPU);
   auto dim_val = CreateScalar<int64_t>(0);
-  auto index_val = std::make_shared<tensor::Tensor>(param.index_dtype->type_id(), param.index_shape);
+  auto index_val = tensor::empty(param.index_dtype->type_id(), param.index_shape, device::DeviceType::kCPU);
   auto src_val = CreateScalar<float>(2.0);
   auto reduce_val = std::make_shared<Int64Imm>(static_cast<int64_t>(Reduce::REDUCE_NONE));
   DoFuncImplSimpleInferAndCompare<ScatterValueFuncImpl>(

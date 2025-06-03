@@ -28,6 +28,7 @@
 #include "ir/func_graph.h"
 #include "utils/shape_utils.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace opt {
 ///
@@ -578,7 +579,7 @@ class PConstant : public PBase<PConstant<T> > {
     TypePtr tensor_type_ptr = tensor_abstract->element()->BuildType();
     ShapeVector tensor_shape = tensor_abstract->shape()->shape();
     if (x == nullptr) {
-      auto new_tensor_ptr = std::make_shared<tensor::Tensor>(tensor_type_ptr->type_id(), tensor_shape);
+      auto new_tensor_ptr = tensor::empty(tensor_type_ptr->type_id(), tensor_shape, device::DeviceType::kCPU);
       char *data = static_cast<char *>(new_tensor_ptr->data_c());
       if (memset_s(data, new_tensor_ptr->Size(), 0, new_tensor_ptr->Size()) != EOK) {
         return nullptr;
@@ -607,7 +608,7 @@ class PConstant : public PBase<PConstant<T> > {
     if (!x_value->isa<tensor::Tensor>()) {
       return nullptr;
     }
-    auto new_tensor_ptr = std::make_shared<tensor::Tensor>(tensor_type_ptr->type_id(), tensor_shape);
+    auto new_tensor_ptr = tensor::empty(tensor_type_ptr->type_id(), tensor_shape, device::DeviceType::kCPU);
     auto x_tensor_ptr = dyn_cast<tensor::Tensor>(x_value);
     if ((x_tensor_ptr->DataSize() > 1) && (x_tensor_ptr->DataSize() != new_tensor_ptr->DataSize())) {
       return nullptr;
@@ -648,7 +649,7 @@ class PConstant : public PBase<PConstant<T> > {
     TypePtr tensor_type_ptr = tensor_abstract->element()->BuildType();
     ShapeVector tensor_shape = tensor_abstract->shape()->shape();
 
-    auto new_tensor_ptr = std::make_shared<tensor::Tensor>(tensor_type_ptr->type_id(), tensor_shape);
+    auto new_tensor_ptr = tensor::empty(tensor_type_ptr->type_id(), tensor_shape, device::DeviceType::kCPU);
     size_t mem_size = GetTypeByte(tensor_type_ptr) * LongToSize(new_tensor_ptr->ElementsNum());
     char *data = reinterpret_cast<char *>(new_tensor_ptr->data_c());
 
@@ -821,7 +822,7 @@ class PConstant : public PBase<PConstant<T> > {
       // If two constant nodes have the same shape, then create a new one with this shape
       auto tensor_out_shape = tensor_1_abstract->shape()->shape();
 
-      return std::make_shared<tensor::Tensor>(tensor_1_type_ptr->type_id(), tensor_out_shape);
+      return tensor::empty(tensor_1_type_ptr->type_id(), tensor_out_shape, device::DeviceType::kCPU);
     } else {
       // If two constant nodes have different shapes, then create a new one node with the shape of the 3rd node
       auto tensor_3_abstract = node_3->abstract()->cast<abstract::AbstractTensorPtr>();
@@ -844,7 +845,7 @@ class PConstant : public PBase<PConstant<T> > {
       if ((tensor_ptr_2->DataSize() > 1) && (tensor_ptr_2->DataSize() != data_out_size)) {
         return nullptr;
       }
-      return std::make_shared<tensor::Tensor>(tensor_3_type_ptr->type_id(), tensor_out_shape);
+      return tensor::empty(tensor_3_type_ptr->type_id(), tensor_out_shape, device::DeviceType::kCPU);
     }
   }
 };

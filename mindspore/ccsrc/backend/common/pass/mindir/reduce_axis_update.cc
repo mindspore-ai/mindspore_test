@@ -27,6 +27,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace opt {
 namespace {
@@ -44,7 +45,7 @@ tensor::TensorPtr CreateTensor(const std::vector<int64_t> &values) {
   auto data_length = sizeof(int64_t);
   std::vector<int64_t> tensor_shape = {SizeToLong(values.size())};
   MS_EXCEPTION_IF_NULL(type_ptr);
-  tensor::TensorPtr tensor = std::make_shared<tensor::Tensor>(type_ptr->type_id(), tensor_shape);
+  tensor::TensorPtr tensor = tensor::empty(type_ptr->type_id(), tensor_shape, device::DeviceType::kCPU);
   MS_EXCEPTION_IF_NULL(tensor);
   tensor::DeviceInfo device_info{kOpFormat_DEFAULT, type_ptr};
   tensor->set_device_info(device_info);

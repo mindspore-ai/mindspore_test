@@ -72,6 +72,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_z.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 using mindspore::ops::FASInputLayoutMode;
 namespace parallel {
@@ -498,7 +499,7 @@ CNodePtr NewTriuNode(const AnfNodePtr &tensor, const AnfNodePtr &diag) {
 }
 
 tensor::TensorPtr make_mask_tensor(TypeId type_id, ShapeVector shape, uint8_t value, bool is_causle) {
-  tensor::TensorPtr mask_tensor = std::make_shared<mindspore::tensor::Tensor>(type_id, shape);
+  tensor::TensorPtr mask_tensor = tensor::empty(type_id, shape, device::DeviceType::kCPU);
   int64_t tensor_size = SizeToLong(mask_tensor->DataSize());
   uint8_t *uint8_data = reinterpret_cast<uint8_t *>(mask_tensor->data_c());
   if (!is_causle) {
@@ -577,7 +578,7 @@ CNodePtr NewEqualNode(const AnfNodePtr &tensor1, const AnfNodePtr &tensor2) {
 
 CNodePtr NewGatherNode(const AnfNodePtr &input_node, int64_t actual_shape) {
   MS_EXCEPTION_IF_NULL(input_node);
-  tensor::TensorPtr const_tensor = std::make_shared<mindspore::tensor::Tensor>(TypeId::kNumberTypeInt64, Shape{1});
+  tensor::TensorPtr const_tensor = tensor::empty(TypeId::kNumberTypeInt64, Shape{1}, device::DeviceType::kCPU);
   int64_t *int_data = reinterpret_cast<int64_t *>(const_tensor->data_c());
   int_data[0] = actual_shape - 1;
   std::vector<AnfNodePtr> gather_inputs = {NewValueNode(std::make_shared<Primitive>(prim::kPrimGather->name())),
@@ -642,7 +643,7 @@ void GenerateEodMask(int index, int64_t rank_id, int64_t sp_num, int64_t actual_
   auto node_sub = NewSubNode(actual_input, node_roll);
 
   tensor::TensorPtr const_tensor =
-    std::make_shared<mindspore::tensor::Tensor>(TypeId::kNumberTypeInt64, Shape{actual_shape - 1});
+    tensor::empty(TypeId::kNumberTypeInt64, Shape{actual_shape - 1}, device::DeviceType::kCPU);
   int64_t *int_data = reinterpret_cast<int64_t *>(const_tensor->data_c());
 
   for (int i = 0; i < actual_shape - 1; ++i) {
@@ -656,7 +657,7 @@ void GenerateEodMask(int index, int64_t rank_id, int64_t sp_num, int64_t actual_
 
   auto node_repeat = NewDynRepeatNode(node_range, node_add, NewTupleGetItemNode(NewTensortoTupleNode(last_eod), 0));
 
-  tensor::TensorPtr z_tensor = std::make_shared<mindspore::tensor::Tensor>(TypeId::kNumberTypeInt64, Shape{1});
+  tensor::TensorPtr z_tensor = tensor::empty(TypeId::kNumberTypeInt64, Shape{1}, device::DeviceType::kCPU);
   int64_t *z_data = reinterpret_cast<int64_t *>(z_tensor->data_c());
   z_data[0] = sp_num * s_shape[0];
 
@@ -727,7 +728,7 @@ void DynGenerateEodMask(int index, int64_t rank_id, int64_t sp_num, int64_t actu
   auto node_sub = NewSubNode(actual_input, node_roll);
 
   tensor::TensorPtr const_tensor =
-    std::make_shared<mindspore::tensor::Tensor>(TypeId::kNumberTypeInt64, Shape{actual_shape - 1});
+    tensor::empty(TypeId::kNumberTypeInt64, Shape{actual_shape - 1}, device::DeviceType::kCPU);
   int64_t *int_data = reinterpret_cast<int64_t *>(const_tensor->data_c());
   for (int i = 0; i < actual_shape - 1; ++i) {
     int_data[i] = 0;
@@ -776,7 +777,7 @@ void DynGenerateEodMask(int index, int64_t rank_id, int64_t sp_num, int64_t actu
 }
 
 tensor::TensorPtr make_start_mask_tensor(TypeId type_id, ShapeVector shape) {
-  tensor::TensorPtr mask_tensor = std::make_shared<mindspore::tensor::Tensor>(type_id, shape);
+  tensor::TensorPtr mask_tensor = tensor::empty(type_id, shape, device::DeviceType::kCPU);
   uint8_t *uint8_data = reinterpret_cast<uint8_t *>(mask_tensor->data_c());
   auto k0 = shape[kIndex0] / 2;
   auto k1 = shape[kIndex1] / 2;
@@ -814,7 +815,7 @@ AnfNodePtr dyn_make_start_mask_tensor(const AnfNodePtr &fa_s1, const AnfNodePtr 
 }
 
 tensor::TensorPtr make_end_mask_tensor(TypeId type_id, ShapeVector shape) {
-  tensor::TensorPtr mask_tensor = std::make_shared<mindspore::tensor::Tensor>(type_id, shape);
+  tensor::TensorPtr mask_tensor = tensor::empty(type_id, shape, device::DeviceType::kCPU);
   uint8_t *uint8_data = reinterpret_cast<uint8_t *>(mask_tensor->data_c());
   auto k0 = shape[kIndex0] / 2;
   auto k1 = shape[kIndex1] / 2;

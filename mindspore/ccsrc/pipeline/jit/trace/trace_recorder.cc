@@ -43,6 +43,7 @@
 #include "pipeline/jit/ps/parse/data_converter.h"
 
 namespace py = pybind11;
+#include "ir/tensor_api.h"
 namespace mindspore {
 constexpr size_t kPrimResultIndex = 0;
 constexpr size_t kFileNameIndex = 1;
@@ -974,7 +975,7 @@ py::object TraceRecorder::InitTraceGraphInputs(const AbstractBasePtr &abs, const
     auto shape_ptr = abs->GetShape();
     MS_EXCEPTION_IF_NULL(shape_ptr);
     auto shape_vec = shape_ptr->GetShapeVector();
-    auto tensor_ptr = std::make_shared<tensor::Tensor>(type_id, shape_vec);
+    auto tensor_ptr = tensor::empty(type_id, shape_vec, device::DeviceType::kCPU);
     py::object tensorpyObject = PackTensorToPyObject(tensor_ptr);
     SetNode(tensorpyObject, param, param->debug_info());
     return tensorpyObject;

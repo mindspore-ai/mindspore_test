@@ -21,6 +21,7 @@
 #include "ops/test_value_utils.h"
 #include "ops/test_ops_cmp_utils.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace ops {
 struct CummaxShapeParams {
@@ -59,7 +60,7 @@ TEST_P(TestCummax, dyn_shape) {
 
 TEST_P(TestCummaxSimpleInfer, simple_infer) {
   const auto &param = GetParam();
-  auto x = std::make_shared<tensor::Tensor>(param.x_type->type_id(), param.x_shape);
+  auto x = tensor::empty(param.x_type->type_id(), param.x_shape, device::DeviceType::kCPU);
   auto expect_shape = ShapeArray{param.x_shape, param.indices_shape};
   auto expect_type = TypePtrList{param.x_type, param.indices_type};
 

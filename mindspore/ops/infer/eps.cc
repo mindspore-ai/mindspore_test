@@ -28,6 +28,7 @@
 #include "base/float16.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace ops {
 namespace {
@@ -80,7 +81,7 @@ ValuePtr EpsInferValue(const PrimitivePtr &primitive, const std::vector<Abstract
   auto data_size = x_tensor->DataSize();
   auto dtype = x_tensor->data_type();
   auto shape = EpsInferShape(primitive, input_args)->cast<abstract::ShapePtr>();
-  auto result_tensor = std::make_shared<tensor::Tensor>(dtype, shape->shape());
+  auto result_tensor = tensor::empty(dtype, shape->shape(), device::DeviceType::kCPU);
   auto result_datac = result_tensor->data_c();
   switch (dtype) {
     case kNumberTypeFloat16: {

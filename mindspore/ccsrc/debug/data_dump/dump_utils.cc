@@ -42,6 +42,7 @@
 
 using mindspore::runtime::DeviceTensorStore;
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 static std::vector<std::string> g_overflow_operators;
 

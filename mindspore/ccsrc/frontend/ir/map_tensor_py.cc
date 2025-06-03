@@ -27,6 +27,7 @@
 #include "utils/hash_set.h"
 #include "utils/log_adapter.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 using tensor::TensorPybind;
 
@@ -149,7 +150,8 @@ void RegMapTensor(const py::module *m) {
            auto value_tensor_ori = ConvertPyObject2TensorPyType(value_tensor);
            auto key_tensor_ptr = std::make_shared<tensor::Tensor>(key_tensor_ori->value.GetTensor().get());
            auto value_tensor_ptr = std::make_shared<tensor::Tensor>(value_tensor_ori->value.GetTensor().get());
-           auto status_tensor_ptr = std::make_shared<Tensor>(kNumberTypeInt, key_tensor_ori->value.GetShape());
+           auto status_tensor_ptr =
+             tensor::empty(kNumberTypeInt, key_tensor_ori->value.GetShape(), device::DeviceType::kCPU);
            auto value_dtype = value_tensor_ptr->Dtype();
            ValuePtr default_value = ConvertMapTensorDefaultValue(default_value_obj, value_dtype);
            ValuePtr permit_filter_value = ConvertMapTensorFilterValue(permit_filter_obj);

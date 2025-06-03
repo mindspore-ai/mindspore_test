@@ -23,6 +23,7 @@
 #include "pybind_api/gil_scoped_long_running.h"
 #include "include/common/utils/pyobj_manager.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace tensor {
 PyTypeObject *TensorPy_Type;
@@ -68,7 +69,9 @@ TensorPy::TensorPy(const TensorPy &input)
   tensor_ = input.GetTensor();
 }
 
-TensorPy::TensorPy(TypeId data_type, const ShapeVector &shape) { tensor_ = std::make_shared<Tensor>(data_type, shape); }
+TensorPy::TensorPy(TypeId data_type, const ShapeVector &shape) {
+  tensor_ = tensor::empty(data_type, shape, device::DeviceType::kCPU);
+}
 
 bool TensorPy::IsInitFinished() { return init_finished_flag_; }
 

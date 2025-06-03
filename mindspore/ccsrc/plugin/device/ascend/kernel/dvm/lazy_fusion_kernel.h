@@ -29,6 +29,7 @@
 #include "mindspore/ccsrc/pyboost/op_runner.h"
 #include "runtime/pynative/lazy_fusion.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace kernel {
 using ShapeRefPtr = std::shared_ptr<dvm::ShapeRef>;
@@ -93,7 +94,7 @@ class LazyFusionKernelAscend : public dvm::Kernel {
   void Output(const TensorPtr &tensor, dvm::NDObject *obj);
 
   TensorPtr Output(dvm::NDObject *obj, TypeId dtype, const ShapeVector &shape) {
-    auto tensor = std::make_shared<tensor::Tensor>(dtype, shape);
+    auto tensor = tensor::empty(dtype, shape, device::DeviceType::kCPU);
     runtime::DeviceAddressUtils::CreateOutputTensorAddress(device_context_, stream_id_, tensor,
                                                            LongToSize(tensor->DataNBytes()));
     Output(tensor, obj);
