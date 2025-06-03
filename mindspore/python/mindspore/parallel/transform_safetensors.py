@@ -1130,6 +1130,7 @@ def unified_safetensors(src_dir, src_strategy_file, dst_dir, merge_with_redundan
                         choice_out = choice_func(k)
                         if isinstance(choice_out, bool):
                             if not choice_out:
+                                name_list.remove(k)
                                 continue
                     if k not in param_size_dict:
                         param_size_dict[k] = _cal_param_size(param_dst_shape, py_slice.dtype)
