@@ -100,7 +100,7 @@ def grouped_matmul_v4_forward_func(x, weight, group_list):
     return out[0]
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', ['KBK', 'pynative'])
 def test_grouped_matmul_v4_x2d_w2d_splititem0_grouptypeneg1_none(mode):
     """
@@ -151,7 +151,7 @@ def test_grouped_matmul_v4_x2d_w2d_splititem0_grouptypeneg1_none(mode):
     np.testing.assert_allclose(except1, res[1].float().asnumpy(), rtol=4e-3)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', ['KBK', 'pynative'])
 def test_grouped_matmul_v4_x2d_w3d_splititem3_grouptype0_a16w8(mode):
     """
@@ -209,7 +209,7 @@ def test_grouped_matmul_v4_x2d_w3d_splititem3_grouptype0_a16w8(mode):
     np.testing.assert_allclose(except_np, res[0][:30].asnumpy(), rtol=1e-3)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', ['KBK', 'pynative'])
 def test_grouped_matmul_v4_x2d_w3d_splititem3_grouptype0_none_pertoken(mode):
     """
@@ -266,7 +266,7 @@ def test_grouped_matmul_v4_x2d_w3d_splititem3_grouptype0_none_pertoken(mode):
     np.testing.assert_allclose(except_np, res[0].float().asnumpy(), rtol=4e-3)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', ['KBK', 'pynative'])
 def test_grouped_matmul_v4_x2d_w3d_splititem3_grouptype0_none_perchannel(mode):
     """
