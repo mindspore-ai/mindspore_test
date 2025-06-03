@@ -50,8 +50,8 @@ bool ValueToBool(const ValuePtr &v, bool *value) {
   } else if (v->isa<tensor::Tensor>()) {
     auto tensor = v->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(tensor);
-    tensor->data_sync();
-    bool *tensor_data = static_cast<bool *>(tensor->data_c());
+    auto tensor_cpu = tensor->cpu();
+    const bool *tensor_data = static_cast<const bool *>(tensor_cpu->data_c());
     // maybe need to support if tensor is a bool array
     auto vb = tensor_data[0];
     *value = vb;
@@ -66,13 +66,13 @@ bool BaseRefToInt(const ValuePtr &v, int64_t *value) {
   MS_EXCEPTION_IF_NULL(v);
   if (v->isa<tensor::Tensor>()) {
     auto tensor = v->cast<tensor::TensorPtr>();
-    tensor->data_sync();
-    if (tensor->Dtype()->ToString() == "Int32") {
-      auto *tensor_data = static_cast<int32_t *>(tensor->data_c());
+    auto tensor_cpu = tensor->cpu();
+    if (tensor_cpu->Dtype()->ToString() == "Int32") {
+      auto *tensor_data = static_cast<const int32_t *>(tensor_cpu->data_c());
       auto vb = tensor_data[0];
       *value = static_cast<int64_t>(vb);
-    } else if (tensor->Dtype()->ToString() == "Int64") {
-      auto *tensor_data = static_cast<int64_t *>(tensor->data_c());
+    } else if (tensor_cpu->Dtype()->ToString() == "Int64") {
+      auto *tensor_data = static_cast<const int64_t *>(tensor_cpu->data_c());
       auto vb = tensor_data[0];
       *value = vb;
     } else {
@@ -609,8 +609,8 @@ ShapeVector ConvertTensorListToShapeVector(const tensor::TensorPtrList &tensor_l
     if (tensorptr->DataDim() != 0) {
       MS_LOG(EXCEPTION) << "Element must be scalar!";
     }
-    tensorptr->data_sync(false);
-    return *(static_cast<int64_t *>(tensorptr->data_c()));
+    auto tensor_cpu = tensorptr->cpu();
+    return *(static_cast<const int64_t *>(tensor_cpu->data_c()));
   };
   std::transform(tensor_list.begin() + index, tensor_list.end(), std::back_inserter(shape), converter);
   if (shape.empty()) {

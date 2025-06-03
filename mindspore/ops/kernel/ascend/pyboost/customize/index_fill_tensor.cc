@@ -34,31 +34,31 @@ tensor::TensorPtr IndexFillTensorAscendCustomize(const std::shared_ptr<OpRunner>
   auto value_scalar = CreateValueFromTensor(value->cast<TensorPtr>())->cast<ScalarPtr>();
   auto dim_imm = GetValue<int64_t>(dim);
   std::vector<int64_t> index_vector;
-  index->data_sync();
-  TypeId tensor_type_id = static_cast<TypeId>(index->data_type_c());
-  size_t elem_num = index->DataSize();
+  auto index_cpu = index->cpu();
+  TypeId tensor_type_id = static_cast<TypeId>(index_cpu->data_type_c());
+  size_t elem_num = index_cpu->DataSize();
   if (tensor_type_id == TypeId::kNumberTypeInt64) {
-    int64_t *elem_ptr = static_cast<int64_t *>(index->data_c());
+    const int64_t *elem_ptr = static_cast<const int64_t *>(index_cpu->data_c());
     for (size_t i = 0; i < elem_num; i++) {
       index_vector.push_back(elem_ptr[i]);
     }
   } else if (tensor_type_id == TypeId::kNumberTypeInt32) {
-    int32_t *elem_ptr = static_cast<int32_t *>(index->data_c());
+    const int32_t *elem_ptr = static_cast<const int32_t *>(index_cpu->data_c());
     for (size_t i = 0; i < elem_num; i++) {
       index_vector.push_back(elem_ptr[i]);
     }
   } else if (tensor_type_id == TypeId::kNumberTypeInt16) {
-    int16_t *elem_ptr = static_cast<int16_t *>(index->data_c());
+    const int16_t *elem_ptr = static_cast<const int16_t *>(index_cpu->data_c());
     for (size_t i = 0; i < elem_num; i++) {
       index_vector.push_back(elem_ptr[i]);
     }
   } else if (tensor_type_id == TypeId::kNumberTypeInt8) {
-    int8_t *elem_ptr = static_cast<int8_t *>(index->data_c());
+    const int8_t *elem_ptr = static_cast<const int8_t *>(index_cpu->data_c());
     for (size_t i = 0; i < elem_num; i++) {
       index_vector.push_back(elem_ptr[i]);
     }
   } else if (tensor_type_id == TypeId::kNumberTypeUInt8) {
-    uint8_t *elem_ptr = static_cast<uint8_t *>(index->data_c());
+    const uint8_t *elem_ptr = static_cast<const uint8_t *>(index_cpu->data_c());
     for (size_t i = 0; i < elem_num; i++) {
       index_vector.push_back(elem_ptr[i]);
     }
