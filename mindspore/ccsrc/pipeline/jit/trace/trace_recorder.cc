@@ -91,18 +91,24 @@ py::object SyncTensor(const py::object &obj) {
     const auto &tensor = tensor::ConvertToTensor(obj);
     MS_EXCEPTION_IF_NULL(tensor);
     auto cpu_tensor = tensor->cpu();
-    py::object new_obj = py::cast(cpu_tensor);
-    return new_obj;
+    py::object new_tensor_obj = PackTensorToPyObject(cpu_tensor);
+    return new_tensor_obj;
   } else if (py::isinstance<py::tuple>(obj)) {
     const py::tuple &obj_tuple = py::cast<py::tuple>(obj);
+    py::tuple new_tuple_obj(obj_tuple.size());
     for (size_t i = 0; i < obj_tuple.size(); ++i) {
-      SyncTensor(obj_tuple[i]);
+      auto new_obj = SyncTensor(obj_tuple[i]);
+      new_tuple_obj[i] = new_obj;
     }
+    return new_tuple_obj;
   } else if (py::isinstance<py::list>(obj)) {
     const py::list &obj_list = py::cast<py::list>(obj);
+    py::list new_list_obj(obj_list.size());
     for (size_t i = 0; i < obj_list.size(); ++i) {
-      SyncTensor(obj_list[i]);
+      auto new_obj = SyncTensor(obj_list[i]);
+      new_list_obj[i] = new_obj;
     }
+    return new_list_obj;
   }
   return obj;
 }

@@ -159,14 +159,6 @@ AbstractBasePtr BuildNodeAbstract(const AnfNodePtr &node) {
   return nullptr;
 }
 
-void SyncTensor(const py::handle &obj) {
-  if (tensor::IsTensorPy(obj)) {
-    auto tensor = tensor::ConvertToTensor(obj);
-    MS_EXCEPTION_IF_NULL(tensor);
-    auto cpu_tensor = tensor->cpu();
-  }
-}
-
 bool IsObjectCallable(const py::object &obj) {
   static constexpr auto check_list = {IsPrimitiveObject, IsPrimitiveFunctionalObject, IsMsClassObject,
                                       IsMetaFuncGraphObject};
@@ -293,7 +285,6 @@ ValuePtr ConvertPyObjToValue(const py::handle &handle) {
   try {
     MS_LOG_TRY_CATCH_SCOPE;
     PyRecursionScope rec_check(obj);
-    SyncTensor(handle);
 
     if (py::list::check_(obj) || py::tuple::check_(obj) || pijit::IsCellList(obj)) {
       std::vector<ValuePtr> elements;
