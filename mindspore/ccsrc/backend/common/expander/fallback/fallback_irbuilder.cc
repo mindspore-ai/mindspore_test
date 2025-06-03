@@ -150,8 +150,8 @@ std::vector<int64_t> FallbackIRBuilder::GetIntList(const ValuePtr &value) {
   if (value->isa<tensor::Tensor>()) {
     auto tensor = value->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(tensor);
-    auto tensor_cpu = tensor->cpu();
-    return CheckAndConvertUtils::CheckTensorIntValue("tensor", tensor_cpu, "bprop");
+    auto cpu_tensor = tensor->cpu();
+    return CheckAndConvertUtils::CheckTensorIntValue("tensor", cpu_tensor, "bprop");
   } else {
     return CheckAndConvertUtils::CheckIntOrTupleInt("value", value, "bprop");
   }

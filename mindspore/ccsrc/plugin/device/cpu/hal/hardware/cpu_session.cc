@@ -150,7 +150,8 @@ void CPUSession::LoadInputData(const std::shared_ptr<KernelGraph> &kernel_graph,
       continue;
     }
     if (std::dynamic_pointer_cast<device::DeviceAddress>(tensor_address)->GetDeviceType() != device::DeviceType::kCPU) {
-      auto cpu_tensor = tensor->cpu();
+      MS_LOG(ERROR) << "Deprecated code is called. Execution aborted.";
+      std::abort();
     }
   }
 }
@@ -163,19 +164,6 @@ void CPUSession::PreExecuteGraph(const std::shared_ptr<KernelGraph> &kernel_grap
 void CPUSession::PostExecuteGraph(const std::shared_ptr<KernelGraph> &kernel_graph,
                                   const std::vector<tensor::TensorPtr> &, VectorRef *const) {
   Summary(kernel_graph.get());
-}
-
-void CPUSession::SetOutputFlags(const VectorRef &base_ref) {
-  for (size_t i = 0; i < base_ref.size(); ++i) {
-    if (utils::isa<VectorRef>(base_ref[i])) {
-      auto ref_iter = utils::cast<VectorRef>(base_ref[i]);
-      SetOutputFlags(ref_iter);
-    } else if (utils::isa<tensor::TensorPtr>(base_ref[i])) {
-      auto tensor_ptr = utils::cast<std::shared_ptr<tensor::Tensor>>(base_ref[i]);
-      MS_EXCEPTION_IF_NULL(tensor_ptr);
-      auto cpu_tensor_ptr = tensor_ptr->cpu();
-    }
-  }
 }
 
 void CPUSession::UpdateDynamicOutputShape(const std::map<tensor::TensorPtr, KernelWithIndex> &tensor_to_node) const {
