@@ -27,7 +27,7 @@ from mindspore._c_expression import CommExecOrderChecker
 # Set Recursion Depth Limit
 sys.setrecursionlimit(10000)
 # support hccl group 150000 card
-csv.field_size_limit(1024 * 1024)
+csv.field_size_limit(1024 * 1024 * 10)
 
 
 def comm_exec_order_check(action):
@@ -479,7 +479,7 @@ def detect_cycle_in_graph(ranks_map):
 
     Returns:
     - tuple: (cycle_path, cycle_ranks) where cycle_path is a list of nodes forming the cycle and cycle_ranks
-             is a list of rank transitions corresponding to the cycle path.
+                is a list of rank transitions corresponding to the cycle path.
     """
     graph = defaultdict(list)
     rank_edges = {}
@@ -491,37 +491,49 @@ def detect_cycle_in_graph(ranks_map):
             rank_edges[(u, v)] = rank
 
     visited = set()
+    path = []
+    node_indices = {}
     cycle_path = []
     cycle_ranks = []
 
-    def dfs(node, path, node_indices):
-        nonlocal cycle_path, cycle_ranks
-        if node in node_indices:
-            cycle_start = node_indices[node]
-            cycle_path = path[cycle_start:] + [node]
-            for i in range(cycle_start, len(path)):
-                u = path[i]
-                v = path[i + 1] if i + 1 < len(path) else node
-                cycle_ranks.append(f"{rank_edges[(u, v)]} {u} -> {v}")
-            return True
-        if node in visited:
-            return False
-        visited.add(node)
-        node_indices[node] = len(path)
-        path.append(node)
-        for neighbor in graph[node]:
-            if dfs(neighbor, path, node_indices):
-                return True
-        path.pop()
-        del node_indices[node]
-        return False
-
-    all_nodes = list(graph.keys())
-
-    for node in all_nodes:
+    # Use a stack to simulate recursion
+    stack = []
+    for node in list(graph.keys()):
         if node not in visited:
-            if dfs(node, [], {}):
-                return cycle_path, cycle_ranks
+            stack.append((node, False))  # (node, is_processed)
+
+            while stack:
+                current_node, is_processed = stack.pop()
+
+                if is_processed:
+                    # Post-processing: remove node from path and indices
+                    path.pop()
+                    del node_indices[current_node]
+                    continue
+
+                if current_node in node_indices:
+                    # Found a cycle
+                    cycle_start = node_indices[current_node]
+                    cycle_path = path[cycle_start:] + [current_node]
+                    for i in range(cycle_start, len(path)):
+                        u = path[i]
+                        v = path[i + 1] if i + 1 < len(path) else current_node
+                        cycle_ranks.append(f"{rank_edges[(u, v)]} {u} -> {v}")
+                    return cycle_path, cycle_ranks
+
+                if current_node in visited:
+                    continue
+
+                visited.add(current_node)
+                node_indices[current_node] = len(path)
+                path.append(current_node)
+
+                # Mark current node as processed
+                stack.append((current_node, True))
+
+                # Add neighbors to stack
+                for neighbor in reversed(graph[current_node]):
+                    stack.append((neighbor, False))
 
     return None, None
 
