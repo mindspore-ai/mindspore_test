@@ -27,6 +27,7 @@
 #include "pipeline/jit/pi/python_adapter/pydef.h"
 #include "include/common/utils/tensor_py.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace pijit {
 
@@ -1426,7 +1427,7 @@ class MetaTensorData : public ItemData {
   }
 
   py::object MakeTensor() {
-    return PackTensorToPyObject(std::make_shared<mindspore::tensor::Tensor>(data_type_->type_id(), shape_));
+    return PackTensorToPyObject(tensor::empty(data_type_->type_id(), shape_, device::DeviceType::kCPU));
   }
 
   bool IsDynamicShape() const {

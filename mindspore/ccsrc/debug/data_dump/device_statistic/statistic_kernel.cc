@@ -24,6 +24,7 @@
 #include "include/common/debug/common.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
+#include "ir/tensor_api.h"
 
 namespace mindspore {
 

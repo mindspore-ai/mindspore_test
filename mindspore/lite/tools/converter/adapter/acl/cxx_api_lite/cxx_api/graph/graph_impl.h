@@ -30,6 +30,7 @@
 #include "backend/ms_backend/ms_backend.h"
 #include "backend/backend_manager/backend_jit_config.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 class GraphCell::GraphImpl {
  public:
@@ -115,7 +116,7 @@ class GraphCell::GraphImpl {
         auto kernel_build_info = AnfAlgo::GetSelectKernelBuildInfo(parameter);
         MS_EXCEPTION_IF_NULL(kernel_build_info);
         auto data_type = kernel_build_info->GetOutputDeviceType(0);
-        auto ms_tensor = std::make_shared<tensor::Tensor>(data_type, input_shape);
+        auto ms_tensor = tensor::empty(data_type, input_shape, device::DeviceType::kCPU);
         inputs->push_back(ms_tensor);
         inputs_name->push_back(parameter->name());
       }

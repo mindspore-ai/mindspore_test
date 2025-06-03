@@ -23,6 +23,7 @@
 #include "proto/random_status.pb.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
+#include "ir/tensor_api.h"
 
 namespace mindspore::opt {
 namespace {
@@ -136,7 +137,7 @@ ValueNodePtr CreateInput(const KernelGraphPtr &kg, size_t value) {
   TensorTypePtr tensor_type = std::make_shared<TensorType>(kUInt64);
   MS_EXCEPTION_IF_NULL(tensor_type);
   tensor::DeviceInfo device_info{kOpFormat_DEFAULT, tensor_type};
-  tensor::TensorPtr tensor = std::make_shared<tensor::Tensor>(TypeId::kNumberTypeUInt64, shape);
+  tensor::TensorPtr tensor = tensor::empty(TypeId::kNumberTypeUInt64, shape, device::DeviceType::kCPU);
   MS_EXCEPTION_IF_NULL(tensor);
   tensor->set_device_info(device_info);
   auto data_ptr = tensor->data_c();

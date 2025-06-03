@@ -27,6 +27,7 @@
 #include "ops/test_value_utils.h"
 #include "ops/test_ops_cmp_utils.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace ops {
 struct BCEWithLogitsParams {
@@ -70,10 +71,10 @@ class TestBCEWithLogitsSimpleInfer : public TestOps, public testing::WithParamIn
 
 TEST_P(TestBCEWithLogitsSimpleInfer, dyn_shape) {
   const auto &param = GetParam();
-  auto input = std::make_shared<tensor::Tensor>(param.input_type->type_id(), param.input_shape);
-  auto target = std::make_shared<tensor::Tensor>(param.target_type->type_id(), param.target_shape);
-  auto weight = std::make_shared<tensor::Tensor>(param.weight_type->type_id(), param.weight_shape);
-  auto posWight = std::make_shared<tensor::Tensor>(param.posWeight_type->type_id(), param.posWeight_shape);
+  auto input = tensor::empty(param.input_type->type_id(), param.input_shape, device::DeviceType::kCPU);
+  auto target = tensor::empty(param.target_type->type_id(), param.target_shape, device::DeviceType::kCPU);
+  auto weight = tensor::empty(param.weight_type->type_id(), param.weight_shape, device::DeviceType::kCPU);
+  auto posWight = tensor::empty(param.posWeight_type->type_id(), param.posWeight_shape, device::DeviceType::kCPU);
   ValuePtrList input_values;
   input_values.push_back(std::move(input));
   input_values.push_back(std::move(target));

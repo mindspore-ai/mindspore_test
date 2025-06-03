@@ -23,6 +23,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace opt {
 namespace {
@@ -53,7 +54,7 @@ ValueNodePtr DeformableOffsetsFusion::CreateHelperNode(const FuncGraphPtr &func_
   int64_t h_index;
   int64_t w_index;
   ShapeVector out_shape = {1, offset_shape[1], offset_shape[2], offset_shape[3]};
-  tensor::TensorPtr helper_tensor = std::make_shared<tensor::Tensor>(kNumberTypeFloat32, out_shape);
+  tensor::TensorPtr helper_tensor = tensor::empty(kNumberTypeFloat32, out_shape, device::DeviceType::kCPU);
   TensorTypePtr tensor_type = std::make_shared<TensorType>(kFloat32);
   tensor::DeviceInfo device_info{kOpFormat_NHWC, tensor_type, kOpFormat_NHWC};
   helper_tensor->set_device_info(device_info);

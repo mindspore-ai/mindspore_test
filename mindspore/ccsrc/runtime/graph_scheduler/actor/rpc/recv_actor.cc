@@ -26,6 +26,7 @@
 #include "include/backend/optimizer/helper.h"
 #include "include/backend/distributed/rpc/tcp/constants.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace runtime {
 RecvActor::~RecvActor() {
@@ -294,7 +295,7 @@ void RecvActor::AddArgSpecForInput(AbstractBasePtrList *args_spec_list, const Sh
   if (output_addr->GetNodeIndex().first == nullptr) {
     output_addr->SetNodeIndex(kernel_, input_index);
   }
-  auto out_tensor = std::make_shared<tensor::Tensor>(data_type, shapes);
+  auto out_tensor = tensor::empty(data_type, shapes, device::DeviceType::kCPU);
   MS_EXCEPTION_IF_NULL(out_tensor);
   out_tensor->set_device_address(output_addr, false);
 

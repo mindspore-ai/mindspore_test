@@ -27,6 +27,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace session {
 using device::KernelInfo;
@@ -87,7 +88,7 @@ TEST_F(KernelGraphTest, NewParameter) {
   // test weight parameter node as input
   auto weight_parameter_node = anf_graph->add_parameter();
   MS_EXCEPTION_IF_NULL(weight_parameter_node);
-  auto param_value_new = std::make_shared<tensor::Tensor>(kNumberTypeFloat32, shape);
+  auto param_value_new = tensor::empty(kNumberTypeFloat32, shape, device::DeviceType::kCPU);
   weight_parameter_node->set_default_param(param_value_new);
   weight_parameter_node->set_abstract(x_abstract);
   auto new_weight_parameter_node = kernel_graph->NewParameter(weight_parameter_node);

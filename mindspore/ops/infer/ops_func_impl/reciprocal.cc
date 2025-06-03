@@ -20,6 +20,7 @@
 #include "infer/ops_func_impl/reciprocal.h"
 #include "utils/ms_context.h"
 #include "ops_utils/op_constants.h"
+#include "ir/tensor_api.h"
 
 namespace mindspore::ops {
 std::vector<TypeId> ReciprocalFuncImpl::InferType(const PrimitivePtr &primitive,
@@ -75,7 +76,7 @@ class OPS_API ReciprocalFrontendFuncImpl : public OpFrontendFuncImpl {
     auto dtype = x_tensor->data_type();
     auto shape = input_args[kIndex0]->GetShape()->GetShapeVector();
     auto x_datac = x_tensor->data_c();
-    auto result_tensor = std::make_shared<tensor::Tensor>(dtype, shape);
+    auto result_tensor = tensor::empty(dtype, shape, device::DeviceType::kCPU);
     MS_EXCEPTION_IF_NULL(result_tensor);
     auto result_datac = result_tensor->data_c();
 

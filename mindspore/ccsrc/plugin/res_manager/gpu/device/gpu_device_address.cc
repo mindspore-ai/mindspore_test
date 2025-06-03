@@ -28,6 +28,7 @@
 #include "runtime/device/res_manager/hal_res_manager.h"
 #include "plugin/res_manager/gpu/device/gpu_device_synchronizer.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace device {
 namespace gpu {
@@ -403,7 +404,7 @@ DeviceAddressPtr GPUDeviceAddress::CloneDeviceAddress() {
 mindspore::tensor::TensorPtr GPUDeviceAddress::LoadMemToHost(const std::string &tensor_name,
                                                              const ShapeVector &host_shape, TypeId host_type, bool,
                                                              bool) const {
-  mindspore::tensor::TensorPtr out_tensor = std::make_shared<tensor::Tensor>(host_type, host_shape);
+  mindspore::tensor::TensorPtr out_tensor = tensor::empty(host_type, host_shape, device::DeviceType::kCPU);
   size_t host_size = out_tensor->DataNBytes();
   if (host_size == 0) {
     MS_LOG(INFO) << "Host size is 0 for tensor: " << tensor_name << ", no need to load.";

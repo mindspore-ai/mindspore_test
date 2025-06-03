@@ -25,6 +25,7 @@
 #include "common/ms_factory.h"
 #include "utils/ms_utils_secure.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace kernel {
 namespace {
@@ -312,7 +313,7 @@ void PyFuncCpuKernelMod::BuildFuncInfo(const PrimitivePtr &primitive, const std:
   input_infos_.dtypes = in_types;
   input_infos_.shapes = in_shapes;
   for (size_t i = 0; i < in_shapes.size(); i++) {
-    auto tensor = std::make_shared<tensor::Tensor>(in_types[i], in_shapes[i]);
+    auto tensor = tensor::empty(in_types[i], in_shapes[i], device::DeviceType::kCPU);
     input_tensors_.push_back(tensor);
 
     const auto &object_type = in_shapes[i].empty() ? PythonOjectType::kScalar : PythonOjectType::kNumpyArray;

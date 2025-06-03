@@ -24,6 +24,7 @@
 #include "ir/func_graph.h"
 #include "ir/func_graph_cloner.h"
 #include "ir/manager.h"
+#include "ir/tensor_api.h"
 #include "ir/value.h"
 #include "frontend/operator/ops.h"
 #include "frontend/optimizer/irpass.h"
@@ -102,8 +103,8 @@ TEST_F(TestOptLib, test_inline) {
   // add infer and renormalize
   std::shared_ptr<mindspore::pipeline::Resource> res = std::make_shared<mindspore::pipeline::Resource>();
   AbstractBasePtrList args_spec_list;
-  tensor::TensorPtr x_tensor = std::make_shared<tensor::Tensor>(kFloat32->type_id(), std::vector<int64_t>{2, 3});
-  tensor::TensorPtr y_tensor = std::make_shared<tensor::Tensor>(kFloat32->type_id(), std::vector<int64_t>{2, 3});
+  tensor::TensorPtr x_tensor = tensor::empty(kFloat32->type_id(), std::vector<int64_t>{2, 3}, device::DeviceType::kCPU);
+  tensor::TensorPtr y_tensor = tensor::empty(kFloat32->type_id(), std::vector<int64_t>{2, 3}, device::DeviceType::kCPU);
 
   AbstractBasePtr abstract_v1 = abstract::FromValue(x_tensor, true);
   AbstractBasePtr abstract_v2 = abstract::FromValue(y_tensor, true);
@@ -178,7 +179,7 @@ TEST_F(TestOptLib, DISABLED_test_elim_cast_same_dtype) {
 
     auto x_node = inputs[1];
     std::vector<int64_t> shp = {2, 3};
-    tensor::TensorPtr x_tensor = std::make_shared<tensor::Tensor>(kFloat32->type_id(), shp);
+    tensor::TensorPtr x_tensor = tensor::empty(kFloat32->type_id(), shp, device::DeviceType::kCPU);
     auto x_abstract = x_tensor->ToAbstract();
     x_node->set_abstract(x_abstract);
 
@@ -208,7 +209,7 @@ TEST_F(TestOptLib, test_elim_reshape_same_shape) {
   if (inputs.size() > 1) {
     auto x_node = inputs[1];
     std::vector<int64_t> shp = {2, 3};
-    tensor::TensorPtr x_tensor = std::make_shared<tensor::Tensor>(kFloat32->type_id(), shp);
+    tensor::TensorPtr x_tensor = tensor::empty(kFloat32->type_id(), shp, device::DeviceType::kCPU);
     auto x_abstract = x_tensor->ToAbstract();
     x_node->set_abstract(x_abstract);
     before->output()->set_abstract(x_abstract);
@@ -218,7 +219,7 @@ TEST_F(TestOptLib, test_elim_reshape_same_shape) {
   if (inputs.size() > 1) {
     auto x_node = inputs[1];
     std::vector<int64_t> shp = {3, 2};
-    tensor::TensorPtr x_tensor = std::make_shared<tensor::Tensor>(kFloat32->type_id(), shp);
+    tensor::TensorPtr x_tensor = tensor::empty(kFloat32->type_id(), shp, device::DeviceType::kCPU);
     auto x_abstract = x_tensor->ToAbstract();
     x_node->set_abstract(x_abstract);
   }
@@ -268,7 +269,7 @@ TEST_F(TestOptLib, test_elim_reduce_mean_shape_one) {
   if (inputs.size() > 2) {
     auto x_node = inputs[1];
     std::vector<int64_t> shp = {1};
-    tensor::TensorPtr x_tensor = std::make_shared<tensor::Tensor>(kFloat32->type_id(), shp);
+    tensor::TensorPtr x_tensor = tensor::empty(kFloat32->type_id(), shp, device::DeviceType::kCPU);
     auto x_abstract = x_tensor->ToAbstract();
     x_node->set_abstract(x_abstract);
 
@@ -290,7 +291,7 @@ TEST_F(TestOptLib, test_elim_all_shape_one) {
   if (inputs.size() > 2) {
     auto x_node = inputs[1];
     std::vector<int64_t> shp = {1};
-    tensor::TensorPtr x_tensor = std::make_shared<tensor::Tensor>(kFloat32->type_id(), shp);
+    tensor::TensorPtr x_tensor = tensor::empty(kFloat32->type_id(), shp, device::DeviceType::kCPU);
     auto x_abstract = x_tensor->ToAbstract();
     x_node->set_abstract(x_abstract);
 
@@ -311,7 +312,7 @@ TEST_F(TestOptLib, test_elim_sum_shape_one) {
   if (inputs.size() > 2) {
     auto x_node = inputs[1];
     std::vector<int64_t> shp = {1};
-    tensor::TensorPtr x_tensor = std::make_shared<tensor::Tensor>(kFloat32->type_id(), shp);
+    tensor::TensorPtr x_tensor = tensor::empty(kFloat32->type_id(), shp, device::DeviceType::kCPU);
     auto x_abstract = x_tensor->ToAbstract();
     x_node->set_abstract(x_abstract);
 
@@ -486,11 +487,11 @@ TEST_F(TestOptLib, DISABLED_test_reducesum_one) {
   auto patterns = std::vector<SubstitutionPtr>({irpass.reduce_eliminate_});
 
   std::vector<int64_t> shp = {3, 2, 2, 1};
-  tensor::TensorPtr x_tensor = std::make_shared<tensor::Tensor>(kFloat32->type_id(), shp);
+  tensor::TensorPtr x_tensor = tensor::empty(kFloat32->type_id(), shp, device::DeviceType::kCPU);
   auto x_abstract = x_tensor->ToAbstract();
 
   std::vector<int64_t> shp2 = {3, 2, 1, 1};
-  tensor::TensorPtr x_tensor2 = std::make_shared<tensor::Tensor>(kFloat32->type_id(), shp2);
+  tensor::TensorPtr x_tensor2 = tensor::empty(kFloat32->type_id(), shp2, device::DeviceType::kCPU);
   auto x_abstract2 = x_tensor2->ToAbstract();
 
   auto inputs = before1->output()->cast<CNodePtr>()->inputs();

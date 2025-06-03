@@ -42,6 +42,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_w.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace opt {
 namespace {
@@ -456,7 +457,7 @@ ParameterPtr TfBidirectionGruFusion::AddDefaultParameter(const FuncGraphPtr &fun
   }
   parameter->set_abstract(abstract);
 
-  auto gate_weight_default = std::make_shared<tensor::Tensor>(type, shape_vector);
+  auto gate_weight_default = tensor::empty(type, shape_vector, device::DeviceType::kCPU);
   if (gate_weight_default == nullptr) {
     MS_LOG(ERROR) << "gate_weight_default is nullptr";
     return nullptr;

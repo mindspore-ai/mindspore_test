@@ -48,6 +48,7 @@
 #include "include/api/model_group.h"
 #include "src/common/common.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace {
 const char *const kExecutionPlan = "execution_plan";
@@ -73,7 +74,7 @@ FuncGraphPtr CreateFuncGraphFromDataFlow(const void *model_data, size_t data_siz
   auto type_ptr = TypeIdToType(kNumberTypeUInt8);
   MS_CHECK_TRUE_RET(type_ptr != nullptr, nullptr);
   ShapeVector shape = {static_cast<int64_t>(data_size)};
-  auto param_tensor = std::make_shared<tensor::Tensor>(kNumberTypeUInt8, shape);
+  auto param_tensor = tensor::empty(kNumberTypeUInt8, shape, device::DeviceType::kCPU);
   MS_CHECK_TRUE_RET(param_tensor != nullptr, nullptr);
   if (param_tensor->Size() != data_size) {
     MS_LOG(ERROR) << "The data size of param value is not equal to the data size: " << data_size;

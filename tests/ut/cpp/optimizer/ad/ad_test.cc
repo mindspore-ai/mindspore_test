@@ -29,6 +29,7 @@
 #include "ir/func_graph_cloner.h"
 #include "utils/log_adapter.h"
 #include "ir/graph_utils.h"
+#include "ir/tensor_api.h"
 #include "pipeline/jit/ps/resource.h"
 #include "pipeline/jit/ps/parse/parse.h"
 #include "include/common/debug/draw.h"
@@ -232,7 +233,7 @@ TEST_F(TestAD, TestImagBpropComplexInputComplexOutput) {
   // Parse the forward fg and do renormalize.
   auto g = getPyFun.CallAndParseRet("get_test_ad_fn", "imag_forward");
   AbstractBasePtrList args_spec_list;
-  tensor::TensorPtr x_tensor = std::make_shared<tensor::Tensor>(kNumberTypeComplex64, std::vector<int64_t>{2, 3, 4, 5});
+  tensor::TensorPtr x_tensor = tensor::empty(kNumberTypeComplex64, std::vector<int64_t>{2, 3, 4, 5}, device::DeviceType::kCPU);
   AbstractBasePtr abstract_v1 = abstract::FromValue(x_tensor, true);
   args_spec_list.push_back(abstract_v1);
   FuncGraphPtr new_g = pipeline::Renormalize(resourcePtr, g, args_spec_list);
@@ -247,7 +248,7 @@ TEST_F(TestAD, TestImagBpropComplexInputComplexOutput) {
   auto grads = top_fg->NewCNode({bprop, dout});
   top_fg->set_output(top_fg->NewCNode({NewValueNode(prim::kPrimTupleGetItem), grads, NewValueNode<int64_t>(1)}));
   // Do renormalize for the top cell.
-  tensor::TensorPtr y_tensor = std::make_shared<tensor::Tensor>(kNumberTypeFloat32, std::vector<int64_t>{2, 3, 4, 5});
+  tensor::TensorPtr y_tensor = tensor::empty(kNumberTypeFloat32, std::vector<int64_t>{2, 3, 4, 5}, device::DeviceType::kCPU);
   AbstractBasePtr abstract_v2 = abstract::FromValue(y_tensor, true);
   args_spec_list.push_back(abstract_v2);
   FuncGraphPtr new_top_fg = pipeline::Renormalize(resourcePtr, top_fg, args_spec_list);
@@ -266,7 +267,7 @@ TEST_F(TestAD, TestImagBpropRealInputComplexOutput) {
   // Parse the forward fg and do renormalize.
   auto g = getPyFun.CallAndParseRet("get_test_ad_fn", "imag_forward");
   AbstractBasePtrList args_spec_list;
-  tensor::TensorPtr x_tensor = std::make_shared<tensor::Tensor>(kNumberTypeFloat32, std::vector<int64_t>{2, 3, 4, 5});
+  tensor::TensorPtr x_tensor = tensor::empty(kNumberTypeFloat32, std::vector<int64_t>{2, 3, 4, 5}, device::DeviceType::kCPU);
   AbstractBasePtr abstract_v1 = abstract::FromValue(x_tensor, true);
   args_spec_list.push_back(abstract_v1);
   FuncGraphPtr new_g = pipeline::Renormalize(resourcePtr, g, args_spec_list);
@@ -298,7 +299,7 @@ TEST_F(TestAD, TestImagBpropRealInputRealOutput) {
   // Parse the forward fg and do renormalize.
   auto g = getPyFun.CallAndParseRet("get_test_ad_fn", "add_forward");
   AbstractBasePtrList args_spec_list;
-  tensor::TensorPtr x_tensor = std::make_shared<tensor::Tensor>(kNumberTypeFloat32, std::vector<int64_t>{2, 3, 4, 5});
+  tensor::TensorPtr x_tensor = tensor::empty(kNumberTypeFloat32, std::vector<int64_t>{2, 3, 4, 5}, device::DeviceType::kCPU);
   AbstractBasePtr abstract_v1 = abstract::FromValue(x_tensor, true);
   args_spec_list.push_back(abstract_v1);
   args_spec_list.push_back(abstract_v1);
@@ -332,7 +333,7 @@ TEST_F(TestAD, TestImagBpropComplexInputRealOutput) {
   // Parse the forward fg and do renormalize.
   auto g = getPyFun.CallAndParseRet("get_test_ad_fn", "add_forward");
   AbstractBasePtrList args_spec_list;
-  tensor::TensorPtr x_tensor = std::make_shared<tensor::Tensor>(kNumberTypeComplex64, std::vector<int64_t>{2, 3, 4, 5});
+  tensor::TensorPtr x_tensor = tensor::empty(kNumberTypeComplex64, std::vector<int64_t>{2, 3, 4, 5}, device::DeviceType::kCPU);
   AbstractBasePtr abstract_v1 = abstract::FromValue(x_tensor, true);
   args_spec_list.push_back(abstract_v1);
   args_spec_list.push_back(abstract_v1);
@@ -349,7 +350,7 @@ TEST_F(TestAD, TestImagBpropComplexInputRealOutput) {
   auto grads = top_fg->NewCNode({bprop, dout});
   top_fg->set_output(top_fg->NewCNode({NewValueNode(prim::kPrimTupleGetItem), grads, NewValueNode<int64_t>(1)}));
   // Do renormalize for the top cell.
-  tensor::TensorPtr y_tensor = std::make_shared<tensor::Tensor>(kNumberTypeFloat32, std::vector<int64_t>{2, 3, 4, 5});
+  tensor::TensorPtr y_tensor = tensor::empty(kNumberTypeFloat32, std::vector<int64_t>{2, 3, 4, 5}, device::DeviceType::kCPU);
   AbstractBasePtr abstract_v2 = abstract::FromValue(y_tensor, true);
   args_spec_list.push_back(abstract_v2);
   FuncGraphPtr new_top_fg = pipeline::Renormalize(resourcePtr, top_fg, args_spec_list);

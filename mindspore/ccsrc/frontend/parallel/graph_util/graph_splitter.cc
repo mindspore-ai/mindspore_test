@@ -40,6 +40,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 #endif
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace parallel {
 bool OperatorLabel::operator<(const OperatorLabel &label) const { return to_string() < label.to_string(); }
@@ -79,11 +80,11 @@ ValueNodePtr CreateFakeValueNode(bool use_origin_node, const AnfNodePtr &origin_
     if (use_fake_shape) {
       // Assign send's output shape as {1};
       ShapeVector fake_shape = {kSizeOne};
-      fake_tensor = std::make_shared<tensor::Tensor>(type_id, fake_shape);
+      fake_tensor = tensor::empty(type_id, fake_shape, device::DeviceType::kCPU);
     } else {
       auto shape = origin_abstract->shape();
       MS_EXCEPTION_IF_NULL(shape);
-      fake_tensor = std::make_shared<tensor::Tensor>(type_id, shape->shape());
+      fake_tensor = tensor::empty(type_id, shape->shape(), device::DeviceType::kCPU);
       fake_tensor->set_base_shape(shape->Clone());
     }
   } else {
@@ -166,8 +167,8 @@ AnfNodePtr CreateReplacedOutputNode(const FuncGraphPtr &func_graph, const AnfNod
       if (!tensor_abstract) {
         MS_LOG_WITH_NODE(EXCEPTION, tuple_input) << "Only support to replace tuple with all tensor elements.";
       }
-      auto fake_tensor = std::make_shared<tensor::Tensor>(tensor_abstract->element()->BuildType()->type_id(),
-                                                          tensor_abstract->shape()->shape());
+      auto fake_tensor = tensor::empty(tensor_abstract->element()->BuildType()->type_id(),
+                                       tensor_abstract->shape()->shape(), device::DeviceType::kCPU);
       MS_EXCEPTION_IF_NULL(fake_tensor);
       auto fake_value_node = NewValueNode(fake_tensor);
       MS_EXCEPTION_IF_NULL(fake_value_node);

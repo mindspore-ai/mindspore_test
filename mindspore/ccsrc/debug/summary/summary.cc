@@ -25,6 +25,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_h.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "ir/tensor_api.h"
 
 namespace mindspore::debug {
 constexpr int kSummaryGetItem = 2;
@@ -105,7 +106,7 @@ void Summary::SummaryTensor(KernelGraph *graph) {
     auto kt = AnfAlgo::GetOutputKernelTensor(node, index, false);
     auto shape = kt->GetShapeVector();
     TypeId type_id = kt->dtype_id();
-    tensor::TensorPtr tensor = std::make_shared<tensor::Tensor>(type_id, shape);
+    tensor::TensorPtr tensor = tensor::empty(type_id, shape, device::DeviceType::kCPU);
     MS_EXCEPTION_IF_NULL(address);
     if (!address->GetPtr()) {
       continue;

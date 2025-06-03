@@ -49,6 +49,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #endif
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace device {
 namespace cpu {
@@ -148,11 +149,11 @@ tensor::TensorPtr CPUKernelRuntime::CreateTensorForOutput(session::KernelGraph *
         temp_shape.clear();
         (void)temp_shape.emplace_back(address->GetSize() / type_size);
       }
-      tensor = std::make_shared<tensor::Tensor>(infer_type_id, temp_shape);
+      tensor = tensor::empty(infer_type_id, temp_shape, device::DeviceType::kCPU);
     }
     kernel_graph->AddInternalOutputTensor(node, index, tensor);
   } else {
-    tensor = std::make_shared<tensor::Tensor>(infer_type_id, temp_shape);
+    tensor = tensor::empty(infer_type_id, temp_shape, device::DeviceType::kCPU);
   }
   tensor->set_device_address(address);
   tensor->set_sync_status(kNeedSyncDeviceToHostImmediately);

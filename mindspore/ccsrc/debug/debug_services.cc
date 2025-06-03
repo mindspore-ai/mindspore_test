@@ -41,6 +41,7 @@
 #include "utils/ms_utils.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace {
 constexpr int md5_bit_wide = 2;
@@ -163,7 +164,7 @@ DebugServices::TensorStat DebugServices::GetTensorStatistics(const std::shared_p
   std::unique_ptr<ITensorSummary> base_summary_ptr;
   void *previous_tensor_ptr = nullptr;
   if (tensor->GetType() == DbgDataType::DT_INT4) {
-    auto tensor_int8 = std::make_shared<tensor::Tensor>(TypeId::kNumberTypeInt8, tensor->GetShape());
+    auto tensor_int8 = tensor::empty(TypeId::kNumberTypeInt8, tensor->GetShape(), device::DeviceType::kCPU);
     bool split_succeed =
       SplitInt8ToInt4x2(tensor->GetDataPtr(), tensor->GetByteSize(), tensor_int8->data_c(), tensor_int8->DataSize());
     if (!split_succeed) {
@@ -173,7 +174,7 @@ DebugServices::TensorStat DebugServices::GetTensorStatistics(const std::shared_p
     tensor->SetDataPtr(static_cast<char *>(tensor_int8->data_c()));
     base_summary_ptr = GetSummaryPtr(tensor, previous_tensor_ptr, tensor_int8->DataNBytes(), 0, DbgDataType::DT_INT8);
   } else if (tensor->GetType() == DbgDataType::DT_UINT1) {
-    auto tensor_uint8 = std::make_shared<tensor::Tensor>(TypeId::kNumberTypeUInt8, tensor->GetShape());
+    auto tensor_uint8 = tensor::empty(TypeId::kNumberTypeUInt8, tensor->GetShape(), device::DeviceType::kCPU);
     SplitUint1x8ToUint8s(tensor->GetDataPtr(), tensor->GetByteSize(), tensor->GetShape(), tensor_uint8->data_c());
     tensor->SetTensor(tensor_uint8);
     tensor->SetDataPtr(static_cast<char *>(tensor_uint8->data_c()));

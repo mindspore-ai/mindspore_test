@@ -42,6 +42,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "ir/tensor_api.h"
 
 namespace mindspore::opt {
 namespace {
@@ -656,12 +657,12 @@ std::shared_ptr<tensor::Tensor> ConcatTensors(const std::vector<std::shared_ptr<
     new_shape.push_back(base_shape.at(i));
   }
   // calculate data
-  auto concat_tensor = std::make_shared<tensor::Tensor>(base_data_type, new_shape);
+  auto concat_tensor = tensor::empty(base_data_type, new_shape, device::DeviceType::kCPU);
   MS_CHECK_TRUE_RET(concat_tensor != nullptr, nullptr);
   std::size_t offset = 0;
   for (const auto &tensor : tensors) {
     void *ptr = reinterpret_cast<uint8_t *>(concat_tensor->data_c()) + offset;
-    auto transpose_tensor = std::make_shared<tensor::Tensor>(base_data_type, tensor->shape());
+    auto transpose_tensor = tensor::empty(base_data_type, tensor->shape(), device::DeviceType::kCPU);
     if (transpose && !transpose_b) {
       switch (base_data_type) {
         case kNumberTypeFloat32: {
@@ -692,7 +693,7 @@ std::shared_ptr<tensor::Tensor> ConcatTensors(const std::vector<std::shared_ptr<
   }
   if (transpose) {
     std::vector<int64_t> tshape = {new_shape[1], new_shape[0]};
-    auto transposed_tensor = std::make_shared<tensor::Tensor>(base_data_type, tshape);
+    auto transposed_tensor = tensor::empty(base_data_type, tshape, device::DeviceType::kCPU);
     switch (base_data_type) {
       case kNumberTypeFloat32: {
         auto status = TransposeMatrix<float>(concat_tensor, transposed_tensor);
