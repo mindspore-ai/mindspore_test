@@ -40,6 +40,7 @@
 #include "mindspore/ccsrc/pipeline/jit/ps/parse/resolve.h"
 
 namespace py = pybind11;
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace abstract {
 using PyObjectWrapperPtr = std::shared_ptr<parse::PyObjectWrapper>;
@@ -94,7 +95,7 @@ class PyExecuteInitializer {
     } else if (IsShapeEmpty(kernel_tensor->GetShapeVector())) {
       auto type_id =
         (kernel_tensor->dtype_id() == TypeId::kTypeUnknown ? TypeId::kNumberTypeInt64 : kernel_tensor->dtype_id());
-      return std::make_shared<tensor::Tensor>(type_id, kernel_tensor->GetShapeVector());
+      return tensor::empty(type_id, kernel_tensor->GetShapeVector(), device::DeviceType::kCPU);
     }
 
     MS_LOG(DEBUG) << "Type:" << kernel_tensor->dtype_id() << " shape:" << kernel_tensor->GetShapeVector()
@@ -112,7 +113,7 @@ class PyExecuteInitializer {
     }
 
     tensor::TensorPtr tensor =
-      std::make_shared<tensor::Tensor>(kernel_tensor->dtype_id(), kernel_tensor->GetShapeVector());
+      tensor::empty(kernel_tensor->dtype_id(), kernel_tensor->GetShapeVector(), device::DeviceType::kCPU);
     MS_EXCEPTION_IF_NULL(tensor);
     if (LongToSize(tensor->DataNBytes()) != kernel_tensor_value->GetDataSize()) {
       MS_LOG(EXCEPTION) << "Invalid host tensor size:" << tensor->DataNBytes()

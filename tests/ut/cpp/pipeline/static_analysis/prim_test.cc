@@ -33,6 +33,7 @@
 #include "frontend/operator/ops.h"
 #include "include/common/debug/draw.h"
 #include "ir/tensor.h"
+#include "ir/tensor_api.h"
 #include "utils/symbolic.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
@@ -98,7 +99,7 @@ namespace {
 /* skip ut test cases temporarily
 AbstractBasePtr ArrayOfTensor(const TypePtr &t, std::initializer_list<int64_t> shp) {
   auto shape = std::vector<int64_t>(shp);
-  auto tensor = std::make_shared<tensor::Tensor>(t->type_id(), shape);
+  auto tensor = tensor::empty(t->type_id(), shape, device::DeviceType::kCPU);
   return ToAbstract(tensor);
 }
 */

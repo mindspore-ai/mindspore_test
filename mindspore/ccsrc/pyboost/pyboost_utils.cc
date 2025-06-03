@@ -37,20 +37,21 @@
 #include "mindspore/ccsrc/include/backend/optimizer/helper.h"
 #include "mindspore/ccsrc/include/backend/optimizer/op_adaptation_info_factory.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
 void CreateTensor(const TypeId &type_id, const ShapeVector &shape_vector, const AbstractBasePtr &abstract_tensor,
                   std::vector<tensor::TensorPtr> *outputs) {
-  auto output_tensor = std::make_shared<tensor::Tensor>(type_id, shape_vector);
+  auto output_tensor = tensor::empty(type_id, shape_vector, device::DeviceType::kCPU);
   output_tensor->set_need_pipeline_sync(true);
   (void)outputs->emplace_back(output_tensor);
   MS_LOG(DEBUG) << "Create output tensor " << output_tensor->ToString();
 }
 
 void CreateTensor(const TypeId &type_id, const ShapeVector &shape_vector, std::vector<tensor::TensorPtr> *outputs) {
-  auto output_tensor = std::make_shared<tensor::Tensor>(type_id, shape_vector);
+  auto output_tensor = tensor::empty(type_id, shape_vector, device::DeviceType::kCPU);
   output_tensor->set_need_pipeline_sync(true);
   (void)outputs->emplace_back(output_tensor);
   MS_LOG(DEBUG) << "Create output tensor " << output_tensor->ToString();
@@ -245,7 +246,7 @@ void PyBoostUtils::CreateOutputTensor(const DeviceContext *device_context, const
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative,
                                      runtime::ProfilerEvent::kPyBoostCreateOutputTensor,
                                      runtime::ProfilerRecorder::kNoName, false);
-  auto output_tensor = std::make_shared<tensor::Tensor>(input->data_type(), storage_info->shape);
+  auto output_tensor = tensor::empty(input->data_type(), storage_info->shape, device::DeviceType::kCPU);
   output_tensor->set_need_pipeline_sync(true);
   output_tensor->set_contiguous_callback(
     [](const DeviceSyncPtr &device_address) -> DeviceSyncPtr { return ContiguousByDeviceAddress(device_address); });

@@ -40,6 +40,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace pijit {
 static const size_t DictStep = 2;
@@ -1535,7 +1536,7 @@ py::object TensorInferBinary(const AbstractBasePtr &left, const AbstractBasePtr 
   MS_EXCEPTION_IF_NULL(shape_ptr);
   auto shape = shape_ptr->cast<mindspore::abstract::ShapePtr>()->shape();
   auto dtype = dtype_ptr->type_id();
-  py::object tensorpyObject = PackTensorToPyObject(std::make_shared<mindspore::tensor::Tensor>(dtype, shape));
+  py::object tensorpyObject = PackTensorToPyObject(tensor::empty(dtype, shape, device::DeviceType::kCPU));
   return tensorpyObject;
 }
 

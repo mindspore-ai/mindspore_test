@@ -25,6 +25,7 @@
 #include "abstract/ops/primitive_infer_map.h"
 #include "include/common/utils/utils.h"
 #include "utils/anf_utils.h"
+#include "ir/tensor_api.h"
 
 namespace mindspore::opt {
 namespace {
@@ -51,7 +52,7 @@ tensor::TensorPtr TransValueToInt32(const AnfNodePtr &input) {
     MS_LOG(INFO) << "Tensor type is not int64, it is " << TypeIdLabel(type_id);
     return nullptr;
   }
-  tensor::TensorPtr new_tensor = std::make_shared<tensor::Tensor>(kInt32->type_id(), tensor->shape());
+  tensor::TensorPtr new_tensor = tensor::empty(kInt32->type_id(), tensor->shape(), device::DeviceType::kCPU);
   auto *ori_data = static_cast<int64_t *>(tensor->data_c());
   auto *new_data = static_cast<int32_t *>(new_tensor->data_c());
   for (int i = 0; i < SizeToInt(tensor->DataSize()); ++i) {

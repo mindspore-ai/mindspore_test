@@ -44,6 +44,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 // namespace to support composite operators definition
 namespace prim {
@@ -1230,8 +1231,9 @@ FuncGraphPtr HandleBoolTensor::GenerateFuncGraph(const AbstractBasePtrList &args
   std::vector<AnfNodePtr> indices_out_list_with_zero{NewValueNode(kPrimMakeTuple)};
 
   std::vector<AnfNodePtr> non_zero_shape_list{NewValueNode(kPrimMakeTuple)};
-  tensor::TensorPtr zero_shape_tensor_index = std::make_shared<tensor::Tensor>(kNumberTypeInt32, ShapeVector({0}));
   MS_EXCEPTION_IF_NULL(tuple_abs_ptr);
+  tensor::TensorPtr zero_shape_tensor_index =
+    tensor::empty(kNumberTypeInt32, ShapeVector({0}), device::DeviceType::kCPU);
   for (size_t i = 0; i < tuple_abs_ptr->size(); i++) {
     const auto &index_abs = tuple_abs_ptr->elements()[i];
     AnfNodePtr new_index_node =

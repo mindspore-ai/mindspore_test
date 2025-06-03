@@ -27,6 +27,7 @@
 
 using mindspore::tensor::TensorPybind;
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace tensor {
 class TestMetaTensor : public UT::Common {
@@ -237,8 +238,8 @@ TEST_F(TestTensor, ValueEqualTest) {
   ASSERT_TRUE(t1->ValueEqual(*t2));
 
   std::vector<int64_t> shape = {6};
-  TensorPtr t3 = std::make_shared<Tensor>(kInt32->type_id(), shape);
-  TensorPtr t4 = std::make_shared<Tensor>(kInt32->type_id(), shape);
+  TensorPtr t3 = tensor::empty(kInt32->type_id(), shape, device::DeviceType::kCPU);
+  TensorPtr t4 = tensor::empty(kInt32->type_id(), shape, device::DeviceType::kCPU);
   ASSERT_TRUE(t3->ValueEqual(*t3));
   ASSERT_FALSE(t3->ValueEqual(*t4));
   ASSERT_FALSE(t3->ValueEqual(*t1));
@@ -368,7 +369,7 @@ TEST_F(TestTensor, TensorDataTest) {
 
 TEST_F(TestTensor, TensorPyCast) {
   std::vector<int64_t> shape{2, 3, 4, 5};
-  auto tensor = std::make_shared<Tensor>(kNumberTypeFloat32, shape);
+  auto tensor = tensor::empty(kNumberTypeFloat32, shape, device::DeviceType::kCPU);
   PyObject *tensor_py = TensorPythonInit(tensor);
   py::object tensor_obj = py::reinterpret_borrow<py::object>(tensor_py);
   py::tuple py_tuple = py::make_tuple(tensor_obj);
