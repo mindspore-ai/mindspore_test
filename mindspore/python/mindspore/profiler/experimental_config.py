@@ -71,17 +71,17 @@ class _ExperimentalConfig:
 
             - ExportType.Text: Export text type data.
             - ExportType.Db: Export db type data.
-        sys_io (bool, optional): (Ascend only) Whether to collect NIC and RoCE data. Default: ``False``.
-        sys_interconnection (bool, optional): (Ascend only) Whether to collect system interconnection data, including
-            HCCS data, PCIe data, and Stars Chip Trans. Default: ``False``.
         mstx_domain_include (list, optional): (Ascend only) Set the set of enabled domain names when the mstx switch
                   is turned on. The name must be of str type. Default value: ``[]``, indicating that this parameter
                   is not used to control the domain. This parameter is mutually exclusive with the mstx_domain_exclude
                   parameter and cannot be set. simultaneously. If both are set, only the mstx_domain_include parameter
                   takes effect.
-        mstx_domain_exclude (list, optional) -(Ascend only) Set the set of domain names that are not enabled when the
+        mstx_domain_exclude (list, optional): (Ascend only) Set the set of domain names that are not enabled when the
                   mstx switch is turned on. The name must be of str type. Default value: ``[]``, indicating that this
                   parameter is not used to control the domain.
+        sys_io (bool, optional): (Ascend only) Whether to collect NIC and RoCE data. Default: ``False``.
+        sys_interconnection (bool, optional): (Ascend only) Whether to collect system interconnection data, including
+            HCCS data, PCIe data, and Stars Chip Trans. Default: ``False``.
         host_sys (list, optional): Collect the data of system call classes on the host side.
             Default: ``[]``.
 
