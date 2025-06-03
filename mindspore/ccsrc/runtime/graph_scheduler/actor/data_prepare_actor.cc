@@ -1102,9 +1102,8 @@ void DataPrepareActor::PrepareDataForStringValue(const ValueNodePtr &node, size_
     MS_EXCEPTION_IF_NULL(device_tensor);
     // account '\0' to string size, keep consistent with method `CreateDeviceAddressForScalarAndString` defined in
     // `device_address_utils.cc`
-    size_t string_tensor_size = tensor_size + 1;
     auto string_tensor = std::make_shared<tensor::Tensor>(
-      kObjectTypeString, shape, const_cast<void *>(kernel_tensor->GetValuePtr()), string_tensor_size);
+      kObjectTypeString, shape, const_cast<void *>(kernel_tensor->GetValuePtr()), tensor_size);
     if (!SyncCopy(device_tensor.get(), string_tensor->device_address().get(), kDefaultStreamIndex)) {
       std::string error_info = "SyncHostToDevice failed, node name: " + node->fullname_with_scope();
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(real_strategy_, (*context), error_info);
