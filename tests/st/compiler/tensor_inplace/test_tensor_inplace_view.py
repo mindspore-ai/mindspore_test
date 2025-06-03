@@ -86,7 +86,7 @@ class ViewOut(nn.Cell):
         return x * 3
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_graph_view_out():
     """
     Feature: Runtime view graph mode.
@@ -119,7 +119,7 @@ class ViewOut2(nn.Cell):
         return x * 3 + y
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_graph_view_out_tensormove():
     """
     Feature: Runtime view graph mode.

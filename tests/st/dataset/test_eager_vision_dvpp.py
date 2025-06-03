@@ -2118,7 +2118,7 @@ def test_basic_transforms_dvpp():
     test_eager_invert_dvpp()
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_basic_transforms_dvpp_mix_cpu():
     """
     Feature: Mix DVPP & CPU basic transforms
