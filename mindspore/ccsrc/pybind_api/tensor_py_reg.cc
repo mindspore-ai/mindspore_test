@@ -531,28 +531,25 @@ extern PyObject *TensorPython_asnumpy(PyObject *self, PyObject *args) {
   HANDLE_MS_EXCEPTION_END
 }
 
-extern PyObject *TensorPython_data_sync(PyObject *self, PyObject *args) {
+extern PyObject *TensorPython_cpu(PyObject *self, PyObject *args) {
   HANDLE_MS_EXCEPTION
-  MS_LOG(DEBUG) << "Tensor data_sync";
+  MS_LOG(DEBUG) << "Tensor cpu";
   PyType<TensorPy> *py_tensor;
-  bool need_wait;
+  TensorPtr cpu_tensor = nullptr;
   if (self != NULL) {
     py_tensor = (PyType<TensorPy> *)self;
     TensorPy &tensor = py_tensor->value;
-    if (!PyArg_ParseTuple(args, "p", &need_wait)) {
-      return nullptr;
-    }
-    tensor.DataSync(need_wait);
+    cpu_tensor = tensor.CPU();
   } else {
     PyObject *oriTensor;
-    if (!PyArg_ParseTuple(args, "Op", &oriTensor, &need_wait)) {
+    if (!PyArg_ParseTuple(args, "O", &oriTensor)) {
       return nullptr;
     }
     py_tensor = (PyType<TensorPy> *)oriTensor;
     TensorPy &tensor = py_tensor->value;
-    tensor.DataSync(need_wait);
+    cpu_tensor = tensor.CPU();
   }
-  Py_RETURN_NONE;
+  return PackTensor(cpu_tensor);
   HANDLE_MS_EXCEPTION_END
 }
 
@@ -1141,7 +1138,7 @@ static PyMethodDef Tensor_methods[] = {
                                     array([[1., 1., 1.],
                                            [1., 1., 1.]])
                                 )mydelimiter"},
-  {"data_sync", (PyCFunction)TensorPython_data_sync, METH_VARARGS, "Synchronize data with optional wait"},
+  {"cpu", (PyCFunction)TensorPython_cpu, METH_NOARGS, "Synchronize data from device to cpu"},
   {"__repr__", (PyCFunction)TensorPython_repr, METH_NOARGS, "Return the string representation of the tensor."},
   {"from_numpy", TensorPython_from_numpy, METH_STATIC | METH_VARARGS, R"mydelimiter(
                                 Creates a Tensor from a numpy.ndarray without copy.

@@ -141,10 +141,8 @@ void UpdatePreTensorInfo(const tensor::TensorPtr &new_tensor, const tensor::Tens
       MS_EXCEPTION_IF_CHECK_FAIL(ret_code == old_ptr, "Memory copy failed");
     }
   } else {
-    old_tensor->set_device_address(device_address);
-    old_tensor->data_sync();
-    old_tensor->set_device_address(nullptr);
-    old_tensor->set_sync_status(kNeedSyncHostToDevice);
+    MS_LOG(ERROR) << "Deprecated code is called. Execution aborted."
+    std::abort();
   }
 }
 }  // namespace

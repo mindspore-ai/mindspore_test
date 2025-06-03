@@ -333,6 +333,7 @@ device::DeviceAddressPtrList DeviceAddressUtils::CreateDeviceAddressForTensorVal
         return address_list;
       }
       auto cpu_tensor = tensor->cpu();
+      value_node->set_value(cpu_tensor);
     }
   }
 

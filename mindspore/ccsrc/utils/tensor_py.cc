@@ -198,7 +198,7 @@ const std::string TensorPy::GetOffloadFilePath() const { return GetTensor()->Get
 
 void TensorPy::SetCastDtype(const TypePtr &dtype) { GetTensor()->set_cast_dtype(dtype); }
 
-void TensorPy::DataSync(bool need_wait) const { GetTensor()->data_sync(need_wait, false); }
+TensorPtr TensorPy::CPU() const { return GetTensor()->cpu(); }
 
 void TensorPy::ExecuteLazyTask() const { GetTensor()->ExecuteLazyTask(); }
 

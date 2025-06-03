@@ -196,16 +196,14 @@ ShapeArray RepeatInterleaveTensorFuncImpl::InferShape(const PrimitivePtr &primit
   const auto x_shape = x_tensor->shape();
   const auto &repeats_tensor = input_values[kInputIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(repeats_tensor);
-  if (repeats_tensor->device_address()) {
-    repeats_tensor->data_sync();
-  }
-  const auto repeats_shape = repeats_tensor->shape();
+  auto repeats_tensor_cpu = repeats_tensor->cpu();
+  const auto repeats_shape = repeats_tensor_cpu->shape();
   if (repeats_shape.size() > 1) {
     MS_EXCEPTION(RuntimeError) << "For '" << primitive->name() << "', 'repeats' must be 0-dim or 1-dim tensor.";
   }
 
   std::vector<TypeId> valid_types = {kNumberTypeInt32, kNumberTypeInt64};
-  auto repeats_type = repeats_tensor->data_type();
+  auto repeats_type = repeats_tensor_cpu->data_type();
   if (std::find(valid_types.begin(), valid_types.end(), repeats_type) == valid_types.end()) {
     MS_EXCEPTION(TypeError) << "For '" << primitive->name() << "', 'repeats' must be int32 or int64. but got "
                             << TypeIdToType(repeats_type)->ToString();
@@ -213,11 +211,11 @@ ShapeArray RepeatInterleaveTensorFuncImpl::InferShape(const PrimitivePtr &primit
 
   ShapeVector repeats;
   if (repeats_type == kNumberTypeInt32) {
-    auto repeats_opt = GetArrayValue<int32_t>(input_values[kInputIndex1]);
+    auto repeats_opt = GetArrayValue<int32_t>(repeats_tensor_cpu);
     auto repeats_values = repeats_opt.value();
     repeats = GetNewRepeats<int32_t>(primitive, repeats_values);
   } else {
-    auto repeats_opt = GetArrayValue<int64_t>(input_values[kInputIndex1]);
+    auto repeats_opt = GetArrayValue<int64_t>(repeats_tensor_cpu);
     auto repeats_values = repeats_opt.value();
     repeats = GetNewRepeats<int64_t>(primitive, repeats_values);
   }
