@@ -332,7 +332,7 @@ abstract::AbstractBasePtr Tensor::ToAbstract() {
 
 bool TensorEqual(const Tensor &self, const Tensor &other) {
   auto self_cpu = self.cpu();
-  auto other_cpu = self.cpu();
+  auto other_cpu = other.cpu();
   auto self_ptr = static_cast<const uint8_t *>(self_cpu->data_c());
   auto other_ptr = static_cast<const uint8_t *>(other_cpu->data_c());
   if (self_ptr == nullptr || other_ptr == nullptr) {

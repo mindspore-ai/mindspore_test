@@ -41,7 +41,6 @@
 #include "ir/device_event.h"
 #include "utils/os.h"
 #include "ir/meta_grad_data.h"
-#include "ir/tensor_data.h"
 #include "utils/ms_utils_secure.h"
 #include "base/complex_storage.h"
 #include "utils/temp_file_manager.h"
@@ -1032,16 +1031,6 @@ class MS_CORE_API RowTensor : public MetaSparseTensor {
 
 // Convert shape vector to string.
 MS_CORE_API std::string ShapeToString(const ShapeVector &shape);
-
-inline static void CopyTensorData(const TensorDataPtr &dest, const TensorDataPtr &src) {
-  auto dest_bytes = dest->nbytes();
-  auto src_bytes = src->nbytes();
-  auto err = common::huge_memcpy(static_cast<uint8_t *>(dest->data()), dest_bytes,
-                                 static_cast<const uint8_t *>(src->const_data()), src_bytes);
-  if (err != EOK) {
-    MS_LOG(INTERNAL_EXCEPTION) << "Copy tensor data failed! bytes: " << dest_bytes << "/" << src_bytes << ".";
-  }
-}
 
 using RowTensorPtr = std::shared_ptr<RowTensor>;
 }  // namespace tensor
