@@ -516,8 +516,8 @@ void AutoGradUtil::BumpVersion(const ValuePtr &value) {
 
 bool AutoGradUtil::NeedGrad(const tensor::TensorPtr &input_tensor) {
   MS_EXCEPTION_IF_NULL(input_tensor);
-  if (IsParamRequiresGrad(input_tensor)) {
-    return true;
+  if (input_tensor->is_parameter()) {
+    return IsParamRequiresGrad(input_tensor);
   }
   return autograd::impl::GetUnsafeGradNodeImpl(input_tensor) != nullptr;
 }
