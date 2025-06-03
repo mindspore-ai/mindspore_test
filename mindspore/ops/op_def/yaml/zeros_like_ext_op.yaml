@@ -16,3 +16,4 @@ zeros_like_ext:
         enable: True
         Ascend: ZerosLikeExtAscend
         GPU: None
+    non-differentiable: True

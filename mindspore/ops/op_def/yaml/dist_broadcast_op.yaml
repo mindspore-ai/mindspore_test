@@ -19,3 +19,4 @@ dist_comm_broadcast:
         is_comm_op: True
         Ascend: DistCommBroadcastAscend
         CPU: DistCommBroadcastCPU
+    non-differentiable: True

@@ -153,7 +153,8 @@ class OpProto:
                  op_inplace=False,
                  op_labels=None,
                  op_deprecated=None,
-                 bprop_expander=True):
+                 bprop_expander=True,
+                 non_differentiable=False):
         self.op_name = op_name
         self.op_args = op_args
         self.op_function = op_function
@@ -167,6 +168,7 @@ class OpProto:
         self.op_labels = op_labels
         self.op_deprecated = op_deprecated
         self.bprop_expander = bprop_expander
+        self.non_differentiable = non_differentiable
 
     @staticmethod
     def load_from_yaml(op_name, op_data):
@@ -210,10 +212,12 @@ class OpProto:
         # get op deprecated
         op_deprecated = op_data.get('deprecated', None)
         bprop_expander = op_data.get('bprop_expander', True)
+        non_differentiable = op_data.get('non-differentiable', False)
         op_proto = OpProto(op_name=op_name, op_args=op_args, op_returns=op_returns, op_function=op_function,
                            op_class=op_class, op_dispatch=op_dispatch, op_args_signature=op_args_signature,
                            op_view=op_view, op_graph_view=op_graph_view, op_inplace=op_inplace, op_labels=op_labels,
-                           op_deprecated=op_deprecated, bprop_expander=bprop_expander)
+                           op_deprecated=op_deprecated, bprop_expander=bprop_expander,
+                           non_differentiable=non_differentiable)
         return op_proto
 
 

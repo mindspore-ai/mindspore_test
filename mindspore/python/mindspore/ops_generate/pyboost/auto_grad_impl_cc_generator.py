@@ -58,7 +58,7 @@ class AutoGradImplGenerator(BaseGenerator):
         do_grad_op_list = []
         ops_inc_head_set = set()
         for op_proto in op_protos:
-            if op_proto.op_dispatch is None or op_proto.op_dispatch.is_comm_op:
+            if op_proto.op_dispatch is None:
                 continue
             auto_grad_reg_list.append(self.auto_grad_reg_template.replace(class_name=op_proto.op_class.name))
             do_grad_op_list.append(self._get_single_do_grad_op(op_proto))
@@ -90,7 +90,10 @@ class AutoGradImplGenerator(BaseGenerator):
         inner_grad_args_with_type =\
             self.do_grad_op_args_with_type.replace(input_args_with_type=inner_grad_args_with_type)
         op_def_name_str = "g" + op_proto.op_class.name
-        bprop_expander = "true" if op_proto.bprop_expander else "false"
+        kTrue = "true"
+        kFalse = "false"
+        bprop_expander = kTrue if op_proto.bprop_expander else kFalse
+        non_differentiable = kTrue if op_proto.non_differentiable else kFalse
         if not op_proto.op_view:
             convert_basic_to_value = ''
         else:
@@ -105,6 +108,7 @@ class AutoGradImplGenerator(BaseGenerator):
                                                            view_arg=view_arg_str,
                                                            op_def_name=op_def_name_str,
                                                            bprop_expander=bprop_expander,
+                                                           non_differentiable=non_differentiable,
                                                            convert_basic_to_value=convert_basic_to_value)
 
     def _get_input_args(self, op_proto, has_type, with_optional, use_basic_type=False):

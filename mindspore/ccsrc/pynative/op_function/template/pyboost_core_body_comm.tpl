@@ -30,33 +30,23 @@ py::object ${func_name}_OP(const PrimitivePtr &prim, const std::vector<ops::OP_D
                 auto old_stream_id = kernel::pyboost::PyBoostUtils::cur_stream_id();
                 kernel::pyboost::PyBoostUtils::set_cur_stream_id(op_run_info->stream_id);
 
-                // stub tensor to tensor.
-                ${convert_stub}
+               // stub tensor to tensor.
+               ${convert_stub}
+               ${implicit_cast}
 
-                // Do mixed precision and implicit cast
-                ${implicit_cast}
-
+                kernel::pyboost::OpRunStatus::Get().set_run_info(
+                            kernel::pyboost::OpStatus(op_run_info->async_status.disable_mix_precision,
+                                                      op_run_info->async_status.is_jit_compiling,
+                                                      op_run_info->async_status.custom_bprop_cell_count,
+                                                      op_run_info->device_target));
+                kernel::pyboost::RequireGradGuard require_grad_guard(op_run_info->requires_grad);
                 // Run op
                 auto outputs = kernel::pyboost::${operator_name}_inner(${cast_args}, comm_handle, target);
                 auto op = kernel::pyboost::OpRunStatus::Get().GetLastOp();
-                const auto &op_prim = op->primitive();
-                ${optional_to_value}
-
-                // Create output value
-                AutoGradUtil::SetInferOutputToGrad(op_run_info, op);
-                // Create output value
-                auto real_output = AutoGradUtil::Make${is_multi}Output(op_run_info->requires_grad, op${view_arg});
-                // Do auto grad
-                if (op_run_info->requires_grad) {
-                  // Refresh op prim, otherwish the size of inputs will be incorrect.
-                  auto op_grad_info = std::make_shared<OpGradInfo>(op_prim, std::vector<ValuePtr>({${grad_args}}), real_output);
-                  op_grad_info->output_value_simple_info = op_run_info->output_value_simple_info;
-                  PyNativeAlgo::PyBoost::DoGrad(op, op_grad_info, op_run_info->async_status);
-                }
                 // Data sync in mix mode(Graph and PyNative)
                 PyNativeAlgo::PyBoost::DataSyncForGraph(op);
                 kernel::pyboost::PyBoostUtils::set_cur_stream_id(old_stream_id);
-                tensor::SetPromise(promises, real_output);
+                tensor::SetPromise(promises, outputs);
                 MS_LOG(DEBUG) << "Run frontend task ${func_name} end";
             },
             [promises]() {
