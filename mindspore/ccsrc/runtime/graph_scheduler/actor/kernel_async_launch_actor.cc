@@ -29,6 +29,8 @@ std::shared_ptr<KernelAsyncLaunchActor> &KernelAsyncLaunchActor::GetInstance() {
 
 void KernelAsyncLaunchActor::Initialize() {
   Async(this->GetAID(), &KernelAsyncLaunchActor::GetThreadId);
+  // Bind LaunchKernel thread to current device.
+  Async(this->GetAID(), &KernelAsyncLaunchActor::BindDevice);
   Wait();
 }
 
@@ -73,5 +75,14 @@ void KernelAsyncLaunchActor::Wait() {
 }
 
 Future<bool> KernelAsyncLaunchActor::OnTaskFinish() { return Future<bool>(true); }
+
+void KernelAsyncLaunchActor::AddDeviceContext(DeviceContext *device_context) {
+  (void)device_contexts_.insert(device_context);
+}
+
+void KernelAsyncLaunchActor::BindDevice() {
+  std::for_each(device_contexts_.begin(), device_contexts_.end(),
+                [](const DeviceContext *item) { item->device_res_manager_->BindDeviceToCurrentThread(false); });
+}
 }  // namespace runtime
 }  // namespace mindspore
