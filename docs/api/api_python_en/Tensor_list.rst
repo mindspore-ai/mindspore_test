@@ -64,6 +64,7 @@
 
 .. autoclass:: {{ name }}
     :members:
+    :exclude-members: profiler_level, mstx, l2_cache, data_simplification, export_type, aic_metrics, host_sys
 
 {% elif fullname=="mindspore.profiler.DynamicProfilerMonitor" %}
 {{ fullname | underline }}

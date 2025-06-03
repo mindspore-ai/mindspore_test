@@ -19,6 +19,8 @@ index_add:
             dim (int): The dimension along which to index.
             index (Tensor): Add the value of "input Tensor" and `source` along the dimension of the `dim` according to the specified index value, with data type int32. The `index` must be 1D with the same size as the size of `source` in the `dim` dimension. The values of `index` should be in [0, b), where the b is the size of "input Tensor" in the `dim` dimension.
             source (Tensor): The input tensor with the value to add. Must have same data type as "input Tensor". The shape must be the same as "input Tensor" except the `dim` th dimension.
+        
+        Keyword Args:
             alpha (number, optional): The scalar multiplier for source. Default: ``1``.
 
         Returns:
