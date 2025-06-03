@@ -100,7 +100,6 @@ class GraphBackwardNode : public BackwardNode {
   // Update nullptr grad.
   ValuePtrList LazeUpdateZeroGradient(const ValuePtrList &dout, FuncBuilder *func_builder, const ValuePtr &output);
   void Release() override;
-  void SetNeedGradIndexes(const std::unordered_map<BackwardNode *, GradientContext> &gradient_contexts);
 
  private:
   FuncGraphPtr func_graph_;
@@ -109,7 +108,6 @@ class GraphBackwardNode : public BackwardNode {
   SavedNodePtr saved_output_;
   std::string cache_key_{false};
   GraphCallCondition graph_call_condition_;
-  std::vector<bool> need_grad_indexes_;
 };
 
 class LeafNode : public BackwardNode {
