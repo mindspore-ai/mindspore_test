@@ -177,7 +177,15 @@ class GkUtils {
 
   static bool UseAkgCceLib(const AnfNodePtr &node);
 
+  /**
+   * @brief Return True if node is inplace op(Assign) and its input is view op.
+   */
   static bool InplaceWithViewInputs(const AnfNodePtr &node);
+
+  /**
+   * @brief Return True if node output shape contains zero.
+   */
+  static bool IsShapeZero(const AnfNodePtr &node);
 };
 }  // namespace mindspore::graphkernel
 #endif  // MINDSPORE_CCSRC_BACKEND_OPTIMIZER_GRAPH_KERNEL_CORE_GRAPH_KERNEL_UTILS_H_

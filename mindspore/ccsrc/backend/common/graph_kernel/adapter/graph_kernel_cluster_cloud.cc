@@ -625,7 +625,7 @@ bool StaticShapeCluster::CanClusterableOp(const AnfNodePtr &node, const std::vec
   if (is_dvm) {
     GkUtils::CheckOpLevel(node, clusterable_ops_with_level_dvm, OpLevel_1);
   }
-  return true;
+  return !GkUtils::IsShapeZero(node);
 }
 
 bool StaticShapeCluster::IsClusterableOp(const AnfNodePtr &node) {
