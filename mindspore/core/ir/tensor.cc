@@ -374,8 +374,8 @@ TypeId Tensor::set_data_type(TypeId data_type) {
 }
 
 size_t Tensor::set_shape(const ShapeVector &shape) {
-  if (DataSize() != SizeOf(shape)) {
-    device_sync_ = MakeDeviceAddress(data_type_, shape, true);
+  if (DataSize() < SizeOf(shape)) {
+    MS_LOG(WARNING) << "It's invalid to set " << ToString() << " shape to " << shape;
   }
   return MetaTensor::set_shape(shape);
 }

@@ -408,6 +408,10 @@ std::pair<AnfNodeWeakPtr, size_t> DeviceAddress::node_index() const { return nod
 
 void DeviceAddress::set_deleter(const std::function<void(uint8_t *)> &deleter) { deleter_ = deleter; }
 
+void DeviceAddress::SetPointerRefCountDeleter(std::function<void(void *, bool)> &&deleter) {
+  pointer_ref_count()->set_deleter(deleter);
+}
+
 std::function<void(uint8_t *)> DeviceAddress::deleter() const { return deleter_; }
 
 bool DeviceAddress::need_sync_user_data() { return need_sync_user_data_; }

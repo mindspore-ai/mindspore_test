@@ -543,6 +543,7 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   void ClearFlag(size_t flag);
   std::pair<AnfNodeWeakPtr, size_t> node_index() const;
   void set_deleter(const std::function<void(uint8_t *)> &deleter) override;
+  void SetPointerRefCountDeleter(std::function<void(void *, bool)> &&deleter) override;
   std::function<void(uint8_t *)> deleter() const;
 
   // For output of pyexecute kernel, the input data is stored in user data and the handler is used to sync data from

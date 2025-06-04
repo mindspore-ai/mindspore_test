@@ -1007,30 +1007,18 @@ void DeviceAddressUtils::MallocForInput(const DeviceContext *device_context, con
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", mem_type, device_address->GetSize(),
                                                  device_address.get());
   if (device_address->GetMutablePtr() != nullptr) {
-    if (!is_view || device_address->GetDeviceType() != device::DeviceType::kCPU || device_address->from_mem_pool()) {
+    return;
+  }
+
+  if (device_address->size() == 0) {
+    auto shape_size = std::accumulate(tensor->shape().begin(), tensor->shape().end(), 1, std::multiplies<int64_t>());
+    if (shape_size != 0) {
       return;
     }
-    // If not from the pool, the lifetime of the device ptr is guaranteed elsewhere.
-    // Before applying for a new address, clear the address. Otherwise a warnging is generated.
-    device_address->set_ptr(nullptr);
-    const auto new_device_context = device_context->GetDeviceType() == device_address->GetDeviceType()
-                                      ? device_context
-                                      : runtime::OpRunner::GetDeviceContext(kCPUDevice);
+  }
 
-    MS_EXCEPTION_IF_NULL(new_device_context);
-    if (!new_device_context->device_res_manager_->AllocateMemory(device_address.get())) {
-      MS_LOG(EXCEPTION) << "Allocate memory failed";
-    }
-  } else {
-    if (device_address->size() == 0) {
-      auto shape_size = std::accumulate(tensor->shape().begin(), tensor->shape().end(), 1, std::multiplies<int64_t>());
-      if (shape_size != 0) {
-        return;
-      }
-    }
-    if (!device_context->device_res_manager_->AllocateMemory(device_address.get())) {
-      MS_LOG(EXCEPTION) << "Allocate memory failed";
-    }
+  if (!device_context->device_res_manager_->AllocateMemory(device_address.get())) {
+    MS_LOG(EXCEPTION) << "Allocate memory failed";
   }
 
   if (device_address->GetDeviceType() == device::DeviceType::kAscend) {
