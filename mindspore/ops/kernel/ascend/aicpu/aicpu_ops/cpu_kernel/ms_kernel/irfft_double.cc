@@ -101,8 +101,7 @@ uint32_t IRFFTDoubleCpuKernel::IRFFTDoubleCompute(CpuKernelContext &ctx) {
   int64_t dim = reinterpret_cast<int64_t *>(ctx.Input(kDimIndex)->GetData())[0];
   dim = dim < 0 ? x_rank + dim : dim;
 
-  int64_t n;
-  n = reinterpret_cast<int64_t *>(ctx.Input(kNIndex)->GetData())[0];
+  int64_t n = reinterpret_cast<int64_t *>(ctx.Input(kNIndex)->GetData())[0];
 
   auto output_nums = ctx.Output(kIndex0)->NumElements();
   auto ret = memset_s(output_ptr, output_nums * sizeof(T), 0, output_nums * sizeof(T));
