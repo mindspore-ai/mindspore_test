@@ -521,10 +521,12 @@ py::object PrimitivePyAdapter::GetUserData(const py::str &key) const {
   auto prim = attached_primitive_.lock();
   if (prim != nullptr) {
     const auto primitive_data = prim->user_data<PrimitiveUserData>(name);
+    MS_EXCEPTION_IF_NULL(primitive_data);
     return primitive_data->obj;
   }
   // Get from primtive adapter.
   const auto primitive_data = user_data<PrimitiveUserData>(name);
+  MS_EXCEPTION_IF_NULL(primitive_data);
   return primitive_data->obj;
 }
 
