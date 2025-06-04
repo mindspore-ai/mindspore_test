@@ -38,6 +38,7 @@
 #include "mindspore/ops/op_def/other_op_name.h"
 #include "mindspore/ops/op_def/array_op_name.h"
 #include "mindspore/ops/op_def/math_op_name.h"
+#include "mindspore/ops/op_def/op_enum.h"
 #include "mindspore/core/include/ops/infer_info/infer_info.h"
 #include "mindspore/core/include/abstract/dshape.h"
 #include "ops/infer_info/infer_info.h"
