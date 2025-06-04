@@ -400,13 +400,13 @@ void AclConverter::ConvertValueDependToHostInput(const std::string &kernel_name,
     const auto &input = inputs[ms_real_idx];
     const auto &param = input_params[ms_real_idx];
     MS_EXCEPTION_IF_NULL(input);
-    auto value_ptr = input->GetValue();
-    MS_EXCEPTION_IF_NULL(value_ptr);
     auto type_id = input->dtype_id();
     AclHostInfoPtr acl_host_input;
     bool is_const = input->IsConstValue();
-    if (!device::ascend::AclHelper::IsInputDtypeSupport(kernel_name, param.data_type, ms_proto_idx) &&
-        param.data_type != kMetaTypeNone) {
+    if (input->size() == 0) {
+      acl_host_input = std::make_shared<AclHostInfo>(nullptr, 0, type_id, is_const);
+    } else if (!device::ascend::AclHelper::IsInputDtypeSupport(kernel_name, param.data_type, ms_proto_idx) &&
+               param.data_type != kMetaTypeNone) {
       ValueDependToInputConverter value_convert;
       auto cast_map = value_convert.GetValueDependCastMap();
       auto iter = cast_map.find(param.data_type);
@@ -417,6 +417,8 @@ void AclConverter::ConvertValueDependToHostInput(const std::string &kernel_name,
       if (!device::ascend::AclHelper::IsInputDtypeSupport(kernel_name, iter->second, ms_proto_idx)) {
         MS_LOG(INTERNAL_EXCEPTION) << kernel_name << " input(" << ms_proto_idx << ") data type not support.";
       }
+      auto value_ptr = input->GetValue();
+      MS_EXCEPTION_IF_NULL(value_ptr);
       value_convert.ConvertValueToDstType(value_ptr, param.data_type);
       host_save_list_[ms_real_idx] = std::move(value_convert.GetData());
       acl_host_input = std::make_shared<AclHostInfo>(host_save_list_[ms_real_idx].data(),
