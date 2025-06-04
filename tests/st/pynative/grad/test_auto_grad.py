@@ -409,3 +409,30 @@ def test_check_run_first_order_net():
     x = Tensor([2], mindspore.float32)
     grad = mindspore.grad(nested_grad_net)(x)
     assert np.allclose(grad.asnumpy(), np.array([1.0], dtype=np.float32), 0.00001, 0.00001)
+
+
+class TestRequiresGradMatmulNet(nn.Cell):
+    def __init__(self):
+        super(TestRequiresGradMatmulNet, self).__init__()
+        self.p1 = Parameter(Tensor(np.ones((5000, 5000), dtype=np.float32)))
+        self.p1.register_hook(lambda: "enter hook")
+        self.p1.requires_grad = False
+
+    def construct(self, x):
+        y = ops.stop_gradient(x)
+        res = ops.mul(y, self.p1)
+        z = res * res * res
+        return z
+
+
+def test_requires_grad_memory_check():
+    """
+    Feature: Test auto grad requires grad memory.
+    Description: Test auto grad memory.
+    Expectation: Success.
+    """
+    x = Tensor(np.ones((5000, 5000), dtype=np.float32))
+    net = TestRequiresGradMatmulNet()
+    _ = mindspore.grad(net)(x)
+    print('memory', mindspore.hal.max_memory_allocated())
+    assert mindspore.hal.max_memory_allocated() < 500100000
