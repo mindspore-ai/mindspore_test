@@ -270,7 +270,7 @@ class COMMON_EXPORT TensorPy {
   void SetCastDtype(const TypePtr &dtype = nullptr);
 
   /// \brief To synchronize data with the device, you need to wait for the data to be valid.
-  TensorPtr CPU() const;
+  void DataSync(bool need_wait = true) const;
 
   /// \brief Execute lazy task.
   void ExecuteLazyTask() const;
