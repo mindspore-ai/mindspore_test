@@ -659,8 +659,11 @@ class AutoParallel(Cell):
                 - recomputation_communication_overlap (bool): Enable overlap between recompute ops and communication ops
                   if True.
                   Default: False.
-                - grad_matmul_communication_overlap (bool): Enable overlap between dw matmul and
-                  tensor parallel communication ops if True. Default: False.
+                - grad_matmul_communication_overlap (bool, str): When set to ``True``, it indicates that overlap
+                  between dw matmul and tensor parallel communication is enabled. When set to ``False``, it indicates
+                  that this feature is disabled. When set to str, it only optimizes the specified communication
+                  operator types, with operators separated by ``,``. For example, "AlltoAll,AlltoAllV" indicates that
+                  only ``AlltoAll`` and ``AlltoAllV`` are optimized. Default: ``False``.
                 - grad_fa_allgather_overlap (bool): Enable overlap between duplicated allgather by recomputing
                   in sequence parallel and flashattentionscoregrad ops if True. Default: False.
                 - enable_communication_fusion (bool): Enable communication fusion to optimize the number of
