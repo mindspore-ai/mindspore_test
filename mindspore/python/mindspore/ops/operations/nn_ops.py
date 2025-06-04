@@ -42,7 +42,7 @@ from ..auto_generate import (CeLU, Flatten, LogSoftmax, LogSoftmaxExt, GLU, ReLU
                              DynamicNTK, UpsampleNearest3D, UpsampleTrilinear3D, MoeGatingGroupTopK,
                              SoftMarginLoss, UpsampleBilinear2D, UpsampleLinear1D,
                              BinaryCrossEntropy, BCEWithLogitsLoss, SoftShrink, AdaptiveMaxPool2D,
-                             SmoothL1Loss)
+                             SmoothL1Loss, KvScaleCache)
 from .manually_defined import BatchNorm
 
 
