@@ -32,7 +32,7 @@ DeviceSyncPtr MakeAscendDeviceAddress(TypeId data_type, const ShapeVector &shape
 
   auto device_address = device_context->device_res_manager_->CreateDeviceAddress(
     data_ptr, data_size, shape, Format::DEFAULT_FORMAT, data_type, "Ascend", device_id, 0);
-  device_address->set_deleter(deleter);
+  device_address->SetPointerRefCountDeleter(std::move(deleter));
   return device_address;
 }
 
