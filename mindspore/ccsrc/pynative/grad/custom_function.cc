@@ -134,6 +134,12 @@ ValuePtrList CustomBackward::CallBackward(const ValuePtrList &grads) {
 
 ValuePtrList CustomBackward::PostProcess(const ValuePtrList &gradient_value) {
   auto flatten_gradients = CommonUtils::FlattenTensorSeqInValueSeq(gradient_value, false);
+  // Zero3 algorithm may split input tensor, which causes gradients shape not same as input tensor.
+  // It will split gradient tensor by tensor hook after recompute. So here input tensor shape
+  // may different from gradient tensor.
+  if (is_recompute_) {
+    return flatten_gradients;
+  }
   return AutoCastAndReduce(flatten_gradients, input_meta_);
 }
 
