@@ -1187,7 +1187,7 @@ def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_stra
     param_not_in_ckpt = []
     for _, param in network.parameters_and_names():
         sliced_params = []
-        if param.name not in rank_list.keys():
+        if param.name not in rank_list:
             param_not_in_strategy.append(param.name)
             continue
         if param.name not in param_total_dict:

@@ -16,8 +16,15 @@
 """
 Parallel function operator
 """
+from __future__ import absolute_import
 
-from mindspore.parallel.function.reshard_func import reshard
+from . import (
+    reshard_func
+)
+
+from .reshard_func import (
+    reshard
+)
 
 __all__ = []
 __all__.extend(reshard_func.__all__)

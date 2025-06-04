@@ -17,8 +17,21 @@ Interfaces for parallel-related functionality
 """
 from __future__ import absolute_import
 
-from mindspore.parallel.nn.parallel_grad_reducer import PipelineGradReducer
-from mindspore.parallel.nn.parallel_cell_wrapper import PipelineCell, Pipeline, MicroBatchInterleaved, GradAccumulation
+from . import (
+    parallel_grad_reducer,
+    parallel_cell_wrapper
+)
+
+from .parallel_grad_reducer import (
+    PipelineGradReducer
+)
+
+from .parallel_cell_wrapper import (
+    PipelineCell,
+    Pipeline,
+    MicroBatchInterleaved,
+    GradAccumulation
+)
 
 __all__ = []
 __all__.extend(parallel_grad_reducer.__all__)
