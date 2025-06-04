@@ -126,3 +126,34 @@ def test_index_select_shard_axis_has_reshape():
     phase = compile_graph(net, 8, "semi_auto_parallel", x, y)
     validator = ParallelValidator(net, phase)
     assert validator.check_node_inputs_has('Add-0', ['ReduceScatter-0'])
+
+
+def test_index_select_shard_axis_dp_0():
+    """
+    Feature: distribute operator index select in semi auto parallel.
+    Description: shard ((dp, mp), (dp)) axis = 0
+    Expectation: compile done without error.
+    """
+    context.set_context(save_graphs=True)
+    strategy1 = ((2, 2), (2,))
+    strategy2 = ((8, 1), (8, 1))
+    net = Net(0, strategy1, strategy2)
+    x = Tensor(np.ones([8, 8]), dtype=ms.int32)
+    y = Tensor(np.ones([64, 16]), dtype=ms.float32)
+    phase = compile_graph(net, 8, "semi_auto_parallel", x, y)
+    ParallelValidator(net, phase)
+
+def test_FmodTensor_auto_parallel_dynamic_shape():
+    """
+    Features: test FmodTensor auto parallel
+    Description: auto parallel
+    Expectation: compile success
+    """
+    context.set_context(save_graphs=True)
+    strategy1 = ((2, 2), (2,))
+    strategy2 = ((8, 1), (8, 1))
+    net = Net(0, strategy1, strategy2)
+    x = Tensor(shape=[8, 8], dtype=ms.int32)
+    y = Tensor(np.ones([64, 16]), dtype=ms.float32)
+    phase = compile_graph(net, 8, "semi_auto_parallel", x, y)
+    ParallelValidator(net, phase)

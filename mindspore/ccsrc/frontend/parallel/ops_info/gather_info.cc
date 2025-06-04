@@ -269,6 +269,31 @@ bool GatherInfo::ShardBatchAndAxis(const Shape &param_strategy, const Shape &ind
   return true;
 }
 
+// return true: split the first&sec dimension of parameter and the first dimension of indices
+// Shape input (A, B) index (C) axis_ 0
+// Shape output (C, B)
+// strategy ((a, b), (c,))
+// dev matrix (c, a, b)
+// InferGroup dim = 1
+// output dev matrix (c, a, b)
+// otherwise return false
+bool GatherInfo::ShardBatchAxisAndDp(const Shape &param_strategy, const Shape &indices_strategy) const {
+  // IndexSelect only support strategy ((a, b), (c,))
+  if ((param_strategy.size() != 2) || (indices_strategy.size() != 1)) {
+    return false;
+  }
+
+  if (param_strategy[0] * param_strategy[1] * indices_strategy[0] != stage_device_size_ || indices_strategy[0] == 1) {
+    return false;
+  }
+
+  if ((param_strategy[0] == stage_device_size_) || (indices_strategy[0] == stage_device_size_)) {
+    return false;
+  }
+
+  return true;
+}
+
 GatherMode GatherInfo::GetGatherMode(const Shape &param_strategy, const Shape &indices_strategy) const {
   if (batch_dims_ > 0) {
     return BATCH;
@@ -289,6 +314,9 @@ GatherMode GatherInfo::GetGatherMode(const Shape &param_strategy, const Shape &i
     return SHARD_BATCH_AND_AXIS;
   }
 
+  if (ShardBatchAxisAndDp(param_strategy, indices_strategy)) {
+    return SHARD_BATCH_AXIS_1_AND_DP;
+  }
   if (axis_ == 0 && param_strategy[0] != NO_SPLIT_STRATEGY) {
     const Shape &shape_to_check =
       (name_.find(EMBEDDING) != std::string::npos && name_.find(EMBEDDING_LOOKUP) == std::string::npos)
@@ -782,6 +810,62 @@ Status ShardBatchAxisAndSpImpl::InferTensorMap() {
   return SUCCESS;
 }
 
+Status ShardBatchAxisAndDpImpl::InferBias() {
+  CheckGlobalDeviceManager();
+  int64_t rank = g_device_manager->rank_index_in_stage();
+  Shape input_shape;
+  input_shape = inputs_shape_.at(0);
+  MS_EXCEPTION_IF_ZERO("param_strategy_[0]", param_strategy_[0]);
+  if (axis_ == 0) {
+    slice_size_ = input_shape[0] / param_strategy_[0];
+    bias_ = rank % (param_strategy_[0] * param_strategy_[1]) / param_strategy_[1] * slice_size_;
+  } else if (axis_ == 1) {
+    slice_size_ = input_shape[1] / param_strategy_[1];
+    bias_ = rank % (param_strategy_[0] * param_strategy_[1]) % param_strategy_[0] * slice_size_;
+  }
+  return SUCCESS;
+}
+
+Status ShardBatchAxisAndDpImpl::InferDevMatrixShape() {
+  dev_matrix_shape_ = {indices_strategy_[0], param_strategy_[0], param_strategy_[1]};
+  MS_LOG(INFO) << name_ << ": Sharding index, dp and mp, the dev matrix is " << dev_matrix_shape_;
+  if (axis_split_forward_allreduce_) {
+    out_dev_matrix_shape_ = dev_matrix_shape_;
+  } else {
+    out_dev_matrix_shape_ = {indices_strategy_[0] * param_strategy_[0], param_strategy_[1]};
+  }
+  auto shard_product =
+    std::accumulate(dev_matrix_shape_.begin(), dev_matrix_shape_.end(), 1, std::multiplies<int64_t>());
+  auto stage_device_size = SizeToLong(g_device_manager->GetDeviceListInThisStage().size());
+  if (shard_product < stage_device_size) {
+    if (shard_product == 0) {
+      MS_LOG(INFO) << name_ << ": InferDevMatrixShape, shard_product is zero";
+      return FAILED;
+    }
+    repeated_calculation_num_ = stage_device_size / shard_product;  // set repeated calculation num
+  }
+  return SUCCESS;
+}
+
+Status ShardBatchAxisAndDpImpl::InferTensorMap() {
+  Shape param_tensor_map = {1, 0};
+  Shape indices_tensor_map = {2};
+  Shape out_tensor_map;
+  if (axis_split_forward_allreduce_) {
+    if (axis_ == 0) {
+      out_tensor_map = {2, 0};  // the dev matrix is (index_strategy[0], param_strategy[0], param_strategy[1])
+    } else if (axis_ == 1) {
+      out_tensor_map = {2, 1};
+    }
+  } else {
+    out_tensor_map = {1, 0};  // the dev matrix is (index_strategy[0] * param_strategy[0], param_strategy[1])
+  }
+  (void)inputs_tensor_map_.emplace_back(std::move(param_tensor_map));    // param
+  (void)inputs_tensor_map_.emplace_back(std::move(indices_tensor_map));  // indices
+  (void)outputs_tensor_map_.emplace_back(std::move(out_tensor_map));     // output
+  return SUCCESS;
+}
+
 void ShardAxisImpl::SetAttribute(const Shape &param_strategy) {
   // axis=0, index_shape(0)%param_strategy(0) must be 0
   Shape index_shape = inputs_shape_.at(1);
@@ -901,7 +985,6 @@ Status ShardAxisImpl::InferDevMatrixShape() {
       (void)out_dev_matrix_shape_.insert(out_dev_matrix_shape_.begin(), repeated_calculation_num_);
     }
   }
-
   return SUCCESS;
 }
 
@@ -926,7 +1009,6 @@ Status ShardAxisImpl::InferTensorMap() {
 
   (void)inputs_tensor_map_.emplace_back(std::move(first_tensor_map));
   (void)inputs_tensor_map_.emplace_back(std::move(second_tensor_map));
-
   // infer output tensor map
   Shape tensor_map_out;
   if (axis_ == 0) {
@@ -977,12 +1059,12 @@ Status ShardAxisImpl::InferTensorInfo() {
   inputs_tensor_info_.push_back(input_tensor_info);
   inputs_tensor_info_.push_back(input_index_info);
   outputs_tensor_info_.push_back(output_tensor_info);
+
   return SUCCESS;
 }
 
 Status ShardAxisImpl::InferGroup() {
   size_t dim = LongToSize(axis_);
-
   int64_t rank = g_device_manager->global_rank();
   DeviceMatrix dev_matrix(rank, g_device_manager->GetDeviceListInThisStage(), dev_matrix_shape_);
   RankList group_devices;
@@ -992,9 +1074,9 @@ Status ShardAxisImpl::InferGroup() {
     dim = dim + 1;
   }
 
-  if (gather_mode_ == SHARD_BATCH_AND_AXIS) {
+  if (gather_mode_ == SHARD_BATCH_AND_AXIS || gather_mode_ == SHARD_BATCH_AXIS_1_AND_DP) {
     dim = 1;
-    MS_LOG(INFO) << name_ << ": Sharding batch and axis, the group dim is " << dim;
+    MS_LOG(INFO) << name_ << ": Sharding batch and axis or axis and dp, the group dim is " << dim;
   }
 
   if (gather_mode_ == SHARD_BATCH_AXIS_AND_SP) {
@@ -1006,11 +1088,11 @@ Status ShardAxisImpl::InferGroup() {
     MS_LOG(ERROR) << name_ << ": Create group failed.";
     return FAILED;
   }
+
   if (group_devices.size() == 1) {
     MS_LOG(INFO) << name_ << ": The group is empty";
     return SUCCESS;
   }
-
   MS_LOG(INFO) << name_ << ": The group ranks is " << group_devices;
   if (g_device_manager->CreateGroup(group_devices, &group_) != SUCCESS) {
     MS_LOG(ERROR) << name_ << ": create reduce group failed in table row split.";
@@ -1225,22 +1307,10 @@ Status GatherInfo::CheckProductValidity(const Dimensions &param_strategy, const 
   return SUCCESS;
 }
 
-Status GatherInfo::CheckStrategy(const StrategyPtr &strategy) {
-  if (CheckStrategyValue(strategy, inputs_shape_) != SUCCESS) {
-    return FAILED;
-  }
-  gather_util_ = nullptr;
-  gather_mode_ = INVALID;
+Status GatherInfo::CheckStrategyParam(const Shape &param_strategy, const Shape &indices_strategy,
+                                      const int64_t param_idx) {
   Shape param_shape;
-  Strategies input_dim = strategy->GetInputDim();
-  Dimensions param_strategy;
-  Dimensions indices_strategy;
-  bool is_embedding = name_.find(EMBEDDING) != std::string::npos && name_.find(EMBEDDING_LOOKUP) == std::string::npos;
-  const int64_t param_idx = is_embedding ? 1 : 0;
-  const int64_t indices_idx = 1 - param_idx;
   param_shape = inputs_shape_[param_idx];
-  param_strategy = input_dim[param_idx];
-  indices_strategy = input_dim[indices_idx];
   if (name_.find(EMBEDDING) != std::string::npos && name_.find(EMBEDDING_LOOKUP) == std::string::npos &&
       CheckProductValidity(param_strategy, indices_strategy) != SUCCESS) {
     return FAILED;
@@ -1249,6 +1319,26 @@ Status GatherInfo::CheckStrategy(const StrategyPtr &strategy) {
   auto slice_shape = param_shape.at(param_shape.size() - 1) / param_strategy.at(param_strategy.size() - 1);
   if ((target_ != CPU) && (slice_shape % 8 != 0) && (slice_shape != 1)) {
     MS_LOG(WARNING) << "Gather: Last dim of param slice shape is not 32Byte aligned.";
+  }
+  return SUCCESS;
+}
+
+Status GatherInfo::CheckStrategy(const StrategyPtr &strategy) {
+  if (CheckStrategyValue(strategy, inputs_shape_) != SUCCESS) {
+    return FAILED;
+  }
+  gather_util_ = nullptr;
+  gather_mode_ = INVALID;
+  bool is_embedding = name_.find(EMBEDDING) != std::string::npos && name_.find(EMBEDDING_LOOKUP) == std::string::npos;
+  const int64_t param_idx = is_embedding ? 1 : 0;
+  const int64_t indices_idx = 1 - param_idx;
+  Strategies input_dim = strategy->GetInputDim();
+  Dimensions param_strategy;
+  Dimensions indices_strategy;
+  param_strategy = input_dim[param_idx];
+  indices_strategy = input_dim[indices_idx];
+  if (CheckStrategyParam(param_strategy, indices_strategy, param_idx) != SUCCESS) {
+    return FAILED;
   }
   gather_mode_ = GetGatherMode(param_strategy, indices_strategy);
   switch (gather_mode_) {
@@ -1291,6 +1381,16 @@ Status GatherInfo::CheckStrategy(const StrategyPtr &strategy) {
       shard_batch_and_axis_util->set_replace_op_name(replace_op_name_);
       shard_batch_and_axis_util->set_axis_split_forward_allreduce(
         true);  // Sharding batch and axis, and the forward use allreduce
+      break;
+    }
+    case SHARD_BATCH_AXIS_1_AND_DP: {
+      gather_util_ = std::make_shared<ShardBatchAxisAndDpImpl>(name_, inputs_shape_clone_, outputs_shape_clone_, axis_);
+      auto shard_batch_and_axis_util = std::dynamic_pointer_cast<ShardBatchAxisAndDpImpl>(gather_util_);
+      shard_batch_and_axis_util->set_target(target_);
+      shard_batch_and_axis_util->set_dynamic_shape_indices(dynamic_shape_indices_);
+      shard_batch_and_axis_util->set_attrs(attrs_);
+      shard_batch_and_axis_util->set_replace_op_name(replace_op_name_);
+      shard_batch_and_axis_util->set_axis_split_forward_allreduce(true);  // forward use allreduce
       break;
     }
     case SHARD_AXIS_0_DYNAMIC:
@@ -1380,7 +1480,8 @@ Status GatherInfo::CheckOutputStrategy(const StrategyPtr &out_strategy) {
     return SUCCESS;
   } else if (out_stra == reduce_scatter_strategy) {
     if (gather_util_->gather_mode() != SHARD_AXIS_0_STATIC && gather_util_->gather_mode() != SHARD_BATCH_AND_AXIS &&
-        gather_util_->gather_mode() != SHARD_BATCH_AXIS_AND_SP) {
+        gather_util_->gather_mode() != SHARD_BATCH_AXIS_AND_SP &&
+        gather_util_->gather_mode() != SHARD_BATCH_AXIS_1_AND_DP) {
       MS_LOG(ERROR) << name_ << ": The output strategy " << out_stra << " for gather mode "
                     << gather_util_->GatherModeToString() << " is invalid, it must be " << allreduce_strategy;
       return FAILED;
