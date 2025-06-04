@@ -28,7 +28,29 @@ void QuantMatmulV4Ascend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &in
                                            const std::vector<KernelTensor *> &outputs) {
   transpose_x1_ = inputs[kIndex6]->GetValueWithCheck<bool>();
   transpose_x2_ = inputs[kIndex7]->GetValueWithCheck<bool>();
-  GetWorkspaceForResize(inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], inputs[kIndex3], inputs[kIndex5],
+  const auto w_tensor = std::make_shared<KernelTensor>(*inputs[kIndex1]);
+  auto format = w_tensor->format();
+  if (format == FRACTAL_NZ) {
+    if (w_tensor->tensor_storage_info() != nullptr) {
+      MS_LOG(EXCEPTION) << "For QuantMatmulV4Ascend NZ is not support when storage_info is not nullptr";
+    }
+
+    auto nd_shape = w_tensor->GetShapeVector();
+    auto nz_shape =
+      trans::DeviceShapeTransfer().GetDeviceShapeByFormat(nd_shape, w_tensor->GetStringFormat(), w_tensor->dtype_id());
+
+    auto strides = nd_shape;
+    if (!strides.empty()) {
+      strides.erase(strides.begin());
+    }
+    strides.push_back(1);
+    for (int i = static_cast<int>(strides.size()) - 2; i >= 0; i--) {
+      strides[i] = strides[i] * strides[i + 1];
+    }
+    auto storage_info = std::make_shared<TensorStorageInfo>(nd_shape, strides, nz_shape, strides, true);
+    w_tensor->set_tensor_storage_info(storage_info);
+  }
+  GetWorkspaceForResize(inputs[kIndex0], w_tensor.get(), inputs[kIndex2], inputs[kIndex3], inputs[kIndex5],
                         inputs[kIndex4], transpose_x1_, transpose_x2_, outputs[kIndex0]);
 }
 
