@@ -342,6 +342,7 @@ class OPS_KERNEL_COMMON_API KernelTensor : public AbstractBase {
     address_common_->pointer_ref_count_->set_ref_count(ptr_ref_cnt->ref_count());
     address_common_->pointer_ref_count_->set_dynamic_ref_count(ptr_ref_cnt->dynamic_ref_count());
     address_common_->pointer_ref_count_->set_deleter(ptr_ref_cnt->deleter());
+    address_common_->pointer_ref_count_->set_allocator(ptr_ref_cnt->allocator());
     address_common_->pointer_ref_count_->set_is_ptr_persisted(ptr_ref_cnt->is_ptr_persisted());
     address_common_->pointer_ref_count_->set_new_ref_count(ptr_ref_cnt->new_ref_count());
   }
@@ -352,6 +353,10 @@ class OPS_KERNEL_COMMON_API KernelTensor : public AbstractBase {
 
   // Set pointer resource destructor.
   void set_deleter(const Deleter &deleter) { address_common_->pointer_ref_count_->set_deleter(deleter); }
+
+  void set_allocator(std::shared_ptr<AddressAllocator> allocator) {
+    address_common_->pointer_ref_count_->set_allocator(allocator);
+  }
 
   // Get pointer to the device side that corresponds to KernelTensor, used in runtime.
   void *device_ptr() const { return address_common_->pointer_ref_count_->ptr(); }

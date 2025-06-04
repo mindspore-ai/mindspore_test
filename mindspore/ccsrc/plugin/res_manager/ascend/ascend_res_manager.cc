@@ -348,33 +348,39 @@ bool AscendResManager::IsEnableVmm() const { return AscendVmmAdapter::GetInstanc
 
 bool AscendResManager::AllocateMemory(DeviceAddress *const &address, uint32_t stream_id) const {
   MS_EXCEPTION_IF_NULL(address);
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-
-  if (address->pointer_ref_count()->ptr() != nullptr) {
-    MS_LOG(ERROR) << "Memory leak detected!";
-    return false;
-  }
-
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  AscendHalManager::GetInstance().SetContext(device_id);
-
+  std::shared_ptr<AddressAllocator> allocator = address->allocator();
   void *device_ptr = nullptr;
 
-  if (stream_id == UINT32_MAX) {
-    stream_id = address->stream_id();
+  if (MS_UNLIKELY(allocator != nullptr)) {
+    device_ptr = allocator->Alloc(address->GetSize(), stream_id);
+  } else {
+    MS_EXCEPTION_IF_NULL(mem_manager_);
+
+    if (address->pointer_ref_count()->ptr() != nullptr) {
+      MS_LOG(ERROR) << "Memory leak detected!";
+      return false;
+    }
+
+    auto ms_context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(ms_context);
+    auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+    AscendHalManager::GetInstance().SetContext(device_id);
+
+    if (stream_id == UINT32_MAX) {
+      stream_id = address->stream_id();
+    }
+
+    const auto &hete_info = address->heterogeneous_info();
+
+    if (hete_info != nullptr) {
+      static std::string name = "Alloc memory";
+      address->IncreaseNewRefCount(name);
+      return AllocateForHete(address, hete_info);
+    }
+    device_ptr = mem_manager_->MallocMemFromMemPool(address->GetSize(), address->from_persistent_mem(),
+                                                    address->need_recycle(), stream_id);
   }
 
-  const auto &hete_info = address->heterogeneous_info();
-
-  if (hete_info != nullptr) {
-    static std::string name = "Alloc memory";
-    address->IncreaseNewRefCount(name);
-    return AllocateForHete(address, hete_info);
-  }
-  device_ptr = mem_manager_->MallocMemFromMemPool(address->GetSize(), address->from_persistent_mem(),
-                                                  address->need_recycle(), stream_id);
   if (!device_ptr) {
     return false;
   }

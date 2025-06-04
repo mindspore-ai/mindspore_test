@@ -16,6 +16,7 @@
 
 #include "common/device_address.h"
 #include "common/format_utils.h"
+#include "runtime/device/res_manager/hal_res_base.h"
 
 namespace mindspore {
 namespace device {
@@ -286,6 +287,7 @@ void DeviceAddress::set_ref_count_without_hold(const PointerRefCountPtr &ptr_ref
   address_common_->pointer_ref_count_->set_ref_count(ptr_ref_cnt->ref_count());
   address_common_->pointer_ref_count_->set_dynamic_ref_count(ptr_ref_cnt->dynamic_ref_count());
   address_common_->pointer_ref_count_->set_deleter(ptr_ref_cnt->deleter());
+  address_common_->pointer_ref_count_->set_allocator(ptr_ref_cnt->allocator());
   address_common_->pointer_ref_count_->set_is_ptr_persisted(ptr_ref_cnt->is_ptr_persisted());
   address_common_->pointer_ref_count_->set_new_ref_count(ptr_ref_cnt->new_ref_count());
 }
