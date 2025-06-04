@@ -46,6 +46,7 @@ void ReuseDataPtr(const py::object &dst_, const py::object &src_, size_t offset)
 
   // create src device address if null
   auto src = tensor::ConvertToTensor(src_);
+  MS_EXCEPTION_IF_NULL(src);
   if (src->device_address() == nullptr) {
     auto device_ptr = device_ctx->device_res_manager_->AllocateMemory(src->Size(), stream_id);
     auto src_device_address = device_ctx->device_res_manager_->CreateDeviceAddress(
@@ -63,6 +64,7 @@ void ReuseDataPtr(const py::object &dst_, const py::object &src_, size_t offset)
   // create device address with src ptr
   uint8_t *ptr = reinterpret_cast<uint8_t *>(src->device_address()->GetMutablePtr());
   auto dst = tensor::ConvertToTensor(dst_);
+  MS_EXCEPTION_IF_NULL(dst);
   auto offset_size = offset * UnitSizeInBytes(dst->data_type());
   if (offset_size >= src->Size()) {
     MS_EXCEPTION(ValueError) << "Offset overflow. Expect offset in bytes less than " << src->Size() << ", got "

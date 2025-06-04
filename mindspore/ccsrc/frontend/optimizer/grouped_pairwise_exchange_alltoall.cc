@@ -461,7 +461,9 @@ void CloneScaledGraph(const std::vector<CNodePtr> &old_cnodes, const AnfNodePtr 
   std::vector<uint32_t> reshape_scale_axis = gpea_info->GetReshapeScaleAxisVec();
   for (size_t i = 0; i < old_cnodes.size(); i++) {
     auto cnode = old_cnodes[i];
-    MS_LOG(DEBUG) << "node in " << i << " " << GetCNodePrimitive(cnode)->name();
+    auto prim = GetCNodePrimitive(cnode);
+    MS_EXCEPTION_IF_NULL(prim);
+    MS_LOG(DEBUG) << "node in " << i << " " << prim->name();
     if (IsPrimitiveCNode(cnode, prim::kPrimLoad)) {
       new_nodes->push_back(cnode);  // reuse old Load node to not increase device memory
       continue;

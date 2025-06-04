@@ -50,6 +50,7 @@ py::object ConvertToPyTensorOrParameter(const py::object &cpp_tensor) {
     return py::object();
   }
   auto tensor = tensor::ConvertToTensor(cpp_tensor);
+  MS_EXCEPTION_IF_NULL(tensor);
   if (tensor->is_parameter()) {
     ParamInfoPtr param_info = tensor->param_info();
     MS_EXCEPTION_IF_NULL(param_info);

@@ -398,6 +398,7 @@ void AnalyzeFailExporter::OutputStatementComment(const CNodePtr &node, const Fun
 void AnalyzeFailExporter::OutputCNode(const CNodePtr &node, const FuncGraphPtr &sub_graph,
                                       const OrderedMap<AnfNodePtr, int32_t> &para_map,
                                       const std::shared_ptr<SubGraphIRInfo> &gsub) {
+  MS_EXCEPTION_IF_NULL(node);
   if (node != sub_graph->get_return()) {
     gsub->buffer << "  %" << gsub->local_var << "(" << node->ToString() << ")"
                  << " = ";

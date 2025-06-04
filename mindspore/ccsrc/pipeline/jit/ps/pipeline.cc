@@ -411,6 +411,7 @@ py::bool_ VerifyInputSignature(const py::list &input_signature, const py::tuple 
     if (m_tensor != nullptr) {
       MS_LOG(DEBUG) << "Verify Tensor";
       auto sig = tensor::ConvertToTensor(input_signature[count]);
+      MS_EXCEPTION_IF_NULL(sig);
       ShapeVector sig_shape = sig->shape();
       TypePtr sig_type = sig->Dtype();
 
