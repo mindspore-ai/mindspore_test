@@ -242,6 +242,7 @@ bool JitExecutorPy::CompileInner(const py::object &source, const py::tuple &args
   CleanCompileRes(resource);
   EventMessage::PrintCompileEndMsg(phase_, obj_desc_);
   PhaseManager::GetInstance().ClearPhase();
+  PhaseManager::GetInstance().ClearJitConfig();
   MS_LOG(INFO) << "Finish compiling.";
   return true;
 }
@@ -269,6 +270,7 @@ bool JitExecutorPy::CompileInner(const FuncGraphPtr &graph, const py::tuple &arg
   SaveCompiledGraph(phase_);
   CleanCompileRes(resource);
   PhaseManager::GetInstance().ClearPhase();
+  PhaseManager::GetInstance().ClearJitConfig();
   MS_LOG(INFO) << "Finish compiling.";
   return true;
 }
@@ -424,6 +426,7 @@ py::object JitExecutorPy::RunInner(const py::tuple &args, const py::object &phas
   py::object res = BaseRefToPyDataWithUserData(value, output_abs);
   ClearRunArgumentsResource(args.size(), &execute_info->arg_list);
   PhaseManager::GetInstance().ClearPhase();
+  PhaseManager::GetInstance().ClearJitConfig();
   MS_LOG(DEBUG) << "Run end";
   return res;
 }

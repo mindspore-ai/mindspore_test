@@ -501,10 +501,10 @@ std::string GetCompileExceptionInfo() {
 }  // namespace
 
 bool ExecutorPy::Compile(const py::object &source, const py::tuple &args, const py::dict &kwargs,
-                         const py::object &phase) {
+                         const py::object &phase, const py::dict &config) {
   bool res = false;
   HandleExceptionRethrow(
-    [this, &res, &source, &args, &kwargs, &phase]() {
+    [this, &res, &source, &args, &kwargs, &phase, &config]() {
       bool executor_running = false;
       std::string running_obj_desc;
       if (GraphExecutorPy::GetInstance()->executor_running()) {
@@ -523,6 +523,8 @@ bool ExecutorPy::Compile(const py::object &source, const py::tuple &args, const 
       std::map<std::string, std::string> custom_info;
       custom_info["phase"] = py::cast<std::string>(phase);
       uint64_t start_time = profiler::GetClockSyscnt();
+      auto jit_config = GenerateJitConfigMap(config);
+      PhaseManager::GetInstance().set_jit_config(jit_config);
       res = CompileInner(source, args, kwargs, phase);
       (void)profiler::CollectHostInfo(kCompiler, kCompiler, kCompiler, start_time, profiler::GetClockSyscnt(), 1,
                                       custom_info);

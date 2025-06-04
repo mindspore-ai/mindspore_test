@@ -50,6 +50,9 @@ class MS_CORE_API PhaseManager {
   /// \brief Clear the phase by set an empty string.
   void ClearPhase() { phase_ = ""; }
 
+  /// \brief Clear jit_config.
+  void ClearJitConfig() { jit_config_.clear(); }
+
   /// \brief Set jit config.
   ///
   /// \param[in] The current jit config.
