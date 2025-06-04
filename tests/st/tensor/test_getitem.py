@@ -175,7 +175,8 @@ def test_getitem(capture_mode):
                      ([0, 1], None, [0, 1]),
                      (Tensor([0, 1]), None, Tensor([0, 1])),
                      ([0, 1], ..., [0, 1]),
-                     (Tensor([0, 1]), ..., Tensor([0, 1]))]
+                     (Tensor([0, 1]), ..., Tensor([0, 1])),
+                     (Tensor([0]), Tensor(0), slice(0, 4, 2))]
 
     np_expecteds = [np.array([[0, 1, 2, 3], [16, 17, 18, 19]]),
                     np.array([[0, 1, 2, 3], [16, 17, 18, 19]]),
@@ -191,7 +192,8 @@ def test_getitem(capture_mode):
                     np.array([[[0, 1, 2, 3]], [[16, 17, 18, 19]]]),
                     np.array([[[0, 1, 2, 3]], [[16, 17, 18, 19]]]),
                     np.array([[0, 4, 8], [13, 17, 21]]),
-                    np.array([[0, 4, 8], [13, 17, 21]])]
+                    np.array([[0, 4, 8], [13, 17, 21]]),
+                    np.array([[0, 2]])]
 
     for index, np_expected in zip(fancy_indices, np_expecteds):
         getitem_check_indexing(ms_x, index, np_expected, capture_mode)
