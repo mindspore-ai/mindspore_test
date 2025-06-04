@@ -236,7 +236,7 @@
               当设置为None时，表示不启用。
 
               - **recomputation_communication_overlap** (bool): 为 ``True`` 时表示开启反向重计算和通信掩盖。默认值： ``False`` 。
-              - **grad_matmul_communication_overlap** (bool): 为 ``True`` 时表示开启反向Matmul和通信掩盖。默认值： ``False`` 。
+              - **grad_matmul_communication_overlap** (bool, str): 当输入为 ``True`` 时表示开启反向Matmul和通信掩盖，为 ``False`` 时表示关闭该功能。当输入为str类型时，仅对指定的通信算子类型做优化，算子间用 ``,`` 分隔，例如 "AlltoAll,AlltoAllV" 表示仅对 ``AlltoAll`` 和 ``AlltoAllV`` 做优化，默认值： ``False`` 。
               - **grad_fa_allgather_overlap** (bool):为 ``True`` 时表示在序列并行和开启FlashAttentionScoreGrad算子时，开启重计算以掩盖重复的AllGather。默认值： ``False`` 。
               - **enable_communication_fusion** (bool): 为 ``True`` 时表示开启通信融合进行通信算子task数量优化。默认值： ``False`` 。
               - **grad_computation_allreduce_overlap** (bool): 为 ``True`` 时表示开启梯度dx计算与数据并行梯度通信的掩盖，暂时不支持 `O2 <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.JitConfig.html>`_ 编译模式下开启。注意在数据并行梯度通信和计算掩盖良好的情况下，开启该选项后性能不一定有提升，请根据实际场景确定是否开启。默认值： ``False`` 。
