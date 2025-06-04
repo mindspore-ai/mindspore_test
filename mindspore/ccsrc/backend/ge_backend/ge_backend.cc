@@ -1533,7 +1533,7 @@ void GEBackend::ConstructInputsRefMode(const KernelGraphPtr &func_graph, const V
           is_need_sync = true;
         } else if (host_tensor_address->GetDeviceType() != device_tensor->GetDeviceType()) {
           // device_type not same -> sync_to_host & copy_to_device
-          flatten_tensors[j]->data_sync();
+          flatten_tensors[j] = flatten_tensors[j]->cpu();
           host_tensor_address = device_tensor;
           flatten_tensors[j]->set_device_address(device_tensor);
           is_need_sync = true;
@@ -1560,7 +1560,7 @@ void GEBackend::ConstructInputsRefMode(const KernelGraphPtr &func_graph, const V
             is_need_sync = true;
           } else if (host_tensor_address->GetDeviceType() != device_tensor->GetDeviceType()) {
             // device type not same: tensor sync to host & copy to device_tensor
-            flatten_tensors[j]->data_sync();
+            flatten_tensors[j] = flatten_tensors[j]->cpu();
             is_need_sync = true;
           } else {
             host_tensor_address =

@@ -77,8 +77,8 @@ std::optional<TensorPtr> SpeedFusionAttentionDropoutGenMaskCall(
 tensor::TensorPtr RecordRandomStateBeforeGenMask(const TensorPtr &tensor, double keep_prob_value) {
   // seed & offset will be inplace update after dropout_gen_mask
   if (0 < keep_prob_value && 1. > keep_prob_value) {
-    tensor->data_sync();
-    int64_t value = *static_cast<int64_t *>(tensor->data_c());
+    auto cpu_tensor = tensor->cpu();
+    int64_t value = *static_cast<const int64_t *>(cpu_tensor->data_c());
     return std::make_shared<tensor::Tensor>(value);
   }
   return tensor;

@@ -193,11 +193,13 @@ Status GPUGraphImpl::ExecuteModel(const std::vector<MSTensor> &request, std::vec
     MS_LOG(ERROR) << "Execute Model Failed";
     return kMCFailed;
   }
+
+  std::vector<tensor::TensorPtr> outputs_cpu;
   for (const auto &out : outputs) {
     MS_EXCEPTION_IF_NULL(out);
-    out->data_sync();
+    outputs_cpu.push_back(out->cpu());
   }
-  last_outputs_ = outputs;
+  last_outputs_ = outputs_cpu;
   reply->clear();
   *reply = GetOutputs();
   return kSuccess;
@@ -293,11 +295,9 @@ std::vector<MSTensor> GPUGraphImpl::GetOutputs() {
     size_t data_size = tensor->Size();
     if (i < last_outputs_.size()) {
       MS_EXCEPTION_IF_NULL(last_outputs_[i]);
-      if (last_outputs_[i]->NeedSyncDeviceToHost()) {
-        last_outputs_[i]->data_sync(false);
-      }
-      data = last_outputs_[i]->data_c();
-      data_size = last_outputs_[i]->Size();
+      auto cpu_tensor = last_outputs_[i]->cpu();
+      data = cpu_tensor->data_c();
+      data_size = cpu_tensor->Size();
     }
     result[i] =
       MSTensor(output_names_[i], static_cast<enum DataType>(tensor->data_type()), tensor->shape(), data, data_size);

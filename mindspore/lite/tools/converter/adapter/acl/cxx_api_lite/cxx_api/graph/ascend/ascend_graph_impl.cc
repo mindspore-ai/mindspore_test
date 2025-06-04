@@ -153,11 +153,13 @@ Status AscendGraphImpl::ExecuteModel(const std::vector<MSTensor> &request, std::
     MS_LOG(ERROR) << "Execute Model Failed";
     return kMCFailed;
   }
+
+  std::vector<tensor::TensorPtr> outputs_cpu;
   for (const auto &out : outputs) {
     MS_EXCEPTION_IF_NULL(out);
-    out->data_sync();
+    outputs_cpu.push_back(out->cpu());
   }
-  last_outputs_ = outputs;
+  last_outputs_ = outputs_cpu;
   reply->clear();
   *reply = GetOutputs();
   return kSuccess;

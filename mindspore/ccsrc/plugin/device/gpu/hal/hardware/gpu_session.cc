@@ -486,9 +486,8 @@ void GPUSession::UpdateOutputTensors(const VectorRef *outputs,
         }
       }
       if (tensor->NeedSyncDeviceToHostImmediately()) {
-        tensor->data_sync(false);
-        tensor->set_device_address(nullptr);
-        tensor->set_sync_status(kNeedSyncHostToDevice);
+        MS_LOG(ERROR) << "Deprecated code is called. Execution aborted."
+        std::abort();
       }
     }
   }

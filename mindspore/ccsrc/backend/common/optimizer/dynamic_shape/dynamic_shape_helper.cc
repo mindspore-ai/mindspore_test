@@ -155,10 +155,10 @@ tensor::TensorPtr GetDependValueTensor(const AnfNodePtr &node, size_t i,
                   << " input node:" << input_node_with_index.first->DebugString() << " index"
                   << input_node_with_index.second << " node addr:" << input_node_with_index.first
                   << " sync for device tensor:" << output_addr;
-    depended_value->data_sync();
+    auto cpu_depended_value = depended_value->cpu();
     PROFILER_END(start_time, runtime::ProfilerModule::kKernel, runtime::ProfilerEvent::kKernelInferDataSync,
                  node->fullname_with_scope(), true);
-    return depended_value;
+    return cpu_depended_value;
   }
 
   MS_LOG_WITH_NODE(EXCEPTION, node) << "There is no valid data for " << i << " input of " << node->DebugString() << ", "

@@ -130,17 +130,18 @@ class Slice final {
   static inline int64_t GetTensorData(const TensorPtr &tensor) {
     MS_EXCEPTION_IF_NULL(tensor);
     const auto &device_address = tensor->device_address();
+    TensorPtr cpu_tensor = tensor;
     if (device_address != nullptr) {
-      tensor->data_sync();
+      cpu_tensor = tensor->cpu();
     }
-    if (!tensor->shape().empty()) {
+    if (!cpu_tensor->shape().empty()) {
       MS_EXCEPTION(TypeError) << "Only integer scalar tensors can be converted to a scalar index";
     }
     int64_t tensor_value = 0;
-    if (tensor->data_type() == kNumberTypeInt32) {
-      tensor_value = *static_cast<int32_t *>(tensor->data_c());
-    } else if (tensor->data_type() == kNumberTypeInt64) {
-      tensor_value = *static_cast<int64_t *>(tensor->data_c());
+    if (cpu_tensor->data_type() == kNumberTypeInt32) {
+      tensor_value = *static_cast<const int32_t *>(cpu_tensor->data_c());
+    } else if (cpu_tensor->data_type() == kNumberTypeInt64) {
+      tensor_value = *static_cast<const int64_t *>(cpu_tensor->data_c());
     }
     return tensor_value;
   }

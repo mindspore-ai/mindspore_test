@@ -1145,8 +1145,9 @@ ValueNodePtr KernelGraphMgr::CreateNewValueNode(const AnfNodePtr &anf, KernelGra
     auto tensor = value->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(tensor);
     if (!tensor->is_forward_output() && !tensor->is_parameter()) {
-      tensor->data_sync();
-      MS_LOG(INFO) << "Data sync for Tensor " << tensor->ToString();
+      auto cpu_tensor = tensor->cpu();
+      value_node->set_value(cpu_tensor);
+      MS_LOG(INFO) << "Data sync for Tensor " << cpu_tensor->ToString();
     }
   }
   auto new_value_node = value_node;
