@@ -22,6 +22,7 @@ from tests.st.pi_jit.share.utils import get_code_extra, has_graph
 import mindspore as ms
 import mindspore.nn as nn
 from mindspore import Tensor, ops, context
+from mindspore.common import mutable
 
 
 def assert_executed_by_graph_mode(func, x, index):
@@ -467,3 +468,69 @@ def test_getitem_exception(mode, capture_mode):
     with pytest.raises(TypeError) as exc:
         _ = sum(ms_x)
     assert "Invalid index of a 0-dim tensor." in str(exc.value)
+
+
+class NetMutableSequenceIndex(nn.Cell):
+    def construct(self, x, index):
+        y = x[index]
+        return y
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_getitem_mutable_sequence_index():
+    """
+    Feature: tensor getitem
+    Description: Verify the result of tensor getitem exception in graph mode
+    Expectation: success
+    """
+    os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
+    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
+    np_x = np.arange(3 * 3 * 2).reshape((3, 3, 2))
+    ms_x = Tensor(np_x)
+    index = mutable([2, 1, 0])
+
+    net = NetMutableSequenceIndex()
+    pynative_res = net(ms_x, index)
+    np_expected = np_x[::-1]
+    assert np.allclose(np_expected, pynative_res.asnumpy()), f"ms_x: {ms_x}, index: {index}, " \
+                                                                f"expected: {np_expected} {np_expected.shape}, " \
+                                                                f"pynative_res: {pynative_res} {pynative_res.shape}"
+
+    with pytest.raises(IndexError) as err:
+        net.construct = ms.jit(net.construct, backend="ms_backend")
+        net(ms_x, index)
+    assert "Current Tensor indexing does not support mutable list/tuple or list containing tensors. " \
+           "Please use an immutable expression instead." in str(err.value)
+
+
+class NetTensorInListIndex(nn.Cell):
+    def construct(self, x, index):
+        y = x[0, [0, 1, index]]
+        return y
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_getitem_tensor_in_list_index():
+    """
+    Feature: tensor getitem
+    Description: Verify the result of tensor getitem exception in graph mode
+    Expectation: success
+    """
+    os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
+    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
+    np_x = np.arange(3 * 3 * 2).reshape((3, 3, 2))
+    ms_x = Tensor(np_x)
+    index = Tensor(2)
+
+    net = NetTensorInListIndex()
+    pynative_res = net(ms_x, index)
+    np_expected = np_x[0]
+    assert np.allclose(np_expected, pynative_res.asnumpy()), f"ms_x: {ms_x}, index: {index}, " \
+                                                                f"expected: {np_expected} {np_expected.shape}, " \
+                                                                f"pynative_res: {pynative_res} {pynative_res.shape}"
+
+    with pytest.raises(IndexError) as err:
+        net.construct = ms.jit(net.construct, backend="ms_backend")
+        net(ms_x, index)
+    assert "Current Tensor indexing does not support mutable list/tuple or list containing tensors. " \
+           "Please use an immutable expression instead." in str(err.value)
