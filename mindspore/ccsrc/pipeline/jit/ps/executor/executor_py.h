@@ -38,7 +38,8 @@ class FRONTEND_EXPORT ExecutorPy : public std::enable_shared_from_this<ExecutorP
  public:
   ExecutorPy() = default;
   virtual ~ExecutorPy() = default;
-  bool Compile(const py::object &source, const py::tuple &args, const py::dict &kwargs, const py::object &phase);
+  bool Compile(const py::object &source, const py::tuple &args, const py::dict &kwargs, const py::object &phase,
+               const py::dict &config);
   py::object Run(const py::tuple &args, const py::object &phase);
   void set_enable_tuple_broaden(bool enable_tuple_broaden) { enable_tuple_broaden_ = enable_tuple_broaden; }
   // Generate a key for mapping function graph

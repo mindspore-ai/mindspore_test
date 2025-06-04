@@ -637,6 +637,11 @@ class _JitExecutor:
             self._compile_args = compile_args
 
         new_inputs = self._generate_run_args(args_list, kwargs)
+        if self.jit_config_dict:
+            jit_config_dict = self.jit_config_dict
+        else:
+            jit_config_dict = JitConfig().jit_config_dict
+        self._graph_executor.set_jit_config(jit_config_dict)
         output = self._graph_executor(
             tuple(new_inputs),
             self.obj.phase_cache[self.obj.phase]
@@ -667,6 +672,11 @@ class _JitExecutor:
             return None
 
         new_inputs = self._generate_run_args(args_list, kwargs)
+        if self.jit_config_dict:
+            jit_config_dict = self.jit_config_dict
+        else:
+            jit_config_dict = JitConfig().jit_config_dict
+        self._graph_executor.set_jit_config(jit_config_dict)
         output = _pynative_executor.grad_jit(*new_inputs)
         if jit_context():
             if is_stub_tensor(output):
@@ -749,10 +759,9 @@ class _JitExecutor:
         # If enable compile cache, get the dependency files list and set to graph executor.
         self._set_compile_cache_dep_files()
         if self.jit_config_dict:
-            self._graph_executor.set_jit_config(self.jit_config_dict)
+            jit_config_dict = self.jit_config_dict
         else:
             jit_config_dict = JitConfig().jit_config_dict
-            self._graph_executor.set_jit_config(jit_config_dict)
 
         if self.obj is None:
             # Set an attribute to fn as an identifier.
@@ -760,7 +769,8 @@ class _JitExecutor:
                 setattr(self.fn.__func__, "__jit_function__", True)
             else:
                 setattr(self.fn, "__jit_function__", True)
-            is_compile = self._graph_executor.compile(self.fn, compile_args, kwargs, phase)
+            is_compile = self._graph_executor.compile(
+                self.fn, compile_args, kwargs, phase, jit_config_dict)
             if isinstance(self.fn, types.MethodType):
                 delattr(self.fn.__func__, "__jit_function__")
             else:
@@ -768,7 +778,8 @@ class _JitExecutor:
         else:
             if isinstance(self.obj, ms.nn.Cell):
                 self._graph_executor.set_weights_values(self.obj.parameters_dict())
-            is_compile = self._graph_executor.compile(self.obj, compile_args, kwargs, phase)
+            is_compile = self._graph_executor.compile(
+                self.obj, compile_args, kwargs, phase, jit_config_dict)
 
         if not is_compile:
             raise RuntimeError("Executor compile failed.")
@@ -2000,13 +2011,11 @@ class _CellGraphExecutor:
         self._set_compile_cache_dep_files(phase)
 
         self._graph_executor.set_weights_values(obj.parameters_dict())
-        if jit_config_dict:
-            self._graph_executor.set_jit_config(jit_config_dict)
-        else:
+        if not jit_config_dict:
             jit_config_dict = JitConfig().jit_config_dict
-            self._graph_executor.set_jit_config(jit_config_dict)
         gc.collect()
-        result = self._graph_executor.compile(obj, args, kwargs, phase)
+        result = self._graph_executor.compile(
+            obj, args, kwargs, phase, jit_config_dict)
         obj.compile_cache.add(phase)
         if not result:
             raise RuntimeError("Executor compile failed.")

@@ -60,6 +60,7 @@ from mindspore.parallel.shard import Shard
 from mindspore.parallel._utils import _init_auto_parallel_context, _clear_auto_parallel_context
 from mindspore._check_jit_forbidden_api import jit_forbidden_register
 from mindspore.common._register_for_recompute import recompute_registry
+from mindspore.common.jit_config import JitConfig
 
 _global_buffer_registration_hooks: Dict[int, Callable] = OrderedDict()
 _EXTRA_STATE_KEY_SUFFIX = "_extra_state"
@@ -1290,10 +1291,16 @@ class Cell(Cell_):
             self._is_check_and_refresh = True
 
     def _predict(self, *args, **kwargs):
+        '''Graph executor for predict'''
         if not hasattr(self, "phase"):
             return False, None
         if (self.phase == "prefill" or self.phase == 'increment') and self.phase in self.phase_cache:
             new_args = _get_args_for_run_predict(self, args, kwargs, self._compile_args)
+            if self.jit_config_dict:
+                jit_config_dict = self.jit_config_dict
+            else:
+                jit_config_dict = JitConfig().jit_config_dict
+            _cell_graph_executor._graph_executor.set_jit_config(jit_config_dict)
             res = _cell_graph_executor._graph_executor(tuple(new_args), self.phase_cache[self.phase])
             res = _convert_python_data(res)
             return True, res
@@ -1717,6 +1724,11 @@ class Cell(Cell_):
         """
         self.compile(*args, **kwargs)
         new_args = _get_args_for_run(self, args, kwargs, self._compile_args)
+        if self.jit_config_dict:
+            jit_config_dict = self.jit_config_dict
+        else:
+            jit_config_dict = JitConfig().jit_config_dict
+        _cell_graph_executor._graph_executor.set_jit_config(jit_config_dict)
         return _cell_graph_executor(self, *new_args, phase=self.phase)
 
     def insert_param_to_cell(self, param_name, param, check_name_contain_dot=True):

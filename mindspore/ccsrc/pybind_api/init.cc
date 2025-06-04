@@ -269,7 +269,7 @@ PYBIND11_MODULE(_c_expression, m) {
     .def("get_random_status", &GraphExecutorPy::GetRandomStatus, py::arg("phase") = py::str(""),
          "Get random status from graph")
     .def("compile", &GraphExecutorPy::Compile, py::arg("obj"), py::arg("args"), py::arg("kwargs"),
-         py::arg("phase") = py::str(""), "Compile obj by executor.")
+         py::arg("phase") = py::str(""), py::arg("jit_config") = py::dict(), "Compile obj by executor.")
     .def("updata_param_node_default_input", &GraphExecutorPy::UpdataParamNodeDefaultInput, py::arg("phase"),
          py::arg("params"), "Fetch the inputs of Conv or Matmul for quant export.")
     .def("get_parameter_layout", &GraphExecutorPy::GetParameterLayout, py::arg("phase") = py::str("train"),
@@ -328,7 +328,7 @@ PYBIND11_MODULE(_c_expression, m) {
     .def("del_net_res", &JitExecutorPy::DelNetRes, py::arg("obj"), py::arg("network_id") = py::set(),
          "Delete network resource.")
     .def("compile", &JitExecutorPy::Compile, py::arg("obj"), py::arg("args"), py::arg("kwargs"),
-         py::arg("phase") = py::str(""), "Compile obj by executor.")
+         py::arg("phase") = py::str(""), py::arg("jit_config") = py::dict(), "Compile obj by executor.")
     .def("has_compiled", &JitExecutorPy::HasCompiled, py::arg("phase") = py::str(""),
          "Get if the cell or function has been compiled.")
     .def("set_enable_tuple_broaden", &JitExecutorPy::set_enable_tuple_broaden,
