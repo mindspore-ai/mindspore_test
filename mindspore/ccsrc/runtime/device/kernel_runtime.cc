@@ -1434,7 +1434,7 @@ void KernelRuntime::SyncNodeOutputTensors(const std::shared_ptr<MemScheduler> &m
 
 void KernelRuntime::SyncNodeOutputTensor(const std::shared_ptr<MemScheduler> &mem_scheduler,
                                          const KernelWithIndex &node_output_index, const session::KernelGraph &graph) {
-  MS_LOG(ERROR) << "Deprecated code is called. Execution aborted."
+  MS_LOG(ERROR) << "Deprecated code is called. Execution aborted.";
   std::abort();
 }
 
@@ -1463,7 +1463,7 @@ void KernelRuntime::InitGraphInputTensors(const std::shared_ptr<MemScheduler> &m
     if (tensor->NeedSyncHostToDevice()) {
       need_sync = true;
     } else if (tensor_address != device_address) {
-      MS_LOG(ERROR) << "Deprecated code is called. Execution aborted."
+      MS_LOG(ERROR) << "Deprecated code is called. Execution aborted.";
       std::abort();
     }
     if (mem_scheduler->HasDeviceMem(device_address.get())) {

@@ -160,7 +160,7 @@ void CPUSession::LoadInputData(const std::shared_ptr<KernelGraph> &kernel_graph,
       continue;
     }
     if (std::dynamic_pointer_cast<device::DeviceAddress>(tensor_address)->GetDeviceType() != device::DeviceType::kCPU) {
-      MS_LOG(ERROR) << "Deprecated code is called. Execution aborted."
+      MS_LOG(ERROR) << "Deprecated code is called. Execution aborted.";
       std::abort();
     }
   }
