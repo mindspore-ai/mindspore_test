@@ -13,15 +13,14 @@
 # limitations under the License.
 # ============================================================================
 """Profiler Action Controller"""
+__all__ = []
+
 from functools import partial
 from typing import Dict, Optional, Callable, Any
 
 from mindspore.profiler.profiler_interface import ProfilerInterface
 from mindspore.profiler.schedule import ProfilerAction
-
 from mindspore import log as logger
-
-__all__ = []
 
 
 class ProfilerActionController:

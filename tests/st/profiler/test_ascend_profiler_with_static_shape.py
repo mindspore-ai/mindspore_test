@@ -240,8 +240,8 @@ def check_ascend_profiler_pynative_files(profiler_path: str, rank_id: int):
     })
     operator_details_path = os.path.join(ascend_profiler_output_path, "operator_details.csv")
     FileChecker.check_csv_items(operator_details_path, {
-        "Name": ["Split", "Transpose", "MatMulExt"],
-        "Input Shapes": ["6,2;;", "2,2;2", "1,1,2;2,2"]
+        "Name": ["Transpose", "MatMulExt", "AddExt"],
+        "Input Shapes": ["6,2", "1,1,2;2,6", "1,1,6;6"]
     })
 
 
