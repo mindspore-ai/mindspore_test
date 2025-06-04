@@ -788,6 +788,7 @@ std::vector<bool> TraceIgnoredLoopParams(const CNodePtr &start_node, const std::
 
 bool IsControlSubgraph(const ValuePtr &func_graph_node) {
   auto func_graph = dyn_cast<FuncGraph>(func_graph_node);
+  MS_EXCEPTION_IF_NULL(func_graph);
   return func_graph != nullptr && IsSubgraphNameCorrect(func_graph, CONTROL_PATTERN);
 }
 
@@ -1596,6 +1597,7 @@ void OnnxExporter::ExportInputs(const FuncGraphPtr &func_graph, std::map<AnfNode
 
     if (param_ptr->Type()->isa<Tuple>()) {
       auto tuple_inputs = dyn_cast<Tuple>(param_ptr->Type());
+      MS_EXCEPTION_IF_NULL(tuple_inputs);
       for (size_t i = 0; i < tuple_inputs->size(); i++) {
         onnx::ValueInfoProto *input_proto = graph_proto->add_input();
         auto output_name = MakeOutputName(name, i);
@@ -1644,8 +1646,10 @@ void OnnxExporter::SetValueInfoType(const AnfNodePtr &node, onnx::ValueInfoProto
   abstract::ShapePtr output_shape;
   if (shape->isa<abstract::TupleShape>()) {
     auto tuple_shape = dyn_cast<abstract::TupleShape>(shape);
+    MS_EXCEPTION_IF_NULL(tuple_shape);
     auto base_shape = tuple_shape->shape().at(static_cast<size_t>(output_index));
     output_shape = dyn_cast<abstract::Shape>(base_shape);
+    MS_EXCEPTION_IF_NULL(output_shape);
     if (output_shape == nullptr) {
       MS_LOG_WITH_NODE(EXCEPTION, node) << "Expected " << node->ToString()
                                         << " to output a tuple of tensors. Instead got " << base_shape->ToString()
@@ -1653,6 +1657,7 @@ void OnnxExporter::SetValueInfoType(const AnfNodePtr &node, onnx::ValueInfoProto
     }
   } else if (shape->isa<abstract::Shape>()) {
     output_shape = dyn_cast<abstract::Shape>(shape);
+    MS_EXCEPTION_IF_NULL(output_shape);
   } else {
     MS_LOG(EXCEPTION) << "Unsupported shape: " << shape->ToString();
   }
@@ -1954,6 +1959,7 @@ void OnnxExporter::ExportPrimReduceAnyOrAll(const FuncGraphPtr &, const CNodePtr
       auto tuple_ptr = dyn_cast<ValueTuple>(axis_value);
       axes = GetValue<std::vector<int64_t>>(tuple_ptr);
       if (axes.empty()) {
+        MS_EXCEPTION_IF_NULL(node->input(kOneNum)->Shape());
         const auto &x_shape = dyn_cast<abstract::Shape>(node->input(kOneNum)->Shape())->shape();
         for (size_t i = 0; i < x_shape.size(); ++i) {
           axes.push_back(static_cast<int64_t>(i));
@@ -2064,7 +2070,9 @@ void OnnxExporter::ExportPrimStridedSlice(const FuncGraphPtr &, const CNodePtr &
                       << "Need to insert op convert variable from tuple to tensor for " << name;
   }
   auto end_value_node = dyn_cast<ValueNode>(end);
+  MS_EXCEPTION_IF_NULL(end_value_node);
   auto end_value = GetValue<std::vector<int64_t>>(end_value_node->value());
+  MS_EXCEPTION_IF_NULL(node->input(kOneNum)->Shape());
   const auto &x_shape = dyn_cast<abstract::Shape>(node->input(kOneNum)->Shape())->shape();
   auto end_ignore_mask = GetOpAttribute<int64_t>(node, "end_mask");
   for (size_t i = 0; i < end_value.size(); ++i) {
@@ -2125,10 +2133,13 @@ onnx::NodeProto *OnnxExporter::PrimResizeExportHelper(const FuncGraphPtr &, cons
                                                       onnx::GraphProto *const graph_proto) {
   auto input_data = GetNodeInputName(node->input(kOneNum), node_map_ptr, graph_proto);
   auto x_shape = dyn_cast<abstract::Shape>(node->input(kOneNum)->Shape());
+  MS_EXCEPTION_IF_NULL(x_shape);
 
   AnfNodePtr op = node->input(kZeroNum);
   auto op_value = dyn_cast<ValueNode>(op);
+  MS_EXCEPTION_IF_NULL(op_value);
   auto prim = dyn_cast<Primitive>(op_value->value());
+  MS_EXCEPTION_IF_NULL(prim);
   std::vector<int64_t> resize_size;
 
   auto tuple_ptr = dyn_cast<ValueSequence>(prim->GetAttr("size"));  // size may be Tuple or List
@@ -2242,6 +2253,7 @@ void OnnxExporter::ExportPrimExpandDims(const FuncGraphPtr &, const CNodePtr &no
   (void)new_shape.insert(new_shape.begin() + axis, kOneNum);
   auto new_shape_value = MakeValue<std::vector<int64_t>>(new_shape);
   auto shape = NewValueNode(new_shape_value)->cast<AnfNodePtr>();
+  MS_EXCEPTION_IF_NULL(shape);
   std::string name_shape;
 
   if (shape->isa<ValueNode>()) {
@@ -2328,7 +2340,9 @@ void OnnxExporter::ExportPrimBatchMatMul(const FuncGraphPtr &, const CNodePtr &n
 
   AnfNodePtr batchmatmul_op = node->input(kZeroNum);
   auto op_value = dyn_cast<ValueNode>(batchmatmul_op);
+  MS_EXCEPTION_IF_NULL(op_value);
   auto prim = dyn_cast<Primitive>(op_value->value());
+  MS_EXCEPTION_IF_NULL(prim);
   auto transpose_a = GetValue<bool>(prim->GetAttr("transpose_a"));
   auto transpose_b = GetValue<bool>(prim->GetAttr("transpose_b"));
   std::string transpose_input_x_name = "";
@@ -3272,6 +3286,7 @@ void OnnxExporter::ExportPrimMeshgrid(const FuncGraphPtr &, const CNodePtr &node
   }
   // Get shape of input tensors
   std::vector<int64_t> output_shape;
+  MS_EXCEPTION_IF_NULL(inputs_abs->cast<abstract::AbstractTuplePtr>());
   auto inputs_elems = inputs_abs->cast<abstract::AbstractTuplePtr>()->elements();
   for (size_t i = 0; i < inputs_elems.size(); i++) {
     auto elem = inputs_elems[i];
@@ -3393,6 +3408,7 @@ void OnnxExporter::ExportPrimBroadcastTo(const FuncGraphPtr &, const CNodePtr &n
                                          std::map<AnfNodePtr, std::string> *node_map_ptr,
                                          onnx::GraphProto *const graph_proto) {
   auto input_x = GetNodeInputName(node->input(kOneNum), node_map_ptr, graph_proto);
+  MS_EXCEPTION_IF_NULL(node->input(kOneNum)->Shape());
   auto x_shape = dyn_cast<abstract::Shape>(node->input(kOneNum)->Shape());
   auto name = prim::kPrimBroadcastTo->name();
 
@@ -3412,6 +3428,8 @@ void OnnxExporter::ExportPrimBroadcastTo(const FuncGraphPtr &, const CNodePtr &n
 
   auto new_shape_value = MakeValue<std::vector<int64_t>>(new_shape);
   auto shape = NewValueNode(new_shape_value)->cast<AnfNodePtr>();
+  MS_EXCEPTION_IF_NULL(shape);
+
   std::string name_shape;
 
   if (shape->isa<ValueNode>()) {
@@ -3443,6 +3461,7 @@ void OnnxExporter::ExportPrimAddN(const FuncGraphPtr &, const CNodePtr &node,
   auto node_name = RegisterNodeWithUniqueName(node, node_map_ptr);
 
   auto input_node = node->input(kOneNum)->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(input_node);
   auto last_input_name = GetNodeInputName(input_node->input(kOneNum), node_map_ptr, graph_proto);
   for (size_t i = kTwoNum; i < input_node->size() - 1; ++i) {
     auto input_name = GetNodeInputName(input_node->input(i), node_map_ptr, graph_proto);
@@ -3511,6 +3530,7 @@ void OnnxExporter::ExportPrimConcat(const FuncGraphPtr &, const CNodePtr &node,
 
   // Get inputs first: otherwise if an input is a constant, topological order will break
   auto input_node = node->input(kOneNum)->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(input_node);
   std::vector<std::string> input_names;
   if (input_node->IsApply(prim::kPrimMakeTuple)) {
     for (size_t i = 1; i < input_node->size(); ++i) {
@@ -3542,6 +3562,7 @@ void OnnxExporter::ExportPrimCast(const FuncGraphPtr &, const CNodePtr &node,
     attr_proto->set_name("to");
     attr_proto->set_type(onnx::AttributeProto_AttributeType_INT);
     auto type_value = dyn_cast<ValueNode>(input_type)->value();
+    MS_EXCEPTION_IF_NULL(type_value);
     auto type_ptr = dyn_cast<Int64Imm>(type_value);
     MS_EXCEPTION_IF_NULL(type_ptr);
     auto type_id = static_cast<TypeId>(type_ptr->value());
@@ -3618,6 +3639,7 @@ void OnnxExporter::ExportPrimMuls(const FuncGraphPtr &, const CNodePtr &node,
   auto input_x = GetNodeInputName(node->input(kOneNum), node_map_ptr, graph_proto);
 
   auto x_type = node->input(kOneNum)->Type();
+  MS_EXCEPTION_IF_NULL(x_type);
   auto x_dtype = dyn_cast<TensorType>(x_type)->element()->type_id();
   auto promote_dtype = x_dtype;
 
@@ -3675,7 +3697,7 @@ void OnnxExporter::ExportPrimSoftmax(const FuncGraphPtr &, const CNodePtr &node,
                                      onnx::GraphProto *const graph_proto) {
   auto input_x = GetNodeInputName(node->input(kOneNum), node_map_ptr, graph_proto);
   auto node_name = RegisterNodeWithUniqueName(node, node_map_ptr);
-
+  MS_EXCEPTION_IF_NULL(node->input(kOneNum)->Shape());
   const auto &input_shape = dyn_cast<abstract::Shape>(node->input(kOneNum)->Shape())->shape();
   int64_t input_rank = static_cast<int64_t>(input_shape.size());
 
@@ -3798,6 +3820,7 @@ void OnnxExporter::ExportPrimDepthwiseConv2d(const FuncGraphPtr &, const CNodePt
   AnfNodePtr op = node->input(0);
   auto op_value = dyn_cast<ValueNode>(op);
   auto prim = dyn_cast<Primitive>(op_value->value());
+  MS_EXCEPTION_IF_NULL(prim);
   // set dilations
   onnx::AttributeProto *onnx_attr_proto = node_proto->add_attribute();
   onnx_attr_proto->set_name("dilations");
@@ -3895,6 +3918,7 @@ void OnnxExporter::ExportPrimGatherV2(const FuncGraphPtr &, const CNodePtr &node
   auto name_x = GetNodeInputName(node->input(kOneNum), node_map_ptr, graph_proto);
   auto name_indices = GetNodeInputName(node->input(kTwoNum), node_map_ptr, graph_proto);
   auto axis = node->input(kThreeNum)->cast<ValueNodePtr>()->value();
+  MS_EXCEPTION_IF_NULL(axis);
   auto node_name = RegisterNodeWithUniqueName(node, node_map_ptr);
   onnx::NodeProto *node_proto = graph_proto->add_node();
   node_proto->set_op_type("Gather");
@@ -4150,6 +4174,7 @@ void OnnxExporter::ExportPrimSplit(const FuncGraphPtr &, const CNodePtr &node,
   if (output_num == 0) {
     MS_LOG(EXCEPTION) << "output_num must be > 0";
   }
+  MS_EXCEPTION_IF_NULL(node->input(kOneNum)->Shape());
   const auto &input_shape = dyn_cast<abstract::Shape>(node->input(kOneNum)->Shape())->shape();
 
   if (axis < 0 || static_cast<size_t>(axis) >= input_shape.size()) {
@@ -4305,6 +4330,7 @@ void OnnxExporter::ExportPrimScatterNd(const FuncGraphPtr &, const CNodePtr &nod
   auto input_shape_name = GetNodeInputName(node->input(kThreeNum), node_map_ptr, graph_proto);
   auto node_zero_tensor_name = node_name + "_zero";
   auto dtype = node->input(kTwoNum)->Type();
+  MS_EXCEPTION_IF_NULL(dtype);
   auto elem_type = dyn_cast<TensorType>(dtype)->element()->type_id();
 
   onnx::TensorProto *zero_proto = AddConstantOfShapeOp(input_shape_name, node_zero_tensor_name, graph_proto);
@@ -4507,6 +4533,7 @@ void OnnxExporter::PrimConv2DTransposeExportHelper(const CNodePtr &conv_node, co
                          "(Python tuple). Instead got "
                       << input_shape_node->ToString();
   }
+  MS_EXCEPTION_IF_NULL(input_shape_node->cast<ValueNodePtr>());
   auto input_shape_value_ptr = input_shape_node->cast<ValueNodePtr>()->value();
   if (!input_shape_value_ptr->isa<ValueTuple>()) {
     MS_LOG(EXCEPTION) << "Expected ValueTuple, got " << input_shape_value_ptr->ToString() << " of type "
@@ -4676,6 +4703,7 @@ void OnnxExporter::ExportPrimDynamicRNN(const FuncGraphPtr &, const CNodePtr &no
 
   auto hidden_size = GetOpAttribute<int64_t>(node, "hidden_size");
   auto direction_input = GetOpAttribute<std::string>(node, "direction");
+  MS_EXCEPTION_IF_NULL(node->input(kOneNum)->Shape());
   auto x_input_shape = dyn_cast<abstract::Shape>(node->input(kOneNum)->Shape())->shape();
   auto seq_len = x_input_shape[0];
   auto batch_size = x_input_shape[1];
@@ -4876,6 +4904,7 @@ void OnnxExporter::ExportPrimLSTM(const FuncGraphPtr &, const CNodePtr &node,
   auto has_bias = GetOpAttribute<bool>(node, "has_bias");
   auto bidirectional = GetOpAttribute<bool>(node, "bidirectional");
   std::string direction = bidirectional ? "bidirectional" : "forward";
+  MS_EXCEPTION_IF_NULL(node->input(kOneNum)->Shape());
   auto x_input_shape = dyn_cast<abstract::Shape>(node->input(kOneNum)->Shape())->shape();
   auto seq_len = x_input_shape[0];
   auto batch_size = x_input_shape[1];
@@ -4946,6 +4975,7 @@ void OnnxExporter::ExportPrimReverseV2(const FuncGraphPtr &, const CNodePtr &nod
   auto axes_ptr = GetOpAttributePtr<ValueSequeue>(node, "axis");
   auto axes_vec = GetValue<std::vector<int64_t>>(axes_ptr);
   size_t n_axes = axes_vec.size();
+  MS_EXCEPTION_IF_NULL(node->input(kOneNum)->Shape());
   auto shape = dyn_cast<abstract::Shape>(node->input(kOneNum)->Shape())->shape();
 
   std::vector<int64_t> starts_vec(n_axes, -1);
@@ -4968,7 +4998,9 @@ void OnnxExporter::ExportPrimTensorCopySlices(const FuncGraphPtr &, const CNodeP
   auto x_input_name = GetNodeInputName(x_input, node_map_ptr, graph_proto);
   auto value_input_name = GetNodeInputName(value_input, node_map_ptr, graph_proto);
 
+  MS_EXCEPTION_IF_NULL(x_input->Shape());
   const auto &x_shape = dyn_cast<abstract::Shape>(x_input->Shape())->shape();
+  MS_EXCEPTION_IF_NULL(value_input->Shape());
   const auto &value_shape = dyn_cast<abstract::Shape>(value_input->Shape())->shape();
 
   auto begin_node = dyn_cast<ValueNode>(node->input(kThreeNum));
@@ -5401,6 +5433,7 @@ void OnnxExporter::ExportCNode(const FuncGraphPtr &func_graph, const CNodePtr &n
   auto op_value = dyn_cast<ValueNode>(op)->value();
   if (op_value->isa<Primitive>()) {
     auto prim = dyn_cast<Primitive>(op_value);
+    MS_EXCEPTION_IF_NULL(prim);
     (*node_map_ptr)[node] = ExportPrimitive(func_graph, node_map_ptr, prim, op_inputs, graph_proto);
   } else if (while_loop_export::IsControlSubgraph(op_value)) {
     ExportWhileLoop(node, node_map_ptr, graph_proto);
@@ -5493,6 +5526,7 @@ void OnnxExporter::ExportWhileLoop(const CNodePtr &start_node, std::map<AnfNodeP
   auto after_loop_retval = GetRealInput(loop_parts.after_loop_subgraph->get_return()->input(1));
   if (after_loop_retval->isa<CNode>() && after_loop_retval->cast<CNodePtr>()->IsApply(prim::kPrimMakeTuple)) {
     auto tuple_retval = dyn_cast<CNode>(after_loop_retval);
+    MS_EXCEPTION_IF_NULL(tuple_retval);
     for (size_t i = 1; i < tuple_retval->size(); ++i) {
       auto output_name = GetNodeInputName(tuple_retval->input(i), node_map_ptr, graph_proto);
       AddOp("Identity", {output_name}, {MakeOutputName(node_name, i - 1)}, graph_proto);
@@ -5646,10 +5680,11 @@ void OnnxExporter::ExportMergeConv(const FuncGraphPtr &func_graph, const CNodePt
                                    std::map<AnfNodePtr, std::string> *node_map_ptr,
                                    onnx::GraphProto *const graph_proto) {
   auto conv_node = dyn_cast<CNode>(node->input(kOneNum));
+  MS_EXCEPTION_IF_NULL(conv_node);
   auto input_x = conv_node->input(kOneNum);  // conv input x
   auto input_w = conv_node->input(kTwoNum);  // conv weight(filter)
   auto input_b = node->input(kTwoNum);       // conv bias
-
+  MS_EXCEPTION_IF_NULL(conv_node->input(kZeroNum));
   PrimitivePtr prim_conv = dyn_cast<Primitive>((dyn_cast<ValueNode>(conv_node->input(kZeroNum)))->value());
   std::vector<AnfNodePtr> inputs{input_x, input_w, input_b};
   (*node_map_ptr)[node] = ExportPrimitive(func_graph, node_map_ptr, prim_conv, inputs, graph_proto);
@@ -5659,10 +5694,12 @@ void OnnxExporter::ExportMergeGemm(const FuncGraphPtr &func_graph, const CNodePt
                                    std::map<AnfNodePtr, std::string> *node_map_ptr,
                                    onnx::GraphProto *const graph_proto) {
   auto matmul_node = dyn_cast<CNode>(node->input(kOneNum));
+  MS_EXCEPTION_IF_NULL(matmul_node);
   auto input_x = matmul_node->input(kOneNum);  // matmul input x
   auto input_y = matmul_node->input(kTwoNum);  // matmul input y
   auto input_b = node->input(kTwoNum);         // matmul bias
 
+  MS_EXCEPTION_IF_NULL(matmul_node->input(kZeroNum));
   PrimitivePtr prim_matmul = dyn_cast<Primitive>((dyn_cast<ValueNode>(matmul_node->input(kZeroNum)))->value());
   std::vector<AnfNodePtr> inputs{input_x, input_y, input_b};
   (*node_map_ptr)[node] = ExportPrimitive(func_graph, node_map_ptr, prim_matmul, inputs, graph_proto);
@@ -5672,6 +5709,7 @@ void OnnxExporter::ExportMergeBatchNorm(const FuncGraphPtr &func_graph, const CN
                                         std::map<AnfNodePtr, std::string> *node_map_ptr,
                                         onnx::GraphProto *const graph_proto) {
   auto batch_norm_node = dyn_cast<CNode>(node->input(kOneNum));
+  MS_EXCEPTION_IF_NULL(batch_norm_node);
 
   auto is_training = GetOpAttribute<bool>(batch_norm_node, "is_training");
   if (is_training) {
@@ -5684,6 +5722,7 @@ void OnnxExporter::ExportMergeBatchNorm(const FuncGraphPtr &func_graph, const CN
     auto output_name = RegisterNodeWithUniqueName(node, node_map_ptr);
 
     auto input_shape_ptr = batch_norm_node->input(kOneNum)->Shape();
+    MS_EXCEPTION_IF_NULL(input_shape_ptr);
     auto input_shape = input_shape_ptr->cast<abstract::ShapePtr>()->shape();
 
     std::vector<int64_t> normalize_axes = {0};
@@ -5715,6 +5754,8 @@ void OnnxExporter::ExportMergeMaxPoolWithArgmax(const FuncGraphPtr &func_graph, 
                                                 std::map<AnfNodePtr, std::string> *node_map_ptr,
                                                 onnx::GraphProto *const graph_proto) {
   auto maxpool_with_argmax_node = dyn_cast<CNode>(node->input(kOneNum));
+  MS_EXCEPTION_IF_NULL(maxpool_with_argmax_node);
+  MS_EXCEPTION_IF_NULL(maxpool_with_argmax_node->input(kZeroNum));
 
   PrimitivePtr prim_maxpool_with_argmax =
     dyn_cast<Primitive>((dyn_cast<ValueNode>(maxpool_with_argmax_node->input(kZeroNum)))->value());
@@ -5730,6 +5771,7 @@ void OnnxExporter::ExportMergeLayerNorm(const FuncGraphPtr &, const CNodePtr &no
                                         std::map<AnfNodePtr, std::string> *node_map_ptr,
                                         onnx::GraphProto *const graph_proto) {
   auto LayerNormNode = dyn_cast<CNode>(node->input(kOneNum));
+  MS_EXCEPTION_IF_NULL(LayerNormNode);
   auto layernorm_input_x = GetNodeInputName(LayerNormNode->input(kOneNum), node_map_ptr, graph_proto);
   auto layernorm_input_gamma = GetNodeInputName(LayerNormNode->input(kTwoNum), node_map_ptr, graph_proto);
   auto layernorm_input_beta = GetNodeInputName(LayerNormNode->input(kThreeNum), node_map_ptr, graph_proto);
@@ -5754,6 +5796,7 @@ void OnnxExporter::ExportMergeConv2DTranspose(const FuncGraphPtr &, const CNodeP
                                               std::map<AnfNodePtr, std::string> *node_map_ptr,
                                               onnx::GraphProto *const graph_proto) {
   auto conv_node = dyn_cast<CNode>(node->input(kOneNum));
+  MS_EXCEPTION_IF_NULL(conv_node);
   PrimConv2DTransposeExportHelper(conv_node, node, node_map_ptr, graph_proto);
 }
 
@@ -6024,6 +6067,7 @@ void OnnxExporter::ExportOutput(const FuncGraphPtr &func_graph, const AnfNodePtr
   } else if (arg->Type()->isa<Tuple>() || arg->Type()->isa<List>()) {
     auto arg_name = GetNodeInputName(arg, node_map_ptr, graph_proto);
     auto tuple = dyn_cast<Tuple>(arg->Type());
+    MS_EXCEPTION_IF_NULL(tuple);
 
     for (size_t i = 0; i < tuple->size(); ++i) {
       auto output_name = MakeOutputName(arg_name, i);

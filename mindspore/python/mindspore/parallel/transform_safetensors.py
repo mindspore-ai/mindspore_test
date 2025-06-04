@@ -1038,6 +1038,14 @@ def _check_remove_redundancy(merge_with_redundancy, f):
     return merge_with_redundancy
 
 
+def set_affinity_pid():
+    """Set CPU affinity pid"""
+    pid = os.getpid()
+    total_cores = os.cpu_count()
+    all_cores = set(range(total_cores))
+    os.sched_setaffinity(pid, all_cores)
+
+
 def unified_safetensors(src_dir, src_strategy_file, dst_dir, merge_with_redundancy=True, file_suffix=None,
                         max_process_num=64, choice_func=None, split_dst_file=()):
     """
@@ -1078,10 +1086,7 @@ def unified_safetensors(src_dir, src_strategy_file, dst_dir, merge_with_redundan
         >>> dst_dir = "/usr/safetensors/llama31B/merge_llama31B_4p/"
         >>> ms.parallel.unified_safetensors(src_dir, src_strategy_file, dst_dir)
     """
-    pid = os.getpid()
-    total_cores = os.cpu_count()
-    all_cores = set(range(total_cores))
-    os.sched_setaffinity(pid, all_cores)
+    set_affinity_pid()
     _check_transform_safetensors(src_dir, "", src_strategy_file, None)
     _make_dir(dst_dir, "path")
     if os.path.isfile(src_dir):
@@ -1151,9 +1156,9 @@ def unified_safetensors(src_dir, src_strategy_file, dst_dir, merge_with_redundan
         start_index = (avg_length * (current_machine_num - 1)) + min(current_machine_num - 1, remainder)
         end_index = start_index + avg_length + (1 if current_machine_num <= remainder else 0)
         sub_list = []
-        for i in range(len(split_list)):
+        for i, item in enumerate(split_list):
             if start_index <= i < end_index:
-                sub_list.append(split_list[i])
+                sub_list.append(item)
             else:
                 sub_list.append([-1])
     else:
@@ -1248,7 +1253,7 @@ def _apply_sf_obj_transform_operators(transform_operator_stack, sf_obj, device_n
                 allgather_list = [sf_obj for _ in operator[1][:-1]]
                 tmp_tensor_dict[rank_id % device_num] = _apply_operator(operator[0])(allgather_list, operator)
             if op_name == "AllConcat":
-                for rank, value in tmp_tensor_dict.items():
+                for _, value in tmp_tensor_dict.items():
                     sf_obj = value
             level_operators.clear()
         if not transform_operator_stack:
@@ -1370,10 +1375,7 @@ def _load_parallel_checkpoint(file_info):
     """load parallel safetensors by merged file."""
     total_safetensors_dir, dst_strategy_file, net, dst_safetensors_dir, \
     rank_id, output_format, name_map, return_param_dict = file_info
-    pid = os.getpid()
-    total_cores = os.cpu_count()
-    all_cores = set(range(total_cores))
-    os.sched_setaffinity(pid, all_cores)
+    set_affinity_pid()
     file_list = os.listdir(total_safetensors_dir)
     json_files = [file for file in file_list if file == "param_name_map.json"]
     sf_files = [file for file in file_list if file.endswith('.safetensors')]

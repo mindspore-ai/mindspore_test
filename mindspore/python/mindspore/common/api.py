@@ -276,14 +276,13 @@ def __get_compile_cache_dep_files(file_path, compile_cache_dep_files, pkg):
             module = importlib.util.module_from_spec(module_spec)
             if hasattr(module, '__file__'):
                 dep_file_path = module.__file__
+                # Exclude the installed modules.
+                if not _in_sys_path(dep_file_path) and dep_file_path not in compile_cache_dep_files:
+                    logger.debug(f"dependent file path: {dep_file_path}")
+                    compile_cache_dep_files.append(dep_file_path)
+                    __get_compile_cache_dep_files(dep_file_path, compile_cache_dep_files, module.__package__)
             else:
                 continue
-            # Exclude the installed modules.
-            if not _in_sys_path(dep_file_path) and dep_file_path not in compile_cache_dep_files:
-                logger.debug(f"dependent file path: {dep_file_path}")
-                compile_cache_dep_files.append(dep_file_path)
-                __get_compile_cache_dep_files(dep_file_path, compile_cache_dep_files, module.__package__)
-
 
 def _get_compile_cache_dep_files():
     """Get the dependency files of the network"""
