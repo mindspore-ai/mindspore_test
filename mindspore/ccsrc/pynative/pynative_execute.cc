@@ -246,9 +246,10 @@ py::object PyNativeExecutor::GradJit(const py::args &args) const {
   return PyNativeExecutorTry(grad_executor()->GradJit, args);
 }
 
-void PyNativeExecutor::CallCustomBprop(const py::object &cell_obj, const py::object &out, const py::args &args) const {
+py::object PyNativeExecutor::CallCustomBprop(const py::object &cell_obj, const py::object &out,
+                                             const py::args &args) const {
   MS_EXCEPTION_IF_NULL(grad_executor()->top_cell());
-  PyNativeExecutorTry(grad_executor()->CallCustomBpropFunc, cell_obj, out, args);
+  return PyNativeExecutorTry(grad_executor()->CallCustomBpropFunc, cell_obj, out, args);
 }
 
 void PyNativeExecutor::SetMixedPrecisionType(const MixedPrecisionType mix_type, bool is_push) const {

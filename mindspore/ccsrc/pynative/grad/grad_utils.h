@@ -121,6 +121,7 @@ struct AutoGradUtil {
   static void CheckAndCloneInplaceInput(const kernel::pyboost::OpPtr &inplace_op, const PrimitivePtr &prim,
                                         const std::string &device_target, ValuePtrList &&inputs);
   static ValuePtr ShallowCopyAndDetach(const ValuePtr &value);
+  static TensorPtr ViewAsSelfWithNoGrad(const TensorPtr &self);
 };
 }  // namespace pynative
 }  // namespace mindspore

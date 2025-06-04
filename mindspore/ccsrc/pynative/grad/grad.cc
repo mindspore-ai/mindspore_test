@@ -358,6 +358,35 @@ void AsyncClearEngine(const std::shared_ptr<autograd::AutoDiff> &engine) {
     engine->Clear();
   }
 }
+
+ValuePtr CheckAndUpdateOutput(const ValuePtr &out, const ValuePtrList &inputs, bool *is_return_self) {
+  std::unordered_set<Value *> inputs_set;
+  inputs_set.reserve(inputs.size());
+  for (const auto &input : inputs) {
+    (void)inputs_set.insert(input.get());
+  }
+  if (out->isa<tensor::Tensor>() && inputs_set.find(out.get()) != inputs_set.end()) {
+    MS_LOG(DEBUG) << "Cell custom bprop return self";
+    *is_return_self = true;
+    return AutoGradUtil::ViewAsSelfWithNoGrad(out->cast<tensor::TensorPtr>());
+  }
+  if (out->isa<ValueSequence>()) {
+    auto out_seq = out->cast<ValueSequencePtr>();
+    std::vector<ValuePtr> res;
+    res.reserve(out_seq->size());
+    for (const auto &out_val : out_seq->value()) {
+      if (out_val->isa<tensor::Tensor>() && inputs_set.find(out_val.get()) != inputs_set.end()) {
+        *is_return_self = true;
+        MS_LOG(DEBUG) << "Cell custom bprop multi output return self";
+        (void)res.emplace_back(AutoGradUtil::ViewAsSelfWithNoGrad(out_val->cast<tensor::TensorPtr>()));
+      } else {
+        (void)res.emplace_back(out_val);
+      }
+    }
+    return is_return_self ? std::make_shared<ValueTuple>(res) : out;
+  }
+  return out;
+}
 }  // namespace
 
 ForwardExecutorPtr GradExecutor::forward() const {
@@ -1049,7 +1078,7 @@ void GradExecutor::ProcessOpGradInfo(const OpGradInfoPtr &grad_info) const {
   DoOpGrad(grad_info);
 }
 
-void GradExecutor::CallCustomBprop(const py::object &obj, const py::object out, const py::args &args) {
+py::object GradExecutor::CallCustomBprop(const py::object &obj, const py::object out, const py::args &args) {
   MS_LOG(DEBUG) << "Begin CallCustomBprop";
   autograd::CustomContext context;
   if (!py::isinstance<Cell>(obj)) {
@@ -1074,6 +1103,8 @@ void GradExecutor::CallCustomBprop(const py::object &obj, const py::object out, 
   if (context.is_recompute) {
     output = ConvertOutputValueToTensor(output, !top_cell()->jit_out_has_dict());
   }
+  bool is_return_self = false;
+  output = CheckAndUpdateOutput(output, context.inputs, &is_return_self);
   (void)AutoGradUtil::SetValueGradInfo(output, InputType::kOpOutput);
   context.output = std::move(output);
   SetCustomBpropInputs(obj, top_cell(), &context);
@@ -1086,6 +1117,7 @@ void GradExecutor::CallCustomBprop(const py::object &obj, const py::object out, 
     (void)autograd::CallCustomBprop(std::move(context));
   }
   MS_LOG(DEBUG) << "End CallCustomBprop";
+  return (is_return_self ? CValueToPybindObj(context.output) : out);
 }
 
 void GradExecutor::SaveOutputNodeMap(const std::string &obj_id, const OpGradInfoPtr &grad_info, const CNodePtr &cnode,

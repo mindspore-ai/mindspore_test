@@ -1103,3 +1103,57 @@ def test_custom_function_reduce_exception():
     with pytest.raises(RuntimeError) as err:
         grad_net(net)(x, y)
     assert "For custom function, grad tensor should be broadcast to" in str(err.value)
+
+
+class CustomFunctionReturnSelfNet(nn.Cell):
+    def construct(self, x):
+        return x
+
+    def bprop(self, *args):
+        return Tensor([1, 1, 1], dtype=ms.float32)
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_custom_function_return_self_net():
+    """
+    Feature: Custom bprop function.
+    Description: Test bprop function return self.
+    Expectation: success.
+    """
+    x = Tensor([3, 3, 3], ms.float32)
+    net = CustomFunctionReturnSelfNet()
+    net.set_grad()
+    output = net(x)
+    grad_net = C.GradOperation(get_all=True)
+    grad_net(net)(x)
+    assert id(output) != id(x)
+
+
+class CustomFunctionMultiOutputReturnSelfNet(nn.Cell):
+    def construct(self, x):
+        return x, Tensor([3, 3, 3], ms.float32)
+
+    def bprop(self, *args):
+        return Tensor([1, 1, 1], dtype=ms.float32)
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_custom_function_multi_output_return_self_net():
+    """
+    Feature: Custom bprop function.
+    Description: Test bprop function return self.
+    Expectation: success.
+    """
+    x = Tensor([3, 3, 3], ms.float32)
+    net = CustomFunctionMultiOutputReturnSelfNet()
+    net.set_grad()
+    output = net(x)
+    grad_net = C.GradOperation(get_all=True)
+    grad_net(net)(x)
+    assert id(output[0]) != id(x)

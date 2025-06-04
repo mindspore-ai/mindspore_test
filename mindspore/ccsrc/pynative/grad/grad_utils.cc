@@ -946,6 +946,14 @@ ValuePtr AutoGradUtil::ShallowCopyAndDetach(const ValuePtr &value) {
   return value;
 }
 
+TensorPtr AutoGradUtil::ViewAsSelfWithNoGrad(const TensorPtr &self) {
+  kernel::pyboost::OpStatus status{false, false, 0,
+                                   MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET)};
+  kernel::pyboost::OpRunStatus::Get().set_run_info(std::move(status));
+  kernel::pyboost::RequireGradGuard require_grad_guard(false);
+  return kernel::pyboost::view(self, self->shape());
+}
+
 bool BpropCallback::IsNotRequiresGrad(size_t index) const {
   // Check Tensor need grad.
   runtime::Pipeline::Get().WaitBpropStage();
