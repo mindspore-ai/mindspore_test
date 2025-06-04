@@ -1357,7 +1357,7 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
                    << ", device tensor type:" << device_tensor->GetDeviceType();
       // The fake heterogeneous scenario.
       if (DeviceTensorStore::GetInstance().Fetch(front_node.get()).size() == 1) {
-        MS_LOG(ERROR) << "Deprecated code is called. Execution aborted."
+        MS_LOG(ERROR) << "Deprecated code is called. Execution aborted.";
         std::abort();
       }
     } else if (host_tensor_address != device_tensor) {
