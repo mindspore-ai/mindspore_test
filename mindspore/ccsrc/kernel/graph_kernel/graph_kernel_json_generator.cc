@@ -582,7 +582,9 @@ void GraphKernelJsonGenerator::GetAttrJson(const AnfNodePtr &anf_node, const std
     (*attr_json)[kJsonKeyValue] = GetValue<float>(attr_value);
   } else if (type == "listInt") {
     std::vector<int> list_int;
-    const auto &vals = attr_value->cast<ValueSequencePtr>()->value();
+    auto value_seq = attr_value->cast<ValueSequencePtr>();
+    MS_EXCEPTION_IF_NULL(value_seq);
+    const auto &vals = value_seq->value();
     (void)std::transform(vals.begin(), vals.end(), std::back_inserter(list_int), get_int_value);
     (*attr_json)[kJsonKeyValue] = list_int;
   } else if (type == "listStr") {

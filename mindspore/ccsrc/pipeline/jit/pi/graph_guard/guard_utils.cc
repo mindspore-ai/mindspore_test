@@ -1363,6 +1363,7 @@ class TensorData : public MetaTensorData {
     tensor_type_ = Py_TYPE(obj);
     tp_ = ItemType::Tensor;
     tensor::TensorPtr tensor_ptr = GetStubInfo(obj);
+    MS_EXCEPTION_IF_NULL(tensor_ptr);
     if (OptStrategy::MakeCalcStrategyByShape(tensor_ptr->shape()) != OptStrategy::CalcKind::kCalcValue) {
       specialized_ = false;
     }

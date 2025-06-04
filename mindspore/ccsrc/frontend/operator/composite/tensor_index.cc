@@ -73,6 +73,7 @@ IndexHandleLevel TensorIndex::PreHandleIndex(const AbstractBasePtr &data, const 
 // Parse slice to start, stop, step
 AnfNodePtrList TensorIndex::ParseSlice(const AnfNodePtr &index_node, const abstract::AbstractSlicePtr &abs_slice_ptr,
                                        std::vector<int64_t> *init_by_one, bool is_need_convert_to_scalar) {
+  MS_EXCEPTION_IF_NULL(abs_slice_ptr);
   auto slice_info_abs = {abs_slice_ptr->start(), abs_slice_ptr->stop(), abs_slice_ptr->step()};
   const std::vector<string> &slice_str = {kSliceStart, kSliceStop, kSliceStep};
   AnfNodePtrList slice_nodes;

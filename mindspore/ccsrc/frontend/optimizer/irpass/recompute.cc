@@ -105,6 +105,7 @@ bool IsGradNode(const AnfNodePtr &node) {
 
 bool IsFpropReturn(const AnfNodePtr &make_tuple) {
   auto cnode = make_tuple->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
   constexpr size_t fprop_output_size = 2;
   if (cnode->size() != fprop_output_size + 1) {
     return false;
@@ -574,9 +575,13 @@ CNodePtr Recomputation::MoveKCallerToBprop(const FuncGraphManagerPtr &manager, c
       auto bprop_caller = GetBpropCaller(manager, GetBpropGetter(manager, node));
       if (bprop_caller != nullptr) {
         std::vector<AnfNodePtr> new_depend_nodes_inputs;
-        (void)std::copy(depend_nodes->cast<CNodePtr>()->inputs().begin(),
-                        depend_nodes->cast<CNodePtr>()->inputs().end(), std::back_inserter(new_depend_nodes_inputs));
-        (void)new_depend_nodes_inputs.emplace_back(bprop_caller->cast<CNodePtr>()->input(1));
+        auto depend_cnode = depend_nodes->cast<CNodePtr>();
+        MS_EXCEPTION_IF_NULL(depend_cnode);
+        (void)std::copy(depend_cnode->inputs().begin(), depend_cnode->inputs().end(),
+                        std::back_inserter(new_depend_nodes_inputs));
+        auto bprop_caller_cnode = bprop_caller->cast<CNodePtr>();
+        MS_EXCEPTION_IF_NULL(bprop_caller_cnode);
+        (void)new_depend_nodes_inputs.emplace_back(bprop_caller_cnode->input(1));
         new_depend_nodes = bprop_fg->NewCNode(new_depend_nodes_inputs);
       }
       for (size_t i = 1; i < new_inputs.size(); ++i) {

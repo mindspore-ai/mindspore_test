@@ -86,7 +86,9 @@ void ByteCodeGenerator::Visit_(const ir::ParameterPtr &node) {
       kwdefaults_[co_var_names_[co_var_names_map_[name]]] = default_value;
     } else {
       MS_EXCEPTION_IF_CHECK_FAIL(node->GetCategory() == 0, "Error category of parameter.");
-      defaults_.append(default_value->cast<ir::ValuePtr>()->GetValue());
+      auto default_value_ptr = default_value->cast<ir::ValuePtr>();
+      MS_EXCEPTION_IF_NULL(default_value_ptr);
+      defaults_.append(default_value_ptr->GetValue());
     }
   }
 }

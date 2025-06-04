@@ -216,6 +216,7 @@ std::vector<std::vector<size_t>> SplitGroup(const std::vector<size_t> &group,
 // delete the UpdateState
 void DeleteLoadUserUpdateState(const FuncGraphManagerPtr &manager, const AnfNodePtr &load_user) {
   const auto &update_state_cnode = load_user->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(update_state_cnode);
   constexpr size_t monad_index = 1;
   const auto &monad = update_state_cnode->input(monad_index);
   (void)manager->Replace(load_user, monad);

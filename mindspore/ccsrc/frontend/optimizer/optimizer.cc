@@ -87,7 +87,9 @@ Optimizer::Optimizer(const std::string &name, const pipeline::ResourceBasePtr &r
       is_enable_(true),
       is_untyped_generated_(false),
       traverse_nodes_first_(traverse_nodes_first),
-      is_first_order_j_(true) {}
+      is_first_order_j_(true),
+      changes_(false),
+      changes_since_last_renorm_(false) {}
 
 bool Optimizer::operator()(const pipeline::ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);

@@ -215,6 +215,7 @@ void GetSequenceText(const ValuePtr &value, const std::shared_ptr<SubGraphIRInfo
 void GetDictText(const ValuePtr &value, const std::shared_ptr<SubGraphIRInfo> &gsub) {
   MS_EXCEPTION_IF_NULL(value);
   ValueDictionaryPtr dict = value->cast<ValueDictionaryPtr>();
+  MS_EXCEPTION_IF_NULL(dict);
   gsub->buffer << "{";
   bool first_flag = true;
   for (const auto &elem : dict->value()) {
@@ -600,6 +601,7 @@ void DumpOperator(const AnfNodePtr &node, const std::shared_ptr<SubGraphIRInfo> 
       gsub->buffer << "%" << gsub->local_var_map[op];
     } else {
       auto input = op->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(input);
       auto fg = input->func_graph();
       if (fg == nullptr) {
         MS_LOG(EXCEPTION) << "Get func graph nullptr, node " << node->DebugString();

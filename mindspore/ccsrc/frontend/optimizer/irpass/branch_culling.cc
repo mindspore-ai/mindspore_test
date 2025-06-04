@@ -378,7 +378,9 @@ void GenerateReplNodeForDependMakeTuple(
   const std::function<AnfNodePtr(FuncGraphPtr graph, AnfNodePtr cond, AnfNodePtr data)> &generate_func) {
   MS_EXCEPTION_IF_NULL(graph->manager());
 
-  auto make_tuple_inputs = depended_node->cast<CNodePtr>()->inputs();
+  auto depend_cnode = depended_node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(depend_cnode);
+  auto make_tuple_inputs = depend_cnode->inputs();
   const size_t make_tuple_begin_idx = 1;
   std::vector<AnfNodePtr> new_make_tuple_nodes;
   bool replace_make_tuple = false;

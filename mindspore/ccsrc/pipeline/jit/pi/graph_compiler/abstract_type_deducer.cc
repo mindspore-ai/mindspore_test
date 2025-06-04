@@ -60,8 +60,10 @@ void ExpandFuncGraphKwargs(const FuncGraphPtr &func_graph, AbstractBasePtrList *
   if (!func_graph->has_kwarg()) {
     return;
   }
-  MS_EXCEPTION_IF_CHECK_FAIL(args_spec->back()->isa<abstract::AbstractDictionary>(), "Kwargs should be a dict.");
-  auto elems = args_spec->back()->cast<abstract::AbstractDictionaryPtr>()->elements();
+  auto args_back = args_spec->back();
+  MS_EXCEPTION_IF_NULL(args_back);
+  MS_EXCEPTION_IF_CHECK_FAIL(args_back->isa<abstract::AbstractDictionary>(), "Kwargs should be a dict.");
+  auto elems = args_back->cast<abstract::AbstractDictionaryPtr>()->elements();
   args_spec->pop_back();
   for (const auto &elem : elems) {
     auto key = GetValue<std::string>(elem.first->BuildValue());

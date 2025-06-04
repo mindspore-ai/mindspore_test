@@ -89,6 +89,8 @@ static bool IsShapeUnknown(mindspore::tensor::TensorPtr tensor) {
 }
 
 static bool CheckDynamicShape(mindspore::tensor::TensorPtr sig, mindspore::tensor::TensorPtr org) {
+  MS_EXCEPTION_IF_NULL(sig);
+  MS_EXCEPTION_IF_NULL(org);
   if (sig->data_type() != org->data_type()) {
     return false;
   }
