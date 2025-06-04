@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2019-2022 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -309,6 +309,10 @@ AbstractBasePtr MakeAbstract(const BaseShapePtr &base_shape, const TypePtr &type
     auto shape_tuple = base_shape->cast_ptr<TupleShape>();
     auto type_tuple = type->cast_ptr<Tuple>();
     AbstractBasePtrList ptr_list;
+    if (shape_tuple->size() != type_tuple->size()) {
+      MS_LOG(EXCEPTION) << "The shape or type may be wrong, shape: " << base_shape->ToString()
+                        << ", type: " << type->ToString();
+    }
     for (size_t it = 0; it < shape_tuple->size(); ++it) {
       auto tensor_it = MakeAbstract((*shape_tuple)[it], (*type_tuple)[it]);
       ptr_list.push_back(tensor_it);
@@ -319,6 +323,10 @@ AbstractBasePtr MakeAbstract(const BaseShapePtr &base_shape, const TypePtr &type
     auto shape_list = base_shape->cast_ptr<ListShape>();
     auto type_list = type->cast_ptr<List>();
     AbstractBasePtrList ptr_list;
+    if (shape_list->size() != type_list->size()) {
+      MS_LOG(EXCEPTION) << "The shape or type may be wrong, shape: " << base_shape->ToString()
+                        << ", type: " << type->ToString();
+    }
     for (size_t it = 0; it < shape_list->size(); ++it) {
       auto tensor_it = MakeAbstract((*shape_list)[it], (*type_list)[it]);
       ptr_list.push_back(tensor_it);

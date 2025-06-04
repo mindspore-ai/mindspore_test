@@ -48,6 +48,7 @@ bool IsCreatedByViewOp(const AnfNodePtr &node) {
 
 std::vector<std::size_t> NeedCheckInplaceCNode(const CNodePtr &primal_cnode, const FuncGraphPtr &bprop_fg) {
   MS_EXCEPTION_IF_NULL(primal_cnode);
+  MS_EXCEPTION_IF_NULL(bprop_fg);
   const auto &prim = GetCNodePrimitive(primal_cnode);
   // InplaceOp(inplace_changed_input0, ... , unchanged_input0, ...)
   if (prim == nullptr || !prim->inplace_prim()) {
@@ -89,6 +90,7 @@ void ResetUselessFuncGraph(const FuncGraphPtr &func_graph, const std::vector<boo
   }
 #endif
   auto bprop_output = func_graph->output();
+  MS_EXCEPTION_IF_NULL(bprop_output);
   MS_LOG(INFO) << "Reset useless element for bprop_output: " << bprop_output->DebugString();
   if (!IsPrimitiveCNode(bprop_output, prim::kPrimMakeTuple)) {
     return;

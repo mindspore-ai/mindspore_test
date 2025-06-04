@@ -428,6 +428,7 @@ class BeforeOptARewriter : public BaseRewriter {
 
   bool HasDictOutput() const {
     const AnfNodePtr &output = root_graph_->output();
+    MS_EXCEPTION_IF_NULL(output);
     return CheckContainsDict(output->abstract());
   }
 
@@ -2036,13 +2037,17 @@ class AfterOptARewriter : public BaseRewriter {
 
   AnfNodePtr ConvertIs_(const CNodePtr &cnode) const {
     auto res = ConvertIsAndIsNot(cnode, true);
-    MS_LOG(DEBUG) << "Convert primitive Is_ to PyExecute node: " << res->DebugString();
+    if (res != nullptr) {
+      MS_LOG(DEBUG) << "Convert primitive Is_ to PyExecute node: " << res->DebugString();
+    }
     return res;
   }
 
   AnfNodePtr ConvertIsNot(const CNodePtr &cnode) const {
     auto res = ConvertIsAndIsNot(cnode, false);
-    MS_LOG(DEBUG) << "Convert primitive IsNot to PyExecute node: " << res->DebugString();
+    if (res != nullptr) {
+      MS_LOG(DEBUG) << "Convert primitive IsNot to PyExecute node: " << res->DebugString();
+    }
     return res;
   }
 
@@ -2511,6 +2516,7 @@ class AfterOptARewriter : public BaseRewriter {
 
   AnfNodePtr PackDictValue(const FuncGraphPtr &fg, const ValueNodePtr &value_node, const ValueDictionaryPtr &dict) {
     const auto &keys_values = dict->value();
+    MS_EXCEPTION_IF_NULL(value_node->abstract());
     auto abs_dict = dyn_cast<abstract::AbstractDictionary>(value_node->abstract());
     const auto &abs_keys_values = abs_dict->elements();
     if (keys_values.size() != abs_keys_values.size()) {
