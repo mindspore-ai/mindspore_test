@@ -319,7 +319,7 @@ TensorPtr TensorPybind::MakeTensorOfNumpy(const py::array &input) {
   auto tensor_data = std::make_shared<TensorDataNumpy>(std::move(buf));
 
   auto device_address = DeviceAddressMaker(tensor_data->data(), dtype, shape)
-                          .set_deleter([tensor_data](void *) {})
+                          .set_deleter([tensor_data](void *, bool) {})
                           .set_maker(GetDeviceAddressMaker(device::DeviceType::kCPU))
                           .make_device_address();
 

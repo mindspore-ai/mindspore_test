@@ -29,7 +29,7 @@ namespace mindspore {
 class DeviceSync;
 using DeviceSyncPtr = std::shared_ptr<DeviceSync>;
 
-using DeviceAddressDeleter = std::function<void(void *)>;
+using DeviceAddressDeleter = std::function<void(void *, bool)>;
 using DeviceAddressMakerFunc =
   std::function<DeviceSyncPtr(TypeId, const ShapeVector &, void *data_ptr, DeviceAddressDeleter &&)>;
 MS_CORE_API void SetDeviceAddressMaker(device::DeviceType device_type, DeviceAddressMakerFunc &&func);
@@ -52,7 +52,7 @@ class MS_CORE_API DeviceAddressMaker {
 
   DeviceSyncPtr make_device_address();
 
-  DeviceAddressMaker &set_deleter(std::function<void(void *)> &&deleter);
+  DeviceAddressMaker &set_deleter(std::function<void(void *, bool)> &&deleter);
 
   DeviceAddressMaker &set_maker(DeviceAddressMakerFunc &&maker);
 
@@ -60,7 +60,7 @@ class MS_CORE_API DeviceAddressMaker {
   void *data_ptr_;
   TypeId data_type_;
   const ShapeVector &shape_;
-  std::function<void(void *)> deleter_;
+  std::function<void(void *, bool)> deleter_;
   DeviceAddressMakerFunc maker_;
 };
 

@@ -84,6 +84,8 @@ class DeviceSync {
 
   virtual void set_deleter(const std::function<void(uint8_t *)> &deleter) = 0;
 
+  virtual void SetPointerRefCountDeleter(std::function<void(void *, bool)> &&deleter) = 0;
+
   virtual ~DeviceSync() {}
 
   virtual const UserDataPtr &user_data() const { MS_LOG(EXCEPTION) << "Not implement exception"; }
