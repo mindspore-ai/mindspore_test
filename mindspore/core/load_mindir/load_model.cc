@@ -192,7 +192,7 @@ std::shared_ptr<T> ParserScalarAttrValue(const std::string &attr_name, const min
 std::shared_ptr<abstract::AbstractTuple> ParserAttrShape(
   const std::string &attr_name, const mindspore::HashMap<string, abstract::AbstractBasePtr> &kv) {
   std::string str = attr_name;
-  auto replace = [&](const string &orgStr, const string &newStr) {
+  auto replace = [&str](const string &orgStr, const string &newStr) {
     std::string::size_type pos;
     while ((pos = str.find(orgStr)) != std::string::npos) {
       (void)str.replace(pos, orgStr.length(), newStr);
