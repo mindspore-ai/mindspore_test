@@ -1011,8 +1011,8 @@ class Parser:
             attr = 'source'
             try:
                 source_lines = inspect.getsourcelines(self.fn)
-                if context.get_context('support_binary') and \
-                   '/mindspore/' not in self.filename and '\\mindspore\\' not in self.filename and \
+                support_binary = context.get_context('support_binary') or os.getenv('MS_SUPPORT_BINARY', None) == '1'
+                if support_binary and '/mindspore/' not in self.filename and '\\mindspore\\' not in self.filename and \
                    (not hasattr(self.fn, attr) or getattr(self.fn, attr) != source_lines):
                     if not os.access(self.filename, os.W_OK):
                         raise PermissionError(f"Don't have the write permission on the file {self.filename}.")
