@@ -1012,6 +1012,8 @@ void DeviceAddressUtils::MallocForInput(const DeviceContext *device_context, con
     }
   } else {
     if (device_address->size() == 0) {
+      MS_LOG(DEBUG) << "DeviceSize is 0, no need to allocate memory for " << tensor->id()
+                    << ", device_address: " << device_address;
       return;
     }
     if (!device_context->device_res_manager_->AllocateMemory(device_address.get())) {

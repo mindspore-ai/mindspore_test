@@ -459,7 +459,8 @@ CNodePtr DFunctor::CalculateDoutTuple(const CNodePtr &cnode_morph, const CNodePt
       {NewValueNode(prim::kPrimOnesLikeExt), mask_viewed, NewValueNode(MakeValue<int64_t>(kBool->type_id()))});
 
     // Get view part by the view_ops and set the value to `true'.
-    auto temp = caller->NewCNodeInOrder({NewValueNode(prim::kPrimInplaceCopy), mask_viewed, mask_viewed_true});
+    auto temp = caller->NewCNodeInOrder(
+      {NewValueNode(prim::kPrimInplaceCopy), mask_viewed, mask_viewed_true, NewValueNode(MakeValue<bool>(false))});
     ori_mask = caller->NewCNodeInOrder({NewValueNode(prim::kPrimDepend), ori_mask, temp});
     // Finally, Do masked_scatter based on dout_mask and the postback dout_mask.
     auto dout_mask = caller->NewCNodeInOrder({NewValueNode(prim::kPrimMaskedScatter), ori_mask, ori_mask, node_mask});

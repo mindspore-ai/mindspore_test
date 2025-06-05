@@ -428,7 +428,8 @@ class InplaceCopyAscendDvm : public InplaceCopyAscend {
   InplaceCopyAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : InplaceCopyAscend(std::move(primitive), device_context) {}
   ~InplaceCopyAscendDvm() = default;
-  tensor::TensorPtr Call(const TensorPtr &variable_tensor, const TensorPtr &value_tensor) override;
+  tensor::TensorPtr Call(const TensorPtr &variable_tensor, const TensorPtr &value_tensor,
+                         const BoolImmPtr &non_blocking) override;
 };
 
 class InplaceDivAscendDvm : public InplaceDivAscend {

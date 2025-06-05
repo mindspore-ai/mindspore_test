@@ -27,7 +27,8 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void InplaceCopyCPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &variable, const TensorPtr &value);
+void InplaceCopyCPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &dst, const TensorPtr &src,
+                             const BoolImmPtr &non_blocking);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

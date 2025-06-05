@@ -27,12 +27,19 @@ REG_BPROP_BUILDER("Assign").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
   return {dout, ib->OutZeros(y)};
 });
 
-REG_BPROP_BUILDER("InplaceCopy").FreeUselessValues_IO({i0, i1}, {}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto y = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
-  auto res = BinopGradCommon(ib, x, y, nullptr, dout);
-  return {ib->OutZeros(x), res[1]};
+REG_BPROP_BUILDER("InplaceCopy").FreeUselessValues_IO({i0, i1, i2}, {}).SetBody(BODYFUNC(ib) {
+  auto dst = ib->GetInput(kIndex0);
+  auto src = ib->GetInput(kIndex1);
+  auto non_blocking = ib->GetInput(kIndex2);
+  auto dout = ib->GetInput(kIndex4);
+  NodePtr ds = nullptr;
+  if (src->need_compute_grad_out()) {
+    auto res = BinopGradCommon(ib, dst, src, nullptr, dout);
+    ds = res[1];
+  } else {
+    ds = ib->OutZeros(src);
+  }
+  return {ib->OutZeros(dst), ds, ib->OutZeros(non_blocking)};
 });
 
 REG_BPROP_BUILDER("InplaceZero").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
