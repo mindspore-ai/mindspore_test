@@ -476,14 +476,14 @@ NodePtr MeanExtGrad(BpropBuilder *ib, const NodePtr &input, NodePtr axis, const 
   NodePtr div_shape_node;
   if (IsDynamic(ib->GetShape(input)) || IsDynamic(ib->GetShape(out))) {
     auto shape_out_sz = ib->DynSize(out, kFloat32);
-    auto div_shape = ib->DynSize(input, kFloat32) / shape_out_sz;
+    auto true_branch = [&](Emitter *e) -> NodePtrList { return {ib->Tensor(1, ib->GetDtype(grad))}; };
+    auto false_branch = [&](Emitter *e) -> NodePtrList { return {ib->DynSize(input, kFloat32) / shape_out_sz}; };
+    auto is_zero_out_sz = ib->Equal(shape_out_sz, ib->Tensor(0, kFloat32));
+    auto div_shape = ib->Conditional(is_zero_out_sz, true_branch, false_branch);
     div_shape_node = ib->Cast(div_shape, ib->GetDtype(grad));
   } else {
     auto shape_out_sz = ib->GetSize(out);
-    if (shape_out_sz == 0) {
-      MS_EXCEPTION(ValueError) << "For 'MeanExt', out shape size can not be 0";
-    }
-    auto div_shape = ib->GetSize(input) / shape_out_sz;
+    auto div_shape = shape_out_sz == 0 ? 1 : ib->GetSize(input) / shape_out_sz;
     div_shape_node = ib->Tensor(div_shape, ib->GetDtype(grad));
   }
   auto dx = ib->Div(grad, div_shape_node);
@@ -3382,7 +3382,7 @@ DEF_PURE_SHAPE_CALC(g_reduce_prod)
     auto input_shape = inputs.at(0);
     auto axis = inputs.at(1);
     auto output_shape_kept_dims = ReduceShape(input_shape, axis);
-    auto tile_scaling = TupleDiv(input_shape, output_shape_kept_dims);
+    auto tile_scaling = ReduceShapeTupleDiv(input_shape, output_shape_kept_dims);
     auto [pack_shape, perm] = SplitShapeIndex(input_shape, axis);
     return {output_shape_kept_dims, tile_scaling, pack_shape, perm, InvertPermutation(perm)};
   })
@@ -5671,7 +5671,7 @@ DEF_PURE_SHAPE_CALC(g_prod_ext)
       std::iota(axis.begin(), axis.end(), 0LL);
     }
     auto output_shape_kept_dims = ReduceShape(input_shape, axis);
-    auto tile_scaling = TupleDiv(input_shape, output_shape_kept_dims);
+    auto tile_scaling = ReduceShapeTupleDiv(input_shape, output_shape_kept_dims);
     auto [pack_shape, perm] = SplitShapeIndex(input_shape, axis);
     return {output_shape_kept_dims, tile_scaling, pack_shape, perm, InvertPermutation(perm)};
   })
