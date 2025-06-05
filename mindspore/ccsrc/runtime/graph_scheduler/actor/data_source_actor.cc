@@ -348,6 +348,7 @@ void HostQueueDataSourceActor::ReleaseData() {
         << "Create device tensor:" << new_address << " type:" << new_address->type_id();
       new_address->set_new_ref_count(old_address->new_ref_count());
       new_address->set_flag(old_address->flag());
+      new_address->set_ptr(nullptr);
       auto [node, index] = old_address->GetNodeIndex();
       new_address->SetNodeIndex(node, index);
       AnfAlgo::SetOutputAddr(new_address, data_node_with_index.second, data_node_with_index.first);
