@@ -248,8 +248,10 @@ class FunctionsGenerator(BaseGenerator):
                     args_list.append(f"{op_arg.arg_name}")
         return args_list
 
+
 def _get_return_type_with_handle_str(return_type_str):
     return f"std::tuple<{return_type_str}, CommHandlePtr>"
+
 
 def _get_return_type_str(op_proto):
     """
