@@ -49,7 +49,7 @@ ValuePtrList ConvertOutputTensorList(const py::object &obj) {
   return res;
 }
 
-TensorPtr view_as_self_with_no_grad(const TensorPtr &self) {
+TensorPtr ViewAsSelfWithNoGrad(const TensorPtr &self) {
   kernel::pyboost::OpStatus status{false, false, 0,
                                    MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET)};
   kernel::pyboost::OpRunStatus::Get().set_run_info(std::move(status));
@@ -336,7 +336,7 @@ py::object FunctionBase::apply(const py::object &cls, const py::args &inputs) {
       } else {
         if (input_tensor_set.count(tensor) > 0) {
           if (dirty_tensor_set.count(tensor) == 0) {
-            tensor = view_as_self_with_no_grad(tensor);
+            tensor = ViewAsSelfWithNoGrad(tensor);
             flatten_outputs[i] = tensor;
           }
         }

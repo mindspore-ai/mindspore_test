@@ -1385,8 +1385,7 @@ class Cell(Cell_):
         """
         with _no_grad():
             output = self.construct(*args, **kwargs)
-        _pynative_executor.call_custom_bprop(self, output, *args, **kwargs)
-        return output
+        return _pynative_executor.call_custom_bprop(self, output, *args, **kwargs)
 
     def _add_attr(self, name, value):
         if name and name[:2] != '__' and name not in Cell.IGNORE_LIST:
