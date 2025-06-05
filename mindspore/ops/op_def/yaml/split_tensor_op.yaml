@@ -11,10 +11,10 @@ split_tensor:
   returns:
     output:
       dtype: tuple[tensor]
+  view: True
   dispatch:
     enable: True
     CPU: None
     GPU: None
   function:
     disable: True
-    

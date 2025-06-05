@@ -108,7 +108,7 @@ from mindspore.ops.auto_generate import cat, range, scatter_nd, deepcopy, masked
     index_fill_scalar, index_fill_tensor
 from mindspore.ops.auto_generate import take, tensor_scatter_elements as tensor_scatter_elements_ext
 from mindspore.ops.auto_generate.gen_ops_prim import scatter_add_ext_op, gather_d_op, slice_op, tril_ext_op, \
-    split_tensor_view_op, split_with_size_view_op
+    split_tensor_op, split_with_size_op
 from mindspore.ops.operations.manually_defined import tile, rank, scalar_cast
 from mindspore.ops.auto_generate.pyboost_inner_prim import _PyboostOneHotExtPrim
 
@@ -4474,9 +4474,9 @@ def split_ext(tensor, split_size, dim=0):
          Tensor(shape=[3], dtype=Float32, value= [ 6.00000000e+00,  7.00000000e+00,  8.00000000e+00]))
     """
     if isinstance(split_size, int):
-        res = split_tensor_view_op(tensor, split_size, dim)
+        res = split_tensor_op(tensor, split_size, dim)
     elif isinstance(split_size, (list, tuple)):
-        res = split_with_size_view_op(tensor, split_size, dim)
+        res = split_with_size_op(tensor, split_size, dim)
     else:
         raise TypeError(f"Type of Argument `split_size` should be integer, tuple(int) or list(int), "
                         f"but got {type(split_size)}")
