@@ -216,13 +216,17 @@ static bool IsRealKernelNode(const AnfNodePtr &node) {
 
 std::pair<AnfNodePtr, int64_t> GetRealKernelNode(const AnfNodePtr &node, int64_t get_item_index, CNodePtr *call_node,
                                                  bool ignore_get_item) {
+  MS_EXCEPTION_IF_NULL(node);
   if (!IsRealKernelNode(node)) {
+    const auto &&cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     size_t travel_index = IsPrimitiveCNode(node, prim::kPrimDumpGradient) ? kDumpGradientSkipIndex : kIndex1;
-    return GetRealKernelNode(node->cast<CNodePtr>()->input(travel_index), get_item_index, call_node, ignore_get_item);
+    return GetRealKernelNode(cnode->input(travel_index), get_item_index, call_node, ignore_get_item);
   }
   if ((IsPrimitiveCNode(node, prim::kPrimTupleGetItem) || IsPrimitiveCNode(node, prim::kPrimInsertGradientOf)) &&
       ignore_get_item) {
     auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     auto cur_get_item_index = LongToInt(GetTupleGetItemIndex(cnode));
     auto tuple_getitem_input = cnode->input(1);
     return GetRealKernelNode(tuple_getitem_input, cur_get_item_index, call_node, ignore_get_item);
@@ -235,9 +239,13 @@ std::pair<AnfNodePtr, int64_t> GetRealKernelNode(const AnfNodePtr &node, int64_t
     return GetRealKernelNode(make_tuple_input, -1, call_node, ignore_get_item);
   }
   if (IsControlFlowNode(node)) {
-    auto switch_cnode = node->cast<CNodePtr>()->input(0)->cast<CNodePtr>();
+    const auto &&cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
+    MS_EXCEPTION_IF_NULL(cnode->input(0));
+    auto switch_cnode = cnode->input(0)->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(switch_cnode);
     auto fg = GetValueNode<FuncGraphPtr>(switch_cnode->input(3));
+    MS_EXCEPTION_IF_NULL(fg);
     return GetRealKernelNode(fg->output(), get_item_index, call_node, ignore_get_item);
   }
   if (node->isa<CNode>() && IsValueNode<FuncGraph>(node->cast<CNodePtr>()->input(0))) {
@@ -245,7 +253,9 @@ std::pair<AnfNodePtr, int64_t> GetRealKernelNode(const AnfNodePtr &node, int64_t
       *call_node = node->cast<CNodePtr>();
     }
     auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     auto graph = GetValueNode<FuncGraphPtr>(cnode->input(0));
+    MS_EXCEPTION_IF_NULL(graph);
     auto output = GetRealKernelNode(graph->output(), get_item_index, call_node, ignore_get_item).first;
     MS_EXCEPTION_IF_NULL(output);
     if (output->isa<Parameter>()) {
@@ -257,6 +267,7 @@ std::pair<AnfNodePtr, int64_t> GetRealKernelNode(const AnfNodePtr &node, int64_t
           continue;
         }
         auto cur_fg = cur_fg_use.first->first->cast<CNodePtr>();
+        MS_EXCEPTION_IF_NULL(cur_fg);
         auto iter = std::find(parameter_list.begin(), parameter_list.end(), output);
         auto pos = std::distance(parameter_list.begin(), iter);
         auto argument = cur_fg->input(pos + 1);
@@ -727,6 +738,7 @@ Shapes GetNodeShape(const AnfNodePtr &node) {
   BaseShapePtr base_shape_ptr = node->Shape();
   if (base_shape_ptr == nullptr && node->isa<ValueNode>()) {
     auto value_node = node->cast<ValueNodePtr>();
+    MS_EXCEPTION_IF_NULL(value_node);
     MS_EXCEPTION_IF_CHECK_FAIL(value_node->value() != nullptr, "ValueNode has no value.");
     auto abstract = value_node->value()->ToAbstract();
     MS_EXCEPTION_IF_CHECK_FAIL(abstract != nullptr, "ValueNode has no Abstract.");
@@ -746,6 +758,7 @@ Shapes GetNodeShape(const AnfNodePtr &node) {
   // If node is Depend, only first input should be used.
   if (node->isa<CNode>() && IsPrimitiveCNode(node->cast<CNodePtr>(), prim::kPrimDepend)) {
     auto depend_cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(depend_cnode);
     MS_EXCEPTION_IF_NULL(depend_cnode->input(1));
     return GetNodeShape(depend_cnode->input(1));
   }
@@ -928,6 +941,7 @@ RankList FindCommonMirrorGroup(const FuncGraphPtr &root) {
       continue;
     }
     auto prim = GetCNodePrimitive(node);
+    MS_EXCEPTION_IF_NULL(prim);
     if (!prim->HasAttr(GROUP)) {
       MS_LOG_WITH_NODE(EXCEPTION, node) << "The mirror operator does not have group attr : " << node->DebugString();
     }
@@ -1011,7 +1025,7 @@ bool CheckTensorType(const TypePtr &node_type) {
 void FindReturnUser(const CNodePtr &cnode, const std::vector<AnfNodePtr> &all_nodes,
                     std::pair<std::shared_ptr<AnfNode>, int> *queue_node) {
   auto graph = cnode->func_graph();
-  auto is_target = [&](const AnfNodePtr &ele) {
+  auto is_target = [&graph](const AnfNodePtr &ele) {
     if (ele->isa<CNode>()) {
       auto parent_cnode = ele->cast<CNodePtr>();
       return IsValueNode<FuncGraph>(parent_cnode->input(0)) &&
@@ -1242,7 +1256,9 @@ void SetCastForParamNotRecompute(const std::vector<AnfNodePtr> &all_nodes) {
       continue;
     }
     auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     auto cnode_prim = GetCNodePrimitive(cnode);
+    MS_EXCEPTION_IF_NULL(cnode_prim);
     if (cnode_prim->HasAttr("DISABLE_MERGE_ASSIGN_ADD")) {
       cnode->AddPrimalAttr("DISABLE_MERGE_ASSIGN_ADD", cnode_prim->GetAttr("DISABLE_MERGE_ASSIGN_ADD"));
     }
@@ -1250,9 +1266,11 @@ void SetCastForParamNotRecompute(const std::vector<AnfNodePtr> &all_nodes) {
       continue;
     }
     auto cast_input = RealInputNode(cnode, 1);
+    MS_EXCEPTION_IF_NULL(cast_input);
     if (cast_input->isa<Parameter>() && cast_input->cast<ParameterPtr>()->has_default()) {
       MS_LOG(INFO) << "Cast for parameter no needs recompute to avoid redundant trans_data operator";
       PrimitivePtr prim = GetValueNode<PrimitivePtr>(cnode->input(0)->cast<ValueNodePtr>());
+      MS_EXCEPTION_IF_NULL(prim);
       (void)prim->AddAttr("recompute", MakeValue(false));
     }
   }
@@ -1408,6 +1426,7 @@ OperatorInfoPtr OperatorInstance(const PrimitivePtr &prim, const PrimitiveAttrs 
   OperatorInfoPtr op_info;
   if (prim->HasAttr(SELF_DEFINE_SHARD)) {
     auto self_define_shard_attr = prim->GetAttr(SELF_DEFINE_SHARD);
+    MS_EXCEPTION_IF_NULL(self_define_shard_attr);
     if (self_define_shard_attr->cast_ptr<BoolImm>() == nullptr) {
       MS_LOG(EXCEPTION) << "SELF_DEFINE_SHARD attribute is not a bool";
     }
@@ -1517,15 +1536,13 @@ std::pair<std::vector<NewShapes>, std::vector<Symbols>> ExtractNewShapeAndSymbol
         continue;
       }
 
-      NewShapes local_new_shapes;
       auto anode = IsPrimitiveCNode(input, prim::kPrimShape) ? input->cast<CNodePtr>()->input(1) : input;
-      local_new_shapes = GetNodeNewShape(anode);
+      const auto &local_new_shapes = GetNodeNewShape(anode);
       input_symbols = GetNodeSymbol(anode);
       ObtainRealShape(input, local_new_shapes, &input_new_shapes);
     } else if (IsValueSequence(input)) {
       // Not in INPUT_IS_TUPLE_OR_LIST_OPS but has tuple input, like virtual data set
-      NewShapes local_new_shapes;
-      local_new_shapes = GetNodeNewShape(input);
+      const auto &local_new_shapes = GetNodeNewShape(input);
       input_symbols = GetNodeSymbol(input);
       ObtainRealShape(input, local_new_shapes, &input_new_shapes);
     } else if (input->isa<ValueNode>() && input->Shape()->isa<abstract::NoShape>()) {
@@ -1751,6 +1768,7 @@ std::pair<bool, size_t> CanMergeConcatSlice(const std::pair<std::shared_ptr<AnfN
     return {false, 0};
   }
   auto slice_cnode = pair.first->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(slice_cnode);
   MS_LOG(INFO) << "concat slice cnode:" << slice_cnode->fullname_with_scope();
   auto begin_value = GetValueNode(slice_cnode->input(2));
   auto end_value = GetValueNode(slice_cnode->input(3));
@@ -1764,10 +1782,13 @@ std::pair<bool, size_t> CanMergeConcatSlice(const std::pair<std::shared_ptr<AnfN
   if (!std::all_of(strided.begin(), strided.end(), [](auto s) { return s == 1; })) {
     return {false, 0};
   }
+  MS_EXCEPTION_IF_NULL(concat_cnode);
+  MS_EXCEPTION_IF_NULL(concat_cnode->input(1));
   if (!IsPrimitiveCNode(concat_cnode->input(1), prim::kPrimMakeTuple)) {
     return {false, 0};
   }
   auto concat_input_node = concat_cnode->input(1)->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(concat_input_node);
   auto concat_input_size = concat_input_node->size();
   bool can_merge = false;
   size_t concat_input_index = 0;
@@ -1941,6 +1962,7 @@ bool MergeConcatSlice(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphM
 AnfNodePtr NewMicroMirrorPrimByMicroMirror(const FuncGraphPtr &func_graph, const CNodePtr &micro_mirror,
                                            const AnfNodePtr &micro_mirror_new_input) {
   auto prim_origin = GetCNodePrimitive(micro_mirror);
+  MS_EXCEPTION_IF_NULL(prim_origin);
   Attr attr0 = std::make_pair(GROUP, prim_origin->GetAttr(GROUP));
   Attr attr1 = std::make_pair(DEV_NUM, prim_origin->GetAttr(DEV_NUM));
   Attr attr2 = std::make_pair(MEAN_FLAG, prim_origin->GetAttr(MEAN_FLAG));
@@ -1954,6 +1976,7 @@ AnfNodePtr NewMicroMirrorPrimByMicroMirror(const FuncGraphPtr &func_graph, const
                                         micro_mirror->input(kIndex2)};
   auto new_mirror_node = func_graph->NewCNode(mirror_inputs);
   auto prim = GetCNodePrimitive(new_mirror_node);
+  MS_EXCEPTION_IF_NULL(prim);
   (void)prim->SetAttrs(prim_origin->attrs());
   new_mirror_node->set_attrs(micro_mirror->attrs());
   new_mirror_node->set_primal_attrs(micro_mirror->primal_attrs());
@@ -2040,13 +2063,16 @@ void AddNodeMirrorInfo(const CNodePtr &cnode, const std::string &param_name) {
 }
 
 static ValuePtr GetMakeTupleValue(const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
   auto cnode = node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
   auto &inputs = cnode->inputs();
 
   std::vector<int64_t> value_list;
   for (size_t index = 1; index < inputs.size(); ++index) {
     if (inputs[index]->isa<ValueNode>()) {
       auto element = GetValueNode(inputs[index]);
+      MS_EXCEPTION_IF_NULL(element);
       if (element->isa<Int64Imm>()) {
         int64_t value = element->cast<Int64ImmPtr>()->value();
         value_list.push_back(value);
@@ -2346,6 +2372,7 @@ bool IsAutoParallelCareGraph(const FuncGraphPtr &func_graph) {
 void FindPreNodeCrossFuncGraph(CNodePtr *cnode, int64_t out_index) {
   if (IsValueNode<FuncGraph>((*cnode)->input(0))) {
     auto graph = GetValueNode<FuncGraphPtr>((*cnode)->input(0));
+    MS_EXCEPTION_IF_NULL(graph);
     auto output = graph->output();
     MS_EXCEPTION_IF_NULL(output);
     while (IsPrimitiveCNode(output, prim::kPrimDepend)) {
@@ -2355,6 +2382,7 @@ void FindPreNodeCrossFuncGraph(CNodePtr *cnode, int64_t out_index) {
     }
     while (IsPrimitiveCNode(output, prim::kPrimMakeTuple)) {
       auto make_tuple_cnode = output->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(make_tuple_cnode);
       output = make_tuple_cnode->input(out_index + 1);
     }
     *cnode = output->cast<CNodePtr>();
@@ -2380,6 +2408,7 @@ AnfNodePtr FindRealInputByFormalParameter(const CNodePtr &node, const AnfNodePtr
       continue;
     }
     auto parent_node = ele->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(parent_node);
     if (IsValueNode<FuncGraph>(parent_node->input(0)) && GetValueNode<FuncGraphPtr>(parent_node->input(0)) == graph) {
       return parent_node->input(param_index + 1);
     }
@@ -2548,6 +2577,7 @@ void ExceptionIfHasCommunicationOp(const std::vector<AnfNodePtr> &all_nodes) {
       continue;
     }
     auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     if (!IsValueNode<Primitive>(cnode->input(0))) {
       continue;
     }
@@ -2761,6 +2791,7 @@ Status ExtractUserConfigLayout(const mindspore::HashMap<std::string, ValuePtr> &
       return FAILED;
     }
     auto layout_value_tuple = layout_value->cast<ValueTuplePtr>();
+    MS_EXCEPTION_IF_NULL(layout_value_tuple);
     std::vector<ValuePtr> layout_value_vector = layout_value_tuple->value();
     if (inputs_shape.size() != layout_value_vector.size()) {
       MS_LOG(ERROR) << "The number of in_layout configured for the node must be equal to its input's number but got"
@@ -2800,6 +2831,7 @@ Status ExtractUserConfigLayout(const mindspore::HashMap<std::string, ValuePtr> &
       MS_LOG(EXCEPTION) << "The in_layout configured for node is not a tuple";
     }
     auto layout_value_tuple = layout_value->cast<ValueTuplePtr>();
+    MS_EXCEPTION_IF_NULL(layout_value_tuple);
     std::vector<ValuePtr> layout_value_vector = layout_value_tuple->value();
     if (outputs_shape.size() != layout_value_vector.size()) {
       MS_LOG(EXCEPTION) << "The out_layout configured for node is not equal to its output nums";
@@ -2840,7 +2872,9 @@ Status ConvertValueToTensorLayout(const ValuePtr &layout_value, const ShapeBaseP
       MS_LOG(ERROR) << "layout is tuple in tuple, but shape is not. Please check the input shape or layout";
       return FAILED;
     }
-    auto layout_value_vector = layout_value->cast<ValueTuplePtr>()->value();
+    const auto &layout_value_tuple = layout_value->cast<ValueTuplePtr>();
+    MS_EXCEPTION_IF_NULL(layout_value_tuple);
+    auto layout_value_vector = layout_value_tuple->value();
     std::vector<TensorLayoutBasePtr> layout_list;
     for (size_t i = 0; i < layout_value_vector.size(); ++i) {
       TensorLayoutBasePtr local_tensor_layout;
@@ -3609,6 +3643,7 @@ static void SetForwardFlag(const std::vector<AnfNodePtr> &all_nodes) {
       continue;
     }
     auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     if (IsValueNode<FuncGraph>(cnode->input(0))) {
       cnode->set_in_forward_flag(true);
       continue;
@@ -3675,10 +3710,12 @@ static FuncGraphPtr PynativeParallelGraph(const FuncGraphPtr &root, const std::v
       continue;
     }
     auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     if (!IsValueNode<Primitive>(cnode->input(0))) {
       continue;
     }
     auto expect_shard_prim = GetValueNode<PrimitivePtr>(cnode->input(0));
+    MS_EXCEPTION_IF_NULL(expect_shard_prim);
     if (expect_shard_prim->name() != SHARD) {
       continue;
     }
@@ -3713,6 +3750,7 @@ Shapes ConvertDatasetLayoutToStrategy() {
 
 void InsertVirtualOutput(const FuncGraphPtr &root, const std::vector<AnfNodePtr> &all_nodes) {
   auto real_graph = PynativeParallelGraph(root, all_nodes);
+  MS_EXCEPTION_IF_NULL(real_graph);
   auto out_pair = GetRealKernelNode(real_graph->output(), -1, nullptr, false);
   auto out_node = out_pair.first;
   MS_EXCEPTION_IF_NULL(out_node);
@@ -3747,7 +3785,9 @@ void InsertVirtualOutput(const FuncGraphPtr &root, const std::vector<AnfNodePtr>
       return;
     }
     auto node_input = CreateInput(op, out_node, VIRTUAL_OUTPUT);
-    auto cur_graph = out_node->cast<CNodePtr>()->func_graph();
+    const auto out_cnode = out_node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(out_cnode);
+    auto cur_graph = out_cnode->func_graph();
     MS_EXCEPTION_IF_NULL(cur_graph);
     auto new_node = cur_graph->NewCNode(node_input);
     auto manager = cur_graph->manager();
