@@ -44,8 +44,7 @@ broadcast_to:
 
         Args:
             input (Tensor): The input Tensor.
-            shape (tuple[int]): The target shape to broadcast. Can be fully specified, or have -1 in one position
-                where it will be substituted by the input tensor's shape in that position, see example.
+            shape (tuple[int]): The target shape to broadcast.
 
         Returns:
             Tensor, with the given `shape` and the same data type as `input`.
