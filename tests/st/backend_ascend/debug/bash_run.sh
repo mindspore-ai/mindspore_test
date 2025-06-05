@@ -16,6 +16,7 @@
 
 export MS_ENABLE_RECOVERY=1
 export MS_DEV_RUNTIME_CONF="async_init_comm:False"
+export MS_ENABLE_TFT="{RSC:1}"
 
 msrun --worker_num=8 --local_worker_num=8 --master_addr=127.0.0.1 --master_port=10971 --join=True --log_dir=./logs "resuming_interface.py"
 

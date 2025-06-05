@@ -157,14 +157,31 @@ class MS_CORE_API UCEException {
   bool enable_arf() { return arf_env_; }
   void set_rebuild_group_flag(bool flag) { rebuild_group_ = flag; }
   bool rebuild_group_flag() const { return rebuild_group_; }
+  bool check_rootinfo_clean_flag() const { return had_clean_; }
+  bool need_clean_rootinfo() const { return clean_rootinfo_; }
+  void set_rootinfo_clean_flag(bool flag) { had_clean_ = flag; }
 
   void CheckUceARFEnv() {
-    const auto tftEnv = common::GetEnv("MS_ENABLE_TFT");
-    constexpr std::string_view optARF = "ARF:1";
-    if (!tftEnv.empty() && (tftEnv.find(optARF) != std::string::npos)) {
+    if (init_) {
+      return;
+    }
+    static std::string tftEnv = common::GetEnv("MS_ENABLE_TFT");
+    if (tftEnv.empty()) {
+      init_ = true;
+      return;
+    }
+    const std::string optARF = "ARF:1";
+    const std::string optRSC = "RSC:1";
+    if (tftEnv.find(optARF) != std::string::npos) {
       arf_env_ = true;
+      clean_rootinfo_ = true;
       MS_LOG(WARNING) << "ARF enabled.";
     }
+    if (tftEnv.find(optRSC) != std::string::npos) {
+      clean_rootinfo_ = true;
+      MS_LOG(WARNING) << "RSC enabled.";
+    }
+    init_ = true;
   }
   void set_uce_occur_time(uint64_t time) { uce_occur_time_ = time; }
   uint64_t get_uce_occur_time() { return uce_occur_time_; }
@@ -198,6 +215,9 @@ class MS_CORE_API UCEException {
   bool is_reboot_node_{false};
   bool is_arf_{false};
   bool rebuild_group_{false};
+  bool had_clean_{false};
+  bool clean_rootinfo_{false};
+  bool init_{false};
   uint64_t uce_occur_time_{0};
   UCEError uce_error_type_{UCEError::kNoneError};
 };

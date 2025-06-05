@@ -25,7 +25,7 @@ from mindspore.communication import get_rank, get_group_size
 from mindspore import log as logger
 from mindspore.train.serialization import _get_cur_rank_dp
 from mindspore._c_expression import _repair_device, _stop_device, _tft_sem_post, _tft_sem_enable
-from mindspore._c_expression import _rebuild_world_group, _rebuild_sub_group, _finalize_comm, _clean_unique_id
+from mindspore._c_expression import _rebuild_world_group, _rebuild_sub_group, _finalize_comm, _clean_rootinfo
 from mindspore._c_expression import clean_tdt_channel
 from mindspore._c_expression import _pre_launch_send_recv
 from mindspore._c_expression import send_recv, reset_params
@@ -474,7 +474,7 @@ class TrainFaultTolerance(Callback):
     def _clear_unique_id(self):
         """Clean unique id on first train step end"""
         if not self.clean_unique_id and ("ARF:1" in os.getenv("MS_ENABLE_TFT", "")):
-            _clean_unique_id()
+            _clean_rootinfo()
             self.clean_unique_id = True
 
     def on_train_step_end(self, run_context):

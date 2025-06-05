@@ -57,7 +57,7 @@ from mindspore.dataset.engine.datasets import _set_training_dataset, _reset_trai
 from mindspore.train import amp
 from mindspore._c_expression import _framework_profiler_step_start, _framework_profiler_step_end
 from mindspore._c_expression import _get_optimzer_timestamps
-from mindspore._c_expression import clean_tdt_channel
+from mindspore._c_expression import clean_tdt_channel, _clean_rootinfo
 
 from mindspore.parallel._utils import _init_auto_parallel_context, _clear_auto_parallel_context
 from .serialization import load_param_into_net
@@ -1133,6 +1133,7 @@ class Model:
                 if cb_params.is_arf:
                     cb_params.is_arf = False
                     _set_recovery_context(is_arf=False)
+                _clean_rootinfo()
 
                 # Embedding cache server only run one step.
                 if is_embedding_cache_server:
@@ -1347,6 +1348,7 @@ class Model:
                 if cb_params.is_arf:
                     cb_params.is_arf = False
                     _set_recovery_context(is_arf=False)
+                _clean_rootinfo()
                 # Embedding cache server only run one step.
                 if is_embedding_cache_server:
                     break
