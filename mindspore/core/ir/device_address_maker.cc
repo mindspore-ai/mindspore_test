@@ -23,11 +23,10 @@ constexpr int kMaxDeviceNum = 5;
 DeviceAddressMakerFunc g_device_address_maker[kMaxDeviceNum];
 DeviceSyncPtr DeviceAddressMaker::make_device_address() {
   auto device_sync = maker_(data_type_, shape_, data_ptr_, std::move(deleter_));
-  device_sync->set_deleter(deleter_);
   return device_sync;
 }
 
-DeviceAddressMaker &DeviceAddressMaker::set_deleter(std::function<void(void *)> &&deleter) {
+DeviceAddressMaker &DeviceAddressMaker::set_deleter(std::function<void(void *, bool)> &&deleter) {
   deleter_ = std::move(deleter);
   return *this;
 }
@@ -52,7 +51,7 @@ DeviceSyncPtr MakeDeviceAddress(TypeId data_type, const ShapeVector &shape, bool
   auto tensor_data = tensor::MakeTensorData(data_type, shape);
   // todo: use init after tensor::empty is replaced.
   return DeviceAddressMaker(tensor_data->data(), data_type, shape)
-    .set_deleter([tensor_data](void *) {})
+    .set_deleter([tensor_data](void *, bool) {})
     .set_maker(GetDeviceAddressMaker(device_type))
     .make_device_address();
 }
@@ -62,7 +61,7 @@ DeviceSyncPtr MakeDeviceAddress(TypeId data_type, const ShapeVector &shape, cons
   // Just GET data ptr of tensor_data and don't init the data.
   // todo: use const_data() after tensor::empty is replaced.
   return DeviceAddressMaker(tensor_data->data(), data_type, shape)
-    .set_deleter([tensor_data](void *) {})
+    .set_deleter([tensor_data](void *, bool) {})
     .set_maker(GetDeviceAddressMaker(device_type))
     .make_device_address();
 }
