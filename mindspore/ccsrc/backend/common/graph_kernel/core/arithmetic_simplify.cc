@@ -1194,13 +1194,15 @@ static std::vector<Expression> expressions_optlevel_2 = {
 };
 
 mindspore::HashMap<std::string, std::vector<PatternTreePtr>> GetExpressions() {
+  constexpr int simplify_level_1 = 1;
+  constexpr int simplify_level_2 = 2;
   const auto &flags = GraphKernelFlags::GetInstance();
   bool exact_precision_mode = flags.exact_precision_mode;
   mindspore::HashMap<std::string, std::vector<PatternTreePtr>> expression_map;
   mindspore::HashSet<std::string> enable_ids{flags.enable_simplify_exprs_only.begin(),
                                              flags.enable_simplify_exprs_only.end()};
   mindspore::HashSet<std::string> disable_ids{flags.disable_simplify_exprs.begin(), flags.disable_simplify_exprs.end()};
-  auto add_exprs = [&](const std::vector<Expression> &exprs, int level) {
+  auto add_exprs = [&enable_ids, &disable_ids, &expression_map](const std::vector<Expression> &exprs, int level) {
     for (size_t i = 0; i < exprs.size(); ++i) {
       std::string expr_id = std::to_string(level) + "." + std::to_string(i);
       if (!enable_ids.empty()) {
@@ -1217,9 +1219,9 @@ mindspore::HashMap<std::string, std::vector<PatternTreePtr>> GetExpressions() {
       expression_map[pt->GetRootOp()].push_back(pt);
     }
   };
-  add_exprs(expressions_optlevel_1, 1);
+  add_exprs(expressions_optlevel_1, simplify_level_1);
   if (!exact_precision_mode) {
-    add_exprs(expressions_optlevel_2, 2);
+    add_exprs(expressions_optlevel_2, simplify_level_2);
   }
   return expression_map;
 }
