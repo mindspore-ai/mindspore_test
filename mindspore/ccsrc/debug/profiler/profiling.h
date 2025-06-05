@@ -90,6 +90,7 @@ class PROFILER_EXPORT ProfilerManager {
 class PROFILER_EXPORT Profiler {
  public:
   static std::shared_ptr<Profiler> GetInstance(const std::string &name) noexcept;
+  static std::map<std::string, std::shared_ptr<Profiler>> &GetInstanceMap();
   static bool Register(const std::string &name, const std::shared_ptr<Profiler> &instance);
   static void Clear();
 
@@ -165,9 +166,6 @@ class PROFILER_EXPORT Profiler {
   bool data_process_enable_ = false;
   std::string op_type_ = "GetNext";
   bool with_stack_ = false;
-
- private:
-  static std::map<std::string, std::shared_ptr<Profiler>> &GetInstanceMap();
 };
 
 PROFILER_EXPORT void CollectHostInfo(const std::string &module, const std::string &event, const std::string &stage,

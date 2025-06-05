@@ -35,6 +35,7 @@
 #include "pybind_api/gil_scoped_long_running.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #include "include/backend/distributed/collective/collective_manager.h"
+#include "include/backend/debug/execute_order_tracker/execute_order_tracker.h"
 
 namespace mindspore {
 namespace runtime {
@@ -893,7 +894,8 @@ bool SuperKernelActor::LaunchAllKernels(OpContext<KernelTensor> *const context) 
       // Push run task to pipeline.
       // Note: dynamic value or static shape also need push task into infer actor to make sure correct kernel
       // execution order.
-      Async(kernel_async_infer_aid_, &KernelAsyncInferActor::InferShapeV2, context, kernel_actor.get());
+      Async(kernel_async_infer_aid_, &KernelAsyncInferActor::InferShapeV2, context, kernel_actor.get(),
+            is_high_perf_mode_ && IsHighPerfModeAtExec());
 
       // The computed depend kernel should wait output shape update after kernel launch.
       if (kernel_actor->kernel_mod_->IsNeedUpdateOutputShapeAndSize()) {
@@ -917,7 +919,12 @@ bool SuperKernelActor::LaunchAllKernels(OpContext<KernelTensor> *const context) 
         kernel_actor->InferAndUpdateDeviceTensorSize(context);
       }
 
-      Async(kernel_async_launch_aid_, &KernelAsyncLaunchActor::LaunchKernelV2, context, kernel_actor.get());
+      // Check high performance condition in SuperKernelActor.
+      if (is_high_perf_mode_ && IsHighPerfModeAtExec()) {
+        Async(kernel_async_launch_aid_, &KernelAsyncLaunchActor::LaunchKernelV2HP, context, kernel_actor.get());
+      } else {
+        Async(kernel_async_launch_aid_, &KernelAsyncLaunchActor::LaunchKernelV2, context, kernel_actor.get());
+      }
 
       // The computed depend kernel should wait output shape update after kernel launch.
       if (kernel_actor->kernel_mod_->IsNeedUpdateOutputShapeAndSize()) {
@@ -1885,6 +1892,45 @@ SuperKernelActor::SuperKernelActor(const std::string &name, const KernelGraphPtr
   enable_parallel_dispatch_ = EnableParallelDispatchKernel() && (graph_phase_.find("increment") != std::string::npos);
   MS_LOG(INFO) << "The kernel graph: " << graph_->ToString() << " phase: " << graph_phase_
                << ", enable parallel dispatch kernel: " << enable_parallel_dispatch_;
+
+  is_high_perf_mode_ = IsHighPerfModeAtComp();
+  std::for_each(profiler::Profiler::GetInstanceMap().begin(), profiler::Profiler::GetInstanceMap().end(),
+                [this](const auto &prof_inst) { prof_instances_.emplace_back(prof_inst.second); });
+}
+
+bool SuperKernelActor::IsHighPerfModeAtComp() {
+  // These high performance checking flag should be confirmed in compilation phase.
+  // They should not be changed in runtime phase so that we could reach optimal performance by avoiding condition
+  // judgement.
+  std::vector<bool> conditions = {
+    common::IsDisableRuntimeConfig(common::kRuntimeHPMode),
+    debug_aid_ != nullptr,
+    recorder_aid_ != nullptr,
+    EnableExecuteOrderDump(),
+    device::tracker::MemTrackerManager::GetInstance().IsEnabled(),
+    UCEException::IsEnableUCE(),
+    mindspore::runtime::RuntimeConf::GetInstance()->launch_blocking(),
+    common::GetEnv("MS_ENABLE_CKPT_D2H_ASYNC") == "1",
+    IsNeedProfilieMemoryLog(),
+    common::GetEnv("NPU_ASD_ENABLE") == std::to_string(kIndex1),
+    common::GetEnv("NPU_ASD_ENABLE") == std::to_string(kIndex2),
+    common::GetEnv("NPU_ASD_ENABLE") == std::to_string(kIndex3),
+  };
+  // When this function returns false, it means performance is not cirtical in this context.
+  // Otherwise runtime will launch kernels with high performance.
+  return std::all_of(conditions.begin(), conditions.end(), [](bool c) { return !c; });
+}
+
+bool SuperKernelActor::IsHighPerfModeAtExec() {
+  // These flags will be switched during execution.
+  // For each step, SuperKernelActor should check this function's return value.
+  std::vector<bool> conditions = {
+    device::tracker::MemTrackerManager::GetInstance().enable_memory_debug_info(),
+    mindspore::runtime::ProfilerAnalyzer::GetInstance().profiler_enable(),
+    std::any_of(prof_instances_.begin(), prof_instances_.end(),
+                [](const auto &p) { return p->GetEnableFlag() || p->GetOpTimeFlag(); }),
+  };
+  return std::all_of(conditions.begin(), conditions.end(), [](bool c) { return !c; });
 }
 
 void SuperKernelActor::GetRefCountForGraphOutput(const std::vector<AnfNodePtr> &output_data_nodes,

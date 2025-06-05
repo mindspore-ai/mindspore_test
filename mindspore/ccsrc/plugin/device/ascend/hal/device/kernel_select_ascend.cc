@@ -21,6 +21,7 @@
 #include <memory>
 #include <set>
 #include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
 #include "plugin/device/ascend/kernel/hccl/hccl_kernel_metadata.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
@@ -47,10 +48,13 @@
 #include "utils/anf_utils.h"
 #include "kernel/ascend/opapi/aclnn/custom_aclnn_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace device {
@@ -674,7 +678,8 @@ std::tuple<bool, std::string, ExceptionType, bool> SelectKernelInfoWithMsg(const
   if (IsOneOfPrimitiveCNode(
         node, {prim::kPrimCallInline, prim::kPrimSwitch, prim::kPrimPartialInline, prim::kPrimConditionSwitch,
                prim::kPrimConditionGather, prim::kPrimReshapeExt, prim::kPrimReshape, prim::kPrimMoveTo,
-               prim::kPrimMoveAssign, prim::kPrimStreamSend, prim::kPrimStreamRecv})) {
+               prim::kPrimMoveAssign, prim::kPrimStreamSend, prim::kPrimStreamRecv, prim::kPrimExpandDims,
+               prim::kPrimSqueeze, prim::kPrimFlatten, prim::kPrimFlattenGrad, prim::kPrimReformat})) {
     GenerateKernelBuildInfo(node, KernelType::RT_KERNEL);
     return result;
   }
