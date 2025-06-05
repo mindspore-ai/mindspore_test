@@ -912,6 +912,7 @@ void GeneralizeReusingGraph(const FuncGraphPtr &func_graph, const FuncGraphPtr &
   for (auto &fv : fv_params) {
     auto param = reusing_graph->InsertFrontParameter();
     const auto &top_param = fv->cast<ParameterPtr>();
+    MS_EXCEPTION_IF_NULL(top_param);
     std::string name = "CR_" + top_param->name();
     if (param->debug_info() != nullptr) {
       param->debug_info()->set_name(name);

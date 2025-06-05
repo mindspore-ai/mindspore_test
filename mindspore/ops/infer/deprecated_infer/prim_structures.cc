@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -448,6 +448,7 @@ AbstractBasePtr InferImplMutable(const AnalysisEnginePtr &, const PrimitivePtr &
 
 namespace {
 std::string GetRefKey(const AbstractRefPtr &ref_tensor) {
+  MS_EXCEPTION_IF_NULL(ref_tensor);
   const auto &ref_key_value = ref_tensor->ref_key_value();
   MS_EXCEPTION_IF_NULL(ref_key_value);
   auto ref_key = ref_key_value->cast_ptr<RefKey>();

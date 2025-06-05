@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1039,6 +1039,7 @@ FuncGraphPtr GradAux::GenerateFuncGraph(const AbstractBasePtrList &args_abs_list
   (void)fg->add_parameter();
 
   AbstractScalarPtr get_value_ptr = dyn_cast<AbstractScalar>(args_abs_list[1]);
+  MS_EXCEPTION_IF_NULL(get_value_ptr);
   bool get_value_flag = GetValue<bool>(get_value_ptr->BuildValue());
   std::vector<AnfNodePtr> elements = {NewValueNode(prim::kPrimMakeTuple)};
   elements.push_back(
