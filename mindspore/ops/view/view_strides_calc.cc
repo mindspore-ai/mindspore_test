@@ -73,6 +73,15 @@ TensorStorageInfoPtrList ViewCalcImpl(const tensor::TensorPtr &input_tensor, con
 TensorStorageInfoPtrList ViewBasicTypeCalc(const PrimitivePtr &prim, const tensor::TensorPtr &input_tensor,
                                            const std::vector<int64_t> &shape) {
   auto ori_storage_info = input_tensor->storage_info();
+  if (shape == input_tensor->shape()) {
+    if (ori_storage_info != nullptr) {
+      return {ori_storage_info};
+    }
+    auto ori_stride = GetOriStrides(shape);
+    auto new_storage_info =
+      std::make_shared<TensorStorageInfo>(shape, ori_stride, shape, ori_stride, input_tensor->is_contiguous());
+    return {new_storage_info};
+  }
   if (ori_storage_info != nullptr && !ori_storage_info->is_contiguous) {
     MS_LOG(EXCEPTION) << "input tensor:" << input_tensor->ToString()
                       << " is not contiguous, storage info:" << ori_storage_info->ToString();

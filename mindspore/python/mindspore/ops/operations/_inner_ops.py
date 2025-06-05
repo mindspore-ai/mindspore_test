@@ -28,7 +28,7 @@ from mindspore.ops.primitive import PrimitiveWithCheck, PrimitiveWithInfer, prim
     _run_op, _check_contains_variable
 from mindspore._c_expression import TensorPy as Tensor_
 from mindspore._c_expression import typing, HookType
-from mindspore._c_expression import pyboost_generator
+from mindspore._c_expression import pyboost_generator, pyboost_cell_backward_hook
 from mindspore import _checkparam as validator
 from mindspore.common import dtype as mstype
 from mindspore.common.parameter import Parameter
@@ -1565,10 +1565,11 @@ class CellBackwardHook(PrimitiveWithInfer):
         self.add_prim_attr("cell_id", cell_id)
         self.grad_output = None
 
-    def __call__(self, *args):
-        # If args is empty, just return.
-        if not args:
-            return args
+    def __call__(self, args):
+        is_tuple = True
+        if not isinstance(args, tuple):
+            args = (args,)
+            is_tuple = False
 
         # Collect the indices and values of arguments that are instances of Tensor
         tensors_idx = []
@@ -1578,20 +1579,18 @@ class CellBackwardHook(PrimitiveWithInfer):
                 tensors_idx.append(i)
                 tensors.append(arg)
 
-        # If there are no Tensor arguments, return the single argument or the original tuple
+        # If there are no Tensor arguments, return original args
         if not tensors:
-            return args[0] if len(args) == 1 else args
+            return args if is_tuple else args[0]
 
-        new_tensors = _run_op(self, self.name, tensors)
-        if not isinstance(new_tensors, tuple):
-            new_tensors = (new_tensors,)
+        new_tensors = pyboost_cell_backward_hook(self, (tensors,))
 
         # Replace the original Tensor arguments with the processed ones
         arg_list = list(args)
         for idx, val in zip(tensors_idx, new_tensors):
             arg_list[idx] = val
 
-        return arg_list[0] if len(arg_list) == 1 else tuple(arg_list)
+        return tuple(arg_list) if is_tuple else arg_list[0]
 
     def infer_shape(self, *inputs_shape):
         if len(inputs_shape) == 1:

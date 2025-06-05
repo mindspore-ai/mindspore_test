@@ -1084,18 +1084,6 @@ AbstractBasePtr InferImplEnumToDtype(const AnalysisEnginePtr &, const PrimitiveP
   return std::make_shared<AbstractType>(TypeIdToType(static_cast<TypeId>(type_id)));
 }
 
-AbstractBasePtr InferImplCellBackwardHook(const AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                          const AbstractBasePtrList &args_abs_list) {
-  AbstractBasePtrList abs_out;
-  for (const auto &arg : args_abs_list) {
-    (void)abs_out.emplace_back(arg->Clone());
-  }
-  if (args_abs_list.size() == 1) {
-    return abs_out[0];
-  }
-  return std::make_shared<AbstractTuple>(abs_out);
-}
-
 #ifndef _MSC_VER
 // String
 REGISTER_PRIMITIVE_FRONT_EVAL_IMPL(StringMul, prim::kPrimStringMul, InferImplStringMul, nullptr);
@@ -1134,7 +1122,6 @@ REGISTER_PRIMITIVE_FRONT_EVAL_IMPL(StringUpper, prim::kPrimStringUpper, InferImp
 REGISTER_PRIMITIVE_FRONT_EVAL_IMPL(StringLower, prim::kPrimStringLower, InferImplStringLower, nullptr);
 REGISTER_PRIMITIVE_FRONT_EVAL_IMPL(DtypeToEnum, prim::kPrimDtypeToEnum, InferImplDtypeToEnum, nullptr);
 REGISTER_PRIMITIVE_FRONT_EVAL_IMPL(EnumToDtype, prim::kPrimEnumToDtype, InferImplEnumToDtype, nullptr);
-REGISTER_PRIMITIVE_FRONT_EVAL_IMPL(CellBackwardHook, prim::kPrimCellBackwardHook, InferImplCellBackwardHook, nullptr)
 #else
 void RegPrimitiveFrontEval() {
   // String

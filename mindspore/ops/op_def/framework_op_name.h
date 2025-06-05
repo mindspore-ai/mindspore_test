@@ -42,7 +42,6 @@ constexpr auto kSetSizeOpName = "SetSize";
 constexpr auto kStringUpperOpName = "StringUpper";
 constexpr auto kStringLowerOpName = "StringLower";
 constexpr auto kHookBackwardName = "HookBackward";
-constexpr auto kCellBackwardHookName = "CellBackwardHook";
 
 // Framework
 constexpr auto kSelectOpName = "Select";

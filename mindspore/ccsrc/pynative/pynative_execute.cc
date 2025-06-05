@@ -42,6 +42,7 @@
 #include "runtime/pipeline/pipeline.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "include/common/pynative/adapter.h"
+#include "include/common/pynative/variable.h"
 
 namespace mindspore::pynative {
 std::shared_ptr<PyNativeExecutor> PyNativeExecutor::executor_ = nullptr;
@@ -128,6 +129,19 @@ py::object PyNativeExecutor::RunSliceOpStub(const std::vector<ValuePtr> &input_v
   forward_executor()->WaitForwardTask();
   auto ret = forward_executor()->RunSliceOpFrontend(input_values, slice_op_infos, requires_grad, nullptr, stream_id);
   return py::reinterpret_steal<py::object>(tensor::Wrap(ret));
+}
+
+void PyNativeExecutor::SetCreationType(const py::object &obj, autograd::CreationType creation_type) {
+  forward_executor()->WaitForwardTask();
+  if (!tensor::IsTensorPy(obj)) {
+    MS_LOG(EXCEPTION) << "Input obj is not a Tensor";
+  }
+  auto tensor = tensor::ConvertToTensor(obj);
+  auto view_autograd_meta_data = autograd::impl::GetViewAutogradMetaImpl(tensor);
+  if (!view_autograd_meta_data) {
+    MS_LOG(EXCEPTION) << "Tensor has no ViewAutogradMeta";
+  }
+  view_autograd_meta_data->set_creation_type(creation_type);
 }
 
 py::object PyNativeExecutor::RealRunOp(const py::args &args) const {
@@ -332,6 +346,13 @@ void PyNativeExecutor::SetAsyncForGraph(bool flag) const {
 void RegPyNativeExecutor(const py::module *m) {
   autograd::RegFunctionBase(m);
 
+  using autograd::CreationType;
+  py::enum_<CreationType>(*m, "CreationType")
+    .value("DEFAULT", CreationType::kDefault)
+    .value("NO_GRAD_MODE", CreationType::kNoGradMode)
+    .value("MULTI_OUTPUT", CreationType::kMultiOutput)
+    .value("CUSTOM_BPROP", CreationType::kCustomBprop);
+
   (void)py::class_<PyNativeExecutor, std::shared_ptr<PyNativeExecutor>>(*m, "PyNativeExecutor_")
     .def_static("get_instance", &PyNativeExecutor::GetInstance, "PyNativeExecutor get_instance.")
     .def("set_mixed_precision_type", &PyNativeExecutor::SetMixedPrecisionType, "set cell mixed precision type.")
@@ -365,7 +386,8 @@ void RegPyNativeExecutor(const py::module *m) {
     .def("run_op_async", &PyNativeExecutor::RunOpStub, "run op asynchronously")
     .def("set_async_for_graph", &PyNativeExecutor::SetAsyncForGraph, py::arg("flag") = py::bool_(false),
          "Executor set async flag.")
-    .def("constant_folding", &PyNativeExecutor::CallConstantFolding, "Call Constant Folding Primitive");
+    .def("constant_folding", &PyNativeExecutor::CallConstantFolding, "Call Constant Folding Primitive")
+    .def("set_creation_type", &PyNativeExecutor::SetCreationType, "Set tensor's view creation type");
 }
 
 struct PyNativeExecutorRegister {

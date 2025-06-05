@@ -197,10 +197,7 @@ def get_parse_method_of_class(obj, parse_method=None):
     if parse_method is not None:
         method_name = parse_method
     elif isinstance(obj, nn.Cell):
-        if obj._backward_hook:
-            method_name = "_backward_hook_construct"
-        else:
-            method_name = "construct"
+        method_name = "construct"
 
     return get_attr_from_object(obj, method_name)
 

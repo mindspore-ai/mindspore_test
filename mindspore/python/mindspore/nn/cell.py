@@ -1027,12 +1027,13 @@ class Cell(Cell_):
         if self._forward_pre_hook:
             args, kwargs = self._run_forward_pre_hook(args, kwargs)
 
+        if self._backward_hook:
+            args = self._cell_backward_hook(args)
+
         if self._shard_fn is not None:
             output = self._shard_fn(*args, **kwargs)
         elif _pynative_executor.requires_grad():
-            if self._backward_hook:
-                output = self._backward_hook_construct(*args, **kwargs)
-            elif self._recompute_cell is not None:
+            if self._recompute_cell is not None:
                 output = self._recompute_cell(*args, **kwargs)
             elif self.has_bprop:
                 output = self._call_custom_bprop(*args, **kwargs)
@@ -1044,8 +1045,11 @@ class Cell(Cell_):
         if self._forward_hook:
             output = self._run_forward_hook(args, kwargs, output)
 
-        if self._backward_pre_hook and _pynative_executor.requires_grad():
-            output = self._run_backward_pre_hook(output)
+        if self._backward_hook:
+            output = self._cell_backward_hook(output)
+
+        if self._backward_pre_hook:
+            output = self._cell_backward_pre_hook(output)
 
         return output
 
@@ -2860,32 +2864,6 @@ class Cell(Cell_):
             self._cell_backward_pre_hook.register_backward_pre_hook()
         return handle
 
-    def _run_backward_pre_hook(self, outputs):
-        """
-        Running backward pre hook function registered on Cell object.
-
-        Args:
-            outputs: The output objects of cell object.
-
-        Returns:
-            - **outputs** - New backward gradient or None.
-
-        Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-        """
-        if isinstance(outputs, tuple):
-            ret = self._cell_backward_pre_hook(*outputs)
-        else:
-            ret = self._cell_backward_pre_hook(outputs)
-        if isinstance(outputs, tuple):
-            if len(outputs) == 1:
-                ret = (ret,)
-            if len(ret) != len(outputs):
-                raise TypeError(
-                    "The backward pre hook return value size is {} not equal to output size {}".format(
-                        len(ret), len(outputs)))
-        return ret
-
     def get_extra_state(self) -> Any:
         """Return any extra state to include in the cell's state_dict.
 
@@ -3474,53 +3452,6 @@ class Cell(Cell_):
                                                               self, self._backward_hook)
             self._cell_backward_hook.register_backward_hook()
         return handle
-
-    def _backward_hook_construct(self, *inputs, **kwargs):
-        """
-        Backward hook construct method to replace original construct method.
-
-        Args:
-            inputs: The input objects of Cell object.
-            kwargs (dict): Dictionary of variable keyword parameters.
-
-        Returns:
-            - **outputs** - The output objects of Cell object.
-
-        Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-        """
-        # cell_backward_hook has CellBackwardHook op, so keep input args as they are.
-        outputs = self._cell_backward_hook(*inputs)
-        # If the inputs have more than two args, the outputs will also have more than two args and will be wrapped into
-        # a tuple, so need to do unwrapping. If inputs is empty, we also need to unwrap it.
-        # Because when output of runop method is one, it will not wrap a tuple, we need not unwrap it.
-        is_need_unwrap = False
-        if isinstance(outputs, tuple) and len(inputs) != 1:
-            is_need_unwrap = True
-
-        if self._recompute_cell is not None:
-            if is_need_unwrap:
-                outputs = self._recompute_cell(*outputs, **kwargs)
-            else:
-                outputs = self._recompute_cell(outputs, **kwargs)
-        elif self.has_bprop:
-            if is_need_unwrap:
-                outputs = self._call_custom_bprop(*outputs, **kwargs)
-            else:
-                outputs = self._call_custom_bprop(outputs, **kwargs)
-        else:
-            if is_need_unwrap:
-                outputs = self.construct(*outputs, **kwargs)
-            else:
-                outputs = self.construct(outputs, **kwargs)
-        if isinstance(outputs, tuple):
-            new_outputs = self._cell_backward_hook(*outputs)
-        else:
-            new_outputs = self._cell_backward_hook(outputs)
-        # if outputs is (X,) and new_outpus is X
-        if isinstance(outputs, tuple) and len(outputs) == 1:
-            new_outputs = (new_outputs,)
-        return new_outputs
 
     def set_param_ps(self, recurse=True, init_in_server=False):
         """

@@ -80,7 +80,6 @@ GVAR_DEF(PrimitivePtr, kPrimReformat, std::make_shared<Primitive>("Reformat"));
 GVAR_DEF(PrimitivePtr, kPrimMutable, std::make_shared<Primitive>(kMutableOpName));
 GVAR_DEF(PrimitivePtr, kPrimGetGrad, std::make_shared<Primitive>(kGetGradOpName));
 GVAR_DEF(PrimitivePtr, kPrimHookBackward, std::make_shared<Primitive>("HookBackward"));
-GVAR_DEF(PrimitivePtr, kPrimCellBackwardHook, std::make_shared<Primitive>("CellBackwardHook"));
 GVAR_DEF(PrimitivePtr, kPrimPrintShapeType, std::make_shared<Primitive>("PrintShapeType"));
 GVAR_DEF(PrimitivePtr, kPrimSameTypeShape, std::make_shared<Primitive>("SameTypeShape"));
 GVAR_DEF(PrimitivePtr, kPrimPrint, std::make_shared<Primitive>("Print"));
