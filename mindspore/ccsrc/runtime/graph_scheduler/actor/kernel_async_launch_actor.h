@@ -40,6 +40,7 @@ class BACKEND_EXPORT KernelAsyncLaunchActor : public ActorBase {
 
   void LaunchKernel(OpContext<KernelTensor> *const context, KernelActor *kernel_actor);
   void LaunchKernelV2(OpContext<KernelTensor> *const context, KernelRunner *kernel_runner);
+  void LaunchKernelV2HP(OpContext<KernelTensor> *const context, KernelRunner *kernel_runner);
 
   void Wait();
 
