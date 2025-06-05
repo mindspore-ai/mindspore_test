@@ -74,7 +74,7 @@ using CacheTuple = std::tuple<uint64_t, mindspore::device::ascend::aclOpExecutor
     }                                                                                                              \
     RUN_CUSTOM_OP_API_ASYNC(aclnn_name, ws_ptr, ws_size, executor, stream, release_func);                          \
     MS_LOG(DEBUG) << "launch task end, " << aclnn_name;                                                            \
-  });
+  })
 
 #define GET_EXECUTOR_FOR_PYBOOST(aclnn_api, ...)                                                       \
   [](const std::string &api_str, const auto &... args) -> auto {                                       \
