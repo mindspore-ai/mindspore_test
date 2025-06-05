@@ -117,6 +117,9 @@ class PyExecuteInitializer {
       MS_LOG(EXCEPTION) << "Invalid host tensor size:" << tensor->data().nbytes()
                         << " and kernel tensor size:" << kernel_tensor_value->GetDataSize() << " for pyexecute.";
     }
+    if (kernel_tensor_value->GetDataSize() == 0) {
+      return tensor;
+    }
     auto data_ptr = tensor->data_c();
     MS_EXCEPTION_IF_NULL(data_ptr);
     const auto &res = memcpy_s(data_ptr, kernel_tensor_value->GetDataSize(), kernel_tensor_value->GetDataPtr(),

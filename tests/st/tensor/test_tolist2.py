@@ -67,3 +67,8 @@ def test_tensor_tolist(mode):
     expect_output = [[[1], [2]], [[4], [5]]]
     output = net(x)
     assert np.allclose(output, expect_output)
+
+    x = Tensor(np.random.randn(2, 0), ms.float32)
+    expect_output = [[], []]
+    output = net(x)
+    assert output == expect_output
