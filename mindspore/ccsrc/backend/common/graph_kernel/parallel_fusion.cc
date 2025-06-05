@@ -253,10 +253,11 @@ bool WhiteOpsFilter(const AnfNodePtr &node) {
   if (device_info != kAscendDevice) {
     return true;
   }
-  auto sub_graph = GetCNodeFuncGraph(node);
   if (common::AnfAlgo::IsDynamicShape(node)) {
     return false;
   }
+  auto sub_graph = GetCNodeFuncGraph(node);
+  MS_EXCEPTION_IF_NULL(sub_graph);
   auto nodes = TopoSort(sub_graph->get_return());
   auto iter = std::find_if(nodes.begin(), nodes.end(), [](const AnfNodePtr &node) {
     return IsPrimitiveCNode(node, prim::kPrimBatchMatMul) || IsPrimitiveCNode(node, prim::kPrimMatMul) ||

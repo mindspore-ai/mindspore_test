@@ -656,7 +656,7 @@ class ReducePatternTree : public PatternTree {
 class CastPatternTree : public PatternTree {
  public:
   explicit CastPatternTree(const std::string &pattern_str) : PatternTree(pattern_str) {}
-  ~CastPatternTree() = default;
+  ~CastPatternTree() override = default;
 
  protected:
   bool CheckInputsAndAttrs(const inner::NodePtr &origin_root) const override {
