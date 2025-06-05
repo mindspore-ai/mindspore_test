@@ -340,58 +340,6 @@ void GeGraphExecutor::UpdateOutputShapeInfo(std::vector<::ge::Tensor> *ge_output
   return;
 }
 
-bool GeGraphExecutor::SetDynamicKVCache(const FuncGraphPtr &func_graph) {
-  auto graph_inputs = func_graph->get_inputs();
-  auto has_dynamic_input = std::any_of(graph_inputs.begin(), graph_inputs.end(), [](const AnfNodePtr &input) {
-    auto shape = FuncGraphUtils::GetTensorShape({input, 0});
-    return std::any_of(shape.begin(), shape.end(), [](auto dim) { return dim < 0; });
-  });
-  if (!has_dynamic_input) {
-    MS_LOG(INFO) << "Not detect dynamic input in graph";
-    return true;
-  }
-  auto nodes = func_graph->TopoSort(func_graph->get_return());
-  if (nodes.empty()) {
-    MS_LOG(WARNING) << "There are no nodes in the graph";
-    return true;
-  }
-  constexpr size_t kv_index = 2;  // primitive, kv cache, kv
-  for (auto &node : nodes) {
-    auto cnode = node->cast<CNodePtr>();
-    if (!cnode || !IsPrimitiveCNode(cnode, prim::kPrimPromptKVCache)) {
-      continue;
-    }
-    auto inputs = cnode->inputs();
-    if (inputs.size() <= kv_index) {
-      MS_LOG(WARNING) << "PrimPromptKVCache " << cnode->fullname_with_scope() << " input size " << inputs.size() - 1
-                      << " <= kv index " << kv_index - 1;
-      continue;
-    }
-    auto kv_input = inputs[kv_index];
-    if (kv_input == nullptr) {
-      MS_LOG(WARNING) << "PrimPromptKVCache " << cnode->fullname_with_scope() << " kv input is nullptr";
-      continue;
-    }
-    if (!IsPrimitiveCNode(kv_input, prim::kPrimPadV3)) {
-      dyn_kv_cache_info_.dynamic_kv_cache = true;
-      dyn_kv_cache_info_.seq_length_dyn = true;
-      auto kv_shape = FuncGraphUtils::GetTensorShape({kv_input, 0});
-      if (kv_shape.size() == kShape4dDims) {
-        dyn_kv_cache_info_.kv_cache_layout = lite::kKVCacheLayoutBNSD;
-      } else if (kv_shape.size() == kShape3dDims) {
-        dyn_kv_cache_info_.kv_cache_layout = lite::kKVCacheLayoutBSH;
-      } else {
-        MS_LOG(ERROR) << "Expect RefData shape to be BNSD or BSH when dynamic kv cache is enable, but got " << kv_shape;
-        return false;
-      }
-    }
-    break;
-  }
-  MS_LOG(INFO) << "set dyn kv info dynamic_kv_cache : " << dyn_kv_cache_info_.dynamic_kv_cache;
-  MS_LOG(INFO) << "set dyn kv info seq_length_dyn : " << dyn_kv_cache_info_.seq_length_dyn;
-  return true;
-}
-
 bool GeGraphExecutor::CheckRefDataInfo() {
   if (!dyn_kv_cache_info_.dynamic_kv_cache) {
     return true;
@@ -1982,10 +1930,6 @@ bool GeGraphExecutor::OfflineBuildGraph(const FuncGraphPtr &graph) {
     return false;
   }
 
-  if (!SetDynamicKVCache(graph)) {
-    MS_LOG(ERROR) << "Failed to init dynamic KVCache info";
-    return false;
-  }
   uint32_t graph_id = 0;
   std::map<std::string, std::string> ge_options;
   GetGeGraphOptions(graph, &ge_options);
