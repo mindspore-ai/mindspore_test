@@ -434,8 +434,7 @@ Status GroupedMatmulInfo::InferForwardCommunication() {
 
   MS_LOG(INFO) << name_ << ": Need push_back op num: " << outputs_shape_new_.size();
   for (size_t i = 0; i < outputs_shape_new_.size(); i++) {
-    Operator op;
-    op = CreateAllReduceOp(REDUCE_OP_SUM, group_list[0].name());
+    Operator op = CreateAllReduceOp(REDUCE_OP_SUM, group_list[0].name());
     forward_op_.push_back(op);
   }
 
