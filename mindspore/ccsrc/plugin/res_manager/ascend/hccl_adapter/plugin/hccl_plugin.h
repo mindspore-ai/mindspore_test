@@ -85,6 +85,7 @@ ORIGIN_METHOD(HcomGetLocalRankId, HcclResult, const char *, uint32_t *);
 ORIGIN_METHOD(HcomGetLocalRankSize, HcclResult, const char *, uint32_t *);
 ORIGIN_METHOD(HcomGetWorldRankFromGroupRank, HcclResult, const char *, uint32_t, uint32_t *);
 ORIGIN_METHOD(HcomGetGroupRankFromWorldRank, HcclResult, uint32_t, const char *, uint32_t *);
+ORIGIN_METHOD(HcclCommWorkingDevNicSet, HcclResult, HcclComm, uint32_t *, bool *, uint32_t);
 
 ORIGIN_METHOD(HcomCreateGroup, HcclResult, const char *, uint32_t, uint32_t *);
 ORIGIN_METHOD(HcomDestroyGroup, HcclResult, const char *);

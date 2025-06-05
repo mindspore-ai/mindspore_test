@@ -654,6 +654,7 @@ def test_mindio_ttp_adapter():
                                                    "tft_register_clean_handler": MagicMock(return_value=None),
                                                    "tft_register_repair_handler": MagicMock(return_value=None),
                                                    "tft_register_rebuild_group_handler": MagicMock(return_value=None),
+                                                   "tft_register_stream_sync_handler": MagicMock(return_value=None),
                                                    "tft_set_step_args": MagicMock(return_value=None),
                                                    "tft_init_controller": MagicMock(return_value=None),
                                                    "tft_start_controller": MagicMock(return_value=None)
@@ -680,7 +681,7 @@ def test_mindio_ttp_adapter():
 
         # case 2: must init advance when using ARF
         context.set_context(mode=context.GRAPH_MODE, device_target='Ascend')
-        os.environ["MS_ENABLE_TFT"] = '{TFT:1,UCE:1,ARF:1}'
+        os.environ["MS_ENABLE_TFT"] = '{TFT:1,UCE:1,ARF:1,TSP:1}'
         with pytest.raises(ValueError):
             mindio_cb = TrainFaultTolerance(ckpt_save_path='./ckpt')
 
@@ -695,7 +696,7 @@ def test_mindio_ttp_adapter():
         assert context.get_context("hccl_watchdog") is False
 
         # case 4: if sink_size > 1, raise error
-        os.environ["MS_ENABLE_TFT"] = '{TFT:1,UCE:1}'
+        os.environ["MS_ENABLE_TFT"] = '{TFT:1,UCE:1,TSP:1}'
         cb_params = _InternalCallbackParam()
         cb_params.cur_epoch_num = 4
         cb_params.epoch_num = 4

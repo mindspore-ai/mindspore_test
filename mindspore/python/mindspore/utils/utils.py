@@ -126,8 +126,8 @@ class TftHandle:
             **kwargs: Reserved parameters.
         """
         tft_env = os.getenv("MS_ENABLE_TFT", "")
-        if ("TTP:1" not in tft_env) and ("UCE:1" not in tft_env) and ("ARF:1" not in tft_env):
-            raise ValueError("MindIO TFT regitster need custom switch on[MS_ENABLE_TFT='{TTP:1,UCE:1,ARF:1}']!")
+        if all(v not in tft_env for v in ("TTP:1", "UCE:1", "ARF:1", "TSP:1")):
+            raise ValueError("MindIO TFT regitster need custom switch on[MS_ENABLE_TFT='{TTP:1,UCE:1,ARF:1,TSP:1}']!")
         if "ARF:1" in tft_env:
             logger.warning(f"Disable hccl watchdog when using ARF.")
             context.set_context(ascend_config={"hccl_watchdog": False})

@@ -559,3 +559,8 @@ def _get_group_map():
 def _wait_all_comm_init():
     """Wait for all communicators to be initialized."""
     return CollectiveManager.get_instance().wait_all_comm_init()
+
+
+def _comm_switch_nic_helper(global_ranks: list, use_backup: list) -> bool:
+    """Switch network interface card due to borrowing or switchback."""
+    return CollectiveManager.get_instance().comm_switch_nic(global_ranks, use_backup)
