@@ -1,4 +1,4 @@
-# Copyright 2024 Huawei Technologies Co., Ltd
+# Copyright 2024-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,8 +21,6 @@ from mindspore.ops import operations as P
 from mindspore.common.api import _pynative_executor
 from tests.mark_utils import arg_mark
 from tests.device_utils import set_device
-import shutil
-import os
 
 class Net(nn.Cell):
     def __init__(self):
@@ -88,6 +86,7 @@ def test_runtime_memory_allocated():
     _pynative_executor.sync()
     assert not res is None
     assert isinstance(res, int)
+
 
 @arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
@@ -208,85 +207,3 @@ def test_runtime_reset_max_memory_allocated():
     allocated_peak_after_reset = ms.runtime.max_memory_allocated()
     _pynative_executor.sync()
     assert allocated_before_reset == allocated_peak_after_reset
-
-
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
-def test_empty_cache_vmm():
-    """
-    Feature: runtime memory api.
-    Description: Test runtime memory empty cache api.
-    Expectation: runtime.empty_cache api performs as expected.
-    """
-    set_device()
-    os.environ['MS_ALLOC_CONF'] = "enable_vmm:true"
-
-    net = Net()
-    net(Tensor(2.0))
-    reserved_size = ms.runtime.memory_reserved()
-    assert reserved_size > 0
-    ms.runtime.empty_cache()
-    reserved_size = ms.runtime.memory_reserved()
-    assert reserved_size == 0
-
-
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
-def test_empty_cache_without_vmm():
-    """
-    Feature: runtime memory api.
-    Description: Test runtime memory empty cache api.
-    Expectation: runtime.empty_cache api performs as expected.
-    """
-    set_device()
-    os.environ['MS_ALLOC_CONF'] = "enable_vmm:false"
-    for _ in range(1000):
-        net = Net()
-        net(Tensor(2.0))
-        reserved_size = ms.runtime.memory_reserved()
-        assert reserved_size > 0
-        ms.runtime.empty_cache()
-        reserved_size = ms.runtime.memory_reserved()
-        assert reserved_size == 0
-
-
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
-def test_empty_cache_dryrun():
-    """
-    Feature: runtime memory api.
-    Description: Test runtime memory empty cache api.
-    Expectation: runtime.empty_cache api performs as expected.
-    """
-    set_device()
-    os.environ["MS_SIMULATION_LEVEL"] = "1"
-    os.environ["RANK_SIZE"] = "1"
-    os.environ["RANK_ID"] = "0"
-
-    net = Net()
-    net(Tensor(2.0))
-    reserved_size = ms.runtime.memory_reserved()
-    assert reserved_size > 0
-    ms.runtime.empty_cache()
-    reserved_size = ms.runtime.memory_reserved()
-    assert reserved_size == 0
-
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
-def test_memory_replay():
-    """
-    Feature: runtime memory api.
-    Description: Test runtime memory replay api.
-    Expectation: success.
-    """
-    mem_tracker_path = "test_replay_mem_tracker"
-    try:
-        cur_dir = os.path.dirname(os.path.realpath(__file__))
-        tracker_path = os.path.join(cur_dir, mem_tracker_path)
-        os.environ['MS_ALLOC_CONF'] = "enable_vmm:false"
-        cmd = "python hal_dryrun_case.py"
-        ret = os.system(cmd)
-        assert ret == 0
-        ms.runtime.memory_replay(os.path.join(tracker_path, "memory_block.csv"))
-    except Exception as e:
-        remove_dir = ["kernel_meta", "offload", tracker_path]
-        for d in remove_dir:
-            if os.path.isdir(d):
-                shutil.rmtree(d)
-        raise e

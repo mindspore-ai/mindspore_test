@@ -13,3 +13,7 @@ def set_device():
 def get_device():
     devcie_target = os.getenv("DEVICE_TARGET")
     return devcie_target
+
+
+def get_device_id():
+    return os.getenv("DEVICE_ID", "0")
