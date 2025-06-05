@@ -88,15 +88,11 @@ void MemoryManagerActor::AllocateMemoryHP(const std::vector<KernelTensorPtr> *al
     if (device_tensor->IsNotNeedAllocWOLock()) {
       continue;
     }
-
-    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, from_aid.Name(), memory::mem_pool::MemType::kKernel,
-                                                   device_tensor->GetSize(), device_tensor);
     try {
       bool success = false;
       if (device_tensor->continuous_device_addresses() == nullptr) {
         success = device_context->device_res_manager_->AllocateMemory(device_tensor, kDefaultStreamIndex);
       } else {
-        device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, from_aid.Name(), "ContinuousMemory", "", false);
         MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
           << "Allocate continuous memory, device address : " << device_tensor << ".";
         success = AllocateContinuousMemory(kernel_tensor.get(), device_context, from_aid);

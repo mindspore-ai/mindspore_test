@@ -1370,8 +1370,6 @@ bool GeKernelExecutor::LaunchKernelHP(const CNodePtr &kernel, const std::vector<
                                       const std::vector<KernelTensor *> &workspace,
                                       const std::vector<KernelTensor *> &outputs, KernelMod *kernel_mod,
                                       void *stream) const {
-  uint64_t start_time = 0;
-  PROFILER_START(start_time);
   if (nop_op_to_memcpy_.find(kernel) != nop_op_to_memcpy_.end()) {
     if (!MemoryCopyAsync(kernel, inputs, outputs, stream)) {
       MS_LOG(ERROR) << "Memory copy failed for kernel " << kernel->fullname_with_scope();
@@ -1393,8 +1391,6 @@ bool GeKernelExecutor::LaunchKernelHP(const CNodePtr &kernel, const std::vector<
       return false;
     }
   }
-  PROFILER_END(start_time, runtime::ProfilerModule::kKernel, runtime::ProfilerEvent::kKernelLaunch,
-               kernel->fullname_with_scope(), false);
   return true;
 }
 

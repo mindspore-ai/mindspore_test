@@ -81,17 +81,15 @@ class KernelRunner {
   bool IsRunHighPerfMode();
 
   // Really do infer shape and update kernel tensor shape.
-  virtual void ExecuteInferShapeTask(OpContext<KernelTensor> *const context);
+  virtual void ExecuteInferShapeTask(OpContext<KernelTensor> *const context, bool high_perf);
   // Really do resize kernel mod and update new size into output and workspace kernel tensors.
-  virtual void ExecuteResizeKernelModTask(OpContext<KernelTensor> *const context);
-  // Really do launch kernel with memory allocate and free.
-  virtual void ExecuteLaunchKernelTask(OpContext<KernelTensor> *const context);
+  virtual void ExecuteResizeKernelModTask(OpContext<KernelTensor> *const context, bool high_perf);
 
   // Two methods implement 'ExecuteLaunchKernelTask' in different scenarios:
-  // 'ExecuteLaunchKernelTaskDebug' is called when debug info should be collected like dump or profiler.
+  // 'ExecuteLaunchKernelTask' is called when debug info should be collected like dump or profiler.
   // 'ExecuteLaunchKernelTaskHP' is called in high performance mode, when is_high_perf_mode_ flag is set to true.
-  void ExecuteLaunchKernelTaskDebug(OpContext<KernelTensor> *const context);
-  void ExecuteLaunchKernelTaskHP(OpContext<KernelTensor> *const context);
+  virtual void ExecuteLaunchKernelTask(OpContext<KernelTensor> *const context);
+  virtual void ExecuteLaunchKernelTaskHP(OpContext<KernelTensor> *const context);
 
   void set_stream_send_actor(KernelRunner *stream_send_actor) { stream_send_actor_ = stream_send_actor; }
 
@@ -218,8 +216,6 @@ class KernelRunner {
   // The dependent parameter stores, the dependent expression is pair<index, ParameterInfo>.
   // Index is the input position, ParameterInfo is used to fetch args and device tensor.
   std::vector<std::pair<size_t, ParameterInfo>> parameter_indexs_;
-
-  static bool is_high_perf_mode_;
 
   // The info of kernel.
   CNodePtr kernel_;
