@@ -474,6 +474,7 @@ void OutputActor::UpdateOutputDeviceAddress() {
             << "Sync device to device failed, device type: " << tensor_device_address->GetDeviceType()
             << ", output node: " << output_node->fullname_with_scope();
         }
+        (void)res_manager->SyncAllStreams();
       } else {
         MS_LOG(DEBUG) << "Async device data from device tensor: " << device_tensor
                       << ", to device tensor: " << tensor_device_address << ", size: " << device_tensor->GetSize();

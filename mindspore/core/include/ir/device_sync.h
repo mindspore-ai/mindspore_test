@@ -34,26 +34,6 @@ namespace mindspore {
 // Interface for data synchornize between device and host.
 class DeviceSync {
  public:
-  // Used to sync data between different device addresses, only need the data size and data ptr. The CPU device doesn't
-  // need use the interfaces, so need the default implementation.
-  virtual bool SyncDeviceToHost(size_t, void *) const { return true; }
-  virtual bool SyncHostToDevice(size_t, const void *) const { return true; }
-
-  // Used to sync data between host tensor and device address, additional need the data shape and data type.
-  virtual bool SyncDeviceToHost(const ShapeVector &shape, size_t size, TypeId type, void *host_ptr,
-                                bool sync_on_demand = false) const = 0;
-  virtual bool SyncHostToDevice(const ShapeVector &shape, size_t size, TypeId type, const void *host_ptr,
-                                const std::string &format) const = 0;
-  virtual bool SyncHostToDevice(const ShapeVector &shape, size_t size, TypeId type, const void *host_ptr) const {
-    return SyncHostToDevice(shape, size, type, host_ptr, "DefaultFormat");
-  }
-
-  virtual bool SyncHostToDevice(const ShapeVector &shape, size_t size, TypeId type, const std::string &format,
-                                const tensor::TensorDataPtr &tensor_data) const {
-    MS_EXCEPTION_IF_NULL(tensor_data);
-    return SyncHostToDevice(shape, size, type, tensor_data->data(), format);
-  }
-
   virtual size_t GetSize() const = 0;
   virtual void *GetMutablePtr() const = 0;
   virtual const uint32_t stream_id() const = 0;
@@ -77,6 +57,27 @@ class DeviceSync {
   virtual void set_user_data(const UserDataPtr &user_data) { MS_LOG(EXCEPTION) << "Not implement exception"; }
 
   virtual device::DeviceType GetDeviceType() const { return device::DeviceType::kUnknown; }
+
+ protected:
+  // Used to sync data between different device addresses, only need the data size and data ptr. The CPU device doesn't
+  // need use the interfaces, so need the default implementation.
+  virtual bool SyncDeviceToHost(size_t, void *) const { return true; }
+  virtual bool SyncHostToDevice(size_t, const void *) const { return true; }
+
+  // Used to sync data between host tensor and device address, additional need the data shape and data type.
+  virtual bool SyncDeviceToHost(const ShapeVector &shape, size_t size, TypeId type, void *host_ptr,
+                                bool sync_on_demand = false) const = 0;
+  virtual bool SyncHostToDevice(const ShapeVector &shape, size_t size, TypeId type, const void *host_ptr,
+                                const std::string &format) const = 0;
+  virtual bool SyncHostToDevice(const ShapeVector &shape, size_t size, TypeId type, const void *host_ptr) const {
+    return SyncHostToDevice(shape, size, type, host_ptr, "DefaultFormat");
+  }
+
+  virtual bool SyncHostToDevice(const ShapeVector &shape, size_t size, TypeId type, const std::string &format,
+                                const tensor::TensorDataPtr &tensor_data) const {
+    MS_EXCEPTION_IF_NULL(tensor_data);
+    return SyncHostToDevice(shape, size, type, tensor_data->data(), format);
+  }
 };
 using DeviceSyncPtr = std::shared_ptr<DeviceSync>;
 

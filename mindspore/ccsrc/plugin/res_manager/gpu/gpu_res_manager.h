@@ -15,12 +15,12 @@
  */
 #ifndef MINDSPORE_CCSR_PLUGIN_RES_MANAGER_CPU_CPU_RES_MANAGER_H_
 #define MINDSPORE_CCSR_PLUGIN_RES_MANAGER_CPU_CPU_RES_MANAGER_H_
+#include <cuda_runtime_api.h>
 #include <utility>
 #include <vector>
 #include <string>
 #include <unordered_map>
 #include <memory>
-#include <cuda_runtime_api.h>
 #include "runtime/device/res_manager/hal_res_base.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
 #include "runtime/device/res_manager/swap_manager.h"
@@ -61,6 +61,7 @@ class GPUResManager : public HalResBase {
                 size_t stream_id) const override;
   bool AsyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
                  size_t stream_id) const override;
+  bool Copy(void *dst, const void *src, uint64_t size, CopyType kind, size_t stream_id) const override;
 
   std::pair<std::vector<size_t>, std::vector<size_t>> AllocDeviceMemoryForTensorList(
     const std::vector<tensor::TensorPtr> &tensor_list, bool enable_mem_align) override;

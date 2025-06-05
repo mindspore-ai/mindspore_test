@@ -430,7 +430,15 @@ bool WaitRuntimePipelineFinish(const OpContext<KernelTensor> *context, const std
 #endif
 }
 
-bool CopyDataForParameter(const DeviceSyncPtr &dst_device_tensor, const DeviceSyncPtr &src_device_tensor,
+bool SyncAllStreamForDeviceAddress(const DeviceTensorPtr &device_tensor) {
+  MS_EXCEPTION_IF_NULL(device_tensor);
+  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(
+    device::ResKey{device_tensor->GetDeviceType(), device_tensor->device_id()});
+  MS_EXCEPTION_IF_NULL(res_manager);
+  return res_manager->SyncAllStreams();
+}
+
+bool CopyDataForParameter(const DeviceTensorPtr &dst_device_tensor, const DeviceSyncPtr &src_device_tensor,
                           size_t stream_id) {
   if (dst_device_tensor->GetDeviceType() == device::DeviceType::kCPU) {
     if (stream_id == SIZE_MAX && src_device_tensor->GetDeviceType() != device::DeviceType::kCPU) {
@@ -438,6 +446,7 @@ bool CopyDataForParameter(const DeviceSyncPtr &dst_device_tensor, const DeviceSy
     }
     MS_LOG(WARNING) << "Sync copy from device tensor:" << src_device_tensor << " to:" << dst_device_tensor
                     << " by stream id:" << stream_id;
+    SyncAllStreamForDeviceAddress(dst_device_tensor);
     return SyncCopy(dst_device_tensor, src_device_tensor, stream_id);
   }
   if (stream_id == SIZE_MAX) {

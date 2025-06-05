@@ -88,6 +88,7 @@ void MemorySwapActor::AllocDeviceContinuousMem(const std::vector<DeviceTensorPtr
         MS_LOG(EXCEPTION) << "Copy data for continuous memory failed, src addr: " << original_ptr << ", dst addr: "
                           << ", size: " << device_tensors[i]->GetSize();
       }
+      device_contexts_[0]->device_res_manager_->SyncAllStreams();
       device_contexts_[0]->device_res_manager_->FreeMemory(original_ptr);
     } else {
       device_tensors[i]->set_ptr(device_ptrs[i]);

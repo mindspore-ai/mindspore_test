@@ -110,6 +110,7 @@ void SyncOutputFromTensor(const DeviceTensorPtr &tensor_device_address, const De
         << "Sync device to device failed, device type: " << tensor_device_address->GetDeviceType()
         << ", output node: " << output_node->fullname_with_scope();
     }
+    SyncAllStreamForDeviceAddress(tensor_device_address);
   } else {
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
       << "Async device data from device tensor: " << device_tensor << ", to device tensor: " << tensor_device_address

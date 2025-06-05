@@ -694,6 +694,8 @@ bool SuperKernelActor::CopyHeterogeneousOutput(OpContext<KernelTensor> *const co
       return false;
     }
 
+    SyncAllStreamForDeviceAddress(
+      dest_device_address->GetDeviceType() == device::DeviceType::kCPU ? src_device_address : dest_device_address);
     auto ret = SyncCopy(dest_device_address, src_device_address, kDefaultStreamIndex);
     if (!ret) {
       MS_LOG(ERROR) << "Copy for heterogeneous output failed, kernel actor: " << kernel_actor->GetAID().Name()

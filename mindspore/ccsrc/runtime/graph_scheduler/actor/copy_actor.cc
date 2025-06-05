@@ -105,6 +105,7 @@ void CopyActor::OnMemoryAllocFinish(OpContext<KernelTensor> *const context) {
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
       << "Copy device tensor from device address:" << input_kernel_tensors_[0]->device_address()->PrintInfo() << " to "
       << output_kernel_tensors_[0]->device_address()->PrintInfo() << " for copy actor:" << GetAID();
+    SyncAllStreamForDeviceAddress(output_kernel_tensors_[0]->device_address());
     if (!SyncCopy(output_kernel_tensors_[0]->device_address(), input_kernel_tensors_[0]->device_address(),
                   kDefaultStreamIndex)) {
       std::string error_info = "Copy device tensor failed: " + GetAID().Name();

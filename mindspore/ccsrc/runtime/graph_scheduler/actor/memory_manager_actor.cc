@@ -179,6 +179,7 @@ void MemoryManagerActor::AllocateContinuousMemory(const std::vector<std::vector<
         MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
           << "Create device tensor:" << new_dev_addr << " type:" << new_dev_addr->type_id();
         (void)SyncCopy(new_dev_addr, old_dev_addr, stream_id);
+        device_context->device_res_manager_->SyncAllStreams();
         device_context->device_res_manager_->FreeMemory(old_dev_addr.get());
       }
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, from_aid.Name(),

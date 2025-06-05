@@ -95,6 +95,7 @@ size_t SwitchActor::GetIndex(const OpContext<KernelTensor> *const context) const
     }
   }
   auto tensor = std::make_shared<tensor::Tensor>(type_id, host_shape, buf, size);
+  SyncAllStreamForDeviceAddress(device_tensor);
   if (!SyncCopy(device_tensor, tensor->device_address(), kDefaultStreamIndex)) {
     MS_LOG(ERROR) << GetAID().Name() << " get index from device address failed, type id:" << type_id;
     return 0;

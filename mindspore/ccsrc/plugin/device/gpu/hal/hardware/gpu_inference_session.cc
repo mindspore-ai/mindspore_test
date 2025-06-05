@@ -19,6 +19,7 @@
 #include "ir/anf.h"
 #include "ir/param_info.h"
 #include "runtime/device/kernel_runtime.h"
+#include "runtime/device/res_manager/hal_res_manager.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "utils/ms_utils.h"
@@ -51,8 +52,11 @@ void GpuInferenceSession::LoadInputData(const std::shared_ptr<KernelGraph> &kern
     if (!common::AnfAlgo::IsParameterWeight(pk_node)) {
       tensor = inputs[no_weight_input++];
       MS_EXCEPTION_IF_NULL(tensor);
-      if (!device_address->SyncHostToDevice(AnfAlgo::GetRuntimePaddingShape(pk_node, 0),
-                                            LongToSize(tensor->DataNBytes()), tensor->data_type(), tensor->data_c())) {
+      device::ResKey res_key{device_address->GetDeviceType(), device_address->device_id()};
+      auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+      MS_EXCEPTION_IF_NULL(res_manager);
+      res_manager->SyncAllStreams();
+      if (!SyncCopy(device_address, tensor->device_address(), device_address->stream_id())) {
         MS_LOG(EXCEPTION) << "SyncHostToDevice failed.";
       }
     }

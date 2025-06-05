@@ -45,6 +45,7 @@
 #endif
 #include "runtime/pipeline/pipeline.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/core/include/ir/tensor_api.h"
 
 namespace mindspore {
 using tensor::TensorPtr;
@@ -170,9 +171,9 @@ void DeviceAddressUtils::CopyNoneTensorDataToDevice(const device::DeviceContext 
   }
   const void *node_value = kernel_tensor->GetValuePtr();
   MS_EXCEPTION_IF_NULL(node_value);
-  auto data_type_id = kernel_tensor->dtype_id();
-  auto format = kernel_tensor->GetStringFormat();
-  if (!device_address->SyncHostToDevice(shape, data_size, data_type_id, node_value, format)) {
+  device_context->device_res_manager_->SyncAllStreams();
+  if (!device_context->device_res_manager_->Copy(device_address->GetMutablePtr(), node_value, data_size,
+                                                 device::CopyType::kH2D, device_address->stream_id())) {
     MS_LOG(EXCEPTION) << "SyncHostToDevice failed";
   }
 }

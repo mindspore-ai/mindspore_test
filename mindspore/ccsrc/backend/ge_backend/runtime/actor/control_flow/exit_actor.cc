@@ -396,6 +396,7 @@ void ExitActor::CopyDeviceAddress(OpContext<KernelTensor> *const context) {
       if (!SyncCopy(new_device_tensor, input_device_tensor, kDefaultStreamIndex)) {
         SET_OPCONTEXT_FAIL_RET_WITH_ERROR(*context, "Sync device to device failed.");
       }
+      (void)res_manager->SyncAllStreams();
     } else {
       // Move the device ptr from input_device_tensor to new_device_tensor.
       input_device_tensor->Swap(new_device_tensor.get());

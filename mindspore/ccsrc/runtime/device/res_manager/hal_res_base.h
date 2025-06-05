@@ -151,6 +151,10 @@ class RES_EXPORT HalResBase {
     MS_LOG(EXCEPTION) << "Unimplemented interface.";
   }
 
+  virtual bool Copy(void *dst, const void *src, uint64_t size, CopyType kind, size_t stream_id) const {
+    MS_LOG(EXCEPTION) << "Unimplemented interface.";
+  }
+
   // Create a stream with assigning a stream id, the assigned stream id will be written to the parameter '*stream_id'.
   virtual bool CreateStream(size_t *stream_id) const {
     MS_LOG(WARNING) << "Unimplemented interface: 'CreateStream'.";

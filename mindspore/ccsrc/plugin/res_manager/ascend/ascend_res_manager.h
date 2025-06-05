@@ -69,6 +69,7 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public HalResBase {
                 size_t stream_id) const override;
   bool AsyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
                  size_t stream_id) const override;
+  bool Copy(void *dst, const void *src, uint64_t size, CopyType kind, size_t stream_id) const override;
 
   bool LoadCollectiveCommLib() override;
   bool IsEnableVmm() const override;
@@ -194,8 +195,8 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public HalResBase {
   bool CopyHostToDevice(const DeviceAddress *dst_device_address, const DeviceAddress *src_device_address,
                         const void *src, uint64_t size, aclrtMemcpyKind kind, size_t stream_id,
                         const DeviceSyncPtr src_device_sync = nullptr) const;
-  bool Copy(void *dst, const void *src, uint64_t size, aclrtMemcpyKind kind, size_t stream_id,
-            const DeviceSyncPtr src_device_sync = nullptr) const;
+  bool BaseCopy(void *dst, const void *src, uint64_t size, aclrtMemcpyKind kind, size_t stream_id,
+                const DeviceSyncPtr src_device_sync = nullptr) const;
 
  private:
   MemUceInfo mem_uce_info_;
