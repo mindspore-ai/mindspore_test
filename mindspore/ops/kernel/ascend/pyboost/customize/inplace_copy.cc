@@ -87,8 +87,6 @@ tensor::TensorPtr InplaceCopyD2D(const std::shared_ptr<OpRunner> &op, const Tens
 
 tensor::TensorPtr InplaceCopyH2D(const std::shared_ptr<OpRunner> &op, const TensorPtr &dst, const TensorPtr &src,
                                  const bool &non_blocking) {
-  // make sure op execute end before data copy
-  runtime::Pipeline::Get().WaitForward();
   auto dst_device_type = GetTensorDeviceType(op, dst, "dst");
   auto src_device_type = GetTensorDeviceType(op, src, "src");
   if (dst_device_type != device::DeviceType::kAscend || src_device_type != device::DeviceType::kCPU) {
@@ -187,8 +185,6 @@ tensor::TensorPtr InplaceCopyH2D(const std::shared_ptr<OpRunner> &op, const Tens
 
 tensor::TensorPtr InplaceCopyD2H(const std::shared_ptr<OpRunner> &op, const TensorPtr &dst, const TensorPtr &src,
                                  const bool &non_blocking) {
-  // make sure op execute end before data copy
-  runtime::Pipeline::Get().WaitForward();
   auto dst_device_type = GetTensorDeviceType(op, dst, "dst");
   auto src_device_type = GetTensorDeviceType(op, src, "src");
   if (dst_device_type != device::DeviceType::kCPU || src_device_type != device::DeviceType::kAscend) {
