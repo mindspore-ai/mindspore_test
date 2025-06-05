@@ -42,7 +42,9 @@ Status UniformCandidateSamplerInfo::GetUniformSamplerAttrInt64(const std::string
     MS_LOG(ERROR) << name_ << ": The type of attr is not int, the attr is " << args;
     return FAILED;
   }
-  *value = iter->second->cast<Int64ImmPtr>()->value();
+  auto val_ptr = iter->second->cast<Int64ImmPtr>();
+  MS_EXCEPTION_IF_NULL(val_ptr);
+  *value = val_ptr->value();
   return SUCCESS;
 }
 
@@ -57,7 +59,9 @@ Status UniformCandidateSamplerInfo::GetUniformSamplerAttrBool(const std::string 
     MS_LOG(ERROR) << name_ << ": The type of attr is not bool, the attr is " << args;
     return FAILED;
   }
-  *value = iter->second->cast<BoolImmPtr>()->value();
+  auto val_ptr = iter->second->cast<BoolImmPtr>();
+  MS_EXCEPTION_IF_NULL(val_ptr);
+  *value = val_ptr->value();
   return SUCCESS;
 }
 

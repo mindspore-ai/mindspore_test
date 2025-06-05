@@ -148,7 +148,9 @@ static void PreProcessActualSeqLenInputForFlashAttentionScore(const FuncGraphPtr
         // Transfer Tuple to Tensor
         if (IsPrimitiveCNode(input, prim::kPrimTensorToTuple)) {
           // Eliminate TensorToTuple
-          manager->SetEdge(fa_cnode, index + 1, input->cast<CNodePtr>()->input(kIndex1));
+          auto cnode = input->cast<CNodePtr>();
+          MS_EXCEPTION_IF_NULL(cnode);
+          manager->SetEdge(fa_cnode, index + 1, cnode->input(kIndex1));
           MS_LOG(DEBUG) << "Eliminate TensorToTuple for " << fa_cnode->fullname_with_scope() << ", index is "
                         << index + 1;
         } else {
@@ -234,6 +236,7 @@ static std::shared_ptr<TensorLayout> FindPrevParallelCareNodeLayout(const AnfNod
     return nullptr;
   }
   CNodePtr cnode = node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
   if (!IsValueNode<Primitive>(cnode->input(0))) {
     return nullptr;
   }
@@ -242,9 +245,12 @@ static std::shared_ptr<TensorLayout> FindPrevParallelCareNodeLayout(const AnfNod
     if (!layout_ptr) {
       MS_LOG_WITH_NODE(EXCEPTION, node) << "Failure:GetLayoutFromCNode failed";
     }
-    if (IsPrimitiveCNode(cnode) && GetCNodePrimitive(cnode)->HasAttr(kAttrFineGrainedInterleavedBlockIndex)) {
-      layout_ptr->set_fine_grain_block_index(
-        GetValue<int64_t>(GetCNodePrimitive(cnode)->GetAttr(kAttrFineGrainedInterleavedBlockIndex)));
+    if (IsPrimitiveCNode(cnode)) {
+      auto prim = GetCNodePrimitive(cnode);
+      MS_EXCEPTION_IF_NULL(prim);
+      if (prim->HasAttr(kAttrFineGrainedInterleavedBlockIndex)) {
+        layout_ptr->set_fine_grain_block_index(GetValue<int64_t>(prim->GetAttr(kAttrFineGrainedInterleavedBlockIndex)));
+      }
     }
     return layout_ptr;
   }
@@ -254,6 +260,7 @@ static std::shared_ptr<TensorLayout> FindPrevParallelCareNodeLayout(const AnfNod
 std::shared_ptr<TensorLayout> FindPrevLayout(const AnfNodePtr &node, bool *is_input_param);
 std::shared_ptr<TensorLayout> FindPrevLayoutByParameter(const AnfNodePtr &node, bool *is_input_param) {
   auto node_param_ptr = node->cast<ParameterPtr>();
+  MS_EXCEPTION_IF_NULL(node_param_ptr);
   if (node_param_ptr->has_default()) {
     // Only when the real input of Reshape is a parameter that the strategy of Reshape will be assigned to this
     // parameter.
@@ -281,8 +288,10 @@ std::shared_ptr<TensorLayout> FindPrevLayout(const AnfNodePtr &node, bool *is_in
     return nullptr;
   }
   CNodePtr cnode = node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
   if (IsValueNode<FuncGraph>(cnode->input(0))) {
     auto fg = GetValueNode<FuncGraphPtr>(cnode->input(0));
+    MS_EXCEPTION_IF_NULL(fg);
     auto pre_node = GetRealKernelNode(fg->output(), -1, nullptr).first;
     if (!pre_node) {
       return nullptr;
@@ -300,20 +309,26 @@ std::shared_ptr<TensorLayout> FindPrevLayout(const AnfNodePtr &node, bool *is_in
     if (!layout_ptr) {
       MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Failure:GetLayoutFromCNode failed";
     }
-    if (IsPrimitiveCNode(cnode) && GetCNodePrimitive(cnode)->HasAttr(kAttrFineGrainedInterleavedBlockIndex)) {
-      layout_ptr->set_fine_grain_block_index(
-        GetValue<int64_t>(GetCNodePrimitive(cnode)->GetAttr(kAttrFineGrainedInterleavedBlockIndex)));
+    if (IsPrimitiveCNode(cnode)) {
+      auto prim = GetCNodePrimitive(cnode);
+      MS_EXCEPTION_IF_NULL(prim);
+      if (prim->HasAttr(kAttrFineGrainedInterleavedBlockIndex)) {
+        layout_ptr->set_fine_grain_block_index(GetValue<int64_t>(prim->GetAttr(kAttrFineGrainedInterleavedBlockIndex)));
+      }
     }
     return layout_ptr;
   }
   ValueNodePtr prim_anf_node = cnode->input(0)->cast<ValueNodePtr>();
+  MS_EXCEPTION_IF_NULL(prim_anf_node);
   PrimitivePtr prim = prim_anf_node->value()->cast<PrimitivePtr>();
+  MS_EXCEPTION_IF_NULL(prim);
   if (prim->name() == prim::kPrimTupleGetItem->name()) {
     auto tuple_index = GetTupleGetItemIndex(cnode);
     auto tuple_getitem_input = cnode->input(1)->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(tuple_getitem_input);
     if (IsValueNode<FuncGraph>(tuple_getitem_input->input(0))) {
       auto fg = GetValueNode<FuncGraphPtr>(tuple_getitem_input->input(0));
+      MS_EXCEPTION_IF_NULL(fg);
       auto pre_node = GetRealKernelNode(fg->output(), tuple_index, nullptr).first;
       if (!pre_node) {
         return nullptr;
@@ -394,6 +409,7 @@ OperatorInfoPtr CreateOperatorInfoForMakeTuple(const CNodePtr make_tuple_node, c
     MS_LOG(DEBUG) << "make tuple node " << make_tuple_node->DebugString() << " take the input " << input_pos << " of "
                   << next_node->DebugString() << " as the op info";
     auto make_tuple_prim = GetValueNode<PrimitivePtr>(make_tuple_node->input(0));
+    MS_EXCEPTION_IF_NULL(make_tuple_prim);
     if (make_tuple_prim->HasAttr(STAND_ALONE)) {
       (void)make_tuple_prim->DelAttr(STAND_ALONE);
     }
@@ -505,6 +521,7 @@ void AddAllGatherAttrs(const CNodePtr &allgather, const CNodePtr &cnode, const A
   // add fusion flag
   auto fusion_id = AddCommOpFusionType(allgather, node);
   auto param_ptr = node->cast<ParameterPtr>();
+  MS_EXCEPTION_IF_NULL(param_ptr);
   auto param_name = param_ptr->name();
   AddNodeFusionInfo(cnode, allgather, "reduce_scatter", param_name, fusion_id);
   // add gradients mean
@@ -576,6 +593,7 @@ static CNodePtr ReplaceNode(const Operator &op, const AnfNodePtr &pre_node, cons
     new_node->set_in_forward_flag(true);  // mark forward flag
   }
   auto new_node_prim = GetValueNode<PrimitivePtr>(node_input[0]);
+  MS_EXCEPTION_IF_NULL(new_node_prim);
   new_node_prim->set_instance_name(instance_name);
   new_node_prim->set_attr("keep_value_node_input", MakeValue(true));
   if (instance_name.find(NOT_RECOMPUTE) != std::string::npos) {
@@ -596,20 +614,25 @@ static void InsertAllGatherOp(const FuncGraphPtr &root, const std::string &group
   MS_EXCEPTION_IF_NULL(node);
   bool grad_accumulation_shard = ParallelContext::GetInstance()->grad_accumulation_shard();
   auto cnode = res.first->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
   auto graph = cnode->func_graph();
   MS_EXCEPTION_IF_NULL(graph);
   auto manager = graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
   Operator op;
   CNodePtr allgather;
-  auto param_name = node->cast<ParameterPtr>()->name();
+  auto param_ptr = node->cast<ParameterPtr>();
+  MS_EXCEPTION_IF_NULL(param_ptr);
+  auto param_name = param_ptr->name();
   auto real_param = RefParameterToActualNode(node, [&](const CNodePtr &cnode) {
     bool filter = IsPrimitiveCNode(cnode, prim::kPrimCast) || IsPrimitiveCNode(cnode, prim::kPrimLoad) ||
                   IsPrimitiveCNode(cnode, prim::kPrimDepend);
     return std::make_pair(filter, 1);
   });
   if (real_param) {
-    param_name = real_param->cast<ParameterPtr>()->name();
+    param_ptr = real_param->cast<ParameterPtr>();
+    MS_EXCEPTION_IF_NULL(param_ptr);
+    param_name = param_ptr->name();
   }
 
   if (op_name == MICRO_STEP_ALL_GATHER) {
@@ -618,7 +641,7 @@ static void InsertAllGatherOp(const FuncGraphPtr &root, const std::string &group
     op = CreateAllGatherOp(group);
   }
   CNodePtr cast_node = InsertAllGatherAfterCast(res);
-  auto param_ptr = node->cast<ParameterPtr>();
+  param_ptr = node->cast<ParameterPtr>();
   MS_EXCEPTION_IF_NULL(param_ptr);
   bool is_with_mirror = false;
   if (param_ptr->user_data<TensorLayout>()) {
@@ -730,7 +753,9 @@ static void ApplyParallelOptOnParam(const FuncGraphManagerPtr &manager, const An
       op_name = MICRO_STEP_ALL_GATHER;
     }
   }
-  auto param_info = parameter->cast<ParameterPtr>()->param_info();
+  auto param_ptr = parameter->cast<ParameterPtr>();
+  MS_EXCEPTION_IF_NULL(param_ptr);
+  auto param_info = param_ptr->param_info();
   auto cell_reuse = MsContext::GetInstance()->CellReuseLevel() != CellReuseLevel::kNoCellReuse;
   if (cell_reuse && ParallelContext::GetInstance()->zero3()) {
     auto param_users = GetOutputNodesWithFilter(parameter, [&](const AnfNodePtr &anode) {
@@ -739,11 +764,12 @@ static void ApplyParallelOptOnParam(const FuncGraphManagerPtr &manager, const An
     });
     std::vector<FuncGraphPtr> fg_list;
     for (const auto &param_user : param_users) {
-      if (!param_user.first->isa<CNode>() || !IsValueNode<FuncGraph>(param_user.first->cast<CNodePtr>()->input(0))) {
+      auto cnode = param_user.first->cast<CNodePtr>();
+      if (!cnode || !IsValueNode<FuncGraph>(cnode->input(0))) {
         continue;
       }
-      auto fg = GetValueNode<FuncGraphPtr>(param_user.first->cast<CNodePtr>()->input(0));
-      if (std::find(fg_list.begin(), fg_list.end(), fg) != fg_list.end()) {
+      auto fg = GetValueNode<FuncGraphPtr>(cnode->input(0));
+      if (fg == nullptr || std::find(fg_list.begin(), fg_list.end(), fg) != fg_list.end()) {
         continue;
       }
       fg_list.push_back(fg);
@@ -901,8 +927,10 @@ static std::pair<AnfNodePtr, int64_t> FindSubGraph(const FuncGraphPtr &graph, co
   for (auto &param_pair : param_sub_set) {
     CNodePtr param_cnode = param_pair.first->cast<CNodePtr>();
     AnfNodePtr graph_value_node;
-    if (param_cnode->input(0)->isa<CNode>()) {
-      graph_value_node = param_cnode->input(0)->cast<CNodePtr>()->input(1);
+    MS_EXCEPTION_IF_NULL(param_cnode);
+    auto cnode = param_cnode->input(0)->cast<CNodePtr>();
+    if (cnode) {
+      graph_value_node = cnode->input(1);
     } else {
       graph_value_node = param_cnode->input(0);
     }
@@ -1038,10 +1066,12 @@ std::shared_ptr<TensorLayout> FindNextLayoutForParallelCareNode(const std::pair<
     MS_LOG(INFO) << "FindNextLayout success node " << use_apply->DebugString() << ", in support new shapebase ops";
     *next_is_reshape = false;
     auto layout = GetInputLayoutFromCNode(node_pair, make_tuple_index);
-    if (IsPrimitiveCNode(node_pair.first) &&
-        GetCNodePrimitive(node_pair.first)->HasAttr(kAttrFineGrainedInterleavedBlockIndex)) {
-      layout.set_fine_grain_block_index(
-        GetValue<int64_t>(GetCNodePrimitive(node_pair.first)->GetAttr(kAttrFineGrainedInterleavedBlockIndex)));
+    if (IsPrimitiveCNode(node_pair.first)) {
+      auto prim = GetCNodePrimitive(node_pair.first);
+      MS_EXCEPTION_IF_NULL(prim);
+      if (prim->HasAttr(kAttrFineGrainedInterleavedBlockIndex)) {
+        layout.set_fine_grain_block_index(GetValue<int64_t>(prim->GetAttr(kAttrFineGrainedInterleavedBlockIndex)));
+      }
     }
     return std::make_shared<TensorLayout>(layout);
   } else {
@@ -1052,10 +1082,12 @@ std::shared_ptr<TensorLayout> FindNextLayoutForParallelCareNode(const std::pair<
     MS_LOG(INFO) << "FindNextLayout success node " << use_apply->DebugString();
     *next_is_reshape = false;
     auto layout = GetInputLayoutFromCNode(node_pair_new, -1);
-    if (IsPrimitiveCNode(node_pair.first) &&
-        GetCNodePrimitive(node_pair.first)->HasAttr(kAttrFineGrainedInterleavedBlockIndex)) {
-      layout.set_fine_grain_block_index(
-        GetValue<int64_t>(GetCNodePrimitive(node_pair.first)->GetAttr(kAttrFineGrainedInterleavedBlockIndex)));
+    if (IsPrimitiveCNode(node_pair.first)) {
+      auto prim = GetCNodePrimitive(node_pair.first);
+      MS_EXCEPTION_IF_NULL(prim);
+      if (prim->HasAttr(kAttrFineGrainedInterleavedBlockIndex)) {
+        layout.set_fine_grain_block_index(GetValue<int64_t>(prim->GetAttr(kAttrFineGrainedInterleavedBlockIndex)));
+      }
     }
     return std::make_shared<TensorLayout>(layout);
   }
@@ -1191,6 +1223,9 @@ void ParallelPreprocessor::HandleRootReshapeAndSaveStrategy(const std::vector<An
       continue;
     }
     auto cnode = node->cast<CNodePtr>();
+    if (cnode == nullptr) {
+      continue;
+    }
     if (IsValueNode<FuncGraph>(cnode->input(0))) {
       cnode->set_in_forward_flag(true);
       continue;
@@ -1217,7 +1252,12 @@ void ParallelPreprocessor::HandleRootReshapeAndSaveStrategy(const std::vector<An
       continue;
     }
 
-    Shape origin_dst_shape = GetValue<std::vector<int64_t>>(cnode->input(2)->cast<ValueNodePtr>()->value());
+    auto origin_dst_shape_val = cnode->input(2)->cast<ValueNodePtr>();
+    if (!origin_dst_shape_val) {
+      continue;
+    }
+
+    Shape origin_dst_shape = GetValue<std::vector<int64_t>>(origin_dst_shape_val->value());
     if (origin_dst_shape.size() == 1 && origin_dst_shape[0] == -1) {
       continue;
     }
@@ -1292,6 +1332,7 @@ void ParallelPreprocessor::ExtractInformation(const std::vector<AnfNodePtr> &all
 
     OperatorInfoPtr operator_ = CreateOperatorInfo(cnode);
     MS_EXCEPTION_IF_NULL(operator_);
+    MS_EXCEPTION_IF_NULL(prim);
 
     if (prim->name() == RESHAPE) {
       cnode->set_user_data<OperatorInfo>(operator_);
@@ -1376,6 +1417,7 @@ void ParallelPreprocessor::SetOperatorInfo() {
         if (node->has_user_data<OperatorInfo>()) {
           auto operator_info = node->user_data<OperatorInfo>();
 
+          MS_EXCEPTION_IF_NULL(operator_info);
           TensorMaps inputs_tensor_map = operator_info->inputs_tensor_map();
           TensorMaps outputs_tensor_map = operator_info->outputs_tensor_map();
           Shape device_matrix = operator_info->dev_matrix_shape();
