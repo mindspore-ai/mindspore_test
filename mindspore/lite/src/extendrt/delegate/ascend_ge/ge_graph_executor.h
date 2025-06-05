@@ -203,7 +203,6 @@ class GeGraphExecutor : public LiteGraphExecutor {
 
   bool SetGeTensorShape(GeTensor *ge_tensor, ShapeVector shape);
   void UpdateOutputShapeInfo(std::vector<::ge::Tensor> *ge_outputs);
-  bool SetDynamicKVCache(const FuncGraphPtr &func_graph);
   bool InitRefModeConfig();
   bool InitRealShapeParam(const std::vector<tensor::Tensor> &inputs);
   bool CheckRefDataInfo();
