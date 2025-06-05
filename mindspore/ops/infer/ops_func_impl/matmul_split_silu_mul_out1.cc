@@ -65,7 +65,7 @@ BaseShapePtr MatmulSplitSiluMulOut1FuncImpl::InferShape(const PrimitivePtr &prim
 
 TypePtr MatmulSplitSiluMulOut1FuncImpl::InferType(const PrimitivePtr &primitive,
                                                   const std::vector<AbstractBasePtr> &input_args) const {
-  return MatmulFusionUtils::InferenceMultiMatmulInferType(primitive, input_args);
+  return MatmulFusionUtils::InferenceMultiMatmulInfer1OutputType(primitive, input_args);
 }
 
 }  // namespace ops
