@@ -84,6 +84,15 @@ TuplePtr MatmulFusionUtils::InferenceMultiMatmulInferType(const PrimitivePtr &pr
   }
 }
 
+TypePtr MatmulFusionUtils::InferenceMultiMatmulInfer1OutputType(const PrimitivePtr &primitive,
+                                                                const std::vector<AbstractBasePtr> &input_args) {
+  auto x_type = input_args[kInputIndex0]->GetType();
+  if (x_type == kInt8 && input_args[kInputIndex1]->GetType() == kInt8) {
+    x_type = kFloat16;
+  }
+  return x_type;
+}
+
 TypePtr MatmulFusionUtils::FusedMatMulElemInferType(const PrimitivePtr &primitive,
                                                     const std::vector<AbstractBasePtr> &input_args,
                                                     const int input_num) {
