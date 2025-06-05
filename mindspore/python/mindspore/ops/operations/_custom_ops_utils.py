@@ -68,7 +68,8 @@ class VersionManager:
 
         return entry[0]
 
-    def _update_hash(self, seed, value):
+    @staticmethod
+    def _update_hash(seed, value):
         """update hash value"""
         # Good old boost::hash_combine
         return seed ^ (hash(value) + 0x9e3779b9 + (seed << 6) + (seed >> 2))
@@ -160,12 +161,14 @@ class ExtensionBuilder:
                 locker.wait()
         logger.info(f'Loading extension module {name}...')
 
-    def _verify_ninja_availability(self):
+    @staticmethod
+    def _verify_ninja_availability():
         """Check ninja is available."""
         try:
             subprocess.check_output('ninja --version'.split())
-        except Exception:
-            raise RuntimeError("Ninja is required to load C++ extensions")
+        except Exception as e:
+            logger.error("Ninja is required to load C++ extensions")
+            raise RuntimeError("Ninja is required to load C++ extensions") from e
 
     def _write_ninja_file_and_build_library(self, module_name, sources, cflags, ldflags, include_paths):
         """Write ninja file and build library."""
@@ -178,7 +181,8 @@ class ExtensionBuilder:
         logger.info(f'Building extension module {module_name}.')
         self._run_ninja_build(module_name)
 
-    def _write_ninja_file(self, fname, name, sources, extra_cflags, extra_ldflags, extra_include_paths):
+    @staticmethod
+    def _write_ninja_file(fname, name, sources, extra_cflags, extra_ldflags, extra_include_paths):
         """Write ninja file."""
         python_include_path = sysconfig.get_path('include', scheme='posix_prefix')
         python_includes = [python_include_path] if python_include_path is not None else []
@@ -246,6 +250,7 @@ class ExtensionBuilder:
             so_file = os.path.join(self.build_dir, f"{module_name}.so")
             if os.path.exists(so_file):
                 os.remove(so_file)
+            logger.error(msg)
             raise RuntimeError(msg) from e
 
     def build(self, module_name, sources, extra_cflags=None, extra_ldflags=None, extra_include_paths=None):
@@ -263,7 +268,7 @@ class CustomCodeGenerator:
         self.header = """
 #include <vector>
 #include "acl/acl_base.h"
-                        
+
 typedef struct aclOpExecutor aclOpExecutor;
 typedef struct aclTensor aclTensor;
 typedef struct aclScalar aclScalar;
@@ -481,7 +486,7 @@ typedef struct aclScalarList aclScalarList;
 
         code = """
 {header}
-        
+
 extern "C" int {func_name}GetWorkSpaceSize(void *func_ptr, std::vector<void *> inputs, std::vector<void *> outputs,
                            uint64_t *workspace_size, aclOpExecutor **executor) {{
   using FuncType = int (*)({input_declarations}, {output_declarations}, uint64_t *, aclOpExecutor **);
