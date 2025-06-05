@@ -1515,10 +1515,6 @@ void GEBackend::ConstructInputsRefMode(const KernelGraphPtr &func_graph, const V
 
       UpdateInputsShapeAndSize(parameter, device_tensor, flatten_tensors[j]);
       CheckContiguousTensor(flatten_tensors[j]);
-
-      if (host_tensor_address == device_tensor) {
-        continue;
-      }
       // in different backend object, but has init, skip
       if (common::AnfAlgo::IsParameterWeight(parameter)) {
         is_weight_init_[parameter] = true;
@@ -1526,6 +1522,9 @@ void GEBackend::ConstructInputsRefMode(const KernelGraphPtr &func_graph, const V
         SetTensorUpdateCallback(flatten_tensors[j]);
 
         device_tensor->set_is_ptr_persisted(true);
+        if (host_tensor_address == device_tensor) {
+          continue;
+        }
 
         if (host_tensor_address == nullptr) {
           // host is nullptr -> set & copy_to_device
@@ -1548,6 +1547,10 @@ void GEBackend::ConstructInputsRefMode(const KernelGraphPtr &func_graph, const V
           is_need_sync = false;
         }
       } else {
+        if (host_tensor_address == device_tensor) {
+          continue;
+        }
+
         if (host_tensor_address != nullptr) {
           if (host_tensor_address->GetPtr() == device_tensor->GetPtr()) {
             continue;
