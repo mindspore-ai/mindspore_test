@@ -166,7 +166,6 @@ int32_t MaxPoolWithMaskFuncImpl::CheckValidation(const PrimitivePtr &primitive,
   }
   auto pads_array_opt = input_infos[kIndex3]->GetArrayValue<int64_t>();
   auto dilation_array_opt = input_infos[kIndex4]->GetArrayValue<int64_t>();
-
   if (MS_UNLIKELY(!kernel_size_array_opt.has_value() || !strides_array_opt.has_value() || !pads_array_opt.has_value() ||
                   !dilation_array_opt.has_value())) {
     check_status = OP_CHECK_RETRY;
