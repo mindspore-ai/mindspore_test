@@ -17,15 +17,13 @@
 from __future__ import absolute_import
 from __future__ import division
 
+__all__ = ['PipelineCell', 'Pipeline', 'MicroBatchInterleaved', 'GradAccumulation']
+
 from mindspore import nn
 from mindspore.ops import operations as P
 from mindspore.nn.cell import Cell
 from mindspore.nn.wrap.cell_wrapper import _MicroBatch
 from mindspore import log as logger
-
-
-__all__ = ['PipelineCell', 'Pipeline', 'MicroBatchInterleaved', 'GradAccumulation']
-
 
 class PipelineCell(Cell):
     """
@@ -101,15 +99,15 @@ class PipelineCell(Cell):
                                    " config stage num:" + str(config_stage_num))
                 logger.warning("network:" + str(self.network))
                 logger.warning("cell name available:")
-                for cell_name, cell in self.network.cells_and_names():
+                for cell_name, _ in self.network.cells_and_names():
                     logger.warning(cell_name)
                 raise KeyError("For 'PipelineCell', the argument 'stage_config' : {} is not "
                                "found in 'network' : {}".format(config_dict, network))
 
-    def construct(self, *inputs):
+    def construct(self, *args, **kwargs):
         ret = None
         for i in range(self.micro_size):
-            micro_input = self.micro_inputs[i](i, *inputs)
+            micro_input = self.micro_inputs[i](i, *args, **kwargs)
             output = self.network(*micro_input)
             if ret is not None:
                 ret = self.add_list[i](ret, output)
@@ -197,10 +195,10 @@ class MicroBatchInterleaved(Cell):
             self.interleave_inputs.append(interleave_data)
         self._get_attr_from_cell(network)
 
-    def construct(self, *inputs):
+    def construct(self, *args, **kwargs):
         output = 0.0
         for i in range(self.interleave_num):
-            interleave_input = self.interleave_inputs[i](i, *inputs)
+            interleave_input = self.interleave_inputs[i](i, *args, **kwargs)
             output = self.add(output, self.network(*interleave_input))
         return output
 
@@ -251,10 +249,10 @@ class GradAccumulation(Cell):
             self.add_list.append(self.add)
         self._get_attr_from_cell(network)
 
-    def construct(self, *inputs):
+    def construct(self, *args, **kwargs):
         ret = None
         for i in range(self.micro_size):
-            micro_input = self.micro_inputs[i](i, *inputs)
+            micro_input = self.micro_inputs[i](i, *args, **kwargs)
             output = self.network(*micro_input)
             if ret is not None:
                 ret = self.add_list[i](ret, output)

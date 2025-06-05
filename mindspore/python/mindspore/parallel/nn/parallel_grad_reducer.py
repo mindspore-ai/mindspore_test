@@ -15,6 +15,8 @@
 """parallel serialization"""
 from __future__ import absolute_import
 
+__all__ = ['PipelineGradReducer']
+
 from mindspore import context
 from mindspore.nn.cell import Cell
 from mindspore.ops import functional as F, composite as C, operations as P
@@ -24,8 +26,6 @@ from mindspore.common.api import jit
 from mindspore.common.parameter import Parameter
 from mindspore.nn.layer import Identity
 from mindspore.parallel._utils import _get_enable_parallel_optimizer
-
-__all__ = ['PipelineGradReducer']
 
 
 grad_scale = C.MultitypeFuncGraph("grad_scale")
@@ -152,10 +152,10 @@ class PipelineGradReducer(Cell):
             self.opt_shard = opt_shard
 
     @jit
-    def construct(self, grads):
+    def construct(self, *args, **kwargs):
         new_grads = None
         if self.opt_shard:
-            grads = self.grad_reducer(grads)
+            grads = self.grad_reducer(*args, **kwargs)
             new_grads = self.hyper_map(F.partial(shard_grad_scale, self.scale_sense * self.degree),
                                        grads, self.accu_grads)
         else:

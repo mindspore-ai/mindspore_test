@@ -15,11 +15,10 @@
 """Convert distributed checkpoint"""
 from __future__ import absolute_import
 
-from mindspore.parallel.checkpoint_transform import rank_list_for_transform, transform_checkpoint_by_rank, transform_checkpoints
+__all__ = ["rank_list_for_convert", "convert_checkpoint_by_rank", "convert_checkpoints"]
 
-__all__ = ["rank_list_for_convert",
-           "convert_checkpoint_by_rank", "convert_checkpoints"]
-
+from mindspore.parallel.checkpoint_transform import rank_list_for_transform, transform_checkpoint_by_rank, \
+    transform_checkpoints
 
 def rank_list_for_convert(rank_id, src_strategy_file=None, dst_strategy_file=None):
     """
