@@ -19,6 +19,7 @@
 
 #include <string>
 #include <memory>
+#include <set>
 #include "mindspore/ccsrc/pyboost/comm_handle.h"
 
 namespace mindspore {
@@ -42,6 +43,7 @@ class CommHandlePy {
  private:
   const device::DeviceContext *device_ctx_;
   kernel::pyboost::CommHandlePtr comm_handle_;
+  std::set<size_t> wait_streams_;
 };
 
 using CommHandlePyPtr = std::shared_ptr<CommHandlePy>;
