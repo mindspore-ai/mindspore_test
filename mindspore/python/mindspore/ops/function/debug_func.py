@@ -15,6 +15,8 @@
 
 """Operators for debug function."""
 
+__all__ = ['print_', 'tensordump']
+
 from mindspore.ops.operations.debug_ops import Print
 from mindspore.common.tensor import Tensor
 from mindspore.ops import operations as P
@@ -176,6 +178,5 @@ def tensordump(file_name, tensor, mode='out'):
     _tensordump = _get_cache_prim(P.TensorDump)(input_output=mode)
     return _tensordump(file_name, tensor)
 
-__all__ = ['print_', 'tensordump']
 
 __all__.sort()
