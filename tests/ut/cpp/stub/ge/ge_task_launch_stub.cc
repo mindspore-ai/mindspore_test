@@ -75,5 +75,9 @@ bool HcclAdapter::UseHcclCM() const { return false; }
 bool HcclAdapter::IsSameServer(const std::vector<uint32_t> &rank_ids) const { return false; }
 
 std::string HcclAdapter::GetHcomGroup(const CNodePtr &) const { return ""; }
+
+HcclResult HcclAdapter::HcclCommWorkingDevNicSet(HcclComm comm, uint32_t *ranks, bool *use_backup, uint32_t nRanks) {
+  return HCCL_SUCCESS;
+}
 }  // namespace hccl
 }  // namespace mindspore

@@ -16,7 +16,7 @@ import os
 from tests.mark_utils import arg_mark
 
 
-@arg_mark(plat_marks=["cpu_linux", "cpu_windows", "cpu_macos"], level_mark="level0", card_mark="onecard",
+@arg_mark(plat_marks=["cpu_linux", "cpu_windows", "cpu_macos"], level_mark="level1", card_mark="onecard",
           essential_mark="essential")
 def test_support_binary_in_graph_mode():
     """
@@ -36,8 +36,7 @@ def test_support_binary_in_graph_mode():
     assert return_code == 0
 
     file_name = f"{file_path}/lenet_train.py"
-    with open(file_name, 'a+') as f:
-        f.seek(0)
+    with open(file_name, 'r') as f:
         lines = f.readlines()
         if all("setattr(LeNet.construct, 'source', ([" not in line for line in lines):
             raise ValueError("Add setattr for LeNet failed！")

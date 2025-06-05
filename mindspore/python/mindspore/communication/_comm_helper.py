@@ -581,3 +581,18 @@ def _remove_group_info(group_name):
 
     """
     CollectiveManager.get_instance().remove_group_info(group_name)
+
+
+def _comm_switch_nic_helper(global_ranks: list, use_backup: list) -> bool:
+    """Switch network interface card between the primary and the secondary NIC.
+
+    Args:
+        global_ranks (list[int], tuple[int]): list of integers. The global rank ids that need switch network interface .
+        use_backup (list[bool], tuple[int]): list of bool. For each rank id in global_ranks, determine whether to use
+            the backup network interface card. True means use, False means not use.
+
+    Returns:
+        bool, whether the network card switch is successful.
+            If one fails, return False. If all are successful, return True.
+    """
+    return CollectiveManager.get_instance().comm_switch_nic(global_ranks, use_backup)

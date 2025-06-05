@@ -727,8 +727,9 @@ PYBIND11_MODULE(_c_expression, m) {
     .def("get_comm_name", &CollectiveManager::GetCommName,
          "Get inner communicator name for the specified communication group.")
     .def("resume_hccl_comm", &CollectiveManager::ResumeHcclComm, "resume hccl comm.")
-    .def("wait_all_comm_init", &CollectiveManager::WaitAllCommInitDone,
-         "Wait for all communicators to be initialized.");
+    .def("wait_all_comm_init", &CollectiveManager::WaitAllCommInitDone, "Wait for all communicators to be initialized.")
+    .def("comm_switch_nic", &CollectiveManager::CommSwitchNic,
+         "Switch network interface card between the primary and the secondary NIC.");
 
   (void)py::class_<TCPStoreClient, std::shared_ptr<TCPStoreClient>>(m, "TCPStoreClient")
     .def_static("get_instance", &TCPStoreClient::instance, "Get TCPStore Client instance.")

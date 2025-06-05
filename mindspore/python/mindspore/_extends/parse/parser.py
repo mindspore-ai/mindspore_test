@@ -688,6 +688,7 @@ def get_operation_namespace_symbol(var: str):
     logger.debug("get operation ops info: %r", ops_info)
     return ops_info
 
+
 def get_ast_type(node):
     """Get the ast type."""
     ast_type = AST_SUB_TYPE_UNKNOWN

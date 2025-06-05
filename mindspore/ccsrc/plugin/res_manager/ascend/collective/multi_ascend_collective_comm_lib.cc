@@ -127,6 +127,14 @@ bool MultiAscendCollectiveCommLib::DestroyCommunicationGroup(const std::string &
   return true;
 }
 
+bool MultiAscendCollectiveCommLib::CommSwitchNic(const std::vector<uint32_t> &global_ranks,
+                                                 const std::vector<bool> &use_backup) {
+  MS_EXCEPTION_IF_NULL(ascend_collective_comm_lib_);
+  RETURN_IF_FALSE_WITH_LOG(ascend_collective_comm_lib_->CommSwitchNic(global_ranks, use_backup),
+                           "Failed to switch network interface card");
+  return true;
+}
+
 bool MultiAscendCollectiveCommLib::CreateDeviceCommunicationGroup(const std::string &group_name,
                                                                   const std::vector<uint32_t> &group_ranks) {
   RETURN_IF_FALSE(ascend_collective_comm_lib_->CreateDeviceCommunicationGroup(group_name, group_ranks));
