@@ -25,6 +25,24 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
+namespace {
+constexpr size_t kInplaceIndexPutEmptyShape = 9;
+// Remove empty tensors from the end of the indices list.
+std::vector<TensorPtr> RemoveTrailingEmptyTensor(const std::vector<TensorPtr> &indices) {
+  std::vector<TensorPtr> new_indices = indices;
+  while (!new_indices.empty()) {
+    auto back_shape = new_indices.back()->shape();
+    if (back_shape.size() == kInplaceIndexPutEmptyShape &&
+        std::all_of(back_shape.begin(), back_shape.end(), [](int i) { return i == 0; })) {
+      new_indices.pop_back();
+    } else {
+      break;
+    }
+  }
+  return new_indices;
+}
+}  // namespace
+
 tensor::TensorPtr InnerInplaceIndexPutAscendCustomize(const std::shared_ptr<OpRunner> &op,
                                                       const TensorPtr &input_tensor,
                                                       const ValueTuplePtr &indices_tensor_list,
@@ -36,6 +54,7 @@ tensor::TensorPtr InnerInplaceIndexPutAscendCustomize(const std::shared_ptr<OpRu
   const auto &input_shape = input_tensor->shape();
   const auto &values_shape = values_tensor->shape();
   std::vector<TensorPtr> indices_tensor_vector = ConvertValueTupleToVector<TensorPtr>(indices_tensor_list);
+  indices_tensor_vector = RemoveTrailingEmptyTensor(indices_tensor_vector);
   auto input_numel =
     std::accumulate(input_shape.begin(), input_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
   auto values_numel =

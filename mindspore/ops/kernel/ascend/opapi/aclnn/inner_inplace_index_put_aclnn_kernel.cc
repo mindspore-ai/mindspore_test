@@ -27,6 +27,7 @@ namespace kernel {
 namespace inner_inplace_index_put {
 namespace {
 constexpr size_t kInnerInplaceIndexPutKenelMinNum = 4;
+constexpr size_t kInnerInplaceIndexPutEmptyShape = 9;
 }  // namespace
 
 void InnerInplaceIndexPutAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
@@ -41,6 +42,7 @@ void InnerInplaceIndexPutAscend::GetWorkSpaceInfo(const std::vector<KernelTensor
   auto value_tensor = *(inputs.end() - kIndex2);
   MS_EXCEPTION_IF_NULL(value_tensor);
   std::vector<KernelTensor *> indices(inputs.begin() + kIndex1, inputs.end() - kIndex2);
+  indices = RemoveTrailingEmptyTensor(indices);
   GetWorkspaceForResize(inputs[kIndex0], indices, value_tensor, accumulate_, outputs[kIndex0]);
 }
 
@@ -55,6 +57,7 @@ bool InnerInplaceIndexPutAscend::Launch(const std::vector<KernelTensor *> &input
   MS_EXCEPTION_IF_NULL(value_tensor);
   auto value_shape = value_tensor->GetShape()->GetShapeVector();
   std::vector<KernelTensor *> indices(inputs.begin() + kIndex1, inputs.end() - kIndex2);
+  indices = RemoveTrailingEmptyTensor(indices);
   // If it's empty tensor doesn't deal with it.
   auto input_numel = std::accumulate(input_shape.begin(), input_shape.end(), kIndex1, std::multiplies<int64_t>());
   auto values_numel = std::accumulate(value_shape.begin(), value_shape.end(), kIndex1, std::multiplies<int64_t>());
@@ -65,6 +68,22 @@ bool InnerInplaceIndexPutAscend::Launch(const std::vector<KernelTensor *> &input
 
   RunOp(stream_ptr, workspace, inputs[kIndex0], indices, value_tensor, accumulate_, outputs[kIndex0]);
   return true;
+}
+
+// Remove empty tensors from the end of the indices list.
+std::vector<KernelTensor *> InnerInplaceIndexPutAscend::RemoveTrailingEmptyTensor(
+  const std::vector<KernelTensor *> &indices) {
+  std::vector<KernelTensor *> new_indices = indices;
+  while (!new_indices.empty()) {
+    auto back_shape = new_indices.back()->GetShape()->GetShapeVector();
+    if (back_shape.size() == kInnerInplaceIndexPutEmptyShape &&
+        std::all_of(back_shape.begin(), back_shape.end(), [](int i) { return i == 0; })) {
+      new_indices.pop_back();
+    } else {
+      break;
+    }
+  }
+  return new_indices;
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(InnerInplaceIndexPut, InnerInplaceIndexPutAscend);
