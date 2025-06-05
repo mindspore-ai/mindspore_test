@@ -285,7 +285,7 @@ std::string GetAppErrCodeInfo(APP_ERROR err);
 void AssertErrorCode(int code, const std::string &file, const std::string &function, int line);
 void CheckErrorCode(int code, const std::string &file, const std::string &function, int line);
 
-#define RtAssert(code) AssertErrorCode(code, DATASET_SRC_FILE_NAME, __FUNCTION__, __LINE__);
-#define RtCheckError(code) CheckErrorCode(code, DATASET_SRC_FILE_NAME, __FUNCTION__, __LINE__);
+#define RtAssert(code) AssertErrorCode(code, DATASET_SRC_FILE_NAME, __FUNCTION__, __LINE__)
+#define RtCheckError(code) CheckErrorCode(code, DATASET_SRC_FILE_NAME, __FUNCTION__, __LINE__)
 
 #endif  // MINDSPORE_CCSRC_MINDDATA_DATASET_KERNELS_IMAGE_DVPP_UTILS_ERROR_CODE_H_
