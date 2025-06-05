@@ -81,7 +81,7 @@ def _transform_target_modules(target_modules):
         obfuscate_layers = target_modules[2].split(':')
         if obfuscate_layers[1] != 'all':
             max_layers = int(obfuscate_layers[1])
-        layers = [i for i in range(0, max_layers)]
+        layers = list(range(0, max_layers))
         path_new = path.replace("blocks", "blocks/${layer}")
         network_obf_template['insert_ops'][0]['input_y'] = "obf_metadata_${layer}"
         weight_obf_template['weight_obf_ops'][0]['input_y'] = "obf_metadata_${layer}"
@@ -95,8 +95,8 @@ def _transform_target_modules(target_modules):
     obf_config['obf_metadata_config'].append(obf_medatadata)
 
     for name in target_list:
-        target_weight = path_new + '/' + name + '/weight'
-        target_bias = path_new + '/' + name + '/bias'
+        target_weight = '/'.join([path_new, name, 'weight'])
+        target_bias = '/'.join([path_new, name, 'bias'])
         weight_obf = weight_obf_template.copy()
         weight_obf['target'] = target_weight
         bias_obf = weight_obf_template.copy()
@@ -185,7 +185,7 @@ def obfuscate_ckpt(network, ckpt_files, target_modules=None, obf_config=None, sa
     def _gen_obf_metadata(config):
         name = config.get('name')
         if name is None:
-            return False
+            return
         save_metadata = config.get('save_metadata', False)
         metadata_op_name = config.get('metadata_op')
         layers = config.get('layers')
@@ -213,7 +213,6 @@ def obfuscate_ckpt(network, ckpt_files, target_modules=None, obf_config=None, sa
                         saved_obf_tensor = metadata_op(saved_obf_tensor)
                     if saved_obf_tensor is not None:
                         saved_metadata[obf_name] = saved_obf_tensor.asnumpy()
-        return True
 
     if not isinstance(network, nn.Cell):
         raise TypeError("network must be nn.Cell, but got {}.".format(type(network)))
@@ -283,13 +282,13 @@ def _obfuscate_single_ckpt(ckpt_name, obf_metadata, obf_config, saved_path):
     def _obfuscate_param(param, obf_metadata, obf_ops, layer=0):
         param_dtype = F.dtype(param)
         obf_param = param
-        for i in range(len(obf_ops)):
-            op_name = obf_ops[i].get('name')
+        for obf_op in obf_ops:
+            op_name = obf_op.get('name')
             if not isinstance(op_name, str):
                 raise TypeError('{} should be str type, but got {}'.format(op_name, type(op_name)))
             if op_name == 'mul':
                 input_x = obf_param
-                input_y_name = _get_op_input_name(obf_ops[i], 'input_y', layer)
+                input_y_name = _get_op_input_name(obf_op, 'input_y', layer)
                 input_y = obf_metadata.get(input_y_name)
                 if input_x is None or input_y is None:
                     log.error("input_x or input_y is None")
@@ -297,15 +296,15 @@ def _obfuscate_single_ckpt(ckpt_name, obf_metadata, obf_config, saved_path):
                 input_y = F.cast(input_y, param_dtype)
                 obf_param = ops.mul(input_x, input_y)
             elif op_name == 'permuate':
-                input_x_name = _get_op_input_name(obf_ops[i], 'input_x', layer)
+                input_x_name = _get_op_input_name(obf_op, 'input_x', layer)
                 p = obf_metadata.get(input_x_name, None)
                 if p is None or obf_param is None:
                     log.error("input_x or param is None")
                     return None
                 obf_param = obf_param[p]
             elif op_name == 'matmul':
-                input_x_name = _get_op_input_name(obf_ops[i], 'input_x', layer)
-                input_y_name = _get_op_input_name(obf_ops[i], 'input_y', layer)
+                input_x_name = _get_op_input_name(obf_op, 'input_x', layer)
+                input_y_name = _get_op_input_name(obf_op, 'input_y', layer)
                 input_x = _get_op_input(input_x_name, obf_param)
                 input_y = _get_op_input(input_y_name, obf_param)
                 if input_x is None or input_y is None:
