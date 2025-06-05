@@ -58,7 +58,8 @@ void BincountTask(const std::vector<KernelTensor *> &inputs, const std::vector<K
   for (int32_t i = 0; i < num_bins; i++) {
     output_data[i] = 0;
   }
-  if (input_weights_sizes.size() != 0 && input_weights_sizes[0] == 0) {
+  if (input_weights_sizes.size() != 0 &&
+      std::find(input_weights_sizes.begin(), input_weights_sizes.end(), 0) != input_weights_sizes.end()) {
     for (size_t i = 0; i < data_num; i++) {
       T_in value = bin_array[i];
       if (value < num_bins) {
