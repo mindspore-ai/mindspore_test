@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -244,7 +244,9 @@ Status ArgMaxWithValueInfo::GetAttrs() {
       MS_LOG(ERROR) << name_ << ": cross_batch is not a bool.";
       return FAILED;
     }
-    cross_batch_ = cross_batch_iter->second->cast<BoolImmPtr>()->value();
+    auto bool_ptr = cross_batch_iter->second->cast<BoolImmPtr>();
+    MS_EXCEPTION_IF_NULL(bool_ptr);
+    cross_batch_ = bool_ptr->value();
   }
   auto reducemethodcost = std::dynamic_pointer_cast<ReduceMethodCost>(operator_cost());
   if (reducemethodcost == nullptr) {
