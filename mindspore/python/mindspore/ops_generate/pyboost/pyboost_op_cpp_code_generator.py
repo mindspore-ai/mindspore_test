@@ -31,7 +31,6 @@ from common.base_generator import BaseGenerator
 from .pyboost_utils import is_cube, AclnnUtils, get_return_type, merge_strings_by_chunk_size, is_op_multi_output, \
     chunk_list
 from .op_template_parser import OpTemplateParser
-from .pyboost_utils import tuple_input_to_cpp_type
 
 def check_no_basic_int_type(op_args):
     for arg in op_args:
@@ -756,6 +755,30 @@ class InternalOpCppCodeGenerator:
         file_name = "pyboost_ascend_internal_ops.cc"
         save_file(save_path, file_name, internal_op_source_str)
 
+    def generate_default_op_function(self, op_parser, op_proto):
+        """
+        Generate default op call function.
+        """
+        call_args_with_type = op_parser.parse_call_args_with_types()
+        cpp_func_return = _generate_cpp_func_return(op_proto)
+        _, call_func_outputs = op_parser.generate_pyboost_outputs()
+        call_args = op_parser.parse_original_call_args(op_proto.op_args)
+        call_args_after_convert, value_tuple_convert, const_number_convert = op_parser.op_args_converter()
+        create_input_address, create_output_address = self._create_input_and_output_address(op_parser, op_proto)
+        internal_op_source_str = self.internal_single_op_source_template.replace(
+            op_name=op_proto.op_class.name,
+            operator_name=op_proto.op_name,
+            call_args_with_type=call_args_with_type,
+            internal_call_args=call_args,
+            internal_real_call_args=call_args_after_convert,
+            create_input_address=create_input_address,
+            create_output_address=create_output_address,
+            value_tuple_convert=value_tuple_convert,
+            const_number_convert=const_number_convert,
+            return_type=cpp_func_return,
+            return_values=call_func_outputs)
+        return internal_op_source_str
+
     def generate_default_call(self, work_path, op_proto, merge_op_header,
                               merge_op_function, ascend_merge_op_inc):
         """
@@ -780,23 +803,9 @@ class InternalOpCppCodeGenerator:
                 customize_inc=''))
 
         # generate op function
-        _, call_func_outputs = op_parser.generate_pyboost_outputs()
-        call_args = op_parser.parse_original_call_args(op_proto.op_args)
-        call_args_after_convert, value_tuple_convert, const_number_convert = op_parser.op_args_converter()
-        create_input_address, create_output_address = self._create_input_and_output_address(op_parser, op_proto)
-        internal_op_source_str = self.internal_single_op_source_template.replace(
-            op_name=op_proto.op_class.name,
-            operator_name=op_proto.op_name,
-            call_args_with_type=call_args_with_type,
-            internal_call_args=call_args,
-            internal_real_call_args=call_args_after_convert,
-            create_input_address=create_input_address,
-            create_output_address=create_output_address,
-            value_tuple_convert=value_tuple_convert,
-            const_number_convert=const_number_convert,
-            return_type=cpp_func_return,
-            return_values=call_func_outputs)
+        internal_op_source_str = self.generate_default_op_function(op_parser, op_proto)
         merge_op_function.append(internal_op_source_str)
+
         ascend_merge_op_inc.append(op_proto.op_class.name)
 
     def generate_customize_call(self, work_path, op_proto, merge_op_header,
@@ -816,8 +825,7 @@ class InternalOpCppCodeGenerator:
             call_args_with_type=call_args_with_type,
             return_type=cpp_func_return)
         save_path = os.path.join(work_path, self.gen_path)
-        file_name = f"{op_proto.op_name}.h"
-        save_file(save_path, file_name, internal_op_header_str)
+        save_file(save_path, f"{op_proto.op_name}.h", internal_op_header_str)
         self.customize_inc_template.replace(
             ms_ops_kernel_path=K.MS_OPS_KERNEL_PATH,
             operator_name=op_proto.op_name)
@@ -841,14 +849,12 @@ class InternalOpCppCodeGenerator:
     @staticmethod
     def _create_input_and_output_address(op_parser: OpTemplateParser, op_proto):
         """
-        Create input and output address, especially for FA and PA.
+        Create input and output address.
         """
         need_malloc_tensors, _, _ = op_parser.parse_need_malloc_tensors()
         create_input_address = ''
         create_output_address = ''
-        args_list = ''
-        for item in need_malloc_tensors:
-            args_list += f'{item}, '
+        args_list = ''.join(f'{arg}, ' for arg in need_malloc_tensors)
         args_list = args_list[:-2]
         if args_list:
             create_input_address = f'PyBoostUtils::PrepareOpInputs(device_context_, op->stream_id(), {args_list});\n'
@@ -858,22 +864,6 @@ class InternalOpCppCodeGenerator:
             create_output_address = 'PyBoostUtils::PrepareOpOutputs(device_context_, op->stream_id(), outputs_);\n'
 
         return create_input_address, create_output_address
-
-    @staticmethod
-    def _convert_tuple_tensor(op_parser: OpTemplateParser, op_proto):
-        """
-        Convert tuple input to vector.
-        """
-        value_tuple_convert = []
-        call_args = op_parser.parse_original_call_args(op_proto.op_args)
-        for op_arg, call_arg in zip(op_proto.op_args, call_args):
-            cpp_type = tuple_input_to_cpp_type(op_arg.arg_dtype)
-            if cpp_type == 'mindspore::tensor::TensorPtr':
-                cpp_type = 'TensorPtr'
-                convert = f"std::vector<{cpp_type}> {call_arg}_vector = \
-                    ConvertValueTupleToVector<{cpp_type}>({call_arg});\n"
-                value_tuple_convert.append(convert)
-        return value_tuple_convert
 
 
 class PyboostOpFunctionGenerator(BaseGenerator):
