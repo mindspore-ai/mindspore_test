@@ -1,10 +1,10 @@
 chunk:
-  - op_yaml: chunk_view_op.yaml
+  - op_yaml: chunk_op.yaml
     py_method: tensor_chunk
     Ascend: pyboost
     CPU: py_method
     GPU: py_method
-    interface: tensor, function
+    interface: tensor
 
   - op_yaml: deprecated/chunk_method.yaml
     py_method: deprecated_tensor_chunk

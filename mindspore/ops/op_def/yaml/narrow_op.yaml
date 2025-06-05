@@ -13,8 +13,8 @@ narrow:
     returns:
         output:
             dtype: tensor
+    view: True
     dispatch:
         enable: True
-        Ascend: NarrowAscend
         CPU: None
         GPU: None

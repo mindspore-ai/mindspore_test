@@ -665,7 +665,7 @@ inline NodePtr GradDiagonal(Emitter *ib, const NodePtr &dout, const NodePtr &dx_
       dim++;
     }
   }
-  dx = ib->TransposeView(dx, perm);
+  dx = ib->Transpose(dx, perm);
   return dx;
 }
 
@@ -691,7 +691,7 @@ inline NodePtr GradDiagonalScalarToTensor(Emitter *ib, const NodePtr &dout, cons
       dim++;
     }
   }
-  dx = ib->TransposeView(dx, perm);
+  dx = ib->Transpose(dx, perm);
   return dx;
 }
 
@@ -827,7 +827,7 @@ inline NodePtr ForEachTransposeLastTwoDim(BpropBuilder *ib, const NodePtr &node,
   std::vector<NodePtr> new_tensors;
   for (size_t i = 0; i < num; ++i) {
     auto tensor_i = ib->TupleGetItem(node, i);
-    auto tensor_i_t = ib->TransposeView(tensor_i, -1, -2);
+    auto tensor_i_t = ib->Transpose(tensor_i, -1, -2);
     new_tensors.push_back(tensor_i_t);
   }
   return ib->MakeTuple(new_tensors);
@@ -1099,8 +1099,8 @@ REG_BPROP_BUILDER("MatMulExt").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
     x = ib->Reshape(x, shapes[0]);
     w = ib->Reshape(w, shapes[1]);
     dout = ib->Reshape(dout, shapes[2]);
-    x = ib->TransposeView(x, shapes[3]);
-    w = ib->TransposeView(w, shapes[4]);
+    x = ib->Transpose(x, shapes[3]);
+    w = ib->Transpose(w, shapes[4]);
 
     NodePtr dx = nullptr;
     NodePtr dw = nullptr;
@@ -1114,12 +1114,12 @@ REG_BPROP_BUILDER("MatMulExt").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
     }
   } else {
     if (ib->GetRank(w) == 1) {
-      w = ib->ExpandDimsView(w, -1);
-      dout = ib->ExpandDimsView(dout, -1);
+      w = ib->ExpandDims(w, -1);
+      dout = ib->ExpandDims(dout, -1);
     }
     if (ib->GetRank(x) == 1) {
-      x = ib->ExpandDimsView(x, 0);
-      dout = ib->ExpandDimsView(dout, -2);
+      x = ib->ExpandDims(x, 0);
+      dout = ib->ExpandDims(dout, -2);
     }
     w = MatrixTransposeExt(ib, w);
     x = MatrixTransposeExt(ib, x);
@@ -2679,8 +2679,8 @@ REG_BPROP_BUILDER("Cdist").SetBody(BODYFUNC(ib) {
   auto out = ib->GetInput(i3);
   auto dout = ib->GetInput(i4);
   auto res = ib->ShapeCalc(g_cdist, {dout})[0];
-  auto dout_transpose = ib->TransposeView(dout, res);
-  auto out_transpose = ib->TransposeView(out, res);
+  auto dout_transpose = ib->Transpose(dout, res);
+  auto out_transpose = ib->Transpose(out, res);
   auto dx =
     input_x->need_compute_grad_out() ? ib->Emit("CdistGrad", {dout, input_x, input_y, out, p}) : ib->OutZeros(input_x);
   auto dy = input_y->need_compute_grad_out()
@@ -3195,16 +3195,16 @@ REG_BPROP_BUILDER("Ger").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   ShapeVector axis = {1};
   NodePtr dx;
   if (input_x->need_compute_grad_out()) {
-    auto m1 = ib->ExpandDimsView(input_y, 1);
+    auto m1 = ib->ExpandDims(input_y, 1);
     dx = ib->Squeeze(ib->MatMul(dout, m1, false, false), MakeValue(axis));
   } else {
     dx = ib->OutZeros(input_x);
   }
   NodePtr dy;
   if (input_y->need_compute_grad_out()) {
-    auto m2 = ib->ExpandDimsView(input_x, 1);
+    auto m2 = ib->ExpandDims(input_x, 1);
     ShapeVector perm = {1, 0};
-    auto transpose = ib->TransposeView(dout, perm);
+    auto transpose = ib->Transpose(dout, perm);
     dy = ib->Squeeze(ib->MatMul(transpose, m2, false, false), MakeValue(axis));
   } else {
     dy = ib->OutZeros(input_y);
@@ -3412,13 +3412,13 @@ REG_BPROP_BUILDER("ReduceProd").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
   auto grad = keep_dims_value ? dout : ib->Reshape(dout, res[0]);
   grad = ib->Tile(grad, res[1]);
 
-  auto permuted = ib->TransposeView(x, res[3]);
+  auto permuted = ib->Transpose(x, res[3]);
   auto permuted_shape = ib->Shape(permuted);
   auto reshaped = ib->Reshape(permuted, res[2]);
   auto left = ib->CumProd(reshaped, ib->Value<int64_t>(0), true, false);
   auto right = ib->CumProd(reshaped, ib->Value<int64_t>(0), true, true);
   auto y = ib->Reshape(ib->Mul(left, right), permuted_shape);
-  auto out = ib->Mul(ib->TransposeView(y, res[4]), grad);
+  auto out = ib->Mul(ib->Transpose(y, res[4]), grad);
   auto dx = ib->Reshape(out, ib->Shape(x));
   return {dx, ib->OutZeros(axis), ib->OutZeros(keep_dims)};
 });
@@ -3699,7 +3699,7 @@ REG_BPROP_BUILDER("MatrixExp").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   auto input_perm = res[0];
   auto begins = res[1];
   auto sizes = res[2];
-  auto x_transpose = ib->TransposeView(x, input_perm);
+  auto x_transpose = ib->Transpose(x, input_perm);
   auto zero_matrix = ib->ZerosLike(x);
   zero_matrix = ib->Cast(zero_matrix, ib->GetDtype(dout));
   auto meta_grad_up = ib->Concat({x_transpose, dout}, -1);
@@ -3718,7 +3718,7 @@ REG_BPROP_BUILDER("Mv").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   // self: ger(dout, vec.conj())
   auto dx = ib->Emit("Outer", {dout, vec});
   // vec: self.conj().t().mv(grad) -> dvec = ib->Mv(x^T, dout)
-  auto dvec = ib->Mv(ib->TransposeView(x, perm), dout);
+  auto dvec = ib->Mv(ib->Transpose(x, perm), dout);
   return {dx, dvec};
 });
 
@@ -3749,14 +3749,14 @@ REG_BPROP_BUILDER("CholeskyInverse").SetBody(BODYFUNC(ib) {
     input_x = ib->Cast(input_x, kFloat32);
     out = ib->Cast(out, kFloat32);
     dout = ib->Cast(dout, kFloat32);
-    auto common_term = ib->Add(dout, ib->TransposeView(dout, input_perm));
+    auto common_term = ib->Add(dout, ib->Transpose(dout, input_perm));
     common_term = ib->Cast(common_term, kFloat32);
     common_term = ib->MatMul(out, ib->MatMul(common_term, out, false, false), false, false);
     DealWithUpper(common_term);
     dx = ib->Cast(dx, kFloat64);
     return {dx, ib->OutZeros(upper)};
   }
-  auto common_term = ib->Add(dout, ib->TransposeView(dout, input_perm));
+  auto common_term = ib->Add(dout, ib->Transpose(dout, input_perm));
   common_term = ib->MatMul(out, ib->MatMul(common_term, out, false, false), false, false);
   DealWithUpper(common_term);
   return {dx, ib->OutZeros(upper)};
@@ -3795,16 +3795,16 @@ REG_BPROP_BUILDER("CholeskySolve").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
   };
   auto dx1 = ib->Emit("CholeskySolve", {dout, x2}, {{"upper", ib->GetAttr("upper")}});
   if (len_x1 == 2) {
-    auto common_term = ib->MatMul(dx1, ib->TransposeView(out, input_perm), false, false);
-    common_term = ib->Add(common_term, (ib->TransposeView(common_term, input_perm)));
+    auto common_term = ib->MatMul(dx1, ib->Transpose(out, input_perm), false, false);
+    common_term = ib->Add(common_term, (ib->Transpose(common_term, input_perm)));
     DealWithUpper2D(common_term);
   } else {
     auto x2_dim_size = static_cast<int64_t>(ib->GetShape(x2).size());
     auto target_order = Range(x2_dim_size - 2);
     target_order.push_back(x2_dim_size - 1);
     target_order.push_back(x2_dim_size - 2);
-    auto common_term = ib->BatchMatMul(dx1, ib->TransposeView(out, target_order), false, false);
-    common_term = ib->Add(common_term, (ib->TransposeView(common_term, target_order)));
+    auto common_term = ib->BatchMatMul(dx1, ib->Transpose(out, target_order), false, false);
+    common_term = ib->Add(common_term, (ib->Transpose(common_term, target_order)));
     DealWithUpperND(common_term);
   }
   if (flag == 1) {
@@ -3976,7 +3976,7 @@ REG_BPROP_BUILDER("TridiagonalMatMul").SetUnusedInputs({i4}).SetBody(BODYFUNC(ib
     }
     (void)perm.emplace_back(rank - 1);
     (void)perm.emplace_back(rank - 2);
-    return ib->TransposeView(x, perm);
+    return ib->Transpose(x, perm);
   };
   auto superdiag = ib->GetInput(i0);
   auto maindiag = ib->GetInput(i1);
@@ -3998,9 +3998,9 @@ REG_BPROP_BUILDER("TridiagonalMatMul").SetUnusedInputs({i4}).SetBody(BODYFUNC(ib
   auto maindiag_grad = ib->ReduceSum(rhs_conj * dout, ShapeVector{-1LL});
   auto subdiag_grad = ib->ReduceSum(RightShift(ib, rhs_conj) * dout, ShapeVector{-1LL});
   auto rhs_grad = RightShift(ib, superdiag_conj * dout) + maindiag_conj * dout + LeftShift(ib, subdiag_conj * dout);
-  superdiag_grad = ib->ExpandDimsView(superdiag_grad, -2);
-  maindiag_grad = ib->ExpandDimsView(maindiag_grad, -2);
-  subdiag_grad = ib->ExpandDimsView(subdiag_grad, -2);
+  superdiag_grad = ib->ExpandDims(superdiag_grad, -2);
+  maindiag_grad = ib->ExpandDims(maindiag_grad, -2);
+  subdiag_grad = ib->ExpandDims(subdiag_grad, -2);
   return {superdiag_grad, maindiag_grad, subdiag_grad, rhs_grad};
 });
 
@@ -4088,8 +4088,8 @@ REG_BPROP_BUILDER("LpNorm").SetBody(BODYFUNC(ib) {
   auto input_x_shape = ib->GetShape(input_x);
   if ((!keep_dims) && (!input_x_shape.empty())) {
     for (const auto &i : axis) {
-      dout = ib->ExpandDimsView(dout, i);
-      out = ib->ExpandDimsView(out, i);
+      dout = ib->ExpandDims(dout, i);
+      out = ib->ExpandDims(out, i);
     }
   }
   if (p == 0) {
@@ -4132,7 +4132,7 @@ REG_BPROP_BUILDER("Renorm").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
                         {"axis", MakeValue(dims)},
                         {"p", MakeValue<int64_t>(p)},
                         {"epsilon", MakeValue<float>(1e-12)}});
-  norm = ib->BroadcastToView(norm, input_x);
+  norm = ib->BroadcastTo(norm, input_x);
   auto grad_out = ib->Mul(input_x, dout);
   grad_out = ib->ReduceSum(grad_out, dims, true);
   NodePtr norm_bp = nullptr;
@@ -4340,14 +4340,14 @@ REG_BPROP_BUILDER("BatchMatMulExt").FreeUselessValues_O({}).SetBody(BODYFUNC(ib)
   NodePtr dw;
   if (x->need_compute_grad_out()) {
     ShapeVector perm_w = {0, 2, 1};
-    auto w_t = ib->TransposeView(w, perm_w);
+    auto w_t = ib->Transpose(w, perm_w);
     dx = ib->Emit("BatchMatMulExt", {dout, w_t});
   } else {
     dx = ib->OutZeros(x);
   }
   if (w->need_compute_grad_out()) {
     ShapeVector perm_x = {0, 2, 1};
-    auto x_t = ib->TransposeView(x, perm_x);
+    auto x_t = ib->Transpose(x, perm_x);
     dw = ib->Emit("BatchMatMulExt", {x_t, dout});
   } else {
     dw = ib->OutZeros(w);
@@ -4365,7 +4365,7 @@ REG_BPROP_BUILDER("EuclideanNorm").SetBody(BODYFUNC(ib) {
   auto dout = ib->GetInput(i3);
   auto scale_v = ib->RealDiv(dout, out);
   if ((!keep_dims) && (ib->GetShape(x).size() > 0)) {
-    scale_v = ib->ExpandDimsView(scale_v, axes);
+    scale_v = ib->Emit("ExpandDims", {scale_v, axes});
   }
   return {ib->Mul(x, scale_v), ib->OutZeros(axes)};
 });
@@ -4633,8 +4633,8 @@ REG_BPROP_BUILDER("InplaceIndexAddExt").SetUnusedInputs({i0, i5}).SetBody(BODYFU
 REG_BPROP_BUILDER("InplaceAddmm").SetUnusedInputs({i0, i3, i5}).SetBody(BODYFUNC(ib) {
   auto mat1 = ib->GetInput(i1);
   auto mat2 = ib->GetInput(i2);
-  auto mat1_t_conj = ib->Conj(ib->TransposeView(mat1, {1, 0}));
-  auto mat2_t_conj = ib->Conj(ib->TransposeView(mat2, {1, 0}));
+  auto mat1_t_conj = ib->Conj(ib->Transpose(mat1, {1, 0}));
+  auto mat2_t_conj = ib->Conj(ib->Transpose(mat2, {1, 0}));
   auto aplha_conj = ib->Conj(ib->GetInput(i4));
   auto aplha_tensor = ib->ScalarToTensor(aplha_conj, ib->GetDtype(mat1));
   auto dout = ib->GetInput(i6);
@@ -4690,7 +4690,7 @@ REG_BPROP_BUILDER("Addmv").SetUnusedInputs({i5}).SetBody(BODYFUNC(ib) {
                 ? MaybeMultiply(ib, input_type, ib->Emit("Outer", {dout, vec}), alpha, "alpha")
                 : ib->OutZeros(mat);
   auto dvec = vec->need_compute_grad_out()
-                ? MaybeMultiply(ib, input_type, ib->Mv(ib->TransposeView(mat, {1, 0}), dout), alpha, "alpha")
+                ? MaybeMultiply(ib, input_type, ib->Mv(ib->Transpose(mat, {1, 0}), dout), alpha, "alpha")
                 : ib->OutZeros(vec);
 
   return {input_grad, dmat, dvec, ib->OutZeros(beta), ib->OutZeros(alpha)};
@@ -4729,9 +4729,9 @@ REG_BPROP_BUILDER("Addbmm").SetUnusedInputs({i5}).SetBody(BODYFUNC(ib) {
   } else {
     input_grad = ib->OutZeros(input);
   }
-  auto grad_unsqueeze = ib->ExpandDimsView(dout, 0);
+  auto grad_unsqueeze = ib->ExpandDims(dout, 0);
   auto expand_shape = ib->ShapeCalc(g_addbmm_shapecalc, {batch1, batch2})[i0];
-  auto grad_unsqueeze_expand = ib->Emit("BroadcastToView", {grad_unsqueeze, expand_shape});
+  auto grad_unsqueeze_expand = ib->Emit("BroadcastTo", {grad_unsqueeze, expand_shape});
   auto batch1_grad =
     batch1->need_compute_grad_out()
       ? MaybeMultiply(ib, input_type, ib->BatchMatMul(grad_unsqueeze_expand, batch2, false, true), alpha, "alpha")
@@ -5726,13 +5726,13 @@ REG_BPROP_BUILDER("ProdExt").SetBody(BODYFUNC(ib) {
       auto res = e->ShapeCalc(g_prod_ext, {input, e->Value<std::vector<int64_t>>({})}, {1});
 
       auto grad = e->Tile(e->Reshape(dout, res[i0]), res[i1]);
-      auto permuted = e->TransposeView(input, res[i3]);
+      auto permuted = e->Transpose(input, res[i3]);
       auto permuted_shape = e->Shape(permuted);
       auto reshaped = e->Reshape(permuted, res[i2]);
       auto left = e->CumProd(reshaped, e->Value<int64_t>(0), true, false);
       auto right = e->CumProd(reshaped, e->Value<int64_t>(0), true, true);
       auto y = e->Reshape(e->Mul(left, right), permuted_shape);
-      auto out = e->Mul(e->TransposeView(y, res[i4]), grad);
+      auto out = e->Mul(e->Transpose(y, res[i4]), grad);
       return {e->Cast(e->Reshape(out, e->Shape(input)), input_dtype)};
     };
     dx = ib->Conditional(has_one_zero, one_zero_true_branch, all_false_branch);
@@ -5763,13 +5763,13 @@ REG_BPROP_BUILDER("ProdExt").SetBody(BODYFUNC(ib) {
     };
     auto no_zero_false_branch = [&](Emitter *e) -> NodePtrList {
       auto grad = e->Tile(dout, res[i1]);
-      auto permuted = e->TransposeView(input, res[i3]);
+      auto permuted = e->Transpose(input, res[i3]);
       auto permuted_shape = e->Shape(permuted);
       auto reshaped = e->Reshape(permuted, res[i2]);
       auto left = e->CumProd(reshaped, e->Value<int64_t>(0), true, false);
       auto right = e->CumProd(reshaped, e->Value<int64_t>(0), true, true);
       auto y = e->Reshape(e->Mul(left, right), permuted_shape);
-      auto out = e->Mul(e->TransposeView(y, res[i4]), grad);
+      auto out = e->Mul(e->Transpose(y, res[i4]), grad);
       return {e->Cast(e->Reshape(out, e->Shape(input)), input_dtype)};
     };
     dx = ib->Conditional(has_no_zero, no_zero_true_branch, no_zero_false_branch);

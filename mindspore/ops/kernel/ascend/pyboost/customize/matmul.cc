@@ -17,7 +17,7 @@
 #include "kernel/ascend/pyboost/customize/matmul.h"
 #include <memory>
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
-#include "kernel/ascend/pyboost/auto_generate/transpose_view.h"
+#include "kernel/ascend/pyboost/auto_generate/transpose.h"
 #include "mindspore/ccsrc/pyboost/op_register.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
@@ -57,14 +57,14 @@ tensor::TensorPtr MatMulAscendCustomize(const std::shared_ptr<OpRunner> &op, con
   TensorPtr input_tensor_ = input_tensor;
   if (transpose_a_imm) {
     const auto &device_name = device_context->device_context_key_.device_name_;
-    auto transpose_op = CREATE_PYBOOST_OP(TransposeView, device_name);
+    auto transpose_op = CREATE_PYBOOST_OP(Transpose, device_name);
     input_tensor_ = transpose_op->Call(input_tensor, matmul_in::GetTransposePerm(input_tensor));
   }
 
   TensorPtr mat2_tensor_ = mat2_tensor;
   if (transpose_b_imm) {
     const auto &device_name = device_context->device_context_key_.device_name_;
-    auto transpose_op = CREATE_PYBOOST_OP(TransposeView, device_name);
+    auto transpose_op = CREATE_PYBOOST_OP(Transpose, device_name);
     mat2_tensor_ = transpose_op->Call(mat2_tensor, matmul_in::GetTransposePerm(mat2_tensor));
   }
   // Async

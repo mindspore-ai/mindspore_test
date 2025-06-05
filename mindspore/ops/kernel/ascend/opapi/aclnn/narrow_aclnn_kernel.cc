@@ -27,15 +27,16 @@
 namespace mindspore {
 namespace kernel {
 namespace narrow {
+
 void NarrowAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                     const std::vector<KernelTensor *> &outputs) {
   dim_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex1]);
   start_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex2]);
   auto length = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex3]);
 
-  const auto &input_shape = inputs[0]->GetShapeVector();
-  dim_ = dim_ < 0 ? dim_ + input_shape.size() : dim_;
-  start_ = start_ < 0 ? start_ + input_shape[dim_] : start_;
+  shape_ = inputs[0]->GetShapeVector();
+  dim_ = dim_ < 0 ? dim_ + shape_.size() : dim_;
+  start_ = start_ < 0 ? start_ + shape_[dim_] : start_;
   end_ = start_ + length;
 
   GetWorkspaceForResize(inputs[kIndex0], dim_, start_, end_, step_, outputs[kIndex0]);
@@ -44,7 +45,11 @@ void NarrowAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
 bool NarrowAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                           const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
-  if (start_ != end_) {
+  if (start_ == end_) {
+    auto output_shape = shape_;
+    output_shape[dim_] = 0;
+    outputs[kIndex0]->SetShapeVector(output_shape);
+  } else {
     RunOp(stream_ptr, workspace, inputs[kIndex0], dim_, start_, end_, step_, outputs[kIndex0]);
   }
   return true;

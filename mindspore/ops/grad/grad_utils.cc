@@ -490,7 +490,7 @@ NodePtr SumGrad(Emitter *ib, const NodePtr &x, const NodePtr &axis, const NodePt
   if (tile_scaling->input_type() == InputType::kConstant || IsDynamic(x->shape())) {
     return ib->Tile(grad, tile_scaling);
   }
-  return ib->BroadcastToView(grad, x);
+  return ib->BroadcastTo(grad, x);
 }
 
 // using input.shape to get the unsqueezed outputs
@@ -623,9 +623,9 @@ NodePtr MinOrMaxGrad(Emitter *ib, const NodePtr &x, const NodePtr &axis, bool ke
 inline NodePtr ScatterZeroDim(Emitter *ib, const NodePtr &input, const NodePtr &dim, const NodePtr &index,
                               const NodePtr &src, const NodePtr &reduce) {
   // Scatter op: ZeroDim need to expand to OneDim
-  auto input_expand = ib->ExpandDimsView(input, -1);
-  auto index_expand = ib->ExpandDimsView(index, -1);
-  auto src_expand = ib->ExpandDimsView(src, -1);
+  auto input_expand = ib->ExpandDims(input, -1);
+  auto index_expand = ib->ExpandDims(index, -1);
+  auto src_expand = ib->ExpandDims(src, -1);
   auto out = ib->Emit("TensorScatterElements", {input_expand, index_expand, src_expand, dim, reduce});
   // recover OneDim To ZeroDim
   return ib->Squeeze(out, MakeValue(ShapeVector{0}));
@@ -690,17 +690,19 @@ NodePtr ArgminOrArgmaxGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr &ax
   if (IsValueKnown(keep_dims_value) && !IsDynamicRank(input_shape)) {
     auto is_zero_dim = input_shape.size() == 0;
     auto keep_dims_bool = GetValue<bool>(keep_dims_value);
-    indices = (keep_dims_bool || is_zero_dim) ? indices : ib->ExpandDimsView(indices, axis);
-    dout_value = (keep_dims_bool || is_zero_dim) ? dout_value : ib->ExpandDimsView(dout_value, axis);
+    indices = (keep_dims_bool || is_zero_dim) ? indices : ib->Emit("ExpandDims", {indices, axis});
+    dout_value = (keep_dims_bool || is_zero_dim) ? dout_value : ib->Emit("ExpandDims", {dout_value, axis});
   } else {
     auto rank = ib->Emit("Rank", {x});
     auto rank_is_zero = ib->Emit("scalar_eq", {rank, ib->Value<int64_t>(0)});
     auto cond = ib->LogicalOr(ib->ScalarToTensor(keep_dims, kBool), ib->ScalarToTensor(rank_is_zero, kBool));
-    auto indices_expand = [&indices, &axis](Emitter *e) -> NodePtrList { return {e->ExpandDimsView(indices, axis)}; };
+    auto indices_expand = [&indices, &axis](Emitter *e) -> NodePtrList {
+      return {e->Emit("ExpandDims", {indices, axis})};
+    };
     auto indices_ori = [&indices](Emitter *e) -> NodePtrList { return {indices}; };
     indices = ib->Conditional(cond, indices_ori, indices_expand);
     auto dout_expand = [&dout_value, &axis](Emitter *e) -> NodePtrList {
-      return {e->ExpandDimsView(dout_value, axis)};
+      return {e->Emit("ExpandDims", {dout_value, axis})};
     };
     auto dout_ori = [&dout_value](Emitter *e) -> NodePtrList { return {dout_value}; };
     dout_value = ib->Conditional(cond, dout_ori, dout_expand);
@@ -725,17 +727,19 @@ inline NodePtr ReduceCommonOpGrad(BpropBuilder *ib, const NodePtr &x, const Node
   if (IsValueKnown(keep_dims_value) && !IsDynamicRank(input_shape)) {
     auto is_zero_dim = input_shape.size() == 0;
     auto keep_dims_bool = GetValue<bool>(keep_dims_value);
-    indices = (keep_dims_bool || is_zero_dim) ? indices : ib->ExpandDimsView(indices, axis);
-    dout_value = (keep_dims_bool || is_zero_dim) ? dout_value : ib->ExpandDimsView(dout_value, axis);
+    indices = (keep_dims_bool || is_zero_dim) ? indices : ib->Emit("ExpandDims", {indices, axis});
+    dout_value = (keep_dims_bool || is_zero_dim) ? dout_value : ib->Emit("ExpandDims", {dout_value, axis});
   } else {
     auto rank = ib->Emit("Rank", {x});
     auto rank_is_zero = ib->Emit("scalar_eq", {rank, ib->Value<int64_t>(0)});
     auto cond = ib->LogicalOr(ib->ScalarToTensor(keep_dims, kBool), ib->ScalarToTensor(rank_is_zero, kBool));
-    auto indices_expand = [&indices, &axis](Emitter *e) -> NodePtrList { return {e->ExpandDimsView(indices, axis)}; };
+    auto indices_expand = [&indices, &axis](Emitter *e) -> NodePtrList {
+      return {e->Emit("ExpandDims", {indices, axis})};
+    };
     auto indices_ori = [&indices](Emitter *e) -> NodePtrList { return {indices}; };
     indices = ib->Conditional(cond, indices_ori, indices_expand);
     auto dout_expand = [&dout_value, &axis](Emitter *e) -> NodePtrList {
-      return {e->ExpandDimsView(dout_value, axis)};
+      return {e->Emit("ExpandDims", {dout_value, axis})};
     };
     auto dout_ori = [&dout_value](Emitter *e) -> NodePtrList { return {dout_value}; };
     dout_value = ib->Conditional(cond, dout_ori, dout_expand);
@@ -855,7 +859,7 @@ NodePtr MatrixTranspose(BpropBuilder *ib, const NodePtr &x) {
     auto part_2 = stridedslice_helper(-1, 0, 1, 1);
     auto part_3 = stridedslice_helper(-2, -1, 1);
     perm = ib->Concat({part_1, part_2, part_3}, -1);
-    return ib->TransposeView(x, ib->TensorToTuple(perm));
+    return ib->Transpose(x, ib->TensorToTuple(perm));
   }
   auto dim = shape.size();
   if (dim < i2) {
@@ -866,7 +870,7 @@ NodePtr MatrixTranspose(BpropBuilder *ib, const NodePtr &x) {
     perm[i] = static_cast<int64_t>(i);
   }
   std::swap(perm[dim - i2], perm[dim - i1]);
-  return ib->TransposeView(x, perm);
+  return ib->Transpose(x, perm);
 }
 
 NodePtr MatrixTransposeExt(BpropBuilder *ib, const NodePtr &x) {
@@ -884,7 +888,7 @@ NodePtr MatrixTransposeExt(BpropBuilder *ib, const NodePtr &x) {
     auto part_2 = stridedslice_helper(-1, 0, 1, 1);
     auto part_3 = stridedslice_helper(-2, -1, 1);
     perm = ib->Concat({part_1, part_2, part_3}, -1);
-    return ib->TransposeView(x, ib->TensorToTuple(perm));
+    return ib->Transpose(x, ib->TensorToTuple(perm));
   }
   auto dim = shape.size();
   if (dim < i2) {
@@ -895,7 +899,7 @@ NodePtr MatrixTransposeExt(BpropBuilder *ib, const NodePtr &x) {
     perm[i] = static_cast<int64_t>(i);
   }
   std::swap(perm[dim - i2], perm[dim - i1]);
-  return ib->TransposeView(x, perm);
+  return ib->Transpose(x, perm);
 }
 
 NodePtr Adjoint(BpropBuilder *ib, const NodePtr &x) { return MatrixTranspose(ib, ib->Conj(x)); }

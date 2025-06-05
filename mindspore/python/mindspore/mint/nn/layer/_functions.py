@@ -4,16 +4,17 @@ from mindspore.ops.auto_generate.gen_ops_prim import BatchNormReduceGrad
 from mindspore.ops.auto_generate.gen_ops_prim import BatchNormElemtGrad
 from mindspore.communication.comm_func import all_gather_into_tensor
 from mindspore.communication.comm_func import all_reduce
-from mindspore import mint
+from mindspore.ops import operations as P
+from mindspore import ops, mint
 from mindspore.ops.primitive import Primitive, prim_arg_register, PrimitiveWithInfer, prim_attr_register
 from mindspore import _checkparam as validator
 from mindspore.communication.management import get_rank, get_group_size, GlobalComm, _get_group
-from mindspore.ops.operations.comm_ops import ReduceOp, check_hcom_group_valid, check_collective_target_dtype
-from mindspore.ops.function.math_func import numel
-from mindspore.ops.function.array_func import shape
+from mindspore.ops.operations.comm_ops import ReduceOp, check_hcom_group_valid
+
 
 batch_norm_reduce_grad = BatchNormReduceGrad()
 batch_norm_elemt_grad = BatchNormElemtGrad()
+shape = P.Shape()
 
 
 class AllGather(PrimitiveWithInfer):
@@ -83,7 +84,7 @@ class SyncBatchNormInner(Cell):
             weight = weight.contiguous()
 
         input_shape = shape(input)
-        input_numel = numel(input)
+        input_numel = ops.numel(input)
         size = int(input_numel // input_shape[1])
         if size == 1 and world_size < 2:
             raise ValueError(
@@ -105,7 +106,7 @@ class SyncBatchNormInner(Cell):
         # world_size * (2C + 1)
         all_gather_op = AllGather(process_group)
         combined = all_gather_op(combined)
-        combined = mint.reshape(combined, [world_size, -1])
+        combined = ops.reshape(combined, [world_size, -1])
         # world_size * (2C + 1) -> world_size * C, world_size * C, world_size * 1
         mean_val_all, invstd_val_all, count_val_all = mint.split(
             combined, num_channels, dim=1)
