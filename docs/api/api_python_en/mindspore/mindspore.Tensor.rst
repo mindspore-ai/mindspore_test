@@ -136,6 +136,7 @@ mindspore.Tensor
     mindspore.Tensor.atan2
     mindspore.Tensor.atanh
     mindspore.Tensor.baddbmm
+    mindspore.Tensor.bernoulli_
     mindspore.Tensor.bernoulli
     mindspore.Tensor.bfloat16
     mindspore.Tensor.bincount

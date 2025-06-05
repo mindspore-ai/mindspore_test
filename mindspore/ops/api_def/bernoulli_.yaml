@@ -1,0 +1,14 @@
+bernoulli_:
+  - op_yaml: inplace_bernoulli_tensor_op.yaml
+    py_method: tensor_bernoulli_
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: function
+
+  - op_yaml: inplace_bernoulli_scalar_op.yaml
+    py_method: tensor_bernoulli_
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: function
