@@ -547,6 +547,25 @@ Arrangement TensorLayout::base_slice_shape() const {
   }
 }
 
+Shape TensorLayout::base_shard_strategy() const {
+  if (tensor_map_before_.empty()) {
+    return shard_strategy();
+  }
+  Shape stra;
+  for (size_t index = 0; index < tensor_map_before_.size(); index++) {
+    auto dim_map = tensor_map_before_[index];
+    int64_t axis_shard = 1;
+    for (const auto &dim : dim_map) {
+      if (dim != -1) {
+        int64_t divisor = device_arrangement_origin_.GetDimByReverseIdx(LongToUlong(dim));
+        axis_shard *= divisor;
+      }
+    }
+    stra.push_back(axis_shard);
+  }
+  return stra;
+}
+
 Shape TensorLayout::shard_strategy() const {
   Shape ret;
   for (size_t index = 0; index < tensor_map_.GetDimSize(); index++) {

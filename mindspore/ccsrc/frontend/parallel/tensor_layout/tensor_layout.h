@@ -116,6 +116,8 @@ class TensorLayout {
 
   Shape shard_strategy() const;
 
+  Shape base_shard_strategy() const;
+
   Status UpdateTensorMap(size_t index, int64_t value);
 
   TensorLayout SqueezeShape() const;
