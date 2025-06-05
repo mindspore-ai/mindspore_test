@@ -1174,7 +1174,8 @@ std::tuple<tensor::TensorPtr, tensor::TensorPtr, tensor::TensorPtr> AdamWAscendD
 
 tensor::TensorPtr InplaceCopyAscendDvm::Call(const TensorPtr &variable_tensor, const TensorPtr &value_tensor,
                                              const BoolImmPtr &non_blocking) {
-  if (!InputCheck(variable_tensor, IsFloatIntType) || !InputCheck(value_tensor, IsFloatIntType)) {
+  if (!InputCheck(variable_tensor, IsFloatIntType) || !InputCheck(value_tensor, IsFloatIntType) ||
+      non_blocking->value()) {
     return InplaceCopyAscend::Call(variable_tensor, value_tensor, non_blocking);
   }
   if (SameTensor(variable_tensor, value_tensor)) {

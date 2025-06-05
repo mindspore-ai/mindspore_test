@@ -6,16 +6,17 @@ copy_:
 
     .. warning::
         This is an experimental API that is subject to change or deletion.
-        If Copying between Ascend and Ascend, the `src` tensor must be broadcastable with the `self` tensor,
+
+        If Copying is performed between Ascend and Ascend, the `src` tensor must be broadcastable with the `self` tensor,
         and they can be of different data types.
-        Copying between CPU and Ascend or CPU and CPU is only supported if 'self' and 'src' have
+        Copying is performed between CPU and Ascend or CPU and CPU are only supported if `self` and `src` have
         the same shape and data type and they are all contiguous.
 
     Args:
         src (Tensor): the source tensor to copy from.
-        non_blocking (bool, optional): If ``True`` and copying is between CPU and Ascend, and 'self' and 'src' have
-            the same shape and data type and are contiguous. the copy may occur asynchronously with respect to the host.
-            For other cases, this argument has no effect. Default: ``False``.
+        non_blocking (bool, optional): If ``True`` and copying is performed between CPU and Ascend, and `self` and `src`
+            have the same shape and data type and are contiguous. The copy may occur asynchronously with respect to the
+            host. For other cases, this argument has no effect. Default: ``False``.
 
     Returns:
         Return self Tensor.
