@@ -50,14 +50,14 @@ class ASCEND_RES_MANAGER_EXPORT AscendVmmAdapter {
   AscendVmmAdapter() {
     auto align_size = common::GetAllocConfigValue(common::kAllocVmmAlignSize);
     if (align_size.empty()) {
-      kVmmAlignSize = kDefaultAlignSize;
+      vmm_align_size_ = kDefaultAlignSize;
     } else {
-      kVmmAlignSize = StringToMB(align_size) * kMB;
-      if (kVmmAlignSize % kDefaultAlignSize != 0) {
-        MS_LOG(EXCEPTION) << "VMM align size must be multiple of 2MB, but got " << kVmmAlignSize;
+      vmm_align_size_ = StringToMB(align_size) * kMB;
+      if (vmm_align_size_ % kDefaultAlignSize != 0) {
+        MS_LOG(EXCEPTION) << "VMM align size must be multiple of 2MB, but got " << vmm_align_size_;
       }
     }
-    MS_LOG(INFO) << "VMM align size is " << kVmmAlignSize;
+    MS_LOG(INFO) << "VMM align size is " << vmm_align_size_;
   }
   ~AscendVmmAdapter();
 
@@ -69,7 +69,7 @@ class ASCEND_RES_MANAGER_EXPORT AscendVmmAdapter {
   size_t AllocDeviceMem(size_t size, DeviceMemPtr *addr);
   size_t MmapDeviceMem(const size_t size, const DeviceMemPtr addr, const size_t max_size);
   size_t EagerFreeDeviceMem(const DeviceMemPtr addr, const size_t size);
-  size_t GetAllocatedSize() { return physical_handle_size_ * kVmmAlignSize; }
+  size_t GetAllocatedSize() { return physical_handle_size_ * vmm_align_size_; }
 
   size_t EmptyCache();
 
@@ -117,7 +117,7 @@ class ASCEND_RES_MANAGER_EXPORT AscendVmmAdapter {
   }
 
  private:
-  uint64_t kVmmAlignSize;
+  uint64_t vmm_align_size_;
   DeviceMemPtr FindVmmSegment(const DeviceMemPtr addr);
   size_t GetHandleSize(size_t input_size);
   std::atomic<size_t> physical_handle_size_{0};

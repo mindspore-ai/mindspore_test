@@ -27,18 +27,18 @@ namespace mindspore {
 namespace device {
 namespace ascend {
 size_t AscendVmmAdapter::GetRoundUpAlignSize(size_t input_size) const {
-  return ((input_size + kVmmAlignSize - 1) / kVmmAlignSize) * kVmmAlignSize;
+  return ((input_size + vmm_align_size_ - 1) / vmm_align_size_) * vmm_align_size_;
 }
 
 size_t AscendVmmAdapter::GetRoundDownAlignSize(size_t input_size) const {
-  return (input_size / kVmmAlignSize) * kVmmAlignSize;
+  return (input_size / vmm_align_size_) * vmm_align_size_;
 }
 
 size_t AscendVmmAdapter::GetHandleSize(size_t input_size) {
-  if (input_size % kVmmAlignSize != 0) {
+  if (input_size % vmm_align_size_ != 0) {
     MS_LOG(EXCEPTION) << "Input size must be multiple of 2MB, but got " << input_size;
   }
-  return input_size / kVmmAlignSize;
+  return input_size / vmm_align_size_;
 }
 
 DeviceMemPtr AscendVmmAdapter::FindVmmSegment(const DeviceMemPtr addr) {
@@ -134,7 +134,7 @@ size_t AscendVmmAdapter::MmapDeviceMem(const size_t size, const DeviceMemPtr add
 
   std::map<DeviceMemPtr, aclrtDrvMemHandle> mapped_vmm_handle;
   for (size_t i = 0; i < handle_size; ++i) {
-    auto new_addr = AddressOffset(vmm_start_addr, i * kVmmAlignSize);
+    auto new_addr = AddressOffset(vmm_start_addr, i * vmm_align_size_);
     if (iter == vmm_map_.end() || iter->first != new_addr) {
       MS_LOG(ERROR) << "Can not find the vmm segment.";
       return 0;
@@ -148,14 +148,14 @@ size_t AscendVmmAdapter::MmapDeviceMem(const size_t size, const DeviceMemPtr add
       handle = *cached_handle_sets_.begin();
       cached_handle_sets_.erase(cached_handle_sets_.begin());
     } else {
-      if (physical_handle_size_ * kVmmAlignSize >= max_size) {
+      if (physical_handle_size_ * vmm_align_size_ >= max_size) {
         MS_LOG(INFO) << "Mapped too much memory, physical_handle_size_ : " << physical_handle_size_
                      << ", max_size : " << max_size << ", addr : " << addr << ", size : " << size << ".";
         MoveBackMappedHandle(&mapped_vmm_handle, &vmm_map_, &cached_handle_sets_);
         return 0;
       }
 
-      auto ret = CALL_ASCEND_API(aclrtMallocPhysical, &handle, kVmmAlignSize, &prop, 0);
+      auto ret = CALL_ASCEND_API(aclrtMallocPhysical, &handle, vmm_align_size_, &prop, 0);
       if (ret != ACL_ERROR_NONE) {
         size_t used_handle_size = 0;
         for (const auto &[k, v] : vmm_map_) {
@@ -172,14 +172,14 @@ size_t AscendVmmAdapter::MmapDeviceMem(const size_t size, const DeviceMemPtr add
         return 0;
       } else {
         physical_handle_size_++;
-        if (physical_handle_size_ * kVmmAlignSize >= max_size) {
+        if (physical_handle_size_ * vmm_align_size_ >= max_size) {
           MS_LOG(WARNING) << "Mapped too much memory, physical_handle_size_ : " << physical_handle_size_
                           << ", max_size : " << max_size << ".";
         }
       }
     }
 
-    auto ret = CALL_ASCEND_API(aclrtMapMem, new_addr, kVmmAlignSize, 0, handle, 0);
+    auto ret = CALL_ASCEND_API(aclrtMapMem, new_addr, vmm_align_size_, 0, handle, 0);
     if (ret != ACL_ERROR_NONE) {
       MS_LOG(ERROR) << "Map memory failed.";
       cached_handle_sets_.insert(handle);
@@ -211,7 +211,7 @@ size_t AscendVmmAdapter::AllocDeviceMem(size_t size, DeviceMemPtr *addr) {
   all_reserve_mems_.push_back(*addr);
   auto handle_size = GetHandleSize(align_size);
   for (size_t i = 0; i < handle_size; i++) {
-    auto new_addr = AddressOffset(*addr, i * kVmmAlignSize);
+    auto new_addr = AddressOffset(*addr, i * vmm_align_size_);
     vmm_map_[new_addr] = nullptr;
   }
   return align_size;
@@ -227,7 +227,7 @@ size_t AscendVmmAdapter::EagerFreeDeviceMem(const DeviceMemPtr addr, const size_
   auto iter = vmm_map_.lower_bound(addr);
   if (iter == vmm_map_.end()) {
     // Memory less than 2MB may be at the end of a vmm segment, and it's a normal case.
-    if (size >= kVmmAlignSize) {
+    if (size >= vmm_align_size_) {
       MS_LOG(ERROR) << "Can not find the vmm segment.";
     }
     return 0;
@@ -235,7 +235,7 @@ size_t AscendVmmAdapter::EagerFreeDeviceMem(const DeviceMemPtr addr, const size_
   auto vmm_start_addr = iter->first;
   auto free_end_addr = AddressOffset(addr, size);
   while (true) {
-    auto vmm_end_addr = AddressOffset(vmm_start_addr, kVmmAlignSize);
+    auto vmm_end_addr = AddressOffset(vmm_start_addr, vmm_align_size_);
     if (vmm_end_addr > free_end_addr) {
       break;
     }
@@ -258,7 +258,7 @@ size_t AscendVmmAdapter::EagerFreeDeviceMem(const DeviceMemPtr addr, const size_
     iter->second = nullptr;
     iter++;
     vmm_start_addr = vmm_end_addr;
-    ret_size += kVmmAlignSize;
+    ret_size += vmm_align_size_;
   }
   MS_LOG(DEBUG) << "After eager free, cached_handle_sets_ size : " << cached_handle_sets_.size()
                 << ", expected free size : " << size << ", real size : " << ret_size << ".";
@@ -276,7 +276,7 @@ size_t AscendVmmAdapter::EmptyCache() {
 
   size_t cache_handle_size = cached_handle_sets_.size();
   physical_handle_size_ -= cache_handle_size;
-  empty_size += cache_handle_size * kVmmAlignSize;
+  empty_size += cache_handle_size * vmm_align_size_;
   cached_handle_sets_.clear();
   MS_LOG(INFO) << "Empty cache size : " << empty_size << ".";
   return empty_size;

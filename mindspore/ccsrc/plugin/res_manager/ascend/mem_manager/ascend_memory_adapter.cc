@@ -107,6 +107,9 @@ bool AscendMemAdapter::Initialize() {
 
   float huge_page_reserve_size = runtime::RuntimeConf::GetInstance()->mem_huge_page_reserve_size();
   device_hbm_huge_page_reserved_size_ = static_cast<size_t>(huge_page_reserve_size * kGBToByte);
+  if (AscendVmmAdapter::IsEnabled() && device_hbm_huge_page_reserved_size_ > 0) {
+    MS_LOG(WARNING) << "Reserve huge page feature is not available when VMM is enabled.";
+  }
   MS_LOG(INFO) << "Config huge_page_reserve_size : " << huge_page_reserve_size
                << ", device_hbm_huge_page_reserved_size_ : " << device_hbm_huge_page_reserved_size_;
 
