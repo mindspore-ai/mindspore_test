@@ -1,5 +1,5 @@
 /**
- * Copyright 2023-2024 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -91,13 +91,7 @@ bool IsEnableInternalNode(const AnfNodePtr &node) {
   }
 
   std::string op_name = common::AnfAlgo::GetCNodeName(node);
-  if (op_name == "QuantBatchMatmul") {
-    auto cnode = node->cast<CNodePtr>();
-    MS_EXCEPTION_IF_NULL(cnode);
-    if (!IsValueNode<None>(cnode->input(kIndex6))) {
-      return false;
-    }
-  } else if (op_name == "SplitWithSize") {
+  if (op_name == "SplitWithSize") {
     static const auto kSplitOutNum2 = 2;
     static const auto kSplitOutNum3 = 3;
     auto out_num = AnfUtils::GetOutputTensorNum(node);

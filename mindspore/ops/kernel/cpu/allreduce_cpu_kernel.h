@@ -37,6 +37,10 @@ class AllReduceCPUKernelMod : public NativeCpuKernelMod {
               const std::vector<KernelTensor *> &outputs) override;
 
   std::vector<KernelAttr> GetOpSupport() override;
+
+ private:
+  std::string group_;
+  mindspore::TypeId input_dtype_ = kNumberTypeFloat32;
 };
 }  // namespace allreduce_cpu
 }  // namespace kernel

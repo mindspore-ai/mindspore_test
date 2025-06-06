@@ -1,5 +1,5 @@
 /**
- * Copyright 2023-2024 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,6 +44,8 @@ constexpr auto kPhaseNameIncrement = "increment";
 constexpr auto kQuantLinearSparseName = "QuantLinearSparse";
 constexpr auto kQuantBatchMatmulName = "QuantBatchMatmul";
 constexpr auto kGroupedMatmulName = "GroupedMatmul";
+constexpr auto kGroupedMatmulV4TransposeName = "GroupedMatmulV4Transpose";
+constexpr auto kGroupedMatmulV4Name = "GroupedMatmulV4";
 constexpr auto CONST_2 = 2;
 constexpr auto Align16 = 16;
 constexpr auto kQuantLinearSparseBiasIdx = 5;  // primitive input weight deq_scale compress_idx bias
@@ -68,7 +70,9 @@ static std::unordered_map<std::string, std::vector<std::vector<std::vector<size_
   {kFlashAttentionScoreOpName, {{{0, 1, 2, 6}, {3}}, {{0, 1, 2, 6}, {3}}}},
   {kReshapeAndCacheOpName, {{{2, 3}, {}}, {{2, 3}, {}}}},
   {kGroupedMatmulName, {{{1}, {}}, {{1}, {}}}},
-  {"GroupedMatmulV4", {{{1}, {}}, {{1}, {}}}}};
+  {kGroupedMatmulV4Name, {{{1}, {}}, {{1}, {}}}},
+  {kGroupedMatmulV4TransposeName, {{{1}, {}}, {{1}, {}}}},
+  {kBatchMatMulOpName, {{{1}, {}}, {{1}, {}}}}};
 
 // unordered_map mean:
 // key is input_idx, value is special_format value
