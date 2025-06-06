@@ -275,7 +275,10 @@ def _update_param(param, new_param, strict_load):
 
         if param.data.dtype != new_param.data.dtype:
             if _type_convert(param, new_param, strict_load):
-                new_tensor = Tensor(new_param.data.asnumpy(), param.data.dtype)
+                if new_param.data.dtype == mstype.bfloat16:
+                    new_tensor = cpu_cast(new_param.data, param.data.dtype)
+                else:
+                    new_tensor = Tensor(new_param.data.asnumpy(), param.data.dtype)
                 param.set_data(new_tensor, param.sliced)
                 return
 
