@@ -55,10 +55,10 @@ REG_BPROP_BUILDER("SolveTriangular").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) 
     NodePtr grad_a;
     if (bp_trans == KTransT) {
       auto conj = ib->Conj(x_align);
-      grad_a = ib->MatMul(grad_b_align, ib->TransposeView(conj, reverse_perm(conj->shape())));
+      grad_a = ib->MatMul(grad_b_align, ib->Transpose(conj, reverse_perm(conj->shape())));
     } else {
       auto conj = ib->Conj(grad_b_align);
-      grad_a = ib->MatMul(x_align, ib->TransposeView(conj, reverse_perm(conj->shape())));
+      grad_a = ib->MatMul(x_align, ib->Transpose(conj, reverse_perm(conj->shape())));
     }
     int is_lower = static_cast<int>(lower_value);
     grad_a = ib->Neg(ib->Emit("MatrixBandPart", {grad_a, ib->Value(-is_lower), ib->Value(is_lower - 1)}));
@@ -93,7 +93,7 @@ REG_BPROP_BUILDER("Eigh").SetBody(BODYFUNC(ib) {
     for (int64_t i = SizeToLong(shape.size()) - 1; i >= 0; --i) {
       perm.push_back(i);
     }
-    return ib->TransposeView(conj, perm);
+    return ib->Transpose(conj, perm);
   };
 
   auto EyeTensor = [](BpropBuilder *ib, int m, int n) -> NodePtr {
@@ -125,7 +125,7 @@ REG_BPROP_BUILDER("Eigh").SetBody(BODYFUNC(ib) {
     auto v = ib->TupleGetItem(
       ib->Emit("Eigh", {a}, {{"compute_eigenvectors", MakeValue(true)}, {"lower", MakeValue(true)}}), 1);
     // grad_a is _matmul(v * F.expand_dims(dout, -2), _adjoint(v))
-    grad_a = ib->MatMul(ib->Mul(v, ib->ExpandDimsView(dout, kValueNeg2)), Adjoint(ib, v), false, false);
+    grad_a = ib->MatMul(ib->Mul(v, ib->Emit("ExpandDims", {dout, kValueNeg2})), Adjoint(ib, v), false, false);
 
   } else {
     //  vh equal _adjoint(out[1])
@@ -137,7 +137,7 @@ REG_BPROP_BUILDER("Eigh").SetBody(BODYFUNC(ib) {
     auto out_0 = ib->TupleGetItem(out, 0);
     // diff_inv equal diff / (diff * diff + epsilon)
     // f equal matrix_set_diag(diff_inv, F.zeros_like(w))
-    auto diff = ib->Sub(ib->ExpandDimsView(out_0, kValueNeg2), ib->ExpandDimsView(out_0, kValueNeg1));
+    auto diff = ib->Sub(ib->Emit("ExpandDims", {out_0, kValueNeg2}), ib->Emit("ExpandDims", {out_0, kValueNeg1}));
     auto diff_inv = ib->RealDiv(diff, ib->Add(ib->Mul(diff, diff), ib->Tensor(1e-20, ib->GetDtype(diff))));
 
     auto f = ib->MatrixSetDiagV3(diff_inv, ib->ZerosLike(out_0), zero_tensor, MakeValue("RIGHT_LEFT"));
@@ -150,7 +150,8 @@ REG_BPROP_BUILDER("Eigh").SetBody(BODYFUNC(ib) {
     auto eye_tensor_node = EyeTensor(ib, dout_0_size, dout_0_size);
 
     // compute the product
-    auto diag_dout_0 = ib->Mul(ib->ExpandDimsView(dout_0, kValueNeg2), ib->Cast(eye_tensor_node, ib->GetDtype(dout_0)));
+    auto diag_dout_0 =
+      ib->Mul(ib->Emit("ExpandDims", {dout_0, kValueNeg2}), ib->Cast(eye_tensor_node, ib->GetDtype(dout_0)));
 
     //  mid_part equal _diag(dout[0]) + f * vh_gv
     auto mid_part = ib->Add(diag_dout_0, ib->Mul(f, vh_gv));
@@ -167,7 +168,7 @@ REG_BPROP_BUILDER("Eigh").SetBody(BODYFUNC(ib) {
   auto grad_a_shape = ib->GetShape(grad_a);
   auto eye_node_for_diag =
     EyeTensor(ib, LongToInt(grad_a_shape[grad_a_shape.size() - i2]), LongToInt(grad_a_shape.back()));
-  auto eye_tensor_broadcast = ib->BroadcastToView(eye_node_for_diag, grad_a);
+  auto eye_tensor_broadcast = ib->BroadcastTo(eye_node_for_diag, grad_a);
 
   auto prod = ib->Mul(grad_a, ib->Cast(eye_tensor_broadcast, ib->GetDtype(grad_a)));
   auto res = ib->ReduceSum(ib->Cast(prod, kFloat32), {-1}, false);

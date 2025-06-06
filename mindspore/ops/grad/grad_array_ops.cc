@@ -535,7 +535,7 @@ NodePtrList BinopGather(BpropBuilder *ib) {
   auto ind_shp = ib->GetShape(indices);
 
   if (out_shp.empty()) {
-    dout = ib->ExpandDimsView(dout, -1);
+    dout = ib->ExpandDims(dout, -1);
   }
   int64_t axis_v = CheckRange(GetIntValue(axis), SizeToLong(x_shp.size()));
   auto batch_dims = GetIntValue(batch_dims_ptr);
@@ -549,7 +549,7 @@ NodePtrList BinopGather(BpropBuilder *ib) {
       (is_axis_mutable && (IsDynamic(x_shp) || IsDynamic(ind_shp) || IsDynamic(out_shp)))) {
     auto batch_dims_tensor = ib->Tensor(batch_dims, kInt64);
     if (ind_shp.empty()) {
-      indices = ib->ExpandDimsView(indices, -1);
+      indices = ib->ExpandDims(indices, -1);
       auto out_shp1 = ib->ShapeCalc(g_regenerate_output, {x, indices, axis, batch_dims_tensor}, {i2, i3})[0];
       dout = ib->Reshape(dout, out_shp1);
     }
@@ -559,7 +559,7 @@ NodePtrList BinopGather(BpropBuilder *ib) {
     MS_EXCEPTION_IF_CHECK_FAIL(perms.size() == perm_num, "Perms number should be 2 for gradient of Gather.");
     auto perm_1 = perms[0];
     auto perm_2 = perms[1];
-    auto values_transpose = ib->TransposeView(dout, perm_1);
+    auto values_transpose = ib->Transpose(dout, perm_1);
     NodePtr x_grad = nullptr;
     if (batch_dims > 0) {
       x_grad = CalBatchGather(ib, values_transpose, indices, x, axis_v, batch_dims);
@@ -567,12 +567,12 @@ NodePtrList BinopGather(BpropBuilder *ib) {
       auto num_segment = CalcNumSegment(ib, x, axis);
       x_grad = ib->UnsortedSegmentSum(values_transpose, indices, num_segment);
     }
-    x_grad = ib->TransposeView(x_grad, perm_2);
+    x_grad = ib->Transpose(x_grad, perm_2);
     return {x_grad, ib->OutZeros(ori_indices), ib->OutZeros(axis), ib->OutZeros(batch_dims_ptr)};
   }
 
   if (ind_shp.empty()) {
-    indices = ib->ExpandDimsView(indices, -1);
+    indices = ib->ExpandDims(indices, -1);
     ind_shp = ib->GetShape(indices);
     auto out_shp1 = RegenerateOutputShape(x_shp, ind_shp, axis_v);
     dout = ib->Reshape(dout, out_shp1);
@@ -580,7 +580,7 @@ NodePtrList BinopGather(BpropBuilder *ib) {
 
   out_shp = ib->GetShape(dout);
   auto perm_1 = GenerateShapeIndex(out_shp, ind_shp, axis_v, batch_dims);
-  auto values_transpose = ib->TransposeView(dout, perm_1);
+  auto values_transpose = ib->Transpose(dout, perm_1);
   NodePtr x_grad = nullptr;
   if (batch_dims > 0) {
     x_grad = CalBatchGather(ib, values_transpose, indices, x, axis_v, batch_dims);
@@ -589,7 +589,7 @@ NodePtrList BinopGather(BpropBuilder *ib) {
     x_grad = ib->UnsortedSegmentSum(values_transpose, indices, num_segment);
   }
   auto perm_2 = GenerateInverseIndex(x_shp, axis_v, batch_dims);
-  auto params_grad = ib->TransposeView(x_grad, perm_2);
+  auto params_grad = ib->Transpose(x_grad, perm_2);
   return {params_grad, ib->OutZeros(ori_indices), ib->OutZeros(axis), ib->OutZeros(batch_dims_ptr)};
 }
 
@@ -988,18 +988,18 @@ REG_BPROP_BUILDER("SparseGatherV2").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(i
   auto out_shp = ib->GetShape(dout);
   auto ind_shp = ib->GetShape(indices);
   if (out_shp.size() == 0) {
-    dout = ib->ExpandDimsView(dout, -1);
+    dout = ib->ExpandDims(dout, -1);
   }
   if (ind_shp.size() == 0) {
-    indices = ib->ExpandDimsView(indices, -1);
+    indices = ib->ExpandDims(indices, -1);
   }
   out_shp = ib->GetShape(dout);
   ind_shp = ib->GetShape(indices);
   auto perm_1 = GenerateShapeIndex(out_shp, ind_shp, axis_int);
-  auto values_transpose = ib->TransposeView(dout, perm_1);
+  auto values_transpose = ib->Transpose(dout, perm_1);
   auto params_grad = ib->UnsortedSegmentSum(values_transpose, indices, ib->Value<int64_t>(x_shp[LongToSize(axis_int)]));
   auto perm_2 = GenerateInverseIndex(x_shp, axis_int);
-  params_grad = ib->TransposeView(params_grad, perm_2);
+  params_grad = ib->Transpose(params_grad, perm_2);
   return {params_grad, ib->OutZeros(indices), ib->OutZeros(axis)};
 });
 
@@ -1051,22 +1051,22 @@ REG_BPROP_BUILDER("Sort").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
     dvalue = ib->Neg(dvalue);
   }
 
-  auto top_k_input = ib->TransposeView(input_x, transposition);
+  auto top_k_input = ib->Transpose(input_x, transposition);
   auto tmp = ib->Emit("TopK", {top_k_input, k}, {{"sorted", MakeValue(true)}});
   auto indices = ib->TupleGetItem(tmp, 1);
   auto res = ib->ShapeCalc(g_sort_2, {indices, top_k_input});
   auto indices_dtype = ib->GetDtype(indices);
   auto range_flatten_index =
     ib->Cast(ib->Range(ib->Value<int64_t>(0), ib->TupleGetItem(res[4], 0), ib->TupleGetItem(res[2], 0)), indices_dtype);
-  range_flatten_index = ib->ExpandDimsView(range_flatten_index, -1);
+  range_flatten_index = ib->ExpandDims(range_flatten_index, -1);
   auto ind_2d = ib->Reshape(indices, res[1]);
   auto ind = ib->Reshape(ib->Add(ind_2d, range_flatten_index), {-1});
 
-  dvalue = ib->TransposeView(dvalue, invert_perm);
-  auto ind_expand = ib->ExpandDimsView(ind, -1);
+  dvalue = ib->Transpose(dvalue, invert_perm);
+  auto ind_expand = ib->ExpandDims(ind, -1);
   auto scatter = ib->ScatterNd(ind_expand, ib->Reshape(dvalue, {-1}), res[3]);
   auto out_grad = ib->Reshape(scatter, res[0]);
-  auto dx = ib->TransposeView(out_grad, invert_perm);
+  auto dx = ib->Transpose(out_grad, invert_perm);
 
   if (!descending) {
     dx = ib->Neg(dx);
@@ -2324,7 +2324,7 @@ REG_BPROP_BUILDER("TransposeView").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib
   auto perm = ib->GetInput(i1);
   auto dout = ib->GetInput(i3);
   auto res_perm = ib->ShapeCalc(g_transpose, {perm}, {0})[0];
-  return {ib->TransposeView(dout, res_perm), ib->OutZeros(perm)};
+  return {ib->Transpose(dout, res_perm), ib->OutZeros(perm)};
 });
 
 REG_BPROP_BUILDER("TransposeExtView").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
@@ -2568,9 +2568,9 @@ REG_BPROP_BUILDER("SelectView").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
   int64_t batch_dims = 0;
 
   if (out_shp.empty()) {
-    dout = ib->ExpandDimsView(dout, -1);
+    dout = ib->ExpandDims(dout, -1);
   } else {
-    dout = ib->ExpandDimsView(dout, axis_v);
+    dout = ib->ExpandDims(dout, axis_v);
   }
 
   auto is_axis_mutable = IsMutable(axis);
@@ -2578,7 +2578,7 @@ REG_BPROP_BUILDER("SelectView").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
       (is_axis_mutable && (IsDynamic(x_shp) || IsDynamic(ind_shp) || IsDynamic(out_shp)))) {
     auto batch_dims_tensor = ib->Tensor(batch_dims, kInt64);
     if (ind_shp.empty()) {
-      indices = ib->ExpandDimsView(indices, -1);
+      indices = ib->ExpandDims(indices, -1);
       auto out_shp1 = ib->ShapeCalc(g_regenerate_output, {x, indices, axis, batch_dims_tensor}, {i2, i3})[0];
       dout = ib->Reshape(dout, out_shp1);
     }
@@ -2589,7 +2589,7 @@ REG_BPROP_BUILDER("SelectView").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
     MS_EXCEPTION_IF_CHECK_FAIL(perms.size() == perm_num, "Perms number should be 2 for gradient of Gather.");
     auto perm_1 = perms[0];
     auto perm_2 = perms[1];
-    auto values_transpose = ib->TransposeView(dout, perm_1);
+    auto values_transpose = ib->Transpose(dout, perm_1);
     NodePtr x_grad = nullptr;
     if (batch_dims > 0) {
       x_grad = CalBatchGather(ib, values_transpose, indices, x, axis_v, batch_dims);
@@ -2597,12 +2597,12 @@ REG_BPROP_BUILDER("SelectView").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
       auto num_segment = CalcNumSegment(ib, x, axis);
       x_grad = ib->UnsortedSegmentSum(values_transpose, indices, num_segment);
     }
-    x_grad = ib->TransposeView(x_grad, perm_2);
+    x_grad = ib->Transpose(x_grad, perm_2);
     return {x_grad, ib->OutZeros(ori_indices), ib->OutZeros(axis)};
   }
 
   if (ind_shp.empty()) {
-    indices = ib->ExpandDimsView(indices, -1);
+    indices = ib->ExpandDims(indices, -1);
     ind_shp = ib->GetShape(indices);
     auto out_shp1 = RegenerateOutputShape(x_shp, ind_shp, axis_v);
     dout = ib->Reshape(dout, out_shp1);
@@ -2610,12 +2610,12 @@ REG_BPROP_BUILDER("SelectView").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
 
   out_shp = ib->GetShape(dout);
   auto perm_1 = GenerateShapeIndex(out_shp, ind_shp, axis_v, batch_dims);
-  auto values_transpose = ib->TransposeView(dout, perm_1);
+  auto values_transpose = ib->Transpose(dout, perm_1);
   NodePtr x_grad = nullptr;
   auto num_segment = CalcNumSegment(ib, x, axis);
   x_grad = ib->UnsortedSegmentSum(values_transpose, indices, num_segment);
   auto perm_2 = GenerateInverseIndex(x_shp, axis_v, batch_dims);
-  auto params_grad = ib->TransposeView(x_grad, perm_2);
+  auto params_grad = ib->Transpose(x_grad, perm_2);
   return {params_grad, ib->OutZeros(ori_indices), ib->OutZeros(axis)};
 });
 
@@ -3001,7 +3001,7 @@ REG_BPROP_BUILDER("ExtractVolumePatches").SetUnusedInputs({i0, i1}).SetBody(BODY
                                 {{"kernel_size", ib->GetAttr("kernel_size")},
                                  {"strides", ib->GetAttr("strides")},
                                  {"padding", ib->GetAttr("padding")}});
-  x_idx_patched = ib->TransposeView(x_idx_patched, {0, 2, 3, 4, 1});
+  x_idx_patched = ib->Transpose(x_idx_patched, {0, 2, 3, 4, 1});
   x_idx_patched = ib->Cast(x_idx_patched, kInt32);
   auto out_shape = ib->GetShape(out);
   auto out_d = out_shape.at(i2);
@@ -3010,20 +3010,20 @@ REG_BPROP_BUILDER("ExtractVolumePatches").SetUnusedInputs({i0, i1}).SetBody(BODY
   auto out_indices_num = ((((out_d * out_h) * out_w) * ksize_d) * ksize_h) * ksize_w;
   auto out_idx = ib->Tensor(Range(0, out_indices_num), kInt32);
   out_idx = ib->Reshape(out_idx, {1, out_d, out_h, out_w, (ksize_d * ksize_h) * ksize_w});
-  auto idx_tensor = ib->Concat({ib->ExpandDimsView(x_idx_patched, -1), ib->ExpandDimsView(out_idx, -1)}, -1);
+  auto idx_tensor = ib->Concat({ib->ExpandDims(x_idx_patched, -1), ib->ExpandDims(out_idx, -1)}, -1);
   auto idx_map = ib->Reshape(idx_tensor, {-1, 2});
   std::vector<int64_t> sp_shape = {x_indices_num, out_indices_num};
   std::vector<int64_t> ones(out_indices_num, 1);
   auto sp_mat_full = ib->ScatterNd(idx_map, ib->Tensor(ones, ib->GetDtype(dout)), ib->Value<ShapeVector>(sp_shape));
   auto sp_tensor = ib->Slice(sp_mat_full, ib->Value<ShapeVector>({1, 0}),
                              ib->Value<ShapeVector>({x_indices_num - 1, out_indices_num}));
-  auto grad = ib->TransposeView(dout, {0, 2, 3, 4, 1});
+  auto grad = ib->Transpose(dout, {0, 2, 3, 4, 1});
   grad = ib->Reshape(grad, {x_n, out_d, out_h, out_w, ksize_d, ksize_h, ksize_w, x_c});
-  auto grad_expended = ib->TransposeView(grad, {1, 2, 3, 4, 5, 6, 0, 7});
+  auto grad_expended = ib->Transpose(grad, {1, 2, 3, 4, 5, 6, 0, 7});
   auto grad_flat = ib->Reshape(grad_expended, {-1, x_n * x_c});
   auto jac = ib->MatMul(sp_tensor, grad_flat, false, false);
   auto dx = ib->Reshape(jac, {x_d, x_h, x_w, x_n, x_c});
-  dx = ib->TransposeView(dx, {3, 4, 0, 1, 2});
+  dx = ib->Transpose(dx, {3, 4, 0, 1, 2});
   return {dx};
 });
 
@@ -3058,18 +3058,18 @@ REG_BPROP_BUILDER("AffineGrid").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
       }
       auto out = (h_value * d_value != 1) ? ib->Tile(vecx, {h_value * d_value, 1}) : vecx;
       auto one = ib->Reshape(out, {h_value * w_value * d_value, 1});
-      out = (w_value == 1) ? ib->ExpandDimsView(vecy, 0) : ib->Tile(vecy, {w_value, 1});
-      out = ib->TransposeView(out, perm1);
+      out = (w_value == 1) ? ib->ExpandDims(vecy, 0) : ib->Tile(vecy, {w_value, 1});
+      out = ib->Transpose(out, perm1);
       if (d_value != 1) {
         out = ib->Tile(out, {d_value, 1});
       }
       auto two = ib->Reshape(out, {h_value * w_value * d_value, 1});
-      out = (w_value * h_value != 1) ? ib->Tile(vecz, {w_value * h_value, 1}) : ib->ExpandDimsView(vecz, 0);
-      out = ib->TransposeView(out, perm1);
+      out = (w_value * h_value != 1) ? ib->Tile(vecz, {w_value * h_value, 1}) : ib->ExpandDims(vecz, 0);
+      out = ib->Transpose(out, perm1);
       auto tre = ib->Reshape(out, {h_value * w_value * d_value, 1});
       auto fou = ib->OnesLike(tre);
       auto output = ib->Concat({one, two, tre, fou}, 1);
-      output = ib->TransposeView(output, perm1);
+      output = ib->Transpose(output, perm1);
       if (n_value != 1) {
         output = ib->Tile(output, {n_value, 1});
       }
@@ -3077,7 +3077,7 @@ REG_BPROP_BUILDER("AffineGrid").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
       dout = ib->Reshape(dout, {n_value, d_value * h_value * w_value, c3});
       dout = ib->Cast(dout, kFloat32);
       auto dtheta = ib->BatchMatMul(output, dout);
-      dtheta = ib->TransposeView(dtheta, perm2);
+      dtheta = ib->Transpose(dtheta, perm2);
       return {dtheta, tre};
     } else if (output_size.size() == i4) {
       auto x_shape = ib->GetShape(dout);
@@ -3092,18 +3092,18 @@ REG_BPROP_BUILDER("AffineGrid").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
       }
       auto out = (h_value != 1) ? ib->Tile(vecx, {h_value, 1}) : vecx;
       auto one = ib->Reshape(out, {h_value * w_value, 1});
-      out = (w_value == 1) ? ib->ExpandDimsView(vecy, 0) : ib->Tile(vecy, {w_value, 1});
-      out = ib->TransposeView(out, perm1);
+      out = (w_value == 1) ? ib->ExpandDims(vecy, 0) : ib->Tile(vecy, {w_value, 1});
+      out = ib->Transpose(out, perm1);
       auto two = ib->Reshape(out, {h_value * w_value, 1});
       auto tre = ib->OnesLike(two);
       auto output = ib->Concat({one, two, tre}, 1);
-      output = ib->TransposeView(output, perm1);
+      output = ib->Transpose(output, perm1);
       output = ib->Tile(output, {n_value, 1});
       output = ib->Reshape(output, {n_value, c3, h_value * w_value});
       dout = ib->Reshape(dout, {n_value, h_value * w_value, c2});
       dout = ib->Cast(dout, kFloat32);
       auto dtheta = ib->BatchMatMul(output, dout);
-      dtheta = ib->TransposeView(dtheta, perm2);
+      dtheta = ib->Transpose(dtheta, perm2);
       return {dtheta, tre};
     }
     MS_LOG(EXCEPTION) << "For op[" << ib->name() << "], the length of output_size should be 4 or 5, but got "
@@ -3615,7 +3615,7 @@ REG_BPROP_BUILDER("AsStrided").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(i
                                        ib->Value(simplify_input_strides), ib->Value(input_effective_offset));
     auto flatten_input_indices = ib->Reshape(input_indices, {-1});
     ShapeVector one_shape{1};
-    auto source = ib->BroadcastToView(
+    auto source = ib->BroadcastTo(
       ib->Ones(ib->Value<ShapeVector>(one_shape), ib->Value(static_cast<int64_t>(input->dtype()->type_id()))),
       flatten_input_indices);
     count = ib->IndexAddExt(count, ib->Value<int64_t>(0LL), flatten_input_indices, source, ib->Value<int64_t>(1LL));

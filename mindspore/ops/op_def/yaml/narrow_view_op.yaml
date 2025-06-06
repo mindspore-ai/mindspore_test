@@ -17,8 +17,6 @@ narrow_view:
     graph_view: True
     labels:
         side_effect_mem: True
-    function:
-        disable: True
     dispatch:
         enable: True
         CPU: None

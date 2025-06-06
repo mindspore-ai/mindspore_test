@@ -17,8 +17,8 @@
 #include "kernel/ascend/pyboost/customize/weight_quant_batch_matmul.h"
 #include <memory>
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "kernel/ascend/pyboost/auto_generate/transpose.h"
 #include "mindspore/ops/op_def/op_name.h"
-#include "kernel/ascend/pyboost/auto_generate/transpose_view.h"
 #include "mindspore/ccsrc/pyboost/op_register.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
@@ -91,13 +91,13 @@ tensor::TensorPtr WeightQuantBatchMatmulV2AscendCustomize(
   TensorPtr x_tensor_trans = x_tensor;
   if (transpose_x_imm) {
     const auto &device_name = device_context->device_context_key_.device_name_;
-    auto transpose_op = CREATE_PYBOOST_OP(TransposeView, device_name);
+    auto transpose_op = CREATE_PYBOOST_OP(Transpose, device_name);
     x_tensor_trans = transpose_op->Call(x_tensor_trans, GetWeightQuantBatchMatmulPerm(x_tensor_trans));
   }
   TensorPtr weight_tensor_trans = new_weight_tensor;
   if (transpose_weight_imm) {
     const auto &device_name = device_context->device_context_key_.device_name_;
-    auto transpose_op = CREATE_PYBOOST_OP(TransposeView, device_name);
+    auto transpose_op = CREATE_PYBOOST_OP(Transpose, device_name);
     weight_tensor_trans = transpose_op->Call(weight_tensor_trans, GetWeightQuantBatchMatmulPerm(weight_tensor_trans));
   }
   PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>(

@@ -36,7 +36,6 @@ constexpr auto kReshape = "Reshape";
 constexpr auto kFlatten = "Flatten";
 constexpr auto kFlattenGrad = "FlattenGrad";
 constexpr auto kExpandDims = "ExpandDims";
-constexpr auto kExpandDimsView = "ExpandDimsView";
 constexpr auto kSqueeze = "Squeeze";
 }  // namespace
 
@@ -177,7 +176,6 @@ std::vector<KernelAttr> MemcpyGpuKernelMod::GetOpSupport() {
     {kFlatten, common_valid_types_with_single_input},
     {kFlattenGrad, common_valid_types_with_single_input},
     {kExpandDims, expand_dims_valid_types},
-    {kExpandDimsView, expand_dims_valid_types},
     {kSqueeze, squeeze_valid_types},
   };
 
@@ -195,8 +193,6 @@ MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeGpuKernelMod, FlattenGrad,
                                  []() { return std::make_shared<MemcpyGpuKernelMod>(kFlattenGrad); });
 MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeGpuKernelMod, ExpandDims,
                                  []() { return std::make_shared<MemcpyGpuKernelMod>(kExpandDims); });
-MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeGpuKernelMod, ExpandDimsView,
-                                 []() { return std::make_shared<MemcpyGpuKernelMod>(kExpandDimsView); });
 MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeGpuKernelMod, Squeeze,
                                  []() { return std::make_shared<MemcpyGpuKernelMod>(kSqueeze); });
 }  // namespace kernel

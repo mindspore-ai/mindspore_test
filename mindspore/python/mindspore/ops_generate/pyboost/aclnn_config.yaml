@@ -134,9 +134,9 @@ InplaceIndexPut: 'aclnnIndexPutImpl'
 InnerIndex: 'aclnnIndex'
 InnerInplaceIndexPut: 'aclnnIndexPutImpl'
 # 17
-BroadcastTo: 'aclnnExpand'
+
 # 18
-Transpose: 'aclnnPermute'
+
 # 19
 
 # 20

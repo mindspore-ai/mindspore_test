@@ -20,7 +20,7 @@
 #include "ir/scalar.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "mindspore/ccsrc/pyboost/auto_generate/convolution.h"
-#include "mindspore/ccsrc/pyboost/auto_generate/expand_dims_view.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/expand_dims.h"
 #include "mindspore/ccsrc/pyboost/auto_generate/squeeze.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
@@ -61,7 +61,7 @@ tensor::TensorPtr ConvTranspose2DAscendCustomize(const std::shared_ptr<OpRunner>
   } else {
     // unsqueeze dim 0
     static auto dim = 0;
-    auto expand_dims_op = CREATE_PYBOOST_OP(ExpandDimsView, op->device_context()->device_context_key_.device_name_);
+    auto expand_dims_op = CREATE_PYBOOST_OP(ExpandDims, op->device_context()->device_context_key_.device_name_);
     auto expand_input = expand_dims_op->Call(input_tensor, dim);
     // call convolution
     auto output_convolution = convolution_op->Call(expand_input, weight_tensor, bias_tensor, stride, padding, dilation,

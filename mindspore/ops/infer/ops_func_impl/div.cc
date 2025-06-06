@@ -51,7 +51,6 @@ TypePtr DivFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<
   (void)types.emplace("y", y_dtype);
   return CheckAndConvertUtils::CheckMathBinaryOpTensorType(types, common_valid_types_with_complex_and_bool, prim_name);
 }
-
 TypePtrList DivFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
   const auto &x_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
@@ -68,7 +67,6 @@ TypePtrList DivFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtr
     return {x_dtype};
   }
 }
-
 ShapeArray DivFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
   return {BroadCastInferShape(primitive->name(), input_values)};
 }

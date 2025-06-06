@@ -73,17 +73,12 @@ class COMMON_EXPORT Emitter {
 
   virtual NodePtr Reshape(const NodePtr &node, const NodePtr &shape);
   NodePtr Reshape(const NodePtr &node, const ShapeVector &shape) { return Reshape(node, Value(shape)); }
-  virtual NodePtr ExpandDims(const NodePtr &node, const NodePtr &axis);
-  NodePtr ExpandDims(const NodePtr &node, int64_t axis) { return ExpandDims(node, Value(axis)); }
-  virtual NodePtr ExpandDimsView(const NodePtr &node, const NodePtr &dim);
-  NodePtr ExpandDimsView(const NodePtr &node, int64_t dim) { return ExpandDimsView(node, Value(dim)); }
+  NodePtr ExpandDims(const NodePtr &node, int64_t axis) { return Emit(kExpandDimsOpName, {node, Value(axis)}); }
   virtual NodePtr Exp(const NodePtr &x);
   NodePtr Log(const NodePtr &x);
   virtual NodePtr Transpose(const NodePtr &node, const NodePtr &perm);
+  virtual NodePtr Transpose(const NodePtr &node, int64_t dim0, int64_t dim1);
   NodePtr Transpose(const NodePtr &node, const ShapeVector &perm) { return Transpose(node, Value(perm)); }
-  virtual NodePtr TransposeView(const NodePtr &node, const NodePtr &perm);
-  NodePtr TransposeView(const NodePtr &node, const ShapeVector &perm) { return TransposeView(node, Value(perm)); }
-  virtual NodePtr TransposeView(const NodePtr &node, int64_t dim0, int64_t dim1);
   virtual NodePtr Tile(const NodePtr &node, const NodePtr &dims);
   NodePtr Tile(const NodePtr &node, const ShapeVector &dims) { return Tile(node, Value(dims)); }
   virtual NodePtr Concat(const NodePtr &input, const NodePtr &axis) { return Emit(kConcatOpName, {input, axis}); }
@@ -235,7 +230,6 @@ class COMMON_EXPORT Emitter {
   NodePtr ReduceSum(const NodePtr &x, const ShapeVector &axis = {}, bool keep_dims = false);
   NodePtr SumExt(const NodePtr &input, const NodePtr &axis, const NodePtr &keep_dims);
   virtual NodePtr BroadcastTo(const NodePtr &x, const NodePtr &y);
-  virtual NodePtr BroadcastToView(const NodePtr &x, const NodePtr &y);
 
   NodePtr ZerosLike(const NodePtr &node);
   virtual NodePtr Depend(const NodePtr &value, const NodePtr &expr) {

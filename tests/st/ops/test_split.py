@@ -287,15 +287,6 @@ def test_f_dsplit_list(mode):
         assert np.allclose(res.asnumpy(), exp)
 
 
-
-def set_mode(mode):
-    if mode == "KBK":
-        ms.context.set_context(mode=ms.GRAPH_MODE,
-                               jit_config={"jit_level": "O0"})
-    else:
-        ms.context.set_context(mode=ms.PYNATIVE_MODE)
-
-
 class SplitNet(nn.Cell):
     def construct(self, x, split_size_or_sections, axis=0):
         out = split_ext(x, split_size_or_sections, axis)
@@ -303,14 +294,14 @@ class SplitNet(nn.Cell):
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-@pytest.mark.parametrize('mode', ["KBK", "PYBOOST"])
+@pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_f_split_ext_int(mode):
     """
     Feature: split
     Description: Verify the result of split.
     Expectation: success
     """
-    set_mode(mode)
+    ms.set_context(mode=mode)
     net = SplitNet()
     a = np.array(np.arange(20).reshape((10, 2)), dtype=np.float32)
     x = ms.Tensor(a, dtype=ms.float32)
@@ -323,14 +314,14 @@ def test_f_split_ext_int(mode):
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-@pytest.mark.parametrize('mode', ["KBK", "PYBOOST"])
+@pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_f_split_ext_int32(mode):
     """
     Feature: split
     Description: Verify the result of split.
     Expectation: success
     """
-    set_mode(mode)
+    ms.set_context(mode=mode)
     net = SplitNet()
     a = np.array(np.arange(2000).reshape((1000, 2)), dtype=np.float32)
     x = ms.Tensor(a, dtype=ms.float32)
@@ -340,14 +331,14 @@ def test_f_split_ext_int32(mode):
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-@pytest.mark.parametrize('mode', ["KBK", "PYBOOST"])
+@pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_f_split_ext_list(mode):
     """
     Feature: split
     Description: Verify the result of split.
     Expectation: success
     """
-    set_mode(mode)
+    ms.set_context(mode=mode)
     net = SplitNet()
     a = np.array(np.arange(20).reshape((2, 10)), dtype=np.float32)
     x = ms.Tensor(a, dtype=ms.float32)
@@ -361,14 +352,14 @@ def test_f_split_ext_list(mode):
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-@pytest.mark.parametrize('mode', ["KBK", "PYBOOST"])
+@pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_f_split_ext_list32(mode):
     """
     Feature: split
     Description: Verify the result of split.
     Expectation: success
     """
-    set_mode(mode)
+    ms.set_context(mode=mode)
     net = SplitNet()
     a = np.array(np.arange(2000).reshape((2, 1000)), dtype=np.float32)
     x = ms.Tensor(a, dtype=ms.float32)

@@ -425,7 +425,7 @@ class MaxPool3d(_PoolNd):
     def construct(self, x):
         expand_batch = False
         if x.ndim == 4:
-            x = ops.unsqueeze(x, 0)
+            x = x.unsqueeze(0)
             expand_batch = True
         out = self.max_pool(x)
         if expand_batch:
@@ -584,22 +584,22 @@ class MaxPool2d(_PoolNd):
     def construct(self, x):
         expand_batch = False
         if x.ndim == 3:
-            x = ops.unsqueeze(x, 0)
+            x = x.unsqueeze(0)
             expand_batch = True
         if self.use_pad:
-            x = ops.unsqueeze(x, 2)
+            x = x.unsqueeze(2)
             out = self.max_pool(x)
             if isinstance(out, tuple):
-                out = ops.squeeze(out[0], 2), ops.squeeze(out[1], 2)
+                out = out[0].squeeze(2), out[1].squeeze(2)
             else:
-                out = ops.squeeze(out, 2)
+                out = out.squeeze(2)
         else:
             out = self.max_pool(x)
         if expand_batch:
             if isinstance(out, tuple):
-                out = (ops.squeeze(out[0], 0), ops.squeeze(out[1], 0))
+                out = (out[0].squeeze(0), out[1].squeeze(0))
             else:
-                out = ops.squeeze(out, 0)
+                out = out.squeeze(0)
         if self.use_pad and not self.return_indices:
             return out[0]
         return out
@@ -832,10 +832,10 @@ class MaxPool1d(_PoolNd):
     def construct(self, x):
         expand_batch = False
         if x.ndim == 2:
-            x = ops.unsqueeze(x, 0)
+            x = x.unsqueeze(0)
             expand_batch = True
         if self.use_pad:
-            x = ops.unsqueeze(ops.unsqueeze(x, 2), 3)
+            x = x.unsqueeze(2).unsqueeze(3)
             output = self.max_pool(x)
             if isinstance(output, tuple):
                 output = output[0].squeeze(3).squeeze(2), output[1].squeeze(3).squeeze(2)
@@ -1013,7 +1013,7 @@ class AvgPool3d(_PoolNd):
     def construct(self, x):
         expand_batch = False
         if len(x.shape) == 4:
-            x = ops.unsqueeze(x, 0)
+            x = x.unsqueeze(0)
             expand_batch = True
         out = self.avg_pool(x)
         if expand_batch:
@@ -1282,10 +1282,10 @@ class AvgPool2d(_PoolNd):
     def construct(self, x):
         expand_batch = False
         if x.ndim == 3:
-            x = ops.unsqueeze(x, 0)
+            x = x.unsqueeze(0)
             expand_batch = True
         if self.is_expand:
-            x = ops.unsqueeze(x, 2)
+            x = x.unsqueeze(2)
             out = self.avg_pool(x)
             res = out.squeeze(2)
         else:
@@ -1412,10 +1412,10 @@ class AvgPool1d(_PoolNd):
     def construct(self, x):
         expand_batch = False
         if x.ndim == 2:
-            x = ops.unsqueeze(x, 0)
+            x = x.unsqueeze(0)
             expand_batch = True
         if self.is_expand_3d:
-            x = ops.unsqueze(ops.unsqueeze(x, 2), 3)
+            x = x.unsqueeze(2).unsqueeze(3)
             x = self.avg_pool(x)
             x = x.squeeze(3).squeeze(2)
         else:

@@ -16,7 +16,7 @@ import pytest
 import numpy as np
 import mindspore as ms
 from mindspore import ops, jit
-from mindspore.ops.auto_generate import SliceExtView
+from mindspore.ops.auto_generate import SliceExt
 import tests.st.utils.test_utils as test_utils
 from tests.mark_utils import arg_mark
 
@@ -35,7 +35,7 @@ def generate_expect_forward_output(x, dim, start, end, step):
 
 @test_utils.run_with_cell
 def slice_ext_forward_func(x, dim, start, end, step):
-    return SliceExtView()(x, dim, start, end, step)
+    return SliceExt()(x, dim, start, end, step)
 
 
 @test_utils.run_with_cell
