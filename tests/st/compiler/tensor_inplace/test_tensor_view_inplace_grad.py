@@ -30,7 +30,7 @@ class GradNet(nn.Cell):
     def construct(self, x):
         return self.grad_op(x)
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_tensor_view_inplace_grad_once():
     """
     Feature: Support tensor inplace view gradient.
@@ -53,7 +53,7 @@ def test_tensor_view_inplace_grad_once():
     assert (out_expect.asnumpy() == out_jit.asnumpy()).all()
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_tensor_view_inplace_grad_twice():
     """
     Feature: Support tensor inplace view gradient.
@@ -78,7 +78,7 @@ def test_tensor_view_inplace_grad_twice():
     assert (out_expect.asnumpy() == out_jit.asnumpy()).all()
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_tensor_view_grad():
     """
     Feature: Support tensor inplace view gradient.
@@ -104,7 +104,7 @@ def test_tensor_view_grad():
            "not supported to compute gradients for the other inputs of this in-place operator" in str(err.value)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_tensor_view_grad1():
     """
     Feature: Support tensor inplace view gradient.
@@ -130,7 +130,7 @@ def test_tensor_view_grad1():
     assert (out_expect.asnumpy() == out_jit.asnumpy()).all()
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_tensor_view_inplace_grad():
     """
     Feature: view inplace operation in grad.
@@ -472,7 +472,7 @@ def test_tensor_view_inplace_grad_check8():
     assert "The current view inplace differentiation scenario is not supported." in str(raise_info.value)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_tensor_view_inplace_grad_control_flow():
     """
     Feature: Support tensor inplace view gradient.
@@ -499,7 +499,7 @@ def test_tensor_view_inplace_grad_control_flow():
     assert np.allclose(out_expect.asnumpy(), out_jit.asnumpy())
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_tensor_view_inplace_grad_control_flow_2():
     """
     Feature: Support tensor inplace view gradient.

@@ -134,7 +134,7 @@ def compare_multi_data(net, dtype, dump_path, precision_mode="high"):
         compare_single_data(x, y, net, Path(dump_path) / "rank_0" / "Net" / "0" / str(i), precision_mode)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_e2e_statistic_async_device_high_precision():
     """
     Feature: kbyk statistic dump support device async high precision
@@ -189,7 +189,7 @@ def test_e2e_statistic_async_device_low_precision():
             del os.environ['MINDSPORE_DUMP_CONFIG']
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_e2e_statistic_sync_device():
     """
     Feature: kbyk statistic dump support device sync
