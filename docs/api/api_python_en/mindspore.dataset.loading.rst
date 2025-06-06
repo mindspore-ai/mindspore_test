@@ -192,6 +192,8 @@ The config module can set or obtain the global configuration parameters of the d
     mindspore.dataset.config.get_debug_mode
     mindspore.dataset.config.set_multiprocessing_start_method
     mindspore.dataset.config.get_multiprocessing_start_method
+    mindspore.dataset.config.set_video_backend
+    mindspore.dataset.config.get_video_backend
 
 Tools
 -------

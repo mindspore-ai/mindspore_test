@@ -1074,11 +1074,11 @@ class VideoDecoder:
         ValueError: If `source` does not exist or permission denied.
 
     Examples:
-            >>> import mindspore.dataset as ds
-            >>> import mindspore.dataset.vision as vision
-            >>>
-            >>> ds.config.set_video_backend("Ascend")
-            >>> reader = vision.VideoDecoder(source="/path/to/filename")
+        >>> import mindspore.dataset as ds
+        >>> import mindspore.dataset.vision as vision
+        >>>
+        >>> ds.config.set_video_backend("Ascend")
+        >>> reader = vision.VideoDecoder(source="/path/to/filename")
     """
     def __init__(self, source):
         check_file(source)
