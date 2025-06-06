@@ -305,6 +305,20 @@ std::string AbstractObject::ToString() const {
   return s.str();
 }
 
+namespace {
+bool IsNNModule(PyTypeObject *tp) {
+  static bool contains_torch = py::module::import("sys").attr("modules").contains("torch");
+  if (contains_torch) {
+    static py::object nn_module = py::module::import("torch.nn").attr("Module");
+    auto nn_module_type = reinterpret_cast<PyTypeObject *>(nn_module.ptr());
+    bool is_subtype = PyType_IsSubtype(tp, nn_module_type);
+    MS_LOG(INFO) << "Match torch.nn.Module: " << is_subtype;
+    return is_subtype;
+  }
+  return false;
+}
+}  // namespace
+
 AbstractObjectBase::Type AbstractObjectBase::GetPyType(PyTypeObject *tp) {
   if (tp == nullptr) {
     return kTypeAnyValue;
@@ -333,6 +347,9 @@ AbstractObjectBase::Type AbstractObjectBase::GetPyType(PyTypeObject *tp) {
     if (PyType_IsSubtype(tp, i.first)) {
       return i.second;
     }
+  }
+  if (IsNNModule(tp)) {
+    return kTypeNNModule;
   }
   return GetMsType(tp);
 }

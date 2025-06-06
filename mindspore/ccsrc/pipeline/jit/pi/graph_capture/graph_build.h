@@ -52,6 +52,7 @@ class GraphBuilder {
   static const char *ID___globals__;
   static const char *ID___call__;
   static const char *ID_construct;
+  static const char *ID_forward;
 
   explicit GraphBuilder(const PyFrameWrapper &f);
   GraphBuilder(GraphBuilder *r, GraphBuilder *p, PyCodeObject *co, PyObject *globals);
