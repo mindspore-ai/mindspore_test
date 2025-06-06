@@ -295,7 +295,7 @@ void RecvActor::AddArgSpecForInput(AbstractBasePtrList *args_spec_list, const Sh
   if (output_addr->GetNodeIndex().first == nullptr) {
     output_addr->SetNodeIndex(kernel_, input_index);
   }
-  auto out_tensor = tensor::empty(data_type, shapes, device::DeviceType::kCPU);
+  auto out_tensor = tensor::empty(data_type, shapes, device::DeviceType::kNone);
   MS_EXCEPTION_IF_NULL(out_tensor);
   out_tensor->set_device_address(output_addr, false);
 

@@ -3595,7 +3595,7 @@ REG_BPROP_BUILDER("DropoutDoMask").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib
   return {ib->Emit("DropoutDoMask", {dout, y, keep_prob}), ib->OutZeros(y), ib->OutZeros(keep_prob)};
 });
 
-REG_BPROP_BUILDER("ReluGrad").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("ReluGrad").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
   auto y = ib->GetInput(i1);
   auto dout = ib->GetInput(i3);
   auto dgrad = ib->ReluGrad(dout, y);

@@ -68,6 +68,7 @@ ParamMap AddCacheParameters(const FuncGraphPtr &graph, const ParamSet &parameter
       auto type_id = data_element_type->type_id();
       auto cache_shape = param_info->cache_shape();
       auto ori_param_name = param->name();
+      // todo: check kNone or kCPU.
       auto new_tensor = tensor::empty(type_id, cache_shape, device::DeviceType::kCPU);
       ParamInfoPtr new_param_info = std::make_shared<ParamInfo>();
       auto cache_name = ori_param_name + "_cache";
@@ -544,6 +545,7 @@ AnfNodePtr CreateOutputNodeParam(const FuncGraphPtr &graph, const AnfNodePtr &or
   auto ori_input_shp = ori_input->Shape();
   auto input_shp = ori_input_shp->cast<abstract::ShapePtr>();
   auto input_shape = input_shp->shape();
+  // todo: check kNone or kCPU.
   auto new_tensor = tensor::empty(ori_input_type_id, input_shape, device::DeviceType::kCPU);
   ParamInfoPtr new_param_info = std::make_shared<ParamInfo>();
   auto new_param_name = name + "_pipe";

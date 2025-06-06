@@ -233,7 +233,7 @@ void OutputActor::FetchParameterInput(OpContext<KernelTensor> *const context) {
     auto tensor = graph_parameter_store->FetchTensor(outer_idx, {output_node, front_node_with_idx.second});
     MS_EXCEPTION_IF_NULL(tensor);
 
-    const auto new_tensor = tensor::empty(tensor->data_type(), tensor->shape(), device::DeviceType::kCPU);
+    const auto new_tensor = tensor::empty(tensor->data_type(), tensor->shape(), device::DeviceType::kNone);
     auto parameter_kernel_tensor = FetchParameter(parameter_index.second, GetAID());
     MS_EXCEPTION_IF_NULL(parameter_kernel_tensor);
     auto device_tensor = parameter_kernel_tensor->device_address().get();
@@ -476,7 +476,7 @@ TensorPtr OutputActor::CreateOutputTensor(const AnfNodePtr &output_node, size_t 
     ShapeVector shape_vector = {0};
     TypeId type_id = (output_kernel_tensor->dtype_id() == TypeId::kTypeUnknown ? TypeId::kNumberTypeInt64
                                                                                : output_kernel_tensor->dtype_id());
-    const auto &tensor = tensor::empty(type_id, shape_vector, device::DeviceType::kCPU);
+    const auto &tensor = tensor::empty(type_id, shape_vector, device::DeviceType::kNone);
     tensor->set_base_shape(output_shape);
     if (output_position < output_kernel_tensors_.size() && output_kernel_tensors_[output_position] &&
         output_kernel_tensors_[output_position]->user_data() != nullptr && output_position < device_contexts_.size() &&
@@ -515,7 +515,7 @@ TensorPtr OutputActor::CreateOutputTensor(const AnfNodePtr &output_node, size_t 
   // when infer type is not equal to device type.
   auto type_id = common::AnfAlgo::GetOutputInferDataType(output_node, output_index);
   const auto &shape = output_kernel_tensor->GetShapeVector();
-  auto tensor = tensor::empty(type_id, shape, device::DeviceType::kCPU);
+  auto tensor = tensor::empty(type_id, shape, device::DeviceType::kNone);
   MS_EXCEPTION_IF_NULL(tensor);
   // Set tensor base shape for restoring the tuple output when output node is dynamic sequence.
   if (common::AnfAlgo::IsDynamicSequence(output_node)) {

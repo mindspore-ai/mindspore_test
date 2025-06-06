@@ -805,8 +805,7 @@ uintptr_t TensorPybind::DataPtr(const TensorPtr &tensor) {
 TensorPtr TensorPybind::MoveTo(const Tensor &self, const std::string &to, bool blocking) {
   py::gil_scoped_release gil_release;
   MS_LOG(INFO) << "Try move tensor to " << to;
-  auto target_tensor = tensor::empty(self.data_type(), self.shape(), device::DeviceType::kCPU);
-  target_tensor->set_device_address(nullptr);
+  auto target_tensor = tensor::empty(self.data_type(), self.shape(), device::DeviceType::kNone);
   bool return_self = false;
   // make sure op execute end before data copy
   runtime::Pipeline::Get().WaitForward();
@@ -926,6 +925,7 @@ TensorPtr TensorPyImpl::InitTensorByShape(const py::dict &input, const TypePtr &
   if (input.contains("shape") &&
       (py::isinstance<py::list>(input["shape"]) || py::isinstance<py::tuple>(input["shape"]))) {
     TypeId data_type = dtype != nullptr ? dtype->type_id() : TypeId::kNumberTypeFloat64;
+    // todo: check kNone or kCPU.
     return tensor::empty(data_type, GetShapeFromTuple(input["shape"]), device::DeviceType::kCPU);
   }
   ShapeVector shape = GetShapeFromPython(input);

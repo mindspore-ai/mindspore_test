@@ -294,7 +294,7 @@ tensor::TensorPtr CreateTensorWithValueTuple(const ValueTuplePtr &value_tuple_pt
 
 tensor::TensorPtr CreateEmptyTupleTensor(const ValueTuplePtr &value_tuple) {
   std::vector<int64_t> tensor_shape = {0};
-  tensor::TensorPtr tensor = std::make_shared<tensor::Tensor>(kInt64->type_id(), tensor_shape);
+  tensor::TensorPtr tensor = tensor::empty(kInt64->type_id(), tensor_shape, device::DeviceType::kNone);
   MS_EXCEPTION_IF_NULL(tensor);
   tensor::DeviceInfo device_info{kOpFormat_DEFAULT, kInt64};
   tensor->set_device_info(device_info);

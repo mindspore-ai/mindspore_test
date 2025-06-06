@@ -149,11 +149,11 @@ tensor::TensorPtr CPUKernelRuntime::CreateTensorForOutput(session::KernelGraph *
         temp_shape.clear();
         (void)temp_shape.emplace_back(address->GetSize() / type_size);
       }
-      tensor = tensor::empty(infer_type_id, temp_shape, device::DeviceType::kCPU);
+      tensor = tensor::empty(infer_type_id, temp_shape, device::DeviceType::kNone);
     }
     kernel_graph->AddInternalOutputTensor(node, index, tensor);
   } else {
-    tensor = tensor::empty(infer_type_id, temp_shape, device::DeviceType::kCPU);
+    tensor = tensor::empty(infer_type_id, temp_shape, device::DeviceType::kNone);
   }
   tensor->set_device_address(address);
   tensor->set_sync_status(kNeedSyncDeviceToHostImmediately);

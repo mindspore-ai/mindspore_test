@@ -310,7 +310,7 @@ TensorPtr OutputActor::CreateOutputTensor(const AnfNodePtr &output_node, size_t 
     ShapeVector shape = {0};
     TypeId type_id = (output_kernel_tensor->dtype_id() == TypeId::kTypeUnknown ? TypeId::kNumberTypeInt64
                                                                                : output_kernel_tensor->dtype_id());
-    const auto &tensor = tensor::empty(type_id, shape, device::DeviceType::kCPU);
+    const auto &tensor = tensor::empty(type_id, shape, device::DeviceType::kNone);
     tensor->set_base_shape(output_shape);
     return tensor;
   }
@@ -337,7 +337,7 @@ TensorPtr OutputActor::CreateOutputTensor(const AnfNodePtr &output_node, size_t 
   // when infer type is not equal to device type.
   auto type_id = common::AnfAlgo::GetOutputInferDataType(output_node, output_index);
   const auto &shape = output_kernel_tensor->GetShapeVector();
-  auto tensor = tensor::empty(type_id, shape, device::DeviceType::kCPU);
+  auto tensor = tensor::empty(type_id, shape, device::DeviceType::kNone);
   MS_EXCEPTION_IF_NULL(tensor);
   // Set tensor base shape for restoring the tuple output when output node is dynamic sequence.
   if (common::AnfAlgo::IsDynamicSequence(output_node)) {

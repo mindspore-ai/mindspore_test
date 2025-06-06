@@ -22,6 +22,9 @@
 namespace mindspore {
 namespace tensor {
 TensorPtr empty(TypeId data_type, const ShapeVector &shape, device::DeviceType device_type) {
+  if (device_type == device::DeviceType::kNone) {
+    return std::make_shared<Tensor>(data_type, shape, nullptr);
+  }
   return std::make_shared<Tensor>(data_type, shape, MakeDeviceAddress(data_type, shape, true, device_type));
 }
 }  // namespace tensor

@@ -73,6 +73,7 @@ ValueNodePtr CreateFakeValueNode(const AnfNodePtr &origin_node) {
   abstract::AbstractTensorPtr origin_abstract = origin_node->abstract()->cast<abstract::AbstractTensorPtr>();
 
   MS_EXCEPTION_IF_NULL(origin_abstract);
+  // todo: check kNone or kCPU.
   tensor::TensorPtr fake_tensor = tensor::empty(origin_abstract->element()->BuildType()->type_id(),
                                                 origin_abstract->shape()->shape(), device::DeviceType::kCPU);
   MS_EXCEPTION_IF_NULL(fake_tensor);

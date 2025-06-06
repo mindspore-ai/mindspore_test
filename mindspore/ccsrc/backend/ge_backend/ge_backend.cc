@@ -1596,7 +1596,7 @@ void GEBackend::ConstructOutputs(const KernelGraphPtr &func_graph, std::vector<t
     }
 
     auto out_tensor =
-      tensor::empty(output_addr->type_id(), output_kernel_tensor->GetShapeVector(), device::DeviceType::kCPU);
+      tensor::empty(output_addr->type_id(), output_kernel_tensor->GetShapeVector(), device::DeviceType::kNone);
 
     auto kernel_tensor = AnfAlgo::CreateKernelTensor(
       nullptr, output_addr->GetSize(), kernel::GetFormatFromStrToEnum(output_addr->format()), output_addr->type_id(),
