@@ -97,6 +97,10 @@ namespace dump {
 void RegDumpControl(py::module *m);
 }
 
+namespace checksum {
+void RegCheckSum(py::module *m);
+}
+
 namespace prim {
 FRONTEND_EXPORT void RegCompositeOpsGroup(const py::module *m);
 }
