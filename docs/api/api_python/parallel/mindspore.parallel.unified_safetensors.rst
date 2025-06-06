@@ -10,7 +10,7 @@ mindspore.parallel.unified_safetensors
 
     参数：
         - **src_dir** (str) - 源权重保存目录。
-        - **src_strategy_file** (str) - 源权重切分策略文件。
+        - **src_strategy_file** (str) - 源权重切分策略文件，文件扩展名是 `.ckpt` 。
         - **dst_dir** (str) - 目标保存目录。
         - **merge_with_redundancy** (bool, 可选) - 合并源权重文件是否是去冗余保存的safetensors文件。默认值是：``True``，合并的源权重文件是完整的。
         - **file_suffix** (str，可选) - 指定合并safetensors的文件名后缀。默认值是：``None`` ，合并源权重目录下所有的safetensors文件。
