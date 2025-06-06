@@ -550,7 +550,9 @@ void BindParamAxis(const AnfNodePtr &node, const FuncGraphPtr &vmap_fg, const Fu
     BindAxis(node, vmap_fg, top_func_graph, manager);
     return;
   }
-  std::string param_name = dyn_cast<Parameter>(node)->name();
+  auto param_node = dyn_cast<Parameter>(node);
+  MS_EXCEPTION_IF_NULL(param_node);
+  std::string param_name = param_node->name();
   std::regex match_prefix("^.*?\\d+\\.(.+)$");
   param_name = std::regex_replace(param_name, match_prefix, "vmap.$1");
   auto iter = stacked_params->find(param_name);

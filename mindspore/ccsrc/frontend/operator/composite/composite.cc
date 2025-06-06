@@ -1410,6 +1410,7 @@ namespace {
 bool IsAxesAllNone(const ValuePtr &axes) {
   MS_EXCEPTION_IF_NULL(axes);
   ValueSequencePtr axes_seq = dyn_cast<ValueSequence>(axes);
+  MS_EXCEPTION_IF_NULL(axes_seq);
   auto axes_seq_value = axes_seq->value();
   if (std::all_of(axes_seq_value.begin(), axes_seq_value.end(), [](const ValuePtr &axes_value_ptr) {
         if (axes_value_ptr->isa<ValueSequence>()) {
