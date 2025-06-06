@@ -5246,13 +5246,17 @@ void OnnxExporter::ExportPrimCustom(const FuncGraphPtr &, const CNodePtr &node,
         str_proto->set_type(onnx::AttributeProto_AttributeType_STRING);
         str_proto->set_s(str_attr);
       } else if (attr_value->isa<IntegerImm>()) {
-        int64_t int64_attr = attr_value->cast<Int64ImmPtr>()->value();
+        auto attr_value_ptr = attr_value->cast<Int64ImmPtr>();
+        MS_EXCEPTION_IF_NULL(attr_value_ptr);
+        int64_t int64_attr = attr_value_ptr->value();
         onnx::AttributeProto *int64_proto = node_proto->add_attribute();
         int64_proto->set_name(input_names_vec[i]);
         int64_proto->set_type(onnx::AttributeProto_AttributeType_INT);
         int64_proto->set_i(int64_attr);
       } else if (attr_value->isa<FloatImm>()) {
-        float fp32_attr = attr_value->cast<FP32ImmPtr>()->value();
+        auto attr_value_ptr = attr_value->cast<FP32ImmPtr>();
+        MS_EXCEPTION_IF_NULL(attr_value_ptr);
+        float fp32_attr = attr_value_ptr->value();
         onnx::AttributeProto *fp32_proto = node_proto->add_attribute();
         fp32_proto->set_name(input_names_vec[i]);
         fp32_proto->set_type(onnx::AttributeProto_AttributeType_FLOAT);
