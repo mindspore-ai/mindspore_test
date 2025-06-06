@@ -604,7 +604,13 @@ class BeforeOptARewriter : public BaseRewriter {
         << "The extract_keyword_arg should have 3 or 4 inputs, but got " << node->size();
     }
     constexpr size_t key_index = 2;
-    return node->input(key_index);
+    auto key_node = node->input(key_index);
+    // Handle cnode as [extract_keyword_arg, arg, (KeywordArg(key, value))]
+    if (IsValueNode<KeywordArg>(key_node)) {
+      auto keyword_arg = GetValueNode<KeywordArgPtr>(key_node);
+      return NewValueNode(keyword_arg->get_value());
+    }
+    return key_node;
   }
 
   using Converter = AnfNodePtr (ThisClass::*)(const CNodePtr &) const;
