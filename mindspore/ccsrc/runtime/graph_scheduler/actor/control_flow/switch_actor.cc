@@ -21,6 +21,8 @@
 #include "runtime/graph_scheduler/actor/output_actor.h"
 #include "utils/log_adapter.h"
 #include "include/common/utils/python_adapter.h"
+#include "mindspore/core/include/ir/tensor_api.h"
+#include "runtime/device/res_manager/hal_res_manager.h"
 
 namespace mindspore {
 namespace runtime {
@@ -94,9 +96,13 @@ size_t SwitchActor::GetIndex(const OpContext<KernelTensor> *const context) const
       return index = static_cast<int64_t>(py::cast<bool>(obj) ? 1 : 0);
     }
   }
-  auto tensor = std::make_shared<tensor::Tensor>(type_id, host_shape, buf, size);
-  if (!SyncAllStreamForDeviceAddress(device_tensor) ||
-      !SyncCopy(device_tensor, tensor->device_address(), kDefaultStreamIndex)) {
+
+  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(
+    device::ResKey{device_tensor->GetDeviceType(), device_tensor->device_id()});
+  MS_EXCEPTION_IF_NULL(res_manager);
+  res_manager->SyncAllStreams();
+  if (!res_manager->Copy(buf, device_tensor->GetMutablePtr(), size, device::CopyType::kD2H,
+                         device_tensor->stream_id())) {
     MS_LOG(ERROR) << GetAID().Name() << " get index from device address failed, type id:" << type_id;
     return 0;
   }

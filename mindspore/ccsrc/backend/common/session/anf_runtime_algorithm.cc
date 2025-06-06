@@ -2879,6 +2879,12 @@ std::string AnfRuntimeAlgorithm::GetValueByDeviceAddress(DeviceAddress *const de
     delete[] buf;
     buf = reinterpret_cast<char *>(device_address->GetMutablePtr());
   }
+  if (device_address->GetDeviceType() != device::DeviceType::kCPU) {
+    device::ResKey res_key{device_address->GetDeviceType(), device_address->device_id()};
+    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+    MS_EXCEPTION_IF_NULL(res_manager);
+    res_manager->Copy(buf, device_address->GetMutablePtr(), size, device::CopyType::kD2H, device_address->stream_id());
+  }
   auto is_vaild_index = [element_num](size_t index, size_t total) { return index < total && index < element_num; };
   std::string result;
   if (device_address->type_id() == TypeId::kNumberTypeInt32) {
