@@ -126,7 +126,7 @@ ValuePtr CopyTensorValueWithNewId(const FrontendOpRunInfoPtr &op_run_info, const
     CreateDeviceAddressForTensor(op_run_info, tensor);
 #endif
     // This constructor will make a tensor with the new id
-    auto new_tensor = tensor::empty(tensor->data_type(), tensor->shape(), device::DeviceType::kCPU);
+    auto new_tensor = tensor::empty(tensor->data_type(), tensor->shape(), device::DeviceType::kNone);
     // todo: check tensor->data need ?
     new_tensor->set_need_pipeline_sync(true);
     new_tensor->set_device_address(tensor->device_address());
@@ -1010,7 +1010,7 @@ void ForwardExecutor::CreateViewOutputTensor(const FrontendOpRunInfoPtr &op_run_
                                              runtime::KernelTaskType task_type, bool is_multi_output) {
   MS_EXCEPTION_IF_NULL(input_tensor);
   MS_EXCEPTION_IF_NULL(storage_info);
-  auto output_tensor = tensor::empty(input_tensor->data_type(), storage_info->shape, device::DeviceType::kCPU);
+  auto output_tensor = tensor::empty(input_tensor->data_type(), storage_info->shape, device::DeviceType::kNone);
   output_tensor->set_need_pipeline_sync(true);
   output_tensor->set_contiguous_callback([this](const DeviceSyncPtr &device_address) -> DeviceSyncPtr {
     return TensorContiguousCallback(device_address, device_address->GetTensorStorageInfo());

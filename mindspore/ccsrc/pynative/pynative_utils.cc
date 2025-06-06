@@ -550,6 +550,7 @@ ValuePtr Common::CreatOutputTensorValueByAbstract(const abstract::AbstractBasePt
       return CreateNonTensorByAbstract(abs);
     }
     for (size_t i = 0; i < abs_seq->size(); ++i) {
+      // todo: check.
       (void)out.emplace_back(
         tensor::empty(type_id, GetShapeFromAbstract(abs_seq->elements()[i]), device::DeviceType::kCPU));
     }
