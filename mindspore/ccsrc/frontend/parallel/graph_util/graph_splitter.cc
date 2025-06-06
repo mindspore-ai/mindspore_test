@@ -1432,6 +1432,7 @@ OperatorLabel GraphSplitter::RecursiveSetTupeGetItemLabel(const CNodePtr &tuple_
     if (NodeHasLabel(tuple_get_item_node)) {
       return node_labels_[tuple_get_item_node];
     } else {
+      MS_EXCEPTION_IF_NULL(tuple_get_item_node);
       MS_LOG_WITH_NODE(EXCEPTION, tuple_get_item_node)
         << "TupeGetItem node " << tuple_get_item_node->fullname_with_scope() << " has no lebel.";
     }
@@ -2056,6 +2057,7 @@ void GraphSplitter::AddDependencyBetweenSegments(const InOutDegreeList &in_out_d
         // Connect fused send nodes to the output so they will not be optimized out.
         AnfNodePtr origin_output = func_graph_->output();
         if (node_labels_.count(origin_output) == 0) {
+          MS_EXCEPTION_IF_NULL(origin_output);
           MS_LOG_WITH_NODE(EXCEPTION, origin_output)
             << "The origin output node " << origin_output->fullname_with_scope()
             << " should have corresponding operator label.";
@@ -2227,6 +2229,7 @@ void GraphSplitter::AddDependencyForSend(const FusedInterProcessOpPairMap &fused
 
   // Connect fused send nodes to the output so they will not be optimized out.
   AnfNodePtr origin_output = func_graph_->output();
+  MS_EXCEPTION_IF_NULL(origin_output);
   if (node_labels_.count(origin_output) == 0) {
     MS_LOG_WITH_NODE(EXCEPTION, origin_output) << "The origin output node " << origin_output->fullname_with_scope()
                                                << " should have corresponding operator label.";
