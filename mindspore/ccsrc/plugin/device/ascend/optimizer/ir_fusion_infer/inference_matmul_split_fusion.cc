@@ -635,8 +635,6 @@ CNodePtr InferenceMatmulSplitFusion::CreateMatmulSplitSiluMulNode(const FuncGrap
   size_t split_size_len = kMatmulFfnSplitSizeLen;
   auto reshape_cnode = split_cnode->input(kIndex1)->cast<CNodePtr>();
   MS_CHECK_TRUE_RET(reshape_cnode != nullptr, nullptr);
-  auto tuple = reshape_cnode->input(kIndex2);
-  MS_CHECK_TRUE_RET(tuple != nullptr, nullptr);
 
   auto matmul_cnode = reshape_cnode->input(kIndex1)->cast<CNodePtr>();
   MS_CHECK_TRUE_RET(matmul_cnode != nullptr, nullptr);
@@ -655,7 +653,7 @@ CNodePtr InferenceMatmulSplitFusion::CreateMatmulSplitSiluMulNode(const FuncGrap
   }
   auto fusion_prim = CreateMatmulSplitPrim(split_cnode, split_size_len, pattern_name);
   fusion_prim->AddAttr("silu_position", MakeValue<int32_t>(1));
-  std::vector<AnfNodePtr> matmul_split_inputs = {x_node, weight_node, tuple};
+  std::vector<AnfNodePtr> matmul_split_inputs = {x_node, weight_node};
   auto matmul_split_cnode = func_graph->NewCNode(fusion_prim, matmul_split_inputs);
   MS_EXCEPTION_IF_NULL(matmul_split_cnode);
 
@@ -691,8 +689,6 @@ CNodePtr InferenceMatmulSplitFusion::CreateMatmulSplitSiluFastgeluAddMulNode(con
 
   auto reshape_cnode = split_cnode->input(kIndex1)->cast<CNodePtr>();
   MS_CHECK_TRUE_RET(reshape_cnode != nullptr, nullptr);
-  auto tuple = reshape_cnode->input(kIndex2);
-  MS_CHECK_TRUE_RET(tuple != nullptr, nullptr);
 
   auto matmul_cnode = reshape_cnode->input(kIndex1)->cast<CNodePtr>();
   MS_CHECK_TRUE_RET(matmul_cnode != nullptr, nullptr);
@@ -711,7 +707,7 @@ CNodePtr InferenceMatmulSplitFusion::CreateMatmulSplitSiluFastgeluAddMulNode(con
   }
   auto fusion_prim = CreateMatmulSplitPrim(split_cnode, split_size_len, pattern_name);
   fusion_prim->AddAttr("silu_position", MakeValue<int32_t>(1));
-  std::vector<AnfNodePtr> matmul_split_inputs = {x_node, weight_node, tuple};
+  std::vector<AnfNodePtr> matmul_split_inputs = {x_node, weight_node};
   auto matmul_split_cnode = func_graph->NewCNode(fusion_prim, matmul_split_inputs);
   MS_EXCEPTION_IF_NULL(matmul_split_cnode);
 
@@ -743,8 +739,6 @@ CNodePtr InferenceMatmulSplitFusion::CreateQMatmulSplitSiluMulNode(const FuncGra
   size_t split_size_len = kMatmulFfnSplitSizeLen;
   auto reshape_cnode = split_cnode->input(kIndex1)->cast<CNodePtr>();
   MS_CHECK_TRUE_RET(reshape_cnode != nullptr, nullptr);
-  auto reshape_tuple = reshape_cnode->input(kIndex2);
-  MS_CHECK_TRUE_RET(reshape_tuple != nullptr, nullptr);
 
   auto qbmm_cnode = reshape_cnode->input(kIndex1)->cast<CNodePtr>();
   MS_CHECK_TRUE_RET(qbmm_cnode != nullptr, nullptr);
@@ -774,7 +768,7 @@ CNodePtr InferenceMatmulSplitFusion::CreateQMatmulSplitSiluMulNode(const FuncGra
 
   auto fusion_prim = CreateMatmulSplitPrim(split_cnode, split_size_len, pattern_name);
   fusion_prim->AddAttr("silu_position", MakeValue<int32_t>(1));
-  std::vector<AnfNodePtr> qbmm_split_inputs = {qbmm_x, qbmm_w, reshape_tuple, input_bias, input_scale};
+  std::vector<AnfNodePtr> qbmm_split_inputs = {qbmm_x, qbmm_w, input_bias, input_scale};
 
   auto qmatmul_split_cnode = func_graph->NewCNode(fusion_prim, qbmm_split_inputs);
   MS_EXCEPTION_IF_NULL(qmatmul_split_cnode);
@@ -810,8 +804,6 @@ CNodePtr InferenceMatmulSplitFusion::CreateQMatmulSplitSiluFastgeluAddMulNode(co
   size_t split_size_len = kMatmulQkvSplitSizeLen;
   auto reshape_cnode = split_cnode->input(kIndex1)->cast<CNodePtr>();
   MS_CHECK_TRUE_RET(reshape_cnode != nullptr, nullptr);
-  auto reshape_tuple = reshape_cnode->input(kIndex2);
-  MS_CHECK_TRUE_RET(reshape_tuple != nullptr, nullptr);
 
   auto qbmm_cnode = reshape_cnode->input(kIndex1)->cast<CNodePtr>();
   MS_CHECK_TRUE_RET(qbmm_cnode != nullptr, nullptr);
@@ -841,7 +833,7 @@ CNodePtr InferenceMatmulSplitFusion::CreateQMatmulSplitSiluFastgeluAddMulNode(co
 
   auto fusion_prim = CreateMatmulSplitPrim(split_cnode, split_size_len, pattern_name);
   fusion_prim->AddAttr("silu_position", MakeValue<int32_t>(1));
-  std::vector<AnfNodePtr> qbmm_split_inputs = {qbmm_x, qbmm_w, reshape_tuple, input_bias, input_scale};
+  std::vector<AnfNodePtr> qbmm_split_inputs = {qbmm_x, qbmm_w, input_bias, input_scale};
   auto qmatmul_split_cnode = func_graph->NewCNode(fusion_prim, qbmm_split_inputs);
   MS_EXCEPTION_IF_NULL(qmatmul_split_cnode);
 
@@ -851,7 +843,7 @@ CNodePtr InferenceMatmulSplitFusion::CreateQMatmulSplitSiluFastgeluAddMulNode(co
   }
 
   visited_cnodes.insert({silu_cnode, split_cnode});
-  MS_LOG(DEBUG) << "create MatmulSplitSiluFastgeluAddMul node success.";
+  MS_LOG(DEBUG) << "create QMatmulSplitSiluFastgeluAddMul node success.";
   return qmatmul_split_cnode;
 }
 
