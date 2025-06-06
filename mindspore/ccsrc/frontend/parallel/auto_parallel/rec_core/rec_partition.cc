@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2023 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,39 +36,39 @@ namespace parallel {
 double GetWeights(const Graph::NodeType &node) {
   const OperatorRec &op = node.apply;
 
-  auto func_matmul = [&]() {
+  auto func_matmul = [&op]() {
     auto cost_ptr = std::make_shared<CostMatMul>();
     return cost_ptr->GetMaxCostIn(op);
   };
-  auto func_batch_matmul = [&]() {
+  auto func_batch_matmul = [&node]() {
     auto cost_ptr = std::make_shared<CostBatchMatMul>();
     return cost_ptr->GetMaxCostIn(node);
   };
-  auto func_convolution = [&]() {
+  auto func_convolution = [&node]() {
     auto cost_ptr = std::make_shared<CostConvolution>();
     return cost_ptr->GetMinCostIn(node);
   };
-  auto func_pooling = [&]() {
+  auto func_pooling = []() {
     auto cost_ptr = std::make_shared<CostPooling>();
     return cost_ptr->GetMinCostIn();
   };
-  auto func_tensor_add = [&]() {
+  auto func_tensor_add = []() {
     auto cost_ptr = std::make_shared<CostTensorAdd>();
     return cost_ptr->GetMinCostIn();
   };
-  auto func_common = [&]() {
+  auto func_common = []() {
     auto cost_ptr = std::make_shared<CostCommon>();
     return cost_ptr->GetMinCostIn();
   };
-  auto func_reshape = [&]() {
+  auto func_reshape = []() {
     auto cost_ptr = std::make_shared<CostReshape>();
     return cost_ptr->GetMinCostIn();
   };
-  auto func_bias_add = [&]() {
+  auto func_bias_add = []() {
     auto cost_ptr = std::make_shared<CostBiasAdd>();
     return cost_ptr->GetMinCostIn();
   };
-  auto func_batch_parallel = [&]() {
+  auto func_batch_parallel = []() {
     auto cost_ptr = std::make_shared<CostBatchParallel>();
     return cost_ptr->GetMaxCostIn();
   };
