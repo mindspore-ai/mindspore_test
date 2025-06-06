@@ -863,7 +863,7 @@ class _BroadCastCell(Cell):
         from mindspore import context
         self.map_ = C.Map()
         self.params = tuple(params)
-        if context.get_context("device_target") == "Ascend" and context.get_context("mode") != context.PYNATIVE_MODE:
+        if context.get_context("device_target") == "Ascend":
             rank_list = [id for id in range(0, get_group_size())]
             create_group("BroadcastWorldGroup", rank_list)
             self.broadcast = P.Broadcast(0, group="BroadcastWorldGroup")
