@@ -139,8 +139,8 @@ void TopPRouterCpuKernel::DoCompute(const CpuKernelContext &ctx, const int i, co
   auto expert_id = input_data[input_index];
   auto cnt_index = bs * expert_num + expert_id;
   auto position_in_expert = expert_counter[cnt_index];
-  bool condition;
-  condition = (position_in_expert < capacity && token_accu_weight[prob_index] + router_prob[input_index] < threshold);
+  bool condition =
+    (position_in_expert < capacity && token_accu_weight[prob_index] + router_prob[input_index] < threshold);
   if (condition) {
     dispatch_index[bs * expert_num * capacity + expert_id * capacity + position_in_expert] =
       static_cast<T>(token_index + 1);
