@@ -23,7 +23,7 @@ from mindspore.communication.management import get_rank, get_group_size, GlobalC
 from mindspore.ops.auto_generate.gen_ops_prim import BatchNormReduceGrad
 from mindspore.ops.auto_generate.gen_ops_prim import BatchNormElemtGrad
 from mindspore.ops.primitive import Primitive, prim_arg_register, PrimitiveWithInfer, prim_attr_register
-from mindspore.ops.operations.comm_ops import ReduceOp, check_hcom_group_valid, check_collective_target_dtype
+from mindspore.ops.operations.comm_ops import ReduceOp, check_collective_target_dtype
 
 batch_norm_reduce_grad = BatchNormReduceGrad()
 batch_norm_elemt_grad = BatchNormElemtGrad()
@@ -71,7 +71,6 @@ class AllReduce(Primitive):
         if not isinstance(self.group, str):
             raise TypeError(f"For '{self.name}', the 'group' must be str, "
                             f"but got {type(self.group).__name__}.")
-        check_hcom_group_valid(self.group, prim_name=self.name)
         self.op = op
         self.add_prim_attr('group', self.group)
         self.add_prim_attr('fusion', 0)
