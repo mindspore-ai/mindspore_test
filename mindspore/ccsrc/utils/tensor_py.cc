@@ -70,6 +70,7 @@ TensorPy::TensorPy(const TensorPy &input)
 }
 
 TensorPy::TensorPy(TypeId data_type, const ShapeVector &shape) {
+  // todo: check.
   tensor_ = tensor::empty(data_type, shape, device::DeviceType::kCPU);
 }
 

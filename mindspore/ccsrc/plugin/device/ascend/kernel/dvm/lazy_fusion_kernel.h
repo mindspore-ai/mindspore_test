@@ -94,7 +94,7 @@ class LazyFusionKernelAscend : public dvm::Kernel {
   void Output(const TensorPtr &tensor, dvm::NDObject *obj);
 
   TensorPtr Output(dvm::NDObject *obj, TypeId dtype, const ShapeVector &shape) {
-    auto tensor = tensor::empty(dtype, shape, device::DeviceType::kCPU);
+    auto tensor = tensor::empty(dtype, shape, device::DeviceType::kNone);
     runtime::DeviceAddressUtils::CreateOutputTensorAddress(device_context_, stream_id_, tensor,
                                                            LongToSize(tensor->DataNBytes()));
     Output(tensor, obj);

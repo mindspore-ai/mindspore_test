@@ -494,6 +494,10 @@ DeviceSyncPtr Tensor::CallContiguousCallback() const {
 }
 
 void *Tensor::data_c() const {
+  if (device_sync_ == nullptr) {
+    MS_LOG(ERROR) << "Cannot access uninitialized tensor data";
+    std::abort();
+  }
   if (device_sync_->GetDeviceType() != device::DeviceType::kCPU) {
     MS_LOG(ERROR) << "Only cpu Tensor can access data.";
     std::abort();
@@ -510,6 +514,10 @@ TensorPtr Tensor::cpu() const {
     device_address = contiguous_address;
   } else {
     device_address = device_sync_;
+  }
+  if (device_address == nullptr) {
+    MS_LOG(ERROR) << "Can't do cpu() for uninitialized tensor";
+    return std::make_shared<Tensor>(data_type_, shape_, device_address);
   }
   if (device_address->GetDeviceType() == device::DeviceType::kCPU) {
     return std::make_shared<Tensor>(data_type_, shape_, device_address);
@@ -546,13 +554,21 @@ void Tensor::data_sync(bool need_wait, bool inpalce, bool sync_on_demand) const 
 }
 
 std::string Tensor::DataToString(bool use_comma) const {
+  if (device_sync_ == nullptr) {
+    return "<uninitialized>";
+  }
   if (device_sync_->GetDeviceType() != device::DeviceType::kCPU) {
-    return "[...]";
+    return "<" + device::GetDeviceNameByType(device_sync_->GetDeviceType()) + ">";
   }
   return GetTensorDataString(data_type_, shape_, device_sync_->GetMutablePtr(), DataSize(), DataDim(), use_comma);
 }
 
-void *Tensor::unsafe_data() { return device_address()->GetMutablePtr(); }
+void *Tensor::unsafe_data() {
+  if (device_sync_ == nullptr) {
+    return nullptr;
+  }
+  return device_sync_->GetMutablePtr();
+}
 
 void Tensor::ExecuteUpdateValueCallback() const {
   if (update_value_callback_ != nullptr) {

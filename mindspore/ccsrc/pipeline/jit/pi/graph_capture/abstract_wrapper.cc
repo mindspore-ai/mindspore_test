@@ -94,7 +94,7 @@ ValuePtr MaybeMakeEmptyTensor(const AbstractBasePtr &abs) {
     auto abs_tensor = abs->cast<abstract::AbstractTensorPtr>();
     TypePtr tensor_type_ptr = abs_tensor->element()->BuildType();
     ShapeVector tensor_shape = abs_tensor->shape()->shape();
-    auto tensor = tensor::empty(tensor_type_ptr->type_id(), tensor_shape, device::DeviceType::kCPU);
+    auto tensor = tensor::empty(tensor_type_ptr->type_id(), tensor_shape, device::DeviceType::kNone);
     if (abs->isa<abstract::AbstractRefTensor>()) {
       auto abs_ref_tensor = abs->cast<abstract::AbstractRefPtr>();
       if (abs_ref_tensor->is_parameter()) {
