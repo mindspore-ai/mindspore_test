@@ -274,11 +274,9 @@ void PrepareValueNode(const AnfNodePtr &node, KernelTensor *kernel_tensor) {
       << "Device address:" << device_tensor << " already has ptr:" << device_tensor->GetPtr()
       << " for value node:" << node->DebugString();
   }
-  auto tensor =
-    std::make_shared<tensor::Tensor>(kernel_tensor->dtype_id(), kernel_tensor->GetShapeVector(),
-                                     const_cast<void *>(kernel_tensor->GetValuePtr()), kernel_tensor->size());
   device_context->device_res_manager_->SyncAllStreams();
-  if (!SyncCopy(device_tensor, tensor->device_address(), kDefaultStreamIndex)) {
+  if (!device_context->device_res_manager_->Copy(device_tensor->GetMutablePtr(), kernel_tensor->GetValuePtr(),
+                                                 kernel_tensor->size(), device::CopyType::kH2D, kDefaultStreamIndex)) {
     MS_LOG_WITH_NODE(EXCEPTION, node) << "Failed to sync data for value node:" << node->DebugString();
   }
 
