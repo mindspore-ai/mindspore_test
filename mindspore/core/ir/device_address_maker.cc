@@ -19,7 +19,7 @@
 #include "ir/tensor_data.h"
 
 namespace mindspore {
-constexpr int kMaxDeviceNum = 5;
+constexpr int kMaxDeviceNum = 6;
 DeviceAddressMakerFunc g_device_address_maker[kMaxDeviceNum];
 DeviceSyncPtr DeviceAddressMaker::make_device_address() {
   auto device_sync = maker_(data_type_, shape_, data_ptr_, std::move(deleter_));

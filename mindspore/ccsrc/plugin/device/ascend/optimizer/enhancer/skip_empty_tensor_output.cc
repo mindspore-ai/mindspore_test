@@ -40,6 +40,7 @@ size_t GetAllEmptyTensorOutputNum(const AnfNodePtr &node) {
 
 AnfNodePtr CreateEmptyTensorValueNode(const KernelGraphPtr &graph, const TypeId &type_id,
                                       const ShapeVector &output_shape) {
+  // todo: check kNone or kCPU.
   auto empty_tensor = tensor::empty(type_id, output_shape, device::DeviceType::kCPU);
   return graph->NewValueNode(empty_tensor);
 }
