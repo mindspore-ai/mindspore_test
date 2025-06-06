@@ -64,6 +64,7 @@ const char *GraphBuilder::ID___self__ = "__self__";
 const char *GraphBuilder::ID___globals__ = "__globals__";
 const char *GraphBuilder::ID___call__ = "__call__";
 const char *GraphBuilder::ID_construct = "construct";
+const char *GraphBuilder::ID_forward = "forward";
 
 static constexpr const char *kPIJitCopyFuncKey = ".<pijit.copy>.";
 
@@ -2249,6 +2250,9 @@ py::object GraphBuilder::FindPyFunc(AObject *vobj) {
     case AObject::kTypeCell:
       vobj = vobj->GetAttr(ID_construct);
       break;
+    case AObject::kTypeNNModule:
+      vobj = vobj->GetAttr(ID_forward);
+      break;
     case AObject::kTypeAnyValue:
       vobj = vobj->GetAttr(ID___call__);
       break;
@@ -2934,6 +2938,7 @@ ValueNode *GetBoundSelfHelper(CallNode *call_node, bool *check_method) {
       is_method = true;
       break;
     case AObject::kTypeCell:
+    case AObject::kTypeNNModule:
       self = func_val;
       break;
     case AObject::kTypeAnyValue:
