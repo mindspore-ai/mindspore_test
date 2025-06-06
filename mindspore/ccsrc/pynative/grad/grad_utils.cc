@@ -207,15 +207,18 @@ InputType SetValueGradInfoForTensor(const ValuePtr &value, InputType grad_type) 
   if (tensor_value->is_parameter() && grad_type != InputType::kInput) {
     grad_type = InputType::kParameter;
     if (AutoGradUtil::IsParamRequiresGrad(tensor_value) && auto_grad_meta_data->UnsafeGetGradNodeImpl() == nullptr) {
-      auto fn = std::make_shared<autograd::LeafNode>(tensor_value->param_info()->name(), tensor_value->shape(),
-                                                     tensor_value->Dtype());
+      auto fn = std::make_shared<autograd::LeafNode>(tensor_value->param_info()->name(), tensor_value,
+                                                     tensor_value->shape(), tensor_value->Dtype());
+      auto_grad_meta_data->set_requires_grad(true);
       auto_grad_meta_data->set_grad_node(fn);
     }
   }
   auto_grad_meta_data->set_input_type(grad_type);
   if (grad_type == InputType::kInput && auto_grad_meta_data->UnsafeGetGradNodeImpl() == nullptr) {
     MS_LOG(DEBUG) << "Build leaf node for input";
-    auto fn = std::make_shared<autograd::LeafNode>("input", tensor_value->shape(), tensor_value->Dtype(), false);
+    auto fn = std::make_shared<autograd::LeafNode>("input_" + tensor_value->id(), tensor_value, tensor_value->shape(),
+                                                   tensor_value->Dtype(), false);
+    auto_grad_meta_data->set_requires_grad(true);
     auto_grad_meta_data->set_grad_node(fn);
   }
   return grad_type;
@@ -323,7 +326,9 @@ InputType AutoGradUtil::SetTensorGradInfo(const tensor::TensorPtr &tensor) {
     auto_grad_meta_data = std::make_shared<AutoGradMetaData>();
     tensor->set_auto_grad_meta_data(auto_grad_meta_data);
     if (IsParamRequiresGrad(tensor)) {
-      auto fn = std::make_shared<autograd::LeafNode>(tensor->param_info()->name(), tensor->shape(), tensor->Dtype());
+      auto fn =
+        std::make_shared<autograd::LeafNode>(tensor->param_info()->name(), tensor, tensor->shape(), tensor->Dtype());
+      auto_grad_meta_data->set_requires_grad(true);
       auto_grad_meta_data->set_grad_node(fn);
     }
   }
@@ -402,8 +407,9 @@ void AutoGradUtil::BuildViewAutoGradMeta(const tensor::TensorPtr &src_tensor, co
       auto auto_grad_meta_data = std::make_shared<AutoGradMetaData>();
       src_tensor->set_auto_grad_meta_data(auto_grad_meta_data);
       if (IsParamRequiresGrad(src_tensor) && autograd::impl::GetUnsafeGradNodeImpl(src_tensor) == nullptr) {
-        auto fn = std::make_shared<autograd::LeafNode>(src_tensor->param_info()->name(), src_tensor->shape(),
-                                                       src_tensor->Dtype());
+        auto fn = std::make_shared<autograd::LeafNode>(src_tensor->param_info()->name(), src_tensor,
+                                                       src_tensor->shape(), src_tensor->Dtype());
+        auto_grad_meta_data->set_requires_grad(true);
         auto_grad_meta_data->set_grad_node(fn);
       }
     }
@@ -521,14 +527,8 @@ bool AutoGradUtil::NeedGrad(const tensor::TensorPtr &input_tensor) {
   if (input_tensor->is_parameter()) {
     return IsParamRequiresGrad(input_tensor);
   }
-  if (autograd::impl::GetUnsafeGradNodeImpl(input_tensor) != nullptr) {
-    return true;
-  }
-  const auto &view_auto_grad_data = autograd::impl::GetViewAutogradMetaImpl(input_tensor);
-  if (!view_auto_grad_data) {
-    return false;
-  }
-  return NeedGrad(view_auto_grad_data->view_info().base());
+  auto grad_meta = input_tensor->auto_grad_meta_data();
+  return grad_meta != nullptr && grad_meta->requires_grad();
 }
 
 bool AutoGradUtil::NeedGrad(const std::vector<ValuePtr> &input_values) {

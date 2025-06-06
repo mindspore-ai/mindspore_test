@@ -683,8 +683,17 @@ class MS_CORE_API Tensor : public MetaTensor {
 
   void set_copy_done_flag(bool flag) { copy_done_flag_ = flag; }
   bool get_copy_done_flag() const { return copy_done_flag_; }
+  // Grad interface for PyNative
+  bool requires_grad();
+  void set_requires_grad(bool requires_grad);
+  TensorPtr grad();
+  void set_grad(const TensorPtr &grad);
+  bool is_leaf();
+  static void InitilizeGradImpl(GradHookInterfacePtr grad_impl);
+  static const GradHookInterfacePtr &grad_impl();
 
  private:
+  inline static GradHookInterfacePtr grad_impl_{nullptr};
   // Really execute callback function when host value is updated of Tensor.
   void ExecuteUpdateValueCallback() const;
 

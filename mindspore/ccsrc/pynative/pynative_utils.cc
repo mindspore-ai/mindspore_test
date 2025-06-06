@@ -1505,6 +1505,11 @@ void PyBoost::DoGrad(const kernel::pyboost::OpPtr &op, const OpGradInfoPtr &grad
   forward->ForwardOpGradImpl(grad_info, async_status);
 }
 
+void PyBoost::MarkSideEffect(PyObject * arg) {
+  tensor::PyType<tensor::TensorPy> *tensor = reinterpret_cast<tensor::PyType<tensor::TensorPy> *>(arg);
+  tensor->value.set_has_side_effect(true);
+}
+
 void PyBoost::MarkPyBoostInputs(const OpGradInfoPtr &op_grad_info) {
   MS_EXCEPTION_IF_NULL(op_grad_info);
   size_t input_size = op_grad_info->input_value.size();

@@ -725,6 +725,7 @@ class Parameter(Tensor_):
             raise TypeError("The argument `requires_grad` must be bool type")
         Tensor_.wait_pipeline(self)
         self.param_info.requires_grad = value
+        self._requires_grad = value
 
     @property
     def data(self):

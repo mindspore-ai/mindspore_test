@@ -33,7 +33,8 @@ namespace mindspore {
 namespace pynative {
 using CallBackFn = std::function<VectorRef(const VectorRef &arg_list)>;
 enum class SpecialType { kZerosLikeType = 0, kOnesLikeType = 1 };
-
+constexpr char kCallBackwradTwiceErr[] =
+  "Try to backward the graph twice, if you want call again, please use retain_graph=True";
 class TensorMeta {
  public:
   TensorMeta() : is_default_(true) {}

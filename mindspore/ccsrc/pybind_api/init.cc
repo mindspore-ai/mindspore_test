@@ -216,6 +216,7 @@ void RegModule(py::module *m) {
   mindspore::pynative::RegisterCellBackwardHookFunction(m);
   mindspore::pynative::RegisterFunctional(m);
   mindspore::pynative::RegDirectOps(m);
+  mindspore::pynative::autograd::RegBackwardFunction(m);
   mindspore::pijit::RegPIJitInterface(m);
   mindspore::prim::RegCompositeOpsGroup(m);
   mindspore::profiler::RegProfilerManager(m);

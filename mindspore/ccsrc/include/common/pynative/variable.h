@@ -28,14 +28,8 @@
 #include "ir/tensor.h"
 #include "pynative/grad/hook_py.h"
 
-namespace mindspore {
-namespace session {
-class KernelGraph;
-}
-using KernelGraphPtr = std::shared_ptr<session::KernelGraph>;
-}  // namespace mindspore
-
 namespace mindspore::pynative::autograd {
+
 class FuncBuilder;
 struct GradAttr {
   GradAttr(bool get_all, bool get_by_list, bool sens_param, bool get_by_position, bool weight_param_is_tuple)
@@ -103,27 +97,29 @@ class COMMON_EXPORT AutoGradMetaData : public AutoGradMetaInterface {
   explicit AutoGradMetaData(const InputType input_type) : input_type_(input_type) {}
   explicit AutoGradMetaData(BackwardNodePtr grad_node, const InputType input_type = InputType::kConstant)
       : grad_node_(std::move(grad_node)), input_type_(input_type) {}
+  [[nodiscard]] const tensor::TensorPtr &grad() const override { return grad_; }
+  void set_grad(const tensor::TensorPtr &grad) override { grad_ = grad; }
   [[nodiscard]] BackwardNodePtr UnsafeGetGradNodeImpl() const override { return grad_node_; }
   void set_grad_node(const BackwardNodePtr &grad_node) override { grad_node_ = grad_node; }
   [[nodiscard]] InputType input_type() const override { return input_type_; }
   void set_input_type(InputType input_type) override { input_type_ = input_type; }
   [[nodiscard]] size_t output_index() const override { return output_index_; }
   void set_output_index(size_t output_index) override { output_index_ = output_index; }
-  // Reset Parameter auto grad meta
-  void Reset() override {
-    grad_node_ = nullptr;
-    output_index_ = 0;
-    input_type_ = InputType::kUnkown;
-  }
+  [[nodiscard]] bool requires_grad() const override;
+  void set_requires_grad(bool requires_grad) override { requires_grad_ = requires_grad; }
+
   ~AutoGradMetaData() override = default;
 
  private:
+  tensor::TensorPtr grad_{nullptr};
   // grad_node for call grad fn.
-  BackwardNodePtr grad_node_;
+  BackwardNodePtr grad_node_{nullptr};
   // Type of grad tensor
   InputType input_type_{InputType::kUnkown};
   // Index of op output tensors.
   size_t output_index_{0};
+  // whether tensor requires grad.
+  bool requires_grad_{false};
 };
 
 using AutoGradMetaDataPtr = std::shared_ptr<AutoGradMetaData>;
@@ -152,7 +148,7 @@ enum class CreationType {
   kCustomBprop,
 };
 
-class ViewAutoGradMetaData final : public AutoGradMetaData {
+class COMMON_EXPORT ViewAutoGradMetaData final : public AutoGradMetaData {
  public:
   ViewAutoGradMetaData(const ViewInfo &&view_info, InputType input_type,
                        CreationType creation_type = CreationType::kDefault)
@@ -162,6 +158,8 @@ class ViewAutoGradMetaData final : public AutoGradMetaData {
   void set_version_attr(uint32_t version) { version_attr_ = version; }
   CreationType creation_type() { return creation_type_; }
   void set_creation_type(const CreationType &creation_type) { creation_type_ = creation_type; }
+  [[nodiscard]] bool requires_grad() const override;
+  ~ViewAutoGradMetaData() override = default;
 
  private:
   ViewInfo view_info_;
@@ -205,6 +203,9 @@ class COMMON_EXPORT BackwardNode : public std::enable_shared_from_this<BackwardN
   /// \brief CallBackward function is used to calculate gradient of this node.
   /// \param[in] grads Grads is this node output's gradients.
   virtual ValuePtrList CallBackward(const ValuePtrList &grads) { return {}; }
+
+  /// \brief Is node a leaf.
+  virtual bool IsLeaf() { return false; }
 
   /// \brief Postprocess gradients from func to align with next_edges.
   /// \param[in] gradient_value Gradients value is gradients result from func
