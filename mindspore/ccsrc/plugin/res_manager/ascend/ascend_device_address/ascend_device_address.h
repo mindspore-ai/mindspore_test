@@ -63,6 +63,22 @@ class ASCEND_RES_MANAGER_EXPORT AscendDeviceAddress : public LoadableDeviceAddre
   DeviceAddressPtr CloneDeviceAddress() override;
 
   DeviceSynchronizerPtr NewDeviceSynchronizer() override;
+  bool CopyDeviceToHost(void *dst, const void *src, const size_t &size) const override;
+  bool CopyHostToDevice(void *dst, const void *src, const size_t &size) const override;
+  void ClearDeviceMemory() override;
+  DeviceType GetDeviceType() const override { return DeviceType::kAscend; }
+  mindspore::tensor::TensorPtr LoadMemToHost(const std::string &tensor_name, const ShapeVector &host_shape,
+                                             TypeId host_type, bool trans_flag, bool async_copy = true) const override;
+
+  void set_communication_ptr(uint8_t *communication_ptr) override {
+    communication_ptr_ = communication_ptr;
+    // The communication_ptr_ should free to memory pool instead of GetDevicePtr(), so must update device pointer
+    // deleter.
+    SetDevicePtrDeleter();
+  }
+  bool CopyDeviceToHostWithoutSyncStream(void *dst, size_t dst_size, const void *src, size_t src_size);
+
+ protected:
   bool SyncDeviceToHost(size_t size, void *const host_ptr) const override;
   bool SyncHostToDevice(size_t size, const void *host_ptr) const override;
   bool SyncDeviceToHost(const ShapeVector &shape, size_t size, TypeId type, void *host_ptr,
@@ -83,13 +99,6 @@ class ASCEND_RES_MANAGER_EXPORT AscendDeviceAddress : public LoadableDeviceAddre
   bool AsyncHostToDevice(size_t size, TypeId type, const tensor::TensorDataPtr &tensor_data,
                          const std::string &host_format, size_t stream_id) const override;
   bool SyncDeviceToDevice(const DeviceSync *src_device_addr) const override;
-  bool CopyDeviceToHost(void *dst, const void *src, const size_t &size) const override;
-  bool CopyHostToDevice(void *dst, const void *src, const size_t &size) const override;
-  void ClearDeviceMemory() override;
-  DeviceType GetDeviceType() const override { return DeviceType::kAscend; }
-  mindspore::tensor::TensorPtr LoadMemToHost(const std::string &tensor_name, const ShapeVector &host_shape,
-                                             TypeId host_type, bool trans_flag, bool async_copy = true) const override;
-
   // Asynchronously copy host memory to device side.
   bool AsyncHostToDevice(const ShapeVector &shape, size_t size, TypeId type, const void *host_ptr,
                          size_t stream_id) const;
@@ -97,15 +106,6 @@ class ASCEND_RES_MANAGER_EXPORT AscendDeviceAddress : public LoadableDeviceAddre
   // Asynchronously copy device memory to host side.
   bool AsyncDeviceToHost(const ShapeVector &shape, size_t size, TypeId type, void *host_ptr, size_t stream_id) const;
 
-  void set_communication_ptr(uint8_t *communication_ptr) override {
-    communication_ptr_ = communication_ptr;
-    // The communication_ptr_ should free to memory pool instead of GetDevicePtr(), so must update device pointer
-    // deleter.
-    SetDevicePtrDeleter();
-  }
-  bool CopyDeviceToHostWithoutSyncStream(void *dst, size_t dst_size, const void *src, size_t src_size);
-
- protected:
   bool CopyDeviceToHost(void *dst, const void *src, size_t size, bool async, size_t stream_id) const override;
   bool CopyHostToDevice(void *dst, const void *src, size_t size, bool async, size_t stream_id) const override;
 

@@ -30,12 +30,12 @@ namespace runtime {
 class MemorySwapActor : public AbstractActor {
  public:
   MemorySwapActor(const std::string &name, const AID *recorder_aid, size_t stream_id,
-                  std::vector<DeviceTensor *> device_tensors_to_swap)
+                  std::vector<DeviceTensorPtr> device_tensors_to_swap)
       : AbstractActor(name, KernelTransformType::kMemorySwapActor, recorder_aid),
         stream_id_(stream_id),
         device_tensors_to_swap_(std::move(device_tensors_to_swap)) {}
   MemorySwapActor(const std::string &name, const AID *recorder_aid, size_t stream_id,
-                  std::vector<DeviceTensor *> device_tensors_to_swap, const DeviceContext *device_context,
+                  std::vector<DeviceTensorPtr> device_tensors_to_swap, const DeviceContext *device_context,
                   std::vector<std::pair<device::SwapActionType, std::vector<size_t>>> actions)
       : AbstractActor(name, KernelTransformType::kMemorySwapActor, recorder_aid),
         stream_id_(stream_id),
@@ -51,15 +51,15 @@ class MemorySwapActor : public AbstractActor {
   void FetchRealParameters(OpContext<KernelTensor> *context);
 
  private:
-  void AllocDeviceContinuousMem(const std::vector<DeviceTensor *> &device_tensors);
+  void AllocDeviceContinuousMem(const std::vector<DeviceTensorPtr> &device_tensors);
   static void Swap(OpContext<KernelTensor> *const context, device::StorageType to,
-                   const std::vector<DeviceTensor *> &device_tensors);
+                   const std::vector<DeviceTensorPtr> &device_tensors);
   void UpdateDeviceTensors(OpContext<KernelTensor> *context);
-  std::vector<DeviceTensor *> GetDeviceTensors(const std::vector<size_t> &indexes);
+  std::vector<DeviceTensorPtr> GetDeviceTensors(const std::vector<size_t> &indexes);
 
  protected:
   size_t stream_id_;
-  std::vector<DeviceTensor *> device_tensors_to_swap_;
+  std::vector<DeviceTensorPtr> device_tensors_to_swap_;
   std::vector<std::pair<device::SwapActionType, std::vector<size_t>>> swap_actions_;
   std::vector<DeviceTensor *> real_parameters_;
   size_t fixed_device_tensor_num_{0};

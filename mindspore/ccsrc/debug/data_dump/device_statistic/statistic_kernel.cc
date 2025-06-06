@@ -23,6 +23,7 @@
 #include "debug/debugger/debugger_utils.h"
 #include "include/common/debug/common.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
+#include "runtime/device/res_manager/hal_res_manager.h"
 
 namespace mindspore {
 
@@ -39,8 +40,12 @@ TensorPtr SyncDeviceToHostTensor(KernelTensorPtr kernel_tensor) {
   const auto &shape_vec = kernel_tensor->GetShapeVector();
 
   mindspore::tensor::TensorPtr out_tensor = std::make_shared<tensor::Tensor>(dtype_id, shape_vec);
-  auto ret_sync = device_addr->SyncDeviceToHost(UnitSizeInBytes(dtype_id), out_tensor->data_c());
-  if (!ret_sync) {
+  MS_EXCEPTION_IF_NULL(out_tensor->device_address());
+  device::ResKey res_key{device_addr->GetDeviceType(), device_addr->device_id()};
+  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+  MS_EXCEPTION_IF_NULL(res_manager);
+  res_manager->SyncAllStreams();
+  if (!SyncCopy(out_tensor->device_address(), device_addr, device_addr->stream_id())) {
     MS_LOG(EXCEPTION) << "Convert format or Copy device mem to host failed";
   }
   return out_tensor;

@@ -237,7 +237,7 @@ atb::Tensor BoostModelATB::MSTensor2Tensor(const tensor::TensorPtr &msTensor) {
                         << ", alloc size: " << device_address->GetSize() << "B.";
     }
     // todo: check format nd!
-    if (!SyncCopy(device_address.get(), device_sync.get(), stream_id_)) {
+    if (!SyncCopy(device_address, device_sync, stream_id_)) {
       MS_LOG(EXCEPTION) << "SyncHostToDevice failed";
     }
   }

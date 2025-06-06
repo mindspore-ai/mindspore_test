@@ -20,6 +20,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "include/backend/distributed/collective/collective_manager.h"
+#include "runtime/device/res_manager/hal_res_base.h"
 #include "runtime/graph_scheduler/execution_order_check/kernel_cache.h"
 #include "runtime/graph_scheduler/execution_order_check/comm_execution_order_check.h"
 #include "mindspore/core/include/utils/ms_utils.h"
@@ -249,10 +250,10 @@ void Process::AllGatherExecuteOrderHash(int step, std::unique_ptr<char[]> *outpu
     MS_LOG(WARNING) << "Allocate device memory failed!";
     return;
   }
-
-  bool sync_ret =
-    input_device_tensor->SyncHostToDevice({static_cast<int64_t>(kMaxAllGatherBuffSize)}, kMaxAllGatherBuffSize,
-                                          TypeId::kNumberTypeUInt8, input_buffer.data());
+  device_context->device_res_manager_->SyncAllStreams();
+  bool sync_ret = device_context->device_res_manager_->Copy(input_device_tensor->GetMutablePtr(), input_buffer.data(),
+                                                            kMaxAllGatherBuffSize, device::CopyType::kH2D,
+                                                            input_device_tensor->stream_id());
   if (!sync_ret) {
     MS_LOG(WARNING) << "Failed to sync input data to device.";
     return;
@@ -291,11 +292,10 @@ void Process::AllGatherExecuteOrderHash(int step, std::unique_ptr<char[]> *outpu
     MS_LOG(WARNING) << "Sync Stream failed";
     return;
   }
-
-  output_device_tensor->SyncDeviceToHost({static_cast<int64_t>(kMaxAllGatherBuffSize * GetRankSize())},
-                                         kMaxAllGatherBuffSize * GetRankSize(), TypeId::kNumberTypeUInt8,
-                                         (*output_host_buffer).get());
-
+  device_context->device_res_manager_->SyncAllStreams();
+  device_context->device_res_manager_->Copy((*output_host_buffer).get(), output_device_tensor->GetMutablePtr(),
+                                            kMaxAllGatherBuffSize * GetRankSize(), device::CopyType::kD2H,
+                                            output_device_tensor->stream_id());
   device_context->device_res_manager_->FreeMemory(output_device_tensor.get());
   device_context->device_res_manager_->FreeMemory(input_device_tensor.get());
 }
