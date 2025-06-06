@@ -1,0 +1,35 @@
+#operator quant_grouped_matmul_dequant
+quant_grouped_matmul_dequant:
+  args:
+    x:
+      dtype: tensor
+    weight:
+      dtype: tensor
+    weight_scale:
+      dtype: tensor
+    group_list:
+      dtype: tensor
+    bias:
+      dtype: tensor
+      default: None
+    x_scale:
+      dtype: tensor
+      default: None
+    x_offset:
+      dtype: tensor
+      default: None
+    smooth_scale:
+      dtype: tensor
+      default: None
+    x_quant_mode:
+      dtype: str
+      default: "'pertoken'"
+    transpose_weight:
+      dtype: bool
+      default: True
+  returns:
+    out:
+      dtype: tensor
+  dispatch:
+    enable: True
+    Ascend: QuantGroupedMatmulDequantAscend
