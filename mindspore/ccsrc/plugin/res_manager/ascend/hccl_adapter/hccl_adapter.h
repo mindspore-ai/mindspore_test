@@ -159,8 +159,6 @@ class ASCEND_RES_MANAGER_EXPORT HcclAdapter {
   bool InitHcclExec();
   bool FinalizeHcclExec();
 
-  HcclMode GetCurrentHcclMode() const;
-  void CheckExcutionMode() const;
   static std::string GetHcclModeString(HcclMode hccl_mode);
   string DoGetHcomGroup(const string &original_group, const std::vector<uint32_t> &rank_ids) const;
 

@@ -242,32 +242,6 @@ void HcclAdapter::FinalizePlugin() {
   plugin_handle_ = nullptr;
 }
 
-HcclMode HcclAdapter::GetCurrentHcclMode() const {
-  auto context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context);
-  bool is_graph_mode = context->get_param<int>(MS_CTX_EXECUTION_MODE) == kGraphMode;
-  bool is_task_sink = context->get_param<bool>(MS_CTX_ENABLE_TASK_SINK);
-  bool graph_kbk = context->IsKByKExecutorMode();
-  if (!is_graph_mode) {
-    return HcclMode::kPynative;
-  } else if (is_task_sink && !graph_kbk) {
-    return HcclMode::kGraph;
-  } else {
-    return HcclMode::kKernelByKernel;
-  }
-}
-
-void HcclAdapter::CheckExcutionMode() const {
-  auto hccl_mode = GetCurrentHcclMode();
-  if (hccl_mode != hccl_mode_ && (!common::UseHostCollective() || UseHcclCM()) &&
-      common::GetEnv(kSimulationLevel).empty()) {
-    MS_LOG(EXCEPTION) << "HCCL is initialized in " << GetHcclModeString(hccl_mode_) << " but current execution mode is "
-                      << GetHcclModeString(hccl_mode)
-                      << ". Please set the execution mode before HCCL init(), and then do not change it in the "
-                         "subsequent script";
-  }
-}
-
 std::string HcclAdapter::GetHcclModeString(HcclMode hccl_mode) {
   static std::map<HcclMode, std::string> kHcclModeString = {{HcclMode::kGraph, "GE_MODE"},
                                                             {HcclMode::kPynative, "PYNATIVE_MODE"},
@@ -730,7 +704,6 @@ bool HcclAdapter::FinalizeHcclComm() {
 }
 
 HcclResult HcclAdapter::HcclCreateGroup(const std::string &group, uint32_t rank_num, uint32_t *rank_ids) const {
-  CheckExcutionMode();
   CHECK_SYMBOL_NULL(hccl_create_group_);
   return hccl_create_group_(group.c_str(), rank_num, rank_ids);
 }
@@ -741,7 +714,6 @@ HcclResult HcclAdapter::HcclDestroyGroup(const std::string &group) const {
 }
 
 HcclResult HcclAdapter::HcclGetRankId(const std::string &group, uint32_t *rank_id) const {
-  CheckExcutionMode();
   if (hccl_mode_ != HcclMode::kGraph) {
     CHECK_SYMBOL_NULL(single_op_hccl_get_rank_id_);
     return single_op_hccl_get_rank_id_(hccl_comm_, rank_id);
@@ -752,7 +724,6 @@ HcclResult HcclAdapter::HcclGetRankId(const std::string &group, uint32_t *rank_i
 }
 
 HcclResult HcclAdapter::HcclGetRankSize(const std::string &group, uint32_t *rank_size) const {
-  CheckExcutionMode();
   if (hccl_mode_ != HcclMode::kGraph) {
     CHECK_SYMBOL_NULL(single_op_hccl_get_rank_size_);
     return single_op_hccl_get_rank_size_(hccl_comm_, rank_size);
@@ -763,13 +734,11 @@ HcclResult HcclAdapter::HcclGetRankSize(const std::string &group, uint32_t *rank
 }
 
 HcclResult HcclAdapter::HcclGetLocalRankId(const std::string &group, uint32_t *local_rank_id) const {
-  CheckExcutionMode();
   CHECK_SYMBOL_NULL(hccl_get_local_rank_id_);
   return hccl_get_local_rank_id_(group.c_str(), local_rank_id);
 }
 
 HcclResult HcclAdapter::HcclGetLocalRankSize(const std::string &group, uint32_t *local_rank_size) const {
-  CheckExcutionMode();
   if (hccl_mode_ != HcclMode::kGraph) {
     MS_LOG(ERROR) << "The pynative mode doesn't support get local rank szie.";
     return HCCL_E_NOT_SUPPORT;
@@ -781,7 +750,6 @@ HcclResult HcclAdapter::HcclGetLocalRankSize(const std::string &group, uint32_t 
 
 HcclResult HcclAdapter::HcclGetWorldRankFromGroupRank(const std::string &group, uint32_t local_rank,
                                                       uint32_t *world_rank) const {
-  CheckExcutionMode();
   if (hccl_mode_ != HcclMode::kGraph) {
     MS_LOG(ERROR) << "The pynative mode doesn't support get world rank by group rank.";
     return HCCL_E_NOT_SUPPORT;
@@ -793,7 +761,6 @@ HcclResult HcclAdapter::HcclGetWorldRankFromGroupRank(const std::string &group, 
 
 HcclResult HcclAdapter::HcclGetGroupRankFromWorldRank(uint32_t world_rank, const std::string &group,
                                                       uint32_t *local_rank) const {
-  CheckExcutionMode();
   if (hccl_mode_ != HcclMode::kGraph) {
     MS_LOG(ERROR) << "The pynative mode doesn't support get group rank by world rank.";
     return HCCL_E_NOT_SUPPORT;
@@ -845,13 +812,11 @@ bool HcclAdapter::FinalizeHcclExec() {
 }
 
 HcclResult HcclAdapter::HcclExecEnqueueOp(const ::HcomOperation &op_info, const HExecCallBack &callback) const {
-  CheckExcutionMode();
   CHECK_SYMBOL_NULL(hccl_exec_enqueue_op_);
   return hccl_exec_enqueue_op_(op_info, callback);
 }
 
 HcclResult HcclAdapter::HcclExecAlltoAllV(const ::HcomAllToAllVParams &params, const HExecCallBack &callback) const {
-  CheckExcutionMode();
   CHECK_SYMBOL_NULL(hccl_exec_enqueue_all_to_all_v_);
   return hccl_exec_enqueue_all_to_all_v_(params, callback);
 }
@@ -867,7 +832,6 @@ HcclResult HcclAdapter::HcclAlltoAllV(void *send_buf, void *recv_buf, hccl::Hccl
   if (MS_UNLIKELY(dry_run)) {
     return HCCL_SUCCESS;
   }
-  CheckExcutionMode();
   CHECK_SYMBOL_NULL(launch_hccl_all_to_allv_);
   MS_EXCEPTION_IF_NULL(hccl_comm);
   uint64_t rangeId = 0;
@@ -893,7 +857,6 @@ HcclResult HcclAdapter::HcclReduceScatterV(void *send_buf, void *recv_buf, hccl:
   if (MS_UNLIKELY(dry_run)) {
     return HCCL_SUCCESS;
   }
-  CheckExcutionMode();
   CHECK_SYMBOL_NULL(launch_hccl_reduce_scatterv_);
   MS_EXCEPTION_IF_NULL(hccl_comm);
   HcclResult ret = launch_hccl_reduce_scatterv_(send_buf, params.send_counts.data(), params.sdispls.data(), recv_buf,
@@ -907,7 +870,6 @@ HcclResult HcclAdapter::HcclAllGatherV(void *send_buf, void *recv_buf, hccl::Hcc
   if (MS_UNLIKELY(dry_run)) {
     return HCCL_SUCCESS;
   }
-  CheckExcutionMode();
   CHECK_SYMBOL_NULL(launch_hccl_all_gatherv_);
   MS_EXCEPTION_IF_NULL(hccl_comm);
   HcclResult ret = launch_hccl_all_gatherv_(send_buf, params.send_count, recv_buf, params.recv_counts.data(),
@@ -921,7 +883,6 @@ HcclResult HcclAdapter::HcclAllToAll(void *send_buf, void *recv_buf, hccl::HcclA
   if (MS_UNLIKELY(dry_run)) {
     return HCCL_SUCCESS;
   }
-  CheckExcutionMode();
   CHECK_SYMBOL_NULL(launch_hccl_all_to_all_);
   MS_EXCEPTION_IF_NULL(hccl_comm);
   uint64_t rangeId = 0;

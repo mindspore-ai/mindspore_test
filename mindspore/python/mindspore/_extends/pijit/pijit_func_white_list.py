@@ -129,7 +129,6 @@ from mindspore.dataset.vision.transforms import AdjustBrightness, AdjustContrast
     ResizeWithBBox as VResizeWithBBox, Rotate as VRotate, SlicePatches as VSlicePatches, Solarize, ToTensor,\
     TrivialAugmentWide, UniformAugment as VUniformAugment, VerticalFlip as VVerticalFlip
 from mindspore.profiler.profiler import Profiler
-from mindspore.communication._hccl_management import get_rank_size, get_rank_id
 from mindspore.communication._comm_helper import _create_group_helper, _destroy_group_helper
 from mindspore.communication.management import _set_rank_from_mpi, init as cinit, release as crelease
 from mindspore.hal.stream import Stream, synchronize, set_cur_stream, current_stream, default_stream
@@ -497,8 +496,6 @@ _func_map = {
     function_id(_set_elegant_exit_handle): FUNC_KEY_PIJIT_CONSTEXPR,
     function_id(_cost_model_context.get_cost_model_context): FUNC_KEY_PIJIT_CONSTEXPR,
     function_id(Stream.__repr__): FUNC_KEY_PIJIT_CONSTEXPR,
-    function_id(get_rank_size): FUNC_KEY_PIJIT_CONSTEXPR,
-    function_id(get_rank_id): FUNC_KEY_PIJIT_CONSTEXPR,
     function_id(offload_context): FUNC_KEY_PIJIT_CONSTEXPR,
     function_id(_is_in_data_parallel_mode): FUNC_KEY_PIJIT_CONSTEXPR,
     function_id(check_version_and_env_config): FUNC_KEY_PIJIT_CONSTEXPR,
