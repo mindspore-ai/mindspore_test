@@ -83,7 +83,7 @@ def test_lccl_broadcast():
     assert return_code == 0
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='allcards', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='allcards', essential_mark='unessential')
 def test_lccl_matmul_allreduce():
     """
     Feature: lccl MatMulAllReduce fustion operator test.

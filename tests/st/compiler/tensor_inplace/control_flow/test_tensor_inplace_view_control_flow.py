@@ -513,7 +513,7 @@ def test_view_in_control_flow14():
            "not supported to compute gradients for the other inputs of this in-place operator" in str(err.value)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_tensor_view_inplace_grad_with_ctr_flow():
     """
     Feature: Support tensor inplace view gradient.
@@ -540,7 +540,7 @@ def test_tensor_view_inplace_grad_with_ctr_flow():
     assert (out_expect.asnumpy() == out_jit.asnumpy()).all()
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_tensor_view_inplace_grad_with_ctr_flow2():
     """
     Feature: Support tensor inplace view gradient.
@@ -570,7 +570,7 @@ def test_tensor_view_inplace_grad_with_ctr_flow2():
     assert (out_expect.asnumpy() == out_jit.asnumpy()).all()
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_tensor_view_inplace_grad_with_ctr_flow3():
     """
     Feature: Support tensor inplace view gradient.
