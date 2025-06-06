@@ -1046,7 +1046,7 @@ def unified_safetensors(src_dir, src_strategy_file, dst_dir, merge_with_redundan
 
     Args:
         src_dir (str): Source weight saving directory.
-        src_strategy_file (str): Source weight segmentation strategy file.
+        src_strategy_file (str): Source weight segmentation strategy file with the file extension `.ckpt` .
         dst_dir (str): Target save directory.
         merge_with_redundancy (bool, optional): Whether the merged source weight files are de-duplicated and
             saved safetensors files. Default: ``True``, indicating that the merged source weight files are complete.
