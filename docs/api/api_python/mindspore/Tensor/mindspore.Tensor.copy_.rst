@@ -7,7 +7,8 @@ mindspore.Tensor.copy\_
 
     .. warning::
         这是一个实验性API，后续可能修改或删除。
-        如果复制在Ascend和Ascend之间进行， `src` 需可广播为 `self`。且它们可以是不同的数据类型。
+
+        如果复制在Ascend和Ascend之间进行， `src` 需可广播为 `self`，且 `src` 可以是不同的数据类型。
         CPU和Ascend，CPU和CPU之间的复制仅当 `self` 和 `src` 具有相同的形状和数据类型并且连续时才能支持。
 
     参数：
