@@ -557,6 +557,30 @@ bool Tensor::operator==(const Value &other) const {
   return false;
 }
 
+bool Tensor::requires_grad() { return grad_impl()->requires_grad(shared_from_base<Tensor>()); }
+
+void Tensor::set_requires_grad(bool requires_grad) {
+  return grad_impl()->set_requires_grad(shared_from_base<Tensor>(), requires_grad);
+}
+
+TensorPtr Tensor::grad() { return grad_impl()->grad(shared_from_base<Tensor>()); }
+
+void Tensor::set_grad(const TensorPtr &grad) { grad_impl()->set_grad(shared_from_base<Tensor>(), grad); }
+
+bool Tensor::is_leaf() { return grad_impl()->is_leaf(shared_from_base<Tensor>()); }
+
+void Tensor::InitilizeGradImpl(GradHookInterfacePtr grad_impl) {
+  if (grad_impl_ != nullptr) {
+    MS_LOG(EXCEPTION) << "Grad hook can only initilize once!";
+  }
+  grad_impl_ = std::move(grad_impl);
+}
+
+const GradHookInterfacePtr &Tensor::grad_impl() {
+  MS_EXCEPTION_IF_NULL(grad_impl_);
+  return grad_impl_;
+}
+
 CSRTensor::CSRTensor(const TensorPtr indptr, const TensorPtr indices, const TensorPtr values, const ShapeVector &shape)
     : MetaSparseTensor(values->data_type(), shape), indptr_(indptr), indices_(indices), values_(values) {}
 

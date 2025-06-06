@@ -305,6 +305,14 @@ class COMMON_EXPORT TensorPy {
   /// \param[in] flag [bool] Is parameter output or not.
   void SetMSParameterOutput(bool flag);
 
+  /// \brief Whether the tensor is used by a inplace operator.
+  /// \return true
+  bool has_side_effect() const { return has_side_effect_; }
+
+  /// \brief Set side effect flag to py tensor.
+  /// \param side_effect
+  void set_has_side_effect(bool side_effect) { has_side_effect_ = side_effect; }
+
   /// \brief Check whether the type of tensor is complex.
   /// \return Boolean indicate whether the type of tensor is complex.
   bool IsComplex() const;
@@ -337,14 +345,6 @@ class COMMON_EXPORT TensorPy {
   /// \param[in] grad_fn [py::object] The automatic gradient function.
   void SetGradFn(const py::object &grad_fn);
 
-  /// \brief Used for requires gradient.
-  /// \return The requires gradient.
-  const py::object GetRequiresGrad() const;
-
-  /// \brief Set the requires gradient to tensor.
-  /// \param[in] requires_grad [py::object] The requires gradient.
-  void SetRequiresGrad(const py::object &requires_grad);
-
   /// \brief Used for retain gradient.
   /// \return The retain gradient.
   const py::object GetRetainGrad() const;
@@ -375,13 +375,12 @@ class COMMON_EXPORT TensorPy {
   bool const_arg_flag_{false};
   bool virtual_flag_{false};
   bool ms_parameter_output_{false};
+  bool has_side_effect_{false};
   py::object initializer_;
   py::object parent_tensor_;
   py::object index_of_parent_;
   py::object symbolic_shape_;
-  py::object grad_;
   py::object grad_fn_;
-  py::object requires_grad_;
   py::object retain_grad_;
   py::object storage_{py::none()};
   std::string device_;

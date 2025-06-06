@@ -63,7 +63,6 @@ class TopCellInfo {
         fg_(std::move(fg)) {}
 
   inline size_t grad_order() const { return grad_order_; }
-  void GetOpInfo(const OpGradInfoPtr &op_run_info, const std::string &op_name, bool is_jit_graph) const;
   inline bool is_high_order_top_cell() const { return is_high_order_top_cell_; }
   inline FuncGraphPtr fg() const { return fg_; }
   inline void ClearForwardGraph() { fg_ = nullptr; }

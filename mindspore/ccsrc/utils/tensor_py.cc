@@ -284,15 +284,6 @@ bool TensorPy::HasAutoGrad() const { return GetTensor()->HasAutoGrad(); }
 
 bool TensorPy::NeedContiguous() const { return GetTensor()->NeedContiguous(); }
 
-const py::object TensorPy::GetGrad() const {
-  if (!grad_.check() || grad_.is_none()) {
-    return py::none();
-  }
-  return grad_;
-}
-
-void TensorPy::SetGrad(const py::object &grad) { grad_ = grad; }
-
 const py::object TensorPy::GetGradFn() const {
   if (!grad_fn_.check() || grad_fn_.is_none()) {
     return py::none();
@@ -301,15 +292,6 @@ const py::object TensorPy::GetGradFn() const {
 }
 
 void TensorPy::SetGradFn(const py::object &grad_fn) { grad_fn_ = grad_fn; }
-
-const py::object TensorPy::GetRequiresGrad() const {
-  if (!requires_grad_.check() || requires_grad_.is_none()) {
-    return py::none();
-  }
-  return requires_grad_;
-}
-
-void TensorPy::SetRequiresGrad(const py::object &requires_grad) { requires_grad_ = requires_grad; }
 
 const py::object TensorPy::GetRetainGrad() const {
   if (!retain_grad_.check() || retain_grad_.is_none()) {

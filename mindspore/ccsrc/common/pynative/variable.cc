@@ -91,6 +91,21 @@ SavedNodePtr SavedNode::ConstructSavedNode(const ValuePtr &output, bool is_view_
   return std::make_shared<SavedNode>(detach_value, nullptr, false, is_placeholder);
 }
 
+bool AutoGradMetaData::requires_grad() const {
+  if (requires_grad_) {
+    return true;
+  }
+  auto grad_node = UnsafeGetGradNodeImpl();
+  if (grad_node != nullptr && !grad_node->IsLeaf()) {
+    return true;
+  }
+  return false;
+}
+
+bool ViewAutoGradMetaData::requires_grad() const {
+  return AutoGradMetaData::requires_grad() || view_info_.base()->requires_grad();
+}
+
 BackwardNode::BackwardNode(string name, uint64_t seq_id, size_t output_size) noexcept
     : name_(std::move(name)), seq_id_(seq_id), output_size_(output_size) {}
 

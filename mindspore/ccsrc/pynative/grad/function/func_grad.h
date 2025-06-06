@@ -113,20 +113,23 @@ class GraphBackwardNode : public BackwardNode {
 
 class LeafNode : public BackwardNode {
  public:
-  explicit LeafNode(const string &name, std::vector<int64_t> shape, TypePtr dtype, bool is_parameter = true,
-                    bool should_execute = true)
+  explicit LeafNode(const string &name, tensor::TensorPtr leaf_tensor, std::vector<int64_t> shape, TypePtr dtype,
+                    bool is_parameter = true, bool should_execute = true)
       : BackwardNode(name, UINT64_MAX, 1),
+        leaf_tensor_(std::move(leaf_tensor)),
         shape_(std::move(shape)),
         dtype_(std::move(dtype)),
         is_parameter_(is_parameter),
         should_execute_(should_execute) {}
   ~LeafNode() override = default;
-  ValuePtrList CallBackward(const ValuePtrList &grads) override { return {}; }
+  ValuePtrList CallBackward(const ValuePtrList &grads) override;
+  bool IsLeaf() override { return true; }
   ValuePtr Zeros(const std::shared_ptr<FuncBuilder> &func_impl);
   bool should_execute() const { return should_execute_; }
   bool is_parameter() const { return is_parameter_; }
 
  private:
+  std::weak_ptr<Tensor> leaf_tensor_;
   std::vector<int64_t> shape_;
   TypePtr dtype_;
   bool is_parameter_;
@@ -259,7 +262,7 @@ class AutoDiff : public AutoDiffInterface {
   /// \param output
   /// \param high_order
   /// \param is_run_recompute
-  AutoDiff(const ValuePtr &output, bool high_order, bool is_run_recompute);
+  AutoDiff(const ValuePtr &output, bool keep_graph, bool high_order, bool is_run_recompute);
   DISABLE_COPY_AND_ASSIGN(AutoDiff)
   /// Calculate gradients of leaf nodes from outputs.
   /// \param inputs
@@ -270,9 +273,11 @@ class AutoDiff : public AutoDiffInterface {
   /// \param has_aux
   /// \param sens
   /// \return grads of weights and inputs.
-  ValuePtr RunBackward(const ValuePtrList &inputs, const tensor::TensorPtrList &weights,
+  ValuePtr RunGradFunc(const ValuePtrList &inputs, const tensor::TensorPtrList &weights,
                        const std::vector<size_t> &grad_position, const GradAttr &grad_attr,
                        bool collect_default_weights, bool has_aux, const ValuePtr &sens = nullptr);
+
+  ValuePtr RunBackward(const ValuePtrList &inputs, const ValuePtr &sens, bool accumulate_grad);
   /// Check the given node is in exec grad graph.
   /// \param node
   /// \return true if in grad graph
@@ -301,14 +306,10 @@ class AutoDiff : public AutoDiffInterface {
   /// \param inputs
   /// \param grad_attr
   /// \param grad_position
-  inline void PruningInput(const ValuePtrList &inputs, const GradAttr &grad_attr,
-                           const std::vector<size_t> &grad_position);
-
-  /// Pruning weights of grad graph, if some weights do not need grad.
-  /// \param weights
-  /// \param grad_attr
-  inline void PruningWeights(const std::vector<BackwardNodePtr> &weights, const GradAttr &grad_attr);
-
+  void PruningInput(const ValuePtrList &inputs, const GradAttr &grad_attr, const std::vector<size_t> &grad_position);
+  /// Pruning input grad of grad graph
+  /// \param inputs
+  void PruningInput(const ValuePtrList &inputs, bool accumulate_grad);
   /// Pruning grad graph.
   /// \param inputs
   /// \param weights
@@ -316,6 +317,8 @@ class AutoDiff : public AutoDiffInterface {
   /// \param grad_position
   void PruningGradGraph(const ValuePtrList &inputs, const std::vector<BackwardNodePtr> &weights,
                         const GradAttr &grad_attr, const std::vector<size_t> &grad_position);
+
+  void PruningGradNode();
 
   /// Compute in degree of grad node from grad graph,
   /// which used for judging node whether can be execute.
@@ -380,8 +383,9 @@ class AutoDiff : public AutoDiffInterface {
 
   /// Get grad from tensor.
   /// \param val
+  /// \param whether execute hook of leaf node which not in grad graph.
   /// \return grad
-  ValuePtr GetTensorGrad(const ValuePtr &val);
+  ValuePtr GetTensorGrad(const ValuePtr &val, bool run_tensor_hook);
   /// Get grad from grad node.
   /// \param grad_node
   /// \return grad
@@ -402,6 +406,7 @@ class AutoDiff : public AutoDiffInterface {
   BackwardNodePtr graph_root_{nullptr};
   std::shared_ptr<FuncBuilder> func_impl_;
   device::DeviceType device_target_;
+  bool keep_graph_{false};
   bool high_order_{false};
   bool is_run_recompute_{false};
 };

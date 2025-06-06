@@ -173,6 +173,7 @@ struct CppFunctionNode : public BackwardNode {
   AutogradContext context_;
   std::vector<bool> is_tensor_input_;
   abstract::AbstractBasePtrList outputs_abstract_;
+  bool is_released{false};
 };
 
 template <class T>
@@ -235,6 +236,7 @@ PYNATIVE_EXPORT ValuePtrList GradPostProcess(const TensorPtrList &outputs, std::
 
 template <class T>
 ValuePtrList CppFunctionNode<T>::CallBackward(const ValuePtrList &grads) {
+  MS_EXCEPTION_IF_CHECK_FAIL(!is_released, kCallBackwradTwiceErr);
   auto grad_in = GradPreProcess(grads, outputs_abstract_, context_.materialize_grads_, name_);
   auto grad_out = T::Backward(&context_, grad_in);
   return GradPostProcess(grad_out, is_tensor_input_, name_);
@@ -245,6 +247,7 @@ void CppFunctionNode<T>::Release() {
   context_.to_save_.clear();
   context_.saved_data.clear();
   context_.saved_nodes_.clear();
+  is_released = true;
 }
 }  // namespace mindspore::pynative::autograd
 #endif  // MINDSPORE_CCSRC_PIPELINE_PYNATIVE_GRAD_FUNCTION_H_
