@@ -32,6 +32,7 @@
 #endif
 #include "include/common/debug/common.h"
 #include "utils/file_utils.h"
+#include "debug/checksum/checksum.h"
 #include "debug/profiler/profiling.h"
 #include "mindspore/ops/op_def/nn_op_name.h"
 #include "debug/data_dump/overflow_counter.h"
@@ -87,6 +88,7 @@ void DebugActor::DebugPostLaunch(const AnfNodePtr &node, const std::vector<Kerne
   MS_LOG(INFO) << "kernel by kernel debug for node: " << cnode->fullname_with_scope() << ", device type is "
                << device_context->GetDeviceType();
   if (device_context->GetDeviceType() == device::DeviceType::kAscend) {
+    checksum::AscendCheckSum(cnode, raw_input_kernel_tensors, raw_output_kernel_tensors, device_context);
 #ifdef ENABLE_DEBUGGER
     AscendKbkDump(cnode, raw_input_kernel_tensors, raw_output_kernel_tensors, device_context);
 #endif

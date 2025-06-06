@@ -67,6 +67,7 @@
 #ifdef ENABLE_DEBUGGER
 #include "include/backend/debug/debugger/debugger.h"
 #endif
+#include "debug/checksum/checksum_mgr.h"
 #include "debug/profiler/profiling.h"
 #include "include/common/debug/common.h"
 #include "include/backend/distributed/recovery/recovery_context.h"
@@ -805,6 +806,11 @@ void GraphScheduler::BuildAndScheduleGlobalActor() {
     debugger_actor_need = true;
   }
 #endif
+  // if silent check is enabled, create debugger actor for CheckSum
+  auto &checkSumMgr = checksum::CheckSumMgr::GetInstance();
+  if (checkSumMgr.NeedEnableCheckSum()) {
+    debugger_actor_need = true;
+  }
   if (debugger_actor_need) {
     auto debug_actor = std::make_shared<DebugActor>();
     MS_EXCEPTION_IF_NULL(debug_actor);
