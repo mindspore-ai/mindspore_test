@@ -133,6 +133,7 @@ void SetParamFirstUsedKernelActors(
   }
 
   if ((*param_first_used_kernel_actors)[graph_input_index].first == nullptr) {
+    MS_EXCEPTION_IF_NULL(kernel_actor);
     (*param_first_used_kernel_actors)[graph_input_index].first = *kernel_actor;
     (*param_first_used_kernel_actors)[graph_input_index].second = actor_input_index;
   }
@@ -390,9 +391,8 @@ void SuperKernelActor::FetchInputDeviceTensor(OpContext<KernelTensor> *const con
       MS_EXCEPTION_IF_NULL(input_kernel_tensors_[index]);
 
       if (IsNeedProfilieMemoryLog()) {
-        auto data = input_kernel_tensors_[index]->device_address().get();
-        MS_EXCEPTION_IF_NULL(data);
-        auto output_address = reinterpret_cast<std::uintptr_t>(data);
+        auto output_address = input_kernel_tensors_[index]->device_address().get();
+        MS_EXCEPTION_IF_NULL(output_address);
         MS_LOG(WARNING) << "Need Profile Memory, Memory use, actor name: " << GetAID().Name()
                         << ", kernel graph: " << graph_->ToString() << ", device address class ptr: " << output_address
                         << ", device address size: " << input_kernel_tensors_[index]->device_address()->GetSize()
@@ -1438,7 +1438,8 @@ void SuperKernelActor::SendMemoryFreeReq(OpContext<KernelTensor> *const context)
   if (memory_free_lists_.size() > 0 && memory_free_lists_.back().size() > 0) {
     if (IsNeedProfilieMemoryLog()) {
       for (auto data : memory_free_lists_.back()) {
-        auto output_address = reinterpret_cast<std::uintptr_t>(data->device_address().get());
+        auto output_address = data->device_address().get();
+        MS_EXCEPTION_IF_NULL(output_address);
         MS_LOG(WARNING) << "Need Profile Memory, Memory need Decrease DynamicRefCount, actor name: " << GetAID().Name()
                         << ", kernel graph: " << graph_->ToString() << ", device address class ptr: " << output_address
                         << ", device address size: " << data->GetSize()

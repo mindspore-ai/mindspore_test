@@ -348,7 +348,7 @@ bool CheckInputOptimizeCondition(const GraphCompilerInfo &graph_compiler_info) {
     return false;
   };
 
-  auto IsKernelNotSupportKbkSubGraphMode = [&](const CNodePtr &kernel) {
+  auto IsKernelNotSupportKbkSubGraphMode = [&IsVirtualSummaryKernel](const CNodePtr &kernel) {
     MS_EXCEPTION_IF_NULL(kernel);
     return IsVirtualSummaryKernel(kernel);
   };
