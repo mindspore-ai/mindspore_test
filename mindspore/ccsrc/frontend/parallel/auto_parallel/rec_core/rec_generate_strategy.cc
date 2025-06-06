@@ -691,6 +691,7 @@ Strategies PrepareLayerNorm(const std::shared_ptr<OperatorInfo> &op, Dimensions 
   if (iter != op->attrs().end()) {
     MS_EXCEPTION_IF_NULL(iter->second);
     if (iter->second->isa<Int64Imm>()) {
+      MS_EXCEPTION_IF_NULL(iter->second->cast<Int64ImmPtr>());
       axis_list.push_back(iter->second->cast<Int64ImmPtr>()->value());
     } else if (iter->second->isa<ValueTuple>()) {
       ValueTuplePtr value_tuple = iter->second->cast<ValueTuplePtr>();
@@ -947,6 +948,7 @@ Strategies PrepareAxisRelatedStrategy(Graph::NodeType *node, const std::vector<s
   if (iter != ops[iter_ops]->attrs().end()) {
     MS_EXCEPTION_IF_NULL(iter->second);
     if (iter->second->isa<Int64Imm>()) {
+      MS_EXCEPTION_IF_NULL(iter->second->cast<Int64ImmPtr>());
       axis_list.push_back(iter->second->cast<Int64ImmPtr>()->value());
     } else if (iter->second->isa<ValueTuple>()) {
       ValueTuplePtr value_tuple = iter->second->cast<ValueTuplePtr>();
@@ -1542,8 +1544,10 @@ Dimensions GetAxisList(const std::vector<std::shared_ptr<OperatorInfo>> &ops, co
   auto axis_param = op_input_value[kIndex1];
   std::vector<ValuePtr> elements;
   if (axis_param->isa<ValueTuple>()) {
+    MS_EXCEPTION_IF_NULL(axis_param->cast<ValueTuplePtr>());
     elements = axis_param->cast<ValueTuplePtr>()->value();
   } else if (axis_param->isa<ValueList>()) {
+    MS_EXCEPTION_IF_NULL(axis_param->cast<ValueTuplePtr>());
     elements = axis_param->cast<ValueListPtr>()->value();
   } else {
     MS_LOG(EXCEPTION) << "Failure: Axis type is invalid, neither tuple nor list.";
@@ -1553,6 +1557,7 @@ Dimensions GetAxisList(const std::vector<std::shared_ptr<OperatorInfo>> &ops, co
     if (!element->isa<Int64Imm>()) {
       MS_LOG(EXCEPTION) << "Failure: Dimension indexes is not Int32.";
     }
+    MS_EXCEPTION_IF_NULL(element->cast<Int64ImmPtr>());
     auto axis = element->cast<Int64ImmPtr>()->value();
     axis_list.push_back(axis);
   }
@@ -2593,8 +2598,7 @@ void RecStrategyPropagator::GenerateStrategyV1() {
     no_stra_op_list_->push_back(eli_list_->at(i - 1)[0]);
   }
 
-  size_t changes;
-  changes = CopyMainOperatorsStrategy();
+  size_t changes = CopyMainOperatorsStrategy();
   MS_LOG(INFO) << "The strategies of " << changes << " operators are modified after CopyMainOperatorsStrategy.";
 
   changes = GenerateEliminatedOperatorStrategyForward();
@@ -2715,8 +2719,7 @@ void RecStrategyPropagator::GenerateStrategyV3() {
   MS_EXCEPTION_IF_NULL(index_list_);
 
   GenerateNoStraList();
-  size_t changes;
-  changes = CopyMainOperatorsStrategy();
+  size_t changes = CopyMainOperatorsStrategy();
   MS_LOG(INFO) << "CopyMainOperatorsStrategy has " << changes << "changes";
   AssignStandaloneAndBatchParallelOpStrategy();
 
