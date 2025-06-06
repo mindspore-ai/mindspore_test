@@ -86,7 +86,7 @@ def run_tracker_command(cmd, log_path, tracker_ir_pash, memory_block_csv_path):
         os.remove(memory_block_csv_path)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='dryrun_only', essential_mark='essential')
 def test_simple_tracker():
     """
     Feature: simple tracker
@@ -98,7 +98,7 @@ def test_simple_tracker():
                                f"{sh_path}/rank_1/tracker_graph.ir", f"{sh_path}/rank_1/memory_block.csv")
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='dryrun_only', essential_mark='essential')
 def test_tracker():
     """
     Feature: tracker

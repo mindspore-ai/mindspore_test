@@ -27,7 +27,7 @@ def mul_scalar_by_one(x, y):
     return x, P.Cos()(x)
 
 
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'platform_ascend', 'platform_ascend910b'], level_mark='level0',
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'platform_ascend'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 def test_mul_scalar_by_one():
     """
@@ -50,7 +50,7 @@ def mul_by_one(x, y):
     return x, P.Cos()(x)
 
 
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'platform_ascend', 'platform_ascend910b'], level_mark='level0',
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'platform_ascend'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 def test_mul_by_one():
     """
@@ -73,7 +73,7 @@ def add_by_zero(x, y):
     return x, P.Cos()(x)
 
 
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'platform_ascend', 'platform_ascend910b'], level_mark='level0',
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'platform_ascend'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 def test_add_by_zero():
     """

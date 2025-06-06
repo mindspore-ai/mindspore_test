@@ -14,16 +14,14 @@
 # ============================================================================
 
 import os
-import pytest
+from tests.mark_utils import arg_mark
 
 from tests.st.mindrlhf.utils import check_log
 
 root_path = os.path.dirname(os.path.abspath(__file__))
 
 
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_single
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='allcards', essential_mark='essential')
 def test_qwen_grpo():
     """
     Feature: test Qwen GRPO training

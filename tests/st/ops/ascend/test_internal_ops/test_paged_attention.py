@@ -359,7 +359,7 @@ class PagedAttentionTest(PagedAttentionBase):
             writer.writerow(running_data)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_paged_attention_bnsd():
     """
     Feature: paged_attention operator
@@ -396,7 +396,7 @@ def test_paged_attention_bnsd():
     PagedAttentionTest(i_test_dict)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_paged_attention_fd_long():
     """
     Feature: paged_attention operator
@@ -425,7 +425,7 @@ def test_paged_attention_fd_long():
     PagedAttentionTest(i_test)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_paged_attention_quant0():
     """
     Feature: paged_attention operator
@@ -485,7 +485,7 @@ def test_paged_attention_quant1():
     PagedAttentionTest(i_test)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_paged_attention_quant_pertoken():
     """
     Feature: paged_attention operator
@@ -640,7 +640,7 @@ def test_paged_attention_large_gsq():
     PagedAttentionTest(i_test)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('quant_method',
                          [QuantMethod.FP16_VEC, QuantMethod.INT_CUBE])
 def test_paged_attention_quant_pertoken_bsh(quant_method):
@@ -671,7 +671,7 @@ def test_paged_attention_quant_pertoken_bsh(quant_method):
     PagedAttentionTest(i_test)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('quant_method',
                          [QuantMethod.FP16_VEC, QuantMethod.INT_CUBE])
 def test_paged_attention_quant_pertoken_bnsd(quant_method):
@@ -702,7 +702,7 @@ def test_paged_attention_quant_pertoken_bnsd(quant_method):
     PagedAttentionTest(i_test)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('quant_method',
                          [QuantMethod.FP16_VEC, QuantMethod.INT_CUBE])
 def test_paged_attention_quant_pertoken_with_anti_shape(quant_method):
@@ -735,7 +735,7 @@ def test_paged_attention_quant_pertoken_with_anti_shape(quant_method):
     PagedAttentionTest(i_test)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('quant_method',
                          [QuantMethod.FP16_VEC, QuantMethod.INT_CUBE])
 def test_paged_attention_large_gsq_pertoken(quant_method):
@@ -914,7 +914,7 @@ def test_paged_attention_quant_pertoken_antiquant_scale_int64_to_fp32():
     PagedAttentionTest(i_test)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_paged_attention_quant_pertoken_antiquant_scale_int64_to_fp32_small():
     """
     Feature: paged_attention operator

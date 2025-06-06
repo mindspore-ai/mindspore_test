@@ -31,7 +31,7 @@ class EnvContext:
 
 
 @arg_mark(plat_marks=['platform_ascend910b'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_pynative_disable_auto_h2d():
