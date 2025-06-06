@@ -22,6 +22,7 @@
 #include <map>
 #include <vector>
 #include <memory>
+#include <numeric>
 #include "ops/op_def.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
@@ -1012,7 +1013,10 @@ void DeviceAddressUtils::MallocForInput(const DeviceContext *device_context, con
     }
   } else {
     if (device_address->size() == 0) {
-      return;
+      auto shape_size = std::accumulate(tensor->shape().begin(), tensor->shape().end(), 1, std::multiplies<int64_t>());
+      if (shape_size != 0) {
+        return;
+      }
     }
     if (!device_context->device_res_manager_->AllocateMemory(device_address.get())) {
       MS_LOG(EXCEPTION) << "Allocate memory failed";
