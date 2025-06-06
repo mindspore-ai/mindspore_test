@@ -1448,7 +1448,9 @@ void DumpParallelInfo(const FuncGraphPtr &graph, size_t *op_id, nlohmann::ordere
   for (auto &node : graph_orders) {
     MS_EXCEPTION_IF_NULL(node);
     if (IsValueNode<FuncGraph>(node->input(0))) {
-      FuncGraphPtr sub_graph = node->input(0)->cast<ValueNodePtr>()->value()->cast<FuncGraphPtr>();
+      auto value_node = node->input(0)->cast<ValueNodePtr>();
+      MS_EXCEPTION_IF_NULL(value_node);
+      FuncGraphPtr sub_graph = value_node->value()->cast<FuncGraphPtr>();
       DumpParallelInfo(sub_graph, op_id, args, global_rank_id, group_map);
     } else if (common::AnfAlgo::IsCommunicationOp(node)) {
       (*args)[std::to_string(*op_id)] = ToJson(node, global_rank_id, group_map);
@@ -1457,13 +1459,16 @@ void DumpParallelInfo(const FuncGraphPtr &graph, size_t *op_id, nlohmann::ordere
       auto abs = node->input(0)->abstract();
       if (abs->isa<abstract::FuncGraphAbstractClosure>()) {
         const auto &abstract_func_graph = abs->cast<abstract::FuncGraphAbstractClosurePtr>();
+        MS_EXCEPTION_IF_NULL(abstract_func_graph);
         MS_EXCEPTION_IF_NULL(abstract_func_graph->func_graph());
         DumpParallelInfo(abstract_func_graph->func_graph(), op_id, args, global_rank_id, group_map);
       } else if (abs->isa<abstract::PartialAbstractClosure>()) {
         const auto &abstract_partial_func = abs->cast<abstract::PartialAbstractClosurePtr>();
+        MS_EXCEPTION_IF_NULL(abstract_partial_func);
         const auto &abstract_fn = abstract_partial_func->fn();
         if (abstract_fn->isa<abstract::FuncGraphAbstractClosure>()) {
           const auto &abstract_func_graph = abstract_fn->cast<abstract::FuncGraphAbstractClosurePtr>();
+          MS_EXCEPTION_IF_NULL(abstract_func_graph);
           MS_EXCEPTION_IF_NULL(abstract_func_graph->func_graph());
           DumpParallelInfo(abstract_func_graph->func_graph(), op_id, args, global_rank_id, group_map);
         }

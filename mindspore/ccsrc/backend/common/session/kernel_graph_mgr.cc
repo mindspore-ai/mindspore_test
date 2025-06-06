@@ -626,6 +626,7 @@ nlohmann::json SaveBackendParamToFrontendParamIndex(const KernelGraphPtr &kernel
   nlohmann::json ret;
   const auto &params = kernel_graph->parameters();
   auto &context = CompileCacheContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(front_graph);
   const auto &front_params = front_graph->parameters();
   for (const auto &param : params) {
     if (!context.IsBackendParamGenFromFrontendParam(param)) {
@@ -675,6 +676,7 @@ void SaveNodesKernelInfoAndParamsName(const KernelGraphPtr &kg, const std::vecto
     const auto &name = GetAnfUniqueCacheName(node);
     if (node->isa<Parameter>()) {
       auto param = node->cast<ParameterPtr>();
+      MS_EXCEPTION_IF_NULL(param);
       param_unique_name_to_name[name] = param->name();
     }
     if (node->kernel_info() == nullptr) {
@@ -1482,6 +1484,8 @@ void KernelGraphMgr::GetNewCNodeInputs(const CNodePtr &cnode, KernelGraph *graph
       if (parameter_from_cnode->isa<Parameter>() && IsPrimitiveCNode(anf, prim::kPrimLoad)) {
         auto para = parameter_from_cnode->cast<ParameterPtr>();
         auto load_cnode = anf->cast<CNodePtr>();
+        MS_EXCEPTION_IF_NULL(load_cnode);
+        MS_EXCEPTION_IF_NULL(para);
         para->set_name(load_cnode->fullname_with_scope());
       }
       (void)params.emplace_back(parameter_from_cnode);
@@ -1578,6 +1582,7 @@ CNodePtr KernelGraphMgr::CreateNewCNode(const CNodePtr &cnode, KernelGraph *grap
         common::AnfAlgo::CheckPrimitiveType(first_input, prim::kPrimSwitchLayer)) {
       auto abstract = cnode->abstract();
       new_cnode = first_input->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(new_cnode);
       new_cnode->set_abstract(abstract);
     }
   }
@@ -3680,6 +3685,7 @@ AnfNodePtr KernelGraphMgr::DoInline(const FuncGraphPtr &func_graph, const FuncGr
   MS_EXCEPTION_IF_NULL(target_func_graph);
   if (func_graph->isa<KernelGraph>()) {
     const auto &sub_kernel_graph = func_graph->cast<KernelGraphPtr>();
+    MS_EXCEPTION_IF_NULL(sub_kernel_graph);
     MS_LOG(INFO) << "subgraph: " << sub_kernel_graph->ToString()
                  << ", is dynamic shape:" << sub_kernel_graph->is_dynamic_shape();
     MS_LOG(INFO) << "graph: " << graph->ToString() << ", is dynamic shape:" << graph->is_dynamic_shape();

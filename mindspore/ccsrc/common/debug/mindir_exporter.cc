@@ -59,12 +59,15 @@ void GetAllFuncGraphs(const FuncGraphPtr &func_graph, std::set<FuncGraphPtr> *al
       MS_ASSERT(node->cast<ValueNodePtr>() != nullptr);
       MS_ASSERT(node->cast<ValueNodePtr>()->value() != nullptr);
       MS_ASSERT((node->cast<ValueNodePtr>()->value())->cast<FuncGraphPtr>() != nullptr);
-      auto new_fg = (node->cast<ValueNodePtr>()->value())->cast<FuncGraphPtr>();
+      auto input_value_node = node->cast<ValueNodePtr>();
+      MS_EXCEPTION_IF_NULL(input_value_node);
+      auto new_fg = (input_value_node->value())->cast<FuncGraphPtr>();
       GetAllFuncGraphs(new_fg, all_func_graphs);
     }
     if (mindspore::utils::isa<CNodePtr>(node)) {
       auto cnode = node->cast<CNodePtr>();
       MS_ASSERT(cnode != nullptr);
+      MS_EXCEPTION_IF_NULL(cnode);
       for (auto &weak_input : cnode->weak_inputs()) {
         auto input = weak_input.lock();
         MS_EXCEPTION_IF_NULL(input);
@@ -73,7 +76,9 @@ void GetAllFuncGraphs(const FuncGraphPtr &func_graph, std::set<FuncGraphPtr> *al
             MS_ASSERT(input->cast<ValueNodePtr>() != nullptr);
             MS_ASSERT(input->cast<ValueNodePtr>()->value() != nullptr);
             MS_ASSERT((input->cast<ValueNodePtr>()->value())->cast<FuncGraphPtr>() != nullptr);
-            auto new_fg = (input->cast<ValueNodePtr>()->value())->cast<FuncGraphPtr>();
+            auto value_cnode = input->cast<ValueNodePtr>();
+            MS_EXCEPTION_IF_NULL(value_cnode);
+            auto new_fg = (value_cnode->value())->cast<FuncGraphPtr>();
             GetAllFuncGraphs(new_fg, all_func_graphs);
           }
         }
