@@ -259,6 +259,10 @@ KernelRunner::KernelRunner(const std::string &name, const CNodePtr &kernel, cons
   MS_LOG(DEBUG) << "Input free index:" << input_free_index_ << " output free index:" << output_free_index_
                 << " need ref storage info:" << need_ref_for_storage_info_ << " for actor:" << GetAID()
                 << " kernel:" << kernel->DebugString();
+  const auto &prim = GetCNodePrimitive(kernel_);
+  if (prim) {
+    rw_write_index_ = prim->rw_write_input_indexes();
+  }
   // shape depend need kernel is cnode.
   SetShapeDependInfo();
 
@@ -593,7 +597,7 @@ void KernelRunner::ConvertInputContiguous(OpContext<KernelTensor> *const context
       }
 
       // Check the inplace op not support the view input.
-      if (modifiable_ref_input_indexes_.count(i) > 0) {
+      if (std::find(rw_write_index_.begin(), rw_write_index_.end(), i) != rw_write_index_.end()) {
         std::string error_msg =
           kernel_->fullname_with_scope() +
           " is an inplace op and does not support view input. Please use other inplace op that support view "
