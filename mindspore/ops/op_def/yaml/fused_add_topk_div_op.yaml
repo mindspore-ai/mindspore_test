@@ -41,3 +41,6 @@ fused_add_topk_div:
     name: fused_add_topk_div
   class:
     name: FusedAddTopKDiv
+  dispatch:
+    enable: True
+    InternalOpAscend: AutoGen
