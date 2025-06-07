@@ -25,6 +25,7 @@ from mindspore.nn.cell import Cell
 from mindspore.nn.wrap.cell_wrapper import _MicroBatch
 from mindspore import log as logger
 
+
 class PipelineCell(Cell):
     """
     Slice MiniBatch into finer-grained MicroBatch for use in pipeline-parallel training.
