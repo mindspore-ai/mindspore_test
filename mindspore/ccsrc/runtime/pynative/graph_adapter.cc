@@ -360,8 +360,6 @@ void GraphAdapter::HandleHeterogeneousTensors(const std::vector<std::vector<tens
         auto device_address = std::dynamic_pointer_cast<device::DeviceAddress>(tensor->device_address());
         MS_EXCEPTION_IF_NULL(device_address);
         if (device_address->GetDeviceType() != device_context->GetDeviceType()) {
-          tensor->data_sync();
-          tensor->set_device_address(nullptr);
           actor_set->data_prepare_actor_->set_heter_weights(true);
         }
       }
