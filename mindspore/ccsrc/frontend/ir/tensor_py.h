@@ -187,6 +187,8 @@ class FRONTEND_EXPORT TensorPybind {
 
   static uintptr_t DataPtr(const TensorPtr &tensor);
 
+  static std::string GetDevice(const TensorPtr &tensor);
+
   static std::shared_ptr<StorageBase> GetStorage(const TensorPtr &tensor);
 
   struct TensorPyUserData {
