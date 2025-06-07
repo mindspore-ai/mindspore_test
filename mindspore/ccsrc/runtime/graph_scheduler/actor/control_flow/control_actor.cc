@@ -258,6 +258,9 @@ void ControlActor::FetchParameterInput(OpContext<KernelTensor> *const context) {
                                " for actor:" + GetAID().Name();
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
     }
+    MS_LOG(DEBUG) << "Actor:" << GetAID() << " fetch parameter output index:" << parameter_index.second.second
+                  << " inner index:" << parameter_index.second.first.second
+                  << " kernel tensor:" << kernel_tensor->ToString();
     input_kernel_tensors_[parameter_index.first] = kernel_tensor;
   }
 }

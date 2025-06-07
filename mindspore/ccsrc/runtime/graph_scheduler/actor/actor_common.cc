@@ -1016,8 +1016,8 @@ void SyncHostToDeviceFromTensor(size_t outer_index, size_t inner_index, tensor::
     {device_tensor->device_name(), device_tensor->device_id()});
 
   if (device_tensor->GetPtr() == nullptr) {
-    auto mem_type = device_tensor->original_ref_count() == SIZE_MAX ? memory::mem_pool::MemType::kWeight
-                                                                    : memory::mem_pool::MemType::kKernel;
+    auto mem_type = device_tensor->new_ref_count() == SIZE_MAX ? memory::mem_pool::MemType::kWeight
+                                                               : memory::mem_pool::MemType::kKernel;
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, from_aid.Name(), mem_type, device_tensor->GetSize(),
                                                    device_tensor.get());
     MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
@@ -1067,8 +1067,8 @@ void SyncDataForTensorAddress(tensor::Tensor *tensor, const AID &from_aid, const
   auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
     {tensor_address->device_name(), tensor_address->device_id()});
   if (tensor_address->GetPtr() == nullptr) {
-    auto mem_type = tensor_address->original_ref_count() == SIZE_MAX ? memory::mem_pool::MemType::kWeight
-                                                                     : memory::mem_pool::MemType::kKernel;
+    auto mem_type = tensor_address->new_ref_count() == SIZE_MAX ? memory::mem_pool::MemType::kWeight
+                                                                : memory::mem_pool::MemType::kKernel;
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, from_aid.Name(), mem_type, tensor_address->GetSize(),
                                                    tensor_address.get());
     MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
@@ -1247,7 +1247,7 @@ KernelTensorPtr FetchParameter(const std::pair<KernelWithIndex, size_t> &paramet
     MS_EXCEPTION_IF_NULL(prepared_kernel_tensor);
     auto is_weight = graph_parameter_store->GetPositionWeight(outer_index);
     if (!is_weight && prepared_kernel_tensor->device_address() != nullptr &&
-        prepared_kernel_tensor->device_address()->original_ref_count() == SIZE_MAX) {
+        prepared_kernel_tensor->device_address()->new_ref_count() == SIZE_MAX) {
       graph_parameter_store->InsertNonWeightRefMaxInputs(outer_index, inner_index);
     }
     return prepared_kernel_tensor;

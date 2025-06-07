@@ -94,6 +94,8 @@ class BACKEND_EXPORT GraphParameterStore {
 
   void SetUserCnt(size_t outer_idx, size_t inner_idx, size_t cnt) {
     auto &kernel_tensor_with_info = parameter_kernel_tensors_[outer_idx][inner_idx];
+    MS_LOG(DEBUG) << "Set use count:" << cnt << " for parameter store outer index:" << outer_idx
+                  << " inner index:" << inner_idx;
     kernel_tensor_with_info.second.first = cnt;
     parameter_used_times_[outer_idx][inner_idx]++;
   }

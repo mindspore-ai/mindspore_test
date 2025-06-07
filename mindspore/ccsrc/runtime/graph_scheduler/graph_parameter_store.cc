@@ -159,6 +159,8 @@ void GraphParameterStore::SetAsyncMemcpyFun(size_t outer_index, size_t inner_ind
 void GraphParameterStore::Push(size_t outer_index, size_t inner_index, const KernelTensorPtr &value, size_t cnt) {
   CheckIndexValid(outer_index, inner_index);
   std::unique_lock<std::shared_mutex> lock(param_mutex_);
+  MS_LOG(DEBUG) << "Push parameter store for outer index:" << outer_index << " inner index:" << inner_index
+                << " count:" << cnt << " kernel tensor:" << value;
   auto &kernel_tensor_with_info = parameter_kernel_tensors_[outer_index][inner_index];
   kernel_tensor_with_info.first = value;
   kernel_tensor_with_info.second.first = cnt;
