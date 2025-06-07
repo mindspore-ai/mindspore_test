@@ -84,6 +84,7 @@ class MatMul : public MatMulBase {
   Status CheckInputLayout() override;
   Status CheckOutputLayout() override;
   virtual Status ComputeReplaceGraphForInterleaved(const CNodePtr &cnode);
+  StrategyPtr output_strategy_ = nullptr;
 
  private:
   void ProcessMatMulLeftInput(const std::vector<Group> &x_group_list, const AnfNodePtr &matmul_actual_input_node,
