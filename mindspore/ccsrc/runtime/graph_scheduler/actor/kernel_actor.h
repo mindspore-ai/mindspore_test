@@ -193,6 +193,7 @@ class KernelActor : public DebugAwareActor {
   bool is_dynamic_value_;
   bool is_dynamic_type_;
   bool has_dynamic_;
+  std::vector<size_t> rw_write_index_;
   // Whether enable asynchronously infer shape and resize kernel mod by KernelInferActor and KernelResizeActor.
   bool enable_async_infer_;
   AID kernel_async_infer_aid_;
