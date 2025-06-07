@@ -2285,44 +2285,46 @@ std::string AnfAlgo::GetTensorValueString(const tensor::TensorPtr &tensor) {
     buf << "s" << tensor::ShapeToString(shape);
   };
 
+  auto cpu_tensor = tensor->cpu();
+
   if (dtype->type_id() == kNumberTypeBool) {
-    fn(reinterpret_cast<bool *>(tensor->data_c()));
+    fn(reinterpret_cast<bool *>(cpu_tensor->data_c()));
   } else if (dtype->type_id() == kNumberTypeInt) {
-    fn(reinterpret_cast<int *>(tensor->data_c()));
+    fn(reinterpret_cast<int *>(cpu_tensor->data_c()));
   } else if (dtype->type_id() == kNumberTypeInt8) {
-    fn(reinterpret_cast<int8_t *>(tensor->data_c()));
+    fn(reinterpret_cast<int8_t *>(cpu_tensor->data_c()));
   } else if (dtype->type_id() == kNumberTypeUInt8) {
-    fn(reinterpret_cast<uint8_t *>(tensor->data_c()));
+    fn(reinterpret_cast<uint8_t *>(cpu_tensor->data_c()));
   } else if (dtype->type_id() == kNumberTypeInt16) {
-    fn(reinterpret_cast<int16_t *>(tensor->data_c()));
+    fn(reinterpret_cast<int16_t *>(cpu_tensor->data_c()));
   } else if (dtype->type_id() == kNumberTypeUInt16) {
-    fn(reinterpret_cast<uint16_t *>(tensor->data_c()));
+    fn(reinterpret_cast<uint16_t *>(cpu_tensor->data_c()));
   } else if (dtype->type_id() == kNumberTypeInt32) {
-    fn(reinterpret_cast<int32_t *>(tensor->data_c()));
+    fn(reinterpret_cast<int32_t *>(cpu_tensor->data_c()));
   } else if (dtype->type_id() == kNumberTypeUInt32) {
-    fn(reinterpret_cast<uint32_t *>(tensor->data_c()));
+    fn(reinterpret_cast<uint32_t *>(cpu_tensor->data_c()));
   } else if (dtype->type_id() == kNumberTypeInt64) {
-    fn(reinterpret_cast<int64_t *>(tensor->data_c()));
+    fn(reinterpret_cast<int64_t *>(cpu_tensor->data_c()));
   } else if (dtype->type_id() == kNumberTypeUInt64) {
-    fn(reinterpret_cast<uint64_t *>(tensor->data_c()));
+    fn(reinterpret_cast<uint64_t *>(cpu_tensor->data_c()));
   } else if (dtype->type_id() == kNumberTypeFloat16) {
-    fn(reinterpret_cast<float16 *>(tensor->data_c()));
+    fn(reinterpret_cast<float16 *>(cpu_tensor->data_c()));
   } else if (dtype->type_id() == kNumberTypeFloat64) {
-    fn(reinterpret_cast<double *>(tensor->data_c()));
+    fn(reinterpret_cast<double *>(cpu_tensor->data_c()));
   } else if (dtype->type_id() == kNumberTypeFloat || dtype->type_id() == kNumberTypeFloat32) {
-    fn(reinterpret_cast<float *>(tensor->data_c()));
+    fn(reinterpret_cast<float *>(cpu_tensor->data_c()));
   } else if (dtype->type_id() == kNumberTypeBFloat16) {
-    fn(reinterpret_cast<bfloat16 *>(tensor->data_c()));
+    fn(reinterpret_cast<bfloat16 *>(cpu_tensor->data_c()));
   } else if (dtype->type_id() == kNumberTypeHiFloat8) {
-    fn(reinterpret_cast<hifloat8 *>(tensor->data_c()));
+    fn(reinterpret_cast<hifloat8 *>(cpu_tensor->data_c()));
   } else if (dtype->type_id() == kNumberTypeFloat8E5M2) {
-    fn(reinterpret_cast<float8_e5m2 *>(tensor->data_c()));
+    fn(reinterpret_cast<float8_e5m2 *>(cpu_tensor->data_c()));
   } else if (dtype->type_id() == kNumberTypeFloat8E4M3FN) {
-    fn(reinterpret_cast<float8_e4m3fn *>(tensor->data_c()));
+    fn(reinterpret_cast<float8_e4m3fn *>(cpu_tensor->data_c()));
   } else if (dtype->type_id() == kNumberTypeComplex64) {
-    fn(reinterpret_cast<complex64 *>(tensor->data_c()));
+    fn(reinterpret_cast<complex64 *>(cpu_tensor->data_c()));
   } else if (dtype->type_id() == kNumberTypeComplex128) {
-    fn(reinterpret_cast<complex128 *>(tensor->data_c()));
+    fn(reinterpret_cast<complex128 *>(cpu_tensor->data_c()));
   } else {
     MS_LOG(INTERNAL_EXCEPTION) << "The dtype of the constant input is " << dtype->ToString();
   }

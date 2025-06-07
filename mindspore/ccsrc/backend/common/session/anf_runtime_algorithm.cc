@@ -2513,9 +2513,10 @@ tensor::TensorPtr AnfRuntimeAlgorithm::SequenceToTensor(const ValuePtr &value) {
       MS_EXCEPTION_IF_NULL(sub_value);
       const auto &src_tensor = sub_value->cast<tensor::TensorPtr>();
       MS_EXCEPTION_IF_NULL(src_tensor);
-      MS_EXCEPTION_IF_NULL(src_tensor->data_c());
+      auto src_cpu_tensor = src_tensor->cpu();
+      MS_EXCEPTION_IF_NULL(src_cpu_tensor->data_c());
       auto ret = memcpy_s((reinterpret_cast<char *>(dst_ptr)) + i * size, static_cast<size_t>(new_tensor->DataNBytes()),
-                          src_tensor->data_c(), size);
+                          src_cpu_tensor->data_c(), size);
       if (ret != EOK) {
         MS_LOG(INTERNAL_EXCEPTION)
           << "#dmsg#Runtime error info:#dmsg#Failed to copy data into tensor, memcpy_s errorno: " << ret;
