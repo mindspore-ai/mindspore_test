@@ -39,7 +39,7 @@ std::shared_ptr<DataDumper> DataDumperRegister::GetDumperForBackend(device::Devi
 
 class CpuDumpRegister {
  public:
-  CpuDumpRegister() {
+  CpuDumpRegister() noexcept {
     MS_LOG(INFO) << "Register DataDumper for cpu backend.";
     DataDumperRegister::Instance().RegistDumper(device::DeviceType::kCPU, std::make_shared<DataDumper>());
   }
