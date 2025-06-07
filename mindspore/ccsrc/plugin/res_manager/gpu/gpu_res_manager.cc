@@ -533,10 +533,12 @@ bool GPUResManager::Copy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncP
                   << " dst:" << dst_device_address->ToString();
     return false;
   }
-  if (dst_device_address->format() != src_device_address->format() ||
-      dst_device_address->type_id() != src_device_address->type_id()) {
-    MS_LOG(ERROR) << "Format or type is different,  src device address:" << src_device_address->ToString()
-                  << " dst:" << dst_device_address->ToString();
+
+  if (copy_type == cudaMemcpyKind::cudaMemcpyDeviceToDevice &&
+      (dst_device_address->format() != src_device_address->format() ||
+       dst_device_address->type_id() != src_device_address->type_id())) {
+    MS_LOG(ERROR) << "Format or type is different,  src device address:" << src_device_address->PrintInfo()
+                  << " dst:" << dst_device_address->PrintInfo();
     return false;
   }
 
