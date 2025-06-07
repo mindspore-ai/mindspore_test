@@ -66,6 +66,7 @@ void ChangeAllGatherGroup(const CNodePtr &ag_cnode, const RankList &new_group_ra
       << ": Create communication group failed, the rank_list is: " << new_group_ranks;
   }
   auto ag_prim = GetCNodePrimitive(ag_cnode);
+  MS_EXCEPTION_IF_NULL(ag_prim);
   ag_prim->AddAttr(GROUP, MakeValue(new_group.name()));
   ag_prim->AddAttr(GROUP_RANKS, MakeValue(g_device_manager->FindRankListNameByHashName(new_group.name())));
   ag_prim->AddAttr(RANK_SIZE, MakeValue<int64_t>(new_group_ranks.size()));
@@ -86,6 +87,7 @@ std::vector<CNodePtr> InterleavedReplacedConcatNodes(const std::vector<CNodePtr>
     }
     auto concat_cnode = ag_next_nodes.front().first->cast<CNodePtr>();
     auto concat_prim = GetCNodePrimitive(concat_cnode);
+    MS_EXCEPTION_IF_NULL(concat_prim);
     if (concat_prim->instance_name().find(REDISTRIBUTION_OP) != std::string::npos) {
       replace_nodes.push_back(concat_cnode);
     }
@@ -150,6 +152,8 @@ CNodePtr ReplaceInterleavedAllGatherToConcat(const FuncGraphPtr &func_graph, con
 }
 
 void MergeOpBeforeInterleaveSlice(const FuncGraphPtr &func_graph, const CNodePtr &virtual_converter_end) {
+  auto virtual_converter_end_prim = GetCNodePrimitive(virtual_converter_end);
+  MS_EXCEPTION_IF_NULL(virtual_converter_end_prim);
   std::vector<std::vector<CNodePtr>> need_replace_op_lists =
     CreateInterleavedNeedReplaceOpLists(virtual_converter_end, prim::kPrimStridedSlice);
   auto manager = func_graph->manager();
@@ -181,20 +185,21 @@ void MergeOpBeforeInterleaveSlice(const FuncGraphPtr &func_graph, const CNodePtr
     // merge nodes before multi slice
     auto slice_input = need_replace_op_lists[kIndex0][col]->input(kIndex1);
     need_replace_op_lists[kIndex0][col]->AddAttr(INTERLEAVED_PARALLEL, MakeValue(true));
-    bool has_fine_grain_index =
-      GetCNodePrimitive(virtual_converter_end)->HasAttr(kAttrFineGrainedInterleavedBlockIndex);
+    bool has_fine_grain_index = virtual_converter_end_prim->HasAttr(kAttrFineGrainedInterleavedBlockIndex);
     if (has_fine_grain_index) {
-      GetCNodePrimitive(need_replace_op_lists[kIndex0][col])
-        ->AddAttr(kAttrFineGrainedInterleavedBlockIndex,
-                  GetCNodePrimitive(virtual_converter_end)->GetAttr(kAttrFineGrainedInterleavedBlockIndex));
+      auto need_replace_op_lists_prim = GetCNodePrimitive(need_replace_op_lists[kIndex0][col]);
+      MS_EXCEPTION_IF_NULL(need_replace_op_lists_prim);
+      need_replace_op_lists_prim->AddAttr(kAttrFineGrainedInterleavedBlockIndex,
+                                          virtual_converter_end_prim->GetAttr(kAttrFineGrainedInterleavedBlockIndex));
     }
     for (size_t row = 1; row < need_replace_op_lists.size(); ++row) {
       auto slice_cnode = need_replace_op_lists[row][col];
+      auto slice_cnode_prim = GetCNodePrimitive(slice_cnode);
+      MS_EXCEPTION_IF_NULL(slice_cnode_prim);
       slice_cnode->AddAttr(INTERLEAVED_PARALLEL, MakeValue(true));
       if (has_fine_grain_index) {
-        GetCNodePrimitive(slice_cnode)
-          ->AddAttr(kAttrFineGrainedInterleavedBlockIndex,
-                    GetCNodePrimitive(virtual_converter_end)->GetAttr(kAttrFineGrainedInterleavedBlockIndex));
+        slice_cnode_prim->AddAttr(kAttrFineGrainedInterleavedBlockIndex,
+                                  virtual_converter_end_prim->GetAttr(kAttrFineGrainedInterleavedBlockIndex));
       }
       (void)manager->SetEdge(slice_cnode, kIndex1, slice_input);
     }
@@ -203,13 +208,15 @@ void MergeOpBeforeInterleaveSlice(const FuncGraphPtr &func_graph, const CNodePtr
 
 void TagFineGrainedInterleavedBlockIndex(const CNodePtr &virtual_converter_end, const CNodePtr &replaced_concat) {
   if (GetCNodePrimitive(virtual_converter_end)->HasAttr(kAttrFineGrainedInterleavedBlockIndex)) {
-    auto block_index =
-      GetValue<int64_t>(GetCNodePrimitive(virtual_converter_end)->GetAttr(kAttrFineGrainedInterleavedBlockIndex));
+    auto virtual_converter_end_prim = GetCNodePrimitive(virtual_converter_end);
+    MS_EXCEPTION_IF_NULL(virtual_converter_end_prim);
+    auto block_index = GetValue<int64_t>(virtual_converter_end_prim->GetAttr(kAttrFineGrainedInterleavedBlockIndex));
     if (std::find(fine_grain_concat_used.begin(), fine_grain_concat_used.end(), block_index) ==
         fine_grain_concat_used.end()) {
-      GetCNodePrimitive(replaced_concat)
-        ->AddAttr(kAttrFineGrainedInterleavedBlockIndex,
-                  GetCNodePrimitive(virtual_converter_end)->GetAttr(kAttrFineGrainedInterleavedBlockIndex));
+      auto replace_concat_prim = GetCNodePrimitive(replaced_concat);
+      MS_EXCEPTION_IF_NULL(replace_concat_prim);
+      replace_concat_prim->AddAttr(kAttrFineGrainedInterleavedBlockIndex,
+                                   virtual_converter_end_prim->GetAttr(kAttrFineGrainedInterleavedBlockIndex));
       fine_grain_concat_used.push_back(block_index);
     }
   }
@@ -334,6 +341,7 @@ bool IsDuplicatedVirtualConverterBegin(const CNodePtr &virtual_converter_begin) 
       continue;
     }
     auto slice = user_pair.first->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(slice);
     std::vector<std::vector<int64_t>> slice_value_list;
     for (size_t i = 2; i < kSizeFive; ++i) {
       ValuePtr slice_value = GetValueNode(slice->input(i));
@@ -352,8 +360,12 @@ bool IsDuplicatedVirtualConverterBegin(const CNodePtr &virtual_converter_begin) 
 bool GetOrderOfTwoAnode(const std::pair<AnfNodePtr, int> &pair1, const std::pair<AnfNodePtr, int> &pair2) {
   int number1 = pair1.second;
   int number2 = pair2.second;
-  auto pair1_input_node = pair1.first->cast<CNodePtr>()->input(pair1.second);
-  auto pair2_input_node = pair2.first->cast<CNodePtr>()->input(pair2.second);
+  auto pair1_cast = pair1.first->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(pair1_cast);
+  auto pair1_input_node = pair1_cast->input(pair1.second);
+  auto pair2_cast = pair2.first->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(pair2_cast);
+  auto pair2_input_node = pair2_cast->input(pair2.second);
   if (IsPrimitiveCNode(pair1_input_node, prim::kPrimTupleGetItem)) {
     number1 = LongToInt(GetTupleGetItemIndex(pair1_input_node->cast<CNodePtr>()));
   }
@@ -368,6 +380,7 @@ bool IsCallFuncInputParam(const AnfNodePtr &node) {
     return false;
   }
   auto node_param_ptr = node->cast<ParameterPtr>();
+  MS_EXCEPTION_IF_NULL(node_param_ptr);
   if (node_param_ptr->has_default()) {
     return false;
   }
@@ -385,12 +398,14 @@ std::vector<CNodePtr> DoSplitForNotParallelCareOpsInterleaved(const FuncGraphMan
   std::sort(virtual_converter_begin_users.begin(), virtual_converter_begin_users.end(),
             [](const auto &pair1, const auto &pair2) { return GetOrderOfTwoAnode(pair1, pair2); });
   auto virtual_converter_begin_input_cnode = virtual_converter_begin_input->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(virtual_converter_begin_input_cnode);
   std::vector<AnfNodePtr> new_inputs;
   std::vector<CNodePtr> new_virtual_converter_begin_vector;
   for (size_t i = 1; i < virtual_converter_begin_input_cnode->size(); ++i) {
     auto v_input_node = virtual_converter_begin_input_cnode->input(i);
     if ((!IsPrimitiveCNode(v_input_node) && !IsCallFuncInputParam(v_input_node) &&
-         !(v_input_node->isa<CNode>() && IsValueNode<FuncGraph>(v_input_node->cast<CNodePtr>()->input(kIndex0)))) ||
+         !(v_input_node->isa<CNode>() && v_input_node->cast<CNodePtr>() != nullptr &&
+           IsValueNode<FuncGraph>(v_input_node->cast<CNodePtr>()->input(kIndex0)))) ||
         IsPrimitiveCNode(v_input_node, prim::kPrimUpdateState)) {
       new_inputs.push_back(v_input_node);
       continue;
@@ -453,6 +468,7 @@ void SplitNotParallelCareOpsInterleaved(const FuncGraphPtr &root) {
       continue;
     }
     auto end_cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(end_cnode);
     auto end_users = new_node_users.at(node);
     auto func_graph = node->func_graph();
     for (const auto &end_user : end_users) {
@@ -460,6 +476,7 @@ void SplitNotParallelCareOpsInterleaved(const FuncGraphPtr &root) {
         continue;
       }
       auto cast_cnode = end_user.first->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(cast_cnode);
       std::vector<AnfNodePtr> new_end_inputs = {end_cnode->input(kIndex0)};
       for (size_t i = 1; i < end_cnode->size(); ++i) {
         std::vector<AnfNodePtr> new_cast_inputs = {cast_cnode->input(kIndex0), end_cnode->input(i),
@@ -474,8 +491,10 @@ void SplitNotParallelCareOpsInterleaved(const FuncGraphPtr &root) {
 }
 
 int64_t SendRecvInterleavedAxis(const CNodePtr &send_recv) {
+  MS_EXCEPTION_IF_NULL(send_recv);
   if (send_recv->has_user_data<TensorLayout>()) {
     auto layout = send_recv->user_data<TensorLayout>();
+    MS_EXCEPTION_IF_NULL(layout);
     if (layout->IsInterleavedParallel()) {
       auto inter_layout = layout->LayoutForRedistribution();
       auto new_slice_shape = inter_layout.base_slice_shape().array();
@@ -495,6 +514,7 @@ int64_t SendRecvInterleavedAxis(const CNodePtr &send_recv) {
 }
 
 int64_t UserIsSend(const CNodePtr &cnode) {
+  MS_EXCEPTION_IF_NULL(cnode);
   if (cnode->size() <= kSizeOne) {
     return -1;
   }
@@ -539,10 +559,12 @@ void MoveVirtualConverterEndInsideCallFunc(const FuncGraphPtr &root) {
       continue;
     }
     auto call_cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(call_cnode);
     if (!IsValueNode<FuncGraph>(call_cnode->input(0))) {
       continue;
     }
     auto sub_func_graph = GetValueNode<FuncGraphPtr>(call_cnode->input(0));
+    MS_EXCEPTION_IF_NULL(sub_func_graph);
     auto call_inputs(call_cnode->inputs());
     size_t inserted_num = 0;
     auto sub_graph_parameters = sub_func_graph->parameters();
@@ -555,6 +577,7 @@ void MoveVirtualConverterEndInsideCallFunc(const FuncGraphPtr &root) {
         continue;
       }
       auto virtual_converter_end = call_input->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(virtual_converter_end);
       auto call_cnodes_map = sub_func_graph->func_graph_cnodes_index();
       if (call_cnodes_map.size() > 1) {
         MS_LOG_WITH_NODE(EXCEPTION, call_input)
@@ -645,7 +668,12 @@ void InsertVirtualConverterEnd(const FuncGraphPtr &root, const FuncGraphPtr &fun
       continue;
     }
     auto get_item_node = fg_user_pair.first->cast<CNodePtr>();
-    auto index_value = get_item_node->input(kIndex2)->cast<ValueNodePtr>()->value();
+    MS_EXCEPTION_IF_NULL(get_item_node);
+    auto get_item_node_index2 = get_item_node->input(kIndex2);
+    MS_EXCEPTION_IF_NULL(get_item_node_index2);
+    auto get_item_node_index2_cast = get_item_node_index2->cast<ValueNodePtr>();
+    MS_EXCEPTION_IF_NULL(get_item_node_index2_cast);
+    auto index_value = get_item_node_index2_cast->value();
     auto index = GetValue<int64_t>(index_value);
     if (index == tuple_index) {
       std::vector<AnfNodePtr> virtual_end_inputs{NewValueNode(prim::kPrimVirtualConverterEnd)};
@@ -694,6 +722,7 @@ void MoveVirtualConverterEndOutsideCallFunc(const FuncGraphPtr &root) {
     auto interleave_size = virtual_end->size() - 1;
     for (auto &fg_use : fg_map) {
       auto fg_node = fg_use.first->first->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(fg_node);
       auto parent_graph = fg_node->func_graph();
       auto node_users = manager->node_users();
       auto fg_node_users = node_users.at(fg_node);
@@ -748,6 +777,7 @@ void EraseResVirtualConverterEnd(const FuncGraphPtr &root, bool is_fine_grained)
   for (const auto &node : new_all_nodes) {
     if (IsPrimitiveCNode(node, prim::kPrimVirtualConverterEnd)) {
       auto virtual_converter_end_cnode = node->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(virtual_converter_end_cnode);
       if (virtual_converter_end_cnode->size() != kSizeTwo) {
         auto end_users = GetOutputNodesWithFilter(virtual_converter_end_cnode, [&](const AnfNodePtr &anode) {
           return IsPrimitiveCNode(anode, prim::kPrimMakeTuple) || IsPrimitiveCNode(anode, prim::kPrimDepend);
@@ -765,8 +795,10 @@ void EraseResVirtualConverterEnd(const FuncGraphPtr &root, bool is_fine_grained)
           auto concat = virtual_converter_end_cnode->func_graph()->NewCNode(concat_inputs);
           (void)manager->Replace(virtual_converter_end_cnode, concat);
           if (is_fine_grained) {
-            GetCNodePrimitive(concat)->AddAttr(kAttrFineGrainedInterleavedBlockIndex,
-                                               MakeValue<int64_t>(kFineGrainedInterleavedBlockIndexMax));
+            auto concat_prim = GetCNodePrimitive(concat);
+            MS_EXCEPTION_IF_NULL(concat_prim);
+            concat_prim->AddAttr(kAttrFineGrainedInterleavedBlockIndex,
+                                 MakeValue<int64_t>(kFineGrainedInterleavedBlockIndexMax));
           }
           continue;
         }
@@ -790,15 +822,19 @@ void EraseVirtualConverter(const FuncGraphPtr &root) {
   auto node_users = manager->node_users();
   bool is_fine_grained = false;
   for (const auto &node : all_nodes) {
-    if (IsPrimitiveCNode(node) &&
-        GetCNodePrimitive(node->cast<CNodePtr>())->HasAttr(kAttrFineGrainedInterleavedBlockIndex)) {
-      is_fine_grained = true;
+    if (IsPrimitiveCNode(node)) {
+      auto node_cast_prim = GetCNodePrimitive(node->cast<CNodePtr>());
+      MS_EXCEPTION_IF_NULL(node_cast_prim);
+      if (node_cast_prim->HasAttr(kAttrFineGrainedInterleavedBlockIndex)) {
+        is_fine_grained = true;
+      }
     }
 
     if (!IsPrimitiveCNode(node, prim::kPrimVirtualConverterBegin)) {
       continue;
     }
     auto virtual_converter_begin = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(virtual_converter_begin);
     if (!IsPrimitiveCNode(virtual_converter_begin->input(kIndex1), prim::kPrimVirtualConverterEnd)) {
       MS_LOG(INFO) << "The VirtualConverterBegin input is not VirtualConverterEnd, it is "
                    << virtual_converter_begin->input(kIndex1)->fullname_with_scope();
@@ -815,6 +851,7 @@ void EraseVirtualConverter(const FuncGraphPtr &root) {
         auto split_axis = SendRecvInterleavedAxis(real_node->cast<CNodePtr>());
         AnfNodePtr axis = NewValueNode(MakeValue<int64_t>(split_axis));
         auto v_begin_prim = GetCNodePrimitive(virtual_converter_begin);
+        MS_EXCEPTION_IF_NULL(v_begin_prim);
         auto output_num = v_begin_prim->GetAttr("output_nums");
         AnfNodePtr split_size = NewValueNode(output_num);
         std::vector<AnfNodePtr> split_inputs{NewValueNode(prim::kPrimSplit->Clone()),
@@ -829,6 +866,7 @@ void EraseVirtualConverter(const FuncGraphPtr &root) {
       continue;
     }
     auto virtual_converter_end = virtual_converter_begin->input(kIndex1)->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(virtual_converter_end);
     auto virtual_converter_begin_users = manager->node_users()[virtual_converter_begin];
     if (virtual_converter_begin_users.size() != virtual_converter_end->size() - 1) {
       MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, virtual_converter_end)
@@ -840,6 +878,7 @@ void EraseVirtualConverter(const FuncGraphPtr &root) {
           << "The VirtualConverterBegin user should be tuple_get_item.";
       }
       auto tuple_get_item = node_pair.first->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(tuple_get_item);
       auto tuple_get_item_index_value = GetValueNode(tuple_get_item->input(kIndex2));
       MS_EXCEPTION_IF_NULL(tuple_get_item_index_value);
       auto get_item_index = GetValue<int64_t>(tuple_get_item_index_value);
