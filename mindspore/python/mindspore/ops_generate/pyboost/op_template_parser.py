@@ -73,7 +73,7 @@ class OpTemplateParser:
         Returns:
             list: A list of formatted strings representing the call arguments with their types.
         """
-        call_args = self.parse_original_call_args(self.op_proto.op_args)
+        call_args = OpTemplateParser.parse_original_call_args(self.op_proto.op_args)
         call_args_types = self._parse_call_args_types(self.op_proto, basic_type)
         call_args_with_types = []
         for type_name, arg_name in zip(call_args_types, call_args):
@@ -93,7 +93,7 @@ class OpTemplateParser:
         need_malloc_tensors = []
         tensor_list_convert = []
         call_args_with_tensor = []
-        call_args = self.parse_original_call_args(self.op_proto.op_args)
+        call_args = OpTemplateParser.parse_original_call_args(self.op_proto.op_args)
         for op_arg, call_arg in zip(self.op_proto.op_args, call_args):
             if pyboost_utils.is_tensor(op_arg):
                 call_arg = op_arg.arg_name + "_tensor"
@@ -108,7 +108,8 @@ class OpTemplateParser:
                 call_args_with_tensor.append(call_arg)
         return need_malloc_tensors, tensor_list_convert, call_args_with_tensor
 
-    def parse_original_call_args(self, op_args):
+    @staticmethod
+    def parse_original_call_args(op_args):
         """
         Parses the original call arguments from the operator prototype.
 
@@ -142,7 +143,7 @@ class OpTemplateParser:
         call_args_after_convert = []
         value_tuple_convert = []
         const_number_convert = []
-        call_args = self.parse_original_call_args(self.op_proto.op_args)
+        call_args = OpTemplateParser.parse_original_call_args(self.op_proto.op_args)
         for op_arg, call_arg in zip(self.op_proto.op_args, call_args):
             if number_input_to_cpp_type(op_arg.arg_dtype):
                 call_args_after_convert.append(call_arg + "_imm")
@@ -227,7 +228,7 @@ class OpTemplateParser:
         """
         call_args_tensor = []
         call_args_types = self._parse_call_args_types(self.op_proto)
-        call_args = self.parse_original_call_args(self.op_proto.op_args)
+        call_args = OpTemplateParser.parse_original_call_args(self.op_proto.op_args)
         for _type, arg_name in zip(call_args_types, call_args):
             if _type in ("mindspore::tensor::TensorPtr", "std::optional<mindspore::tensor::TensorPtr>"):
                 call_args_tensor.append(arg_name)
