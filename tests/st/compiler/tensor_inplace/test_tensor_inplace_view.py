@@ -14,11 +14,15 @@
 # ==============================================================================
 import pytest
 import os
+import re
+import shutil
 import numpy as np
 import mindspore as ms
 import mindspore.nn as nn
 from mindspore import context, Tensor
 from mindspore.ops import operations as P
+from mindspore.common import dtype as mstype
+from mindspore.ops.auto_generate.gen_ops_prim import split_tensor_view_op
 from tests.mark_utils import arg_mark
 
 context.set_context(mode=ms.GRAPH_MODE)
@@ -178,3 +182,53 @@ def test_setitem_simple_case():
         assert np.allclose(out_expect.asnumpy(), out.asnumpy())
     finally:
         del os.environ["MS_DEV_TENSOR_INDEX_BOOST"]
+
+
+def clean_all_ir_files(folder_path):
+    if os.path.exists(folder_path):
+        for file_name in os.listdir(folder_path):
+            if file_name.endswith('.ir') or file_name.endswith('.dot') or \
+                    file_name.endswith('.dat') or file_name.endswith('.pb'):
+                os.remove(os.path.join(folder_path, file_name))
+
+
+def find_newest_validateir_file(folder_path):
+    ckpt_files = map(lambda f: os.path.join(folder_path, f),
+                     filter(lambda f: re.match(r'\d+_validate_\d+.ir', f),
+                            os.listdir(folder_path)))
+    return max(ckpt_files, key=os.path.getctime)
+
+
+def read_file(save_path):
+    filename = find_newest_validateir_file(save_path)
+    with open((os.path.join(filename)), 'r') as f:
+        content = f.read()
+    clean_all_ir_files(save_path)
+    return content
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_split_tensor_view_op():
+    """
+    Feature: View feature.
+    Description: View feature.
+    Expectation: The input of the view operator needs to be updated to ref_key.
+    """
+    class Split(nn.Cell):
+        def construct(self, tensor, split_size_or_sections, dim):
+            out = split_tensor_view_op(tensor, split_size_or_sections, dim)
+            return out
+
+    save_path = "./test_split_tensor_view_op"
+    context.set_context(jit_config={"jit_level": "O0"}, save_graphs=True, save_graphs_path=save_path)
+    tensor_input = Tensor(np.random.randn(3,), mstype.float32)
+    net = Split()
+    net.construct = ms.jit(net.construct, backend="ms_backend")
+    net(tensor_input, 2, -1)
+    content = read_file(save_path)
+    ref_key_set = re.findall('ref_key', content)
+    try:
+        shutil.rmtree(save_path)
+    except FileNotFoundError:
+        pass
+    assert len(ref_key_set) == 2

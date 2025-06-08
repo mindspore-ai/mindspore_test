@@ -948,7 +948,7 @@ AbstractBasePtr PrimitiveFunctionEvaluator::CheckAndInfer(const AbstractBasePtrL
       if (frontend_func_impl_ != nullptr) {
         auto infer_result = frontend_func_impl_->InferAbstract(prim_func_, args);
         if (infer_result != nullptr) {
-          return infer_result;
+          return ProcessViewInplaceAbstract(args, infer_result);
         }
       }
       auto type = op_def_->func_impl_.InferType(prim_func_, args);
