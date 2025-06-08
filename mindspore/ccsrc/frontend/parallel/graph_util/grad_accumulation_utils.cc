@@ -53,7 +53,7 @@ void SetGradAccumulationStep(const std::vector<AnfNodePtr> &all_nodes) {
     }
     auto slice_cnode = node->cast<CNodePtr>();
     auto slice_prim = GetCNodePrimitive(slice_cnode);
-    if (!slice_prim || !slice_prim->HasAttr(GRAD_ACCU_NUM)) {
+    if (slice_prim == nullptr || !slice_prim->HasAttr(GRAD_ACCU_NUM)) {
       continue;
     }
     auto accu_step = GetValue<int64_t>(slice_prim->GetAttr(GRAD_ACCU_NUM));
@@ -70,7 +70,7 @@ void TagMicroBatchStart(const FuncGraphManagerPtr &manager, const std::vector<An
     auto slice_cnode = node->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(slice_cnode);
     auto slice_prim = GetCNodePrimitive(slice_cnode);
-    if (!slice_prim || !slice_prim->HasAttr(GRAD_ACCU_NUM)) {
+    if (slice_prim == nullptr || !slice_prim->HasAttr(GRAD_ACCU_NUM)) {
       continue;
     }
     auto accu_step = GetValue<int64_t>(slice_prim->GetAttr(GRAD_ACCU_NUM));
@@ -96,7 +96,7 @@ void TagMicroBatchEnd(const FuncGraphManagerPtr &manager, const std::vector<AnfN
     auto end_cnode = node->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(end_cnode);
     auto end_prim = GetCNodePrimitive(end_cnode);
-    if (!end_prim || !end_prim->HasAttr(FORWARD_END)) {
+    if (end_prim == nullptr || !end_prim->HasAttr(FORWARD_END)) {
       continue;
     }
     if (ParallelContext::GetInstance()->grad_accumulation_step() > 1 && !end_cnode->HasPrimalAttr(MICRO)) {
