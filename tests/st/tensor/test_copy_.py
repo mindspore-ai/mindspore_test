@@ -273,3 +273,22 @@ def test_copy_h2d_d2h_h2h(non_blocking):
     copy_h2d_d2h_view(non_blocking)
     copy_h2d_d2h_discontiguous(non_blocking)
     copy_h2d_d2h_h2h_empty(non_blocking)
+
+
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
+def test_copy_large_tensor():
+    """
+    Feature: test copy tensor API.
+    Description: testcase for copy tensor API with large tensor on cpu.
+    Expectation: the result match with expected result.
+    """
+    src1 = ms.Tensor(np.random.randn(380762112, 2), dtype=ms.float32)
+    dst1 = ms.mint.empty_like(src1, device="CPU")
+    dst1.copy_(src1)
+    assert np.all(dst1.asnumpy() == src1.asnumpy())
+
+    src2 = ms.Tensor(np.random.randn(380762112, 2), dtype=ms.float32)
+    dst2 = ms.mint.empty((2, 380762112, 2), dtype=src2.dtype, device="CPU")
+    dst2.copy_(src2)
+    assert np.all(dst2.asnumpy() == np.broadcast_to(src2.asnumpy(), (2, 380762112, 2)))

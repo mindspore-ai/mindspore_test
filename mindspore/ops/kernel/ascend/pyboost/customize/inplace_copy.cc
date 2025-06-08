@@ -135,14 +135,6 @@ tensor::TensorPtr InplaceCopyH2D(const std::shared_ptr<OpRunner> &op, const Tens
           }
           MS_LOG(DEBUG) << "Launch InplaceCopyH2D SyncCopy end";
         } else {
-          // Use temp buffer to ensure host data is not modified during async copying
-          std::shared_ptr<uint8_t[]> host_buffer(new (std::nothrow) uint8_t[src->Size()]);
-          MS_EXCEPTION_IF_NULL(host_buffer);
-          auto ret = memcpy_s(host_buffer.get(), src->Size(), src_ptr, src->Size());
-          if (ret == ERANGE) {
-            device::ConvertSameType(host_buffer.get(), src_ptr, src->Size(), src->data_type());
-          }
-
           // call aclrtMemcpyAsync to copy host tor device async
           auto stream_ptr = device_context->device_res_manager_->GetStream(stream_id);
           auto ret_rt_memcpy = CALL_ASCEND_API(aclrtMemcpyAsync, dst_ptr, dst->Size(), src_ptr, src->Size(),
@@ -151,23 +143,6 @@ tensor::TensorPtr InplaceCopyH2D(const std::shared_ptr<OpRunner> &op, const Tens
             MS_LOG(EXCEPTION) << "For InplaceCopyH2D, aclrtMemcpyAsync call failed with error = " << ret_rt_memcpy
                               << ", src_ptr: " << src_ptr << ", dst_ptr: " << dst_ptr << ", copySize: " << src->Size();
           }
-
-          std::function<void(void)> callback_func = [host_buffer]() {
-            // Clear host_buffer automatically.
-            MS_LOG(DEBUG) << "InplaceCopyH2D callback_func exec, host_buffer cnt:" << host_buffer.use_count();
-          };
-
-          auto ms_context = MsContext::GetInstance();
-          MS_EXCEPTION_IF_NULL(ms_context);
-          auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-          auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(
-            device::ResKey{device::DeviceType::kAscend, device_id});
-          MS_EXCEPTION_IF_NULL(res_manager);
-          auto callback_ret = res_manager->LaunchCallback(callback_func, stream_id);
-          if (!callback_ret) {
-            MS_LOG(EXCEPTION) << "InplaceCopyH2D LaunchCallback failed on device " << device_id;
-          }
-
           auto sync_mode = runtime::RuntimeConf::GetInstance()->launch_blocking();
           if (sync_mode) {
             if (!device_context->device_res_manager_->SyncStream(stream_id)) {
@@ -298,7 +273,7 @@ tensor::TensorPtr InplaceCopyAscendCustomize(const std::shared_ptr<OpRunner> &op
                                              const TensorPtr &src, const BoolImmPtr &non_blocking) {
   auto is_contiguous = src->is_contiguous() && dst->is_contiguous();
   if (dst->shape() != src->shape() || dst->data_type() != src->data_type() || !is_contiguous) {
-    MS_LOG(DEBUG) << "InplaceCopy H2D/D2H/H2H don't support BroadCast, DtypeCast, empty and discontiguous src/dst yet.";
+    MS_LOG(DEBUG) << "InplaceCopy H2D/D2H/H2H don't support BroadCast, DtypeCast, discontiguous src/dst yet.";
     return InplaceCopyD2D(op, dst, src);
   }
 
