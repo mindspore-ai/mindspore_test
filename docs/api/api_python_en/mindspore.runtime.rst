@@ -15,6 +15,7 @@ Executor
     mindspore.runtime.launch_blocking
     mindspore.runtime.dispatch_threads_num
     mindspore.runtime.set_kernel_launch_group
+    mindspore.runtime.set_kernel_launch_capture
 
 Memory
 ------------
