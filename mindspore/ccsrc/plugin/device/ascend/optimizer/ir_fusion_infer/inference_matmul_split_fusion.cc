@@ -23,9 +23,11 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
+#include "mindspore/ops/op_def/nn_optimizer_ops.h"
 #include "utils/ms_context.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_q.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
@@ -43,33 +45,45 @@ bool InferenceMatmulSplitFusion::Run(const FuncGraphPtr &graph) {
   MS_EXCEPTION_IF_NULL(ms_context);
   constexpr auto kInferenceMatmulSplitSiluName = "InferenceMatmulSplitSilu";
   constexpr auto kInferenceMatmulSplitName = "InferenceMatmulSplit";
+  constexpr auto kInferenceMatmulSplitSiluFastgeluAddMulName = "InferenceGatedFFN";
   auto enable_op_list = ms_context->ms_internal_enable_custom_kernel_list();
+  auto enable_fuse_gated_ffn = (std::find(enable_op_list.begin(), enable_op_list.end(),
+                                          kInferenceMatmulSplitSiluFastgeluAddMulName) != enable_op_list.end());
   auto enable_fusion =
     (std::find(enable_op_list.begin(), enable_op_list.end(), kInferenceMatmulSplitName) != enable_op_list.end());
-  if (!enable_fusion) {
+  if (!enable_fusion && !enable_fuse_gated_ffn) {
     return false;
   }
-  enable_fusion_silu =
-    (std::find(enable_op_list.begin(), enable_op_list.end(), kInferenceMatmulSplitSiluName) != enable_op_list.end());
+  enable_fusion_silu = enable_fusion && (std::find(enable_op_list.begin(), enable_op_list.end(),
+                                                   kInferenceMatmulSplitSiluName) != enable_op_list.end());
 
   std::string pattern_name = "";
   auto node_list = TopoSort(graph->output());
   std::reverse(node_list.begin(), node_list.end());
   for (const auto &node : node_list) {
+    bool fuse_gated_ffn = false;
     if (node == nullptr || !node->isa<CNode>()) {
       continue;
     }
     auto cnode = node->cast<CNodePtr>();
     auto node_name = common::AnfAlgo::GetCNodeName(cnode);
-    if (node_name != prim::kPrimSplitWithSize->name() && node_name != prim::kPrimSiLU->name()) {
+    if (enable_fuse_gated_ffn && (node_name == prim::kPrimMul->name())) {
+      // last node is Mul and Fusion is allowed
+      fuse_gated_ffn = true;
+    } else if (node_name != prim::kPrimSplitWithSize->name() && node_name != prim::kPrimSiLU->name()) {
       continue;
     }
     if (visited_cnodes.find(cnode) != visited_cnodes.end()) {
       continue;
     }
-    pattern_name = GetFusionPatternName(cnode);
+    if (fuse_gated_ffn) {
+      pattern_name = GetGatedFFNFusionPatternName(cnode);
+    } else if (enable_fusion) {
+      pattern_name = GetFusionPatternName(cnode);
+    }
     MS_LOG(DEBUG) << "fusion pattern is : " << pattern_name;
     if (!pattern_name.empty()) {
+      MS_LOG(DEBUG) << "pattern name is not empty. node name is " << node_name;
       auto new_node = Process(pattern_name, graph, node);
       changed |= new_node != nullptr;
     }
@@ -122,6 +136,96 @@ std::string InferenceMatmulSplitFusion::GetSplitFusionPatternName(const CNodePtr
       }
     }
   }
+  return pattern_name;
+}
+
+std::string InferenceMatmulSplitFusion::GetSiluMulPattern(const CNodePtr &mul_input0_node,
+                                                          const CNodePtr &mul_input1_node) const {
+  // in this branch we aim to find the first pattern -- kPatternNameMatMulSplitSiluMul
+  std::string pattern_name = "";
+  auto silu_input_node = common::AnfAlgo::GetInputNode(mul_input0_node->cast<CNodePtr>(), kIndex0);
+  auto silu_input_name = common::AnfAlgo::GetCNodeName(silu_input_node);
+  auto tuple_input_node = common::AnfAlgo::GetInputNode(mul_input1_node->cast<CNodePtr>(), kIndex0);
+  auto tuple_input_name = common::AnfAlgo::GetCNodeName(tuple_input_node);
+  if ((silu_input_name == prim::kPrimTupleGetItem->name()) && (tuple_input_name == prim::kPrimSplitWithSize->name())) {
+    auto tuple2_input_node = common::AnfAlgo::GetInputNode(silu_input_node->cast<CNodePtr>(), kIndex0);
+    auto split_input_node = common::AnfAlgo::GetInputNode(tuple_input_node->cast<CNodePtr>(), kIndex0);
+    auto split_input_name = common::AnfAlgo::GetCNodeName(split_input_node);
+    if ((tuple_input_node == tuple2_input_node) && (split_input_name == prim::kPrimReshape->name())) {
+      auto reshape_input_node = common::AnfAlgo::GetInputNode(split_input_node->cast<CNodePtr>(), kIndex0);
+      auto reshape_input_name = common::AnfAlgo::GetCNodeName(reshape_input_node);
+      if (reshape_input_name == prim::kPrimMatMul->name()) {
+        pattern_name = kPatternNameMatMulSplitSiluMul;
+      } else if (reshape_input_name == prim::kPrimQuantBatchMatmul->name()) {
+        pattern_name = kPatternNameQMatMulSplitSiluMul;
+      }
+    }
+  }
+  return pattern_name;
+}
+
+std::string InferenceMatmulSplitFusion::GetSiluFastGeluAddMulPattern(const CNodePtr &mul_input0_node,
+                                                                     const CNodePtr &mul_input1_node) const {
+  // in this branch we aim to find the second pattern -- kPatternNameMatMulSplitSiluFastgeluAddMul
+  std::string pattern_name = "";
+  auto add_input0_node = common::AnfAlgo::GetInputNode(mul_input0_node->cast<CNodePtr>(), kIndex0);
+  auto add_input0_name = common::AnfAlgo::GetCNodeName(add_input0_node);
+  auto add_input1_node = common::AnfAlgo::GetInputNode(mul_input0_node->cast<CNodePtr>(), kIndex1);
+  auto add_input1_name = common::AnfAlgo::GetCNodeName(add_input1_node);
+  auto tuple_input_node = common::AnfAlgo::GetInputNode(mul_input1_node->cast<CNodePtr>(), kIndex0);
+  auto tuple_input_name = common::AnfAlgo::GetCNodeName(tuple_input_node);
+  if ((add_input0_name == prim::kPrimSiLU->name()) && (add_input1_name == prim::kPrimFastGeLU->name()) &&
+      (tuple_input_name == prim::kPrimSplitWithSize->name())) {
+    auto silu_input_node = common::AnfAlgo::GetInputNode(add_input0_node->cast<CNodePtr>(), kIndex0);
+    auto silu_input_name = common::AnfAlgo::GetCNodeName(silu_input_node);
+    auto fastgelu_input_node = common::AnfAlgo::GetInputNode(add_input1_node->cast<CNodePtr>(), kIndex0);
+    auto fastgelu_input_name = common::AnfAlgo::GetCNodeName(fastgelu_input_node);
+    if ((silu_input_name == prim::kPrimTupleGetItem->name()) &&
+        (fastgelu_input_name == prim::kPrimTupleGetItem->name())) {
+      auto tuple2_input_node = common::AnfAlgo::GetInputNode(silu_input_node->cast<CNodePtr>(), kIndex0);
+      auto tuple2_input_name = common::AnfAlgo::GetCNodeName(tuple2_input_node);
+      auto tuple3_input_node = common::AnfAlgo::GetInputNode(fastgelu_input_node->cast<CNodePtr>(), kIndex0);
+      if ((tuple2_input_name == prim::kPrimSplitWithSize->name()) && (tuple2_input_node == tuple3_input_node) &&
+          (tuple2_input_node == tuple_input_node)) {
+        auto split_input_node = common::AnfAlgo::GetInputNode(tuple_input_node->cast<CNodePtr>(), kIndex0);
+        auto split_input_name = common::AnfAlgo::GetCNodeName(split_input_node);
+        if (split_input_name == prim::kPrimReshape->name()) {
+          auto reshape_input_node = common::AnfAlgo::GetInputNode(split_input_node->cast<CNodePtr>(), kIndex0);
+          auto reshape_input_name = common::AnfAlgo::GetCNodeName(reshape_input_node);
+          if (reshape_input_name == prim::kPrimMatMul->name()) {
+            pattern_name = kPatternNameMatMulSplitSiluFastgeluAddMul;
+          } else if (reshape_input_name == prim::kPrimQuantBatchMatmul->name()) {
+            pattern_name = kPatternNameQMatMulSplitSiluFastgeluAddMul;
+          }
+        }
+      }
+    }
+  }
+  return pattern_name;
+}
+
+std::string InferenceMatmulSplitFusion::GetGatedFFNFusionPatternName(const CNodePtr &mul_cnode) const {
+  // in this Fusion Pass we are searching for two constructions:
+  // silu(w1 * x) ( w3 * x ) and
+  // [silu(w1 * x) + FastGeLU(w11 * x)] (w3 * x)
+  // in each of these constructions, in order to speed up computation, the weights are concatenated into a single W
+  // such that a single MatMul operation is performed, then the output is Reshape, Split and used accordingly
+  // This modification is performed in the python level, and here, during the fusion pass we capture it and replace it
+  // with a single kernel
+  std::string pattern_name = "";
+  auto mul_i0_node = common::AnfAlgo::GetInputNode(mul_cnode, kIndex0);
+  auto mul_i1_node = common::AnfAlgo::GetInputNode(mul_cnode, kIndex1);
+  if (mul_i0_node == nullptr || !mul_i0_node->isa<CNode>() || mul_i1_node == nullptr || !mul_i1_node->isa<CNode>()) {
+    return "";
+  }
+  auto mul_i0_name = common::AnfAlgo::GetCNodeName(mul_i0_node);
+  auto mul_i1_name = common::AnfAlgo::GetCNodeName(mul_i1_node);
+  if ((mul_i0_name == prim::kPrimSiLU->name()) && (mul_i1_name == prim::kPrimTupleGetItem->name())) {
+    pattern_name = GetSiluMulPattern(mul_i0_node->cast<CNodePtr>(), mul_i1_node->cast<CNodePtr>());
+  } else if ((mul_i0_name == prim::kPrimAdd->name()) && (mul_i1_name == prim::kPrimTupleGetItem->name())) {
+    pattern_name = GetSiluFastGeluAddMulPattern(mul_i0_node->cast<CNodePtr>(), mul_i1_node->cast<CNodePtr>());
+  }
+  MS_LOG(DEBUG) << " found pattern " << pattern_name;
   return pattern_name;
 }
 
@@ -229,8 +333,10 @@ PrimitivePtr InferenceMatmulSplitFusion::CreateMatmulSplitPrim(const CNodePtr &s
   MS_CHECK_TRUE_RET(!prim_name.empty(), nullptr);
   matmul_split_prim = std::make_shared<Primitive>(prim_name);
   MS_CHECK_TRUE_RET(matmul_split_prim != nullptr, nullptr);
-  auto split_size = split_cnode->input(kIndex2)->cast<ValueNodePtr>();
-  matmul_split_prim->AddAttr("n_lens", split_size->value());
+  if (split_size_len != 1) {
+    auto split_size = split_cnode->input(kIndex2)->cast<ValueNodePtr>();
+    matmul_split_prim->AddAttr("n_lens", split_size->value());
+  }
   return matmul_split_prim;
 }
 
@@ -511,6 +617,236 @@ CNodePtr InferenceMatmulSplitFusion::CreateMatmulSplitSiluNode(const FuncGraphPt
   return new_item_cnode;
 }
 
+CNodePtr InferenceMatmulSplitFusion::CreateMatmulSplitSiluMulNode(const FuncGraphPtr &func_graph,
+                                                                  const AnfNodePtr &node,
+                                                                  const std::string &pattern_name) const {
+  MS_LOG(DEBUG) << "start create MatmulSplitSiluMul node";
+  MS_ASSERT(func_graph != nullptr && node != nullptr);
+  auto elem_mul_cnode = node->cast<CNodePtr>();
+  MS_CHECK_TRUE_RET(elem_mul_cnode != nullptr, nullptr);
+
+  auto silu_cnode = elem_mul_cnode->input(kIndex1)->cast<CNodePtr>();
+  MS_CHECK_TRUE_RET(silu_cnode != nullptr, nullptr);
+  auto tuple_get_item_cnode = elem_mul_cnode->input(kIndex2)->cast<CNodePtr>();
+  MS_CHECK_TRUE_RET(tuple_get_item_cnode != nullptr, nullptr);
+  auto split_cnode = tuple_get_item_cnode->input(kIndex1)->cast<CNodePtr>();
+  MS_CHECK_TRUE_RET(split_cnode != nullptr, nullptr);
+
+  size_t split_size_len = kMatmulFfnSplitSizeLen;
+  auto reshape_cnode = split_cnode->input(kIndex1)->cast<CNodePtr>();
+  MS_CHECK_TRUE_RET(reshape_cnode != nullptr, nullptr);
+
+  auto matmul_cnode = reshape_cnode->input(kIndex1)->cast<CNodePtr>();
+  MS_CHECK_TRUE_RET(matmul_cnode != nullptr, nullptr);
+  MS_CHECK_TRUE_RET(matmul_cnode->func_graph() == split_cnode->func_graph(), nullptr);
+
+  auto pre_reshape = matmul_cnode->input(kIndex1)->cast<CNodePtr>();
+  MS_CHECK_TRUE_RET(pre_reshape != nullptr, nullptr);
+
+  auto x_node = pre_reshape->input(kIndex1);
+  MS_EXCEPTION_IF_NULL(x_node);
+  auto weight_node = matmul_cnode->input(kIndex2);
+  MS_EXCEPTION_IF_NULL(weight_node);
+  const std::set<TypeId> support_dtype = {kNumberTypeFloat16, kNumberTypeBFloat16};
+  if (!CheckSupportDataType(x_node, support_dtype) || !CheckMatMulDataFormat(matmul_cnode)) {
+    return nullptr;
+  }
+  auto fusion_prim = CreateMatmulSplitPrim(split_cnode, split_size_len, pattern_name);
+  fusion_prim->AddAttr("silu_position", MakeValue<int32_t>(1));
+  std::vector<AnfNodePtr> matmul_split_inputs = {x_node, weight_node};
+  auto matmul_split_cnode = func_graph->NewCNode(fusion_prim, matmul_split_inputs);
+  MS_EXCEPTION_IF_NULL(matmul_split_cnode);
+
+  matmul_split_cnode->set_fullname_with_scope(matmul_cnode->fullname_with_scope() + "-SplitWithSiluMul");
+  if (node->abstract() != nullptr) {
+    matmul_split_cnode->set_abstract(elem_mul_cnode->abstract()->Clone());
+  }
+
+  visited_cnodes.insert({silu_cnode, split_cnode});
+  MS_LOG(DEBUG) << "create MatmulSplitSiluMul node success.";
+  return matmul_split_cnode;
+}
+
+CNodePtr InferenceMatmulSplitFusion::CreateMatmulSplitSiluFastgeluAddMulNode(const FuncGraphPtr &func_graph,
+                                                                             const AnfNodePtr &node,
+                                                                             const std::string &pattern_name) const {
+  MS_LOG(DEBUG) << "start create MatmulSplitSiluFastgeluAddMul node";
+  MS_ASSERT(func_graph != nullptr && node != nullptr);
+  auto elem_mul_cnode = node->cast<CNodePtr>();
+  MS_CHECK_TRUE_RET(elem_mul_cnode != nullptr, nullptr);
+
+  auto add_cnode = elem_mul_cnode->input(kIndex1)->cast<CNodePtr>();
+  MS_CHECK_TRUE_RET(add_cnode != nullptr, nullptr);
+  auto silu_cnode = add_cnode->input(kIndex1)->cast<CNodePtr>();
+  MS_CHECK_TRUE_RET(silu_cnode != nullptr, nullptr);
+
+  auto tuple_get_item_cnode = elem_mul_cnode->input(kIndex2)->cast<CNodePtr>();
+  MS_CHECK_TRUE_RET(tuple_get_item_cnode != nullptr, nullptr);
+  auto split_cnode = tuple_get_item_cnode->input(kIndex1)->cast<CNodePtr>();
+  MS_CHECK_TRUE_RET(split_cnode != nullptr, nullptr);
+
+  size_t split_size_len = kMatmulQkvSplitSizeLen;
+
+  auto reshape_cnode = split_cnode->input(kIndex1)->cast<CNodePtr>();
+  MS_CHECK_TRUE_RET(reshape_cnode != nullptr, nullptr);
+
+  auto matmul_cnode = reshape_cnode->input(kIndex1)->cast<CNodePtr>();
+  MS_CHECK_TRUE_RET(matmul_cnode != nullptr, nullptr);
+  MS_CHECK_TRUE_RET(matmul_cnode->func_graph() == split_cnode->func_graph(), nullptr);
+
+  auto pre_reshape = matmul_cnode->input(kIndex1)->cast<CNodePtr>();
+  MS_CHECK_TRUE_RET(pre_reshape != nullptr, nullptr);
+
+  auto x_node = pre_reshape->input(kIndex1);
+  MS_EXCEPTION_IF_NULL(x_node);
+  auto weight_node = matmul_cnode->input(kIndex2);
+  MS_EXCEPTION_IF_NULL(weight_node);
+  const std::set<TypeId> support_dtype = {kNumberTypeFloat16, kNumberTypeBFloat16};
+  if (!CheckSupportDataType(x_node, support_dtype) || !CheckMatMulDataFormat(matmul_cnode)) {
+    return nullptr;
+  }
+  auto fusion_prim = CreateMatmulSplitPrim(split_cnode, split_size_len, pattern_name);
+  fusion_prim->AddAttr("silu_position", MakeValue<int32_t>(1));
+  std::vector<AnfNodePtr> matmul_split_inputs = {x_node, weight_node};
+  auto matmul_split_cnode = func_graph->NewCNode(fusion_prim, matmul_split_inputs);
+  MS_EXCEPTION_IF_NULL(matmul_split_cnode);
+
+  matmul_split_cnode->set_fullname_with_scope(matmul_cnode->fullname_with_scope() + "-SplitWithSiluFastGeluAddMul");
+  if (node->abstract() != nullptr) {
+    matmul_split_cnode->set_abstract(elem_mul_cnode->abstract()->Clone());
+  }
+
+  visited_cnodes.insert({silu_cnode, split_cnode});
+  MS_LOG(DEBUG) << "create MatmulSplitSiluFastgeluAddMul node success.";
+  return matmul_split_cnode;
+}
+
+CNodePtr InferenceMatmulSplitFusion::CreateQMatmulSplitSiluMulNode(const FuncGraphPtr &func_graph,
+                                                                   const AnfNodePtr &node,
+                                                                   const std::string &pattern_name) const {
+  MS_LOG(DEBUG) << "start create MatmulSplitSiluMul node";
+  MS_ASSERT(func_graph != nullptr && node != nullptr);
+  auto elem_mul_cnode = node->cast<CNodePtr>();
+  MS_CHECK_TRUE_RET(elem_mul_cnode != nullptr, nullptr);
+
+  auto silu_cnode = elem_mul_cnode->input(kIndex1)->cast<CNodePtr>();
+  MS_CHECK_TRUE_RET(silu_cnode != nullptr, nullptr);
+  auto tuple_get_item_cnode = elem_mul_cnode->input(kIndex2)->cast<CNodePtr>();
+  MS_CHECK_TRUE_RET(tuple_get_item_cnode != nullptr, nullptr);
+  auto split_cnode = tuple_get_item_cnode->input(kIndex1)->cast<CNodePtr>();
+  MS_CHECK_TRUE_RET(split_cnode != nullptr, nullptr);
+
+  size_t split_size_len = kMatmulFfnSplitSizeLen;
+  auto reshape_cnode = split_cnode->input(kIndex1)->cast<CNodePtr>();
+  MS_CHECK_TRUE_RET(reshape_cnode != nullptr, nullptr);
+
+  auto qbmm_cnode = reshape_cnode->input(kIndex1)->cast<CNodePtr>();
+  MS_CHECK_TRUE_RET(qbmm_cnode != nullptr, nullptr);
+  MS_CHECK_TRUE_RET(qbmm_cnode->func_graph() == split_cnode->func_graph(), nullptr);
+
+  auto pre_reshape = qbmm_cnode->input(kIndex1)->cast<CNodePtr>();
+  MS_CHECK_TRUE_RET(pre_reshape != nullptr, nullptr);
+  auto qbmm_x = pre_reshape->input(kIndex1);
+  MS_EXCEPTION_IF_NULL(qbmm_x);
+  auto qbmm_w = qbmm_cnode->input(kIndex2);
+  MS_EXCEPTION_IF_NULL(qbmm_w);
+  auto input_bias = qbmm_cnode->input(kIndex5);
+  MS_EXCEPTION_IF_NULL(input_bias);
+  auto pertoken_scale = qbmm_cnode->input(kIndex6);
+  MS_EXCEPTION_IF_NULL(pertoken_scale);
+  if (!IsValueNode<None>(pertoken_scale)) {
+    MS_LOG(INFO) << "Currently, do not support to fuse qbmm(pertoken) with split.";
+    return nullptr;
+  }
+  auto input_scale = qbmm_cnode->input(kIndex3);
+  MS_EXCEPTION_IF_NULL(input_scale);
+  const std::set<TypeId> support_dtype = {kNumberTypeInt8};
+  if (!CheckSupportDataType(qbmm_x, support_dtype) || !CheckMatMulDataFormat(qbmm_cnode) ||
+      !CheckSplitSize(qbmm_w, split_cnode)) {
+    return nullptr;
+  }
+
+  auto fusion_prim = CreateMatmulSplitPrim(split_cnode, split_size_len, pattern_name);
+  fusion_prim->AddAttr("silu_position", MakeValue<int32_t>(1));
+  std::vector<AnfNodePtr> qbmm_split_inputs = {qbmm_x, qbmm_w, input_bias, input_scale};
+
+  auto qmatmul_split_cnode = func_graph->NewCNode(fusion_prim, qbmm_split_inputs);
+  MS_EXCEPTION_IF_NULL(qmatmul_split_cnode);
+
+  qmatmul_split_cnode->set_fullname_with_scope(qbmm_cnode->fullname_with_scope() + "-SplitWithSiluMul");
+  if (node->abstract() != nullptr) {
+    qmatmul_split_cnode->set_abstract(elem_mul_cnode->abstract()->Clone());
+  }
+
+  visited_cnodes.insert({silu_cnode, split_cnode});
+  MS_LOG(DEBUG) << "create QMatmulSplitSiluMul node success.";
+  return qmatmul_split_cnode;
+}
+
+CNodePtr InferenceMatmulSplitFusion::CreateQMatmulSplitSiluFastgeluAddMulNode(const FuncGraphPtr &func_graph,
+                                                                              const AnfNodePtr &node,
+                                                                              const std::string &pattern_name) const {
+  MS_LOG(DEBUG) << "start create MatmulSplitSiluFastgeluAddMul node";
+  MS_ASSERT(func_graph != nullptr && node != nullptr);
+  auto elem_mul_cnode = node->cast<CNodePtr>();
+  MS_CHECK_TRUE_RET(elem_mul_cnode != nullptr, nullptr);
+
+  auto add_cnode = elem_mul_cnode->input(kIndex1)->cast<CNodePtr>();
+  MS_CHECK_TRUE_RET(add_cnode != nullptr, nullptr);
+  auto silu_cnode = add_cnode->input(kIndex1)->cast<CNodePtr>();
+  MS_CHECK_TRUE_RET(silu_cnode != nullptr, nullptr);
+
+  auto tuple_get_item_cnode = elem_mul_cnode->input(kIndex2)->cast<CNodePtr>();
+  MS_CHECK_TRUE_RET(tuple_get_item_cnode != nullptr, nullptr);
+  auto split_cnode = tuple_get_item_cnode->input(kIndex1)->cast<CNodePtr>();
+  MS_CHECK_TRUE_RET(split_cnode != nullptr, nullptr);
+
+  size_t split_size_len = kMatmulQkvSplitSizeLen;
+  auto reshape_cnode = split_cnode->input(kIndex1)->cast<CNodePtr>();
+  MS_CHECK_TRUE_RET(reshape_cnode != nullptr, nullptr);
+
+  auto qbmm_cnode = reshape_cnode->input(kIndex1)->cast<CNodePtr>();
+  MS_CHECK_TRUE_RET(qbmm_cnode != nullptr, nullptr);
+  MS_CHECK_TRUE_RET(qbmm_cnode->func_graph() == split_cnode->func_graph(), nullptr);
+
+  auto pre_reshape = qbmm_cnode->input(kIndex1)->cast<CNodePtr>();
+  MS_CHECK_TRUE_RET(pre_reshape != nullptr, nullptr);
+  auto qbmm_x = pre_reshape->input(kIndex1);
+  MS_EXCEPTION_IF_NULL(qbmm_x);
+  auto qbmm_w = qbmm_cnode->input(kIndex2);
+  MS_EXCEPTION_IF_NULL(qbmm_w);
+  auto input_bias = qbmm_cnode->input(kIndex5);
+  MS_EXCEPTION_IF_NULL(input_bias);
+  auto pertoken_scale = qbmm_cnode->input(kIndex6);
+  MS_EXCEPTION_IF_NULL(pertoken_scale);
+  if (!IsValueNode<None>(pertoken_scale)) {
+    MS_LOG(INFO) << "Currently, do not support to fuse qbmm(pertoken) with split.";
+    return nullptr;
+  }
+  auto input_scale = qbmm_cnode->input(kIndex3);
+  MS_EXCEPTION_IF_NULL(input_scale);
+  const std::set<TypeId> support_dtype = {kNumberTypeInt8};
+  if (!CheckSupportDataType(qbmm_x, support_dtype) || !CheckMatMulDataFormat(qbmm_cnode) ||
+      !CheckSplitSize(qbmm_w, split_cnode)) {
+    return nullptr;
+  }
+
+  auto fusion_prim = CreateMatmulSplitPrim(split_cnode, split_size_len, pattern_name);
+  fusion_prim->AddAttr("silu_position", MakeValue<int32_t>(1));
+  std::vector<AnfNodePtr> qbmm_split_inputs = {qbmm_x, qbmm_w, input_bias, input_scale};
+  auto qmatmul_split_cnode = func_graph->NewCNode(fusion_prim, qbmm_split_inputs);
+  MS_EXCEPTION_IF_NULL(qmatmul_split_cnode);
+
+  qmatmul_split_cnode->set_fullname_with_scope(qbmm_cnode->fullname_with_scope() + "-SplitWithSiluFastGeluAddMul");
+  if (node->abstract() != nullptr) {
+    qmatmul_split_cnode->set_abstract(elem_mul_cnode->abstract()->Clone());
+  }
+
+  visited_cnodes.insert({silu_cnode, split_cnode});
+  MS_LOG(DEBUG) << "create QMatmulSplitSiluFastgeluAddMul node success.";
+  return qmatmul_split_cnode;
+}
+
 CNodePtr InferenceMatmulSplitFusion::CreateMatmulBiasAddSplitSiluNode(const FuncGraphPtr &func_graph,
                                                                       const AnfNodePtr &node,
                                                                       const std::string &pattern_name) const {
@@ -642,8 +978,8 @@ AnfNodePtr InferenceMatmulSplitFusion::Process(const std::string &pattern_name, 
   auto manager = func_graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
 
-  auto split_cnode = node->cast<CNodePtr>();
-  MS_CHECK_TRUE_RET(split_cnode != nullptr, nullptr);
+  auto top_cnode = node->cast<CNodePtr>();
+  MS_CHECK_TRUE_RET(top_cnode != nullptr, nullptr);
   CNodePtr matmul_split_cnode = nullptr;
 
   if (pattern_name == kPatternNameMatMulSplit) {
@@ -655,7 +991,18 @@ AnfNodePtr InferenceMatmulSplitFusion::Process(const std::string &pattern_name, 
   if (pattern_name == kPatternNameQuantbatchmatmulSplit) {
     matmul_split_cnode = CreateQuantbatchmatmulSplitNode(func_graph, node, pattern_name);
   }
-
+  if (pattern_name == kPatternNameMatMulSplitSiluMul) {
+    matmul_split_cnode = CreateMatmulSplitSiluMulNode(func_graph, node, pattern_name);
+  }
+  if (pattern_name == kPatternNameMatMulSplitSiluFastgeluAddMul) {
+    matmul_split_cnode = CreateMatmulSplitSiluFastgeluAddMulNode(func_graph, node, pattern_name);
+  }
+  if (pattern_name == kPatternNameQMatMulSplitSiluMul) {
+    matmul_split_cnode = CreateQMatmulSplitSiluMulNode(func_graph, node, pattern_name);
+  }
+  if (pattern_name == kPatternNameQMatMulSplitSiluFastgeluAddMul) {
+    matmul_split_cnode = CreateQMatmulSplitSiluFastgeluAddMulNode(func_graph, node, pattern_name);
+  }
   if (pattern_name == kPatternNameMatMulSplitSilu) {
     matmul_split_cnode = CreateMatmulSplitSiluNode(func_graph, node, pattern_name);
   }
@@ -667,7 +1014,7 @@ AnfNodePtr InferenceMatmulSplitFusion::Process(const std::string &pattern_name, 
   }
   MS_CHECK_TRUE_RET(matmul_split_cnode != nullptr, nullptr);
 
-  (void)manager->Replace(split_cnode, matmul_split_cnode);
+  (void)manager->Replace(top_cnode, matmul_split_cnode);
   MS_LOG(DEBUG) << "MatmulSplit replace success";
   return matmul_split_cnode;
 }

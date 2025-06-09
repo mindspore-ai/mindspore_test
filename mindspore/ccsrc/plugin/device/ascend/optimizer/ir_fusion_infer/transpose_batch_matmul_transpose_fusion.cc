@@ -81,10 +81,12 @@ const AnfNodePtr TransposeBatchMatmulTranspose::Process(const FuncGraphPtr &func
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   if (!ms_context->IsEnableInferBoost()) {
+    MS_LOG(INFO) << "TransposeBatchMatmulTranspose failed because infer boost is off.";
     return nullptr;
   }
   auto const &soc_version = ms_context->ascend_soc_version();
   if (!soc_version.empty() && soc_version != "ascend910b" && soc_version != "ascend910_93") {
+    MS_LOG(INFO) << "TransposeBatchMatmulTranspose failed because soc is not support: " << soc_version;
     return nullptr;
   }
 
@@ -92,6 +94,7 @@ const AnfNodePtr TransposeBatchMatmulTranspose::Process(const FuncGraphPtr &func
   bool enable_fusion =
     (std::find(enable_op_list.begin(), enable_op_list.end(), "TransposeBatchMatmulTranspose") != enable_op_list.end());
   if (!enable_fusion) {
+    MS_LOG(INFO) << "TransposeBatchMatmulTranspose failed because fusion is disabled.";
     return nullptr;
   }
 
@@ -112,12 +115,15 @@ const AnfNodePtr TransposeBatchMatmulTranspose::Process(const FuncGraphPtr &func
   auto trans_a_ptr = transpose_a->cast<ValueNodePtr>();
   auto is_transpose_a = GetValue<bool>(trans_a_ptr->value());
   if (is_transpose_a) {
+    MS_LOG(INFO) << "TransposeBatchMatmulTranspose failed because transpose_a is true.";
     return nullptr;
   }
 
   ShapeVector perm_in_value = GetPermValue(transpose_in);
   ShapeVector perm_out_value = GetPermValue(transpose_out);
   if (perm_in_value != perm_out_value) {
+    MS_LOG(INFO) << "TransposeBatchMatmulTranspose failed because perm_in_value(" << perm_in_value
+                 << ") != perm_out_value(" << perm_out_value << ").";
     return nullptr;
   }
 
@@ -126,6 +132,8 @@ const AnfNodePtr TransposeBatchMatmulTranspose::Process(const FuncGraphPtr &func
   const ShapeVector perm_4d = {0, 2, 1, 3};
   if (!(input_x.size() == perm_3d.size() && perm_in_value == perm_3d) &&
       !(input_x.size() == perm_4d.size() && perm_in_value == perm_4d)) {
+    MS_LOG(INFO) << "TransposeBatchMatmulTranspose failed because xxxx, input_x: " << input_x
+                 << ", perm_in_value: " << perm_in_value;
     return nullptr;
   }
 

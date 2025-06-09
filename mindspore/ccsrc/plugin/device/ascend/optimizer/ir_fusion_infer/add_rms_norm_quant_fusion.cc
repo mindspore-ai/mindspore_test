@@ -84,10 +84,10 @@ inline bool CheckSupport(size_t rms_norm_out0_users_size, const AnfNodePtr &node
   if ((rms_norm_out0_users_size > kRmsNormOutUserSize1)) {
     auto shape = tensor_quant_shape->GetShapeVector();
     constexpr auto kMaxDimLimited = 8192;
-    constexpr auto kMinDimLimited = 4000;
+    constexpr auto kMinDimLimited = 2048;
     if (shape.empty() || shape[shape.size() - 1] == abstract::Shape::kShapeDimAny ||
         shape[shape.size() - 1] > kMaxDimLimited || shape[shape.size() - 1] < kMinDimLimited) {
-      MS_LOG(INFO) << "AddRmsNormQuant fused failed shen need_rms_norm_out is true and shape is: " << shape
+      MS_LOG(INFO) << "AddRmsNormQuant fused failed when need_rms_norm_out is true and shape is: " << shape
                    << ", because the kernel does not support.";
       return false;
     }

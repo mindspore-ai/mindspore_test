@@ -1031,7 +1031,7 @@ void KernelActor::SetMemInfoForRdr() {
 }
 
 void KernelActor::CopyInputDeviceTensor(KernelTensorPtr kernel_tensor, size_t input_index,
-                                        bool is_infer_boost_parameter, OpContext<KernelTensor> *const context) {
+                                        OpContext<KernelTensor> *const context) {
   // The ignored input address that is not used in the kernel launch and no need copy.
   MS_EXCEPTION_IF_NULL(kernel_tensor);
   auto device_tensor = kernel_tensor->device_address().get();
@@ -1057,16 +1057,9 @@ void KernelActor::CopyInputDeviceTensor(KernelTensorPtr kernel_tensor, size_t in
     return;
   }
 
-  uint64_t start_time = 0;
-  PROFILER_START(start_time);
   if (!WaitRuntimePipelineFinish(context, GetAID().Name())) {
     MS_LOG(INFO) << "Run failed and early stop for kernel: " << kernel_->fullname_with_scope();
     return;
-  }
-  if (is_infer_boost_parameter) {
-    std::string error_info =
-      GetAID().Name() + " not support copy input parameter for infer boost, input index " + std::to_string(input_index);
-    SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(strategy_, *context, error_info);
   }
   if (inputs_continuous_memory_) {
     std::string error_info = GetAID().Name() + " inputs must be continuous memory and can't be copied for index " +
@@ -1151,8 +1144,133 @@ void KernelActor::CopyInputDeviceTensor(KernelTensorPtr kernel_tensor, size_t in
                   << " type:" << device_tensor->GetDeviceType() << " for copy actor:" << GetAID();
     KernelTensorCopyStore::GetInstance().Insert(new_kernel_tensor.get(), kernel_tensor.get());
   }
+}
+
+void KernelActor::CopyParameterDeviceTensor(KernelTensorPtr kernel_tensor, size_t input_index,
+                                            OpContext<KernelTensor> *const context, size_t stream_id) {
+  // The ignored input address that is not used in the kernel launch and no need copy.
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
+  auto device_tensor = kernel_tensor->device_address();
+  MS_EXCEPTION_IF_NULL(device_tensor);
+  if (!launch_ignored_inputs_.empty() && (std::find(launch_ignored_inputs_.begin(), launch_ignored_inputs_.end(),
+                                                    input_index) != launch_ignored_inputs_.end())) {
+    MS_LOG(DEBUG) << GetAID().Name() << " ignore the input address for input index: " << input_index;
+    return;
+  }
+  if (skip_launch_shape_related_op_) {
+    return;
+  }
+  if (input_index >= real_input_data_infos_.size()) {
+    std::stringstream ofs;
+    ofs << "Invalid input index:" << input_index << " size:" << real_input_data_infos_.size()
+        << " for actor:" << GetAID();
+    SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(strategy_, *context, ofs.str());
+  }
+  auto &real_input_info = real_input_data_infos_[input_index];
+  if ((device_tensor->GetDeviceType() == device_contexts_[0]->GetDeviceType()) &&
+      AnfAlgo::IsEquivalentFormat(kernel_tensor->format(), real_input_info->format_) &&
+      device_tensor->type_id() == real_input_info->type_id_) {
+    return;
+  }
+
+  uint64_t start_time = 0;
+  PROFILER_START(start_time);
+  if (!WaitRuntimePipelineFinish(context, GetAID().Name())) {
+    MS_LOG(INFO) << "Run failed and early stop for kernel: " << kernel_->fullname_with_scope();
+    return;
+  }
+  if (inputs_continuous_memory_) {
+    std::string error_info = GetAID().Name() + " inputs must be continuous memory and can't be copied for index " +
+                             std::to_string(input_index);
+    SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(strategy_, *context, error_info);
+  }
+  if (input_index >= copy_input_kernel_tensors_.size()) {
+    std::stringstream ofs;
+    ofs << "Invalid input index:" << input_index
+        << " copy input device tensor size:" << copy_input_kernel_tensors_.size() << " for actor:" << GetAID();
+    SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(strategy_, *context, ofs.str());
+  }
+  if (copy_input_kernel_tensors_[input_index] == nullptr) {
+    const auto &pre_kernel_tensor = kernel_tensor;
+    MS_EXCEPTION_IF_NULL(pre_kernel_tensor);
+    auto new_kernel_tensor = AnfAlgo::CreateKernelTensor(
+      pre_kernel_tensor->GetShape(), pre_kernel_tensor->GetType(), pre_kernel_tensor->GetValueTrack(), nullptr,
+      real_input_info->size_, kernel::GetFormatFromEnumToStr(real_input_info->format_), real_input_info->type_id_,
+      real_input_info->shape_, device_contexts_[0]->device_context_key().device_name_,
+      device_contexts_[0]->device_context_key().device_id_, device_tensor->user_data());
+    MS_EXCEPTION_IF_NULL(new_kernel_tensor);
+    auto pre_stream_id = pre_kernel_tensor->stream_id();
+    if (pre_stream_id == UINT32_MAX) {
+      auto stream_id = kernel_info_->stream_id();
+      MS_LOG(DEBUG) << "Rewrite kernel tensor : " << new_kernel_tensor
+                    << " stream id with kernel info stream id : " << stream_id << ".";
+      new_kernel_tensor->set_stream_id(stream_id);
+    } else {
+      MS_LOG(DEBUG) << "Rewrite kernel tensor : " << new_kernel_tensor
+                    << " stream id with pre kernel tensor stream id : " << pre_stream_id << ".";
+      new_kernel_tensor->set_stream_id(pre_stream_id);
+    }
+
+    copy_input_kernel_tensors_[input_index] = new_kernel_tensor;
+    MS_LOG(DEBUG) << "Create copy kernel tensor:" << copy_input_kernel_tensors_[input_index]->ToString()
+                  << " index:" << input_index << " for actor:" << GetAID();
+  }
+  auto &new_kernel_tensor = copy_input_kernel_tensors_[input_index];
+  MS_EXCEPTION_IF_NULL(new_kernel_tensor);
+  auto &new_device_tensor = new_kernel_tensor->device_address();
+  MS_EXCEPTION_IF_NULL(new_device_tensor);
+  new_device_tensor->set_need_sync_user_data(device_tensor->need_sync_user_data());
+  MS_LOG(DEBUG) << "Prev stream id : " << input_kernel_tensors_[input_index]->device_address()->stream_id()
+                << " new stream id : " << new_device_tensor->stream_id() << ".";
+  // Update the input kernel tensor.
+  input_launch_tensors_[input_index] = new_kernel_tensor.get();
+  pre_input_kernel_tensors_[input_index] = kernel_tensor;
+  input_kernel_tensors_[input_index] = new_kernel_tensor;
+  if (is_dynamic_shape_) {
+    // Need update shape and size for dynamic shape case.
+    input_kernel_tensors_for_infer_[input_index] = input_kernel_tensors_[input_index];
+    MS_EXCEPTION_IF_NULL(input_kernel_tensors_[input_index]);
+    MS_EXCEPTION_IF_NULL(kernel_tensor);
+    MS_EXCEPTION_IF_NULL(kernel_tensor->GetShape());
+    input_kernel_tensors_[input_index]->SetShape(kernel_tensor->GetShape()->Clone());
+    input_kernel_tensors_[input_index]->set_size(device_tensor->GetSize());
+  }
+
+  if (new_device_tensor->GetSize() == 0 || device_tensor->GetSize() == 0) {
+    MS_LOG(DEBUG) << "Input size is 0, new_device_tensor size: " << new_device_tensor->GetSize()
+                  << ", device_tensor size: " << device_tensor->GetSize() << ".";
+    return;
+  }
+
+  if (new_device_tensor->GetPtr() == nullptr) {
+    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, GetAID().Name(), memory::mem_pool::MemType::kOther,
+                                                   new_device_tensor->GetSize(), new_device_tensor.get());
+    if (!device_contexts_[0]->device_res_manager_->AllocateMemory(new_device_tensor.get(), kDefaultStreamIndex)) {
+      SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(strategy_, *context, *(device_contexts_[0]), GetAID().Name(),
+                                                  new_device_tensor->GetSize());
+    }
+    MS_LOG(DEBUG) << "Increase new ref count for device address:" << new_device_tensor << " in actor:" << GetAID();
+  }
+
+  MS_LOG(INFO) << GetAID().Name() << " the input position:" << input_index
+               << " copy from kernel tensor:" << kernel_tensor->ToString()
+               << " to kernel tensor:" << new_kernel_tensor->ToString();
+  // Copy from the real parameter to formal parameter and insert the device tensor copy store.
+  auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
+  if (!AsyncCopy(new_device_tensor.get(), device_tensor.get(), stream_id)) {
+    MS_LOG(EXCEPTION) << "Async copy failed, src kernel tensor: " << kernel_tensor->ToString()
+                      << ", dst kernel tensor: " << new_kernel_tensor->ToString();
+  }
+  graph_parameter_store->InsertDeviceTensorIntoCallback(device_tensor);
+
+  if (modifiable_ref_input_indexes_.count(input_index) > 0) {
+    MS_LOG(DEBUG) << "Add device tensor copy store for device address:" << new_device_tensor
+                  << " type:" << new_device_tensor->GetDeviceType() << " and " << device_tensor
+                  << " type:" << device_tensor->GetDeviceType() << " for copy actor:" << GetAID();
+    KernelTensorCopyStore::GetInstance().Insert(new_kernel_tensor.get(), kernel_tensor.get());
+  }
   PROFILER_END(start_time, runtime::ProfilerModule::kKernel, runtime::ProfilerEvent::kPreLaunch,
-               "CopyInputDeviceTensor", false);
+               "CopyParameterDeviceTensor", false);
 }
 
 void KernelActor::UpdateInputDeviceTensor(const OpData<KernelTensor> *input_data,
@@ -1188,7 +1306,7 @@ void KernelActor::FetchInputDeviceTensor(OpContext<KernelTensor> *const context)
   if (data_iter != input_op_datas_.end()) {
     for (auto &input_data : data_iter->second) {
       UpdateInputDeviceTensor(input_data, context);
-      CopyInputDeviceTensor(input_data->data_, IntToSize(input_data->index_), false, context);
+      CopyInputDeviceTensor(input_data->data_, IntToSize(input_data->index_), context);
     }
   }
 
