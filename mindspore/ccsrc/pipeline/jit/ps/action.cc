@@ -761,8 +761,7 @@ bool ParseAction(const ResourcePtr &resource) {
 
   auto top_graph = converted_ret->cast<FuncGraphPtr>();
   if (top_graph == nullptr) {
-    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, top_graph->return_node())
-      << "Object to parse " << std::string(py::str(input)) << " is not function or cell.";
+    MS_LOG(INTERNAL_EXCEPTION) << "Object to parse " << std::string(py::str(input)) << " is not function or cell.";
   }
   if (py::hasattr(input, parse::PYTHON_PARSE_METHOD) || py::hasattr(input, "__jit_function__")) {
     (void)std::for_each(top_graph->parameters().begin(), top_graph->parameters().end(),
@@ -826,6 +825,7 @@ bool CombineLikeGraphs(const ResourcePtr &resource) {
     MS_LOG(DEBUG) << "Fg0 parameter_obj_nodes size :" << fg->parameter_obj_nodes().size();
 
     for (auto &g : graphs) {
+      MS_EXCEPTION_IF_NULL(fg->output());
       TraceGuard guard(MakeTraceInfo<TraceCopy>(fg->output()->debug_info()));
       auto &fvs = g->parameter_obj_nodes();
       std::vector<AnfNodePtr> new_node_inputs;

@@ -1144,6 +1144,7 @@ CNodePtr GradOperation::SetNodeByParameter(const CNodePtr &grad, const FuncGraph
       auto weight_ref = dyn_cast<abstract::AbstractRefTensor>(elements[i]);
       if (weight_ref != nullptr) {
         auto weight_key = weight_ref->ref_key_value()->cast<RefKeyPtr>();
+        MS_EXCEPTION_IF_NULL(weight_key);
         auto param_name = weight_key->value();
         auto grad_value =
           fg->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), grad, NewValueNode(static_cast<int64_t>(i))});
