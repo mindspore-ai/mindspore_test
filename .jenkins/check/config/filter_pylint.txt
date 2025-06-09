@@ -107,6 +107,7 @@
 "mindspore/mindspore/python/mindspore/_extends/parse/standard_method.py"                                                 "len-as-condition"
 "mindspore/mindspore/python/mindspore/_extends/parse/standard_method.py"                                                 "redefined-outer-name"
 "mindspore/mindspore/python/mindspore/common/tensor.py"                                                                  "redefined-builtin"
+"mindspore/mindspore/python/mindspore/common/symbol.py"                                                                  "missing-docstring"
 "mindspore/mindspore/python/mindspore/ops/function/array_func.py"                                                        "redefined-builtin"
 "mindspore/mindspore/python/mindspore/ops/function/math_func.py"                                                         "bad-continuation"
 "mindspore/mindspore/python/mindspore/ops/operations/array_ops.py"                                                       "redefined-builtin"
