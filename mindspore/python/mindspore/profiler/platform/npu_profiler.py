@@ -18,7 +18,6 @@ import glob
 import json
 from typing import List, Optional
 
-from mindspore import context
 from mindspore import log as logger
 import mindspore._c_dataengine as cde
 import mindspore._c_expression as c_expression
@@ -88,7 +87,6 @@ class NpuProfiler(BaseProfiler):
         # record original profiler params
         self._prof_info.profiler_parameters = self._prof_ctx.original_params
         self._prof_info.ms_profiler_info = {
-            "context_mode": context.get_context("mode"),
             "rank_id": self._prof_ctx.rank_id,
             "device_id": self._prof_ctx.device_id,
         }
@@ -225,7 +223,6 @@ class NPUProfilerAnalysis:
         prof_ctx.set_params()
         prof_ctx.load_offline_profiler_params(prof_info.profiler_parameters)
         prof_ctx.jit_level = prof_info.jit_level
-        prof_ctx.context_mode = prof_info.context_mode
 
         if ProfilerActivity.NPU in prof_ctx.activities:
             prof_dir = glob.glob(os.path.join(ascend_ms_dir, "PROF_*"))
