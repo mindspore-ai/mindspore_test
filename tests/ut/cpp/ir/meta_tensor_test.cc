@@ -245,7 +245,7 @@ TEST_F(TestTensor, ValueEqualTest) {
   ASSERT_FALSE(t3->ValueEqual(*t1));
   ASSERT_FALSE(t1->ValueEqual(*t3));
 
-  memcpy_s(t3->data_c(), t3->data().nbytes(), t1->data_c(), t1->data().nbytes());
+  memcpy_s(t3->data_c(), t3->DataNBytes(), t1->data_c(), t1->DataNBytes());
   ASSERT_TRUE(t1->ValueEqual(*t3));
   ASSERT_FALSE(t3->ValueEqual(*t4));
   ASSERT_FALSE(t4->ValueEqual(*t3));
@@ -352,7 +352,7 @@ TEST_F(TestTensor, TensorDataTest) {
   float *me_tensor_data = reinterpret_cast<float *>(tensor.data_c());
 
   // Copy data from buffer to tensor's data
-  errno_t ret = memcpy_s(me_tensor_data, tensor.data().nbytes(), ge_tensor_data, sizeof(ge_tensor_data));
+  errno_t ret = memcpy_s(me_tensor_data, tensor.DataNBytes(), ge_tensor_data, sizeof(ge_tensor_data));
   ASSERT_EQ(0, ret);
 
   // Testify if the data has been copied to the tensor data
@@ -416,28 +416,28 @@ TEST_F(TestTensor, TensorSetShapeDataTest) {
   Tensor tensor(TypeId::kNumberTypeInt64, std::vector<int64_t>(old_shape));
   tensor.set_shape(old_shape);
   ASSERT_EQ(6, tensor.DataSize());
-  ASSERT_EQ(nullptr, tensor.data().const_data());
+  ASSERT_EQ(nullptr, tensor.unsafe_data());
 
   // Init a data buffer
   int64_t ge_tensor_data[] = {1, 2, 3, 4, 5, 6};
   // Get the writable data pointer from the tensor
   int64_t *tensor_data = reinterpret_cast<int64_t *>(tensor.data_c());
   // Copy data from buffer to tensor's data
-  errno_t ret = memcpy_s(tensor_data, tensor.data().nbytes(), ge_tensor_data, sizeof(ge_tensor_data));
+  errno_t ret = memcpy_s(tensor_data, tensor.DataNBytes(), ge_tensor_data, sizeof(ge_tensor_data));
   ASSERT_EQ(0, ret);
-  ASSERT_NE(nullptr, tensor.data().const_data());
+  ASSERT_NE(nullptr, tensor.unsafe_data());
 
   // Shape change larger
   std::vector<int64_t> large_shape({3, 4});
   tensor.set_shape(large_shape);
   ASSERT_EQ(12, tensor.DataSize());
-  ASSERT_EQ(nullptr, tensor.data().const_data());
+  ASSERT_EQ(nullptr, tensor.unsafe_data());
 
   // Shape change litter
   std::vector<int64_t> little_shape({1, 2});
   tensor.set_shape(little_shape);
   ASSERT_EQ(2, tensor.DataSize());
-  ASSERT_EQ(nullptr, tensor.data().const_data());
+  ASSERT_EQ(nullptr, tensor.unsafe_data());
 }
 
 /// Feature: Tensor offload
@@ -448,20 +448,20 @@ TEST_F(TestTensor, TensorOffloadTest) {
   std::vector<int64_t> tensor_shape({2, 3});
   Tensor tensor(TypeId::kNumberTypeInt64, tensor_shape);
   ASSERT_EQ(6, tensor.DataSize());
-  ASSERT_EQ(nullptr, tensor.data().const_data());
+  ASSERT_EQ(nullptr, tensor.unsafe_data());
 
   // Init a data buffer
   int64_t init_data[] = {1, 2, 3, 4, 5, 6};
-  errno_t ret = memcpy_s(tensor.data_c(), tensor.data().nbytes(), init_data, sizeof(init_data));
+  errno_t ret = memcpy_s(tensor.data_c(), tensor.DataNBytes(), init_data, sizeof(init_data));
   ASSERT_EQ(0, ret);
-  ASSERT_NE(nullptr, tensor.data().const_data());
+  ASSERT_NE(nullptr, tensor.unsafe_data());
   auto const kTmpFilePath = "./test_file_path";
   tensor.Offload(kTmpFilePath);
   ASSERT_EQ(tensor.GetOffloadFilePath(), kTmpFilePath);
 
   // Check tensor data
   int64_t load_data[] = {0, 0, 0, 0, 0, 0};
-  ret = memcpy_s(load_data, tensor.data().nbytes(), tensor.data_c(), sizeof(load_data));
+  ret = memcpy_s(load_data, tensor.DataNBytes(), tensor.data_c(), sizeof(load_data));
   ASSERT_EQ(0, ret);
   const size_t kElemNum = 6;
   for (size_t i = 0; i < kElemNum; ++i) {
