@@ -27,9 +27,9 @@ from collections import defaultdict, OrderedDict
 import time
 import multiprocessing as mp
 
+from safetensors.numpy import save_file, load_file
 import psutil
 import numpy as np
-from safetensors.numpy import save_file, load_file
 
 import mindspore as ms
 from mindspore import log as logger
@@ -217,7 +217,11 @@ class _fast_safe_open:
         self.framework = framework
         self.file = open(self.filename, "rb")
         self.file_mmap = mmap.mmap(self.file.fileno(), 0, access=mmap.ACCESS_COPY)
-        self.base, self.tensors_decs, self.__metadata__ = read_metadata(self.file)
+        try:
+            self.base, self.tensors_decs, self.__metadata__ = read_metadata(self.file)
+        except ValueError:
+            raise ValueError(f"Fail to parse the input safetensors file: '{self.filename}'. "
+                             f"Please check the correctness of the file.")
         self.tensors = OrderedDict()
         for key, info in self.tensors_decs.items():
             self.tensors[key] = PySafeSlice(info, self.file, self.base, self.file_mmap)
