@@ -94,7 +94,6 @@ class BACKEND_COMMON_EXPORT DumpJsonParser {
   void UpdateNeedDumpKernels(const session::KernelGraph &kernel_graph);
   bool IsDumpEnabled();
   bool IsDeviceCalcStats() const;
-  void PyNativeModeCheck();
   void CheckE2eSetting();
   bool IsHCCLKernelInput(const std::string &kernel_name) const;
   bool IsCallbackRegistered() { return dumpdatacallback_registered_; }
