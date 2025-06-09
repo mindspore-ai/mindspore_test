@@ -101,8 +101,7 @@ class PIJitCaptureContext:
             fn.construct = self(fn.construct)
             return fn
         if isinstance(fn, mindspore.nn.Cell):
-            fn.construct = types.MethodType(self(fn.construct.__func__), fn)
-            return fn
+            return types.MethodType(self(fn.construct.__func__), fn)
         if isinstance(fn, types.MethodType):
             return types.MethodType(self(fn.__func__), fn.__self__)
         if not isinstance(fn, types.FunctionType) or self._is_unsupported(fn):
