@@ -143,9 +143,12 @@ class LRScheduler:
 
 @jit_class
 class StepLR(LRScheduler):
-    """Decays the learning rate of each parameter group by gamma every
-    step_size epochs. Notice that such decay can happen simultaneously with
-    other changes to the learning rate from outside this scheduler.
+    """
+    During training, when calling `StepLR.step()` , if the current epoch number is an integer multiple of `step_size` ,
+    the learning rate will be decayed by multiplying it with `gamma` . The adjustment of the learning rate and
+    the parameter update of the optimizer are synergistically performed. The optimizer executes parameter optimization
+    operations based on the currently adjusted learning rate. The learning rate decay of StepLR may occur simultaneously
+    with external changes to the learning rate.
 
     .. warning::
         This is an experimental lr scheduler module that is subject to change.
