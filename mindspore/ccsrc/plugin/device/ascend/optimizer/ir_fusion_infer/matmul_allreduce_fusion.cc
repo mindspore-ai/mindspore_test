@@ -36,6 +36,7 @@
 #include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+// #include "plugin/res_manager/ascend/collective/multi_ascend_collective_comm_lib.h"
 
 namespace mindspore::opt {
 enum MC2FusionLevel { kMC2NotFusion = 0, kMC2FusionForward = 1, kMC2FusionBackward = 2, kMC2FusionFull = 3 };
@@ -171,11 +172,11 @@ AnfNodePtr MatMulAllReduceFusion::CreateMatMulAllReduceNode(const FuncGraphPtr &
   auto kernel_graph = func_graph->cast<KernelGraphPtr>();
   MS_EXCEPTION_IF_NULL(kernel_graph);
 
-  if (IsKbkAclnnMode(kernel_graph)) {
-    auto is_trans_a = GetInputValueFromCNode<bool>(matmul_cnode, kIndex3);
-    // current only support b tans
-    MS_CHECK_TRUE_RET(!is_trans_a, {});
+  auto is_trans_a = GetInputValueFromCNode<bool>(matmul_cnode, kIndex3);
+  // current only support b tanspose for mc2 and lccl fusion
+  MS_CHECK_TRUE_RET(!is_trans_a, {});
 
+  if (IsKbkAclnnMode(kernel_graph)) {
     // X1 supports two or three dimensions, and X2 supports only two dimensions
     MS_CHECK_TRUE_RET(GetShape(input_x_node).size() == kSizeTwo || GetShape(input_x_node).size() == kSizeThree, {});
     MS_CHECK_TRUE_RET(GetShape(input_y_node).size() == kSizeTwo, {});
@@ -239,6 +240,14 @@ const AnfNodePtr MatMulAllReduceFusion::Process(const mindspore::FuncGraphPtr &f
   MS_EXCEPTION_IF_NULL(func_graph);
   auto kernel_graph = func_graph->cast<KernelGraphPtr>();
   MS_EXCEPTION_IF_NULL(kernel_graph);
+  auto allreduce_cnode = node->cast<CNodePtr>();
+  MS_ASSERT(allreduce_cnode != nullptr);
+  if (allreduce_cnode->size() != kSizeTwo) {
+    return nullptr;
+  }
+
+  auto matmul_cnode = allreduce_cnode->input(kIndex1)->cast<CNodePtr>();
+  MS_ASSERT(matmul_cnode != nullptr);
   if (IsKbkAclnnMode(kernel_graph)) {
     if (!IsSupportFusion(node)) {
       return nullptr;
@@ -253,9 +262,6 @@ const AnfNodePtr MatMulAllReduceFusion::Process(const mindspore::FuncGraphPtr &f
     }
     auto ms_context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(ms_context);
-    if (!ms_context->IsEnableInferBoost()) {
-      return nullptr;
-    }
 
     auto phase = PhaseManager::GetInstance().phase();
     bool enable_lccl = device::ascend::AscendHalManager::GetInstance().EnableLccl();
@@ -273,10 +279,6 @@ const AnfNodePtr MatMulAllReduceFusion::Process(const mindspore::FuncGraphPtr &f
   }
 
   if (func_graph == nullptr || node == nullptr) {
-    return nullptr;
-  }
-  auto allreduce_cnode = node->cast<CNodePtr>();
-  if (allreduce_cnode->size() != kSizeTwo) {
     return nullptr;
   }
 

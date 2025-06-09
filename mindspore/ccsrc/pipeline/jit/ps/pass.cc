@@ -44,10 +44,12 @@
 #include "frontend/parallel/step_auto_parallel.h"
 #include "frontend/parallel/graph_util/pipeline_split_utils.h"
 #include "frontend/parallel/pipeline_transformer/pipeline_scheduler.h"
+#include "frontend/parallel/pipeline_transformer/detach_backward.h"
 #include "frontend/parallel/pipeline_transformer/pipeline_interleave.h"
 #include "frontend/parallel/pipeline_transformer/gpipe_interleave_scheduler.h"
 #include "frontend/parallel/pass/merge_comm.h"
 #include "frontend/parallel/pass/merge_send_recv.h"
+#include "frontend/parallel/pass/merge_recompute_call_nodes.h"
 #include "frontend/parallel/pass/set_forward_comm_id_for_comm_node.h"
 #include "frontend/parallel/cache_embedding/cache_embedding.h"
 #include "frontend/parallel/cache_embedding/ps_embedding_cache_inserter.h"
@@ -85,6 +87,7 @@
 #include "frontend/parallel/pipeline_transformer/pipeline_transformer.h"
 #include "frontend/parallel/pass/overlap_grad_comm.h"
 #include "frontend/parallel/pass/overlap_param_gather.h"
+#include "frontend/parallel/pass/overlap_recompute_comm.h"
 #include "frontend/optimizer/recompute.h"
 #include "frontend/optimizer/irpass/recompute.h"
 #include "frontend/optimizer/slice_activation_in_recompute.h"
@@ -644,6 +647,7 @@ OptPassGroupMap GetOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass, cons
      {"offload_activation", opt::OptPassConfig(OffloadActivationWrapper)},
      {"cell_reuse_recompute_pass", opt::OptPassConfig(opt::irpass::Recomputation())},
      {"cell_reuse_handle_not_recompute_node_pass", cell_reuse_handle_not_recompute_node_pass},
+     {"merge_recompute_call_nodes", opt::OptPassConfig(parallel::MergeRecomputeCallNodes)},
      {"before_grad", before_grad},
      {kSetForwardCommIdForCommNodePass, opt::OptPassConfig(parallel::SetForwardCommIdForCommNode)},
      {kMetaFgExpandFlag, opt::OptPassConfig(opt::irpass::ExpandMetaFg())},
@@ -1116,6 +1120,15 @@ bool OverlapRecomputeAllGatherAndFlashAttentionGradPass(const ResourcePtr &resou
   return true;
 }
 
+bool OverlapRecomputeCommPass(const ResourcePtr &resource) {
+  MS_EXCEPTION_IF_NULL(resource);
+  if (IsPassDisableForGPTO()) {
+    return true;
+  }
+  parallel::OverlapRecomputeComm(resource->func_graph());
+  return true;
+}
+
 bool OverlapGradRingAttentionPass(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
   if (IsPassDisableForGPTO()) {
@@ -1512,6 +1525,36 @@ bool PipelineSplitPass(const ResourcePtr &resource) { return PipelineSplit(resou
 
 bool ParallelVirtualDatasetPass(const ResourcePtr &resource) { return ParallelVirtualDataset(resource); }
 
+bool DetachBackward(const ResourcePtr &resource) {
+  MS_EXCEPTION_IF_NULL(resource);
+  auto parallel_context = parallel::ParallelContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(parallel_context);
+  auto parallel_mode = parallel_context->parallel_mode();
+  if (parallel_mode != parallel::kSemiAutoParallel && parallel_mode != parallel::kAutoParallel) {
+    MS_LOG(INFO) << "Only auto_parallel and semi_auto_parallel support detach backward graph.";
+    return true;
+  }
+  auto pp_scheduler = parallel_context->pipeline_scheduler();
+  auto stage_num = parallel_context->pipeline_stage_split_num();
+  if (pp_scheduler == parallel::ZBV && stage_num > 1) {
+    auto manager = resource->manager();
+    auto root = resource->func_graph();
+    auto stage = parallel::InferStage();
+    std::shared_ptr<parallel::DetachBackward> processor =
+      std::make_shared<parallel::DetachBackward>(manager, root, stage);
+    processor->Init();
+    processor->Run();
+    abstract::AbstractBasePtrList args_abs;
+    auto parameters = root->parameters();
+    (void)std::transform(parameters.begin(), parameters.end(), std::back_inserter(args_abs),
+                         [](const AnfNodePtr &p) -> AbstractBasePtr { return p->abstract(); });
+    FuncGraphPtr new_fg = pipeline::Renormalize(resource, root, args_abs);
+    resource->set_func_graph(new_fg);
+    resource->set_args_abs(args_abs);
+  }
+  return true;
+}
+
 bool PipelineParallelScheduler(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
   auto root = resource->func_graph();
@@ -1797,6 +1840,7 @@ std::vector<PassItem> kVmPasses = {
   {"overlap_recompute_and_grad_model_parallel", OverlapRecomputeAndGradModelParallel},
   {"overlap_grad_matmul_and_grad_allreduce", OverlapGradMatmulAndGradAllreduce},
   {"overlap_recompute_allgather_and_fa_grad", OverlapRecomputeAllGatherAndFlashAttentionGradPass},
+  {"overlap_recompute_comm", OverlapRecomputeCommPass},
   {"overlap_grad_ring_attention", OverlapGradRingAttentionPass},
   {"overlap_grad_flash_sp", OverlapGradFlashSP},
   {"begin_end_overlap_inline", BeginEndOverlapInlinePass},

@@ -26,26 +26,26 @@ using mindspore::device::ascend::FASInputLayoutMode;
 namespace kernel {
 namespace pyboost {
 namespace {
-bool CheckSeqList(const std::vector<int64_t> &seq_list, const ShapeVector &t_shape) {
-  if (t_shape.empty()) {
-    return false;
-  }
-  bool is_increased = true;
-  auto num = seq_list.size();
-  for (size_t i = 1; i < num; ++i) {
-    if (seq_list[i] < seq_list[i - 1]) {
-      is_increased = false;
-      break;
-    }
-  }
-  return is_increased && seq_list[num - 1] == t_shape[0];
-}
+// bool CheckSeqList(const std::vector<int64_t> &seq_list, const ShapeVector &t_shape) {
+//   if (t_shape.empty()) {
+//     return false;
+//   }
+//   bool is_increased = true;
+//   auto num = seq_list.size();
+//   for (size_t i = 1; i < num; ++i) {
+//     if (seq_list[i] < seq_list[i - 1]) {
+//       is_increased = false;
+//       break;
+//     }
+//   }
+//   return is_increased && seq_list[num - 1] == t_shape[0];
+// }
 void FlashAttentionScoreAscendCall(
   const std::shared_ptr<OpRunner> &op, const device::DeviceContext *device_context, const TensorPtr &query,
   const TensorPtr &key, const TensorPtr &value, const std::optional<TensorPtr> &real_shift,
   const std::optional<TensorPtr> &drop_mask, const std::optional<TensorPtr> &padding_mask,
   const std::optional<TensorPtr> &attn_mask, const std::optional<ValueTuplePtr> &prefix,
-  const std::optional<ValueTuplePtr> &actual_seq_qlen, const std::optional<ValueTuplePtr> &actual_seq_kvlen,
+  const std::optional<TensorPtr> &actual_seq_qlen, const std::optional<TensorPtr> &actual_seq_kvlen,
   const Int64ImmPtr head_num, const FP32ImmPtr keep_prob, const FP32ImmPtr scale_value, const Int64ImmPtr pre_tokens,
   const Int64ImmPtr next_tokens, const Int64ImmPtr inner_precise, const Int64ImmPtr input_layout,
   const Int64ImmPtr sparse_mode, const std::vector<tensor::TensorPtr> &outputs) {
@@ -74,15 +74,15 @@ void FlashAttentionScoreAscendCall(
       MS_LOG(EXCEPTION) << "For [aclnnFlashAttentionVarLenScore], actual_seq_qlen and actual_seq_kvlen must be not "
                            "none when input layout is TND.";
     }
-    std::vector<int64_t> actual_seq_qlen_array = ConvertValueTupleToVector<int64_t>(actual_seq_qlen.value());
-    std::vector<int64_t> actual_seq_kvlen_array = ConvertValueTupleToVector<int64_t>(actual_seq_kvlen.value());
-    if (!CheckSeqList(actual_seq_qlen_array, query->shape_c()) ||
-        !CheckSeqList(actual_seq_kvlen_array, key->shape_c())) {
-      MS_LOG(EXCEPTION)
-        << "For actual_seq_qlen and actual_seq_kvlen, must be increasing array and the last number is equal to T.";
-    }
+    // std::vector<int64_t> actual_seq_qlen_array = ConvertValueTupleToVector<int64_t>(actual_seq_qlen.value());
+    // std::vector<int64_t> actual_seq_kvlen_array = ConvertValueTupleToVector<int64_t>(actual_seq_kvlen.value());
+    // if (!CheckSeqList(actual_seq_qlen_array, query->shape_c()) ||
+    //     !CheckSeqList(actual_seq_kvlen_array, key->shape_c())) {
+    //   MS_LOG(EXCEPTION)
+    //     << "For actual_seq_qlen and actual_seq_kvlen, must be increasing array and the last number is equal to T.";
+    // }
     LAUNCH_ACLNN(aclnnFlashAttentionVarLenScore, device_context, op->stream_id(), query, key, value, real_shift,
-                 drop_mask, padding_mask, attn_mask, prefix_array, actual_seq_qlen_array, actual_seq_kvlen_array,
+                 drop_mask, padding_mask, attn_mask, prefix_array, actual_seq_qlen, actual_seq_kvlen,
                  scale_value_value, keep_prob_value, pre_tokens_value, next_tokens_value, head_num_value,
                  input_layout_string, inner_precise_value, sparse_mode_value, outputs[kIndex0], outputs[kIndex1],
                  outputs[kIndex2], outputs[kIndex3]);
@@ -99,8 +99,8 @@ tensor::TensorPtr FlashAttentionScoreAscendCustomize(
   const std::shared_ptr<OpRunner> &op, const TensorPtr &query, const TensorPtr &key, const TensorPtr &value,
   const std::optional<TensorPtr> &real_shift, const std::optional<TensorPtr> &drop_mask,
   const std::optional<TensorPtr> &padding_mask, const std::optional<TensorPtr> &attn_mask,
-  const std::optional<ValueTuplePtr> &prefix, const std::optional<ValueTuplePtr> &actual_seq_qlen,
-  const std::optional<ValueTuplePtr> &actual_seq_kvlen, const Int64ImmPtr head_num, const FP32ImmPtr keep_prob,
+  const std::optional<ValueTuplePtr> &prefix, const std::optional<TensorPtr> &actual_seq_qlen,
+  const std::optional<TensorPtr> &actual_seq_kvlen, const Int64ImmPtr head_num, const FP32ImmPtr keep_prob,
   const FP32ImmPtr scale_value, const Int64ImmPtr pre_tokens, const Int64ImmPtr next_tokens,
   const Int64ImmPtr inner_precise, const Int64ImmPtr input_layout, const Int64ImmPtr sparse_mode) {
   OpRunner::InferOpOutput(op, query, key, value, real_shift, drop_mask, padding_mask, attn_mask, prefix,

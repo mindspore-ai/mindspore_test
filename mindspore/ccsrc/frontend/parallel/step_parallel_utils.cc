@@ -3755,6 +3755,71 @@ void InsertVirtualOutput(const FuncGraphPtr &root, const std::vector<AnfNodePtr>
   }
 }
 
+AnfNodePtr ParamNodeForMoveMirror(const CNodePtr &micro_mirror) {
+  return GetInputNodeWithFilter(micro_mirror, [&](const CNodePtr &cnode) {
+    bool filter = IsPrimitiveCNode(cnode, prim::kPrimMirrorMicroStep) || IsPrimitiveCNode(cnode, prim::kPrimLoad) ||
+                  IsPrimitiveCNode(cnode, prim::kPrimDepend) || IsPrimitiveCNode(cnode, prim::kPrimMicroStepAllGather);
+    return std::make_pair(filter, 1);
+  });
+}
+
+AnfNodePtr MoveSingeMirrorOutCallFunc(const CNodePtr &micro_mirror) {
+  auto param_anf_node = ParamNodeForMoveMirror(micro_mirror);
+  if (!param_anf_node->isa<Parameter>()) {
+    return nullptr;
+  }
+  auto param = param_anf_node->cast<ParameterPtr>();
+  if (param->has_default()) {
+    return nullptr;
+  }
+  auto sub_func_graph = param_anf_node->func_graph();
+  auto call_cnodes_map = sub_func_graph->func_graph_cnodes_index();
+  auto sub_graph_parameters = sub_func_graph->parameters();
+  auto curr_param_iter = std::find(sub_graph_parameters.begin(), sub_graph_parameters.end(), param_anf_node);
+  if (curr_param_iter == sub_graph_parameters.end()) {
+    MS_LOG_WITH_NODE(EXCEPTION, param_anf_node)
+      << "Cannot find param " << param_anf_node->DebugString() << " in current sub_graph";
+  }
+  size_t curr_param_index = static_cast<size_t>(curr_param_iter - sub_graph_parameters.begin());
+  AnfNodePtr call_nodes_common_param_input = nullptr;
+  FuncGraphPtr call_nodes_func_graph = nullptr;
+  for (const auto &node_pair : call_cnodes_map) {
+    if (!node_pair.first->first->isa<CNode>() || node_pair.first->second > 0) {
+      continue;
+    }
+    auto cnode = node_pair.first->first->cast<CNodePtr>();
+    call_nodes_func_graph = cnode->func_graph();
+    auto cnode_input = cnode->input(curr_param_index + 1);
+    if (!call_nodes_common_param_input) {
+      call_nodes_common_param_input = cnode_input;
+    }
+    if (call_nodes_common_param_input != cnode_input) {
+      call_nodes_common_param_input = nullptr;
+      break;
+    }
+  }
+  if (!call_nodes_common_param_input || !call_nodes_func_graph) {
+    return nullptr;
+  }
+  auto manager = call_nodes_func_graph->manager();
+  // Insert new MicroMirror in root func
+  if (!IsPrimitiveCNode(call_nodes_common_param_input, prim::kPrimMirrorMicroStep)) {
+    auto new_mirror_node =
+      NewMicroMirrorPrimByMicroMirror(call_nodes_func_graph, micro_mirror, call_nodes_common_param_input);
+    for (const auto &node_pair : call_cnodes_map) {
+      if (!node_pair.first->first->isa<CNode>() || node_pair.first->second > 0) {
+        continue;
+      }
+      (void)manager->SetEdge(node_pair.first->first, curr_param_index + 1, new_mirror_node);
+    }
+    // Remove MicroMirror in call_func
+    (void)manager->Replace(micro_mirror, micro_mirror->input(kIndex1));
+    return new_mirror_node;
+  }
+  (void)manager->Replace(micro_mirror, micro_mirror->input(kIndex1));
+  return nullptr;
+}
+
 int64_t LongAdd(int64_t base, int64_t shift) {
   int64_t result;
   if (shift > 0) {
@@ -3773,12 +3838,28 @@ int64_t LongAdd(int64_t base, int64_t shift) {
   return result;
 }
 
+bool NeededHandleShardParam() {
+  return ParallelContext::GetInstance()->enable_parallel_optimizer() &&
+         ParallelContext::GetInstance()->pipeline_interleave() && !ParallelContext::GetInstance()->zero3() &&
+         !ParallelContext::GetInstance()->grad_accumulation_shard();
+}
+
 bool IsCommunicateNode(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
   static const PrimitiveSet comm_op_type = {prim::kPrimAllReduce, prim::kPrimReduceScatter, prim::kPrimAllGather,
                                             prim::kPrimBroadcast, prim::kPrimAlltoAll,      prim::kPrimAlltoAllV,
                                             prim::kPrimSend,      prim::kPrimReceive};
   return IsOneOfPrimitiveCNode(node, comm_op_type);
+}
+
+bool StringToInt(std::string *str, int64_t *value) {
+  try {
+    *value = stoi(*str);
+  } catch (std::invalid_argument &) {
+    MS_LOG(ERROR) << "Catch invalid argument, invalid of digit string:" << *str;
+    return false;
+  }
+  return true;
 }
 }  // namespace parallel
 }  // namespace mindspore

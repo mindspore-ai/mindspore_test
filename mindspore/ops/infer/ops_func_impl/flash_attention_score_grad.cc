@@ -331,5 +331,8 @@ TypePtr FlashAttentionScoreGradFuncImpl::InferType(const PrimitivePtr &prim,
   return std::make_shared<Tuple>(output_type_ptr_list);
 }
 
+std::set<int64_t> FlashAttentionScoreGradFuncImpl::GetValueDependArgIndices() const {
+  return {kFASGradInputActualSeqQlenIndex, kFASGradInputActualSeqKVlenIndex};
+} 
 }  // namespace ops
 }  // namespace mindspore

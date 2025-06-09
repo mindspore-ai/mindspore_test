@@ -547,9 +547,15 @@ KernelWithIndex FetchRealFrontNode(const KernelWithIndex &node_with_index, const
 }
 
 bool NoNeedContinuesOp(const AnfNodePtr &kernel) {
+  const auto &kernel_name = common::AnfAlgo::GetCNodeName(kernel);
   bool flag = !common::AnfAlgo::IsCommunicationOp(kernel) ||
-              common::AnfAlgo::GetCNodeName(kernel) == kMatMulAllReduceOpName ||
-              common::AnfAlgo::GetCNodeName(kernel) == kAlltoAllVOpName;
+              kernel_name == kMatMulAllReduceOpName ||
+              kernel_name == kAlltoAllVOpName ||
+              kernel_name == kAlltoAllVCOpName ||
+              kernel_name == kAllGatherVOpName ||
+              kernel_name == kReduceScatterVOpName ||
+              kernel_name == kMatmulReduceScatterOpName ||
+              kernel_name == kAllGatherMatmulOpName;
   return flag;
 }
 }  // namespace
@@ -2196,8 +2202,8 @@ std::vector<KernelActorPtr> GraphScheduler::BuildKernelActor(const GraphCompiler
         // Set the member of kernel actor.
         kernel_actor->is_launch_skipped_ =
           common::AnfAlgo::IsNopNode(kernel) && graph->IsInRefOutputMap(std::make_pair(kernel, 0));
-        kernel_actor->inputs_continuous_memory_ = (common::AnfAlgo::IsCommunicationOp(kernel) &&
-                                                   common::AnfAlgo::GetCNodeName(kernel) != kMatMulAllReduceOpName) &&
+        kernel_actor->inputs_continuous_memory_ = common::AnfAlgo::IsCommunicationOp(kernel) &&
+                                                  !NoNeedContinuesOp(kernel) &&
                                                   (common::AnfAlgo::GetInputTensorNum(kernel) > 1);
 
         if (IsPrimitiveCNode(kernel, prim::kPrimStreamSend)) {
@@ -2555,7 +2561,9 @@ bool IsNeedLinkControlArrowByMonad(const KernelGraphPtr &graph, const GraphCompi
 
   for (const auto &kernel : graph->execution_order()) {
     MS_EXCEPTION_IF_NULL(kernel);
-    if (common::AnfAlgo::IsCommunicationOp(kernel) && common::AnfAlgo::GetCNodeName(kernel) != kMatMulAllReduceOpName) {
+    if (common::AnfAlgo::IsCommunicationOp(kernel) && common::AnfAlgo::GetCNodeName(kernel) != kMatMulAllReduceOpName &&
+        common::AnfAlgo::GetCNodeName(kernel) != kMatmulReduceScatterOpName &&
+        common::AnfAlgo::GetCNodeName(kernel) != kAllGatherMatmulOpName) {
       MS_LOG(INFO) << "No need to link control arrow for graph:" << graph->ToString()
                    << " by kernel:" << kernel->fullname_with_scope();
       return false;
@@ -2592,7 +2600,9 @@ void GraphScheduler::LinkDataArrowInNonSinkMode(const KernelGraphPtr &graph,
   for (const auto &kernel : execution_order) {
     MS_EXCEPTION_IF_NULL(kernel);
     MS_LOG(DEBUG) << "Graph " << graph->graph_id() << " execution order node: " << kernel->fullname_with_scope();
-    if (common::AnfAlgo::IsCommunicationOp(kernel) && common::AnfAlgo::GetCNodeName(kernel) != kMatMulAllReduceOpName) {
+    if (common::AnfAlgo::IsCommunicationOp(kernel) && common::AnfAlgo::GetCNodeName(kernel) != kMatMulAllReduceOpName &&
+        common::AnfAlgo::GetCNodeName(kernel) != kMatmulReduceScatterOpName &&
+        common::AnfAlgo::GetCNodeName(kernel) != kAllGatherMatmulOpName) {
       MS_LOG(DEBUG) << "Graph " << graph->graph_id()
                     << " execution order communication node: " << kernel->fullname_with_scope();
       (void)communication_nodes->emplace_back(kernel);
@@ -4156,8 +4166,11 @@ void GraphScheduler::PersistDeviceTensorForParameter(const AnfNodePtr &parameter
                       << " type:" << other_type_device_tensor->type_id();
         SchedulerHelper::AddDeviceTensorStore(front_node, kernel_tensor);
       }
+      // If enable input optimize, the weight should push into parameter store, so return to avoid to push into
+      // device tensor store.
+      // The value node should push into device tensor store.
+      return;
     }
-    return;
   }
 
   // If the device tensor store of this device type is not exist, then create the new device tensor of this type.

@@ -223,8 +223,11 @@ TensorLayouts GetLossNodeGradOutputLayout(const LossNodeInfo &node_info);
 LossNodeInfo FindLossCNode(const FuncGraphPtr &func_graph);
 void MarkForwardCNode(const FuncGraphPtr &root);
 void InsertVirtualOutput(const FuncGraphPtr &root, const std::vector<AnfNodePtr> &all_nodes);
+AnfNodePtr MoveSingeMirrorOutCallFunc(const CNodePtr &micro_mirror);
 int64_t LongAdd(int64_t base, int64_t shift);
+bool NeededHandleShardParam();
 bool IsCommunicateNode(const AnfNodePtr &node);
+bool StringToInt(std::string *str, int64_t *value);
 }  // namespace parallel
 }  // namespace mindspore
 

@@ -42,9 +42,6 @@
 
 namespace mindspore {
 namespace ops {
-namespace {
-static constexpr size_t kInputNum3 = 3;
-}  // namespace
 MIND_API_OPERATOR_IMPL(AlltoAllV, BaseOperator);
 class AlltoAllVInfer : public abstract::OpInferBase {
  public:
@@ -100,12 +97,12 @@ class AlltoAllVInfer : public abstract::OpInferBase {
     }
     // flag to check different valid types on ascend
     auto is_ascend = (context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kAscendDevice);
-
     if (!is_ascend) {
-      (void)CheckAndConvertUtils::CheckTypeValid("x", x_type, common_valid_types, prim_name);
+      (void)CheckAndConvertUtils::CheckTensorTypeValid("x", x_type, common_valid_types_with_bool, prim_name);
     } else {
-      (void)CheckAndConvertUtils::CheckTypeValid("x", x_type, common_valid_types_with_bool, prim_name);
+      (void)CheckAndConvertUtils::CheckTensorTypeValid("x", x_type, common_valid_types, prim_name);
     }
+
     return x_type->Clone();
   }
 

@@ -33,8 +33,8 @@ tensor::TensorPtr FlashAttentionScoreGradAscendCustomize(
   const std::optional<TensorPtr> &padding_mask, const std::optional<TensorPtr> &attn_mask,
   const std::optional<TensorPtr> &softmax_max, const std::optional<TensorPtr> &softmax_sum,
   const std::optional<TensorPtr> &softmax_in, const std::optional<TensorPtr> &attention_in,
-  const std::optional<ValueTuplePtr> &prefix, const std::optional<ValueTuplePtr> &actual_seq_qlen,
-  const std::optional<ValueTuplePtr> &actual_seq_kvlen, const Int64ImmPtr head_num, const FP32ImmPtr keep_prob,
+  const std::optional<ValueTuplePtr> &prefix, const std::optional<TensorPtr> &actual_seq_qlen,
+  const std::optional<TensorPtr> &actual_seq_kvlen, const Int64ImmPtr head_num, const FP32ImmPtr keep_prob,
   const FP32ImmPtr scale_value, const Int64ImmPtr pre_tokens, const Int64ImmPtr next_tokens,
   const Int64ImmPtr inner_precise, const Int64ImmPtr input_layout, const Int64ImmPtr sparse_mode);
 }  // namespace pyboost

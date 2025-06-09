@@ -38,13 +38,11 @@ flash_attention_score_grad:
       default: None
       type_cast: list[int], tensor
     actual_seq_qlen:
-      dtype: tuple[int]
+      dtype: tensor
       default: None
-      type_cast: list[int], tensor
     actual_seq_kvlen:
-      dtype: tuple[int]
+      dtype: tensor
       default: None
-      type_cast: list[int], tensor
     head_num:
       dtype: int
       prim_init: True

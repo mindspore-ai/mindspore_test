@@ -54,7 +54,7 @@ const std::set<std::string> &GetConvertInputAttrOps() {
     prim::kPrimBiasAdd->name(),       prim::kPrimBiasAddGrad->name(),     prim::kPrimLayerNorm->name(),
     prim::kPrimLayerNormGrad->name(), prim::kPrimLogSoftmax->name(),      prim::kPrimLogSoftmaxGrad->name(),
     prim::kPrimStridedSlice->name(),  prim::kPrimAdamWeightDecay->name(), prim::kPrimMatMul->name(),
-    prim::kPrimBatchMatMul->name(),
+    prim::kPrimBatchMatMul->name(),   prim::kPrimGroupedMatmul->name(),
   };
   return convert_input_attr_ops;
 }

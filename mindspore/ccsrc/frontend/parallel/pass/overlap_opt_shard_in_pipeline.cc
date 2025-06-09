@@ -57,6 +57,9 @@ bool is_allgather_comm_ops(const AnfNodePtr &node) {
 bool is_first_receive(const AnfNodePtr &node) {
   if (IsPrimitiveCNode(node, prim::kPrimReceive)) {
     auto recv_node = node->cast<CNodePtr>();
+    if (recv_node->HasPrimalAttr(PIPELINE_PARAM)) {
+      return false;
+    }
     if (recv_node->HasPrimalAttr(kPrimalAttrForwardNodeName)) {
       return false;
     }

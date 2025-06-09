@@ -308,6 +308,7 @@ constexpr auto kGraphIdsSingleCache = "graph_ids_for_single_cache";
 // recompute and parallel
 constexpr auto kRecomputeInsert = "recompute_insert";
 constexpr auto kAddedRecomputeDependAttr = "added_recompute_depend";
+constexpr auto kRecomputeSubgraphIdAttr = "recompute_subgraph_id";
 constexpr auto kCondidateOverlapBlockId = "condidate_overlap_block_id";
 constexpr auto kNcclWorldGroup = "nccl_world_group";
 constexpr auto kHcclWorldGroup = "hccl_world_group";

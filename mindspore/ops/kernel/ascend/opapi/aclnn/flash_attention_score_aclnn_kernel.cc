@@ -75,7 +75,8 @@ void FlashAttentionScoreAscend::GetWorkSpaceInfo(const std::vector<KernelTensor 
     if (!CheckSeqList(actual_seq_kvlen_array, inputs[kIndex1]->GetShapeVector()) ||
         !CheckSeqList(actual_seq_qlen_array, inputs[kIndex0]->GetShapeVector())) {
       MS_LOG(EXCEPTION)
-        << "For actual_seq_qlen and actual_seq_kvlen, must be increasing array and the last number is equal to T.";
+        << "For actual_seq_qlen and actual_seq_kvlen, must be increasing array and the last number is equal to T. qlen: " << actual_seq_qlen_array
+        << ", kvlen: " << actual_seq_kvlen_array;
     }
     op_type_ = "aclnnFlashAttentionVarLenScore";
     GetWorkspaceForResize(inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], inputs[kIndex3], inputs[kIndex4],

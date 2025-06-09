@@ -506,8 +506,8 @@ void OverlapRecomputeAndGradModelParallel(const FuncGraphPtr &graph) {
   }
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  auto is_enable = ms_context->get_param<bool>(MS_CTX_RECOMPUTE_COMM_OVERLAP);
-  if (!is_enable) {
+  auto recompute_comm_overlap = ms_context->get_param<std::string>(MS_CTX_RECOMPUTE_COMM_OVERLAP);
+  if (recompute_comm_overlap != "grad_model_parallel") {
     return;
   }
   if (ms_context->CellReuseLevel() != CellReuseLevel::kNoCellReuse) {

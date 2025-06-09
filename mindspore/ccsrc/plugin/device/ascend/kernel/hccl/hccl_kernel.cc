@@ -102,18 +102,26 @@ HcclKernel::HcclKernel()
       comm_(nullptr),
       use_lccl_{false} {}
 
-bool isSupportLccl(const std::string &group_name, const std::string &kernel_name,
-                   const std::unordered_set<std::string> &lccl_enabled_groups) {
+static std::set<std::string> lccl_support_kernels = {
+  kAllReduceOpName, kReduceScatterOpName,   kBroadcastOpName,       kAllGatherOpName,
+  kBarrierOpName,   kMatMulAllReduceOpName, kAllGatherMatmulOpName, kMatmulReduceScatterOpName};
+bool isSupportLccl(const std::string &group_name, const std::string &kernel_name) {
 #ifdef ENABLE_INTERNAL_KERNELS
-  bool enable_lccl = device::ascend::AscendHalManager::GetInstance().EnableLccl();
-  std::set<std::string> support_lccl_op_names = {kAllReduceOpName, kReduceScatterOpName,   kBroadcastOpName,
-                                                 kAllGatherOpName, kMatMulAllReduceOpName, kBarrierOpName};
-  if (enable_lccl && lccl_enabled_groups.find(group_name) != lccl_enabled_groups.end() &&
-      support_lccl_op_names.find(kernel_name) != support_lccl_op_names.end()) {
-    return true;
-  } else {
+  if (group_name.empty()) {
     return false;
   }
+  if (!device::ascend::AscendHalManager::GetInstance().EnableLccl()) {
+    return false;
+  }
+  if (lccl_support_kernels.find(kernel_name) == lccl_support_kernels.end()) {
+    return false;
+  }
+  std::unordered_set<std::string> lccl_enabled_groups =
+    MultiAscendCollectiveCommLib::GetInstance().GetLcclEnabledGroups();
+  if (lccl_enabled_groups.find(group_name) == lccl_enabled_groups.end()) {
+    return false;
+  }
+  return true;
 #endif
   return false;
 }
@@ -136,8 +144,8 @@ bool HcclKernel::Init(const std::vector<KernelTensor *> &inputs, const std::vect
     return false;
   }
 
-  std::set<std::string> reduce_op_names = {kAllReduceOpName, kReduceScatterOpName, kReduceOpName,
-                                           kMatMulAllReduceOpName};
+  std::set<std::string> reduce_op_names = {kAllReduceOpName, kReduceScatterOpName, kReduceOpName, kReduceScatterVOpName,
+                                           kMatMulAllReduceOpName, kMatmulReduceScatterOpName};
   if (reduce_op_names.count(kernel_name_) != 0) {
     if (!HcomUtil::GetHcomOperationType(primitive_, &op_type_, &collective_reduce_type_)) {
       MS_LOG(ERROR) << "GetHcomOperationType fail!";
@@ -159,9 +167,7 @@ bool HcclKernel::Init(const std::vector<KernelTensor *> &inputs, const std::vect
     // Before calling each hccl operator, we need to wait for communicator to be initialized.
     distributed::collective::CollectiveManager::instance()->WaitCommInitDone(group_);
 #ifdef ENABLE_INTERNAL_KERNELS
-    std::unordered_set<std::string> lccl_enabled_groups =
-      MultiAscendCollectiveCommLib::GetInstance().GetLcclEnabledGroups();
-    use_lccl_ = isSupportLccl(group_, kernel_name_, lccl_enabled_groups);
+    use_lccl_ = isSupportLccl(group_, kernel_name_);
     if (use_lccl_) {
       LoadLcclLibrary();
     } else {
@@ -205,7 +211,8 @@ void HcclKernel::CalLoopSize() {
     loop_size_ = hccl_kernel_output_shape_list_.size();
   }
   // For MatMulAllReduce, output number is 1.
-  if (kernel_name_ == kMatMulAllReduceOpName) {
+  if (kernel_name_ == kMatMulAllReduceOpName || kernel_name_ == kAllGatherMatmulOpName ||
+      kernel_name_ == kMatmulReduceScatterOpName) {
     loop_size_ = hccl_kernel_output_shape_list_.size();
   }
   MS_LOG(INFO) << "Get Hccl Kernel: " << kernel_name_ << ", output size: " << loop_size_;

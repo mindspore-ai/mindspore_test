@@ -616,18 +616,21 @@ Please see the `msrun start up \
     :template: classtemplate.rst
 
     mindspore.ops.AllGather
+    mindspore.ops.AllGatherV
     mindspore.ops.AllReduce
     mindspore.ops.AlltoAll
     mindspore.ops.AlltoAllV
+    mindspore.ops.AlltoAllVC
     mindspore.ops.Barrier
     mindspore.ops.Broadcast
     mindspore.ops.CollectiveGather
     mindspore.ops.CollectiveScatter
     mindspore.ops.NeighborExchangeV2
     mindspore.ops.Receive
+    mindspore.ops.Reduce
     mindspore.ops.ReduceOp
     mindspore.ops.ReduceScatter
-    mindspore.ops.Reduce
+    mindspore.ops.ReduceScatterV
     mindspore.ops.Send
 
 Debugging Operator

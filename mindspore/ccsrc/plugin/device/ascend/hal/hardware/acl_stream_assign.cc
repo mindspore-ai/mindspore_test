@@ -37,6 +37,9 @@ namespace mindspore {
 namespace device {
 namespace ascend {
 namespace {
+constexpr int64_t MAX_MICRO_BATCH_NUM = 1024;
+constexpr int64_t MAX_INTERLEAVE_NUM = 32;
+constexpr int64_t MAX_SEQ_CHUNK_NUM = 64;
 void SetForSwitchInline(const NotNull<KernelGraphPtr> &kernel_graph, const CNodePtr &send_cnode,
                         const CNodePtr &recv_cnode, const AnfNodePtr &pre_node, const AnfNodePtr &next_node) {
   if (pre_node == nullptr || next_node == nullptr) {
@@ -116,6 +119,11 @@ void AddStreamIdByGroup(const AnfNodePtr &node, DeviceResManager *device_res_man
       AnfAlgo::SetStreamId(kDefaultStreamIndex, node.get());
       common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kDefaultStreamIndex), node);
     }
+  } else if (common::AnfAlgo::IsLcclCommunicationOp(cnode)) {
+    AnfAlgo::SetStreamId(kDefaultStreamIndex, node.get());
+    common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kDefaultStreamIndex), node);
+    MS_LOG(INFO) << "Set stream id by default for node " << node->fullname_with_scope()
+                 << ", because it is an LCCL operator.";
   } else {
     auto prim = GetCNodePrimitive(cnode);
     MS_EXCEPTION_IF_NULL(prim);
@@ -137,6 +145,24 @@ void AddStreamIdByGroup(const AnfNodePtr &node, DeviceResManager *device_res_man
                    << group_value->ToString();
     }
   }
+}
+
+int64_t CalSendIdx(const CNodePtr& kernel) {
+  if (!kernel->HasPrimalAttr(kMicro)) {
+    return -1;
+  }
+  int64_t micro = GetValue<int64_t>(kernel->GetPrimalAttr(kMicro));
+  int64_t chunk = 0;
+  if (kernel->HasPrimalAttr(kChunk)) {
+    chunk = GetValue<int64_t>(kernel->GetPrimalAttr(kChunk));
+  }
+  int64_t seq_chunk = 0;
+  if (kernel->HasPrimalAttr(kSeqChunk)) {
+    seq_chunk = GetValue<int64_t>(kernel->GetPrimalAttr(kSeqChunk));
+  }
+  int64_t is_bp = kernel->HasPrimalAttr(kPrimalAttrForwardUniqueId) ? 1 : 0;
+  return is_bp * MAX_SEQ_CHUNK_NUM * MAX_INTERLEAVE_NUM * MAX_MICRO_BATCH_NUM +
+         seq_chunk * MAX_INTERLEAVE_NUM * MAX_MICRO_BATCH_NUM + chunk * MAX_MICRO_BATCH_NUM + micro;
 }
 }  // namespace
 
@@ -421,6 +447,7 @@ void AclStreamAssign::UpdateEventsToExecutionOrder(
   }
   CNodePtr last_kernel = nullptr;
   size_t cur_idx = 0;
+  int64_t send_idx = -1;
   for (auto &kernel : exec_kernels) {
     auto before_iter = recv_before_node.find(kernel);
     if (before_iter != recv_before_node.end()) {
@@ -442,8 +469,13 @@ void AclStreamAssign::UpdateEventsToExecutionOrder(
       }
     }
     if (kernel_graph->enable_multi_stream() && IsPrimitiveCNode(kernel, std::make_shared<Primitive>(kSendOpName))) {
-      AddBoundarySendRecvKernel(kernel_graph, process_stream_id, kDefaultStreamIndex, &new_exec_orders,
-                                &no_event_streams, last_kernel, kernel);
+      auto cur_send_idx = CalSendIdx(kernel);
+      if (cur_send_idx != send_idx || cur_send_idx == -1) {
+        AddBoundarySendRecvKernel(kernel_graph, process_stream_id, kDefaultStreamIndex, &new_exec_orders,
+                                  &no_event_streams, last_kernel, kernel);
+        MS_LOG(WARNING) << "Add event for send:" << kernel->fullname_with_scope();
+      }
+      send_idx = cur_send_idx;
     }
     std::vector<AnfNodePtr> real_inputs;
     ProcessSideEffect(kernel_graph, kernel, process_stream_id, last_kernel, &real_inputs, &side_effect_map,

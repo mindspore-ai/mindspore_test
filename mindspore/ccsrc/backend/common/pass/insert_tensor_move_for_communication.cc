@@ -49,6 +49,17 @@ bool IsNeedInsertForInput(const AnfNodePtr &communication_op, const AnfNodePtr &
           (AnfAlgo::FetchDeviceTarget(input_node, kernel_graph.get()) !=
            AnfAlgo::FetchDeviceTarget(communication_op, kernel_graph.get())));
 }
+bool NoNeedInsertOp(const AnfNodePtr &kernel) {
+  bool flag = kernel == nullptr || !common::AnfAlgo::IsCommunicationOp(kernel) ||
+              common::AnfAlgo::GetCNodeName(kernel) == kMatMulAllReduceOpName ||
+              common::AnfAlgo::GetCNodeName(kernel) == kAlltoAllVOpName ||
+              common::AnfAlgo::GetCNodeName(kernel) == kAlltoAllVCOpName ||
+              common::AnfAlgo::GetCNodeName(kernel) == kAllGatherVOpName ||
+              common::AnfAlgo::GetCNodeName(kernel) == kReduceScatterVOpName ||
+              common::AnfAlgo::GetCNodeName(kernel) == kAllGatherMatmulOpName ||
+              common::AnfAlgo::GetCNodeName(kernel) == kMatmulReduceScatterOpName;
+  return flag;
+}
 }  // namespace
 
 constexpr auto kSingleNum = 1;
@@ -61,9 +72,7 @@ bool InsertTensorMoveForCommunication::Run(const FuncGraphPtr &graph) {
   std::vector<AnfNodePtr> node_list = TopoSort(graph->get_return());
   std::vector<CNodePtr> communication_op_list;
   for (auto &node : node_list) {
-    if (node == nullptr || !common::AnfAlgo::IsCommunicationOp(node) ||
-        common::AnfAlgo::GetCNodeName(node) == kMatMulAllReduceOpName ||
-        common::AnfAlgo::GetCNodeName(node) == kAlltoAllVOpName) {
+    if (NoNeedInsertOp(node)) {
       continue;
     }
     auto communication_op = node->cast<CNodePtr>();

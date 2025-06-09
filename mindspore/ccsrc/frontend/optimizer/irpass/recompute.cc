@@ -766,6 +766,8 @@ bool Recomputation::operator()(const FuncGraphPtr &root, const OptimizerPtr &opt
     bool change = AddNewPrimalNode(manager, fg, node, new_primal, recompute_cell, &origin_to_new_primal);
     changed = change || changed;
     if (change && recompute_cell) {
+      static int64_t recomput_subgraph_id = 1;
+      k_fg->set_attr(kRecomputeSubgraphIdAttr, MakeValue(recomput_subgraph_id++));
       k_fg_caller_cnode->set_user_data(kPrimalFgCallerUserDataKey, new_primal);
     }
     k_fg_caller_cnode->AddAttr(kAttrReplacedWithPrimal, MakeValue(true));

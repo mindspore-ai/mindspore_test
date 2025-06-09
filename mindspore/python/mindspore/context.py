@@ -838,6 +838,25 @@ class _Context:
             raise TypeError(f"For step num, the value type should be int, but got {type(step)}, {step}")
         self.set_param(ms_ctx_param.last_triggered_step, step)
 
+    def _check_speedup_config_str_value(self, key, value):
+        """check speedup config str value"""
+        if key in ("pp_1f1b_overlap", "recompute_comm_overlap", "recomputation_communication_overlap",
+                   "matmul_grad_comm_overlap"):
+            if isinstance(value, str):
+                values = value.split(",")
+                for v in values:
+                    if v not in ['AlltoAll', 'AlltoAllV', 'MorphAllGather', 'AlltoAllVC',
+                                 'AllGather', 'ReduceScatter', 'MorphReduceScatter', '', 'AllReduce']:
+                        raise ValueError("{} 's value should be subset of ['AlltoAll', 'AlltoAllV',"
+                                         " 'MorphAllGather', 'AllGather', 'ReduceScatter',"
+                                         " 'MorphReduceScatter', 'AlltoAllVC'].".format(key))
+                return value
+            if value:
+                return "AlltoAll,AlltoAllV,AllGather,ReduceScatter"
+            return ""
+
+        return value
+
     def _set_speedup_config_path(self, speedup_config_path):
         """"Check and set speedup config for auto parallel."""
         if speedup_config_path is None or speedup_config_path == "":
@@ -848,10 +867,10 @@ class _Context:
                              f"{speedup_config_real_path} does not exist, please check whether the "
                              f"'parallel_speed_up_json_path' is correct.")
         try:
-            valid_option = {"recompute_comm_overlap": (ms_ctx_param.recompute_comm_overlap, bool),
-                            "recomputation_communication_overlap": (ms_ctx_param.recompute_comm_overlap, bool),
-                            "matmul_grad_comm_overlap": (ms_ctx_param.matmul_grad_comm_overlap, bool),
-                            "grad_matmul_communication_overlap": (ms_ctx_param.matmul_grad_comm_overlap, bool),
+            valid_option = {"recompute_comm_overlap": (ms_ctx_param.recompute_comm_overlap, str),
+                            "recomputation_communication_overlap": (ms_ctx_param.recompute_comm_overlap, str),
+                            "matmul_grad_comm_overlap": (ms_ctx_param.matmul_grad_comm_overlap, (bool, str)),
+                            "grad_matmul_communication_overlap": (ms_ctx_param.matmul_grad_comm_overlap, (bool, str)),
                             "enable_task_opt": (ms_ctx_param.enable_task_opt, bool),
                             "enable_communication_fusion": (ms_ctx_param.enable_task_opt, bool),
                             "enable_grad_comm_opt": (ms_ctx_param.enable_grad_comm_opt, bool),
@@ -908,17 +927,12 @@ class _Context:
                                        f"Please use '{name_replace.get(key)}' instead.")
                     set_func, valid_type = valid_option.get(key)
                     if not isinstance(value, valid_type):
-                        raise TypeError(f"The value type of {key} must be {valid_type}, "
-                                        f"but got value is {value} and type is {type(value)}.")
-                    if key == "pp_1f1b_overlap":
-                        values = value.split(",")
-                        for v in values:
-                            if v not in ['AlltoAll', 'AlltoAllV', 'MorphAllGather',
-                                         'AllGather', 'ReduceScatter', 'MorphReduceScatter']:
-                                raise ValueError("{} 's value should be subset of ['AlltoAll', 'AlltoAllV',"
-                                                 " 'MorphAllGather', 'AllGather', 'ReduceScatter',"
-                                                 " 'MorphReduceScatter'].".format(key))
-                    self.set_param(set_func, value)
+                        if not ((key == "recompute_comm_overlap" or key == "recomputation_communication_overlap")
+                                and isinstance(value, bool)):
+                            raise TypeError(f"The value type of {key} must be {valid_type}, "
+                                            f"but got value is {value} and type is {type(value)}.")
+                    value_new = self._check_speedup_config_str_value(key, value)
+                    self.set_param(set_func, value_new)
         except (TypeError, ValueError) as exo:
             raise ValueError(str(exo) + "\nFor 'context.set_context', "
                                         "open or load the 'speedup_config_path' file {} "

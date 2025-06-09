@@ -90,6 +90,44 @@ print(output)
  [3.]]
 ```
 
+## AllGatherV
+
+`AllGatherV`操作相对`AllGather`来说，支持收集不均匀的Tensor，并将每张卡的输入Tensor的进行拼接，最终每张卡输出是相同的数值，`output_split_sizes`中存储每张卡输入的数据量。
+
+示例代码如下：我们根据rank号(每张卡所属通信编号)初始化每个进程中`AllGather`算子输入的数值，例如卡0，我们申请了一个1x3大小，数值为0,1,2的输入。卡0，我们申请了一个1x4大小，数值为0,1,2,3的输入，`output_split_sizes`设置为[3, 4]。然后调用`AllGather`算子，在通信域为`0-1`的卡(所有卡的通信范围即nccl_world_group)中进行通信，并且打印输出结果。
+
+```python
+import mindspore as ms
+from mindspore.ops.operations.comm_ops import AllGatherV
+import mindspore.nn as nn
+from mindspore.communication import init, get_rank
+from mindspore import Tensor
+
+ms.set_context(mode=ms.GRAPH_MODE)
+init()
+class Net(nn.Cell):
+    def __init__(self):
+        super(Net, self).__init__()
+        self.allgatherv = AllGatherV()
+
+    def construct(self, x, output_split_sizes):
+        return self.allgatherv(x, output_split_sizes)
+
+rank = get_rank()
+data = [i for i in range(rank + 3)]
+input_x = Tensor(data)
+output_split_sizes = [3, 4]
+net = Net()
+output = net(input_x, output_split_sizes)
+print(output)
+```
+
+运行结果如下，输出日志路径为`log/1/rank.0`：
+
+```text
+[0 1 2 0 1 2 3]
+```
+
 ## ReduceScatter
 
 ![image](./images/reducescatter.png)
@@ -125,6 +163,50 @@ print(output)
 
 ```text
 [[0.]]
+```
+
+## ReduceScatterV
+
+`ReduceScatterV`操作相对`ReduceScatter`来说，支持对不均匀的张量进行规约并分发。`ReduceScatterV`将每张卡的输入先进行求和，并根据`input_split_sizes`中定义的每张卡分发的数据量，将数据分发到对应的卡上。。
+
+示例代码如下：我们根据rank号(每张卡所属通信编号)初始化每个进程中`ReduceScatter`算子输入的数值，例如卡0和卡1，我们申请了一个1*3大小，数值为[0, 1, 2.0]的输入，`input_split_sizes`设置为[2, 1]。然后调用`ReduceScatterV`算子，在通信域为`0-1`的卡(所有卡的通信范围即nccl_world_group)中进行通信，并且打印输出结果。
+
+```python
+import mindspore as ms
+from mindspore import Tensor
+from mindspore.communication import init, get_rank
+from mindspore.ops import ReduceOp
+import mindspore.nn as nn
+from mindspore.ops.operations.comm_ops import ReduceScatterV
+
+ms.set_context(mode=ms.GRAPH_MODE)
+init()
+class Net(nn.Cell):
+    def __init__(self):
+        super(Net, self).__init__()
+        self.reducescatterv = ReduceScatterV(ReduceOp.SUM)
+
+    def construct(self, x, input_split_sizes):
+        return self.reducescatterv(x, input_split_sizes)
+
+rank = get_rank()
+input_x = Tensor([0, 1, 2.0])
+input_split_sizes = [2, 1]
+net = Net()
+output = net(input_x, input_split_sizes)
+print(output)
+```
+
+rank0的结果为：
+
+```text
+[0. 2]
+```
+
+rank1的结果为：
+
+```text
+[4.]
 ```
 
 ## Reduce
@@ -494,6 +576,62 @@ rank1的结果为：
 
 ```text
 [1. 2. 5]
+```
+
+## AlltoAllVC
+
+`AlltoAllVC`功能与`AlltoAllV`类似，性能表现更优。`AlltoAllVC`会将输入数据在特定的维度按照`send_count_matrix`进行切分和分发。`send_count_matrix`中存储了所有rank的收发参数，`send_count_matrix[i][j]`表示rank i发给rank j的数据量，基本单位是Tensor的数据类型。
+
+示例代码如下：我们使用`AlltoAllVC`算子进行2卡的数据交换，`send_count_matrix`存储0卡发送给1卡的数据量为3,1卡发送给0卡的数据量为3，即两卡进行了数据交换。
+
+```python
+from mindspore.ops.operations.comm_ops import AlltoAllVC
+import mindspore.nn as nn
+from mindspore.communication import init, get_rank
+from mindspore import Tensor
+init()
+rank = get_rank()
+class Net(nn.Cell):
+    def __init__(self):
+        super(Net, self).__init__()
+        self.all_to_all_v_c = AlltoAllVC()
+    def construct(self, x, send_count_matrix):
+        return self.all_to_all_v_c(x, send_count_matrix)
+send_count_matrix = Tensor([[0, 3], [3, 0]])
+send_tensor = Tensor([0, 1, 2.]) * rank
+net = Net()
+output = net(send_tensor, send_count_matrix)
+print(output)
+```
+
+使用shell脚本启动2卡脚本，下述中的`rank_table_file`文件可以使用[models](https://gitee.com/mindspore/models)下面的hccl_tools.py生成，对应的目录文件为`models/utils/hccl_tools`。示例shell脚本如下：
+
+```shell
+export MINDSPORE_HCCL_CONFIG_PATH=rank_table_file
+export DEVICE_NUM=2
+BASE_PATH=$(cd "$(dirname $0)"; pwd)
+for((i=0; i<$DEVICE_NUM; i++)); do
+    rm -rf ${BASE_PATH}/rank${i}
+    mkdir ${BASE_PATH}/rank${i}
+    cp -r ${BASE_PATH}/alltoallv.py ${BASE_PATH}/rank${i}/
+    cd ${BASE_PATH}/rank${i}
+    export RANK_ID=${i}
+    export DEVICE_ID=${i}
+    echo "start training for device $i"
+    python alltoallv.py > log.txt 2>&1 &
+done
+```
+
+rank0的结果为：
+
+```text
+[0. 1. 2]
+```
+
+rank1的结果为：
+
+```text
+[0. 0. 0]
 ```
 
 ## CollectiveScatter

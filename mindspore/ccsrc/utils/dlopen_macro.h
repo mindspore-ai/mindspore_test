@@ -167,5 +167,8 @@ static T DlsymAscend(void *handle, const char *symbol_name) {
   return symbol;
 }
 
+const char kVCName[] = "_Z14HcclAlltoAllVCPKvS0_12HcclDataTypeS0_S1_PvS2_";
+#define DlsymFuncObjTest(func_name, plugin_handle) DlsymAscend<func_name##FunPtr>(plugin_handle, kVCName);
+
 #define DlsymAscendFuncObj(func_name, plugin_handle) DlsymAscend<func_name##FunPtr>(plugin_handle, k##func_name##Name);
 #endif  // MINDSPORE_CCSRC_UTILS_DLOPEN_MACRO_H

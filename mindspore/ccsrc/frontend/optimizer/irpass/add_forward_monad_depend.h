@@ -133,6 +133,10 @@ void PropagateUMonadInput(const FuncGraphManagerPtr &manager, const FuncGraphPtr
 // graph bprop(dout, u):
 //   %0 = side_effect_mem_op(dout, u)
 bool AddForwardMonadDepend(const FuncGraphPtr &root, const opt::OptimizerPtr &opt) {
+  auto scheduler = parallel::ParallelContext::GetInstance()->pipeline_scheduler();
+  if (scheduler == mindspore::parallel::ZBV) {
+    return false;
+  }
   MS_EXCEPTION_IF_NULL(root);
   MS_EXCEPTION_IF_NULL(opt);
   auto manager = opt->manager();

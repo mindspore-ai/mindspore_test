@@ -164,8 +164,13 @@ void OverLapGradMatMul(const FuncGraphManagerPtr &manager, const std::vector<CNo
                        const std::vector<std::string> &forward_matmul_unique_id_list) {
   std::set<CNodePtr> matched_matmul_list;
   CNodePtrList communicate_cnode_list;
+  auto grad_comm_value = MsContext::GetInstance()->get_param<std::string>(MS_CTX_GRAD_COMM_OVERLAP);
   for (const auto &node : origin_nodes_topological) {
-    if (!IsSomePrimitiveList(node, {ALL_GATHER, REDUCE_SCATTER, ALL_REDUCE, ALL_TO_ALL, ALL_TO_ALLV})) {
+    auto cnode = node->cast<CNodePtr>();
+    if (cnode == nullptr) {
+      continue;
+    }
+    if (!common::AnfAlgo::IsNeededOverlapComm(cnode, grad_comm_value)) {
       continue;
     }
     if (IsForwardNode(node) || node->HasAttr(kAttrDuplicated)) {
@@ -253,7 +258,7 @@ void OverlapGradMatmulAndGradAllreduce(const FuncGraphPtr &graph) {
   }
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  auto is_enable = ms_context->get_param<bool>(MS_CTX_GRAD_COMM_OVERLAP);
+  auto is_enable = !ms_context->get_param<std::string>(MS_CTX_GRAD_COMM_OVERLAP).empty();
   if (!is_enable) {
     return;
   }

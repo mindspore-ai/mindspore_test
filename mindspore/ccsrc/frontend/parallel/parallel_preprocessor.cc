@@ -129,41 +129,41 @@ void ClearCnodesForOperator(const std::vector<AnfNodePtr> &all_nodes) {
   }
 }
 
-static void PreProcessActualSeqLenInputForFlashAttentionScore(const FuncGraphPtr &root,
-                                                              const std::vector<AnfNodePtr> &all_nodes) {
-  auto manager = root->manager();
-  MS_EXCEPTION_IF_NULL(manager);
-  for (auto node : all_nodes) {
-    if (IsPrimitiveCNode(node, prim::kPrimFlashAttentionScore)) {
-      auto fa_cnode = node->cast<CNodePtr>();
-      MS_EXCEPTION_IF_NULL(fa_cnode);
-      auto fa_inputs = fa_cnode->inputs();
-      for (size_t index = ops::kFlashAttentionScoreInputActualSeqQlenIndex;
-           index <= ops::kFlashAttentionScoreInputActualSeqKVlenIndex; ++index) {
-        auto input = fa_inputs.at(index + 1);
-        if (IsValueNode<None>(input)) {
-          continue;
-        }
-        // Transfer Tuple to Tensor
-        if (IsPrimitiveCNode(input, prim::kPrimTensorToTuple)) {
-          // Eliminate TensorToTuple
-          manager->SetEdge(fa_cnode, index + 1, input->cast<CNodePtr>()->input(kIndex1));
-          MS_LOG(DEBUG) << "Eliminate TensorToTuple for " << fa_cnode->fullname_with_scope() << ", index is "
-                        << index + 1;
-        } else {
-          auto dtype = NewValueNode(MakeValue<int64_t>(kInt64->type_id()));
-          dtype->set_abstract(abstract::FromValue((int64_t)(kInt64->type_id())));
-          auto tuple_to_tensor_cnode =
-            fa_cnode->func_graph()->NewCNode({NewValueNode(prim::kPrimTupleToTensor), input, dtype});
-          auto abs = GenerateAbsByOpInfer(GetCNodePrimitive(tuple_to_tensor_cnode), {input, dtype});
-          tuple_to_tensor_cnode->set_abstract(abs);
-          manager->SetEdge(fa_cnode, index + 1, tuple_to_tensor_cnode);
-          MS_LOG(DEBUG) << "Insert TupleToTensor for " << fa_cnode->fullname_with_scope() << ", index is " << index + 1;
-        }
-      }
-    }
-  }
-}
+// static void PreProcessActualSeqLenInputForFlashAttentionScore(const FuncGraphPtr &root,
+//                                                               const std::vector<AnfNodePtr> &all_nodes) {
+//   auto manager = root->manager();
+//   MS_EXCEPTION_IF_NULL(manager);
+//   for (auto node : all_nodes) {
+//     if (IsPrimitiveCNode(node, prim::kPrimFlashAttentionScore)) {
+//       auto fa_cnode = node->cast<CNodePtr>();
+//       MS_EXCEPTION_IF_NULL(fa_cnode);
+//       auto fa_inputs = fa_cnode->inputs();
+//       for (size_t index = ops::kFlashAttentionScoreInputActualSeqQlenIndex;
+//            index <= ops::kFlashAttentionScoreInputActualSeqKVlenIndex; ++index) {
+//         auto input = fa_inputs.at(index + 1);
+//         if (IsValueNode<None>(input)) {
+//           continue;
+//         }
+//         // Transfer Tuple to Tensor
+//         if (IsPrimitiveCNode(input, prim::kPrimTensorToTuple)) {
+//           // Eliminate TensorToTuple
+//           manager->SetEdge(fa_cnode, index + 1, input->cast<CNodePtr>()->input(kIndex1));
+//           MS_LOG(DEBUG) << "Eliminate TensorToTuple for " << fa_cnode->fullname_with_scope() << ", index is "
+//                         << index + 1;
+//         } else {
+//           auto dtype = NewValueNode(MakeValue<int64_t>(kInt64->type_id()));
+//           dtype->set_abstract(abstract::FromValue((int64_t)(kInt64->type_id())));
+//           auto tuple_to_tensor_cnode =
+//             fa_cnode->func_graph()->NewCNode({NewValueNode(prim::kPrimTupleToTensor), input, dtype});
+//           auto abs = GenerateAbsByOpInfer(GetCNodePrimitive(tuple_to_tensor_cnode), {input, dtype});
+//           tuple_to_tensor_cnode->set_abstract(abs);
+//           manager->SetEdge(fa_cnode, index + 1, tuple_to_tensor_cnode);
+//           MS_LOG(DEBUG) << "Insert TupleToTensor for " << fa_cnode->fullname_with_scope() << ", index is " << index + 1;
+//         }
+//       }
+//     }
+//   }
+// }
 
 static void MicroBatchPreProcess(const FuncGraphPtr &root, const FuncGraphManagerPtr &manager,
                                  const std::vector<AnfNodePtr> &all_nodes) {
@@ -1336,7 +1336,7 @@ void ParallelPreprocessor::MarkAndModifyGraph() {
     ClearCnodesForOperator(all_nodes);
   }
   // Insert TupleToTensor for FA if actual_seq_len input is tuple type.
-  PreProcessActualSeqLenInputForFlashAttentionScore(root, all_nodes);
+  // PreProcessActualSeqLenInputForFlashAttentionScore(root, all_nodes);
 
   MicroBatchPreProcess(root, manager, all_nodes);
   // mark the forward cnodes, parallel only care these nodes

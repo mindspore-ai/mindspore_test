@@ -32,6 +32,7 @@
 #include "pipeline/jit/ps/resource.h"
 #include "frontend/optimizer/ad/adjoint.h"
 #include "frontend/operator/ops.h"
+#include "frontend/parallel/ops_info/ops_utils.h"
 #include "utils/symbolic.h"
 #include "utils/ms_context.h"
 #include "pipeline/jit/ps/action.h"
@@ -39,6 +40,7 @@
 #include "include/common/debug/anf_ir_dump.h"
 #include "include/common/pynative/adapter.h"
 #include "include/common/pynative/grad_state.h"
+#include "include/common/utils/parallel_context.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_h.h"
@@ -387,6 +389,28 @@ void DFunctor::BackPropagate(const CNodePtr &cnode_morph, const CNodePtr &k_app,
   }
 }
 
+static void AddParallelAttrs(const CNodePtr &k_app_c, const CNodePtr &morph_c) {
+  auto parallel_context = parallel::ParallelContext::GetInstance();
+  if (parallel_context == nullptr) {
+    return;
+  }
+  auto parallel_mode = parallel_context->parallel_mode();
+  if (parallel_mode != parallel::kSemiAutoParallel && parallel_mode != parallel::kAutoParallel) {
+    return;
+  }
+  auto stage_num = parallel_context->pipeline_stage_split_num();
+  if (stage_num <= 1) {
+    return;
+  }
+
+  if (morph_c->HasPrimalAttr(parallel::CHUNK)) {
+    k_app_c->AddAttr(parallel::CHUNK, morph_c->GetPrimalAttr(parallel::CHUNK));
+  }
+  if (morph_c->HasPrimalAttr(parallel::MICRO)) {
+    k_app_c->AddAttr(parallel::MICRO, morph_c->GetPrimalAttr(parallel::MICRO));
+  }
+}
+
 // Map a morphism.
 AdjointPtr DFunctor::MapMorphism(const AnfNodePtr &morph) {
   constexpr int recursive_level = 4;
@@ -438,6 +462,7 @@ AdjointPtr DFunctor::MapMorphism(const AnfNodePtr &morph) {
   {
     TraceGuard guard(MakeTraceInfo<TraceGradFpropApp>(cnode_morph->debug_info()));
     k_app = k_graph_->NewCNode(inputs);
+    AddParallelAttrs(k_app, cnode_morph);
     const DebugInfoPtr &old_debug_info = cnode_morph->debug_info();
     if (old_debug_info != nullptr) {
       const auto &old_real_loc = old_debug_info->real_loc();

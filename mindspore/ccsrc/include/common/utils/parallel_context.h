@@ -58,6 +58,8 @@ constexpr char kPipelineGpipe[] = "gpipe";
 constexpr char kPipelineSeqpipe[] = "seqpipe";
 constexpr char kPipelineSeqvpp[] = "seqvpp";
 constexpr char kPipelineSeqsmartvpp[] = "seqsmartvpp";
+constexpr char kPipelineSendSharedParam[] = "send_shared_param";
+constexpr char kPipelineZeroBubbleV[] = "zero_bubble_v";
 
 constexpr char kFusionAuto[] = "auto";
 constexpr char kFusionSize[] = "size";

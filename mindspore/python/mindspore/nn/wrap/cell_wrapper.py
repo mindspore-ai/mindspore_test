@@ -903,7 +903,7 @@ class PipelineCell(Cell):
         >>> net = LeNet5()
         >>> net = nn.PipelineCell(net, 4)
     """
-    def __init__(self, network, micro_size, stage_config=None):
+    def __init__(self, network, micro_size, stage_config=None, segment_config=None):
         super(PipelineCell, self).__init__(auto_prefix=False)
         self.network = network
         self.micro_inputs = nn.CellList()
@@ -959,6 +959,36 @@ class PipelineCell(Cell):
                     print(cell_name)
                 raise KeyError("For 'PipelineCell', the argument 'stage_config' : {} is not "
                                "found in 'network' : {}".format(config_dict, network))
+        if segment_config is None:
+            return
+        self._config_segment(segment_config)
+
+
+    def _config_segment(self, segment_config=None):
+        """
+        Config segment num for cell.
+        """
+        config_dict = segment_config.copy()
+        for cell_name, cell in self.network.cells_and_names():
+            if cell_name in segment_config:
+                setattr(cell, "pipeline_segment", segment_config[cell_name])
+                del config_dict[cell_name]
+        if str(self.network) in segment_config:
+            setattr(self.network, "pipeline_segment", segment_config[str(self.network)])
+            del config_dict[str(self.network)]
+        # if there are any config elements left, print them
+        if config_dict:
+            for config_cell_name, config_segment_num in config_dict.items():
+                logger.error("pipeline_cell segment_config set pipeline_segment fail!")
+                logger.warning("config cell name:" + str(config_cell_name) +
+                               " config segment num:" + str(config_segment_num))
+            logger.warning("network:" + str(self.network))
+            logger.warning("cell name available:")
+            for cell_name, cell in self.network.cells_and_names():
+                logger.warning(cell_name)
+            raise KeyError("For 'PipelineCell', the argument 'segment_config' : {} is not "
+                           "found in 'network' : {}".format(config_dict, network))
+
 
     def construct(self, *inputs):
         ret = None

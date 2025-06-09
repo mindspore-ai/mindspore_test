@@ -73,6 +73,7 @@
 #include "backend/common/graph_kernel/proactive_fallback_expander.h"
 #include "backend/common/graph_kernel/transpose_matmul_fusion.h"
 #include "backend/common/graph_kernel/shrink_only_shape_needed.h"
+#include "backend/common/graph_kernel/depend_edge_elimination.h"
 #include "backend/common/graph_kernel/add_attr.h"
 #ifdef ENABLE_AKG
 #include "backend/common/graph_kernel/graph_kernel_build.h"
@@ -109,9 +110,6 @@ PassManagerPtr GraphKernelOptimizer::PreProcess() const {
   pm->Add(std::make_shared<ProactiveFallbackExpander>(), OptLevel_1,
           is_dvm && !(common::GetEnv(kDisableKernelBackoff) == "1"));
 
-  // Transform Transpose + Mutmul to a single Matmul with attribute trans_a/trans_b
-  pm->Add(std::make_shared<TransposeMatmulFusion>(), OptLevel_2, is_ascend);
-
   // convert input to attr adapter for dyn-shape
   pm->Add(std::make_shared<ConvertFrontEndToGraphKernel>(), OptLevel_1);
 
@@ -137,6 +135,9 @@ PassManagerPtr GraphKernelOptimizer::PreProcess() const {
 
 PassManagerPtr GraphKernelOptimizer::Cluster() const {
   auto pm = std::make_shared<GraphKernelPassManager>(1, "cluster");
+
+  // Transform Transpose + Mutmul to a single Matmul with attribute trans_a/trans_b
+  pm->Add(std::make_shared<TransposeMatmulFusion>(), OptLevel_2, is_ascend);
 
   // Convert IsFinite and its user to FloatStatus
   pm->Add(std::make_shared<FloatStatusFusion>(), OptLevel_2, is_dvm);
@@ -212,6 +213,7 @@ PassManagerPtr GraphKernelOptimizer::Split() const {
   // Eliminate the redundant node that is copied above but not handled by GraphKernelSplitter
   pm->Add(std::make_shared<MergeOutputForUpdateState>(), OptLevel_1);
   pm->Add(std::make_shared<GraphKernelCSE>(), OptLevel_1);
+  pm->Add(std::make_shared<DependEdgeElimination>(), OptLevel_1, is_dvm);
   pm->Add(std::make_shared<EliminateRedundantOutput>(), OptLevel_1);
   return pm;
 }

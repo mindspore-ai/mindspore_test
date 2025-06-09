@@ -189,6 +189,9 @@ void HcclAdapter::InitPlugin() {
   hccl_exec_enqueue_op_ = DlsymFuncObj(HcomExecEnqueueOperation, plugin_handle_);
   hccl_exec_enqueue_all_to_all_v_ = DlsymFuncObj(HcomExecEnqueueAllToAllV, plugin_handle_);
   launch_hccl_all_to_allv_ = DlsymFuncObj(HcclAlltoAllV, plugin_handle_);
+  launch_hccl_all_to_allvc_ = DlsymFuncObjTest(HcclAlltoAllVC, plugin_handle_);
+  launch_hccl_reduce_scatterv_ = DlsymAscendFuncObj(HcclReduceScatterV, plugin_handle_);
+  launch_hccl_all_gatherv_ = DlsymAscendFuncObj(HcclAllGatherV, plugin_handle_);
   launch_hccl_all_to_all_ = DlsymFuncObj(HcclAlltoAll, plugin_handle_);
   launch_hccl_comm_resume_ = DlsymAscendFuncObj(HcclCommResume, plugin_handle_);
   hcom_destroy_ = DlsymFuncObj(HcomDestroy, plugin_handle_);
@@ -229,6 +232,9 @@ void HcclAdapter::FinalizePlugin() {
   hccl_exec_enqueue_op_ = nullptr;
   hccl_exec_enqueue_all_to_all_v_ = nullptr;
   launch_hccl_all_to_allv_ = nullptr;
+  launch_hccl_all_to_allvc_ = nullptr;
+  launch_hccl_reduce_scatterv_ = nullptr;
+  launch_hccl_all_gatherv_ = nullptr;
   launch_hccl_comm_resume_ = nullptr;
   hcom_destroy_ = nullptr;
   (void)dlclose(plugin_handle_);
@@ -856,6 +862,49 @@ HcclResult HcclAdapter::HcclAlltoAllV(void *send_buf, void *recv_buf, hccl::Hccl
   if (MS_UNLIKELY(mindspore::profiler::MstxImpl::GetInstance().IsEnable())) {
     MSTX_END(rangeId, mindspore::profiler::MSTX_DOMAIN_COMMUNICATION);
   }
+  return ret;
+}
+
+HcclResult HcclAdapter::HcclAlltoAllVC(void *send_buf, void *send_count_matrix, HcclDataType send_type, void *recv_buf,
+                                       HcclDataType recv_type, aclrtStream stream, HcclComm hccl_comm) const {
+  static bool dry_run = common::IsCompileSimulation();
+  if (MS_UNLIKELY(dry_run)) {
+    return HCCL_SUCCESS;
+  }
+  CheckExcutionMode();
+  CHECK_SYMBOL_NULL(launch_hccl_all_to_allvc_);
+  MS_EXCEPTION_IF_NULL(hccl_comm);
+  HcclResult ret =
+    launch_hccl_all_to_allvc_(send_buf, send_count_matrix, send_type, recv_buf, recv_type, hccl_comm, stream);
+  return ret;
+}
+
+HcclResult HcclAdapter::HcclReduceScatterV(void *send_buf, void *recv_buf, hccl::HcclReduceScatterVParams params,
+                                           HcclDataType data_type, const HcclReduceOp op, const aclrtStream stream,
+                                           HcclComm hccl_comm) const {
+  static bool dry_run = common::IsCompileSimulation();
+  if (MS_UNLIKELY(dry_run)) {
+    return HCCL_SUCCESS;
+  }
+  CheckExcutionMode();
+  CHECK_SYMBOL_NULL(launch_hccl_reduce_scatterv_);
+  MS_EXCEPTION_IF_NULL(hccl_comm);
+  HcclResult ret = launch_hccl_reduce_scatterv_(send_buf, params.send_counts.data(), params.sdispls.data(), recv_buf,
+                                                params.recv_count, data_type, op, hccl_comm, stream);
+  return ret;
+}
+
+HcclResult HcclAdapter::HcclAllGatherV(void *send_buf, void *recv_buf, hccl::HcclAllGatherVParams params,
+                                       HcclDataType data_type, const aclrtStream stream, HcclComm hccl_comm) const {
+  static bool dry_run = common::IsCompileSimulation();
+  if (MS_UNLIKELY(dry_run)) {
+    return HCCL_SUCCESS;
+  }
+  CheckExcutionMode();
+  CHECK_SYMBOL_NULL(launch_hccl_all_gatherv_);
+  MS_EXCEPTION_IF_NULL(hccl_comm);
+  HcclResult ret = launch_hccl_all_gatherv_(send_buf, params.send_count, recv_buf, params.recv_counts.data(),
+                                            params.rdispls.data(), data_type, hccl_comm, stream);
   return ret;
 }
 

@@ -263,10 +263,10 @@ CNodePtr MatmulReduceScatterFusion::CreateFusionCNode(const FuncGraphPtr &func_g
   MS_CHECK_TRUE_RET(IsNodesDTypeSameAndValid({input, x2}, valid_type_list), {});
 
   auto matmul_cnode_users = matmul_cnode->func_graph()->manager()->node_users()[matmul_cnode];
-  MS_CHECK_TRUE_RET(matmul_cnode_users.size() == 1, {});
 
   auto trans_input = GetInputValueFromCNode<bool>(matmul_cnode, kIndex3);
   auto trans_x2 = GetInputValueFromCNode<bool>(matmul_cnode, kIndex4);
+  // Ensure trans_input is false for mc2 and lccl fusion
   MS_CHECK_TRUE_RET(!trans_input, {});
 
   auto input_shape = GetShape(input);
@@ -293,6 +293,7 @@ CNodePtr MatmulReduceScatterFusion::CreateFusionCNode(const FuncGraphPtr &func_g
     MS_LOG(WARNING) << "The reduce op is " << reduce_op << ", but aclnnMatmulReduceScatter only support sum.";
     return nullptr;
   }
+  matmul_reduce_scatter_prim->AddAttr(kAttrOp, reduce_scatter_prim->GetAttr(kAttrOp));
 
   auto kernel_graph = func_graph->cast<std::shared_ptr<mindspore::session::KernelGraph>>();
   MS_EXCEPTION_IF_NULL(kernel_graph);
@@ -309,6 +310,12 @@ CNodePtr MatmulReduceScatterFusion::CreateFusionCNode(const FuncGraphPtr &func_g
   }
   matmul_reduce_scatter_cnode->set_abstract(reduce_scatter_cnode->abstract()->Clone());
   matmul_reduce_scatter_cnode->set_scope(reduce_scatter_cnode->scope());
+  for (const auto &matmul_cnode_user_pair : matmul_cnode_users) {
+    if (common::AnfAlgo::CheckPrimitiveType(matmul_cnode_user_pair.first, prim::kPrimUpdateState)) {
+      matmul_cnode->func_graph()->manager()->SetEdge(matmul_cnode_user_pair.first, matmul_cnode_user_pair.second,
+                                                     matmul_reduce_scatter_cnode);
+    }
+  }
   MS_LOG(DEBUG) << "Create MatmulReduceScatter cnode success.";
   return matmul_reduce_scatter_cnode;
 }
@@ -383,8 +390,10 @@ CNodePtr AllGatherMatmulFusion::CreateFusionCNode(const FuncGraphPtr &func_graph
 
   auto trans_input = GetInputValueFromCNode<bool>(matmul_cnode, kIndex3);
   auto trans_x2 = GetInputValueFromCNode<bool>(matmul_cnode, kIndex4);
+  // Ensure trans_input is false for mc2 and lccl fusion
   MS_CHECK_TRUE_RET(!trans_input, {});
 
+  // create op
   auto all_gather_matmul_prim = prim::kPrimAllGatherMatmul->Clone();
   MS_CHECK_TRUE_RET(all_gather_matmul_prim, {});
   auto all_gather_prim = GetCNodePrimitive(all_gather_cnode);

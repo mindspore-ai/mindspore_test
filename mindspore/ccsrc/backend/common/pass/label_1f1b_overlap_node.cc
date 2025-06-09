@@ -32,35 +32,47 @@
 namespace mindspore {
 namespace opt {
 namespace {
-constexpr int64_t kAll2AllSize = 262144;
-void LabelBpBegin(const std::vector<CNodePtr> &begin_cnodes, const std::string &output_tags) {
+void LabelInputNodes(const CNodePtr& first_all2all) {
+  MS_LOG(ERROR) << "=======first_all2all:" << first_all2all->DebugString();
+  std::queue<AnfNodePtr> anf_queue;
+  anf_queue.push(first_all2all);
+  std::unordered_set<AnfNodePtr> visited;
+  while (!anf_queue.empty()) {
+    auto queue_end = anf_queue.front();
+    anf_queue.pop();
+    if (visited.find(queue_end) != visited.end()) {
+      continue;
+    }
+    (void)visited.insert(queue_end);
+    if (!IsPrimitiveCNode(queue_end)) {
+      continue;
+    }
+    auto cnode_queue_end = queue_end->cast<CNodePtr>();
+    cnode_queue_end->AddAttr("last_all2all_node_input", MakeValue(true));
+    for (size_t i = 1; i < cnode_queue_end->size(); ++i) {
+      anf_queue.push(cnode_queue_end->input(i));
+    }
+  }
+}
+
+void LabelBpBegin(const CNodePtr& first_all2all,
+                  const std::vector<CNodePtr> &begin_origin_cnodes, const std::string &output_tags) {
+  std::vector<CNodePtr> begin_cnodes;
+  if (first_all2all != nullptr) { 
+    LabelInputNodes(first_all2all);
+    std::copy_if(begin_origin_cnodes.begin(), begin_origin_cnodes.end(),
+                 std::back_inserter(begin_cnodes), [](const CNodePtr &node) { return node->HasAttr("last_all2all_node_input"); });
+  } else {
+    begin_cnodes = begin_origin_cnodes;
+  }
   if (!begin_cnodes.empty()) {
-    size_t middle_cnode_index = begin_cnodes.size() / kSizeTwo;
+    size_t middle_cnode_index = begin_cnodes.size() / kSizeFour;
     auto first_cnode = begin_cnodes[middle_cnode_index];
     first_cnode->AddAttr(output_tags, MakeValue<size_t>(0));
     if (middle_cnode_index >= 1 && output_tags == kCNodeAttrBackwardAll2AllOutput) {
       begin_cnodes[middle_cnode_index - 1]->AddAttr(kCNodeAttr1f1bIndexBpBegin, MakeValue(true));
     }
   }
-}
-
-AnfNodePtr GetInputNode(const AnfNodePtr &node, std::function<std::pair<bool, size_t>(const CNodePtr &)> check_filter) {
-  std::queue<AnfNodePtr> node_queue;
-  node_queue.push(node);
-  while (!node_queue.empty()) {
-    auto end = node_queue.front();
-    node_queue.pop();
-    if (!end->isa<CNode>()) {
-      return end;
-    }
-    auto cnode_queue_end = end->cast<CNodePtr>();
-    auto check_res = check_filter(cnode_queue_end);
-    if (!check_res.first) {
-      return end;
-    }
-    node_queue.push(cnode_queue_end->input(check_res.second));
-  }
-  return node;
 }
 
 void LabelOutputNodesWithCheck(const AnfNodePtr &node, std::function<bool(const AnfNodePtr &)> check) {
@@ -132,81 +144,15 @@ FuncGraphManagerPtr GetManager(const FuncGraphPtr &cur_graph) {
   return mng;
 }
 
-bool IsNeededAllGatherReduceScatter(const CNodePtr &cnode, const std::string &pp_1f1b_value) {
-  bool is_target = false;
-  if (pp_1f1b_value.find("MorphAllGather") != std::string::npos) {
-    is_target =
-      is_target || (IsPrimitiveCNode(cnode, prim::kPrimAllGather) &&
-                    GetCNodePrimitive(cnode)->instance_name().find("parallel_optimizer") == std::string::npos &&
-                    GetCNodePrimitive(cnode)->instance_name().find("redistribution") == std::string::npos &&
-                    GetCNodePrimitive(cnode)->instance_name().find("forward_op") == std::string::npos);
-  } else if (pp_1f1b_value.find("AllGather") != std::string::npos) {
-    is_target =
-      is_target || (IsPrimitiveCNode(cnode, prim::kPrimAllGather) &&
-                    GetCNodePrimitive(cnode)->instance_name().find("parallel_optimizer") == std::string::npos);
-  }
-  if (pp_1f1b_value.find("MorphReduceScatter") != std::string::npos) {
-    is_target =
-      is_target || (IsPrimitiveCNode(cnode, prim::kPrimReduceScatter) &&
-                    GetCNodePrimitive(cnode)->instance_name().find("parallel_optimizer") == std::string::npos &&
-                    GetCNodePrimitive(cnode)->instance_name().find("redistribution") == std::string::npos &&
-                    GetCNodePrimitive(cnode)->instance_name().find("forward_op") == std::string::npos);
-  } else if (pp_1f1b_value.find("ReduceScatter") != std::string::npos) {
-    is_target =
-      is_target || (IsPrimitiveCNode(cnode, prim::kPrimReduceScatter) &&
-                    GetCNodePrimitive(cnode)->instance_name().find("parallel_optimizer") == std::string::npos);
-  }
-  return is_target;
-}
-
-bool IsNeededShape(const CNodePtr &cnode) {
-  if (!(cnode->input(kIndex1)->abstract() && cnode->input(kIndex1)->abstract()->GetShape())) {
-    return true;
-  }
-  auto a2a_shape = cnode->input(kIndex1)->abstract()->GetShape()->GetShapeVector();
-  auto a2a_size = std::accumulate(a2a_shape.begin(), a2a_shape.end(), 1, std::multiplies<int64_t>());
-  if (std::find(a2a_shape.begin(), a2a_shape.end(), -1) != a2a_shape.end()) {
-    auto input_node = GetInputNode(cnode->input(kIndex1), [&](const CNodePtr &cnode) {
-      bool filter = IsPrimitiveCNode(cnode, prim::kPrimDepend) || IsPrimitiveCNode(cnode, prim::kPrimLoad) ||
-                    IsPrimitiveCNode(cnode, prim::kPrimReshape) || IsPrimitiveCNode(cnode, prim::kPrimCast);
-      return std::make_pair(filter, 1);
-    });
-    if (!input_node->isa<CNode>()) {
-      return true;
-    }
-    auto input_cnode = input_node->cast<CNodePtr>();
-    if (input_cnode->input(kIndex1)->abstract() && input_cnode->input(kIndex1)->abstract()->GetShape()) {
-      auto a2a_input_shape = input_cnode->input(kIndex1)->abstract()->GetShape()->GetShapeVector();
-      auto a2a_input_size =
-        std::accumulate(a2a_input_shape.begin(), a2a_input_shape.end(), 1, std::multiplies<int64_t>());
-      if (std::find(a2a_input_shape.begin(), a2a_input_shape.end(), -1) != a2a_input_shape.end()) {
-        return true;
-      }
-      return a2a_input_size >= kAll2AllSize;
-    }
-  }
-  return a2a_size >= kAll2AllSize;
-}
-
 bool IsNeededCNode(const CNodePtr &cnode) {
   if (!common::AnfAlgo::IsCommunicationOp(cnode)) {
     return false;
   }
-  if (!IsNeededShape(cnode)) {
+  if (!common::AnfAlgo::IsNeededShape(cnode)) {
     return false;
   }
   auto pp_1f1b_value = MsContext::GetInstance()->get_param<std::string>(MS_CTX_PP_1F1B_OVERLAP);
-
-  bool is_target = false;
-  if (pp_1f1b_value.find("AlltoAll") != std::string::npos) {
-    is_target =
-      is_target || IsPrimitiveCNode(cnode, prim::kPrimAlltoAll) || IsPrimitiveCNode(cnode, prim::kPrimAllToAll);
-  }
-  if (pp_1f1b_value.find("AlltoAllV") != std::string::npos) {
-    is_target = is_target || IsPrimitiveCNode(cnode, prim::kPrimAlltoAllV);
-  }
-  is_target = is_target || IsNeededAllGatherReduceScatter(cnode, pp_1f1b_value);
-  return is_target;
+  return common::AnfAlgo::IsNeededOverlapComm(cnode, pp_1f1b_value);
 }
 }  // namespace
 void LabelAll2AllInputOutput(const FuncGraphPtr &cur_graph, const std::string &input_tags,
@@ -220,6 +166,7 @@ void LabelAll2AllInputOutput(const FuncGraphPtr &cur_graph, const std::string &i
   size_t all2all_input_index = 0;
   size_t all2all_output_index = 1;
   size_t last_a2a_index = 0;
+  CNodePtr first_all2all_node = nullptr;
   for (size_t idx = 0; idx < order_cnode_list.size(); ++idx) {
     auto cnode = order_cnode_list[idx];
     if (IsPrimitiveCNode(cnode) && AnfUtils::IsRealKernel(cnode) && !common::AnfAlgo::IsNopNode(cnode) &&
@@ -233,6 +180,9 @@ void LabelAll2AllInputOutput(const FuncGraphPtr &cur_graph, const std::string &i
     }
     if (cnode->HasAttr(kAttrDuplicated)) {
       continue;
+    }
+    if (!first_all2all_node) {
+      first_all2all_node = cnode;
     }
     last_a2a_index = idx;
     cnode->AddAttr(input_tags, MakeValue<size_t>(all2all_input_index));
@@ -248,8 +198,7 @@ void LabelAll2AllInputOutput(const FuncGraphPtr &cur_graph, const std::string &i
       push_begin_cnode = false;
     }
   }
-
-  LabelBpBegin(begin_cnodes, output_tags);
+  LabelBpBegin(first_all2all_node, begin_cnodes, output_tags);
   if (last_a2a_index > 0) {
     LabelEndCNode(order_cnode_list, input_tags, all2all_input_index, last_a2a_index);
   }

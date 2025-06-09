@@ -62,6 +62,7 @@ class PartialEliminater : public AnfVisitor {
       (void)std::copy(inputs.begin() + 1, inputs.end(), std::back_inserter(args));
       TraceGuard guard(MakeTraceInfo<TracePartialTransform>(node->debug_info()));
       auto new_node = node->func_graph()->NewCNode(args);
+      new_node->set_primal_attrs(node->cast<CNodePtr>()->primal_attrs());
       new_node->set_abstract(node->abstract());
       return new_node;
     }
@@ -87,6 +88,7 @@ class PartialEliminater : public AnfVisitor {
     (void)std::copy(Xs_.begin(), Xs_.end(), std::back_inserter(args));
     TraceGuard guard(MakeTraceInfo<TracePartialTransform>(node->debug_info()));
     auto new_node = node->func_graph()->NewCNode(args);
+    new_node->set_primal_attrs(node->cast<CNodePtr>()->primal_attrs());
     new_node->set_abstract(node->abstract());
 
     // reorder the formal parameter of fg.

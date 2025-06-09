@@ -442,5 +442,9 @@ TypePtr FlashAttentionScoreFuncImpl::InferType(const PrimitivePtr &prim,
   output_type_ptr_list[kFlashAttentionScoreOutputAttentionOutIndex] = std::make_shared<TensorType>(type);
   return std::make_shared<Tuple>(output_type_ptr_list);
 }
+
+std::set<int64_t> FlashAttentionScoreFuncImpl::GetValueDependArgIndices() const {
+  return {kFlashAttentionScoreInputActualSeqQlenIndex, kFlashAttentionScoreInputActualSeqKVlenIndex};
+} 
 }  // namespace ops
 }  // namespace mindspore

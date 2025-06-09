@@ -33,7 +33,7 @@ void FlashAttentionScoreGradAscendCall(
   const std::optional<TensorPtr> &attn_mask, const std::optional<TensorPtr> &softmax_max,
   const std::optional<TensorPtr> &softmax_sum, const std::optional<TensorPtr> &softmax_in,
   const std::optional<TensorPtr> &attention_in, const std::optional<ValueTuplePtr> &prefix,
-  const std::optional<ValueTuplePtr> &actual_seq_qlen, const std::optional<ValueTuplePtr> &actual_seq_kvlen,
+  const std::optional<TensorPtr> &actual_seq_qlen, const std::optional<TensorPtr> &actual_seq_kvlen,
   const Int64ImmPtr head_num, const FP32ImmPtr keep_prob, const FP32ImmPtr scale_value, const Int64ImmPtr pre_tokens,
   const Int64ImmPtr next_tokens, const Int64ImmPtr inner_precise, const Int64ImmPtr input_layout,
   const Int64ImmPtr sparse_mode, const std::vector<tensor::TensorPtr> &outputs) {
@@ -58,16 +58,16 @@ void FlashAttentionScoreGradAscendCall(
   }
 
   if (input_layout_string == "TND") {
-    if (!actual_seq_kvlen.has_value() || !actual_seq_qlen.has_value()) {
-      MS_LOG(EXCEPTION)
-        << "For [aclnnFlashAttentionUnpaddingScoreGrad], actual_seq_qlen and actual_seq_kvlen must be not "
-           "none when input layout is TND.";
-    }
-    std::vector<int64_t> actual_seq_qlen_array = ConvertValueTupleToVector<int64_t>(actual_seq_qlen.value());
-    std::vector<int64_t> actual_seq_kvlen_array = ConvertValueTupleToVector<int64_t>(actual_seq_kvlen.value());
+    // if (!actual_seq_kvlen.has_value() || !actual_seq_qlen.has_value()) {
+    //   MS_LOG(EXCEPTION)
+    //     << "For [aclnnFlashAttentionUnpaddingScoreGrad], actual_seq_qlen and actual_seq_kvlen must be not "
+    //        "none when input layout is TND.";
+    // }
+    // std::vector<int64_t> actual_seq_qlen_array = ConvertValueTupleToVector<int64_t>(actual_seq_qlen.value());
+    // std::vector<int64_t> actual_seq_kvlen_array = ConvertValueTupleToVector<int64_t>(actual_seq_kvlen.value());
     LAUNCH_ACLNN(aclnnFlashAttentionUnpaddingScoreGrad, device_context, op->stream_id(), query, key, value, dy,
                  pse_shift, drop_mask, padding_mask, attn_mask, softmax_max, softmax_sum, softmax_in, attention_in,
-                 prefix_array, actual_seq_qlen_array, actual_seq_kvlen_array, scale_value_value, keep_prob_value,
+                 prefix_array, actual_seq_qlen, actual_seq_kvlen, scale_value_value, keep_prob_value,
                  pre_tokens_value, next_tokens_value, head_num_value, input_layout_string, inner_precise_value,
                  sparse_mode_value, outputs[kIndex0], outputs[kIndex1], outputs[kIndex2], outputs[kIndex3]);
   } else {
@@ -86,8 +86,8 @@ tensor::TensorPtr FlashAttentionScoreGradAscendCustomize(
   const std::optional<TensorPtr> &padding_mask, const std::optional<TensorPtr> &attn_mask,
   const std::optional<TensorPtr> &softmax_max, const std::optional<TensorPtr> &softmax_sum,
   const std::optional<TensorPtr> &softmax_in, const std::optional<TensorPtr> &attention_in,
-  const std::optional<ValueTuplePtr> &prefix, const std::optional<ValueTuplePtr> &actual_seq_qlen,
-  const std::optional<ValueTuplePtr> &actual_seq_kvlen, const Int64ImmPtr head_num, const FP32ImmPtr keep_prob,
+  const std::optional<ValueTuplePtr> &prefix, const std::optional<TensorPtr> &actual_seq_qlen,
+  const std::optional<TensorPtr> &actual_seq_kvlen, const Int64ImmPtr head_num, const FP32ImmPtr keep_prob,
   const FP32ImmPtr scale_value, const Int64ImmPtr pre_tokens, const Int64ImmPtr next_tokens,
   const Int64ImmPtr inner_precise, const Int64ImmPtr input_layout, const Int64ImmPtr sparse_mode) {
   OpRunner::InferOpOutput(op, query, key, value, dy, pse_shift, drop_mask, padding_mask, attn_mask, softmax_max,
