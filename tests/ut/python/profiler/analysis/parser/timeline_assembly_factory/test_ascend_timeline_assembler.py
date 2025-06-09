@@ -15,8 +15,10 @@
 
 import unittest
 from unittest import mock
+from unittest.mock import patch
 from decimal import Decimal
 
+from mindspore.profiler.common.log import ProfilerLogger
 from mindspore.profiler.common.constant import EventConstant, TimelineLayerName, FileConstant
 from mindspore.profiler.analysis.parser.timeline_event.fwk_event import FwkCompleteEvent
 from mindspore.profiler.analysis.parser.timeline_event.msprof_event import MsprofCompleteEvent
@@ -40,8 +42,12 @@ class TestAscendTimelineAssembler(unittest.TestCase):
     assembled and verified.
     """
 
-    def setUp(self):
+    @patch.object(ProfilerLogger, 'init')
+    @patch.object(ProfilerLogger, 'get_instance')
+    def setUp(self, mock_get_instance, mock_init):
         """Set up test environment."""
+        mock_logger = unittest.mock.MagicMock()
+        mock_get_instance.return_value = mock_logger
         self.assembler = AscendTimelineAssembler()
         self._setup_test_data()
 
