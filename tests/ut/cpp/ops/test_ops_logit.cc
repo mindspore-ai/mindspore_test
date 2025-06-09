@@ -25,7 +25,7 @@ namespace ops {
 OP_FUNC_IMPL_TEST_DECLARE(Logit, EltwiseOpParams);
 
 OP_FUNC_IMPL_TEST_CASES(
-  Logit, testing::Values(EltwiseOpParams{{2, 3}, kFloat32, {2, 3}, kFloat32, {CreateScalar<float>(-1.0)}},
+  Logit, testing::Values(EltwiseOpParams{{2, 3}, kFloat32, {2, 3}, kFloat32, {CreateScalar<double>(-1.0)}},
                          EltwiseOpParams{{2, -1}, kFloat32, {2, -1}, kFloat32, {CreateScalar(kValueAny)}},
                          EltwiseOpParams{{-1, -1}, kFloat32, {-1, -1}, kFloat32, {CreateScalar(kValueAny)}},
                          EltwiseOpParams{{-2}, kFloat32, {-2}, kFloat32, {CreateScalar(kValueAny)}}));

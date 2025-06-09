@@ -21,6 +21,7 @@
 #include "kernel/cpu/atomic_add.h"
 #include "kernel/cpu/roi_align_grad_cpu_kernel.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -148,7 +149,7 @@ bool ROIAlignGradCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
   // Get primitive args
   pooled_height_ = LongToInt(GetValue<int64_t>(primitive_->GetAttr(ops::kPooledHeight)));
   pooled_width_ = LongToInt(GetValue<int64_t>(primitive_->GetAttr(ops::kPooledWidth)));
-  spatial_scale_ = GetValue<float>(primitive_->GetAttr(ops::kSpatialScale));
+  spatial_scale_ = GetValue<pyfloat>(primitive_->GetAttr(ops::kSpatialScale));
   sample_num_ = LongToInt(GetValue<int64_t>(primitive_->GetAttr(ops::kSampleNum)));
   roi_end_mode_ = 1;
   return true;

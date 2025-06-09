@@ -16,6 +16,7 @@
 
 #include "kernel/cpu/nan_to_num_cpu_kernel.h"
 #include "base/float16.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 using std::isinf;
 using std::isnan;
@@ -63,11 +64,11 @@ int NanToNumCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
   }
   const float DEFAULT_NAN = 0.0;
 
-  auto nan_opt = inputs[kNanValueIdx]->GetOptionalValueWithCheck<float>();
+  auto nan_opt = inputs[kNanValueIdx]->GetOptionalValueWithCheck<pyfloat>();
   nan_value_ = nan_opt.has_value() ? nan_opt.value() : DEFAULT_NAN;
 
-  auto posinf_opt = inputs[kPosinfValueIdx]->GetOptionalValueWithCheck<float>();
-  auto neginf_opt = inputs[kNeginfValueIdx]->GetOptionalValueWithCheck<float>();
+  auto posinf_opt = inputs[kPosinfValueIdx]->GetOptionalValueWithCheck<pyfloat>();
+  auto neginf_opt = inputs[kNeginfValueIdx]->GetOptionalValueWithCheck<pyfloat>();
 
   bool posinf_has_value = posinf_opt.has_value();
   bool neginf_has_value = neginf_opt.has_value();

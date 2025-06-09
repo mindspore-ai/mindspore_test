@@ -24,6 +24,7 @@
 
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "common/ms_factory.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -56,10 +57,10 @@ class BoundingBoxDecodeCpuKernelMod : public NativeCpuKernelMod {
   static std::vector<std::pair<KernelAttr, BoundingBoxDecodeFunc>> func_list_;
   BoundingBoxDecodeFunc kernel_func_;
 
-  std::vector<float> means_;
-  std::vector<float> stds_;
+  std::vector<pyfloat> means_;
+  std::vector<pyfloat> stds_;
   std::vector<size_t> max_shape_;
-  float wh_ratio_clip_{0.016};
+  pyfloat wh_ratio_clip_{0.016};
 };
 }  // namespace boundingbox_decode_cpu
 }  // namespace kernel

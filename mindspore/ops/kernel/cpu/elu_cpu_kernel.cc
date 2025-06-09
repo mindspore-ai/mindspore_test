@@ -17,6 +17,7 @@
 #include "kernel/cpu/elu_cpu_kernel.h"
 #include "nnacl/fp32/activation_fp32.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -28,7 +29,7 @@ bool EluCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
   const auto *in = GetDeviceAddress<T>(inputs, kIndex0);
   auto *out = GetDeviceAddress<T>(outputs, kIndex0);
   const size_t lens = outputs[kIndex0]->size() / sizeof(T);
-  auto alpha = inputs[kIndex1]->GetValueWithCheck<float>();
+  auto alpha = inputs[kIndex1]->GetValueWithCheck<pyfloat>();
 
   auto task = [in, out, alpha](size_t start, size_t end) {
     if constexpr (std::is_same_v<T, float>) {
@@ -47,12 +48,12 @@ const std::vector<std::pair<KernelAttr, EluCpuKernelMod::KernelRunFunc>> &EluCpu
   static const std::vector<std::pair<KernelAttr, EluCpuKernelMod::KernelRunFunc>> func_list = {
     {KernelAttr()
        .AddInputAttr(kNumberTypeFloat32)
-       .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
        .AddOutputAttr(kNumberTypeFloat32),
      &EluCpuKernelMod::LaunchKernel<float>},
     {KernelAttr()
        .AddInputAttr(kNumberTypeFloat64)
-       .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
        .AddOutputAttr(kNumberTypeFloat64),
      &EluCpuKernelMod::LaunchKernel<double>}};
   return func_list;

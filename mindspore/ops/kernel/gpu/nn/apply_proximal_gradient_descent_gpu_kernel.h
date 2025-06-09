@@ -22,7 +22,7 @@
 #include <functional>
 #include <map>
 #include <utility>
-#include "mindspore/ops/infer/apply_proximal_gradient_descent.h"
+
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/apply_proximal_gradient_descent_impl.cuh"
 #include "common/ms_factory.h"

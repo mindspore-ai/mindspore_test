@@ -25,7 +25,7 @@ namespace ops {
 OP_FUNC_IMPL_TEST_DECLARE(LeakyReLUExt, EltwiseOpParams);
 
 OP_FUNC_IMPL_TEST_CASES(
-  LeakyReLUExt, testing::Values(EltwiseOpParams{{2, 3}, kFloat32, {2, 3}, kFloat32, {CreateScalar<float>(0.5)}},
+  LeakyReLUExt, testing::Values(EltwiseOpParams{{2, 3}, kFloat32, {2, 3}, kFloat32, {CreateScalar<double>(0.5)}},
                                 EltwiseOpParams{{2, -1}, kFloat32, {2, -1}, kFloat32, {CreateScalar(kValueAny)}},
                                 EltwiseOpParams{{-1, -1}, kFloat32, {-1, -1}, kFloat32, {CreateScalar(kValueAny)}},
                                 EltwiseOpParams{{-2}, kFloat32, {-2}, kFloat32, {CreateScalar(kValueAny)}}));

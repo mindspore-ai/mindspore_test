@@ -20,6 +20,7 @@
 #include <map>
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/infer/fractional_max_pool.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -42,7 +43,10 @@ constexpr size_t kOutputShapeIndexC = 3;
 
 bool FractionalMaxPoolCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                          const std::vector<KernelTensor *> &outputs) {
-  pooling_ratio_ = GetValue<std::vector<float>>(primitive_->GetAttr("pooling_ratio"));
+  auto pooling_ratio = GetValue<std::vector<pyfloat>>(primitive_->GetAttr("pooling_ratio"));
+  pooling_ratio_.clear();
+  (void)std::transform(pooling_ratio.begin(), pooling_ratio.end(), std::back_inserter(pooling_ratio_),
+                       [](pyfloat v) { return static_cast<float>(v); });
   if (pooling_ratio_.size() != kInputDims) {
     MS_EXCEPTION(ValueError) << "For '" << kernel_name_
                              << "', the size of parameter 'pooling_ratio' must be 4, but got " << pooling_ratio_.size()

@@ -36,10 +36,10 @@ std::vector<tensor::TensorPtr> SilentCheckV2AscendCustomize(
                           c_thresh_l2_ptr, c_coeff_l2_ptr, npu_asd_detect_ptr);
 
   auto c_min_steps = GetValue<int64_t>(c_min_steps_ptr);
-  auto c_thresh_l1 = GetValue<pyfloat>(c_thresh_l1_ptr);
-  auto c_coeff_l1 = GetValue<pyfloat>(c_coeff_l1_ptr);
-  auto c_thresh_l2 = GetValue<pyfloat>(c_thresh_l2_ptr);
-  auto c_coeff_l2 = GetValue<pyfloat>(c_coeff_l2_ptr);
+  float c_thresh_l1 = GetValue<pyfloat>(c_thresh_l1_ptr);
+  float c_coeff_l1 = GetValue<pyfloat>(c_coeff_l1_ptr);
+  float c_thresh_l2 = GetValue<pyfloat>(c_thresh_l2_ptr);
+  float c_coeff_l2 = GetValue<pyfloat>(c_coeff_l2_ptr);
   auto npu_asd_detect = GetValue<int64_t>(npu_asd_detect_ptr);
 
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), val, input_grad, sfda, step);

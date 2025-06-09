@@ -19,12 +19,14 @@
 #include "ops/test_ops.h"
 #include "ops/test_ops_cmp_utils.h"
 #include "ops/test_value_utils.h"
+#include "mindspore/core/include/mindapi/base/types.h"
+
 namespace mindspore {
 namespace ops {
 OP_FUNC_IMPL_TEST_DECLARE(CeLU, EltwiseOpParams);
 
 OP_FUNC_IMPL_TEST_CASES(
-  CeLU, testing::Values(EltwiseOpParams{{2, 3}, kFloat32, {2, 3}, kFloat32, {CreateScalar<float>(0.5)}},
+  CeLU, testing::Values(EltwiseOpParams{{2, 3}, kFloat32, {2, 3}, kFloat32, {CreateScalar<pyfloat>(0.5)}},
                         EltwiseOpParams{{2, -1}, kFloat32, {2, -1}, kFloat32, {CreateScalar(kValueAny)}},
                         EltwiseOpParams{{-1, -1}, kFloat32, {-1, -1}, kFloat32, {CreateScalar(kValueAny)}},
                         EltwiseOpParams{{-2}, kFloat32, {-2}, kFloat32, {CreateScalar(kValueAny)}}));

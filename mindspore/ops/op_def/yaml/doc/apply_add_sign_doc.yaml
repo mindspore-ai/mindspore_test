@@ -1,0 +1,76 @@
+apply_add_sign:
+    description: |
+        Updates relevant entries according to the AddSign algorithm.
+
+        .. math::
+            \begin{array}{ll} \\
+                m_{t+1} = \beta * m_{t} + (1 - \beta) * g \\
+                \text{update} = (\alpha + \text{sign_decay} * sign(g) * sign(m)) * g \\
+                var = var - lr_{t+1} * \text{update}
+            \end{array}
+
+        :math:`t` represents updating step while :math:`m` represents the 1st moment vector, :math:`m_{t}`
+        is the last moment of :math:`m_{t+1}`, :math:`lr` represents scaling factor `lr`, :math:`g` represents `grad`,
+        :math:`\alpha` represents `alpha`, :math:`\beta` represents `beta`.
+
+        The data type of all inputs must be float16 or float32 on Ascend and float16, float32 or float64 on CPU and GPU.
+
+        Inputs of `var`, `accum` and `grad` , `sign_decay` and `beta` comply with the implicit type conversion rules
+        to make the data types consistent.
+        If they have different data types, the lower priority data type will be converted to
+        the relatively highest priority data type.
+
+        Inputs:
+            - **var** (Union[Parameter, Tensor]) - Variable tensor to be updated.
+              The shape is :math:`(N, *)` where :math:`*` means, any number of additional dimensions.
+            - **m** (Union[Parameter, Tensor]) - Variable tensor to be updated, has the same data type as `var`.
+            - **lr** (Union[Number, Tensor]) - The learning rate value, must be a scalar.
+            - **alpha** (Union[Number, Tensor]) - Must be a scalar.
+            - **sign_decay** (Union[Number, Tensor]) - Must be a scalar.
+            - **beta** (Union[Number, Tensor]) - The exponential decay rate, must be a scalar.
+            - **grad** (Tensor) - A tensor of the same shape as `var`, for the gradient.
+
+        Outputs:
+            Tuple of 2 Tensors, the updated parameters or tensors.
+
+            - **var** (Tensor) - The same shape and data type as `var`.
+            - **m** (Tensor) - The same shape and data type as `m`.
+
+        Raises:
+            TypeError: If dtype of `var`, `lr` and `alpha` is not float16, float32 or float64.
+            TypeError: If dtype of `sign_decay` and `beta` are both not float16, float32 or float64.
+            TypeError: If `lr`, `alpha` or `sign_decay` is neither a Number nor a Tensor.
+            TypeError: If `grad` is not a Tensor.
+            TypeError: If the data type of `var`, `accum` and `grad` conversion of Parameter is not supported.
+
+        Supported Platforms:
+            ``Ascend`` ``GPU`` ``CPU``
+
+        Examples:
+            >>> import numpy as np
+            >>> from mindspore import Tensor, nn, ops, Parameter
+            >>> class Net(nn.Cell):
+            ...     def __init__(self):
+            ...         super(Net, self).__init__()
+            ...         self.apply_add_sign = ops.ApplyAddSign()
+            ...         self.var = Parameter(Tensor(np.array([[0.6, 0.4],
+            ...                                               [0.1, 0.5]]).astype(np.float32)), name="var")
+            ...         self.m = Parameter(Tensor(np.array([[0.6, 0.5],
+            ...                                             [0.2, 0.6]]).astype(np.float32)), name="m")
+            ...         self.lr = 0.001
+            ...         self.alpha = 1.0
+            ...         self.sign_decay = 0.99
+            ...         self.beta = 0.9
+            ...     def construct(self, grad):
+            ...         out = self.apply_add_sign(self.var, self.m, self.lr, self.alpha, self.sign_decay, self.beta, grad)
+            ...         return out
+            ...
+            >>> net = Net()
+            >>> grad = Tensor(np.array([[0.3, 0.7], [0.1, 0.8]]).astype(np.float32))
+            >>> output = net(grad)
+            >>> print(output)
+            (Tensor(shape=[2, 2], dtype=Float32, value=
+            [[ 5.99403024e-01,  3.98607016e-01],
+            [ 9.98010039e-02,  4.98407990e-01]]), Tensor(shape=[2, 2], dtype=Float32, value=
+            [[ 5.70000052e-01,  5.19999981e-01],
+            [ 1.89999998e-01,  6.20000064e-01]]))

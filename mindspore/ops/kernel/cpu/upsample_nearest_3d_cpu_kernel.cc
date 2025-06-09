@@ -73,18 +73,19 @@ int UpsampleNearest3DCpuKernelMod::Resize(const std::vector<KernelTensor *> &inp
   auto type_idx1 = inputs[kIndex1]->GetType();
   MS_EXCEPTION_IF_NULL(type_idx1);
   auto output_size_none = type_idx1->isa<TypeNone>();
-  auto scales_opt = inputs[kIndex2]->GetOptionalValueWithCheck<std::vector<float>>();
+  auto scales_opt = inputs[kIndex2]->GetOptionalValueWithCheck<std::vector<pyfloat>>();
   bool scales_none = !scales_opt.has_value();
   if (output_size_none == scales_none) {
     MS_LOG(ERROR) << "For '" << kernel_name_ << "', only one of output_size or scales should be specified.";
     return KRET_RESIZE_FAILED;
   }
   if (scales_none) {
-    scales_ = std::vector<float>(kIndex3, kValueZero);
+    scales_ = std::vector<pyfloat>(kIndex3, kValueZero);
   } else {
     scales_ = scales_opt.value();
-    scales_.insert(scales_.end(), kIndex3 - scales_.size(), 1.f);
+    scales_.insert(scales_.end(), kIndex3 - scales_.size(), 1.);
   }
+
   return KRET_OK;
 }
 
@@ -153,7 +154,7 @@ bool UpsampleNearest3DCpuKernelMod::LaunchKernel(const std::vector<KernelTensor 
   std::make_pair(KernelAttr()                                                  \
                    .AddInputAttr(M_S)                                          \
                    .AddOptionalInputAttr(kObjectTypeTuple, kNumberTypeInt64)   \
-                   .AddOptionalInputAttr(kObjectTypeTuple, kNumberTypeFloat32) \
+                   .AddOptionalInputAttr(kObjectTypeTuple, kNumberTypePyFloat) \
                    .AddOutputAttr(M_S),                                        \
                  &UpsampleNearest3DCpuKernelMod::LaunchKernel<T>)
 

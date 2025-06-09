@@ -21,6 +21,8 @@
 #include <string>
 #include <utility>
 
+#include "mindspore/core/include/mindapi/base/types.h"
+
 namespace mindspore {
 namespace kernel {
 namespace {
@@ -35,17 +37,17 @@ using LogitPtrCreatorFunc =
 const std::vector<std::pair<KernelAttr, LogitPtrCreatorFunc>> kernel_attr = {
   {KernelAttr()
      .AddInputAttr(kNumberTypeFloat64)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddOutputAttr(kNumberTypeFloat64),
    CreateLogitKernelPtr<double, float>},
   {KernelAttr()
      .AddInputAttr(kNumberTypeFloat32)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddOutputAttr(kNumberTypeFloat32),
    CreateLogitKernelPtr<float, float>},
   {KernelAttr()
      .AddInputAttr(kNumberTypeFloat16)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddOutputAttr(kNumberTypeFloat16),
    CreateLogitKernelPtr<half, float>}};
 }  // namespace
@@ -80,7 +82,7 @@ int LogitGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const s
       return KRET_UNKNOWN_SHAPE;
     }
   }
-  attr_ptr_->eps = inputs[1]->GetValueWithCheck<float>();
+  attr_ptr_->eps = inputs[1]->GetValueWithCheck<pyfloat>();
   std::vector<std::vector<int64_t>> input_shapes;
   std::vector<std::vector<int64_t>> output_shapes;
   std::vector<int64_t> input_shape = inputs[0]->GetShapeVector();

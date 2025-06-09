@@ -16,6 +16,7 @@
 #include <algorithm>
 #include "backend/common/graph_kernel/expander/base/ir_builder.h"
 #include "backend/common/graph_kernel/expander/base/utils.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 #include "ops_utils/op_utils.h"
 
 namespace mindspore::graphkernel::expander {
@@ -227,7 +228,7 @@ REG_EXPANDER_FUNC("DropoutGrad").SetBody(BODYFUNC(ib) {
   // Expand
   const auto &input_dy = ib->input(0);
   const auto &input_mask = ib->input(1);
-  auto keep_prob = GetValue<float>(ib->attr("keep_prob"));
+  float keep_prob = GetValue<pyfloat>(ib->attr("keep_prob"));
   auto r_keep_prob = ib->Tensor(1.0f / keep_prob, input_dy->GetDtype());
   auto result = ib->Mul(input_dy, r_keep_prob);
   result = ib->Mul(result, input_mask);
@@ -350,7 +351,7 @@ REG_EXPANDER_FUNC("EluExt").SetBody(BODYFUNC(ib) {
   auto f32 = TypeIdToType(kNumberTypeFloat32);
   auto need_cast = input->GetDtype() != f32;
   auto cast_1 = need_cast ? ib->Cast(input, f32) : input;
-  auto alpha = ib->input(kIndex1);
+  auto alpha = ib->ScalarToTensor(ib->input(kIndex1), f32);
   auto min = ib->Minimum(cast_1, 0);
   auto exp = ib->Exp(min);
   auto sub = ib->Sub(exp, 1);
@@ -390,7 +391,7 @@ REG_EXPANDER_FUNC("HShrink").SetBody(BODYFUNC(ib) {
   auto lambd = ib->input(kIndex1);
   auto abs = ib->Abs(input);
   auto const_zero = ib->Tensor(0, input->GetDtype());
-  auto le_cmp = ib->LessEqual(abs, lambd);
+  auto le_cmp = ib->LessEqual(abs, ib->ScalarToTensor(lambd, input->GetDtype()));
   auto result = ib->Select(le_cmp, const_zero, input);
   return {result};
 });
@@ -573,7 +574,7 @@ REG_EXPANDER_FUNC("BatchNormGatherStatsWithCounts").SetRealOutputIndices({0, 1})
     MS_LOG(DEBUG) << "Skip counts_all is None";
     return {};
   }
-  auto momentum_value = GetValue<float>(momentum->GetValue());
+  auto momentum_value = GetValue<pyfloat>(momentum->GetValue());
   auto m1 = ib->Tensor(momentum_value, x->GetDtype());
   auto m2 = ib->Tensor(1.0f - momentum_value, x->GetDtype());
   auto global_counts = ib->ReduceSum(counts_all, ib->Value(AllAxis(counts_all->GetShape().size())), ib->Value(false));

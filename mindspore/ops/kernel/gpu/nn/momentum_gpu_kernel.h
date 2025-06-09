@@ -21,13 +21,12 @@
 #include <map>
 #include <utility>
 #include <algorithm>
-#include "mindspore/ops/infer/apply_momentum.h"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/momentum_impl.cuh"
 namespace mindspore {
 namespace kernel {
-constexpr size_t INPUT_NUM = 5;
+constexpr size_t INPUT_NUM = 8;
 class MomentumGpuKernelMod : public NativeGpuKernelMod {
  public:
   MomentumGpuKernelMod() = default;
@@ -44,8 +43,6 @@ class MomentumGpuKernelMod : public NativeGpuKernelMod {
       MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', the number of inputs must be " << INPUT_NUM << ", but got "
                         << inputs.size();
     }
-    use_nesterov_ = GetValue<bool>(primitive_->GetAttr(ops::kUseNesterov));
-
     auto kernel_attr = GetKernelAttrFromTensors(inputs, outputs);
     auto [is_match, index] = MatchKernelAttr(kernel_attr, GetOpSupport());
     if (!is_match) {
@@ -56,6 +53,7 @@ class MomentumGpuKernelMod : public NativeGpuKernelMod {
   }
 
   int Resize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override {
+    use_nesterov_ = inputs[kIndex5]->GetValueWithCheck<bool>();
     return KernelMod::Resize(inputs, outputs);
   }
 

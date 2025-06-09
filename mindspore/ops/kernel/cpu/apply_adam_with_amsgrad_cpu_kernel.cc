@@ -21,14 +21,14 @@
 #include "kernel/cpu/apply_adam_with_amsgrad_cpu_kernel.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "kernel/cpu/nnacl/fp32/adam_fp32.h"
-#include "mindspore/ops/infer/apply_adam_with_amsgrad.h"
+#include "mindspore/ops/infer/ops_func_impl/apply_adam_with_amsgrad.h"
 #include "ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace kernel {
 namespace apply_adam_with_amsgrad_cpu {
 namespace {
-constexpr size_t kApplyAdamWithAmsgradInputsNum = 8;
+constexpr size_t kApplyAdamWithAmsgradInputsNum = 12;
 constexpr size_t kApplyAdamWithAmsgradOutputsNum = 4;
 constexpr size_t kScalarIndex = 0;
 constexpr size_t kIndexVar = 0;
@@ -39,6 +39,9 @@ constexpr size_t kIndexBeta1Power = 4;
 constexpr size_t kIndexBeta2Power = 5;
 constexpr size_t kIndexLr = 6;
 constexpr size_t kIndexGrad = 7;
+constexpr size_t kIndexBeta1 = 8;
+constexpr size_t kIndexBeta2 = 9;
+constexpr size_t kIndexEpsilon = 10;
 }  // namespace
 
 bool ApplyAdamWithAmsgradCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
@@ -60,15 +63,14 @@ bool ApplyAdamWithAmsgradCpuKernelMod::Init(const std::vector<KernelTensor *> &i
     return false;
   }
 
-  beta1_ = GetValue<float>(primitive_->GetAttr(ops::kBeta1));
-  beta2_ = GetValue<float>(primitive_->GetAttr(ops::kBeta2));
-  epsilon_ = GetValue<float>(primitive_->GetAttr(ops::kEpsilon));
-
   return true;
 }
 
 int ApplyAdamWithAmsgradCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
                                              const std::vector<KernelTensor *> &outputs) {
+  beta1_ = inputs[kIndexBeta1]->GetValueWithCheck<pyfloat>();
+  beta2_ = inputs[kIndexBeta2]->GetValueWithCheck<pyfloat>();
+  epsilon_ = inputs[kIndexEpsilon]->GetValueWithCheck<pyfloat>();
   int ret = 0;
   if ((ret = KernelMod::Resize(inputs, outputs)) != 0) {
     return ret;
@@ -205,6 +207,10 @@ std::vector<KernelAttr> ApplyAdamWithAmsgradCpuKernelMod::GetOpSupport() {
                                                    .AddInputAttr(kNumberTypeFloat32)
                                                    .AddInputAttr(kNumberTypeFloat32)
                                                    .AddInputAttr(kNumberTypeFloat32)
+                                                   .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
+                                                   .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
+                                                   .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
+                                                   .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                                    .AddOutputAttr(kNumberTypeFloat32)
                                                    .AddOutputAttr(kNumberTypeFloat32)
                                                    .AddOutputAttr(kNumberTypeFloat32)
@@ -222,6 +228,10 @@ std::vector<KernelAttr> ApplyAdamWithAmsgradCpuKernelMod::GetOpSupport() {
                                                    .AddInputAttr(kNumberTypeFloat16)
                                                    .AddInputAttr(kNumberTypeFloat16)
                                                    .AddInputAttr(kNumberTypeFloat16)
+                                                   .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
+                                                   .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
+                                                   .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
+                                                   .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                                    .AddOutputAttr(kNumberTypeFloat16)
                                                    .AddOutputAttr(kNumberTypeFloat16)
                                                    .AddOutputAttr(kNumberTypeFloat16)

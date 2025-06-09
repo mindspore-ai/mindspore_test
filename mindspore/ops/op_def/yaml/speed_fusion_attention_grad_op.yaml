@@ -103,5 +103,7 @@ speed_fusion_attention_grad:
   dispatch:
     enable: True
     Ascend: SpeedFusionAttentionGradAscend
+    CPU: None
+    GPU: None
   function:
     disable: True

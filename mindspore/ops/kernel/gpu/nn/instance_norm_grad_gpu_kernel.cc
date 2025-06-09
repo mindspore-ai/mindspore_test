@@ -18,6 +18,7 @@
 #include <map>
 #include <utility>
 #include "mindspore/ops/infer/instance_norm_grad.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -41,7 +42,7 @@ bool InstanceNormGradGpuKernelMod::Init(const std::vector<KernelTensor *> &input
     int64_t batch_rank = GetValue<int64_t>(primitive_->GetAttr("batch_rank"));
     batch_rank_ = LongToSize(batch_rank);
   }
-  epsilon_ = static_cast<double>(GetValue<float>(primitive_->GetAttr("epsilon")));
+  epsilon_ = GetValue<pyfloat>(primitive_->GetAttr("epsilon"));
   auto inplace_algo =
     primitive_->HasAttr("inplace_algo") ? GetValue<std::string>(primitive_->GetAttr("inplace_algo")) : "cover";
   beta_data_diff_ = inplace_algo == "cover" ? 0 : 1;

@@ -33,6 +33,7 @@
 #include "mindspore/ops/infer/lp_norm.h"
 #include "kernel/cpu/nnacl/op_base.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -82,7 +83,7 @@ bool LpNormCpuKernelMod::GetReductionAttr() {
   int64_t p = GetValue<int64_t>(primitive_->GetAttr(ops::kP));
   is_p_zero_ = (p == 0);
   p_ = LongToFloat(p);
-  epsilon_ = GetValue<float>(primitive_->GetAttr(ops::kEpsilon));
+  epsilon_ = GetValue<pyfloat>(primitive_->GetAttr(ops::kEpsilon));
   axis_ = GetValue<std::vector<int64_t>>(primitive_->GetAttr(ops::kAxis));
   return true;
 }

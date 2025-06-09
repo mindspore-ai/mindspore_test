@@ -16,6 +16,7 @@
 #include "kernel/ascend/opapi/aclnn/dropout_do_mask_ext_aclnn_kernel.h"
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -31,13 +32,15 @@ void DropoutDoMaskExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> 
       p_value_ = static_cast<double>(1.0) - static_cast<double>(inputs[kIndex2]->GetValueWithCheck<bfloat16>());
     } else if (keep_prob_dtype == kNumberTypeFloat32) {
       p_value_ = static_cast<double>(1.0) - static_cast<double>(inputs[kIndex2]->GetValueWithCheck<float>());
+    } else if (keep_prob_dtype == kNumberTypeFloat64) {
+      p_value_ = static_cast<double>(1.0) - inputs[kIndex2]->GetValueWithCheck<double>();
     } else {
       MS_LOG(EXCEPTION)
         << "For 'DropoutDoMaskExt', the 'keep_prob' type must be in [Float16, BFloat16, Float32], but got "
         << TypeIdToString(keep_prob_dtype);
     }
   } else {
-    p_value_ = static_cast<double>(inputs[kIndex2]->GetValueWithCheck<float>());
+    p_value_ = inputs[kIndex2]->GetValueWithCheck<pyfloat>();
   }
 
   MS_LOG(DEBUG) << primitive_->name() << " got a (" + TypeIdToString(inputs[kIndex2]->dtype_id()) + ")p = " << p_value_;

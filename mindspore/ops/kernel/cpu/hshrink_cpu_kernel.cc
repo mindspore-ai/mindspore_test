@@ -19,6 +19,7 @@
 #include "common/ms_factory.h"
 #include "kernel/cpu/nnacl/errorcode.h"
 #include "kernel/cpu/nnacl/fp32/activation_fp32.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -29,7 +30,7 @@ constexpr size_t kHShrinkOutputsNum = 1;
 
 const std::vector<KernelAttr> kernel_attr = {{KernelAttr()
                                                 .AddInputAttr(kNumberTypeFloat32)
-                                                .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+                                                .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
                                                 .AddOutputAttr(kNumberTypeFloat32)}};
 }  // namespace
 
@@ -57,7 +58,7 @@ int HShrinkCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const
   }
   MS_EXCEPTION_IF_CHECK_FAIL(unit_size_ != 0, "For HShrink, the value of [unit_size_] must not be 0!");
   input_elements_ = inputs[0]->size() / unit_size_;
-  lambd = inputs[kIndex1]->GetValueWithCheck<float>();
+  lambd_ = inputs[kIndex1]->GetValueWithCheck<pyfloat>();
   return KRET_OK;
 }
 
@@ -69,7 +70,7 @@ bool HShrinkCpuKernelMod::Launch(const std::vector<KernelTensor *> &inputs, cons
   auto *output = GetDeviceAddress<float>(outputs, kIndex0);
 
   auto task = [input, output, this](size_t start, size_t end) {
-    auto ret = HardShrink(input + start, SizeToInt(end - start), output + start, lambd);
+    auto ret = HardShrink(input + start, SizeToInt(end - start), output + start, lambd_);
     if (ret != NNACL_OK) {
       MS_LOG(ERROR) << "For '" << kernel_name_ << "', call NNACL HShrink function failed. Error code: " << ret;
       return false;

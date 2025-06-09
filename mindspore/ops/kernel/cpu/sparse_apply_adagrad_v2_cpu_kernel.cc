@@ -23,6 +23,7 @@
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "infer/sparse_apply_adagrad_v2.h"
 #include "ops_utils/op_utils.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -59,8 +60,8 @@ bool SparseApplyAdagradV2CpuKernelMod::Init(const std::vector<KernelTensor *> &i
                   << ", but got " << inputs.size();
     return false;
   }
-  lr_ = GetValue<float>(primitive_->GetAttr(kAttrLr));
-  epsilon_ = GetValue<float>(primitive_->GetAttr(ops::kEpsilon));
+  lr_ = GetValue<pyfloat>(primitive_->GetAttr(kAttrLr));
+  epsilon_ = GetValue<pyfloat>(primitive_->GetAttr(ops::kEpsilon));
   update_slots_ = GetValue<bool>(primitive_->GetAttr(ops::kUpdateSlots));
   batch_rank_ = ops::get_batch_rank(primitive_);
   if (lr_ <= 0) {

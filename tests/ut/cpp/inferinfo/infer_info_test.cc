@@ -57,6 +57,7 @@ using InferInfoTypes = ::testing::Types<ValueInferInfoAdapter, AbstractInferInfo
 TYPED_TEST_SUITE(TypedTestInferInfo, InferInfoTypes);
 
 static std::unordered_map<TypeId, std::function<ValuePtr(float)>> scalar_creator{
+  {kNumberTypeFloat64, [](float x) { return std::make_shared<FP64Imm>(x); }},
   {kNumberTypeFloat32, [](float x) { return std::make_shared<FP32Imm>(x); }},
   {kNumberTypeInt64, [](float x) { return std::make_shared<Int64Imm>(static_cast<int64_t>(x)); }}};
 

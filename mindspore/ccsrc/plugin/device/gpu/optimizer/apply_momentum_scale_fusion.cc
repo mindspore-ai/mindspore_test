@@ -58,8 +58,8 @@ bool ApplyMomentumScaleFusion::IsScalar(const BaseRef &n) {
 
 const BaseRef ApplyMomentumScaleFusion::DefinePattern() const {
   VectorRef scale = VectorRef({prim::kPrimMul, gradient_, scale_});
-  VectorRef apply_momentum =
-    VectorRef({prim::kPrimApplyMomentum, variable_, accumulation_, learning_rate_, scale, momentum_, monad_state_});
+  VectorRef apply_momentum = VectorRef({prim::kPrimApplyMomentum, variable_, accumulation_, learning_rate_, scale,
+                                        momentum_, use_nesterov_, use_locking_, gradient_scale_, monad_state_});
   return apply_momentum;
 }
 

@@ -36,7 +36,7 @@ tensor::TensorPtr GetContiguousTensor(const std::string &device_target, const te
 
 Int64ImmPtr ValueConverter::ToInt(const ValuePtr &input) { return Convert<Int64ImmPtr>(input); }
 
-FP32ImmPtr ValueConverter::ToFloat(const ValuePtr &input) { return Convert<FP32ImmPtr>(input); }
+FP64ImmPtr ValueConverter::ToFloat(const ValuePtr &input) { return Convert<FP64ImmPtr>(input); }
 
 BoolImmPtr ValueConverter::ToBool(const ValuePtr &input) { return Convert<BoolImmPtr>(input); }
 
@@ -60,8 +60,8 @@ std::optional<Int64ImmPtr> ValueConverter::ToIntOptional(const ValuePtr &input) 
   return ConvertOptional<Int64ImmPtr>(input);
 }
 
-std::optional<FP32ImmPtr> ValueConverter::ToFloatOptional(const ValuePtr &input) {
-  return ConvertOptional<FP32ImmPtr>(input);
+std::optional<FP64ImmPtr> ValueConverter::ToFloatOptional(const ValuePtr &input) {
+  return ConvertOptional<FP64ImmPtr>(input);
 }
 
 std::optional<BoolImmPtr> ValueConverter::ToBoolOptional(const ValuePtr &input) {

@@ -18,6 +18,8 @@
 
 #include <algorithm>
 
+#include "mindspore/core/include/mindapi/base/types.h"
+
 namespace mindspore {
 namespace kernel {
 namespace {
@@ -60,7 +62,7 @@ bool GruGpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std:
   num_layers_ = static_cast<int>(GetValue<int64_t>(primitive_->GetAttr("num_layers")));
   has_bias_ = GetValue<bool>(primitive_->GetAttr("has_bias"));
   bidirectional_ = GetValue<bool>(primitive_->GetAttr("bidirectional"));
-  dropout_ = GetValue<float>(primitive_->GetAttr("dropout"));
+  dropout_ = GetValue<pyfloat>(primitive_->GetAttr("dropout"));
   kernel_func_ = func_list_[index].second;
   return true;
 }

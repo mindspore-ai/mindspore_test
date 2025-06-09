@@ -20,6 +20,7 @@
 #include <algorithm>
 #include <functional>
 #include "mindspore/ops/infer/priority_replay_buffer.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -35,7 +36,7 @@ PriorityReplayBufferCreateGpuKernel::~PriorityReplayBufferCreateGpuKernel() {
 bool PriorityReplayBufferCreateGpuKernel::Init(const std::vector<KernelTensor *> &inputs,
                                                const std::vector<KernelTensor *> &outputs) {
   const int64_t &capacity = GetValue<int64_t>(primitive_->GetAttr("capacity"));
-  const float &alpha = GetValue<float>(primitive_->GetAttr("alpha"));
+  const float &alpha = GetValue<pyfloat>(primitive_->GetAttr("alpha"));
   const std::vector<int64_t> &schema = GetValue<std::vector<int64_t>>(primitive_->GetAttr("schema"));
   const int64_t &seed0 = GetValue<int64_t>(primitive_->GetAttr("seed0"));
   const int64_t &seed1 = GetValue<int64_t>(primitive_->GetAttr("seed1"));

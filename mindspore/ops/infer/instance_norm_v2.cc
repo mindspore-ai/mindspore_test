@@ -41,6 +41,7 @@
 #include "utils/check_convert_utils.h"
 #include "utils/convert_utils_base.h"
 #include "utils/log_adapter.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
 
 namespace mindspore {
@@ -108,14 +109,14 @@ abstract::TupleShapePtr InstanceNormV2InferShape(const PrimitivePtr &primitive,
   MS_EXCEPTION_IF_NULL(is_training_ptr);
   auto momentum_ptr = primitive->GetAttr(kMomentum);
   MS_EXCEPTION_IF_NULL(momentum_ptr);
-  auto momentum = GetValue<float>(momentum_ptr);
-  constexpr float momentum_min = 0.0;
-  constexpr float momentum_max = 1.0;
+  auto momentum = GetValue<pyfloat>(momentum_ptr);
+  constexpr pyfloat momentum_min = 0.0;
+  constexpr pyfloat momentum_max = 1.0;
   auto momentum_range = std::make_pair(momentum_min, momentum_max);
   CheckAndConvertUtils::CheckInRange(kMomentum, momentum, kIncludeBoth, momentum_range, prim_name);
   auto epsilon_ptr = primitive->GetAttr(kEpsilon);
   MS_EXCEPTION_IF_NULL(epsilon_ptr);
-  auto epsilon = GetValue<float>(epsilon_ptr);
+  auto epsilon = GetValue<pyfloat>(epsilon_ptr);
   // momentum_range is equal to epsilon_range, but epsilon_range just include left.
   CheckAndConvertUtils::CheckInRange(kEpsilon, epsilon, kIncludeLeft, momentum_range, prim_name);
 

@@ -50,7 +50,7 @@ def add_int(x, y):
     return F.scalar_add(x, y)
 
 
-@MULTI_ADD.register("Float32", "Float32")
+@MULTI_ADD.register("Float64", "Float64")
 def add_float(x, y):
     return F.scalar_add(x, y)
 

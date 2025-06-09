@@ -17,6 +17,7 @@
 #include "kernel/cpu/mkldnn/batch_norm_grad_cpu_kernel.h"
 #include <map>
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -43,7 +44,7 @@ int BatchNormGradCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
   }
 
   is_train_ = inputs[kIndex6]->GetValueWithCheck<bool>();
-  epsilon_ = inputs[kIndex7]->GetValueWithCheck<float>();
+  epsilon_ = inputs[kIndex7]->GetValueWithCheck<pyfloat>();
 
   auto x_shape = inputs[kIndex0]->GetDeviceShapeVector();
   const size_t x_shape_size = x_shape.size();
@@ -146,7 +147,7 @@ bool BatchNormGradCpuKernelMod::Launch(const std::vector<kernel::KernelTensor *>
     .AddInputAttr(MS)                                    \
     .AddInputAttr(MS)                                    \
     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)    \
-    .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32) \
+    .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat) \
     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)   \
     .AddOutputAttr(MS)                                   \
     .AddOutputAttr(MS)                                   \

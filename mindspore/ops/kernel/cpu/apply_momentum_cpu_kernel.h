@@ -19,7 +19,6 @@
 
 #include <vector>
 #include <map>
-#include "mindspore/ops/infer/apply_momentum.h"
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "common/ms_factory.h"
 

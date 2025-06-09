@@ -407,7 +407,7 @@ class LinalgVectorNormAscendDvm : public LinalgVectorNormAscend {
   LinalgVectorNormAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : LinalgVectorNormAscend(std::move(primitive), device_context) {}
   ~LinalgVectorNormAscendDvm() = default;
-  tensor::TensorPtr Call(const TensorPtr &x_tensor, const FP32ImmPtr &ord, const std::optional<ValueTuplePtr> &dim,
+  tensor::TensorPtr Call(const TensorPtr &x_tensor, const FP64ImmPtr &ord, const std::optional<ValueTuplePtr> &dim,
                          const BoolImmPtr &keepdim, const std::optional<Int64ImmPtr> &dtype) override;
 };
 
@@ -418,8 +418,8 @@ class AdamWAscendDvm : public AdamWAscend {
   ~AdamWAscendDvm() = default;
   std::tuple<tensor::TensorPtr, tensor::TensorPtr, tensor::TensorPtr> Call(
     const TensorPtr &var_tensor, const TensorPtr &m_tensor, const TensorPtr &v_tensor, const TensorPtr &max_v_tensor,
-    const TensorPtr &gradient_tensor, const TensorPtr &step_tensor, const FP32ImmPtr &lr, const FP32ImmPtr &beta1,
-    const FP32ImmPtr &beta2, const FP32ImmPtr &decay, const FP32ImmPtr &eps, const BoolImmPtr &amsgrad,
+    const TensorPtr &gradient_tensor, const TensorPtr &step_tensor, const FP64ImmPtr &lr, const FP64ImmPtr &beta1,
+    const FP64ImmPtr &beta2, const FP64ImmPtr &decay, const FP64ImmPtr &eps, const BoolImmPtr &amsgrad,
     const BoolImmPtr &maximize) override;
 };
 
@@ -520,7 +520,7 @@ class BatchNormStatsAscendDvm : public BatchNormStatsAscend {
   ~BatchNormStatsAscendDvm() = default;
 
   std::tuple<mindspore::tensor::TensorPtr, mindspore::tensor::TensorPtr> Call(
-    const mindspore::tensor::TensorPtr &input_tensor, const mindspore::FP32ImmPtr &eps) override;
+    const mindspore::tensor::TensorPtr &input_tensor, const mindspore::FP64ImmPtr &eps) override;
 };
 
 class BatchNormGatherStatsWithCountsAscendDvm : public BatchNormGatherStatsWithCountsAscend {
@@ -533,8 +533,8 @@ class BatchNormGatherStatsWithCountsAscendDvm : public BatchNormGatherStatsWithC
     const mindspore::tensor::TensorPtr &input_tensor, const mindspore::tensor::TensorPtr &mean_tensor,
     const mindspore::tensor::TensorPtr &invstd_tensor,
     const std::optional<mindspore::tensor::TensorPtr> &running_mean_tensor_opt,
-    const std::optional<mindspore::tensor::TensorPtr> &running_var_tensor_opt, const mindspore::FP32ImmPtr &momentum,
-    const mindspore::FP32ImmPtr &eps, const std::optional<mindspore::tensor::TensorPtr> &counts_tensor_opt) override;
+    const std::optional<mindspore::tensor::TensorPtr> &running_var_tensor_opt, const mindspore::FP64ImmPtr &momentum,
+    const mindspore::FP64ImmPtr &eps, const std::optional<mindspore::tensor::TensorPtr> &counts_tensor_opt) override;
 };
 
 class BatchNormElemtAscendDvm : public BatchNormElemtAscend {
@@ -548,7 +548,7 @@ class BatchNormElemtAscendDvm : public BatchNormElemtAscend {
                                     const std::optional<mindspore::tensor::TensorPtr> &bias_tensor_opt,
                                     const std::optional<mindspore::tensor::TensorPtr> &mean_tensor_opt,
                                     const std::optional<mindspore::tensor::TensorPtr> &invstd_tensor_opt,
-                                    const mindspore::FP32ImmPtr &eps) override;
+                                    const mindspore::FP64ImmPtr &eps) override;
 };
 
 class BatchNormElemtGradAscendDvm : public BatchNormElemtGradAscend {

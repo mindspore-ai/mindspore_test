@@ -11,8 +11,9 @@ topprouter:
       dtype: int
       default: 0
     threshold:
-      dtype: float
+      dtype: tensor
       default: 0.0
+      type_cast: float
     router_prob:
       dtype: tensor
       default: 0.0

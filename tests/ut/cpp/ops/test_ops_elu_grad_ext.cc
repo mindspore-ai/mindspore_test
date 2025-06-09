@@ -41,7 +41,7 @@ TEST_P(TestEluGradExt, dyn_shape) {
   auto expect_shape = std::make_shared<abstract::Shape>(shape_param.out_shape);
   auto expect_type = std::make_shared<TensorType>(dtype_param.out_type);
 
-  auto alpha = CreateScalar(1.f)->ToAbstract();
+  auto alpha = CreateScalar<double>(1.)->ToAbstract();
   DoFuncImplInferAndCompare<EluGradExtFuncImpl>("EluGradExt", {dy, x, alpha}, expect_shape, expect_type);
 }
 

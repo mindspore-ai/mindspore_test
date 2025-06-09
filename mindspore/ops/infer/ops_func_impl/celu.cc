@@ -19,6 +19,7 @@
 #include "mindspore/ops/op_def/op_name.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "ops_utils/op_constants.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace ops {
@@ -29,9 +30,9 @@ BaseShapePtr CeLUFuncImpl::InferShape(const PrimitivePtr &primitive,
   // check attr: alpha
   auto input_alpha = input_args[kIndex1];
   ValuePtr alpha_ptr = input_alpha->GetValue();
-  auto alpha_value = GetScalarValue<float>(alpha_ptr);
+  auto alpha_value = GetScalarValue<pyfloat>(alpha_ptr);
   if (MS_LIKELY(alpha_value.has_value())) {
-    (void)CheckAndConvertUtils::CheckValue<float>(kAlpha, alpha_value.value(), kNotEqual, 0.0f, prim_name);
+    (void)CheckAndConvertUtils::CheckValue<pyfloat>(kAlpha, alpha_value.value(), kNotEqual, 0.0, prim_name);
   }
 
   auto x_shape = input_args[kIndex0]->GetShape();

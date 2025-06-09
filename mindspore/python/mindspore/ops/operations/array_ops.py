@@ -759,7 +759,7 @@ class MatrixDiagV3(Primitive):
           Tensor is a square matrix, and the real number of columns will be derivated by other inputs.
           That is :math:`num\_cols = x.shape[-1] + max(k[0], 0)`. Otherwise, the value must be equal or
           greater than :math:`x.shape[-1] - min(k[1], 0)`.  Default: -1.
-        - **padding_value** (Union[int, float, Tensor], optional) - The number to fill the area outside the specified
+        - **padding_value** (Tensor, optional) - The number to fill the area outside the specified
           diagonal band. A Tensor with only one value. Have the same dtype as x. Default: ``0`` .
 
     Outputs:
@@ -5068,7 +5068,7 @@ class IndexFill(Primitive):
         - **dim** (Union[int, Tensor]) - Dimension along which to fill the input tensor. Only supports
           a 0-dimensional tensor or an int number.
         - **index** (Tensor) - Indices of the input tensor to fill in.
-        - **value** (Union[bool, int, float, Tensor]) - Value to fill the input tensor.
+        - **value** (Tensor) - Value to fill the input tensor.
 
     Outputs:
         Tensor, has the same type and shape as input tensor.

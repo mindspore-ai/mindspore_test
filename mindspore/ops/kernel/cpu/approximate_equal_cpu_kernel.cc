@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <vector>
 #include "ops/base_operator.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -62,7 +63,7 @@ void ApproximateEqualCpuKernelMod::CheckParam(const std::vector<KernelTensor *> 
 bool ApproximateEqualCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                         const std::vector<KernelTensor *> &outputs) {
   CheckParam(inputs, outputs);
-  tolerance_ = GetValue<float>(primitive_->GetAttr(ops::kTolerance));
+  tolerance_ = GetValue<pyfloat>(primitive_->GetAttr(ops::kTolerance));
 
   auto kernel_attr = GetKernelAttrFromTensors(inputs, outputs);
   // pair = (is_match, index)

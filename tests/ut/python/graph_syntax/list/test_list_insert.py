@@ -192,5 +192,5 @@ def test_list_insert_type_error():
     with pytest.raises(TypeError) as error_info:
         res = list_insert()
         print("res:", res)
-    assert "Integer argument expected, but got FP32Imm type value: 1" in str(error_info)
+    assert "Integer argument expected, but got FP64Imm type value: 1" in str(error_info)
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'

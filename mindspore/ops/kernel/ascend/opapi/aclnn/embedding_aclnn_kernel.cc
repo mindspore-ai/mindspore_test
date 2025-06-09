@@ -22,6 +22,7 @@
 #include "runtime/device/kernel_runtime.h"
 #include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -30,11 +31,11 @@ namespace embedding {
 void EmbeddingAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                        const std::vector<KernelTensor *> &outputs) {
   ClearOpsWorkSpaceList();
-  auto max_norm_opt = inputs[kIndex3]->GetValue<float>();
+  auto max_norm_opt = inputs[kIndex3]->GetValue<pyfloat>();
   if (max_norm_opt.has_value()) {
     do_renorm_ = true;
     max_norm_ = static_cast<double>(max_norm_opt.value());
-    norm_type_ = static_cast<double>(device::ascend::ConvertKernelTensor<float>(inputs[kIndex4]));
+    norm_type_ = static_cast<double>(device::ascend::ConvertKernelTensor<pyfloat>(inputs[kIndex4]));
     GetWorkspaceForResizeEmbeddingRenorm(inputs[1], inputs[0], max_norm_, norm_type_);
   }
   GetWorkspaceForResizeEmbedding(inputs[kIndex1], inputs[kIndex0], outputs[kIndex0]);

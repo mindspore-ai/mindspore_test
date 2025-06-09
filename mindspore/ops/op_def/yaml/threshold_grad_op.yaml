@@ -15,3 +15,5 @@ threshold_grad:
     dispatch:
         enable: True
         Ascend: ThresholdGradAscend
+        CPU: None
+        GPU: None

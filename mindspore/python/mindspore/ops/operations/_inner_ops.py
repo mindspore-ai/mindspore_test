@@ -37,7 +37,7 @@ from mindspore.common.parameter import Parameter
 from mindspore.communication.management import GlobalComm, get_rank, _get_group, get_group_size
 from mindspore.common.api import _pynative_executor
 from ..auto_generate import TensorCopySlices, SiLU, Cummin, TopKRouter, TopPRouter, ExtractImagePatches, DecoderKVCache, \
-    PromptKVCache, ApplyCamePart1, ApplyCamePart2, ApplyCamePart3, ApplyCamePart4
+    PromptKVCache, ApplyCamePart1, ApplyCamePart2, ApplyCamePart3, ApplyCamePart4, Lamb
 
 # Bit operation
 bit_and = bit_and()
@@ -132,65 +132,6 @@ class Quant(PrimitiveWithInfer):
         validator.check_subclass("input_x", x_type, mstype.tensor_type, self.name)
         validator.check_type_name("input_x", x_type, [mstype.float16, mstype.float32], self.name)
         return self.get_attr_dict()['dst_type']
-
-
-class Lamb(PrimitiveWithInfer):
-    r"""
-    LAMB optimizer algorithm.
-
-    The Lamb optimizer is proposed in `Large Batch Optimization for Deep Learning: Training BERT in 76 minutes
-    <https://arxiv.org/abs/1904.00962>`_.
-
-    Inputs:
-        - **var** (Tensor) - Weights to be updated. The shape is :math:`(N, *)` where :math:`*` means,
-          any number of additional dimensions. The data type can be float16 or float32.
-        - **m** (Tensor) - The 1st moment vector in the updating formula,
-          the shape and data type value should be the same as `var`.
-        - **v** (Tensor) - the 2nd moment vector in the updating formula,
-          the shape and data type value should be the same as `var`. Mean square gradients with the same type as `var`.
-        - **lr** (float) - :math:`l` in the updating formula. The paper suggested value is :math:`10^{-8}`,
-          the data type value should be the same as `var`.
-        - **beta1** (float) - The exponential decay rate for the 1st moment estimations,
-          the data type value should be the same as `var`. The paper suggested value is :math:`0.9`
-        - **beta2** (float) - The exponential decay rate for the 2nd moment estimations,
-          the data type value should be the same as `var`. The paper suggested value is :math:`0.999`
-        - **epsilon** (float) - Term added to the denominator to improve numerical stability.
-        - **decay** (float) - The weight decay value, must be a scalar tensor with float data type.
-          Default: 0.0.
-        - **global_step** (Tensor) - Tensor to record current global step.
-        - **gradient** (Tensor) - Gradient, has the same shape and data type as `var`.
-
-    Outputs:
-        Tensor, the updated parameters.
-
-        - **var** (Tensor) - The same shape and data type as `var`.
-
-    Supported Platforms:
-        ``Ascend````GPU``
-    """
-
-    @prim_attr_register
-    def __init__(self):
-        """Initialize Lamb."""
-        self.add_prim_attr('side_effect_mem', True)
-
-    def infer_shape(self, var_shape, m_shape, v_shape, lr_shape, beta1_shape, beta2_shape,
-                    epsilon_shape, decay_shape, global_step_shape, gradient_shape):
-        validator.check("var_shape", var_shape, "m_shape", m_shape, validator.EQ, self.name)
-        validator.check("var_shape", var_shape, "v_shape", v_shape, validator.EQ, self.name)
-        validator.check("var_shape", var_shape, "gradient_shape", gradient_shape, validator.EQ, self.name)
-        return var_shape
-
-    def infer_dtype(self, var_dtype, m_dtype, v_dtype, lr_dtype, beta1_dtype, beta2_dtype,
-                    epsilon_dtype, decay_dtype, global_step_dtype, gradient_dtype):
-        args = {"var": var_dtype, "m": m_dtype, "v": v_dtype, "grad": gradient_dtype}
-        validator.check_tensors_dtypes_same_and_valid(args, [mstype.float16, mstype.float32], self.name)
-
-        args = {"lr": lr_dtype, "decay": decay_dtype, "beta1": beta1_dtype, "beta2": beta2_dtype,
-                "epsilon": epsilon_dtype}
-        validator.check_scalar_or_tensor_types_same(args, [mstype.float32], self.name, True)
-        return var_dtype
-
 
 class Dequant(PrimitiveWithInfer):
     r"""

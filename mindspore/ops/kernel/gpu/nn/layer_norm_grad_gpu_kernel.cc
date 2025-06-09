@@ -19,6 +19,7 @@
 #include <functional>
 #include <numeric>
 #include "kernel/gpu/cuda_impl/cuda_ops/layer_norm_grad_impl.cuh"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -47,7 +48,7 @@ bool LayerNormGradGpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
   if (!primitive()->HasAttr(ops::kEpsilon)) {
     MS_LOG(WARNING) << "LayerNormGrad should have attr 'epsilon'.";
   } else {
-    epsilon_ = GetValue<float>(primitive()->GetAttr(ops::kEpsilon));
+    epsilon_ = GetValue<pyfloat>(primitive()->GetAttr(ops::kEpsilon));
   }
 
   return true;

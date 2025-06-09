@@ -81,7 +81,7 @@ class MinMaxUpdatePerLayerInfo : public FakeQuantPerLayerInfo {
   ReplaceGraphPtr replace_graph(const CNodePtr &cnode) override;
 
   bool ema_ = False;
-  float ema_decay_ = 0.0;
+  pyfloat ema_decay_ = 0.0;
   std::string forward_group_;
   std::string op_name_;
   OperatorAttrs op_attrs_;

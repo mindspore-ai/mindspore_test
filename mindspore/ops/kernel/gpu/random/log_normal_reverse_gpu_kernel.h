@@ -59,8 +59,6 @@ class LogNormalReverseGpuKernelMod : public NativeGpuKernelMod {
   TypeId input_dtype_{kTypeUnknown};
   TypeId output_dtype_{kTypeUnknown};
   cudaStream_t cuda_stream_;
-  std::vector<int64_t> output_shape_;
-  std::vector<int64_t> input_shape_;
   float input_mean_;
   float input_std_;
   void *stream_ptr_{nullptr};

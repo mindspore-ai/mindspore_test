@@ -30,12 +30,12 @@ std::vector<GeneralInferParam> prepare_params() {
     .FeedExpectedOutput({{10, 5}}, {kNumberTypeInt16});
   generator
     .FeedInputArgs({InferInfoParam{ShapeVector{10, -1}, kNumberTypeInt16},
-                    InferInfoParam{ShapeVector{}, kNumberTypeFloat32, CreateScalar<float>(3.)}})
+                    InferInfoParam{ShapeVector{}, kNumberTypeFloat64, CreateScalar<double>(3.)}})
     .FeedExpectedOutput({{10, -1}}, {kNumberTypeFloat32});
   generator
-    .FeedInputArgs({InferInfoParam{ShapeVector{-2}, kNumberTypeFloat64},
-                    InferInfoParam{ShapeVector{}, kNumberTypeFloat64, CreateScalar<float>(3.)}})
-    .FeedExpectedOutput({{-2}}, {kNumberTypeFloat64});
+    .FeedInputArgs({InferInfoParam{ShapeVector{-2}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{}, kNumberTypeFloat64, CreateScalar<double>(3.)}})
+    .FeedExpectedOutput({{-2}}, {kNumberTypeFloat32});
   return generator.Generate();
 }
 }  // namespace

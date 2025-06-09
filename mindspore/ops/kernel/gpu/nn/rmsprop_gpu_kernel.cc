@@ -31,6 +31,7 @@ MS_REG_GPU_KERNEL_ONE(ApplyRMSProp,
                         .AddInputAttr(kNumberTypeFloat32)
                         .AddInputAttr(kNumberTypeFloat32)
                         .AddInputAttr(kNumberTypeFloat32)
+                        .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                         .AddOutputAttr(kNumberTypeFloat32),
                       RMSPropGpuKernelMod, float)
 MS_REG_GPU_KERNEL_ONE(ApplyRMSProp,
@@ -43,6 +44,7 @@ MS_REG_GPU_KERNEL_ONE(ApplyRMSProp,
                         .AddInputAttr(kNumberTypeFloat16)
                         .AddInputAttr(kNumberTypeFloat16)
                         .AddInputAttr(kNumberTypeFloat16)
+                        .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                         .AddOutputAttr(kNumberTypeFloat16),
                       RMSPropGpuKernelMod, half)
 MS_REG_GPU_KERNEL_ONE(ApplyRMSProp,
@@ -55,6 +57,7 @@ MS_REG_GPU_KERNEL_ONE(ApplyRMSProp,
                         .AddInputAttr(kNumberTypeFloat64)
                         .AddInputAttr(kNumberTypeFloat64)
                         .AddInputAttr(kNumberTypeFloat64)
+                        .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                         .AddOutputAttr(kNumberTypeFloat64),
                       RMSPropGpuKernelMod, double)
 MS_REG_GPU_KERNEL_ONE(ApplyRMSProp,
@@ -67,6 +70,7 @@ MS_REG_GPU_KERNEL_ONE(ApplyRMSProp,
                         .AddInputAttr(kNumberTypeInt8)
                         .AddInputAttr(kNumberTypeInt8)
                         .AddInputAttr(kNumberTypeInt8)
+                        .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                         .AddOutputAttr(kNumberTypeInt8),
                       RMSPropGpuKernelMod, int8_t)
 MS_REG_GPU_KERNEL_ONE(ApplyRMSProp,
@@ -79,6 +83,7 @@ MS_REG_GPU_KERNEL_ONE(ApplyRMSProp,
                         .AddInputAttr(kNumberTypeInt16)
                         .AddInputAttr(kNumberTypeInt16)
                         .AddInputAttr(kNumberTypeInt16)
+                        .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                         .AddOutputAttr(kNumberTypeInt16),
                       RMSPropGpuKernelMod, int16_t)
 MS_REG_GPU_KERNEL_ONE(ApplyRMSProp,
@@ -91,6 +96,7 @@ MS_REG_GPU_KERNEL_ONE(ApplyRMSProp,
                         .AddInputAttr(kNumberTypeInt32)
                         .AddInputAttr(kNumberTypeInt32)
                         .AddInputAttr(kNumberTypeInt32)
+                        .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                         .AddOutputAttr(kNumberTypeInt32),
                       RMSPropGpuKernelMod, int32_t)
 MS_REG_GPU_KERNEL_ONE(ApplyRMSProp,
@@ -103,6 +109,7 @@ MS_REG_GPU_KERNEL_ONE(ApplyRMSProp,
                         .AddInputAttr(kNumberTypeInt64)
                         .AddInputAttr(kNumberTypeInt64)
                         .AddInputAttr(kNumberTypeInt64)
+                        .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                         .AddOutputAttr(kNumberTypeInt64),
                       RMSPropGpuKernelMod, int64_t)
 MS_REG_GPU_KERNEL_ONE(ApplyRMSProp,
@@ -115,6 +122,7 @@ MS_REG_GPU_KERNEL_ONE(ApplyRMSProp,
                         .AddInputAttr(kNumberTypeUInt8)
                         .AddInputAttr(kNumberTypeUInt8)
                         .AddInputAttr(kNumberTypeUInt8)
+                        .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                         .AddOutputAttr(kNumberTypeUInt8),
                       RMSPropGpuKernelMod, uint8_t)
 MS_REG_GPU_KERNEL_ONE(ApplyRMSProp,
@@ -127,6 +135,7 @@ MS_REG_GPU_KERNEL_ONE(ApplyRMSProp,
                         .AddInputAttr(kNumberTypeUInt16)
                         .AddInputAttr(kNumberTypeUInt16)
                         .AddInputAttr(kNumberTypeUInt16)
+                        .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                         .AddOutputAttr(kNumberTypeUInt16),
                       RMSPropGpuKernelMod, uint16_t)
 MS_REG_GPU_KERNEL_ONE(ApplyRMSProp,
@@ -139,6 +148,7 @@ MS_REG_GPU_KERNEL_ONE(ApplyRMSProp,
                         .AddInputAttr(kNumberTypeUInt32)
                         .AddInputAttr(kNumberTypeUInt32)
                         .AddInputAttr(kNumberTypeUInt32)
+                        .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                         .AddOutputAttr(kNumberTypeUInt32),
                       RMSPropGpuKernelMod, uint32_t)
 MS_REG_GPU_KERNEL_ONE(ApplyRMSProp,
@@ -151,6 +161,7 @@ MS_REG_GPU_KERNEL_ONE(ApplyRMSProp,
                         .AddInputAttr(kNumberTypeUInt64)
                         .AddInputAttr(kNumberTypeUInt64)
                         .AddInputAttr(kNumberTypeUInt64)
+                        .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                         .AddOutputAttr(kNumberTypeUInt64),
                       RMSPropGpuKernelMod, uint64_t)
 MS_REG_GPU_KERNEL_ONE(ApplyRMSProp,
@@ -163,6 +174,7 @@ MS_REG_GPU_KERNEL_ONE(ApplyRMSProp,
                         .AddInputAttr(kNumberTypeComplex64)
                         .AddInputAttr(kNumberTypeComplex64)
                         .AddInputAttr(kNumberTypeComplex64)
+                        .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                         .AddOutputAttr(kNumberTypeComplex64),
                       RMSPropGpuKernelMod, utils::Complex<float>)
 MS_REG_GPU_KERNEL_ONE(ApplyRMSProp,
@@ -175,6 +187,7 @@ MS_REG_GPU_KERNEL_ONE(ApplyRMSProp,
                         .AddInputAttr(kNumberTypeComplex128)
                         .AddInputAttr(kNumberTypeComplex128)
                         .AddInputAttr(kNumberTypeComplex128)
+                        .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                         .AddOutputAttr(kNumberTypeComplex128),
                       RMSPropGpuKernelMod, utils::Complex<double>)
 MS_REG_GPU_KERNEL_ONE(ApplyCenteredRMSProp,
@@ -188,6 +201,7 @@ MS_REG_GPU_KERNEL_ONE(ApplyCenteredRMSProp,
                         .AddInputAttr(kNumberTypeFloat32)
                         .AddInputAttr(kNumberTypeFloat32)
                         .AddInputAttr(kNumberTypeFloat32)
+                        .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                         .AddOutputAttr(kNumberTypeFloat32),
                       RMSPropGpuKernelMod, float)
 MS_REG_GPU_KERNEL_ONE(ApplyCenteredRMSProp,
@@ -201,6 +215,7 @@ MS_REG_GPU_KERNEL_ONE(ApplyCenteredRMSProp,
                         .AddInputAttr(kNumberTypeFloat16)
                         .AddInputAttr(kNumberTypeFloat16)
                         .AddInputAttr(kNumberTypeFloat16)
+                        .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                         .AddOutputAttr(kNumberTypeFloat16),
                       RMSPropGpuKernelMod, half)
 MS_REG_GPU_KERNEL_ONE(ApplyCenteredRMSProp,
@@ -214,6 +229,7 @@ MS_REG_GPU_KERNEL_ONE(ApplyCenteredRMSProp,
                         .AddInputAttr(kNumberTypeFloat64)
                         .AddInputAttr(kNumberTypeFloat64)
                         .AddInputAttr(kNumberTypeFloat64)
+                        .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                         .AddOutputAttr(kNumberTypeFloat64),
                       RMSPropGpuKernelMod, double)
 MS_REG_GPU_KERNEL_ONE(ApplyCenteredRMSProp,
@@ -227,6 +243,7 @@ MS_REG_GPU_KERNEL_ONE(ApplyCenteredRMSProp,
                         .AddInputAttr(kNumberTypeInt8)
                         .AddInputAttr(kNumberTypeInt8)
                         .AddInputAttr(kNumberTypeInt8)
+                        .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                         .AddOutputAttr(kNumberTypeInt8),
                       RMSPropGpuKernelMod, int8_t)
 MS_REG_GPU_KERNEL_ONE(ApplyCenteredRMSProp,
@@ -240,6 +257,7 @@ MS_REG_GPU_KERNEL_ONE(ApplyCenteredRMSProp,
                         .AddInputAttr(kNumberTypeInt16)
                         .AddInputAttr(kNumberTypeInt16)
                         .AddInputAttr(kNumberTypeInt16)
+                        .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                         .AddOutputAttr(kNumberTypeInt16),
                       RMSPropGpuKernelMod, int16_t)
 MS_REG_GPU_KERNEL_ONE(ApplyCenteredRMSProp,
@@ -253,6 +271,7 @@ MS_REG_GPU_KERNEL_ONE(ApplyCenteredRMSProp,
                         .AddInputAttr(kNumberTypeInt32)
                         .AddInputAttr(kNumberTypeInt32)
                         .AddInputAttr(kNumberTypeInt32)
+                        .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                         .AddOutputAttr(kNumberTypeInt32),
                       RMSPropGpuKernelMod, int32_t)
 MS_REG_GPU_KERNEL_ONE(ApplyCenteredRMSProp,
@@ -266,6 +285,7 @@ MS_REG_GPU_KERNEL_ONE(ApplyCenteredRMSProp,
                         .AddInputAttr(kNumberTypeInt64)
                         .AddInputAttr(kNumberTypeInt64)
                         .AddInputAttr(kNumberTypeInt64)
+                        .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                         .AddOutputAttr(kNumberTypeInt64),
                       RMSPropGpuKernelMod, int64_t)
 MS_REG_GPU_KERNEL_ONE(ApplyCenteredRMSProp,
@@ -279,6 +299,7 @@ MS_REG_GPU_KERNEL_ONE(ApplyCenteredRMSProp,
                         .AddInputAttr(kNumberTypeUInt8)
                         .AddInputAttr(kNumberTypeUInt8)
                         .AddInputAttr(kNumberTypeUInt8)
+                        .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                         .AddOutputAttr(kNumberTypeUInt8),
                       RMSPropGpuKernelMod, uint8_t)
 MS_REG_GPU_KERNEL_ONE(ApplyCenteredRMSProp,
@@ -292,6 +313,7 @@ MS_REG_GPU_KERNEL_ONE(ApplyCenteredRMSProp,
                         .AddInputAttr(kNumberTypeUInt16)
                         .AddInputAttr(kNumberTypeUInt16)
                         .AddInputAttr(kNumberTypeUInt16)
+                        .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                         .AddOutputAttr(kNumberTypeUInt16),
                       RMSPropGpuKernelMod, uint16_t)
 MS_REG_GPU_KERNEL_ONE(ApplyCenteredRMSProp,
@@ -305,6 +327,7 @@ MS_REG_GPU_KERNEL_ONE(ApplyCenteredRMSProp,
                         .AddInputAttr(kNumberTypeUInt32)
                         .AddInputAttr(kNumberTypeUInt32)
                         .AddInputAttr(kNumberTypeUInt32)
+                        .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                         .AddOutputAttr(kNumberTypeUInt32),
                       RMSPropGpuKernelMod, uint32_t)
 MS_REG_GPU_KERNEL_ONE(ApplyCenteredRMSProp,
@@ -318,6 +341,7 @@ MS_REG_GPU_KERNEL_ONE(ApplyCenteredRMSProp,
                         .AddInputAttr(kNumberTypeUInt64)
                         .AddInputAttr(kNumberTypeUInt64)
                         .AddInputAttr(kNumberTypeUInt64)
+                        .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                         .AddOutputAttr(kNumberTypeUInt64),
                       RMSPropGpuKernelMod, uint64_t)
 MS_REG_GPU_KERNEL_ONE(ApplyCenteredRMSProp,
@@ -331,6 +355,7 @@ MS_REG_GPU_KERNEL_ONE(ApplyCenteredRMSProp,
                         .AddInputAttr(kNumberTypeComplex64)
                         .AddInputAttr(kNumberTypeComplex64)
                         .AddInputAttr(kNumberTypeComplex64)
+                        .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                         .AddOutputAttr(kNumberTypeComplex64),
                       RMSPropGpuKernelMod, utils::Complex<float>)
 MS_REG_GPU_KERNEL_ONE(ApplyCenteredRMSProp,
@@ -344,6 +369,7 @@ MS_REG_GPU_KERNEL_ONE(ApplyCenteredRMSProp,
                         .AddInputAttr(kNumberTypeComplex128)
                         .AddInputAttr(kNumberTypeComplex128)
                         .AddInputAttr(kNumberTypeComplex128)
+                        .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                         .AddOutputAttr(kNumberTypeComplex128),
                       RMSPropGpuKernelMod, utils::Complex<double>)
 }  // namespace kernel

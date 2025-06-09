@@ -21,6 +21,7 @@
 #include "common/common_utils.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "kernel/cpu/eigen/eigen_common_utils.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -46,7 +47,7 @@ int InstanceNormV2GradCpuKernelMod::Resize(const std::vector<KernelTensor *> &in
                              << dy_shape_.size() << "D.";
   }
   is_training_ = GetValue<bool>(primitive_->GetAttr(kAttrIsTraining));
-  epsilon_ = GetValue<float>(primitive_->GetAttr(kAttrEpsilon));
+  epsilon_ = GetValue<pyfloat>(primitive_->GetAttr(kAttrEpsilon));
   dy_is_4d_ = (dy_shape_.size() == kDim4);
   // Format NCHW could be considered as a situation of format NC1HWC0 when C0 = 1.
   if (dy_is_4d_) {

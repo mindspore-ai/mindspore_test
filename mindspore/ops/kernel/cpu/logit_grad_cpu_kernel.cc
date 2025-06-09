@@ -21,6 +21,7 @@
 #include <map>
 #include "common/common_utils.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -47,7 +48,7 @@ int LogitGradCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
   if (ret != KRET_OK) {
     return ret;
   }
-  eps = inputs[kIndex2]->GetValueWithCheck<float>();
+  eps_ = inputs[kIndex2]->GetValueWithCheck<pyfloat>();
   input_dtype_ = inputs[kIndex0]->dtype_id();
   auto input_shape = inputs.at(kIndex0)->GetShapeVector();
   (void)std::transform(input_shape.begin(), input_shape.end(), std::back_inserter(input_shape_), LongToSize);
@@ -82,7 +83,7 @@ bool LogitGradCpuKernelMod::LaunchKernelHalf(const std::vector<KernelTensor *> &
   if (memset_s(output, output_size, 0, output_size) != EOK) {
     MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', output buffer memset failed.";
   }
-  if (eps < 0) {
+  if (eps_ < 0) {
     for (size_t i = 0; i < input_elements_; i++) {
       output[i] = (input[i] < float16(0) || input[i] > float16(1))
                     ? float16(std::numeric_limits<float>::quiet_NaN())
@@ -91,8 +92,8 @@ bool LogitGradCpuKernelMod::LaunchKernelHalf(const std::vector<KernelTensor *> &
     }
   } else {
     for (size_t i = 0; i < input_elements_; i++) {
-      output[i] = (static_cast<float>(input[i]) < static_cast<float>(eps) ||
-                   static_cast<float>(input[i]) > static_cast<float>(1 - eps))
+      output[i] = (static_cast<float>(input[i]) < static_cast<float>(eps_) ||
+                   static_cast<float>(input[i]) > static_cast<float>(1 - eps_))
                     ? float16(0)
                     : float16(static_cast<float>(grad[i]) / static_cast<float>(input[i]) /
                               (static_cast<float>(1) - static_cast<float>(input[i])));
@@ -111,14 +112,14 @@ bool LogitGradCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inpu
   if (memset_s(output, output_size, 0, output_size) != EOK) {
     MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', output buffer memset failed.";
   }
-  if (eps < 0) {
+  if (eps_ < 0) {
     for (size_t i = 0; i < input_elements_; i++) {
       output[i] = (input[i] < T(0) || input[i] > T(1)) ? std::numeric_limits<T>::quiet_NaN()
                                                        : (grad[i] / input[i] / (T(1) - input[i]));
     }
   } else {
     for (size_t i = 0; i < input_elements_; i++) {
-      output[i] = (input[i] < static_cast<T>(eps) || input[i] > T(1) - static_cast<T>(eps))
+      output[i] = (input[i] < static_cast<T>(eps_) || input[i] > T(1) - static_cast<T>(eps_))
                     ? T(0)
                     : (grad[i] / input[i] / (T(1) - input[i]));
     }
@@ -130,17 +131,17 @@ std::vector<KernelAttr> LogitGradCpuKernelMod::GetOpSupport() {
   static std::vector<KernelAttr> support_list = {KernelAttr()
                                                    .AddInputAttr(kNumberTypeFloat16)
                                                    .AddInputAttr(kNumberTypeFloat16)
-                                                   .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+                                                   .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
                                                    .AddOutputAttr(kNumberTypeFloat16),
                                                  KernelAttr()
                                                    .AddInputAttr(kNumberTypeFloat32)
                                                    .AddInputAttr(kNumberTypeFloat32)
-                                                   .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+                                                   .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
                                                    .AddOutputAttr(kNumberTypeFloat32),
                                                  KernelAttr()
                                                    .AddInputAttr(kNumberTypeFloat64)
                                                    .AddInputAttr(kNumberTypeFloat64)
-                                                   .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+                                                   .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
                                                    .AddOutputAttr(kNumberTypeFloat64)};
   return support_list;
 }

@@ -41,7 +41,7 @@ void PromptFlashAttentionAscend::GetWorkSpaceInfo(const std::vector<KernelTensor
 
   auto scale_value = inputs[kIndex13];
   MS_EXCEPTION_IF_NULL(scale_value);
-  auto scale_value_value = static_cast<double>(scale_value->GetValueWithCheck<float>());
+  auto scale_value_value = static_cast<double>(scale_value->GetValueWithCheck<pyfloat>());
 
   auto pre_tokens = inputs[kIndex14];
   MS_EXCEPTION_IF_NULL(pre_tokens);

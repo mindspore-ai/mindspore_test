@@ -25,6 +25,7 @@
 #include "common/oplib/oplib.h"
 #include "include/common/utils/anfalgo.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace opt {
@@ -46,7 +47,7 @@ void ParseAttrDefaultValue(const std::string &op_name, const std::string &attr_n
       std::istringstream(attr_value) >> std::boolalpha >> value;
       prim->set_attr(attr_name, std::make_shared<BoolImm>(value));
     } else if (attr_type == "float") {
-      prim->set_attr(attr_name, std::make_shared<FP32Imm>(std::stof(attr_value)));
+      prim->set_attr(attr_name, std::make_shared<FP64Imm>(std::stof(attr_value)));
     } else if (attr_type == "listInt") {
       std::stringstream ss(attr_value);
       std::string elem;
@@ -78,7 +79,7 @@ void ParseAttrDefaultValue(const std::string &op_name, const std::string &attr_n
       std::string elem;
       std::vector<ValuePtr> value;
       while (std::getline(ss, elem, ',')) {
-        value.push_back(std::make_shared<FP32Imm>(std::stof(elem)));
+        value.push_back(std::make_shared<FP64Imm>(std::stof(elem)));
       }
       prim->set_attr(attr_name, std::make_shared<ValueList>(value));
     } else {

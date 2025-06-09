@@ -20,6 +20,7 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 #include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
@@ -59,8 +60,7 @@ void IncreFlashAttentionAscend::GetWorkSpaceInfo(const std::vector<KernelTensor 
   auto input_layout = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex16]);
   auto input_layout_str = device::ascend::FASInputLayoutMode::ConvertEnumToString(input_layout);
   MS_EXCEPTION_IF_NULL(inputs[kIndex17]);
-  auto scale_value = device::ascend::ConvertKernelTensor<float>(inputs[kIndex17]);
-  auto scale_value_d = static_cast<double>(scale_value);
+  auto scale_value_d = device::ascend::ConvertKernelTensor<pyfloat>(inputs[kIndex17]);
   MS_EXCEPTION_IF_NULL(inputs[kIndex18]);
   auto num_key_value_heads = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex18]);
   MS_EXCEPTION_IF_NULL(inputs[kIndex19]);
@@ -91,8 +91,7 @@ bool IncreFlashAttentionAscend::Launch(const std::vector<KernelTensor *> &inputs
   auto input_layout = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex16]);
   auto input_layout_str = device::ascend::FASInputLayoutMode::ConvertEnumToString(input_layout);
   MS_EXCEPTION_IF_NULL(inputs[kIndex17]);
-  auto scale_value = device::ascend::ConvertKernelTensor<float>(inputs[kIndex17]);
-  auto scale_value_d = static_cast<double>(scale_value);
+  auto scale_value_d = device::ascend::ConvertKernelTensor<pyfloat>(inputs[kIndex17]);
   MS_EXCEPTION_IF_NULL(inputs[kIndex18]);
   auto num_key_value_heads = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex18]);
   MS_EXCEPTION_IF_NULL(inputs[kIndex19]);

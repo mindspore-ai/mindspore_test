@@ -25,13 +25,12 @@
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/rmsprop_impl.cuh"
-#include "mindspore/ops/infer/apply_rms_prop.h"
 #include "ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace kernel {
-constexpr size_t kCenteredRMSPropInputsNum = 9;
-constexpr size_t kRMSPropInputsNum = 8;
+constexpr size_t kCenteredRMSPropInputsNum = 10;
+constexpr size_t kRMSPropInputsNum = 9;
 constexpr auto kApplyRMSProp = "ApplyRMSProp";
 constexpr auto kApplyCenteredRMSProp = "ApplyCenteredRMSProp";
 constexpr auto kNumberZero = 0;
@@ -160,6 +159,7 @@ class RMSPropGpuKernelMod : public NativeGpuKernelMod {
     }
     return true;
   }
+
   bool Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override {
     batch_rank_ = ops::get_batch_rank(primitive_);
     if (kernel_name_ == "ApplyCenteredRMSProp") {

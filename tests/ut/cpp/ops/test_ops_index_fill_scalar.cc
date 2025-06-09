@@ -24,25 +24,25 @@ std::vector<GeneralInferParam> prepare_params() {
     .FeedInputArgs({InferInfoParam{ShapeVector{2, 3}, kNumberTypeFloat32},
                     InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
                     InferInfoParam{ShapeVector{}, kNumberTypeInt32, CreateScalarList<int64_t>({0, 2})},
-                    InferInfoParam{ShapeVector{}, kNumberTypeFloat32, CreateScalar<float>(1.0)}})
+                    InferInfoParam{ShapeVector{}, kNumberTypeFloat64, CreateScalar<double>(1.0)}})
     .FeedExpectedOutput({{2, 3}}, {kNumberTypeFloat32});
   generator
     .FeedInputArgs({InferInfoParam{ShapeVector{2, -1}, kNumberTypeFloat32},
                     InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
                     InferInfoParam{ShapeVector{}, kNumberTypeInt32, CreateScalarList<int64_t>({0, 2})},
-                    InferInfoParam{ShapeVector{}, kNumberTypeFloat32, CreateScalar<float>(1.0)}})
+                    InferInfoParam{ShapeVector{}, kNumberTypeFloat64, CreateScalar<double>(1.0)}})
     .FeedExpectedOutput({{2, -1}}, {kNumberTypeFloat32});
   generator
     .FeedInputArgs({InferInfoParam{ShapeVector{-1, -1}, kNumberTypeFloat32},
                     InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
                     InferInfoParam{ShapeVector{}, kNumberTypeInt32, CreateScalarList<int64_t>({0, 2})},
-                    InferInfoParam{ShapeVector{}, kNumberTypeFloat32, CreateScalar<float>(1.0)}})
+                    InferInfoParam{ShapeVector{}, kNumberTypeFloat64, CreateScalar<double>(1.0)}})
     .FeedExpectedOutput({{-1, -1}}, {kNumberTypeFloat32});
   generator
     .FeedInputArgs({InferInfoParam{ShapeVector{-2}, kNumberTypeFloat32},
                     InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
                     InferInfoParam{ShapeVector{}, kNumberTypeInt32, CreateScalarList<int64_t>({0, 2})},
-                    InferInfoParam{ShapeVector{}, kNumberTypeFloat32, CreateScalar<float>(1.0)}})
+                    InferInfoParam{ShapeVector{}, kNumberTypeFloat64, CreateScalar<double>(1.0)}})
     .FeedExpectedOutput({{-2}}, {kNumberTypeFloat32});
   return generator.Generate();
 }

@@ -17,6 +17,7 @@
 #include "kernel/cpu/mkldnn/batch_norm_cpu_kernel.h"
 #include <map>
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -42,8 +43,8 @@ int BatchNormCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
   }
 
   is_train_ = inputs[kIndex5]->GetValueWithCheck<bool>();
-  epsilon_ = inputs[kIndex6]->GetValueWithCheck<float>();
-  momentum_ = inputs[kIndex7]->GetValueWithCheck<float>();
+  epsilon_ = inputs[kIndex6]->GetValueWithCheck<pyfloat>();
+  momentum_ = inputs[kIndex7]->GetValueWithCheck<pyfloat>();
 
   auto x_shape = inputs[kIndex0]->GetDeviceShapeVector();
   (void)x_shape.insert(x_shape.end(), kBatchNormInputShapeMaxSize - x_shape.size(), 1);
@@ -139,8 +140,8 @@ bool BatchNormCpuKernelMod::Launch(const std::vector<kernel::KernelTensor *> &in
     .AddInputAttr(T)                                     \
     .AddInputAttr(T)                                     \
     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)    \
-    .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32) \
-    .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32) \
+    .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat) \
+    .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat) \
     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)   \
     .AddOutputAttr(T)                                    \
     .AddOutputAttr(T)                                    \

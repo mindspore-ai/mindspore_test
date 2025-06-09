@@ -85,19 +85,19 @@ TEST_P(TestXlogyScalarSelfSimpleInfer, simple_infer) {
 auto XlogyScalarSelfOpShapeTestCases =
   testing::ValuesIn({XlogyScalarSelfParam{CreateScalar<bool>(true), {10}, kFloat32, {10}, kFloat32},
                      XlogyScalarSelfParam{CreateScalar<bool>(true), {10, 1, 2}, kInt64, {10, 1, 2}, kFloat32},
-                     XlogyScalarSelfParam{CreateScalar<float>(2.0), {10, 4, 2}, kInt64, {10, 4, 2}, kFloat32},
+                     XlogyScalarSelfParam{CreateScalar<double>(2.0), {10, 4, 2}, kInt64, {10, 4, 2}, kFloat32},
                      XlogyScalarSelfParam{CreateScalar<int>(2), {10, 1, -1}, kInt64, {10, 1, -1}, kFloat32},
                      XlogyScalarSelfParam{CreateScalar<int>(2), {10, 1, -1}, kFloat32, {10, 1, -1}, kFloat32},
                      XlogyScalarSelfParam{CreateScalar<bool>(false), {-2}, kInt64, {-2}, kFloat32},
-                     XlogyScalarSelfParam{CreateScalar<float>(2.0), {}, kFloat32, {}, kFloat32},
+                     XlogyScalarSelfParam{CreateScalar<double>(2.0), {}, kFloat32, {}, kFloat32},
                      XlogyScalarSelfParam{CreateScalar<bool>(true), {}, kInt64, {}, kFloat32},
                      XlogyScalarSelfParam{CreateScalar<int>(2), {}, kInt64, {}, kFloat32}});
 
 auto XlogyScalarSelfOpSimpleInferShapeTestCases =
   testing::ValuesIn({XlogyScalarSelfParam{CreateScalar<bool>(true), {10}, kFloat32, {10}, kFloat32},
                      XlogyScalarSelfParam{CreateScalar<bool>(true), {10, 1, 2}, kInt64, {10, 1, 2}, kFloat32},
-                     XlogyScalarSelfParam{CreateScalar<float>(2.0), {10, 4, 2}, kInt64, {10, 4, 2}, kFloat32},
-                     XlogyScalarSelfParam{CreateScalar<float>(2.0), {}, kFloat32, {}, kFloat32},
+                     XlogyScalarSelfParam{CreateScalar<double>(2.0), {10, 4, 2}, kInt64, {10, 4, 2}, kFloat32},
+                     XlogyScalarSelfParam{CreateScalar<double>(2.0), {}, kFloat32, {}, kFloat32},
                      XlogyScalarSelfParam{CreateScalar<bool>(true), {}, kInt64, {}, kFloat32},
                      XlogyScalarSelfParam{CreateScalar<int>(2), {}, kInt64, {}, kFloat32}});
 

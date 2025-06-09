@@ -16,11 +16,12 @@
 
 #include "kernel/gpu/nn/soft_shrink_gpu_kernel.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/soft_shrink_impl.cuh"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
 #define SOFT_SHRINK_GPU_REGISTER(DT, T)                                                                \
-  KernelAttr().AddInputAttr(DT).AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32).AddOutputAttr(DT), \
+  KernelAttr().AddInputAttr(DT).AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat).AddOutputAttr(DT), \
     &SoftShrinkGpuKernelMod::LaunchKernel<T>
 
 template <typename T>
@@ -57,7 +58,7 @@ int SoftShrinkGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
 
   auto in_shape = inputs[kIndex0]->GetShapeVector();
   size_ = std::accumulate(in_shape.begin(), in_shape.end(), size_t(1), std::multiplies<size_t>());
-  lambd_ = inputs[kIndex1]->GetValueWithCheck<float>();
+  lambd_ = inputs[kIndex1]->GetValueWithCheck<pyfloat>();
   if (lambd_ < 0.0) {
     MS_EXCEPTION(RuntimeError) << "For 'SoftShrink', the values for lambd should be greater or equal to 0, "
                                << ", but found to be [" << lambd_ << "].";

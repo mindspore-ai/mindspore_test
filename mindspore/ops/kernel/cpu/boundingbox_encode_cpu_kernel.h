@@ -24,6 +24,7 @@
 
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "common/ms_factory.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -56,8 +57,8 @@ class BoundingBoxEncodeCpuKernelMod : public NativeCpuKernelMod {
   static std::vector<std::pair<KernelAttr, BoundingBoxEncodeFunc>> func_list_;
   BoundingBoxEncodeFunc kernel_func_;
 
-  std::vector<float> means_;
-  std::vector<float> stds_;
+  std::vector<pyfloat> means_;
+  std::vector<pyfloat> stds_;
 };
 }  // namespace boundingbox_encode_cpu
 }  // namespace kernel

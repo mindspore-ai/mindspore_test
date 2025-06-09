@@ -13,3 +13,5 @@ batch_norm_stats:
   dispatch:
     enable: True
     Ascend: BatchNormStatsAscend
+    CPU: None
+    GPU: None

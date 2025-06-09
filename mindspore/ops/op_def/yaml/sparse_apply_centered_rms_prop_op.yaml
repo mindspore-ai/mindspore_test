@@ -1,0 +1,43 @@
+#operator sparse_apply_centered_rms_prop
+sparse_apply_centered_rms_prop:
+    args:
+        var:
+            dtype: tensor
+        mg:
+            dtype: tensor
+        ms:
+            dtype: tensor
+        mom:
+            dtype: tensor
+        lr:
+            dtype: tensor
+            type_cast: number
+        rho:
+            dtype: tensor
+            type_cast: number
+        momentum:
+            dtype: tensor
+            type_cast: number
+        epsilon:
+            dtype: tensor
+            type_cast: number
+        grad:
+            dtype: tensor
+        indices:
+            dtype: tensor
+        use_locking:
+            dtype: bool
+            default: False
+            prim_init: True
+    returns:
+        var:
+            dtype: tensor
+    args_signature:
+        rw_write: var, mg, ms, mom
+        dtype_group: (var, mg, ms, mom, lr, rho, momentum, epsilon, grad), (indices)
+    labels:
+        side_effect_mem: True
+    class:
+        name: SparseApplyCenteredRMSProp
+    function:
+        disable: True

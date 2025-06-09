@@ -24,6 +24,7 @@
 #include "common/common_utils.h"
 #include "mindspore/ops/infer/histogram.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -39,8 +40,8 @@ bool HistogramCPUKernelMod::Init(const std::vector<KernelTensor *> &inputs,
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kOutputNum, kernel_name_);
   x_type_ = inputs[kIndex0]->dtype_id();
   bins_ = GetValue<int64_t>(primitive_->GetAttr(ops::kBins));
-  min_attr_ = GetValue<float>(primitive_->GetAttr(ops::kMin));
-  max_attr_ = GetValue<float>(primitive_->GetAttr(ops::kMax));
+  min_attr_ = GetValue<pyfloat>(primitive_->GetAttr(ops::kMin));
+  max_attr_ = GetValue<pyfloat>(primitive_->GetAttr(ops::kMax));
   auto kernel_attr = GetKernelAttrFromTensors(inputs, outputs);
   auto match = MatchKernelAttr(kernel_attr, GetOpSupport());
   if (!match.first) {

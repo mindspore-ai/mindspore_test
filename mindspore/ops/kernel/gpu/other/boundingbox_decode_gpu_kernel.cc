@@ -15,6 +15,9 @@
  */
 
 #include "kernel/gpu/other/boundingbox_decode_gpu_kernel.h"
+#include <algorithm>
+#include <iterator>
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -27,9 +30,9 @@ bool BoundingBoxDecodeGpuKernelMod::Init(const std::vector<KernelTensor *> &inpu
   auto means = primitive_->GetAttr("means");
   MS_EXCEPTION_IF_NULL(means);
   if (means->isa<ValueSequence>()) {
-    means_ = GetValue<std::vector<float>>(means);
+    means_ = GetValue<std::vector<pyfloat>>(means);
   } else if (means->isa<FloatImm>()) {
-    float mean = GetValue<float>(means);
+    auto mean = GetValue<pyfloat>(means);
     for (size_t i = 0; i < coordinate_size; i++) {
       (void)means_.emplace_back(mean);
     }
@@ -41,9 +44,9 @@ bool BoundingBoxDecodeGpuKernelMod::Init(const std::vector<KernelTensor *> &inpu
   auto stds = primitive_->GetAttr("stds");
   MS_EXCEPTION_IF_NULL(stds);
   if (stds->isa<ValueSequence>()) {
-    stds_ = GetValue<std::vector<float>>(stds);
+    stds_ = GetValue<std::vector<pyfloat>>(stds);
   } else if (stds->isa<FloatImm>()) {
-    float std = GetValue<float>(stds);
+    auto std = GetValue<pyfloat>(stds);
     for (size_t i = 0; i < coordinate_size; i++) {
       (void)stds_.emplace_back(std);
     }
@@ -64,7 +67,7 @@ bool BoundingBoxDecodeGpuKernelMod::Init(const std::vector<KernelTensor *> &inpu
   (void)std::transform(max_shape_me.begin(), max_shape_me.end(), std::back_inserter(max_shape_),
                        [](const int64_t &value) { return LongToInt(value); });
   auto wh_ratio_clip = primitive_->GetAttr("wh_ratio_clip");
-  wh_ratio_clip_ = GetValue<float>(wh_ratio_clip);
+  wh_ratio_clip_ = GetValue<pyfloat>(wh_ratio_clip);
 
   if (max_shape_.size() < kMinMaxShapeSize) {
     MS_LOG(EXCEPTION) << "For '" << kernel_name_

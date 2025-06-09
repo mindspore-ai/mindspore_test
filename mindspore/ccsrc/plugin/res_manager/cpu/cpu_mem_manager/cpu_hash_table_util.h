@@ -59,7 +59,7 @@ void CreateCPUHashTable(const UserDataPtr &user_data) {
     user_data->set<CPUHashTable<KeyType, ValueType>>(
       kUserDataData,
       std::make_shared<CPUHashTable<KeyType, ValueType>>(value_size, GetValue<std::string>(default_value)));
-  } else if (default_value->isa<FloatImm>()) {
+  } else if (default_value->isa<FP32Imm>()) {
     user_data->set<CPUHashTable<KeyType, ValueType>>(
       kUserDataData, std::make_shared<CPUHashTable<KeyType, float>>(value_size, GetValue<float>(default_value)));
   } else {

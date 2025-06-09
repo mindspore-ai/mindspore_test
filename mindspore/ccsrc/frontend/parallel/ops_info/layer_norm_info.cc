@@ -58,7 +58,7 @@ Status LayerNormInfo::GetAttrs() {
 
   std::optional<int64_t> axis_opt = GetScalarValueFromInputs<int64_t>(input_value_, op_name, BEGIN_NORM_AXIS);
   std::optional<int64_t> params_axis_opt = GetScalarValueFromInputs<int64_t>(input_value_, op_name, BEGIN_PARAMS_AXIS);
-  std::optional<float> epsilon = GetScalarValueFromInputs<float>(input_value_, op_name, EPSILON);
+  std::optional<pyfloat> epsilon = GetScalarValueFromInputs<pyfloat>(input_value_, op_name, EPSILON);
   if (!axis_opt.has_value()) {
     MS_LOG(ERROR) << name_ << ": Can not find the attr of begin_norm_axis.";
     return FAILED;
@@ -448,7 +448,7 @@ Status LayerNormInfo::ComputeReplaceGraphForInterleaved(const CNodePtr &cnode) {
     auto tuple_get_item = gen_g.PushBack({gen_g.NewOpInst(TUPLE_GETITEM), virtual_converter_begin, CreatInt64Imm(i)});
     auto begin_norm_axis = CreatInt64Imm(SizeToLong(begin_norm_axis_));
     auto begin_params_axis = CreatInt64Imm(SizeToLong(begin_params_axis_));
-    auto epsilon = CreateFP32Imm(epsilon_);
+    auto epsilon = CreatePyFloatImm(epsilon_);
     auto layernorm = gen_g.PushBack({gen_g.NewOpInst(prim_name_), tuple_get_item, gen_g.virtual_input_node(),
                                      gen_g.virtual_input_node(), begin_norm_axis, begin_params_axis, epsilon});
     input_nodes.push_back(std::make_pair(layernorm, kIndexTwo));

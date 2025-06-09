@@ -32,6 +32,7 @@
 #include "utils/ms_context.h"
 #include "mindapi/base/types.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore::expander::bprop {
 namespace {
@@ -44,7 +45,7 @@ NodePtr ApplyAdam(BpropBuilder *ib, const std::vector<NodePtr> &nodes, const std
 
   auto grad_dtype = ib->GetDtype(dout);
 
-  auto backward_float_params = GetValue<std::vector<float>>(ib->GetAttr("backward_float_params"));
+  auto backward_float_params = GetValue<std::vector<pyfloat>>(ib->GetAttr("backward_float_params"));
   MS_ASSERT(backward_float_params.size() == kIndex6);
   auto beta1_power = ib->Tensor(backward_float_params[0], grad_dtype);
   auto beta2_power = ib->Tensor(backward_float_params[1], grad_dtype);
@@ -80,7 +81,7 @@ NodePtr ApplyFtrl(BpropBuilder *ib, const std::vector<NodePtr> &nodes, const std
 
   auto grad_dtype = ib->GetDtype(dout);
 
-  auto backward_float_params = GetValue<std::vector<float>>(ib->GetAttr("backward_float_params"));
+  auto backward_float_params = GetValue<std::vector<pyfloat>>(ib->GetAttr("backward_float_params"));
   MS_ASSERT(backward_float_params.size() == kIndex4);
   auto lr = ib->Tensor(backward_float_params[0], grad_dtype);
   auto lr_power = ib->Tensor(backward_float_params[1], grad_dtype);
@@ -113,7 +114,7 @@ NodePtr ApplyAdamW(BpropBuilder *ib, const std::vector<NodePtr> &nodes, const st
 
   auto grad_dtype = ib->GetDtype(dout);
 
-  auto backward_float_params = GetValue<std::vector<float>>(ib->GetAttr("backward_float_params"));
+  auto backward_float_params = GetValue<std::vector<pyfloat>>(ib->GetAttr("backward_float_params"));
   MS_ASSERT(backward_float_params.size() == kIndex7);
   auto beta1_power = ib->Tensor(backward_float_params[0], grad_dtype);
   auto beta2_power = ib->Tensor(backward_float_params[1], grad_dtype);
@@ -159,7 +160,7 @@ NodePtr ApplyAdaGrad(BpropBuilder *ib, const std::vector<NodePtr> &nodes, const 
 
   auto grad_dtype = ib->GetDtype(dout);
 
-  auto backward_float_params = GetValue<std::vector<float>>(ib->GetAttr("backward_float_params"));
+  auto backward_float_params = GetValue<std::vector<pyfloat>>(ib->GetAttr("backward_float_params"));
   assert(backward_float_params.size() == kIndex1);
   auto lr = ib->Tensor(backward_float_params.at(0), grad_dtype);
 
@@ -189,7 +190,7 @@ NodePtr ApplySgd(BpropBuilder *ib, const std::vector<NodePtr> &nodes, const std:
 
   auto grad_dtype = ib->GetDtype(dout);
 
-  auto backward_float_params = GetValue<std::vector<float>>(ib->GetAttr("backward_float_params"));
+  auto backward_float_params = GetValue<std::vector<pyfloat>>(ib->GetAttr("backward_float_params"));
   assert(backward_float_params.size() == kIndex1);
   auto lr = ib->Tensor(backward_float_params[0], grad_dtype);
 
@@ -219,7 +220,7 @@ NodePtr ApplyRmsprop(BpropBuilder *ib, const std::vector<NodePtr> &nodes, const 
 
   auto grad_dtype = ib->GetDtype(dout);
 
-  auto backward_float_params = GetValue<std::vector<float>>(ib->GetAttr("backward_float_params"));
+  auto backward_float_params = GetValue<std::vector<pyfloat>>(ib->GetAttr("backward_float_params"));
   assert(backward_float_params.size() == kIndex4);
   auto lr = ib->Tensor(backward_float_params[kIndex0], grad_dtype);
   auto rho = ib->Tensor(backward_float_params[kIndex1], grad_dtype);
@@ -263,7 +264,7 @@ NodePtr FakeRemoteAndTableFindInitBackwardFunc(BpropBuilder *ib, const std::vect
 }
 
 NodePtrList Dropout2DBpropExpander(BpropBuilder *ib) {
-  auto keep_prob = GetValue<float>(ib->GetAttr("keep_prob"));
+  auto keep_prob = GetValue<pyfloat>(ib->GetAttr("keep_prob"));
   auto x = ib->GetInput(kIndex0);
   auto out = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex2);
@@ -3606,7 +3607,7 @@ REG_BPROP_BUILDER("CeLU").SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto x_dtype = ib->GetDtype(x);
   auto alpha = ib->GetInput(kIndex1);
-  auto alpha_value = GetValue<float>(alpha->BuildValue());
+  auto alpha_value = GetValue<pyfloat>(alpha->BuildValue());
   auto out = ib->GetInput(kIndex2);
   auto dout = ib->GetInput(kIndex3);
   auto greater = ib->GreaterEqual(x, ib->Tensor(0.0, x_dtype));
@@ -4061,21 +4062,22 @@ REG_BPROP_BUILDER("SparseSoftmaxCrossEntropyWithLogitsV2").FreeUselessValues_IO(
   return {grad, ib->OutZeros(labels)};
 });
 
-REG_BPROP_BUILDER("PadV3").SetUnusedInputs({i0, i1, i3}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("PadV3").SetUnusedInputs({i0, i2, i5}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
   auto paddings = ib->GetInput(kIndex1);
-  bool has_constant_values = ib->GetInputs().size() == kDim5;
-  auto dout = has_constant_values ? ib->GetInput(kIndex4) : ib->GetInput(kIndex3);
-  auto mode = GetValue<std::string>(ib->GetAttr("mode"));
-  NodePtr dx;
-
-  if (mode == "constant") {
+  auto constant_value = ib->GetInput(kIndex2);
+  auto mode = ib->GetInput(kIndex3);
+  auto paddings_contiguous = ib->GetInput(kIndex4);
+  auto dout = ib->GetInput(kIndex6);
+  auto mode_value = static_cast<mindspore::ops::Mode>(GetValue<int64_t>(mode->BuildValue()));
+  NodePtr dx{nullptr};
+  if (mode_value == mindspore::ops::Mode::CONSTANT) {
     MS_EXCEPTION_IF_NULL(paddings);
     auto pad_value = GetIntList(paddings);
     auto context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(context);
     if (context->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kAscendDevice) {
       (void)CheckAndConvertUtils::CheckPositiveVector("paddings", pad_value, "PadV3Grad");
-      auto x = ib->GetInput(kIndex0);
       auto x_shape = ib->GetShape(x);
       std::vector<std::vector<int64_t>> ordered_paddings(x_shape.size(), {0, 0});
       const size_t step_2 = 2;
@@ -4090,20 +4092,14 @@ REG_BPROP_BUILDER("PadV3").SetUnusedInputs({i0, i1, i3}).SetBody(BODYFUNC(ib) {
       dx = ib->Slice(dout, ib->EmitValue(MakeValue(begin)), ib->EmitValue(MakeValue(x_shape)));
     } else {
       (void)std::transform(pad_value.begin(), pad_value.end(), pad_value.begin(), [](const int64_t &c) { return -c; });
-      auto constant_values = ib->GetInput(kIndex2);
-      dx = ib->Emit("PadV3", {dout, ib->Tensor(pad_value), ib->ZerosLike(constant_values)},
-                    {{"mode", ib->GetAttr("mode")}, {"paddings_contiguous", ib->GetAttr("paddings_contiguous")}});
+      dx = ib->Emit("PadV3", {dout, ib->Tensor(pad_value), ib->ZerosLike(constant_value), mode, paddings_contiguous});
     }
   } else {
-    dx = ib->Emit("PadV3Grad", {dout, paddings},
-                  {{"mode", ib->GetAttr("mode")}, {"paddings_contiguous", ib->GetAttr("paddings_contiguous")}});
+    dx = ib->Emit("PadV3Grad", {dout, paddings, mode, paddings_contiguous});
   }
-  if (has_constant_values) {
-    auto constant_values = ib->GetInput(kIndex2);
-    return {dx, ib->OutZeros(paddings), ib->OutZeros(constant_values)};
-  } else {
-    return {dx, ib->OutZeros(paddings)};
-  }
+
+  return {dx, ib->OutZeros(paddings), ib->OutZeros(constant_value), ib->OutZeros(mode),
+          ib->OutZeros(paddings_contiguous)};
 });
 
 REG_BPROP_BUILDER("ConstantPadND").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib) {

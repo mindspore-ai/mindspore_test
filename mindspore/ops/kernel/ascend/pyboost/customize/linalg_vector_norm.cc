@@ -25,7 +25,7 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 void LinalgVectorNormAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &x_tensor,
-                                     const FP32ImmPtr &ord, const std::optional<ValueTuplePtr> &dim,
+                                     const FP64ImmPtr &ord, const std::optional<ValueTuplePtr> &dim,
                                      const BoolImmPtr &keepdim, const std::optional<Int64ImmPtr> &dtype) {
   MS_LOG(DEBUG) << "Call LinalgVectorNorm start";
   // Convert ValuePtr to c++ scalar
@@ -35,7 +35,7 @@ void LinalgVectorNormAscendCustomize(const std::shared_ptr<OpRunner> &op, const 
     dim_vector = ConvertValueTupleToVector<int64_t>(dim.value());
   }
   ScalarPtr ord_scalar = nullptr;
-  MAKE_SCALAR(GetValue<float>(ord), kNumberTypeFloat32, ord_scalar);
+  MAKE_SCALAR(static_cast<float>(ord->value()), kNumberTypeFloat32, ord_scalar);
   const auto keepdim_imm = GetValue<bool>(keepdim);
 
   TypeId out_dtype = dtype.has_value() ? static_cast<TypeId>(GetValue<int64_t>(dtype.value())) : x_tensor->data_type();

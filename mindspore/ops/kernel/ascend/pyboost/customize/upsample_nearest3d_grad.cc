@@ -18,6 +18,7 @@
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -25,7 +26,7 @@ namespace pyboost {
 namespace {
 tensor::TensorPtr UpsampleNearest3DGradAscendCall(
   const std::shared_ptr<OpRunner> &op, const device::DeviceContext *device_context, const TensorPtr &gradout_tensor,
-  const std::vector<int64_t> &input_size, const std::vector<int64_t> &output_size, const std::vector<float> &scales,
+  const std::vector<int64_t> &input_size, const std::vector<int64_t> &output_size, const std::vector<pyfloat> &scales,
   const std::vector<tensor::TensorPtr> &outputs) {
   MS_LOG(DEBUG) << "Call start";
   double scales_d = scales[0];
@@ -48,7 +49,7 @@ tensor::TensorPtr UpsampleNearest3DGradAscendCustomize(const std::shared_ptr<OpR
 
   std::vector<int64_t> output_size_vector{};
   constexpr pyfloat DEFAULT_SCALE_VALUE = 0.;
-  std::vector<float> scales(kDim3, DEFAULT_SCALE_VALUE);
+  std::vector<pyfloat> scales(kDim3, DEFAULT_SCALE_VALUE);
   if (output_size.has_value()) {
     output_size_vector = ConvertValueTupleToVector<int64_t>(output_size.value());
   } else if (scale_factors.has_value()) {

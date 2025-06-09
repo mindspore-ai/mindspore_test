@@ -28,6 +28,8 @@
 #include "kernel/gpu/cuda_impl/cuda_ops/elementwise/eltwise_ops_impl.cuh"
 #include "kernel/gpu/cuda_impl/cuda_ops/elementwise/eltwise_ops_type.cuh"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/core/include/mindapi/base/types.h"
+
 namespace mindspore {
 namespace kernel {
 bool LpNormGpuKernelMod::GetLpNormAttr() {
@@ -39,7 +41,7 @@ bool LpNormGpuKernelMod::GetLpNormAttr() {
 
   axis_ = GetValue<std::vector<int64_t>>(primitive_->GetAttr(ops::kAxis));
   p_ = GetValue<int64_t>(primitive_->GetAttr(ops::kP));
-  epsilon_ = GetValue<float>(primitive_->GetAttr(ops::kEpsilon));
+  epsilon_ = GetValue<pyfloat>(primitive_->GetAttr(ops::kEpsilon));
   return true;
 }
 

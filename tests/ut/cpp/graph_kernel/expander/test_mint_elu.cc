@@ -31,7 +31,7 @@ namespace mindspore::graphkernel::test {
 namespace {
 struct EluExtParams {
   ShapeVector input_shape;
-  float alpha;
+  double alpha;
   ShapeVector expect_shape;
   TypePtr type;
 };

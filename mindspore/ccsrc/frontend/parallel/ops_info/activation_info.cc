@@ -567,7 +567,7 @@ Status ActivationBase::InferOutputTensorMap() {
 }
 
 Status DropoutInfo::GetAttrs() {
-  auto keep_prob_value = GetScalarValueFromInputsWithCheck<float>(input_value_, name_, KEEP_PROB);
+  auto keep_prob_value = GetScalarValueFromInputsWithCheck<pyfloat>(input_value_, name_, KEEP_PROB);
   if (!keep_prob_value.has_value()) {
     return FAILED;
   }

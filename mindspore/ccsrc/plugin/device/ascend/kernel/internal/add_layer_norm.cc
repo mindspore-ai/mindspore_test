@@ -17,7 +17,9 @@
 #include "plugin/device/ascend/kernel/internal/add_layer_norm.h"
 
 #include <memory>
+
 #include "common/kernel.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -26,7 +28,7 @@ internal::InternalOpPtr InternalAddLayerNorm::CreateKernel(const internal::Input
                                                            const std::vector<KernelTensor *> &ms_inputs,
                                                            const std::vector<KernelTensor *> &ms_outputs) {
   internal::NormParam param;
-  param.eps = ms_inputs[kIndex4]->GetValueWithCheck<float>();
+  param.eps = ms_inputs[kIndex4]->GetValueWithCheck<pyfloat>();
 
   MS_LOG(INFO) << "Create kernel: " << internal::kInternalAddLayerNormOpName << " eps: " << param.eps;
   return internal::CreateAddLayerNormOp(inputs_ii, outputs_ii, param, internal::kInternalAddLayerNormOpName);

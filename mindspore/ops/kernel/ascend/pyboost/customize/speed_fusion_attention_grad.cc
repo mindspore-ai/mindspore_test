@@ -33,7 +33,7 @@ void SpeedFusionAttentionGradAscendCustomize(
   const std::optional<TensorPtr> &pse, const std::optional<TensorPtr> &padding_mask,
   const std::optional<TensorPtr> &atten_mask, const std::optional<TensorPtr> &softmax_max,
   const std::optional<TensorPtr> &softmax_sum, const std::optional<TensorPtr> &softmax_in,
-  const std::optional<TensorPtr> &attention_in, const FP32ImmPtr &scale, const FP32ImmPtr &keep_prob,
+  const std::optional<TensorPtr> &attention_in, const FP64ImmPtr &scale, const FP64ImmPtr &keep_prob,
   const Int64ImmPtr &pre_tokens, const Int64ImmPtr &next_tokens, const Int64ImmPtr &inner_precise,
   const std::optional<TensorPtr> &seed, const std::optional<TensorPtr> &offset, const std::optional<TensorPtr> &numels,
   const std::optional<ValueTuplePtr> &prefix, const std::optional<ValueTuplePtr> &actual_seq_qlen,
@@ -53,9 +53,9 @@ void SpeedFusionAttentionGradAscendCustomize(
   auto numels_tensor = numels.value();
   numels_tensor->data_sync();
   int64_t numels_value = *static_cast<int64_t *>(numels_tensor->data_c());
-  double keep_prob_value = static_cast<double>(GetValue<float>(keep_prob));
+  double keep_prob_value = static_cast<double>(keep_prob->value());
   if (0 < keep_prob_value && keep_prob_value < 1.) {
-    auto p = std::make_shared<FP32Imm>(static_cast<float>(1 - keep_prob_value));
+    auto p = std::make_shared<FP64Imm>(1 - keep_prob_value);
     auto shape = std::make_shared<ValueTuple>(std::vector<ValuePtr>{MakeValue(numels_value)});
     auto dtype = std::make_shared<Int64Imm>(static_cast<int64_t>(query->Dtype()->type_id()));
     auto dropout_gen_mask_ext_op =
@@ -73,7 +73,7 @@ void SpeedFusionAttentionGradAscendCustomize(
   auto head_num_value = GetValue<int64_t>(head_num);
   auto input_layout_str =
     mindspore::device::ascend::FASInputLayoutMode::ConvertEnumToString(GetValue<int64_t>(input_layout));
-  auto scale_value = static_cast<double>(GetValue<float>(scale));
+  auto scale_value = static_cast<double>(scale->value());
   auto pre_tokens_value = GetValue<int64_t>(pre_tokens);
   auto next_tokens_value = GetValue<int64_t>(next_tokens);
   auto inner_precise_value = GetValue<int64_t>(inner_precise);

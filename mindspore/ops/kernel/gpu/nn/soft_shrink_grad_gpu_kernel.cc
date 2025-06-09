@@ -16,6 +16,7 @@
 
 #include "kernel/gpu/nn/soft_shrink_grad_gpu_kernel.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/soft_shrink_impl.cuh"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -23,7 +24,7 @@ namespace kernel {
   KernelAttr()                                           \
     .AddInputAttr(DT)                                    \
     .AddInputAttr(DT)                                    \
-    .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32) \
+    .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat) \
     .AddOutputAttr(DT),                                  \
     &SoftShrinkGradGpuKernelMod::LaunchKernel<T>
 
@@ -35,7 +36,7 @@ bool SoftShrinkGradGpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTe
   T *x_addr = GetDeviceAddress<T>(inputs, kIndex1);
   T *dx_addr = GetDeviceAddress<T>(outputs, kIndex0);
   auto status =
-    SoftShrinkGrad(size_, dy_addr, x_addr, lambd, dx_addr, device_id_, reinterpret_cast<cudaStream_t>(cuda_stream_));
+    SoftShrinkGrad(size_, dy_addr, x_addr, lambd_, dx_addr, device_id_, reinterpret_cast<cudaStream_t>(cuda_stream_));
   CHECK_CUDA_STATUS(status, kernel_name_);
   return true;
 }
@@ -62,12 +63,12 @@ int SoftShrinkGradGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs
 
   auto in_shape = inputs[kIndex0]->GetShapeVector();
   size_ = std::accumulate(in_shape.begin(), in_shape.end(), size_t(1), std::multiplies<size_t>());
-  lambd = inputs[kIndex2]->GetValueWithCheck<float>();
+  lambd_ = inputs[kIndex2]->GetValueWithCheck<pyfloat>();
   return KRET_OK;
 }
 
-const std::vector<std::pair<KernelAttr, SoftShrinkGradGpuKernelMod::KernelRunFunc>> &
-SoftShrinkGradGpuKernelMod::GetFuncList() const {
+const std::vector<std::pair<KernelAttr, SoftShrinkGradGpuKernelMod::KernelRunFunc>>
+  &SoftShrinkGradGpuKernelMod::GetFuncList() const {
   static const std::vector<std::pair<KernelAttr, SoftShrinkGradGpuKernelMod::KernelRunFunc>> func_list = {
     {SOFT_SHRINK_GRAD_GPU_REGISTER(kNumberTypeFloat32, float)},
     {SOFT_SHRINK_GRAD_GPU_REGISTER(kNumberTypeFloat16, half)},

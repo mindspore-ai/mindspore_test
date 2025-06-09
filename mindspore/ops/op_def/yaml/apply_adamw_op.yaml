@@ -17,7 +17,8 @@ apply_adamw:
       dtype: tensor
       type_cast: float
     weight_decay:
-      dtype: float
+      dtype: tensor
+      type_cast: float
     beta1:
       dtype: tensor
       type_cast: float
@@ -25,7 +26,8 @@ apply_adamw:
       dtype: tensor
       type_cast: float
     epsilon:
-      dtype: float
+      dtype: tensor
+      type_cast: float
     grad:
       dtype: tensor
     max_grad_norm:

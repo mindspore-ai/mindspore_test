@@ -35,6 +35,8 @@ class BatchNormStatsAscend : public AclnnKernelMod {
 
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
+
+  double eps_;
 };
 }  // namespace batch_norm_stats
 }  // namespace kernel

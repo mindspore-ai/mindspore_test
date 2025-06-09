@@ -30,7 +30,7 @@ tensor::TensorPtr BatchNormElemtAscendCustomize(const std::shared_ptr<OpRunner> 
                                                 const std::optional<TensorPtr> &weight_tensor,
                                                 const std::optional<TensorPtr> &bias_tensor,
                                                 const std::optional<TensorPtr> &mean_tensor,
-                                                const std::optional<TensorPtr> &invstd_tensor, const FP32ImmPtr &eps);
+                                                const std::optional<TensorPtr> &invstd_tensor, const FP64ImmPtr &eps);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

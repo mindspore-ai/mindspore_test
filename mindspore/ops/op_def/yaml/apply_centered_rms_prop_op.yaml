@@ -1,0 +1,38 @@
+#operator apply_centered_rms_prop
+apply_centered_rms_prop:
+    args:
+        var:
+            dtype: tensor
+        mean_gradient:
+            dtype: tensor
+        mean_square:
+            dtype: tensor
+        moment:
+            dtype: tensor
+        grad:
+            dtype: tensor
+        learning_rate:
+            dtype: tensor
+            type_cast: float
+        decay:
+            dtype: tensor
+            type_cast: float
+        momentum:
+            dtype: tensor
+            type_cast: float
+        epsilon:
+            dtype: tensor
+            type_cast: float
+        use_locking:
+            dtype: bool
+            default: False
+            prim_init: True
+    returns:
+        var:
+            dtype: tensor
+    labels:
+        side_effect_mem: True
+    class:
+        name: ApplyCenteredRMSProp
+    function:
+        disable: True

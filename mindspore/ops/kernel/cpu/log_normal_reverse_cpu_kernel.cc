@@ -22,6 +22,7 @@
 #include "abstract/utils.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "Eigen/Core"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -35,8 +36,8 @@ constexpr auto kAttrStd = "std";
 
 bool LogNormalReverseCpuKernel::Init(const std::vector<KernelTensor *> &inputs,
                                      const std::vector<KernelTensor *> &outputs) {
-  input_mean_ = GetValue<float>(primitive_->GetAttr(kAttrMean));
-  input_std_ = GetValue<float>(primitive_->GetAttr(kAttrStd));
+  input_mean_ = GetValue<pyfloat>(primitive_->GetAttr(kAttrMean));
+  input_std_ = GetValue<pyfloat>(primitive_->GetAttr(kAttrStd));
   auto kernel_attr = GetKernelAttrFromTensors(inputs, outputs);
   auto is_match = MatchKernelAttr(kernel_attr, GetOpSupport());
   if (!is_match.first) {

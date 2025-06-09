@@ -26,6 +26,7 @@
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "kernel/gpu/kernel_constants.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -102,9 +103,9 @@ class LocalResponseNormGpuKernelMod : public NativeGpuKernelMod {
     }
 
     depth_radius_ = static_cast<int>(GetValue<int64_t>(prim->GetAttr("depth_radius")));
-    bias_ = GetValue<float>(prim->GetAttr("bias"));
-    alpha_ = GetValue<float>(prim->GetAttr("alpha"));
-    beta_ = GetValue<float>(prim->GetAttr("beta"));
+    bias_ = GetValue<pyfloat>(prim->GetAttr("bias"));
+    alpha_ = GetValue<pyfloat>(prim->GetAttr("alpha"));
+    beta_ = GetValue<pyfloat>(prim->GetAttr("beta"));
     use_native_ = false;
     const unsigned int lrnN = 2 * depth_radius_ + 1;
     if (lrnN < CUDNN_LRN_MIN_N || lrnN > CUDNN_LRN_MAX_N || bias_ < CUDNN_LRN_MIN_K || beta_ < CUDNN_LRN_MIN_BETA) {

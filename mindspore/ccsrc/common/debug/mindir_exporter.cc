@@ -378,6 +378,8 @@ bool IrExportBuilder::BuildModel(const FuncGraphPtr &func_graph) {
   // Build the main funcGraph
   (void)nodeName_.insert(func_graph->ToString());
   top_graph = true;
+  // The old version MindIR (mindspore version < 2.7.0) didn't have this flag.
+  func_graph->set_flag("skip_converting_mindir_scalar_dtype", true);
 
   if (!BuildFuncGraph(func_graph, graph_proto)) {
     MS_LOG(ERROR) << "Failed to export MindIR! Build func graph failed: " << func_graph->ToString();

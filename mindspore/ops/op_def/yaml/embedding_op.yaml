@@ -27,5 +27,7 @@ embedding:
     dispatch:
         enable: True
         Ascend: EmbeddingAscend
+        CPU: None
+        GPU: None
     function:
         disable: True

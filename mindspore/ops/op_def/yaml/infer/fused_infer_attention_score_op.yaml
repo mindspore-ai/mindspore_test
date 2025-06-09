@@ -138,3 +138,5 @@ fused_infer_attention_score:
   dispatch:
     enable: True
     Ascend: FusedInferAttentionScoreAscend
+    CPU: None
+    GPU: None

@@ -39,9 +39,9 @@ constexpr size_t kStrategySize = 5;
 Status BatchNormInfo::GetAttrs() {
   auto is_training_value = GetScalarValueFromInputsWithCheck<bool>(input_value_, name_, IS_TRAINING);
 
-  auto epsilon_value = GetScalarValueFromInputsWithCheck<float>(input_value_, name_, EPSILON);
+  auto epsilon_value = GetScalarValueFromInputsWithCheck<pyfloat>(input_value_, name_, EPSILON);
 
-  auto momentum_value = GetScalarValueFromInputsWithCheck<float>(input_value_, name_, MOMENTUM);
+  auto momentum_value = GetScalarValueFromInputsWithCheck<pyfloat>(input_value_, name_, MOMENTUM);
   if (!is_training_value.has_value() || !epsilon_value.has_value() || !momentum_value.has_value()) {
     return FAILED;
   }

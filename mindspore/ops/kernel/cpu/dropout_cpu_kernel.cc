@@ -23,6 +23,7 @@
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/infer/ops_func_impl/dropout.h"
 #include "kernel/philox_random.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -72,7 +73,7 @@ bool DropoutCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const 
                   << " and " << kDropoutOutputsNum << ", but got " << inputs.size() << " and " << outputs.size();
     return false;
   }
-  keep_prob_ = inputs[kIndex1]->GetValueWithCheck<float>();
+  keep_prob_ = inputs[kIndex1]->GetValueWithCheck<pyfloat>();
   if (keep_prob_ <= 0.0 || keep_prob_ > 1.0) {
     MS_LOG(EXCEPTION) << "For '" << kernel_name_ << ", the 'keep_prob' must be in (0.0, 1.0], but got " << keep_prob_;
   }
@@ -115,7 +116,7 @@ FuncVec &DropoutCpuKernelMod::GetFuncList() const {
   static const std::vector<std::pair<KernelAttr, DropoutCpuKernelMod::KernelRunFunc>> func_list = {
     {KernelAttr()
        .AddInputAttr(kNumberTypeFloat16)
-       .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
        .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
        .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
        .AddOutputAttr(kNumberTypeFloat16)
@@ -123,7 +124,7 @@ FuncVec &DropoutCpuKernelMod::GetFuncList() const {
      &DropoutCpuKernelMod::LaunchKernel<float16>},
     {KernelAttr()
        .AddInputAttr(kNumberTypeFloat32)
-       .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
        .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
        .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
        .AddOutputAttr(kNumberTypeFloat32)
@@ -131,7 +132,7 @@ FuncVec &DropoutCpuKernelMod::GetFuncList() const {
      &DropoutCpuKernelMod::LaunchKernel<float>},
     {KernelAttr()
        .AddInputAttr(kNumberTypeFloat64)
-       .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
        .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
        .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
        .AddOutputAttr(kNumberTypeFloat64)

@@ -79,3 +79,5 @@ incre_flash_attention:
   dispatch:
     enable: True
     Ascend: IncreFlashAttentionAscend
+    CPU: None
+    GPU: None

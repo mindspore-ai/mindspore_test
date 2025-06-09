@@ -24,13 +24,13 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::TensorPtr NormalFloatTensorAscendCustomize(const std::shared_ptr<OpRunner> &op, const FP32ImmPtr &mean_float,
+tensor::TensorPtr NormalFloatTensorAscendCustomize(const std::shared_ptr<OpRunner> &op, const FP64ImmPtr &mean_float,
                                                    const TensorPtr &std_tensor, const TensorPtr &seed,
                                                    const TensorPtr &offset) {
   MS_LOG(DEBUG) << "NormalFloatTensor call start";
   OpRunner::InferOpOutput(op, mean_float, std_tensor, seed, offset);
   // ValueTuple to std::vector
-  auto mean_imm = GetValue<float>(mean_float);
+  auto mean_imm = static_cast<float>(mean_float->value());
   auto [seed_imm, offset_imm] = UpdateGeneratorState(seed, offset);
 
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), std_tensor);

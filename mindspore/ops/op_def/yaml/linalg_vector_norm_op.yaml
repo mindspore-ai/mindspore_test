@@ -26,3 +26,5 @@ linalg_vector_norm:
   dispatch:
     enable: True
     Ascend: LinalgVectorNormAscend
+    CPU: None
+    GPU: None

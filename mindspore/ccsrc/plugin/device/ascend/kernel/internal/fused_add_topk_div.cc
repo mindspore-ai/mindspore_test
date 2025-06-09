@@ -17,8 +17,10 @@
 #include "plugin/device/ascend/kernel/internal/fused_add_topk_div.h"
 
 #include <memory>
+
 #include "common/kernel.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_in_out_map.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -38,14 +40,14 @@ internal::InternalOpPtr InternalFusedAddTopKDiv::CreateKernel(const internal::In
   if (group_num->dtype_id() == TypeId::kNumberTypeInt64 && group_topk->dtype_id() == TypeId::kNumberTypeInt64 &&
       n->dtype_id() == TypeId::kNumberTypeInt64 && k->dtype_id() == TypeId::kNumberTypeInt64 &&
       activate_type->dtype_id() == TypeId::kNumberTypeInt64 && is_norm->dtype_id() == TypeId::kNumberTypeBool &&
-      scale->dtype_id() == TypeId::kNumberTypeFloat32) {
+      scale->dtype_id() == TypeId::kNumberTypePyFloat) {
     param.group_num = static_cast<int32_t>(group_num->GetValue<int64_t>().value());
     param.group_topk = static_cast<int32_t>(group_topk->GetValue<int64_t>().value());
     param.n = static_cast<int32_t>(n->GetValue<int64_t>().value());
     param.k = static_cast<int32_t>(k->GetValue<int64_t>().value());
     param.activate_type = static_cast<int32_t>(activate_type->GetValue<int64_t>().value());
     param.is_norm = is_norm->GetValue<bool>().value();
-    param.scale = scale->GetValue<float>().value();
+    param.scale = scale->GetValue<pyfloat>().value();
     param.enableExpertMapping = enableExpertMapping->GetValue<bool>().value();
   } else {
     MS_LOG(EXCEPTION) << "FusedAddTopKDiv [group_num, group_topk, n, k, activate_type, is_norm, scale]'s dtype wrong";

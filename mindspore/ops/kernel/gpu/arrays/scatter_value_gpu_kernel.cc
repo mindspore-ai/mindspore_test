@@ -16,6 +16,7 @@
 
 #include "kernel/gpu/arrays/scatter_value_gpu_kernel.h"
 #include "abstract/utils.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -176,7 +177,7 @@ bool ScatterValueGpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &i
   VARIABLE_NOT_USED(workspace);
   T *input = GetDeviceAddress<T>(inputs, input_idx_);
   S *indices = GetDeviceAddress<S>(inputs, index_idx_);
-  auto src = static_cast<T>(inputs[kIndex3]->GetValueWithCheck<float>());
+  auto src = static_cast<T>(inputs[kIndex3]->GetValueWithCheck<pyfloat>());
   T *output = GetDeviceAddress<T>(outputs, kIndex0);
 
   if (sync_resource_) {
@@ -211,7 +212,7 @@ bool ScatterValueGpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &i
     .AddInputAttr(MS_T)                                  \
     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)   \
     .AddInputAttr(MS_S)                                  \
-    .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32) \
+    .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat) \
     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)   \
     .AddOutputAttr(MS_T),                                \
     &ScatterValueGpuKernelMod::LaunchKernel<T, S>

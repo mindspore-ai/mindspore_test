@@ -223,10 +223,14 @@ REG_STRING_TO_ENUM_SPECIAL(flip_mode, StrToEnumMap{{"BITFLIP", FlipMode::BITFLIP
                                                    {"MULTIPLY", FlipMode::MULTIPLY},
                                                    {"MULTIPLY_MAX", FlipMode::MULTIPLY_MAX}});
 
-// LinalgQrMode
-REG_STRING_TO_ENUM_SPECIAL(mode, StrToEnumMap{{"REDUCED", LinalgQrMode::REDUCED},
-                                              {"COMPLETE", LinalgQrMode::COMPLETE},
-                                              {"R", LinalgQrMode::R}});
+// Mode
+REG_STRING_TO_ENUM_SPECIAL(mode, StrToEnumMap{{"REDUCED", Mode::REDUCED},
+                                              {"COMPLETE", Mode::COMPLETE},
+                                              {"R", Mode::R},
+                                              {"CONSTANT", Mode::CONSTANT},
+                                              {"REFLECT", Mode::REFLECT},
+                                              {"EDGE", Mode::EDGE},
+                                              {"CIRCULAR", Mode::CIRCULAR}});
 
 // FlipMode
 REG_STRING_TO_ENUM_SPECIAL(approximate, StrToEnumMap{{"NONE", Approximate::NONE}, {"TANH", Approximate::TANH}});

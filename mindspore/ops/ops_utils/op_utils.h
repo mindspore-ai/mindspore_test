@@ -142,9 +142,7 @@ void BlockInvalid(const PrimitivePtr &primitive, const std::vector<AbstractBaseP
 BaseShapePtr SetPadShape(const ShapeVector &x_shape, const ArrayValue<int64_t> &paddings);
 BaseShapePtr PadInferShapeBase(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args,
                                const size_t pad_dim);
-size_t GetHashId(int a, int b);
-TypeId ConvertTypeBetweenTensorAndScalar(const TypeId &tensor_type_id, const TypeId &scalar_type_id,
-                                         const size_t hash_id);
+TypeId ConvertTypeBetweenTensorAndScalar(const TypeId &tensor_type_id, const TypeId &scalar_type_id);
 
 bool ObscureShapeEqual(const ShapeVector &lhs, const ShapeVector &rhs);
 
@@ -344,8 +342,6 @@ OPS_API int ConvertReductionForAclnn(Reduction reduction);
 OPS_API size_t CalOutputSize(const std::vector<int64_t> &output_shape, const size_t &type_size);
 OPS_API ValueTuplePtr ConvertShapeVectorToValueTuple(const ShapeVector &shape_vector);
 OPS_API int64_t GetCacheCapaticy();
-OPS_API double GetDoubleValueFromScalar(const FP32ImmPtr &scalar);
-OPS_API ScalarPtr FetchRealScalar(const ScalarPtr &scalar);
 
 static inline void CheckRank(const InferInfoPtr &infer_info, size_t supported_rank, const std::string &op_name,
                              const std::string &input_name) {

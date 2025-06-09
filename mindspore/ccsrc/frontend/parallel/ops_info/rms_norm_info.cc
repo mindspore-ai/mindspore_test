@@ -402,7 +402,7 @@ AnfNodePtr RmsNormInfo::GetInputOutputNodeForSplitNormAxis(const CNodePtr &cnode
 
   auto pre_node_eps = cnode->input(kIndex3);  // eps
   MS_EXCEPTION_IF_NULL(pre_node_eps);
-  float eps_number = GetValue<float>(pre_node_eps->cast<ValueNodePtr>()->value());
+  pyfloat eps_number = GetValue<pyfloat>(pre_node_eps->cast<ValueNodePtr>()->value());
   mindspore::tensor::TensorPtr eps_tensor_ptr =
     std::make_shared<mindspore::tensor::Tensor>(static_cast<float>(eps_number));
   AnfNodePtr add_eps = gen_g->PushBack({gen_g->NewOpInst(ADD), real_div_node, NewValueNode(MakeValue(eps_tensor_ptr))});
@@ -446,7 +446,7 @@ Status RmsNormInfo::ComputeReplaceGraphForInterleaved(const CNodePtr &cnode) {
       output_node = GetInputOutputNodeForSplitNormAxis(cnode, tuple_get_item, &gen_g, &input_nodes);
     } else {
       output_node = gen_g.PushBack(
-        {gen_g.NewOpInst(prim_name_), tuple_get_item, gen_g.virtual_input_node(), CreateFP32Imm(DEFAULT_EPS)});
+        {gen_g.NewOpInst(prim_name_), tuple_get_item, gen_g.virtual_input_node(), CreatePyFloatImm(DEFAULT_EPS)});
       input_nodes.push_back(std::make_pair(output_node, kIndexTwo));
     }
     virtual_converter_end_inputs_vector.push_back(output_node);

@@ -21,6 +21,7 @@
 #include <map>
 #include "common/common_utils.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -45,7 +46,7 @@ int LogitCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const s
   if (ret != KRET_OK) {
     return ret;
   }
-  eps = inputs[kIndex1]->GetValueWithCheck<float>();
+  eps = inputs[kIndex1]->GetValueWithCheck<pyfloat>();
   input_dtype_ = inputs[kIndex0]->dtype_id();
   auto input_shape = inputs.at(kIndex0)->GetShapeVector();
   (void)std::transform(input_shape.begin(), input_shape.end(), std::back_inserter(input_shape_), LongToSize);
@@ -127,15 +128,15 @@ bool LogitCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
 std::vector<KernelAttr> LogitCpuKernelMod::GetOpSupport() {
   static std::vector<KernelAttr> support_list = {KernelAttr()
                                                    .AddInputAttr(kNumberTypeFloat16)
-                                                   .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+                                                   .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
                                                    .AddOutputAttr(kNumberTypeFloat16),
                                                  KernelAttr()
                                                    .AddInputAttr(kNumberTypeFloat32)
-                                                   .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+                                                   .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
                                                    .AddOutputAttr(kNumberTypeFloat32),
                                                  KernelAttr()
                                                    .AddInputAttr(kNumberTypeFloat64)
-                                                   .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+                                                   .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
                                                    .AddOutputAttr(kNumberTypeFloat64)};
   return support_list;
 }

@@ -16,6 +16,7 @@
 
 #include "backend/common/pass/add_attr_to_node/add_attr_to_node_register.h"
 #include "include/common/utils/anfalgo.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace opt {
@@ -29,7 +30,7 @@ const AnfNodePtr IOUFusionProcess(const FuncGraphPtr &graph, const AnfNodePtr &n
   MS_EXCEPTION_IF_NULL(prim);
 
   if (prim->GetAttr(kEpsName) == nullptr) {
-    constexpr float kDefaultValue = 1.0;
+    constexpr pyfloat kDefaultValue = 1.0;
     prim->AddAttr(kEpsName, MakeValue(kDefaultValue));
   }
 

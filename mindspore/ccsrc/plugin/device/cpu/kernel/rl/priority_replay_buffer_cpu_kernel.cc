@@ -22,6 +22,7 @@
 #include <functional>
 #include "common/kernel.h"
 #include "include/common/factory/replay_buffer_factory.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -36,7 +37,7 @@ int PriorityReplayBufferCreateCpuKernel::Resize(const std::vector<KernelTensor *
     return ret;
   }
   const int64_t &capacity = GetValue<int64_t>(primitive_->GetAttr("capacity"));
-  const float &alpha = GetValue<float>(primitive_->GetAttr("alpha"));
+  const float &alpha = GetValue<pyfloat>(primitive_->GetAttr("alpha"));
   const auto &dtypes = GetValue<std::vector<TypePtr>>(primitive_->GetAttr("dtypes"));
   const auto &shapes = GetValue<std::vector<std::vector<int64_t>>>(primitive_->GetAttr("shapes"));
   const int64_t &seed0 = GetValue<int64_t>(primitive_->GetAttr("seed0"));

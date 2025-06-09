@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,44 @@
  * limitations under the License.
  */
 
-#include <memory>
-#include "common/common_test.h"
-#include "ops/test_ops.h"
-#include "ops/test_ops_cmp_utils.h"
-#include "infer/ops_func_impl/range.h"
+#include "ops/utils/general_infer_utils.h"
 
 namespace mindspore {
 namespace ops {
-OP_FUNC_IMPL_TEST_DECLARE(Range, MultiInputOpParams);
+namespace {
+std::vector<GeneralInferParam> prepare_params() {
+  GeneralInferParamGenerator generator;
+  generator
+    .FeedInputArgs({
+      InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(1)},
+      InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(3)},
+      InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(1)},
+      InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(1000000)},
+    })
+    .FeedExpectedOutput({{2}}, {kNumberTypeInt64});
 
-OP_FUNC_IMPL_TEST_CASES(
-  Range,
-  testing::Values(MultiInputOpParams{{{}, {}, {}}, {kInt32, kInt32, kInt32}, {{-1}}, {kInt32}, {}},
-                  MultiInputOpParams{{{-1}, {-1}, {-1}}, {kFloat32, kFloat32, kFloat32}, {{-1}}, {kFloat32}, {}},
-                  MultiInputOpParams{{{-2}, {-2}, {-2}}, {kFloat64, kFloat64, kFloat64}, {{-1}}, {kFloat64}, {}}));
+  generator
+    .FeedInputArgs({
+      InferInfoParam{ShapeVector{}, kNumberTypeFloat64, CreateScalar<double>(1)},
+      InferInfoParam{ShapeVector{}, kNumberTypeFloat64, CreateScalar<double>(3)},
+      InferInfoParam{ShapeVector{}, kNumberTypeFloat64, CreateScalar<double>(1)},
+      InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(1000000)},
+    })
+    .FeedExpectedOutput({{2}}, {kNumberTypeFloat32});
+
+  generator
+    .FeedInputArgs({
+      InferInfoParam{ShapeVector{}, kNumberTypeInt64},
+      InferInfoParam{ShapeVector{}, kNumberTypeInt64},
+      InferInfoParam{ShapeVector{}, kNumberTypeInt64},
+      InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(1000000)},
+    })
+    .FeedExpectedOutput({{-1}}, {kNumberTypeInt64});
+
+  return generator.Generate();
+}
+}  // namespace
+
+INSTANTIATE_TEST_CASE_P(Range, GeneralInferTest, testing::ValuesIn(prepare_params()));
 }  // namespace ops
 }  // namespace mindspore

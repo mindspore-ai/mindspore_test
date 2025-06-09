@@ -35,6 +35,9 @@ class BatchNormGatherStatsWithCountsAscend : public AclnnKernelMod {
 
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
+
+  double momentum_;
+  double eps_;
 };
 }  // namespace batch_norm_gather_stats_with_counts
 }  // namespace kernel

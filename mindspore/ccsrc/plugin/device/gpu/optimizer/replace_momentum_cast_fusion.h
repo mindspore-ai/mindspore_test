@@ -29,6 +29,9 @@ class ReplaceMomentumCastFusion : public PatternProcessPass {
     lr_ = std::make_shared<Var>();
     grad_ = std::make_shared<Var>();
     mom_ = std::make_shared<Var>();
+    use_nesterov_ = std::make_shared<Var>();
+    use_locking_ = std::make_shared<Var>();
+    gradient_scale_ = std::make_shared<Var>();
   }
   ~ReplaceMomentumCastFusion() override = default;
   const BaseRef DefinePattern() const override;
@@ -40,6 +43,9 @@ class ReplaceMomentumCastFusion : public PatternProcessPass {
   VarPtr lr_;
   VarPtr grad_;
   VarPtr mom_;
+  VarPtr use_nesterov_;
+  VarPtr use_locking_;
+  VarPtr gradient_scale_;
 };
 }  // namespace opt
 }  // namespace mindspore

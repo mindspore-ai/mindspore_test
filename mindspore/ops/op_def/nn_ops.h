@@ -61,8 +61,6 @@ GVAR_DEF(PrimitivePtr, kPrimPdist, std::make_shared<Primitive>("Pdist"));
 GVAR_DEF(PrimitivePtr, kPrimPdistGrad, std::make_shared<Primitive>("PdistGrad"));
 
 // pad
-GVAR_DEF(PrimitivePtr, kPrimPadV3, std::make_shared<Primitive>(kPadV3OpName));
-GVAR_DEF(PrimitivePtr, kPrimPadV3Grad, std::make_shared<Primitive>(kPadV3GradOpName));
 GVAR_DEF(PrimitivePtr, kPrimMirrorPadGrad, std::make_shared<Primitive>(kMirrorPadGradOpName));
 
 // Norm
@@ -147,7 +145,6 @@ GVAR_DEF(PrimitivePtr, kPrimHardSwish, std::make_shared<Primitive>("HardSwish"))
 GVAR_DEF(PrimitivePtr, kPrimHardSwishGrad, std::make_shared<Primitive>("HardSwishGrad"));
 GVAR_DEF(PrimitivePtr, kPrimDeformableOffsets, std::make_shared<Primitive>("DeformableOffsets"));
 GVAR_DEF(PrimitivePtr, kPrimDeformableConv2d, std::make_shared<Primitive>("DeformableConv2d"));
-GVAR_DEF(PrimitivePtr, kPrimLARSUpdate, std::make_shared<Primitive>("LARSUpdate"));
 GVAR_DEF(PrimitivePtr, kPrimLarsV2Update, std::make_shared<Primitive>("LarsV2Update"));
 GVAR_DEF(PrimitivePtr, kPrimBoundingBoxDecode, std::make_shared<Primitive>("BoundingBoxDecode"));
 GVAR_DEF(PrimitivePtr, kPrimBoundingBoxEncode, std::make_shared<Primitive>("BoundingBoxEncode"));

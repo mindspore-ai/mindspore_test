@@ -24,7 +24,7 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void NormAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_x_tensor, const FP32ImmPtr &p,
+void NormAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_x_tensor, const FP64ImmPtr &p,
                          const std::optional<ValueTuplePtr> &dim, const BoolImmPtr &keepdim,
                          const std::optional<Int64ImmPtr> &dtype) {
   MS_LOG(DEBUG) << "Call Norm start";
@@ -35,7 +35,7 @@ void NormAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &i
     dim_vector = ConvertValueTupleToVector<int64_t>(dim.value());
   }
   ScalarPtr p_scalar = nullptr;
-  MAKE_SCALAR(GetValue<float>(p), kNumberTypeFloat32, p_scalar);
+  MAKE_SCALAR(static_cast<float>(p->value()), kNumberTypeFloat32, p_scalar);
 
   const auto keepdim_imm = GetValue<bool>(keepdim);
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_x_tensor);

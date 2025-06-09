@@ -27,6 +27,7 @@
 #include "utils/check_convert_utils.h"
 #include "utils/ms_context.h"
 #include "ops_utils/op_utils.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore::expander::bprop {
 NodePtrList ReturnZeros(BpropBuilder *ib) {
@@ -603,7 +604,7 @@ NodePtr VarGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr &axis_node, co
     }
 
     grad = ib->Cast(grad, ib->GetDtype(dout));
-    grad = dof ? ib->Mul(grad, dof) : ib->Emit("Muls", {grad, ib->Value<float>(dof_imm)});
+    grad = dof ? ib->Mul(grad, dof) : ib->Emit("Muls", {grad, ib->Value<pyfloat>(dof_imm)});
     return ib->Mul(grad, ib->Sub(x, mean));
   }
 }
@@ -911,7 +912,7 @@ NodePtr VectorNormGrad(BpropBuilder *ib, const NodePtr &input_node, const NodePt
   }
   auto keepdim_value = GetScalarValue<bool>(keepdim->BuildValue());
   auto input = input_node;
-  float p_value = GetValue<float>(p->BuildValue());
+  pyfloat p_value = GetValue<pyfloat>(p->BuildValue());
   auto tensor_zero = ib->Tensor(0, input->dtype());
   auto input_shape = ib->GetShape(input);
   auto out = out_node;

@@ -19,6 +19,7 @@ from mindspore import _checkparam as validator
 from mindspore.common import dtype as mstype
 from mindspore.ops.primitive import prim_attr_register, PrimitiveWithInfer, Primitive
 from mindspore.ops import signature as sig
+from mindspore.ops.auto_generate import FusedCastAdamWeightDecay
 
 
 class Randperm(Primitive):
@@ -351,113 +352,6 @@ class FusedWeightScaleApplyMomentum(PrimitiveWithInfer):
         return v_dtype
 
 
-class FusedCastAdamWeightDecay(PrimitiveWithInfer):
-    r"""
-    Updates gradients by the Adaptive Moment Estimation (AdamWeightDecay) algorithm with weight decay. This operator
-    incorporates type conversion when parameters are initialized with dtype of float16.
-
-    The Adam algorithm is proposed in `Adam: A Method for Stochastic Optimization <https://arxiv.org/abs/1412.6980>`_.
-    The AdamWeightDecay variant was proposed in `Decoupled Weight Decay Regularization
-    <https://arxiv.org/abs/1711.05101>`_.
-
-    The updating formulas are as follows,
-
-    .. math::
-        \begin{array}{ll} \\
-            m = \beta_1 * m + (1 - \beta_1) * g \\
-            v = \beta_2 * v + (1 - \beta_2) * g * g \\
-            update = \frac{m}{\sqrt{v} + \epsilon} \\
-            update =
-            \begin{cases}
-                update + weight\_decay * w
-                    & \text{ if } weight\_decay > 0 \\
-                update
-                    & \text{ otherwise }
-            \end{cases} \\
-            w  = w - lr * update
-        \end{array}
-
-    :math:`m` represents the 1st moment vector, :math:`v` represents the 2nd moment vector, :math:`g` represents
-    `gradient`, :math:`\beta_1, \beta_2` represent `beta1` and `beta2`,
-    :math:`lr` represents `learning_rate`, :math:`w` represents `var`, :math:`decay` represents `weight_decay`,
-    :math:`\epsilon` represents `epsilon`.
-
-    Args:
-        use_locking (bool): Whether to enable a lock to protect variable tensors from being updated.
-            If ``True`` , updates of the var, m, and v tensors will be protected by a lock.
-            If ``False`` , the result is unpredictable. Default: ``False`` .
-
-    Inputs:
-        - **var** (Tensor) - Weights to be updated with the type float16 or float32.
-        - **m** (Tensor) - The 1st moment vector in the updating formula with the type float32.
-        - **v** (Tensor) - the 2nd moment vector in the updating formula with the type float32.
-        - **lr** (float) - :math:`lr` in the updating formula.
-        - **beta1** (float) - The exponential decay rate for the 1st moment estimations.
-        - **beta2** (float) - The exponential decay rate for the 2nd moment estimations.
-        - **epsilon** (float) - Term added to the denominator to improve numerical stability.
-        - **decay** (float) - The weight decay value, must be a scalar tensor with float data type.
-        - **gradient** (Tensor) - Gradient, has the type float16.
-
-    Outputs:
-        Tuple of 3 Tensor, the updated parameters.
-
-        - **var** (Tensor) - The same shape and data type as `var`.
-        - **m** (Tensor) - The same shape and data type as `m`.
-        - **v** (Tensor) - The same shape and data type as `v`.
-
-    Supported Platforms:
-        ``CPU``
-
-    Examples:
-        >>> import numpy as np
-        >>> import mindspore as ms
-        >>> import mindspore.nn as nn
-        >>> from mindspore import ops
-        >>> from mindspore import Tensor, Parameter
-        >>> from mindspore import dtype as mstype
-        >>> class Net(nn.Cell):
-        ...     def __init__(self):
-        ...         super(Net, self).__init__()
-        ...         self.opt = ops.FusedCastAdamWeightDecay()
-        ...         self.var = Parameter(Tensor(np.ones([2, 2]), mstype.float16), name="var")
-        ...         self.m = Parameter(Tensor(np.ones([2, 2]), mstype.float32), name="m")
-        ...         self.v = Parameter(Tensor(np.ones([2, 2]), mstype.float32), name="v")
-        ...     def construct(self, lr, beta1, beta2, epsilon, decay, grad, norm):
-        ...         out = self.opt(self.var, self.m, self.v, lr, beta1, beta2, epsilon, decay, grad, norm)
-        ...         return out
-        >>> ms.set_context(mode=ms.GRAPH_MODE)
-        >>> ms.set_device(device_target="CPU")
-        >>> net = Net()
-        >>> gradient = Tensor(np.ones([2, 2]), mstype.float16)
-        >>> output = net(0.001, 0.9, 0.999, 1e-8, 0.0, gradient, 1.0)
-    """
-
-    @prim_attr_register
-    def __init__(self, use_locking=False):
-        self.add_prim_attr('side_effect_mem', True)
-        validator.check_value_type("use_locking", use_locking, [bool], self.name)
-
-    def infer_shape(self, var_shape, m_shape, v_shape, lr_shape, beta1_shape, beta2_shape,
-                    epsilon_shape, decay_shape, grad_shape, global_norm):
-        validator.check("var_shape", var_shape, "m_shape", m_shape, validator.EQ, self.name)
-        validator.check("var_shape", var_shape, "v_shape", v_shape, validator.EQ, self.name)
-        validator.check("var_shape", var_shape, "grad_shape", grad_shape, validator.EQ, self.name)
-        return var_shape, m_shape, v_shape
-
-    def infer_dtype(self, var_dtype, m_dtype, v_dtype, lr_dtype, beta1_dtype, beta2_dtype,
-                    epsilon_dtype, decay_dtype, grad_dtype, global_norm):
-        """infer dtype"""
-        args = {"m": m_dtype, "v": v_dtype}
-        validator.check_tensors_dtypes_same_and_valid(args, mstype.number_type, self.name)
-        validator.check_scalar_or_tensor_types_same({"var": var_dtype}, [mstype.float16, mstype.float32], self.name)
-        validator.check_scalar_or_tensor_types_same({"grad": grad_dtype}, [mstype.float16, mstype.float32], self.name)
-
-        args = {"lr": lr_dtype, "beta1": beta1_dtype, "beta2": beta2_dtype, "epsilon": epsilon_dtype,
-                "decay": decay_dtype}
-        validator.check_scalar_or_tensor_types_same(args, [mstype.float32], self.name, True)
-        return var_dtype, m_dtype, v_dtype
-
-
 class FusedAdaFactor(PrimitiveWithInfer):
     r"""
     Updates gradients by the Adaptive Learning Rates with Sublinear Memory Cost (Adafactor) algorithm.
@@ -521,11 +415,11 @@ class FusedAdaFactor(PrimitiveWithInfer):
 
     Inputs:
         - **epsilon** (Tensor) - input epsilon pair.
-        - **clip_threshold** (float) - The threshold of root mean square of final gradient update.
-        - **beta1** (float) - The exponential decay rate for the 1nd moment estimations.
-        - **beta2** (float) - The exponential decay rate for the 2nd moment estimations.
-        - **weight_decay** (float) - The weight decay value, must be a scalar tensor with float data type.
-        - **learning_rate** (float) - The learning rate value.
+        - **clip_threshold** (Tensor) - The threshold of root mean square of final gradient update.
+        - **beta1** (Tensor) - The exponential decay rate for the 1nd moment estimations.
+        - **beta2** (Tensor) - The exponential decay rate for the 2nd moment estimations.
+        - **weight_decay** (Tensor) - The weight decay value, must be a scalar tensor with float data type.
+        - **learning_rate** (Tensor) - The learning rate value.
         - **gradient** (Tensor) - Gradient.
         - **param** (Tensor) - Weights to be updated.
         - **exp_avg** (Tensor) - The exponential moving average of 1st moment optimizer state.

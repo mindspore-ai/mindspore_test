@@ -25,6 +25,7 @@
 #include "infer/fused_sparse_ftrl.h"
 #include "infer/sparse_apply_ftrl.h"
 #include "ops_utils/op_utils.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -107,22 +108,22 @@ bool FusedSparseFtrlCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs
                   << inputs.size();
     return false;
   }
-  lr_ = GetValue<float>(primitive_->GetAttr(kAttrLr));
+  lr_ = GetValue<pyfloat>(primitive_->GetAttr(kAttrLr));
   if (lr_ <= 0) {
     MS_LOG(ERROR) << "For '" << kernel_name_ << "', 'lr' must be a positive scalar, but got " << lr_;
     return false;
   }
-  l1_ = GetValue<float>(primitive_->GetAttr(ops::kL1));
+  l1_ = GetValue<pyfloat>(primitive_->GetAttr(ops::kL1));
   if (l1_ < 0) {
     MS_LOG(ERROR) << "For '" << kernel_name_ << "', 'l1' must be a non-negative scalar, but got " << l1_;
     return false;
   }
-  l2_ = GetValue<float>(primitive_->GetAttr(ops::kL2));
+  l2_ = GetValue<pyfloat>(primitive_->GetAttr(ops::kL2));
   if (l2_ < 0) {
     MS_LOG(ERROR) << "For '" << kernel_name_ << "', 'l2' must be a non-negative scalar, but got " << l2_;
     return false;
   }
-  lr_power_ = GetValue<float>(primitive_->GetAttr(ops::kLrPower));
+  lr_power_ = GetValue<pyfloat>(primitive_->GetAttr(ops::kLrPower));
   if (lr_power_ > 0) {
     MS_LOG(ERROR) << "For '" << kernel_name_ << "', 'lr_power' must be a non-negative scalar, but got " << lr_power_;
     return false;
@@ -293,22 +294,22 @@ bool SparseApplyFtrlCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs
                   << inputs.size();
     return false;
   }
-  lr_ = GetValue<float>(primitive_->GetAttr(kAttrLr));
+  lr_ = GetValue<pyfloat>(primitive_->GetAttr(kAttrLr));
   if (lr_ <= 0) {
     MS_LOG(ERROR) << "For '" << kernel_name_ << "', 'lr' must be a positive scalar, but got " << lr_;
     return false;
   }
-  l1_ = GetValue<float>(primitive_->GetAttr(ops::kL1));
+  l1_ = GetValue<pyfloat>(primitive_->GetAttr(ops::kL1));
   if (l1_ < 0) {
     MS_LOG(ERROR) << "For '" << kernel_name_ << "', 'l1' must be a non-negative scalar, but got " << l1_;
     return false;
   }
-  l2_ = GetValue<float>(primitive_->GetAttr(ops::kL2));
+  l2_ = GetValue<pyfloat>(primitive_->GetAttr(ops::kL2));
   if (l2_ < 0) {
     MS_LOG(ERROR) << "For '" << kernel_name_ << "', 'l2' must be a non-negative scalar, but got " << l2_;
     return false;
   }
-  lr_power_ = GetValue<float>(primitive_->GetAttr(ops::kLrPower));
+  lr_power_ = GetValue<pyfloat>(primitive_->GetAttr(ops::kLrPower));
   if (lr_power_ > 0) {
     MS_LOG(ERROR) << "For '" << kernel_name_ << "', 'lr_power' must be a non-negative scalar, but got " << lr_power_;
     return false;

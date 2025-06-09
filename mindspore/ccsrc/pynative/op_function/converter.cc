@@ -46,14 +46,6 @@ std::shared_ptr<U> PyCast(const py::object &obj) {
   return std::make_shared<U>(py::cast<T>(obj));
 }
 
-template <>
-std::shared_ptr<FP32Imm> PyCast<double, FP32Imm>(const py::object &obj) {
-  auto obj_float32 = py::cast<float>(obj);
-  auto ret = std::make_shared<FP32Imm>(obj_float32);
-  ret->set_prim_value(py::cast<double>(obj));
-  return ret;
-}
-
 BoolImmPtr ConvertBool(const py::object &obj) {
   if (!py::isinstance<py::bool_>(obj)) {
     // The mutable _Bool class inherits from int, because base class 'bool' is a marked final.
@@ -75,16 +67,16 @@ Int64ImmPtr ConvertInt(const py::object &obj) {
   return PyCast<int64_t, Int64Imm>(obj);
 }
 
-FP32ImmPtr ConvertFloat(const py::object &obj) {
+FP64ImmPtr ConvertFloat(const py::object &obj) {
   if (!py::isinstance<py::float_>(obj)) {
     return nullptr;
   }
-  return PyCast<double, FP32Imm>(obj);
+  return PyCast<double, FP64Imm>(obj);
 }
 
 ScalarPtr ConvertNumber(const py::object &obj) {
   if (py::isinstance<py::float_>(obj)) {
-    return PyCast<double, FP32Imm>(obj);
+    return PyCast<double, FP64Imm>(obj);
   }
   if (py::isinstance<py::bool_>(obj)) {
     return PyCast<bool, BoolImm>(obj);
@@ -386,7 +378,7 @@ std::optional<ValueTuplePtr> Converter::ToBoolListOptional(const py::list &pytho
   return std::make_optional(ToBoolList<T>(python_args, i));
 }
 
-FP32ImmPtr Converter::ToFloat(const py::list &python_args, size_t i) {
+FP64ImmPtr Converter::ToFloat(const py::list &python_args, size_t i) {
   const auto &op_arg = op_def_->args_[i];
   const py::object &obj = python_args[i];
   source_type_[i] = OP_DTYPE::DT_BEGIN;
@@ -396,15 +388,15 @@ FP32ImmPtr Converter::ToFloat(const py::list &python_args, size_t i) {
   }
   if (!op_arg.cast_dtype_.empty()) {
     auto convert_value = ConvertByCastDtype(obj, op_arg, i);
-    if (convert_value != nullptr && convert_value->isa<FP32Imm>()) {
-      return convert_value->cast<FP32ImmPtr>();
+    if (convert_value != nullptr && convert_value->isa<FP64Imm>()) {
+      return convert_value->cast<FP64ImmPtr>();
     }
   }
   PyNativeAlgo::PyParser::PrintTypeCastError(op_def_, python_args, i);
   return nullptr;
 }
 
-std::optional<FP32ImmPtr> Converter::ToFloatOptional(const py::list &python_args, size_t i) {
+std::optional<FP64ImmPtr> Converter::ToFloatOptional(const py::list &python_args, size_t i) {
   const py::object &obj = python_args[i];
   if (py::isinstance<py::none>(obj)) {
     return std::nullopt;
@@ -417,7 +409,7 @@ ValueTuplePtr Converter::ToFloatList(const py::list &python_args, size_t i) {
   const auto &op_arg = op_def_->args_[i];
   const py::object &obj = python_args[i];
   source_type_[i] = OP_DTYPE::DT_BEGIN;
-  ValueTuplePtr convert = ConvertList<T, py::float_, FP32Imm>(obj);
+  ValueTuplePtr convert = ConvertList<T, py::float_, FP64Imm>(obj);
   if (convert != nullptr) {
     return convert;
   }

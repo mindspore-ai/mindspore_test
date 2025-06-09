@@ -15,6 +15,7 @@
  */
 
 #include "kernel/gpu/other/hamming_window_gpu_kernel.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -35,8 +36,8 @@ bool HammingWindowGpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
   unit_input_size_ = abstract::TypeIdSize(kernel_attr.GetInputAttr(kIndex0).dtype);
   unit_output_size_ = abstract::TypeIdSize(kernel_attr.GetOutputAttr(kIndex0).dtype);
   periodic_ = GetValue<bool>(primitive_->GetAttr("periodic"));
-  alpha_ = GetValue<float>(primitive_->GetAttr("alpha"));
-  beta_ = GetValue<float>(primitive_->GetAttr("beta"));
+  alpha_ = GetValue<pyfloat>(primitive_->GetAttr("alpha"));
+  beta_ = GetValue<pyfloat>(primitive_->GetAttr("beta"));
   return true;
 }
 

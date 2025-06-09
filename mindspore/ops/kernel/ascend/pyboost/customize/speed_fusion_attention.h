@@ -31,7 +31,7 @@ void SpeedFusionAttentionAscendCustomize(
   const std::shared_ptr<OpRunner> &op, const TensorPtr &query, const TensorPtr &key, const TensorPtr &value,
   const Int64ImmPtr &head_num, const Int64ImmPtr &input_layout, const TensorPtr &seed, const TensorPtr &offset,
   const std::optional<TensorPtr> &pse, const std::optional<TensorPtr> &padding_mask,
-  const std::optional<TensorPtr> &atten_mask, const FP32ImmPtr &scale, const FP32ImmPtr &keep_prob,
+  const std::optional<TensorPtr> &atten_mask, const FP64ImmPtr &scale, const FP64ImmPtr &keep_prob,
   const Int64ImmPtr &pre_tokens, const Int64ImmPtr &next_tokens, const Int64ImmPtr &inner_precise,
   const std::optional<ValueTuplePtr> &prefix, const std::optional<ValueTuplePtr> &actual_seq_qlen,
   const std::optional<ValueTuplePtr> &actual_seq_kvlen, const Int64ImmPtr &sparse_mode,

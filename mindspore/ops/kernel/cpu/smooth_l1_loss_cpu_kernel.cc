@@ -21,6 +21,7 @@
 #include <map>
 #include <functional>
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -102,7 +103,7 @@ int SmoothL1LossCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
   if (auto ret = KernelMod::Resize(inputs, outputs); ret != KRET_OK) {
     return ret;
   }
-  beta_ = inputs[kIndex2]->GetValueWithCheck<float>();
+  beta_ = inputs[kIndex2]->GetValueWithCheck<pyfloat>();
   if (beta_ <= 0.0) {
     MS_EXCEPTION(RuntimeError) << "For '" << kernel_name_ << "', the values for beta should greater than 0"
                                << ", but got " << beta_ << ".";
@@ -129,7 +130,7 @@ int SmoothL1LossCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
   KernelAttr()                                           \
     .AddInputAttr(MS_T)                                  \
     .AddInputAttr(MS_T)                                  \
-    .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32) \
+    .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat) \
     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)   \
     .AddOutputAttr(MS_T),                                \
     &SmoothL1LossCpuKernelMod::LaunchKernel<T>

@@ -30,7 +30,7 @@
 
 namespace mindspore {
 namespace kernel {
-constexpr size_t INPUT_NUM = 7;
+constexpr size_t INPUT_NUM = 8;
 template <typename T>
 class SparseApplyProximalAdagradKernelMod : public NativeGpuKernelMod {
  public:

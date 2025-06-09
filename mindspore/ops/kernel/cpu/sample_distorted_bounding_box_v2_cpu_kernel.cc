@@ -15,11 +15,14 @@
  */
 
 #include "kernel/cpu/sample_distorted_bounding_box_v2_cpu_kernel.h"
+#include <algorithm>
+#include <iterator>
 #include <random>
 #include "mindspore/ops/infer/sample_distorted_bounding_box_v2.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "kernel/cpu/mkldnn/mkl_cpu_kernel.h"
 #include "utils/ms_utils.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -197,7 +200,12 @@ bool SampleDistortedBoundingBoxV2CPUKernelMod::Init(const std::vector<KernelTens
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kOutputSize, kernel_name_);
   seed_ = GetValue<int64_t>(primitive_->GetAttr("seed"));
   seed2_ = GetValue<int64_t>(primitive_->GetAttr("seed2"));
-  aspect_ratio_range_ = GetValue<std::vector<float>>(primitive_->GetAttr("aspect_ratio_range"));
+
+  auto TransFunc = [](pyfloat v) { return static_cast<float>(v); };
+  auto aspect_ratio_range = GetValue<std::vector<pyfloat>>(primitive_->GetAttr("aspect_ratio_range"));
+  aspect_ratio_range_.clear();
+  (void)std::transform(aspect_ratio_range.begin(), aspect_ratio_range.end(), std::back_inserter(aspect_ratio_range_),
+                       TransFunc);
   if (aspect_ratio_range_.size() != kShapeSize2) {
     MS_LOG(ERROR) << "For '" << kernel_name_ << "', aspect_ratio_range field must specify 2 dimensions.";
     return false;
@@ -207,7 +215,10 @@ bool SampleDistortedBoundingBoxV2CPUKernelMod::Init(const std::vector<KernelTens
                   << aspect_ratio_range_[kIndex0] << "], [" << aspect_ratio_range_[kIndex1] << "].";
     return false;
   }
-  area_range_ = GetValue<std::vector<float>>(primitive_->GetAttr("area_range"));
+
+  auto area_range = GetValue<std::vector<pyfloat>>(primitive_->GetAttr("area_range"));
+  area_range_.clear();
+  (void)std::transform(area_range.begin(), area_range.end(), std::back_inserter(area_range_), TransFunc);
   if (area_range_.size() != kShapeSize2) {
     MS_LOG(ERROR) << "For '" << kernel_name_ << "', area_range field must specify 2 dimensions.";
     return false;

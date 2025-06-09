@@ -21,13 +21,13 @@
 #include <string>
 #include <map>
 #include <utility>
-#include "mindspore/ops/infer/adam.h"
+
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/adam_impl.cuh"
 namespace mindspore {
 namespace kernel {
-constexpr size_t INPUT_NUM = 10;
+constexpr size_t INPUT_NUM = 12;
 class AdamGpuKernelMod : public NativeGpuKernelMod {
  public:
   AdamGpuKernelMod()
@@ -83,7 +83,7 @@ class AdamGpuKernelMod : public NativeGpuKernelMod {
   size_t gradient_size_;
   bool is_null_input_;
   bool use_nesterov_ = false;
-  bool use_locikng_ = false;
+  bool use_locking_ = false;
   std::string kernel_name_;
 };
 }  // namespace kernel

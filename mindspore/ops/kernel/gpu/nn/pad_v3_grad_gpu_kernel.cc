@@ -18,7 +18,6 @@
 namespace mindspore {
 namespace kernel {
 namespace {
-const std::vector<std::string> mode_list = {ops::kReflect, ops::kEdge, ops::kCircular};
 template <typename T, typename S>
 std::unique_ptr<cukernel::GpuKernelHelperBase> CreatePadV3GradKernelPtr(const std::string &kernel_name,
                                                                         const uint32_t &device_id) {
@@ -27,60 +26,36 @@ std::unique_ptr<cukernel::GpuKernelHelperBase> CreatePadV3GradKernelPtr(const st
 using PadV3GradPtrCreatorFunc =
   std::function<std::unique_ptr<cukernel::GpuKernelHelperBase>(const std::string &, const uint32_t &)>;
 
+#define PAD_V3_GRAD_GPU_REG(MS_S, S)                                    \
+  std::make_pair(KernelAttr()                                           \
+                   .AddInputAttr(MS_S)                                  \
+                   .AddInputAttr(kNumberTypeInt32)                      \
+                   .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)   \
+                   .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)    \
+                   .AddOutputAttr(MS_S),                                \
+                 CreatePadV3GradKernelPtr<S, int64_t>),                 \
+    std::make_pair(KernelAttr()                                         \
+                     .AddInputAttr(MS_S)                                \
+                     .AddInputAttr(kNumberTypeInt64)                    \
+                     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64) \
+                     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)  \
+                     .AddOutputAttr(MS_S),                              \
+                   CreatePadV3GradKernelPtr<S, int64_t>)
+
 const std::vector<std::pair<KernelAttr, PadV3GradPtrCreatorFunc>> kernel_attr = {
-  {KernelAttr().AddInputAttr(kNumberTypeFloat64).AddInputAttr(kNumberTypeInt64).AddOutputAttr(kNumberTypeFloat64),
-   CreatePadV3GradKernelPtr<double, int64_t>},
-  {KernelAttr().AddInputAttr(kNumberTypeFloat32).AddInputAttr(kNumberTypeInt64).AddOutputAttr(kNumberTypeFloat32),
-   CreatePadV3GradKernelPtr<float, int64_t>},
-  {KernelAttr().AddInputAttr(kNumberTypeFloat16).AddInputAttr(kNumberTypeInt64).AddOutputAttr(kNumberTypeFloat16),
-   CreatePadV3GradKernelPtr<half, int64_t>},
-  {KernelAttr().AddInputAttr(kNumberTypeInt64).AddInputAttr(kNumberTypeInt64).AddOutputAttr(kNumberTypeInt64),
-   CreatePadV3GradKernelPtr<int64_t, int64_t>},
-  {KernelAttr().AddInputAttr(kNumberTypeInt32).AddInputAttr(kNumberTypeInt64).AddOutputAttr(kNumberTypeInt32),
-   CreatePadV3GradKernelPtr<int32_t, int64_t>},
-  {KernelAttr().AddInputAttr(kNumberTypeInt16).AddInputAttr(kNumberTypeInt64).AddOutputAttr(kNumberTypeInt16),
-   CreatePadV3GradKernelPtr<int16_t, int64_t>},
-  {KernelAttr().AddInputAttr(kNumberTypeInt8).AddInputAttr(kNumberTypeInt64).AddOutputAttr(kNumberTypeInt8),
-   CreatePadV3GradKernelPtr<int8_t, int64_t>},
-  {KernelAttr().AddInputAttr(kNumberTypeUInt64).AddInputAttr(kNumberTypeInt64).AddOutputAttr(kNumberTypeUInt64),
-   CreatePadV3GradKernelPtr<uint64_t, int64_t>},
-  {KernelAttr().AddInputAttr(kNumberTypeUInt32).AddInputAttr(kNumberTypeInt64).AddOutputAttr(kNumberTypeUInt32),
-   CreatePadV3GradKernelPtr<uint32_t, int64_t>},
-  {KernelAttr().AddInputAttr(kNumberTypeUInt16).AddInputAttr(kNumberTypeInt64).AddOutputAttr(kNumberTypeUInt16),
-   CreatePadV3GradKernelPtr<uint16_t, int64_t>},
-  {KernelAttr().AddInputAttr(kNumberTypeUInt8).AddInputAttr(kNumberTypeInt64).AddOutputAttr(kNumberTypeUInt8),
-   CreatePadV3GradKernelPtr<uint8_t, int64_t>},
-  {KernelAttr().AddInputAttr(kNumberTypeComplex64).AddInputAttr(kNumberTypeInt64).AddOutputAttr(kNumberTypeComplex64),
-   CreatePadV3GradKernelPtr<Complex<float>, int64_t>},
-  {KernelAttr().AddInputAttr(kNumberTypeComplex128).AddInputAttr(kNumberTypeInt64).AddOutputAttr(kNumberTypeComplex128),
-   CreatePadV3GradKernelPtr<Complex<double>, int64_t>},
-  {KernelAttr().AddInputAttr(kNumberTypeFloat64).AddInputAttr(kNumberTypeInt32).AddOutputAttr(kNumberTypeFloat64),
-   CreatePadV3GradKernelPtr<double, int64_t>},
-  {KernelAttr().AddInputAttr(kNumberTypeFloat32).AddInputAttr(kNumberTypeInt32).AddOutputAttr(kNumberTypeFloat32),
-   CreatePadV3GradKernelPtr<float, int64_t>},
-  {KernelAttr().AddInputAttr(kNumberTypeFloat16).AddInputAttr(kNumberTypeInt32).AddOutputAttr(kNumberTypeFloat16),
-   CreatePadV3GradKernelPtr<half, int64_t>},
-  {KernelAttr().AddInputAttr(kNumberTypeInt64).AddInputAttr(kNumberTypeInt32).AddOutputAttr(kNumberTypeInt64),
-   CreatePadV3GradKernelPtr<int64_t, int64_t>},
-  {KernelAttr().AddInputAttr(kNumberTypeInt32).AddInputAttr(kNumberTypeInt32).AddOutputAttr(kNumberTypeInt32),
-   CreatePadV3GradKernelPtr<int32_t, int64_t>},
-  {KernelAttr().AddInputAttr(kNumberTypeInt16).AddInputAttr(kNumberTypeInt32).AddOutputAttr(kNumberTypeInt16),
-   CreatePadV3GradKernelPtr<int16_t, int64_t>},
-  {KernelAttr().AddInputAttr(kNumberTypeInt8).AddInputAttr(kNumberTypeInt32).AddOutputAttr(kNumberTypeInt8),
-   CreatePadV3GradKernelPtr<int8_t, int64_t>},
-  {KernelAttr().AddInputAttr(kNumberTypeUInt64).AddInputAttr(kNumberTypeInt32).AddOutputAttr(kNumberTypeUInt64),
-   CreatePadV3GradKernelPtr<uint64_t, int64_t>},
-  {KernelAttr().AddInputAttr(kNumberTypeUInt32).AddInputAttr(kNumberTypeInt32).AddOutputAttr(kNumberTypeUInt32),
-   CreatePadV3GradKernelPtr<uint32_t, int64_t>},
-  {KernelAttr().AddInputAttr(kNumberTypeUInt16).AddInputAttr(kNumberTypeInt32).AddOutputAttr(kNumberTypeUInt16),
-   CreatePadV3GradKernelPtr<uint16_t, int64_t>},
-  {KernelAttr().AddInputAttr(kNumberTypeUInt8).AddInputAttr(kNumberTypeInt32).AddOutputAttr(kNumberTypeUInt8),
-   CreatePadV3GradKernelPtr<uint8_t, int64_t>},
-  {KernelAttr().AddInputAttr(kNumberTypeComplex64).AddInputAttr(kNumberTypeInt32).AddOutputAttr(kNumberTypeComplex64),
-   CreatePadV3GradKernelPtr<Complex<float>, int64_t>},
-  {KernelAttr().AddInputAttr(kNumberTypeComplex128).AddInputAttr(kNumberTypeInt32).AddOutputAttr(kNumberTypeComplex128),
-   CreatePadV3GradKernelPtr<Complex<double>, int64_t>},
-};
+  PAD_V3_GRAD_GPU_REG(kNumberTypeFloat16, half),
+  PAD_V3_GRAD_GPU_REG(kNumberTypeFloat32, float),
+  PAD_V3_GRAD_GPU_REG(kNumberTypeFloat64, double),
+  PAD_V3_GRAD_GPU_REG(kNumberTypeInt8, int8_t),
+  PAD_V3_GRAD_GPU_REG(kNumberTypeInt16, int16_t),
+  PAD_V3_GRAD_GPU_REG(kNumberTypeInt32, int32_t),
+  PAD_V3_GRAD_GPU_REG(kNumberTypeInt64, int64_t),
+  PAD_V3_GRAD_GPU_REG(kNumberTypeUInt8, uint8_t),
+  PAD_V3_GRAD_GPU_REG(kNumberTypeUInt16, uint16_t),
+  PAD_V3_GRAD_GPU_REG(kNumberTypeUInt32, uint32_t),
+  PAD_V3_GRAD_GPU_REG(kNumberTypeUInt64, uint64_t),
+  PAD_V3_GRAD_GPU_REG(kNumberTypeComplex64, Complex<float>),
+  PAD_V3_GRAD_GPU_REG(kNumberTypeComplex128, Complex<double>)};
 }  // namespace
 
 bool PadV3GradGpuKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
@@ -107,16 +82,7 @@ bool PadV3GradGpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
   if (!is_match) {
     return false;
   }
-  MS_ERROR_IF_NULL(attr_ptr_);
-  attr_ptr_->mode = GetValue<std::string>(primitive_->GetAttr(ops::kMode));
-  const bool is_mode_available = std::find(mode_list.begin(), mode_list.end(), attr_ptr_->mode) != mode_list.end();
-  if (is_mode_available == false) {
-    MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', the 'mode' should be, 'reflect' or 'edge', but got "
-                      << attr_ptr_->mode;
-  }
-  attr_ptr_->paddings_contiguous = GetValue<bool>(primitive_->GetAttr("paddings_contiguous"));
   helper_ptr_ = std::move(kernel_attr[index].second(kernel_name_, device_id_));
-  helper_ptr_->SetKernelParam(attr_ptr_);
   return true;
 }
 
@@ -126,6 +92,16 @@ int PadV3GradGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
   if (ret != KRET_OK) {
     return ret;
   }
+
+  MS_ERROR_IF_NULL(attr_ptr_);
+  auto mode = static_cast<mindspore::ops::Mode>(inputs[inputs.size() - kIndex2]->GetValueWithCheck<int64_t>());
+  auto it = mode_map_.find(mode);
+  if (it == mode_map_.end()) {
+    MS_EXCEPTION(ValueError) << "For " << kernel_name_ << ", mode should be reflect, edge or circular.";
+  }
+  attr_ptr_->mode = it->second;
+  attr_ptr_->paddings_contiguous = inputs[inputs.size() - kIndex1]->GetValueWithCheck<bool>();
+  helper_ptr_->SetKernelParam(attr_ptr_);
 
   std::vector<int64_t> paddings_val;
   auto paddings_type = inputs[kIndex1]->dtype_id();
@@ -144,7 +120,7 @@ int PadV3GradGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
   int64_t paddings_size = SizeToLong(paddings_val.size());
   auto prim = primitive_;
   MS_EXCEPTION_IF_NULL(prim);
-  if (!GetValue<bool>(prim->GetAttr("paddings_contiguous"))) {
+  if (!attr_ptr_->paddings_contiguous) {
     constexpr int64_t nTwo = 2;
     std::vector<int64_t> tmp = paddings_val;
     for (int64_t i = 0; i < paddings_size; ++i) {

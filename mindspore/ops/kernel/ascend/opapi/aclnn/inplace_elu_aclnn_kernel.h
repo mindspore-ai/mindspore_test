@@ -15,8 +15,11 @@
  */
 #ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INPLACE_ELU_ACLNN_KERNEL_MOD_H_
 #define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INPLACE_ELU_ACLNN_KERNEL_MOD_H_
+
 #include <vector>
 #include <utility>
+#include <memory>
+
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
 #include "kernel/ascend/acl_ir/acl_convert.h"
@@ -35,8 +38,9 @@ class InplaceEluAclnnKernelMod : public AclnnKernelMod {
 
  private:
   ScalarPtr alpha_ = nullptr;
-  ScalarPtr scale_ = nullptr;
-  ScalarPtr input_scale_ = nullptr;
+  const ScalarPtr scale_ = std::make_shared<Int64Imm>(1);
+  const ScalarPtr input_scale_ = std::make_shared<Int64Imm>(1);
+
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
 }  // namespace inplace_elu

@@ -33,7 +33,7 @@ struct LayerNormExtOpParams {
   TypePtr gamma_type;
   ShapeVector beta_shape;
   TypePtr beta_type;
-  float epsilon;
+  double epsilon;
 
   ShapeVector output_x_shape;
   TypePtr output_x_type;

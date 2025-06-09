@@ -22,15 +22,14 @@
 
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
 #include "nnacl/fp32/rmsprop_fp32.h"
-#include "infer/apply_rms_prop.h"
 #include "ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace kernel {
 namespace rmsprop_cpu {
 namespace {
-constexpr size_t kCenteredRMSPropInputsNum = 9;
-constexpr size_t kRMSPropInputsNum = 8;
+constexpr size_t kCenteredRMSPropInputsNum = 10;
+constexpr size_t kRMSPropInputsNum = 9;
 constexpr auto kApplyRMSProp = "ApplyRMSProp";
 constexpr auto kApplyCenteredRMSProp = "ApplyCenteredRMSProp";
 constexpr auto kNumberZero = 0;
@@ -305,6 +304,7 @@ std::map<std::string, std::vector<std::pair<KernelAttr, RMSPropCpuKernelMod::RMS
                                           .AddInputAttr(kNumberTypeFloat32)
                                           .AddInputAttr(kNumberTypeFloat32)
                                           .AddInputAttr(kNumberTypeFloat32)
+                                          .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                           .AddOutputAttr(kNumberTypeFloat32),
                                         &RMSPropCpuKernelMod::LaunchKernel<float>}}},
                                      {kApplyCenteredRMSProp,
@@ -318,6 +318,7 @@ std::map<std::string, std::vector<std::pair<KernelAttr, RMSPropCpuKernelMod::RMS
                                           .AddInputAttr(kNumberTypeFloat32)
                                           .AddInputAttr(kNumberTypeFloat32)
                                           .AddInputAttr(kNumberTypeFloat32)
+                                          .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                           .AddOutputAttr(kNumberTypeFloat32),
                                         &RMSPropCpuKernelMod::LaunchKernel<float>},
                                        {KernelAttr()
@@ -330,6 +331,7 @@ std::map<std::string, std::vector<std::pair<KernelAttr, RMSPropCpuKernelMod::RMS
                                           .AddInputAttr(kNumberTypeFloat64)
                                           .AddInputAttr(kNumberTypeFloat64)
                                           .AddInputAttr(kNumberTypeFloat64)
+                                          .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                           .AddOutputAttr(kNumberTypeFloat64),
                                         &RMSPropCpuKernelMod::LaunchKernel<double>},
                                        {KernelAttr()
@@ -342,6 +344,7 @@ std::map<std::string, std::vector<std::pair<KernelAttr, RMSPropCpuKernelMod::RMS
                                           .AddInputAttr(kNumberTypeFloat16)
                                           .AddInputAttr(kNumberTypeFloat16)
                                           .AddInputAttr(kNumberTypeFloat16)
+                                          .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                           .AddOutputAttr(kNumberTypeFloat16),
                                         &RMSPropCpuKernelMod::LaunchKernel<float16>},
                                        {KernelAttr()
@@ -354,6 +357,7 @@ std::map<std::string, std::vector<std::pair<KernelAttr, RMSPropCpuKernelMod::RMS
                                           .AddInputAttr(kNumberTypeInt8)
                                           .AddInputAttr(kNumberTypeInt8)
                                           .AddInputAttr(kNumberTypeInt8)
+                                          .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                           .AddOutputAttr(kNumberTypeInt8),
                                         &RMSPropCpuKernelMod::LaunchKernel<int8_t>},
                                        {KernelAttr()
@@ -366,6 +370,7 @@ std::map<std::string, std::vector<std::pair<KernelAttr, RMSPropCpuKernelMod::RMS
                                           .AddInputAttr(kNumberTypeInt16)
                                           .AddInputAttr(kNumberTypeInt16)
                                           .AddInputAttr(kNumberTypeInt16)
+                                          .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                           .AddOutputAttr(kNumberTypeInt16),
                                         &RMSPropCpuKernelMod::LaunchKernel<int16_t>},
                                        {KernelAttr()
@@ -378,6 +383,7 @@ std::map<std::string, std::vector<std::pair<KernelAttr, RMSPropCpuKernelMod::RMS
                                           .AddInputAttr(kNumberTypeInt64)
                                           .AddInputAttr(kNumberTypeInt64)
                                           .AddInputAttr(kNumberTypeInt64)
+                                          .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                           .AddOutputAttr(kNumberTypeInt64),
                                         &RMSPropCpuKernelMod::LaunchKernel<int64_t>},
                                        {KernelAttr()
@@ -390,6 +396,7 @@ std::map<std::string, std::vector<std::pair<KernelAttr, RMSPropCpuKernelMod::RMS
                                           .AddInputAttr(kNumberTypeUInt8)
                                           .AddInputAttr(kNumberTypeUInt8)
                                           .AddInputAttr(kNumberTypeUInt8)
+                                          .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                           .AddOutputAttr(kNumberTypeUInt8),
                                         &RMSPropCpuKernelMod::LaunchKernel<uint8_t>},
                                        {KernelAttr()
@@ -402,6 +409,7 @@ std::map<std::string, std::vector<std::pair<KernelAttr, RMSPropCpuKernelMod::RMS
                                           .AddInputAttr(kNumberTypeUInt16)
                                           .AddInputAttr(kNumberTypeUInt16)
                                           .AddInputAttr(kNumberTypeUInt16)
+                                          .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                           .AddOutputAttr(kNumberTypeUInt16),
                                         &RMSPropCpuKernelMod::LaunchKernel<uint16_t>},
                                        {KernelAttr()
@@ -414,6 +422,7 @@ std::map<std::string, std::vector<std::pair<KernelAttr, RMSPropCpuKernelMod::RMS
                                           .AddInputAttr(kNumberTypeUInt32)
                                           .AddInputAttr(kNumberTypeUInt32)
                                           .AddInputAttr(kNumberTypeUInt32)
+                                          .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                           .AddOutputAttr(kNumberTypeUInt32),
                                         &RMSPropCpuKernelMod::LaunchKernel<uint32_t>},
                                        {KernelAttr()
@@ -426,6 +435,7 @@ std::map<std::string, std::vector<std::pair<KernelAttr, RMSPropCpuKernelMod::RMS
                                           .AddInputAttr(kNumberTypeUInt64)
                                           .AddInputAttr(kNumberTypeUInt64)
                                           .AddInputAttr(kNumberTypeUInt64)
+                                          .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                           .AddOutputAttr(kNumberTypeUInt64),
                                         &RMSPropCpuKernelMod::LaunchKernel<uint64_t>},
                                        {KernelAttr()
@@ -438,6 +448,7 @@ std::map<std::string, std::vector<std::pair<KernelAttr, RMSPropCpuKernelMod::RMS
                                           .AddInputAttr(kNumberTypeInt16)
                                           .AddInputAttr(kNumberTypeInt16)
                                           .AddInputAttr(kNumberTypeInt16)
+                                          .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                           .AddOutputAttr(kNumberTypeInt16),
                                         &RMSPropCpuKernelMod::LaunchKernel<uint16_t>},
                                        {KernelAttr()
@@ -450,6 +461,7 @@ std::map<std::string, std::vector<std::pair<KernelAttr, RMSPropCpuKernelMod::RMS
                                           .AddInputAttr(kNumberTypeInt32)
                                           .AddInputAttr(kNumberTypeInt32)
                                           .AddInputAttr(kNumberTypeInt32)
+                                          .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                           .AddOutputAttr(kNumberTypeInt32),
                                         &RMSPropCpuKernelMod::LaunchKernel<int32_t>},
                                        {KernelAttr()
@@ -462,6 +474,7 @@ std::map<std::string, std::vector<std::pair<KernelAttr, RMSPropCpuKernelMod::RMS
                                           .AddInputAttr(kNumberTypeInt64)
                                           .AddInputAttr(kNumberTypeInt64)
                                           .AddInputAttr(kNumberTypeInt64)
+                                          .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                           .AddOutputAttr(kNumberTypeInt64),
                                         &RMSPropCpuKernelMod::LaunchKernel<int64_t>},
                                        {KernelAttr()
@@ -474,6 +487,7 @@ std::map<std::string, std::vector<std::pair<KernelAttr, RMSPropCpuKernelMod::RMS
                                           .AddInputAttr(kNumberTypeComplex64)
                                           .AddInputAttr(kNumberTypeComplex64)
                                           .AddInputAttr(kNumberTypeComplex64)
+                                          .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                           .AddOutputAttr(kNumberTypeComplex64),
                                         &RMSPropCpuKernelMod::LaunchKernel<std::complex<float>>},
                                        {KernelAttr()
@@ -486,6 +500,7 @@ std::map<std::string, std::vector<std::pair<KernelAttr, RMSPropCpuKernelMod::RMS
                                           .AddInputAttr(kNumberTypeComplex128)
                                           .AddInputAttr(kNumberTypeComplex128)
                                           .AddInputAttr(kNumberTypeComplex128)
+                                          .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                           .AddOutputAttr(kNumberTypeComplex128),
                                         &RMSPropCpuKernelMod::LaunchKernel<std::complex<double>>}}}};
 

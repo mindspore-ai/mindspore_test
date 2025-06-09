@@ -42,6 +42,7 @@
 #include "utils/log_adapter.h"
 #include "ir/kernel_tensor_value.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace ops {
@@ -125,12 +126,12 @@ TypePtr DropoutDoMaskInferType(const PrimitivePtr &primitive, const std::vector<
     }
   } else if (CheckAndConvertUtils::IsScalar(input_args[kInputIndex2])) {
     if (keep_prop_value != nullptr) {
-      if (!keep_prop_value->isa<FloatImm>() && !keep_prop_value->isa<KernelTensorValue>()) {
+      if (!keep_prop_value->isa<FP64Imm>() && !keep_prop_value->isa<KernelTensorValue>()) {
         MS_EXCEPTION(TypeError)
           << "For 'DropoutDoMask', the type of 'keep_prop' must be float && KernelTensorValue, but got: "
           << keep_prop_value->ToString() << ".";
       }
-      auto value = GetScalarValue<float>(keep_prop_value).value();
+      auto value = GetScalarValue<pyfloat>(keep_prop_value).value();
       if (value < 0 || value > 1) {
         MS_EXCEPTION(ValueError) << "For 'DropoutDoMask', the 'keep_prop' must in the range [0, 1], but got: " << value
                                  << ".";

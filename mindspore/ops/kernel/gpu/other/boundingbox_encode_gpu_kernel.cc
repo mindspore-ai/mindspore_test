@@ -27,9 +27,9 @@ bool BoundingBoxEncodeGpuKernelMod::Init(const std::vector<KernelTensor *> &inpu
   auto means = primitive_->GetAttr("means");
   MS_EXCEPTION_IF_NULL(means);
   if (means->isa<ValueSequence>()) {
-    means_ = GetValue<std::vector<float>>(means);
+    means_ = GetValue<std::vector<pyfloat>>(means);
   } else if (means->isa<FloatImm>()) {
-    float mean = GetValue<float>(means);
+    pyfloat mean = GetValue<pyfloat>(means);
     for (size_t i = 0; i < coordinate_size; i++) {
       (void)means_.emplace_back(mean);
     }
@@ -41,9 +41,9 @@ bool BoundingBoxEncodeGpuKernelMod::Init(const std::vector<KernelTensor *> &inpu
   auto stds = primitive_->GetAttr("stds");
   MS_EXCEPTION_IF_NULL(stds);
   if (stds->isa<ValueSequence>()) {
-    stds_ = GetValue<std::vector<float>>(stds);
+    stds_ = GetValue<std::vector<pyfloat>>(stds);
   } else if (stds->isa<FloatImm>()) {
-    float std = GetValue<float>(stds);
+    pyfloat std = GetValue<pyfloat>(stds);
     for (size_t i = 0; i < coordinate_size; i++) {
       (void)stds_.emplace_back(std);
     }

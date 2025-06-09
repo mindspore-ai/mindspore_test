@@ -32,7 +32,7 @@ struct LayerNormV3OpParams {
   int begin_norm_axis;
   bool begin_params_axis_has_value;
   int begin_params_axis;
-  float epsilon;
+  double epsilon;
 
   ShapeVector output_x_shape;
   TypePtr output_x_type;

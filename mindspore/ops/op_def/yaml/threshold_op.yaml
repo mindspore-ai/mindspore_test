@@ -13,4 +13,6 @@ threshold:
   dispatch:
     enable: True
     Ascend: ThresholdAscend
+    CPU: None
+    GPU: None
   

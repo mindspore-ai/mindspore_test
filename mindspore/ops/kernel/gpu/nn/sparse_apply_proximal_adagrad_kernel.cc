@@ -27,6 +27,7 @@ MS_REG_GPU_KERNEL_ONE(SparseApplyProximalAdagrad,
                         .AddInputAttr(kNumberTypeFloat32)
                         .AddInputAttr(kNumberTypeFloat32)
                         .AddInputAttr(kNumberTypeInt32)
+                        .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                         .AddOutputAttr(kNumberTypeFloat32)
                         .AddOutputAttr(kNumberTypeFloat32),
                       SparseApplyProximalAdagradKernelMod, float)
@@ -39,6 +40,7 @@ MS_REG_GPU_KERNEL_ONE(SparseApplyProximalAdagrad,
                         .AddInputAttr(kNumberTypeFloat16)
                         .AddInputAttr(kNumberTypeFloat16)
                         .AddInputAttr(kNumberTypeInt32)
+                        .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                         .AddOutputAttr(kNumberTypeFloat16)
                         .AddOutputAttr(kNumberTypeFloat16),
                       SparseApplyProximalAdagradKernelMod, half)

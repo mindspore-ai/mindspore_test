@@ -293,4 +293,4 @@ def test_ctc_loss_v2_exception():
         _ = F.ctc_loss(log_probs, targets, input_lengths, target_lengths, blank=blank, reduction=reduction,
                        zero_infinity=zero_infinity)
         _pynative_executor.sync()
-    assert "but got Float32" in str(e.value)
+    assert "but got Float64" in str(e.value)

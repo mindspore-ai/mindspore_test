@@ -30,7 +30,7 @@ namespace pyboost {
 std::tuple<tensor::TensorPtr, tensor::TensorPtr> BatchNormGatherStatsWithCountsAscendCustomize(
   const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor, const TensorPtr &mean_tensor,
   const TensorPtr &invstd_tensor, const std::optional<TensorPtr> &running_mean_tensor,
-  const std::optional<TensorPtr> &running_var_tensor, const FP32ImmPtr &momentum, const FP32ImmPtr &eps,
+  const std::optional<TensorPtr> &running_var_tensor, const FP64ImmPtr &momentum, const FP64ImmPtr &eps,
   const std::optional<TensorPtr> &counts_tensor);
 }  // namespace pyboost
 }  // namespace kernel

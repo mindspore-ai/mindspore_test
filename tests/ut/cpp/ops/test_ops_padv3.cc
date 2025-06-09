@@ -17,12 +17,12 @@
 #include <memory>
 #include <string>
 #include "common/common_test.h"
-#include "infer/pad_v3.h"
 #include "ir/dtype/type.h"
 #include "abstract/dshape.h"
 #include "utils/tensor_construct_utils.h"
 #include "ir/primitive.h"
 #include "abstract/abstract_value.h"
+#include "mindspore/ops/op_def/op_enum.h"
 #include "utils/ms_context.h"
 #include "ops/test_ops.h"
 #include "include/backend/optimizer/helper.h"
@@ -37,7 +37,7 @@ struct PadV3Params {
   TypePtr paddings_type;
   ShapeVector value_shape;
   TypePtr value_type;
-  std::string mode;
+  Mode mode;
   bool paddings_contiguous;
   ShapeVector out_shape;
   TypePtr out_type;
@@ -53,19 +53,24 @@ TEST_P(TestPadV3, dyn_shape) {
   ASSERT_NE(input, nullptr);
   ASSERT_NE(paddings, nullptr);
   ASSERT_NE(value, nullptr);
+  auto mode_value = std::make_shared<Int64Imm>(param.mode);
+  auto mode = mode_value->ToAbstract();
+  auto paddings_contiguous_value = std::make_shared<BoolImm>(param.paddings_contiguous);
+  auto paddings_contiguous = paddings_contiguous_value->ToAbstract();
+  ASSERT_NE(mode, nullptr);
+  ASSERT_NE(paddings_contiguous, nullptr);
 
   auto prim = std::make_shared<Primitive>(kNamePadV3);
-  prim->set_attr("mode", MakeValue<std::string>(param.mode));
-  prim->set_attr("paddings_contiguous", MakeValue<bool>(param.paddings_contiguous));
 
   auto expect = std::make_shared<abstract::AbstractTensor>(param.out_type, param.out_shape);
   ASSERT_NE(expect, nullptr);
 
   abstract::AbstractBasePtr out_abstract;
-  if (param.mode == "constant") {
-    out_abstract = opt::CppInferShapeAndType(prim, {input, paddings, value});
+  if (param.mode == Mode::CONSTANT) {
+    out_abstract = opt::CppInferShapeAndType(prim, {input, paddings, value, mode, paddings_contiguous});
   } else {
-    out_abstract = opt::CppInferShapeAndType(prim, {input, paddings});
+    auto none_abs = mindspore::kNone->ToAbstract();
+    out_abstract = opt::CppInferShapeAndType(prim, {input, paddings, none_abs, mode, paddings_contiguous});
   }
   ASSERT_NE(out_abstract, nullptr);
   ASSERT_TRUE(*out_abstract == *expect);
@@ -74,14 +79,17 @@ TEST_P(TestPadV3, dyn_shape) {
 INSTANTIATE_TEST_CASE_P(
   TestPadV3Group, TestPadV3,
   testing::Values(
-    PadV3Params{{1, -1, -1, -1}, kFloat32, {-1, -1}, kInt32, {}, kInt32, "constant", true, {-1, -1, -1, -1}, kFloat32},
-    PadV3Params{{1, 2, 3, 4}, kFloat32, {-1, -1}, kInt32, {}, kInt32, "constant", true, {-1, -1, -1, -1}, kFloat32},
-    PadV3Params{{-2}, kFloat32, {-1, -1}, kInt32, {}, kInt32, "constant", true, {-2}, kFloat32},
-    PadV3Params{{1, -1, -1, -1}, kFloat32, {-1, -1}, kInt32, {}, kInt32, "reflect", true, {-1, -1, -1, -1}, kFloat32},
-    PadV3Params{{1, 2, 3, 4}, kFloat32, {-1, -1}, kInt32, {}, kInt32, "reflect", true, {-1, -1, -1, -1}, kFloat32},
-    PadV3Params{{-2}, kFloat32, {-1, -1}, kInt32, {}, kInt32, "reflect", true, {-2}, kFloat32},
-    PadV3Params{{1, -1, -1, -1}, kFloat32, {-1, -1}, kInt32, {}, kInt32, "replicate", true, {-1, -1, -1, -1}, kFloat32},
-    PadV3Params{{1, 2, 3, 4}, kFloat32, {-1, -1}, kInt32, {}, kInt32, "replicate", true, {-1, -1, -1, -1}, kFloat32},
-    PadV3Params{{-2}, kFloat32, {-1, -1}, kInt32, {}, kInt32, "replicate", true, {-2}, kFloat32}));
+    PadV3Params{
+      {1, -1, -1, -1}, kFloat32, {-1, -1}, kInt32, {}, kInt32, Mode::CONSTANT, true, {-1, -1, -1, -1}, kFloat32},
+    PadV3Params{{1, 2, 3, 4}, kFloat32, {-1, -1}, kInt32, {}, kInt32, Mode::CONSTANT, true, {-1, -1, -1, -1}, kFloat32},
+    PadV3Params{{-2}, kFloat32, {-1, -1}, kInt32, {}, kInt32, Mode::CONSTANT, true, {-2}, kFloat32},
+    PadV3Params{
+      {1, -1, -1, -1}, kFloat32, {-1, -1}, kInt32, {}, kInt32, Mode::REFLECT, true, {-1, -1, -1, -1}, kFloat32},
+    PadV3Params{{1, 2, 3, 4}, kFloat32, {-1, -1}, kInt32, {}, kInt32, Mode::REFLECT, true, {-1, -1, -1, -1}, kFloat32},
+    PadV3Params{{-2}, kFloat32, {-1, -1}, kInt32, {}, kInt32, Mode::REFLECT, true, {-2}, kFloat32},
+    PadV3Params{
+      {1, -1, -1, -1}, kFloat32, {-1, -1}, kInt32, {}, kInt32, Mode::CIRCULAR, true, {-1, -1, -1, -1}, kFloat32},
+    PadV3Params{{1, 2, 3, 4}, kFloat32, {-1, -1}, kInt32, {}, kInt32, Mode::CIRCULAR, true, {-1, -1, -1, -1}, kFloat32},
+    PadV3Params{{-2}, kFloat32, {-1, -1}, kInt32, {}, kInt32, Mode::CIRCULAR, true, {-2}, kFloat32}));
 }  // namespace ops
 }  // namespace mindspore

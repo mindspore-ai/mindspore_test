@@ -79,7 +79,7 @@ void IncreFlashAttentionInfo::SetOptinalInputs() {
   for (size_t index = 0; index < input_value_.size(); index++) {
     auto optinal_input_ptr = input_value_[index];
     if (optinal_input_ptr != nullptr && (optinal_input_ptr->isa<None>() || optinal_input_ptr->isa<StringImm>() ||
-                                         optinal_input_ptr->isa<Int64Imm>() || optinal_input_ptr->isa<FP32Imm>())) {
+                                         optinal_input_ptr->isa<Int64Imm>() || optinal_input_ptr->isa<FP64Imm>())) {
       optinal_inputs_[index] = False;
     } else {
       if (index == ops::kIncreFlashAttentionInputAttnMaskIndex && valid_input_index < inputs_shape_.size()) {

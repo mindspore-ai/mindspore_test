@@ -33,7 +33,7 @@ bool isFloatType(TypeId t) {
 bool isBoolType(TypeId t) { return t == kNumberTypeBool; }
 
 TypeId GetOutputType(const PrimitivePtr &primitive, TypeId input_type, TypeId other_type, TypeId alpha_type) {
-  if (alpha_type == kNumberTypeFloat32 && !isFloatType(input_type)) {
+  if (alpha_type == kNumberTypePyFloat && !isFloatType(input_type)) {
     MS_EXCEPTION(ValueError) << "For '" << primitive->name() << "', floating alpha need floating input, but got "
                              << TypeIdToType(input_type)->ToString();
   }

@@ -35,7 +35,7 @@ ShapeArray LerpScalarFuncImpl::InferShape(const PrimitivePtr &primitive, const I
 
 std::vector<TypeId> LerpScalarFuncImpl::InferType(const PrimitivePtr &primitive,
                                                   const InferInfoPtrList &input_infos) const {
-  const std::set<TypeId> valid_type = {kNumberTypeFloat16, kNumberTypeFloat32, kNumberTypeBFloat16};
+  const std::set<TypeId> valid_type = {kNumberTypeFloat16, kNumberTypeFloat32, kNumberTypeBFloat16, kNumberTypeFloat64};
   const auto start_type = input_infos[kInputIndex0]->GetType();
   const auto end_type = input_infos[kInputIndex1]->GetType();
   const auto weight_type = input_infos[kInputIndex2]->GetType();

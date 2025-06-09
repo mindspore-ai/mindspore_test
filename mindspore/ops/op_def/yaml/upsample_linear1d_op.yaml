@@ -24,3 +24,5 @@ upsample_linear1d:
     dispatch:
         enable: True
         Ascend: UpsampleLinear1DAscend
+        CPU: None
+        GPU: None

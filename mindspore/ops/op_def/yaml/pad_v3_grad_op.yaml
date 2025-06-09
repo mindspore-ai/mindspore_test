@@ -1,0 +1,25 @@
+#operator pad_v3_grad
+pad_v3_grad:
+    args:
+        dout:
+            dtype: tensor
+        paddings:
+            dtype: tensor
+        mode:
+            dtype: int
+            default: "'reflect'"
+            prim_init: True
+            arg_handler: str_to_enum
+        paddings_contiguous:
+            dtype: bool
+            default: True
+            prim_init: True
+    returns:
+        output:
+            dtype: tensor
+    class:
+        name: PadV3Grad
+    labels:
+        cust_aicpu: "'PadV3Grad'"
+    function:
+        disable: True

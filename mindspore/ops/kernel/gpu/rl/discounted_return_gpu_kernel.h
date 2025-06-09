@@ -22,6 +22,7 @@
 #include "kernel/gpu/gpu_kernel.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 #include "kernel/gpu/cuda_impl/rl/discounted_return_impl.cuh"
 
 namespace mindspore {
@@ -51,7 +52,7 @@ class DiscountedReturnGpuKernelMod : public NativeGpuKernelMod {
         return KRET_UNKNOWN_SHAPE;
       }
     }
-    gamma_ = GetValue<float>(primitive_->GetAttr(kGammaAttrName));
+    gamma_ = GetValue<pyfloat>(primitive_->GetAttr(kGammaAttrName));
     const std::vector<int64_t> &reward_shape = inputs[kIndex0]->GetDeviceShapeVector();
     const std::vector<int64_t> &done_shape = inputs[kIndex1]->GetDeviceShapeVector();
     if (reward_shape.size() == 0) {

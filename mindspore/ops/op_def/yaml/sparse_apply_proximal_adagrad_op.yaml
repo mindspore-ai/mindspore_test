@@ -1,0 +1,36 @@
+#operator sparse_apply_proximal_adagrad
+sparse_apply_proximal_adagrad:
+    args:
+        var:
+            dtype: tensor
+        accum:
+            dtype: tensor
+        lr:
+            dtype: tensor
+            type_cast: float
+        l1:
+            dtype: tensor
+            type_cast: float
+        l2:
+            dtype: tensor
+            type_cast: float
+        grad:
+            dtype: tensor
+        indices:
+            dtype: tensor
+        use_locking:
+            dtype: bool
+            default: False
+            prim_init: True
+    returns:
+        var:
+            dtype: tensor
+        accum:
+            dtype: tensor
+    args_signature:
+        rw_write: var, accum
+        dtype_group: (var, accum, grad), (lr), (l1), (l2), (indices)
+    labels:
+        side_effect_mem: True
+    function:
+        disable: True

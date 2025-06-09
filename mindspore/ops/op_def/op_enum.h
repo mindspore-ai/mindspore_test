@@ -71,7 +71,7 @@ enum ErrorMode : int64_t { CYCLE = 0, SPECIFIC = 1 };
 
 enum FlipMode : int64_t { BITFLIP = 0, BITFLIP_DESIGNED = 1, MULTIPLY = 2, MULTIPLY_MAX = 3 };
 
-enum LinalgQrMode : int64_t { REDUCED = 0, COMPLETE = 1, R = 2 };
+enum Mode : int64_t { REDUCED = 0, COMPLETE = 1, R = 2, CONSTANT = 3, REFLECT = 4, EDGE = 5, CIRCULAR = 6 };
 
 enum Approximate : int64_t { NONE = 0, TANH = 1 };
 

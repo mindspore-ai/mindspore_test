@@ -31,7 +31,7 @@ from mindspore.ops._vmap.vmap_base import vmap_rules_getters, vmap_general_prepr
 from mindspore.ops.primitive import Primitive
 from mindspore.ops.auto_generate import Embedding
 from mindspore.ops._utils import arg_handler as handler
-from mindspore._c_expression import FormatEnum as Format
+from mindspore._c_expression import FormatEnum as Format, ModeEnum as Mode
 
 
 @vmap_rules_getters.register(P.ApplyAdaMax)
@@ -84,14 +84,14 @@ def get_apply_ada_max_rule(prim, axis_size):
 @vmap_rules_getters.register(P.ApplyAdadelta)
 def get_apply_adadelta_rule(prim, axis_size):
     """VmapRule for `ApplyAdadelta` operation."""
-    if hasattr(prim, 'batch_rank'):
-        batch_rank = prim.batch_rank + 1
+    if prim.has_label("batch_rank"):
+        batch_rank = prim.get_label("batch_rank") + 1
     else:
         batch_rank = 1
 
     prim_name = prim.name
-    batch_prim = _vmap_clone_prim(prim)
-    batch_prim.add_prim_attr('batch_rank', batch_rank)
+    batch_prim = prim.clone()
+    batch_prim.set_label('batch_rank', batch_rank)
 
     def vmap_rule(var_bdim, accum_bdim, accum_update_bdim, lr_bdim, rho_bdim, epsilon_bdim, grad_bdim, u_monad):
         var, var_dim = var_bdim
@@ -129,15 +129,17 @@ def get_apply_adadelta_rule(prim, axis_size):
 @vmap_rules_getters.register(P.ApplyFtrl)
 def get_apply_ftrl_rule(prim, axis_size):
     """VmapRule for `ApplyFtrl` operation"""
-    if hasattr(prim, "batch_rank"):
-        batch_rank = prim.batch_rank + 1
+    if prim.has_label("batch_rank"):
+        batch_rank = prim.get_label("batch_rank") + 1
     else:
         batch_rank = 1
-    prim_name = prim.name
-    batch_prim = _vmap_clone_prim(prim)
-    batch_prim.add_prim_attr('batch_rank', batch_rank)
 
-    def vmap_rule(var_bdim, accum_bdim, linear_bdim, grad_bdim, lr_bdim, l1_bdim, l2_bdim, lr_power_bdim, u_monad):
+    prim_name = prim.name
+    batch_prim = prim.clone()
+    batch_prim.set_label('batch_rank', batch_rank)
+
+    def vmap_rule(var_bdim, accum_bdim, linear_bdim, grad_bdim, lr_bdim, l1_bdim,
+                  l2_bdim, lr_power_bdim, use_locking_bdim, u_monad):
         var, var_dim = var_bdim
         accum, accum_dim = accum_bdim
         linear, linear_dim = linear_bdim
@@ -146,13 +148,13 @@ def get_apply_ftrl_rule(prim, axis_size):
         l1, l1_dim = l1_bdim
         l2, l2_dim = l2_bdim
         lr_power, lr_power_dim = lr_power_bdim
-
+        use_locking, _ = use_locking_bdim
         if var_dim is None:
             if any(dim is not None for dim in [accum_dim, linear_dim, grad_dim, lr_dim, l1_dim, l2_dim, lr_power_dim]):
                 raise ValueError("The source axis of `var` is None, "
                                  "but the source axis of `accum/linear/grad/lr/l1/l1/lr_power` is not None. "
                                  "The execution order of operator `{}` cannot be guaranteed.".format(prim_name))
-            var = prim(var, accum, linear, grad, lr, l1, l2, lr_power, u_monad)
+            var = prim(var, accum, linear, grad, lr, l1, l2, lr_power, use_locking, u_monad)
             return var, None
         if var_dim != 0 or accum_dim != var_dim or linear_dim != var_dim:
             raise ValueError("For `{}`, the source axis of `var/accum/linear` must be 0, "
@@ -164,7 +166,7 @@ def get_apply_ftrl_rule(prim, axis_size):
         l2 = _bdim_at_front(l2, l2_dim, axis_size)
         lr_power = _bdim_at_front(lr_power, lr_power_dim, axis_size)
 
-        var = batch_prim(var, accum, linear, grad, lr, l1, l2, lr_power, u_monad)
+        var = batch_prim(var, accum, linear, grad, lr, l1, l2, lr_power, use_locking, u_monad)
         return var, 0
 
     return vmap_rule
@@ -173,29 +175,30 @@ def get_apply_ftrl_rule(prim, axis_size):
 @vmap_rules_getters.register(P.ApplyProximalAdagrad)
 def get_apply_proximal_adagrad_rule(prim, axis_size):
     """VmapRule for `ApplyProximalAdagrad` operation."""
-    if hasattr(prim, 'batch_rank'):
-        batch_rank = prim.batch_rank + 1
+    if prim.has_label("batch_rank"):
+        batch_rank = prim.get_label("batch_rank") + 1
     else:
         batch_rank = 1
 
     prim_name = prim.name
-    batch_prim = _vmap_clone_prim(prim)
-    batch_prim.add_prim_attr('batch_rank', batch_rank)
+    batch_prim = prim.clone()
+    batch_prim.set_label('batch_rank', batch_rank)
 
-    def vmap_rule(var_bdim, accum_bdim, lr_bdim, l1_bdim, l2_bdim, grad_bdim, u_monad):
+    def vmap_rule(var_bdim, accum_bdim, lr_bdim, l1_bdim, l2_bdim, grad_bdim, use_locking_bdim, u_monad):
         var, var_dim = var_bdim
         accum, accum_dim = accum_bdim
         lr, lr_dim = lr_bdim
         l1, l1_dim = l1_bdim
         l2, l2_dim = l2_bdim
         grad, grad_dim = grad_bdim
+        use_locking, _ = use_locking_bdim
 
         if var_dim is None:
             if any(dim is not None for dim in [accum_dim, lr_dim, l1_dim, l2_dim, grad_dim]):
                 raise ValueError("The source axis of `var` is None, but the source "
                                  "axis of `accum/lr/l1/l2/grad` is not None. The execution order of "
                                  "operator `{}` cannot be guaranteed.".format(prim_name))
-            var, accum = prim(var, accum, lr, l1, l2, grad, u_monad)
+            var, accum = prim(var, accum, lr, l1, l2, grad, use_locking, u_monad)
             return (var, None), (accum, None)
 
         if var_dim != 0 or accum_dim != var_dim:
@@ -207,7 +210,7 @@ def get_apply_proximal_adagrad_rule(prim, axis_size):
         l2 = _bdim_at_front(l2, l2_dim, axis_size)
         grad = _bdim_at_front(grad, grad_dim, axis_size)
 
-        var, accum = batch_prim(var, accum, lr, l1, l2, grad, u_monad)
+        var, accum = batch_prim(var, accum, lr, l1, l2, grad, use_locking, u_monad)
         return (var, 0), (accum, 0)
 
     return vmap_rule
@@ -216,14 +219,14 @@ def get_apply_proximal_adagrad_rule(prim, axis_size):
 @vmap_rules_getters.register(P.ApplyGradientDescent)
 def get_apply_gradient_descent_rule(prim, axis_size):
     """VmapRule for `ApplyGradientDescent` operation."""
-    if hasattr(prim, 'batch_rank'):
-        batch_rank = prim.batch_rank + 1
+    if prim.has_label("batch_rank"):
+        batch_rank = prim.get_label("batch_rank") + 1
     else:
         batch_rank = 1
 
     prim_name = prim.name
-    batch_prim = _vmap_clone_prim(prim)
-    batch_prim.add_prim_attr('batch_rank', batch_rank)
+    batch_prim = prim.clone()
+    batch_prim.set_label('batch_rank', batch_rank)
 
     def vmap_rule(var_bdim, alpha_bdim, delta_bdim, u_monad):
         var, var_dim = var_bdim
@@ -254,14 +257,14 @@ def get_apply_gradient_descent_rule(prim, axis_size):
 @vmap_rules_getters.register(P.ApplyProximalGradientDescent)
 def get_apply_proximal_gradient_descent_rule(prim, axis_size):
     """VmapRule for `ApplyProximalGradientDescent` operation."""
-    if hasattr(prim, 'batch_rank'):
-        batch_rank = prim.batch_rank + 1
+    if prim.has_label("batch_rank"):
+        batch_rank = prim.get_label("batch_rank") + 1
     else:
         batch_rank = 1
 
     prim_name = prim.name
-    batch_prim = _vmap_clone_prim(prim)
-    batch_prim.add_prim_attr('batch_rank', batch_rank)
+    batch_prim = prim.clone()
+    batch_prim.set_label('batch_rank', batch_rank)
 
     def vmap_rule(var_bdim, alpha_bdim, l1_bdim, l2_bdim, delta_bdim, u_monad):
         var, var_dim = var_bdim
@@ -1133,29 +1136,27 @@ def get_pad_v3_vmap_rule(prim, axis_size):
     """VmapRule for `PadV3` operation."""
     pad_pair = 2
     input_max_dim = 4
-    mode = prim.mode
 
-    def vmap_rule(*params_bdim):
-        is_all_none, result = vmap_general_preprocess(
-            prim, params_bdim)
+    def vmap_rule(x_bdim, paddings_bdim, constant_value_bdim, mode_bdim, paddings_contiguous_bdim):
+        is_all_none, result = vmap_general_preprocess(prim, x_bdim, paddings_bdim,
+                                                      constant_value_bdim, mode_bdim,
+                                                      paddings_contiguous_bdim)
         if is_all_none:
             return result
-        if len(params_bdim) < 2:
-            _raise_value_error("The input params in `PadV3` must >= 2, "
-                               "but got {}.".format(len(params_bdim)))
-        input_x, input_x_dim = params_bdim[0]
-        paddings, paddings_dim = params_bdim[1]
-        values = None
+        input_x, input_x_dim = x_bdim
+        paddings, paddings_dim = paddings_bdim
+        values, values_dim = constant_value_bdim
+        mode, _ = mode_bdim
+        paddings_contiguous, _ = paddings_contiguous_bdim
         out = None
         x = _bdim_at_front(input_x, input_x_dim, axis_size)
         if paddings_dim is not None:
             _raise_value_error("The source axis of `paddings` in `PadV3` must be None, "
                                "but got {}.".format(paddings_dim))
-        if mode == "constant":
-            if len(params_bdim) != 3:
-                _raise_value_error("The input params in `PadV3` of constant mode must be 3, "
-                                   "but got {}.".format(len(params_bdim)))
-            values, values_dim = params_bdim[2]
+        if mode == Mode.CONSTANT:
+            if values is None:
+                _raise_value_error("For `PadV3`, the constant_value should be a Tensor, "
+                                   "but got {}.".format(len(constant_value_bdim)))
             if values_dim is not None:
                 _raise_value_error("The source axis of `values_dim` in `PadV3` must be None, "
                                    "but got {}.".format(values_dim))
@@ -1166,10 +1167,7 @@ def get_pad_v3_vmap_rule(prim, axis_size):
         x_ndim = F.rank(x)
         # pylint: disable=chained-comparison
         if pad_dim < x_ndim and x_ndim < input_max_dim:
-            if mode == "constant":
-                out = prim(x, paddings, values)
-            else:
-                out = prim(x, paddings)
+                out = prim(x, paddings, values, mode, paddings_contiguous)
         elif x_ndim >= input_max_dim:
             # reshape to 4 dims
             x_shape = F.shape(x)
@@ -1179,10 +1177,7 @@ def get_pad_v3_vmap_rule(prim, axis_size):
                 first_shape *= x_shape[i]
             input_shape = (first_shape,) + x_shape[(-input_max_dim + 1):]
             x = F.reshape(x, input_shape)
-            if mode == "constant":
-                out = prim(x, paddings, values)
-            else:
-                out = prim(x, paddings)
+            out = prim(x, paddings, values, mode, paddings_contiguous)
             out_shape = F.shape(out)
             real_out_shape = x_shape[:diff_dim + 1] + out_shape[1:]
             out = F.reshape(out, real_out_shape)
@@ -1333,15 +1328,16 @@ def get_batchnorm_vmap_rule(prim, axis_size):
 @vmap_rules_getters.register(P.ApplyAdamWithAmsgrad)
 def get_apply_adam_with_amsgrad_rule(prim, axis_size):
     """VmapRule for `ApplyAdamWithAmsgrad` operation"""
-    if hasattr(prim, "batch_rank"):
-        batch_rank = prim.batch_rank + 1
+    if prim.has_label("batch_rank"):
+        batch_rank = prim.get_label("batch_rank") + 1
     else:
         batch_rank = 1
     prim_name = prim.name
-    batch_prim = _vmap_clone_prim(prim)
-    batch_prim.add_prim_attr("batch_rank", batch_rank)
+    batch_prim = prim.clone()
+    batch_prim.set_label("batch_rank", batch_rank)
 
-    def vmap_rule(var_bdim, m_bdim, v_bdim, vhat_bdim, beta1_power_bdim, beta2_power_bdim, lr_bdim, grad_bdim, u_monad):
+    def vmap_rule(var_bdim, m_bdim, v_bdim, vhat_bdim, beta1_power_bdim, beta2_power_bdim, lr_bdim, grad_bdim,
+                  beta1_bdim, beta2_bdim, epsilon_bdim, use_locking_bdim, u_monad):
         var, var_dim = var_bdim
         m, m_dim = m_bdim
         v, v_dim = v_bdim
@@ -1350,6 +1346,10 @@ def get_apply_adam_with_amsgrad_rule(prim, axis_size):
         beta2_power, beta2_power_dim = beta2_power_bdim
         lr, lr_dim = lr_bdim
         grad, grad_dim = grad_bdim
+        beta1, _ = beta1_bdim
+        beta2, _ = beta2_bdim
+        epsilon, _ = epsilon_bdim
+        use_locking, _ = use_locking_bdim
 
         if var_dim is None:
             if any(dim is not None for dim in [m_dim, v_dim, vhat_dim, beta1_power_dim,
@@ -1357,7 +1357,8 @@ def get_apply_adam_with_amsgrad_rule(prim, axis_size):
                 raise ValueError("The source axis of `var` is None, "
                                  "but the source axis of `m/v/vhat/beta1_power/beta2_power/lr/grad` is not None. "
                                  "The execution of operator `{}` cannot be guaranteed.".format(prim_name))
-            out_var, out_m, out_v, out_vhat = prim(var, m, v, vhat, beta1_power, beta2_power, lr, grad, u_monad)
+            out_var, out_m, out_v, out_vhat = prim(var, m, v, vhat, beta1_power, beta2_power, lr, grad, beta1, beta2,
+                                                   epsilon, use_locking, u_monad)
             return (out_var, None), (out_m, None), (out_v, None), (out_vhat, None)
 
         if any(dim != 0 for dim in [var_dim, m_dim, v_dim, vhat_dim]):
@@ -1370,7 +1371,8 @@ def get_apply_adam_with_amsgrad_rule(prim, axis_size):
         lr = _bdim_at_front(lr, lr_dim, axis_size)
         grad = _bdim_at_front(grad, grad_dim, axis_size)
 
-        out_var, out_m, out_v, out_vhat = batch_prim(var, m, v, vhat, beta1_power, beta2_power, lr, grad, u_monad)
+        out_var, out_m, out_v, out_vhat = batch_prim(var, m, v, vhat, beta1_power, beta2_power, lr, grad, beta1, beta2,
+                                                     epsilon, use_locking, u_monad)
         return (out_var, 0), (out_m, 0), (out_v, 0), (out_vhat, 0)
 
     return vmap_rule
@@ -1379,16 +1381,16 @@ def get_apply_adam_with_amsgrad_rule(prim, axis_size):
 @vmap_rules_getters.register(P.ApplyAdamWithAmsgradV2)
 def get_apply_adam_with_amsgrad_v2_rule(prim, axis_size):
     """VmapRule for `ApplyAdamWithAmsgradV2` operation"""
-    if hasattr(prim, "batch_rank"):
-        batch_rank = prim.batch_rank + 1
+    if prim.has_label("batch_rank"):
+        batch_rank = prim.get_label("batch_rank") + 1
     else:
         batch_rank = 1
     prim_name = prim.name
-    batch_prim = _vmap_clone_prim(prim)
-    batch_prim.add_prim_attr("batch_rank", batch_rank)
+    batch_prim = prim.clone()
+    batch_prim.set_label("batch_rank", batch_rank)
 
     def vmap_rule(var_bdim, m_bdim, v_bdim, vhat_bdim, beta1_power_bdim, beta2_power_bdim, lr_bdim, beta1_bdim,
-                  beta2_bdim, epsilon_bdim, grad_bdim, u_monad):
+                  beta2_bdim, epsilon_bdim, grad_bdim, use_locking_bdim, u_monad):
         var, var_dim = var_bdim
         m, m_dim = m_bdim
         v, v_dim = v_bdim
@@ -1400,6 +1402,7 @@ def get_apply_adam_with_amsgrad_v2_rule(prim, axis_size):
         beta2, beta2_dim = beta2_bdim
         epsilon, epsilon_dim = epsilon_bdim
         grad, grad_dim = grad_bdim
+        use_locking, _ = use_locking_bdim
 
         if var_dim is None:
             if any(dim is not None for dim in [m_dim, v_dim, vhat_dim, beta1_power_dim,
@@ -1408,7 +1411,7 @@ def get_apply_adam_with_amsgrad_v2_rule(prim, axis_size):
                                  "but the source axis of `m/v/vhat/beta1_power/beta2_power/lr/beta1/beta2/grad` is not "
                                  "None. The execution of operator `{}` cannot be guaranteed.".format(prim_name))
             out_var, out_m, out_v, out_vhat = prim(var, m, v, vhat, beta1_power, beta2_power, lr, beta1, beta2, epsilon,
-                                                   grad, u_monad)
+                                                   grad, use_locking, u_monad)
             return (out_var, None), (out_m, None), (out_v, None), (out_vhat, None)
 
         if any(dim != 0 for dim in [var_dim, m_dim, v_dim, vhat_dim]):
@@ -1425,7 +1428,7 @@ def get_apply_adam_with_amsgrad_v2_rule(prim, axis_size):
         grad = _bdim_at_front(grad, grad_dim, axis_size)
 
         out_var, out_m, out_v, out_vhat = batch_prim(var, m, v, vhat, beta1_power, beta2_power, lr, beta1, beta2,
-                                                     epsilon, grad, u_monad)
+                                                     epsilon, grad, use_locking, u_monad)
         return (out_var, 0), (out_m, 0), (out_v, 0), (out_vhat, 0)
 
     return vmap_rule
@@ -1434,16 +1437,16 @@ def get_apply_adam_with_amsgrad_v2_rule(prim, axis_size):
 @vmap_rules_getters.register(P.Adam)
 def get_adam_rule(prim, axis_size):
     """VmapRule for `Adam` operation"""
-    if hasattr(prim, "batch_rank"):
-        batch_rank = prim.batch_rank + 1
+    if prim.has_label("batch_rank"):
+        batch_rank = prim.get_label("batch_rank") + 1
     else:
         batch_rank = 1
     prim_name = prim.name
-    batch_prim = _vmap_clone_prim(prim)
-    batch_prim.add_prim_attr("batch_rank", batch_rank)
+    batch_prim = prim.clone()
+    batch_prim.set_label("batch_rank", batch_rank)
 
     def vmap_rule(var_bdim, m_bdim, v_bdim, beta1_power_bdim, beta2_power_bdim, lr_bdim, beta1_bdim,
-                  beta2_bdim, epsilon_bdim, grad_bdim, u_monad):
+                  beta2_bdim, epsilon_bdim, grad_bdim, use_locking_bdim, use_nesterov_bdim, u_monad):
         var, var_dim = var_bdim
         m, m_dim = m_bdim
         v, v_dim = v_bdim
@@ -1454,6 +1457,8 @@ def get_adam_rule(prim, axis_size):
         beta2, beta2_dim = beta2_bdim
         epsilon, epsilon_dim = epsilon_bdim
         grad, grad_dim = grad_bdim
+        use_locking, _ = use_locking_bdim
+        use_nesterov, _ = use_nesterov_bdim
 
         all_dim = [m_dim, v_dim, beta1_power_dim, beta2_power_dim, lr_dim, beta1_dim, beta2_dim, epsilon_dim, grad_dim]
         if var_dim is None:
@@ -1462,7 +1467,8 @@ def get_adam_rule(prim, axis_size):
                                  "but the source axis of `m/v/vhat/beta1_power/beta2_power/lr/beta1/beta2/epsilon grad"
                                  " is not None. The execution of operator `{}` cannot be guaranteed.".format(prim_name))
             out_var, out_m, out_v = prim(
-                var, m, v, beta1_power, beta2_power, lr, beta1, beta2, epsilon, grad, u_monad)
+                var, m, v, beta1_power, beta2_power, lr, beta1, beta2, epsilon, grad, use_locking, use_nesterov,
+                u_monad)
             return ((out_var, None), (out_m, None), (out_v, None))
 
         if any(dim != 0 for dim in [var_dim, m_dim, v_dim]):
@@ -1479,7 +1485,7 @@ def get_adam_rule(prim, axis_size):
         grad = _bdim_at_front(grad, grad_dim, axis_size)
 
         out_var, out_m, out_v = batch_prim(
-            var, m, v, beta1_power, beta2_power, lr, beta1, beta2, epsilon, grad, u_monad)
+            var, m, v, beta1_power, beta2_power, lr, beta1, beta2, epsilon, grad, use_locking, use_nesterov, u_monad)
         return ((out_var, 0), (out_m, 0), (out_v, 0))
 
     return vmap_rule
@@ -1488,14 +1494,14 @@ def get_adam_rule(prim, axis_size):
 @vmap_rules_getters.register(P.ApplyPowerSign)
 def get_apply_power_sign_rule(prim, axis_size):
     """VmapRule for `ApplyPowerSign` operation."""
-    if hasattr(prim, 'batch_rank'):
-        batch_rank = prim.batch_rank + 1
+    if prim.has_label("batch_rank"):
+        batch_rank = prim.get_label("batch_rank") + 1
     else:
         batch_rank = 1
 
     prim_name = prim.name
-    batch_prim = _vmap_clone_prim(prim)
-    batch_prim.add_prim_attr("batch_rank", batch_rank)
+    batch_prim = prim.clone()
+    batch_prim.set_label("batch_rank", batch_rank)
 
     def vmap_rule(var_bdim, m_bdim, lr_bdim, logbase_bdim, sign_decay_bdim, beta_bdim, grad_bdim, u_monad):
         var, var_dim = var_bdim
@@ -1531,20 +1537,22 @@ def get_apply_power_sign_rule(prim, axis_size):
 @vmap_rules_getters.register(P.ApplyAdagradV2)
 def get_apply_adagrad_v2_vmap_rule(prim, axis_size):
     """VmapRule for `ApplyAdagradV2` operation."""
-    if hasattr(prim, 'batch_rank'):
-        batch_rank = prim.batch_rank + 1
+    if prim.has_label("batch_rank"):
+        batch_rank = prim.get_label("batch_rank") + 1
     else:
         batch_rank = 1
 
-    batch_prim = _vmap_clone_prim(prim)
-    batch_prim.add_prim_attr('batch_rank', batch_rank)
+    batch_prim = prim.clone()
+    batch_prim.set_label('batch_rank', batch_rank)
     prim_name = prim.name
 
-    def vmap_rule(var_bdim, accum_bdim, lr_bdim, grad_bdim, u_monad):
+    def vmap_rule(var_bdim, accum_bdim, lr_bdim, grad_bdim, epsilon_bdim, update_slots_bdim, u_monad):
         var, var_dim = var_bdim
         accum, accum_dim = accum_bdim
         lr, lr_dim = lr_bdim
         grad, grad_dim = grad_bdim
+        epsilon, _ = epsilon_bdim
+        update_slots, _ = update_slots_bdim
 
         if var_dim is None:
             if any(dim is not None for dim in
@@ -1553,7 +1561,7 @@ def get_apply_adagrad_v2_vmap_rule(prim, axis_size):
                                  "axis of 'accum/lr/grad'"
                                  " is not None. The execution order of "
                                  "operator '{}' cannot be guaranteed.".format(prim_name))
-            var, accum = prim(var, accum, lr, grad, u_monad)
+            var, accum = prim(var, accum, lr, grad, epsilon, update_slots, u_monad)
             return (var, None), (accum, None)
         if var_dim != 0 or var_dim != accum_dim:
             raise ValueError(
@@ -1564,7 +1572,7 @@ def get_apply_adagrad_v2_vmap_rule(prim, axis_size):
         lr = _bdim_at_front(lr, lr_dim, axis_size)
         grad = _bdim_at_front(grad, grad_dim, axis_size)
 
-        var, accum = batch_prim(var, accum, lr, grad, u_monad)
+        var, accum = batch_prim(var, accum, lr, grad, epsilon, update_slots, u_monad)
         return (var, 0), (accum, 0)
 
     return vmap_rule
@@ -1578,13 +1586,12 @@ def get_apply_adagrad_da_vmap_rule(prim, axis_size):
     else:
         batch_rank = 1
 
-    attr = prim.init_attrs
-    batch_prim = P.ApplyAdagradDA(**attr)
-    batch_prim.add_prim_attr('batch_rank', batch_rank)
     prim_name = prim.name
+    batch_prim = prim.clone()
+    batch_prim.add_prim_attr('batch_rank', batch_rank)
 
     def vmap_rule(var_bdim, gradient_accumulator_bdim, gradient_squared_accumulator_bdim, grad_bdim, lr_bdim, l1_bdim,
-                  l2_bdim, global_step_bdim, u_monad):
+                  l2_bdim, global_step_bdim, use_locking_bdim, u_monad):
         var, var_dim = var_bdim
         gradient_accumulator, gradient_accumulator_dim = gradient_accumulator_bdim
         gradient_squared_accumulator, gradient_squared_accumulator_dim = gradient_squared_accumulator_bdim
@@ -1593,7 +1600,7 @@ def get_apply_adagrad_da_vmap_rule(prim, axis_size):
         l1, l1_dim = l1_bdim
         l2, l2_dim = l2_bdim
         global_step, global_step_dim = global_step_bdim
-
+        use_locking, _ = use_locking_bdim
         if var_dim is None:
             if any(dim is not None for dim in
                    [gradient_accumulator_bdim, gradient_squared_accumulator_bdim, grad_bdim, lr_bdim, l1_bdim, l2_bdim,
@@ -1606,6 +1613,7 @@ def get_apply_adagrad_da_vmap_rule(prim, axis_size):
                                                                            gradient_squared_accumulator, grad, lr, l1,
                                                                            l2,
                                                                            global_step,
+                                                                           use_locking,
                                                                            u_monad)  # Low dimensional operator
             return (var, None), (gradient_accumulator, None), (gradient_squared_accumulator, None)
         if var_dim != 0 or var_dim != gradient_accumulator_dim or var_dim != gradient_squared_accumulator_dim:
@@ -1626,6 +1634,7 @@ def get_apply_adagrad_da_vmap_rule(prim, axis_size):
                          gradient_squared_accumulator, grad, lr, l1,
                          l2,
                          global_step,
+                         use_locking,
                          u_monad)  # High dimensional operator;
         return (var, 0)
 
@@ -1716,17 +1725,17 @@ def get_max_pool3d_with_argmax_vmap_rule(prim, axis_size):
 @vmap_rules_getters.register(P.ApplyRMSProp)
 def get_rmsprop_vmap_rule(prim, axis_size):
     """VmapRule for `ApplyRMSProp` operation."""
-    if hasattr(prim, 'batch_rank'):
-        batch_rank = prim.batch_rank + 1
+    if prim.has_label("batch_rank"):
+        batch_rank = prim.get_label("batch_rank") + 1
     else:
         batch_rank = 1
 
-    batch_prim = _vmap_clone_prim(prim)
-    batch_prim.add_prim_attr('batch_rank', batch_rank)
+    batch_prim = prim.clone()
+    batch_prim.set_label('batch_rank', batch_rank)
     prim_name = prim.name
 
     def vmap_rule(var_bdim, mean_square_bdim, moment_bdim, lr_bdim, grad_bdim, decay_bdim, momentum_bdim,
-                  epsilon_bdim, u_monad):
+                  epsilon_bdim, use_locking_bdim, u_monad):
         var, var_dim = var_bdim
         mean_square, mean_square_dim = mean_square_bdim
         moment, moment_dim = moment_bdim
@@ -1735,6 +1744,7 @@ def get_rmsprop_vmap_rule(prim, axis_size):
         decay, decay_dim = decay_bdim
         momentum, momentum_dim = momentum_bdim
         epsilon, epsilon_dim = epsilon_bdim
+        use_locking, _ = use_locking_bdim
 
         if var_dim is None:
             if any(dim is not None for dim in
@@ -1744,7 +1754,7 @@ def get_rmsprop_vmap_rule(prim, axis_size):
                                  " is not None. The execution order of "
                                  "operator '{}' cannot be guaranteed.".format(prim_name))
 
-            res = prim(var, mean_square, moment, lr, grad, decay, momentum, epsilon,
+            res = prim(var, mean_square, moment, lr, grad, decay, momentum, epsilon, use_locking,
                        u_monad)  # low dimensional operator;
             return (res, None)
         precondition = var_dim != 0 or var_dim != mean_square_dim or var_dim != moment_dim or var_dim != grad_dim
@@ -1762,7 +1772,7 @@ def get_rmsprop_vmap_rule(prim, axis_size):
         grad = _bdim_at_front(grad, grad_dim, axis_size)
         lr = _bdim_at_front(lr, lr_dim, axis_size)
 
-        res = batch_prim(var, mean_square, moment, lr, grad, decay, momentum, epsilon,
+        res = batch_prim(var, mean_square, moment, lr, grad, decay, momentum, epsilon, use_locking,
                          u_monad)  # High dimensional operator;
 
         return res, 0
@@ -1773,16 +1783,17 @@ def get_rmsprop_vmap_rule(prim, axis_size):
 @vmap_rules_getters.register(P.ApplyCenteredRMSProp)
 def get_apply_centered_rmsprop_vmap_rule(prim, axis_size):
     """VmapRule for `ApplyCenteredRMSProp` operation."""
-    if hasattr(prim, 'batch_rank'):
-        batch_rank = prim.batch_rank + 1
+    if prim.has_label("batch_rank"):
+        batch_rank = prim.get_label("batch_rank") + 1
     else:
         batch_rank = 1
+
     prim_name = prim.name
-    batch_prim = _vmap_clone_prim(prim)
-    batch_prim.add_prim_attr("batch_rank", batch_rank)
+    batch_prim = prim.clone()
+    batch_prim.set_label("batch_rank", batch_rank)
 
     def vmap_rule(var_bdim, mean_grad_bdim, mean_square_bdim, mom_bdim, grad_bdim, lr_bdim, rho_bdim,
-                  momentum_bdim, eps_bdim, u_monad):
+                  momentum_bdim, eps_bdim, use_locking_bdim, u_monad):
         var, var_dim = var_bdim
         mean_grad, mean_grad_dim = mean_grad_bdim
         mean_square, mean_square_dim = mean_square_bdim
@@ -1792,7 +1803,7 @@ def get_apply_centered_rmsprop_vmap_rule(prim, axis_size):
         rho, rho_dim = rho_bdim
         momentum, momentum_dim = momentum_bdim
         eps, eps_dim = eps_bdim
-
+        use_locking, _ = use_locking_bdim
         if var_dim is None:
             if any(dim is not None for dim in
                    [mean_grad_dim, mean_square_dim, mom_dim, grad_dim, lr_dim, rho_dim,
@@ -1802,7 +1813,7 @@ def get_apply_centered_rmsprop_vmap_rule(prim, axis_size):
                                  " is not None. The execution order of "
                                  "operator '{}' cannot be guaranteed.".format(prim_name))
             var = prim(var, mean_grad, mean_square,
-                       mom, grad, lr, rho, momentum, eps, u_monad)
+                       mom, grad, lr, rho, momentum, eps, use_locking, u_monad)
             return (var, None)
         precondition = var_dim != 0 or var_dim != mean_grad_dim or var_dim != mean_square_dim or var_dim != mom_dim
         if precondition:
@@ -1821,7 +1832,7 @@ def get_apply_centered_rmsprop_vmap_rule(prim, axis_size):
         eps = _bdim_at_front(eps, eps_dim, axis_size)
 
         var = batch_prim(var, mean_grad, mean_square,
-                         mom, grad, lr, rho, momentum, eps, u_monad)
+                         mom, grad, lr, rho, momentum, eps, use_locking, u_monad)
         return var, 0
 
     return vmap_rule

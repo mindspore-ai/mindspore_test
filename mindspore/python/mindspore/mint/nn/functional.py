@@ -246,7 +246,7 @@ from mindspore.ops.auto_generate import max_unpool2d_ext as max_unpool2d
 
 # 256
 from mindspore.ops.auto_generate import inplace_threshold as threshold_
-from mindspore.ops.auto_generate import threshold as threshold_op
+from mindspore.ops.auto_generate import threshold_op
 # 257
 
 # 258

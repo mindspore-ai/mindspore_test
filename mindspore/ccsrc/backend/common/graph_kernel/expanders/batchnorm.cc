@@ -17,6 +17,7 @@
 #include <memory>
 #include <vector>
 #include "backend/common/graph_kernel/expanders/op_desc_registry.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore::graphkernel::expanders {
 class BatchNorm : public OpDesc {
@@ -59,7 +60,7 @@ class BatchNorm : public OpDesc {
     const auto &input_offset = inputs[2];
     const auto &input_mean = inputs[3];
     const auto &input_variance = inputs[4];
-    auto eps = gb.Tensor(GetValue<float>(attrs_["epsilon"]), input_x->type);
+    auto eps = gb.Tensor(GetValue<pyfloat>(attrs_["epsilon"]), input_x->type);
     auto shape_x = input_x->shape;
     ShapeVector reduce_axis;
     int64_t num;
@@ -120,8 +121,8 @@ class BatchNorm : public OpDesc {
     auto res_y = gb.Add(res_y_mul, input_offset_expand);
 
     // compute mean_res
-    auto momentum = GetValue<float>(attrs_["momentum"]);
-    auto momentum_sub = 1.0f - momentum;
+    auto momentum = GetValue<pyfloat>(attrs_["momentum"]);
+    auto momentum_sub = 1.0 - momentum;
     auto momentum_sub_tensor = gb.Tensor(momentum_sub, input_scale->type);
     auto new_running_mean_tmp = gb.Mul(momentum_sub_tensor, input_mean);
     auto momentum_tensor = gb.Tensor(momentum, input_scale->type);
@@ -147,7 +148,7 @@ class BatchNorm : public OpDesc {
     const auto &input_offset = inputs[2];
     const auto &input_mean = inputs[3];
     const auto &input_variance = inputs[4];
-    auto eps = gb.Tensor(GetValue<float>(attrs_["epsilon"]), input_x->type);
+    auto eps = gb.Tensor(GetValue<pyfloat>(attrs_["epsilon"]), input_x->type);
 
     auto x_ori_type = input_x->type;
     auto x_new_type = input_x->type;

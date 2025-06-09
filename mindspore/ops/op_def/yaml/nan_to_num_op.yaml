@@ -26,3 +26,4 @@ nan_to_num:
     dispatch:
         enable: True
         Ascend: NanToNumAscend
+        GPU: None

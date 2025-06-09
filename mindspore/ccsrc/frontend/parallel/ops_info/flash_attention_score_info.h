@@ -33,6 +33,7 @@
 #include "frontend/parallel/strategy.h"
 #include "mindspore/ops/infer/ops_func_impl/flash_attention_score.h"
 #include "op_def/op_enum.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace parallel {
@@ -140,8 +141,8 @@ class FlashAttentionScoreInfo : public OperatorInfo {
   Status GetAttrsForRA();
   void InitFromInput();
   int64_t head_num_ = 1;
-  float keep_prob_ = 1.0;
-  float scale_value_ = 1.0;
+  pyfloat keep_prob_ = 1.0;
+  pyfloat scale_value_ = 1.0;
   size_t qkv_batch_dim_;
   size_t qkv_head_dim_;
   size_t qkv_seq_dim_;

@@ -77,7 +77,7 @@ TEST_P(TestPassSwitch, pass_switch) {
   auto add = c.NewCNode("Add", {input_0, input_1}, {});
   auto begin_norm_axis = c.NewValueNode(MakeValue<int64_t>(-1));
   auto begin_params_axis = c.NewValueNode(MakeValue<int64_t>(-1));
-  auto eps = c.NewValueNode(MakeValue<float>(1e-5));
+  auto eps = c.NewValueNode(MakeValue<double>(1e-5));
   auto layernorm = c.NewCNode("LayerNorm", {add, gamma, beta, begin_norm_axis, begin_params_axis, eps}, {});
   c.SetOutput(layernorm);
 

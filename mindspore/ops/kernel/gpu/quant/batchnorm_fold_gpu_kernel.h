@@ -23,6 +23,7 @@
 #include "kernel/gpu/kernel_constants.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/batchnorm_fold_impl.cuh"
 #include "kernel/gpu/quant/quant_op_const.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -99,9 +100,9 @@ class BatchNormFoldGpuKernelMod : public NativeGpuKernelMod {
 
   bool Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override {
     InitResource();
-    T momentum = GetValue<T>(primitive_->GetAttr("momentum"));
+    T momentum = GetValue<pyfloat>(primitive_->GetAttr("momentum"));
     exp_avg_factor_ = 1.0 - momentum;
-    epsilon_ = GetValue<T>(primitive_->GetAttr("epsilon"));
+    epsilon_ = GetValue<pyfloat>(primitive_->GetAttr("epsilon"));
     is_training_ = GetValue<bool>(primitive_->GetAttr("is_training"));
     freeze_bn_ = static_cast<int>(GetValue<int64_t>(primitive_->GetAttr("freeze_bn")));
     return true;

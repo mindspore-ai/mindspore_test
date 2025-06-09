@@ -29,7 +29,17 @@ namespace mindspore {
 namespace opt {
 const BaseRef ReplaceMomentumCastFusion::DefinePattern() const {
   VectorRef grad_cast = VectorRef({prim::kPrimCast, grad_});
-  VectorRef momentum = VectorRef({prim::kPrimApplyMomentum, var_, acc_, lr_, grad_cast, mom_});
+  VectorRef momentum = VectorRef({
+    prim::kPrimApplyMomentum,
+    var_,
+    acc_,
+    lr_,
+    grad_cast,
+    mom_,
+    use_nesterov_,
+    use_locking_,
+    gradient_scale_,
+  });
   return momentum;
 }
 

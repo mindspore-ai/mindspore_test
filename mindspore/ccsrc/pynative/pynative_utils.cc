@@ -293,8 +293,11 @@ std::string Common::GetIdByValue(const ValuePtr &v) {
   if (v->isa<IntegerImm>()) {
     return "I" + std::to_string(v->cast<Int64ImmPtr>()->value());
   }
-  if (v->isa<FloatImm>()) {
+  if (v->isa<FP32Imm>()) {
     return "F" + std::to_string(v->cast<FP32ImmPtr>()->value());
+  }
+  if (v->isa<FP64Imm>()) {
+    return "F" + std::to_string(v->cast<FP64ImmPtr>()->value());
   }
   if (v->isa<None>()) {
     return "None";
@@ -1110,9 +1113,9 @@ void PyParser::PrintTypeCastError(const ops::OpDefPtr &op_def, const py::list &o
 }
 
 inline ValuePtr ConvertScalarToTensor(const ValuePtr &value) {
-  auto fp32_imm = value->cast<FP32ImmPtr>();
-  if (fp32_imm != nullptr) {
-    return std::make_shared<tensor::Tensor>(fp32_imm->value());
+  auto fp64_imm = value->cast<FP64ImmPtr>();
+  if (fp64_imm != nullptr) {
+    return std::make_shared<tensor::Tensor>(fp64_imm->value());
   }
 
   auto bool_imm = value->cast<BoolImmPtr>();
@@ -1780,11 +1783,11 @@ tensor::TensorPtr Common::CaculateGradNorm(const tensor::TensorPtr &grad) {
   if (grad->Dtype()->type_id() == kNumberTypeBool) {
     return grad;
   }
-  static constexpr const float norm_val = 2;
+  static constexpr const double norm_val = 2;
   kernel::pyboost::OpStatus status{false, false, 0,
                                    MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET)};
   kernel::pyboost::OpRunStatus::Get().set_run_info(std::move(status));
-  return kernel::pyboost::norm(grad, std::make_shared<FP32Imm>(norm_val), std::nullopt,
+  return kernel::pyboost::norm(grad, std::make_shared<FP64Imm>(norm_val), std::nullopt,
                                std::make_shared<BoolImm>(false), std::nullopt);
 }
 

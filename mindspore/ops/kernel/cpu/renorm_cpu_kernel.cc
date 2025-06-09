@@ -25,6 +25,7 @@
 #include "mindspore/ops/infer/renorm.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "include/common/thread_pool.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -49,6 +50,10 @@ bool RenormCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const s
   }
   kernel_func_ = func_list_[index].second;
 
+  axis_ = GetValue<int64_t>(primitive_->GetAttr("dim"));
+  p_ = GetValue<pyfloat>(primitive_->GetAttr("p"));
+  max_norm_ = GetValue<pyfloat>(primitive_->GetAttr("maxnorm"));
+
   return true;
 }
 
@@ -59,9 +64,6 @@ int RenormCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const 
     return ret;
   }
   x_shape_ = inputs[kIndex0]->GetShapeVector();
-  axis_ = GetValue<int64_t>(primitive_->GetAttr("dim"));
-  p_ = GetValue<float>(primitive_->GetAttr("p"));
-  max_norm_ = GetValue<float>(primitive_->GetAttr("maxnorm"));
   return 0;
 }
 

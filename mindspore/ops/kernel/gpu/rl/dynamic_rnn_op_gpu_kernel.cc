@@ -20,6 +20,7 @@
 #include <string>
 #include <algorithm>
 #include "abstract/utils.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 #include "common/common_utils.h"
 
 namespace mindspore {
@@ -57,7 +58,7 @@ bool DynamicRnnOpBaseMod::Init(const std::vector<KernelTensor *> &inputs, const 
   num_layers_ = static_cast<int>(GetValue<int64_t>(primitive_->GetAttr("num_layers")));
   has_bias_ = GetValue<bool>(primitive_->GetAttr("has_bias"));
   bidirectional_ = GetValue<bool>(primitive_->GetAttr("bidirectional"));
-  dropout_ = GetValue<float>(primitive_->GetAttr("dropout"));
+  dropout_ = GetValue<pyfloat>(primitive_->GetAttr("dropout"));
   is_train_ = GetValue<bool>(primitive_->GetAttr("is_train"));
   const auto &func_list = GetSupportFuncList();
   kernel_func_ = func_list[index].second;

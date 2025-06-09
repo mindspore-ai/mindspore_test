@@ -31,6 +31,7 @@
 #include "utils/ms_context.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
 #include "op_def/op_enum.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore::expander::bprop {
 namespace {
@@ -1337,7 +1338,7 @@ REG_BPROP_BUILDER("Scatter").FreeUselessValues_IO({i0, i3}, {}).SetBody(BODYFUNC
   auto reduce = ib->GetInput(kIndex4);
   auto dout = ib->GetInput(kIndex6);
   auto input_grad = input->need_compute_grad_out()
-                      ? ib->Emit("ScatterValue", {dout, dim, index, ib->EmitValue(MakeValue<float>(0)), reduce})
+                      ? ib->Emit("ScatterValue", {dout, dim, index, ib->EmitValue(MakeValue<pyfloat>(0)), reduce})
                       : ib->OutZeros(input);
   auto idx_shape = ib->GetShape(index);
   if (IsShapeNone(idx_shape) || !src->need_compute_grad_out()) {
@@ -1356,7 +1357,7 @@ REG_BPROP_BUILDER("InplaceScatterSrc").FreeUselessValues_IO({i0, i3}, {}).SetBod
   auto input_grad = input->need_compute_grad_out()
                       ? (IsShapeNone(ib->GetShape(dout))  // ScatterValue does not accepts empty input
                            ? dout
-                           : ib->Emit("ScatterValue", {dout, dim, index, ib->EmitValue(MakeValue<float>(0)),
+                           : ib->Emit("ScatterValue", {dout, dim, index, ib->EmitValue(MakeValue<pyfloat>(0)),
                                                        ib->EmitValue(MakeValue<int64_t>(0))}))
                       : ib->OutZeros(input);
   auto src_grad = src->need_compute_grad_out() && !IsShapeNone(ib->GetShape(index)) ? ib->GatherD(dout, dim, index)
@@ -1374,7 +1375,7 @@ REG_BPROP_BUILDER("ScatterValue").FreeUselessValues_IO({i0, i3}, {}).SetBody(BOD
   auto src = ib->GetInput(kIndex3);
   auto reduce = ib->GetInput(kIndex4);
   auto dout = ib->GetInput(kIndex6);
-  auto input_grad = ib->Emit("ScatterValue", {dout, dim, index, ib->EmitValue(MakeValue<float>(0)), reduce});
+  auto input_grad = ib->Emit("ScatterValue", {dout, dim, index, ib->EmitValue(MakeValue<pyfloat>(0)), reduce});
   return {input_grad, ib->OutZeros(dim), ib->OutZeros(index), ib->OutZeros(src), ib->OutZeros(reduce)};
 });
 
@@ -1387,7 +1388,7 @@ REG_BPROP_BUILDER("InplaceScatterValue").FreeUselessValues_IO({i0}, {}).SetBody(
   auto input_grad = input->need_compute_grad_out()
                       ? (IsShapeNone(ib->GetShape(dout))  // ScatterValue does not accepts empty input
                            ? dout
-                           : ib->Emit("ScatterValue", {dout, dim, index, ib->EmitValue(MakeValue<float>(0)),
+                           : ib->Emit("ScatterValue", {dout, dim, index, ib->EmitValue(MakeValue<pyfloat>(0)),
                                                        ib->EmitValue(MakeValue<int64_t>(0))}))
                       : ib->OutZeros(input);
   return {input_grad, ib->OutZeros(dim), ib->OutZeros(index), ib->OutZeros(value)};
@@ -1869,7 +1870,7 @@ REG_BPROP_BUILDER("InplaceMaskedFillScalar").SetUnusedInputs({i0, i2, i3}).SetBo
   auto mask = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex4);
   auto dout_clone = ib->Emit("Clone", {dout});
-  auto input_grad = ib->Emit("InplaceMaskedFillScalar", {dout_clone, mask, ib->Value<float>(0)});
+  auto input_grad = ib->Emit("InplaceMaskedFillScalar", {dout_clone, mask, ib->Value<pyfloat>(0)});
   return {input_grad, ib->OutZeros(ib->GetInput(kIndex1)), ib->OutZeros(ib->GetInput(kIndex2))};
 });
 
@@ -1882,7 +1883,7 @@ REG_BPROP_BUILDER("InplaceMaskedFillTensor").SetUnusedInputs({i0, i2, i3}).SetBo
   NodePtr value_grad = nullptr;
   if (input->need_compute_grad_out()) {
     auto dout_clone = ib->Emit("Clone", {dout});
-    input_grad = ib->Emit("InplaceMaskedFillScalar", {dout_clone, mask, ib->Value<float>(0)});
+    input_grad = ib->Emit("InplaceMaskedFillScalar", {dout_clone, mask, ib->Value<pyfloat>(0)});
   } else {
     input_grad = ib->OutZeros(input);
   }
@@ -3681,7 +3682,7 @@ REG_BPROP_BUILDER("InplaceFillDiagonal").SetUnusedInputs({i0, i1, i2, i3}).SetBo
   auto fill_value = ib->GetInput(kIndex1);
   auto wrap = ib->GetInput(kIndex2);
   auto dout = ib->GetInput(kIndex4);
-  auto grad = ib->Emit("InplaceFillDiagonal", {dout, ib->Value<float>(0), ib->Value<bool>(false)});
+  auto grad = ib->Emit("InplaceFillDiagonal", {dout, ib->Value<pyfloat>(0), ib->Value<bool>(false)});
   return {grad, ib->OutZeros(fill_value), ib->OutZeros(wrap)};
 });
 REG_BPROP_BUILDERS_END

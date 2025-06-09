@@ -21,6 +21,7 @@
 #include "common/common_utils.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "kernel/cpu/eigen/eigen_common_utils.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -202,8 +203,8 @@ bool InstanceNormV2CpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
 
   in_type_ = inputs[kIndex0]->dtype_id();
   is_training_ = GetValue<bool>(primitive_->GetAttr(kAttrIsTraining));
-  momentum_ = GetValue<float>(primitive_->GetAttr(kAttrMomentum));
-  epsilon_ = GetValue<float>(primitive_->GetAttr(kAttrEpsilon));
+  momentum_ = GetValue<pyfloat>(primitive_->GetAttr(kAttrMomentum));
+  epsilon_ = GetValue<pyfloat>(primitive_->GetAttr(kAttrEpsilon));
   if (momentum_ > momentum_max || momentum_ < momentum_min) {
     MS_EXCEPTION(ValueError) << "For '" << kernel_name_
                              << "momentum value should be in [0, 1], but get momentum = " << momentum_ << ".";

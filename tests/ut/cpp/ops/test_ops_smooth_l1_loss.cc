@@ -15,6 +15,7 @@
  */
 
 #include "ops/utils/general_infer_utils.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore::ops {
 namespace {
@@ -23,40 +24,40 @@ std::vector<GeneralInferParam> prepare_params() {
   generator
     .FeedInputArgs({InferInfoParam{ShapeVector{2, 3}, kNumberTypeFloat32},
                     InferInfoParam{ShapeVector{2, 3}, kNumberTypeFloat32},
-                    InferInfoParam{ShapeVector{}, kNumberTypeFloat32, CreateScalar<float>(1.2)},
+                    InferInfoParam{ShapeVector{}, kNumberTypePyFloat, CreateScalar<pyfloat>(1.2)},
                     // REDUCTION_SUM
                     InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)}})
     .FeedExpectedOutput({{}}, {kNumberTypeFloat32});
   generator
     .FeedInputArgs({InferInfoParam{ShapeVector{2, 3, 4}, kNumberTypeFloat16},
                     InferInfoParam{ShapeVector{2, 3, 4}, kNumberTypeFloat16},
-                    InferInfoParam{ShapeVector{}, kNumberTypeFloat32, CreateScalar<float>(2.3)},
+                    InferInfoParam{ShapeVector{}, kNumberTypePyFloat, CreateScalar<pyfloat>(2.3)},
                     // MEAN
                     InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(1)}})
     .FeedExpectedOutput({{}}, {kNumberTypeFloat16});
   generator
     .FeedInputArgs({InferInfoParam{ShapeVector{2, 3, 4}, kNumberTypeBFloat16},
                     InferInfoParam{ShapeVector{2, 3, 4}, kNumberTypeBFloat16},
-                    InferInfoParam{ShapeVector{}, kNumberTypeFloat32, CreateScalar<float>(2.3)},
+                    InferInfoParam{ShapeVector{}, kNumberTypePyFloat, CreateScalar<pyfloat>(2.3)},
                     // NONE
                     InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(2)}})
     .FeedExpectedOutput({{2, 3, 4}}, {kNumberTypeBFloat16});
   generator
     .FeedInputArgs({InferInfoParam{ShapeVector{2, -1}, kNumberTypeFloat32},
                     InferInfoParam{ShapeVector{2, -1}, kNumberTypeFloat32},
-                    InferInfoParam{ShapeVector{}, kNumberTypeFloat32, CreateScalar<float>(1.2)},
+                    InferInfoParam{ShapeVector{}, kNumberTypePyFloat, CreateScalar<pyfloat>(1.2)},
                     InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(2)}})
     .FeedExpectedOutput({{2, -1}}, {kNumberTypeFloat32});
   generator
     .FeedInputArgs({InferInfoParam{ShapeVector{-1, -1}, kNumberTypeFloat32},
                     InferInfoParam{ShapeVector{-1, -1}, kNumberTypeFloat32},
-                    InferInfoParam{ShapeVector{}, kNumberTypeFloat32, CreateScalar<float>(1.2)},
+                    InferInfoParam{ShapeVector{}, kNumberTypePyFloat, CreateScalar<pyfloat>(1.2)},
                     InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(2)}})
     .FeedExpectedOutput({{-1, -1}}, {kNumberTypeFloat32});
   generator
     .FeedInputArgs({InferInfoParam{ShapeVector{-2}, kNumberTypeFloat32},
                     InferInfoParam{ShapeVector{-2}, kNumberTypeFloat32},
-                    InferInfoParam{ShapeVector{}, kNumberTypeFloat32, CreateScalar<float>(1.2)},
+                    InferInfoParam{ShapeVector{}, kNumberTypePyFloat, CreateScalar<pyfloat>(1.2)},
                     InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(2)}})
     .FeedExpectedOutput({{-2}}, {kNumberTypeFloat32});
   return generator.Generate();

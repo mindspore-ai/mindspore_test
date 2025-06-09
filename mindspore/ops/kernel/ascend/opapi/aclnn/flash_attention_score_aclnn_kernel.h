@@ -22,6 +22,7 @@
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
 #include "kernel/ascend/acl_ir/acl_convert.h"
 #include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 using mindspore::device::ascend::FASInputLayoutMode;
@@ -77,10 +78,10 @@ class FlashAttentionScoreAscend : public AclnnKernelMod {
     auto head_num_value = head_num->GetValueWithCheck<int64_t>();
     auto keep_prob = inputs[kIndex11];
     MS_EXCEPTION_IF_NULL(keep_prob);
-    auto keep_prob_value = static_cast<double>(keep_prob->GetValueWithCheck<float>());
+    auto keep_prob_value = static_cast<double>(keep_prob->GetValueWithCheck<pyfloat>());
     auto scale_value = inputs[kIndex12];
     MS_EXCEPTION_IF_NULL(scale_value);
-    auto scale_value_value = static_cast<double>(scale_value->GetValueWithCheck<float>());
+    auto scale_value_value = static_cast<double>(scale_value->GetValueWithCheck<pyfloat>());
     auto pre_tokens = inputs[kIndex13];
     MS_EXCEPTION_IF_NULL(pre_tokens);
     auto pre_tokens_value = pre_tokens->GetValueWithCheck<int64_t>();

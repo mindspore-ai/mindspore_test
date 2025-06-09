@@ -747,8 +747,8 @@ void FlashAttentionScoreInfo::CheckDynamicShape() {
 
 void FlashAttentionScoreInfo::InitFromInput() {
   head_num_ = GetInputValueFromCNode<int64_t>(cnode_, ops::kFlashAttentionScoreInputHeadNumIndex + 1);
-  keep_prob_ = GetInputValueFromCNode<float>(cnode_, ops::kFlashAttentionScoreInputKeepProbIndex + 1);
-  scale_value_ = GetInputValueFromCNode<float>(cnode_, ops::kFlashAttentionScoreInputScaleValueIndex + 1);
+  keep_prob_ = GetInputValueFromCNode<pyfloat>(cnode_, ops::kFlashAttentionScoreInputKeepProbIndex + 1);
+  scale_value_ = GetInputValueFromCNode<pyfloat>(cnode_, ops::kFlashAttentionScoreInputScaleValueIndex + 1);
   pre_tokens_ = GetInputValueFromCNodeWithDefaultValue<int64_t>(
     cnode_, ops::kFlashAttentionScoreInputPreTokensIndex + 1, kDefaultInt64Value);
   next_tokens_ = GetInputValueFromCNodeWithDefaultValue<int64_t>(

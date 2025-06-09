@@ -55,10 +55,12 @@ REG_ADPT_DESC(Fill, kFillOpName, ADPT_DESC(Fill))
 REG_ADPT_DESC(FillV1, kNameFillV1, ADPT_DESC(Fill))
 REG_ADPT_DESC(FillV2, kFillV2OpName, ADPT_DESC(Fill))
 
+std::vector<std::string> pad_v3_modes{"reduced", "complete", "r", "constant", "reflect", "edge", "circular"};
 // PadV3
 INPUT_MAP(PadV3) = {{1, INPUT_DESC(x)}, {2, INPUT_DESC(paddings)}, {3, INPUT_DESC(constant_values)}};
-ATTR_MAP(PadV3) = {{"mode", ATTR_DESC(mode, AnyTraits<std::string>())},
-                   {"paddings_contiguous", ATTR_DESC(paddings_contiguous, AnyTraits<bool>())}};
+INPUT_ATTR_MAP(PadV3) = {{4, ATTR_DESC(mode, AnyTraits<GEEnumToStr>(), pad_v3_modes)},
+                         {5, ATTR_DESC(paddings_contiguous, AnyTraits<bool>())}};
+ATTR_MAP(PadV3) = EMPTY_ATTR_MAP;
 OUTPUT_MAP(PadV3) = {{0, OUTPUT_DESC(y)}};
 REG_ADPT_DESC(PadV3, kNamePadV3, ADPT_DESC(PadV3))
 
@@ -70,8 +72,9 @@ REG_ADPT_DESC(PadV2, kNamePadV2, ADPT_DESC(PadV2))
 
 // PadV3Grad
 INPUT_MAP(PadV3Grad) = {{1, INPUT_DESC(x)}, {2, INPUT_DESC(paddings)}};
-ATTR_MAP(PadV3Grad) = {{"mode", ATTR_DESC(mode, AnyTraits<std::string>())},
-                       {"paddings_contiguous", ATTR_DESC(paddings_contiguous, AnyTraits<bool>())}};
+INPUT_ATTR_MAP(PadV3Grad) = {{3, ATTR_DESC(mode, AnyTraits<GEEnumToStr>(), pad_v3_modes)},
+                             {4, ATTR_DESC(paddings_contiguous, AnyTraits<bool>())}};
+ATTR_MAP(PadV3Grad) = EMPTY_ATTR_MAP;
 OUTPUT_MAP(PadV3Grad) = {{0, OUTPUT_DESC(y)}};
 REG_ADPT_DESC(PadV3Grad, kNamePadV3Grad, ADPT_DESC(PadV3Grad));
 }  // namespace mindspore::device::ascend

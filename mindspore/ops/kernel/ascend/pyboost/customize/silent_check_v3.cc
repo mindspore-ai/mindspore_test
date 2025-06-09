@@ -36,9 +36,9 @@ std::vector<tensor::TensorPtr> SilentCheckV3AscendCustomize(const std::shared_pt
   MS_LOG(INFO) << op->primitive()->name() << "Call start";
   OpRunner::InferOpOutput(op, val, max, avg, input_grad, step, c_thresh_l1, c_thresh_l2, beta1, npu_asd_detect);
 
-  auto c_thresh_l1_value = GetValue<pyfloat>(c_thresh_l1);
-  auto c_thresh_l2_value = GetValue<pyfloat>(c_thresh_l2);
-  auto beta1_value = GetValue<pyfloat>(beta1);
+  float c_thresh_l1_value = GetValue<pyfloat>(c_thresh_l1);
+  float c_thresh_l2_value = GetValue<pyfloat>(c_thresh_l2);
+  float beta1_value = GetValue<pyfloat>(beta1);
   auto npu_asd_detect_value = GetValue<int64_t>(npu_asd_detect);
 
   op->set_outputs(std::vector<tensor::TensorPtr>{avg, input_grad, step, op->output(kIndex3)});

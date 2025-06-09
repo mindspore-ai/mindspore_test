@@ -25,6 +25,7 @@
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "infer/sgd.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -74,8 +75,8 @@ class SGDGpuKernelMod : public NativeGpuKernelMod {
       return false;
     }
 
-    dampening_ = GetValue<float>(primitive_->GetAttr(ops::kDampening));
-    weight_decay_ = GetValue<float>(primitive_->GetAttr(ops::kWeightDecay));
+    dampening_ = GetValue<pyfloat>(primitive_->GetAttr(ops::kDampening));
+    weight_decay_ = GetValue<pyfloat>(primitive_->GetAttr(ops::kWeightDecay));
     nesterov_ = GetValue<bool>(primitive_->GetAttr(ops::kNesterov));
     return true;
   }

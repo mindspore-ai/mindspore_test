@@ -30,6 +30,7 @@
 #include "mindspore/ops/op_def/other_op_name.h"
 #include "backend/common/pass/common/get_value_helper.h"
 #include "utils/trace_base.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
@@ -112,11 +113,11 @@ AnfNodePtr BnSplit::CreateOutputsOfBNTrainingUpdate(const FuncGraphPtr &graph, c
   bn_training_update->set_abstract(bn_cnode->abstract());
   bn_training_update->set_scope(bn_cnode->scope());
 
-  auto factor = GetNodeScalarValue<float>(bn_cnode->input(kIdxMomentum));
-  common::AnfAlgo::SetNodeAttr(kAttrFactor, MakeValue<float>(factor), bn_training_update);
+  auto factor = GetNodeScalarValue<pyfloat>(bn_cnode->input(kIdxMomentum));
+  common::AnfAlgo::SetNodeAttr(kAttrFactor, MakeValue<pyfloat>(factor), bn_training_update);
 
-  auto epsilon = GetNodeScalarValue<float>(bn_cnode->input(kIdxEpsilon));
-  common::AnfAlgo::SetNodeAttr(kAttrEpsilon, MakeValue(epsilon), bn_training_update);
+  auto epsilon = GetNodeScalarValue<pyfloat>(bn_cnode->input(kIdxEpsilon));
+  common::AnfAlgo::SetNodeAttr(kAttrEpsilon, MakeValue<pyfloat>(epsilon), bn_training_update);
 
   auto format = GetNodeFormatValue(bn_cnode->input(kIdxFormat));
   common::AnfAlgo::SetNodeAttr(kAttrFormat, MakeValue(format), bn_training_update);

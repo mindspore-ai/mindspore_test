@@ -29,12 +29,12 @@ namespace kernel {
 namespace pyboost {
 tensor::TensorPtr SmoothL1LossGradAscendCustomize(const std::shared_ptr<OpRunner> &op,
                                                   const TensorPtr &prediction_tensor, const TensorPtr &target_tensor,
-                                                  const TensorPtr &dout_tensor, const FP32ImmPtr &beta,
+                                                  const TensorPtr &dout_tensor, const FP64ImmPtr &beta,
                                                   const Int64ImmPtr &reduction) {
   MS_LOG(DEBUG) << "SmoothL1LossGrad call start";
   OpRunner::InferOpOutput(op, prediction_tensor, target_tensor, dout_tensor, beta, reduction);
   // Convert ValuePtr to c++ scalar
-  auto beta_imm = GetValue<float>(beta);
+  auto beta_imm = static_cast<float>(beta->value());
   auto reduction_imm = static_cast<Reduction>(GetValue<int64_t>(reduction));
   // transform reduction enum value to corresponding value
   auto reduction_value = ops::ConvertReductionForAclnn(reduction_imm);

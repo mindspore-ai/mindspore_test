@@ -19,18 +19,15 @@
 
 #include <vector>
 #include <set>
-#include "mindspore/ops/op_def/op_name.h"
 #include "ops/ops_func_impl/op_func_impl.h"
 
 namespace mindspore::ops {
 class OPS_API ArangeFuncImpl : public OpFuncImpl {
  public:
-  BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
-  TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
-  std::set<int64_t> GetValueDependArgIndices() const override { return {kInputIndex0, kInputIndex1, kInputIndex2}; };
-  // simple infer
-  ShapeArray InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const override;
-  TypePtrList InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const override;
+  ShapeArray InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+  TypeIdList InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+  bool GeneralInferRegistered() const override { return true; }
+  std::set<int64_t> GetValueDependArgIndices() const override { return {0, 1, 2}; };
 };
 }  // namespace mindspore::ops
 

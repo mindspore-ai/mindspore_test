@@ -67,7 +67,7 @@ int UpsampleNearest3DGradGpuKernelMod::Resize(const std::vector<KernelTensor *> 
   auto type = inputs[kIndex2]->GetType();
   MS_EXCEPTION_IF_NULL(type);
   auto output_size_none = type->isa<TypeNone>();
-  auto scales_opt = inputs[kIndex3]->GetOptionalValueWithCheck<std::vector<float>>();
+  auto scales_opt = inputs[kIndex3]->GetOptionalValueWithCheck<std::vector<pyfloat>>();
   bool scales_none = !scales_opt.has_value();
   if (output_size_none == scales_none) {
     MS_LOG(ERROR) << "For '" << kernel_name_ << "', only one of output_size or scales should be specified.";
@@ -75,10 +75,10 @@ int UpsampleNearest3DGradGpuKernelMod::Resize(const std::vector<KernelTensor *> 
   }
 
   if (!output_size_none) {
-    scales_ = std::vector<float>(kIndex3, kValueZero);
+    scales_ = std::vector<pyfloat>(kIndex3, kValueZero);
   } else {
     scales_ = scales_opt.value();
-    scales_.insert(scales_.end(), kIndex3 - scales_.size(), 1.f);
+    scales_.insert(scales_.end(), kIndex3 - scales_.size(), 1.);
   }
   return KRET_OK;
 }
@@ -107,7 +107,7 @@ bool UpsampleNearest3DGradGpuKernelMod::LaunchKernel(const std::vector<KernelTen
                    .AddInputAttr(M_S)                                          \
                    .AddInputAttr(kObjectTypeTuple, kNumberTypeInt64)           \
                    .AddOptionalInputAttr(kObjectTypeTuple, kNumberTypeInt64)   \
-                   .AddOptionalInputAttr(kObjectTypeTuple, kNumberTypeFloat32) \
+                   .AddOptionalInputAttr(kObjectTypeTuple, kNumberTypePyFloat) \
                    .AddOutputAttr(M_S),                                        \
                  &UpsampleNearest3DGradGpuKernelMod::LaunchKernel<T>)
 

@@ -1,0 +1,28 @@
+#operator apply_adagrad
+apply_adagrad:
+    args:
+        var:
+            dtype: tensor
+        accum:
+            dtype: tensor
+        lr:
+            dtype: tensor
+            type_cast: number
+        grad:
+            dtype: tensor
+        update_slots:
+            dtype: bool
+            default: True
+            prim_init: True
+    returns:
+        var:
+            dtype: tensor
+        accum:
+            dtype: tensor
+    args_signature:
+        rw_write: var, accum
+        dtype_group: (var, accum, grad), (lr)
+    labels:
+        side_effect_mem: True
+    function:
+        disable: True

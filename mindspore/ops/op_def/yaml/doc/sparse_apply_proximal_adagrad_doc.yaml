@@ -1,0 +1,81 @@
+sparse_apply_proximal_adagrad:
+    description: |
+        Updates relevant entries according to the proximal adagrad algorithm.
+        Compared with :class:`mindspore.ops.ApplyProximalAdagrad`,
+        an additional index tensor is input.
+
+        .. math::
+            \begin{array}{ll} \\
+                accum += grad * grad \\
+                \text{prox_v} = var - lr * grad * \frac{1}{\sqrt{accum}} \\
+                var = \frac{sign(\text{prox_v})}{1 + lr * l2} * \max(\left| \text{prox_v} \right| - lr * l1, 0)
+            \end{array}
+
+        Inputs of `var`, `accum` and `grad` comply with the implicit type conversion rules
+        to make the data types consistent.
+        If they have different data types, the lower priority data type will be converted to
+        the relatively highest priority data type.
+
+        Args:
+            use_locking (bool): If ``True`` , the `var` and `accum` tensors will be protected from being updated.
+                Default: ``False`` .
+
+        Inputs:
+            - **var** (Union[Parameter, Tensor]) - Variable tensor to be updated. The data type must be float16 or float32.
+              The shape is :math:`(N, *)` where :math:`*` means, any number of additional dimensions.
+            - **accum** (Parameterv) - Variable tensor to be updated, has the same shape as `var`.
+            - **lr** (Union[Number, Tensor]) - The learning rate value, must be a float number or
+              a scalar tensor with float16 or float32 data type. It must be positive.
+            - **l1** (Union[Number, Tensor]) - l1 regularization strength, must be a float number or
+              a scalar tensor with float16 or float32 data type. It must be non-negative.
+            - **l2** (Union[Number, Tensor]) - l2 regularization strength, must be a float number or
+              a scalar tensor with float16 or float32 data type. It must be non-negative.
+            - **grad** (Tensor) - A tensor must meet with
+              :math:`grad.shape[1:] = var.shape[1:]` if var.shape > 1.
+            - **indices** (Tensor) - A tensor of indices in the first dimension of `var` and `accum`.
+              If there are duplicates in `indices`, the behavior is undefined. Must be one of the
+              following types: int32, int64 and :math:`indices.shape[0] = grad.shape[0]`.
+
+        Outputs:
+            Tuple of 2 tensors, the updated parameters or tensors.
+
+            - **var** (Tensor) - The same shape and data type as `var`.
+            - **accum** (Tensor) - The same shape and data type as `accum`.
+
+        Raises:
+            TypeError: If `use_locking` is not a bool.
+            TypeError: If dtype of `var`, `accum`, `lr`, `l1`, `l2` or `grad` is neither float16 nor float32.
+            TypeError: If dtype of `indices` is neither int32 nor int64.
+            ValueError: If `lr` <= 0 or `l1` < 0 or `l2` < 0.
+            RuntimeError: If the data type of `var`, `accum` and `grad` conversion of Parameter is not supported.
+
+        Supported Platforms:
+            ``Ascend`` ``GPU``
+
+        Examples:
+            >>> import numpy as np
+            >>> from mindspore import Tensor, nn, ops, Parameter
+            >>> class Net(nn.Cell):
+            ...     def __init__(self):
+            ...         super(Net, self).__init__()
+            ...         self.sparse_apply_proximal_adagrad = ops.SparseApplyProximalAdagrad()
+            ...         self.var = Parameter(Tensor(np.array([[4.1, 7.2], [1.1, 3.0]], np.float32)), name="var")
+            ...         self.accum = Parameter(Tensor(np.array([[0, 0], [0, 0]], np.float32)), name="accum")
+            ...         self.lr = 1.0
+            ...         self.l1 = 1.0
+            ...         self.l2 = 0.0
+            ...     def construct(self, grad, indices):
+            ...         out = self.sparse_apply_proximal_adagrad(self.var, self.accum, self.lr, self.l1,
+            ...                                                  self.l2, grad, indices)
+            ...         return out
+            ...
+            >>> net = Net()
+            >>> grad = Tensor(np.array([[1, 1], [1, 1]], np.float32))
+            >>> indices = Tensor(np.array([0, 1], np.int32))
+            >>> output = net(grad, indices)
+            >>> print(output)
+            (Tensor(shape=[2, 2], dtype=Float32, value=
+            [[ 2.09999990e+00,  5.19999981e+00],
+            [ 0.00000000e+00,  1.00000000e+00]]), Tensor(shape=[2, 2], dtype=Float32, value=
+            [[ 1.00000000e+00,  1.00000000e+00],
+            [ 1.00000000e+00,  1.00000000e+00]]))

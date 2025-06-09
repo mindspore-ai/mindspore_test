@@ -29,6 +29,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace opt {
@@ -92,7 +93,7 @@ const AnfNodePtr BiasDropoutAddFusion::Process(const FuncGraphPtr &graph, const 
     return nullptr;
   }
   auto seed0_v = GetScalarValue<int64_t>(seed0->cast<ValueNodePtr>()->value());
-  auto prob_v = GetScalarValue<float>(prob->cast<ValueNodePtr>()->value());
+  auto prob_v = GetScalarValue<pyfloat>(prob->cast<ValueNodePtr>()->value());
   auto seed1_v = GetScalarValue<int64_t>(seed1->cast<ValueNodePtr>()->value());
   if (!prob_v.has_value() || !seed0_v.has_value() || !seed1_v.has_value()) {
     return nullptr;

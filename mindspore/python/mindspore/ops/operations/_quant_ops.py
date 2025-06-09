@@ -141,7 +141,7 @@ class MinMaxUpdatePerLayer(PrimitiveWithInfer):
 
     Args:
         ema (bool): Uses EMA algorithm update value min and max. Default: ``False``.
-        ema_decay (int) : EMA algorithm decay parameter. Default: 0.999.
+        ema_decay (float) : EMA algorithm decay parameter. Default: 0.999.
 
     Inputs:
         - **x** (Tensor) : float32 Tensor representing the shape of the output tensor.

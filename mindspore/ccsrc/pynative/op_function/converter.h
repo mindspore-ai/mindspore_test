@@ -230,8 +230,8 @@ class PYNATIVE_EXPORT Converter {
   ValueTuplePtr ToBoolList(const py::list &python_args, size_t i);
   template <typename T>
   std::optional<ValueTuplePtr> ToBoolListOptional(const py::list &python_args, size_t i);
-  FP32ImmPtr ToFloat(const py::list &python_args, size_t i);
-  std::optional<FP32ImmPtr> ToFloatOptional(const py::list &python_args, size_t i);
+  FP64ImmPtr ToFloat(const py::list &python_args, size_t i);
+  std::optional<FP64ImmPtr> ToFloatOptional(const py::list &python_args, size_t i);
   template <typename T>
   ValueTuplePtr ToFloatList(const py::list &python_args, size_t i);
   template <typename T>

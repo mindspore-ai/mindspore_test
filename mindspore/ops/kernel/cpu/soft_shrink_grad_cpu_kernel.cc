@@ -16,6 +16,7 @@
 
 #include "kernel/cpu/soft_shrink_grad_cpu_kernel.h"
 #include "kernel/cpu/nnacl/fp32_grad/activation_grad_fp32.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -24,7 +25,7 @@ namespace soft_shrink_grad_cpu {
   KernelAttr()                                           \
     .AddInputAttr(DT)                                    \
     .AddInputAttr(DT)                                    \
-    .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32) \
+    .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat) \
     .AddOutputAttr(DT),                                  \
     &SoftShrinkGradCpuKernelMod::LaunchKernel<T>
 
@@ -42,7 +43,7 @@ bool SoftShrinkGradCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTe
       auto src0_tmp = src0 + start;
       auto src1_tmp = src1 + start;
       auto out_tmp = out + start;
-      (void)SoftShrinkGrad(src0_tmp, src1_tmp, (end - start), out_tmp, lambd);
+      (void)SoftShrinkGrad(src0_tmp, src1_tmp, (end - start), out_tmp, lambd_);
     };
     ParallelLaunchAutoSearch(task, size_, this, &parallel_search_info_);
     return true;
@@ -52,7 +53,7 @@ bool SoftShrinkGradCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTe
   T *dy_addr = reinterpret_cast<T *>(inputs.at(kIndex0)->device_ptr());
   T *x_addr = reinterpret_cast<T *>(inputs.at(kIndex1)->device_ptr());
   T *dx_addr = reinterpret_cast<T *>(outputs.at(kIndex0)->device_ptr());
-  T lambd_value = static_cast<T>(lambd);
+  T lambd_value = static_cast<T>(lambd_);
   auto task = [dy_addr, x_addr, dx_addr, lambd_value](size_t start, size_t end) {
     for (size_t i = start; i < end; i++) {
       dx_addr[i] = (x_addr[i] >= -lambd_value && x_addr[i] <= lambd_value) ? 0 : dy_addr[i];
@@ -85,7 +86,7 @@ int SoftShrinkGradCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs
 
   auto in_shape = inputs[kIndex0]->GetShapeVector();
   size_ = std::accumulate(in_shape.begin(), in_shape.end(), size_t(1), std::multiplies<size_t>());
-  lambd = inputs[kIndex2]->GetValueWithCheck<float>();
+  lambd_ = inputs[kIndex2]->GetValueWithCheck<pyfloat>();
   return KRET_OK;
 }
 

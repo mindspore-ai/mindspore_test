@@ -64,9 +64,9 @@ tensor::TensorPtr IncreFlashAttentionAscendCustomize(
   const std::optional<TensorPtr> &dequant_scale2_tensor, const std::optional<TensorPtr> &quant_scale2_tensor,
   const std::optional<TensorPtr> &quant_offset2_tensor, const std::optional<TensorPtr> &antiquant_scale_tensor,
   const std::optional<TensorPtr> &antiquant_offset_tensor, const std::optional<TensorPtr> &block_table_tensor,
-  const std::optional<TensorPtr> &kv_padding_size_tensor, const Int64ImmPtr &num_heads, const Int64ImmPtr &input_layout,
-  const FP32ImmPtr &scale_value, const Int64ImmPtr &num_key_value_heads, const Int64ImmPtr &block_size,
-  const Int64ImmPtr &inner_precise) {
+  const std::optional<TensorPtr> &kv_padding_size_tensor, const Int64ImmPtr &num_heads,
+  const Int64ImmPtr &input_layout, const FP64ImmPtr &scale_value, const Int64ImmPtr &num_key_value_heads,
+  const Int64ImmPtr &block_size, const Int64ImmPtr &inner_precise) {
   OpRunner::InferOpOutput(op, query_tensor, key_tensor_list, value_tensor_list, attn_mask_tensor,
                           actual_seq_lengths_tensor, pse_shift_tensor, dequant_scale1_tensor, quant_scale1_tensor,
                           dequant_scale2_tensor, quant_scale2_tensor, quant_offset2_tensor, antiquant_scale_tensor,
@@ -83,8 +83,7 @@ tensor::TensorPtr IncreFlashAttentionAscendCustomize(
   auto num_heads_imm = GetValue<int64_t>(num_heads);
   auto input_layout_imm = GetValue<int64_t>(input_layout);
   auto input_layout_str = device::ascend::FASInputLayoutMode::ConvertEnumToString(input_layout_imm);
-  auto scale_value_imm = GetValue<float>(scale_value);
-  double scale_value_imm_d = static_cast<double>(scale_value_imm);
+  double scale_value_imm_d = static_cast<double>(scale_value->value());
   auto num_key_value_heads_imm = GetValue<int64_t>(num_key_value_heads);
   auto block_size_imm = GetValue<int64_t>(block_size);
   auto inner_precise_imm = GetValue<int64_t>(inner_precise);

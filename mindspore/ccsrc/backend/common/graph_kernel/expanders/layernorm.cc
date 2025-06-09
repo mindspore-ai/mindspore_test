@@ -17,6 +17,7 @@
 #include <memory>
 #include <vector>
 #include "backend/common/graph_kernel/expanders/op_desc_registry.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore::graphkernel::expanders {
 class LayerNorm : public OpDesc {
@@ -36,7 +37,7 @@ class LayerNorm : public OpDesc {
     const auto &input_x = inputs[0];
     const auto &input_gamma = inputs[1];
     const auto &input_beta = inputs[2];
-    const auto epsilon = GetValue<float>(attrs_["epsilon"]);
+    const auto epsilon = GetValue<pyfloat>(attrs_["epsilon"]);
 
     auto x = input_x;
     auto gamma = input_gamma;

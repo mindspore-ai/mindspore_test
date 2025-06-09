@@ -26,6 +26,7 @@
 #include "frontend/parallel/auto_parallel/operator_costmodel.h"
 #include "frontend/parallel/ops_info/operator_info.h"
 #include "frontend/parallel/strategy.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace parallel {
@@ -51,8 +52,8 @@ class BatchNormInfo : public OperatorInfo {
 
  private:
   bool is_training_ = false;
-  float epsilon_ = 0.00001;
-  float momentum_ = 0.1;
+  pyfloat epsilon_ = 0.00001;
+  pyfloat momentum_ = 0.1;
   bool input_is_4d_ = true;
   int64_t group_size_ = -1;  // config the allreduce group size for SyncBatchnorm, it only support that sharding n dim
   std::string format_;

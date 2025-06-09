@@ -1,0 +1,28 @@
+#operator pad_v3
+pad_v3:
+    args:
+        x:
+            dtype: tensor
+        paddings:
+            dtype: tensor
+            type_cast: tuple[int], list[int]
+        constant_value:
+            dtype: tensor
+            default: None
+            type_cast: number
+        mode:
+            dtype: int
+            default: "'constant'"
+            prim_init: True
+            arg_handler: str_to_enum
+        paddings_contiguous:
+            dtype: bool
+            default: True
+            prim_init: True
+    returns:
+        output:
+            dtype: tensor
+    class:
+        name: PadV3
+    function:
+        disable: True

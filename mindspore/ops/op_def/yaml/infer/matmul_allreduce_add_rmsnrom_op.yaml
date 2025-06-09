@@ -37,3 +37,5 @@ matmul_allreduce_add_rmsnorm:
   dispatch:
     enable: True
     Ascend: MatmulAllReduceAddRmsNormAscend
+    CPU: None
+    GPU: None

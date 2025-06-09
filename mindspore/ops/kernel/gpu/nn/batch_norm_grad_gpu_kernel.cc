@@ -22,6 +22,7 @@
 #include "mindspore/ops/op_def/nn_op_name.h"
 #include "mindspore/ops/op_def/op_name.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/elementwise/eltwise_ops_impl.cuh"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -78,7 +79,7 @@ int BatchNormGradGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
   }
 
   is_train_ = inputs[attrs_pos0_]->GetValueWithCheck<bool>();
-  epsilon_ = inputs[attrs_pos0_ + kIndex1]->GetValueWithCheck<float>();
+  epsilon_ = inputs[attrs_pos0_ + kIndex1]->GetValueWithCheck<pyfloat>();
   format_ = static_cast<mindspore::Format>(inputs[attrs_pos0_ + kIndex2]->GetValueWithCheck<int64_t>());
 
   auto x_shape = inputs[kIndex0]->GetDeviceShapeVector();
@@ -273,7 +274,7 @@ void BatchNormGradGpuKernelMod::SetTensorDescriptor(const Format &format, const 
     .AddInputAttr(kNumberTypeFloat32)                    \
     .AddInputAttr(kNumberTypeFloat32)                    \
     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)    \
-    .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32) \
+    .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat) \
     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)   \
     .AddOutputAttr(MS)                                   \
     .AddOutputAttr(kNumberTypeFloat32)                   \
@@ -291,7 +292,7 @@ void BatchNormGradGpuKernelMod::SetTensorDescriptor(const Format &format, const 
     .AddInputAttr(kNumberTypeFloat32)                    \
     .AddInputAttr(MS)                                    \
     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)    \
-    .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32) \
+    .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat) \
     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)   \
     .AddOutputAttr(MS)                                   \
     .AddOutputAttr(kNumberTypeFloat32)                   \
@@ -309,7 +310,7 @@ void BatchNormGradGpuKernelMod::SetTensorDescriptor(const Format &format, const 
     .AddInputAttr(kNumberTypeFloat32)                         \
     .AddInputAttr(MS)                                         \
     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)         \
-    .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)      \
+    .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)      \
     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)        \
     .AddOutputAttr(MS)                                        \
     .AddOutputAttr(kNumberTypeFloat32)                        \

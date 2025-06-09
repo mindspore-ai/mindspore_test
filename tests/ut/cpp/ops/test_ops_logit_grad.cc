@@ -27,7 +27,7 @@ OP_FUNC_IMPL_TEST_DECLARE(LogitGrad, MultiInputOpParams);
 OP_FUNC_IMPL_TEST_CASES(
   LogitGrad,
   testing::Values(
-    MultiInputOpParams{{{2, 3}, {2, 3}}, {kFloat32, kFloat32}, {{2, 3}}, {kFloat32}, {CreateScalar<float>(-1.0)}},
+    MultiInputOpParams{{{2, 3}, {2, 3}}, {kFloat32, kFloat32}, {{2, 3}}, {kFloat32}, {CreateScalar<double>(-1.0)}},
     MultiInputOpParams{{{2, -1}, {2, 3}}, {kFloat32, kFloat32}, {{2, 3}}, {kFloat32}, {CreateScalar(kValueAny)}},
     MultiInputOpParams{{{2, 3}, {2, -1}}, {kFloat32, kFloat32}, {{2, 3}}, {kFloat32}, {CreateScalar(kValueAny)}},
     MultiInputOpParams{{{2, -1}, {-1, -1}}, {kFloat32, kFloat32}, {{2, -1}}, {kFloat32}, {CreateScalar(kValueAny)}},

@@ -20,6 +20,7 @@
 #include <random>
 #include "mindspore/ops/infer/cauchy.h"
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -30,8 +31,8 @@ constexpr size_t kCauchyOutputNum = 1;
 
 bool CauchyCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kCauchyOutputNum, kernel_name_);
-  sigma_ = GetValue<float>(primitive_->GetAttr("sigma"));
-  median_ = GetValue<float>(primitive_->GetAttr("median"));
+  sigma_ = GetValue<pyfloat>(primitive_->GetAttr("sigma"));
+  median_ = GetValue<pyfloat>(primitive_->GetAttr("median"));
   return true;
 }
 

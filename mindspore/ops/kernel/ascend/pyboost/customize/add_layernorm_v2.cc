@@ -19,18 +19,19 @@
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
 void AddLayerNormAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &x1_tensor,
                                  const TensorPtr &x2_tensor, const TensorPtr &gamma_tensor,
-                                 const TensorPtr &beta_tensor, const FP32ImmPtr &epsilon,
+                                 const TensorPtr &beta_tensor, const FP64ImmPtr &epsilon,
                                  const BoolImmPtr &additional_out) {
   MS_LOG(DEBUG) << "Call start";
   OpRunner::InferOpOutput(op, x1_tensor, x2_tensor, gamma_tensor, beta_tensor, epsilon, additional_out);
   // Convert ValuePtr to c++ scalar
-  auto epsilon_imm = static_cast<double>(GetValue<float>(epsilon));
+  auto epsilon_imm = static_cast<double>(GetValue<pyfloat>(epsilon));
   auto additional_out_imm = GetValue<bool>(additional_out);
 
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), x1_tensor, x2_tensor, gamma_tensor, beta_tensor);

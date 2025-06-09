@@ -49,7 +49,7 @@ std::vector<GeneralInferParam> prepare_params_1() {
     .FeedInputArgs({
       InferInfoParam{ShapeVector{2, 3, 4}, kNumberTypeFloat32},
       InferInfoParam{ShapeVector{2, 1, 4}, kNumberTypeFloat32},
-      InferInfoParam{ShapeVector{}, kNumberTypeFloat32, CreateScalar<float>(0.5)},
+      InferInfoParam{ShapeVector{}, kNumberTypeFloat64, CreateScalar<double>(0.5)},
     })
     .FeedExpectedOutput({{2, 3, 4}}, {kNumberTypeFloat32});
   return generator.Generate();

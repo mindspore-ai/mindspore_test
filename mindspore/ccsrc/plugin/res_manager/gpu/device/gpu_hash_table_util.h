@@ -74,7 +74,7 @@ void SetHashTable(const UserDataPtr &user_data) {
     user_data->set<GPUHashTable<KeyType, ValueType>>(
       kUserDataData, std::make_shared<GPUHashTable<KeyType, ValueType>>(
                        value_size, GetValue<std::string>(default_value), permit_threshold, evict_threshold, allocator));
-  } else if (default_value->isa<FloatImm>()) {
+  } else if (default_value->isa<FP32Imm>()) {
     user_data->set<GPUHashTable<KeyType, ValueType>>(
       kUserDataData, std::make_shared<GPUHashTable<KeyType, float>>(value_size, GetValue<float>(default_value),
                                                                     permit_threshold, evict_threshold, allocator));

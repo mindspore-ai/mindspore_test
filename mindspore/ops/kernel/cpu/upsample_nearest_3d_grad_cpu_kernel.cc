@@ -74,7 +74,7 @@ int UpsampleNearest3DGradCpuKernelMod::Resize(const std::vector<KernelTensor *> 
   auto type = inputs[kIndex2]->GetType();
   MS_EXCEPTION_IF_NULL(type);
   auto output_size_none = type->isa<TypeNone>();
-  auto scales_opt = inputs[kIndex3]->GetOptionalValueWithCheck<std::vector<float>>();
+  auto scales_opt = inputs[kIndex3]->GetOptionalValueWithCheck<std::vector<pyfloat>>();
   bool scales_none = !scales_opt.has_value();
   if (output_size_none == scales_none) {
     MS_LOG(ERROR) << "For '" << kernel_name_ << "', only one of output_size or scales should be specified.";
@@ -82,14 +82,14 @@ int UpsampleNearest3DGradCpuKernelMod::Resize(const std::vector<KernelTensor *> 
   }
 
   if (!output_size_none) {
-    scales_ = std::vector<float>(kIndex3, kValueZero);
+    scales_ = std::vector<pyfloat>(kIndex3, kValueZero);
   } else {
     scales_ = scales_opt.value();
     if (scales_.empty()) {
       MS_LOG(ERROR) << "For " << kernel_name_ << " can't get scales input! ";
       return KRET_RESIZE_FAILED;
     }
-    scales_.insert(scales_.end(), kIndex3 - scales_.size(), 1.f);
+    scales_.insert(scales_.end(), kIndex3 - scales_.size(), 1.);
   }
 
   return KRET_OK;
@@ -139,10 +139,9 @@ bool UpsampleNearest3DGradCpuKernelMod::LaunchKernel(const std::vector<kernel::K
   MS_EXCEPTION_IF_NULL(h_helper);
   int64_t *const w_helper = GetDeviceAddress<int64_t>(workspace, kIndex2);
   MS_EXCEPTION_IF_NULL(w_helper);
-  (void)ComputeNearestIndex(d_helper, input_height * input_width, input_depth, output_depth,
-                            static_cast<double>(scales_[kIndex0]));
-  (void)ComputeNearestIndex(h_helper, input_width, input_height, output_height, static_cast<double>(scales_[kIndex1]));
-  (void)ComputeNearestIndex(w_helper, 1, input_width, output_width, static_cast<double>(scales_[kIndex2]));
+  (void)ComputeNearestIndex(d_helper, input_height * input_width, input_depth, output_depth, scales_[kIndex0]);
+  (void)ComputeNearestIndex(h_helper, input_width, input_height, output_height, scales_[kIndex1]);
+  (void)ComputeNearestIndex(w_helper, 1, input_width, output_width, scales_[kIndex2]);
 
   auto loop3d = [&](int64_t begin, int64_t end) {
     for (int64_t c = begin; c < end; ++c) {
@@ -184,7 +183,7 @@ bool UpsampleNearest3DGradCpuKernelMod::LaunchKernel(const std::vector<kernel::K
                    .AddInputAttr(M_S)                                          \
                    .AddInputAttr(kObjectTypeTuple, kNumberTypeInt64)           \
                    .AddOptionalInputAttr(kObjectTypeTuple, kNumberTypeInt64)   \
-                   .AddOptionalInputAttr(kObjectTypeTuple, kNumberTypeFloat32) \
+                   .AddOptionalInputAttr(kObjectTypeTuple, kNumberTypePyFloat) \
                    .AddOutputAttr(M_S),                                        \
                  &UpsampleNearest3DGradCpuKernelMod::LaunchKernel<T, S>)
 

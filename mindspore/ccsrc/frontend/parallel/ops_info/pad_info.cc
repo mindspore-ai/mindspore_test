@@ -23,8 +23,13 @@
 namespace mindspore {
 namespace parallel {
 Status PadV3Info::GetAttrs() {
-  mode_ = GetStringAttr(MODE);
-  if (mode_ != CONSTANT) {
+  auto mode_opt = GetScalarValueFromInputsWithCheck<int64_t>(input_value_, name_, MODE);
+  if (!mode_opt.has_value()) {
+    MS_LOG(ERROR) << name_ << ": mode should not be dynamic.";
+    return FAILED;
+  }
+  mode_ = static_cast<ops::Mode>(mode_opt.value());
+  if (mode_ != ops::Mode::CONSTANT) {
     MS_LOG(ERROR) << name_ << ": only support the constant mode, but the mode is " << mode_;
     return FAILED;
   }
@@ -156,6 +161,8 @@ Status PadV3Info::InferMirrorOps() {
   mirror_op = CreateMirrorOps(group[0].name(), group[0].GetDevNum());
   mirror_ops_.push_back(mirror_op);
   OperatorVector tmp;
+  mirror_ops_.push_back(tmp);
+  mirror_ops_.push_back(tmp);
   mirror_ops_.push_back(tmp);
   mirror_ops_.push_back(tmp);
   return SUCCESS;

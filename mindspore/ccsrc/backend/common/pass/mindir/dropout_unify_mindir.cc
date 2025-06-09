@@ -30,6 +30,7 @@
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
@@ -84,12 +85,12 @@ AnfNodePtr CreateKeepProbValueNode(const FuncGraphPtr &func_graph, const AnfNode
   auto cnode = node->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(cnode);
   // Step1: get keep_prob
-  float keep_prob = 0.5;
+  pyfloat keep_prob = 0.5;
   auto cnode_name = common::AnfAlgo::GetCNodeName(cnode);
   if (cnode_name == kDropoutOpName) {
     auto keep_prob_v = cnode->input(kIndex2)->cast<ValueNodePtr>();
     MS_EXCEPTION_IF_NULL(keep_prob_v);
-    auto keep_prob_opt = GetScalarValue<float>(keep_prob_v->value());
+    auto keep_prob_opt = GetScalarValue<pyfloat>(keep_prob_v->value());
     MS_EXCEPTION_IF_CHECK_FAIL(keep_prob_opt.has_value(), "can't get keep_prob value from " + cnode_name);
     keep_prob = keep_prob_opt.value();
   } else if (cnode_name == prim::kPrimDropoutExt->name() || cnode_name == prim::kPrimDropoutGradExt->name()) {
@@ -118,11 +119,11 @@ AnfNodePtr CreateKeepProbValueNode(const FuncGraphPtr &func_graph, const AnfNode
       return keep_prob_node;
     }
     MS_EXCEPTION_IF_NULL(p_value);
-    auto p_opt = GetScalarValue<float>(p_value->value());
+    auto p_opt = GetScalarValue<pyfloat>(p_value->value());
     MS_EXCEPTION_IF_CHECK_FAIL(p_opt.has_value(), "can't get p value from " + cnode_name);
-    keep_prob = static_cast<float>(1.0) - p_opt.value();
+    keep_prob = 1.0 - p_opt.value();
   } else {
-    keep_prob = common::AnfAlgo::GetNodeAttr<float>(node, kAttrKeepProb);
+    keep_prob = common::AnfAlgo::GetNodeAttr<pyfloat>(node, kAttrKeepProb);
   }
 
   MS_LOG(DEBUG) << "Keep_prob value: " << keep_prob;

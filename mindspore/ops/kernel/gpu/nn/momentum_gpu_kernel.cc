@@ -38,6 +38,9 @@ std::vector<std::pair<KernelAttr, MomentumGpuKernelMod::LaunchFunc>> MomentumGpu
      .AddInputAttr(kNumberTypeFloat32)
      .AddInputAttr(kNumberTypeFloat32)
      .AddInputAttr(kNumberTypeFloat32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddOutputAttr(kNumberTypeFloat32)
      .AddOutInRef(0, 0),
    &MomentumGpuKernelMod::LaunchKernel<float, float, float>},
@@ -47,6 +50,9 @@ std::vector<std::pair<KernelAttr, MomentumGpuKernelMod::LaunchFunc>> MomentumGpu
      .AddInputAttr(kNumberTypeFloat16)
      .AddInputAttr(kNumberTypeFloat16)
      .AddInputAttr(kNumberTypeFloat16)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddOutputAttr(kNumberTypeFloat16)
      .AddOutInRef(0, 0),
    &MomentumGpuKernelMod::LaunchKernel<half, half, half>},
@@ -56,6 +62,9 @@ std::vector<std::pair<KernelAttr, MomentumGpuKernelMod::LaunchFunc>> MomentumGpu
      .AddInputAttr(kNumberTypeFloat32)
      .AddInputAttr(kNumberTypeFloat16)
      .AddInputAttr(kNumberTypeFloat32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddOutputAttr(kNumberTypeFloat16)
      .AddOutInRef(0, 0),
    &MomentumGpuKernelMod::LaunchKernel<half, float, half>},
@@ -65,6 +74,9 @@ std::vector<std::pair<KernelAttr, MomentumGpuKernelMod::LaunchFunc>> MomentumGpu
      .AddInputAttr(kNumberTypeFloat32)
      .AddInputAttr(kNumberTypeFloat16)
      .AddInputAttr(kNumberTypeFloat32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddOutputAttr(kNumberTypeFloat32)
      .AddOutInRef(0, 0),
    &MomentumGpuKernelMod::LaunchKernel<float, float, half>},
@@ -74,6 +86,9 @@ std::vector<std::pair<KernelAttr, MomentumGpuKernelMod::LaunchFunc>> MomentumGpu
      .AddInputAttr(kNumberTypeInt8)
      .AddInputAttr(kNumberTypeInt8)
      .AddInputAttr(kNumberTypeInt8)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddOutputAttr(kNumberTypeInt8)
      .AddOutInRef(0, 0),
    &MomentumGpuKernelMod::LaunchKernel<int8_t, int8_t, int8_t>},
@@ -83,6 +98,9 @@ std::vector<std::pair<KernelAttr, MomentumGpuKernelMod::LaunchFunc>> MomentumGpu
      .AddInputAttr(kNumberTypeUInt8)
      .AddInputAttr(kNumberTypeUInt8)
      .AddInputAttr(kNumberTypeUInt8)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddOutputAttr(kNumberTypeUInt8)
      .AddOutInRef(0, 0),
    &MomentumGpuKernelMod::LaunchKernel<uint8_t, uint8_t, uint8_t>},
@@ -92,6 +110,9 @@ std::vector<std::pair<KernelAttr, MomentumGpuKernelMod::LaunchFunc>> MomentumGpu
      .AddInputAttr(kNumberTypeInt16)
      .AddInputAttr(kNumberTypeInt16)
      .AddInputAttr(kNumberTypeInt16)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddOutputAttr(kNumberTypeInt16)
      .AddOutInRef(0, 0),
    &MomentumGpuKernelMod::LaunchKernel<int16_t, int16_t, int16_t>},
@@ -101,6 +122,9 @@ std::vector<std::pair<KernelAttr, MomentumGpuKernelMod::LaunchFunc>> MomentumGpu
      .AddInputAttr(kNumberTypeUInt16)
      .AddInputAttr(kNumberTypeUInt16)
      .AddInputAttr(kNumberTypeUInt16)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddOutputAttr(kNumberTypeUInt16)
      .AddOutInRef(0, 0),
    &MomentumGpuKernelMod::LaunchKernel<uint16_t, uint16_t, uint16_t>},
@@ -110,6 +134,9 @@ std::vector<std::pair<KernelAttr, MomentumGpuKernelMod::LaunchFunc>> MomentumGpu
      .AddInputAttr(kNumberTypeUInt32)
      .AddInputAttr(kNumberTypeUInt32)
      .AddInputAttr(kNumberTypeUInt32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddOutputAttr(kNumberTypeUInt32)
      .AddOutInRef(0, 0),
    &MomentumGpuKernelMod::LaunchKernel<uint32_t, uint32_t, uint32_t>},
@@ -119,6 +146,9 @@ std::vector<std::pair<KernelAttr, MomentumGpuKernelMod::LaunchFunc>> MomentumGpu
      .AddInputAttr(kNumberTypeInt32)
      .AddInputAttr(kNumberTypeInt32)
      .AddInputAttr(kNumberTypeInt32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddOutputAttr(kNumberTypeInt32)
      .AddOutInRef(0, 0),
    &MomentumGpuKernelMod::LaunchKernel<int32_t, int32_t, int32_t>},
@@ -128,6 +158,9 @@ std::vector<std::pair<KernelAttr, MomentumGpuKernelMod::LaunchFunc>> MomentumGpu
      .AddInputAttr(kNumberTypeInt64)
      .AddInputAttr(kNumberTypeInt64)
      .AddInputAttr(kNumberTypeInt64)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddOutputAttr(kNumberTypeInt64)
      .AddOutInRef(0, 0),
    &MomentumGpuKernelMod::LaunchKernel<int64_t, int64_t, int64_t>},
@@ -137,6 +170,9 @@ std::vector<std::pair<KernelAttr, MomentumGpuKernelMod::LaunchFunc>> MomentumGpu
      .AddInputAttr(kNumberTypeUInt64)
      .AddInputAttr(kNumberTypeUInt64)
      .AddInputAttr(kNumberTypeUInt64)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddOutputAttr(kNumberTypeUInt64)
      .AddOutInRef(0, 0),
    &MomentumGpuKernelMod::LaunchKernel<uint64_t, uint64_t, uint64_t>},
@@ -146,6 +182,9 @@ std::vector<std::pair<KernelAttr, MomentumGpuKernelMod::LaunchFunc>> MomentumGpu
      .AddInputAttr(kNumberTypeFloat64)
      .AddInputAttr(kNumberTypeFloat64)
      .AddInputAttr(kNumberTypeFloat64)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddOutputAttr(kNumberTypeFloat64)
      .AddOutInRef(0, 0),
    &MomentumGpuKernelMod::LaunchKernel<double, double, double>},
@@ -156,6 +195,9 @@ std::vector<std::pair<KernelAttr, MomentumGpuKernelMod::LaunchFunc>> MomentumGpu
      .AddInputAttr(kNumberTypeComplex64)
      .AddInputAttr(kNumberTypeComplex64)
      .AddInputAttr(kNumberTypeComplex64)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddOutputAttr(kNumberTypeComplex64)
      .AddOutInRef(0, 0),
    &MomentumGpuKernelMod::LaunchKernel<utils::Complex<float>, utils::Complex<float>, utils::Complex<float>>},
@@ -165,6 +207,9 @@ std::vector<std::pair<KernelAttr, MomentumGpuKernelMod::LaunchFunc>> MomentumGpu
      .AddInputAttr(kNumberTypeComplex128)
      .AddInputAttr(kNumberTypeComplex128)
      .AddInputAttr(kNumberTypeComplex128)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddOutputAttr(kNumberTypeComplex128)
      .AddOutInRef(0, 0),
    &MomentumGpuKernelMod::LaunchKernel<utils::Complex<double>, utils::Complex<double>, utils::Complex<double>>}

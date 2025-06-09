@@ -25,7 +25,7 @@ namespace {
 constexpr size_t kSizeFloat32 = sizeof(float);
 constexpr size_t kSizeFloat16 = sizeof(float16);
 constexpr size_t kScalarIndex = 0;
-constexpr size_t kFusedCastAdamWeightDecayInputNum = 10;
+constexpr size_t kFusedCastAdamWeightDecayInputNum = 11;
 constexpr size_t kFusedCastAdamWeightDecayOutputNum = 3;
 constexpr size_t kBatchSize = 10000;
 constexpr float kMinGlobalNorm = 1e-10;

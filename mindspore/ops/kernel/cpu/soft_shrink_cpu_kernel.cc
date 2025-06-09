@@ -16,12 +16,13 @@
 
 #include "kernel/cpu/soft_shrink_cpu_kernel.h"
 #include "kernel/cpu/nnacl/fp32/activation_fp32.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
 namespace soft_shrink_cpu {
 #define SOFT_SHRINK_CPU_REGISTER(DT, T)                                                                \
-  KernelAttr().AddInputAttr(DT).AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32).AddOutputAttr(DT), \
+  KernelAttr().AddInputAttr(DT).AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat).AddOutputAttr(DT), \
     &SoftShrinkCpuKernelMod::LaunchKernel<T>
 
 template <typename T>
@@ -83,7 +84,7 @@ int SoftShrinkCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
   }
   auto in_shape = inputs[kIndex0]->GetShapeVector();
   size_ = std::accumulate(in_shape.begin(), in_shape.end(), size_t(1), std::multiplies<size_t>());
-  lambd_ = inputs[kIndex1]->GetValueWithCheck<float>();
+  lambd_ = inputs[kIndex1]->GetValueWithCheck<pyfloat>();
   if (lambd_ < 0.0) {
     MS_EXCEPTION(RuntimeError) << "For 'SoftShrink', the values for lambd should be greater or equal to 0, "
                                << ", but found to be [" << lambd_ << "].";

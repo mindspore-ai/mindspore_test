@@ -18,15 +18,14 @@
 #include <map>
 #include <functional>
 #include <algorithm>
-#include "mindspore/ops/infer/apply_ftrl.h"
-#include "infer/apply_ftrl.h"
+
 #include "ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace kernel {
 namespace apply_ftrl_cpu {
 namespace {
-constexpr size_t kApplyFtrlInputsNum = 8;
+constexpr size_t kApplyFtrlInputsNum = 9;
 constexpr size_t kApplyFtrlOutputsNum = 1;
 constexpr size_t kIndexVar = 0;
 constexpr size_t kIndexAcc = 1;
@@ -213,19 +212,20 @@ bool ApplyFtrlCpuKernelMod::Launch(const std::vector<kernel::KernelTensor *> &in
   return true;
 }
 
-#define APPLY_FTRL_ADD_KERNEL_FTRL(input_dtype) \
-  {                                             \
-    KernelAttr()                                \
-      .AddInputAttr(kNumberType##input_dtype)   \
-      .AddInputAttr(kNumberType##input_dtype)   \
-      .AddInputAttr(kNumberType##input_dtype)   \
-      .AddInputAttr(kNumberType##input_dtype)   \
-      .AddInputAttr(kNumberType##input_dtype)   \
-      .AddInputAttr(kNumberType##input_dtype)   \
-      .AddInputAttr(kNumberType##input_dtype)   \
-      .AddInputAttr(kNumberType##input_dtype)   \
-      .AddOutputAttr(kNumberType##input_dtype)  \
-      .AddOutInRef(0, 0)                        \
+#define APPLY_FTRL_ADD_KERNEL_FTRL(input_dtype)         \
+  {                                                     \
+    KernelAttr()                                        \
+      .AddInputAttr(kNumberType##input_dtype)           \
+      .AddInputAttr(kNumberType##input_dtype)           \
+      .AddInputAttr(kNumberType##input_dtype)           \
+      .AddInputAttr(kNumberType##input_dtype)           \
+      .AddInputAttr(kNumberType##input_dtype)           \
+      .AddInputAttr(kNumberType##input_dtype)           \
+      .AddInputAttr(kNumberType##input_dtype)           \
+      .AddInputAttr(kNumberType##input_dtype)           \
+      .AddInputAttr(kObjectTypeNumber, kNumberTypeBool) \
+      .AddOutputAttr(kNumberType##input_dtype)          \
+      .AddOutInRef(0, 0)                                \
   }
 
 std::vector<KernelAttr> ApplyFtrlCpuKernelMod::GetOpSupport() {

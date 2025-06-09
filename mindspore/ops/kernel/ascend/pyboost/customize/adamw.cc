@@ -25,14 +25,14 @@ namespace kernel {
 namespace pyboost {
 std::tuple<tensor::TensorPtr, tensor::TensorPtr, tensor::TensorPtr> AdamWAscendCustomize(
   const std::shared_ptr<OpRunner> &op, const TensorPtr &var, const TensorPtr &m, const TensorPtr &v,
-  const TensorPtr &max_v, const TensorPtr &grad, const TensorPtr &step, const FP32ImmPtr &lr, const FP32ImmPtr &beta1,
-  const FP32ImmPtr &beta2, const FP32ImmPtr &decay, const FP32ImmPtr &epsilon, const BoolImmPtr &amsgrad,
+  const TensorPtr &max_v, const TensorPtr &grad, const TensorPtr &step, const FP64ImmPtr &lr, const FP64ImmPtr &beta1,
+  const FP64ImmPtr &beta2, const FP64ImmPtr &decay, const FP64ImmPtr &epsilon, const BoolImmPtr &amsgrad,
   const BoolImmPtr &maximize) {
-  const auto lr_imm = GetValue<float>(lr);
-  const auto beta1_imm = GetValue<float>(beta1);
-  const auto beta2_imm = GetValue<float>(beta2);
-  const auto decay_imm = GetValue<float>(decay);
-  const auto epsilon_imm = GetValue<float>(epsilon);
+  const auto lr_imm = static_cast<float>(lr->value());
+  const auto beta1_imm = static_cast<float>(beta1->value());
+  const auto beta2_imm = static_cast<float>(beta2->value());
+  const auto decay_imm = static_cast<float>(decay->value());
+  const auto epsilon_imm = static_cast<float>(epsilon->value());
   const auto amsgrad_imm = GetValue<bool>(amsgrad);
   const auto maximize_imm = GetValue<bool>(maximize);
   op->set_outputs({var, m, v});

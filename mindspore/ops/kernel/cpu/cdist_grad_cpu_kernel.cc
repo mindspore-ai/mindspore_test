@@ -18,6 +18,8 @@
 #include <utility>
 #include <algorithm>
 #include "kernel/cpu/nnacl/op_base.h"
+#include "mindspore/core/include/mindapi/base/types.h"
+
 namespace mindspore {
 namespace kernel {
 namespace cdist_grad_cpu {
@@ -29,7 +31,7 @@ const std::vector<KernelAttr> kernel_attr = {{KernelAttr()
                                                 .AddInputAttr(kNumberTypeFloat32)
                                                 .AddInputAttr(kNumberTypeFloat32)
                                                 .AddInputAttr(kNumberTypeFloat32)
-                                                .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+                                                .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
                                                 .AddOutputAttr(kNumberTypeFloat32)}};
 }  // namespace
 
@@ -93,7 +95,7 @@ int CdistGradCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
     MS_LOG(WARNING) << "For " << kernel_name_ << " Resize failed. ret " << ret;
     return ret;
   }
-  p_ = inputs[kIndex4]->GetValueWithCheck<float>();
+  p_ = inputs[kIndex4]->GetValueWithCheck<pyfloat>();
   auto input_type_id = inputs[kIndex0]->dtype_id();
   switch (input_type_id) {
     case kNumberTypeFloat32:

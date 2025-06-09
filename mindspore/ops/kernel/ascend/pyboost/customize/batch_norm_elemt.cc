@@ -29,15 +29,14 @@ tensor::TensorPtr BatchNormElemtAscendCustomize(const std::shared_ptr<OpRunner> 
                                                 const std::optional<TensorPtr> &weight_tensor,
                                                 const std::optional<TensorPtr> &bias_tensor,
                                                 const std::optional<TensorPtr> &mean_tensor,
-                                                const std::optional<TensorPtr> &invstd_tensor, const FP32ImmPtr &eps) {
+                                                const std::optional<TensorPtr> &invstd_tensor, const FP64ImmPtr &eps) {
   std::string op_name = op->primitive()->name();
   MS_LOG(DEBUG) << op_name << " call start";
   OpRunner::InferOpOutput(op, input_tensor, weight_tensor, bias_tensor, mean_tensor, invstd_tensor, eps);
   // ValueTuple to std::vector
 
   // Convert ValuePtr to c++ scalar
-  // Convert ValuePtr to c++ scalar
-  auto eps_imm = GetValue<float>(eps);
+  auto eps_imm = GetValue<pyfloat>(eps);
 
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor, weight_tensor, bias_tensor,
                                 mean_tensor, invstd_tensor);

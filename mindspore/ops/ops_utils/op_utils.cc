@@ -1069,29 +1069,6 @@ size_t CalOutputSize(const std::vector<int64_t> &output_shape, const size_t &typ
   return output_size;
 }
 
-double GetDoubleValueFromScalar(const FP32ImmPtr &scalar) {
-  MS_EXCEPTION_IF_NULL(scalar);
-  constexpr double eps = 1e-6;
-  auto float_value = scalar->value();
-  auto doubel_value = scalar->prim_value();
-  // If double value is default value 0, don't use double value.
-  if (std::abs(doubel_value) > std::numeric_limits<double>::epsilon() && std::abs(float_value - doubel_value) < eps) {
-    MS_LOG(DEBUG) << "Use the real double float value in FP32Imm, which is inherited from python float object.";
-    return doubel_value;
-  }
-  return static_cast<double>(float_value);
-}
-
-ScalarPtr FetchRealScalar(const ScalarPtr &scalar) {
-  MS_EXCEPTION_IF_NULL(scalar);
-  auto real_scalar = scalar;
-  if (scalar->isa<FP32Imm>()) {
-    auto fp32imm_ptr = scalar->cast<FP32ImmPtr>();
-    real_scalar = std::make_shared<FP64Imm>(GetDoubleValueFromScalar(fp32imm_ptr));
-  }
-  return real_scalar;
-}
-
 ValueTuplePtr ConvertShapeVectorToValueTuple(const ShapeVector &shape_vector) {
   std::vector<ValuePtr> shape_out_vector;
   std::transform(shape_vector.begin(), shape_vector.end(), std::back_inserter(shape_out_vector),
@@ -1120,50 +1097,51 @@ int64_t GetCacheCapaticy() {
 
 static const std::map<size_t, TypeId> scalar_tensor_convert_map = {
   // Scalar is bool.
-  {GetHashId(kNumberTypeBool, kNumberTypeBool), kNumberTypeBool},
-  {GetHashId(kNumberTypeBool, kNumberTypeInt8), kNumberTypeInt8},
-  {GetHashId(kNumberTypeBool, kNumberTypeInt16), kNumberTypeInt16},
-  {GetHashId(kNumberTypeBool, kNumberTypeInt32), kNumberTypeInt32},
-  {GetHashId(kNumberTypeBool, kNumberTypeInt64), kNumberTypeInt64},
-  {GetHashId(kNumberTypeBool, kNumberTypeUInt8), kNumberTypeUInt8},
-  {GetHashId(kNumberTypeBool, kNumberTypeUInt16), kNumberTypeUInt16},
-  {GetHashId(kNumberTypeBool, kNumberTypeUInt32), kNumberTypeUInt32},
-  {GetHashId(kNumberTypeBool, kNumberTypeUInt64), kNumberTypeUInt64},
-  {GetHashId(kNumberTypeBool, kNumberTypeFloat16), kNumberTypeFloat16},
-  {GetHashId(kNumberTypeBool, kNumberTypeBFloat16), kNumberTypeBFloat16},
-  {GetHashId(kNumberTypeBool, kNumberTypeFloat32), kNumberTypeFloat32},
-  {GetHashId(kNumberTypeBool, kNumberTypeFloat64), kNumberTypeFloat64},
-  {GetHashId(kNumberTypeBool, kNumberTypeComplex64), kNumberTypeComplex64},
-  {GetHashId(kNumberTypeBool, kNumberTypeComplex128), kNumberTypeComplex128},
+  {hash_combine(kNumberTypeBool, kNumberTypeBool), kNumberTypeBool},
+  {hash_combine(kNumberTypeBool, kNumberTypeInt8), kNumberTypeInt8},
+  {hash_combine(kNumberTypeBool, kNumberTypeInt16), kNumberTypeInt16},
+  {hash_combine(kNumberTypeBool, kNumberTypeInt32), kNumberTypeInt32},
+  {hash_combine(kNumberTypeBool, kNumberTypeInt64), kNumberTypeInt64},
+  {hash_combine(kNumberTypeBool, kNumberTypeUInt8), kNumberTypeUInt8},
+  {hash_combine(kNumberTypeBool, kNumberTypeUInt16), kNumberTypeUInt16},
+  {hash_combine(kNumberTypeBool, kNumberTypeUInt32), kNumberTypeUInt32},
+  {hash_combine(kNumberTypeBool, kNumberTypeUInt64), kNumberTypeUInt64},
+  {hash_combine(kNumberTypeBool, kNumberTypeFloat16), kNumberTypeFloat16},
+  {hash_combine(kNumberTypeBool, kNumberTypeBFloat16), kNumberTypeBFloat16},
+  {hash_combine(kNumberTypeBool, kNumberTypeFloat32), kNumberTypeFloat32},
+  {hash_combine(kNumberTypeBool, kNumberTypeFloat64), kNumberTypeFloat64},
+  {hash_combine(kNumberTypeBool, kNumberTypeComplex64), kNumberTypeComplex64},
+  {hash_combine(kNumberTypeBool, kNumberTypeComplex128), kNumberTypeComplex128},
   // Scalar is int.
-  {GetHashId(kNumberTypeInt64, kNumberTypeBool), kNumberTypeInt64},
-  {GetHashId(kNumberTypeInt64, kNumberTypeInt8), kNumberTypeInt8},
-  {GetHashId(kNumberTypeInt64, kNumberTypeInt16), kNumberTypeInt16},
-  {GetHashId(kNumberTypeInt64, kNumberTypeInt32), kNumberTypeInt32},
-  {GetHashId(kNumberTypeInt64, kNumberTypeInt64), kNumberTypeInt64},
-  {GetHashId(kNumberTypeInt64, kNumberTypeUInt8), kNumberTypeUInt8},
-  {GetHashId(kNumberTypeInt64, kNumberTypeFloat16), kNumberTypeFloat16},
-  {GetHashId(kNumberTypeInt64, kNumberTypeBFloat16), kNumberTypeBFloat16},
-  {GetHashId(kNumberTypeInt64, kNumberTypeFloat32), kNumberTypeFloat32},
-  {GetHashId(kNumberTypeInt64, kNumberTypeFloat64), kNumberTypeFloat64},
-  {GetHashId(kNumberTypeInt64, kNumberTypeComplex64), kNumberTypeComplex64},
-  {GetHashId(kNumberTypeInt64, kNumberTypeComplex128), kNumberTypeComplex128},
+  {hash_combine(kNumberTypeInt64, kNumberTypeBool), kNumberTypeInt64},
+  {hash_combine(kNumberTypeInt64, kNumberTypeInt8), kNumberTypeInt8},
+  {hash_combine(kNumberTypeInt64, kNumberTypeInt16), kNumberTypeInt16},
+  {hash_combine(kNumberTypeInt64, kNumberTypeInt32), kNumberTypeInt32},
+  {hash_combine(kNumberTypeInt64, kNumberTypeInt64), kNumberTypeInt64},
+  {hash_combine(kNumberTypeInt64, kNumberTypeUInt8), kNumberTypeUInt8},
+  {hash_combine(kNumberTypeInt64, kNumberTypeFloat16), kNumberTypeFloat16},
+  {hash_combine(kNumberTypeInt64, kNumberTypeBFloat16), kNumberTypeBFloat16},
+  {hash_combine(kNumberTypeInt64, kNumberTypeFloat32), kNumberTypeFloat32},
+  {hash_combine(kNumberTypeInt64, kNumberTypeFloat64), kNumberTypeFloat64},
+  {hash_combine(kNumberTypeInt64, kNumberTypeComplex64), kNumberTypeComplex64},
+  {hash_combine(kNumberTypeInt64, kNumberTypeComplex128), kNumberTypeComplex128},
   // Scalar is float.
-  {GetHashId(kNumberTypeFloat32, kNumberTypeBool), kNumberTypeFloat32},
-  {GetHashId(kNumberTypeFloat32, kNumberTypeInt8), kNumberTypeFloat32},
-  {GetHashId(kNumberTypeFloat32, kNumberTypeInt16), kNumberTypeFloat32},
-  {GetHashId(kNumberTypeFloat32, kNumberTypeInt32), kNumberTypeFloat32},
-  {GetHashId(kNumberTypeFloat32, kNumberTypeInt64), kNumberTypeFloat32},
-  {GetHashId(kNumberTypeFloat32, kNumberTypeUInt8), kNumberTypeFloat32},
-  {GetHashId(kNumberTypeFloat32, kNumberTypeFloat16), kNumberTypeFloat16},
-  {GetHashId(kNumberTypeFloat32, kNumberTypeBFloat16), kNumberTypeBFloat16},
-  {GetHashId(kNumberTypeFloat32, kNumberTypeFloat32), kNumberTypeFloat32},
-  {GetHashId(kNumberTypeFloat32, kNumberTypeFloat64), kNumberTypeFloat64},
-  {GetHashId(kNumberTypeFloat32, kNumberTypeComplex64), kNumberTypeComplex64},
-  {GetHashId(kNumberTypeFloat32, kNumberTypeComplex128), kNumberTypeComplex128},
+  {hash_combine(kNumberTypeFloat64, kNumberTypeBool), kNumberTypeFloat32},
+  {hash_combine(kNumberTypeFloat64, kNumberTypeInt8), kNumberTypeFloat32},
+  {hash_combine(kNumberTypeFloat64, kNumberTypeInt16), kNumberTypeFloat32},
+  {hash_combine(kNumberTypeFloat64, kNumberTypeInt32), kNumberTypeFloat32},
+  {hash_combine(kNumberTypeFloat64, kNumberTypeInt64), kNumberTypeFloat32},
+  {hash_combine(kNumberTypeFloat64, kNumberTypeUInt8), kNumberTypeFloat32},
+  {hash_combine(kNumberTypeFloat64, kNumberTypeFloat16), kNumberTypeFloat16},
+  {hash_combine(kNumberTypeFloat64, kNumberTypeBFloat16), kNumberTypeBFloat16},
+  {hash_combine(kNumberTypeFloat64, kNumberTypeFloat32), kNumberTypeFloat32},
+  {hash_combine(kNumberTypeFloat64, kNumberTypeFloat64), kNumberTypeFloat64},
+  {hash_combine(kNumberTypeFloat64, kNumberTypeComplex64), kNumberTypeComplex64},
+  {hash_combine(kNumberTypeFloat64, kNumberTypeComplex128), kNumberTypeComplex128},
 };
-TypeId ConvertTypeBetweenTensorAndScalar(const TypeId &tensor_type_id, const TypeId &scalar_type_id,
-                                         const size_t hash_id) {
+
+TypeId ConvertTypeBetweenTensorAndScalar(const TypeId &tensor_type_id, const TypeId &scalar_type_id) {
+  auto hash_id = hash_combine(scalar_type_id, tensor_type_id);
   auto iter = scalar_tensor_convert_map.find(hash_id);
   if (iter != scalar_tensor_convert_map.end()) {
     return iter->second;
@@ -1171,7 +1149,5 @@ TypeId ConvertTypeBetweenTensorAndScalar(const TypeId &tensor_type_id, const Typ
   MS_EXCEPTION(TypeError) << "Type implicit conversion between Tensor[" << TypeIdToString(tensor_type_id) << "] and "
                           << TypeIdToString(scalar_type_id) << " is not supported.";
 }
-
-size_t GetHashId(int a, int b) { return a < b ? hash_combine(a, b) : hash_combine(b, a); }
 }  // namespace ops
 }  // namespace mindspore

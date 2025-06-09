@@ -22,7 +22,6 @@
 #include <functional>
 #include <map>
 #include <utility>
-#include "mindspore/ops/infer/apply_proximal_adagrad.h"
 #include "kernel/gpu/gpu_kernel.h"
 #include "common/ms_factory.h"
 namespace mindspore {

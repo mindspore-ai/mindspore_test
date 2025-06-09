@@ -660,6 +660,10 @@ class OpAdapter : public BaseOpAdapter {
     return ConvertAnyUtil(value, anyTraitsVec, anyTraitsFlo);
   }
 
+  static std::vector<float> ConvertAny(const ValuePtr &value, const AnyTraits<std::vector<float>> anyTraitsVec) {
+    return GetCastFloatArrayValue<float>(value);
+  }
+
   static std::vector<int64_t> ConvertAny(const ValuePtr &value, const std::string &format,
                                          const AnyTraits<std::vector<int64_t>> anyTraitsVec,
                                          const AnyTraits<int64_t> anyTraitsInt) {

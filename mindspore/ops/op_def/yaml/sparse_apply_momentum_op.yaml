@@ -1,0 +1,32 @@
+#operator sparse_apply_momentum
+sparse_apply_momentum:
+    args:
+        var:
+            dtype: tensor
+        accum:
+            dtype: tensor
+        lr:
+            dtype: tensor
+            type_cast: number
+        grad:
+            dtype: tensor
+        indices:
+            dtype: tensor
+        momentum:
+            dtype: tensor
+            type_cast: number
+        use_locking:
+            dtype: bool
+            default: False
+            prim_init: True
+        use_nesterov:
+            dtype: bool
+            default: False
+            prim_init: True
+    returns:
+        var:
+            dtype: tensor
+    args_signature:
+        dtype_group: (var, accum, lr, grad, momentum), (indices)
+    function:
+        disable: True

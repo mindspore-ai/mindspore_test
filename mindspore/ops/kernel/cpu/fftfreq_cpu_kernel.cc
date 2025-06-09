@@ -18,6 +18,7 @@
 #include "ops_utils/op_utils.h"
 #include "common/kernel.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -43,7 +44,7 @@ int FFTFreqCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const
   }
 
   n_ = inputs[kIndex0]->GetValueWithCheck<int64_t>();
-  auto d_opt = inputs[kIndex1]->GetOptionalValueWithCheck<float>();
+  auto d_opt = inputs[kIndex1]->GetOptionalValueWithCheck<pyfloat>();
   if (d_opt.has_value()) {
     d_ = d_opt.value();
   }
@@ -77,7 +78,7 @@ bool FFTFreqCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *>
 std::vector<std::pair<KernelAttr, FFTFreqCpuKernelMod::FFTFreqFunc>> FFTFreqCpuKernelMod::func_list_ = {
   {KernelAttr()
      .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
-     .AddOptionalInputAttr(kNumberTypeFloat32)
+     .AddOptionalInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddOptionalInputAttr(kNumberTypeInt64)
      .AddOutputAttr(kNumberTypeFloat32),
    &FFTFreqCpuKernelMod::LaunchKernel<float>}};

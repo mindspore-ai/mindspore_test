@@ -579,11 +579,10 @@ REG_BPROP_BUILDER("SparseReorder").SetUnusedInputs({i1, i3}).SetBody(BODYFUNC(ib
   auto shape = ib->GetInput(kIndex2);
   auto dout = ib->GetInput(kIndex4);
   auto num_entries = ib->GetShape(indices)[0];
-  auto start = ib->Tensor(0, kInt32);
-  auto limit = ib->Tensor(LongToInt(num_entries), kInt32);
-  auto delta = ib->Tensor(1, kInt32);
-  constexpr int64_t max_len = 1000000;
-  auto entry_indices = ib->Emit("Range", {start, limit, delta}, {{"maxlen", MakeValue(max_len)}});
+  auto start = ib->Value<int64_t>(0);
+  auto limit = ib->Value<int64_t>(num_entries);
+  auto delta = ib->Value<int64_t>(1);
+  auto entry_indices = ib->Range(start, limit, delta);
   auto output = ib->Emit("SparseReorder", {indices, entry_indices, shape});
   constexpr int64_t sort_axis = -1;
   constexpr int64_t gather_axis = 0;

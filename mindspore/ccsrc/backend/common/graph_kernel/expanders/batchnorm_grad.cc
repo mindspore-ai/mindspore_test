@@ -17,6 +17,7 @@
 #include <memory>
 #include <vector>
 #include "backend/common/graph_kernel/expanders/op_desc_registry.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore::graphkernel::expanders {
 class BatchNormGrad : public OpDesc {
@@ -82,7 +83,7 @@ class BatchNormGrad : public OpDesc {
     // in training input_save_inv_variance means 1 / sqrt(variance + epsilon), which is calculated in forward pass
     auto inv_variance = input_save_inv_variance;
     if (!GetValue<bool>(attrs_["is_training"])) {
-      auto epsilon_tensor = gb.Tensor(GetValue<float>(attrs_["epsilon"]), input_scale->type);
+      auto epsilon_tensor = gb.Tensor(GetValue<pyfloat>(attrs_["epsilon"]), input_scale->type);
       auto var_add = gb.Add(input_save_inv_variance, epsilon_tensor);
       auto sqrt_var_eps = gb.Sqrt(var_add);
       auto scalar_one_tensor = gb.Tensor(1.0, input_scale->type);

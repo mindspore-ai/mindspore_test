@@ -15,10 +15,13 @@
  */
 
 #include "kernel/gpu/nn/group_norm_gpu_kernel.h"
+
 #include <algorithm>
 #include <functional>
 #include <numeric>
+
 #include "kernel/gpu/cuda_impl/cuda_ops/group_norm_impl.cuh"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -55,7 +58,7 @@ int GroupNormGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
   HxW_ = LongToSize((x_shape.size() == kNumberTwo)
                       ? 1
                       : std::accumulate(x_shape.begin() + kIndex2, x_shape.end(), 1, std::multiplies<int64_t>()));
-  eps_ = inputs[kIndex4]->GetValueWithCheck<float_t>();
+  eps_ = static_cast<float>(inputs[kIndex4]->GetValueWithCheck<pyfloat>());
   num_channel_ = LongToSize(x_shape[1]);
   inner_size_ = LongToSize(num_channel_ * HxW_ / num_groups);
   outter_size_ = LongToSize(batch * num_groups);
@@ -99,7 +102,7 @@ std::vector<std::pair<KernelAttr, GroupNormGpuKernelMod::KernelFunc>> GroupNormG
      .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
      .AddInputAttr(kNumberTypeFloat16)
      .AddInputAttr(kNumberTypeFloat16)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddOutputAttr(kNumberTypeFloat16)
      .AddOutputAttr(kNumberTypeFloat16)
      .AddOutputAttr(kNumberTypeFloat16),
@@ -109,7 +112,7 @@ std::vector<std::pair<KernelAttr, GroupNormGpuKernelMod::KernelFunc>> GroupNormG
      .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
      .AddInputAttr(kNumberTypeFloat32)
      .AddInputAttr(kNumberTypeFloat32)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddOutputAttr(kNumberTypeFloat32)
      .AddOutputAttr(kNumberTypeFloat32)
      .AddOutputAttr(kNumberTypeFloat32),
@@ -119,7 +122,7 @@ std::vector<std::pair<KernelAttr, GroupNormGpuKernelMod::KernelFunc>> GroupNormG
      .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
      .AddInputAttr(kNumberTypeFloat64)
      .AddInputAttr(kNumberTypeFloat64)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddOutputAttr(kNumberTypeFloat64)
      .AddOutputAttr(kNumberTypeFloat64)
      .AddOutputAttr(kNumberTypeFloat64),

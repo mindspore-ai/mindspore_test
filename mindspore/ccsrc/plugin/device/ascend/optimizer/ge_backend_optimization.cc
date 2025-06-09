@@ -53,6 +53,7 @@
 #include "backend/common/pass/other/hcom/insert_tensor_move_for_hccl_op_ge.h"
 #include "backend/common/pass/other/resize_bilinear_add_attr.h"
 #include "backend/common/pass/custom_defined_depend.h"
+#include "mindspore/ccsrc/backend/common/pass/other/convert_input_type.h"
 
 namespace mindspore {
 namespace opt {
@@ -115,6 +116,7 @@ void GEBackendOptimizeACL(const KernelGraphPtr &kernel_graph) {
   opt_acl_pm->AddPass(std::make_shared<opt::ExpanderFallback>());
   opt_acl_pm->AddPass(std::make_shared<opt::ConvertPadV3Paddings>());
   opt_acl_pm->AddPass(std::make_shared<opt::ConvertPadV3GradPaddings>());
+  opt_acl_pm->AddPass(std::make_shared<opt::ConvertInputType>());
   opt_acl_pm->AddPass(std::make_shared<opt::ResizeBilinearAddAttr>());
   opt_acl_pm->AddPass(std::make_shared<opt::CustomDefinedDepend>(false, kernel_graph->graph_id()));
   optimizer->AddPassManager(opt_acl_pm);

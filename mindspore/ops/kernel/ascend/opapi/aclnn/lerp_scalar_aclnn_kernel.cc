@@ -16,6 +16,7 @@
 #include "kernel/ascend/opapi/aclnn/lerp_scalar_aclnn_kernel.h"
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -24,7 +25,7 @@ namespace lerp_scalar {
 void LerpScalarAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                         const std::vector<KernelTensor *> &outputs) {
   auto weight_dtype_id = inputs[kIndex2]->dtype_id();
-  auto weight = inputs[kIndex2]->GetValueWithCheck<float>();
+  auto weight = inputs[kIndex2]->GetValueWithCheck<pyfloat>();
   MAKE_SCALAR(weight, weight_dtype_id, weight_);
   GetWorkspaceForResize(inputs[kIndex0], inputs[kIndex1], weight_, outputs[kIndex0]);
 }

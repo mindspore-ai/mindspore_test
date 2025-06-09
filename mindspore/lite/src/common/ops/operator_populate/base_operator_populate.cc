@@ -25,7 +25,6 @@
 #include "nnacl/gather_nd_parameter.h"
 #include "nnacl/reshape_parameter.h"
 #include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
-#include "infer/adam.h"
 #include "infer/assert.h"
 #include "infer/where.h"
 #include "infer/unique.h"

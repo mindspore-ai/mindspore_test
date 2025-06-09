@@ -21,6 +21,7 @@
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -34,17 +35,17 @@ std::map<std::string, std::vector<std::pair<KernelAttr, ActivationFwdGpuKernelMo
     {ops::kNameElu,
      {{KernelAttr()
          .AddInputAttr(kNumberTypeFloat64)
-         .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+         .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
          .AddOutputAttr(kNumberTypeFloat64),
        &ActivationFwdGpuKernelMod::LaunchKernel<double>},
       {KernelAttr()
          .AddInputAttr(kNumberTypeFloat32)
-         .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+         .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
          .AddOutputAttr(kNumberTypeFloat32),
        &ActivationFwdGpuKernelMod::LaunchKernel<float>},
       {KernelAttr()
          .AddInputAttr(kNumberTypeFloat16)
-         .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+         .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
          .AddOutputAttr(kNumberTypeFloat16),
        &ActivationFwdGpuKernelMod::LaunchKernel<half>}}},
 };
@@ -106,7 +107,7 @@ int ActivationFwdGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
   ShapeVector shape;
   double coef = (mode_ == CUDNN_ACTIVATION_CLIPPED_RELU) ? 6.0 : 0.0;
   if (mode_ == CUDNN_ACTIVATION_ELU) {
-    auto alpha = inputs[kIndex1]->GetValueWithCheck<float>();
+    auto alpha = inputs[kIndex1]->GetValueWithCheck<pyfloat>();
     coef = static_cast<double>(alpha);
   }
   CHECK_CUDNN_RET_WITH_EXCEPT_NOTRACE(cudnnSetActivationDescriptor(activation_desc_, mode_, CUDNN_PROPAGATE_NAN, coef),

@@ -16,6 +16,7 @@
 #include <cmath>
 #include <algorithm>
 #include "kernel/cpu/pdist_cpu_kernel.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -61,7 +62,7 @@ struct pdist_calc {
 };
 
 bool PdistCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
-  p_ = GetValue<float>(primitive_->GetAttr(ops::kP));
+  p_ = GetValue<pyfloat>(primitive_->GetAttr(ops::kP));
   dtype_ = inputs[0]->dtype_id();
   return true;
 }

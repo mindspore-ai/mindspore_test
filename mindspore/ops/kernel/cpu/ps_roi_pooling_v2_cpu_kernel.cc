@@ -21,6 +21,7 @@
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "abstract/utils.h"
 #include "mindspore/ops/infer/ps_roi_pooling.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -173,7 +174,7 @@ int PSROIPoolingCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
 
   auto spatial_scale_ptr = primitive_->GetAttr("spatial_scale");
   MS_EXCEPTION_IF_NULL(spatial_scale_ptr);
-  spatial_scale_ = GetValue<float>(spatial_scale_ptr);
+  spatial_scale_ = GetValue<pyfloat>(spatial_scale_ptr);
 
   auto group_size_ptr = primitive_->GetAttr("group_size");
   MS_EXCEPTION_IF_NULL(group_size_ptr);

@@ -28,6 +28,7 @@
 #include <map>
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "common/ms_factory.h"
+#include "mindspore/ops/op_def/op_enum.h"
 
 namespace mindspore {
 namespace kernel {
@@ -96,7 +97,7 @@ class PadV3GradCpuKernelMod : public NativeCpuKernelMod {
   TypeId dtype_{kTypeUnknown};
   TypeId pad_dtype_{kTypeUnknown};
   bool paddings_contiguous_;
-  std::string mode_ = "reflect";
+  mindspore::ops::Mode mode_{mindspore::ops::Mode::REFLECT};
   std::vector<int64_t> paddings_{0, 0, 0, 0, 0, 0};
   std::vector<int64_t> input_shape_;
   std::vector<int64_t> output_shape_;

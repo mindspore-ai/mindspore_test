@@ -33,8 +33,8 @@ CUDA_LIB_EXPORT cudaError_t CudaValidateInputAndInferShape(const T *range_start,
                                                            DynamicRangeErrorCode *error_code,
                                                            const int64_t max_output_size, cudaStream_t cuda_stream);
 
-template <typename T>
-CUDA_LIB_EXPORT cudaError_t CalRange(const T *range_start, const T *range_end, const T *range_delta, T *output,
+template <typename T, typename S>
+CUDA_LIB_EXPORT cudaError_t CalRange(const T *range_start, const T *range_end, const T *range_delta, S *output,
                                      int64_t *output_shape, DynamicRangeErrorCode *error_code,
                                      const int64_t max_output_size, cudaStream_t cuda_stream);
 

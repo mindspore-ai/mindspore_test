@@ -29,7 +29,7 @@ namespace kernel {
 namespace pyboost {
 void LayerNormExtCPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
                               const ValueTuplePtr &normalized_shape, const std::optional<TensorPtr> &weight_tensor,
-                              const std::optional<TensorPtr> &bias_opt_tensor, const FP32ImmPtr &eps);
+                              const std::optional<TensorPtr> &bias_opt_tensor, const FP64ImmPtr &eps);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

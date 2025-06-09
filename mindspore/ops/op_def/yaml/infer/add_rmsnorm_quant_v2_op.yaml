@@ -29,3 +29,5 @@ add_rmsnorm_quant_v2:
   dispatch:
     enable: True
     Ascend: AddRmsNormQuantAscend
+    CPU: None
+    GPU: None

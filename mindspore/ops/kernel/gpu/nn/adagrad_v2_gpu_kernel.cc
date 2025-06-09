@@ -19,13 +19,16 @@
 #include <utility>
 #include <algorithm>
 #include "abstract/utils.h"
-#include "mindspore/ops/infer/apply_adagrad_v2.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/adagrad_v2_impl.cuh"
 
 namespace mindspore {
 namespace kernel {
 void AdagradV2GpuKernelMod::InOutputResize(const std::vector<KernelTensor *> &inputs,
                                            const std::vector<KernelTensor *> &outputs) {
+  epsilon_ = inputs[kIndex4]->GetValueWithCheck<pyfloat>();
+  update_slots_ = inputs[kIndex5]->GetValueWithCheck<bool>();
+
   output_size_list_.clear();
   workspace_size_list_.clear();
   auto kernel_attr = GetKernelAttrFromTensors(inputs, outputs);
@@ -68,9 +71,7 @@ void AdagradV2GpuKernelMod::InOutputResize(const std::vector<KernelTensor *> &in
 
 bool AdagradV2GpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                  const std::vector<KernelTensor *> &outputs) {
-  epsilon_ = GetValue<float>(primitive_->GetAttr(ops::kEpsilon));
-  update_slots_ = GetValue<bool>(primitive_->GetAttr(ops::kUpdateSlots));
-  constexpr int INPUT_NUM = 4;
+  constexpr int INPUT_NUM = 6;
   if (inputs.size() != INPUT_NUM) {
     MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', the number of inputs should be 4, but got " << inputs.size();
   }
@@ -82,7 +83,6 @@ bool AdagradV2GpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
     return false;
   }
   kernel_func_ = func_list_[index].second;
-  InOutputResize(inputs, outputs);
   return true;
 }
 
@@ -123,87 +123,25 @@ std::vector<KernelAttr> AdagradV2GpuKernelMod::GetOpSupport() {
   return support_list;
 }
 
+#define ADAGRAD_V2_GPU_REG(MS_IO, MS_LR, IO, LR)                        \
+  std::make_pair(KernelAttr()                                           \
+                   .AddInputAttr(kNumberType##MS_IO)                    \
+                   .AddInputAttr(kNumberType##MS_IO)                    \
+                   .AddInputAttr(kNumberType##MS_LR)                    \
+                   .AddInputAttr(kNumberType##MS_IO)                    \
+                   .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat) \
+                   .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)    \
+                   .AddOutputAttr(kNumberType##MS_IO)                   \
+                   .AddOutputAttr(kNumberType##MS_IO),                  \
+                 &AdagradV2GpuKernelMod::LaunchKernel<IO, LR>)
+
 std::vector<std::pair<KernelAttr, AdagradV2GpuKernelMod::ApplyAdagradV2Func>> AdagradV2GpuKernelMod::func_list_ = {
-  {KernelAttr()
-     .AddInputAttr(kNumberTypeFloat64)
-     .AddInputAttr(kNumberTypeFloat64)
-     .AddInputAttr(kNumberTypeFloat64)
-     .AddInputAttr(kNumberTypeFloat64)
-     .AddOutputAttr(kNumberTypeFloat64)
-     .AddOutputAttr(kNumberTypeFloat64),
-   &AdagradV2GpuKernelMod::LaunchKernel<double, double>},
-
-  {KernelAttr()
-     .AddInputAttr(kNumberTypeFloat32)
-     .AddInputAttr(kNumberTypeFloat32)
-     .AddInputAttr(kNumberTypeFloat32)
-     .AddInputAttr(kNumberTypeFloat32)
-     .AddOutputAttr(kNumberTypeFloat32)
-     .AddOutputAttr(kNumberTypeFloat32),
-   &AdagradV2GpuKernelMod::LaunchKernel<float, float>},
-
-  {KernelAttr()
-     .AddInputAttr(kNumberTypeFloat16)
-     .AddInputAttr(kNumberTypeFloat16)
-     .AddInputAttr(kNumberTypeFloat16)
-     .AddInputAttr(kNumberTypeFloat16)
-     .AddOutputAttr(kNumberTypeFloat16)
-     .AddOutputAttr(kNumberTypeFloat16),
-   &AdagradV2GpuKernelMod::LaunchKernel<half, half>},
-
-  {KernelAttr()
-     .AddInputAttr(kNumberTypeFloat16)
-     .AddInputAttr(kNumberTypeFloat16)
-     .AddInputAttr(kNumberTypeFloat32)
-     .AddInputAttr(kNumberTypeFloat16)
-     .AddOutputAttr(kNumberTypeFloat16)
-     .AddOutputAttr(kNumberTypeFloat16),
-   &AdagradV2GpuKernelMod::LaunchKernel<half, float>},
-
-  {KernelAttr()
-     .AddInputAttr(kNumberTypeFloat32)
-     .AddInputAttr(kNumberTypeFloat32)
-     .AddInputAttr(kNumberTypeFloat16)
-     .AddInputAttr(kNumberTypeFloat32)
-     .AddOutputAttr(kNumberTypeFloat32)
-     .AddOutputAttr(kNumberTypeFloat32),
-   &AdagradV2GpuKernelMod::LaunchKernel<float, half>},
-
-  {KernelAttr()
-     .AddInputAttr(kNumberTypeFloat32)
-     .AddInputAttr(kNumberTypeFloat32)
-     .AddInputAttr(kNumberTypeFloat64)
-     .AddInputAttr(kNumberTypeFloat32)
-     .AddOutputAttr(kNumberTypeFloat32)
-     .AddOutputAttr(kNumberTypeFloat32),
-   &AdagradV2GpuKernelMod::LaunchKernel<float, double>},
-
-  {KernelAttr()
-     .AddInputAttr(kNumberTypeFloat16)
-     .AddInputAttr(kNumberTypeFloat16)
-     .AddInputAttr(kNumberTypeFloat64)
-     .AddInputAttr(kNumberTypeFloat16)
-     .AddOutputAttr(kNumberTypeFloat16)
-     .AddOutputAttr(kNumberTypeFloat16),
-   &AdagradV2GpuKernelMod::LaunchKernel<half, double>},
-
-  {KernelAttr()
-     .AddInputAttr(kNumberTypeFloat64)
-     .AddInputAttr(kNumberTypeFloat64)
-     .AddInputAttr(kNumberTypeFloat32)
-     .AddInputAttr(kNumberTypeFloat64)
-     .AddOutputAttr(kNumberTypeFloat64)
-     .AddOutputAttr(kNumberTypeFloat64),
-   &AdagradV2GpuKernelMod::LaunchKernel<double, float>},
-
-  {KernelAttr()
-     .AddInputAttr(kNumberTypeFloat64)
-     .AddInputAttr(kNumberTypeFloat64)
-     .AddInputAttr(kNumberTypeFloat16)
-     .AddInputAttr(kNumberTypeFloat64)
-     .AddOutputAttr(kNumberTypeFloat64)
-     .AddOutputAttr(kNumberTypeFloat64),
-   &AdagradV2GpuKernelMod::LaunchKernel<double, half>}};
+  ADAGRAD_V2_GPU_REG(Float64, Float64, double, double), ADAGRAD_V2_GPU_REG(Float32, Float32, float, float),
+  ADAGRAD_V2_GPU_REG(Float16, Float16, half, half),     ADAGRAD_V2_GPU_REG(Float16, Float32, half, float),
+  ADAGRAD_V2_GPU_REG(Float32, Float16, float, half),    ADAGRAD_V2_GPU_REG(Float32, Float64, float, double),
+  ADAGRAD_V2_GPU_REG(Float16, Float64, half, double),   ADAGRAD_V2_GPU_REG(Float64, Float32, double, float),
+  ADAGRAD_V2_GPU_REG(Float64, Float16, double, half),
+};
 
 MS_KERNEL_FACTORY_REG(NativeGpuKernelMod, ApplyAdagradV2, AdagradV2GpuKernelMod);
 }  // namespace kernel

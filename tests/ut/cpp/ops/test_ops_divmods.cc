@@ -28,7 +28,6 @@
 #include "abstract/ops/primitive_infer_map.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 
-
 namespace mindspore::ops {
 namespace {
 std::vector<GeneralInferParam> prepare_params() {
@@ -39,7 +38,7 @@ std::vector<GeneralInferParam> prepare_params() {
       // input
       InferInfoParam{ShapeVector{-2}, kNumberTypeInt32},
       // other
-      InferInfoParam{ShapeVector{}, kNumberTypeFloat32, CreateScalar<float>(2.)},
+      InferInfoParam{ShapeVector{}, kNumberTypeFloat64, CreateScalar<double>(2.)},
       // rounding_mode
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(RoundingMode::TRUNC)},
     })
@@ -72,7 +71,7 @@ std::vector<GeneralInferParam> prepare_params() {
       // input
       InferInfoParam{ShapeVector{-2}, kNumberTypeInt32},
       // other
-      InferInfoParam{ShapeVector{}, kNumberTypeFloat32, CreateScalar<float>(2.)},
+      InferInfoParam{ShapeVector{}, kNumberTypeFloat64, CreateScalar<double>(2.)},
       // rounding_mode
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(RoundingMode::FLOOR)},
     })
@@ -105,7 +104,7 @@ std::vector<GeneralInferParam> prepare_params() {
       // input
       InferInfoParam{ShapeVector{-2}, kNumberTypeInt32},
       // other
-      InferInfoParam{ShapeVector{}, kNumberTypeFloat32, CreateScalar<float>(2.)},
+      InferInfoParam{ShapeVector{}, kNumberTypeFloat64, CreateScalar<double>(2.)},
       // rounding_mode
       InferInfoParam{ShapeVector{}, kMetaTypeNone, mindspore::kNone},
     })
@@ -182,17 +181,9 @@ INSTANTIATE_TEST_CASE_P(
   TestDivmodsInferValue, TestDivmodsInferValue,
   testing::Values(
     DivmodsInferValueParams{
-      CreateTensorPtr<float>(kNumberTypeFloat32, ShapeVector{2, 2}, std::vector<float>{2, -3, 2.4, 4}),
-      CreatePyInt(2),
-      CreatePyInt(1),
-      CreateTensorPtr<float>(kNumberTypeFloat32, ShapeVector{2, 2}, std::vector<float>{1, -1, 1, 2})
-    },
+      CreateTensorPtr<float>(kNumberTypeFloat32, ShapeVector{2, 2}, std::vector<float>{2, -3, 2.4, 4}), CreatePyInt(2),
+      CreatePyInt(1), CreateTensorPtr<float>(kNumberTypeFloat32, ShapeVector{2, 2}, std::vector<float>{1, -1, 1, 2})},
     DivmodsInferValueParams{
-      CreateTensorPtr<float>(kNumberTypeFloat32, ShapeVector{2, 2}, std::vector<float>{2, -3, 2.4, 4}),
-      CreatePyInt(2),
-      CreatePyInt(2),
-      CreateTensorPtr<float>(kNumberTypeFloat32, ShapeVector{2, 2}, std::vector<float>{1, -2, 1, 2})
-    }
-  )
-);
+      CreateTensorPtr<float>(kNumberTypeFloat32, ShapeVector{2, 2}, std::vector<float>{2, -3, 2.4, 4}), CreatePyInt(2),
+      CreatePyInt(2), CreateTensorPtr<float>(kNumberTypeFloat32, ShapeVector{2, 2}, std::vector<float>{1, -2, 1, 2})}));
 }  // namespace mindspore::ops

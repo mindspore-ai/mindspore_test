@@ -17,6 +17,8 @@
 #include "plugin/device/ascend/kernel/internal/rms_norm_quant.h"
 
 #include <memory>
+
+#include "mindspore/core/include/mindapi/base/types.h"
 #include "common/kernel.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_in_out_map.h"
 
@@ -27,9 +29,10 @@ internal::InternalOpPtr InternalRmsNormQuant::CreateKernel(const internal::Input
                                                            const std::vector<KernelTensor *> &ms_inputs,
                                                            const std::vector<KernelTensor *> &ms_outputs) {
   internal::NormParam param;
-  param.eps = ms_inputs[kIndex5]->GetValueWithCheck<float>();
+  param.eps = ms_inputs[kIndex5]->GetValueWithCheck<pyfloat>();
   return internal::CreateRmsNormQuantOp(inputs_ii, outputs_ii, param, internal::kInternalRmsNormQuantOpName);
 }
+
 MS_INTERNAL_KERNEL_FACTORY_REG(RmsNormQuant, internal::kInternalRmsNormQuantOpName, InternalRmsNormQuant);
 REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(RmsNormQuant, INPUT_NUM_5, INDEX_0, INDEX_1, INDEX_2, INDEX_3, INDEX_4);
 REG_MS_TO_INTERNAL_OUT_TENSOR_IDX_MAP(RmsNormQuant, OUTPUT_NUM_1, INDEX_0);

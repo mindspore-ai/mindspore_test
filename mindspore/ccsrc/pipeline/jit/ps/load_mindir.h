@@ -35,6 +35,7 @@ void ModifyOneFuncGraph(const FuncGraphPtr &func_graph, std::set<FuncGraphPtr> *
 void ModifyOneCNode(const FuncGraphPtr &func_graph, const CNodePtr &cnode);
 std::vector<AnfNodePtr> ArgsNeededToConvert(const PrimitivePtr &prim, const CNodePtr &cnode);
 bool InferMindIR(const ResourcePtr &resource);
+bool ConvertScalarDtypeForLegacyMindIR(const ResourcePtr &resource);
 }  // namespace pipeline
 }  // namespace mindspore
 

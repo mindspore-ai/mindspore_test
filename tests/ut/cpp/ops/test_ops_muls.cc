@@ -25,6 +25,7 @@
 #include "ops/test_value_utils.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore::ops {
 namespace {
@@ -32,19 +33,19 @@ std::vector<GeneralInferParam> prepare_params() {
   GeneralInferParamGenerator generator;
   generator
     .FeedInputArgs({InferInfoParam{ShapeVector{2, 3}, kNumberTypeFloat32},
-                    InferInfoParam{ShapeVector{}, kNumberTypeFloat32, CreateScalar<float>(1.)}})
+                    InferInfoParam{ShapeVector{}, kNumberTypePyFloat, CreateScalar<pyfloat>(1.)}})
     .FeedExpectedOutput({{2, 3}}, {kNumberTypeFloat32});
   generator
     .FeedInputArgs({InferInfoParam{ShapeVector{2, -1}, kNumberTypeFloat16},
-                    InferInfoParam{ShapeVector{}, kNumberTypeFloat32, CreateScalar<float>(1.)}})
+                    InferInfoParam{ShapeVector{}, kNumberTypePyFloat, CreateScalar<pyfloat>(1.)}})
     .FeedExpectedOutput({{2, -1}}, {kNumberTypeFloat16});
   generator
     .FeedInputArgs({InferInfoParam{ShapeVector{-1, -1}, kNumberTypeInt32},
-                    InferInfoParam{ShapeVector{}, kNumberTypeFloat32, CreateScalar<float>(1.)}})
+                    InferInfoParam{ShapeVector{}, kNumberTypePyFloat, CreateScalar<pyfloat>(1.)}})
     .FeedExpectedOutput({{-1, -1}}, {kNumberTypeFloat32});
   generator
     .FeedInputArgs({InferInfoParam{ShapeVector{-2}, kNumberTypeComplex128},
-                    InferInfoParam{ShapeVector{}, kNumberTypeFloat32, CreateScalar<float>(1.)}})
+                    InferInfoParam{ShapeVector{}, kNumberTypePyFloat, CreateScalar<pyfloat>(1.)}})
     .FeedExpectedOutput({{-2}}, {kNumberTypeComplex128});
   return generator.Generate();
 }
@@ -107,50 +108,28 @@ INSTANTIATE_TEST_CASE_P(
   TestMulsInferValue, TestMulsInferValue,
   testing::Values(
     MulsInferValueParams{
-      CreateTensorPtr<float>(kNumberTypeFloat32, ShapeVector{2, 2}, std::vector<float>{1, 2, 3.4, 4}),
-      CreatePyInt(2),
-      CreateTensorPtr<float>(kNumberTypeFloat32, ShapeVector{2, 2}, std::vector<float>{2, 4, 6.8, 8})
-    },
+      CreateTensorPtr<float>(kNumberTypeFloat32, ShapeVector{2, 2}, std::vector<float>{1, 2, 3.4, 4}), CreatePyInt(2),
+      CreateTensorPtr<float>(kNumberTypeFloat32, ShapeVector{2, 2}, std::vector<float>{2, 4, 6.8, 8})},
     MulsInferValueParams{
-      CreateTensorPtr<double>(kNumberTypeFloat64, ShapeVector{2, 2}, std::vector<double>{1.1, 4, 3, 4}),
-      CreatePyInt(2),
-      CreateTensorPtr<double>(kNumberTypeFloat64, ShapeVector{2, 2}, std::vector<double>{2.2, 8, 6, 8})
-    },
+      CreateTensorPtr<double>(kNumberTypeFloat64, ShapeVector{2, 2}, std::vector<double>{1.1, 4, 3, 4}), CreatePyInt(2),
+      CreateTensorPtr<double>(kNumberTypeFloat64, ShapeVector{2, 2}, std::vector<double>{2.2, 8, 6, 8})},
     MulsInferValueParams{
-      CreateTensorPtr<uint8_t>(kNumberTypeUInt8, ShapeVector{2, 2}, std::vector<uint8_t>{1, 23, 3, 4}),
-      CreatePyInt(2),
-      CreateTensorPtr<uint8_t>(kNumberTypeUInt8, ShapeVector{2, 2}, std::vector<uint8_t>{2, 46, 6, 8})
-    },
+      CreateTensorPtr<uint8_t>(kNumberTypeUInt8, ShapeVector{2, 2}, std::vector<uint8_t>{1, 23, 3, 4}), CreatePyInt(2),
+      CreateTensorPtr<uint8_t>(kNumberTypeUInt8, ShapeVector{2, 2}, std::vector<uint8_t>{2, 46, 6, 8})},
+    MulsInferValueParams{CreateTensorPtr<int8_t>(kNumberTypeInt8, ShapeVector{2, 2}, std::vector<int8_t>{12, 2, 3, 4}),
+                         CreatePyInt(2),
+                         CreateTensorPtr<int8_t>(kNumberTypeInt8, ShapeVector{2, 2}, std::vector<int8_t>{24, 4, 6, 8})},
     MulsInferValueParams{
-      CreateTensorPtr<int8_t>(kNumberTypeInt8, ShapeVector{2, 2}, std::vector<int8_t>{12, 2, 3, 4}),
-      CreatePyInt(2),
-      CreateTensorPtr<int8_t>(kNumberTypeInt8, ShapeVector{2, 2}, std::vector<int8_t>{24, 4, 6, 8})
-    },
-    MulsInferValueParams{
-      CreateTensorPtr<int32_t>(kNumberTypeInt32, ShapeVector{2, 2}, std::vector<int32_t>{1, 2, 3, 4}),
-      CreatePyInt(3),
-      CreateTensorPtr<int32_t>(kNumberTypeInt32, ShapeVector{2, 2}, std::vector<int32_t>{3, 6, 9, 12})
-    },
-    MulsInferValueParams{
-      CreateMulsBoolTensorPtr(),
-      CreateScalar(true),
-      CreateMulsBoolTensorPtr()
-    },
-    MulsInferValueParams{
-      CreateMulsBoolTensorPtr(),
-      CreateScalar(false),
-      CreateMulsAllFalseBoolTensorPtr()
-    },
+      CreateTensorPtr<int32_t>(kNumberTypeInt32, ShapeVector{2, 2}, std::vector<int32_t>{1, 2, 3, 4}), CreatePyInt(3),
+      CreateTensorPtr<int32_t>(kNumberTypeInt32, ShapeVector{2, 2}, std::vector<int32_t>{3, 6, 9, 12})},
+    MulsInferValueParams{CreateMulsBoolTensorPtr(), CreateScalar(true), CreateMulsBoolTensorPtr()},
+    MulsInferValueParams{CreateMulsBoolTensorPtr(), CreateScalar(false), CreateMulsAllFalseBoolTensorPtr()},
     MulsInferValueParams{
       CreateTensorPtr<float>(kNumberTypeFloat32, ShapeVector{2, 2}, std::vector<float>{1.2, 2.1, 2, 3.2}),
       CreateScalar(true),
-      CreateTensorPtr<float>(kNumberTypeFloat32, ShapeVector{2, 2}, std::vector<float>{1.2, 2.1, 2, 3.2})
-    },
+      CreateTensorPtr<float>(kNumberTypeFloat32, ShapeVector{2, 2}, std::vector<float>{1.2, 2.1, 2, 3.2})},
     MulsInferValueParams{
       CreateTensorPtr<float>(kNumberTypeFloat32, ShapeVector{2, 2}, std::vector<float>{1.2, 2.1, 2, 3.2}),
       CreateScalar(false),
-      CreateTensorPtr<float>(kNumberTypeFloat32, ShapeVector{2, 2}, std::vector<float>{0.0, 0.0, 0.0, 0.0})
-    }
-  )
-);
+      CreateTensorPtr<float>(kNumberTypeFloat32, ShapeVector{2, 2}, std::vector<float>{0.0, 0.0, 0.0, 0.0})}));
 }  // namespace mindspore::ops

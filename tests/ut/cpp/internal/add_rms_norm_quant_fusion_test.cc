@@ -46,7 +46,7 @@ TEST_F(AddRmsNormQuantFusionUT, AddRmsNormQuantFusionTest) {
   auto add = c.NewCNode("Add", {input_0, input_1}, {});
 
   auto gamma = c.NewTensorInput("gamma", kFloat16, {11264});
-  auto eps = c.NewValueNode(MakeValue<float>(1e-5));
+  auto eps = c.NewValueNode(MakeValue<double>(1e-5));
   auto rmsnorm = c.NewCNode("RmsNorm", {add, gamma, eps}, {});
 
   auto idx = c.NewValueNode(MakeValue<int64_t>(0));

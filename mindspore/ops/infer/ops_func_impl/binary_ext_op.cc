@@ -44,7 +44,7 @@ std::vector<TypeId> BinaryExtOpFuncImpl::InferType(const PrimitivePtr &primitive
   auto other = input_infos[kInputIndex1]->GetType();
   auto alpha = input_infos[kInputIndex2]->GetType();
   auto typePtr = TypeIdToType(input);
-  if (alpha == kNumberTypeFloat32 && (IsIntegralBinaryType(input) || IsIntegralBinaryType(other))) {
+  if (alpha == kNumberTypePyFloat && (IsIntegralBinaryType(input) || IsIntegralBinaryType(other))) {
     MS_EXCEPTION(TypeError) << "For '" << primitive->name()
                             << "', floating alpha need floating input and other, but got " << TypeIdToString(input)
                             << " and " << TypeIdToString(other);

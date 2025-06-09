@@ -27,14 +27,14 @@ namespace pyboost {
 void LayerNormExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
                                  const ValueTuplePtr &normalized_shape,
                                  const std::optional<TensorPtr> &weight_opt_tensor,
-                                 const std::optional<TensorPtr> &bias_opt_tensor, const FP32ImmPtr &eps) {
+                                 const std::optional<TensorPtr> &bias_opt_tensor, const FP64ImmPtr &eps) {
   MS_LOG(DEBUG) << "Call start";
 
   // Convert ValuePtr to c++ scalr
   OpRunner::InferOpOutput(op, input_tensor, normalized_shape, weight_opt_tensor, bias_opt_tensor, eps);
 
   std::vector<int64_t> normalized_shape_vector = ConvertValueTupleToVector<int64_t>(normalized_shape);
-  auto eps_imm = static_cast<double>(GetValue<float>(eps));
+  auto eps_imm = static_cast<double>(eps->value());
 
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor, weight_opt_tensor,
                                 bias_opt_tensor);

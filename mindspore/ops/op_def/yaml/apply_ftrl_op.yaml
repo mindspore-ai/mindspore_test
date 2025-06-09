@@ -1,0 +1,41 @@
+#operator apply_ftrl
+apply_ftrl:
+    args:
+        var:
+            dtype: tensor
+        accum:
+            dtype: tensor
+        linear:
+            dtype: tensor
+        grad:
+            dtype: tensor
+        lr:
+            dtype: tensor
+            type_cast: number
+            default: 0.001
+        l1:
+            dtype: tensor
+            type_cast: number
+            default: 0.0
+        l2:
+            dtype: tensor
+            type_cast: number
+            default: 0.0
+        lr_power:
+            dtype: tensor
+            type_cast: number
+            default: -0.5
+        use_locking:
+            dtype: bool
+            default: False
+            prim_init: True
+    returns:
+        var:
+            dtype: tensor
+    args_signature:
+        rw_write: var, accum, linear
+        dtype_group: (var, accum, linear, grad, lr, l1, l2, lr_power)
+    labels:
+        side_effect_mem: True
+    function:
+        disable: True

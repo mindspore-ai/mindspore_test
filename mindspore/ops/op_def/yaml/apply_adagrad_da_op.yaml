@@ -1,0 +1,39 @@
+#operator apply_adagrad_da
+apply_adagrad_da:
+    args:
+        var:
+            dtype: tensor
+        gradient_accumulator:
+            dtype: tensor
+        gradient_squared_accumulator:
+            dtype: tensor
+        grad:
+            dtype: tensor
+        lr:
+            dtype: tensor
+            type_cast: float
+        l1:
+            dtype: tensor
+            type_cast: float
+        l2:
+            dtype: tensor
+            type_cast: float
+        global_step:
+            dtype: tensor
+            type_cast: int
+        use_locking:
+            dtype: bool
+            default: False
+            prim_init: True
+    returns:
+        var:
+            dtype: tensor
+    args_signature:
+        rw_write: var, gradient_accumulator, gradient_squared_accumulator
+        dtype_group: (var, gradient_accumulator, gradient_squared_accumulator, grad), (lr), (l1), (l2), (global_step)
+    labels:
+        side_effect_mem: True
+    class:
+        name: ApplyAdagradDA
+    function:
+        disable: True

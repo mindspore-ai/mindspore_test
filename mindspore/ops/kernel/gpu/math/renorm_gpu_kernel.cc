@@ -25,6 +25,7 @@
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
 #include "mindspore/ops/infer/renorm.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/renorm_impl.cuh"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -32,12 +33,12 @@ constexpr size_t RenormInputsNum = 1;
 constexpr size_t RenormOutputsNum = 1;
 bool RenormGpuKernelMod::GetRenormAttr() {
   dim_ = GetValue<int64_t>(primitive_->GetAttr("dim"));
-  p_ = GetValue<float>(primitive_->GetAttr("p"));
+  p_ = GetValue<pyfloat>(primitive_->GetAttr("p"));
   if (p_ <= 0.0f) {
     MS_LOG(ERROR) << "For 'Renorm', it's op attribute 'p'" << p_ << "less than or equals to zero is invalid.";
     return false;
   }
-  max_norm_ = GetValue<float>(primitive_->GetAttr("maxnorm"));
+  max_norm_ = GetValue<pyfloat>(primitive_->GetAttr("maxnorm"));
   if (max_norm_ < 0) {
     MS_LOG(ERROR) << "For 'Renorm', it's op attribute 'maxnorm'" << max_norm_ << "less than zero is invalid.";
     return false;

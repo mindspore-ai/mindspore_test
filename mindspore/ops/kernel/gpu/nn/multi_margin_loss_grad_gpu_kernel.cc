@@ -25,6 +25,7 @@
 #include "mindspore/ops/infer/grad/multi_margin_loss_grad.h"
 #include "abstract/utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/multi_margin_loss_grad_impl.cuh"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -35,7 +36,7 @@ bool MultiMarginLossGradGpuKernelMod::Init(const std::vector<KernelTensor *> &in
     MS_LOG(ERROR) << "For '" << kernel_name_ << "' p should be 1 or 2, but got " << p_;
     return false;
   }
-  margin_ = GetValue<float>(primitive_->GetAttr(ops::kMargin));
+  margin_ = GetValue<pyfloat>(primitive_->GetAttr(ops::kMargin));
   string reduction = GetValue<std::string>(primitive_->GetAttr(ops::kReduction));
   reduction_ = 1;
   if (reduction == "mean") {

@@ -17,7 +17,9 @@
 #include "plugin/device/ascend/kernel/internal/add_rms_norm_quant.h"
 
 #include <memory>
+
 #include "common/kernel.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -26,7 +28,7 @@ internal::InternalOpPtr InternalAddRmsNormQuant::CreateKernel(const internal::In
                                                               const std::vector<KernelTensor *> &ms_inputs,
                                                               const std::vector<KernelTensor *> &ms_outputs) {
   internal::NormParam param;
-  param.eps = ms_inputs[kIndex5]->GetValueWithCheck<float>();
+  param.eps = ms_inputs[kIndex5]->GetValueWithCheck<pyfloat>();
   param.need_rms_norm_out =
     primitive_->HasAttr("need_rms_norm_out") ? GetValue<bool>(primitive_->GetAttr("need_rms_norm_out")) : false;
   need_rms_norm_out_ = param.need_rms_norm_out;

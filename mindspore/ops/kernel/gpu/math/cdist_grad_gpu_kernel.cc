@@ -17,6 +17,7 @@
 #include "kernel/gpu/math/cdist_grad_gpu_kernel.h"
 #include <utility>
 #include <algorithm>
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -42,7 +43,7 @@ int CdistGradGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
     return false;
   }
   kernel_func_ = func_list_[index].second;
-  p_ = inputs[kIndex4]->GetValueWithCheck<float>();
+  p_ = inputs[kIndex4]->GetValueWithCheck<pyfloat>();
   unit_size_ = abstract::TypeIdSize(kernel_attr.GetInputAttr(kIndex0).dtype);
   std::vector<int64_t> grad_shape = inputs[kIndex0]->GetShapeVector();
   std::vector<int64_t> in_shape0 = inputs[kIndex1]->GetShapeVector();
@@ -109,7 +110,7 @@ std::vector<std::pair<KernelAttr, CdistGradGpuKernelMod::CdistGradFunc>> CdistGr
      .AddInputAttr(kNumberTypeFloat32)
      .AddInputAttr(kNumberTypeFloat32)
      .AddInputAttr(kNumberTypeFloat32)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddOutputAttr(kNumberTypeFloat32),
    &CdistGradGpuKernelMod::LaunchKernel<float>},
   {KernelAttr()
@@ -117,7 +118,7 @@ std::vector<std::pair<KernelAttr, CdistGradGpuKernelMod::CdistGradFunc>> CdistGr
      .AddInputAttr(kNumberTypeFloat64)
      .AddInputAttr(kNumberTypeFloat64)
      .AddInputAttr(kNumberTypeFloat64)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddOutputAttr(kNumberTypeFloat64),
    &CdistGradGpuKernelMod::LaunchKernel<double>}};
 

@@ -15,6 +15,7 @@
  */
 
 #include "kernel/gpu/random/log_normal_reverse_gpu_kernel.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -55,8 +56,6 @@ bool LogNormalReverseGpuKernelMod::Init(const std::vector<KernelTensor *> &input
     return false;
   }
 
-  input_shape_ = inputs.at(kIndex0)->GetShapeVector();
-  output_shape_ = outputs.at(kIndex0)->GetShapeVector();
   input_dtype_ = inputs.at(kIndex0)->dtype_id();
   output_dtype_ = outputs.at(kIndex0)->dtype_id();
   if (input_dtype_ != kNumberTypeFloat32 && input_dtype_ != kNumberTypeFloat16 && input_dtype_ != kNumberTypeFloat64) {
@@ -70,8 +69,8 @@ bool LogNormalReverseGpuKernelMod::Init(const std::vector<KernelTensor *> &input
                       << "but got input type: " << input_dtype_ << " and output type: " << output_dtype_ << ".";
   }
 
-  input_mean_ = GetValue<float>(primitive_->GetAttr("mean"));
-  input_std_ = GetValue<float>(primitive_->GetAttr("std"));
+  input_mean_ = GetValue<pyfloat>(primitive_->GetAttr("mean"));
+  input_std_ = GetValue<pyfloat>(primitive_->GetAttr("std"));
 
   kernel_func_ = func_list_[pair.second].second;
   unit_size_ = abstract::TypeIdSize(kernel_attr.GetInputAttr(kIndex0).dtype);

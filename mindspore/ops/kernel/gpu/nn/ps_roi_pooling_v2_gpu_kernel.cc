@@ -16,6 +16,7 @@
 #include <utility>
 #include "kernel/gpu/nn/ps_roi_pooling_v2_gpu_kernel.h"
 #include "mindspore/ops/infer/ps_roi_pooling.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -96,7 +97,7 @@ int PSROIPoolingV2GpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs
   rois_num_ = static_cast<int32_t>(rois_shape[kNumberIndex]);
   output_n_ = batch_size_ * rois_num_;
 
-  spatial_scale_ = GetValue<float>(primitive_->GetAttr("spatial_scale"));
+  spatial_scale_ = GetValue<pyfloat>(primitive_->GetAttr("spatial_scale"));
 
   pooled_height_ = LongToInt(GetValue<int64_t>(primitive_->GetAttr("group_size")));
   pooled_width_ = LongToInt(GetValue<int64_t>(primitive_->GetAttr("group_size")));

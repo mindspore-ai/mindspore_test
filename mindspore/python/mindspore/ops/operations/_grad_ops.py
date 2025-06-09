@@ -36,7 +36,8 @@ from ..auto_generate import (AbsGrad, ACosGrad, LogitGrad, AcoshGrad, AsinGrad, 
                              ResizeBicubicGrad, HSigmoidGrad, CholeskyGrad, ResizeNearestNeighborGrad, LayerNormGrad,
                              HShrinkGrad, LayerNormGradGrad, SiLUGrad, MaximumGrad, MaximumGradGrad, RmsNormGrad,
                              FlashAttentionScoreGrad, UpsampleTrilinear3DGrad, UpsampleNearest3DGrad, MaskedSelectGrad,
-                             BinaryCrossEntropyGrad, SoftShrinkGrad, SoftMarginLossGrad, SeluGrad, SmoothL1LossGrad)
+                             BinaryCrossEntropyGrad, SoftShrinkGrad, SoftMarginLossGrad, SeluGrad, SmoothL1LossGrad,
+                             PadV3Grad)
 
 
 class SparseFillEmptyRowsGrad(Primitive):
@@ -1696,20 +1697,6 @@ class MirrorPadGrad(Primitive):
         self.init_prim_io_names(inputs=['dy', 'paddings'], outputs=['output'])
         validator.check_string(mode, ['REFLECT', 'SYMMETRIC'], 'mode', self.name)
         self.mode = mode
-
-
-class PadV3Grad(Primitive):
-    """Gradients of PadV3 operation."""
-
-    @prim_attr_register
-    def __init__(self, mode='reflect', paddings_contiguous=True):
-        """Initialize Padv3Grad"""
-        self.add_prim_attr("cust_aicpu", self.name)
-        self.init_prim_io_names(inputs=['x', 'paddings'], outputs=['y'])
-        validator.check_string(mode, ['reflect', 'edge', 'circular'], 'mode', self.name)
-        validator.check_bool(paddings_contiguous, "paddings_contiguous", self.name)
-        self.mode = mode
-        self.paddings_contiguous = paddings_contiguous
 
 
 class EmbeddingLookupCommGrad(PrimitiveWithInfer):

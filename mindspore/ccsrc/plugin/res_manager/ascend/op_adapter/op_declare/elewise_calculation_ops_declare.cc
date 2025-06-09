@@ -699,7 +699,8 @@ REG_ADPT_DESC(Argmin, kArgminOpName, ADPT_DESC(ArgMin))
 
 // Threshold
 INPUT_MAP(Threshold) = {{1, INPUT_DESC(x)}};
-ATTR_MAP(Threshold) = {{"threshold", ATTR_DESC(threshold, AnyTraits<float>())}};
+INPUT_ATTR_MAP(Threshold) = {{2, ATTR_DESC(threshold, AnyTraits<float>())}};
+ATTR_MAP(Threshold) = EMPTY_ATTR_MAP;
 OUTPUT_MAP(Threshold) = {{0, OUTPUT_DESC(y)}};
 REG_ADPT_DESC(Threshold, kNameThreshold, ADPT_DESC(Threshold))
 

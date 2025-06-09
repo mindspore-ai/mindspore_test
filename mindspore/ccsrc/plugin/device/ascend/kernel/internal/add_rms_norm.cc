@@ -19,6 +19,8 @@
 #include <memory>
 #include "common/kernel.h"
 
+#include "mindspore/core/include/mindapi/base/types.h"
+
 namespace mindspore {
 namespace kernel {
 internal::InternalOpPtr InternalAddRmsNorm::CreateKernel(const internal::InputsImmutableInfoList &inputs_ii,
@@ -26,7 +28,7 @@ internal::InternalOpPtr InternalAddRmsNorm::CreateKernel(const internal::InputsI
                                                          const std::vector<KernelTensor *> &ms_inputs,
                                                          const std::vector<KernelTensor *> &ms_outputs) {
   internal::NormParam param;
-  param.eps = ms_inputs[kIndex3]->GetValueWithCheck<float>();
+  param.eps = ms_inputs[kIndex3]->GetValueWithCheck<pyfloat>();
   return internal::CreateAddRmsNormOp(inputs_ii, outputs_ii, param, internal::kInternalAddRmsNormOpName);
 }
 MS_INTERNAL_KERNEL_FACTORY_REG(AddRmsNorm, internal::kInternalAddRmsNormOpName, InternalAddRmsNorm);

@@ -20,6 +20,7 @@
 #include "abstract/utils.h"
 #include "common/ms_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/hshrink_impl.cuh"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -59,7 +60,7 @@ int HShrinkGradGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
     return KRET_RESIZE_FAILED;
   }
   input_elements_ = inputs[0]->size() / unit_size_;
-  lambd = inputs[kIndex2]->GetValueWithCheck<float>();
+  lambd_ = inputs[kIndex2]->GetValueWithCheck<pyfloat>();
   return KRET_OK;
 }
 
@@ -70,7 +71,7 @@ bool HShrinkGradGpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &in
   T *x = GetDeviceAddress<T>(inputs, kIndex1);
   T *dx = GetDeviceAddress<T>(outputs, kIndex0);
   auto status =
-    CalHShrinkGrad(input_elements_, dy, x, lambd, dx, device_id_, reinterpret_cast<cudaStream_t>(cuda_stream_));
+    CalHShrinkGrad(input_elements_, dy, x, lambd_, dx, device_id_, reinterpret_cast<cudaStream_t>(cuda_stream_));
   CHECK_CUDA_STATUS(status, kernel_name_);
   return true;
 }
@@ -79,13 +80,13 @@ std::vector<std::pair<KernelAttr, HShrinkGradGpuKernelMod::HShrinkGradFunc>> HSh
   {KernelAttr()
      .AddInputAttr(kNumberTypeFloat16)
      .AddInputAttr(kNumberTypeFloat16)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddOutputAttr(kNumberTypeFloat16),
    &HShrinkGradGpuKernelMod::LaunchKernel<half>},
   {KernelAttr()
      .AddInputAttr(kNumberTypeFloat32)
      .AddInputAttr(kNumberTypeFloat32)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddOutputAttr(kNumberTypeFloat32),
    &HShrinkGradGpuKernelMod::LaunchKernel<float>}};
 

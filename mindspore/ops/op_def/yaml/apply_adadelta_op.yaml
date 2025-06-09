@@ -1,0 +1,34 @@
+#operator apply_adadelta
+apply_adadelta:
+    args:
+        var:
+            dtype: tensor
+        accum:
+            dtype: tensor
+        accum_update:
+            dtype: tensor
+        lr:
+            dtype: tensor
+            type_cast: float
+        rho:
+            dtype: tensor
+            type_cast: float
+        epsilon:
+            dtype: tensor
+            type_cast: float
+        grad:
+            dtype: tensor
+    returns:
+        var:
+            dtype: tensor
+        accum:
+            dtype: tensor
+        accum_update:
+            dtype: tensor
+    args_signature:
+        rw_write: var, accum, accum_update
+        dtype_group: (var, accum, accum_update, grad), (lr), (rho), (epsilon)
+    labels:
+        side_effect_mem: True
+    function:
+        disable: True

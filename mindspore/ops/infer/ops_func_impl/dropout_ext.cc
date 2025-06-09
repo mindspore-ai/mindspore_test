@@ -20,6 +20,7 @@
 #include <string>
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "ops_utils/op_constants.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace ops {
@@ -73,11 +74,11 @@ TypePtr DropoutExtFuncImpl::InferType(const PrimitivePtr &primitive,
 int32_t DropoutExtFuncImpl::CheckValidation(const PrimitivePtr &primitive,
                                             const std::vector<AbstractBasePtr> &input_args) const {
   MS_EXCEPTION_IF_NULL(input_args[kIndex1]);
-  const auto &p_opt = GetScalarValue<float>(input_args[kIndex1]->GetValue());
+  const auto &p_opt = GetScalarValue<pyfloat>(input_args[kIndex1]->GetValue());
   if (MS_UNLIKELY(!p_opt.has_value())) {
     return OP_CHECK_RETRY;
   }
-  MS_CHECK_VALUE(p_opt.value() >= static_cast<float>(0.0) && p_opt.value() <= static_cast<float>(1.0),
+  MS_CHECK_VALUE(p_opt.value() >= static_cast<pyfloat>(0.0) && p_opt.value() <= static_cast<pyfloat>(1.0),
                  "For 'DropoutExt', the 'p' must be in range [0, 1], but got " + std::to_string(p_opt.value()));
   return OP_CHECK_SUCCESS;
 }

@@ -78,9 +78,9 @@ CNodePtr CreateBNInferGrad(const FuncGraphPtr &graph, const CNodePtr &batchnormg
   }
 
   auto epsilon_opt = GetScalarAnfNodeValue<pyfloat>(batchnormgrad->input(kIdxEpsilon));
-  float epsilon{1e-5};
+  pyfloat epsilon{1e-5};
   if (epsilon_opt.has_value()) {
-    epsilon = epsilon_opt.has_value() ? epsilon_opt.value() : 1e-5;
+    epsilon = epsilon_opt.value();
   } else {
     MS_LOG(ERROR) << "For BNInferGrad pass, failed to get attr epsilon, use default epsilon: 1e-5.";
   }

@@ -23,6 +23,7 @@
 #include "utils/trace_base.h"
 #include "plugin/device/ascend/hal/device/lic_manager.h"
 #include "include/common/utils/anfalgo.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore {
@@ -113,7 +114,7 @@ AnfNodePtr Conv2dBackpropInputDilationFusion::CreateDilation(const FuncGraphPtr 
                                               dilation.get());
   std::vector<int64_t> dilations = {1, 1, kAttrHAxisSize, kAttrHAxisSize, 1};
   common::AnfAlgo::SetNodeAttr("dilations", MakeValue(dilations), dilation);
-  common::AnfAlgo::SetNodeAttr("padding_value", MakeValue<float>(0.0), dilation);
+  common::AnfAlgo::SetNodeAttr("padding_value", MakeValue<pyfloat>(0.0), dilation);
   common::AnfAlgo::SetNodeAttr("pads", MakeValue(std::vector<int64_t>{0, 1, 0, 1}), dilation);
   return dilation;
 }

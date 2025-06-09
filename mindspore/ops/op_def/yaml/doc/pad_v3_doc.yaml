@@ -1,0 +1,85 @@
+pad_v3:
+    description: |
+        Pads the input Tensor according to the `paddings`, `mode` and `paddings_contiguous`.
+
+        Args:
+            mode (str, optional): An optional string indicates padding mode,
+                support ``"constant"`` , ``"reflect"`` , ``"edge"`` , ``"circular"`` . Default: ``"constant"`` .
+                The effects of various padding modes are as follows:
+
+                - ``"constant"``: Pads the input Tensor with value specified by `constant_value`.
+                - ``"reflect"``: Pads the input Tensor by reflecting the values of the pixels at the
+                  boundary of the Tensor.
+                - ``"edge"``: Pads the input Tensor with the values of the pixels on the border of the Tensor.
+                - ``"circular"``: Circular padding mode. In this mode, the pixels from one edge of the image
+                  are wrapped around to the opposite edge, such that the pixel on the right edge of the
+                  image is replaced with the pixel on the left edge, and the pixel on the bottom edge
+                  is replaced with the pixel on the top edge.
+
+            paddings_contiguous (bool, optional): An optional bool value indicates if the padding is paddings_contiguous.
+                If ``True`` , paddings is arranged as [begin0, end0, begin1, end1, ...]
+                If ``False`` , paddings is arranged as [begin0, begin1, ..., end1, end2, ...]
+                Default: ``True`` .
+
+        Inputs:
+            - **x** (Tensor) - Tensor to be padded. It has shape :math:`(N, *)`, where :math:`*` means
+                any number of additional dimensions.
+            - **paddings** (Union[Tensor, list[int], tuple[int]]) -  Specifies the number of zeros to be padded before
+                and after each dimension of the input Tensor `x`. It's a 1D Tensor of type int32 or int64.
+            - **constant_value** (Union[Tensor, number], optional) - Padding value to use in 'constant' mode,
+                if not specified, None is used instead. It has the same type as `x`.
+
+        Outputs:
+            Tensor, the tensor after padding.
+
+        Raises:
+            TypeError: If `x` or `paddings` is not a Tensor.
+            TypeError: If `padding_contiguous` is not a bool.
+            ValueError: If `mode` is not a str or not in support modes.
+            ValueError: If `mode` is "constant", the element's number of `paddings` not be even.
+            ValueError: If `mode` is "constant", the element's number of `paddings` large than input dim * 2.
+            ValueError: If `mode` is "edge" "reflect" or "circular", the element's number of `paddings` is not 2, 4 or 6.
+            ValueError: If `mode` is "edge" "reflect" or "circular", `x` dims equals 3,
+                the element's number of `paddings` is not 2.
+            ValueError: If `mode` is "edge" "reflect" or "circular", `x` dims equals 4,
+                the element's number of `paddings` is not 4.
+            ValueError: If `mode` is "circular", `x` dims equals 5, the element's number of `paddings` is not 6.
+            ValueError: If `mode` is "edge", "reflect" or "circular", `x` dims smaller than 3.
+            ValueError: If `mode` is "edge" or "circular", x dims bigger than 5.
+            ValueError: If `mode` is "reflect", x dims bigger than 4.
+            ValueError: If `mode` is "reflect", padding size bigger than the corresponding `x` dimension.
+            ValueError: After padding, output's shape number is not greater than 0.
+
+        Supported Platforms:
+            ``Ascend`` ``GPU`` ``CPU``
+
+        Examples:
+            >>> # case1: mode="reflect", paddings_contiguous=True
+            >>> class Net(nn.Cell):
+            ...    def __init__(self, mode, paddings_contiguous):
+            ...        super(Net, self).__init__()
+            ...        self.pad = ops.PadV3(mode=mode, paddings_contiguous=paddings_contiguous)
+            ...        self.paddings = Tensor([1, 1])
+            ...    def construct(self, x):
+            ...        return self.pad(x, self.paddings)
+            ...
+            >>> x = Tensor([[[0., 1.]]])
+            >>> pad = Net(mode="reflect", paddings_contiguous=True)
+            >>> output = pad(x)
+            >>> print(output)
+            [[[1. 0. 1. 0.]]]
+            >>> # case2: mode="constant", padding_contigous=False
+            >>> class Net(nn.Cell):
+            ...    def __init__(self, mode, paddings_contiguous):
+            ...        super(Net, self).__init__()
+            ...        self.pad = ops.PadV3(mode=mode, paddings_contiguous=paddings_contiguous)
+            ...        self.paddings = Tensor([1, 0, 1, 0])
+            ...        self.value = Tensor(1.5)
+            ...    def construct(self, x):
+            ...        return self.pad(x, self.paddings, self.value)
+            ...
+            >>> x = Tensor([[0., 1., 2.]])
+            >>> pad = Net(mode="constant", paddings_contiguous=False)
+            >>> output = pad(x)
+            >>> print(output)
+            [[1.5 0. 1. 2. 1.5]]

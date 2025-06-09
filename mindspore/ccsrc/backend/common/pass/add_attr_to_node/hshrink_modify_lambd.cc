@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #include "backend/common/pass/add_attr_to_node/add_attr_to_node_register.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace opt {
@@ -27,9 +28,9 @@ const AnfNodePtr HShrinkModifyLambd(const FuncGraphPtr &graph, const AnfNodePtr 
   if (lambd_node->isa<ValueNode>()) {
     auto lambd_value_node = lambd_node->cast<ValueNodePtr>();
     MS_EXCEPTION_IF_NULL(lambd_value_node);
-    auto lambd = GetValue<float>(lambd_value_node->value());
+    auto lambd = GetValue<pyfloat>(lambd_value_node->value());
     if (lambd < 0) {
-      lambd_value_node->set_value(MakeValue(0.0f));
+      lambd_value_node->set_value(MakeValue<pyfloat>(0.0));
     }
   }
   return node;

@@ -21,7 +21,6 @@
 #include <vector>
 #include <utility>
 
-#include "mindspore/ops/infer/apply_adagrad_v2.h"
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "common/ms_factory.h"
 

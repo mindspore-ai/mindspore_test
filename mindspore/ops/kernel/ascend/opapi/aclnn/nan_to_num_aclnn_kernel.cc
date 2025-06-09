@@ -23,6 +23,7 @@
 #include "kernel/ascend/acl_ir/acl_helper.h"
 #include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -65,17 +66,17 @@ void NanToNumAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                       const std::vector<KernelTensor *> &outputs) {
   const float DEFAULT_NAN = 0.0;
 
-  auto nan = inputs[kIndex1]->GetOptionalValueWithCheck<float>();
+  auto nan = inputs[kIndex1]->GetOptionalValueWithCheck<pyfloat>();
   nan_ = nan.has_value() ? nan.value() : DEFAULT_NAN;
 
-  auto posinf = inputs[kIndex2]->GetOptionalValueWithCheck<float>();
-  auto neginf = inputs[kIndex3]->GetOptionalValueWithCheck<float>();
+  auto posinf = inputs[kIndex2]->GetOptionalValueWithCheck<pyfloat>();
+  auto neginf = inputs[kIndex3]->GetOptionalValueWithCheck<pyfloat>();
 
   bool posinf_has_value = posinf.has_value();
   bool neginf_has_value = neginf.has_value();
   if (posinf_has_value && neginf_has_value) {
-    posinf_ = device::ascend::ConvertKernelTensor<float>(inputs[kIndex2]);
-    neginf_ = device::ascend::ConvertKernelTensor<float>(inputs[kIndex3]);
+    posinf_ = device::ascend::ConvertKernelTensor<pyfloat>(inputs[kIndex2]);
+    neginf_ = device::ascend::ConvertKernelTensor<pyfloat>(inputs[kIndex3]);
   } else {
     auto input_type = inputs[kIndex0]->dtype_id();
     GetInfValues(input_type, posinf, neginf, posinf_has_value, neginf_has_value);

@@ -21,7 +21,7 @@
 #include <vector>
 #include <map>
 
-#include "mindspore/ops/infer/sparse_apply_momentum.h"
+#include "mindspore/ops/infer/ops_func_impl/sparse_apply_momentum.h"
 #include "kernel/cpu/sparse_optimizer_cpu_kernel.h"
 #include "common/ms_factory.h"
 

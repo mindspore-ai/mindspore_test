@@ -20,7 +20,6 @@
 #include "pyboost/op_register.h"
 #include "pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "mindspore/ops/ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace kernel {
@@ -32,14 +31,13 @@ tensor::TensorPtr DivModsAscendCustomize(const std::shared_ptr<OpRunner> &op, co
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
 
-  auto other_real = ops::FetchRealScalar(other);
   auto mode = 0;
   if (rounding_mode.has_value()) {
     mode = static_cast<int>(GetValue<int64_t>(rounding_mode.value()));
   }
 
   // Async
-  PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([op, input, other_real, mode]() {
+  PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([op, input, other, mode]() {
     MS_LOG(DEBUG) << "Run device task DivMods start";
     auto device_context = op->device_context();
     const auto &outputs = op->outputs();
@@ -48,7 +46,7 @@ tensor::TensorPtr DivModsAscendCustomize(const std::shared_ptr<OpRunner> &op, co
     // Malloc for output tensors
     PyBoostUtils::MallocOpOutputs(device_context, outputs);
 
-    LAUNCH_ACLNN(aclnnDivMods, device_context, op->stream_id(), input, other_real, mode, outputs[0]);
+    LAUNCH_ACLNN(aclnnDivMods, device_context, op->stream_id(), input, other, mode, outputs[0]);
     MS_LOG(DEBUG) << "Run device task DivMods end";
   }));
 

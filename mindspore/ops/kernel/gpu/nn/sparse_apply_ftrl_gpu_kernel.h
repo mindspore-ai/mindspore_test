@@ -24,6 +24,7 @@
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/sparse_ftrl_impl.cuh"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -61,10 +62,10 @@ class SparseFtrlGpuKernelMod : public NativeGpuKernelMod {
   }
 
   bool Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
-    lr_ = GetValue<float>(primitive_->GetAttr("lr"));
-    l1_ = GetValue<float>(primitive_->GetAttr("l1"));
-    l2_ = GetValue<float>(primitive_->GetAttr("l2"));
-    lr_power_ = GetValue<float>(primitive_->GetAttr("lr_power"));
+    lr_ = GetValue<pyfloat>(primitive_->GetAttr("lr"));
+    l1_ = GetValue<pyfloat>(primitive_->GetAttr("l1"));
+    l2_ = GetValue<pyfloat>(primitive_->GetAttr("l2"));
+    lr_power_ = GetValue<pyfloat>(primitive_->GetAttr("lr_power"));
     use_locking_ = GetValue<bool>(primitive_->GetAttr("use_locking"));
     return true;
   }

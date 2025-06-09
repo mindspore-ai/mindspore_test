@@ -31,7 +31,7 @@ constexpr size_t kSizeFloat16 = 2;
 constexpr size_t kSizeFloat32 = 4;
 constexpr size_t kSizeInt32 = 4;
 constexpr size_t kSizeInt64 = 8;
-constexpr size_t kApplyAdagradDAInputsNum = 8;
+constexpr size_t kApplyAdagradDAInputsNum = 9;
 constexpr size_t kApplyAdagradDAOutputsNum = 1;
 constexpr size_t kVarIndex = 0;
 constexpr size_t kAccIndex = 1;
@@ -185,6 +185,7 @@ std::vector<KernelAttr> ApplyAdagradDACpuKernelMod::GetOpSupport() {
                                                        .AddInputAttr(kNumberTypeFloat32)
                                                        .AddInputAttr(kNumberTypeFloat32)
                                                        .AddInputAttr(kNumberTypeInt32)
+                                                       .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                                        .AddOutputAttr(kNumberTypeFloat32)
                                                        .AddOutInRef(0, 0),
                                                      KernelAttr()
@@ -196,6 +197,7 @@ std::vector<KernelAttr> ApplyAdagradDACpuKernelMod::GetOpSupport() {
                                                        .AddInputAttr(kNumberTypeFloat16)
                                                        .AddInputAttr(kNumberTypeFloat16)
                                                        .AddInputAttr(kNumberTypeInt64)
+                                                       .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                                        .AddOutputAttr(kNumberTypeFloat16)
                                                        .AddOutInRef(0, 0)};
   return kernel_attr_list;

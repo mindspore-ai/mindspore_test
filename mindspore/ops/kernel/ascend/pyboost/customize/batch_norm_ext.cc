@@ -20,6 +20,7 @@
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -29,14 +30,14 @@ void BatchNormExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const Tens
                                  const std::optional<TensorPtr> &bias_tensor,
                                  const std::optional<TensorPtr> &mean_tensor,
                                  const std::optional<TensorPtr> &variance_tensor, const BoolImmPtr &training,
-                                 const FP32ImmPtr &momentum, const FP32ImmPtr &epsilon) {
+                                 const FP64ImmPtr &momentum, const FP64ImmPtr &epsilon) {
   MS_LOG(DEBUG) << "Call aclnnBatchNorm start";
   // Convert ValuePtr to c++ scalar
   OpRunner::InferOpOutput(op, input_tensor, weight_tensor, bias_tensor, mean_tensor, variance_tensor, training,
                           momentum, epsilon);
   auto training_imm = GetValue<bool>(training);
-  auto momentum_imm = static_cast<double>(GetValue<float>(momentum));
-  auto eps_imm = static_cast<double>(GetValue<float>(epsilon));
+  auto momentum_imm = static_cast<double>(GetValue<pyfloat>(momentum));
+  auto eps_imm = static_cast<double>(GetValue<pyfloat>(epsilon));
 
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor, weight_tensor, bias_tensor,
                                 mean_tensor, variance_tensor);

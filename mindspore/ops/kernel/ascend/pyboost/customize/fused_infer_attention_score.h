@@ -42,7 +42,7 @@ tensor::TensorPtr FusedInferAttentionScoreAscendCustomize(
   const std::optional<TensorPtr> &value_antiquant_offset_tensor,
   const std::optional<TensorPtr> &key_shared_prefix_tensor, const std::optional<TensorPtr> &value_shared_prefix_tensor,
   const std::optional<TensorPtr> &actual_shared_prefix_len_tensor, const Int64ImmPtr &num_heads,
-  const FP32ImmPtr &scale_value, const Int64ImmPtr &pre_tokens, const Int64ImmPtr &next_tokens,
+  const FP64ImmPtr &scale_value, const Int64ImmPtr &pre_tokens, const Int64ImmPtr &next_tokens,
   const Int64ImmPtr &input_layout, const Int64ImmPtr &num_key_value_heads, const Int64ImmPtr &sparse_mode,
   const Int64ImmPtr &inner_precise, const Int64ImmPtr &block_size, const Int64ImmPtr &antiquant_mode,
   const BoolImmPtr &softmax_lse_flag, const Int64ImmPtr &key_antiquant_mode, const Int64ImmPtr &value_antiquant_mode);

@@ -20,7 +20,6 @@
 #include <utility>
 #include <string>
 #include "ops/base_operator.h"
-#include "mindapi/base/types.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
 #include "kernel/ascend/acl_ir/acl_convert.h"
 
@@ -41,9 +40,9 @@ class SilentCheckV3Ascend : public AclnnKernelMod {
   DEFINE_GET_WORKSPACE_FOR_OPS(aclnnSilentCheckV2, SilentCheckV3)
   DEFINE_GET_WORKSPACE_FOR_OPS(aclnnInplaceCopy, InputGradCopy)
 
-  pyfloat c_thresh_l1_{1000000.};
-  pyfloat c_thresh_l2_{10000.};
-  pyfloat beta1_{0.};
+  float c_thresh_l1_{1000000.};
+  float c_thresh_l2_{10000.};
+  float beta1_{0.};
   int64_t npu_asd_detect_{1};
 
   std::vector<int64_t> dst_size_;

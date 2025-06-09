@@ -16,12 +16,13 @@
 
 #include "infer/ops_func_impl/elu.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace ops {
 BaseShapePtr EluFuncImpl::InferShape(const PrimitivePtr &primitive,
                                      const std::vector<AbstractBasePtr> &input_args) const {
-  auto alpha_ptr = GetScalarValue<float>(input_args[1]->GetValue());
+  auto alpha_ptr = GetScalarValue<pyfloat>(input_args[1]->GetValue());
   if (alpha_ptr.has_value()) {
     auto alpha = alpha_ptr.value();
     MS_CHECK_VALUE(alpha == 1.0, primitive->name() + "In Elu, alpha must be 1.0f.");

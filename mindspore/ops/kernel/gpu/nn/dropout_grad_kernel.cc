@@ -20,6 +20,7 @@
 
 #include "kernel/gpu/nn/dropout_grad_kernel.h"
 #include "mindspore/ops/infer/grad/dropout_grad.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -38,7 +39,7 @@ bool DropoutGradBwdGpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
     return false;
   }
   kernel_func_ = func_list_[index].second;
-  keep_prob_ = GetValue<float>(primitive_->GetAttr("keep_prob"));
+  keep_prob_ = GetValue<pyfloat>(primitive_->GetAttr("keep_prob"));
   return true;
 }
 

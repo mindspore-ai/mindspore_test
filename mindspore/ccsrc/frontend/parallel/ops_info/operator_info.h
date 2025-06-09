@@ -40,6 +40,7 @@
 #include "utils/log_adapter.h"
 #include "ops_utils/op_utils.h"
 #include "utils/anf_utils.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace parallel {
@@ -601,7 +602,7 @@ class OperatorInfo {
   void BreakingTiesForPreferringDataParallel(const StrategyPtr &stra, const CostPtr &cost) const;
   int64_t GetIntAttr(const std::string &attr_name);
   bool GetBoolAttr(const std::string &attr_name);
-  float GetFloatAttr(const std::string &attr_name);
+  pyfloat GetFloatAttr(const std::string &attr_name);
   std::string GetStringAttr(const std::string &attr_name);
   std::vector<int64_t> GetTupleIntAttr(const std::string &attr_name);
   void ReportError(const std::string &error_msg) const {

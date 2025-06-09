@@ -44,7 +44,7 @@ TEST_P(TestRmsNorm, rms_norm_dyn_shape) {
   const auto &param = GetParam();
   auto x = std::make_shared<abstract::AbstractTensor>(param.x_type, param.x_shape);
   auto gamma = std::make_shared<abstract::AbstractTensor>(param.gamma_type, param.gamma_shape);
-  auto eps_val = std::make_shared<FP32Imm>(1e-6f);
+  auto eps_val = std::make_shared<FP64Imm>(1e-6f);
   auto eps = eps_val->ToAbstract();
   ASSERT_NE(x, nullptr);
   ASSERT_NE(gamma, nullptr);

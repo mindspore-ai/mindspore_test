@@ -3261,18 +3261,18 @@ std::vector<int64_t> OperatorInfo::GetTupleIntAttr(const std::string &attr_name)
   return tuple_attr;
 }
 
-float OperatorInfo::GetFloatAttr(const std::string &attr_name) {
+pyfloat OperatorInfo::GetFloatAttr(const std::string &attr_name) {
   auto attr_iter = attrs_.find(attr_name);
   if (attr_iter == attrs_.end()) {
     MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Can not find the attribution of " << attr_name;
   }
 
   MS_EXCEPTION_IF_NULL(attr_iter->second);
-  if (!attr_iter->second->isa<FP32Imm>()) {
+  if (!attr_iter->second->isa<FP64Imm>()) {
     MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": The value of " << attr_name << " is not float";
   }
 
-  return attr_iter->second->cast<FP32ImmPtr>()->value();
+  return attr_iter->second->cast<FP64ImmPtr>()->value();
 }
 
 std::vector<ValuePtr> GetValueSequence(const ValuePtr &sequence) {

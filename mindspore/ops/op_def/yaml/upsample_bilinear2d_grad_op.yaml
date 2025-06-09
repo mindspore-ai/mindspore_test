@@ -27,3 +27,5 @@ upsample_bilinear2d_grad:
     dispatch:
         enable: True
         Ascend: UpsampleBilinear2DGradAscend
+        CPU: None
+        GPU: None

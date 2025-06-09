@@ -28,7 +28,7 @@ namespace pyboost {
 void MatmulAllReduceAddRmsNormAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &x1_tensor,
                                               const TensorPtr &x2_tensor, const TensorPtr &bias_tensor,
                                               const TensorPtr &residual_tensor, const TensorPtr &gamma_tensor,
-                                              const FP32ImmPtr &epsilon, const StringImmPtr &group,
+                                              const FP64ImmPtr &epsilon, const StringImmPtr &group,
                                               const Int64ImmPtr &reduction, const Int64ImmPtr &comm_turn,
                                               const Int64ImmPtr &stream_mode);
 }  // namespace pyboost

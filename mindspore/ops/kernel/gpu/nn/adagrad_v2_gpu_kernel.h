@@ -25,7 +25,6 @@
 #include <memory>
 #include <algorithm>
 #include <iostream>
-#include "mindspore/ops/infer/apply_adagrad_v2.h"
 #include "common/common_utils.h"
 #include "include/curand.h"
 #include "abstract/utils.h"

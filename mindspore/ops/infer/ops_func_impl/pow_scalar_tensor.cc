@@ -39,7 +39,7 @@ TypePtr PowCheckAndInferType(const TypeId input_type_id, const TypeId exp_type_i
                                                   kNumberTypeInt32, kNumberTypeInt64, kNumberTypeBool};
   bool is_int_or_bool = std::any_of(int_or_bool.begin(), int_or_bool.end(),
                                     [&exp_type_id](const TypeId &type_id) { return exp_type_id == type_id; });
-  if (input_type_id == kNumberTypeFloat32 && is_int_or_bool) {
+  if (input_type_id == kNumberTypePyFloat && is_int_or_bool) {
     return kFloat32;
   }
 

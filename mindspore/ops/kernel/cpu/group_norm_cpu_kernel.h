@@ -23,6 +23,7 @@
 #include <vector>
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "common/ms_factory.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -47,7 +48,7 @@ class GroupNormCpuKernelMod : public NativeCpuKernelMod {
   KernelFunc kernel_func_{};
   static std::vector<std::pair<KernelAttr, KernelFunc>> func_list_;
 
-  float eps_{1e-5};
+  pyfloat eps_{1e-5};
   int64_t num_channel_{1};
   size_t HxW_{1};
   size_t inner_size_{1};

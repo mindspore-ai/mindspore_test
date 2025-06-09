@@ -22,6 +22,7 @@
 #include "runtime/device/kernel_runtime.h"
 #include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -29,8 +30,8 @@ namespace softshrink_grad {
 
 void SoftshrinkGradAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                             const std::vector<KernelTensor *> &outputs) {
-  auto lambd_value = inputs[kIndex2]->GetValueWithCheck<float>();
-  MAKE_SCALAR(lambd_value, inputs[2]->dtype_id(), lambd_);
+  auto lambd_value = inputs[kIndex2]->GetValueWithCheck<pyfloat>();
+  MAKE_SCALAR(lambd_value, inputs[kIndex2]->dtype_id(), lambd_);
   GetWorkspaceForResize(inputs[kIndex0], inputs[kIndex1], lambd_, outputs[kIndex0]);
 }
 

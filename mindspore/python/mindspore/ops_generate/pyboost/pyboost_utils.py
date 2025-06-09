@@ -136,7 +136,7 @@ def get_input_args_type_str(dtype: str, optional, use_basic_type=False):
     # add more type here
     native_type = {
         'int': 'Int64ImmPtr',
-        'float': 'FP32ImmPtr',
+        'float': 'FP64ImmPtr',
         'bool': 'BoolImmPtr',
         'number': 'ScalarPtr',
         'tuple[int]': 'ValueTuplePtr',
@@ -153,7 +153,7 @@ def get_input_args_type_str(dtype: str, optional, use_basic_type=False):
     }
     optional_type = {
         'int': 'std::optional<Int64ImmPtr>',
-        'float': 'std::optional<FP32ImmPtr>',
+        'float': 'std::optional<FP64ImmPtr>',
         'number': 'std::optional<ScalarPtr>',
         'tensor': 'std::optional<ValuePtr>',
         'type': 'std::optional<Int64ImmPtr>',
@@ -273,12 +273,12 @@ def tuple_input_to_cpp_type(dtype: str):
     """
     types_map = {
         'tuple[int]': 'int64_t',
-        'tuple[float]': 'float',
+        'tuple[float]': 'double',
         'tuple[bool]': 'bool',
         'tuple[str]': 'string',
         'tuple[tensor]': 'mindspore::tensor::TensorPtr',
         'list[int]': 'int64_t',
-        'list[float]': 'float',
+        'list[float]': 'double',
         'list[bool]': 'bool',
         'list[tensor]': 'mindspore::tensor::TensorPtr',
     }
@@ -288,7 +288,7 @@ def tuple_input_to_cpp_type(dtype: str):
 def number_input_to_cpp_type(dtype: str):
     types_map = {
         'int': 'int64_t',
-        'float': 'float',
+        'float': 'double',
         'bool': 'bool',
         'str': 'string'
     }
@@ -303,7 +303,7 @@ def get_input_dtype(dtype: str, optional, use_basic_type=False):
     value_tuple = 'mindspore::ValueTuplePtr'
     type_convert = {
         'int': 'mindspore::Int64ImmPtr',
-        'float': 'mindspore::FP32ImmPtr',
+        'float': 'mindspore::FP64ImmPtr',
         'bool': 'mindspore::BoolImmPtr',
         'number': 'mindspore::ScalarPtr',
         'str': 'mindspore::StringImmPtr',
@@ -320,7 +320,7 @@ def get_input_dtype(dtype: str, optional, use_basic_type=False):
     value_tuple_optional = 'std::optional<mindspore::ValueTuplePtr>'
     optional_type_convert = {
         'int': 'std::optional<mindspore::Int64ImmPtr>',
-        'float': 'std::optional<mindspore::FP32ImmPtr>',
+        'float': 'std::optional<mindspore::FP64ImmPtr>',
         'bool': 'std::optional<mindspore::BoolImmPtr>',
         'number': 'std::optional<mindspore::ScalarPtr>',
         'str': 'std::optional<mindspore::StringImmPtr>',
@@ -488,7 +488,7 @@ def convert_types(inputs):
             elif data_type == 'int':
                 inputs_dtypes[i] = 'std::vector<int64_t>'
             elif data_type == 'float':
-                inputs_dtypes[i] = 'std::vector<float>'
+                inputs_dtypes[i] = 'std::vector<double>'
             elif data_type == 'bool':
                 inputs_dtypes[i] = 'std::vector<uint8_t>'
             else:
@@ -497,6 +497,8 @@ def convert_types(inputs):
             inputs_dtypes[i] = 'ScalarPtr'
         if inputs_dtypes[i] == 'int':
             inputs_dtypes[i] = 'int64_t'
+        if inputs_dtypes[i] == 'float':
+            inputs_dtypes[i] = 'double'
     return inputs_dtypes, flag
 
 

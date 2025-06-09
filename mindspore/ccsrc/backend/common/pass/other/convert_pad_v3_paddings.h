@@ -38,6 +38,8 @@ class BACKEND_COMMON_EXPORT ConvertBasePaddings : public PatternProcessPass {
   const CNodePtr CreateConcatNode(const FuncGraphPtr &, const std::vector<AnfNodePtr> &, const AnfNodePtr &) const;
   const CNodePtr ProcessSliceNConcat(const FuncGraphPtr &, const AnfNodePtr &, const AnfNodePtr &, const int64_t &,
                                      const int64_t &) const;
+  const CNodePtr CreateNewPadNode(const FuncGraphPtr &graph, const CNodePtr &cnode,
+                                  const AnfNodePtr &paddings_value_node) const;
 
   const AnfNodePtr CreateDynPaddingsPass(const FuncGraphPtr &, const CNodePtr &, const bool &) const;
   virtual const AnfNodePtr CreateDynPaddingsNode(const FuncGraphPtr &, const CNodePtr &) const { return nullptr; }

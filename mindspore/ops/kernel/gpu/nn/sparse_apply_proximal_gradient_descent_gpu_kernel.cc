@@ -22,7 +22,7 @@
 namespace mindspore {
 namespace kernel {
 namespace {
-constexpr size_t kSparseApplyProximalGradientDescentInputsNum = 6;
+constexpr size_t kSparseApplyProximalGradientDescentInputsNum = 7;
 constexpr size_t kSparseApplyProximalGradientDescentOutputsNum = 1;
 constexpr size_t kVarIndex = 0;
 constexpr size_t kAlphaIndex = 1;
@@ -199,6 +199,7 @@ std::vector<std::pair<KernelAttr, SparseApplyProximalGradientDescentGpuKernelMod
        .AddInputAttr(kNumberTypeFloat32)
        .AddInputAttr(kNumberTypeFloat32)
        .AddInputAttr(kNumberTypeInt32)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
        .AddOutputAttr(kNumberTypeFloat32),
      &SparseApplyProximalGradientDescentGpuKernelMod::LaunchKernel<float, int32_t>},
     {KernelAttr()
@@ -208,6 +209,7 @@ std::vector<std::pair<KernelAttr, SparseApplyProximalGradientDescentGpuKernelMod
        .AddInputAttr(kNumberTypeFloat32)
        .AddInputAttr(kNumberTypeFloat32)
        .AddInputAttr(kNumberTypeInt64)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
        .AddOutputAttr(kNumberTypeFloat32),
      &SparseApplyProximalGradientDescentGpuKernelMod::LaunchKernel<float, int64_t>},
     {KernelAttr()
@@ -217,6 +219,7 @@ std::vector<std::pair<KernelAttr, SparseApplyProximalGradientDescentGpuKernelMod
        .AddInputAttr(kNumberTypeFloat64)
        .AddInputAttr(kNumberTypeFloat64)
        .AddInputAttr(kNumberTypeInt32)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
        .AddOutputAttr(kNumberTypeFloat64),
      &SparseApplyProximalGradientDescentGpuKernelMod::LaunchKernel<double, int32_t>},
     {KernelAttr()
@@ -226,6 +229,7 @@ std::vector<std::pair<KernelAttr, SparseApplyProximalGradientDescentGpuKernelMod
        .AddInputAttr(kNumberTypeFloat64)
        .AddInputAttr(kNumberTypeFloat64)
        .AddInputAttr(kNumberTypeInt64)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
        .AddOutputAttr(kNumberTypeFloat64),
      &SparseApplyProximalGradientDescentGpuKernelMod::LaunchKernel<double, int64_t>},
     {KernelAttr()
@@ -235,6 +239,7 @@ std::vector<std::pair<KernelAttr, SparseApplyProximalGradientDescentGpuKernelMod
        .AddInputAttr(kNumberTypeFloat16)
        .AddInputAttr(kNumberTypeFloat16)
        .AddInputAttr(kNumberTypeInt32)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
        .AddOutputAttr(kNumberTypeFloat16),
      &SparseApplyProximalGradientDescentGpuKernelMod::LaunchKernel<half, int32_t>},
     {KernelAttr()
@@ -244,6 +249,7 @@ std::vector<std::pair<KernelAttr, SparseApplyProximalGradientDescentGpuKernelMod
        .AddInputAttr(kNumberTypeFloat16)
        .AddInputAttr(kNumberTypeFloat16)
        .AddInputAttr(kNumberTypeInt64)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
        .AddOutputAttr(kNumberTypeFloat16),
      &SparseApplyProximalGradientDescentGpuKernelMod::LaunchKernel<half, int64_t>},
     {KernelAttr()
@@ -253,6 +259,7 @@ std::vector<std::pair<KernelAttr, SparseApplyProximalGradientDescentGpuKernelMod
        .AddInputAttr(kNumberTypeInt8)
        .AddInputAttr(kNumberTypeInt8)
        .AddInputAttr(kNumberTypeInt32)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
        .AddOutputAttr(kNumberTypeInt8),
      &SparseApplyProximalGradientDescentGpuKernelMod::LaunchKernel<int8_t, int32_t>},
     {KernelAttr()
@@ -262,6 +269,7 @@ std::vector<std::pair<KernelAttr, SparseApplyProximalGradientDescentGpuKernelMod
        .AddInputAttr(kNumberTypeInt8)
        .AddInputAttr(kNumberTypeInt8)
        .AddInputAttr(kNumberTypeInt64)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
        .AddOutputAttr(kNumberTypeInt8),
      &SparseApplyProximalGradientDescentGpuKernelMod::LaunchKernel<int8_t, int64_t>},
     {KernelAttr()
@@ -271,6 +279,7 @@ std::vector<std::pair<KernelAttr, SparseApplyProximalGradientDescentGpuKernelMod
        .AddInputAttr(kNumberTypeInt16)
        .AddInputAttr(kNumberTypeInt16)
        .AddInputAttr(kNumberTypeInt32)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
        .AddOutputAttr(kNumberTypeInt16),
      &SparseApplyProximalGradientDescentGpuKernelMod::LaunchKernel<int16_t, int32_t>},
     {KernelAttr()
@@ -280,6 +289,7 @@ std::vector<std::pair<KernelAttr, SparseApplyProximalGradientDescentGpuKernelMod
        .AddInputAttr(kNumberTypeInt16)
        .AddInputAttr(kNumberTypeInt16)
        .AddInputAttr(kNumberTypeInt64)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
        .AddOutputAttr(kNumberTypeInt16),
      &SparseApplyProximalGradientDescentGpuKernelMod::LaunchKernel<int16_t, int64_t>},
     {KernelAttr()
@@ -289,6 +299,7 @@ std::vector<std::pair<KernelAttr, SparseApplyProximalGradientDescentGpuKernelMod
        .AddInputAttr(kNumberTypeInt32)
        .AddInputAttr(kNumberTypeInt32)
        .AddInputAttr(kNumberTypeInt32)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
        .AddOutputAttr(kNumberTypeInt32),
      &SparseApplyProximalGradientDescentGpuKernelMod::LaunchKernel<int32_t, int32_t>},
     {KernelAttr()
@@ -298,6 +309,7 @@ std::vector<std::pair<KernelAttr, SparseApplyProximalGradientDescentGpuKernelMod
        .AddInputAttr(kNumberTypeInt32)
        .AddInputAttr(kNumberTypeInt32)
        .AddInputAttr(kNumberTypeInt64)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
        .AddOutputAttr(kNumberTypeInt32),
      &SparseApplyProximalGradientDescentGpuKernelMod::LaunchKernel<int32_t, int64_t>},
     {KernelAttr()
@@ -307,6 +319,7 @@ std::vector<std::pair<KernelAttr, SparseApplyProximalGradientDescentGpuKernelMod
        .AddInputAttr(kNumberTypeInt64)
        .AddInputAttr(kNumberTypeInt64)
        .AddInputAttr(kNumberTypeInt32)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
        .AddOutputAttr(kNumberTypeInt64),
      &SparseApplyProximalGradientDescentGpuKernelMod::LaunchKernel<int64_t, int32_t>},
     {KernelAttr()
@@ -316,6 +329,7 @@ std::vector<std::pair<KernelAttr, SparseApplyProximalGradientDescentGpuKernelMod
        .AddInputAttr(kNumberTypeInt64)
        .AddInputAttr(kNumberTypeInt64)
        .AddInputAttr(kNumberTypeInt64)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
        .AddOutputAttr(kNumberTypeInt64),
      &SparseApplyProximalGradientDescentGpuKernelMod::LaunchKernel<int64_t, int64_t>},
     {KernelAttr()
@@ -325,6 +339,7 @@ std::vector<std::pair<KernelAttr, SparseApplyProximalGradientDescentGpuKernelMod
        .AddInputAttr(kNumberTypeUInt8)
        .AddInputAttr(kNumberTypeUInt8)
        .AddInputAttr(kNumberTypeInt32)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
        .AddOutputAttr(kNumberTypeUInt8),
      &SparseApplyProximalGradientDescentGpuKernelMod::LaunchKernel<uint8_t, int32_t>},
     {KernelAttr()
@@ -334,6 +349,7 @@ std::vector<std::pair<KernelAttr, SparseApplyProximalGradientDescentGpuKernelMod
        .AddInputAttr(kNumberTypeUInt8)
        .AddInputAttr(kNumberTypeUInt8)
        .AddInputAttr(kNumberTypeInt64)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
        .AddOutputAttr(kNumberTypeUInt8),
      &SparseApplyProximalGradientDescentGpuKernelMod::LaunchKernel<uint8_t, int64_t>},
     {KernelAttr()
@@ -343,6 +359,7 @@ std::vector<std::pair<KernelAttr, SparseApplyProximalGradientDescentGpuKernelMod
        .AddInputAttr(kNumberTypeUInt16)
        .AddInputAttr(kNumberTypeUInt16)
        .AddInputAttr(kNumberTypeInt32)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
        .AddOutputAttr(kNumberTypeUInt16),
      &SparseApplyProximalGradientDescentGpuKernelMod::LaunchKernel<uint16_t, int32_t>},
     {KernelAttr()
@@ -352,6 +369,7 @@ std::vector<std::pair<KernelAttr, SparseApplyProximalGradientDescentGpuKernelMod
        .AddInputAttr(kNumberTypeUInt16)
        .AddInputAttr(kNumberTypeUInt16)
        .AddInputAttr(kNumberTypeInt64)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
        .AddOutputAttr(kNumberTypeUInt16),
      &SparseApplyProximalGradientDescentGpuKernelMod::LaunchKernel<uint16_t, int64_t>},
     {KernelAttr()
@@ -361,6 +379,7 @@ std::vector<std::pair<KernelAttr, SparseApplyProximalGradientDescentGpuKernelMod
        .AddInputAttr(kNumberTypeUInt32)
        .AddInputAttr(kNumberTypeUInt32)
        .AddInputAttr(kNumberTypeInt32)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
        .AddOutputAttr(kNumberTypeUInt32),
      &SparseApplyProximalGradientDescentGpuKernelMod::LaunchKernel<uint32_t, int32_t>},
     {KernelAttr()
@@ -370,6 +389,7 @@ std::vector<std::pair<KernelAttr, SparseApplyProximalGradientDescentGpuKernelMod
        .AddInputAttr(kNumberTypeUInt32)
        .AddInputAttr(kNumberTypeUInt32)
        .AddInputAttr(kNumberTypeInt64)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
        .AddOutputAttr(kNumberTypeUInt32),
      &SparseApplyProximalGradientDescentGpuKernelMod::LaunchKernel<uint32_t, int64_t>},
     {KernelAttr()
@@ -379,6 +399,7 @@ std::vector<std::pair<KernelAttr, SparseApplyProximalGradientDescentGpuKernelMod
        .AddInputAttr(kNumberTypeUInt64)
        .AddInputAttr(kNumberTypeUInt64)
        .AddInputAttr(kNumberTypeInt32)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
        .AddOutputAttr(kNumberTypeUInt64),
      &SparseApplyProximalGradientDescentGpuKernelMod::LaunchKernel<uint64_t, int32_t>},
     {KernelAttr()
@@ -388,6 +409,7 @@ std::vector<std::pair<KernelAttr, SparseApplyProximalGradientDescentGpuKernelMod
        .AddInputAttr(kNumberTypeUInt64)
        .AddInputAttr(kNumberTypeUInt64)
        .AddInputAttr(kNumberTypeInt64)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
        .AddOutputAttr(kNumberTypeUInt64),
      &SparseApplyProximalGradientDescentGpuKernelMod::LaunchKernel<uint64_t, int64_t>}};
 

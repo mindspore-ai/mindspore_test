@@ -14,31 +14,33 @@
  * limitations under the License.
  */
 
+#include "infer/ops_func_impl/range.h"
+
 #include <memory>
 #include <vector>
+#include <utility>
 #include <algorithm>
+
 #include "abstract/dshape.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"
 #include "utils/log_adapter.h"
 #include "utils/shape_utils.h"
-#include "infer/ops_func_impl/range.h"
 #include "ops_utils/op_constants.h"
 
 namespace mindspore::ops {
-#define IsNoneOrAnyValue(value_ptr) ((value_ptr->isa<None>()) || (value_ptr->ContainsValueAny()))
-
 template <typename T>
-BaseShapePtr CalculateShapeSize(const ValuePtr start_ptr, const ValuePtr limit_ptr, const ValuePtr delta_ptr) {
+ShapeVector CalculateShapeSize(const InferInfoPtr &start_info, const InferInfoPtr &limit_info,
+                               const InferInfoPtr &delta_info) {
   ShapeVector out_shape = {};
-  auto start_opt = GetScalarValue<T>(start_ptr);
-  auto limit_opt = GetScalarValue<T>(limit_ptr);
-  auto delta_opt = GetScalarValue<T>(delta_ptr);
+  auto start_opt = start_info->GetScalarValue<T>();
+  auto limit_opt = limit_info->GetScalarValue<T>();
+  auto delta_opt = delta_info->GetScalarValue<T>();
 
   if (MS_UNLIKELY(!start_opt.has_value()) || MS_UNLIKELY(!limit_opt.has_value()) ||
       MS_UNLIKELY(!delta_opt.has_value())) {
     (void)out_shape.emplace_back(abstract::Shape::kShapeDimAny);
-    return std::make_shared<abstract::Shape>(out_shape);
+    return out_shape;
   }
 
   auto start = start_opt.value();
@@ -67,66 +69,58 @@ BaseShapePtr CalculateShapeSize(const ValuePtr start_ptr, const ValuePtr limit_p
   }
 
   (void)out_shape.emplace_back(shape_size);
-  return std::make_shared<abstract::TensorShape>(out_shape);
+  return out_shape;
 }
 
-int32_t RangeFuncImpl::CheckValidation(const PrimitivePtr &primitive,
-                                       const std::vector<AbstractBasePtr> &input_args) const {
-  auto maxlen_opt = GetScalarValue<int64_t>(input_args[kIndex3]->GetValue());
+ShapeArray RangeFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+  const auto &start_info = input_infos[kIndex0];
+  const auto &limit_info = input_infos[kIndex1];
+  const auto &delta_info = input_infos[kIndex2];
+  ShapeVector output_shape;
+  auto start_type = start_info->GetType();
+  switch (start_type) {
+    case kNumberTypeInt32:
+      output_shape = CalculateShapeSize<int32_t>(start_info, limit_info, delta_info);
+      break;
+    case kNumberTypeInt64:
+      output_shape = CalculateShapeSize<int64_t>(start_info, limit_info, delta_info);
+      break;
+    case kNumberTypeFloat32:
+      output_shape = CalculateShapeSize<float>(start_info, limit_info, delta_info);
+      break;
+    case kNumberTypeFloat64:
+      output_shape = CalculateShapeSize<double>(start_info, limit_info, delta_info);
+      break;
+    default:
+      MS_EXCEPTION(TypeError) << "For Range, the dtype of input must be int64 or float64, but got "
+                              << TypeIdToString(start_type) << ".";
+  }
+
+  return {std::move(output_shape)};
+}
+
+TypeIdList RangeFuncImpl::InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+  auto start_type = input_infos[kIndex0]->GetType();
+  auto limit_type = input_infos[kIndex1]->GetType();
+  auto delta_type = input_infos[kIndex2]->GetType();
+  if (!(start_type == limit_type && limit_type == delta_type)) {
+    MS_EXCEPTION(TypeError) << "For Range, the dtypes of inputs must be the same, but got ("
+                            << TypeIdToString(start_type) << ", " << TypeIdToString(limit_type) << ", "
+                            << TypeIdToString(delta_type) << ").";
+  }
+  if (start_type == kNumberTypeFloat32 || start_type == kNumberTypeFloat64) {
+    return {kNumberTypeFloat32};
+  }
+  return {start_type};
+}
+
+int32_t RangeFuncImpl::CheckValidation(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+  auto maxlen_opt = input_infos[kIndex3]->GetScalarValue<int64_t>();
   if (MS_UNLIKELY(!maxlen_opt.has_value())) {
     return OP_CHECK_RETRY;
   }
   MS_CHECK_VALUE(maxlen_opt.value() > 0,
                  CheckAndConvertUtils::FormatCheckIntegerMsg("maxlen", maxlen_opt.value(), kGreaterThan, 0, primitive));
   return OP_CHECK_SUCCESS;
-}
-
-BaseShapePtr RangeFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                       const std::vector<AbstractBasePtr> &input_args) const {
-  auto start_type = input_args[kInputIndex0]->GetType()->type_id();
-  auto limit_type = input_args[kInputIndex1]->GetType()->type_id();
-  auto delta_type = input_args[kInputIndex2]->GetType()->type_id();
-  if (!(start_type == limit_type && limit_type == delta_type)) {
-    MS_EXCEPTION(TypeError) << "For Range, the dtypes of inputs must be the same, but got ("
-                            << TypeIdToString(start_type) << ", " << TypeIdToString(limit_type) << ", "
-                            << TypeIdToString(delta_type) << ").";
-  }
-  ShapeVector out_shape = {};
-  auto start_value = input_args[kInputIndex0]->GetValue();
-  auto limit_value = input_args[kInputIndex1]->GetValue();
-  auto delta_value = input_args[kInputIndex2]->GetValue();
-  MS_EXCEPTION_IF_NULL(start_value);
-  MS_EXCEPTION_IF_NULL(limit_value);
-  MS_EXCEPTION_IF_NULL(delta_value);
-
-  BaseShapePtr shape_ptr = nullptr;
-  bool is_compile = (IsNoneOrAnyValue(start_value) || IsNoneOrAnyValue(limit_value) || IsNoneOrAnyValue(delta_value));
-  if (is_compile) {
-    (void)out_shape.emplace_back(abstract::Shape::kShapeDimAny);
-    return std::make_shared<abstract::Shape>(out_shape);
-  } else {
-    // not in compile, need inferShape
-    auto dtype = input_args[kInputIndex0]->GetType();
-    if ((*dtype == *kInt) || (*dtype == *kInt32)) {
-      shape_ptr = CalculateShapeSize<int32_t>(start_value, limit_value, delta_value);
-    } else if (*dtype == *kInt64) {
-      shape_ptr = CalculateShapeSize<int64_t>(start_value, limit_value, delta_value);
-    } else if ((*dtype == *kFloat) || (*dtype == *kFloat32)) {
-      shape_ptr = CalculateShapeSize<float>(start_value, limit_value, delta_value);
-    } else if (*dtype == *kFloat64) {
-      shape_ptr = CalculateShapeSize<double>(start_value, limit_value, delta_value);
-    } else {
-      MS_EXCEPTION(TypeError) << "For Range, the dtype of input must be int32, int64, float32, float64, but got "
-                              << TypeIdToString(dtype->type_id()) << ".";
-    }
-  }
-
-  return shape_ptr;
-}
-
-TypePtr RangeFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
-  auto start_type = input_args[kInputIndex0]->GetType();
-  MS_EXCEPTION_IF_NULL(start_type);
-  return start_type->Clone();
 }
 }  // namespace mindspore::ops

@@ -52,7 +52,7 @@ class SoftShrinkGradCpuKernelMod : public NativeCpuKernelMod, public MatchKernel
                     const std::vector<kernel::KernelTensor *> &workspace,
                     const std::vector<kernel::KernelTensor *> &outputs);
   size_t size_ = 1;
-  float lambd = 0.5;
+  float lambd_ = 0.5;
 };
 }  // namespace soft_shrink_grad_cpu
 }  // namespace kernel
