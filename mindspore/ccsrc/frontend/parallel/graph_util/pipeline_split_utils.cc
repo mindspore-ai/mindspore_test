@@ -88,7 +88,7 @@ bool IsLastStage() {
 }
 
 bool PrimHasAttr(const PrimitivePtr &prim, const std::string &attrName) {
-  if (prim && prim->HasAttr(attrName)) {
+  if ((prim != nullptr) && prim->HasAttr(attrName)) {
     return true;
   }
   return false;
@@ -387,7 +387,7 @@ void SetStridedSliceStrategy(const AnfNodePtr &node) {
         }
       }
       auto prim = GetCNodePrimitive(node);
-      if (!prim) {
+      if (prim == nullptr) {
         continue;
       }
       if (prim->HasAttr("out_shard_size")) {
@@ -1107,7 +1107,7 @@ void BroadCastSeqChunk(const FuncGraphPtr &root) {
     auto slice_cnode = node->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(slice_cnode);
     auto slice_prim = GetCNodePrimitive(slice_cnode);
-    if (!slice_prim || !slice_prim->HasAttr("seq_split_slice")) {
+    if (slice_prim == nullptr || !slice_prim->HasAttr("seq_split_slice")) {
       continue;
     }
     SetStridedSliceStrategy(slice_cnode);
@@ -1217,7 +1217,7 @@ void AddVirtualAssignKvCache(const FuncGraphPtr &root) {
     auto func_graph = kv_add_input->func_graph();
     auto virtual_assign_kv_cache = func_graph->NewCNode(virtual_assign_kv_cache_inputs);
     auto kv_prim = GetCNodePrimitive(virtual_assign_kv_cache);
-    if (!kv_prim) {
+    if (kv_prim == nullptr) {
       continue;
     }
     kv_prim->AddAttr("param_name", MakeValue(param_name));
