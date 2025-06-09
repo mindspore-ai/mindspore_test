@@ -57,7 +57,7 @@ class PYBOOST_API OpRunStatus {
 
   void SetLastOp(const OpPtr &op) { last_op_ = op; }
 
-  OpPtr &&GetLastOp() { return std::move(last_op_); }
+  OpPtr GetLastOp() { return std::move(last_op_); }
 
  private:
   OpRunStatus() = default;
