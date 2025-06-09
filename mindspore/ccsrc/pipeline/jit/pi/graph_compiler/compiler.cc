@@ -80,6 +80,7 @@ void MarkArgumentMutable(const py::tuple &args) {
 }
 
 void MarkArgumentMutableWithParams(const py::tuple &args, const AnfNodePtrList &params) {
+  MS_LOG(DEBUG) << "Number of input arguments: " << args.size();
   for (auto param : params) {
     auto abstract = param->abstract();
     MS_EXCEPTION_IF_NULL(abstract);
@@ -91,6 +92,8 @@ void MarkArgumentMutableWithParams(const py::tuple &args, const AnfNodePtrList &
       std::shared_ptr<size_t> index_ptr = abstract->user_data<size_t>(pipeline::kActualArgumentIndex);
       MS_EXCEPTION_IF_NULL(index_ptr);
       auto index = *index_ptr;
+      MS_LOG(DEBUG) << "Param: " << param->DebugString() << ", index: " << index;
+      MS_EXCEPTION_IF_CHECK_FAIL(index < args.size(), "Arg index out of range.");
       auto arg = args[index];
       if (GraphUtils::IsMutable(arg)) {
         continue;
@@ -98,9 +101,9 @@ void MarkArgumentMutableWithParams(const py::tuple &args, const AnfNodePtrList &
       py::object o = python_adapter::CallPyFn("mindspore.common.mutable", "_check_element_type", arg);
       if (py::isinstance<py::bool_>(o) && py::bool_(o)) {
         args[index] = python_adapter::CallPyFn("mindspore.common", "mutable", arg);
-        MS_LOG(INFO) << "Add mutable to object index " << index;
+        MS_LOG(DEBUG) << "Add mutable to object";
       } else {
-        MS_LOG(INFO) << "Failed to make argument mutable, arg index: " << index << ", arg object: " << py::str(arg);
+        MS_LOG(INFO) << "Failed to make argument mutable, arg object: " << py::str(arg);
       }
     }
   }

@@ -1,9 +1,12 @@
 import pytest
 from mindspore import jit, context, Tensor
+from mindspore.nn import Cell
 from mindspore.common import dtype as mstype
+from mindspore._c_expression import update_pijit_default_config
 from .share.utils import match_array, match_value, assert_executed_by_graph_mode
 from tests.mark_utils import arg_mark
 from tests.st.pi_jit.share.utils import pi_jit_with_config
+from tests.st.pi_jit.one_stage.test_utils import save_graph_ir, check_ir_num
 
 # set feature expand graph input on
 config = { "expand_graph_input": True, "eliminate_redundant_args":True}
@@ -309,3 +312,69 @@ def test_mix_case(func, x1, x2, y1, y2):
     assert_executed_by_graph_mode(wrapped_func)
     res = func(s, d)
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
+
+@save_graph_ir(ir_name='graph_before_compile')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_parameter_elimination_01():
+    """
+    Feature: parameter elimination
+    Description: test cases for parameter elimination
+    Expectation: The result match and no exception
+    """
+    class Net(Cell):
+        def __init__(self):
+            super().__init__()
+            self.x = 1
+
+        @jit(capture_mode="bytecode", backend="ms_backend")
+        def construct(self, x):
+            if self.x > 3:
+                self.x = x
+            else:
+                self.x = self.x + 1
+            return self.x + x
+
+    update_pijit_default_config(eliminate_redundant_args=True)
+    net = Net()
+    expected_y = [2, 4, 6, 6, 8, 10, 12, 14, 16, 18]
+    actual_y = []
+    for i in range(10):
+        x = Tensor([i])
+        y = net(x)
+        actual_y.append(y.asnumpy()[0])
+
+    assert actual_y == expected_y
+    check_ir_num('graph_before_compile', 8)
+
+@save_graph_ir(ir_name='graph_before_compile')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_parameter_elimination_02():
+    """
+    Feature: parameter elimination
+    Description: test cases for parameter elimination
+    Expectation: The result match and no exception
+    """
+    class Net(Cell):
+        def __init__(self):
+            super().__init__()
+            self.x = 1
+
+        @jit(capture_mode="bytecode", backend="ms_backend")
+        def construct(self, x):
+            if self.x > 3:
+                self.x = x
+            else:
+                self.x = self.x + 1
+            return self.x + x
+
+    update_pijit_default_config(eliminate_redundant_args=False)
+    net = Net()
+    expected_y = [2, 4, 6, 6, 8, 10, 12, 14, 16, 18]
+    actual_y = []
+    for i in range(10):
+        x = Tensor([i])
+        y = net(x)
+        actual_y.append(y.asnumpy()[0])
+
+    assert actual_y == expected_y
+    check_ir_num('graph_before_compile', 8)
