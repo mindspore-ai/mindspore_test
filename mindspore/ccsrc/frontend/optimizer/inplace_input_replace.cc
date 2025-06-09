@@ -72,7 +72,6 @@ void ChangeInplaceInputInner(const FuncGraphPtr &func_graph) {
       continue;
     }
     auto cnode = node->cast<CNodePtr>();
-
     // If cnode has users with io_monad, do not do replacement
     // cnode1 = Load(param, u)
     // Print(str, cnode1, io)

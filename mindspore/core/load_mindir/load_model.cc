@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2022 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -172,7 +172,7 @@ std::shared_ptr<T> ParserAttr(const std::string &str, const mindspore::HashMap<s
 template <typename T>
 std::shared_ptr<T> ParserScalarAttrValue(const std::string &attr_name, const mindspore::HashMap<string, ValuePtr> &kv) {
   std::string str = attr_name;
-  auto replace = [&](const string &orgStr, const string &newStr) {
+  auto replace = [&str](const string &orgStr, const string &newStr) {
     std::string::size_type pos;
     while ((pos = str.find(orgStr)) != std::string::npos) {
       (void)str.replace(pos, orgStr.length(), newStr);
