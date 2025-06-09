@@ -650,12 +650,6 @@ std::shared_ptr<mindspore::dataset::DeviceBuffer> PluginDvppVdecStopGetFrame(int
 
 int64_t PluginDvppVdecDestroyChnl(int64_t chnId) { return mindspore::dataset::dvpp_vdec_destroy_chnl(chnId); }
 
-int64_t PluginDvppMalloc(uint32_t dev_id, void **dev_ptr, uint64_t size) {
-  return mindspore::dataset::dvpp_malloc(dev_id, dev_ptr, size);
-}
-
-int64_t PluginDvppFree(void *dev_ptr) { return mindspore::dataset::dvpp_free(dev_ptr); }
-
 int64_t PluginDvppMemcpy(const std::shared_ptr<mindspore::dataset::DeviceBuffer> &src, void *dest) {
   return mindspore::dataset::dvpp_memcpy(src, dest);
 }

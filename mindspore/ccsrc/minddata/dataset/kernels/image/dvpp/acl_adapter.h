@@ -182,10 +182,6 @@ class AclAdapter {
 
   APP_ERROR DvppVdecDestroyChnl(int64_t chnId);
 
-  APP_ERROR DvppMalloc(uint32_t dev_id, void **dev_ptr, uint64_t size);
-
-  APP_ERROR DvppFree(void *dev_ptr);
-
   APP_ERROR DvppMemcpy(const std::shared_ptr<DeviceBuffer> &src, void *dest);
 
   // acl
@@ -283,8 +279,6 @@ class AclAdapter {
   DvppVdecSendStreamFunObj dvpp_vdec_send_stream_fun_obj_;
   DvppVdecStopGetFrameFunObj dvpp_vdec_stop_get_frame_fun_obj_;
   DvppVdecDestroyChnlFunObj dvpp_vdec_destroy_chnl_fun_obj_;
-  DvppMallocFunObj dvpp_malloc_fun_obj_;
-  DvppFreeFunObj dvpp_free_fun_obj_;
   DvppMemcpyFunObj dvpp_memcpy_fun_obj_;
 
   // acl interface

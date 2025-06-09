@@ -136,8 +136,6 @@ void AclAdapter::InitPlugin() {
   dvpp_vdec_send_stream_fun_obj_ = DlsymFuncObj(DvppVdecSendStream, plugin_handle_);
   dvpp_vdec_stop_get_frame_fun_obj_ = DlsymFuncObj(DvppVdecStopGetFrame, plugin_handle_);
   dvpp_vdec_destroy_chnl_fun_obj_ = DlsymFuncObj(DvppVdecDestroyChnl, plugin_handle_);
-  dvpp_malloc_fun_obj_ = DlsymFuncObj(DvppMalloc, plugin_handle_);
-  dvpp_free_fun_obj_ = DlsymFuncObj(DvppFree, plugin_handle_);
   dvpp_memcpy_fun_obj_ = DlsymFuncObj(DvppMemcpy, plugin_handle_);
 
   // acl
@@ -227,8 +225,6 @@ void AclAdapter::FinalizePlugin() {
   dvpp_vdec_send_stream_fun_obj_ = nullptr;
   dvpp_vdec_stop_get_frame_fun_obj_ = nullptr;
   dvpp_vdec_destroy_chnl_fun_obj_ = nullptr;
-  dvpp_malloc_fun_obj_ = nullptr;
-  dvpp_free_fun_obj_ = nullptr;
   dvpp_memcpy_fun_obj_ = nullptr;
 
   // acl
@@ -792,22 +788,6 @@ APP_ERROR AclAdapter::DvppVdecDestroyChnl(int64_t chnId) {
     return APP_ERR_ACL_FAILURE;
   }
   int64_t ret = dvpp_vdec_destroy_chnl_fun_obj_(chnId);
-  return ret == 0 ? APP_ERR_OK : APP_ERR_ACL_FAILURE;
-}
-
-APP_ERROR AclAdapter::DvppMalloc(uint32_t dev_id, void **dev_ptr, uint64_t size) {
-  if (!HasAclPlugin() || dvpp_malloc_fun_obj_ == nullptr) {
-    return APP_ERR_ACL_FAILURE;
-  }
-  int64_t ret = dvpp_malloc_fun_obj_(dev_id, dev_ptr, size);
-  return ret == 0 ? APP_ERR_OK : APP_ERR_ACL_FAILURE;
-}
-
-APP_ERROR AclAdapter::DvppFree(void *dev_ptr) {
-  if (!HasAclPlugin() || dvpp_free_fun_obj_ == nullptr) {
-    return APP_ERR_ACL_FAILURE;
-  }
-  int64_t ret = dvpp_free_fun_obj_(dev_ptr);
   return ret == 0 ? APP_ERR_OK : APP_ERR_ACL_FAILURE;
 }
 

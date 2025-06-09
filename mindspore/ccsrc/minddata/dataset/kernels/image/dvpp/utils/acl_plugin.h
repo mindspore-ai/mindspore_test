@@ -179,10 +179,6 @@ PLUGIN_METHOD(DvppVdecStopGetFrame, std::shared_ptr<mindspore::dataset::DeviceBu
 
 PLUGIN_METHOD(DvppVdecDestroyChnl, int64_t, int64_t);
 
-PLUGIN_METHOD(DvppMalloc, int64_t, uint32_t, void **, uint64_t);
-
-PLUGIN_METHOD(DvppFree, int64_t, void *);
-
 PLUGIN_METHOD(DvppMemcpy, int64_t, const std::shared_ptr<mindspore::dataset::DeviceBuffer> &, void *);
 
 // acl
