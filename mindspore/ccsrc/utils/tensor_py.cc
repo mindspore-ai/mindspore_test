@@ -106,6 +106,10 @@ TensorPtr TensorPy::GetTensor() const {
   return tensor_;
 }
 
+void TensorPy::SetTensor(const TensorPtr &tensor) {
+  tensor_ = tensor;
+}
+
 void TensorPy::UpdateStub(const TensorPtr &tensor) { stub_->SetValue(tensor); }
 
 const py::object TensorPy::GetStorage() const { return storage_; }
@@ -356,6 +360,17 @@ TensorPtr ConvertToTensor(const py::handle &obj) {
     return tensor_ptr;
   }
   return nullptr;
+}
+
+void SetTensorValue(const py::handle &obj, const TensorPtr &tensor_value) {
+  PyObject *raw_ptr = obj.ptr();
+  PyObject *str_type = reinterpret_cast<PyObject *>(TensorPy_Type);
+  if (PyObject_IsInstance(raw_ptr, str_type)) {
+    PyType<TensorPy> *tensor = (PyType<TensorPy> *)raw_ptr;
+    tensor->value.SetTensor(tensor_value);
+  } else {
+    MS_LOG(EXCEPTION) << "Not TensorPy object";
+  }
 }
 
 PyType<TensorPy> *ConvertPyObject2TensorPyType(const py::object obj) {
