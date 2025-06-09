@@ -38,7 +38,11 @@ void RegRuntimeConf(py::module *m) {
     .def("set_thread_bind_core_configured", &RuntimeConf::SetThreadBindCoreConfigured,
          "Set thread_bind_core configured.")
     .def("thread_bind_core_with_policy", &RuntimeConf::BindCoreWithPolicy,
-         "Bind thread to specific cpus with policy generated");
+         "Bind thread to specific cpus with policy generated")
+    .def("set_kernel_launch_capture", &RuntimeConf::SetKernelLaunchCapture,
+         "Enable capture graph when launch some kernels")
+    .def("get_enable_kernel_launch_capture", &RuntimeConf::GetEnableKernelLaunchCapture,
+         "Is kernel launch capture configured");
 }
 }  // namespace runtime
 }  // namespace mindspore
