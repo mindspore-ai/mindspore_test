@@ -372,8 +372,8 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         try:
             data = self._item()
             return int(data)
-        except ValueError:
-            raise ValueError("Only one element tensors can be converted to Python scalars")
+        except ValueError as e:
+            raise ValueError("Only one element tensors can be converted to Python scalars") from e
 
 
     def __float__(self):
@@ -389,8 +389,8 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
             if not isinstance(data, (int, bool)):
                 raise ValueError
             return int(data)
-        except ValueError:
-            raise ValueError("Only integer tensors of a single element can be converted to an index.")
+        except ValueError as e:
+            raise ValueError("Only integer tensors of a single element can be converted to an index.") from e
 
     def __pos__(self):
         return self

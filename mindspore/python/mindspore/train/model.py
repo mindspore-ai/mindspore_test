@@ -1057,7 +1057,7 @@ class Model:
             initial_epoch (int): Epoch at which to start train, it used for resuming a previous training run.
                                  Default: 0.
         """
-        is_graph = (context.get_context("mode") == context.GRAPH_MODE)
+        is_graph = context.get_context("mode") == context.GRAPH_MODE
         dataset_size = train_dataset.get_dataset_size()
         if dataset_size % sink_size != 0:
             logger.info("In dataset_sink mode (dataset_size % sink_size) should equal to 0, "
