@@ -529,6 +529,7 @@ BuiltInTypeMap &GetMethodMap() {
        {"outer", std::string("outer")},                                    // outer()
        {"softmax", std::string("softmax")},                                // softmax()
        {"index_add_", std::string("index_add_")},                          // index_add_()
+       {"move_to", std::string("move_to")},                                // move_to()
      }},
     {kObjectTypeRowTensorType,
      {

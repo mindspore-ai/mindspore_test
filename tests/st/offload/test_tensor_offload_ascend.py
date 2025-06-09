@@ -217,8 +217,12 @@ def test_abnormal_case4(mode):
     context.set_context(mode=mode)
     x = Tensor(np.random.randn(128, 256, 32, 32), ms.float32)
     y = ops.add(x, x)
+    @ms.jit
+    def test_jit(t):
+        t.move_to(to="Ascend")
+        return t
     with pytest.raises(ValueError):
-        y.move_to(to="Ascend")
+        test_jit(y)
         _pynative_executor.sync()
 
 
