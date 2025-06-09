@@ -1020,7 +1020,7 @@ def read_video(filename, start_pts=0, end_pts=None, pts_unit="pts"):
         ValueError: If `pts_unit` is not in ["pts", "sec"].
 
     Supported Platforms:
-        ``CPU`` ``Ascend`
+        ``CPU`` ``Ascend``
 
     Examples:
         >>> import mindspore.dataset.vision as vision
@@ -1085,33 +1085,6 @@ class VideoDecoder:
         self.source = source
         self._metadata = self.metadata
 
-    @property
-    def metadata(self):
-        """
-        Getting metadata of the video stream.
-
-        Returns:
-            dict, information about the metadata.
-
-        Examples:
-            >>> import mindspore.dataset as ds
-            >>> import mindspore.dataset.vision as vision
-            >>>
-            >>> ds.config.set_video_backend("Ascend")
-            >>> reader = vision.VideoDecoder(source="/path/to/filename")
-            >>> metadata = reader.metadata
-        """
-        metadata = {}
-        filepath = os.path.realpath(self.source)
-        with cde.pyav_open(filepath) as container:
-            stream = container.streams.video[0]
-            metadata["width"] = stream.width
-            metadata["height"] = stream.height
-            metadata["duration_seconds"] = round(float(stream.duration * stream.time_base), 6)
-            metadata["num_frames"] = stream.frames
-            metadata["average_fps"] = float(stream.average_rate)
-        return metadata
-
     def get_frames_at(self, indices):
         """
         Retrieves the frame at the specified index.
@@ -1174,6 +1147,33 @@ class VideoDecoder:
             vframes = vframes.transpose(0, 2, 3, 1)
 
         return vframes
+
+    @property
+    def metadata(self):
+        """
+        Getting metadata of the video stream.
+
+        Returns:
+            dict, information about the metadata.
+
+        Examples:
+            >>> import mindspore.dataset as ds
+            >>> import mindspore.dataset.vision as vision
+            >>>
+            >>> ds.config.set_video_backend("Ascend")
+            >>> reader = vision.VideoDecoder(source="/path/to/filename")
+            >>> metadata = reader.metadata
+        """
+        metadata = {}
+        filepath = os.path.realpath(self.source)
+        with cde.pyav_open(filepath) as container:
+            stream = container.streams.video[0]
+            metadata["width"] = stream.width
+            metadata["height"] = stream.height
+            metadata["duration_seconds"] = round(float(stream.duration * stream.time_base), 6)
+            metadata["num_frames"] = stream.frames
+            metadata["average_fps"] = float(stream.average_rate)
+        return metadata
 
     def _read_from_stream_dvpp_frames(self, filename, container, start_offset, end_offset,
                                       stream, stream_name, indices):

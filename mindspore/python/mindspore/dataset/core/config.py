@@ -1175,6 +1175,7 @@ def get_multiprocessing_start_method():
     """
     return _config.get_multiprocessing_start_method()
 
+
 def set_video_backend(backend):
     """
     Set the backend used to decode videos.
@@ -1199,6 +1200,7 @@ def set_video_backend(backend):
         ret = cde.dvpp_sys_init()
         if ret != 0:
             raise RuntimeError(f"_dvpp_sys_init failed {ret}")
+
 
 def get_video_backend():
     """

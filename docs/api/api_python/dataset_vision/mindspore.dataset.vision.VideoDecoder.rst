@@ -11,14 +11,6 @@ mindspore.dataset.vision.VideoDecoder
     异常：
         - **TypeError** - 如果 `source` 不是str类型。
         - **ValueError** - 如果 `source` 不存在或者权限被拒绝。
-    
-    .. py:method:: mindspore.dataset.vision.VideoDecoder.metadata
-        :property:
-
-        获取视频流的元数据。
-
-        返回：
-            dict，元数据的相关信息。
 
     .. py:method:: get_frames_at(indices)
 
@@ -34,3 +26,11 @@ mindspore.dataset.vision.VideoDecoder
             - **TypeError** - 如果 `indices` 不是list类型。
             - **TypeError** - 如果 `indices` 的值不是int类型。
             - **ValueError** - 如果 `indices` 的值不在[0，总帧数)范围内。
+
+    .. py:method:: metadata
+        :property:
+
+        获取视频流的元数据。
+
+        返回：
+            dict，元数据的相关信息。
