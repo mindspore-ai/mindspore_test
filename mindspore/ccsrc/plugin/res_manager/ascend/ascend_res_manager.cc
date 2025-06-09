@@ -732,7 +732,8 @@ aclrtMemcpyKind CopyTypeToAclType(CopyType copy_type) {
 }  // namespace
 
 bool AscendResManager::Copy(void *dst, const void *src, uint64_t size, CopyType kind, size_t stream_id) const {
-  if (BaseCopy(dst, src, size, CopyTypeToAclType(kind), stream_id)) {
+  BindDeviceToCurrentThread(true);
+  if (!BaseCopy(dst, src, size, CopyTypeToAclType(kind), stream_id)) {
     MS_LOG(ERROR) << "Failed to copy from:" << dst << " to:" << src << " size:" << size << " kind:" << kind;
     return false;
   }
@@ -898,6 +899,10 @@ bool AscendResManager::AsyncDeviceToHost(const DeviceSyncPtr &dst_device_sync, c
   const auto &src_device_address = dynamic_cast<const DeviceAddress *>(src_device_sync.get());
   MS_EXCEPTION_IF_NULL(dst_device_address);
   MS_EXCEPTION_IF_NULL(src_device_address);
+  if (src_device_address->GetTensorStorageInfo() != nullptr || dst_device_address->GetTensorStorageInfo() != nullptr) {
+    MS_LOG(EXCEPTION) << "Invalid sync host to device for tensor storage info in device address:"
+                      << src_device_address->PrintInfo() << " and:" << dst_device_address->PrintInfo();
+  }
   BindDeviceToCurrentThread(false);
   // Check hete info.
   if (src_device_address->hete_info_ != nullptr) {
@@ -1096,6 +1101,10 @@ bool AscendResManager::AsyncHostToDevice(const DeviceSyncPtr &dst_device_sync, c
   const auto &src_device_address = dynamic_cast<const DeviceAddress *>(src_device_sync.get());
   MS_EXCEPTION_IF_NULL(dst_device_address);
   MS_EXCEPTION_IF_NULL(src_device_address);
+  if (src_device_address->GetTensorStorageInfo() != nullptr || dst_device_address->GetTensorStorageInfo() != nullptr) {
+    MS_LOG(EXCEPTION) << "Invalid sync host to device for tensor storage info in device address:"
+                      << src_device_address->PrintInfo() << " and:" << dst_device_address->PrintInfo();
+  }
   BindDeviceToCurrentThread(false);
   // Check hete info.
   if (dst_device_address->hete_info_ != nullptr) {
@@ -1170,6 +1179,10 @@ bool AscendResManager::AsyncDeviceToDevice(const DeviceSyncPtr &dst_device_sync,
   const auto &src_device_address = dynamic_cast<const DeviceAddress *>(src_device_sync.get());
   MS_EXCEPTION_IF_NULL(dst_device_address);
   MS_EXCEPTION_IF_NULL(src_device_address);
+  if (src_device_address->GetTensorStorageInfo() != nullptr || dst_device_address->GetTensorStorageInfo() != nullptr) {
+    MS_LOG(EXCEPTION) << "Invalid sync host to device for tensor storage info in device address:"
+                      << src_device_address->PrintInfo() << " and:" << dst_device_address->PrintInfo();
+  }
   BindDeviceToCurrentThread(true);
   if (dst_device_address->format() != src_device_address->format() ||
       dst_device_address->type_id() != src_device_address->type_id()) {

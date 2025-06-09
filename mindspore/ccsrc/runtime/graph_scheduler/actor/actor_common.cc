@@ -445,8 +445,8 @@ bool CopyDataForParameter(const DeviceTensorPtr &dst_device_tensor, const Device
     if (stream_id == SIZE_MAX && src_device_tensor->GetDeviceType() != device::DeviceType::kCPU) {
       stream_id = src_device_tensor->stream_id();
     }
-    MS_LOG(WARNING) << "Sync copy from device tensor:" << src_device_tensor << " to:" << dst_device_tensor
-                    << " by stream id:" << stream_id;
+    MS_LOG(DEBUG) << "Sync copy from device tensor:" << src_device_tensor << " to:" << dst_device_tensor
+                  << " by stream id:" << stream_id;
     if (!SyncAllStreamForDeviceAddress(dst_device_tensor)) {
       MS_LOG(ERROR) << "Failed to sync all stream.";
       return false;
@@ -456,8 +456,8 @@ bool CopyDataForParameter(const DeviceTensorPtr &dst_device_tensor, const Device
   if (stream_id == SIZE_MAX) {
     stream_id = dst_device_tensor->stream_id();
   }
-  MS_LOG(WARNING) << "Async copy from device tensor:" << src_device_tensor << " to:" << dst_device_tensor
-                  << " by stream id:" << stream_id;
+  MS_LOG(DEBUG) << "Async copy from device tensor:" << src_device_tensor << " to:" << dst_device_tensor
+                << " by stream id:" << stream_id;
   return AsyncCopy(dst_device_tensor, src_device_tensor, stream_id);
 }
 
