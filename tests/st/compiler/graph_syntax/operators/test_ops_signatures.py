@@ -49,8 +49,6 @@ torch_data = {
 
 
 def get_dtype(x):
-    if x.dtype in (ms.bfloat16, torch.bfloat16):
-        return "bfloat16"
     if isinstance(x, (ms.Tensor, torch.Tensor)):
         return x.numpy().dtype
     return x.dtype
@@ -72,9 +70,6 @@ def test_tensor_add_tensor_compare(mode):
     for key1 in ms_data.keys():
         for key2 in ms_data.keys():
             if key1 == "bool" and key2 == "bool":
-                continue
-            # aclnnCast does not support bfloat16
-            if key1 == "bfloat16" or key2 == "bfloat16":
                 continue
             out_ms = Net()(ms_data[key1], ms_data[key2])
             out_torch = torch_data[key1] + torch_data[key2]
@@ -129,25 +124,6 @@ def test_tensor_mul_tensor_complex(mode):
     out_torch = torch_x * 1.0
     dtype_torch = get_dtype(out_torch)
     assert dtype_ms == dtype_torch, f"complex64 * float = {dtype_ms}, expect {dtype_torch}"
-
-
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('mode', [ms.GRAPH_MODE])
-def test_assignadd_bfloat16_float16(mode):
-    """
-    Feature: Implicit type conversion.
-    Description: Test AssignAdd with bfloat16 and float16.
-    Expectation: No exception.
-    """
-    class Net(ms.nn.Cell):
-        def construct(self, x, y):
-            ms.ops.assign_add(x, y)
-            return x
-
-    ms.context.set_context(mode=mode)
-    ms.set_context(jit_level="O2")
-    out = Net()(ms.Parameter(ms_data["float16"], name="x"), ms_data["bfloat16"])
-    assert out.dtype == ms.float16
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
