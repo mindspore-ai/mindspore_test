@@ -207,6 +207,14 @@ Status ReceiveBridgeOp::operator()() {
       }
       receive_info_.normal_row_.row_step_ = ReceiveBridgeOp::RowStep::kAfterReceiveMsg;
 
+      // If the data is relatively large and the network is executed under an independent process,
+      // coredump issues may occur. The reason is that ReceptBridgeOp did not finish immediately after DataQueueOp
+      // Finished, resulting in ToTensorRow executing the inverse sequence in the future. At this time,
+      // ReceptBridgeOp was finished, causing coredump when executing the inverse sequence in the underlying memcpy.
+      // So make another judgment before executing ToTensorRow.
+      if (tree_->isFinished()) {
+        return Task::OverrideInterruptRc(this_thread::GetInterruptStatus());
+      }
       RETURN_IF_NOT_OK(receive_queue_.ToTensorRow(&new_row, msg_queue_.shm_id_, msg_queue_.shm_size_));
     }
 
