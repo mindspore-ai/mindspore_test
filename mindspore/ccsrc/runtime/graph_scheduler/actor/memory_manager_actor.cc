@@ -457,7 +457,7 @@ void MemoryManagerActor::FreeMemoryByRefCount(KernelTensor *const kernel_tensor,
   if (device_tensor->new_ref_count() != SIZE_MAX) {
     if (device_tensor->new_ref_count() == 0) {
       const auto &node_with_index = device_tensor->GetNodeIndex();
-      MS_LOG(EXCEPTION) << "Invalid new ref count:0 for decrease for device address:" << device_tensor->ToString()
+      MS_LOG(EXCEPTION) << "Invalid new ref count:0 for decrease for kernel tensor:" << kernel_tensor->ToString()
                         << " node:"
                         << (node_with_index.first == nullptr
                               ? "null"
@@ -467,11 +467,11 @@ void MemoryManagerActor::FreeMemoryByRefCount(KernelTensor *const kernel_tensor,
     }
 
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-      << "Op:" << op_name << " decrease new ref count for:" << device_tensor->ToString();
+      << "Op:" << op_name << " decrease new ref count for:" << kernel_tensor->ToString();
     if ((device_tensor->DecreaseNewRefCount(op_name) == 0) && device_tensor->IsPtrValid()) {
       device_tensor->ClearUserData();
       MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-        << "Op:" << op_name << " free memory by the new reference count, device address:" << device_tensor->GetPtr()
+        << "Op:" << op_name << " free memory by the new reference count, kernel tensor:" << kernel_tensor->ToString()
         << ".";
       if (device_tensor->deleter() != nullptr) {
         MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
