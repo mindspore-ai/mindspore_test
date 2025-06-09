@@ -349,6 +349,20 @@ static bool GuardIsInstance(CallNode *call_node) {
 }
 
 bool InferBuiltinFuncOrMethod(CallNode *call_node, GraphBuilder *unused = nullptr) {
+  bool guard_success = false;
+  std::string name = GetFuncName(call_node->input(0)->GetVobj()->GetPyObject());
+  if (name == "isinstance") {
+    guard_success = GuardIsInstance(call_node);
+  } else {
+    guard_success = GuardBuiltinFunc(call_node);
+  }
+
+  if (!guard_success) {
+    MS_LOG(INFO) << "Guard `isinstance` or guard builtin func failed.";
+    call_node->SetSubGraph(nullptr);
+    return false;
+  }
+
   Graph *sub_graph = call_node->GetSubGraph();
   (void)JustCallAndSetRes(call_node);
   call_node->SetInlineReason(InlineReason::kInlineFunc_Type_Unsupported);
@@ -358,14 +372,6 @@ bool InferBuiltinFuncOrMethod(CallNode *call_node, GraphBuilder *unused = nullpt
   }
   if (call_node->GetVobj() == nullptr || call_node->GetVobj()->GetPyObject().ptr() == nullptr) {
     return false;
-  }
-
-  bool guard_success = false;
-  std::string name = GetFuncName(call_node->input(0)->GetVobj()->GetPyObject());
-  if (name == "isinstance") {
-    guard_success = GuardIsInstance(call_node);
-  } else {
-    guard_success = GuardBuiltinFunc(call_node);
   }
   if (guard_success) {
     return CallNodeReturnConst(call_node, sub_graph, call_node->GetVobj());

@@ -141,6 +141,11 @@ class COMMON_EXPORT TensorPy {
   /// \return The created C++ Tensor.
   TensorPtr GetTensor() const;
 
+  /// \brief Set C++ Tensor.
+  ///
+  /// \param[in] tensor [TensorPtr] The C++ Tensor.
+  void SetTensor(const TensorPtr &tensor);
+
   /// \brief Get parent Tensor.
   /// \return Parent Tensor.
   const py::object GetParentTensor();
@@ -392,6 +397,13 @@ COMMON_EXPORT const py::handle ConvertToTensorPy(const py::handle &obj);
 /// \param[in] obj [py::handle] The python object.
 /// \return A pointer address of C++ Tensor.
 COMMON_EXPORT TensorPtr ConvertToTensor(const py::handle &obj);
+
+/// \brief Set Tensor value for TensorPy.
+///
+/// \param[in] obj [py::handle] The python object.
+/// \param[in] tensor_value [TensorPtr] C++ Tensor.
+COMMON_EXPORT void SetTensorValue(const py::handle &obj, const TensorPtr &tensor_value);
+
 COMMON_EXPORT const ValuePtr ConvertToValue(const py::handle &obj);
 template <typename T>
 struct PyType {
