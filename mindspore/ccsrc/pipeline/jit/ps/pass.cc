@@ -1680,9 +1680,28 @@ bool EliminateUnusedParamsPass(const ResourcePtr &resource) {
   FuncGraphPtr func_graph = resource->func_graph();
   ud_chain::Preprocess(func_graph);
   AnfNodePtrList parameters;
+  size_t eliminate_cnt = 0;
   for (const auto &param : func_graph->parameters()) {
     if (!ud_chain::GetUsers(param).empty() || param->cast<ParameterPtr>()->has_default()) {
       parameters.push_back(param);
+
+      // update kActualArgumentIndex
+      auto abstract = param->abstract();
+      MS_EXCEPTION_IF_NULL(abstract);
+      if (abstract->has_user_data(pipeline::kActualArgumentIndex)) {
+        std::shared_ptr<size_t> index_ptr = abstract->user_data<size_t>(pipeline::kActualArgumentIndex);
+        MS_EXCEPTION_IF_NULL(index_ptr);
+        auto new_index = *index_ptr - eliminate_cnt;
+        MS_EXCEPTION_IF_CHECK_FAIL(*index_ptr >= eliminate_cnt, "argument index < eliminate cnt");
+        abstract->set_user_data<size_t>(kActualArgumentIndex, std::make_shared<size_t>(new_index));
+        MS_LOG(DEBUG) << "Param:" << param->DebugString() << ", original index:" << new_index + eliminate_cnt
+                      << ", eliminate_cnt:" << eliminate_cnt << ", new index:" << new_index;
+      } else {
+        MS_LOG(INFO) << "Cannot find index of param: " << param->DebugString() << ", " << abstract->ToString();
+      }
+    } else {
+      ++eliminate_cnt;
+      MS_LOG(DEBUG) << "Eliminate param:" << param->DebugString();
     }
   }
   func_graph->set_parameters(parameters);
