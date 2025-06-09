@@ -40,6 +40,7 @@
 #include "ir/device_event.h"
 #include "utils/ms_context.h"
 #include "ir/tensor.h"
+#include "ir/capture_graph.h"
 #ifdef __APPLE__
 #include "async/spinlock.h"
 #endif
@@ -323,6 +324,9 @@ class BACKEND_COMMON_EXPORT DeviceResManager {
 
   // Create device event for runtime.
   virtual DeviceEventPtr CreateRuntimeEvent(bool enable_blocking, bool enable_record_wait) { return nullptr; }
+
+  // Create mind graph
+  virtual CaptureGraphPtr CreateCaptureGraph() { return nullptr; }
 
   // Create device event with flag.
   virtual DeviceEventPtr CreateEventWithFlag(bool enable_timing, bool blocking, bool use_extensional_api = true) {

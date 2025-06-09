@@ -35,6 +35,7 @@
 #include "utils/shape_utils.h"
 #include "utils/ms_exception.h"
 #include "ir/device_event.h"
+#include "ir/capture_graph.h"
 #include "utils/os.h"
 #include "ir/meta_grad_data.h"
 #include "ir/tensor_data.h"

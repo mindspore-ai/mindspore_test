@@ -209,6 +209,8 @@ class RES_EXPORT HalResBase {
     return nullptr;
   }
 
+  virtual CaptureGraphPtr CreateCaptureGraph() { return nullptr; }
+
   // Destroy specified device event.
   virtual bool DestroyEvent(const DeviceEventPtr &event) { return false; }
 

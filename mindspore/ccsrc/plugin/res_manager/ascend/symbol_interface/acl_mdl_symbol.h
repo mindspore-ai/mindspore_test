@@ -63,6 +63,13 @@ ORIGIN_METHOD(aclmdlGetInputDynamicDims, aclError, const aclmdlDesc *, size_t, a
 ORIGIN_METHOD(aclmdlGetInputDynamicGearCount, aclError, const aclmdlDesc *, size_t, size_t *)
 ORIGIN_METHOD(aclmdlGetDynamicBatch, aclError, const aclmdlDesc *, aclmdlBatch *)
 ORIGIN_METHOD(aclmdlSetDynamicHWSize, aclError, uint32_t, aclmdlDataset *, size_t, uint64_t, uint64_t)
+#if defined(__linux__) && defined(WITH_BACKEND)
+ORIGIN_METHOD(aclmdlRICaptureBegin, aclError, aclrtStream, aclmdlRICaptureMode)
+ORIGIN_METHOD(aclmdlRICaptureGetInfo, aclError, aclrtStream, aclmdlRICaptureStatus *, aclmdlRI *)
+ORIGIN_METHOD(aclmdlRICaptureEnd, aclError, aclrtStream, aclmdlRI *)
+ORIGIN_METHOD(aclmdlRIExecuteAsync, aclError, aclmdlRI, aclrtStream)
+ORIGIN_METHOD(aclmdlRIDestroy, aclError, aclmdlRI)
+#endif
 
 extern aclmdlAddDatasetBufferFunObj aclmdlAddDatasetBuffer_;
 extern aclmdlCreateDatasetFunObj aclmdlCreateDataset_;
@@ -107,6 +114,13 @@ extern aclmdlGetInputDynamicDimsFunObj aclmdlGetInputDynamicDims_;
 extern aclmdlGetInputDynamicGearCountFunObj aclmdlGetInputDynamicGearCount_;
 extern aclmdlGetDynamicBatchFunObj aclmdlGetDynamicBatch_;
 extern aclmdlSetDynamicHWSizeFunObj aclmdlSetDynamicHWSize_;
+#if defined(__linux__) && defined(WITH_BACKEND)
+extern aclmdlRICaptureBeginFunObj aclmdlRICaptureBegin_;
+extern aclmdlRICaptureGetInfoFunObj aclmdlRICaptureGetInfo_;
+extern aclmdlRICaptureEndFunObj aclmdlRICaptureEnd_;
+extern aclmdlRIExecuteAsyncFunObj aclmdlRIExecuteAsync_;
+extern aclmdlRIDestroyFunObj aclmdlRIDestroy_;
+#endif
 
 void LoadAclMdlApiSymbol(const std::string &ascend_path);
 }  // namespace mindspore::device::ascend

@@ -128,6 +128,7 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public HalResBase {
   int ResetParams(const std::vector<tensor::TensorPtr> &params) const;
 
   DeviceEventPtr CreateRuntimeEvent(bool enable_blocking, bool enable_record_wait);
+  CaptureGraphPtr CreateCaptureGraph();
   DeviceEventPtr CreateEventWithFlag(bool enable_timing, bool blocking, bool use_extensional_api) override;
   bool DestroyEvent(const DeviceEventPtr &event) override;
   bool DestroyAllEvents() override;
