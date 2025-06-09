@@ -641,7 +641,9 @@ void ViewBackend::AllocateMemForTensor(const tensor::TensorPtr &tensor, DeviceCo
     MS_LOG(EXCEPTION) << "Allocate memory failed";
   }
 
-  tensor->to_device();
+  if (!tensor->to_device()) {
+    MS_LOG(EXCEPTION) << "To device failed, " << tensor->ToString();
+  }
 
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
     MarkTensorAsOutput, "PyNative", device_address->device_name(), device_address->GetPtr(), device_address->type_id(),

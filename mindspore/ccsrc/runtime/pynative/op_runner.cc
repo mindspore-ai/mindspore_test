@@ -719,32 +719,6 @@ void UpdateOutputDeviceInfo(const std::vector<EdgePtr> &edges, const CNodePtr &k
   }
 }
 
-void UpdateInputTensorForHeterogeneous(const DeviceContext *device_context, const tensor::TensorPtr &input_tensor,
-                                       const device::DeviceAddressPtr &cached_device_address, size_t stream_id) {
-  MS_EXCEPTION_IF_NULL(device_context);
-  MS_EXCEPTION_IF_NULL(cached_device_address);
-  MS_EXCEPTION_IF_NULL(input_tensor);
-
-  static bool need_check = common::GetEnv("MS_DEV_DISABLE_AUTO_H2D") == "1";
-  if (need_check) {
-    CheckAutoH2D(device_context, input_tensor);
-  }
-
-  auto device_sync = input_tensor->device_address();
-  // This device address of tensor should never be null at any time.
-  MS_EXCEPTION_IF_NULL(device_sync);
-  auto device_address = std::dynamic_pointer_cast<device::DeviceAddress>(device_sync);
-  MS_EXCEPTION_IF_NULL(device_address);
-  if (device_address->GetDeviceType() != device_context->GetDeviceType() ||
-      device_address->format() != cached_device_address->format()) {
-    cached_device_address->set_from_persistent_mem(input_tensor->is_parameter());
-    input_tensor->set_device_address(cached_device_address);
-    input_tensor->set_to_device([device_address, cached_device_address, stream_id]() {
-      return AsyncCopy(cached_device_address, device_address, stream_id);
-    });
-  }
-}
-
 void UpdateAddressInfoByInputTensor(const OpCompilerInfoPtr &op_compiler_info, const tensor::TensorPtr &tensor,
                                     const EdgePtr &edge, const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(tensor);
@@ -773,6 +747,9 @@ void UpdateAddressInfoByInputTensor(const OpCompilerInfoPtr &op_compiler_info, c
   new_kernel_tensor->set_host_shape(shape);
   new_device_address->SetSize(tensor_size);
   new_device_address->set_from_persistent_mem(tensor->is_parameter());
+
+  MS_LOG(DEBUG) << "Update input edge kernel tensor from " << (edge->kernel_tensor_ != nullptr ? edge->kernel_tensor_->ToString() : "None")
+                << " to " << new_kernel_tensor->ToString();
   edge->kernel_tensor_ = new_kernel_tensor;
 }
 
@@ -1021,40 +998,42 @@ void DynamicOpRunner::UpdateInputDeviceAddress(const OpCompilerInfoPtr &op_compi
     MS_LOG(EXCEPTION) << "Real input tensor's num " << input_tensors_num << " is not equal to op input num"
                       << op_input_num << " !";
   }
-  const auto &device_context = op_compiler_info->device_context_;
   const auto &inputs = simple_graph->inputs_;
   for (size_t i = 0; i < input_tensors_num; ++i) {
     const auto &input_tensor = input_tensors[i];
     MS_EXCEPTION_IF_NULL(input_tensor);
     const auto &input_edge = inputs[i];
-    // input_edge->kernel_tensor_ is null.
-    UpdateInputTensorForHeterogeneous(device_context, input_tensor, input_edge->origin_kernel_tensor_->device_address(),
-                                      stream_id);
+
     const auto &device_sync = input_tensor->device_address();
+    MS_EXCEPTION_IF_NULL(device_sync);
     const auto &device_address = std::dynamic_pointer_cast<device::DeviceAddress>(device_sync);
+
+    if (device_address->GetTensorStorageInfo() != nullptr) {
+      MS_EXCEPTION(RuntimeError) << "Not support view tensor for " << op_compiler_info->graph_info_;
+    }
 
     const auto &input_node = input_edge->node_with_index_.first;
     common::AnfAlgo::SetOutputInferTypeAndShape({input_tensor->data_type()}, {input_tensor->shape()}, input_node.get());
-    if (device_address != nullptr) {
-      if (device_address->GetTensorStorageInfo() != nullptr) {
-        MS_EXCEPTION(RuntimeError) << "Not support view tensor for " << op_compiler_info->graph_info_;
-      } else {
-        // Always use tensor address as kernel address.
-        auto abs = input_tensor->ToAbstract()->Broaden();
-        MS_EXCEPTION_IF_NULL(abs);
-        auto kernel_tensor = std::make_shared<kernel::KernelTensor>(abs->GetShape(), abs->GetType(), abs->GetValue());
-        kernel_tensor->set_device_address(device_address);
-        kernel_tensor->set_host_shape(input_tensor->shape());
-        input_edge->kernel_tensor_ = kernel_tensor;
-      }
+
+    UpdateAddressInfoByInputTensor(op_compiler_info, input_tensor, input_edge, input_node);
+
+    const auto &new_device_address = input_edge->kernel_tensor_->device_address();
+    if (device_address->GetDeviceType() != new_device_address->GetDeviceType()) {
+      MS_LOG(DEBUG) << "Input tensor device address type:" << device::GetDeviceNameByType(device_address->GetDeviceType())
+                    << " but ir device address type:" << device::GetDeviceNameByType(new_device_address->GetDeviceType());
+      auto h2d = [device_address, new_device_address, stream_id](){
+        return AsyncCopy(new_device_address, device_address, stream_id);
+      };
+      input_tensor->set_to_device(std::move(h2d));
+      input_tensor->set_device_address(new_device_address);
     } else {
-      UpdateAddressInfoByInputTensor(op_compiler_info, input_tensor, input_edge, input_node);
-      if (input_edge->ignore_h2d_) {
-        input_edge->kernel_tensor_->SetValue(input_tensor);
-        MS_LOG(DEBUG) << "Ignore host to device for " << op_compiler_info->graph_info_;
-      } else {
-        input_tensor->set_device_address(input_edge->kernel_tensor_->device_address());
-      }
+      MS_LOG(DEBUG) << "Input device type is same, set tensor device address to ir input.";
+      input_tensor->set_to_device(nullptr);
+      input_edge->kernel_tensor_->set_device_address(device_address);
+    }
+
+    if (device_address->GetDeviceType() == device::DeviceType::kCPU && input_edge->ignore_h2d_) {
+      input_edge->kernel_tensor_->SetValue(input_tensor);
     }
   }
   MS_LOG(DEBUG) << "End update input device address for " << op_compiler_info->graph_info_;
@@ -1105,7 +1084,9 @@ void DynamicOpRunner::CopyHostToDevice(const OpCompilerInfoPtr &op_compiler_info
                         << ", alloc size: " << device_address->GetSize() << "B.";
     }
 
-    input_tensor->to_device();
+    if (!input_tensor->to_device()) {
+      MS_LOG(EXCEPTION) << "To device failed, " << input_tensor->ToString();
+    }
     MS_LOG(DEBUG) << "Copy host tensor to device for op " << op_compiler_info->graph_info_ << " input " << i;
   }
 }
