@@ -319,8 +319,7 @@ int AclModelManager::FlushAclInputsAndOutputs() {
 
 int AclModelManager::AclModelRun(const std::vector<mindspore::MSTensor> &input_tensors) {
   std::unique_lock<std::mutex> lock(acl_run_mutex);
-  int ret;
-  ret = svp_acl_rt_set_device(acl_device_id_);
+  int ret = svp_acl_rt_set_device(acl_device_id_);
   MS_CHECK_TRUE_MSG(ret == SVP_ACL_SUCCESS, RET_ERROR, "svp acl rt set device failed.");
   if (acl_model_type_ != AclModelType::kRecurrent) {
     size_t index;
