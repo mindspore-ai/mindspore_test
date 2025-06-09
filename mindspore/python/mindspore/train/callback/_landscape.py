@@ -404,7 +404,6 @@ class SummaryLandscape:
     def _set_context(device_id):
         """Set context."""
         context.set_context(device_id=device_id)
-        context.set_context(mode=context.GRAPH_MODE)
 
     def _create_landscape_by_pca(self, epochs, proz, landscape_size, device_ids=None, callback_fn=None, executor=None):
         """Create landscape by PCA."""

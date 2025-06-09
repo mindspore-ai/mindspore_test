@@ -428,8 +428,7 @@ class SummaryRecord:
             if graph_proto is None and train_network is not None:
                 graph_proto = _cell_graph_executor.get_optimize_graph_proto(train_network)
             if graph_proto is None:
-                if not context.get_context("mode") == context.PYNATIVE_MODE:
-                    logger.error("Failed to get proto for graph.")
+                logger.warning("Failed to get proto for graph.")
             else:
                 self._event_writer.write({'graph': [{'step': step, 'value': graph_proto}]})
                 self._status['has_graph'] = True
