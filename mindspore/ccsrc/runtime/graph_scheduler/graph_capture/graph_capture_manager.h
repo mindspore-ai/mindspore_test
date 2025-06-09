@@ -20,8 +20,12 @@
 #include <vector>
 #include <memory>
 #include <utility>
+#include <queue>
+#include <map>
+#include <tuple>
 #include "runtime/device/res_manager/capture_graph.h"
 #include "runtime/graph_scheduler/actor/kernel_runner.h"
+#include "runtime/graph_scheduler/graph_parameter_store.h"
 
 namespace mindspore {
 namespace runtime {
@@ -30,6 +34,7 @@ class SuperKernelActor;
 // The GraphCaptureManager class is used to manage graph capture and replay functionality in kbk mode. It dynamically
 // captures kernel launch operations during execution, translates them into a captured graph to sink execution.
 // This class provides capabilities for graph capture, replay, and automatic graph partitioning.
+using parameter_idx = std::pair<size_t, std::pair<KernelWithIndex, size_t>>;
 class BACKEND_EXPORT GraphCaptureManager {
  public:
   static GraphCaptureManager &GetInstance() noexcept;
@@ -46,7 +51,7 @@ class BACKEND_EXPORT GraphCaptureManager {
                                          const DeviceContext *expected_device_context);
 
   void Initialize(const DeviceContext *device_context);
-  void ResetCaptureGraphs(const DeviceContext *device_context);
+  void Reset(const DeviceContext *device_context);
 
   // Capture operators according to the execution order. Operators that are not supported for capture will be dispatched
   // immediately.
@@ -60,6 +65,26 @@ class BACKEND_EXPORT GraphCaptureManager {
                                        SuperKernelActor *super_kernel_actor);
 
   bool HasCapturedGraph() const { return capture_graph_ && capture_graph_->HasCapturedGraph(); }
+
+  // Before capture graph, process the inputs of all operators. For normal inputs, perform memory solidification
+  // by constructing fix_addrs. Record the weights and kv_cache, which will be used during the subsequent replay phase
+  // to verify whether there are any changes in the addresses.
+  void FetchAllInputsBeforeCaptureGraph(OpContext<KernelTensor> *const context, size_t stream_id,
+                                        const std::vector<KernelRunnerPtr> &kernel_runners,
+                                        std::queue<std::vector<KernelTensorPtr>> *memory_free_lists);
+
+  // Through D2D copy operations, update all the fixed ddresses recorded during the capture phase to ensure that
+  // the addresses of all normal inputs are valid during the replay phase.
+  void UpdateFixAddressBeforeReplayGraph(size_t stream_id, std::queue<std::vector<KernelTensorPtr>> *memory_free_lists);
+
+  // Using the kv_cache and weight results recorded during the capture phase, verify whether the addresses
+  // fetched during replay phase have changed.
+  bool CheckWeightAndKVCacheNotChange(size_t stream_id);
+
+  void HandleFirstUserMemoryFree(const KernelTensorPtr &kernel_tensor, const KernelRunnerPtr &kernel_actor,
+                                 std::queue<std::vector<KernelTensorPtr>> *memory_free_lists);
+
+  bool IsWeightOrKVCache(GraphParameterStore *cur_graph_parameter_store, const AnfNodePtr &node, size_t parameter_idx);
 
   void Finalize();
 
@@ -80,6 +105,10 @@ class BACKEND_EXPORT GraphCaptureManager {
   std::vector<std::pair<size_t, size_t>> capture_kernel_range_positions_;
   // Record all captured sub graphs and kernels that don't support capture, according to the execution order.
   std::vector<std::pair<ExecutorType, size_t>> executors_;
+
+  std::vector<std::tuple<parameter_idx, KernelTensorPtr, KernelRunnerPtr>> fixed_addrs_for_update_;
+  std::map<KernelWithIndex, KernelTensorPtr> fixed_addrs_for_set_inputs_;
+  std::map<KernelWithIndex, std::tuple<KernelTensorPtr, size_t, KernelRunnerPtr>> weight_kv_addrs_;
 
   bool init_{false};
 };

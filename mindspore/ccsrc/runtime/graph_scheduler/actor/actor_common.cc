@@ -465,6 +465,44 @@ bool Copy(const DeviceTensor *dst_device_tensor, const DeviceTensor *src_device_
   }
 }
 
+bool AsyncCopy(const DeviceTensor *dst_device_tensor, const DeviceTensor *src_device_tensor, size_t stream_id) {
+  MS_EXCEPTION_IF_NULL(dst_device_tensor);
+  MS_EXCEPTION_IF_NULL(src_device_tensor);
+  static const std::string kSyncCopyInput = "sync_copy_input";
+  static bool sync_copy_input = common::IsEnableRuntimeConfig(kSyncCopyInput);
+  if (src_device_tensor->GetSize() != dst_device_tensor->GetSize()) {
+    MS_LOG(INFO) << "Copy size is not equal, input size:" << src_device_tensor->GetSize()
+                 << ", output size:" << dst_device_tensor->GetSize();
+  }
+
+  // Exist the size alignment in some device, so get the min device size.
+  size_t copy_size = std::min(src_device_tensor->GetSize(), dst_device_tensor->GetSize());
+
+  MS_LOG(DEBUG) << "src device tensor type: " << src_device_tensor->GetDeviceType()
+                << ", dst device tensor type: " << dst_device_tensor->GetDeviceType();
+  bool ret = false;
+  if (dst_device_tensor->GetDeviceType() == src_device_tensor->GetDeviceType()) {
+    ret = dst_device_tensor->AsyncDeviceToDevice(src_device_tensor, stream_id);
+  } else if (src_device_tensor->GetDeviceType() == device::DeviceType::kCPU) {
+    // CPU device tensor copy to other device tensor.
+    ret = dst_device_tensor->AsyncHostToDevice(copy_size, src_device_tensor->GetPtr(), stream_id);
+  } else if (dst_device_tensor->GetDeviceType() == device::DeviceType::kCPU) {
+    // Other device tensor copy to CPU device tensor.
+    // Use Sync instead of Async because cpu ops may use host ptr immediately.
+    ret = src_device_tensor->SyncDeviceToHost(copy_size, dst_device_tensor->GetMutablePtr());
+  } else {
+    MS_LOG(ERROR) << "Invalid device type, src device type: " << src_device_tensor->GetDeviceType()
+                  << ", dst device type: " << dst_device_tensor->GetDeviceType();
+    return false;
+  }
+  if (sync_copy_input) {
+    auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
+      {dst_device_tensor->device_name(), dst_device_tensor->device_id()});
+    MS_EXCEPTION_IF_CHECK_FAIL(device_context->device_res_manager_->SyncAllStreams(), "Synchronize stream failed.");
+  }
+  return ret;
+}
+
 void FreeMemoryByDeviceContext(DeviceTensor *const device_tensor, const DeviceContext *device_context) {
   MS_EXCEPTION_IF_NULL(device_tensor);
   // The device context may be not accurate in the control flow scene, so need fetch by device name and device id.

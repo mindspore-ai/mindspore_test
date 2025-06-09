@@ -513,7 +513,7 @@ void SuperKernelActor::UpdateMemoryTraceMangerStatus(OpContext<KernelTensor> *co
   if (!ActorDispatcher::enable_static_shape()) {
     if (GraphCaptureManager::GetInstance().GetEnableGraphCapture() && already_allocate_trace_memory_) {
       MS_LOG(INFO) << "Clear captured graph when execute graph: " << graph_->ToString();
-      GraphCaptureManager::GetInstance().ResetCaptureGraphs(device_contexts_[0]);
+      GraphCaptureManager::GetInstance().Reset(device_contexts_[0]);
       FreeTraceMemory();
     }
 
@@ -1202,7 +1202,7 @@ void SuperKernelActor::RunGraphKernelByKernel(OpContext<KernelTensor> *const con
   } else if (GraphCaptureManager::GetInstance().GetEnableGraphCapture() && enable_trace_memory_ &&
              already_allocate_trace_memory_) {
     MS_LOG(INFO) << "Clear captured graph when execute graph: " << graph_->ToString();
-    GraphCaptureManager::GetInstance().ResetCaptureGraphs(device_contexts_[0]);
+    GraphCaptureManager::GetInstance().Reset(device_contexts_[0]);
     FreeTraceMemory();
   }
 
@@ -1222,14 +1222,30 @@ void SuperKernelActor::RunGraphKernelByKernel(OpContext<KernelTensor> *const con
           << "Launch kernels by execution order failed for graph: " << graph_->ToString();
       }
     } else if (need_capture_graph) {
+      GraphCaptureManager::GetInstance().FetchAllInputsBeforeCaptureGraph(context, 0, kernel_actors_,
+                                                                          &memory_free_lists_);
       if (!GraphCaptureManager::GetInstance().LaunchAllKernelsWithCapture(context, kernel_actors_, this)) {
         MS_INTERNAL_EXCEPTION(RuntimeError)
           << "Launch kernels with capture graph failed for graph: " << graph_->ToString();
       }
     } else if (need_replay_graph) {
       ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kGraphLaunch, GetAID().Name(), false);
+      auto result = std::async(std::launch::async, [this]() {
+        return GraphCaptureManager::GetInstance().CheckWeightAndKVCacheNotChange(static_cast<size_t>(0));
+      });
+      GraphCaptureManager::GetInstance().UpdateFixAddressBeforeReplayGraph(0, &memory_free_lists_);
       if (!GraphCaptureManager::GetInstance().LaunchAllKernelsWithReplayGraph(context, kernel_actors_, this)) {
         MS_INTERNAL_EXCEPTION(RuntimeError) << "Replay graph failed for graph: " << graph_->ToString();
+      }
+      try {
+        result.get();
+      } catch (const std::exception &e) {
+        if (context->error_info_.empty()) {
+          MsException::Instance().SetException();
+          std::string error_info = "Check failed graph[" + std::to_string(graph_->graph_id()) +
+                                   "] kernel by kernel failed, exception: " + e.what();
+          SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
+        }
       }
     }
   }

@@ -180,7 +180,7 @@ def set_kernel_launch_group(thread_num=2, kernel_group_num=8):
         raise RuntimeError("The 'kernel_launch_group' can not be set repeatedly.")
 
     if RuntimeConf.get_instance().get_enable_kernel_launch_capture():
-        raise RuntimeError("The 'kernel_launch_group' can not be set with kernel launch capture")
+        raise RuntimeError("The kernel launch group and kernel launch capture can not be set together")
 
     if thread_num < 1:
         raise ValueError(f"The value of thread_num should be at least 1, but got {thread_num}")
@@ -214,6 +214,6 @@ def set_kernel_launch_capture(enable_capture_graph):
         >>> ms.runtime.set_kernel_launch_capture(enable_capture_graph=True)
     """
     if RuntimeConf.get_instance().is_kernel_launch_group_configured():
-        raise RuntimeError("The 'kernel_launch_group' can not be set with kernel launch capture")
+        raise RuntimeError("The kernel launch group and kernel launch capture can not be set together")
 
     return RuntimeConf.get_instance().set_kernel_launch_capture(enable_capture_graph)
