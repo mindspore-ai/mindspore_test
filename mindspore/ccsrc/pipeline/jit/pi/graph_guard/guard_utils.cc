@@ -1427,7 +1427,6 @@ class MetaTensorData : public ItemData {
   }
 
   py::object MakeTensor() {
-    // todo: check kNone or kCPU.
     return PackTensorToPyObject(tensor::empty(data_type_->type_id(), shape_, device::DeviceType::kCPU));
   }
 
