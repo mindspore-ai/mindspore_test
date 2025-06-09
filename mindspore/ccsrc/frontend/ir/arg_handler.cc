@@ -59,11 +59,16 @@ std::optional<Int64ImmPtr> DtypeToTypeId(const std::string &op_name, const std::
   if (py::isinstance<py::none>(obj)) {
     return std::nullopt;
   }
-  if (!py::isinstance<mindspore::Type>(obj)) {
-    MS_LOG(EXCEPTION) << "For '" << op_name << "', the input '" << arg_name << "' should be mindspore dtype, but got "
-                      << obj << ".";
+  if (py::isinstance<mindspore::Type>(obj)) {
+    return std::make_optional(ToDtype(obj));
   }
-  return std::make_optional(ToDtype(obj));
+  if (obj.equal(py::type::of(py::bool_()))) {
+    auto ms_bool_type = mindspore::Bool();
+    return std::make_optional(ToDtype(py::cast(ms_bool_type)));
+  }
+  MS_LOG(EXCEPTION) << "For '" << op_name << "', the input '" << arg_name
+                    << "' should be one of ['mindspore dtype', 'bool'], but got " << obj << ".";
+  return std::nullopt;
 }
 
 std::optional<Int64ImmPtr> StrToEnum(const std::string &op_name, const std::string &arg_name, const py::object &obj) {
