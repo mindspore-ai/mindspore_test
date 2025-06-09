@@ -142,7 +142,7 @@ tensor::TensorPtr OnnxNodeParser::CopyOnnxTensorData(const onnx::TensorProto &on
     return nullptr;
   }
   auto dst_bytes_size = tensor_info->DataNBytes();
-  if (dst_bytes_size != SizeToLong(data_size)) {
+  if (dst_bytes_size != data_size) {
     MS_LOG(ERROR) << "Calculated data size " << data_size << " != tensor bytes size " << dst_bytes_size;
     return nullptr;
   }

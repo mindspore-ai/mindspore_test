@@ -59,7 +59,7 @@ std::pair<std::string, bool> GetTransposeFormat(const CNodePtr &cnode) {
       return GetLiteFormat(cnode);
     }
     auto perm_tensor = perm_para->default_param()->cast<tensor::TensorPtr>();
-    auto perm = static_cast<int32_t *>(perm_tensor->data_ptr()->data());
+    auto perm = static_cast<int32_t *>(perm_tensor->device_address()->GetMutablePtr());
     std::transform(perm, perm + perm_tensor->shape()[0], std::back_inserter(perm_list), IntToLong);
   } else {
     auto perm_value = cnode->input(perm_idx)->cast<ValueNodePtr>();

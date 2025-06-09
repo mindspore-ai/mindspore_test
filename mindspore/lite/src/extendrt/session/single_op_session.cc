@@ -40,6 +40,7 @@
 #include "tools/optimizer/common/gllo_utils.h"
 #include "extendrt/utils/tensor_utils.h"
 #include "mindspore/lite/src/common/common.h"
+#include "ir/device_address_maker.h"
 
 namespace mindspore {
 const size_t tensor_max_size = 0x1000000;
@@ -390,7 +391,7 @@ void SingleOpInferSession::SetBackOutputIfDynamic(std::vector<tensor::Tensor> *o
         };
         auto ref_tensor_data =
           std::make_shared<TensorRefData>(host_addr->addr, elem_num, host_addr->size, shape.size(), acl_mem_deleter);
-        (*outputs)[i] = tensor::Tensor(out_type, shape, ref_tensor_data);
+        (*outputs)[i] = tensor::Tensor(out_type, shape, MakeDeviceAddress(out_type, shape, ref_tensor_data));
         MS_LOG(DEBUG) << "resetting kernel tensor shape to 0 for the next prediction";
         kernel_args_.outputs[i]->SetShapeVector({0});
       }
@@ -415,7 +416,8 @@ Status SingleOpInferSession::InitInputOutputData(const std::vector<tensor::Tenso
       return kLiteError;
     }
     auto input_device_address = input.device_address();
-    if (input_device_address != nullptr && input_device_address->GetMutablePtr() != nullptr) {
+    if (input_device_address != nullptr && input_device_address->GetMutablePtr() != nullptr &&
+        input_device_address->GetDeviceType() != device::DeviceType::kCPU) {
       auto device_ptr = input_device_address->GetMutablePtr();
       kernel_args_.inputs[i]->SetData(std::make_shared<kernel::Address>(device_ptr, input.Size()));
       kernel_args_.inputs[i]->SetHostData(nullptr);
@@ -427,7 +429,11 @@ Status SingleOpInferSession::InitInputOutputData(const std::vector<tensor::Tenso
   }
   if (outputs->empty()) {
     std::transform(kernel_args_.outputs.begin(), kernel_args_.outputs.end(), std::back_inserter(*outputs),
-                   [](auto &item) { return tensor::Tensor(item->dtype_id(), item->GetShapeVector()); });
+                   [](auto &item) {
+                     return tensor::Tensor(
+                       item->dtype_id(), item->GetShapeVector(),
+                       MakeDeviceAddress(item->dtype_id(), item->GetShapeVector(), true, device::DeviceType::kCPU));
+                   });
   }
   if (outputs->size() != kernel_args_.outputs.size()) {
     MS_LOG(ERROR) << "Given outputs size " << outputs->size() << " != graph inputs size "
@@ -444,7 +450,8 @@ Status SingleOpInferSession::InitInputOutputData(const std::vector<tensor::Tenso
       return kLiteError;
     }
     auto output_device_address = output.device_address();
-    if (output_device_address != nullptr && output_device_address->GetMutablePtr() != nullptr) {
+    if (output_device_address != nullptr && output_device_address->GetMutablePtr() != nullptr &&
+        output_device_address->GetDeviceType() != device::DeviceType::kCPU) {
       auto device_ptr = output_device_address->GetMutablePtr();
       kernel_args_.outputs[i]->SetData(std::make_shared<kernel::Address>(device_ptr, output.Size()));
       kernel_args_.outputs[i]->SetHostData(nullptr);
@@ -488,7 +495,8 @@ Status SingleOpInferSession::InitVariableWeights(const std::vector<std::shared_p
     auto kernel_tensor = make_kernel_tensor(static_cast<TypeId>(data_type), shape);
     kernel_tensor->SetData(std::make_shared<kernel::Address>(input->data_c(), input->Size()));
     auto input_device_address = input->device_address();
-    if (input_device_address != nullptr && input_device_address->GetMutablePtr() != nullptr) {
+    if (input_device_address != nullptr && input_device_address->GetMutablePtr() != nullptr &&
+        input_device_address->GetDeviceType() != device::DeviceType::kCPU) {
       auto device_ptr = input_device_address->GetMutablePtr();
       kernel_tensor->SetData(std::make_shared<kernel::Address>(device_ptr, input->Size()));
       kernel_tensor->SetHostData(nullptr);

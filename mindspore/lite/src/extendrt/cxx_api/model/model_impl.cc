@@ -857,8 +857,9 @@ Status ModelImpl::Predict(const std::vector<MSTensor> &inputs, std::vector<MSTen
   if (!org_graph_outputs.empty() && org_graph_outputs.size() == graph_outputs.size()) {
     output_remain = true;
     for (size_t i = 0; i < org_graph_outputs.size(); i++) {
-      if (org_graph_outputs[i].data_ptr() != graph_outputs[i].data_ptr() ||
-          org_graph_outputs[i].device_address() != graph_outputs[i].device_address()) {
+      if (org_graph_outputs[i].device_address() != graph_outputs[i].device_address() ||
+          org_graph_outputs[i].device_address()->GetMutablePtr() !=
+            graph_outputs[i].device_address()->GetMutablePtr()) {
         output_remain = false;
         break;
       }

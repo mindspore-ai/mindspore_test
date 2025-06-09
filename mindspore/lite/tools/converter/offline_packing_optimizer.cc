@@ -155,7 +155,7 @@ STATUS CreateLiteTensor(const CNodePtr &cnode, std::vector<Tensor *> *in_tensors
       auto param_node = cnode->input(i)->cast<ParameterPtr>();
       if (param_node->has_default()) {
         auto tensor_info = std::static_pointer_cast<tensor::Tensor>(param_node->default_param());
-        tensor_data = tensor_info->data().data();
+        tensor_data = tensor_info->device_address()->GetMutablePtr();
         auto quantization_params = tensor_info->quant_params();
         if (!quantization_params.empty()) {
           auto quantization_param = quantization_params.front();

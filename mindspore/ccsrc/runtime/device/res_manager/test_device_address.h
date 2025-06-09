@@ -275,7 +275,7 @@ class TestResManager : public device::HalResBase {
                                        uint32_t stream_id, const UserDataPtr &user_data = nullptr) const override {
     return std::make_shared<TestDeviceAddress>(ptr, size, "NCHW", type_id, "CPU", 0);
   }
-  void *AllocateMemory(size_t size, uint32_t stream_id = kDefaultStreamIndex) const override {}
+  void *AllocateMemory(size_t size, uint32_t stream_id = kDefaultStreamIndex) const override {return nullptr;}
   void FreeMemory(void *ptr) const override {}
   void FreePartMemorys(const std::vector<void *> &free_addrs, const std::vector<void *> &keep_addrs,
                        const std::vector<size_t> &keep_addr_sizes) const override {}
