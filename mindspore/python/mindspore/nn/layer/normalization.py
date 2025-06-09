@@ -106,7 +106,6 @@ class _BatchNorm(Cell):
         self.dtype = P.DType()
         self.reshape = P.Reshape()
         self._target = context.get_context("device_target")
-        self.is_graph_mode = context.get_context("mode") == context.GRAPH_MODE
         self.momentum = 1.0 - momentum
 
         self.bn_train = P.BatchNorm(is_training=True,
