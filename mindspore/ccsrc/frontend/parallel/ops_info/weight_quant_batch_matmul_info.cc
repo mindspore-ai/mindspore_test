@@ -121,7 +121,9 @@ Status WeightQuantBatchMatmulInfo::GetAttrs() {
   if (field_size_iter != attrs_.end()) {
     MS_EXCEPTION_IF_NULL(field_size_iter->second);
     if (field_size_iter->second->isa<Int64Imm>()) {
-      field_size_ = field_size_iter->second->cast<Int64ImmPtr>()->value();
+      auto field_size_val = field_size_iter->second->cast<Int64ImmPtr>();
+      MS_EXCEPTION_IF_NULL(field_size_val);
+      field_size_ = field_size_val->value();
     } else {
       MS_LOG(ERROR) << name_ << ": The value of field_size is not int64_t.";
       return FAILED;
