@@ -31,7 +31,6 @@ from common.base_generator import BaseGenerator
 from pyboost import pyboost_utils
 from pyboost.pyboost_utils import get_convert_type_str, is_optional_param, get_input_args_type_str, \
     is_tensor_list
-
 from .op_template_parser import OpTemplateParser
 
 

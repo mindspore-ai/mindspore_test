@@ -15,11 +15,12 @@
 
 """Defines custom autograd function with functional form."""
 
+__all__ = ['_Function']
+
 from typing import Any
 from mindspore._c_expression import FunctionBase as FunctionBase_
 from mindspore.common.tensor import Tensor
 
-__all__ = ['_Function']
 
 class _Function(FunctionBase_):
     """

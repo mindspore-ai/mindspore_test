@@ -79,7 +79,8 @@ class OpTemplateParser:
                                      "to_output_padding": "ops::OP_DTYPE::DT_TUPLE_INT",
                                      "to_rates": "ops::OP_DTYPE::DT_TUPLE_INT"}
 
-    def _parse_call_args_types(self, op_proto, basic_type=False, is_convert=False):
+    @staticmethod
+    def _parse_call_args_types(op_proto, basic_type=False, is_convert=False):
         """
         Parses the data types of the call arguments for the operator.
 
@@ -449,7 +450,7 @@ class OpTemplateParser:
                                for word in arg_handler.split('_'))
             if arg_handler:
                 op_arg_name = op_arg.arg_name
-                new_type = self.arg_handler_type_map[arg_handler]
+                new_type = self.arg_handler_type_map.get(arg_handler, "Not exist")
                 if func_str in ("StrToEnum", "DtypeToTypeId"):
                     arg_handler_str = arg_handler_prt_template.replace(func_str=func_str,
                                                                        func_name=func_name,
@@ -470,7 +471,8 @@ class OpTemplateParser:
 
         return arg_handler_processor
 
-    def get_input_tensor_index(self, op_proto):
+    @staticmethod
+    def get_input_tensor_index(op_proto):
         """
         Get index of input.
 
