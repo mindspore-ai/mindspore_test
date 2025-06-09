@@ -57,6 +57,7 @@ CNodePtr CreateAllGatherCNode(const AnfNodePtr &node, const std::string &group) 
 
 std::vector<parallel::Group> InferRepeatedRankList(const CNodePtr &cnode) {
   OperatorInfoPtr operator_info = cnode->user_data<parallel::OperatorInfo>();
+  MS_EXCEPTION_IF_NULL(operator_info);
   std::vector<parallel::TensorInfo> output_info = operator_info->outputs_tensor_info();
   if (output_info.size() != 1) {
     MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, cnode) << "The output_info size is wrong, node is" << cnode->DebugString();
@@ -72,7 +73,9 @@ bool IsDuplicateNode(const AnfNodePtr &node) {
   if (!node->isa<CNode>()) {
     return false;
   }
-  if (node->cast<CNodePtr>()->HasAttr(kAttrDuplicated)) {
+  auto duplicate_cnode = node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(duplicate_cnode);
+  if (duplicate_cnode->HasAttr(kAttrDuplicated)) {
     return true;
   }
   if (IsPrimitiveCNode(node, prim::kPrimDepend) || IsPrimitiveCNode(node, prim::kPrimLoad)) {
@@ -109,6 +112,7 @@ void CreateGroupForSliceAllGatherInMicroInterleaved(const CNodePtr &allgather_cn
   parallel::Group cur_device_list;
   (void)parallel::g_device_manager->CreateGroup(new_group_name, dev_list, &cur_device_list);
   auto allgather_prim = GetCNodePrimitive(allgather_cnode);
+  MS_EXCEPTION_IF_NULL(allgather_prim);
   (void)allgather_prim->AddAttr(parallel::GROUP, MakeValue<std::string>(new_group_name));
 }
 
@@ -119,7 +123,9 @@ void InsertSliceAllGatherNode(const std::vector<std::pair<std::shared_ptr<AnfNod
   auto manager = node->func_graph()->manager();
   MS_EXCEPTION_IF_NULL(manager);
   auto output_shape = node->abstract()->BuildShape();
-  std::vector<int64_t> out_shape_element = output_shape->cast<abstract::ShapePtr>()->shape();
+  auto output_shape_node = output_shape->cast<abstract::ShapePtr>();
+  MS_EXCEPTION_IF_NULL(output_shape_node);
+  std::vector<int64_t> out_shape_element = output_shape_node->shape();
   if (out_shape_element.empty()) {
     return;
   }
@@ -200,8 +206,10 @@ void InsertAllGatherDepend(const FuncGraphPtr &graph, const std::vector<CNodePtr
   CNodePtr allgather_depend_node = nullptr;
   auto node_users = manager->node_users()[last_allgather];
   for (auto &node_user : node_users) {
-    if (IsPrimitiveCNode(node_user.first) && node_user.first->cast<CNodePtr>()->HasAttr("recompute_depend") &&
-        GetValue<bool>(node_user.first->cast<CNodePtr>()->GetAttr("recompute_depend"))) {
+    auto user_cnode = node_user.first->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(user_cnode);
+    if (IsPrimitiveCNode(node_user.first) && user_cnode->HasAttr("recompute_depend") &&
+        GetValue<bool>(user_cnode->GetAttr("recompute_depend"))) {
       allgather_depend_node = node_user.first->cast<CNodePtr>();
     }
   }
@@ -267,7 +275,9 @@ void SpreadRecomputeDepend(const FuncGraphManagerPtr &manager, const std::vector
     }
   }
   for (auto &depend_cnode : depend_cnodes) {
-    depend_cnode->cast<CNodePtr>()->AddAttr("recompute_depend", MakeValue(true));
+    auto cur_depend_cnode = depend_cnode->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cur_depend_cnode);
+    cur_depend_cnode->AddAttr("recompute_depend", MakeValue(true));
   }
 }
 }  // namespace
