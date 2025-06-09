@@ -1916,7 +1916,7 @@ BackendGraphId MSBackendBase::Build(const FuncGraphPtr &func_graph, const Backen
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
   auto ms_execution_mode = context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE);
-  func_graph->set_flag(kFlagPyNativeRunInGraph, ms_execution_mode == kPynativeMode);
+  func_graph->set_flag(kFlagPyNativeRunInGraph, JitPipelineCompiling());
 
   // Compile root graph.
   bool load_compile_cache = false;

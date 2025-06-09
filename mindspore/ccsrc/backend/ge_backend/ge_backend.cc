@@ -2036,7 +2036,7 @@ void GEBackend::CompileGraphFromSegment(const GraphSegmentPtr &segment, const Ba
     std::tie(fg, inputs, outputs) = mindspore::ge_backend::runtime::TransformSegmentToAnfGraph(segment->nodes_);
 
     GraphId graph_id = graph_compiler_->CompileGraph(segment, std::make_pair(inputs, outputs), backend_jit_config,
-                                                     device::RunMode::kGraphMode, false);
+                                                     device::RunMode::kGraphMode);
     auto new_fg = graph_compiler_->Fetch(graph_id);
     MS_EXCEPTION_IF_NULL(new_fg);
 

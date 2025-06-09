@@ -1518,8 +1518,7 @@ bool ExistSwitchRef(const FuncGraphPtr &func_graph, const std::vector<AnfNodePtr
   return false;
 }
 
-bool SetModeForControlFlow(const FuncGraphPtr &func_graph, const std::vector<AnfNodePtr> &all_nodes,
-                           bool pynative_mode) {
+bool SetModeForControlFlow(const FuncGraphPtr &func_graph, const std::vector<AnfNodePtr> &all_nodes) {
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
   MS_EXCEPTION_IF_NULL(func_graph);
@@ -1533,8 +1532,9 @@ bool SetModeForControlFlow(const FuncGraphPtr &func_graph, const std::vector<Anf
   (void)graphs.insert(func_graph);
   bool exist_control_flow = ExistControlFlow(func_graph);
   bool exist_func = exist_control_flow && HasIncorporateCall(all_nodes);
+  bool is_ge = common::AnfAlgo::IsBackendGe();
   if (exist_func) {
-    if (!pynative_mode) {
+    if (is_ge) {
       MS_LOG(INFO) << "Run graph mode with sub graph sink because graph exist control flow and incorporate call.";
       set_ctx(true, false, false);
     } else {
@@ -1547,7 +1547,7 @@ bool SetModeForControlFlow(const FuncGraphPtr &func_graph, const std::vector<Anf
     std::any_of(graphs.cbegin(), graphs.cend(), [](const FuncGraphPtr &fg) { return fg->recursive(); });
   MS_LOG(INFO) << func_graph->ToString() << " exist_while: " << exist_while;
   if (exist_while || ExistSwitchRef(func_graph, all_nodes)) {
-    if (!pynative_mode) {
+    if (is_ge) {
       MS_LOG(INFO) << "Run graph mode with sub graph sink because graph exist while or switch ref.";
       set_ctx(true, false, false);
     } else {
@@ -1559,7 +1559,7 @@ bool SetModeForControlFlow(const FuncGraphPtr &func_graph, const std::vector<Anf
   // Multiple device targets scenario.
   if (func_graph->exist_multi_target()) {
     // Heterogeneous scenario + ControlFlow : KernelByKernel path in MindRT.
-    if (exist_control_flow && pynative_mode) {
+    if (exist_control_flow && !is_ge) {
       MS_LOG(INFO) << "Run graph mode with kernel by kernel because graph exist multi device target and control flow.";
       set_ctx(false, false, false);
       return false;
@@ -1675,9 +1675,9 @@ void SetRunMode(const FuncGraphPtr &func_graph, std::string *kbk_reason) {
   jit_config[kAttrJitLevel] = jit_level;
   graphkernel::GraphKernelFlags::SaveJitConfig(jit_config);
 
-  const bool pynative_mode = context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode;
+  const bool is_jit = IsJit();
   const auto &device_target = context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  if (pynative_mode && device_target != kAscendDevice) {
+  if (!is_jit && device_target != kAscendDevice) {
     return;
   }
   const auto &all_nodes = TopoSort(func_graph->return_node(), SuccDeeperSimple, AlwaysInclude);
@@ -1717,7 +1717,7 @@ void SetRunMode(const FuncGraphPtr &func_graph, std::string *kbk_reason) {
     set_ctx(false, false, false);
     return;
   }
-  if (!SetModeForControlFlow(func_graph, all_nodes, pynative_mode)) {
+  if (!SetModeForControlFlow(func_graph, all_nodes)) {
     return;
   }
 
@@ -1731,7 +1731,7 @@ void SetRunMode(const FuncGraphPtr &func_graph, std::string *kbk_reason) {
 
   // GRAPH | normal network and if/for/switch scenario etc : MultiGraph path in MindRT.
   MS_LOG(INFO) << "Run graph mode with multi graph sink.";
-  set_ctx(true, true, !pynative_mode);
+  set_ctx(true, true, is_jit);
   return;
 }
 
@@ -1739,13 +1739,13 @@ void OriginSetRunMode(const ResourcePtr &resource) {
   FuncGraphPtr func_graph = resource->func_graph();
   MS_EXCEPTION_IF_NULL(func_graph);
   auto context_ptr = MsContext::GetInstance();
-  std::string backend = MsContext::GetInstance()->backend_policy();
   MS_EXCEPTION_IF_NULL(context_ptr);
+  std::string backend = context_ptr->backend_policy();
   auto task_sink = context_ptr->get_param<bool>(MS_CTX_ENABLE_TASK_SINK);
   if (func_graph->exist_multi_target() || !task_sink) {
     context_ptr->set_param<bool>(MS_CTX_IS_MULTI_GRAPH_SINK, false);
     context_ptr->set_param<bool>(MS_CTX_ENABLE_LOOP_SINK, false);
-  } else if (context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE) != kPynativeMode) {
+  } else if (IsJit()) {
     std::string device_target = context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET);
     auto manager = func_graph->manager();
     auto graphs = manager->func_graphs();
@@ -1776,12 +1776,11 @@ void SetRunMode(const ResourcePtr &resource) {
   } else {
     OriginSetRunMode(resource);
   }
-  auto mode = context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE);
   auto is_task_sink = context_ptr->get_param<bool>(MS_CTX_ENABLE_TASK_SINK);
   auto enable_hccl = context_ptr->get_param<bool>(MS_CTX_ENABLE_HCCL);
   if ((!is_task_sink ||
        (context_ptr->IsKByKExecutorMode() && common::AnfAlgo::IsDynamicGraph(resource->func_graph()))) &&
-      mode == kGraphMode && enable_hccl && !common::UseHostCollective() && common::GetEnv(kSimulationLevel).empty()) {
+      enable_hccl && !common::UseHostCollective() && common::GetEnv(kSimulationLevel).empty()) {
     MS_LOG(INTERNAL_EXCEPTION) << "Current execution mode is 'kernelbykernel', reason: " << kbk_reason
                                << ", but you're launching job using 'ranktable', which "
                                   "does not support 'kernelbykernel' mode.\n Please refer to link: "
@@ -1801,15 +1800,15 @@ bool TaskEmitAction(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(context_ptr);
   context_ptr->Refresh();
   const auto &backend = context_ptr->backend_policy();
-  auto mode = context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE);
-  if (mode == kGraphMode && CheckGraphOutputConstOrParameter(func_graph)) {
+  auto is_jit = IsJit();
+  if (is_jit && CheckGraphOutputConstOrParameter(func_graph)) {
     return true;
   }
 
   // In PyNative mode, multi target will generate in -1 shape in jit. But, jit in -1 shape will run as a call graph;
   // control flow not has flag kFlagJitCallGraph
   bool is_control_flow = !func_graph->func_graphs_used_total().empty();
-  if (mode == kGraphMode || (mode == kPynativeMode && (func_graph->has_flag(kFlagJitCallGraph) || is_control_flow))) {
+  if (is_jit || (func_graph->has_flag(kFlagJitCallGraph) || is_control_flow)) {
     func_graph->SetMultiTarget();
     if (func_graph->exist_multi_target() && DumpJsonParser::GetInstance().IsDumpEnabled()) {
       MS_LOG(WARNING) << "Multi device target is detected, CPU data is dumped in rank_0 directory";
@@ -1838,8 +1837,7 @@ bool TaskEmitAction(const ResourcePtr &resource) {
 
 bool ExecuteAction(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
-  if (MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kGraphMode &&
-      CheckGraphOutputConstOrParameter(resource->func_graph())) {
+  if (IsJit() && CheckGraphOutputConstOrParameter(resource->func_graph())) {
     return true;
   }
 

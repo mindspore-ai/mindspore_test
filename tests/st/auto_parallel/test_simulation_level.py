@@ -226,6 +226,7 @@ def test_run_graph():
     os.environ["MS_SIMULATION_LEVEL"] = "1"
     os.environ["RANK_SIZE"] = "32"
     os.environ["RANK_ID"] = "1"
+    context.set_context(jit_level='O0')
     init()
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
     net = DenseNet()
@@ -250,6 +251,7 @@ def test_build_model_with_dataset():
     os.environ["MS_SIMULATION_LEVEL"] = "1"
     os.environ["RANK_SIZE"] = "32"
     os.environ["RANK_ID"] = "1"
+    context.set_context(jit_level='O0')
     init()
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
     net = DenseNet()
