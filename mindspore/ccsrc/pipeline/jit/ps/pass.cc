@@ -326,6 +326,7 @@ FuncGraphPtr JitBpropGraphPass(const ResourcePtr &resource, bool need_renormaliz
   }
 
   opt::OptPassConfig grad_graph_opt = opt::OptPassConfig({
+    irpass.reset_defer_inline_,
     irpass.inline_,
     irpass.list_to_tuple_eliminator_,
     irpass.tuple_to_list_eliminator_,

@@ -274,15 +274,10 @@ bool HasRecomputedScope(const CNodePtr &node) {
   if (!WithRecomputedScope(node)) {
     return false;
   }
-  // Do not directly judge through the kAttrRecompute to prevent inaccurate passes related to adding this attr
-  // Exclude nodes if has kAttrRecompute, but set as false (cell output node)
   auto cnode = node->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(cnode);
-  if (common::AnfAlgo::HasNodeAttr(kAttrRecompute, cnode) &&
-      !common::AnfAlgo::GetNodeAttr<bool>(cnode, kAttrRecompute)) {
-    return false;
-  }
-  return true;
+  auto recompute_attr = cnode->GetAttr(kAttrRecompute);
+  return recompute_attr != nullptr && recompute_attr->isa<BoolImm>() && GetValue<bool>(recompute_attr);
 }
 }  // namespace
 
