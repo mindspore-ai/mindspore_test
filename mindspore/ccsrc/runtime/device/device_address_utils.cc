@@ -969,6 +969,8 @@ void DeviceAddressUtils::CreateInputTensorAddress(const DeviceContext *device_co
   }
   MS_LOG(DEBUG) << "Input tensor device type is " << tensor_address->GetDeviceType()
                 << " but current device context is " << device_context->GetDeviceType();
+  // Avoid multithread
+  runtime::Pipeline::Get().WaitForward();
 
   auto tensor_size = LongToSize(tensor->DataNBytes());
   const auto &format = GetFormatByTensorShape(device_context, tensor->shape());
@@ -1020,7 +1022,7 @@ void DeviceAddressUtils::MallocForInput(const DeviceContext *device_context, con
     MS_LOG(EXCEPTION) << "Allocate memory failed";
   }
 
-  if (device_address->GetDeviceType() == device::DeviceType::kAscend) {
+  if (device_context->GetDeviceType() == device::DeviceType::kAscend) {
     OpExecutor::DispatchLaunchTask([tensor]() {
       if (!tensor->to_device()) {
         MS_LOG(EXCEPTION) << "Tensor to device failed";
