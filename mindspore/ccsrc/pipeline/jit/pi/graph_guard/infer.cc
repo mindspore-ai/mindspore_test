@@ -119,7 +119,6 @@ static py::object CreateMetaTensor(const ShapeVector &shape, const mindspore::Ty
   /**
    * NOTE: here create a lazy initialized tensor, avoid allocate data
    */
-  // todo: check kNone or kCPU.
   py::object tensorpyObject = PackTensorToPyObject(tensor::empty(dtype->type_id(), shape, device::DeviceType::kCPU));
   return tensorpyObject;
 }
