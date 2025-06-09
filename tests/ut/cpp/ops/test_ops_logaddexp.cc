@@ -24,6 +24,7 @@
 #include "ops/test_value_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace ops {
 class TestLogAddExp : public TestOps, public testing::WithParamInterface<BroadcastOpParams> {};
@@ -43,8 +44,8 @@ TEST_P(TestLogAddExp, logaddexp_dyn_shape) {
   DoFuncImplInferAndCompare<LogAddExpFuncImpl>(kNameLogAddExp, input_args, expect_shape, expect_type);
 
   // simple infer
-  auto input_val = std::make_shared<tensor::Tensor>(param.x_type->type_id(), param.x_shape);
-  auto other_val = std::make_shared<tensor::Tensor>(param.y_type->type_id(), param.y_shape);
+  auto input_val = tensor::empty(param.x_type->type_id(), param.x_shape, device::DeviceType::kCPU);
+  auto other_val = tensor::empty(param.y_type->type_id(), param.y_shape, device::DeviceType::kCPU);
   DoFuncImplSimpleInferAndCompare<LogAddExpFuncImpl>(
       kNameLogAddExp, {input_val, other_val}, {param.out_shape}, {param.out_type});
 };

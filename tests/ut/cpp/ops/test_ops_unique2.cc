@@ -27,6 +27,7 @@
 #include "ops/test_value_utils.h"
 #include "ops/test_ops_cmp_utils.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace ops {
 struct Unique2Params {
@@ -71,7 +72,7 @@ class TestUnique2SimpleInfer : public TestOps, public testing::WithParamInterfac
 
 TEST_P(TestUnique2SimpleInfer, dyn_shape) {
   const auto &param = GetParam();
-  auto x = std::make_shared<tensor::Tensor>(param.x_type->type_id(), param.x_shape);
+  auto x = tensor::empty(param.x_type->type_id(), param.x_shape, device::DeviceType::kCPU);
   ValuePtrList input_values;
   input_values.push_back(std::move(x));
   input_values.push_back(std::move(param.sorted));

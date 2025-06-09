@@ -24,6 +24,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace opt {
 namespace {
@@ -162,7 +163,7 @@ AnfNodePtr ConstructMultiplier(const FuncGraphPtr &func_graph, int64_t fn, int64
   MS_EXCEPTION_IF_NULL(func_graph);
   //  assist tensor 2
   std::vector<int64_t> assist_shape = {fn, fc, dd, dh, dw};  // NCDHW
-  tensor::TensorPtr tensor = std::make_shared<tensor::Tensor>(kNumberTypeFloat16, assist_shape);
+  tensor::TensorPtr tensor = tensor::empty(kNumberTypeFloat16, assist_shape, device::DeviceType::kCPU);
   MS_EXCEPTION_IF_NULL(tensor);
   auto tensor_data = static_cast<float16 *>(tensor->data_c());
   auto pad_d = pad_list[kDim0] + pad_list[kDim1];
@@ -214,7 +215,7 @@ AnfNodePtr ConstructMultiplier(const FuncGraphPtr &func_graph, int64_t fn, int64
 
 AnfNodePtr ConstructFilterValueNode(const FuncGraphPtr &func_graph, float val, const ShapeVector &assist_shape,
                                     const ShapeVector &infer_shape, int64_t cnt) {
-  tensor::TensorPtr assist_tensor = std::make_shared<tensor::Tensor>(kNumberTypeFloat16, assist_shape);
+  tensor::TensorPtr assist_tensor = tensor::empty(kNumberTypeFloat16, assist_shape, device::DeviceType::kCPU);
   MS_EXCEPTION_IF_NULL(assist_tensor);
   TensorTypePtr tensor_type = std::make_shared<TensorType>(kFloat16);
   tensor::DeviceInfo device_info{kOpFormat_FRACTAL_Z_3D, tensor_type, kOpFormat_FRACTAL_Z_3D};

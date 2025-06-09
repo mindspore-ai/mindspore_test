@@ -25,6 +25,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace pynative {
 namespace {
@@ -37,7 +38,8 @@ tensor::TensorPtr GenNewTensorInner(const TypePtr &type_elem, const BaseShapePtr
   MS_EXCEPTION_IF_NULL(tensor_type);
   auto type = tensor_type->element();
   MS_EXCEPTION_IF_NULL(type);
-  return std::make_shared<tensor::Tensor>(type->type_id(), shape->shape());
+  // todo: check kNone or kCPU.
+  return tensor::empty(type->type_id(), shape->shape(), device::DeviceType::kCPU);
 }
 
 ValuePtr NewValue(const TypePtr &type_elem, const BaseShapePtr &shape_elem) {
@@ -64,7 +66,8 @@ ValuePtr NewValue(const TypePtr &type_elem, const BaseShapePtr &shape_elem) {
     if (type_elem->type_id() == kMetaTypeNone) {
       return kNone;
     }
-    return std::make_shared<tensor::Tensor>(type_elem->type_id(), NoShape);
+    // todo: check.
+    return tensor::empty(type_elem->type_id(), NoShape, device::DeviceType::kCPU);
   }
   MS_LOG(INTERNAL_EXCEPTION) << "Unknown shape: " << shape_elem->ToString() << ", type: " << type_elem->ToString();
 }
@@ -129,7 +132,8 @@ ValueNodePtr GenNewTensor(const CNodePtr &cnode_morph) {
   }
   if (cnode_shape->isa<abstract::NoShape>()) {
     ShapeVector NoShape;
-    auto tensor_value = std::make_shared<tensor::Tensor>(cnode_type->type_id(), NoShape);
+    // todo: check
+    auto tensor_value = tensor::empty(cnode_type->type_id(), NoShape, device::DeviceType::kCPU);
     return gen_output_value_node(tensor_value);
   }
   MS_LOG(INTERNAL_EXCEPTION) << "Unknown shape: " << cnode_shape->ToString() << ", type: " << cnode_type->ToString();

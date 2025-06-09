@@ -23,6 +23,7 @@
 #include "ops_utils/op_constants.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace ops {
 namespace {
@@ -111,7 +112,8 @@ class OPS_API LogFrontendFuncImpl : public OpFrontendFuncImpl {
     auto data_size = x_tensor->DataSize();
     auto dtype = x_tensor->data_type();
     auto shape = input_args[kIndex0]->GetShape()->GetShapeVector();
-    auto result_tensor = std::make_shared<tensor::Tensor>(GetOutputTypeId(dtype), shape);  // same shape and dtype
+    auto result_tensor =
+      tensor::empty(GetOutputTypeId(dtype), shape, device::DeviceType::kCPU);  // same shape and dtype
     auto x_datac = x_tensor->data_c();
     MS_EXCEPTION_IF_NULL(result_tensor);
     auto result_datac = result_tensor->data_c();

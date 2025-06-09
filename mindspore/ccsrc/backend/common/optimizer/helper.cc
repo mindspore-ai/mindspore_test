@@ -294,7 +294,7 @@ tensor::TensorPtr CreateTensorWithValueTuple(const ValueTuplePtr &value_tuple_pt
 
 tensor::TensorPtr CreateEmptyTupleTensor(const ValueTuplePtr &value_tuple) {
   std::vector<int64_t> tensor_shape = {0};
-  tensor::TensorPtr tensor = std::make_shared<tensor::Tensor>(kInt64->type_id(), tensor_shape);
+  tensor::TensorPtr tensor = tensor::empty(kInt64->type_id(), tensor_shape, device::DeviceType::kNone);
   MS_EXCEPTION_IF_NULL(tensor);
   tensor::DeviceInfo device_info{kOpFormat_DEFAULT, kInt64};
   tensor->set_device_info(device_info);
@@ -1537,7 +1537,7 @@ void UseEmptyNodeReplaceNone(const FuncGraphPtr &graph, const std::string &cnode
     // create empty tensor
     auto tensor_type = OpInputDtypeMap.at(cnode_name).at(input_idx);
     std::vector<int64_t> tensor_shape = {0};
-    auto empty_tensor = std::make_shared<tensor::Tensor>(tensor_type, tensor_shape);
+    auto empty_tensor = tensor::empty(tensor_type, tensor_shape, device::DeviceType::kCPU);
     // create node
     auto empty_node = opt::CreateValueNodeWithKernelInfo(graph, empty_tensor);
     ValueNodePtr empty_value_node = empty_node->cast<ValueNodePtr>();

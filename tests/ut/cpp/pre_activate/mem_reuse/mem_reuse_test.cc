@@ -34,6 +34,7 @@
 #include "common/py_func_graph_fetcher.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "ir/tensor_api.h"
 
 namespace mindspore {
 namespace memreuse {
@@ -67,9 +68,9 @@ static KernelGraphPtr CreateKernelGraph() {
   TensorTypePtr tensor_type = std::make_shared<TensorType>(kFloat32);
   tensor::DeviceInfo device_info{kOpFormat_NCHW, tensor_type};
 
-  tensor::TensorPtr y_tensor = std::make_shared<tensor::Tensor>(kFloat32->type_id(), shp);
+  tensor::TensorPtr y_tensor = tensor::empty(kFloat32->type_id(), shp, device::DeviceType::kCPU);
   y_tensor->set_device_info(device_info);
-  tensor::TensorPtr z_tensor = std::make_shared<tensor::Tensor>(kFloat32->type_id(), shp);
+  tensor::TensorPtr z_tensor = tensor::empty(kFloat32->type_id(), shp, device::DeviceType::kCPU);
   z_tensor->set_device_info(device_info);
   auto y_const = NewValueNode(y_tensor);
   auto z_const = NewValueNode(z_tensor);

@@ -30,6 +30,7 @@
 #include "mindapi/base/macros.h"
 #include "utils/shape_utils.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 using HashTableExportData = std::vector<std::shared_ptr<std::vector<char>>>;
 
@@ -74,9 +75,9 @@ class MS_CORE_API MapTensor final : public Tensor {
     (void)shape_.insert(shape_.cend(), value_shape.cbegin(), value_shape.cend());
     size_ = shape_[0];
     ShapeVector key_shape = {abstract::Shape::kShapeDimAny};
-    key_tensor_ = std::make_shared<Tensor>(key_dtype, key_shape);
-    value_tensor_ = std::make_shared<Tensor>(value_dtype, shape_);
-    status_tensor_ = std::make_shared<Tensor>(kNumberTypeInt, key_shape);
+    key_tensor_ = tensor::empty(key_dtype, key_shape, device::DeviceType::kCPU);
+    value_tensor_ = tensor::empty(value_dtype, shape_, device::DeviceType::kCPU);
+    status_tensor_ = tensor::empty(kNumberTypeInt, key_shape, device::DeviceType::kCPU);
     permit_filter_value_ = (permit_filter_value == nullptr) ? std::make_shared<Int64Imm>(1) : permit_filter_value;
     evict_filter_value_ = (evict_filter_value == nullptr) ? std::make_shared<Int64Imm>(INT64_MAX) : evict_filter_value;
   }

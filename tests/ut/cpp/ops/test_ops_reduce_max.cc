@@ -22,6 +22,7 @@
 #include "utils/tensor_construct_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace ops {
 
@@ -70,7 +71,7 @@ class TestReduceMaxSimple : public TestOps, public testing::WithParamInterface<R
 
 TEST_P(TestReduceMaxSimple, simple_infer) {
   const auto &param = GetParam();
-  auto x = std::make_shared<tensor::Tensor>(param.input_dtype->type_id(), param.input_shape);
+  auto x = tensor::empty(param.input_dtype->type_id(), param.input_shape, device::DeviceType::kCPU);
   auto dim = param.dim->ToAbstract();
   auto keepdim = param.keepdim->ToAbstract();
 

@@ -23,6 +23,7 @@
 #include "utils/ms_utils_secure.h"
 #include "utils/hash_table.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 using device::HashTable;
 namespace tensor {
@@ -212,9 +213,9 @@ MapTensor::ExportData MapTensor::Export(bool incremental) const {
   // Note: this is fake implementation.
   ShapeVector key_shape = {1};
   ShapeVector values_shape = ConcatShape(ShapeVector{1}, value_shape());
-  auto key_tensor = std::make_shared<Tensor>(key_dtype(), key_shape);
-  auto value_tensor = std::make_shared<Tensor>(value_dtype(), values_shape);
-  auto status_tensor = std::make_shared<Tensor>(kNumberTypeInt, key_shape);
+  auto key_tensor = tensor::empty(key_dtype(), key_shape, device::DeviceType::kCPU);
+  auto value_tensor = tensor::empty(value_dtype(), values_shape, device::DeviceType::kCPU);
+  auto status_tensor = tensor::empty(kNumberTypeInt, key_shape, device::DeviceType::kCPU);
   return {key_tensor, value_tensor, status_tensor};
 }
 

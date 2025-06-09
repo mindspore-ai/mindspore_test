@@ -45,6 +45,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace parse {
 namespace {
@@ -1401,10 +1402,12 @@ TensorPtr ConvertTensorValue(const py::object &obj) {
   return nullptr;
 }
 
-static inline void *GetTensorDataPtr(const tensor::TensorPtr &tensor) {
+template <typename T>
+static inline T GetTensorData(const tensor::TensorPtr &tensor) {
   MS_EXCEPTION_IF_NULL(tensor);
   auto cpu_tensor = tensor->cpu();
-  return cpu_tensor->data_c();
+  // The data_c is a raw pointer and will become invalid when cpu_tensor is destructed.
+  return *(static_cast<T *>(cpu_tensor->data_c()));
 }
 
 ValuePtr ConvertStr(const py::object &obj) {
@@ -1497,7 +1500,8 @@ ValuePtr ConvertSequenceBoolToTensor(const py::object &obj) {
     return nullptr;
   }
 
-  auto tensor = std::make_shared<tensor::Tensor>(kNumberTypeBool, ShapeVector({static_cast<int64_t>(seq.size())}));
+  auto tensor =
+    tensor::empty(kNumberTypeBool, ShapeVector({static_cast<int64_t>(seq.size())}), device::DeviceType::kCPU);
   auto data = static_cast<bool *>(tensor->data_c());
   for (size_t it = 0; it < seq.size(); ++it) {
     if (!py::isinstance<py::bool_>(seq[it])) {
@@ -1535,7 +1539,9 @@ ValuePtr ConvertTensorToSequence(const py::object &obj) {
     return nullptr;
   }
 
-  auto data = static_cast<TDE *>(GetTensorDataPtr(tensor));
+  // The data_c is a raw pointer and will become invalid when cpu_tensor is destructed.
+  auto cpu_tensor = tensor->cpu();
+  auto data = static_cast<TDE *>(cpu_tensor->data_c());
   auto size = tensor->DataSize();
   std::vector<ValuePtr> value_list;
   for (size_t i = 0; i < size; ++i) {
@@ -1566,12 +1572,14 @@ ValuePtr ConvertTensorToSequenceInt(const py::object &obj) {
   }
   auto size = tensor->DataSize();
   std::vector<ValuePtr> value_list;
+  // The data_c is a raw pointer and will become invalid when cpu_tensor is destructed.
+  auto cpu_tensor = tensor->cpu();
   if (data_type == kNumberTypeInt64) {
-    auto data = static_cast<int64_t *>(GetTensorDataPtr(tensor));
+    auto data = static_cast<int64_t *>(cpu_tensor->data_c());
     std::transform(data, data + size, std::back_inserter(value_list),
                    [](int64_t num) { return std::make_shared<Int64Imm>(num); });
   } else {
-    auto data = static_cast<int32_t *>(GetTensorDataPtr(tensor));
+    auto data = static_cast<int32_t *>(cpu_tensor->data_c());
     std::transform(data, data + size, std::back_inserter(value_list),
                    [](int32_t num) { return std::make_shared<Int64Imm>(num); });
   }
@@ -1599,7 +1607,9 @@ ValuePtr ConvertTensorToSequenceFloat(const py::object &obj) {
     return nullptr;
   }
 
-  auto data = static_cast<double *>(GetTensorDataPtr(float_tensor));
+  // The data_c is a raw pointer and will become invalid when cpu_tensor is destructed.
+  auto cpu_tensor = float_tensor->cpu();
+  auto data = static_cast<double *>(cpu_tensor->data_c());
   auto size = float_tensor->DataSize();
   std::vector<ValuePtr> value_list(size);
   for (size_t i = 0; i < size; ++i) {
@@ -1627,18 +1637,20 @@ ValuePtr ConvertTensorToSequenceAny(const py::object &obj) {
   auto data_type = tensor->data_type();
   auto size = tensor->DataSize();
   std::vector<ValuePtr> value_list(size);
+  // The data_c is a raw pointer and will become invalid when cpu_tensor is destructed.
+  auto cpu_tensor = tensor->cpu();
   if (data_type == kNumberTypeInt64) {
-    auto data = static_cast<int64_t *>(GetTensorDataPtr(tensor));
+    auto data = static_cast<int64_t *>(cpu_tensor->data_c());
     for (size_t i = 0; i < size; ++i) {
       (void)value_list.emplace_back(std::make_shared<Int64Imm>(data[i]));
     }
   } else if (data_type == kNumberTypeFloat64) {
-    auto data = static_cast<double *>(GetTensorDataPtr(tensor));
+    auto data = static_cast<double *>(cpu_tensor->data_c());
     for (size_t i = 0; i < size; ++i) {
       (void)value_list.emplace_back(ConvertPythonFloatToScalarValue(data[i]));
     }
   } else if (data_type == kNumberTypeBool) {
-    auto data = static_cast<bool *>(GetTensorDataPtr(tensor));
+    auto data = static_cast<bool *>(cpu_tensor->data_c());
     for (size_t i = 0; i < size; ++i) {
       (void)value_list.emplace_back(std::make_shared<BoolImm>(data[i]));
     }
@@ -1660,15 +1672,15 @@ ValuePtr ConvertTensorToInt64(const py::object &obj) {
     return nullptr;
   }
   if (tensor->data_type() == kNumberTypeInt64) {
-    return std::make_shared<Int64Imm>(static_cast<int64_t *>(GetTensorDataPtr(tensor))[0]);
+    return std::make_shared<Int64Imm>(GetTensorData<int64_t>(tensor));
   } else if (tensor->data_type() == kNumberTypeInt32) {
-    return std::make_shared<Int64Imm>(static_cast<int32_t *>(GetTensorDataPtr(tensor))[0]);
+    return std::make_shared<Int64Imm>(GetTensorData<int32_t>(tensor));
   } else if (tensor->data_type() == kNumberTypeInt16) {
-    return std::make_shared<Int64Imm>(static_cast<int16_t *>(GetTensorDataPtr(tensor))[0]);
+    return std::make_shared<Int64Imm>(GetTensorData<int16_t>(tensor));
   } else if (tensor->data_type() == kNumberTypeInt8) {
-    return std::make_shared<Int64Imm>(static_cast<int8_t *>(GetTensorDataPtr(tensor))[0]);
+    return std::make_shared<Int64Imm>(GetTensorData<int8_t>(tensor));
   } else if (tensor->data_type() == kNumberTypeUInt8) {
-    return std::make_shared<Int64Imm>(static_cast<uint8_t *>(GetTensorDataPtr(tensor))[0]);
+    return std::make_shared<Int64Imm>(GetTensorData<uint8_t>(tensor));
   } else {
     MS_LOG(ERROR) << "Can not convert " << tensor->ToString() << " to int";
     return nullptr;
@@ -1686,21 +1698,21 @@ ValuePtr ConvertTensorToInt(const py::object &obj) {
   }
   switch (tensor->data_type()) {
     case kNumberTypeInt64:
-      return std::make_shared<Int64Imm>(static_cast<int64_t *>(GetTensorDataPtr(tensor))[0]);
+      return std::make_shared<Int64Imm>(GetTensorData<int64_t>(tensor));
     case kNumberTypeInt32:
-      return std::make_shared<Int32Imm>(static_cast<int32_t *>(GetTensorDataPtr(tensor))[0]);
+      return std::make_shared<Int32Imm>(GetTensorData<int32_t>(tensor));
     case kNumberTypeInt16:
-      return std::make_shared<Int64Imm>(static_cast<int16_t *>(GetTensorDataPtr(tensor))[0]);
+      return std::make_shared<Int64Imm>(GetTensorData<int16_t>(tensor));
     case kNumberTypeInt8:
-      return std::make_shared<Int64Imm>(static_cast<int8_t *>(GetTensorDataPtr(tensor))[0]);
+      return std::make_shared<Int64Imm>(GetTensorData<int8_t>(tensor));
     case kNumberTypeUInt64:
-      return std::make_shared<Int64Imm>(static_cast<uint64_t *>(GetTensorDataPtr(tensor))[0]);
+      return std::make_shared<Int64Imm>(GetTensorData<uint64_t>(tensor));
     case kNumberTypeUInt32:
-      return std::make_shared<Int64Imm>(static_cast<uint32_t *>(GetTensorDataPtr(tensor))[0]);
+      return std::make_shared<Int64Imm>(GetTensorData<uint32_t>(tensor));
     case kNumberTypeUInt16:
-      return std::make_shared<Int64Imm>(static_cast<uint16_t *>(GetTensorDataPtr(tensor))[0]);
+      return std::make_shared<Int64Imm>(GetTensorData<uint16_t>(tensor));
     case kNumberTypeUInt8:
-      return std::make_shared<Int64Imm>(static_cast<uint8_t *>(GetTensorDataPtr(tensor))[0]);
+      return std::make_shared<Int64Imm>(GetTensorData<uint8_t>(tensor));
     default:
       MS_EXCEPTION(TypeError) << "Can not convert " << tensor->ToString() << " to Int.";
   }
@@ -1730,7 +1742,7 @@ ValuePtr ConvertTensorToFloat(const py::object &obj) {
     MS_LOG(ERROR) << "Can not convert " << tensor->ToString() << " to float";
     return nullptr;
   }
-  return ConvertPythonFloatToScalarValue(static_cast<double *>(GetTensorDataPtr(tensor))[0]);
+  return ConvertPythonFloatToScalarValue(GetTensorData<double>(tensor));
 }
 
 ValuePtr ConvertTensorToBool(const py::object &obj) {
@@ -1742,7 +1754,7 @@ ValuePtr ConvertTensorToBool(const py::object &obj) {
     MS_LOG(ERROR) << "Can not convert " << tensor->ToString() << " to bool";
     return nullptr;
   }
-  return std::make_shared<BoolImm>(static_cast<bool *>(GetTensorDataPtr(tensor))[0]);
+  return std::make_shared<BoolImm>(GetTensorData<bool>(tensor));
 }
 
 ValuePtr ConvertTensorToNumber(const py::object &obj) {
@@ -1756,29 +1768,29 @@ ValuePtr ConvertTensorToNumber(const py::object &obj) {
 
   switch (tensor->data_type()) {
     case kNumberTypeBool:
-      return std::make_shared<BoolImm>(static_cast<bool *>(GetTensorDataPtr(tensor))[0]);
+      return std::make_shared<BoolImm>(GetTensorData<bool>(tensor));
     case kNumberTypeInt64:
-      return std::make_shared<Int64Imm>(static_cast<int64_t *>(GetTensorDataPtr(tensor))[0]);
+      return std::make_shared<Int64Imm>(GetTensorData<int64_t>(tensor));
     case kNumberTypeInt32:
-      return std::make_shared<Int64Imm>(static_cast<int32_t *>(GetTensorDataPtr(tensor))[0]);
+      return std::make_shared<Int64Imm>(GetTensorData<int32_t>(tensor));
     case kNumberTypeInt16:
-      return std::make_shared<Int64Imm>(static_cast<int16_t *>(GetTensorDataPtr(tensor))[0]);
+      return std::make_shared<Int64Imm>(GetTensorData<int16_t>(tensor));
     case kNumberTypeInt8:
-      return std::make_shared<Int64Imm>(static_cast<int8_t *>(GetTensorDataPtr(tensor))[0]);
+      return std::make_shared<Int64Imm>(GetTensorData<int8_t>(tensor));
     case kNumberTypeUInt64:
-      return std::make_shared<Int64Imm>(static_cast<uint64_t *>(GetTensorDataPtr(tensor))[0]);
+      return std::make_shared<Int64Imm>(GetTensorData<uint64_t>(tensor));
     case kNumberTypeUInt32:
-      return std::make_shared<Int64Imm>(static_cast<uint32_t *>(GetTensorDataPtr(tensor))[0]);
+      return std::make_shared<Int64Imm>(GetTensorData<uint32_t>(tensor));
     case kNumberTypeUInt16:
-      return std::make_shared<Int64Imm>(static_cast<uint16_t *>(GetTensorDataPtr(tensor))[0]);
+      return std::make_shared<Int64Imm>(GetTensorData<uint16_t>(tensor));
     case kNumberTypeUInt8:
-      return std::make_shared<Int64Imm>(static_cast<uint8_t *>(GetTensorDataPtr(tensor))[0]);
+      return std::make_shared<Int64Imm>(GetTensorData<uint8_t>(tensor));
     case kNumberTypeFloat64:
-      return ConvertPythonFloatToScalarValue(static_cast<double *>(GetTensorDataPtr(tensor))[0]);
+      return ConvertPythonFloatToScalarValue(GetTensorData<double>(tensor));
     case kNumberTypeFloat32:
-      return ConvertPythonFloatToScalarValue(static_cast<float *>(GetTensorDataPtr(tensor))[0]);
+      return ConvertPythonFloatToScalarValue(GetTensorData<float>(tensor));
     case kNumberTypeFloat16:
-      return ConvertPythonFloatToScalarValue(static_cast<float>(static_cast<float16 *>(GetTensorDataPtr(tensor))[0]));
+      return ConvertPythonFloatToScalarValue(static_cast<float>(GetTensorData<float16>(tensor)));
     default:
       MS_EXCEPTION(TypeError) << "Can not convert " << tensor->ToString() << " to number";
   }

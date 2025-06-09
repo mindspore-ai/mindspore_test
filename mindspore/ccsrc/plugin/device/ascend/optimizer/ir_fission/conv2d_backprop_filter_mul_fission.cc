@@ -27,6 +27,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/kernel_info.h"
 #include "utils/ms_context.h"
+#include "ir/tensor_api.h"
 
 namespace mindspore::opt {
 namespace {
@@ -46,7 +47,7 @@ ValueNodePtr CreateAssistNode(const FuncGraphPtr &func_graph, const AnfNodePtr &
   MS_EXCEPTION_IF_NULL(func_graph);
   MS_EXCEPTION_IF_NULL(node);
   auto type = common::AnfAlgo::GetOutputInferDataType(node, 0);
-  tensor::TensorPtr tensor = std::make_shared<tensor::Tensor>(type, shape);
+  tensor::TensorPtr tensor = tensor::empty(type, shape, device::DeviceType::kCPU);
   AbstractBasePtr x_abstract;
   if (type == kNumberTypeInt32) {
     SetAssistTensorData<int32_t>(tensor->data_c(), 1, matrix_size);

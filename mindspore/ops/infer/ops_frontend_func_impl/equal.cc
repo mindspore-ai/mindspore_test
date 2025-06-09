@@ -25,6 +25,7 @@
 #include "abstract/abstract_value.h"
 #include "ops_utils/op_constants.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace ops {
 template <typename T>
@@ -72,8 +73,9 @@ class EqualFrontendFuncImpl : public OpFrontendFuncImpl {
     if (x1 == nullptr || x2 == nullptr || x1->isa<ValueAny>() || x2->isa<ValueAny>()) {
       return nullptr;
     }
-    auto x1_tensor = x1->cast<tensor::TensorPtr>();
-    auto x2_tensor = x2->cast<tensor::TensorPtr>();
+    // todo: why gpu/npu tensor exist on graph?
+    auto x1_tensor = x1->cast<tensor::TensorPtr>()->cpu();
+    auto x2_tensor = x2->cast<tensor::TensorPtr>()->cpu();
 
     auto x1_shape = input_args[kIndex0]->GetShape()->GetShapeVector();
     auto x2_shape = input_args[kIndex1]->GetShape()->GetShapeVector();
@@ -82,7 +84,7 @@ class EqualFrontendFuncImpl : public OpFrontendFuncImpl {
     }
     auto type_id = x1_tensor->data_type();
     auto data_size = x1_tensor->DataSize();
-    auto result_tensor = std::make_shared<tensor::Tensor>(kNumberTypeBool, x1_shape);
+    auto result_tensor = tensor::empty(kNumberTypeBool, x1_shape, device::DeviceType::kCPU);
     auto iter = equal_impl_list.find(type_id);
     if (iter == equal_impl_list.end()) {
       MS_LOG(DEBUG) << "For '" << primitive->name() << "', 'x1' is " << x1_tensor->ToString()

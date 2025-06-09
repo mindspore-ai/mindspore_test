@@ -58,6 +58,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_z.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace opt {
 static const std::unordered_set<PrimitivePtr> kNNACLToOpsInfer = {
@@ -168,7 +169,7 @@ void RectifyFormat(const std::vector<lite::Tensor *> &inputs, FmkType fmk_type) 
 tensor::TensorPtr NewTensorInfo(const lite::Tensor *tensor) {
   std::vector<int> shape(tensor->shape());
   std::vector<int64_t> shape_vector(shape.begin(), shape.end());
-  auto tensor_info = std::make_shared<tensor::Tensor>(tensor->data_type(), shape_vector);
+  auto tensor_info = tensor::empty(tensor->data_type(), shape_vector, device::DeviceType::kCPU);
   if (tensor_info == nullptr) {
     MS_LOG(ERROR) << "new tensor::Tensor failed";
     return nullptr;

@@ -47,6 +47,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace parallel {
 namespace {
@@ -392,7 +393,7 @@ CNodePtr NewSendNode(const AnfNodePtr &send_data, int64_t tag, int64_t dest_rank
 CNodePtr NewReceiveNode(const AnfNodePtr &parameter, int64_t tag, int64_t src_rank, const Shape &recv_shape,
                         TypeId type_id, const std::string &group_name, const RankList &rank_list) {
   MS_EXCEPTION_IF_NULL(parameter);
-  tensor::TensorPtr recv_tensor = std::make_shared<mindspore::tensor::Tensor>(type_id, recv_shape);
+  tensor::TensorPtr recv_tensor = tensor::empty(type_id, recv_shape, device::DeviceType::kCPU);
   AnfNodePtr recv_input = NewValueNode(MakeValue(recv_tensor));
   common::AnfAlgo::SetOutputInferTypeAndShape({type_id}, {recv_shape}, recv_input.get());
   Attr attr_tag = std::make_pair(parallel::SR_TAG, MakeValue((tag)));

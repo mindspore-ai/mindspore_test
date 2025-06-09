@@ -59,6 +59,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "ir/tensor_api.h"
 
 namespace mindspore::session {
 using abstract::AbstractTensor;
@@ -2494,7 +2495,7 @@ tensor::TensorPtr AnfRuntimeAlgorithm::SequenceToTensor(const ValuePtr &value) {
     const auto &single_shape = std::make_shared<abstract::Shape>(single_shape_vector);
     (void)shape_vector.insert(shape_vector.end(), single_shape_vector.begin(), single_shape_vector.end());
     const auto &shape = std::make_shared<abstract::Shape>(shape_vector);
-    auto new_tensor = std::make_shared<tensor::Tensor>(type_id, shape_vector);
+    auto new_tensor = tensor::empty(type_id, shape_vector, device::DeviceType::kCPU);
     MS_EXCEPTION_IF_NULL(new_tensor);
     const auto dst_ptr = new_tensor->data_c();
     MS_EXCEPTION_IF_NULL(dst_ptr);
@@ -2504,9 +2505,10 @@ tensor::TensorPtr AnfRuntimeAlgorithm::SequenceToTensor(const ValuePtr &value) {
       MS_EXCEPTION_IF_NULL(sub_value);
       const auto &src_tensor = sub_value->cast<tensor::TensorPtr>();
       MS_EXCEPTION_IF_NULL(src_tensor);
-      MS_EXCEPTION_IF_NULL(src_tensor->data_c());
+      auto src_cpu_tensor = src_tensor->cpu();
+      MS_EXCEPTION_IF_NULL(src_cpu_tensor->data_c());
       auto ret = memcpy_s((reinterpret_cast<char *>(dst_ptr)) + i * size, static_cast<size_t>(new_tensor->DataNBytes()),
-                          src_tensor->data_c(), size);
+                          src_cpu_tensor->data_c(), size);
       if (ret != EOK) {
         MS_LOG(INTERNAL_EXCEPTION)
           << "#dmsg#Runtime error info:#dmsg#Failed to copy data into tensor, memcpy_s errorno: " << ret;
@@ -2520,7 +2522,7 @@ tensor::TensorPtr AnfRuntimeAlgorithm::SequenceToTensor(const ValuePtr &value) {
   }
 
   // Create the tensor.
-  auto tensor = std::make_shared<tensor::Tensor>(values[0]->type()->type_id(), shape_vector);
+  auto tensor = tensor::empty(values[0]->type()->type_id(), shape_vector, device::DeviceType::kCPU);
   MS_EXCEPTION_IF_NULL(tensor);
   SetScalarToTensor(values, tensor);
   // Build the tuple shape and set into tensor.
