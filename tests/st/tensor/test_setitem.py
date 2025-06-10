@@ -96,12 +96,22 @@ def test_setitem(capture_mode):
         np_x[index] = value
         setitem_check_indexing(ms_x, index, value, np_x, capture_mode)
 
+    # Basic index with float value
     np_x = np.arange(2*3*4).reshape(2, 3, 4)
     ms_x = Tensor(np_x)
     index = [0, 1]
     value = -1.0
     np_x[index] = value
     setitem_check_indexing(ms_x, index, value, np_x, capture_mode)
+
+    # Basic index with tensor value
+    np_x = np.arange(2*3*4).reshape(2, 3, 4)
+    ms_x = Tensor(np_x)
+    index = 0
+    value = Tensor([[[-1, -1, -1, -1]]])
+    np_expected = np.array([[[-1, -1, -1, -1], [-1, -1, -1, -1], [-1, -1, -1, -1]],
+                            [[12, 13, 14, 15], [16, 17, 18, 19], [20, 21, 22, 23]]])
+    setitem_check_indexing(ms_x, index, value, np_expected, capture_mode)
 
     # Numpy index
     if capture_mode is None:
@@ -352,11 +362,20 @@ def test_setitem_grad(capture_mode):
         value = -1
         setitem_check_grad(ms_x, index, value, np_expected, capture_mode)
 
+    # Basic index with float value
     ms_x = Tensor(np.arange(2 * 3 * 4).reshape((2, 3, 4)).astype(np.float32))
     index = [0, 1]
     value = -1.0
     np_expected = np.array([[[0., 0., 0., 0.,], [0., 0., 0., 0.,], [0., 0., 0., 0.,]],
                             [[0., 0., 0., 0.,], [0., 0., 0., 0.,], [0., 0., 0., 0.,]]])
+    setitem_check_grad(ms_x, index, value, np_expected, capture_mode)
+
+    # Basic index with tensor value
+    ms_x = Tensor(np.arange(2 * 3 * 4).reshape((2, 3, 4)).astype(np.float32))
+    index = 0
+    value = Tensor([[[-1, -1, -1, -1]]])
+    np_expected = np.array([[[0., 0., 0., 0.,], [0., 0., 0., 0.,], [0., 0., 0., 0.,]],
+                            [[1., 1., 1., 1.,], [1., 1., 1., 1.,], [1., 1., 1., 1.,]]])
     setitem_check_grad(ms_x, index, value, np_expected, capture_mode)
 
     # Tensor index
@@ -399,7 +418,8 @@ def test_setitem_grad(capture_mode):
                      ([0, 1], None, [0, 1]),
                      (Tensor([0, 1]), None, Tensor([0, 1])),
                      ([0, 1], ..., [0, 1]),
-                     (Tensor([0, 1]), ..., Tensor([0, 1]))]
+                     (Tensor([0, 1]), ..., Tensor([0, 1])),
+                     (Tensor([0]), Tensor(0), slice(0, 4, 2))]
     value = -1
     np_expecteds = [
         np.array([[[0., 0., 0., 0.], [1., 1., 1., 1.], [1., 1., 1., 1.]],
@@ -429,7 +449,9 @@ def test_setitem_grad(capture_mode):
         np.array([[[0., 1., 1., 1.], [0., 1., 1., 1.], [0., 1., 1., 1.]],
                   [[1., 0., 1., 1.], [1., 0., 1., 1.], [1., 0., 1., 1.]]]),
         np.array([[[0., 1., 1., 1.], [0., 1., 1., 1.], [0., 1., 1., 1.]],
-                  [[1., 0., 1., 1.], [1., 0., 1., 1.], [1., 0., 1., 1.]]])]
+                  [[1., 0., 1., 1.], [1., 0., 1., 1.], [1., 0., 1., 1.]]]),
+        np.array([[[0., 1., 0., 1.], [1., 1., 1., 1.], [1., 1., 1., 1.]],
+                  [[1., 1., 1., 1.], [1., 1., 1., 1.], [1., 1., 1., 1.]]])]
     for index, np_expected in zip(fancy_indices, np_expecteds):
         setitem_check_grad(ms_x, index, value, np_expected, capture_mode)
 
