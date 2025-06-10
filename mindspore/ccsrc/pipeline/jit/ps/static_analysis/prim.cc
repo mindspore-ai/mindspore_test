@@ -3856,6 +3856,8 @@ class ScanEvaluator : public Evaluator {
         return CreateScanEvalResult(loop_result_abs, length_value, args_abs_list);
       }
       MS_LOG(DEBUG) << "`Scan` op will be translated into a loop function call in type inference action";
+      std::string reason = "Loop op with unroll set as false is not allow do higher order grad";
+      cur_graph->set_attr(FUNC_GRAPH_ATTR_UNSUPPORT_HIGHER_GRAD_REASON, MakeValue(reason));
       result_node = RepeatLoop(cur_graph, loop_func_node, init_node, xs_node, getitem_op, length_value, manager);
     } else {
       // Unroll the loop

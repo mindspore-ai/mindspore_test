@@ -50,6 +50,27 @@ AnfNodePtrList ExpandMultiJ(const FuncGraphVector &func_graphs, const OptimizerP
                        });
   return expanded_nodes;
 }
+
+void AddHighOrderUnsupportAttr(const FuncGraphPtr &need_grad_fg, const AnfNodePtr &j_node,
+                               const FuncGraphManagerPtr &manager) {
+  if (!need_grad_fg->has_attr(FUNC_GRAPH_ATTR_UNSUPPORT_HIGHER_GRAD_REASON)) {
+    return;
+  }
+  const auto &node_users = manager->node_users();
+  auto iter = node_users.find(j_node);
+  if (iter == node_users.end()) {
+    return;
+  }
+  // Set attr for j_node users' func_graph
+  for (auto &user_pair : iter->second) {
+    auto user_node = user_pair.first->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(user_node);
+    auto caller_func_graph = user_node->func_graph();
+    MS_EXCEPTION_IF_NULL(caller_func_graph);
+    auto reason = need_grad_fg->get_attr(FUNC_GRAPH_ATTR_UNSUPPORT_HIGHER_GRAD_REASON);
+    caller_func_graph->set_attr(FUNC_GRAPH_ATTR_UNSUPPORT_HIGHER_GRAD_REASON, reason);
+  }
+}
 }  // namespace internal
 
 void ExpandJPrim::CloneUsedPrimalGraph(const FuncGraphManagerPtr &manager, FuncGraphVector *func_graphs) const {
@@ -98,6 +119,7 @@ bool ExpandJPrim::operator()(const FuncGraphPtr &func_graph, const OptimizerPtr 
       func_graphs.push_back(cur_func_graph);
       MS_LOG(DEBUG) << "FuncGraph: " << cur_func_graph->ToString() << " will expandJ now";
       j_node_to_index_map[j_node] = index++;
+      internal::AddHighOrderUnsupportAttr(cur_func_graph, j_node, manager);
     } else if (IsValueNode<Primitive>(j_node_inp1)) {
       auto expanded_j = internal::ExpandJPrimitive(j_node_inp1->cast<ValueNodePtr>(), optimizer->resource());
       (void)manager->Replace(j_node, expanded_j);

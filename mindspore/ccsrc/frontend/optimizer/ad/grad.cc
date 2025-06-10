@@ -462,6 +462,12 @@ FuncGraphPtr Grad(const FuncGraphPtr &func_graph, const opt::OptimizerPtr &optim
   if (gradkv != func_graph->transforms().end()) {
     return gradkv->second.func_graph();
   }
+  if (!optimizer->is_first_order_j() && func_graph->has_attr(FUNC_GRAPH_ATTR_UNSUPPORT_HIGHER_GRAD_REASON)) {
+    auto reason = func_graph->get_attr(FUNC_GRAPH_ATTR_UNSUPPORT_HIGHER_GRAD_REASON);
+    MS_EXCEPTION_IF_NULL(reason);
+    MS_EXCEPTION(NotSupportError) << "Higher-order differentiation is not supported for the current scenario, reason: "
+                                  << GetValue<string>(reason);
+  }
 
   const auto &resources = optimizer->resource();
   AddToManage(resources, func_graph);
