@@ -270,6 +270,7 @@ void LazyFusionKernelAscend::Flush() {
           dump_buf_ << "[lazy_fusion before split] "
                     << "kernel id : " << id() << "\n";
           dump_buf_ << Dump() << "\n";
+          DumpToFile();
           EagerCodeGen(reloc_entry_.data(), reloc_entry_.size());
           dump_buf_ << "[lazy_fusion after split] "
                     << "kernel id : " << id() << "\n";
