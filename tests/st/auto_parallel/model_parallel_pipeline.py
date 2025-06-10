@@ -469,3 +469,147 @@ def test_parallel_mp_compare_context_auto_pp_cfg_lazy_init_inline_sink():
     model = Model(network=pp_net, optimizer=optimizer)
     model.train(epoch=2, train_dataset=parallel_dataset, dataset_sink_mode=True, sink_size=-1,
                 callbacks=[loss_monitor_pp])
+
+def test_parallel_mp_compare_context_auto_sink_gpipe():
+    """
+    Feature:test_parallel_mp_compare_context_auto_pp_config_lazy_init
+    Description:
+        1.create pp Net
+        2.train the net, using new pipeline_stage config
+        3.predict net
+    Expectation:
+        1.train ok
+        2.the predcit result is the same
+    """
+    rank_id = int(os.environ.get('RANK_ID', -1))
+    init(backend_name='hccl')
+    pp_strategy = ((2, 1), (1, 2))
+    # set_parallel_context
+    # config
+    ms.set_seed(1)
+    context.reset_auto_parallel_context()
+    context.set_context(mode=context.GRAPH_MODE, device_target='Ascend', save_graphs=True,
+                        save_graphs_path="context_ir")
+    pp_config = {"pipeline_interleave": True, "pipeline_scheduler": "gpipe"}
+    context.set_auto_parallel_context(parallel_mode=ParallelMode.SEMI_AUTO_PARALLEL,
+                                      dataset_strategy="full_batch", pipeline_stages=2,
+                                      pipeline_config=pp_config)
+    # net
+    context_net = ParallelPPNetworkFinal(pp_strategy)
+    # dataset
+    context_dataset = create_dataset(8)
+    context_ckpt_path = 'context_ckpt/context_rank_{}_ckpt'.format(rank_id)
+    # pp config
+    context_net.cell1.pipeline_stage = 0
+    context_net.cell2.pipeline_stage = 1
+    # train_model ops loss
+    optimizer = nn.Momentum(context_net.trainable_params(), learning_rate=0.1, momentum=0.9)
+    loss_fn = nn.MSELoss(reduction='mean')
+    loss_monitor = LossMonitor(per_print_times=1)
+    clean_all_ckpt_files(context_ckpt_path)
+    # loss with lazy inline
+    net_with_loss = PipelineCell(LazyLossCell(context_net, loss_fn), micro_size=4)
+    # train WithLossCell
+    model = Model(network=net_with_loss, optimizer=optimizer)
+    model.train(epoch=2, train_dataset=context_dataset, dataset_sink_mode=True, sink_size=-1, callbacks=[loss_monitor])
+    # AutoParallel(net)
+    # config
+    ms.set_seed(1)
+    context.reset_auto_parallel_context()
+    context.set_context(mode=context.GRAPH_MODE, device_target='Ascend',
+                        save_graphs=True, save_graphs_path="parallel_ir")
+    # dataset
+    parallel_dataset = create_dataset(8)
+    parallel_ckpt_path = 'parallel_ckpt/parallel_rank_{}_ckpt'.format(rank_id)
+    # net
+    with no_init_parameters():
+        net_tmp = ParallelPPNetworkFinal(pp_strategy)
+        optimizer = nn.Momentum(net_tmp.trainable_params(), learning_rate=0.1, momentum=0.9)
+    # train_model ops loss
+    loss_fn = nn.MSELoss(reduction='mean')
+    loss_monitor_pp = LossMonitor(per_print_times=1)
+    clean_all_ckpt_files(parallel_ckpt_path)
+    # loss with lazy inline & pp config
+    pp_net_with_loss = PipelineCell(LazyLossCell(net_tmp, loss_fn),
+                                    micro_size=4,
+                                    stage_config={"_backbone.cell1": 0,
+                                                  "_backbone.cell2": 1})
+    pp_net = AutoParallel(pp_net_with_loss, parallel_mode="semi_auto")
+    pp_net.full_batch = True
+    pp_net.pipeline(stages=2, interleave=True, scheduler="gpipe")
+    # train WithLossCell
+    model = Model(network=pp_net, optimizer=optimizer)
+    model.train(epoch=2, train_dataset=parallel_dataset, dataset_sink_mode=True, sink_size=-1,
+                callbacks=[loss_monitor_pp])
+
+def test_parallel_mp_compare_context_auto_sink_seqpipe():
+    """
+    Feature:test_parallel_mp_compare_context_auto_pp_config_lazy_init
+    Description:
+        1.create pp Net
+        2.train the net, using new pipeline_stage config
+        3.predict net
+    Expectation:
+        1.train ok
+        2.the predcit result is the same
+    """
+    rank_id = int(os.environ.get('RANK_ID', -1))
+    init(backend_name='hccl')
+    pp_strategy = ((2, 1), (1, 2))
+    # set_parallel_context
+    # config
+    ms.set_seed(1)
+    context.reset_auto_parallel_context()
+    context.set_context(mode=context.GRAPH_MODE, device_target='Ascend', save_graphs=True,
+                        save_graphs_path="context_ir")
+    pp_config = {"pipeline_interleave": True, "pipeline_scheduler": "seqpipe"}
+    context.set_auto_parallel_context(parallel_mode=ParallelMode.SEMI_AUTO_PARALLEL,
+                                      dataset_strategy="full_batch", pipeline_stages=2,
+                                      pipeline_config=pp_config)
+    # net
+    context_net = ParallelPPNetworkFinal(pp_strategy)
+    # dataset
+    context_dataset = create_dataset(8)
+    context_ckpt_path = 'context_ckpt/context_rank_{}_ckpt'.format(rank_id)
+    # pp config
+    context_net.cell1.pipeline_stage = 0
+    context_net.cell2.pipeline_stage = 1
+    # train_model ops loss
+    optimizer = nn.Momentum(context_net.trainable_params(), learning_rate=0.1, momentum=0.9)
+    loss_fn = nn.MSELoss(reduction='mean')
+    loss_monitor = LossMonitor(per_print_times=1)
+    clean_all_ckpt_files(context_ckpt_path)
+    # loss with lazy inline
+    net_with_loss = PipelineCell(LazyLossCell(context_net, loss_fn), micro_size=4)
+    # train WithLossCell
+    model = Model(network=net_with_loss, optimizer=optimizer)
+    model.train(epoch=2, train_dataset=context_dataset, dataset_sink_mode=True, sink_size=-1, callbacks=[loss_monitor])
+    # AutoParallel(net)
+    # config
+    ms.set_seed(1)
+    context.reset_auto_parallel_context()
+    context.set_context(mode=context.GRAPH_MODE, device_target='Ascend',
+                        save_graphs=True, save_graphs_path="parallel_ir")
+    # dataset
+    parallel_dataset = create_dataset(8)
+    parallel_ckpt_path = 'parallel_ckpt/parallel_rank_{}_ckpt'.format(rank_id)
+    # net
+    with no_init_parameters():
+        net_tmp = ParallelPPNetworkFinal(pp_strategy)
+        optimizer = nn.Momentum(net_tmp.trainable_params(), learning_rate=0.1, momentum=0.9)
+    # train_model ops loss
+    loss_fn = nn.MSELoss(reduction='mean')
+    loss_monitor_pp = LossMonitor(per_print_times=1)
+    clean_all_ckpt_files(parallel_ckpt_path)
+    # loss with lazy inline & pp config
+    pp_net_with_loss = PipelineCell(LazyLossCell(net_tmp, loss_fn),
+                                    micro_size=4,
+                                    stage_config={"_backbone.cell1": 0,
+                                                  "_backbone.cell2": 1})
+    pp_net = AutoParallel(pp_net_with_loss, parallel_mode="semi_auto")
+    pp_net.full_batch = True
+    pp_net.pipeline(stages=2, interleave=True, scheduler="seqpipe")
+    # train WithLossCell
+    model = Model(network=pp_net, optimizer=optimizer)
+    model.train(epoch=2, train_dataset=parallel_dataset, dataset_sink_mode=True, sink_size=-1,
+                callbacks=[loss_monitor_pp])
