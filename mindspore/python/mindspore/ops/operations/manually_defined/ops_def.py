@@ -1065,7 +1065,6 @@ class Tile(Primitive):
             return jit_context().run_op(self, res, input, dims)
         return res
 
-    # pylint: disable=missing-docstring
     def check_elim(self, *args):
         base_tensor, dims = args
         if not isinstance(base_tensor, Tensor):
