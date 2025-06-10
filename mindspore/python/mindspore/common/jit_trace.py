@@ -129,8 +129,8 @@ def _jit_trace():
         if hasattr(fn, "construct"):
             if isinstance(fn, ms.nn.Cell):
                 # Bound the cell object to get the self arg.
-                fn.construct = types.MethodType(_jit_trace()(fn.construct.__func__), fn)
-            elif isinstance(fn, type) and issubclass(fn, ms.nn.Cell):
+                return types.MethodType(_jit_trace()(fn.construct.__func__), fn)
+            if isinstance(fn, type) and issubclass(fn, ms.nn.Cell):
                 fn.construct = _jit_trace()(fn.construct)
             return fn
 

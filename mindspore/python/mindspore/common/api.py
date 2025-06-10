@@ -1035,9 +1035,8 @@ def _jit_ast(hash_obj, dynamic, jit_config):
         if hasattr(func, "construct"):
             if isinstance(func, ms.nn.Cell):
                 # Bound the cell object to get the self arg.
-                func.construct = types.MethodType(_jit_ast(hash_obj, dynamic, jit_config)(func.construct.__func__),
-                                                  func)
-            elif isinstance(func, type) and issubclass(func, ms.nn.Cell):
+                return types.MethodType(_jit_ast(hash_obj, dynamic, jit_config)(func.construct.__func__), func)
+            if isinstance(func, type) and issubclass(func, ms.nn.Cell):
                 func.construct = _jit_ast(hash_obj, dynamic, jit_config)(func.construct)
             return func
 
