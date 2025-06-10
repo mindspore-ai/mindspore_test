@@ -136,41 +136,55 @@ class ProfilerParameters:
             if key in ProfilerParameters.PARAMS:
                 expected_type = ProfilerParameters.PARAMS[key][ProfilerParameters.TYPE_INDEX]
                 default_value = ProfilerParameters.PARAMS[key][ProfilerParameters.VALUE_INDEX]
-
-                # Callable特殊处理
                 if key == "on_trace_ready":
-                    if value is not None and not callable(value):
-                        setattr(self, key, default_value)
-                        logger.warning(
-                            f"For Profiler, on_trace_ready value is Invalid, reset to {default_value}."
-                        )
+                    setattr(self, key, self._check_and_get_on_trace_ready(value, default_value))
                 elif key == "schedule":
-                    if not isinstance(value, Schedule):
-                        setattr(self, key, Schedule(wait=0, active=1))
-                        logger.warning(
-                            f"For Profiler, schedule value is Invalid, reset to {Schedule(wait=0, active=1)}"
-                        )
+                    setattr(self, key, self._check_and_get_schedule(value))
                 elif key == "export_type":
                     setattr(self, key, self._check_and_get_export_type(value))
-                elif key == "mstx_domain_include" or key == "mstx_domain_exclude":
+                elif key in ("mstx_domain_include", "mstx_domain_exclude"):
                     setattr(self, key, self._check_and_get_mstx_domain(key, value))
                 elif key == "host_sys":
                     setattr(self, key, self._check_and_get_host_sys(value, expected_type, default_value))
                 # 检查可迭代类型
                 elif isinstance(expected_type, type) and issubclass(expected_type, (list, tuple, set)):
-                    if not (isinstance(value, expected_type) and
-                            all(isinstance(item, type(default_value[0])) for item in value)):
-                        logger.warning(
-                            f"For Profiler, {key} value is Invalid, reset to {default_value}."
-                        )
-                        setattr(self, key, default_value)
+                    setattr(self, key, self._check_and_get_iterable_params(key, value, expected_type, default_value))
                 # 检查普通类型
-                elif not isinstance(value, expected_type):
-                    logger.warning(
-                        f"For Profiler, the type of {key} should be {expected_type}, "
-                        f"but got {type(value)}, reset to {default_value}."
-                    )
-                    setattr(self, key, default_value)
+                else:
+                    setattr(self, key, self._check_and_get_common_params(key, value, expected_type, default_value))
+
+    @staticmethod
+    def _check_and_get_on_trace_ready(value, default_value):
+        if value is not None and not callable(value):
+            logger.warning(f"For Profiler, on_trace_ready value is Invalid, reset to {default_value}.")
+            return default_value
+
+        return value
+
+    @staticmethod
+    def _check_and_get_schedule(value):
+        if not isinstance(value, Schedule):
+            logger.warning(f"For Profiler, schedule value is Invalid, reset to {Schedule(wait=0, active=1)}")
+            return Schedule(wait=0, active=1)
+
+        return value
+
+    @staticmethod
+    def _check_and_get_iterable_params(key, value, expected_type, default_value):
+        if not (isinstance(value, expected_type) and all(isinstance(item, type(default_value[0])) for item in value)):
+            logger.warning(f"For Profiler, {key} value is Invalid, reset to {default_value}.")
+            return default_value
+
+        return list(set(value))
+
+    @staticmethod
+    def _check_and_get_common_params(key, value, expected_type, default_value):
+        if not isinstance(value, expected_type):
+            logger.warning(f"For Profiler, the type of {key} should be {expected_type}, "
+                           f"but got {type(value)}, reset to {default_value}.")
+            return default_value
+
+        return value
 
     def _check_deprecated_params(self, **kwargs) -> None:
         """

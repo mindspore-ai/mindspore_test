@@ -31,6 +31,7 @@ from mindspore.profiler.dynamic_profile.dynamic_profiler_config_context import D
 from mindspore.profiler.dynamic_profile.dynamic_monitor_proxy import MsDynamicMonitorProxySingleton
 from mindspore.profiler.dynamic_profile.dynamic_profiler_utils import DynamicProfilerUtils
 from mindspore.profiler.common.util import no_exception_func
+from mindspore.profiler.profiler_interface import ProfilerInterface
 
 
 def print_msg(msg):
