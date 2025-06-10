@@ -50,7 +50,7 @@ class DetachBackward {
   void HandleDataDependency(const std::vector<size_t> &dw_index, const FuncGraphPtr &fg, size_t num_diff);
   std::vector<size_t> HandleBwdGraphOutputs(
     const std::pair<std::vector<AnfNodePtr>, std::vector<AnfNodePtr>> &out_inputs, bool is_dw_fg,
-    const FuncGraphPtr &fg, const std::vector<AnfNodePtr> &parameters, size_t partial_input_size);
+    const FuncGraphPtr &fg, const std::vector<AnfNodePtr> &parameters, size_t num_diff);
   AnfNodePtr CreateTupleGetItem(const FuncGraphPtr &fg, const AnfNodePtr &node, int64_t index);
   AnfNodePtr CreateMakeTuple(const FuncGraphPtr &fg, const std::vector<AnfNodePtr> &inputs);
   FuncGraphManagerPtr manager_;

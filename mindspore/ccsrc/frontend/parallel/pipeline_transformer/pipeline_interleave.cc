@@ -1141,8 +1141,8 @@ void PipelineInterleave::CutBorder() {
         (IsPrimitiveCNode(node, prim::kPrimMatMul) || (IsPrimitiveCNode(node, prim::kPrimBatchMatMul)))) {
       const auto &cnode = node->cast<CNodePtr>();
       MS_EXCEPTION_IF_NULL(cnode);
-      const auto &the_3rd_input = cnode->input(kIndex3);
-      const auto &trans_b = GetValueNode(the_3rd_input);
+      const auto &the_4th_input = cnode->input(kIndex4);
+      const auto &trans_b = GetValueNode(the_4th_input);
       bool is_trans_b = GetValue<bool>(trans_b);
       cnode->AddPrimalAttr(FORWARD_TRANSPOSE_B, MakeValue(is_trans_b));
     }

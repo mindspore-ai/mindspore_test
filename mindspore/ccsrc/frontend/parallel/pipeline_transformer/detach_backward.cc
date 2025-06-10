@@ -108,6 +108,7 @@ std::vector<size_t> DetachBackward::DetachDxAndDwGraph(const FuncGraphPtr &fg, b
   std::vector<AnfNodePtr> dw_out_inputs;
   std::vector<size_t> dw_index;
   auto fg_params = fg->parameters();
+  auto num_diff = fg_params.size() + kSizeTwo - partial_cnode->inputs().size();
   for (size_t i = 1; i < fg_output->inputs().size(); ++i) {
     auto cur_input = fg_output->input(i);
     if (!IsPrimitiveCNode(cur_input, prim::kPrimDepend)) {
@@ -154,8 +155,8 @@ std::vector<size_t> DetachBackward::DetachDxAndDwGraph(const FuncGraphPtr &fg, b
       manager_->SetEdge(dw_c, input_index, fg_new_param);
     }
   }
-  auto no_used_index = HandleBwdGraphOutputs(std::make_pair(dx_out_inputs, dw_out_inputs), is_dw_fg, fg, fg_params,
-                                             new_partial_inputs->size());
+  auto no_used_index =
+    HandleBwdGraphOutputs(std::make_pair(dx_out_inputs, dw_out_inputs), is_dw_fg, fg, fg_params, num_diff);
   for (size_t i = 2; i < partial_cnode->inputs().size(); ++i) {
     if (std::find(no_used_index.begin(), no_used_index.end(), i) == no_used_index.end()) {
       new_partial_inputs->emplace_back(partial_cnode->input(i));
@@ -183,7 +184,7 @@ AnfNodePtr DetachBackward::CreateTupleGetItem(const FuncGraphPtr &fg, const AnfN
 
 std::vector<size_t> DetachBackward::HandleBwdGraphOutputs(
   const std::pair<std::vector<AnfNodePtr>, std::vector<AnfNodePtr>> &out_inputs, bool is_dw_fg, const FuncGraphPtr &fg,
-  const std::vector<AnfNodePtr> &parameters, size_t partial_input_size) {
+  const std::vector<AnfNodePtr> &parameters, size_t num_diff) {
   auto output = fg->output();
   const auto &dx_out_inputs = out_inputs.first;
   if (!is_dw_fg && !dx_out_inputs.empty()) {
@@ -201,12 +202,10 @@ std::vector<size_t> DetachBackward::HandleBwdGraphOutputs(
   std::vector<AnfNodePtr> parameter_used;
   std::vector<size_t> no_used_index;
   auto node_users_map = manager_->node_users();
-  auto params_size = params.size();
-  auto num_diff = params_size - partial_input_size;
 
   for (size_t i = 0; i < params.size(); ++i) {
     auto cur_param = params.at(i);
-    if (i >= (params_size - num_diff) && !is_dw_fg) {
+    if (i >= (params.size() - num_diff) && !is_dw_fg) {
       parameter_used.emplace_back(cur_param);
       continue;
     }
