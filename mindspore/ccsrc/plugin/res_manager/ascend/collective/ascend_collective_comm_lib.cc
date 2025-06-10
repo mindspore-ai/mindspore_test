@@ -134,11 +134,8 @@ bool AscendCollectiveCommLib::InitializeHccl() {
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   MS_LOG(INFO) << "MINDSPORE_HCCL_CONFIG_PATH : " << full_path << ", RANK_ID: " << rank_id_str;
 
-  auto mode = ms_context->get_param<int>(MS_CTX_EXECUTION_MODE);
   hccl::HcclMode hccl_mode = hccl::HcclMode::kGraph;
-  if (mode == kPynativeMode) {
-    hccl_mode = hccl::HcclMode::kPynative;
-  } else if (ms_context->IsKByKExecutorMode()) {
+  if (ms_context->IsKByKExecutorMode()) {
     hccl_mode = hccl::HcclMode::kKernelByKernel;
   }
 
@@ -246,10 +243,6 @@ bool AscendCollectiveCommLib::CreateDeviceCommunicationGroup(const std::string &
   HCCL_GROUP_CHECK_EMPTY(group_name);
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  if (ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
-    MS_LOG(ERROR) << "Creating custom communication group is not allowed in PyNative mode.";
-    return false;
-  }
   auto rank_size = group_ranks.size();
   HCCL_RUN_CHECK(std::string("create communicate group"), group_name,
                  hccl::HcclAdapter::GetInstance().HcclCreateGroup(group_name, UlongToUint(rank_size),

@@ -18,10 +18,9 @@
 from __future__ import absolute_import
 from __future__ import division
 
-import os
 from mindspore.common import Tensor
 from mindspore import _checkparam as validator
-from mindspore.communication.management import get_rank, get_group_size, GlobalComm, _get_group, _host_distribute
+from mindspore.communication.management import get_rank, get_group_size, GlobalComm, _get_group
 from mindspore.common import dtype as mstype
 from mindspore.ops.primitive import PrimitiveWithInfer, PrimitiveWithCheck, Primitive, prim_attr_register
 from mindspore.common.api import context
@@ -96,17 +95,6 @@ def check_collective_target_dtype(data_name, data_dtype, prim_name):
 
     valid_dtype = gpu_target_dtypes if context.get_context("device_target") == "GPU" else default_target_dtypes
     validator.check_tensor_dtype_valid(data_name, data_dtype, valid_dtype, prim_name)
-
-
-def check_hcom_group_valid(group, prim_name=None):
-    """Check if hcom group is valid."""
-    msg_prefix = f"For '{prim_name}', the" if prim_name else "The"
-    sim_level = os.getenv("MS_SIMULATION_LEVEL")
-    no_sim = (sim_level is None or sim_level.strip() == '')
-    if no_sim and (not _host_distribute()) and context.get_context("mode") == context.PYNATIVE_MODE and \
-            group != GlobalComm.WORLD_COMM_GROUP:
-        raise RuntimeError(f"{msg_prefix} 'group' only support 'hccl_world_group' in pynative mode, but got "
-                           f"'group': {group}. Please start by using mpi-run.")
 
 
 class AllReduce(Primitive):
@@ -187,7 +175,6 @@ class AllReduce(Primitive):
         if not isinstance(self.group, str):
             raise TypeError(f"For '{self.name}', the 'group' must be str, "
                             f"but got {type(self.group).__name__}.")
-        check_hcom_group_valid(self.group, prim_name=self.name)
         self.op = op
         self.add_prim_attr('group', self.group)
         self.add_prim_attr('fusion', 0)
@@ -720,7 +707,6 @@ class Broadcast(PrimitiveWithInfer):
         """Initialize Broadcast."""
         validator.check_value_type('root_rank', root_rank, (int,), self.name)
         validator.check_value_type('group', _get_group(group), (str,), self.name)
-        check_hcom_group_valid(group, prim_name=self.name)
         self.add_prim_attr('group', _get_group(group))
         self.add_prim_attr('no_eliminate', True)
 

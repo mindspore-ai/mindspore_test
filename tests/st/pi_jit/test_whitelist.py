@@ -20,7 +20,6 @@ from mindspore.nn import Cell
 import mindspore.nn as nn
 from tests.st.pi_jit.share.utils import pi_jit_with_config
 from tests.mark_utils import arg_mark
-from mindspore.communication._hccl_management import get_rank_size
 from mindspore.runtime.memory import memory_stats
 from mindspore._c_expression import get_code_extra
 from mindspore._c_expression.np_dtypes import np_version_valid

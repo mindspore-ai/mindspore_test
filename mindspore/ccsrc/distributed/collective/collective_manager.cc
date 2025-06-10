@@ -193,10 +193,6 @@ bool CollectiveManager::Initialize() {
     return InitializeDummyCommLib();
   }
 
-  if (MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode && !need_host_collective_) {
-    MS_LOG(EXCEPTION) << "Ranktable startup method doesn't support pynative mode. Please switch to msrun method.";
-  }
-
   // Initialize real collective libs.
   if (!need_host_collective_) {
     RETURN_IF_FALSE_WITH_LOG(InitDeviceCommLib(), "Failed to initialize device communication library.");
@@ -954,8 +950,7 @@ bool CollectiveManager::CreateDeviceCommunicator(const std::string &group_name, 
 
   MS_EXCEPTION_IF_NULL(device_comm_lib_instance_);
   CommunicationGroupPtr group = device_comm_lib_instance_->GetGroup(group_name);
-  if (group_name.compare(kIndex0, kSizeFour, kPlatFormMccl) == 0 &&
-      MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
+  if (group_name.compare(kIndex0, kSizeFour, kPlatFormMccl) == 0) {
     group = host_comm_lib_instance_->GetGroup(group_name);
     MS_LOG(INFO) << "Begin to Create mccl group " << group_name;
   }

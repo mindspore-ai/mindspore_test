@@ -413,10 +413,6 @@ class Parameter(Tensor_):
                                "1. context.set_ps_context(enable_ps=True) \n"
                                "2. export MS_ROLE environment variable \n"
                                "Please refer to the official website for detailed usage.")
-
-        if context.get_context("mode") == context.PYNATIVE_MODE:
-            raise RuntimeError("Parameter server training is not supported in pynative mode currently."
-                               "Please switch to graph mode and retry.")
         self.is_param_ps = True
         self.init_in_server = init_in_server
         self.param_info.init_in_server = init_in_server
