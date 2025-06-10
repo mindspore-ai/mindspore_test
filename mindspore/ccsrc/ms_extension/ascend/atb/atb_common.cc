@@ -67,4 +67,13 @@ void AtbOpRunner::LaunchKernel() {
   auto st = op_->Execute(variant_pack_, static_cast<uint8_t *>(workspace_ptr()), workspace_size_, context_);
   CHECK_ATB_RET(op_name(), st, Execute);
 }
+
+void AtbOpRunner::_Run() {
+  for (auto &inp : _inputs_) {
+    if (inp.is_defined() && !inp.is_contiguous()) {
+      inp = inp.contiguous();
+    }
+  }
+  PyboostRunner::_Run();
+}
 }  // namespace ms::pynative

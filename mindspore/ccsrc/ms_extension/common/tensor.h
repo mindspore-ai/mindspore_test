@@ -125,6 +125,121 @@ class EXTENSION_API Tensor {
    */
   void *GetDataPtr() const;
 
+  /* ====== Operators based on Tensor BEGIN ====== */
+ public:
+  /// \brief Casts the tensor to the specified data type.
+  ///
+  /// Converts the current tensor to the specified type `dtype` and returns the result.
+  ///
+  /// \note
+  /// Ensure the specified data type is compatible with the tensor's current data.
+  /// Casting may result in loss of precision if converting to a lower precision type.
+  ///
+  /// \param[in] dtype The target data type to cast the tensor to.
+  ///     Supported types include float, int, etc.
+  ///
+  /// \return A new tensor with the specified data type.
+  Tensor cast(TypeId dtype) const;
+
+  /// \brief Splits the tensor into smaller chunks along a specified dimension.
+  ///
+  /// Divides the tensor into `chunks` number of smaller tensors along the specified dimension `dim`.
+  /// Each chunk will have an approximately equal size, except for the last chunk which may be smaller if the dimension
+  /// size is not divisible by `chunks`.
+  ///
+  /// \param[in] chunks The number of chunks to split the tensor into. Must be positive.
+  /// \param[in] dim The dimension along which the tensor is split. Defaults to 0.
+  ///
+  /// \return A vector of tensors containing the chunks.
+  std::vector<Tensor> chunk(int64_t chunks, int64_t dim = 0) const;
+
+  /// \brief Returns a contiguous tensor in memory order.
+  ///
+  /// Creates a contiguous version of the current tensor, ensuring that its data is stored in contiguous memory.
+  ///
+  /// \return A contiguous tensor.
+  Tensor contiguous() const;
+
+  /// \brief Flattens the tensor into a single dimension or over a range of dimensions.
+  ///
+  /// Flattens the dimensions of the tensor starting from `start_dim` to `end_dim` into a single dimension.
+  /// By default, it flattens the entire tensor.
+  ///
+  /// \param[in] start_dim The first dimension to flatten. Defaults to 0.
+  /// \param[in] end_dim The last dimension to flatten. Defaults to -1 (last dimension).
+  ///
+  /// \return A flattened tensor.
+  Tensor flatten(int64_t start_dim = 0, int64_t end_dim = -1) const;
+
+  /// \brief Selects elements along a specified dimension using indices.
+  ///
+  /// Gathers elements from the tensor along dimension `dim` based on the indices specified by `index`.
+  ///
+  /// \note
+  /// The `index` tensor must have values within the range `[0, shape(dim)-1]`.
+  ///
+  /// \param[in] dim The dimension along which to select elements.
+  /// \param[in] index A tensor containing the indices of elements to select.
+  ///
+  /// \return A new tensor containing the selected elements.
+  Tensor index_select(int64_t dim, const Tensor &index) const;
+
+  /// \brief Reshapes the tensor to the specified shape.
+  ///
+  /// Returns a tensor with the same data but with a new shape defined by `shape`.
+  ///
+  /// \note
+  /// The total number of elements in the new shape must match the original tensor's size.
+  /// Use `-1` in `shape` to infer one dimension automatically.
+  ///
+  /// \param[in] shape A vector specifying the new shape. One dimension can be set to `-1` for automatic inference.
+  ///
+  /// \return A reshaped tensor.
+  Tensor reshape(const std::vector<int64_t> &shape) const;
+
+  /// \brief Repeats the tensor along specified dimensions.
+  ///
+  /// Creates a new tensor by repeating the current tensor along each dimension as specified in `repeats`.
+  ///
+  /// \note
+  /// The size of `repeats` must match the number of dimensions of the tensor.
+  ///
+  /// \param[in] repeats A vector specifying the number of repetitions for each dimension.
+  ///
+  /// \return A new tensor with repeated elements.
+  Tensor repeat(const std::vector<int64_t> &repeats) const;
+
+  /// \brief Repeats elements of the tensor along a specified dimension.
+  ///
+  /// Repeats each element of the tensor the number of times specified by `repeats`.
+  /// If `repeats` is a tensor, it specifies the number of repetitions for each element in the dimension.
+  /// If `repeats` is a scalar, all elements are repeated the same number of times.
+  ///
+  /// \note
+  /// The size of the `repeats` tensor must match the size of the tensor along `dim` if specified.
+  ///
+  /// \param[in] repeats A tensor or scalar specifying the number of repetitions for each element.
+  /// \param[in] dim The dimension along which to repeat elements. Defaults to `std::nullopt`.
+  /// \param[in] output_size (Optional) The size of the output tensor along `dim`.
+  ///
+  /// \return A new tensor with repeated elements.
+  Tensor repeat_interleave(const Tensor &repeats, std::optional<int64_t> dim = std::nullopt,
+                           std::optional<int64_t> output_size = std::nullopt) const;
+
+  /// \brief Repeats elements of the tensor a fixed number of times along a specified dimension.
+  ///
+  /// Similar to the overloaded version, but `repeats` is a scalar that specifies the number of repetitions for all
+  /// elements along the dimension `dim`.
+  ///
+  /// \param[in] repeats A scalar specifying the number of repetitions for each element.
+  /// \param[in] dim The dimension along which to repeat elements. Defaults to `std::nullopt`.
+  /// \param[in] output_size (Optional) The size of the output tensor along `dim`.
+  ///
+  /// \return A new tensor with repeated elements.
+  Tensor repeat_interleave(int64_t repeats, std::optional<int64_t> dim = std::nullopt,
+                           std::optional<int64_t> output_size = std::nullopt) const;
+
+  /* ====== Operators based on Tensor END ====== */
  public:
   /**
    * @brief Constructs a Tensor object from a given ValuePtr.

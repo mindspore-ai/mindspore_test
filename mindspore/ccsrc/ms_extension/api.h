@@ -20,6 +20,7 @@
 
 #include "mindspore/ccsrc/pynative/grad/function.h"
 #include "ms_extension/common/tensor.h"
+#include "ms_extension/common/tensor_utils.h"
 #include "ms_extension/pynative/pyboost_extension.h"
 
 // ascend files
