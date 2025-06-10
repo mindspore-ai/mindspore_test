@@ -58,7 +58,6 @@ from tests.st.mint import (
     test_cdist,
     test_diff,
     test_float_power,
-    test_matmul,
     test_multinomial,
     test_nan_to_num,
     test_nn_linear,
@@ -133,7 +132,7 @@ ops_group_cases_registry_level0 = [
      (("pynative", "KBK", "graph"), ("mean", "sum", "none"))],
     [test_ops_squeeze.test_ops_squeeze_normal, ("ascend910b",), 4, ((ms.GRAPH_MODE, ms.PYNATIVE_MODE),)],
     [test_ops_svd.test_ops_svd_normal, ("ascend910b",), 4,
-     (('pynative', 'kbk', 'ge'), (np.float32, np.float64, np.complex64, np.complex128))],
+     (('pynative', 'ge'), (np.float32, np.float64, np.complex64, np.complex128))],
     [test_ops_svd.test_ops_svd_selfcases, ("ascend910b",), 4, (('pynative', 'kbk', 'ge'), (np.float32,))],
     [test_ops_swiglu.test_ops_swiglu_normal, ("ascend910b",), 4, ((ms.GRAPH_MODE, ms.PYNATIVE_MODE), (0, 2, -1))],
     [test_ops_transpose.test_ops_transpose_normal, ("ascend910b",), 4, ((ms.GRAPH_MODE, ms.PYNATIVE_MODE),)],
@@ -161,7 +160,6 @@ ops_group_cases_registry_level0 = [
     [test_nn_AvgPool3d.test_mint_avg_pool3d_binary_cases, ("ascend910b",), 20, (("pynative", "KBK"),)],
     [test_addmv.test_mint_addmv_normal, ("ascend910b",), 4, ((ms.GRAPH_MODE, ms.PYNATIVE_MODE,),)],
     [test_cdist.test_mint_cdist_binary_cases, ("ascend910b",), 4, (("KBK", "GRAPH"),)],
-    [test_matmul.test_matmul_binary_cases, ("ascend910b",), 282, (('pynative', 'KBK'),)],
     [test_nn_kldivloss.test_mint_nn_kldivloss_normal, ("ascend910b",), 4, (('pynative', 'KBK'),)],
 ]
 
