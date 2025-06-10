@@ -659,8 +659,9 @@ void OutputActor::HandleOutput() {
     auto device_context = device_contexts_[i];
     MS_EXCEPTION_IF_NULL(device_context);
     MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
+    bool need_release_mem = true;
     // If the output node whose output address ptr can't be changed, then alloc the new device memory and copy the data:
-    if (IsOutputAddressPersisted(device_tensor.get(), output_nodes_[i])) {
+    if (IsOutputAddressPersisted(device_tensor.get(), output_nodes_[i], &need_release_mem)) {
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, GetAID().Name(), memory::mem_pool::MemType::kOther,
                                                      tensor_device_address->GetSize(), tensor_device_address.get());
       if (!device_context->device_res_manager_->AllocateMemory(tensor_device_address.get(), kDefaultStreamIndex)) {
@@ -694,9 +695,14 @@ void OutputActor::HandleOutput() {
     const auto &real_device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
       {device_tensor->device_name(), device_tensor->device_id()});
     MS_EXCEPTION_IF_NULL(real_device_context);
-    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-      << "Free device address:" << device_tensor << " for actor:" << GetAID();
-    MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(device_tensor.get(), real_device_context, GetAID().Name());
+    // If enable kernel launch capture, the kernel output as graph output will be captured and can not release device
+    // memory.
+    if (need_release_mem) {
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+        << "Free device address:" << device_tensor << " for actor:" << GetAID();
+      MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(device_tensor.get(), real_device_context,
+                                                              GetAID().Name());
+    }
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
       MarkTensorAsOutput, GetAID().Name(), device_tensor->device_name(), device_tensor->GetPtr(),
       device_tensor->type_id(), device_tensor->GetShapeVector(), device_tensor->GetTensorStorageInfo());
