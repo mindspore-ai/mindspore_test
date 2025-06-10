@@ -224,11 +224,11 @@ void MultiConvSplit::AdJustInputs(const AnfNodePtr &ori_conv_node, const std::ve
 
 bool MultiConvSplit::CreateNewConvNode(const AnfNodePtr &ori_conv_node, const std::vector<AnfNodePtr> &conv_inputs,
                                        int output_conv_index, std::vector<AnfNodePtr> *outputs_node) {
-  MS_ASSERT(ori_conv_node != nullptr && outputs_node != nullptr);
+  MS_CHECK_TRUE_RET(ori_conv_node != nullptr && outputs_node != nullptr, false);
   std::string ori_cnode_name = ori_conv_node->fullname_with_scope();
   // new conv_node
   auto conv_cnode = func_graph_->NewCNode(conv_inputs);
-  MS_ASSERT(conv_cnode != nullptr);
+  MS_CHECK_TRUE_RET(conv_cnode != nullptr, false);
   conv_cnode->set_fullname_with_scope(ori_cnode_name + "_" + PARALLEL_NAME_SUFFIX +
                                       std::to_string(output_conv_index + 1));
   conv_cnode->AddAttr(mindspore::ops::kDeviceType,

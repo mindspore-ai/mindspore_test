@@ -31,9 +31,6 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore::opt {
-namespace {
-constexpr size_t kInputNumber = 2;
-}
 
 bool InputAndOutputVariablePass::Run(const FuncGraphPtr &graph) {
   MS_LOG(INFO) << "Start to run input and output variable pass";
@@ -95,6 +92,7 @@ bool InputAndOutputVariablePass::Run(const FuncGraphPtr &graph) {
     return false;
   }
   auto old_output_node = output->cast<CNodePtr>();
+  MS_CHECK_TRUE_RET(old_output_node->size() >= kInputSizeTwo, false);
   auto make_tuple = old_output_node->input(1);
   if (make_tuple == nullptr) {
     MS_LOG(ERROR) << "make tuple input1 is nullptr";
@@ -105,6 +103,7 @@ bool InputAndOutputVariablePass::Run(const FuncGraphPtr &graph) {
     return false;
   }
   auto make_tuple_node = make_tuple->cast<CNodePtr>();
+  MS_CHECK_TRUE_RET(make_tuple_node->size() >= kInputSizeTwo, false);
   auto output_1 = make_tuple_node->input(1);
 
   AnfNodePtrList new_make_tuple_inputs = {NewValueNode(prim::kPrimMakeTuple)};

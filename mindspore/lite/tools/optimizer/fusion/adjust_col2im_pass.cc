@@ -49,6 +49,7 @@ STATUS AddConstInputToAttr(const CNodePtr &cnode, const size_t input_index, cons
     value = value_node->value();
   } else if (input_node->isa<Parameter>()) {
     auto parameter_node = input_node->cast<ParameterPtr>();
+    CHECK_NULL_RETURN(parameter_node->abstract());
     value = parameter_node->abstract()->BuildValue();
   }
   if (value == nullptr) {
