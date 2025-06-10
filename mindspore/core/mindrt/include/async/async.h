@@ -147,7 +147,7 @@ void Async(const AID &aid, const std::shared_ptr<ActorMgr> &mgr, void (T::*metho
     MINDRT_ASSERT(t != nullptr);
     Apply(t, method, tuple);
   };
-  auto msg = std::unique_ptr<MessageBase>(new (std::nothrow) MessageAsync(std::move(handler)));
+  auto msg = std::make_unique<MessageAsync>(std::move(handler));
   MINDRT_OOM_EXIT(msg);
   (void)mgr->Send(aid, std::move(msg));
 }
@@ -172,7 +172,7 @@ Future<R> Async(const AID &aid, Future<R> (T::*method)()) {
     promise->Associate((t->*method)());
   };
 
-  auto msg = std::unique_ptr<MessageBase>(new (std::nothrow) MessageAsync(std::move(handler)));
+  auto msg = std::make_unique<MessageAsync>(std::move(handler));
   MINDRT_OOM_EXIT(msg);
   (void)ActorMgr::GetActorMgrRef()->Send(aid, std::move(msg));
   return future;

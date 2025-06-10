@@ -1394,6 +1394,7 @@
       "mindspore/core/mindrt/CMakeLists.txt",
       "mindspore/lite/CMakeLists.txt",
       "include/api",
+      "include/c_api",
       "mindspore/ccsrc/CMakeLists.txt",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/backend/common/optimizer",

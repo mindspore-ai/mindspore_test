@@ -163,15 +163,8 @@ VectorRef DecoderLayerFusion::DefineLayerNorm(VectorRef input, VarPtr gamma, Var
   return mul;
 }
 
-VectorRef DecoderLayerFusion::DefinePatternDecoderLayer(bool post_layernorm = true, bool layernorm_fusion = false,
-                                                        bool is_position_bias = false, bool mask = true,
-                                                        bool is_layer_norm = false) const {
-  auto is_reshape1 = std::make_shared<CondVar>(std::bind(IsOpType, p1, prim::kPrimReshape), "reshape-decoder");
-  MS_CHECK_TRUE_RET(is_reshape1 != nullptr, {});
-  auto var1 = std::make_shared<Var>("var1-reshape");
-  MS_CHECK_TRUE_RET(var1 != nullptr, {});
-  auto reshape1 = VectorRef({is_reshape1, hidden_stats_, var1});
-  VectorRef inputs, input_cross, tuple2, tuple3, matmul2, tuple4, tuple5;
+VectorRef DecoderLayerFusion::InitInputs(bool post_layernorm, bool layernorm_fusion, bool is_position_bias) const {
+  VectorRef inputs;
   if (is_position_bias) {
     inputs = VectorRef({is_attention_, getTuple(post_layernorm, layernorm_fusion, is_position_bias),
                         getTuple(post_layernorm, layernorm_fusion, is_position_bias),
@@ -183,6 +176,19 @@ VectorRef DecoderLayerFusion::DefinePatternDecoderLayer(bool post_layernorm = tr
                         getTuple(post_layernorm, layernorm_fusion, is_position_bias), weight_attn_qkv_, weight_attn_o_,
                         bias_attn_qkv_, bias_attn_o_});
   }
+  return inputs;
+}
+
+VectorRef DecoderLayerFusion::DefinePatternDecoderLayer(bool post_layernorm = true, bool layernorm_fusion = false,
+                                                        bool is_position_bias = false, bool mask = true,
+                                                        bool is_layer_norm = false) const {
+  auto is_reshape1 = std::make_shared<CondVar>(std::bind(IsOpType, p1, prim::kPrimReshape), "reshape-decoder");
+  MS_CHECK_TRUE_RET(is_reshape1 != nullptr, {});
+  auto var1 = std::make_shared<Var>("var1-reshape");
+  MS_CHECK_TRUE_RET(var1 != nullptr, {});
+  auto reshape1 = VectorRef({is_reshape1, hidden_stats_, var1});
+  VectorRef inputs, input_cross, tuple2, tuple3, matmul2, tuple4, tuple5;
+  inputs = InitInputs(post_layernorm, layernorm_fusion, is_position_bias);
   if (mask) inputs.push_back(mask_);
   auto attention = VectorRef(inputs);
   if (is_position_bias) {
