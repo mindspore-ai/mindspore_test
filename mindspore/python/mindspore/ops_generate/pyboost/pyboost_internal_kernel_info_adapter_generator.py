@@ -29,8 +29,6 @@ import common.gen_constants as K
 from common.gen_utils import save_file
 from common.base_generator import BaseGenerator
 
-from .pyboost_internal_functions_h_generator import PyboostInternalFunctionsHeaderGenerator
-
 from .op_template_parser import OpTemplateParser
 
 KERNEL_INFO_ADAPTER_REGISTER = \
@@ -54,7 +52,6 @@ class PyboostKernelInfoAdapterGenerator(BaseGenerator):
         self.kernel_info_adapter_register_template = Template(KERNEL_INFO_ADAPTER_REGISTER)
         self.merged_op_headers_template = Template(
             "#include \"plugin/device/ascend/kernel/internal/pyboost/${operator_name}.h\"\n")
-        self.header_generator = PyboostInternalFunctionsHeaderGenerator()
 
     def generate(self, work_path, op_protos):
         """
@@ -80,7 +77,7 @@ class PyboostKernelInfoAdapterGenerator(BaseGenerator):
                 continue
             op_parser = OpTemplateParser(op_proto)
             call_args_after_convert, _, _ = op_parser.op_args_converter()
-            call_args_with_type = self.header_generator.get_call_args_with_type(op_proto)
+            call_args_with_type = op_parser.parse_call_args_with_types(is_convert=True)
             kernel_info_adapter_list.append(
                 self.kernel_info_adapter_template.replace(
                     op_name=op_proto.op_class.name,
