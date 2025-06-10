@@ -2460,7 +2460,9 @@ FuncGraphPtr AccumulateDout::BuildAddOutputFG(const std::string &name, const Abs
     return fg;
   }
   auto dout_seq_abs = dyn_cast<AbstractSequence>(dout_tuple_abs);
+  MS_EXCEPTION_IF_NULL(dout_seq_abs);
   auto factor_seq_abs = dyn_cast<AbstractSequence>(factor_tuple_abs);
+  MS_EXCEPTION_IF_NULL(factor_seq_abs);
   if (dout_seq_abs->elements().size() != factor_seq_abs->elements().size()) {
     fg->set_output(cal_res);
     return fg;
