@@ -1,0 +1,32 @@
+#operator apply_rotary_pos_emb_ext
+apply_rotary_pos_emb_ext:
+    args:
+        query:
+            dtype: tensor
+        key:
+            dtype: tensor
+        cos:
+            dtype: tensor
+        sin:
+            dtype: tensor
+        layout:
+            dtype: int
+            default: 1
+    args_signature:
+        rw_write: query, key
+    labels:
+        side_effect_mem: True
+    returns:
+        query_embed:
+            dtype: tensor
+            inplace: query
+        key_embed:
+            dtype: tensor
+            inplace: key
+    class:
+        name: ApplyRotaryPosEmbExt
+    function:
+        name: apply_rotary_pos_emb
+    dispatch:
+        enable: True
+        Ascend: ApplyRotaryPosEmbExtAscend
