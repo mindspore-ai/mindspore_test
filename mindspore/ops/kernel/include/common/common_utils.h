@@ -132,6 +132,15 @@ inline std::string Map2Str(const M<std::string, T> value) {
   return ss.str();
 }
 
+inline ShapeVector GetRealDims(const ShapeVector &input_shape) {
+  ShapeVector dim_vector{};
+  auto rank = SizeToLong(input_shape.size());
+  for (int64_t i = 0; i < rank; i++) {
+    dim_vector.emplace_back(i);
+  }
+  return dim_vector;
+}
+
 struct DataType {
   explicit DataType(const TypeId &dtype, const string &format = kOpFormat_DEFAULT,
                     const TypeId &object_type = kObjectTypeTensorType, bool is_optional = false)

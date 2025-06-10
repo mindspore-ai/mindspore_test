@@ -5550,22 +5550,6 @@ REG_BPROP_BUILDER("Std").SetBody(BODYFUNC(ib) {
   return {grad, ib->OutZeros(axis), ib->OutZeros(correction), ib->OutZeros(keep_dims)};
 });
 
-REG_BPROP_BUILDER("Std").SetBody(BODYFUNC(ib) {
-  auto input = ib->GetInput(i0);
-  auto axis = ib->GetInput(i1);
-  auto correction = ib->GetInput(i2);
-  auto keep_dims = ib->GetInput(i3);
-  auto out = ib->GetInput(i4);
-  auto dout = ib->GetInput(i5);
-
-  auto grad_var = ib->Emit("Div", {dout, ib->Emit("Muls", {out, ib->Value<float>(2.0)})});
-  auto equal_zero = ib->Equal(out, ib->Tensor(0, ib->GetDtype(out)));
-  grad_var = ib->MaskedFill(grad_var, equal_zero, ib->Tensor(0.0, ib->GetDtype(grad_var)));
-
-  auto grad = VarGrad(ib, input, axis, grad_var, correction, keep_dims);
-  return {grad, ib->OutZeros(axis), ib->OutZeros(correction), ib->OutZeros(keep_dims)};
-});
-
 REG_BPROP_BUILDER("SumExt").SetUnusedInputs({i0, i4}).SetBody(BODYFUNC(ib) {
   auto input = ib->GetInput(i0);
   auto axis = ib->GetInput(i1);
