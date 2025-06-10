@@ -369,7 +369,15 @@ class SummaryRecord:
         global SUMMARY_TENSOR_CACHE
         for tag in tags:
             item_name = name + tag
+            time_out = 10
+            start = time.time()
             while item_name not in SUMMARY_TENSOR_CACHE:
+                if time.time() - start > time_out:
+                    logger.warning(
+                        f"For '{self.__class__.__name__}', {tag} summary op sync tag"
+                        f"was not received within {time_out} seconds. The data may be incomplete."
+                    )
+                    break
                 time.sleep(0.004)
 
         with _summary_lock:
