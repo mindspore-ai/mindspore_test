@@ -94,6 +94,7 @@ const char FUNC_GRAPH_FLAG_CORE[] = "core";
 const char FUNC_GRAPH_FLAG_K_GRAPH[] = "k_graph";
 const char FUNC_GRAPH_ATTR_GRAPH_KERNEL[] = "graph_kernel";
 const char FUNC_GRAPH_ATTR_KERNEL_PACKET[] = "kernel_packet_node";
+const char FUNC_GRAPH_ATTR_UNSUPPORT_HIGHER_GRAD_REASON[] = "unsupport_higher_order_grad_reason";
 const char FUNC_GRAPH_FLAG_SPECIALIZE_PARAMETER[] = "spec_param";
 const char FUNC_GRAPH_OUTPUT_NO_RECOMPUTE[] = "output_no_recompute";
 const char FUNC_GRAPH_RECOMPUTE_K_GRAPH[] = "recompute_k_graph";
