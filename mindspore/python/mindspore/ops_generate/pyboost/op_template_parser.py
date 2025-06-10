@@ -87,6 +87,7 @@ class OpTemplateParser:
 
         Args:
             op_args (list): A list of operator arguments.
+            is_convert (bool): A flag to control whether to convert the types.
 
         Returns:
             list: A list of data types for the call arguments.
@@ -109,8 +110,15 @@ class OpTemplateParser:
         return call_args_types
 
     def parse_call_args_with_types(self, basic_type=False, is_convert=False):
+                    op_arg.arg_dtype, is_optional))
+        return call_args_types
+
+    def parse_call_args_with_types(self, is_convert=False):
         """
         Parses the original call arguments and their types for the operator.
+
+        Args:
+            is_convert (bool): A flag to control whether to convert the types.
 
         Returns:
             list: A list of formatted strings representing the call arguments with their types.
