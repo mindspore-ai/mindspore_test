@@ -199,9 +199,11 @@ template <typename F, typename... Args>
 void DvmCall(const std::string &op_name, OpRunner *op, const F &func, const Args &... inputs) {
   size_t stream = op->stream_id();
   const DeviceContext *context = op->device_context();
+  PyBoostUtils::PrepareOpInputs(context, stream, inputs...);
+  // Prevent the indirect invocation of FlushLazyFusion() within the PrepareOpInputs() function
+  // from releasing the current LazyFusionAscend pointer.
   auto k = g_lazy_fusion_manager.Get(context, stream);
   CALL_START(op_name, k);
-  PyBoostUtils::PrepareOpInputs(context, stream, inputs...);
   auto tensor = func(k);
   tensor->set_need_pipeline_sync(true);
   auto &outputs = const_cast<std::vector<tensor::TensorPtr> &>(op->outputs());
@@ -233,12 +235,13 @@ void BinaryDvmCall(const std::string &op_name, OpRunner *op, dvm::BinaryOpType o
                    const TensorPtr &other_tensor, const TypeId dst_type) {
   size_t stream = op->stream_id();
   const DeviceContext *context = op->device_context();
-  auto k = g_lazy_fusion_manager.Get(context, stream);
-  CALL_START(op_name, k);
+  LazyFusionKernelAscend *k;
   auto type_id = input_tensor->data_type();
   dvm::NDObject *obj = nullptr;
   if (IsScalar(input_tensor)) {
     PyBoostUtils::PrepareOpInputs(context, stream, other_tensor);
+    k = g_lazy_fusion_manager.Get(context, stream);
+    CALL_START(op_name, k);
     if (type_id == kNumberTypeInt32) {
       auto scalar_value = TensorToScalar<int32_t>(input_tensor);
       MS_LOG(INFO) << op_name << " input_tensor is scalar, value: " << scalar_value << ", kernel id is " << k->id()
@@ -252,6 +255,8 @@ void BinaryDvmCall(const std::string &op_name, OpRunner *op, dvm::BinaryOpType o
     }
   } else if (IsScalar(other_tensor)) {
     PyBoostUtils::PrepareOpInputs(context, stream, input_tensor);
+    k = g_lazy_fusion_manager.Get(context, stream);
+    CALL_START(op_name, k);
     if (type_id == kNumberTypeInt32) {
       auto scalar_value = TensorToScalar<int32_t>(other_tensor);
       MS_LOG(INFO) << op_name << " other_tensor is scalar, value: " << scalar_value << ", kernel id is " << k->id()
@@ -265,6 +270,8 @@ void BinaryDvmCall(const std::string &op_name, OpRunner *op, dvm::BinaryOpType o
     }
   } else {
     PyBoostUtils::PrepareOpInputs(context, stream, input_tensor, other_tensor);
+    k = g_lazy_fusion_manager.Get(context, stream);
+    CALL_START(op_name, k);
     obj = k->Binary(op_type, k->Input(input_tensor), k->Input(other_tensor));
   }
   auto tensor = k->Output(obj, dst_type, k->GetShape(obj));
@@ -1116,8 +1123,6 @@ std::tuple<tensor::TensorPtr, tensor::TensorPtr, tensor::TensorPtr> AdamWAscendD
     return AdamWAscend::Call(var_tensor, m_tensor, v_tensor, max_v_tensor, gradient_tensor, step_tensor, lr, beta1,
                              beta2, decay, eps, amsgrad, maximize);
   }
-  auto k = g_lazy_fusion_manager.Get(device_context_, stream_id_);
-  CALL_START(op_name_, k);
   if (amsgrad_imm) {
     PyBoostUtils::PrepareOpInputs(device_context_, stream_id_, var_tensor, m_tensor, v_tensor, max_v_tensor,
                                   gradient_tensor, step_tensor);
@@ -1125,6 +1130,8 @@ std::tuple<tensor::TensorPtr, tensor::TensorPtr, tensor::TensorPtr> AdamWAscendD
     PyBoostUtils::PrepareOpInputs(device_context_, stream_id_, var_tensor, m_tensor, v_tensor, gradient_tensor,
                                   step_tensor);
   }
+  auto k = g_lazy_fusion_manager.Get(device_context_, stream_id_);
+  CALL_START(op_name_, k);
   auto var_obj = k->Input(var_tensor);
   auto m_obj = k->Input(m_tensor);
   auto v_obj = k->Input(v_tensor);
@@ -1184,9 +1191,9 @@ tensor::TensorPtr InplaceCopyAscendDvm::Call(const TensorPtr &variable_tensor, c
     CreateOutputSimpleInfo();
     return outputs_[0];
   }
+  PyBoostUtils::PrepareOpInputs(device_context_, stream_id_, variable_tensor, value_tensor);
   auto k = g_lazy_fusion_manager.Get(device_context_, stream_id_);
   CALL_START(op_name_, k);
-  PyBoostUtils::PrepareOpInputs(device_context_, stream_id_, variable_tensor, value_tensor);
   // copy value_tensor to variable_tensor
   auto value_obj = k->Input(value_tensor, false);
   if (value_tensor->data_type() != variable_tensor->data_type()) {
@@ -1415,9 +1422,9 @@ std::tuple<TensorPtr, TensorPtr> BatchNormStatsAscendDvm::Call(const TensorPtr &
     return BatchNormStatsAscend::Call(input_tensor, eps);
   }
   auto x = ToContiguous(input_tensor, device_context_->device_context_key_.device_name_, stream_id_);
+  PyBoostUtils::PrepareOpInputs(device_context_, stream_id_, x);
   auto k = g_lazy_fusion_manager.Get(device_context_, stream_id_);
   CALL_START(op_name_, k);
-  PyBoostUtils::PrepareOpInputs(device_context_, stream_id_, x);
   ShapeVector axis;
   axis.reserve(x->shape().size());
   for (int64_t i = 0; i < static_cast<int64_t>(x->shape().size()); ++i) {
@@ -1474,11 +1481,10 @@ std::tuple<TensorPtr, TensorPtr> BatchNormGatherStatsWithCountsAscendDvm::Call(
   auto momentum_imm = GetValue<float>(momentum);
   auto momentum_imm_reverse = 1.0f - momentum_imm;
   auto eps_imm = GetValue<float>(eps);
-  auto k = g_lazy_fusion_manager.Get(device_context_, stream_id_);
-  CALL_START(op_name_, k);
   PyBoostUtils::PrepareOpInputs(device_context_, stream_id_, x, sum_all, square_sum_all, running_mean_tensor,
                                 running_var_tensor, counts_tensor);
-
+  auto k = g_lazy_fusion_manager.Get(device_context_, stream_id_);
+  CALL_START(op_name_, k);
   ShapeVector counts_axis;
   counts_axis.reserve(counts_tensor->shape().size());
   for (int64_t i = 0; i < static_cast<int64_t>(counts_tensor->shape().size()); ++i) {
