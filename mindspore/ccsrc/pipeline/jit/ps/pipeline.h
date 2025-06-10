@@ -31,6 +31,7 @@
 #include "base/base.h"
 #include "pipeline/jit/ps/action.h"
 #include "include/common/visible.h"
+#include "utils/ms_exception.h"
 
 namespace mindspore {
 // namespace to support pipeline structures definition
@@ -63,7 +64,11 @@ class JitCompilingScope {
 
 class GraphCompilingScope {
  public:
-  GraphCompilingScope() { MsContext::GetInstance()->set_jit_status(kGraphCompiling); }
+  GraphCompilingScope() {
+    MsContext::GetInstance()->set_jit_status(kGraphCompiling);
+    MsContext::GetInstance()->set_graph_pipeline_compiled(true);
+    UCEException::GetInstance().SetGraphPipelineCompiled(true);
+  }
   ~GraphCompilingScope() { MsContext::GetInstance()->set_jit_status(kNotJit); }
 };
 
