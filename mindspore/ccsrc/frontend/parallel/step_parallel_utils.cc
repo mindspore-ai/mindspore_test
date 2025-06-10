@@ -819,6 +819,7 @@ ShapeBasePtr ExtractNewShapeFromShape(const abstract::BaseShapePtr &shape) {
 
 void UseAbstractForValueNode(const AnfNodePtr &node, BaseShapePtr *base_shape_ptr) {
   auto value_node = node->cast<ValueNodePtr>();
+  MS_EXCEPTION_IF_NULL(value_node);
   MS_EXCEPTION_IF_CHECK_FAIL(value_node->value() != nullptr, "ValueNode has no value.");
   auto abstract = value_node->value()->ToAbstract();
   MS_EXCEPTION_IF_CHECK_FAIL(abstract != nullptr, "ValueNode has no Abstract.");
@@ -872,6 +873,7 @@ NewShapes GetNodeNewShape(const AnfNodePtr &node) {
   // If node is Depend, only first input should be used.
   if (node->isa<CNode>() && IsPrimitiveCNode(node->cast<CNodePtr>(), prim::kPrimDepend)) {
     auto depend_cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(depend_cnode);
     MS_EXCEPTION_IF_NULL(depend_cnode->input(1));
     return GetNodeNewShape(depend_cnode->input(1));
   }
@@ -1535,7 +1537,6 @@ std::pair<std::vector<NewShapes>, std::vector<Symbols>> ExtractNewShapeAndSymbol
         MS_LOG(INFO) << "may be dynamic shape, no need to get input's shape, the node is " << node->ToString();
         continue;
       }
-
       auto anode = IsPrimitiveCNode(input, prim::kPrimShape) ? input->cast<CNodePtr>()->input(1) : input;
       const auto &local_new_shapes = GetNodeNewShape(anode);
       input_symbols = GetNodeSymbol(anode);
@@ -2616,6 +2617,7 @@ bool CheckStrategyWithTupleInTuple(const std::vector<ValuePtr> &elements) {
   for (size_t i = 0; i < elements.size(); ++i) {
     if (elements[i]->isa<ValueSequence>()) {
       auto value_tuple = elements[i]->cast<ValueTuplePtr>();
+      MS_EXCEPTION_IF_NULL(value_tuple);
       std::vector<ValuePtr> value_vector = value_tuple->value();
       auto local_tuple_in_tuple = std::any_of(value_vector.begin(), value_vector.end(),
                                               [](const ValuePtr &value) { return value->isa<ValueSequence>(); });
@@ -2630,6 +2632,7 @@ bool CheckStrategyWithTupleInTuple(const std::vector<ValuePtr> &elements) {
 
 NewDimensions ExtractDimensions(const ValuePtr &stra) {
   auto value_tuple = stra->cast<ValueTuplePtr>();
+  MS_EXCEPTION_IF_NULL(value_tuple);
   std::vector<ValuePtr> value_vector = value_tuple->value();
   bool has_tuple_in_tuple = std::any_of(value_vector.begin(), value_vector.end(),
                                         [](const ValuePtr &value) { return value->isa<ValueSequence>(); });
@@ -2923,6 +2926,7 @@ bool CheckNoShape(const ShapeBasePtr &shape) {
 
 Status ConvertValueTupleToTensorLayoutVector(const ValueTuplePtr &in_layout_value, const NewShapes &inputs_shape,
                                              std::vector<TensorLayoutBasePtr> *out_tensor_layouts) {
+  MS_EXCEPTION_IF_NULL(in_layout_value);
   std::vector<ValuePtr> layout_value_vector = in_layout_value->value();
   if (inputs_shape.size() < layout_value_vector.size()) {
     MS_LOG(ERROR) << "The in_layout configured for node is smaller than its input nums";
