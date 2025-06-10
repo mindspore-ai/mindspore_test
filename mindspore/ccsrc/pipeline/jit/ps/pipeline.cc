@@ -158,6 +158,7 @@ bool CheckArgValid(const py::handle &arg) {
 
   if (tensor::IsTensorPy(arg)) {
     auto tensor = tensor::ConvertToTensor(arg);
+    MS_EXCEPTION_IF_NULL(tensor);
     if (tensor->data_type() == kNumberTypeBool) {
       MS_LOG(INFO) << "It is not recommended to use a tensor of bool data type as network input, which may cause "
                    << "operator compilation failure. For more details, please refer to the FAQ at "

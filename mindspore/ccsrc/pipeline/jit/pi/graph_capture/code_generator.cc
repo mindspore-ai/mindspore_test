@@ -2187,6 +2187,7 @@ std::string PrintNodeSet(const NodeSet &nodes) {
 
 py::object CodeBreakGenerator::MakeCapturedCode() const {
   auto jcr = GetJitCompileResults(co_);
+  MS_EXCEPTION_IF_NULL(jcr);
   if (jcr->conf()->GetBoolConfig(GraphJitConfig::kInterpretCapturedCode)) {
     return MakeInterpretCapturedCode();
   }
@@ -2329,6 +2330,7 @@ py::object LoopBodyReCaptureCodeGenerator::MakeLoopBodyCode(int loopBodyStartBci
                                "<pijit.loopBody>"};
   py::object code = CodeGenerator(std::move(ccode)).NewCode();
   auto parent = GetJitCompileResults(co_);
+  MS_EXCEPTION_IF_NULL(parent);
   JitCompileResults *child = CreateJitCompileResults(code.ptr());
   child->set_stat(JitCompileResults::GRAPH_CANDIDATE);
   child->set_conf(parent->conf());
@@ -2366,6 +2368,7 @@ bool LoopBodyReCaptureCodeGenerator::Prepare() {
   }
   std::sort(loopBodySortedBBs.begin(), loopBodySortedBBs.end(),
             [](Block *left, Block *right) { return left->id() < right->id(); });
+  MS_EXCEPTION_IF_NULL(jcr);
   if (jcr->conf()->GetLogConfig(GraphJitConfig::kAll)) {
     std::stringstream ss;
     ss << "====>DUMP LOOP BB START<====" << std::endl;
@@ -2576,22 +2579,22 @@ void LocationTableEncoder::Add(int bci_delta, const CodeLocation &loc) {
   AddEntry(bci_delta, loc);
 }
 
-void ExceptionTableEncoder::WriteVariant(int value, int msb) {
+void ExceptionTableEncoder::WriteVariant(int value, int mask_bits) {
   const int kValidBits = 6;
   const int kContinuationBit = 1 << kValidBits;
   const int kValueMask = kContinuationBit - 1;
   const int kStart = 24;
   if (value >= (1 << kStart)) {
-    WriteByte((value >> kStart) | kContinuationBit | msb);
-    msb = 0;
+    WriteByte((value >> kStart) | kContinuationBit | mask_bits);
+    mask_bits = 0;
   }
   for (int left = kStart - kValidBits; left; left -= kValidBits) {
     if (value >= (1 << left)) {
-      WriteByte(((value >> left) & kValueMask) | kContinuationBit | msb);
-      msb = 0;
+      WriteByte(((value >> left) & kValueMask) | kContinuationBit | mask_bits);
+      mask_bits = 0;
     }
   }
-  WriteByte((value & kValueMask) | msb);
+  WriteByte((value & kValueMask) | mask_bits);
 }
 
 void ExceptionTableEncoder::WriteItem(const ExceptionTableItem &item) {

@@ -915,6 +915,7 @@ void FuncGraphTransaction::SetParameters(FuncGraphPtr fg, const std::vector<AnfN
 }
 
 void FuncGraphTransaction::AddParameter(FuncGraphPtr fg, const AnfNodePtr &param) {
+  MS_EXCEPTION_IF_NULL(param);
   (void)changes_.emplace_back(std::make_unique<change::AddParam>(fg, param->cast<ParameterPtr>()));
 }
 
