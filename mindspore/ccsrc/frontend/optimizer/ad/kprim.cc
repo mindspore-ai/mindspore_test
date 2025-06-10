@@ -180,7 +180,7 @@ FuncGraphPtr KPrim::GetPrimBprop(const PrimitivePtr &prim, const ValueNodePtr &v
   MS_EXCEPTION_IF_NULL(prim);
   MS_EXCEPTION_IF_NULL(value_node);
   auto iter = bprop_registry_.find(prim);
-  if (iter != bprop_registry_.end() && !iter->second->dropped()) {
+  if (iter != bprop_registry_.end() && !iter->second->dropped() && !prim->HasAttr("variable_length_inputs")) {
     return iter->second;
   }
 

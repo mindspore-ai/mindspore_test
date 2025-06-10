@@ -153,7 +153,8 @@ GVAR_DEF(PrimitivePtr, kPrimCall, std::make_shared<Primitive>(kCallOpName));
 GVAR_DEF(PrimitivePtr, kPrimRaise,
          std::make_shared<Primitive>(kRaiseOpName, mindspore::HashMap<std::string, ValuePtr>(
                                                      {{std::string(GRAPH_FLAG_SIDE_EFFECT_IO), MakeValue(true)},
-                                                      {std::string("primitive_target"), MakeValue("CPU")}})));
+                                                      {std::string("primitive_target"), MakeValue("CPU")},
+                                                      {std::string("variable_length_inputs"), MakeValue(true)}})));
 GVAR_DEF(PrimitivePtr, kPrimSwitchLayer, std::make_shared<Primitive>("switch_layer"));
 GVAR_DEF(PrimitivePtr, kPrimStringUpper, std::make_shared<Primitive>(kStringUpperOpName));
 GVAR_DEF(PrimitivePtr, kPrimStringLower, std::make_shared<Primitive>(kStringLowerOpName));
