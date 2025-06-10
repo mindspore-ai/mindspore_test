@@ -24,6 +24,10 @@ from tests.device_utils import set_device
 
 import os
 
+GB_TO_BYTE = 1024 << 20
+FLOAT32_SIZE = 8
+
+
 class Net(nn.Cell):
     def __init__(self):
         super(Net, self).__init__()
@@ -88,6 +92,7 @@ def test_runtime_memory_allocated():
     _pynative_executor.sync()
     assert not res is None
     assert isinstance(res, int)
+
 
 @arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
