@@ -219,7 +219,7 @@ class KernelRunner {
   // Index is the input position, ParameterInfo is used to fetch args and device tensor.
   std::vector<std::pair<size_t, ParameterInfo>> parameter_indexs_;
 
-  bool is_high_perf_mode_{true};
+  static bool is_high_perf_mode_;
 
   // The info of kernel.
   CNodePtr kernel_;

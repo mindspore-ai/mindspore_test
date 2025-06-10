@@ -17,6 +17,7 @@
 #ifndef MINDSPORE_CCSRC_RUNTIME_FRAMEWORK_ACTOR_KERNEL_ASYNC_LAUNCH_ACTOR_H_
 #define MINDSPORE_CCSRC_RUNTIME_FRAMEWORK_ACTOR_KERNEL_ASYNC_LAUNCH_ACTOR_H_
 
+#include <set>
 #include <vector>
 #include <memory>
 
@@ -46,6 +47,10 @@ class BACKEND_EXPORT KernelAsyncLaunchActor : public ActorBase {
 
   const std::thread::id &actor_thread_id() const { return thread_id_; }
 
+  void AddDeviceContext(DeviceContext *device_context);
+
+  void BindDevice();
+
  private:
   KernelAsyncLaunchActor() : ActorBase("KernelAsyncLaunchActor") {}
   DISABLE_COPY_AND_ASSIGN(KernelAsyncLaunchActor);
@@ -54,6 +59,8 @@ class BACKEND_EXPORT KernelAsyncLaunchActor : public ActorBase {
 
   // The thread id of exclusive thread used by this actor.
   std::thread::id thread_id_;
+
+  std::set<DeviceContext *> device_contexts_;
 };
 }  // namespace runtime
 }  // namespace mindspore
