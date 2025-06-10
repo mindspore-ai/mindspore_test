@@ -35,7 +35,7 @@ namespace ops {
 constexpr size_t kInputQueryBSHRankLayout = 3;
 constexpr size_t kInputQueryBNSDRankLayout = 4;
 constexpr int64_t SPARSE_LEFTUP_ATTENTION_SIZE = 2048;
-enum SparseMode { SPARSE_MODE_0, SPARSE_MODE_1, SPARSE_MODE_2, SPARSE_MODE_3, SPARSE_MODE_4 };
+enum class SparseMode : int64_t { SPARSE_MODE_0, SPARSE_MODE_1, SPARSE_MODE_2, SPARSE_MODE_3, SPARSE_MODE_4 };
 constexpr int64_t ALIGN_BFLOAT_16 = 16;
 
 ShapeValueDType GetDimensionPFA(const std::vector<ShapeValueDType> &dimensions, const std::string &op_name,
@@ -123,14 +123,19 @@ void CheckOptinalInputShape(const PrimitivePtr &primitive, const std::vector<Abs
                             ShapeValueDType b, ShapeValueDType q_s, ShapeValueDType kv_s) {
   auto op_name = primitive->name();
   auto sparse_mode = GetScalarValue<int64_t>(input_args[kPromptFlashAttentionInputSparseModeIndex]->GetValue()).value();
-  if (sparse_mode != SPARSE_MODE_0 && sparse_mode != SPARSE_MODE_1 && sparse_mode != SPARSE_MODE_2 &&
-      sparse_mode != SPARSE_MODE_3 && sparse_mode != SPARSE_MODE_4) {
+  if (sparse_mode != static_cast<int64_t>(SparseMode::SPARSE_MODE_0) &&
+      sparse_mode != static_cast<int64_t>(SparseMode::SPARSE_MODE_1) &&
+      sparse_mode != static_cast<int64_t>(SparseMode::SPARSE_MODE_2) &&
+      sparse_mode != static_cast<int64_t>(SparseMode::SPARSE_MODE_3) &&
+      sparse_mode != static_cast<int64_t>(SparseMode::SPARSE_MODE_4)) {
     MS_LOG(EXCEPTION) << "For primitive[" << op_name << "], sparse_mode must be 0, 1, 2, 3 or 4 but got "
                       << sparse_mode;
   }
   std::vector<ShapeVector> expect_mask_shapes = {
     {q_s, kv_s}, {1, q_s, kv_s}, {b, q_s, kv_s}, {b, 1, q_s, kv_s}, {1, 1, q_s, kv_s}};
-  if (sparse_mode == SPARSE_MODE_2 || sparse_mode == SPARSE_MODE_3 || sparse_mode == SPARSE_MODE_4) {
+  if (sparse_mode == static_cast<int64_t>(SparseMode::SPARSE_MODE_2) ||
+      sparse_mode == static_cast<int64_t>(SparseMode::SPARSE_MODE_3) ||
+      sparse_mode == static_cast<int64_t>(SparseMode::SPARSE_MODE_4)) {
     expect_mask_shapes = {{SPARSE_LEFTUP_ATTENTION_SIZE, SPARSE_LEFTUP_ATTENTION_SIZE},
                           {1, SPARSE_LEFTUP_ATTENTION_SIZE, SPARSE_LEFTUP_ATTENTION_SIZE},
                           {1, 1, SPARSE_LEFTUP_ATTENTION_SIZE, SPARSE_LEFTUP_ATTENTION_SIZE}};
@@ -240,7 +245,8 @@ ShapeVector InferShapeBSH(const PrimitivePtr &primitive, const std::vector<Abstr
   auto query_dtype = input_args[kPromptFlashAttentionInputQueryIndex]->GetType();
   CheckShapeAlign(query_dtype, dim_d, op_name);
   auto sparse_mode = GetScalarValue<int64_t>(input_args[kPromptFlashAttentionInputSparseModeIndex]->GetValue()).value();
-  if (sparse_mode == SPARSE_MODE_0 || sparse_mode == SPARSE_MODE_1) {
+  if (sparse_mode == static_cast<int64_t>(SparseMode::SPARSE_MODE_0) ||
+      sparse_mode == static_cast<int64_t>(SparseMode::SPARSE_MODE_1)) {
     CheckOptinalInputShape(primitive, input_args, dim_b, dim_q_s, dim_kv_s);
   }
   return ShapeVector{dim_b, dim_q_s, q_h};
@@ -288,7 +294,8 @@ ShapeVector InferShapeBNSD(const PrimitivePtr &primitive, const std::vector<Abst
   auto sparse_mode_opt = GetScalarValue<int64_t>(input_args[kPromptFlashAttentionInputSparseModeIndex]->GetValue());
   if (sparse_mode_opt.has_value()) {
     auto sparse_mode = sparse_mode_opt.value();
-    if (sparse_mode == SPARSE_MODE_0 || sparse_mode == SPARSE_MODE_1) {
+    if (sparse_mode == static_cast<int64_t>(SparseMode::SPARSE_MODE_0) ||
+        sparse_mode == static_cast<int64_t>(SparseMode::SPARSE_MODE_1)) {
       CheckOptinalInputShape(primitive, input_args, dim_b, dim_q_s, dim_kv_s);
     }
   } else {

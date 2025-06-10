@@ -520,7 +520,9 @@ Status SumExtInfo::GetAttrs() {
       MS_LOG(ERROR) << name_ << ": cross_batch is not a bool.";
       return FAILED;
     }
-    cross_batch_ = cross_batch_iter->second->cast<BoolImmPtr>()->value();
+    auto cross_batch = cross_batch_iter->second->cast<BoolImmPtr>();
+    MS_EXCEPTION_IF_NULL(cross_batch);
+    cross_batch_ = cross_batch->value();
   }
   auto reducemethodcost = std::dynamic_pointer_cast<ReduceMethodCost>(operator_cost());
   if (reducemethodcost == nullptr) {

@@ -455,6 +455,7 @@ AnfNodePtr GenerateGraph::NewOpInst(const OperatorName &op_name, const OperatorA
   }
   auto value_node = NewValueNode(op_prim_instance);
   auto prim = GetValueNode<PrimitivePtr>(value_node);
+  MS_EXCEPTION_IF_NULL(prim);
   for (const auto &[name, value] : prim_attrs) {
     prim->set_attr(name, value);
   }
