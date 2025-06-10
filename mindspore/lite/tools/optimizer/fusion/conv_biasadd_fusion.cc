@@ -165,6 +165,7 @@ int ConvBiasaddFusion::DoFuison(const FuncGraphPtr &func_graph, const AnfNodePtr
   MS_ASSERT(node != nullptr);
   auto add_cnode = node->cast<CNodePtr>();
   MS_ASSERT(add_cnode != nullptr);
+  MS_ASSERT(add_cnode->size() >= kInputSizeThree);
   auto add_bias = add_cnode->input(kInputIndexTwo);
   lite::DataInfo add_bias_info;
   int status = lite::RET_ERROR;

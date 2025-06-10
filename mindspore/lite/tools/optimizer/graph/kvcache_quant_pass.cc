@@ -114,6 +114,7 @@ STATUS KVCacheQuantPass::ReplaceCastOpToQuantOp(const FuncGraphPtr &func_graph, 
   CHECK_NULL_RETURN(anf_node);
   CHECK_NULL_RETURN(manager);
   auto cast_cnode = anf_node->cast<CNodePtr>();
+  MS_CHECK_TRUE_RET(cast_cnode->size() >= kSizeTwo, lite::RET_ERROR);
   auto input_node = cast_cnode->input(kIndexOne);
 
   TypeId dst_type_id;
@@ -190,16 +191,19 @@ STATUS KVCacheQuantPass::RunQuantPass(const FuncGraphPtr &func_graph, const Func
     if (!utils::isa<CNodePtr>(node) || !CheckPrimitiveType(node, prim::kPrimCast)) {
       continue;
     }
+    MS_CHECK_TRUE_RET(node->cast<CNodePtr>()->size() >= kSizeTwo, lite::RET_ERROR);
     auto round_node = node->cast<CNodePtr>()->input(kIndexOne);
-    if (!CheckPrimitiveType(round_node, prim::kPrimRound)) {
+    if (!utils::isa<CNodePtr>(round_node) || !CheckPrimitiveType(round_node, prim::kPrimRound)) {
       continue;
     }
+    MS_CHECK_TRUE_RET(round_node->cast<CNodePtr>()->size() >= kSizeTwo, lite::RET_ERROR);
     auto add_node = round_node->cast<CNodePtr>()->input(kIndexOne);
-    if (!CheckPrimitiveType(add_node, prim::kPrimAdd)) {
+    if (!utils::isa<CNodePtr>(add_node) || !CheckPrimitiveType(add_node, prim::kPrimAdd)) {
       continue;
     }
+    MS_CHECK_TRUE_RET(add_node->cast<CNodePtr>()->size() >= kSizeTwo, lite::RET_ERROR);
     auto mul_node = add_node->cast<CNodePtr>()->input(kIndexOne);
-    if (CheckPrimitiveType(mul_node, prim::kPrimMul)) {
+    if (!utils::isa<CNodePtr>(mul_node) || CheckPrimitiveType(mul_node, prim::kPrimMul)) {
       MS_LOG(INFO) << "Cast node: " << node->fullname_with_scope() << " will replace to Quant node";
       auto status = ReplaceCastOpToQuantOp(func_graph, node, manager);
       if (status != lite::RET_OK) {
