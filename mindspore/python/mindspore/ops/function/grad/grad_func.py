@@ -1395,7 +1395,7 @@ def stop_gradient(value):
         >>> mindspore.ops.grad(f1)(mindspore.tensor(x))
         Tensor(shape=[], dtype=Float32, value= 6)
         >>>
-        >>> # The same function with stop_gradient, return a zero gradient because x is effectively treated as a constant.
+        >>> # With stop_gradient, return a zero gradient because x is effectively treated as a constant.
         >>> def f2(x):
         ...     return mindspore.ops.stop_gradient(x) ** 2
         >>> f2(x)
