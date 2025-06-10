@@ -30,7 +30,7 @@ class PYBOOST_API CommHandle : public std::enable_shared_from_this<CommHandle> {
  public:
   CommHandle() = default;
   explicit CommHandle(const device::DeviceContext *device_ctx) : device_ctx_(device_ctx) {}
-  ~CommHandle() = default;
+  ~CommHandle();
 
   DeviceEventPtr CreateEvent();
 
