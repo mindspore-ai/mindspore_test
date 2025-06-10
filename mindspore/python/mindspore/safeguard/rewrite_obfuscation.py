@@ -310,8 +310,8 @@ def _obfuscate_single_ckpt(ckpt_name, obf_metadata, obf_config, saved_path):
                 if input_x is None or input_y is None:
                     log.error("the input_x or input_y of op: {} is None.".format(op_name))
                     return None
-                input_x = ops.transpose(input_x, (1, 0)) if obf_ops[i].get('transpose_a', False) else input_x
-                input_y = ops.transpose(input_y, (1, 0)) if obf_ops[i].get('transpose_b', False) else input_y
+                input_x = ops.transpose(input_x, (1, 0)) if obf_op.get('transpose_a', False) else input_x
+                input_y = ops.transpose(input_y, (1, 0)) if obf_op.get('transpose_b', False) else input_y
                 obf_param = ops.matmul(F.cast(input_x, param_dtype), F.cast(input_y, param_dtype))
             else:
                 log.error("unsupported op, op must be matmul or permuate or mul, but got {}."
