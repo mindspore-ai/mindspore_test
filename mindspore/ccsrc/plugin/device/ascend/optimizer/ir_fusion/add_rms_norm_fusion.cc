@@ -51,15 +51,7 @@ const AnfNodePtr AddRmsNormFusion::Process(const FuncGraphPtr &graph, const AnfN
   if (ms_context->IsEnableInferBoost()) {
 #ifndef ENABLE_INTERNAL_KERNELS
     return nullptr;
-#else
-    auto enable_op_list = ms_context->ms_internal_enable_custom_kernel_list();
-    bool enable_add_rmsnorm =
-      (std::find(enable_op_list.begin(), enable_op_list.end(), fusion_op_name) != enable_op_list.end());
-    if (!enable_add_rmsnorm) {
-      return nullptr;
-    }
-#endif  // ENABLE_INTERNAL_KERNELS
-  } else {
+#endif
     // aclnnAddRmsNorm can not support different input types
     auto x_dtype = common::AnfAlgo::GetPrevNodeOutputInferDataType(node, 0);
     auto gamma_dtype = common::AnfAlgo::GetPrevNodeOutputInferDataType(node, 1);
