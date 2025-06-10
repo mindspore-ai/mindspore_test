@@ -632,13 +632,6 @@ class ModelCheckpoint(Callback):
         if "step_num" in self._append_dict:
             self._append_dict["step_num"] = self._append_step_num + step_num
 
-    def _update_save_step(self, cb_params):
-        """update step if used async d2h copy"""
-        step_num_in_epoch = int((cb_params.cur_step_num - 1) % cb_params.batch_num + 1)
-        if self._d2h_async and self._run_mode == context.GRAPH_MODE:
-            step_num_in_epoch -= 1
-        return step_num_in_epoch
-
     def _save_ckpt(self, cb_params, force_to_save=False):
         """Save checkpoint files."""
         if cb_params.cur_step_num == self._last_triggered_step:
@@ -649,7 +642,7 @@ class ModelCheckpoint(Callback):
             self._flush_from_cache(cb_params)
 
         save_ckpt = self._check_save_ckpt(cb_params, force_to_save)
-        step_num_in_epoch = self._update_save_step(cb_params)
+        step_num_in_epoch = int((cb_params.cur_step_num - 1) % cb_params.batch_num + 1)
 
         if save_ckpt:
 

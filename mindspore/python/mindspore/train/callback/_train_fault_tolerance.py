@@ -378,11 +378,9 @@ class TrainFaultTolerance(Callback):
             _tft_handler.init(config=None)
             self.tft = _tft_handler.get_tft()
             logger.warning(f"TFT handle init ok.")
-        mode = context.get_context("mode")
         device_target = context.get_context("device_target")
-        if device_target != "Ascend" or mode != context.GRAPH_MODE:
-            raise ValueError(f"MindIO adataper only support on Ascend device with GRAPH Mode!"
-                             f"device:{device_target}, run mode: {mode}")
+        if device_target != "Ascend":
+            raise ValueError(f"MindIO adataper only support on Ascend device but got device {device_target}!")
 
     def _is_params_consistent(self):
         for key, param in self.cb_params.train_network.parameters_and_names():

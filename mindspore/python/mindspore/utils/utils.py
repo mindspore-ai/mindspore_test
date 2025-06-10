@@ -138,11 +138,9 @@ class TftHandle:
                 os.environ["MS_ENABLE_TFT"] = "{TTP:1,ARF:1}"
             os.environ["MS_ENABLE_RECOVERY"] = "1"
 
-        mode = context.get_context("mode")
         device_target = context.get_context("device_target")
-        if device_target != "Ascend" or mode != context.GRAPH_MODE:
-            logger.warning(f"MindIO adataper only support on Ascend device with GRAPH Mode!"
-                           f"device:{device_target}, run mode: {mode}")
+        if device_target != "Ascend":
+            logger.warning(f"MindIO adataper only support on Ascend device but got device {device_target}!")
             return
 
         ctrl_port = int(os.getenv("MS_TFT_PORT"))

@@ -24,6 +24,7 @@
 #include "include/common/debug/anf_dump_utils.h"
 #include "include/common/debug/dump_proto.h"
 #include "include/common/debug/rdr/recorder_manager.h"
+#include "include/common/utils/utils.h"
 #include "utils/file_utils.h"
 
 namespace mindspore {
@@ -95,8 +96,7 @@ bool RecordAnfGraph(const SubModuleId module, const std::string &name, const Fun
                     const DumpGraphParams &info, const std::string &file_type) {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  if (!mindspore::RecorderManager::Instance().RdrEnable() ||
-      ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
+  if (!mindspore::RecorderManager::Instance().RdrEnable() || !IsGraphPipelineCompiled()) {
     return false;
   }
   std::string submodule_name = std::string(GetSubModuleName(module));

@@ -21,6 +21,7 @@
 #include "include/common/utils/parallel_context.h"
 #include "debug/profiler/profiler.h"
 #include "common/kernel.h"
+#include "include/common/utils/utils.h"
 #include "mindapi/base/type_id.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
@@ -1290,9 +1291,8 @@ void GeKernelExecutor::DoAsyncCkpt(const CNodePtr &kernel) const {
   }
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  auto execution_mode = ms_context->get_param<int>(MS_CTX_EXECUTION_MODE);
   auto need_async_ckpt = ms_context->get_param<bool>(MS_CTX_NEED_CKPT);
-  if (execution_mode == kPynativeMode || !need_async_ckpt) {
+  if (!IsGraphPipelineCompiled() || !need_async_ckpt) {
     return;
   }
   MS_EXCEPTION_IF_NULL(kernel);

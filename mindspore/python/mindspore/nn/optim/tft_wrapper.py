@@ -69,10 +69,9 @@ class OptTFTWrapper(Optimizer):
         tft_env = os.getenv("MS_ENABLE_TFT", "")
         if ("TTP:1" not in tft_env) and ("UCE:1" not in tft_env) and ("ARF:1" not in tft_env):
             raise ValueError("MindIO TFT regitster need custom switch on[MS_ENABLE_TFT='{TTP:1,UCE:1,ARF:1}']!")
-        mode = context.get_context("mode")
         device_target = context.get_context("device_target")
-        if device_target != "Ascend" or mode != context.GRAPH_MODE:
-            raise ValueError("MindIO adataper only support on Ascend device with GRAPH Mode!")
+        if device_target != "Ascend":
+            raise ValueError("MindIO adataper only support on Ascend device!")
         self.opt = opt
         self.report = TensorReport()
         self.report_end = TensorReport()

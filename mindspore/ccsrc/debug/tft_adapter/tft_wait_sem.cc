@@ -130,8 +130,7 @@ TFTWaitSem::~TFTWaitSem() {}
 void TFTWaitSem::Enable() { isEnable_ = true; }
 bool TFTWaitSem::IsEnable() {
   auto msContext = MsContext::GetInstance();
-  if (msContext->get_param<int>(MS_CTX_EXECUTION_MODE) != kGraphMode ||
-      msContext->get_param<std::string>(MS_CTX_DEVICE_TARGET) != kAscendDevice) {
+  if (!IsGraphPipelineCompiled() || msContext->get_param<std::string>(MS_CTX_DEVICE_TARGET) != kAscendDevice) {
     return false;
   }
   return isEnable_;

@@ -303,9 +303,6 @@ def _check_tft():
         ascend_target = MSContext.get_instance().get_ascend_soc_version()
         if ascend_target == 'ascend910':
             raise ValueError("TFT is not supported when using ascend910")
-        ms_mode = context.get_context("mode")
-        if ms_mode != mindspore.GRAPH_MODE:
-            raise ValueError("TFT is only supported in GRAPH_MODE")
         jit_level = context.get_context("jit_level")
         if jit_level == "O2" and ("UCE:1" in tft_env or "ARF:1" in tft_env):
             raise ValueError("TFT is not supported when using jit_level == O2")
@@ -808,7 +805,7 @@ class Model:
         """
         if os.environ.get("MS_ENABLE_CKPT_D2H_ASYNC") != "1":
             return
-        if (context.get_context("mode") == context.GRAPH_MODE) and (context.get_context("device_target") == "Ascend"):
+        if context.get_context("device_target") == "Ascend":
             cb_params.need_ckpt, cb_params.save_checkpoint_steps, \
             cb_params.last_triggered_step = self._check_need_ckpt(cb_params.list_callback)
             logger.info(f"need_ckpt:{cb_params.need_ckpt},"
