@@ -13,11 +13,11 @@
 # limitations under the License.
 # ============================================================================
 """Profiler Schedule"""
+__all__ = ["ProfilerAction", "Schedule"]
+
 from enum import Enum
 
 from mindspore import log as logger
-
-__all__ = ["ProfilerAction", "Schedule"]
 
 
 class ProfilerAction(Enum):

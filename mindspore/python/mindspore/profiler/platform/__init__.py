@@ -13,9 +13,8 @@
 # limitations under the License.
 # ============================================================================
 """Platform profiler"""
+__all__ = ["CpuProfiler", "GpuProfiler", "NpuProfiler"]
+
 from .cpu_profiler import CpuProfiler
 from .gpu_profiler import GpuProfiler
 from .npu_profiler import NpuProfiler
-
-
-__all__ = ["CpuProfiler", "GpuProfiler", "NpuProfiler"]
