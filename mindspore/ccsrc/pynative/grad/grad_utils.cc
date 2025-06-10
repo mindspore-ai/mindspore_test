@@ -65,7 +65,6 @@ const mindspore::HashSet<std::string> kGradBlackList{kMakeTupleOpName,         k
                                                      kTupleGetItemOpName,      kStopGradientOpName,
                                                      kUpdateStateOpName,       kNPUAllocFloatStatusOpName,
                                                      kNPUGetFloatStatusOpName, kNPUClearFloatStatusOpName,
-                                                     kZerosLikeExtOpName,      kOnesLikeExtOpName,
                                                      kInplaceStopGradientName};
 mindspore::HashMap<std::string, pipeline::ResourcePtr> jit_call_graph_compile_cache_;
 

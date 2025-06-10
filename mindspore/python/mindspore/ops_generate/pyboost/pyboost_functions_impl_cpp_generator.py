@@ -29,7 +29,7 @@ from common.gen_utils import save_file
 from common.op_proto import OpProto
 from common.base_generator import BaseGenerator
 from pyboost import pyboost_utils
-from pyboost.pyboost_utils import get_convert_type_str, is_optional_param, is_op_multi_output, get_input_args_type_str, \
+from pyboost.pyboost_utils import get_convert_type_str, is_optional_param, get_input_args_type_str, \
     is_tensor_list
 
 from .op_template_parser import OpTemplateParser
@@ -63,7 +63,7 @@ class PyboostFunctionsImplGenerator(BaseGenerator):
         self.implicit_cast_template = Template(
             '// Do mixed precision and implicit cast\n' \
             'static const std::vector<std::vector<size_t>> same_type_table{${same_type}};\n' \
-            'auto [${cast_args}] =\n'\
+            'auto [${cast_args}] =\n' \
             '   PyNativeAlgo::PyBoost::SetPyBoostCastForInputs<${type_num}>(op_run_info, "${class_name}", \
  same_type_table, ${call_args});\n'
         )
@@ -145,14 +145,9 @@ class PyboostFunctionsImplGenerator(BaseGenerator):
         parser_body_str = self._generate_parser_func(op_proto)
         op_args_str = [op_arg.arg_name for op_arg in op_proto.op_args]
         convert_stub_str = self._get_convert_stub_str(op_proto)
-        optional_to_value_str = self._get_optional_to_value_str(op_proto)
         call_args_str = self._get_call_args_str(op_proto)
-        grad_args_str = self._get_grad_args_str(op_proto)
         cast_args_str = self._get_cast_to_value_str(op_proto)
-        view_arg_str = self._get_first_str(op_proto.op_view, grad_args_str)
         op_input_args_str = self._get_input_args_str(op_proto)
-        view_arg_str = ", " + view_arg_str if view_arg_str else ''
-        multi_ouptut_str = 'Multi' if is_op_multi_output(op_proto.op_returns) else ''
         output_num_str = len(op_proto.op_returns)
         pyboost_core_body_tpl = self._get_pyboost_core_body_tpl(op_proto)
         if op_proto.op_view:
@@ -173,12 +168,8 @@ class PyboostFunctionsImplGenerator(BaseGenerator):
                                              implicit_cast=implicit_cast_str,
                                              op_args=op_args_str,
                                              convert_stub=convert_stub_str,
-                                             optional_to_value=optional_to_value_str,
                                              call_args=call_args_str,
-                                             grad_args=grad_args_str,
                                              cast_args=cast_args_str,
-                                             view_arg=view_arg_str,
-                                             is_multi=multi_ouptut_str,
                                              output_num=output_num_str,
                                              operator_name=op_proto.op_name)
 
@@ -261,37 +252,6 @@ class PyboostFunctionsImplGenerator(BaseGenerator):
                                                                                  need_contiguous=need_contiguous)
         return convert_stub_str
 
-    def _get_optional_to_value_str(self, op_proto: OpProto):
-        """
-        Generates the code for converting optional arguments to their corresponding values.
-
-        This method constructs code to handle optional arguments and converts them to their actual values,
-        ensuring proper handling for tensors and lists.
-
-        Args:
-            op_proto (OpProto): The operator prototype containing the argument information.
-
-        Returns:
-            str: The generated code for converting optional arguments to values as a string.
-        """
-        optional_to_value_str = ''
-        for op_arg in op_proto.op_args:
-            if is_optional_param(op_arg):
-                if pyboost_utils.is_tensor(op_arg) or pyboost_utils.is_tensor_list(op_arg):
-                    convert_stub_output_name = op_arg.arg_name + '_optional'
-                    cast_output = 'cast_' + convert_stub_output_name
-                    convert_optional_to_value_name = op_arg.arg_name + '_value'
-                    optional_to_value_str += \
-                        self.convert_optional_to_value_template.replace(input=cast_output,
-                                                                        output=convert_optional_to_value_name)
-                else:
-                    call_arg = op_arg.arg_name
-                    convert_optional_to_value_name = op_arg.arg_name + '_value'
-                    optional_to_value_str += \
-                        self.convert_optional_to_value_template.replace(input=call_arg,
-                                                                        output=convert_optional_to_value_name)
-        return optional_to_value_str
-
     def _get_call_args_str(self, op_proto: OpProto):
         """
         Generates the list of call arguments for the operator.
@@ -319,40 +279,6 @@ class PyboostFunctionsImplGenerator(BaseGenerator):
                 call_arg = op_arg.arg_name
             call_args_str.append(call_arg)
         return call_args_str
-
-    def _get_grad_args_str(self, op_proto: OpProto):
-        """
-        Generates the list of gradient arguments for the operator.
-
-        This method constructs a list of argument names used for computing gradients, adapting for
-        optional tensors and tensor lists as necessary.
-
-        Args:
-            op_proto (OpProto): The operator prototype containing the argument information.
-
-        Returns:
-            list: A list of formatted gradient argument names.
-        """
-        grad_args_str = []
-        for op_arg in op_proto.op_args:
-            if pyboost_utils.is_tensor(op_arg):
-                grad_arg = op_arg.arg_name + "_value" if is_optional_param(op_arg) else \
-                    f"cast_" + op_arg.arg_name + "_tensor"
-            elif pyboost_utils.is_tensor_list(op_arg):
-                if is_optional_param(op_arg):
-                    # To adapt the cases where TensorList is optional.
-                    convert_optional_to_value_name = op_arg.arg_name + "_value"
-                    grad_arg = convert_optional_to_value_name
-                else:
-                    convert_stub_output_name = op_arg.arg_name + "_tensor_list"
-                    grad_arg = "cast_" + convert_stub_output_name
-            else:
-                grad_arg = "cast_" + op_arg.arg_name
-                if is_optional_param(op_arg):
-                    convert_optional_to_value_name = op_arg.arg_name + "_value"
-                    grad_arg = convert_optional_to_value_name
-            grad_args_str.append(grad_arg)
-        return grad_args_str
 
     def _get_cast_to_value_str(self, op_proto: OpProto):
         """
@@ -382,26 +308,6 @@ class PyboostFunctionsImplGenerator(BaseGenerator):
                 cast_arg = cast_str + op_arg.arg_name
             cast_args_str.append(cast_arg)
         return cast_args_str
-
-    def _get_first_str(self, is_view_or_inplace: bool, grad_args: list):
-        """
-        Generates the view base str of arguments for the operator.
-
-        This method constructs a list of argument names that need to be cast to their corresponding types.
-
-        Args:
-            is_view_or_inplace (bool): Whether the op is view op or inplace op.
-            grad_args (list): grad args
-
-        Returns:
-            str: Formatted view or inplace first argument names.
-        """
-        arg_str = ''
-        for i, grad_arg in enumerate(grad_args):
-            if is_view_or_inplace and i == 0:
-                arg_str = grad_arg
-                break
-        return arg_str
 
     def _get_pyboost_core_body_tpl(self, op_proto: OpProto):
         if len(op_proto.op_returns) == 1 and is_tensor_list(op_proto.op_returns[0]):

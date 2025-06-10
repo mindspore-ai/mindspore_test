@@ -13,7 +13,8 @@ void DoGrad${class_name}Inner(${inner_grad_args_with_type}, const ValuePtr &outp
 void DoGrad${class_name}(${grad_args_with_type}) {
   static bool is_inplace_op = kernel::pyboost::GetOpTypeFromOpdef(ops::${op_def_name}) == OperatorType::kInplaceOp;
   static bool bprop_expander = ${bprop_expander};
-  if (!bprop_expander) {
+  static bool non_differentiable = ${non_differentiable};
+  if (!bprop_expander || non_differentiable) {
     return;
   }
   bool require_grad = kernel::pyboost::OpRunStatus::Get().RequireGrad();

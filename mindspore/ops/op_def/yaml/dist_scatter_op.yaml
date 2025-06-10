@@ -24,3 +24,4 @@ dist_comm_scatter:
         is_comm_op: True
         Ascend: DistCommScatterAscend
         CPU: DistCommScatterCPU
+    non-differentiable: True

@@ -19,3 +19,4 @@ dist_comm_irecv:
         is_comm_op: True
         Ascend: DistCommIrecvAscend
         CPU: DistCommIrecvCPU
+    non-differentiable: True
