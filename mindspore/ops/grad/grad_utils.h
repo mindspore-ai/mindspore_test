@@ -73,7 +73,7 @@ NodePtrList ReturnZeros(BpropBuilder *ib);
 // normalize the axis to [0, rank)
 int64_t NormalizeAxis(int64_t axis, size_t rank);
 
-std::vector<int64_t> TupleDiv(const std::vector<int64_t> &x, const std::vector<int64_t> &y);
+std::vector<int64_t> ReduceShapeTupleDiv(const std::vector<int64_t> &x, const std::vector<int64_t> &y);
 
 std::vector<int64_t> ReduceShape(const std::vector<int64_t> &x, const std::vector<int64_t> &axis,
                                  bool skip_mode = false);

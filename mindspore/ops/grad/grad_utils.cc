@@ -190,18 +190,22 @@ std::pair<ShapeVector, ShapeVector> SplitShapeIndex(const ShapeVector &input_sha
   return std::make_pair(pack_shape, perm);
 }
 
-std::vector<int64_t> TupleDiv(const std::vector<int64_t> &x, const std::vector<int64_t> &y) {
+std::vector<int64_t> ReduceShapeTupleDiv(const std::vector<int64_t> &x, const std::vector<int64_t> &y) {
   std::vector<int64_t> out;
   if (x.size() != y.size()) {
-    MS_LOG(EXCEPTION) << "The size of inputs of TupleDiv must be the same, but the size of divisor tuple is"
+    MS_LOG(EXCEPTION) << "The size of inputs of ReduceShapeTupleDiv must be the same, but the size of divisor tuple is"
                       << " " << y.size() << ", the size of dividend tuple is " << x.size() << ".";
   }
   for (size_t i = 0; i < y.size(); i++) {
+    if (x[i] == 0 && y[i] == 0) {
+      out.push_back(1LL);
+      continue;
+    }
     if (y[i] == 0) {
       MS_LOG(EXCEPTION) << "The divisor value should not be 0!";
     }
     if ((x[i] % y[i]) != 0) {
-      MS_LOG(EXCEPTION) << "The inputs of TupleDiv should be divisible, but they are not divisible now, "
+      MS_LOG(EXCEPTION) << "The inputs of ReduceShapeTupleDiv should be divisible, but they are not divisible now, "
                         << "the dividend is " << x[i] << ", the divisor is " << y[i] << ".";
     }
     out.push_back(x[i] / y[i]);
@@ -466,7 +470,7 @@ class ReduceShapeShapeCalc : public ShapeCalcFunctor {
     auto x_shape = inputs.at(0);
     auto axis_value = inputs.at(1);
     auto r_shape = ReduceShape(x_shape, axis_value, skip_mode_);
-    auto scaling = TupleDiv(x_shape, r_shape);
+    auto scaling = ReduceShapeTupleDiv(x_shape, r_shape);
     return {r_shape, scaling};
   }
   std::vector<int64_t> Infer(const ShapeArray &inputs, const HashSet<size_t> &) const override {

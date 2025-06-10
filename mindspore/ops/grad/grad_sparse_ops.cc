@@ -282,7 +282,7 @@ REG_BPROP_BUILDER("CSRReduceSum").SetUnusedInputs({i2, i5}).SetBody(BODYFUNC(ib)
   auto dout = ib->GetInput(i6);
   auto shape_vec = GetIntList(shape);
   auto output_shape_kept_dims = ReduceShape(shape_vec, GetIntList(axis));
-  auto tile_scaling = TupleDiv(shape_vec, output_shape_kept_dims);
+  auto tile_scaling = ReduceShapeTupleDiv(shape_vec, output_shape_kept_dims);
   auto values_grad_dense = ib->Tile(ib->Reshape(dout, output_shape_kept_dims), tile_scaling);
   auto values_grad = ib->Emit("CSRGather", {indptr, indices, values_grad_dense, shape});
   return {ib->OutZeros(indptr), ib->OutZeros(indices), values_grad, ib->OutZeros(ib->Value<int64_t>(0)),
