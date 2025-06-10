@@ -51,6 +51,44 @@ CNodePtr QbmmAllReduceAddFusion::CreateQbmmAllReduceAddNode(const FuncGraphPtr &
   return allreduce_node;
 }
 
+CNodePtr QbmmAllReduceAddFusion::CreateDynamicQbmmAllReduceAddNode(const FuncGraphPtr &func_graph,
+                                                                   const AnfNodePtr &add_node,
+                                                                   const EquivPtr &equiv) const {
+  MS_LOG(DEBUG) << "start create DynamicQbmmAllReduceAddFusion node";
+  MS_ASSERT(func_graph != nullptr && add_node != nullptr && equiv != nullptr);
+  // quantbatchmatmul -> allreduce -> add
+  TypeId dtype = static_cast<TypeId>(GetValue<int64_t>(out_dtype_node_->cast<ValueNodePtr>()->value()));
+  auto shape = common::AnfAlgo::GetOutputInferShape(bias_tensor_node_, kIndex0);
+  TensorTypePtr tensor_type = std::make_shared<TensorType>(kBFloat16);
+  tensor::TensorPtr assist_tensor = std::make_shared<tensor::Tensor>(kNumberTypeBFloat16, shape);
+  auto len = shape[0];
+  void *dst_data = assist_tensor->data_c();
+  if (dtype == TypeId::kNumberTypeBFloat16) {
+    bfloat16 *dst_data_t = reinterpret_cast<bfloat16 *>(dst_data);
+    for (int i = 0; i < len; i++) {
+      dst_data_t[i] = BFloat16(0.0f);
+    }
+  } else {
+    return nullptr;  // unsupported dtypes
+  }
+  auto layer_bias_node = CreateValueNode(assist_tensor, tensor_type);
+  if (!layer_bias_node) {
+    return nullptr;
+  }
+  auto kernel_graph = func_graph->cast<KernelGraphPtr>();
+  kernel_graph->AddValueNodeToGraph(layer_bias_node);
+  auto allreduce_node = add_node->cast<CNodePtr>()->input(kIndex1)->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(allreduce_node);
+  auto quantbatchmatmul_node = allreduce_node->input(kIndex1)->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(quantbatchmatmul_node);
+  quantbatchmatmul_node->set_input(kIndex5, layer_bias_node);
+  if (add_node->abstract() != nullptr) {
+    allreduce_node->set_abstract(add_node->abstract()->Clone());
+  }
+  MS_LOG(DEBUG) << "create DynamicQbmmAllReduceAddFusion node success.";
+  return allreduce_node;
+}
+
 std::vector<std::string> QbmmAllReduceAddFusion::MustExistPrimitiveName() const {
   std::vector<std::string> ret{prim::kPrimQuantBatchMatmul->name(), prim::kPrimAllReduce->name(),
                                prim::kPrimAdd->name()};
@@ -80,15 +118,16 @@ const AnfNodePtr QbmmAllReduceAddFusion::Process(const FuncGraphPtr &func_graph,
     return nullptr;
   }
   SetNodes(equiv);
-  if (!IsValueNode<None>(pertoken_scale_node_)) {
-    MS_LOG(INFO) << "Currently, do not support to fuse qbmm(pertoken) with communication.";
+  if (!CheckValid(!IsValueNode<None>(pertoken_scale_node_))) {
     return nullptr;
   }
-  if (!CheckValid()) {
-    return nullptr;
+  if (IsValueNode<None>(pertoken_scale_node_)) {
+    auto cnode = CreateQbmmAllReduceAddNode(func_graph, node, equiv);
+    return cnode;
+  } else {
+    auto cnode = CreateDynamicQbmmAllReduceAddNode(func_graph, node, equiv);
+    return cnode;
   }
-  auto cnode = CreateQbmmAllReduceAddNode(func_graph, node, equiv);
-  return cnode;
 }
 
 }  // namespace opt

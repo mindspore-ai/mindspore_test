@@ -81,10 +81,15 @@ bool QbmmFusionBase::PassEnable(const std::string &op_name) const {
   return true;
 }
 
-bool QbmmFusionBase::CheckValid() const {
-  if (!CheckSupportDataType(bias_tensor_node_, {kNumberTypeFloat16, kNumberTypeBFloat16}) ||
-      !CheckSupportDataType(scale_node_, {kNumberTypeInt64, kNumberTypeFloat32}) ||
-      !CheckSupportDataType(bias_node_, {kMetaTypeNone})) {
+bool QbmmFusionBase::CheckValid(const bool &is_dynamic_quant) const {
+  if (!is_dynamic_quant && (!CheckSupportDataType(bias_tensor_node_, {kNumberTypeFloat16, kNumberTypeBFloat16}) ||
+                            !CheckSupportDataType(scale_node_, {kNumberTypeInt64, kNumberTypeFloat32}) ||
+                            !CheckSupportDataType(bias_node_, {kMetaTypeNone}))) {
+    return false;
+  }
+  if (is_dynamic_quant && (!CheckSupportDataType(bias_tensor_node_, {kNumberTypeFloat16, kNumberTypeBFloat16}) ||
+                           !CheckSupportDataType(scale_node_, {kNumberTypeBFloat16, kNumberTypeFloat32}) ||
+                           !CheckSupportDataType(bias_node_, {kMetaTypeNone}))) {
     return false;
   }
   auto dtype_value = GetValue<int64_t>(out_dtype_node_->cast<ValueNodePtr>()->value());

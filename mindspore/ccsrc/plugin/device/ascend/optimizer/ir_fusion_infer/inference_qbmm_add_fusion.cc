@@ -53,6 +53,26 @@ CNodePtr QbmmAddFusion::CreateQbmmAddNode(const FuncGraphPtr &func_graph, const 
   return new_qbmm_node;
 }
 
+CNodePtr QbmmAddFusion::CreateDynamicQbmmAddNode(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
+                                                 const EquivPtr &equiv) const {
+  MS_LOG(DEBUG) << "start create DynamicQbmmAddNode node";
+  MS_ASSERT(func_graph != nullptr && node != nullptr && equiv != nullptr);
+  std::string prim_name = "QuantBatchMatmul";
+  auto qbmm_prim = std::make_shared<Primitive>(prim_name);
+
+  std::vector<AnfNodePtr> inputs = {x_node_,       w_node_,           scale_node_,
+                                    offset_node_,  bias_tensor_node_, pertoken_scale_node_,
+                                    trans_a_node_, trans_b_node_,     out_dtype_node_};
+  auto new_qbmm_node = func_graph->NewCNode(qbmm_prim, inputs);
+  MS_CHECK_TRUE_RET(new_qbmm_node != nullptr, nullptr);
+  new_qbmm_node->set_scope(node->scope());
+  if (node->abstract() != nullptr) {
+    new_qbmm_node->set_abstract(node->abstract()->Clone());
+  }
+  MS_LOG(DEBUG) << "create DynamicQbmmAddNode node success.";
+  return new_qbmm_node;
+}
+
 std::vector<std::string> QbmmAddFusion::MustExistPrimitiveName() const {
   std::vector<std::string> ret{prim::kPrimQuantBatchMatmul->name(), prim::kPrimAdd->name()};
   return ret;
@@ -78,15 +98,16 @@ const AnfNodePtr QbmmAddFusion::Process(const FuncGraphPtr &func_graph, const An
     return nullptr;
   }
   SetNodes(equiv);
-  if (!IsValueNode<None>(pertoken_scale_node_)) {
-    MS_LOG(INFO) << "Currently, do not support to fuse qbmm(pertoken) with add.";
+  if (!CheckValid(!IsValueNode<None>(pertoken_scale_node_))) {
     return nullptr;
   }
-  if (!CheckValid()) {
-    return nullptr;
+  if (IsValueNode<None>(pertoken_scale_node_)) {
+    auto cnode = CreateQbmmAddNode(func_graph, node, equiv);
+    return cnode;
+  } else {
+    auto cnode = CreateDynamicQbmmAddNode(func_graph, node, equiv);
+    return cnode;
   }
-  auto cnode = CreateQbmmAddNode(func_graph, node, equiv);
-  return cnode;
 }
 
 }  // namespace opt
