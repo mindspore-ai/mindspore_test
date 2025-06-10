@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,23 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_RESHAPE_H_
-#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_RESHAPE_H_
+#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_RESHAPE_VIEW_H_
+#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_RESHAPE_VIEW_H_
 
 #include <vector>
 #include "ops/ops_func_impl/op_func_impl.h"
+#include "infer/ops_func_impl/reshape.h"
 
 namespace mindspore {
 namespace ops {
-class OPS_API ReshapeFuncImpl : public OpFuncImpl {
- public:
-  ReshapeFuncImpl() = default;
-  ~ReshapeFuncImpl() = default;
-
-  BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
-
-  TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
-};
+class OPS_API ReshapeViewFuncImpl : public ReshapeFuncImpl {};
 }  // namespace ops
 }  // namespace mindspore
-#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_RESHAPE_H_
+#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_RESHAPE_VIEW_H_
