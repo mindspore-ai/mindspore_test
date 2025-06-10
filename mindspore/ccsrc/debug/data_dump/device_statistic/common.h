@@ -34,19 +34,6 @@ extern const char KStatL2Norm[];
 extern const char KCheckOverflow[];
 
 void WarningOnce(const std::string &device_name, const std::string &type_name, const std::string &statistic_name);
-void WarningOnceCategory(const std::string &name);
-
-template <typename Func, typename... Args>
-auto TimeWrapper(Func &&func, const std::string &funcName, Args &&... args) -> decltype(auto) {
-  auto start = std::chrono::high_resolution_clock::now();
-  auto result = std::forward<Func>(func)(std::forward<Args>(args)...);
-  auto end = std::chrono::high_resolution_clock::now();
-  auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-  auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
-  auto microseconds = duration.count() % 1000;
-  MS_LOG(DEBUG) << funcName << " took " << milliseconds.count() << " ms " << microseconds << " us";
-  return result;
-}
 
 }  // namespace datadump
 }  // namespace mindspore

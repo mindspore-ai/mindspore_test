@@ -25,9 +25,7 @@
 #include "base/bfloat16.h"
 #include "utils/log_adapter.h"
 #include "mindapi/base/type_id.h"
-#ifndef OFFLINE_DBG_MODE
 #include "ir/tensor.h"
-#endif
 
 constexpr size_t kFloat32Size = 4;
 constexpr size_t kFloat64Size = 8;
@@ -128,10 +126,8 @@ class TensorData {
     this->root_graph_id_ = obj.root_graph_id_;
     this->is_output_ = obj.is_output_;
     this->time_stamp_ = obj.time_stamp_;
-#ifndef OFFLINE_DBG_MODE
     this->format_ = obj.format_;
     this->tensor_ptr_ = obj.tensor_ptr_;
-#endif
   }
 
   TensorData &operator=(const TensorData &other) {
@@ -151,10 +147,8 @@ class TensorData {
       this->root_graph_id_ = other.root_graph_id_;
       this->is_output_ = other.is_output_;
       this->time_stamp_ = other.time_stamp_;
-#ifndef OFFLINE_DBG_MODE
       this->format_ = other.format_;
       this->tensor_ptr_ = other.tensor_ptr_;
-#endif
     }
     return *this;
   }
@@ -162,16 +156,8 @@ class TensorData {
   ~TensorData() { DeleteDataPtr(); }
 
   void DeleteDataPtr() noexcept {
-#ifndef OFFLINE_DBG_MODE
     this->tensor_ptr_ = nullptr;
     this->data_ptr_ = nullptr;
-#else
-    if (this->data_ptr_ != nullptr) {
-      delete[] this->data_ptr_;
-      this->data_ptr_ = nullptr;
-      this->size_ = 0;
-    }
-#endif
   }
 
   std::string GetName() const { return this->name_; }
@@ -188,13 +174,11 @@ class TensorData {
 
   void SetTimeStamp(const std::string &time_stamp) { this->time_stamp_ = time_stamp; }
 
-#ifndef OFFLINE_DBG_MODE
   void SetTensor(const mindspore::tensor::TensorPtr &out_tensor) { this->tensor_ptr_ = out_tensor; }
 
   void SetFormat(const std::string &format) { this->format_ = format; }
 
   std::string GetFormat() { return this->format_; }
-#endif
 
   void SetSlot(size_t slot) { this->slot_ = slot; }
 
@@ -462,11 +446,8 @@ class TensorData {
   int execution_order_{-1};
   std::string time_stamp_;
   const float INT4_SIZE = 0.5;
-
-#ifndef OFFLINE_DBG_MODE
   std::string format_{""};
   mindspore::tensor::TensorPtr tensor_ptr_{nullptr};
-#endif
 };
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_DEBUG_TENSOR_DATA_H_

@@ -16,10 +16,6 @@
 #ifndef MINDSPORE_CCSRC_DEBUG_DEBUG_SERVICES_H_
 #define MINDSPORE_CCSRC_DEBUG_DEBUG_SERVICES_H_
 
-#ifdef OFFLINE_DBG_MODE
-#include "base/float16.h"
-#endif
-
 #include <cmath>
 #include <vector>
 #include <future>
@@ -35,6 +31,7 @@
 #include <utility>
 #include "debug/tensor_load.h"
 #include "include/backend/debug/tensor_data.h"
+#include "base/float16.h"
 
 namespace mindspore {
 class DebugServices {
