@@ -53,7 +53,7 @@ class FlopsUtilizationCollector(Callback):
     The FlopsUtilizationCollector interface counts the model utilization information MFU
     and the hardware utilization information HFU.
     Currently, the API counts only the forward and backward flops of MatMul,
-    BatchMatMul, FlashAttentionScore, and Conv2D operators.
+    BatchMatMul, flash_attention_score, and Conv2D operators.
     Only used in graph mode with static shape.
 
     Args:
