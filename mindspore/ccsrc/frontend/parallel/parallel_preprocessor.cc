@@ -1416,6 +1416,7 @@ void ParallelPreprocessor::SetOperatorInfo() {
       for (const auto &node : all_nodes) {
         if (node->has_user_data<OperatorInfo>()) {
           auto operator_info = node->user_data<OperatorInfo>();
+          MS_EXCEPTION_IF_NULL(operator_info);
 
           MS_EXCEPTION_IF_NULL(operator_info);
           TensorMaps inputs_tensor_map = operator_info->inputs_tensor_map();
