@@ -19,17 +19,7 @@ import mindspore.ops as ops
 import mindspore.nn as nn
 import mindspore as ms
 from mindspore.common.np_dtype import bfloat16
-
-
-ms.set_context(device_target="Ascend",
-               mode=ms.GRAPH_MODE,
-               jit_config={"jit_level": "O0", "infer_boost": "on"},
-               pynative_synchronize=True,
-               #    save_graphs=True,
-               #    save_graphs_path="./moe_gating_group_topk_graph",
-               )
-
-np.random.seed(42)
+from tests.mark_utils import arg_mark
 
 
 class MoeGatingGroupTopkCell(nn.Cell):
@@ -126,7 +116,14 @@ def print_result(is_debug, out_flag, golden_softmax, y_softmax, golden_w, y, gol
 
 
 def run(x_dtype, row, expert, k, k_group, group_count, group_select_mode, renorm,
-        norm_type, out_flag, routed_scaling_factor, eps, is_dynamic, is_debug):
+        norm_type, out_flag, routed_scaling_factor, eps, is_dynamic, is_debug, run_mode=ms.GRAPH_MODE):
+    ms.set_context(device_target="Ascend",
+                   mode=run_mode,
+                   jit_config={"jit_level": "O0", "infer_boost": "on"},
+                   pynative_synchronize=True,
+                   #   save_graphs=True,
+                   #   save_graphs_path="./moe_gating_group_topk_graph",
+                   )
     net = MoeGatingGroupTopkCell()
     if is_dynamic:
         x_shape = (row, expert)
@@ -155,16 +152,15 @@ def run(x_dtype, row, expert, k, k_group, group_count, group_select_mode, renorm
                                   renorm, norm_type, out_flag, routed_scaling_factor, eps)
         print_result(is_debug, out_flag, golden_softmax,
                      y_softmax, golden_w, y, golden_idx, y_idx)
-        np.testing.assert_allclose(golden_w, y.astype(ms.float32).asnumpy(),
-                                   rtol=1e-2, atol=1e-2, err_msg='score error', verbose=True)
         np.testing.assert_allclose(golden_idx, y_idx.astype(ms.int32).asnumpy(),
                                    rtol=1e-2, atol=1e-2, err_msg='index error', verbose=True)
+        np.testing.assert_allclose(golden_w, y.astype(ms.float32).asnumpy(),
+                                   rtol=1e-2, atol=1e-2, err_msg='score error', verbose=True)
 
 
-@pytest.mark.level1
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.platform_ascend910b
-@pytest.mark.parametrize('x_dtype', [np.float32, np.float16, bfloat16])
+@arg_mark(plat_marks=['platform_ascend910b', 'platform_ascend310p'],
+          level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('x_dtype', [np.float32, np.float16])
 @pytest.mark.parametrize('row', [8000])
 @pytest.mark.parametrize('expert', [64])
 @pytest.mark.parametrize('k', [4])
@@ -178,21 +174,21 @@ def run(x_dtype, row, expert, k, k_group, group_count, group_select_mode, renorm
 @pytest.mark.parametrize('eps', [1e-20])
 @pytest.mark.parametrize('is_dynamic', [True, False])
 @pytest.mark.parametrize('is_debug', [False])
-def test_moe_gating_group_topk_tp4(x_dtype, row, expert, k, k_group, group_count, group_select_mode, renorm,
-                                   norm_type, out_flag, routed_scaling_factor, eps, is_dynamic, is_debug):
+@pytest.mark.parametrize('run_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+def test_moe_gating_group_top4(x_dtype, row, expert, k, k_group, group_count, group_select_mode, renorm,
+                               norm_type, out_flag, routed_scaling_factor, eps, is_dynamic, is_debug, run_mode):
     """
     Feature: 64专家，分4组，选出top4
     Description: What input in what scene
     Expectation: the result is correct
     """
     run(x_dtype, row, expert, k, k_group, group_count, group_select_mode, renorm,
-        norm_type, out_flag, routed_scaling_factor, eps, is_dynamic, is_debug)
+        norm_type, out_flag, routed_scaling_factor, eps, is_dynamic, is_debug, run_mode)
 
 
-@pytest.mark.level1
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.platform_ascend910b
-@pytest.mark.parametrize('x_dtype', [np.float32, np.float16, bfloat16])
+@arg_mark(plat_marks=['platform_ascend910b', 'platform_ascend310p'],
+          level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('x_dtype', [np.float32, np.float16])
 @pytest.mark.parametrize('row', [8000])
 @pytest.mark.parametrize('expert', [64])
 @pytest.mark.parametrize('k', [8])
@@ -206,8 +202,61 @@ def test_moe_gating_group_topk_tp4(x_dtype, row, expert, k, k_group, group_count
 @pytest.mark.parametrize('eps', [1e-20])
 @pytest.mark.parametrize('is_dynamic', [False, True])
 @pytest.mark.parametrize('is_debug', [False])
-def test_moe_gating_group_topk_tp8(x_dtype, row, expert, k, k_group, group_count, group_select_mode, renorm,
-                                   norm_type, out_flag, routed_scaling_factor, eps, is_dynamic, is_debug):
+@pytest.mark.parametrize('run_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+def test_moe_gating_group_top8(x_dtype, row, expert, k, k_group, group_count, group_select_mode, renorm,
+                               norm_type, out_flag, routed_scaling_factor, eps, is_dynamic, is_debug, run_mode):
+    """
+    Feature: 64专家，分8组，选出top8
+    Description: What input in what scene
+    Expectation: the result is correct
+    """
+    run(x_dtype, row, expert, k, k_group, group_count, group_select_mode, renorm,
+        norm_type, out_flag, routed_scaling_factor, eps, is_dynamic, is_debug, run_mode)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('x_dtype', [bfloat16])
+@pytest.mark.parametrize('row', [8000])
+@pytest.mark.parametrize('expert', [64])
+@pytest.mark.parametrize('k', [4])
+@pytest.mark.parametrize('k_group', [4])
+@pytest.mark.parametrize('group_count', [4])
+@pytest.mark.parametrize('group_select_mode', [0])
+@pytest.mark.parametrize('renorm', [0])
+@pytest.mark.parametrize('norm_type', [0])
+@pytest.mark.parametrize('out_flag', [False])
+@pytest.mark.parametrize('routed_scaling_factor', [1.0])
+@pytest.mark.parametrize('eps', [1e-20])
+@pytest.mark.parametrize('is_dynamic', [True, False])
+@pytest.mark.parametrize('is_debug', [False])
+def test_moe_gating_group_top4_bf16(x_dtype, row, expert, k, k_group, group_count, group_select_mode, renorm,
+                                    norm_type, out_flag, routed_scaling_factor, eps, is_dynamic, is_debug):
+    """
+    Feature: 64专家，分4组，选出top4
+    Description: What input in what scene
+    Expectation: the result is correct
+    """
+    run(x_dtype, row, expert, k, k_group, group_count, group_select_mode, renorm,
+        norm_type, out_flag, routed_scaling_factor, eps, is_dynamic, is_debug)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('x_dtype', [bfloat16])
+@pytest.mark.parametrize('row', [8000])
+@pytest.mark.parametrize('expert', [64])
+@pytest.mark.parametrize('k', [8])
+@pytest.mark.parametrize('k_group', [8])
+@pytest.mark.parametrize('group_count', [8])
+@pytest.mark.parametrize('group_select_mode', [0])
+@pytest.mark.parametrize('renorm', [0])
+@pytest.mark.parametrize('norm_type', [0])
+@pytest.mark.parametrize('out_flag', [False])
+@pytest.mark.parametrize('routed_scaling_factor', [1.0])
+@pytest.mark.parametrize('eps', [1e-20])
+@pytest.mark.parametrize('is_dynamic', [False, True])
+@pytest.mark.parametrize('is_debug', [False])
+def test_moe_gating_group_top8_bf16(x_dtype, row, expert, k, k_group, group_count, group_select_mode, renorm,
+                                    norm_type, out_flag, routed_scaling_factor, eps, is_dynamic, is_debug):
     """
     Feature: 64专家，分8组，选出top8
     Description: What input in what scene
