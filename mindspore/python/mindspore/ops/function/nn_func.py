@@ -6373,9 +6373,9 @@ def _get_pad_info(dilation, weight):
     for i in range(2):
         d = dilation[i]
         weight_size = weight.shape[i + 2]
-        pad = d * (weight_size - 1)
-        pad_l += (int(pad / 2),)
-        pad_r += (int(pad - pad_l[i]),)
+        pad_item = d * (weight_size - 1)
+        pad_l += (int(pad_item / 2),)
+        pad_r += (int(pad_item - pad_l[i]),)
         if pad_l[i] != pad_r[i]:
             need_pad_nd = True
     return need_pad_nd, pad_l, pad_r
@@ -7515,7 +7515,7 @@ def pixel_shuffle(input, upscale_factor):
     c, h, w = idx[-3:]
     _check_pxiel_shuffle_valid(c, upscale_factor)
     c = c // upscale_factor ** 2
-    input_perm = (pre + (c, upscale_factor, upscale_factor, h, w))
+    input_perm = pre + (c, upscale_factor, upscale_factor, h, w)
     input = reshape_(input, input_perm)
     input_perm = [i for i in range(length - 2)]
     input_perm = input_perm + [length, length - 2, length + 1, length - 1]
@@ -7579,7 +7579,7 @@ def pixel_unshuffle(input, downscale_factor):
     _check_pxiel_unshuffle_valid(h, w, downscale_factor)
     h = h // downscale_factor
     w = w // downscale_factor
-    input_perm = (pre + (c, h, downscale_factor, w, downscale_factor))
+    input_perm = pre + (c, h, downscale_factor, w, downscale_factor)
     input = reshape_(input, input_perm)
     input_perm = [i for i in range(length - 2)]
     input_perm = input_perm + [length - 1, length + 1, length - 2, length]

@@ -81,7 +81,7 @@ def _save_checkpoint_on_failure(step, save_info, args, cb_ctx):
         append_dict["loss_scale"] = outputs[2]
 
     ckpt_file = f"ttp_rank_{str(cur_rank)}-{str(cur_epoch_num)}_{str(step_num_in_epoch)}.ckpt"
-    cur_ckpt_dir = _get_ckpt_dir(step, ckpt_save_path, True) + "/rank_" + str(cur_rank)
+    cur_ckpt_dir = os.path.join(_get_ckpt_dir(step, ckpt_save_path, True), "rank_" + str(cur_rank))
     os.makedirs(cur_ckpt_dir, exist_ok=True)
     cur_file = os.path.join(cur_ckpt_dir, ckpt_file)
     save_checkpoint(cb_params.train_network, cur_file,

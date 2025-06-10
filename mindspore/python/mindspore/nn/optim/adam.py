@@ -1014,7 +1014,7 @@ class AdamWeightDecay(Optimizer):
         >>>
         >>> loss = nn.SoftmaxCrossEntropyWithLogits()
         >>> model = ms.Model(net, loss_fn=loss, optimizer=optim)
-   """
+    """
     _support_parallel_optimizer = True
 
     def __init__(self, params, learning_rate=1e-3, beta1=0.9, beta2=0.999, eps=1e-6, weight_decay=0.0):

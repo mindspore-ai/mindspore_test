@@ -2119,7 +2119,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
                 self.init = init
                 global_seed = get_seed()
                 self._np_seed = np.random.get_state()[1][0]
-                self.need_set_seed = (slice_index is not None)
+                self.need_set_seed = slice_index is not None
                 self._global_seed = global_seed
                 self._seed_offset = 1
                 if self.need_set_seed:
