@@ -212,7 +212,7 @@ def tuple_input_to_cpp_type(dtype: str):
         'tuple[int]': 'int64_t',
         'tuple[float]': 'float',
         'tuple[bool]': 'bool',
-        'tuple[str]': 'string',
+        'tuple[str]': 'std::string',
         'tuple[tensor]': 'mindspore::tensor::TensorPtr',
         'list[int]': 'int64_t',
         'list[float]': 'float',
@@ -227,9 +227,41 @@ def number_input_to_cpp_type(dtype: str):
         'int': 'int64_t',
         'float': 'float',
         'bool': 'bool',
-        'str': 'string'
+        'str': 'std::string'
     }
     return types_map.get(dtype)
+
+
+def input_dtype_to_cpp_type(dtype: str, optional):
+    """
+    Map input dtype to cpp dtype
+    """
+    type_convert = {
+        'int': 'int64_t',
+        'float': 'float',
+        'bool': 'bool',
+        'number': 'mindspore::ScalarPtr',
+        'str': 'std::string',
+        'tensor': 'mindspore::tensor::BaseTensorPtr',
+        'tuple[int]': 'std::vector<int64_t>',
+        'tuple[float]': 'std::vector<float>',
+        'tuple[bool]': 'std::vector<bool>',
+        'tuple[tensor]': 'std::vector<mindspore::tensor::BaseTensorPtr>',
+        'list[int]': 'std::vector<int64_t>',
+        'list[float]': 'std::vector<float>',
+        'list[bool]': 'std::vector<bool>',
+        'list[tensor]': 'std::vector<mindspore::tensor::BaseTensorPtr>',
+    }
+    optional_tensor_type_convert = {
+        'tensor': 'std::optional<mindspore::tensor::BaseTensorPtr>',
+        'tuple[tensor]': 'std::vector<mindspore::tensor::BaseTensorPtr>',
+        'list[tensor]': 'std::vector<mindspore::tensor::BaseTensorPtr>'
+    }
+    if optional and dtype in optional_tensor_type_convert:
+        return optional_tensor_type_convert[dtype]
+    if dtype in type_convert:
+        return type_convert[dtype]
+    raise TypeError(f"""Unsupported dtype {dtype} for args.""")
 
 
 def get_input_dtype(dtype: str, optional):
