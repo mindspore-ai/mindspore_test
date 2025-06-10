@@ -125,9 +125,25 @@ void ContinugousBroadCastTo(T *input, T *output, int64_t broadcast_dim, size_t b
   if (copy_offsets.size() * copy_size > kParallelDataLenThreshold) {
     auto copy_task = [&](size_t start, size_t end) {
       for (size_t i = start; i < end; ++i) {
-        auto ret = memcpy_s(output + copy_offsets[i].second, copy_size, input + copy_offsets[i].first, copy_size);
-        if (ret != EOK) {
-          MS_LOG(EXCEPTION) << "ContinugousBroadCastTo memcpy_s error. Error no: " << ret << ".";
+        size_t remain_size = copy_size;
+        auto dst_ptr = static_cast<char *>(static_cast<void *>(output + copy_offsets[i].second));
+        auto src_ptr = static_cast<char *>(static_cast<void *>(input + copy_offsets[i].first));
+        while (remain_size > SECUREC_MEM_MAX_LEN) {
+          auto ret = memcpy_s(dst_ptr, SECUREC_MEM_MAX_LEN, src_ptr, SECUREC_MEM_MAX_LEN);
+          if (ret != EOK) {
+            MS_LOG(EXCEPTION) << "For InplaceCopy, memcpy_s error. Error no: " << ret << ", dst: " << dst_ptr
+                              << ", src: " << src_ptr << ", data_size: " << SECUREC_MEM_MAX_LEN;
+          }
+          remain_size -= SECUREC_MEM_MAX_LEN;
+          dst_ptr += SECUREC_MEM_MAX_LEN;
+          src_ptr += SECUREC_MEM_MAX_LEN;
+        }
+        if (remain_size != 0U) {
+          auto ret = memcpy_s(dst_ptr, remain_size, src_ptr, remain_size);
+          if (ret != EOK) {
+            MS_LOG(EXCEPTION) << "For InplaceCopy, memcpy_s error. Error no: " << ret << ", dst: " << dst_ptr
+                              << ", src: " << src_ptr << ", data_size: " << remain_size;
+          }
         }
       }
     };
@@ -256,14 +272,30 @@ void InplaceCopyCpuKernelMod::InplaceCopySameDtypeSameShape(T *input, T *output,
   if (data_size <= kDataLenThreshold) {
     auto ret = memcpy_s(output, data_size, input, data_size);
     if (ret != EOK) {
-      MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', memcpy_s error. Error no: " << ret << ".";
+      MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', memcpy_s error. Error no: " << ret << ", dst: " << output
+                        << ", src: " << input << ", data_size: " << data_size;
     }
   } else {
     auto inplace_copy_task = [&](size_t start, size_t end) {
-      size_t length = (end - start) * sizeof(T);
-      auto ret = memcpy_s(output + start, length, input + start, length);
-      if (ret != EOK) {
-        MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', memcpy_s error. Error no: " << ret << ".";
+      size_t remain_size = LongToSize((SizeToLong(end) - SizeToLong(start))) * sizeof(T);
+      auto dst_ptr = static_cast<char *>(static_cast<void *>(output + start));
+      auto src_ptr = static_cast<char *>(static_cast<void *>(input + start));
+      while (remain_size > SECUREC_MEM_MAX_LEN) {
+        auto ret = memcpy_s(dst_ptr, SECUREC_MEM_MAX_LEN, src_ptr, SECUREC_MEM_MAX_LEN);
+        if (ret != EOK) {
+          MS_LOG(EXCEPTION) << "For InplaceCopy, memcpy_s error. Error no: " << ret << ", dst: " << dst_ptr
+                            << ", src: " << src_ptr << ", data_size: " << SECUREC_MEM_MAX_LEN;
+        }
+        remain_size -= SECUREC_MEM_MAX_LEN;
+        dst_ptr += SECUREC_MEM_MAX_LEN;
+        src_ptr += SECUREC_MEM_MAX_LEN;
+      }
+      if (remain_size != 0U) {
+        auto ret = memcpy_s(dst_ptr, remain_size, src_ptr, remain_size);
+        if (ret != EOK) {
+          MS_LOG(EXCEPTION) << "For InplaceCopy, memcpy_s error. Error no: " << ret << ", dst: " << dst_ptr
+                            << ", src: " << src_ptr << ", data_size: " << remain_size;
+        }
       }
     };
     ParallelLaunchAutoSearch(inplace_copy_task, data_size / sizeof(T), this, &parallel_search_info_);
