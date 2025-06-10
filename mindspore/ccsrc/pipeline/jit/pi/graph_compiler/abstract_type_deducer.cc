@@ -84,6 +84,7 @@ void PrepareEvalFuncGraph(const AnfNodePtr &func, AbstractBasePtrList *args_spec
 }
 
 abstract::AbstractBasePtr EvalFunctionValue(const AnfNodePtr &func, AbstractBasePtrList *args_spec) {
+  MS_EXCEPTION_IF_NULL(func);
   if (func->isa<Primitive>()) {
     auto prim = GetValueNode<PrimitivePtr>(func);
     auto res = abstract::EvalOnePrim(prim, *args_spec);
