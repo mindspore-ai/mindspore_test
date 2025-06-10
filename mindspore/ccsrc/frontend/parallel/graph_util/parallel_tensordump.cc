@@ -110,6 +110,7 @@ void RedistributionParallelTensorDumpHandler::HandleDumpAfterRedistributionNode(
         continue;
       }
       CNodePtr hook_cnode = dump_hook->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(hook_cnode);
       AnfNodePtr hook_prenode = hook_cnode->input(kIndex2);
       (void)fg_manager_->Replace(hook_cnode, hook_prenode);
       auto &hook_prenode_users = node_user_map[hook_prenode];
@@ -297,6 +298,7 @@ void RedistributionParallelTensorDumpHandler::MakeOutModeDumpBwdHookAfterRedistr
       continue;
     }
     const PrimitivePtr &old_hook_prim = GetCNodePrimitive(hook_cnode);
+    MS_EXCEPTION_IF_NULL(old_hook_prim);
     ValuePtr v = GetValueNode(hook_cnode->input(kIndex1));
     const std::string dump_cnode_filepath = GetValue<std::string>(v);
     const std::string bwd_dump_mode = GetValue<std::string>(GetValueNode(hook_cnode->input(kIndex3)));
@@ -338,6 +340,7 @@ std::string GetDumpInputOutputAttr(const AnfNodePtr &dump_node) {
     MS_EXCEPTION(ValueError) << "When Fetch input_output from primitive attributions, meet not TensorDump.";
   }
   auto prim = GetCNodePrimitive(dump_cnode);
+  MS_EXCEPTION_IF_CHECK_FAIL(prim, "Get Primitive from TensorDump failed");
   if (!prim->HasAttr(INPUT_OUTPUT)) {
     MS_EXCEPTION(ValueError) << "TensorDump has no primitive attribute of 'input_output'";
   }
@@ -413,6 +416,7 @@ void FwdCommunicationParallelTensorDumpHandler::MakeOutModeDumpBeforeFwdComm() {
       continue;
     }
     auto prim = GetCNodePrimitive(dump_cnode);
+    MS_EXCEPTION_IF_NULL(prim);
     const std::string dump_mode = GetValue<std::string>(prim->GetAttr(INPUT_OUTPUT));
     if (dump_mode != OUT_MODE) {
       continue;
