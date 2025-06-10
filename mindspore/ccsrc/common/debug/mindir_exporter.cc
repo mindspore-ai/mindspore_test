@@ -235,8 +235,8 @@ bool IrExportBuilder::BuildPrimitivesByMap(std::map<PrimitivePtr, std::string> *
         MS_LOG(ERROR) << "Set value to AttributeProto failed.";
         return false;
       }
-    }  // Loop of attrs
-  }    // Loop of primitives
+    }
+  }
   return true;
 }
 
@@ -600,6 +600,7 @@ bool IrExportBuilder::SetFunctorToAttrProto(const FunctorPtr &func, mind_ir::Att
 
 bool IrExportBuilder::SetScalarGraphHolderToAttrProto(const ops::ScalarGraphHolderPtr &scalar_graph_holder,
                                                       mind_ir::AttributeProto *const attr_proto) {
+  MS_EXCEPTION_IF_NULL(scalar_graph_holder);
   auto *graph_holder_proto = attr_proto->mutable_graph_holder();
   attr_proto->set_type(mind_ir::AttributeProto_AttributeType_SCALAR_GRAPH_HOLDER);
   for (size_t i = 0; i < scalar_graph_holder->GetNodeSize(); i++) {

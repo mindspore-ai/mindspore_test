@@ -240,6 +240,7 @@ AnfNodePtr MulAddFusion::Process(const std::string &pattern_name, const mindspor
                                                                        : add_cnode->input(THIRD_INPUT);
   MS_CHECK_TRUE_RET(mul_node != nullptr, nullptr);
   auto mul_cnode = mul_node->cast<CNodePtr>();
+  MS_CHECK_TRUE_RET(mul_cnode != nullptr, nullptr);
   if (!CheckMulNode(func_graph, mul_cnode)) {
     MS_LOG(DEBUG) << "Mul op is not suit for mul-add-fusion: " << mul_cnode->fullname_with_scope();
     return nullptr;

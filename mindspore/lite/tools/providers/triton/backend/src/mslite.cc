@@ -18,20 +18,22 @@
 #include "triton/backend/backend_model.h"
 #include "triton/backend/backend_model_instance.h"
 
-//
-// Backend that demonstrates using in-process C-API to execute inferences
-// within the backend.
+/**
+ * Backend that demonstrates using in-process C-API to execute inferences
+ * within the backend.
+ */
 
 namespace triton {
 namespace backend {
 namespace mslite {
 extern "C" {
-// Triton calls TRITONBACKEND_Initialize when a backend is loaded into
-// Triton to allow the backend to create and initialize any state that
-// is intended to be shared across all models and model instances that
-// use the backend. The backend should also verify version
-// compatibility with Triton in this function.
-//
+/**
+ * Triton calls TRITONBACKEND_Initialize when a backend is loaded into
+ * Triton to allow the backend to create and initialize any state that
+ * is intended to be shared across all models and model instances that
+ * use the backend. The backend should also verify version
+ * compatibility with Triton in this function.
+ */
 TRITONSERVER_Error *TRITONBACKEND_Initialize(TRITONBACKEND_Backend *backend) {
   const char *cname;
   RETURN_IF_ERROR(TRITONBACKEND_BackendName(backend, &cname));
@@ -39,10 +41,12 @@ TRITONSERVER_Error *TRITONBACKEND_Initialize(TRITONBACKEND_Backend *backend) {
 
   LOG_MESSAGE(TRITONSERVER_LOG_INFO, (std::string("TRITONBACKEND_Initialize: ") + name).c_str());
 
-  // Check the backend API version that Triton supports vs. what this
-  // backend was compiled against. Make sure that the Triton major
-  // version is the same and the minor version is >= what this backend
-  // uses.
+  /**
+   * Check the backend API version that Triton supports vs. what this
+   * backend was compiled against. Make sure that the Triton major
+   * version is the same and the minor version is >= what this backend
+   * uses.
+   */
   uint32_t api_version_major;
   uint32_t api_version_minor;
   RETURN_IF_ERROR(TRITONBACKEND_ApiVersion(&api_version_major, &api_version_minor));
@@ -58,10 +62,12 @@ TRITONSERVER_Error *TRITONBACKEND_Initialize(TRITONBACKEND_Backend *backend) {
     LOG_MESSAGE(TRITONSERVER_LOG_WARN, "triton backend API version does not support this backend");
   }
 
-  // The backend configuration may contain information needed by the
-  // backend, such as tritonserver command-line arguments. This
-  // backend doesn't use any such configuration but for this example
-  // print whatever is available.
+  /**
+   * The backend configuration may contain information needed by the
+   * backend, such as tritonserver command-line arguments. This
+   * backend doesn't use any such configuration but for this example
+   * print whatever is available.
+   */
   TRITONSERVER_Message *backend_config_message;
   RETURN_IF_ERROR(TRITONBACKEND_BackendConfig(backend, &backend_config_message));
 
@@ -73,16 +79,15 @@ TRITONSERVER_Error *TRITONBACKEND_Initialize(TRITONBACKEND_Backend *backend) {
   return nullptr;  // success
 }
 
-// Triton calls TRITONBACKEND_Finalize when a backend is no longer
-// needed.
-//
 TRITONSERVER_Error *TRITONBACKEND_Finalize(TRITONBACKEND_Backend *backend) {
   return nullptr;  // success
 }
 
-// Implementing TRITONBACKEND_ModelInitialize is optional. The backend
-// should initialize any state that is intended to be shared across
-// all instances of the model.
+/**
+ * Implementing TRITONBACKEND_ModelInitialize is optional. The backend
+ * should initialize any state that is intended to be shared across
+ * all instances of the model.
+ */
 TRITONSERVER_Error *TRITONBACKEND_ModelInitialize(TRITONBACKEND_Model *model) {
   const char *const_name;
   RETURN_IF_ERROR(TRITONBACKEND_ModelName(model, &const_name));
@@ -98,10 +103,11 @@ TRITONSERVER_Error *TRITONBACKEND_ModelInitialize(TRITONBACKEND_Model *model) {
 
   return nullptr;  // success
 }
-
-// Implementing TRITONBACKEND_ModelFinalize is optional unless state
-// is set using TRITONBACKEND_ModelSetState. The backend must free
-// this state and perform any other cleanup.
+/**
+ * Implementing TRITONBACKEND_ModelFinalize is optional unless state
+ * is set using TRITONBACKEND_ModelSetState. The backend must free
+ * this state and perform any other cleanup.
+ */
 TRITONSERVER_Error *TRITONBACKEND_ModelFinalize(TRITONBACKEND_Model *model) {
   void *vstate;
   RETURN_IF_ERROR(TRITONBACKEND_ModelState(model, &vstate));
@@ -114,9 +120,11 @@ TRITONSERVER_Error *TRITONBACKEND_ModelFinalize(TRITONBACKEND_Model *model) {
   return nullptr;  // success
 }
 
-// Implementing TRITONBACKEND_ModelInstanceInitialize is optional. The
-// backend should initialize any state that is required for a model
-// instance.
+/**
+ * Implementing TRITONBACKEND_ModelInstanceInitialize is optional. The
+ * backend should initialize any state that is required for a model
+ * instance.
+ */
 TRITONSERVER_Error *TRITONBACKEND_ModelInstanceInitialize(TRITONBACKEND_ModelInstance *model_instance) {
   const char *const_name;
   RETURN_IF_ERROR(TRITONBACKEND_ModelInstanceName(model_instance, &const_name));
@@ -148,9 +156,11 @@ TRITONSERVER_Error *TRITONBACKEND_ModelInstanceInitialize(TRITONBACKEND_ModelIns
   return nullptr;  // success
 }
 
-// Implementing TRITONBACKEND_ModelInstanceFinalize is optional unless
-// state is set using TRITONBACKEND_ModelInstanceSetState. The backend
-// must free this state and perform any other cleanup.
+/**
+ * Implementing TRITONBACKEND_ModelInstanceFinalize is optional unless
+ * state is set using TRITONBACKEND_ModelInstanceSetState. The backend
+ * must free this state and perform any other cleanup.
+ */
 TRITONSERVER_Error *TRITONBACKEND_ModelInstanceFinalize(TRITONBACKEND_ModelInstance *instance) {
   void *vstate;
   RETURN_IF_ERROR(TRITONBACKEND_ModelInstanceState(instance, &vstate));

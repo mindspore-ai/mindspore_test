@@ -562,6 +562,7 @@ AbstractBasePtr GetCNodeInputAbstract(const CNodePtr &cnode, size_t index) {
     abstract = parameter->abstract();
   } else if (utils::isa<ValueNodePtr>(input)) {
     auto value_node = input->cast<ValueNodePtr>();
+    MS_CHECK_TRUE_RET(value_node != nullptr, nullptr);
     abstract = value_node->abstract();
   } else if (utils::isa<CNodePtr>(input)) {
     auto input_cnode = input->cast<CNodePtr>();
