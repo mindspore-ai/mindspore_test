@@ -32,11 +32,13 @@ from .pyboost_utils import is_cube, AclnnUtils, get_return_type, merge_strings_b
     chunk_list
 from .op_template_parser import OpTemplateParser
 
+
 def check_no_basic_int_type(op_args):
     for arg in op_args:
         if arg.arg_dtype in ["tuple[int]", "list[int]", "int"]:
             return False
     return True
+
 
 class PyboostCommonOpHeaderGenerator(BaseGenerator):
     """
@@ -53,6 +55,7 @@ class PyboostCommonOpHeaderGenerator(BaseGenerator):
             '\n   MS_EXCEPTION(NotImplementedError) << "Basic type func not implemented";' \
             '\n};'
         )
+
     def generate(self, work_path, op_protos):
         """
         Generates header files for the provided operator prototypes.
@@ -107,10 +110,6 @@ class PyboostOpHeaderGenerator(BaseGenerator):
         template_dict = {"ascend": template.PYBOOST_ASCEND_OP_HEADER_TEMPLATE,
                          "gpu": template.PYBOOST_GPU_OP_HEADER_TEMPLATE,
                          "cpu": template.PYBOOST_CPU_OP_HEADER_TEMPLATE}
-        reg_str_dict = {"ascend": "Ascend",
-                        "gpu": "GPU",
-                        "cpu": "CPU"}
-        self.device_reg_str = reg_str_dict[device]
         if device not in template_dict:
             raise ValueError(
                 f"Device must be ascend, gpu, or cpu, {device} is not supported")
@@ -284,7 +283,7 @@ class PyboostOpCppGenerator:
                 continue
             is_ascend_comm_op = op_proto.op_dispatch.is_comm_op and self.device == 'ascend'
             op_parser = OpTemplateParser(op_proto)
-            call_args = op_parser.parse_original_call_args(op_proto.op_args)
+            call_args = OpTemplateParser.parse_original_call_args(op_proto.op_args)
             if op_proto.op_view and not check_no_basic_int_type(op_proto.op_args):
                 call_args_with_type = op_parser.parse_call_args_with_types(True)
             else:
@@ -321,7 +320,7 @@ must be provided for comm op {operator_name}")
                                                                device=self.device_reg_str,
                                                                register_custom_kernel=register_custom)
             if is_ascend_comm_op:
-                merge_op_hccl_header.append(\
+                merge_op_hccl_header.append(
                     self.PYBOOST_SINGLE_HCLL_OP_HEADER_TEMPLATE.replace(operator_name=operator_name,
                                                                         customize_include=customize_include))
                 merge_op_hccl_function.append(
@@ -342,7 +341,6 @@ must be provided for comm op {operator_name}")
                                                                    op_register=op_register,
                                                                    device=self.device_reg_str))
                 merge_op_inc.append(op_name_str)
-
 
     def _get_register_custom_kernel(self, op_proto: OpProto):
         """
@@ -440,10 +438,10 @@ class PyboostViewOpCppGenerator:
 
             op_parser = OpTemplateParser(op_proto)
             call_args_tensor = op_parser.get_call_args_tensor()
-            call_args = op_parser.parse_original_call_args(op_proto.op_args)
+            call_args = OpTemplateParser.parse_original_call_args(op_proto.op_args)
             if op_proto.op_view and not check_no_basic_int_type(op_proto.op_args):
                 call_args_with_type = op_parser.parse_call_args_with_types(True)
-                storage_calc_str = op_proto.op_class.name+"BasicType"
+                storage_calc_str = op_proto.op_class.name + "BasicType"
                 calc_func_args_str = call_args
             else:
                 call_args_with_type = op_parser.parse_call_args_with_types()
@@ -556,11 +554,11 @@ class AclnnOpCppCodeGenerator:
             aclnn_name = AclnnUtils.get_aclnn_interface(op_proto.op_class.name)
 
             call_args_tensor = op_parser.get_call_args_tensor()
-            create_input_address = self._generate_create_input_address(
+            create_input_address = AclnnOpCppCodeGenerator._generate_create_input_address(
                 op_parser)
-            malloc_inputs = self._generate_malloc_input(op_parser)
+            malloc_inputs = AclnnOpCppCodeGenerator._generate_malloc_input(op_parser)
             op_outputs, call_func_outputs = op_parser.generate_pyboost_outputs()
-            get_inputs_kernel_tensors = self._generate_get_inputs_kernel_tensors(
+            get_inputs_kernel_tensors = AclnnOpCppCodeGenerator._generate_get_inputs_kernel_tensors(
                 op_parser)
 
             cube_math_type, get_cube_math_type = '', ''
@@ -572,12 +570,12 @@ class AclnnOpCppCodeGenerator:
             real_output = ', ' + op_outputs \
                 if _generate_inplace_process_cpp_code(op_proto) == '' else ''
 
-            cast_input_code, real_call_args_tensor = self._generate_tensor_cpu_cast_input_code(
+            cast_input_code, real_call_args_tensor = AclnnOpCppCodeGenerator._generate_tensor_cpu_cast_input_code(
                 op_parser)
             cpp_func_return = _generate_cpp_func_return(op_proto)
             _, tensor_list_convert, call_args_with_tensor = op_parser.parse_need_malloc_tensors()
             call_args_after_convert, value_tuple_convert, const_number_convert = op_parser.op_args_converter()
-            call_args = op_parser.parse_original_call_args(op_proto.op_args)
+            call_args = OpTemplateParser.parse_original_call_args(op_proto.op_args)
             if op_proto.op_view and not check_no_basic_int_type(op_proto.op_args):
                 call_args_with_type = op_parser.parse_call_args_with_types(True)
             else:
@@ -618,7 +616,8 @@ class AclnnOpCppCodeGenerator:
                                                                device=self.device_reg_str))
             ascend_merge_op_inc.append(op_proto.op_class.name)
 
-    def _generate_tensor_cpu_cast_input_code(self, op_parser: OpTemplateParser):
+    @staticmethod
+    def _generate_tensor_cpu_cast_input_code(op_parser: OpTemplateParser):
         """
         Generates the input casting code for CPU tensor operations.
 
@@ -648,18 +647,17 @@ class AclnnOpCppCodeGenerator:
             cast_input = "auto &select_kernel = kernel_attr_pair.second;\n" + cast_input
         return cast_input, real_call_args_tensor
 
-    def _generate_create_input_address(self, op_parser: OpTemplateParser):
+    @staticmethod
+    def _generate_create_input_address(op_parser: OpTemplateParser):
         need_malloc_tensors, _, _ = op_parser.parse_need_malloc_tensors()
         create_input_address = ''
-        args_list = ''
-        for item in need_malloc_tensors:
-            args_list += f'{item}, '
-        args_list = args_list[:-2]
+        args_list = ', '.join(str(item) for item in need_malloc_tensors)
         if args_list:
             create_input_address = f'PyBoostUtils::PrepareOpInputs(device_context_, op->stream_id(), {args_list});\n'
         return create_input_address
 
-    def _generate_malloc_input(self, op_parser: OpTemplateParser):
+    @staticmethod
+    def _generate_malloc_input(op_parser: OpTemplateParser):
         """
         Generates the code for creating input addresses for tensors that need to be allocated.
 
@@ -671,15 +669,13 @@ class AclnnOpCppCodeGenerator:
         """
         need_malloc_tensors, _, _ = op_parser.parse_need_malloc_tensors()
         malloc_inputs = ''
-        args_list = ''
-        for item in need_malloc_tensors:
-            args_list += f'{item}, '
-        args_list = args_list[:-2]
+        args_list = ', '.join(str(item) for item in need_malloc_tensors)
         if args_list:
             malloc_inputs += f'PyBoostUtils::MallocOpInputs(device_context, {args_list});\n'
         return malloc_inputs
 
-    def _generate_get_inputs_kernel_tensors(self, op_parser: OpTemplateParser):
+    @staticmethod
+    def _generate_get_inputs_kernel_tensors(op_parser: OpTemplateParser):
         """
         Generates the code for retrieving input kernel tensors.
 
@@ -691,10 +687,7 @@ class AclnnOpCppCodeGenerator:
         """
         _, _, call_args_with_tensor = op_parser.parse_need_malloc_tensors()
         inputs_kernel_tensors = ''
-        args_list = ''
-        for item in call_args_with_tensor:
-            args_list += f'{item}, '
-        args_list = args_list[:-2]
+        args_list = ', '.join(str(item) for item in call_args_with_tensor)
         if args_list:
             inputs_kernel_tensors += f'const auto &input_address_info = PyBoostUtils::GetAddressInfo(' \
                                      f'device_context, op->stream_id(), op->input_abs(), {args_list});\n'
@@ -762,7 +755,7 @@ class InternalOpCppCodeGenerator:
         call_args_with_type = op_parser.parse_call_args_with_types()
         cpp_func_return = _generate_cpp_func_return(op_proto)
         _, call_func_outputs = op_parser.generate_pyboost_outputs()
-        call_args = op_parser.parse_original_call_args(op_proto.op_args)
+        call_args = OpTemplateParser.parse_original_call_args(op_proto.op_args)
         call_args_after_convert, value_tuple_convert, const_number_convert = op_parser.op_args_converter()
         create_input_address, create_output_address = self._create_input_and_output_address(op_parser, op_proto)
         internal_op_source_str = self.internal_single_op_source_template.replace(
@@ -836,7 +829,7 @@ class InternalOpCppCodeGenerator:
 
         # generate op function
         _, call_func_outputs = op_parser.generate_pyboost_outputs()
-        call_args = op_parser.parse_original_call_args(op_proto.op_args)
+        call_args = OpTemplateParser.parse_original_call_args(op_proto.op_args)
         internal_op_source_str = self.internal_single_op_customize_source_template.replace(
             op_name=op_proto.op_class.name,
             call_args=call_args,
@@ -1079,8 +1072,7 @@ class PyboostOpFunctionGenerator(BaseGenerator):
             None
         """
         all_files = os.listdir(files_path)
-        old_pyboost_ops_files = [file for file in all_files if re.match(
-            r'pyboost_.*_ops_.*\.cc', file)]
+        old_pyboost_ops_files = [file for file in all_files if re.match(r'pyboost_.*_ops_.*\.cc', file)]
         old_files_num = len(old_pyboost_ops_files)
         if new_gen_num != old_files_num:
             for file in old_pyboost_ops_files:
@@ -1212,12 +1204,11 @@ class PyboostOpRegisterCppCodeGenerator:
         for op_proto in op_protos:
             if op_proto.op_dispatch is None:
                 continue
-            functional_name = op_proto.op_name
             op_name_str = op_proto.op_class.name
             if getattr(op_proto.op_dispatch, 'internal_op_ascend') != 'None':
                 internal_op_names.append(op_name_str)
             all_op_names.append(op_name_str)
-            all_functional_names.append(functional_name)
+            all_functional_names.append(op_proto.op_name)
 
         include_str = ''
         factory_str = ''

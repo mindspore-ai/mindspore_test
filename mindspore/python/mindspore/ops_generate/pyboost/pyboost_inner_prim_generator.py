@@ -122,7 +122,7 @@ class PyboostInnerPrimGenerator(BaseGenerator):
             arg_name = arg.arg_name
             arg_handler = arg.arg_handler
             processed_arg = arg_name
-            if arg_handler != '' and arg_handler != 'dtype_to_type_id':
+            if arg_handler not in ('', 'dtype_to_type_id'):
                 process_func += \
                     f"""converted_{arg_name} = {arg_handler}('{operator_name}', '{arg_name}', {arg_name})\n"""
                 processed_arg = 'converted_' + arg_name

@@ -115,7 +115,7 @@ class PyboostFunctionsPyGenerator(BaseGenerator):
             arg_handler = op_arg.arg_handler
             arg_name = op_arg.arg_name
             input_arg = arg_name
-            if arg_handler != '' and arg_handler != 'dtype_to_type_id':
+            if arg_handler not in ('', 'dtype_to_type_id'):
                 input_arg = 'converted_' + arg_name
             input_args.append(input_arg)
             default_value = op_arg.default
