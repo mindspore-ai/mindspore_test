@@ -38,6 +38,7 @@ class PipelineCell(Cell):
         network (Cell): The target network to wrap.
         micro_size (int): MicroBatch size.
         stage_config (dict, optional): The stage configuration for each cell's execution in pipeline parallel.
+        segment_config (dict, optional): The segment configuration for each cell's execution in pipeline parallel.
 
     Supported Platforms:
         ``Ascend``
