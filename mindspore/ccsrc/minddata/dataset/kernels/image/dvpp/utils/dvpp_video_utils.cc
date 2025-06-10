@@ -202,13 +202,13 @@ static void vdec_reset_chn(uint32_t chn) {
   }
 }
 
-static thread_local uint32_t local_device = -1;
+static thread_local int32_t local_device = -1;
+static std::unordered_map<int32_t, aclrtContext> used_devices;
 std::recursive_mutex mtx;
-static std::unordered_map<int8_t, aclrtContext> used_devices;
 
-aclError SetDevice(uint32_t device) {
+aclError SetDevice(int32_t device) {
   if (device < 0) {
-    MS_EXCEPTION(RuntimeError) << "device id must be positive!";
+    MS_EXCEPTION(RuntimeError) << "Device id must be positive!";
   }
 
   if (local_device == device) {
@@ -222,7 +222,7 @@ aclError SetDevice(uint32_t device) {
     if (used_devices.find(local_device) == used_devices.end()) {
       aclError ret = aclrtGetCurrentContext(&used_devices[local_device]);
       if (ret != ACL_SUCCESS) {
-        MS_EXCEPTION(RuntimeError) << "aclrtGetCurrentContext failed.";
+        MS_EXCEPTION(RuntimeError) << "Call aclrtGetCurrentContext failed, ret: " << ret;
       }
     }
   }
@@ -355,7 +355,7 @@ aclError GetDevice(int32_t *device) {
   }
   aclError err = aclrtGetDevice(device);
   if (err != ACL_SUCCESS) {
-    MS_EXCEPTION(RuntimeError) << err;
+    MS_EXCEPTION(RuntimeError) << "Call aclrtGetDevice failed, ret: " << err;
   }
   if (err == ACL_SUCCESS) {
     local_device = *device;

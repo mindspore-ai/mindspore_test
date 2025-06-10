@@ -29,7 +29,6 @@ import platform
 import random
 import numpy
 import mindspore._c_dataengine as cde
-import mindspore
 from mindspore import log as logger
 from mindspore.dataset.core.validator_helpers import replace_none, type_check, check_valid_str
 from mindspore.dataset.debug import DebugHook, PrintMetaDataHook
@@ -1195,9 +1194,6 @@ def set_video_backend(backend):
     type_check(backend, (str,), "backend")
     check_valid_str(backend, ["CPU", "Ascend"], "backend")
     _config.set_video_backend(backend)
-    if backend == "Ascend":
-        mindspore.set_device(backend, device_id=0)
-        cde.dvpp_sys_init()
 
 
 def get_video_backend():

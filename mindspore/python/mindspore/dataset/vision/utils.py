@@ -30,7 +30,7 @@ import mindspore
 import mindspore._c_dataengine as cde
 from mindspore import log as logger
 from mindspore.dataset.core.validator_helpers import check_file, check_value, type_check, type_check_list
-from ..core.config import get_video_backend, set_video_backend
+from ..core.config import get_video_backend
 
 _CALLED_TIMES = 0
 _GC_COLLECTION_INTERVAL = 10
@@ -876,7 +876,7 @@ def _read_from_stream_ffmpeg(container, start_offset, end_offset, pts_unit, stre
 def _read_video_dvpp(filename, start_pts=0, end_pts=None, pts_unit="pts", output_format="THWC"):
     """ Read video with DVPP. """
 
-    set_video_backend("Ascend")
+    cde.dvpp_sys_init()
 
     output_format = output_format.upper()
     if output_format not in ("THWC", "TCHW"):
