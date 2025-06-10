@@ -316,6 +316,7 @@ void MindIREngine::EvalPartialPrimitive(const CNodePtr &node, const AbstractBase
 
 void MindIREngine::EvalPartialAbastract(const abstract::PartialAbstractClosurePtr &func, const CNodePtr &node,
                                         const AbstractBasePtrListPtr &args) {
+  MS_EXCEPTION_IF_NULL(func);
   AbstractBasePtrListPtr partial_args_list = std::make_shared<AbstractBasePtrList>();
   // Join arguments in partial and the rest arguments from args_conf_list.
   auto func_args = func->args();

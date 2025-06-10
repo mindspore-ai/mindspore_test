@@ -300,12 +300,12 @@ uint8_t *AscendMemAdapter::MallocFromRts(size_t size) const {
       auto context_ptr = MsContext::GetInstance();
       MS_EXCEPTION_IF_NULL(context_ptr);
       unsigned int device_id = context_ptr->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-      size_t free = 0;
+      size_t free_size = 0;
       size_t total = 0;
-      (void)CALL_ASCEND_API(aclrtGetMemInfo, ACL_HBM_MEM, &free, &total);
+      (void)CALL_ASCEND_API(aclrtGetMemInfo, ACL_HBM_MEM, &free_size, &total);
       MS_LOG(EXCEPTION) << "#umsg#Framework Error Message:#umsg#Malloc device memory failed, size[" << size << "], ret["
                         << ret << "], "
-                        << "Device " << device_id << " Available MOC size:" << total << " free size:" << free
+                        << "Device " << device_id << " Available MOC size:" << total << " free size:" << free_size
                         << " may be other processes occupying this card, check as: ps -ef|grep python";
     } else {
       MS_EXCEPTION(DeviceProcessError) << "rtMalloc mem size[" << size << "] fail, ret[" << ret << "]";
