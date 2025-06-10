@@ -498,3 +498,54 @@ def test_not_raise_joinedstr_scalar_join_grad_in_graph():
     res = grad_func(func, input_x, input_y, input_z)
     assert np.all(res.asnumpy() == np.array([0]))
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_raise_joinedstr_multi_input_control_flow_grad_in_pynative():
+    """
+    Feature: Test raise syntax in strict mode.
+    Description: Test raise syntax in strict mode.
+    Expectation: Throw correct exception when needed.
+    """
+    @jit
+    def func(x, y):
+        if x < y:
+            raise ValueError(f"The input is {x} ", "and", f"{y}")
+        return x + y
+
+    def grad_func(foo, x, y):
+        return ops.grad(foo)(x, y)
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '0'
+    input_x = Tensor([1])
+    input_y = Tensor([2])
+    with pytest.raises(ValueError) as raise_info:
+        res = grad_func(func, input_x, input_y)
+        print(res)
+    assert "('The input is [1] ', 'and', '[2]')" in str(raise_info.value)
+    os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_not_raise_joinedstr_multi_input_control_flow_grad_in_pynative():
+    """
+    Feature: Test raise syntax in strict mode.
+    Description: Test raise syntax in strict mode.
+    Expectation: Throw correct exception when needed.
+    """
+    @jit
+    def func(x, y):
+        if x < y:
+            raise ValueError(f"The input is {x} ", "and", f"{y}")
+        return x + y
+
+    def grad_func(foo, x, y):
+        return ops.grad(foo)(x, y)
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '0'
+    input_x = Tensor([2])
+    input_y = Tensor([1])
+    res = grad_func(func, input_x, input_y)
+    assert np.all(res.asnumpy() == np.array([1]))
+    os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
