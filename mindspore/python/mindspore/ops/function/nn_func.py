@@ -6307,7 +6307,7 @@ def conv1d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups
             this 1D convolution layer also can be called 1D depthwise convolution layer. Default: ``1`` .
 
             - :math:`(C_{in} \text{ % } \text{groups} == 0)` , :math:`(C_{out} \text{ % } \text{groups} == 0)` ,
-              :math:`(C_{out} >= \text{groups})` , :math:`(\text{kernel_size[1]} = C_{in} / \text{groups})`。
+              :math:`(C_{out} >= \text{groups})` , :math:`(\text{weight[1]} = C_{in} / \text{groups})`。
 
     Returns:
         Tensor, the value that applied 1D convolution. The shape is :math:`(N, C_{out}, L_{out})`.
@@ -6477,7 +6477,7 @@ def conv2d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups
         groups (int, optional): Splits `input` into groups. Default: ``1`` .
 
             - :math:`(C_{in} \text{ % } \text{groups} == 0)` , :math:`(C_{out} \text{ % } \text{groups} == 0)` ,
-              :math:`(C_{out} >= \text{groups})` , :math:`(\text{kernel_size[1]} = C_{in} / \text{groups})`
+              :math:`(C_{out} >= \text{groups})` , :math:`(\text{weight[1]} = C_{in} / \text{groups})`
 
     Returns:
         Tensor, the value that applied 2D convolution. The shape is :math:`(N, C_{out}, H_{out}, W_{out})`.

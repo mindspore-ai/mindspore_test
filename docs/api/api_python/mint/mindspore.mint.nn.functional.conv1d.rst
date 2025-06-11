@@ -46,7 +46,7 @@ mindspore.mint.nn.functional.conv1d
           假设 :math:`dilation=(d)`, 则卷积核在长度方向间隔 :math:`d-1` 个元素进行采样。默认值： ``1`` 。
         - **groups** (int，可选) - 将过滤器拆分为组， `in_channels` 和 `out_channels` 必须可被 `groups` 整除。如果组数等于 `in_channels` 和 `out_channels` ，这个一维卷积层也被称为一维深度卷积层。默认值： ``1`` 。
 
-          - :math:`(C_{in} \text{ % } \text{groups} == 0)` ， :math:`(C_{out} \text{ % } \text{groups} == 0)` ， :math:`(C_{out} >= \text{groups})` ， :math:`(\text{kernel_size[1]} = C_{in} / \text{groups})` 。
+          - :math:`(C_{in} \text{ % } \text{groups} == 0)` ， :math:`(C_{out} \text{ % } \text{groups} == 0)` ， :math:`(C_{out} >= \text{groups})` ， :math:`(\text{weight[1]} = C_{in} / \text{groups})` 。
 
     返回：
         Tensor，卷积后的值。shape为 :math:`(N, C_{out}, L_{out})` 。

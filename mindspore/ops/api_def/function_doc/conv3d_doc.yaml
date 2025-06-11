@@ -1,6 +1,6 @@
 conv3d:
     description: |
-        conv3d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1) -> Tensor
+        conv3d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1) -> Tensor
 
         Applies a 3D convolution over an input tensor. The input tensor is typically of
         shape :math:`(N, C_{in}, D_{in}, H_{in}, W_{in})` or :math:`(C_{in}, D_{in}, H_{in}, W_{in})`,
