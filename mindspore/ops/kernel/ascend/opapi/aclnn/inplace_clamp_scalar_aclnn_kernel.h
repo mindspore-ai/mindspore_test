@@ -37,6 +37,8 @@ class InplaceClampScalarAclnnKernelMod : public AclnnKernelMod {
   void GetScalarVal(TypeId dtype_id, KernelTensor *input);
 
  private:
+  ScalarPtr min_scalar_ = nullptr;
+  ScalarPtr max_scalar_ = nullptr;
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
 }  // namespace inplace_clamp_scalar
