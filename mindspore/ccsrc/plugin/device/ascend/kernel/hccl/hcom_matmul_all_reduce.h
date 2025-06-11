@@ -42,7 +42,7 @@ class HcomMatMulAllReduceKernel : public HcclKernel {
  private:
   bool transpose_a_{false};
   bool transpose_b_{false};
-#ifdef ENABLE_INTERNAL_KERNELS
+
   Lcal::CoCDataTypeDesc lcoc_dtype_{Lcal::CoCDataTypeDesc::FP16FP16_FP32_FP16};
   Lcal::LcalType lcoc_type_{Lcal::LcalType::MATMUL_ALL_REDUCE};
   Lcal::QuantInfo quant_info_{};
@@ -53,7 +53,6 @@ class HcomMatMulAllReduceKernel : public HcclKernel {
   SetParamForLcocFunPtr set_param_for_lcoc_func_{nullptr};
   GetLcocWorkspaceSizeFunPtr get_lcoc_workspace_func_{nullptr};
   MatmulAllReduceFunPtr matmul_all_reduce_func_{nullptr};
-#endif
 };
 
 MS_HCCL_REG_KERNEL(MatMulAllReduce, HcomMatMulAllReduceKernel);

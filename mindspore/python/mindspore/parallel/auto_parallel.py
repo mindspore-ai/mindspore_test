@@ -689,13 +689,6 @@ class AutoParallel(Cell):
                   - 2: Apply fusion to backward nodes.
 
                   - 3: Apply fusion to all nodes.
-
-                  .. warning::
-                    When enabling the fusion of computation and communication, if you also set
-                    ``export MS_ENABLE_LCCL=true``, the MTE-based fusion operator will be used. In some scenarios,
-                    this may lead to greater performance gains. Please note that this operator is still in an
-                    experimental stage and may be changed or removed in the future.
-
                 - dataset_broadcast_opt_level (int): Optimize the scenario that the dataset repeated reading. Only
                   support O0/O1 jit level. It doesn't work in O2 mode. Default: ``0``.
 

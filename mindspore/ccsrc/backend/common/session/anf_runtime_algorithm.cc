@@ -2068,8 +2068,8 @@ bool AnfRuntimeAlgorithm::IsKernelSelectBackoffOp(const AnfNodePtr &node) {
 }
 
 bool AnfRuntimeAlgorithm::IsNeedContinuesMemoryOp(const AnfNodePtr &kernel) {
-  static std::set<std::string> names = {kMatMulAllReduceOpName, kAlltoAllVOpName,       kAllGatherVOpName,
-                                        kReduceScatterVOpName,  kAllGatherMatmulOpName, kMatmulReduceScatterOpName};
+  static std::set<std::string> names = {kMatMulAllReduceOpName, kAlltoAllVOpName, kAllGatherVOpName,
+                                        kReduceScatterVOpName};
   bool flag = (common::AnfAlgo::IsCommunicationOp(kernel)) && (names.count(common::AnfAlgo::GetCNodeName(kernel)) == 0);
   return flag;
 }
