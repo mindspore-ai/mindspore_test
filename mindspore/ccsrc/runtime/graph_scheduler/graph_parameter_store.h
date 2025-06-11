@@ -111,7 +111,7 @@ class BACKEND_EXPORT GraphParameterStore {
     return kernel_tensor_with_info.second.first;
   }
 
-  void SetFrontNodeToIndex(const AnfNodePtr &node, size_t index);
+  void SetFrontNodeToIndex(AnfNode *node, size_t index);
 
   size_t GetFrontNodeToIndex(AnfNode *node) {
     MS_EXCEPTION_IF_NULL(node);
@@ -185,6 +185,14 @@ class BACKEND_EXPORT GraphParameterStore {
   // Release input data at the end of run graph.
   void ReleaseData();
 
+  void SetPositionWeight(size_t outer_index, bool is_weight);
+  bool GetPositionWeight(size_t outer_index);
+  size_t GetNonWeightParameterNum();
+
+  // Insert and refresh ref device tensor when device tensor changed in store.
+  void InsertRefDeviceTensors(const DeviceTensorPosition &key, DeviceTensor *value);
+  void RefreshRefDeviceTensor(const DeviceTensorPosition &key);
+
   // Insert host tensor data and src device tensor into callback to avoid release before async copy finished.
   void InsertTensorDataIntoCallback(const TensorDataPtr &tensor_data);
   void InsertDeviceTensorIntoCallback(const DeviceTensorPtr &device_tensor);
@@ -229,6 +237,8 @@ class BACKEND_EXPORT GraphParameterStore {
   std::map<DeviceTensorPosition, std::pair<TypePtr, KernelWithIndex>> release_data_info_;
 
   std::map<AnfNode *, size_t> front_node_to_index_;
+
+  size_t weight_num_{0};
 
   // When front node to index failed, use the map to find real front node.
   std::map<KernelWithIndex, KernelWithIndex> node_to_real_front_node_;

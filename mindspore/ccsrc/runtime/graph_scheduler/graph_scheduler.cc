@@ -486,7 +486,11 @@ void InitGraphParameterStore(const GraphCompilerInfo &graph_compiler_info) {
     }
     auto inner_size = common::AnfAlgo::GetOutputNumByAbstract(abstract);
     graph_parameter_store->ResizePosition(i, inner_size);
-    graph_parameter_store->SetFrontNodeToIndex(graph_compiler_info.origin_parameters_order_[i], i);
+    graph_parameter_store->SetFrontNodeToIndex(graph_compiler_info.origin_parameters_order_[i].get(), i);
+    if (graph_compiler_info.origin_parameters_order_[i]->isa<Parameter>() &&
+        (common::AnfAlgo::IsParameterWeight(graph_compiler_info.origin_parameters_order_[i]->cast<ParameterPtr>()))) {
+      graph_parameter_store->SetPositionWeight(i, true);
+    }
     MS_LOG(DEBUG) << "Init store inner: outer index: " << i << ", inner size: " << inner_size
                   << ", parameter: " << graph_compiler_info.origin_parameters_order_[i]->DebugString();
   }

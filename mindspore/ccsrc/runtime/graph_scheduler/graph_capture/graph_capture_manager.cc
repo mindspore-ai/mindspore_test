@@ -144,7 +144,7 @@ void GraphCaptureManager::Initialize(const DeviceContext *device_context) {
   init_ = true;
 }
 
-void GraphCaptureManager::ResetCaptureGraphs(const DeviceContext *device_context) {
+void GraphCaptureManager::Reset(const DeviceContext *device_context) {
   if (capture_graph_ && capture_graph_->HasCapturedGraph()) {
     capture_graphs_.clear();
 
@@ -156,6 +156,15 @@ void GraphCaptureManager::ResetCaptureGraphs(const DeviceContext *device_context
       capture_graph_ = capture_graphs_.front();
       MS_EXCEPTION_IF_NULL(capture_graph_);
     }
+  }
+  if (!fixed_addrs_for_update_.empty()) {
+    fixed_addrs_for_update_.clear();
+  }
+  if (!fixed_addrs_for_set_inputs_.empty()) {
+    fixed_addrs_for_set_inputs_.clear();
+  }
+  if (!weight_kv_addrs_.empty()) {
+    weight_kv_addrs_.clear();
   }
 }
 
@@ -222,10 +231,178 @@ bool GraphCaptureManager::LaunchAllKernelsWithReplayGraph(OpContext<KernelTensor
   return true;
 }
 
+void GraphCaptureManager::HandleFirstUserMemoryFree(const KernelTensorPtr &kernel_tensor,
+                                                    const KernelRunnerPtr &kernel_actor,
+                                                    std::queue<std::vector<KernelTensorPtr>> *memory_free_lists) {
+  if (ActorDispatcher::enable_use_trace_memory() && kernel_tensor->new_ref_count() != SIZE_MAX) {
+    memory_free_lists->back().emplace_back(kernel_tensor);
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "Add memory free list for tensor:" << kernel_tensor->ToString();
+  }
+}
+
+bool GraphCaptureManager::IsWeightOrKVCache(GraphParameterStore *cur_graph_parameter_store, const AnfNodePtr &node,
+                                            size_t parameter_idx) {
+  bool is_weight = cur_graph_parameter_store->GetPositionWeight(parameter_idx);
+  std::string cur_node_name = node->fullname_with_scope();
+  bool is_kv_cache =
+    (cur_node_name.find("key_cache") != std::string::npos || cur_node_name.find("value_cache") != std::string::npos);
+  return is_weight || is_kv_cache;
+}
+
+void GraphCaptureManager::FetchAllInputsBeforeCaptureGraph(
+  OpContext<KernelTensor> *const context, size_t stream_id, const std::vector<KernelRunnerPtr> &kernel_runners,
+  std::queue<std::vector<KernelTensorPtr>> *memory_free_lists) {
+  MS_LOG(INFO) << "Begin fetch all kernels inputs before capture graph.";
+  size_t kernel_num = kernel_runners.size();
+  auto cur_graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
+  MS_EXCEPTION_IF_NULL(cur_graph_parameter_store);
+  for (size_t i = 0; i < kernel_num; i++) {
+    const auto &kernel_actor = kernel_runners[i];
+    if (kernel_actor == nullptr) {
+      continue;
+    }
+    for (const auto &parameter_index : kernel_actor->parameter_indexs()) {
+      size_t kernel_input_index = parameter_index.first;
+      auto inner_index = parameter_index.second.first;
+      auto node = parameter_index.second.first.first;
+      bool is_first_user = kernel_actor->is_first_used_params()[kernel_input_index];
+      auto kernel_tensor =
+        FetchParameter(parameter_index.second, context, kernel_actor->GetAID(), is_first_user, stream_id, false);
+      const auto &device_tensor = kernel_tensor->device_address();
+      MS_EXCEPTION_IF_NULL(device_tensor);
+      auto cur_device_context = kernel_actor->device_contexts()[0];
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+        << "Actor: " << kernel_actor->GetAID().Name() << ", input index: " << parameter_index.first
+        << ", device tensor: " << device_tensor << ", ptr: " << device_tensor->GetPtr()
+        << " new ref count:" << device_tensor->new_ref_count()
+        << " super kernel actor context:" << cur_device_context->device_context_key().ToString()
+        << " kernel actor context:" << cur_device_context->device_context_key().ToString();
+      auto real_input_data_infos = kernel_actor->real_input_data_infos();
+      auto &real_input_info = real_input_data_infos[kernel_input_index];
+      if ((device_tensor->GetDeviceType() != cur_device_context->GetDeviceType()) ||
+          !AnfAlgo::IsEquivalentFormat(kernel_tensor->format(), real_input_info->format_) ||
+          device_tensor->type_id() != real_input_info->type_id_) {
+        MS_EXCEPTION(RuntimeError) << "Does not support heterogeneous scenarios";
+      }
+      // deal weight/KV Cache
+      if (IsWeightOrKVCache(cur_graph_parameter_store, node, kernel_input_index)) {
+        // Save the weight or kv value for the subsequent CheckWeightAndKVCacheNotChange function.
+        if (weight_kv_addrs_.find(parameter_index.second.first) == weight_kv_addrs_.end()) {
+          weight_kv_addrs_[parameter_index.second.first] = {kernel_tensor, parameter_index.second.second, kernel_actor};
+        }
+        kernel_actor->SetInputDeviceTensor(kernel_tensor, parameter_index.first);
+        continue;
+      }
+      // deal with mormal inputs
+      if (fixed_addrs_for_set_inputs_.find(parameter_index.second.first) == fixed_addrs_for_set_inputs_.end()) {
+        auto strategy = kernel_actor->get_strategy();
+        auto fix_kernel_tensor = AnfAlgo::CreateKernelTensor(
+          kernel_tensor->GetShape(), kernel_tensor->GetType(), kernel_tensor->GetValueTrack(), nullptr,
+          real_input_info->size_, kernel::GetFormatFromEnumToStr(real_input_info->format_), real_input_info->type_id_,
+          real_input_info->shape_, cur_device_context->device_context_key().device_name_,
+          cur_device_context->device_context_key().device_id_, device_tensor->user_data());
+        MS_EXCEPTION_IF_NULL(kernel_tensor->GetShape());
+        fix_kernel_tensor->SetShape(kernel_tensor->GetShape()->Clone());
+        fix_kernel_tensor->set_size(device_tensor->GetSize());
+        auto fix_device_tensor = fix_kernel_tensor->device_address();
+        if (fix_device_tensor->GetPtr() == nullptr) {
+          device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, kernel_actor->GetAID().Name(),
+                                                         memory::mem_pool::MemType::kOther,
+                                                         fix_device_tensor->GetSize(), fix_device_tensor.get());
+          if (!cur_device_context->device_res_manager_->AllocateMemory(fix_device_tensor.get(), kDefaultStreamIndex)) {
+            SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(strategy, *context, *(cur_device_context),
+                                                        kernel_actor->GetAID().Name(), fix_device_tensor->GetSize());
+          }
+        }
+        if (!AsyncCopy(fix_device_tensor.get(), device_tensor.get(), stream_id)) {
+          MS_LOG(EXCEPTION) << "Async copy failed, src kernel tensor: " << kernel_tensor->ToString()
+                            << ", dst kernel tensor: " << fix_kernel_tensor->ToString();
+        }
+        // The fixed_addrs_for_set_inputs_ is to set input for kernel actors during the capture phase.
+        fixed_addrs_for_set_inputs_[parameter_index.second.first] = fix_kernel_tensor;
+        // The fixed_addrs_for_update_ is to update the fix_addr again before the replay phase.
+        fixed_addrs_for_update_.emplace_back(parameter_index, fix_kernel_tensor, kernel_actor);
+      }
+      kernel_actor->SetInputDeviceTensor(fixed_addrs_for_set_inputs_[parameter_index.second.first],
+                                         parameter_index.first);
+
+      if (is_first_user) {
+        HandleFirstUserMemoryFree(kernel_tensor, kernel_actor, memory_free_lists);
+      }
+    }
+  }
+}
+
+void GraphCaptureManager::UpdateFixAddressBeforeReplayGraph(
+  OpContext<KernelTensor> *const context, size_t stream_id,
+  std::queue<std::vector<KernelTensorPtr>> *memory_free_lists) {
+  MS_LOG(INFO) << "Begin update all fixed inputs before replay graph.";
+  for (const auto &fix_pair : fixed_addrs_for_update_) {
+    auto parameter_index = std::get<kIndex0>(fix_pair);
+    auto fix_kernel_tensor = std::get<kIndex1>(fix_pair);
+    auto kernel_actor = std::get<kIndex2>(fix_pair);
+    size_t kernel_input_index = parameter_index.first;
+    MS_EXCEPTION_IF_NULL(kernel_actor);
+    MS_EXCEPTION_IF_NULL(fix_kernel_tensor);
+    auto cur_device_context = kernel_actor->device_contexts()[0];
+    auto real_input_data_infos = kernel_actor->real_input_data_infos();
+    auto &real_input_info = real_input_data_infos[kernel_input_index];
+    bool is_first_user = kernel_actor->is_first_used_params()[parameter_index.first];
+    auto kernel_tensor =
+      FetchParameter(parameter_index.second, context, kernel_actor->GetAID(), true, stream_id, false);
+    MS_EXCEPTION_IF_NULL(kernel_tensor);
+    const auto &device_tensor = kernel_tensor->device_address();
+    MS_EXCEPTION_IF_NULL(device_tensor);
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+      << "Actor: " << kernel_actor->GetAID().Name() << ", input index: " << parameter_index.first
+      << ", device tensor: " << device_tensor << ", ptr: " << device_tensor->GetPtr()
+      << " new ref count:" << device_tensor->new_ref_count()
+      << " super kernel actor context:" << cur_device_context->device_context_key().ToString();
+    if ((device_tensor->GetDeviceType() != cur_device_context->GetDeviceType()) ||
+        !AnfAlgo::IsEquivalentFormat(kernel_tensor->format(), real_input_info->format_) ||
+        device_tensor->type_id() != real_input_info->type_id_) {
+      MS_EXCEPTION(RuntimeError) << "Does not support heterogeneous scenarios";
+    }
+    if (!AsyncCopy(fix_kernel_tensor->device_address().get(), device_tensor.get(), stream_id)) {
+      MS_LOG(EXCEPTION) << "Async copy failed, src kernel tensor: " << kernel_tensor->ToString()
+                        << ", dst kernel tensor: " << fix_kernel_tensor->ToString();
+    }
+    if (is_first_user) {
+      HandleFirstUserMemoryFree(kernel_tensor, kernel_actor, memory_free_lists);
+    }
+  }
+}
+
+bool GraphCaptureManager::CheckWeightAndKVCacheNotChange(OpContext<KernelTensor> *const context, size_t stream_id) {
+  for (const auto &weight_kv_addr : weight_kv_addrs_) {
+    auto old_kernel_tensor = std::get<kIndex0>(weight_kv_addr.second);
+    auto outer_idx = std::get<kIndex1>(weight_kv_addr.second);
+    auto kernel_actor = std::get<kIndex2>(weight_kv_addr.second);
+    auto kernel_tensor =
+      FetchParameter({weight_kv_addr.first, outer_idx}, context, kernel_actor->GetAID(), true, stream_id, false);
+    if (kernel_tensor->GetSize() != old_kernel_tensor->GetSize() ||
+        kernel_tensor->device_ptr() != old_kernel_tensor->device_ptr() ||
+        kernel_tensor->GetShape() != old_kernel_tensor->GetShape()) {
+      MS_LOG(ERROR) << "KV or Weight device address has changed!!!";
+      return false;
+    }
+  }
+  return true;
+}
+
 void GraphCaptureManager::Finalize() {
   capture_graph_ = nullptr;
   if (!capture_graphs_.empty()) {
     capture_graphs_.clear();
+  }
+  if (!fixed_addrs_for_update_.empty()) {
+    fixed_addrs_for_update_.clear();
+  }
+  if (!fixed_addrs_for_set_inputs_.empty()) {
+    fixed_addrs_for_set_inputs_.clear();
+  }
+  if (!weight_kv_addrs_.empty()) {
+    weight_kv_addrs_.clear();
   }
 }
 }  // namespace runtime

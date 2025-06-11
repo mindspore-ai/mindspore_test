@@ -97,8 +97,8 @@ class KernelRunner {
     skip_launch_shape_related_op_ = skip_launch_shape_related_op;
   }
 
-  const std::map<size_t, std::pair<KernelTensorPtr, std::pair<const DeviceContext *, std::vector<KernelTensorPtr>>>>
-    &copy_output_kernel_tensors() const {
+  const std::map<size_t, std::pair<KernelTensorPtr, std::pair<const DeviceContext *, std::vector<KernelTensorPtr>>>> &
+  copy_output_kernel_tensors() const {
     return copy_output_kernel_tensors_;
   }
   std::vector<KernelTensor *> GetOutputDeviceTensors() { return output_launch_tensors_; }
@@ -133,6 +133,11 @@ class KernelRunner {
   const std::vector<size_t> &output_free_index() const { return output_free_index_; }
   const std::vector<bool> &depend_shape_input_list() const { return depend_shape_input_list_; }
   const std::vector<bool> &is_weight() const { return is_weight_; }
+  const std::vector<bool> &is_first_used_params() const { return is_first_used_params_; }
+  const std::vector<std::shared_ptr<InputDataInfo>> &real_input_data_infos() const {
+    return real_input_data_infos_;
+  }
+  GraphExecutionStrategy &get_strategy() { return strategy_; }
   KernelTransformType type() const { return type_; }
 
  protected:
