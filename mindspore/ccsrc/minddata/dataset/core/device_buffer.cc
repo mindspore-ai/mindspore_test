@@ -15,18 +15,16 @@
  */
 
 #include <memory>
+#include <string>
 #include <utility>
 #include <vector>
 
 #include "minddata/dataset/core/device_buffer.h"
 
-#if defined(ENABLE_D)
-#include "minddata/dataset/kernels/image/dvpp/acl_adapter.h"
-#endif
-
 namespace mindspore {
 namespace dataset {
-DeviceBuffer::DeviceBuffer(const std::vector<size_t> &shape) : shape_(shape), ptr_(nullptr), own_data_(true) {
+DeviceBuffer::DeviceBuffer(const std::vector<size_t> &shape)
+    : shape_(shape), ptr_(nullptr), own_data_(true), device_context_(nullptr) {
   if (shape.size() != 0) {
     strides_ = std::vector<size_t>(shape.size());
     size_ = 1;
@@ -39,9 +37,22 @@ DeviceBuffer::DeviceBuffer(const std::vector<size_t> &shape) : shape_(shape), pt
   }
 
   if (size_ != 0) {
-    auto ret = AclAdapter::GetInstance().DvppMalloc(0, &ptr_, size_);
-    if (ret != 0) {
-      MS_EXCEPTION(RuntimeError) << "dvpp_malloc failed.";
+    auto ms_context = MsContext::GetInstance();
+    if (ms_context == nullptr) {
+      MS_EXCEPTION(RuntimeError) << "Get ms context failed by MsContext::GetInstance().";
+    }
+    device_context_ = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
+      {ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET), ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
+    if (device_context_ == nullptr) {
+      MS_EXCEPTION(RuntimeError) << "Get device context failed by ms context.";
+    }
+    device_context_->Initialize();
+    if (device_context_->device_res_manager_ == nullptr) {
+      MS_EXCEPTION(RuntimeError) << "The device resource manager is null.";
+    }
+    ptr_ = device_context_->device_res_manager_->AllocateMemory(size_);
+    if (ptr_ == nullptr) {
+      MS_EXCEPTION(RuntimeError) << "Allocate device memory failed.";
     }
   }
 }
@@ -51,7 +62,8 @@ DeviceBuffer::DeviceBuffer(DeviceBuffer &&other)
       size_(other.size_),
       ptr_(std::move(other.ptr_)),
       own_data_(other.own_data_),
-      strides_(std::move(other.strides_)) {}
+      strides_(std::move(other.strides_)),
+      device_context_(std::move(other.device_context_)) {}
 
 DeviceBuffer &DeviceBuffer::operator=(DeviceBuffer &&other) {
   if (&other != this) {
@@ -60,6 +72,7 @@ DeviceBuffer &DeviceBuffer::operator=(DeviceBuffer &&other) {
     size_ = other.size_;
     own_data_ = other.own_data_;
     strides_ = std::move(other.strides_);
+    device_context_ = std::move(other.device_context_);
   }
   return *this;
 }
@@ -75,14 +88,13 @@ DeviceBuffer::DeviceBuffer(const std::shared_ptr<DeviceBuffer> &other, ptrdiff_t
   own_data_ = false;
   strides_ = other->strides_;
   (void)strides_.erase(strides_.begin());
+  device_context_ = nullptr;
 }
 
 DeviceBuffer::~DeviceBuffer() {
-  if (own_data_ && ptr_ != nullptr) {
-    auto ret = AclAdapter::GetInstance().DvppFree(ptr_);
-    if (ret != 0) {
-      MS_EXCEPTION(RuntimeError) << "dvpp_free failed.";
-    }
+  if (own_data_ && ptr_ != nullptr && device_context_ != nullptr) {
+    device_context_->device_res_manager_->FreeMemory(ptr_);
+    ptr_ = nullptr;
   }
 }
 
@@ -91,5 +103,7 @@ size_t DeviceBuffer::GetBufferSize() const { return size_; }
 void *DeviceBuffer::GetBuffer() { return ptr_; }
 
 std::vector<size_t> DeviceBuffer::GetShape() { return shape_; }
+
+std::vector<size_t> DeviceBuffer::GetStrides() { return strides_; }
 }  // namespace dataset
 }  // namespace mindspore

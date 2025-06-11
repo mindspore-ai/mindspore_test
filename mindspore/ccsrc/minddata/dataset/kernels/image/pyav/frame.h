@@ -49,8 +49,6 @@ class Frame {
   AVRational *time_base_;
 };
 
-// Status AllocFrame(std::shared_ptr<Frame> *frame);
-
 class VideoFrame : public Frame {
  public:
   VideoFrame();

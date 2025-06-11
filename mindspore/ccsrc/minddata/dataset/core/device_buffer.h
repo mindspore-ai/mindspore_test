@@ -20,6 +20,8 @@
 #include <memory>
 #include <vector>
 
+#include "runtime/hardware/device_context_manager.h"
+
 namespace mindspore {
 namespace dataset {
 class DeviceBuffer : public std::enable_shared_from_this<DeviceBuffer> {
@@ -46,12 +48,15 @@ class DeviceBuffer : public std::enable_shared_from_this<DeviceBuffer> {
 
   std::vector<size_t> GetShape();
 
+  std::vector<size_t> GetStrides();
+
  private:
   std::vector<size_t> shape_;
   void *ptr_;
   size_t size_;
   bool own_data_;
   std::vector<size_t> strides_;
+  device::DeviceContext *device_context_;
 };
 }  // namespace dataset
 }  // namespace mindspore
