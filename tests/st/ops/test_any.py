@@ -42,7 +42,7 @@ def any_vmap_func(x, in_axes=0):
     return ops.vmap(any_forward_func, in_axes, out_axes=0)(x)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_ops_any_forward(context_mode):
     """

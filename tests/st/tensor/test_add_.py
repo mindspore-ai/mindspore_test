@@ -39,7 +39,7 @@ def inplace_add_backward_func(x, y):
     return grad(Net())(x, y)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_inplace_add_std():
     """
     Feature: standard forward, backward features.

@@ -50,7 +50,7 @@ def test_adaptive_max_pool2d():
     assert (output1.asnumpy() == output2.asnumpy()).all()
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_adaptive_max_pool2d_to_pooling():
     """
     Feature: Test pooling ops.

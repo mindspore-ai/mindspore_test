@@ -447,7 +447,7 @@ def test_compile_cache_net_with_control_flow():
                                 "control_net_second.txt")
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_compile_cache_auto_detect():
     """
     Feature: Compile cache.
@@ -520,7 +520,7 @@ def test_compile_cache_pipeline_parallel_and_recompute():
                          "pp_recompute_first", "pp_recompute_second")
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_compile_cache_lenet_ge():
     """
     Feature: Compile cache.

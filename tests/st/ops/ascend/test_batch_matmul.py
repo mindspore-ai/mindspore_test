@@ -74,7 +74,7 @@ def test_bmm_forward_functional_api(nptype):
     np.testing.assert_array_almost_equal(output.asnumpy(), expected)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_bmm_forward_float32_functional_api():
     """
     Feature: test bmm forward functional api.
