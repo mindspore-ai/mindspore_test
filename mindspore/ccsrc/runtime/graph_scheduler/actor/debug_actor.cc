@@ -30,7 +30,6 @@
 #include "debug/debugger/debugger_utils.h"
 #include "debug/data_dump/device_statistic/mem_manager.h"
 #endif
-#include "debug/data_dump/data_dumper.h"
 #include "include/common/debug/common.h"
 #include "utils/file_utils.h"
 #include "debug/profiler/profiling.h"
