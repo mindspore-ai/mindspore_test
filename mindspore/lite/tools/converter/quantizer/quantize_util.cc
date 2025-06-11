@@ -1176,6 +1176,7 @@ STATUS GetScaleZpFromAntiQuantModeNodes(const AnfNodePtr &node, ParameterPtr *sc
   if (!utils::isa<CNodePtr>(node) || !opt::CheckPrimitiveType(node, prim::kPrimMul)) {
     return RET_ERROR;
   }
+  MS_CHECK_TRUE_RET(node->cast<CNodePtr>()->size() >= kSizeThree, RET_ERROR);
   auto add_node = node->cast<CNodePtr>()->input(kIndexOne);
   auto scale_param = node->cast<CNodePtr>()->input(kIndexTwo);
   if (opt::CheckPrimitiveType(scale_param, prim::kPrimLoad)) {
@@ -1186,8 +1187,10 @@ STATUS GetScaleZpFromAntiQuantModeNodes(const AnfNodePtr &node, ParameterPtr *sc
   if (!utils::isa<CNodePtr>(add_node) || !opt::CheckPrimitiveType(add_node, prim::kPrimAdd)) {
     return RET_ERROR;
   }
+  MS_CHECK_TRUE_RET(add_node->cast<CNodePtr>()->size() >= kSizeThree, RET_ERROR);
   auto zp_param = add_node->cast<CNodePtr>()->input(kIndexTwo);
-  if (opt::CheckPrimitiveType(zp_param, prim::kPrimLoad)) {
+  if (!utils::isa<CNodePtr>(zp_param) || opt::CheckPrimitiveType(zp_param, prim::kPrimLoad)) {
+    MS_CHECK_TRUE_RET(zp_param->cast<CNodePtr>()->size() >= kSizeTwo, RET_ERROR);
     zp_param = zp_param->cast<CNodePtr>()->input(kIndexOne);
   }
   *zp_param_node = zp_param->cast<ParameterPtr>();

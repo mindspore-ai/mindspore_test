@@ -1097,6 +1097,7 @@ STATUS OnnxModelParser::BuildCNode(const onnx::NodeProto &onnx_node, const FuncG
               return RET_ERROR;
             }
             auto tensor_info = parameter->default_param()->cast<tensor::TensorPtr>();
+            CHECK_NULL_RETURN(tensor_info);
             auto copy_tensor_info = CreateTensorInfo(tensor_info->data_c(), tensor_info->Size(), tensor_info->shape(),
                                                      tensor_info->data_type());
             if (copy_tensor_info == nullptr) {
