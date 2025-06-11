@@ -1104,6 +1104,10 @@ void DataPrepareActor::PrepareDataForStringValue(const ValueNodePtr &node, size_
     // `device_address_utils.cc`
     auto string_tensor = std::make_shared<tensor::Tensor>(
       kObjectTypeString, shape, const_cast<void *>(kernel_tensor->GetValuePtr()), tensor_size);
+    const auto &host_device_address = (dynamic_cast<device::DeviceAddress *>(string_tensor->device_address().get()));
+    MS_EXCEPTION_IF_NULL(host_device_address);
+    host_device_address->SetSize(tensor_size + 1);
+    MS_LOG(DEBUG) << "Sync string to device for string:" << node_value->ToString() << " size:" << tensor_size;
     if (!SyncAllStreamForDeviceAddress(device_tensor) ||
         !SyncCopy(device_tensor, string_tensor->device_address(), kDefaultStreamIndex)) {
       std::string error_info = "SyncHostToDevice failed, node name: " + node->fullname_with_scope();

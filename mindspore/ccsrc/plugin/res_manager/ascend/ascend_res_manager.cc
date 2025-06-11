@@ -900,7 +900,7 @@ bool AscendResManager::AsyncDeviceToHost(const DeviceSyncPtr &dst_device_sync, c
   MS_EXCEPTION_IF_NULL(dst_device_address);
   MS_EXCEPTION_IF_NULL(src_device_address);
   if (src_device_address->GetTensorStorageInfo() != nullptr || dst_device_address->GetTensorStorageInfo() != nullptr) {
-    MS_LOG(EXCEPTION) << "Invalid sync host to device for tensor storage info in device address:"
+    MS_LOG(EXCEPTION) << "Invalid sync device to host for tensor storage info in device address:"
                       << src_device_address->PrintInfo() << " and:" << dst_device_address->PrintInfo();
   }
   BindDeviceToCurrentThread(false);
@@ -974,6 +974,7 @@ bool AscendResManager::CopyHostToDevice(const DeviceAddress *dst_device_address,
     MS_LOG(ERROR) << "Copy string head failed for device address:" << dst_device_address->ToString();
     return false;
   }
+  SyncStream(stream_id);
   // sync string body (real contents) from device to host
   if (!BaseCopy(static_cast<void *>(static_cast<char *>(dst_device_address->GetDevicePtr()) + sizeof(ge::StringHead)),
                 src, size, ACL_MEMCPY_HOST_TO_DEVICE, stream_id, src_device_sync)) {
@@ -1179,10 +1180,6 @@ bool AscendResManager::AsyncDeviceToDevice(const DeviceSyncPtr &dst_device_sync,
   const auto &src_device_address = dynamic_cast<const DeviceAddress *>(src_device_sync.get());
   MS_EXCEPTION_IF_NULL(dst_device_address);
   MS_EXCEPTION_IF_NULL(src_device_address);
-  if (src_device_address->GetTensorStorageInfo() != nullptr || dst_device_address->GetTensorStorageInfo() != nullptr) {
-    MS_LOG(EXCEPTION) << "Invalid sync host to device for tensor storage info in device address:"
-                      << src_device_address->PrintInfo() << " and:" << dst_device_address->PrintInfo();
-  }
   BindDeviceToCurrentThread(true);
   if (dst_device_address->format() != src_device_address->format() ||
       dst_device_address->type_id() != src_device_address->type_id()) {
