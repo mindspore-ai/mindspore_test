@@ -43,7 +43,7 @@ def flatten_backward_func(x, start_dim=0, end_dim=-1):
     return flatten_bwd_func(x, start_dim, end_dim)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_flatten_normal(mode):
     """

@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 # pylint: disable=unused-variable
+import pytest
 import numpy as np
 import mindspore as ms
 from mindspore.common import dtype as mstype
@@ -21,8 +22,17 @@ from tests.mark_utils import arg_mark
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-def test_empty_normal1():
+class Net(ms.nn.Cell):
+    def construct(self, *size, dtype=None, device=None):
+        return mint.empty(*size, dtype=dtype, device=device)
+
+
+@arg_mark(plat_marks=['platform_ascend'],
+          level_mark='level1',
+          card_mark='onecard',
+          essential_mark='essential')
+@pytest.mark.parametrize('mode', ['pynative', 'KBK'])
+def test_empty_normal1(mode):
     """
     Feature: Ops.
     Description: test empty.

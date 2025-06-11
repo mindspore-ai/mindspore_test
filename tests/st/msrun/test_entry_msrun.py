@@ -292,7 +292,7 @@ def test_msrun_tail_specified_worker_log():
     assert result_rename_3 != -1
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='allcards', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='allcards', essential_mark='essential')
 def test_msrun_with_correct_hostname():
     """
     Feature: 'msrun' launch utility.
