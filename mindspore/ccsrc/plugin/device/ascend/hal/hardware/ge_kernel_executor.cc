@@ -331,6 +331,12 @@ void InlineSubGraph(const KernelGraphPtr &graph, const KernelGraphPtr &sub_graph
   auto main_graph = kernel_cnode->func_graph();
   MS_EXCEPTION_IF_NULL(main_graph);
   auto mng = main_graph->manager();
+  if (mng == nullptr) {
+    mng = MakeManager({main_graph});
+    MS_EXCEPTION_IF_NULL(mng);
+    mng->AddFuncGraph(main_graph);
+    main_graph->set_manager(mng);
+  }
   auto kernel_info = dynamic_cast<device::KernelInfo *>(kernel_cnode->kernel_info());
   MS_EXCEPTION_IF_NULL(kernel_info);
   AnfNodePtrList inp;
