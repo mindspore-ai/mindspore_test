@@ -961,7 +961,7 @@ void DeviceAddressUtils::CreateInputTensorAddress(const DeviceContext *device_co
   }
 
   auto addr = tensor->device_address();
-
+  MS_EXCEPTION_IF_NULL(addr);
   auto tensor_address = std::static_pointer_cast<device::DeviceAddress>(addr);
   if (tensor_address->GetDeviceType() == device_context->GetDeviceType()) {
     MS_LOG(DEBUG) << "Already have device address of tensor " << tensor->id();
