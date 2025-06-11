@@ -43,6 +43,7 @@ int NnieInit(NnieHandle *h, NnieTensors *inputs);
 int NnieFillData(NnieHandle *h, NnieTensors *inputs);
 int NnieRun(NnieHandle *h, NnieTensors *outputs);
 void NnieClose(NnieHandle *h);
+HI_U32 CalcInputSize(const NnieTensors *inputs, const size_t *j);
 }  // namespace nnie
 }  // namespace mindspore
 #endif  // MINDSPORE_LITE_TOOLS_CONVERTER_MICRO_PROVIDERS_NNIE_NNIE_INTERFACES_H_

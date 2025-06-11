@@ -223,9 +223,7 @@ int ScaleOpenCLKernel::Prepare() {
 
 int ScaleOpenCLKernel::SetKernelArg(int *idx) {
   int arg_idx = 0;
-  if (ocl_runtime_->SetKernelArg(kernel_, arg_idx++, in_tensors_[0]->data()) != CL_SUCCESS) {
-    return RET_ERROR;
-  }
+  MS_CHECK_TRUE_RET(ocl_runtime_->SetKernelArg(kernel_, arg_idx++, in_tensors_[0]->data()) == CL_SUCCESS, RET_ERROR);
   if (weight_vector_flag_) {
     void *scale = scale_ptr_ == nullptr ? in_tensors_[INPUT_SCALE]->data() : scale_ptr_;
     void *offset = offset_ptr_ == nullptr ? in_tensors_[INPUT_OFFSET]->data() : offset_ptr_;

@@ -96,6 +96,7 @@ class OpenCLAllocator : public mindspore::Allocator {
   int GetImgDtypeSize(const ImageSize &img_size);
   template <typename T>
   void ClearMemList(T *list);
+  void CheckOversize(const uint64_t *max_size);
 
  private:
   OpenCLRuntime *ocl_runtime_{nullptr};

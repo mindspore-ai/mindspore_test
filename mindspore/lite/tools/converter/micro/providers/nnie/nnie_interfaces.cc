@@ -166,16 +166,21 @@ int NnieFillData(NnieHandle *h, NnieTensors *inputs) {
         return HI_FAILURE;
       }
     }
-    HI_U32 input_size = 1;
-    for (int n = 0; n < inputs->shape_len_[j]; n++) {
-      input_size *= inputs->shape_[j][n];
-    }
+    HI_U32 input_size = CalcInputSize(inputs, &j);
     if (NnieCommFillData(&h->cfg_, inputs->data_[j], input_size, i) != HI_SUCCESS) {
       LOGE("FillData failed!");
       return HI_FAILURE;
     }
   }
   return HI_SUCCESS;
+}
+
+HI_U32 CalcInputSize(const NnieTensors *inputs, const size_t *j) {
+  HI_U32 input_size = 1;
+  for (int n = 0; n < inputs->shape_len_[*j]; n++) {
+    input_size *= inputs->shape_[*j][n];
+  }
+  return input_size;
 }
 
 int NnieRun(NnieHandle *h, NnieTensors *outputs) {

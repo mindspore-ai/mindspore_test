@@ -202,6 +202,36 @@ int MatMulFP32BaseCoder::CollectFilesForTarget(CoderContext *const context) {
   return RET_OK;
 }
 
+void MatMulFP32BaseCoder::GenerateMatrixCalculation(NNaclFp32Serializer *const code, const std::string *c_str,
+                                                    const std::string *a_pack_str, const std::string *b_pack_str,
+                                                    int cur_oc) {
+  *code << "    for (int i = 0; i < " << params_.batch << "; ++i) {\n";
+  if (vec_matmul_) {
+    *code << "      const float *batch_a_ptr = " << *a_pack_str << " + i * " << params_.deep_ << ";\n";
+    if (params_.b_batch_ != 1) {
+      *code << "      const float *batch_b_ptr = " << *b_pack_str << " + i * " << params_.deep_ * params_.col_ << ";\n";
+    } else {
+      *code << "      const float *batch_b_ptr = " << *b_pack_str << ";\n";
+    }
+    *code << "      float *batch_c_ptr = " << *c_str << " + i * " << params_.row_ * params_.col_ << ";\n  ";
+    code->CodeFunction("MatVecMulFp32", "batch_a_ptr", "batch_b_ptr", "batch_c_ptr", bias_ptr_, params_.act_type_,
+                       params_.deep_, cur_oc);
+  } else {
+    *code << "      const float *batch_a_ptr = " << *a_pack_str << " + i * " << params_.row_align_ * params_.deep_
+          << ";\n";
+    if (params_.b_batch_ != 1) {
+      *code << "      const float *batch_b_ptr = " << *b_pack_str << " + i * " << params_.deep_ * params_.col_align_
+            << ";\n";
+    } else {
+      *code << "      const float *batch_b_ptr = " << *b_pack_str << ";\n";
+    }
+    *code << "      float *batch_c_ptr = " << *c_str << " + i * " << params_.row_ * params_.col_ << ";\n  ";
+    code->CodeFunction("MatMulOpt", "batch_a_ptr", "batch_b_ptr", "batch_c_ptr", bias_ptr_, params_.act_type_,
+                       params_.deep_, params_.row_, cur_oc, params_.col_, "OutType_Nhwc");
+  }
+  *code << "    }\n";
+}
+
 int MatMulFP32BaseCoder::DoCode(CoderContext *const context) {
   CollectFilesForTarget(context);
   NNaclFp32Serializer code, init_code;
@@ -278,31 +308,7 @@ int MatMulFP32BaseCoder::DoCode(CoderContext *const context) {
   int current_rest_oc = params_.col_ - kDefaultTaskId * thread_stride_ * col_tile_;
   int cur_oc = MSMIN(current_stride_oc, current_rest_oc);
   if (cur_oc <= 0) return RET_OK;
-  code << "    for (int i = 0; i < " << params_.batch << "; ++i) {\n";
-  if (vec_matmul_) {
-    code << "      const float *batch_a_ptr = " << a_pack_str << " + i * " << params_.deep_ << ";\n";
-    if (params_.b_batch_ != 1) {
-      code << "      const float *batch_b_ptr = " << b_pack_str << " + i * " << params_.deep_ * params_.col_ << ";\n";
-    } else {
-      code << "      const float *batch_b_ptr = " << b_pack_str << ";\n";
-    }
-    code << "      float *batch_c_ptr = " << c_str << " + i * " << params_.row_ * params_.col_ << ";\n  ";
-    code.CodeFunction("MatVecMulFp32", "batch_a_ptr", "batch_b_ptr", "batch_c_ptr", bias_ptr_, params_.act_type_,
-                      params_.deep_, cur_oc);
-  } else {
-    code << "      const float *batch_a_ptr = " << a_pack_str << " + i * " << params_.row_align_ * params_.deep_
-         << ";\n";
-    if (params_.b_batch_ != 1) {
-      code << "      const float *batch_b_ptr = " << b_pack_str << " + i * " << params_.deep_ * params_.col_align_
-           << ";\n";
-    } else {
-      code << "      const float *batch_b_ptr = " << b_pack_str << ";\n";
-    }
-    code << "      float *batch_c_ptr = " << c_str << " + i * " << params_.row_ * params_.col_ << ";\n  ";
-    code.CodeFunction("MatMulOpt", "batch_a_ptr", "batch_b_ptr", "batch_c_ptr", bias_ptr_, params_.act_type_,
-                      params_.deep_, params_.row_, cur_oc, params_.col_, "OutType_Nhwc");
-  }
-  code << "    }\n";
+  GenerateMatrixCalculation(&code, &c_str, &a_pack_str, &b_pack_str, cur_oc);
   context->AppendInitWeightSizeCode(w_buf_size);
   context->AppendCode(code.str());
   context->AppendInitCode(init_code.str());
