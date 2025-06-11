@@ -116,9 +116,8 @@ class InternalKernelInfo {
 };
 using InternalKernelInfoPtr = std::shared_ptr<InternalKernelInfo>;
 
-#define MS_INTERNAL_KERNEL_INFO_FACTORY_REG(PRIM_NAME_STR, INTERNAL_NAME_VAR, DERIVE) \
-  MS_KERNEL_FACTORY_REG(InternalKernelInfo, PRIM_NAME_STR, DERIVE);                   \
-  static const NameMappingRegistrar g_##PRIM_NAME_STR##_ms_to_acme_pyboost_mapper(#PRIM_NAME_STR, INTERNAL_NAME_VAR);
+#define MS_INTERNAL_KERNEL_INFO_FACTORY_REG(PRIM_NAME_STR, DERIVE) \
+  MS_KERNEL_FACTORY_REG(InternalKernelInfo, PRIM_NAME_STR, DERIVE);
 
 #define LAUNCH_INTERNAL_KERNEL(op, internal_op, device_context, tiling_ptr, inputs_addr, outputs_addr,             \
                                internal_wss_addr, kernel_name)                                                     \

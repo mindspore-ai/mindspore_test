@@ -40,6 +40,6 @@ void ReshapeAndCache::Call(const std::shared_ptr<pyboost::OpRunner> &op, const T
   GetOrCreateKernel(op, inputs, outputs, op_key);
   LAUNCH_INTERNAL(kernel_name_, op, internal_op_, inputs, outputs, tiling_info_);
 }
-MS_INTERNAL_KERNEL_INFO_FACTORY_REG(ReshapeAndCache, internal::kInternalReshapeAndCacheOpName, ReshapeAndCache);
+MS_INTERNAL_KERNEL_INFO_FACTORY_REG(ReshapeAndCache, ReshapeAndCache);
 }  // namespace kernel
 }  // namespace mindspore

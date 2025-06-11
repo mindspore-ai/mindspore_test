@@ -47,3 +47,6 @@ mla:
       dtype: tensor
     lse:
       dtype: tensor
+  dispatch:
+    enable: True
+    InternalOpAscend: AutoGen

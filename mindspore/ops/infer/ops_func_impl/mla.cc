@@ -30,12 +30,35 @@ namespace mindspore {
 namespace ops {
 static constexpr auto kMLAQshapeRank = 3;
 static constexpr auto kMLAKVshapeRank = 4;
+static constexpr auto kMLABlockSizeDim = 1;
 static constexpr auto kMLABlockTablesRank = 2;
 static constexpr auto kMLAMaskRank = 2;
 static constexpr auto kMLADeqScaleRank = 1;
 static constexpr auto kMLAMaskFreeLastDim = 128;
 static constexpr auto kMLAQKVnopeHiddenSize = 512;
 static constexpr auto kMLAQKropeHiddenSize = 64;
+static constexpr auto kMLAQheadMax = 128;
+static constexpr auto kMLABlockSizeheadMax = 128;
+
+#define ALIGN_16(v) (((v) & (16 - 1)) == 0)
+
+static void CheckParam(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) {
+  auto kv_heads = input_infos[kMlaInputNumKVHeadIndex]->GetScalarValue<int64_t>();
+  if (kv_heads.has_value()) {
+    MS_CHECK_VALUE(kv_heads.value() == 1, CheckAndConvertUtils::FormatCommMsg(
+                                            "For MLA The kv_heads must be 1 , but got : ", kv_heads.value()));
+  }
+
+  auto q_heads = input_infos[kMlaInputNumHeadIndex]->GetScalarValue<int64_t>();
+  if (q_heads.has_value()) {
+    MS_CHECK_VALUE(q_heads.value() <= kMLAQheadMax,
+                   CheckAndConvertUtils::FormatCommMsg("For MLA The q_heads must be <= ", kMLAQheadMax,
+                                                       ", but got : ", q_heads.value()));
+    MS_CHECK_VALUE(ALIGN_16(q_heads.value()),
+                   CheckAndConvertUtils::FormatCommMsg("For MLA The q_heads must be the multiple of 16, but got : ",
+                                                       q_heads.value()));
+  }
+}
 
 static void CheckShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) {
   auto q_nope_shape = input_infos[kMlaInputQnopeIndex]->GetShape();
@@ -71,6 +94,19 @@ static void CheckShape(const PrimitivePtr &primitive, const InferInfoPtrList &in
     MS_CHECK_VALUE(ctkv_shape[ctkv_shape.size() - 1] == kMLAQKVnopeHiddenSize,
                    CheckAndConvertUtils::FormatCommMsg("For MLA The last dim of ctkv must be ", kMLAQKVnopeHiddenSize,
                                                        ", but got shape: ", ctkv_shape));
+    MS_CHECK_VALUE(ALIGN_16(ctkv_shape[kMLABlockSizeDim]),
+                   CheckAndConvertUtils::FormatCommMsg("For MLA The block_size must be the multiple of 16 , but got: ",
+                                                       ctkv_shape[kMLABlockSizeDim]));
+
+    auto q_heads = input_infos[kMlaInputNumHeadIndex]->GetScalarValue<int64_t>();
+    if (q_heads.has_value()) {
+      if (q_heads.value() == kMLAQheadMax) {
+        if (ctkv_shape[kMLABlockSizeDim] != kMLAQheadMax) {
+          MS_LOG(EXCEPTION) << "For MLA the block_size must be 128 when q_heads is 128, but got block_size: "
+                            << ctkv_shape[kMLABlockSizeDim];
+        }
+      }
+    }
   }
 
   if (!input_infos[kMlaInputKropeIndex]->IsDynamic()) {
@@ -146,6 +182,8 @@ ShapeArray MlaFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInf
   }
 
   CheckShape(primitive, input_infos);
+
+  CheckParam(primitive, input_infos);
 
   ShapeVector lse_out_shape{0};
   return {q_nope_shape, lse_out_shape};

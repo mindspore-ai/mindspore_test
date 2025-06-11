@@ -77,7 +77,6 @@ void FlashAttentionScore::Call(const std::shared_ptr<pyboost::OpRunner> &op, con
   GetOrCreateKernel(op, inputs, outputs, op_key);
   LAUNCH_INTERNAL(kernel_name_, op, internal_op_, inputs, outputs, tiling_info_);
 }
-MS_INTERNAL_KERNEL_INFO_FACTORY_REG(FlashAttentionScore, internal::kInternalFlashAttentionScoreOpName,
-                                    FlashAttentionScore);
+MS_INTERNAL_KERNEL_INFO_FACTORY_REG(FlashAttentionScore, FlashAttentionScore);
 }  // namespace kernel
 }  // namespace mindspore

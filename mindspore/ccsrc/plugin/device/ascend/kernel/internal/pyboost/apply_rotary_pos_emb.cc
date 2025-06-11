@@ -41,6 +41,6 @@ void ApplyRotaryPosEmb::Call(const std::shared_ptr<pyboost::OpRunner> &op, const
   GetOrCreateKernel(op, inputs, outputs, op_key);
   LAUNCH_INTERNAL(kernel_name_, op, internal_op_, inputs, outputs, tiling_info_);
 }
-MS_INTERNAL_KERNEL_INFO_FACTORY_REG(ApplyRotaryPosEmb, internal::kInternalApplyRotaryPosEmbOpName, ApplyRotaryPosEmb);
+MS_INTERNAL_KERNEL_INFO_FACTORY_REG(ApplyRotaryPosEmb, ApplyRotaryPosEmb);
 }  // namespace kernel
 }  // namespace mindspore
