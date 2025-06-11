@@ -86,7 +86,8 @@ class TimelineEventPool:
             self.start_to_end_events_pairs[flow_key] = {"start": [], "end": []}
         self.start_to_end_events_pairs[flow_key]["end"].append(event)
 
-    def _get_events(self, event_dict: dict) -> List[BaseEvent]:
+    @staticmethod
+    def _get_events(event_dict: dict) -> List[BaseEvent]:
         """Helper function to get events from a dictionary."""
         events = []
         for event_list in event_dict.values():

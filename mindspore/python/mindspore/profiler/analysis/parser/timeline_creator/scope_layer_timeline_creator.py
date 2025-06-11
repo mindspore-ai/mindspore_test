@@ -32,15 +32,15 @@ from mindspore.profiler.analysis.parser.timeline_event.scope_layer_event import 
 class ScopeLayerTimelineCreator(BaseTimelineCreator):
     """Create timeline event pools for scope layer operations."""
 
-    def create(self, event_list: List[BaseEvent]) -> None:
+    def create(self, data: List[BaseEvent]) -> None:
         """Create timeline event pools from scope layer events."""
-        if not event_list:
+        if not data:
             return
 
         pool = TimelineEventPool(EventConstant.SCOPE_LAYER_PID)
         self.event_pools[EventConstant.SCOPE_LAYER_PID] = pool
 
-        self._create_base_events(pool, event_list)
+        self._create_base_events(pool, data)
         self._create_meta_event(pool)
 
     def _create_base_events(self, pool: TimelineEventPool, event_list: List[BaseEvent]) -> None:
