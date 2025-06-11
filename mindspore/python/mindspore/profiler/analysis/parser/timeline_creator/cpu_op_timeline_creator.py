@@ -31,15 +31,15 @@ class CpuOpTimelineCreator(BaseTimelineCreator):
         super().__init__()
         self.scope_data: List[CpuOpCompleteEvent] = []
 
-    def create(self, cpu_info_lines: List[str]) -> None:
+    def create(self, data: List[str]) -> None:
         """Create timeline event pools from CPU info lines."""
-        if not cpu_info_lines:
+        if not data:
             return
 
         pool = TimelineEventPool(EventConstant.CPU_OP_PID)
         self.event_pools[EventConstant.CPU_OP_PID] = pool
 
-        self._create_base_events(pool, cpu_info_lines)
+        self._create_base_events(pool, data)
         self._create_meta_event(pool)
 
     def _create_base_events(self, pool: TimelineEventPool, cpu_info_lines: List[str]) -> None:

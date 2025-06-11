@@ -623,7 +623,8 @@ class DynamicProfilerConfigContext:
 
         return [ExportType.Text]
 
-    def _convert_host_sys(self, host_systems):
+    @staticmethod
+    def _convert_host_sys(host_systems):
         """ Convert host_sys to real args in Profiler."""
         if not host_systems:
             return None

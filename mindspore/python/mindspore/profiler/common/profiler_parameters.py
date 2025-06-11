@@ -318,7 +318,8 @@ class ProfilerParameters:
                 return []
         return list(set(domain_list))
 
-    def _check_and_get_host_sys(self, host_sys, expected_type, default_value):
+    @staticmethod
+    def _check_and_get_host_sys(host_sys, expected_type, default_value):
         """
         Check host system.
         """

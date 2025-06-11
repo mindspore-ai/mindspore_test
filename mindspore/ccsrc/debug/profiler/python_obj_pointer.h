@@ -27,7 +27,7 @@ class PythonObjPointer {
   PythonObjPointer() : ptr(nullptr) {}
   explicit PythonObjPointer(T *ptr) noexcept : ptr(ptr) {}
   PythonObjPointer(PythonObjPointer &&p) noexcept : ptr(std::exchange(p.ptr, nullptr)) {}
-  ~PythonObjPointer() { free(); }
+  ~PythonObjPointer() { FreePtr(); }
 
   T *get() { return ptr; }
   const T *get() const { return ptr; }
@@ -40,24 +40,24 @@ class PythonObjPointer {
     return tmp;
   }
   PythonObjPointer &operator=(PythonObjPointer &&p) noexcept {
-    free();
+    FreePtr();
     ptr = p.ptr;
     p.ptr = nullptr;
     return *this;
   }
   PythonObjPointer &operator=(T *new_ptr) noexcept {
-    free();
+    FreePtr();
     ptr = new_ptr;
     return *this;
   }
 
  private:
-  void free();
+  void FreePtr();
   T *ptr = nullptr;
 };
 
 template <>
-void PythonObjPointer<PyObject>::free() {
+void PythonObjPointer<PyObject>::FreePtr() {
 #if (PY_MAJOR_VERSION == 3) && (PY_MINOR_VERSION >= 11)
   if (ptr && Py_IsInitialized()) {
     Py_DECREF(ptr);
@@ -67,7 +67,7 @@ void PythonObjPointer<PyObject>::free() {
 template class PythonObjPointer<PyObject>;
 
 template <>
-void PythonObjPointer<PyCodeObject>::free() {
+void PythonObjPointer<PyCodeObject>::FreePtr() {
 #if (PY_MAJOR_VERSION == 3) && (PY_MINOR_VERSION >= 11)
   if (ptr && Py_IsInitialized()) {
     Py_DECREF(ptr);
@@ -77,7 +77,7 @@ void PythonObjPointer<PyCodeObject>::free() {
 template class PythonObjPointer<PyCodeObject>;
 
 template <>
-void PythonObjPointer<PyFrameObject>::free() {
+void PythonObjPointer<PyFrameObject>::FreePtr() {
 #if (PY_MAJOR_VERSION == 3) && (PY_MINOR_VERSION >= 11)
   if (ptr && Py_IsInitialized()) {
     Py_DECREF(ptr);
