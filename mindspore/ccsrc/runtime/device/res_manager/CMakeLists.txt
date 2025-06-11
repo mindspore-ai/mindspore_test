@@ -6,6 +6,9 @@ include_directories(${CMAKE_SOURCE_DIR}/mindspore/core/include)
 
 file(GLOB RES_MANAGER_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "*.cc")
+if(NOT ENABLE_TESTCASES)
+        list(REMOVE_ITEM RES_MANAGER_LIST "./test_device_address.cc")
+endif()
 add_subdirectory(${CMAKE_SOURCE_DIR}/mindspore/ccsrc/runtime/device/res_manager/utils)
 list(APPEND RES_MANAGER_LIST $<TARGET_OBJECTS:_mindspore_runtime_device_res_manager_utils_obj>)
 if(CMAKE_SYSTEM_NAME MATCHES "Windows")
