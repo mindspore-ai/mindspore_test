@@ -68,10 +68,10 @@ class QuantPerChannel(ms.nn.Cell):
         )
 
 
-def run(shape, shape1, is_dyn=False, in_dtype=np.float16):
+def run(shape, shape1, is_dyn=False, in_dtype=np.float16, mode=context.GRAPH_MODE):
     if "ASCEND_HOME_PATH" not in os.environ:
         os.environ["ASCEND_HOME_PATH"] = "/usr/local/Ascend/latest"
-    ms.set_context(device_target="Ascend", mode=context.GRAPH_MODE)
+    ms.set_context(device_target="Ascend", mode=mode)
     ms.set_context(jit_config={"jit_level": "O0", "infer_boost": "on"})
     net = QuantPerChannel()
 
@@ -101,13 +101,14 @@ def run(shape, shape1, is_dyn=False, in_dtype=np.float16):
 @pytest.mark.parametrize("is_dynamic", [False])
 @pytest.mark.parametrize("in_dtype", [np.float16])
 @pytest.mark.parametrize("shapes", [[(10, 32768), (32768,)]])
-def test_quant_per_channel_large(shapes, in_dtype, is_dynamic):
+@pytest.mark.parametrize("mode", [context.GRAPH_MODE, context.PYNATIVE_MODE])
+def test_quant_per_channel_large(shapes, in_dtype, is_dynamic, mode):
     """
     Feature: test quant_v2 op in kbk enabling infer_boost.
     Description: large input for quant_v2.
     Expectation: the result is correct
     """
-    run(shapes[0], shapes[1], is_dynamic, in_dtype)
+    run(shapes[0], shapes[1], is_dynamic, in_dtype, mode)
 
 
 @pytest.mark.level1
@@ -116,13 +117,14 @@ def test_quant_per_channel_large(shapes, in_dtype, is_dynamic):
 @pytest.mark.parametrize("is_dynamic", [False])
 @pytest.mark.parametrize("in_dtype", [np.float16])
 @pytest.mark.parametrize("shapes", [[(2, 2), (2,)]])
-def test_quant_per_channel_small(shapes, in_dtype, is_dynamic):
+@pytest.mark.parametrize("mode", [context.GRAPH_MODE, context.PYNATIVE_MODE])
+def test_quant_per_channel_small(shapes, in_dtype, is_dynamic, mode):
     """
     Feature: test quant_v2 op in kbk enabling infer_boost.
     Description: small input for quant_v2.
     Expectation: the result is correct
     """
-    run(shapes[0], shapes[1], is_dynamic, in_dtype)
+    run(shapes[0], shapes[1], is_dynamic, in_dtype, mode)
 
 
 @pytest.mark.level1
@@ -131,13 +133,14 @@ def test_quant_per_channel_small(shapes, in_dtype, is_dynamic):
 @pytest.mark.parametrize("is_dynamic", [True])
 @pytest.mark.parametrize("in_dtype", [np.float16])
 @pytest.mark.parametrize("shapes", [[(99, 32), (99, 32)], [(2, 2), (2,)]])
-def test_quant_per_channel_dyn(shapes, in_dtype, is_dynamic):
+@pytest.mark.parametrize("mode", [context.GRAPH_MODE, context.PYNATIVE_MODE])
+def test_quant_per_channel_dyn(shapes, in_dtype, is_dynamic, mode):
     """
     Feature: test quant_v2 op in kbk enabling infer_boost.
     Description: dynamic shape for quant_v2.
     Expectation: the result is correct
     """
-    run(shapes[0], shapes[1], is_dynamic, in_dtype)
+    run(shapes[0], shapes[1], is_dynamic, in_dtype, mode)
 
 
 @pytest.mark.level1
@@ -146,10 +149,11 @@ def test_quant_per_channel_dyn(shapes, in_dtype, is_dynamic):
 @pytest.mark.parametrize("is_dynamic", [False])
 @pytest.mark.parametrize("in_dtype", [np.float16])
 @pytest.mark.parametrize("shapes", [[(4096, 40), (40,)]])
-def test_quant_per_channel_special(shapes, in_dtype, is_dynamic):
+@pytest.mark.parametrize("mode", [context.GRAPH_MODE, context.PYNATIVE_MODE])
+def test_quant_per_channel_special(shapes, in_dtype, is_dynamic, mode):
     """
     Feature: test quant_v2 op in kbk enabling infer_boost.
     Description: special shape for quant_v2.
     Expectation: the result is correct
     """
-    run(shapes[0], shapes[1], is_dynamic, in_dtype)
+    run(shapes[0], shapes[1], is_dynamic, in_dtype, mode)

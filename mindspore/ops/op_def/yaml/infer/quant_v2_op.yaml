@@ -26,3 +26,4 @@ quant_v2:
     dispatch:
         enable: True
         Ascend: QuantV2Ascend
+        InternalOpAscend: AutoGen
