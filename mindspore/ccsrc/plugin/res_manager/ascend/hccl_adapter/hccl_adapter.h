@@ -163,6 +163,7 @@ class ASCEND_RES_MANAGER_EXPORT HcclAdapter {
   static std::string GetHcclModeString(HcclMode hccl_mode);
   string DoGetHcomGroup(const string &original_group, const std::vector<uint32_t> &rank_ids) const;
 
+  static bool IsSimulation();
   void *plugin_handle_ = nullptr;
 
   InitHcomGraphAdapterFunObj init_hcom_graph_adapter_ = nullptr;

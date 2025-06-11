@@ -21,6 +21,8 @@
 #include "include/backend/debug/execute_order_tracker/execute_order_tracker.h"
 #include "plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 #include "mindspore/ccsrc/pyboost/comm_utils.h"
 #include "runtime/pipeline/pipeline.h"
 #include "runtime/graph_scheduler/execution_order_check/kernel_cache.h"
@@ -31,6 +33,36 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
+void SimuExecSetOutput(const tensor::TensorPtr &output_tensor, const std::string &op_name) {
+  auto output_size = output_tensor->Size();
+  auto output_type = static_cast<TypeId>(output_tensor->data_type_c());
+  static const float kInitValue = 0.1f;
+  static const size_t kFp32TypeSize = abstract::TypeIdSize(kNumberTypeFloat32);
+  std::vector<float> init_value;
+  std::vector<float> host_data;
+  init_value.resize(output_size, kInitValue);
+  host_data.resize(output_size, 0);
+  void *host_ptr = init_value.data();
+  if (output_type != kNumberTypeFloat32) {
+    auto elem_num = output_size / abstract::TypeIdSize(output_type);
+    const trans::TypeIdArgs type_args{init_value.data(), SizeToLong(elem_num), kNumberTypeFloat32, output_type,
+                                      elem_num * kFp32TypeSize};
+    auto sync_ok = trans::TransDataType(type_args, host_data.data());
+    if (!sync_ok) {
+      MS_LOG(ERROR) << "simu SimuExecSetOutput trans data type failed.";
+      return;
+    }
+    host_ptr = host_data.data();
+  }
+
+  auto data_ptr = GetDevicePtrFromTensor(op_name, output_tensor);
+  auto cp_ret = CALL_ASCEND_API(aclrtMemcpy, data_ptr, output_size, host_ptr, output_size, ACL_MEMCPY_HOST_TO_DEVICE);
+  if (cp_ret != EOK) {
+    MS_LOG(ERROR) << "Simu receive memset 0 failed.";
+    return;
+  }
+}
+
 void CommonCommRunTask(const std::function<void(void)> &run_func) {
   if (runtime::OpExecutor::NeedSync()) {
     run_func();
@@ -39,6 +71,7 @@ void CommonCommRunTask(const std::function<void(void)> &run_func) {
       std::make_shared<runtime::PassthroughNoWaitDeviceTask>(run_func));
   }
 }
+
 void CommonCommAscendFunc(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor, const StringImmPtr &group,
                           const std::function<void(const HcclComm &, void *)> &launch_func,
                           const std::function<void(const DeviceEventPtr &, size_t)> &post_func, int64_t rank) {
@@ -107,6 +140,12 @@ void CommonCommAscendFunc(const std::shared_ptr<OpRunner> &op, const TensorPtr &
     }
     comm_handle->RecordEvent(comm_stream_id);
   };
+
+  static bool dry_run = common::IsExecuteSimulation();
+  if (MS_UNLIKELY(dry_run)) {
+    SimuExecSetOutput(op->output(0), op->primitive()->name());
+  }
+
   runtime::OpExecutor::DispatchLaunchTask(func);
   if (post_func) {
     post_func(comm_handle->event(), comm_stream_id);
