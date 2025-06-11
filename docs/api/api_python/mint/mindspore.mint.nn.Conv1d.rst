@@ -41,7 +41,7 @@ mindspore.mint.nn.Conv1d
           - ``"same"``：在输入的四周填充，使得当 `stride` 为 ``1`` 时，输入和输出的shape一致。待填充的量由算子内部计算，若为偶数，则均匀地填充在两侧，若为奇数，多余的填充量将补充在右侧。若设置该模式， `stride` 的值必须为1。
           - ``"valid"``：不对输入进行填充，返回输出可能的最大长度，不能构成一个完整stride的额外的序列将被丢弃。
 
-        - **padding_mode** (str，可选) - 指定填充模式，填充值为0。可选值为 ``"zeros"`` ， ``"reflect"``， ``"circular"`` 或 ``"replicate"`` 。默认值： ``"zeros"`` 。
+        - **padding_mode** (str，可选) - 指定填充模式，填充值为0。可选值为 ``"zeros"`` 、 ``"reflect"`` 或 ``"replicate"`` 。默认值： ``"zeros"`` 。
         - **dilation** (Union[int, tuple[int], list[int]]，可选) - 卷积核膨胀尺寸。可以为单个int，或者由1个int组成的tuple/list。
           假设 :math:`dilation=(d)`, 则卷积核在长度方向间隔 :math:`d-1` 个元素进行采样。默认值： ``1`` 。
         - **groups** (int，可选) - 将过滤器拆分为组， `in_channels` 和 `out_channels` 必须可被 `groups` 整除。如果组数等于 `in_channels` 和 `out_channels` ，这个一维卷积层也被称为一维深度卷积层。默认值： ``1`` 。

@@ -201,7 +201,7 @@ class Conv1d(_Conv):
               be discarded.
 
         padding_mode (str, optional): Specifies the padding mode with a padding value of 0. It can be set to:
-            ``"zeros"`` , ``"reflect"`` ``"circular"`` or ``"replicate"`` . Default: ``"zeros"`` .
+            ``"zeros"`` , ``"reflect"`` or ``"replicate"`` . Default: ``"zeros"`` .
         dilation (Union[int, tuple[int], list[int]], optional): Specifies the dilation rate to use for dilated convolution.
             It can be a single int or a tuple of 1 integer. 
             Assuming :math:`dilation=(d)`, the convolutional kernel samples the input with a
@@ -325,11 +325,11 @@ class Conv2d(_Conv):
     .. math::
 
         \text{out}(N_i, C_{\text{out}_j}) = \text{bias}(C_{\text{out}_j}) +
-        \sum_{k = 0}^{C_{in} - 1} \text{ccor}({\text{weight}(C_{\text{out}_j}, k), \text{X}(N_i, k)})
+        \sum_{k = 0}^{C_{in} - 1} \text{ccor}({\text{weight}(C_{\text{out}_j}, k), \text{Input}(N_i, k)})
 
     where :math:`bias` is the output channel bias, :math:`ccor` is
     the `cross-correlation <https://en.wikipedia.org/wiki/Cross-correlation>`_,
-    :math:`weight` is the convolution kernel value and :math:`X` represents the input feature map.
+    :math:`weight` is the convolution kernel value and :math:`Input` represents the input feature map.
 
     - :math:`i` corresponds to the batch number, the range is :math:`[0, N-1]`,
       where :math:`N` is the batch size of the input.
@@ -344,7 +344,7 @@ class Conv2d(_Conv):
 
     Therefore, in the above formula, :math:`{bias}(C_{\text{out}_j})` represents the bias of the :math:`j`-th
     output channel, :math:`{weight}(C_{\text{out}_j}, k)` represents the slice of the :math:`j`-th convolutional
-    kernel in the :math:`k`-th channel, and :math:`{X}(N_i, k)` represents the slice of the :math:`k`-th input
+    kernel in the :math:`k`-th channel, and :math:`{Input}(N_i, k)` represents the slice of the :math:`k`-th input
     channel in the :math:`i`-th batch of the input feature map.
 
     The shape of the convolutional kernel is given by :math:`(\text{kernel_size[0]},\text{kernel_size[1]})`,
@@ -352,7 +352,7 @@ class Conv2d(_Conv):
     and :math:`\text{kernel_size[1]}` are the height and width of the kernel, respectively.
     If we consider the input and output channels as well as the `groups` parameter, the complete kernel shape
     will be :math:`(C_{out}, C_{in} / \text{groups}, \text{kernel_size[0]}, \text{kernel_size[1]})`,
-    where `groups` is the number of groups dividing `x`'s input channel when applying groups convolution.
+    where `groups` is the number of groups dividing `Input`'s input channel when applying groups convolution.
 
     For more details about convolution layer, please refer to `Gradient Based Learning Applied to Document Recognition
     <http://vision.stanford.edu/cs598_spring07/papers/Lecun98.pdf>`_.
@@ -387,13 +387,11 @@ class Conv2d(_Conv):
               be discarded.
 
         padding_mode (str, optional): Specifies the padding mode with a padding value of 0. It can be set to:
-            ``"zeros"`` , ``"reflect"`` ``"circular"`` or ``"replicate"`` . Default: ``"zeros"`` .
+            ``"zeros"`` , ``"reflect"`` or ``"replicate"`` . Default: ``"zeros"`` .
         dilation (Union[int, tuple[int], list[int]], optional): Specifies the dilation rate to use for dilated convolution.
-            It can be a single int or a tuple of 2 or 4 integers. A single int means the dilation size is the same
+            It can be a single int or a tuple of 2 integers. A single int means the dilation size is the same
             in both the height and width directions. A tuple of two ints represents the dilation size in
-            the height and width directions, respectively. For a tuple of four ints, the two ints correspond
-            to (N, C) dimension are treated as 1, and the two correspond to (H, W) dimensions is the
-            dilation size in the height and width directions respectively.
+            the height and width directions, respectively.
             Assuming :math:`dilation=(d0, d1)`, the convolutional kernel samples the input with a
             spacing of :math:`d0-1` elements in the height direction and :math:`d1-1` elements in the width direction.
             The values in the height and width dimensions are in the ranges [1, H] and [1, W], respectively.
@@ -412,8 +410,7 @@ class Conv2d(_Conv):
         dtype (:class:`mindspore.dtype`, optional): Dtype of Parameters. Default: ``None``, using ``mstype.float32``.
 
     Inputs:
-        - **x** (Tensor) - Tensor of shape :math:`(N, C_{in}, H_{in}, W_{in})` \
-          or :math:`(C_{in}, H_{in}, W_{in})`.
+        - **Input** (Tensor) - Tensor of shape :math:`(N, C_{in}, H_{in}, W_{in})` or :math:`(C_{in}, H_{in}, W_{in})`.
 
     Outputs:
         Tensor of shape :math:`(N, C_{out}, H_{out}, W_{out})` or :math:`(C_{out}, H_{out}, W_{out})`.
@@ -440,11 +437,17 @@ class Conv2d(_Conv):
 
         .. math::
             \begin{array}{ll} \\
-                H_{out} = \left \lfloor{\frac{H_{in} + padding[0] + padding[1] - \text{dilation[0]} \times
+                H_{out} = \left \lfloor{\frac{H_{in} + 2 \times padding[0] - \text{dilation[0]} \times
                 (\text{kernel_size[0]} - 1) - 1}{\text{stride[0]}}} \right \rfloor + 1 \\
-                W_{out} = \left \lfloor{\frac{W_{in} + padding[2] + padding[3] - \text{dilation[1]} \times
+                W_{out} = \left \lfloor{\frac{W_{in} + 2 \times padding[1] - \text{dilation[1]} \times
                 (\text{kernel_size[1]} - 1) - 1}{\text{stride[1]}}} \right \rfloor + 1 \\
             \end{array}
+
+    Variables:
+        - **weight** (Tensor) - The weight of the convolution layer, with shape :math:`
+          (C_{out}, C_{in} / \text{groups}, \text{kernel_size[0]}, \text{kernel_size[1]})`.
+        - **bias** (Tensor) - The bias of the convolution layer, with shape :math:`
+          (C_{out})`. If bias is False, this will be None.
 
     Raises:
         ValueError: Args and size of the input feature map should satisfy the output formula to ensure that the size of
@@ -452,7 +455,7 @@ class Conv2d(_Conv):
         RuntimeError: On Ascend, due to the limitation of the L1 cache size of different NPU chip, if input size or
             kernel size is too large, it may trigger an error.
         TypeError: If `in_channels`, `out_channels` or `groups` is not an int.
-        TypeError: If `kernel_size`, `stride` or `dilation` is neither an int nor a tuple.
+        TypeError: If `kernel_size`, `stride` or `dilation` is neither an int nor a tuple/list.
         ValueError: If `in_channels`, `out_channels`, `kernel_size`, `stride` or `dilation` is less than 1.
         ValueError: If `padding` is less than 0.
         ValueError: If `padding` is `same` , `stride` is not equal to 1.
@@ -590,7 +593,7 @@ class Conv3d(_Conv):
               be discarded. If this mode is set, `padding` must be 0.
 
         padding_mode (str, optional): Specifies the padding mode with a padding value of 0. It can be set to:
-            ``"zeros"`` , ``"reflect"`` ``"circular"`` or ``"replicate"`` . Default: ``"zeros"`` .
+            ``"zeros"`` , ``"reflect"`` or ``"replicate"`` . Default: ``"zeros"`` .
         dilation (Union[int, tuple[int], list[int]], optional): Controlling the space between the kernel points.
             Default: ``1`` .
         groups (int, optional): Splits filter into groups, `in_channels` and `out_channels` must be
