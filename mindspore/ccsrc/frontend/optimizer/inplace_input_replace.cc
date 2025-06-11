@@ -52,14 +52,21 @@ AnfNodePtr FindNodeUserWithIOMonad(const mindspore::CompactSet<std::pair<AnfNode
   return found ? node_user_with_io_monad : nullptr;
 }
 
-// Change from:
-// %0 = InplaceOp(param_x, param_y)
-// %1 = UpdataState(U, %0)
-// %2 = Depend(param_x, %1)
-// To:
-// %0 = InplaceOp(param_x, param_y)
-// %1 = UpdataState(U, %0)
-// %2 = Depend(%0, %1)
+/**
+ * \brief Change inplace input of cnode in func_graph.
+ *
+ * \example
+ * Change from:
+ *   %0 = InplaceOp(param_x, param_y)
+ *   %1 = UpdataState(U, %0)
+ *   %2 = Depend(param_x, %1)
+ * To:
+ *   %0 = InplaceOp(param_x, param_y)
+ *   %1 = UpdataState(U, %0)
+ *   %2 = Depend(%0, %1)
+ *
+ * \param[in] func_graph func graph.
+ **/
 void ChangeInplaceInputInner(const FuncGraphPtr &func_graph) {
   MS_EXCEPTION_IF_NULL(func_graph);
   std::map<AnfNodePtr, AnfNodePtr> inplace_input;

@@ -284,6 +284,7 @@ AnfNodePtr EliminateUpdateStateMakeTupleWithUselessEnv(const CNodePtr &update_st
 // make_tuple = MakeTuple(xx)
 // u2 = UpdateState(u1, make_tuple) or u2 = u1
 AnfNodePtr EliminateUpdateStateMakeTupleWithUselessLoadNode(const CNodePtr &update_state, const CNodePtr &make_tuple) {
+  MS_EXCEPTION_IF_NULL(make_tuple);
   if (!OnlyUsedByOneNode(make_tuple, update_state)) {
     return nullptr;
   }
@@ -551,8 +552,11 @@ AnfNodePtr EliminateUpdateStateForLoads(const CNodePtr &old_update_state, const 
 // u3 = UpdateState(u1, t)
 AnfNodePtr EliminateUpdateStateBetweenAssigns(const CNodePtr &update_state, const AnfNodePtr &assign) {
   auto a2_cnode = assign->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(a2_cnode);
   auto u2 = a2_cnode->input(kAssignMonadInputIndex);
-  auto a1 = u2->cast<CNodePtr>()->input(kAttachIndex);
+  auto u2_cnode = u2->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(u2_cnode);
+  auto a1 = u2_cnode->input(kAttachIndex);
   if (IsPrimitiveCNode(a1, prim::kPrimAssign)) {
     auto a1_cnode = a1->cast<CNodePtr>();
     if (a1_cnode->size() != kAssignSize) {

@@ -111,6 +111,7 @@ PrimitivePtr Emitter::NewPrimitive(const std::string &op_name, const DAttr &attr
   if (mindspore::ops::IsPrimitiveFunction(op_name)) {
     prim = std::make_shared<Primitive>(op_name);
     auto op_def = mindspore::ops::GetOpDef(op_name);
+    MS_EXCEPTION_IF_NULL(op_def);
     auto signatures = op_def->signatures_;
     std::vector<size_t> rw_write_input_indexes;
     for (size_t i = 0; i < signatures.size(); ++i) {

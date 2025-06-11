@@ -106,6 +106,38 @@ std::ostream &operator<<(std::ostream &stream, const std::vector<TensorIndex> &t
   return stream;
 }
 
+TensorIndex::TensorIndex(const py::handle &py_object) {
+  if (py::isinstance<py::list>(py_object)) {
+    this->list_ = py_object.cast<py::list>();
+    this->type_ = TensorIndexType::List;
+  } else if (py::isinstance<py::int_>(py_object) && !py::isinstance<py::bool_>(py_object)) {
+    this->integer_ = py_object.cast<py::int_>();
+    this->type_ = TensorIndexType::Integer;
+  } else if (py::isinstance<py::float_>(py_object)) {
+    this->float_ = py_object.cast<py::float_>();
+    this->type_ = TensorIndexType::Float;
+  } else if (py::isinstance<py::tuple>(py_object)) {
+    this->tuple_ = py_object.cast<py::tuple>();
+    this->type_ = TensorIndexType::Tuple;
+  } else if (py::isinstance<py::slice>(py_object)) {
+    this->slice_ = TensorIndex(py_object.cast<py::slice>()).slice_;
+    this->type_ = TensorIndexType::Slice;
+  } else if (py::isinstance<py::ellipsis>(py_object)) {
+    this->type_ = TensorIndexType::Ellipsis;
+  } else if (py::isinstance<py::none>(py_object)) {
+    this->type_ = TensorIndexType::None;
+  } else if (py::isinstance<py::array>(py_object)) {
+    this->array_ = py_object.cast<py::array>();
+    this->type_ = TensorIndexType::Array;
+  } else if (py::isinstance<py::bool_>(py_object)) {
+    this->boolean_ = py_object.cast<py::bool_>();
+    this->type_ = TensorIndexType::Boolean;
+  } else if (IsTensorPy(py_object)) {
+    this->tensorpynew_ = py_object;
+    this->type_ = TensorIndexType::Tensor;
+  }
+}
+
 void TensorIndex::CheckGetItemIndex(const TensorIndexType &index_data_type) {
   bool valid = CheckTypeIsInstance<TensorIndexType>(
     index_data_type,
@@ -169,6 +201,30 @@ ShapeVector TensorIndex::BroadCastShape(const ShapeVector &x_shape, const ShapeV
   (void)broadcast_shape_front.insert(broadcast_shape_front.end(), broadcast_shape_back.begin(),
                                      broadcast_shape_back.end());
   return broadcast_shape_front;
+}
+
+ShapeVector TensorIndex::BroadCastShape(const std::vector<ShapeVector> &tensor_indexes_shapes) {
+  if (tensor_indexes_shapes.empty()) {
+    return {};
+  }
+  return std::accumulate(tensor_indexes_shapes.begin(), tensor_indexes_shapes.end(), tensor_indexes_shapes[0],
+                         [](const auto &output_shape, const auto &tensor_indexes_shape) {
+                           return BroadCastShape(output_shape, tensor_indexes_shape);
+                         });
+}
+
+std::vector<int64_t> TensorIndex::SliceToVector(int64_t start, int64_t stop, int64_t step) {
+  std::vector<int64_t> slice_ele_list_index;
+  if (step > 0) {
+    for (int64_t j = start; j < stop; j += step) {
+      (void)slice_ele_list_index.emplace_back(j);
+    }
+    return slice_ele_list_index;
+  }
+  for (int64_t j = start; j > stop; j += step) {
+    (void)slice_ele_list_index.emplace_back(j);
+  }
+  return slice_ele_list_index;
 }
 
 template <typename T>
@@ -407,6 +463,18 @@ TensorIndex TensorIndex::SliceToArray(py::object index, const ShapeVector &final
   array = TensorIndex::np_module_.attr("reshape")(array, py::cast(shape));
   array = BroadCastTo(final_shape, array);
   return TensorIndex(array);
+}
+
+ShapeVector TensorIndex::ComputeSliceShape(const ShapeVector &slice_shape, size_t broadcast_shape_len, size_t slice_cnt,
+                                           int64_t fancy_position) {
+  ShapeVector shape(slice_shape.size(), 1);
+  if (slice_cnt >= shape.size()) {
+    MS_EXCEPTION(IndexError) << "Index out of shape size.";
+  }
+  shape[slice_cnt] = slice_shape[slice_cnt];
+  ShapeVector temp_shape(broadcast_shape_len, 1);
+  (void)shape.insert(shape.begin() + fancy_position, temp_shape.begin(), temp_shape.end());
+  return shape;
 }
 
 py::object TensorIndex::BroadCastTo(const ShapeVector &broadcast_shape, const py::object &item) {
@@ -1463,6 +1531,15 @@ py::object TensorIndex::SetitemBySliceWithTensor(const ShapeVector &data_shape, 
                         py::make_tuple(static_cast<int>(tensor_update_type)), py::make_tuple(py::none()));
 }
 
+ShapeVector TensorIndex::GeneratePaddingShape(const ShapeVector &shape, int64_t length) {
+  if (SizeToLong(shape.size()) > length) {
+    MS_EXCEPTION(ValueError) << "Can not pad " << shape << " to length " << length;
+  }
+  ShapeVector pad_shape(length - SizeToLong(shape.size()), 1);
+  (void)pad_shape.insert(pad_shape.begin(), shape.begin(), shape.end());
+  return pad_shape;
+}
+
 py::array TensorIndex::SetItemByTensorByBool(const ShapeVector &data_shape, const PyType<TensorPy> *index,
                                              int64_t data_dims, std::vector<int64_t> *value_transfer_types,
                                              std::vector<py::object> *value_transfer_args,
@@ -2118,6 +2195,17 @@ py::object TensorIndex::SetItemByNumberWithView(const ShapeVector &data_shape, c
 py::object TensorIndex::SetItemByTensorResult(py::array np_index) {
   TensorPtr tensor = TensorPybind::MakeTensor(TensorIndex::np_module_.attr("array")(np_index));
   return PackTensorToPyObject(tensor);
+}
+
+bool TensorIndex::CheckScalarValue(const py::handle &value) {
+  if (IsTensorPy(value)) {
+    TensorPtr data = ConvertToTensor(value);
+    MS_EXCEPTION_IF_NULL(data);
+    auto data_shape = data->shape();
+    return data_shape.empty();
+  }
+  return CheckTypeIsInstance(TensorIndex(value).type(),
+                             {TensorIndexType::Float, TensorIndexType::Integer, TensorIndexType::Boolean});
 }
 
 py::object TensorIndex::SetItemByTensor(const ShapeVector &data_shape, bool is_parameter,

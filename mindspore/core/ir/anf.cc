@@ -1143,6 +1143,7 @@ PrimitivePtr GetPrimitiveFromValueNode(const AnfNodePtr &node) {
 }
 
 static std::string GetNodeTargetForVarInputNode(const CNodePtr &cnode) {
+  MS_EXCEPTION_IF_NULL(cnode);
   auto &inputs = cnode->inputs();
   AnfNodeWeakPtrList real_inputs;
   const size_t update_state_valid_input_index = 2;

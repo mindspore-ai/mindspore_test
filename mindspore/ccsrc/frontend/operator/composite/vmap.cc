@@ -163,6 +163,7 @@ AbstractBasePtrList GetOutAxesAbstractElements(const AbstractBasePtr &out_axes_a
     return out_axes_abstract_elements;
   }
   abstract::AbstractTuplePtr out_axes_abstract_tuple = dyn_cast<abstract::AbstractTuple>(out_axes_abstract);
+  MS_EXCEPTION_IF_NULL(out_axes_abstract_tuple);
   out_axes_abstract_elements = out_axes_abstract_tuple->elements();
   if (out_axes_abstract_elements.size() != inputs_abstract_elements_size) {
     MS_LOG(EXCEPTION) << "The length of out_axes and inputs do not match. ";

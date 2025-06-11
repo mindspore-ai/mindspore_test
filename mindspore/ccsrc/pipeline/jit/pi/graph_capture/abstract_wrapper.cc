@@ -420,6 +420,7 @@ std::vector<py::object> AbstractWrapper::GetDictKeysObject() const {
     MS_LOG(EXCEPTION) << "Can not get keys non-dict abstract wrapper: " << ToString();
   }
   auto dict_abstract = abstract_->cast<abstract::AbstractDictionaryPtr>();
+  MS_EXCEPTION_IF_NULL(dict_abstract);
   const auto &pairs = dict_abstract->elements();
   std::vector<py::object> ret;
   std::transform(pairs.begin(), pairs.end(), std::back_inserter(ret), [](const auto &e) {

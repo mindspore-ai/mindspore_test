@@ -123,6 +123,7 @@ bool Graph::NeedSymbolic(ValueNode *node) {
     return false;
   }
   JitCompileResults *jcr = GetJitCompileResults(GetCodeObj());
+  MS_EXCEPTION_IF_NULL(jcr);
   if (jcr->cache().fail_guard().empty()) {
     return false;
   }

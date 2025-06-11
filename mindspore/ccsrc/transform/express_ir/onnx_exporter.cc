@@ -104,7 +104,9 @@ bool IsZeroRefcountNode(const AnfNodePtr &node) { return HasAbstractMonad(node) 
 static AnfNodePtr GetRealInput(const AnfNodePtr &origin_input) {
   AnfNodePtr input = origin_input;
   while (IsIgnoredIdentityNode(input)) {
-    input = input->cast<CNodePtr>()->inputs().at(1);
+    const auto &cnode = input->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
+    input = cnode->inputs().at(1);
   }
   return input;
 }

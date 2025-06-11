@@ -89,6 +89,7 @@ using DeviceTensor = mindspore::device::DeviceAddress;
 namespace {
 
 bool CheckAllTensor(const ValueTuplePtr &value_tuple) {
+  MS_EXCEPTION_IF_NULL(value_tuple);
   auto elements = value_tuple->value();
   for (auto element : elements) {
     MS_EXCEPTION_IF_NULL(element);

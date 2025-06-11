@@ -2133,6 +2133,7 @@ bool AbstractRefTensor::operator==(const AbstractBase &other) const {
 }
 
 AbstractBasePtr AbstractRefTensor::Join(const std::shared_ptr<AbstractRefTensor> &other) {
+  MS_EXCEPTION_IF_NULL(other);
   if (*this == *other) {
     return shared_from_base<AbstractRefTensor>();
   }

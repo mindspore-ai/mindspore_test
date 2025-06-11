@@ -904,6 +904,7 @@ def get_method_info(obj):
     class_name_and_method_name = obj.__qualname__.split('.')
     return class_name_and_method_name[0], class_name_and_method_name[1]
 
+
 def can_constant_fold(obj):
     """Check if the obj is the function can be constantly folded."""
     return obj in constant_fold_functions

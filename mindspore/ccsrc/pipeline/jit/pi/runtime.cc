@@ -713,6 +713,7 @@ static bool JitCompileWithTry(PyThreadState *tstate, JitCompileResults *c) {
 }
 
 static py::object CodeHook(PyThreadState *tstate, JitCompileResults *c, PyFrameWrapper frame) {
+  MS_EXCEPTION_IF_NULL(c);
   PyCodeObject *co = PyFrameWrapper(frame).GetCode().ptr();
   bool just_compiled = false;
   switch (c->stat()) {

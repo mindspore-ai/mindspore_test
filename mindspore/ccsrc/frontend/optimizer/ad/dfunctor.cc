@@ -98,6 +98,16 @@ void ComplexPreprocess(const AnfNodePtr &input, const CNodePtr &din) {
   din->AddAttr(kAttrCheckComplex, MakeValue(true));
 }
 
+bool PrimitiveNeedSkip(const AnfNodePtr &node) {
+  const auto prim = GetValueNode<PrimitivePtr>(node);
+  if (!prim) {
+    return false;
+  }
+
+  return IsPrimitiveEquals(prim, prim::kPrimReturn) || IsPrimitiveEquals(prim, prim::kPrimHookBackward) ||
+         IsPrimitiveEquals(prim, prim::kPrimCellBackwardHook);
+}
+
 void CopyPrimitivePtrForFpropReplace(const FuncGraphPtr &primal_graph, const FuncGraphManagerPtr &manager) {
   MS_EXCEPTION_IF_NULL(primal_graph);
   MS_LOG(INFO) << "Copy primitive value node for fprop replace in gradjit function for fg: "
@@ -109,11 +119,7 @@ void CopyPrimitivePtrForFpropReplace(const FuncGraphPtr &primal_graph, const Fun
     if (!IsValueNode<Primitive>(node)) {
       continue;
     }
-    const auto &prim = GetValuePtr<Primitive>(node);
-    if (IsPrimitive(node, prim::kPrimUpdateState) ||
-        (prim->Hash() == prim::kPrimReturn->hash() && prim->name() == prim::kPrimReturn->name()) ||
-        (prim->Hash() == prim::kPrimHookBackward->Hash() && prim->name() == prim::kPrimHookBackward->name()) ||
-        (prim->Hash() == prim::kPrimCellBackwardHook->Hash() && prim->name() == prim::kPrimCellBackwardHook->name())) {
+    if (IsPrimitive(node, prim::kPrimUpdateState) || PrimitiveNeedSkip(node)) {
       continue;
     }
     auto users = manager->node_users()[node];
@@ -137,6 +143,31 @@ bool NeedGradForUpdateState(const CNodePtr &cnode, const NodeUsersMap &node_user
   return std::any_of(cnode->inputs().begin(), cnode->inputs().end(), [node_user_map](const auto &node_input) {
     return InplaceUsedByUpdateStateOnly(node_input, node_user_map);
   });
+}
+
+void DuplicateSideEffectNodes(const FuncGraphManagerPtr &manager, const FuncGraphPtr &func_graph) {
+  MS_EXCEPTION_IF_NULL(manager);
+  MS_EXCEPTION_IF_NULL(func_graph);
+
+  auto value_nodes_origin = func_graph->value_nodes();
+  for (const auto &value_pair : value_nodes_origin) {
+    auto node = value_pair.first;
+    auto prim = GetValueNode<PrimitivePtr>(node);
+    if (prim == nullptr || !prim->HasAttr("side_effect_backprop_mem")) {
+      continue;
+    }
+    auto users = manager->node_users()[node];
+    if (users.size() <= 1) {
+      continue;
+    }
+    for (const auto &user : users) {
+      auto new_value_node = NewValueNode(prim);
+      auto cnode = user.first->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(cnode);
+      auto index = user.second;
+      (void)manager->SetEdge(cnode, index, new_value_node);
+    }
+  }
 }
 }  // namespace
 
@@ -1038,25 +1069,7 @@ void DFunctor::MapValueObject() {
     CopyPrimitivePtrForFpropReplace(primal_graph_, manager);
   }
   if (is_view_inplace_) {
-    auto value_nodes_origin = primal_graph_->value_nodes();
-    for (const auto &value_pair : value_nodes_origin) {
-      auto node = value_pair.first;
-      auto prim = GetValueNode<PrimitivePtr>(node);
-      if (prim == nullptr || !prim->HasAttr("side_effect_backprop_mem")) {
-        continue;
-      }
-      auto users = manager->node_users()[node];
-      if (users.size() <= 1) {
-        continue;
-      }
-      for (const auto &user : users) {
-        auto new_value_node = NewValueNode(prim);
-        auto cnode = user.first->cast<CNodePtr>();
-        MS_EXCEPTION_IF_NULL(cnode);
-        auto index = user.second;
-        (void)manager->SetEdge(cnode, index, new_value_node);
-      }
-    }
+    DuplicateSideEffectNodes(manager, primal_graph_);
   }
   auto &value_nodes = primal_graph_->value_nodes();
   for (const auto &value_pair : value_nodes) {
@@ -1070,12 +1083,7 @@ void DFunctor::MapValueObject() {
 
     AdjointPtr adjoint = nullptr;
     if (IsValueNode<Primitive>(node)) {  // Primitive.
-      auto prim = GetValuePtr<Primitive>(node);
-      MS_EXCEPTION_IF_NULL(prim);
-      if ((prim->Hash() == prim::kPrimReturn->hash() && prim->name() == prim::kPrimReturn->name()) ||
-          (prim->Hash() == prim::kPrimHookBackward->Hash() && prim->name() == prim::kPrimHookBackward->name()) ||
-          (prim->Hash() == prim::kPrimCellBackwardHook->Hash() &&
-           prim->name() == prim::kPrimCellBackwardHook->name())) {
+      if (PrimitiveNeedSkip(node)) {
         continue;
       }
       MS_LOG(DEBUG) << "Map Primitive node " << node->DebugString() << ".";

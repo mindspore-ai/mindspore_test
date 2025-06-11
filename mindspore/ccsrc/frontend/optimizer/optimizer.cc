@@ -276,6 +276,43 @@ bool Optimizer::traverse_nodes_first() const { return traverse_nodes_first_; }
 bool Optimizer::is_first_order_j() const { return is_first_order_j_; }
 void Optimizer::set_is_first_order_j(bool is_first_order_j) { is_first_order_j_ = is_first_order_j; }
 
+namespace {
+FuncGraphPtr RunRenormalize(const pipeline::ResourcePtr &resource, const FuncGraphPtr &func_graph) {
+  // StepParallel may replace the AbstractValue of the parameters of func_graph,
+  // So generate the args_abs from parameters.
+  abstract::AbstractBasePtrList maybe_new_args;
+  std::transform(func_graph->parameters().begin(), func_graph->parameters().end(), std::back_inserter(maybe_new_args),
+                 [](const AnfNodePtr &param) -> AbstractBasePtr { return param->abstract(); });
+
+  if (common::GetCompileConfig("CHECK_PASS_NODE_SCOPE") == "1") {
+    const auto &all_nodes = TopoSort(func_graph->return_node(), SuccDeeperSimple);
+    for (const auto &node : all_nodes) {
+      validator::ValidateScope(node, "before_renormalize");
+    }
+  }
+
+  return pipeline::Renormalize(resource, func_graph, maybe_new_args);
+}
+}  // namespace
+
+void Optimizer::OptRenormalize() {
+  auto resource = std::dynamic_pointer_cast<pipeline::Resource>(resource_);
+  if (resource == nullptr) {
+    return;
+  }
+
+  if (is_watch_renormalize_) {
+    if (is_untyped_generated_) {
+      func_graph_ = RunRenormalize(resource, func_graph_);
+      clear_is_untyped_generated();
+    } else {
+      MS_LOG(DEBUG) << "Optimizer::step: Skipping Renormalize because is_untyped_generated_ is False.";
+    }
+  } else {
+    func_graph_ = RunRenormalize(resource, func_graph_);
+  }
+}
+
 void Optimizer::OptProcess(OptPass *opt) {
   if (opt->is_renormalize()) {
     if (!changes_since_last_renorm_) {
@@ -284,40 +321,7 @@ void Optimizer::OptProcess(OptPass *opt) {
     if (opt->is_once() && opt->alreay_run()) {
       return;
     }
-    auto resource = std::dynamic_pointer_cast<pipeline::Resource>(resource_);
-    if (resource != nullptr) {
-      // StepParallel may replace the AbstractValue of the parameters of func_graph,
-      // So generate the args_abs from parameters.
-      abstract::AbstractBasePtrList maybe_new_args;
-      if (is_watch_renormalize_) {
-        if (is_untyped_generated_) {
-          std::transform(func_graph_->parameters().begin(), func_graph_->parameters().end(),
-                         std::back_inserter(maybe_new_args),
-                         [](const AnfNodePtr &param) -> AbstractBasePtr { return param->abstract(); });
-          if (common::GetCompileConfig("CHECK_PASS_NODE_SCOPE") == "1") {
-            const auto &all_nodes = TopoSort(func_graph_->return_node(), SuccDeeperSimple);
-            for (const auto &node : all_nodes) {
-              validator::ValidateScope(node, "before_renormalize");
-            }
-          }
-          func_graph_ = pipeline::Renormalize(resource, func_graph_, maybe_new_args);
-          clear_is_untyped_generated();
-        } else {
-          MS_LOG(DEBUG) << "Optimizer::step: Skipping Renormalize because is_untyped_generated_ is False.";
-        }
-      } else {
-        std::transform(func_graph_->parameters().begin(), func_graph_->parameters().end(),
-                       std::back_inserter(maybe_new_args),
-                       [](const AnfNodePtr &param) -> AbstractBasePtr { return param->abstract(); });
-        if (common::GetCompileConfig("CHECK_PASS_NODE_SCOPE") == "1") {
-          const auto &all_nodes = TopoSort(func_graph_->return_node(), SuccDeeperSimple);
-          for (const auto &node : all_nodes) {
-            validator::ValidateScope(node, "before_renormalize");
-          }
-        }
-        func_graph_ = pipeline::Renormalize(resource, func_graph_, maybe_new_args);
-      }
-    }
+    OptRenormalize();
     changes_since_last_renorm_ = false;
     opt->set_alreay_run(true);
   } else if ((*opt)(func_graph_, shared_from_this())) {

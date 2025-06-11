@@ -256,6 +256,7 @@ AbstractBasePtr MakeAbstractTensor(const ShapePtr &shape, const TypePtr &type) {
 }
 
 AbstractBasePtr MakeMonadAbstract(const MonadTypePtr &type) {
+  MS_EXCEPTION_IF_NULL(type);
   if (type->isa<UMonadType>()) {
     return kUMonad->ToAbstract();
   } else if (type->isa<IOMonadType>()) {

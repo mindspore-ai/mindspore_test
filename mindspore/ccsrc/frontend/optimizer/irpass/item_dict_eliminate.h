@@ -189,7 +189,9 @@ class DictSetitemEliminator : public AnfVisitor {
     CNodePtr real_node = cnode;
     while (IsPrimitiveCNode(real_node, prim::kPrimDepend)) {
       auto depend = real_node->cast<CNodePtr>();
-      real_node = depend->input(1)->cast<CNodePtr>();
+      auto &input1 = depend->input(1);
+      MS_EXCEPTION_IF_NULL(input1);
+      real_node = input1->cast<CNodePtr>();
     }
     if (IsPrimitiveCNode(real_node, prim::kPrimMakeDict)) {
       keys_tuple_ = real_node->input(kIndex1);

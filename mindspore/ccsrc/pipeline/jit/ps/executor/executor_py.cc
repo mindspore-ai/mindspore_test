@@ -81,7 +81,7 @@ void CheckShapeConsistency(const abstract::ShapePtr &compile_shape, const abstra
   if (!IsDynamicRank(compile_shape_vec)) {
     if (!args_shape_vec.empty() && compile_shape_vec.size() != args_shape_vec.size()) {
       MS_EXCEPTION(ValueError) << "For " << target_str << " and tuple(list) in " << target_str << ", the dims of "
-                               << index + 1 << "th input must be the same as expected, "
+                               << (index + 1) << "th input must be the same as expected, "
                                << "but got expected: " << compile_shape_vec.size()
                                << ", and input: " << args_shape_vec.size() << "!";
     }
@@ -91,7 +91,7 @@ void CheckShapeConsistency(const abstract::ShapePtr &compile_shape, const abstra
         continue;
       }
       MS_EXCEPTION(ValueError) << "For " << target_str << " and tuple(list) in " << target_str << ", the shape of "
-                               << index + 1 << "th input must be the same as expected, "
+                               << (index + 1) << "th input must be the same as expected, "
                                << "but got expected: " << compile_shape_vec[i] << ", and input: " << args_shape_vec[i]
                                << "!";
     }
@@ -120,7 +120,7 @@ void CheckAbstractConsistency(const AbstractBasePtrList &compile_abstracts, cons
     auto is_compile_var = compile_abs->BuildValue()->ContainsValueAny();
     auto is_args_var = args_abs->BuildValue()->ContainsValueAny();
     if (is_compile_var != is_args_var) {
-      MS_EXCEPTION(TypeError) << "For " << target_str << " or tuple(list) in " << target_str << ", the " << i + 1
+      MS_EXCEPTION(TypeError) << "For " << target_str << " or tuple(list) in " << target_str << ", the " << (i + 1)
                               << "th should be " << (is_compile_var ? "mutable" : "static") << " one, but got "
                               << (is_args_var ? "mutable" : "static") << "!";
     }
@@ -138,7 +138,7 @@ void CheckAbstractConsistency(const AbstractBasePtrList &compile_abstracts, cons
         auto compile_element = compile_tensor->element();
         auto args_element = args_tensor->element();
         if (!common::IsEqual(compile_element, args_element)) {
-          MS_EXCEPTION(TypeError) << "For " << target_str << " or tuple(list) in " << target_str << ", the " << i + 1
+          MS_EXCEPTION(TypeError) << "For " << target_str << " or tuple(list) in " << target_str << ", the " << (i + 1)
                                   << "th type should be " << compile_tensor->BuildType()->ToString() << ", but got "
                                   << args_tensor->BuildType()->ToString() << "!";
         }

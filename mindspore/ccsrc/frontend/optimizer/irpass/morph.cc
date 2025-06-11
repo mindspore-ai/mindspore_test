@@ -169,6 +169,7 @@ AnfNodePtr Morph::operator()(const OptimizerPtr &, const AnfNodePtr &node) {
   }
 
   const auto cnode = node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
 
   size_t start_of_monad = 1;
   for (; start_of_monad < cnode->size(); ++start_of_monad) {

@@ -17,6 +17,7 @@ Interfaces for optimize module.
 """
 
 from __future__ import absolute_import
-from .cell_utils import set_lazy_inline
 
 __all__ = ['set_lazy_inline']
+
+from .cell_utils import set_lazy_inline

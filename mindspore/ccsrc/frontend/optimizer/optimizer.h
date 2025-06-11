@@ -142,6 +142,7 @@ class FRONTEND_EXPORT Optimizer : public std::enable_shared_from_this<Optimizer>
 
  private:
   void OptProcess(OptPass *opt);
+  void OptRenormalize();
   const std::string name_;
   pipeline::ResourceBasePtr resource_;
   std::vector<OptPass> passes_;

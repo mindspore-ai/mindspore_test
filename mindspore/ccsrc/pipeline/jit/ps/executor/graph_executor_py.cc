@@ -793,8 +793,7 @@ void GraphExecutorPy::ExportGraph(const std::string &file_name, const std::strin
   FuncGraphPtr func_graph = info_[phase]->func_graph;
   MS_EXCEPTION_IF_NULL(func_graph);
 
-  string save_str;
-  save_str =
+  string save_str =
     backend::BackendManager::GetInstance().ExportIR(func_graph, file_name, is_save_to_file, backend::IRFormat::kAir);
 
   if (is_save_to_file) {
