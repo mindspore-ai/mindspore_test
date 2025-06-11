@@ -69,6 +69,7 @@ mindspore/mindspore/ccsrc/pipeline/jit/ps/pipeline.cc:mindspore::pipeline::Pipel
 mindspore/mindspore/ccsrc/pipeline/jit/ps/action.cc:mindspore::pipeline::TaskEmitAction
 mindspore/mindspore/ccsrc/pipeline/jit/ps/debug/anf_ir_utils.cc:mindspore::Skip
 mindspore/mindspore/ccsrc/common/debug/anf_ir_dump.cc:mindspore::Skip
+mindspore/mindspore/ccsrc/transform/express_ir/onnx_exporter.cc:mindspore::OnnxExporter::ExportPrimDynamicRNN
 mindspore/mindspore/python/mindspore/ops/operations/array_ops.py:_compute_slicing_shape
 mindspore/mindspore/python/mindspore/ops/function/nn_func.py:conv2d_ext
 mindspore/mindspore/python/mindspore/ops/function/array_func.py:scatter_nd
