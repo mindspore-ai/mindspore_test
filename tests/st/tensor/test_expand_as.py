@@ -41,7 +41,7 @@ def expect_forward_func(x_np, other_np):
 
 @arg_mark(
     plat_marks=["platform_ascend"],
-    level_mark="level0",
+    level_mark="level1",
     card_mark="onecard",
     essential_mark="essential",
 )

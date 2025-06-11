@@ -41,7 +41,7 @@ def asin_backward_func(x):
     return ops.grad(asin_forward_func, (0,))(x)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0',
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 def test_asin_std(mode):

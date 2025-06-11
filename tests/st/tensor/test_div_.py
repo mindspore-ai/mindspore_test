@@ -64,7 +64,7 @@ def test_divide_none_scalar(mode):
     assert np.allclose(output.asnumpy(), expected)
 
 @arg_mark(plat_marks=['platform_ascend'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize('mode', [context.PYNATIVE_MODE])
@@ -84,7 +84,7 @@ def test_divide_floor(mode):
 
 
 @arg_mark(plat_marks=['platform_ascend'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize('mode', [context.PYNATIVE_MODE])
