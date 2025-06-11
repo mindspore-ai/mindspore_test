@@ -180,7 +180,9 @@ class FwkProfileDataField:
             The enum value string.
         """
         try:
-            return list(enum_class)[index].value
+            # pylint: disable=protected-access
+            name = enum_class._member_names_[index]
+            return enum_class[name].value
         except IndexError:
             logger.warning(f"Invalid {enum_type} index: {index}")
             return enum_class.DEFAULT.value
