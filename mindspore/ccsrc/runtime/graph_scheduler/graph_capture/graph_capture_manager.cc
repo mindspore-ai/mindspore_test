@@ -263,7 +263,7 @@ void GraphCaptureManager::FetchAllInputsBeforeCaptureGraph(
     }
     for (const auto &parameter_index : kernel_actor->parameter_indexs()) {
       size_t kernel_input_index = parameter_index.first;
-      auto inner_index = parameter_index.second.first;
+      auto outer_index = parameter_index.second.second;
       auto node = parameter_index.second.first.first;
       bool is_first_user = kernel_actor->is_first_used_params()[kernel_input_index];
       auto kernel_tensor =
@@ -285,7 +285,7 @@ void GraphCaptureManager::FetchAllInputsBeforeCaptureGraph(
         MS_EXCEPTION(RuntimeError) << "Does not support heterogeneous scenarios";
       }
       // deal weight/KV Cache
-      if (IsWeightOrKVCache(cur_graph_parameter_store, node, kernel_input_index)) {
+      if (IsWeightOrKVCache(cur_graph_parameter_store, node, outer_index)) {
         // Save the weight or kv value for the subsequent CheckWeightAndKVCacheNotChange function.
         if (weight_kv_addrs_.find(parameter_index.second.first) == weight_kv_addrs_.end()) {
           weight_kv_addrs_[parameter_index.second.first] = {kernel_tensor, parameter_index.second.second, kernel_actor};
