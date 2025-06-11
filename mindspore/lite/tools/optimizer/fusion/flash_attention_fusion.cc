@@ -153,6 +153,7 @@ int32_t GetReshapeParam(const AnfNodePtr &reshape_node, size_t index) {
     return -1;
   }
   auto reshape_cnode = reshape_node->cast<CNodePtr>();
+  MS_CHECK_TRUE_MSG(reshape_cnode != nullptr, -1, "reshape_cnode is nullptr");
   if (reshape_cnode->inputs().size() < kNumShapeSize3) {
     MS_LOG(WARNING) << "reshape_cnode size < 3!";
     return -1;
@@ -296,6 +297,7 @@ const CNodePtr PD2DecoderPattern(const CNodePtr &q_trans_BNSD) {
   }
 
   auto q_conv = q_reshape_BSH->input(kNumIndex1)->cast<CNodePtr>();
+  MS_CHECK_TRUE_MSG(q_conv != nullptr, nullptr, "q_conv is nullptr!");
   if (!CheckPrimitiveType(q_conv, prim::kPrimConv2DFusion)) {
     MS_LOG(INFO) << "node is not check op type: " << q_conv->fullname_with_scope();
     return nullptr;
@@ -2062,7 +2064,7 @@ CNodePtr FlashAttentionFusion::CreateFlashAttentionNodeForMsSDPseShift(
 
   // V
   auto v_reshape = matmul_2->input(kNumIndex2)->cast<CNodePtr>();
-  MS_CHECK_TRUE_RET(trans != nullptr, nullptr);
+  MS_CHECK_TRUE_RET(v_reshape != nullptr, nullptr);
   auto v_input = v_reshape->input(kNumIndex1)->cast<CNodePtr>();
   MS_CHECK_TRUE_RET(v_input != nullptr, nullptr);
 
@@ -2740,6 +2742,7 @@ CNodePtr FlashAttentionFusion::CreateFlashAttentionNodeForBaiChuanPattern(
   MS_CHECK_TRUE_RET(attention_mask_mul != nullptr, nullptr);
 
   auto add_up = add->input(kNumIndex2)->cast<CNodePtr>();
+  MS_CHECK_TRUE_RET(add_up != nullptr, nullptr);
   auto mul = add_up->input(kNumIndex1)->cast<CNodePtr>();
   MS_CHECK_TRUE_RET(mul != nullptr, nullptr);
   auto matmul_1 = mul->input(kNumIndex1)->cast<CNodePtr>();

@@ -115,7 +115,7 @@ std::vector<int64_t> GetDefaultParamShape(const ParameterPtr &param) {
 }
 
 bool IsScalarNode(const AnfNodePtr &nodePtr) {
-  MS_ASSERT(nodePtr != nullptr);
+  MS_CHECK_TRUE_MSG(nodePtr != nullptr, false, "nodePtr is nullptr!");
   if (utils::isa<ParameterPtr>(nodePtr) && nodePtr->cast<ParameterPtr>()->has_default()) {
     auto tensor = utils::cast<tensor::TensorPtr>(utils::cast<ParameterPtr>(nodePtr)->default_param());
     MS_ASSERT(tensor != nullptr);

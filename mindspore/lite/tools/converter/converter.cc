@@ -1156,6 +1156,7 @@ int ConverterImpl::Convert(const std::shared_ptr<ConverterPara> &param, void **m
     size_t model_index = 0;
     for (auto pair : model_param_infos) {
       auto convert_param = CreateConvertParam(pair.second);
+      MS_CHECK_TRUE_MSG(convert_param != nullptr, RET_ERROR, "convert_param is a nullptr.");
       convert_param->microParam = param->microParam;
       ret = CheckValueParam(convert_param, true);
       if (ret != RET_OK) {

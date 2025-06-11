@@ -737,6 +737,7 @@ void PagedAttentionOp::RectifyAbstract(const PrimitivePtr &prim, AbstractBasePtr
   constexpr size_t PA_INPUT_NUM = 5;
   constexpr size_t PA_MASK_INPUT_NUM = 6;
   if (abs_list->size() == PA_INPUT_NUM || abs_list->size() == PA_MASK_INPUT_NUM) {
+    MS_EXCEPTION_IF_NULL(prim);
     CHECK_ATTR(prim->attrs(), "head_num");
     (void)abs_list->emplace_back(prim->GetAttr("head_num")->ToAbstract());
     CHECK_ATTR(prim->attrs(), "scale_value");

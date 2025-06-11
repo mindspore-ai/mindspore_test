@@ -320,6 +320,7 @@ void SetInputParameterName(const FuncGraphPtr &func_graph) {
 void SetInputParameterAbstractName(const FuncGraphPtr &func_graph) {
   for (auto &input : func_graph->get_inputs()) {
     auto parameter = input->cast<ParameterPtr>();
+    MS_EXCEPTION_IF_NULL(parameter);
     if (!parameter->has_default()) {
       auto abstract = parameter->abstract();
       if (abstract != nullptr && abstract->name().empty()) {

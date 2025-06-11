@@ -1049,6 +1049,7 @@ STATUS SetInputNodeQuantParam(const CNodePtr &cnode, size_t index,
     cnode_primitive->AddAttr(quant::kGraphInputQuantParam, quantization_param);
   } else if (input_node->isa<mindspore::CNode>()) {
     auto input_cnode = input_node->cast<mindspore::CNodePtr>();
+    MS_CHECK_TRUE_MSG(input_cnode != nullptr, RET_NULL_PTR, "input_cnode is nullptr");
     auto input_cnode_primitive = GetValueNode<PrimitivePtr>(input_cnode->input(0));
     MS_CHECK_TRUE_MSG(input_cnode_primitive != nullptr, RET_NULL_PTR, "Primitive is nullptr.");
     auto quantization_param = ConvertQuantParamTToQuantizationParam(quant_param);
@@ -1252,6 +1253,7 @@ std::vector<std::vector<int64_t>> ExtractStrategy(const ValuePtr &stra) {
       std::vector<int64_t> dim;
       if (elements[index]->isa<ValueSequence>()) {
         auto value_tuple = elements[index]->cast<ValueTuplePtr>();
+        MS_EXCEPTION_IF_NULL(value_tuple);
         std::vector<ValuePtr> value_vector = value_tuple->value();
         (void)std::transform(value_vector.begin(), value_vector.end(), std::back_inserter(dim),
                              [](const ValuePtr &value) { return static_cast<int64_t>(GetValue<int64_t>(value)); });
