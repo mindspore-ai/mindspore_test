@@ -36,7 +36,7 @@ bool GraphCaptureManager::GetEnableGraphCapture() const {
 void GraphCaptureManager::SetEnableGraphCapture(bool enable_graph_capture) {
   auto runtime_conf_instance = runtime::RuntimeConf::GetInstance();
   MS_EXCEPTION_IF_NULL(runtime_conf_instance);
-  runtime_conf_instance->SetKernelLaunchCapture(enable_graph_capture);
+  runtime_conf_instance->SetEnableKernelLaunchCapture(enable_graph_capture);
 }
 
 bool GraphCaptureManager::CheckKernelSupportCapture(const KernelRunnerPtr &kernel_runner,
