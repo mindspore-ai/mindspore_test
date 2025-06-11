@@ -539,7 +539,7 @@ class _ProcessManager:
         self.start_workers()
         worker_status = self.monitor_rank_status([-1])
         for i in range(self.local_worker_num):
-            if worker_status[i]["status"] != None:  # pylint: disable=singleton-comparison
+            if worker_status[i]["status"] is not None:
                 return 1
         return 0
 
@@ -554,7 +554,7 @@ class _ProcessManager:
             self._start_single_worker(idx)
         worker_status = self.monitor_rank_status(rank_ids)
         for i in range(rank_ids):
-            if worker_status[i]["status"] != None:  # pylint: disable=singleton-comparison
+            if worker_status[i]["status"] is not None:
                 return 1
         return 0
 
