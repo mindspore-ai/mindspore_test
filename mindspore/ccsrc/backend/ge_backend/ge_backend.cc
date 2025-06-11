@@ -1448,9 +1448,10 @@ void GEBackend::ConstructInputsRefMode(const KernelGraphPtr &func_graph, const V
           is_need_sync = true;
         } else if (host_tensor_address->GetDeviceType() != device_tensor->GetDeviceType()) {
           // device_type not same -> sync_to_host & copy_to_device
+          auto origin_tensor = flatten_tensors[j];
           flatten_tensors[j] = flatten_tensors[j]->cpu();
           host_tensor_address = device_tensor;
-          flatten_tensors[j]->set_device_address(device_tensor);
+          origin_tensor->set_device_address(device_tensor);
           is_need_sync = true;
         } else {
           // other not same condition -> device_copy

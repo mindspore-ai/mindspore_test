@@ -1123,7 +1123,8 @@ bool AscendResManager::AsyncHostToDevice(const DeviceSyncPtr &dst_device_sync, c
   if (src_device_address->type_id() != dst_device_address->type_id()) {
     return CopyHostToDeviceForDiffType(dst_device_address, src_device_address, stream_id);
   }
-  if (src_device_address->GetSize() != dst_device_address->GetSize()) {
+  if (src_device_address->GetSize() != dst_device_address->GetSize() &&
+      dst_device_address->type_id() != kObjectTypeString) {
     MS_LOG(WARNING) << "Invalid size for host to device copy, host device address:" << src_device_address->ToString()
                     << " device address:" << dst_device_address->ToString();
   }
