@@ -370,6 +370,16 @@ class RangeNet(Cell):
         return self.range_ops(start, limit, delta)
 
 
+class MaskedFillFunc(Cell):
+    def __init__(self):
+        super(MaskedFillFunc, self).__init__()
+        self.maskedfill_ = ops.function.masked_fill
+
+    def construct(self, x, mask, value):
+        y = self.maskedfill_(x, mask, value)
+        return y
+
+
 test_case_array_ops = [
     ('CustNet1', {
         'block': CustNet1(),
