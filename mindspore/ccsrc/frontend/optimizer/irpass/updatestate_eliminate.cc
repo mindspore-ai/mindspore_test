@@ -358,6 +358,7 @@ void GetLoadsFollowTuple(const CNodePtr &update_state, const CNodePtr &make_tupl
 // Search consecutive load nodes from UpdateState node.
 void GetLoadsFromUpdateState(const CNodePtr &update_state, std::vector<CNodePtr> *update_states,
                              std::vector<CNodePtr> *loads) {
+  MS_EXCEPTION_IF_NULL(update_state);
   auto &attach = update_state->input(kAttachIndex);
   if (IsPrimitiveCNode(attach, prim::kPrimLoad)) {
     GetLoadsFollowLoad(update_state, attach->cast<CNodePtr>(), update_states, loads);

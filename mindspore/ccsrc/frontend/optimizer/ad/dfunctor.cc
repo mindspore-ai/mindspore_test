@@ -260,6 +260,7 @@ void DFunctor::BackPropagateSwitchLayer(const CNodePtr &cnode_morph, const CNode
   }
   mindspore::HashMap<AnfNodePtr, FuncGraphPtr> node_to_fg;
   auto tuple_graphs = input->cast_ptr<CNode>();
+  MS_EXCEPTION_IF_NULL(tuple_graphs);
   for (size_t i = 1; i < tuple_graphs->size(); ++i) {
     auto graph = tuple_graphs->input(i);
     if (!IsValueNode<FuncGraph>(graph)) {

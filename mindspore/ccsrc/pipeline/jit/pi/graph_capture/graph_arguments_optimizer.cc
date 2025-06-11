@@ -220,6 +220,7 @@ bool GraphArgumentOptimizer::AnalyzeCallNode(CallNode *call_node) {
     optimizer->arguments_ = arguments_;
     optimizer->Run({ret_val});
     status_ = optimizer->status_;
+    MS_EXCEPTION_IF_NULL(ret_val);
     if (ret_val->GetOwnVobj() != call_node->GetOwnVobj()) {
       MS_LOG(WARNING) << "The aobj of " << call_node->ToString() << " should be same as " << ret_val->ToString();
       std::for_each(ret_val->getInputs().begin(), ret_val->getInputs().end(),

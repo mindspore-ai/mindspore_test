@@ -43,7 +43,9 @@ class StopGradientEliminater : public AnfVisitor {
 
  private:
   static inline AnfNodePtr GetInputStopGradient(const AnfNodePtr &node) {
-    auto &input = node->cast<CNodePtr>()->inputs().at(1);
+    auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
+    auto &input = cnode->inputs().at(1);
     if (IsPrimitiveCNode(input, prim::kPrimStopGradient)) {
       return input;
     }
