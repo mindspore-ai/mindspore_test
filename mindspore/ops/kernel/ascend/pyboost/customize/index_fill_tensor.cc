@@ -66,7 +66,7 @@ tensor::TensorPtr IndexFillTensorAscendCustomize(const std::shared_ptr<OpRunner>
     MS_LOG(EXCEPTION) << "Unsupported data type for index conversion";
   }
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input);
-  PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), op->outputs());
+  PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
 
   // Async
   PyBoostUtils::DispatchRun(

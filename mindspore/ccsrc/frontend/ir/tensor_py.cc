@@ -764,12 +764,14 @@ void TensorPybind::SetDeviceAddress(const TensorPtr &tensor, uintptr_t addr, con
   }
   auto data_size = elem_num * GetDataTypeSize(data_type);
   auto device_sync_ = tensor->device_address();
-  if (device_sync_ == nullptr) {
+  MS_EXCEPTION_IF_NULL(device_sync_);
+  if (device_sync_->GetDeviceType() != device::DeviceType::kAscend) {
     auto device_address =
       std::make_shared<device::MbufDeviceAddress>(data, data_size, shape, data_type, kAscendDevice, device_id);
     const_cast<TensorPtr &>(tensor)->set_device_address(device_address);
   } else {
     auto device_address = std::dynamic_pointer_cast<device::MbufDeviceAddress>(device_sync_);
+    MS_EXCEPTION_IF_NULL(device_address);
     device_address->SetData(data);
   }
 }
