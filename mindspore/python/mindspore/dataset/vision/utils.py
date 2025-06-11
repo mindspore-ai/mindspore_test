@@ -739,16 +739,7 @@ def _decode_video_dvpp(decode_params, frames, pts_per_frame):
 
     # decode from dvpp
     chn = cde.decode_video_create_chn(codec_id)
-    if chn == -1:
-        logger.warning(f"_decode_video_create_chn failed {chn}")
-        cde.dvpp_sys_exit()
-        return None
-    ret = cde.decode_video_start_get_frame(chn, total_frame)
-    if not ret == 0:
-        logger.warning(f"_decode_video_start_get_frame failed {ret}")
-        cde.decode_video_destroy_chnl(chn)
-        cde.dvpp_sys_exit()
-        return None
+    cde.decode_video_start_get_frame(chn, total_frame)
 
     for packet in container.demux(stream):
         if packet.pts is not None:
@@ -763,9 +754,7 @@ def _decode_video_dvpp(decode_params, frames, pts_per_frame):
                 output_tensor = cde.DeviceBuffer([])
             # 12:rgb888packed; 13:bgr888packed; 69:rgb888planer; 70:bgr888planer. Packed is HWC, planer is CHW
             # use CHW to avoid memory copy
-            ret = cde.decode_video_send_stream(chn, cde.Tensor(input_tensor), 69, display, output_tensor)
-            if not ret == 0:
-                logger.warning(f"_decode_video_send_stream failed {ret}")
+            cde.decode_video_send_stream(chn, cde.Tensor(input_tensor), 69, display, output_tensor)
 
     # ret_tensor is ordered by pts
     ret_tensor_dvpp = cde.decode_video_stop_get_frame(chn, total_frame)
@@ -774,14 +763,9 @@ def _decode_video_dvpp(decode_params, frames, pts_per_frame):
     if ret_tensor_dvpp.size() != 0:
         ret_tensor = ret_tensor_dvpp
 
-    ret_numpy = np.empty(ret_tensor.shape, dtype=np.uint8)
-    ret = cde.copy_to_numpy(ret_tensor, ret_numpy)
-    if not ret == 0:
-        logger.warning(f"_copy_to_numpy failed {ret}")
+    ret_numpy = ret_tensor.numpy()
 
-    ret = cde.decode_video_destroy_chnl(chn)
-    if not ret == 0:
-        logger.warning(f"_decode_video_destroy_chnl failed {ret}")
+    cde.decode_video_destroy_chnl(chn)
     return ret_numpy
 
 
@@ -1230,9 +1214,7 @@ class VideoDecoder:
                 else:
                     display = False
                     output_tensor = cde.DeviceBuffer([])
-                ret = cde.decode_video_send_stream(chn, cde.Tensor(input_tensor), 69, display, output_tensor)
-                if not ret == 0:
-                    logger.warning(f"decode_video_send_stream failed {ret}")
+                cde.decode_video_send_stream(chn, cde.Tensor(input_tensor), 69, display, output_tensor)
 
     def _decode_video_dvpp_frames(self, decode_params, frames, pts_per_frame, indices):
         """ Send frames to Ascend and using DVPP to decode. """
@@ -1275,16 +1257,7 @@ class VideoDecoder:
 
         # decode from dvpp
         chn = cde.decode_video_create_chn(codec_id)
-        if chn == -1:
-            logger.warning(f"decode_video_create_chn failed {chn}")
-            cde.dvpp_sys_exit()
-            return None
-        ret = cde.decode_video_start_get_frame(chn, len(target_frame_list))
-        if not ret == 0:
-            logger.warning(f"decode_video_start_get_frame failed {ret}")
-            cde.decode_video_destroy_chnl(chn)
-            cde.dvpp_sys_exit()
-            return None
+        cde.decode_video_start_get_frame(chn, len(target_frame_list))
 
         groups = {}
         key_list, first_pts = self._get_key_frames_and_first_pts(container, stream, pts_per_frame)
@@ -1311,14 +1284,9 @@ class VideoDecoder:
         if ret_tensor_dvpp.size() != 0:
             ret_tensor = ret_tensor_dvpp
 
-        ret_numpy = np.empty(ret_tensor.shape, dtype=np.uint8)
-        ret = cde.copy_to_numpy(ret_tensor, ret_numpy)
-        if not ret == 0:
-            logger.warning(f"copy_to_numpy failed {ret}")
+        ret_numpy = ret_tensor.numpy()
 
-        ret = cde.decode_video_destroy_chnl(chn)
-        if not ret == 0:
-            logger.warning(f"decode_video_destroy_chnl failed {ret}")
+        cde.decode_video_destroy_chnl(chn)
 
         if indices != target_frame_list:
             mapping = {val: ret_numpy[index] for index, val in enumerate(target_frame_list)}

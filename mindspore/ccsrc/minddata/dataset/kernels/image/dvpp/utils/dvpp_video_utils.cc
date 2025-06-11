@@ -130,10 +130,6 @@ hi_s32 VideoDecoder::sys_init(void) {
     device_context_ = nullptr;
     MS_EXCEPTION(RuntimeError) << "The SoC: " << soc_version << " is not Ascend910B / Ascend910_93";
   }
-  if (!device_context_->device_res_manager_->CreateStream(&stream_id_)) {
-    MS_EXCEPTION(RuntimeError) << "Create new stream failed on Ascend910B platform.";
-  }
-  MS_LOG(INFO) << "Create new stream id: " << std::to_string(stream_id_);
   auto ret = hi_mpi_sys_init();
   return ret;
 }
@@ -417,12 +413,13 @@ int64_t dvpp_vdec_send_stream(int64_t chnId, const std::shared_ptr<Tensor> &inpu
                                << " or " << HI_PIXEL_FORMAT_BGR_888_PLANAR;
   }
 
-  std::shared_ptr<DeviceTensorAscend910B> in_device;
-  auto status = DeviceTensorAscend910B::CreateDeviceTensor(
-    input, VideoDecoder::GetInstance().device_context_, VideoDecoder::GetInstance().stream_id_, &in_device, false, {1});
-  if (status.IsError()) {
-    MS_EXCEPTION(RuntimeError) << "Create device tensor failed.";
+  void *device_address =
+    VideoDecoder::GetInstance().device_context_->device_res_manager_->AllocateMemory(input->SizeInBytes());
+  if (device_address == nullptr) {
+    MS_EXCEPTION(RuntimeError) << "Allocate device memory failed.";
   }
+  VideoDecoder::GetInstance().device_context_->device_res_manager_->SwapIn(
+    reinterpret_cast<void *>(input->GetMutableBuffer()), device_address, input->SizeInBytes(), nullptr);
 
   int64_t selfSizeBytes = input->SizeInBytes();
 
@@ -432,7 +429,7 @@ int64_t dvpp_vdec_send_stream(int64_t chnId, const std::shared_ptr<Tensor> &inpu
   uint64_t currentSendTime = 0;
   get_current_time_us(currentSendTime);
   stream.pts = currentSendTime;
-  stream.addr = static_cast<hi_u8 *>(in_device->GetDeviceAddress());
+  stream.addr = static_cast<hi_u8 *>(device_address);
   stream.len = selfSizeBytes;
   stream.end_of_frame = HI_TRUE;
   stream.end_of_stream = HI_FALSE;

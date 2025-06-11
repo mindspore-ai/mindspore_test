@@ -1197,9 +1197,7 @@ def set_video_backend(backend):
     _config.set_video_backend(backend)
     if backend == "Ascend":
         mindspore.set_device(backend, device_id=0)
-        ret = cde.dvpp_sys_init()
-        if ret != 0:
-            raise RuntimeError(f"_dvpp_sys_init failed {ret}")
+        cde.dvpp_sys_init()
 
 
 def get_video_backend():

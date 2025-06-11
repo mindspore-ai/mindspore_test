@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -167,22 +167,23 @@ class AclAdapter {
   APP_ERROR DvppVerticalFlip(const std::shared_ptr<DeviceTensorAscend910B> &input,
                              std::shared_ptr<DeviceTensorAscend910B> *output);
 
-  APP_ERROR DvppSysInit();
+  // dvpp codec
+  Status DvppSysInit();
 
-  APP_ERROR DvppSysExit();
+  Status DvppSysExit();
 
-  APP_ERROR DvppVdecCreateChnl(int64_t pType, int64_t *chnl);
+  Status DvppVdecCreateChnl(int64_t pType, int64_t *chnl);
 
-  APP_ERROR DvppVdecStartGetFrame(int64_t chnId, int64_t totalFrame);
+  Status DvppVdecStartGetFrame(int64_t chnId, int64_t totalFrame);
 
-  APP_ERROR DvppVdecSendStream(int64_t chnId, const std::shared_ptr<Tensor> &input, int64_t outFormat, bool display,
-                               std::shared_ptr<DeviceBuffer> *out);
+  Status DvppVdecSendStream(int64_t chnId, const std::shared_ptr<Tensor> &input, int64_t outFormat, bool display,
+                            std::shared_ptr<DeviceBuffer> *out);
 
-  APP_ERROR DvppVdecStopGetFrame(int64_t chnId, int64_t totalFrame, std::shared_ptr<DeviceBuffer> *output);
+  Status DvppVdecStopGetFrame(int64_t chnId, int64_t totalFrame, std::shared_ptr<DeviceBuffer> *output);
 
-  APP_ERROR DvppVdecDestroyChnl(int64_t chnId);
+  Status DvppVdecDestroyChnl(int64_t chnId);
 
-  APP_ERROR DvppMemcpy(const std::shared_ptr<DeviceBuffer> &src, void *dest);
+  Status DvppMemcpy(const std::shared_ptr<DeviceBuffer> &src, void *dest);
 
   // acl
   APP_ERROR GetSocName(std::string *soc_name);

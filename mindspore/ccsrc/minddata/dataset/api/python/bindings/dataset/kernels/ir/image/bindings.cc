@@ -1012,73 +1012,43 @@ PYBIND_REGISTER(WritePNGOperation, 1, ([](py::module *m) {
                 }));
 
 #if defined(ENABLE_D)
-PYBIND_REGISTER(VideoReader, 1, ([](py::module *m) {
-                  (void)m->def("dvpp_sys_init", ([]() {
-                                 int ret = AclAdapter::GetInstance().DvppSysInit();
-                                 if (ret != 0) {
-                                   MS_LOG(ERROR) << "Failed to DvppSysInit.";
-                                 }
-                                 return ret;
-                               }));
+PYBIND_REGISTER(DvppCodec, 1, ([](py::module *m) {
+                  (void)m->def("dvpp_sys_init", ([]() { THROW_IF_ERROR(AclAdapter::GetInstance().DvppSysInit()); }));
 
-                  (void)m->def("dvpp_sys_exit", ([]() {
-                                 int ret = AclAdapter::GetInstance().DvppSysExit();
-                                 if (ret != 0) {
-                                   MS_LOG(ERROR) << "Failed to DvppSysExit.";
-                                 }
-                                 return ret;
-                               }));
+                  (void)m->def("dvpp_sys_exit", ([]() { THROW_IF_ERROR(AclAdapter::GetInstance().DvppSysExit()); }));
 
                   (void)m->def("decode_video_create_chn", ([](int ptype) {
                                  int64_t chnl;
-                                 int ret = AclAdapter::GetInstance().DvppVdecCreateChnl(ptype, &chnl);
-                                 if (ret != 0) {
-                                   MS_LOG(ERROR) << "Failed to DvppVdecCreateChnl.";
-                                 }
+                                 THROW_IF_ERROR(AclAdapter::GetInstance().DvppVdecCreateChnl(ptype, &chnl));
                                  return chnl;
                                }));
 
                   (void)m->def("decode_video_start_get_frame", ([](int chnId, int totalFrame) {
-                                 int ret = AclAdapter::GetInstance().DvppVdecStartGetFrame(chnId, totalFrame);
-                                 if (ret != 0) {
-                                   MS_LOG(ERROR) << "Failed to DvppVdecStartGetFrame.";
+                                 THROW_IF_ERROR(AclAdapter::GetInstance().DvppVdecStartGetFrame(chnId, totalFrame));
+                               }));
+
+                  (void)m->def("decode_video_send_stream",
+                               ([](int chnId, const std::shared_ptr<Tensor> &input, int64_t outFormat, bool display,
+                                   std::shared_ptr<DeviceBuffer> *out) {
+                                 Status status =
+                                   AclAdapter::GetInstance().DvppVdecSendStream(chnId, input, outFormat, display, out);
+                                 if (status.IsError()) {
+                                   MS_LOG(WARNING) << status.ToString();
                                  }
-                                 return ret;
                                }));
 
                   (void)m->def(
-                    "decode_video_send_stream", ([](int chnId, const std::shared_ptr<Tensor> &input, int64_t outFormat,
-                                                    bool display, std::shared_ptr<DeviceBuffer> *out) {
-                      int ret = AclAdapter::GetInstance().DvppVdecSendStream(chnId, input, outFormat, display, out);
-                      if (ret != 0) {
-                        MS_LOG(ERROR) << "Failed to DvppVdecSendStream.";
-                      }
-                      return ret;
+                    "decode_video_stop_get_frame", ([](int chnId, int totalFrame) {
+                      std::shared_ptr<DeviceBuffer> output;
+                      THROW_IF_ERROR(AclAdapter::GetInstance().DvppVdecStopGetFrame(chnId, totalFrame, &output));
+                      return output;
                     }));
 
-                  (void)m->def("decode_video_stop_get_frame", ([](int chnId, int totalFrame) {
-                                 std::shared_ptr<DeviceBuffer> output;
-                                 int ret = AclAdapter::GetInstance().DvppVdecStopGetFrame(chnId, totalFrame, &output);
-                                 if (ret != 0) {
-                                   MS_LOG(ERROR) << "Failed to DvppVdecStopGetFrame.";
-                                 }
-                                 return output;
-                               }));
-
                   (void)m->def("decode_video_destroy_chnl", ([](int chnId) {
-                                 int ret = AclAdapter::GetInstance().DvppVdecDestroyChnl(chnId);
-                                 if (ret != 0) {
-                                   MS_LOG(ERROR) << "Failed to DvppVdecDestroyChnl.";
+                                 Status status = AclAdapter::GetInstance().DvppVdecDestroyChnl(chnId);
+                                 if (status.IsError()) {
+                                   MS_LOG(WARNING) << status.ToString();
                                  }
-                                 return ret;
-                               }));
-
-                  (void)m->def("copy_to_numpy", ([](const std::shared_ptr<DeviceBuffer> &buffer, py::array array) {
-                                 int ret = AclAdapter::GetInstance().DvppMemcpy(buffer, array.mutable_data(0));
-                                 if (ret != 0) {
-                                   MS_LOG(ERROR) << "Failed to DvppMemcpy.";
-                                 }
-                                 return ret;
                                }));
                 }));
 #endif
