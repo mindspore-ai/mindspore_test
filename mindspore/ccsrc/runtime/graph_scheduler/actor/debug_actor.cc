@@ -257,7 +257,8 @@ void DebugActor::DebugOnStepBegin(const std::vector<KernelGraphPtr> &graphs,
  * Ascend and update step number of online debugger GPU.
  */
 void DebugActor::DebugOnStepEnd(OpContext<KernelTensor> *const, const AID *, int total_running_count_, int sink_size_) {
-  MS_LOG(INFO) << "Debug on step end. total_running_count is: " << total_running_count_;
+  MS_LOG(INFO) << "Debug on step end. total_running_count is: " << total_running_count_
+               << "; total user_dump_step is: " << DumpJsonParser::GetInstance().cur_dump_iter();
   auto context = MsContext::GetInstance();
   auto is_kbyk = context->IsKByKExecutorMode();
   MS_EXCEPTION_IF_NULL(context);
