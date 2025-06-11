@@ -2623,7 +2623,7 @@ def interpolate(input,
             t1 = seq.TupleToTensor()(size[:1], mstype.int32)
             t2 = Tensor([1], mstype.int32)
             size = F.concat([t1, t2])
-            x = F.unsqueeze(x, -1)
+            x = x.unsqueeze(-1)
             x = _get_cache_prim(P.ResizeNearestNeighborV2)()(
                 x, size)
             x = _get_cache_prim(P.Squeeze)(-1)(x)
@@ -2673,7 +2673,7 @@ def interpolate(input,
         if x_rank == 3:
             size = seq.TupleToTensor()((size[0], 1), mstype.int32)
             # For impl of nearest 3D use 4D.
-            x = F.unsqueeze(x, -1)
+            x = x.unsqueeze(-1)
             resize = _get_cache_prim(P.ResizeNearestNeighborV2)(
                 align_corners=False,
                 half_pixel_centers=True)
@@ -5634,7 +5634,7 @@ def gaussian_nll_loss(x, target, var, full=False, eps=1e-6, reduction='mean'):
         but got {reduction}.")
     if not x.shape == var.shape:
         if x.shape[:-1] == var.shape:
-            var = F.unsqueeze(var, dim=-1)
+            var = var.unsqueeze(dim=-1)
 
     maxima = maximum_(var, eps)
     logarithm = log_(maxima)
@@ -6373,9 +6373,9 @@ def _get_pad_info(dilation, weight):
     for i in range(2):
         d = dilation[i]
         weight_size = weight.shape[i + 2]
-        pad = d * (weight_size - 1)
-        pad_l += (int(pad / 2),)
-        pad_r += (int(pad - pad_l[i]),)
+        pad_item = d * (weight_size - 1)
+        pad_l += (int(pad_item / 2),)
+        pad_r += (int(pad_item - pad_l[i]),)
         if pad_l[i] != pad_r[i]:
             need_pad_nd = True
     return need_pad_nd, pad_l, pad_r
@@ -7515,7 +7515,7 @@ def pixel_shuffle(input, upscale_factor):
     c, h, w = idx[-3:]
     _check_pxiel_shuffle_valid(c, upscale_factor)
     c = c // upscale_factor ** 2
-    input_perm = (pre + (c, upscale_factor, upscale_factor, h, w))
+    input_perm = pre + (c, upscale_factor, upscale_factor, h, w)
     input = reshape_(input, input_perm)
     input_perm = [i for i in range(length - 2)]
     input_perm = input_perm + [length, length - 2, length + 1, length - 1]
@@ -7579,7 +7579,7 @@ def pixel_unshuffle(input, downscale_factor):
     _check_pxiel_unshuffle_valid(h, w, downscale_factor)
     h = h // downscale_factor
     w = w // downscale_factor
-    input_perm = (pre + (c, h, downscale_factor, w, downscale_factor))
+    input_perm = pre + (c, h, downscale_factor, w, downscale_factor)
     input = reshape_(input, input_perm)
     input_perm = [i for i in range(length - 2)]
     input_perm = input_perm + [length - 1, length + 1, length - 2, length]

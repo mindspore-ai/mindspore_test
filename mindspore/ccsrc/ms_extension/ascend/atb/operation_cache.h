@@ -42,12 +42,12 @@ constexpr int g_hash_buf_max_size = g_hash_buf_size + 1024;
 EXTENSION_EXPORT char *g_hash_buf_ptr();
 EXTENSION_EXPORT int &g_hash_offset_ref();
 
-#define MEMCPY_TO_BUF(data_expression, size_expression)                             \
-  if (g_hash_offset_ref() + (size_expression) > g_hash_buf_size) {                  \
-    g_hash_offset_ref() = g_hash_buf_max_size;                                      \
-    return;                                                                         \
-  }                                                                                 \
-  memcpy(g_hash_buf_ptr() + g_hash_offset_ref(), data_expression, size_expression); \
+#define MEMCPY_TO_BUF(data_expression, size_expression)                                                      \
+  if (g_hash_offset_ref() + (size_expression) > g_hash_buf_size) {                                           \
+    g_hash_offset_ref() = g_hash_buf_max_size;                                                               \
+    return;                                                                                                  \
+  }                                                                                                          \
+  (void)memcpy_s(g_hash_buf_ptr() + g_hash_offset_ref(), size_expression, data_expression, size_expression); \
   g_hash_offset_ref() += size_expression
 
 EXTENSION_EXPORT uint64_t calc_hash_id();

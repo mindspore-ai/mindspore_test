@@ -367,11 +367,13 @@ class MindDataPiplineSummaryViewer(BaseViewer):
                 raise ProfilerRawFileException('The contents of MindData CPU utilization JSON file is wrong.')
         # Note: The CPU utilization data may have an extra entry with op_id=-1
         # Omit info for op_id=1
-        dict_opid_cpuutil = {
-            op["op_id"]: [op_sys + op_usr for op_sys, op_usr in
-                          zip(op["metrics"]["sys_utilization"], op["metrics"]["user_utilization"])]
-            for op in cpu_op_info if op and op["op_id"] != -1
-        }
+        for op in cpu_op_info:
+            if not op or op["op_id"] == -1:
+                continue
+            dict_opid_cpuutil = {
+                op["op_id"]: [op_sys + op_usr for op_sys, op_usr in
+                              zip(op["metrics"]["sys_utilization"], op["metrics"]["user_utilization"])]
+            }
         # Initialize oplist_avg_cpu_pct with -1 for each pipeline op, since
         # CPU utilization data may not have information for each pipeline op
         oplist_avg_cpu_pct = [-1] * len(dict_opid_cpuutil)

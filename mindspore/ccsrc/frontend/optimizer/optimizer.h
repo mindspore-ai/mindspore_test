@@ -118,6 +118,7 @@ class FRONTEND_EXPORT Optimizer : public std::enable_shared_from_this<Optimizer>
 
   void DumpStep(FuncGraphPtr func_graph, int counter, int index, int jump_counter);
   FuncGraphPtr step(FuncGraphPtr func_graph, bool use_profile = true, pipeline::ResourceBasePtr res = nullptr);
+  void RunFunc(int *counter, bool use_profile);
 
   pipeline::ResourceBasePtr resource() const;
   FuncGraphManagerPtr manager() const;

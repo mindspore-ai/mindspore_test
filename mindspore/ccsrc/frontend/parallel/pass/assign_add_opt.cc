@@ -87,6 +87,7 @@ void UpdateValueNodeAbs(ValueNodePtr *axis) {
 
 bool GetMatMulTransposeValue(const CNodePtr &matmul_node, const std::string &attr_name) {
   auto mat_prim = GetCNodePrimitive(matmul_node);
+  MS_EXCEPTION_IF_NULL(mat_prim);
   auto prim_name = mat_prim->name();
   auto &inputs = matmul_node->inputs();
   auto idx = ops::GetInputIndexByName(prim_name, attr_name);
@@ -120,10 +121,14 @@ CNodePtr InsertConcat(const std::vector<CNodePtr> &matmul_dw_nodes, const FuncGr
   auto matmul_dw_node_front_input_node2_abstract = matmul_dw_node_front->input(kIndex2)->abstract();
   MS_EXCEPTION_IF_NULL(matmul_dw_node_front_input_node1_abstract);
   MS_EXCEPTION_IF_NULL(matmul_dw_node_front_input_node2_abstract);
-  auto matmul_dw_node_front_input_node1_input_shape =
-    matmul_dw_node_front_input_node1_abstract->BuildShape()->cast<abstract::ShapePtr>()->shape();
-  auto matmul_dw_node_front_input_node2_input_shape =
-    matmul_dw_node_front_input_node2_abstract->BuildShape()->cast<abstract::ShapePtr>()->shape();
+  auto matmul_dw_node_front_input_node1_input_shape_ptr =
+    matmul_dw_node_front_input_node1_abstract->BuildShape()->cast<abstract::ShapePtr>();
+  MS_EXCEPTION_IF_NULL(matmul_dw_node_front_input_node1_input_shape_ptr);
+  auto matmul_dw_node_front_input_node1_input_shape = matmul_dw_node_front_input_node1_input_shape_ptr->shape();
+  auto matmul_dw_node_front_input_node2_input_shape_ptr =
+    matmul_dw_node_front_input_node2_abstract->BuildShape()->cast<abstract::ShapePtr>();
+  MS_EXCEPTION_IF_NULL(matmul_dw_node_front_input_node2_input_shape_ptr);
+  auto matmul_dw_node_front_input_node2_input_shape = matmul_dw_node_front_input_node2_input_shape_ptr->shape();
   auto axis_pair = GetMatMulReduceAxis(matmul_dw_node_front_input_node2_input_shape.size(), transpose_a1, transpose_b1);
   auto axis1 = axis_pair.first;
   auto axis2 = axis_pair.second;
@@ -296,11 +301,13 @@ bool SkipAssignAddEliminate(const FuncGraphManagerPtr &manager,
   }
   // Check all input of assignadd node is matmul
   for (const auto &assign_add_node : assign_add_map_pair.second) {
-    if (IsPrimitiveCNode(assign_add_node->cast<CNodePtr>()->input(kIndex2), prim::kPrimMatMul)) {
-      auto matmul_node = assign_add_node->cast<CNodePtr>()->input(kIndex2)->cast<CNodePtr>();
+    auto assign_add_ptr = assign_add_node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(assign_add_ptr);
+    if (IsPrimitiveCNode(assign_add_ptr->input(kIndex2), prim::kPrimMatMul)) {
+      auto matmul_node = assign_add_ptr->input(kIndex2)->cast<CNodePtr>();
       (void)matmul_dw_nodes->emplace_back(matmul_node);
-    } else if (IsPrimitiveCNode(assign_add_node->cast<CNodePtr>()->input(kIndex2), prim::kPrimCast)) {
-      auto cast_node = assign_add_node->cast<CNodePtr>()->input(kIndex2)->cast<CNodePtr>();
+    } else if (IsPrimitiveCNode(assign_add_ptr->input(kIndex2), prim::kPrimCast)) {
+      auto cast_node = assign_add_ptr->input(kIndex2)->cast<CNodePtr>();
       if (IsPrimitiveCNode(cast_node->input(kIndex1), prim::kPrimMatMul)) {
         auto matmul_node = cast_node->input(kIndex1)->cast<CNodePtr>();
         (void)matmul_dw_nodes->emplace_back(matmul_node);
@@ -387,6 +394,7 @@ void ReplaeAddNAssignAddToTwoAssignAdd(const FuncGraphManagerPtr &manager) {
         continue;
       }
       auto addn_cnode = assign_add_input->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(addn_cnode);
       if (!IsPrimitiveCNode(addn_cnode->input(kIndex1), prim::kPrimMakeTuple)) {
         continue;
       }
@@ -396,6 +404,7 @@ void ReplaeAddNAssignAddToTwoAssignAdd(const FuncGraphManagerPtr &manager) {
       });
       bool contain_cast = IsPrimitiveCNode(cast_node, prim::kPrimCast);
       auto make_tuple_cnode = addn_cnode->input(kIndex1)->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(make_tuple_cnode);
       std::vector<AnfNodePtr> make_tuple_inputs = {NewValueNode(prim::kPrimMakeTuple->Clone())};
       std::vector<AbstractBasePtr> maketuple_abs_inputs;
       auto matmuls = make_tuple_cnode->inputs();
@@ -410,8 +419,9 @@ void ReplaeAddNAssignAddToTwoAssignAdd(const FuncGraphManagerPtr &manager) {
         assign_add_inputs[kIndex0] = NewValueNode(prim::kPrimAssignAdd->Clone());
         assign_add_inputs[kIndex2] = input_node;
         if (contain_cast) {
-          std::vector<AnfNodePtr> cast_inputs{cast_node->cast<CNodePtr>()->input(kIndex0), input_node,
-                                              cast_node->cast<CNodePtr>()->input(kIndex2)};
+          auto cast_node_ptr = cast_node->cast<CNodePtr>();
+          MS_EXCEPTION_IF_NULL(cast_node_ptr);
+          std::vector<AnfNodePtr> cast_inputs{cast_node_ptr->input(kIndex0), input_node, cast_node_ptr->input(kIndex2)};
           auto new_cast = each_graph->NewCNode(cast_inputs);
           new_cast->set_abstract(cast_node->abstract()->Clone());
           new_cast->abstract()->set_shape(input_node->abstract()->GetShapeTrack());

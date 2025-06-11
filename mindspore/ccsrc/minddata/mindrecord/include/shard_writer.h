@@ -40,7 +40,6 @@
 #include "minddata/mindrecord/include/common/log_adapter.h"
 #include "minddata/mindrecord/include/common/shard_utils.h"
 #include "minddata/mindrecord/include/shard_column.h"
-#include "minddata/mindrecord/include/shard_error.h"
 #include "minddata/mindrecord/include/shard_header.h"
 #include "minddata/mindrecord/include/shard_index.h"
 #include "pybind11/pybind11.h"

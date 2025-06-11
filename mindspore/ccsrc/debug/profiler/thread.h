@@ -62,8 +62,8 @@ class Thread {
 
  private:
   static void *Execute(void *args) {
-    Thread *thr = (Thread *)args;                                    // NOLINT(readability/casting)
-    prctl(PR_SET_NAME, (unsigned long)thr->GetThreadName().data());  // NOLINT(runtime/int)
+    Thread *thr = (Thread *)args;                                                  // NOLINT(readability/casting)
+    prctl(PR_SET_NAME, reinterpret_cast<uintptr_t>(thr->GetThreadName().data()));  // NOLINT(runtime/int)
     thr->Run();
     return nullptr;
   }

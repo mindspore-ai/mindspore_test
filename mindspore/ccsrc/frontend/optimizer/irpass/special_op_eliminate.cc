@@ -173,6 +173,7 @@ AnfNodePtr DumpGradientEliminater::operator()(const OptimizerPtr &, const AnfNod
     return nullptr;
   }
   const CNodePtr dump_gradient_cnode = node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(dump_gradient_cnode);
   return dump_gradient_cnode->input(kIndex2);
 }
 

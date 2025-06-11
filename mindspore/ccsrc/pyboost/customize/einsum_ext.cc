@@ -37,7 +37,7 @@ TensorPtr FastPermute(const TensorPtr &input, const std::vector<int64_t> &perm) 
   for (const auto &perm_i : perm) {
     // cppcheck-suppress useStlAlgorithm
     if (perm_i != dim++) {
-      return transpose_view(input, perm);
+      return transpose(input, perm);
     }
   }
   return input;

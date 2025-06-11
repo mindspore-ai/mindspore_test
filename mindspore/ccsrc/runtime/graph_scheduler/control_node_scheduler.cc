@@ -1194,9 +1194,10 @@ void ControlNodeScheduler::OptimizeDynamicRefCountForEntranceActor(const ActorSe
       const auto &to_aid = data_arrow->to_op_id_;
       size_t from_index = IntToSize(data_arrow->from_output_index_);
       size_t to_index = IntToSize(data_arrow->to_input_index_);
-      const auto &actor = FetchActor(to_aid.Name());
+      auto actor = FetchActor(to_aid.Name());
       if (actor == nullptr || (actor->type() != KernelTransformType::kKernelActor &&
-                               actor->type() != KernelTransformType::kSuperKernelActor)) {
+                               actor->type() != KernelTransformType::kSuperKernelActor &&
+                               actor->type() != KernelTransformType::kFusionActor)) {
         continue;
       }
       if (actor->type() == KernelTransformType::kSuperKernelActor) {
@@ -1217,6 +1218,25 @@ void ControlNodeScheduler::OptimizeDynamicRefCountForEntranceActor(const ActorSe
                        << " from index:" << from_index << " to actor:" << to_aid << " to index:" << to_index;
         }
         continue;
+      }
+      if (actor->type() == KernelTransformType::kFusionActor) {
+        const auto &fusion_actor = dynamic_cast<FusionActor *>(actor);
+        MS_EXCEPTION_IF_NULL(fusion_actor);
+        const auto &real_input_data = fusion_actor->real_input_data();
+        if (to_index >= real_input_data.size()) {
+          MS_LOG(INFO) << "Failed to find to index in fusion actor:" << fusion_actor->GetAID()
+                       << " for actor:" << control_actor->GetAID() << " to index:" << to_index;
+          continue;
+        }
+        actor = real_input_data[to_index].first;
+        to_index = real_input_data[to_index].second;
+        MS_EXCEPTION_IF_NULL(actor);
+        if (actor->type() != KernelTransformType::kKernelActor) {
+          continue;
+        }
+        MS_LOG(INFO) << "Fix to actor from:" << data_arrow->to_op_id_ << " index:" << data_arrow->to_input_index_
+                     << " to:" << actor->GetAID() << " index:" << to_index << " for actor:" << control_actor->GetAID()
+                     << " from index:" << data_arrow->from_output_index_;
       }
       const auto &kernel_actor = dynamic_cast<KernelActor *>(actor);
       MS_EXCEPTION_IF_NULL(kernel_actor);

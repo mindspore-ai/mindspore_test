@@ -260,7 +260,7 @@ class AscendStepTraceTimeViewer(BaseViewer):
             # communication not overlapped time exclude receive
             step_trace_time_data[StepTraceTimeHeaders.COMMUNICATION_NOT_OVERLAPPED_EXCLUDE_RECEIVE.value] = (
                 step_trace_time_data[StepTraceTimeHeaders.COMMUNICATION_NOT_OVERLAPPED.value]
-                - step_trace_time_data[StepTraceTimeHeaders.BUBBLE.value]
+                - step_trace_time_data.get(StepTraceTimeHeaders.BUBBLE.value, Decimal('0.000'))
             )
             step_trace_time_data[StepTraceTimeHeaders.PREPARING.value] = self._calculate_prepare_time_by_step(
                 self.computing_np, self.communication_np, start_time, step_id
@@ -355,7 +355,8 @@ class AscendStepTraceTimeViewer(BaseViewer):
             logger.info("No HCCL events in the given time range, skip calculate stage and bubble")
             return Decimal(0), Decimal(0)
 
-        total_hccl_time = filtered_hccl_events_np["ts"][-1] - filtered_hccl_events_np["ts"][0]
+        total_hccl_time = filtered_hccl_events_np["ts"][-1] - filtered_hccl_events_np["ts"][0] + \
+                          filtered_hccl_events_np["dur"][-1]
         bubble_time = np.sum(
             filtered_hccl_events_np["dur"][
                 np.array(

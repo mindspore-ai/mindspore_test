@@ -108,6 +108,30 @@ def test_mint_std_norlmal(mode):
     assert np.allclose(output.asnumpy(), expect_output)
 
 
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+def test_mint_std_default(mode):
+    """
+    Feature: mint.std
+    Description: Verify the result of std on Ascend
+    Expectation: success
+    """
+    ms.set_context(mode=mode)
+    x = Tensor([1., 2., 3.])
+    expect_output = 1.
+    expect_grad = [-0.5, 0., 0.5]
+
+    # std backward
+    if mode == ms.PYNATIVE_MODE:
+        output = std_forward(x)
+        grad = std_backward(x)
+    elif mode == ms.GRAPH_MODE:
+        output = (jit(std_forward, backend="ms_backend", jit_level="O0"))(x)
+        grad = (jit(std_backward, backend="ms_backend", jit_level="O0"))(x)
+    assert np.allclose(output.asnumpy(), expect_output)
+    assert np.allclose(grad.asnumpy(), expect_grad)
+
+
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_mint_std_dynamic_shape():
     """

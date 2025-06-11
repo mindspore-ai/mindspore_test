@@ -16,7 +16,7 @@ import numpy as np
 import mindspore as ms
 import mindspore.nn as nn
 from mindspore import Tensor
-from mindspore import ops, mint
+from mindspore import ops
 from tests.mark_utils import arg_mark
 
 
@@ -34,7 +34,7 @@ def test_transpose_single_op():
 
     class Net(nn.Cell):
         def construct(self, x, y):
-            return mint.permute(x, y)
+            return ops.transpose(x, y)
 
     input_x = Tensor(np.array([[[1, 2, 3], [4, 5, 6]], [[7, 8, 9], [10, 11, 12]]]), ms.float32)
     input_perm = (0, 2, 1)
@@ -65,9 +65,9 @@ def test_transpose_multiple_op():
 
     class Net(nn.Cell):
         def construct(self, x, y):
-            temp = mint.permute(x, y)
+            temp = ops.transpose(x, y)
             temp = (temp + 1) * 2
-            return mint.permute(temp, y)
+            return ops.transpose(temp, y)
 
     input_x = Tensor(np.array([[[1, 2, 3], [4, 5, 6]], [[7, 8, 9], [10, 11, 12]]]), ms.float32)
     input_perm = (0, 2, 1)

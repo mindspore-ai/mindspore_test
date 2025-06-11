@@ -22,16 +22,16 @@ namespace symshape {
 #define SYMBOL_DISPATCH(cls)            \
   case cls::kTypeId:                    \
     VisitImpl(static_cast<cls *>(ptr)); \
-    break;
+    break
 
 void SymbolVisitor::Visit(Symbol *ptr) {
   switch (ptr->tid()) {
-    SYMBOL_DISPATCH(DynamicSymbol)
-    SYMBOL_DISPATCH(ListSymbol)
-    SYMBOL_DISPATCH(IntSymbol)
-    SYMBOL_DISPATCH(BoolSymbol)
-    SYMBOL_DISPATCH(FloatSymbol)
-    SYMBOL_DISPATCH(StrSymbol)
+    SYMBOL_DISPATCH(DynamicSymbol);
+    SYMBOL_DISPATCH(ListSymbol);
+    SYMBOL_DISPATCH(IntSymbol);
+    SYMBOL_DISPATCH(BoolSymbol);
+    SYMBOL_DISPATCH(FloatSymbol);
+    SYMBOL_DISPATCH(StrSymbol);
     default:
       // do not dispatch the 'ScalarSymbol'
       MS_LOG(WARNING) << "This type of symbol " << ptr->type_name() << " is not dispatched.";

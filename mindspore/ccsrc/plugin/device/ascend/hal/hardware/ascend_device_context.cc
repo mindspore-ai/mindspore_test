@@ -113,7 +113,7 @@ void AscendDeviceContext::InitializeForAclop() const {
   }
   // should be called after ge initialize.
   SetAclOpDebugOption();
-  TensorDumpStepManager::GetInstance().SetAclDumpCallbackReg(reinterpret_cast<void *>(acldumpRegCallback));
+  dump::TensorDumpStepManager::GetInstance().SetAclDumpCallbackReg(reinterpret_cast<void *>(acldumpRegCallback));
   initialized_aclop_ = true;
 }
 

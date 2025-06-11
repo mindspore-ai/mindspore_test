@@ -206,7 +206,7 @@ void DFunctor::BackPropagateFv(const AnfNodePtr &fv, const AnfNodePtr &din) {
         MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, fv) << "Can not find adjoint in anfnode_to_adjoin_ fv "
                                                  << fv->func_graph()->ToString() << " " << fv->ToString() << ".";
       }
-      if (fv->isa<CNode>()) {
+      if (is_view_inplace_ && fv->isa<CNode>()) {
         BackPropagate(dyn_cast<CNode>(fv), fv_adjoint->second);
         fv_adjoint->second->set_back_bproped(true);
       }
@@ -481,7 +481,11 @@ void DFunctor::BackPropagate(const CNodePtr &cnode_morph, const AdjointPtr &node
   // Call with delimited continuation dout.
   CNodePtr bprop_app;
   if (HasSideEffectBackProp(cnode_morph)) {
-    bprop_app = tape_->NewCNodeInOrder({bprop, node_adjoint->dout()});
+    if (is_view_inplace_) {
+      bprop_app = tape_->NewCNodeInOrder({bprop, node_adjoint->dout()});
+    } else {
+      bprop_app = tape_->NewCNodeInFront({bprop, node_adjoint->dout()});
+    }
     tape_->set_flag(mindspore::kFuncGraphFlagReAutoMonad, true);
   } else {
     if (common::GetCompileConfig("PUT_ALL_CNODE_INTO_ORDER_LIST") == "0") {
@@ -635,6 +639,11 @@ AdjointPtr DFunctor::MapMorphism(const AnfNodePtr &morph) {
   UpdateAdjoint(node_adjoint);
   anfnode_to_adjoin_[morph] = node_adjoint;
   MS_LOG(DEBUG) << "End, node: " << morph->DebugString(recursive_level);
+
+  if (!is_view_inplace_) {
+    // Do sens backpropagation.
+    BackPropagate(cnode_morph, node_adjoint);
+  }
   return node_adjoint;
 }
 
@@ -675,14 +684,16 @@ void DFunctor::MapFreeMorphism() {
     MS_LOG(DEBUG) << "Map nonoutput cnode after MapMorphism " << node->ToString() << ".";
     (void)MapMorphism(node);
 
-    auto cnode = dyn_cast<CNode>(node);
-    auto node_adjoint_iter = anfnode_to_adjoin_.find(node);
-    if (node_adjoint_iter == anfnode_to_adjoin_.end()) {
-      MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, node) << "The node adjoint is null, " << node->DebugString();
+    if (is_view_inplace_) {
+      auto cnode = dyn_cast<CNode>(node);
+      auto node_adjoint_iter = anfnode_to_adjoin_.find(node);
+      if (node_adjoint_iter == anfnode_to_adjoin_.end()) {
+        MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, node) << "The node adjoint is null, " << node->DebugString();
+      }
+      auto node_adjoint = node_adjoint_iter->second;
+      BackPropagate(cnode, node_adjoint);
+      node_adjoint->set_back_bproped(true);
     }
-    auto node_adjoint = node_adjoint_iter->second;
-    BackPropagate(cnode, node_adjoint);
-    node_adjoint->set_back_bproped(true);
   }
 }
 
@@ -759,21 +770,23 @@ void DFunctor::MapMorphism() {
     (void)MapMorphism(SkipHookNodeInBackProp(node));
   }
 
-  // Do backPropagate by reversed order.
-  std::reverse(nodes.begin(), nodes.end());
-  for (const auto &pre_node : nodes) {
-    auto node = SkipHookNodeInBackProp(pre_node);
-    if (!node->isa<CNode>()) {
-      continue;
+  if (is_view_inplace_) {
+    // Do backPropagate by reversed order for view_inplace grad.
+    std::reverse(nodes.begin(), nodes.end());
+    for (const auto &pre_node : nodes) {
+      auto node = SkipHookNodeInBackProp(pre_node);
+      if (!node->isa<CNode>()) {
+        continue;
+      }
+      auto cnode = dyn_cast<CNode>(node);
+      auto node_adjoint_iter = anfnode_to_adjoin_.find(node);
+      if (node_adjoint_iter == anfnode_to_adjoin_.end()) {
+        MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, node) << "The node adjoint is null, " << node->DebugString();
+      }
+      auto node_adjoint = node_adjoint_iter->second;
+      BackPropagate(cnode, node_adjoint);
+      node_adjoint->set_back_bproped(true);
     }
-    auto cnode = dyn_cast<CNode>(node);
-    auto node_adjoint_iter = anfnode_to_adjoin_.find(node);
-    if (node_adjoint_iter == anfnode_to_adjoin_.end()) {
-      MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, node) << "The node adjoint is null, " << node->DebugString();
-    }
-    auto node_adjoint = node_adjoint_iter->second;
-    BackPropagate(cnode, node_adjoint);
-    node_adjoint->set_back_bproped(true);
   }
   // Construct K for primal_graph_.
   auto output_adjoint = anfnode_to_adjoin_.find(output_node);
@@ -937,6 +950,8 @@ AnfNodePtr DFunctor::MapFuncGraphToK(const AnfNodePtr &primal) {
   auto k_user_defined = KUserDefined(func_graph);
   if (k_user_defined != nullptr) {
     MS_LOG(DEBUG) << "K graph functor user defined bprop " << func_graph->ToString() << ".";
+    (void)func_graph->transforms().emplace("grad", FuncGraphTransform(k_user_defined));
+    (void)k_user_defined->transforms().emplace("custom_bprop_primal", FuncGraphTransform(func_graph));
     return NewValueNode(k_user_defined);
   }
   auto functor = std::make_shared<DFunctor>(func_graph, resources_, false, is_view_inplace_);

@@ -95,7 +95,6 @@ class PipelineSplitWithScalarLoss(nn.Cell):
     def __init__(self, strategy1, strategy2, dtype=ms.float32):
         super().__init__()
         self.cell = Net(strategy1, strategy2, dtype=dtype)
-        self.cell.block[0].matmul.add_prim_attr("parameter_start", 0)
         self.loss = P.ReduceSum()
 
     def construct(self, x, label):
@@ -108,7 +107,6 @@ class PipelineSplitWithTensorLoss(nn.Cell):
     def __init__(self, strategy1, strategy2, dtype=ms.float32):
         super().__init__()
         self.cell = Net(strategy1, strategy2, dtype=dtype)
-        self.cell.block[0].matmul.add_prim_attr("parameter_start", 0)
 
     def construct(self, x, label):
         x = self.cell(x)
@@ -128,7 +126,7 @@ def test_pipeline_split_dynamic_loss_is_scalar_stage0():
     strategy1 = ((16, 1), (1, 1))
     strategy2 = ((16, 1), (1, 1))
     net = PipelineCell(PipelineSplitWithScalarLoss(strategy1, strategy2), 4)
-    params = net.network.cell.block[0].trainable_params()
+    params = net.network.trainable_params()
     s1 = Symbol(divisor=4)
     dynamic_data = Tensor(shape=[s1, None], dtype=ms.float32)
     dynamic_label = Tensor(shape=[s1, None], dtype=ms.float32)
@@ -178,7 +176,6 @@ class PipelineSplitWithScalarLoss2(nn.Cell):
     def __init__(self, strategy, dtype=ms.float32):
         super().__init__()
         self.cell = Net2(strategy, dtype=dtype)
-        self.cell.block[0].matmul.add_prim_attr("parameter_start", 0)
         self.loss = P.ReduceSum()
 
     def construct(self, x, label):
@@ -198,7 +195,7 @@ def test_pipeline_split_dynamic_loss_is_scalar_stage0_auto():
     label = Tensor(np.ones([32, 64]), dtype=ms.float32)
     strategy = ((16, 1), (1, 1))
     net = PipelineCell(PipelineSplitWithScalarLoss2(strategy), 4)
-    params = net.network.cell.block[0].trainable_params()
+    params = net.network.trainable_params()
     dataset = DatasetLenet(data, label, 3)
     optimizer = nn.Lamb(params, learning_rate=0.01)
     model = Model(net, optimizer=optimizer)
@@ -217,7 +214,7 @@ def test_pipeline_split_dynamic_loss_is_not_scalar_stage0():
     strategy1 = ((16, 1), (1, 1))
     strategy2 = ((16, 1), (1, 1))
     net = PipelineCell(PipelineSplitWithTensorLoss(strategy1, strategy2), 4)
-    params = net.network.cell.block[0].trainable_params()
+    params = net.network.trainable_params()
     s1 = Symbol(divisor=4)
     dynamic_data = Tensor(shape=[s1, None], dtype=ms.float32)
     dynamic_label = Tensor(shape=[s1, None], dtype=ms.float32)

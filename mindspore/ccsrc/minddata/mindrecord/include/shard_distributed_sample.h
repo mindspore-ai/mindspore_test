@@ -22,7 +22,6 @@
 #include <utility>
 #include <vector>
 #include "minddata/dataset/include/dataset/constants.h"
-#include "minddata/mindrecord/include/shard_operator.h"
 #include "minddata/mindrecord/include/shard_shuffle.h"
 #include "minddata/mindrecord/include/shard_sample.h"
 

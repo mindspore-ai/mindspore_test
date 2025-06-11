@@ -23,6 +23,16 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
+CommHandle::~CommHandle() {
+  if (event_ == nullptr) {
+    return;
+  }
+  if (device_ctx_ != nullptr && device_ctx_->initialized()) {
+    device_ctx_->device_res_manager_->DestroyEvent(event_);
+    MS_LOG(DEBUG) << "DestoryEvent done, event: " << event_;
+  }
+}
+
 DeviceEventPtr CommHandle::CreateEvent() {
   MS_EXCEPTION_IF_NULL(device_ctx_);
   device_ctx_->device_res_manager_->BindDeviceToCurrentThread(false);
@@ -73,19 +83,8 @@ void WaitTaskFunc(CommHandlePtr comm_handle) {
   MS_EXCEPTION_IF_NULL(comm_handle);
   auto cur_stream_id = comm_handle->device_ctx()->device_res_manager_->GetCurrentStreamId();
   auto wait_fn = [cur_stream_id, comm_handle]() {
-    runtime::OpExecutor::DispatchLaunchTask([cur_stream_id, comm_handle]() {
-      comm_handle->WaitDeviceEvent(cur_stream_id);
-
-      auto event = comm_handle->event();
-      if (event == nullptr) {
-        return;
-      }
-      auto device_ctx = comm_handle->device_ctx();
-      if (device_ctx != nullptr && device_ctx->initialized()) {
-        device_ctx->device_res_manager_->DestroyEvent(event);
-        MS_LOG(DEBUG) << "DestoryEvent done, event: " << event;
-      }
-    });
+    runtime::OpExecutor::DispatchLaunchTask(
+      [cur_stream_id, comm_handle]() { comm_handle->WaitDeviceEvent(cur_stream_id); });
 
     comm_handle->ReleaseMultiStreamEvent(cur_stream_id);
   };

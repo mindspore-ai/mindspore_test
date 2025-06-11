@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,10 @@ class FuseLayerNorm : public FusePattern {
   ~FuseLayerNorm() = default;
 
  protected:
-  bool Check(const AreaPtr &dom) override { return (dom->dom()->op() == "ReduceSum"); }
+  bool Check(const AreaPtr &dom) override {
+    MS_EXCEPTION_IF_NULL(dom);
+    return (dom->dom() != nullptr && dom->dom()->op() == "ReduceSum");
+  }
   bool Match(const AreaPtr &dom) override {
     constexpr size_t c1 = 1;
     constexpr size_t c2 = 2;

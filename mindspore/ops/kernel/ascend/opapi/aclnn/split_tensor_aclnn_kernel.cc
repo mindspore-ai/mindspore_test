@@ -28,6 +28,13 @@
 namespace mindspore {
 namespace kernel {
 namespace split_tensor {
+
+int64_t SplitTensorAscend::GetDimValue(KernelTensor *axis_ptr) const noexcept {
+  auto axis_vec = device::ascend::ConvertKernelTensor<std::vector<int64_t>>(axis_ptr);
+  auto dim = axis_vec[0];
+  return dim;
+}
+
 bool SplitTensorAscend::IsTuple(const KernelTensor *tensor) {
   if (tensor == nullptr) {
     return false;
@@ -55,17 +62,19 @@ std::vector<KernelTensor *> SplitTensorAscend::GetSplitRealOutputs(const std::ve
 
 void SplitTensorAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                          const std::vector<KernelTensor *> &outputs) {
-  split_size_ = inputs[kIndex1]->GetValueWithCheck<int64_t>();
-  dim_ = inputs[kIndex2]->GetValueWithCheck<int64_t>();
+  auto split_size = GetDimValue(inputs[kIndex1]);
+  auto dim = GetDimValue(inputs[kIndex2]);
   std::vector<KernelTensor *> split_outputs = GetSplitRealOutputs(outputs);
-  GetWorkspaceForResize(inputs[kIndex0], split_size_, dim_, split_outputs);
+  GetWorkspaceForResize(inputs[kIndex0], split_size, dim, split_outputs);
 }
 
 bool SplitTensorAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                                const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
+  auto split_size = GetDimValue(inputs[kIndex1]);
+  auto dim = GetDimValue(inputs[kIndex2]);
   std::vector<KernelTensor *> split_outputs = GetSplitRealOutputs(outputs);
-  RunOp(stream_ptr, workspace, inputs[kIndex0], split_size_, dim_, split_outputs);
+  RunOp(stream_ptr, workspace, inputs[kIndex0], split_size, dim, split_outputs);
   return true;
 }
 

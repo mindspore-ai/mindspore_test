@@ -113,6 +113,7 @@ void AnyTypeGraphScheduler::Optimize(const ActorSetPtr &actor_set,
           continue;
         }
 
+        MS_EXCEPTION_IF_NULL(backend_node_with_index.first->cast<ValueNodePtr>());
         const auto &kernel_tensor = AnfAlgo::CreateKernelTensor(
           kernel_tensors[0]->GetShape(), kernel_tensors[0]->GetType(),
           backend_node_with_index.first->cast<ValueNodePtr>()->value(), nullptr, kernel_tensors[0]->size(),

@@ -1705,6 +1705,10 @@ def tensor_sinc(input):
     return sinc(input)
 
 
+def tensor_unsqueeze(input, dim):
+    return
+
+
 def deprecated_tensor_unsqueeze(input, dim):
     return unsqueeze(input, dim)
 
@@ -1907,11 +1911,13 @@ def deprecated_pixel_shuffle(input, upscale_factor):
     return F.pixel_shuffle(input, upscale_factor)
 
 
+def tensor_quant_matmul(x1, x2, scale, *, offset=None, pertoken_scale=None, bias=None, output_dtype=None,
+                        x1_dtype=None, x2_dtype=None, pertoken_scale_dtype=None, scale_dtype=None, group_sizes=None):
+    raise NotImplementedError('quant_matmul only supports Ascend.')
+
+
 def tensor_gmm(x, weight, *, bias=None, group_list=None, group_type=0, group_list_type=0):
     raise NotImplementedError("gmm has not been implemented by python.")
 
 def raise_func(*args, **kwargs):
     raise NotImplementedError("this func has not been implemented.")
-
-def tensor_broadcast_to(input, shape):
-    return F.broadcast_to(input, shape)

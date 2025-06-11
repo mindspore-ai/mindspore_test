@@ -13,8 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "infer/ops_func_impl/avg_pool1d.h"
+
 #include <memory>
+#include "infer/ops_func_impl/avg_pool1d.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"
 #include "ops/ops_func_impl/simple_infer.h"

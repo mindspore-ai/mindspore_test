@@ -140,6 +140,5 @@ int TransposeGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_KERNEL_FACTORY_REG(NativeGpuKernelMod, Transpose, TransposeGpuKernelMod);
-MS_KERNEL_FACTORY_REG(NativeGpuKernelMod, TransposeView, TransposeGpuKernelMod);
 }  // namespace kernel
 }  // namespace mindspore

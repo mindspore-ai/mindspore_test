@@ -329,7 +329,9 @@ AnfNodePtr CreateMapCacheIdx(const FuncGraphPtr &func_graph, const AnfNodePtr &i
   auto map_cache_idx = func_graph->NewCNode(map_cache_nodes);
 
   auto indices_ori_shp = indices->Shape();
+  MS_EXCEPTION_IF_NULL(indices_ori_shp);
   auto indices_shp = indices_ori_shp->cast<abstract::ShapePtr>();
+  MS_EXCEPTION_IF_NULL(indices_shp);
   ShapeVector shape(indices_shp->shape().size(), -1);
 
   auto cache_idx = std::make_shared<abstract::AbstractTensor>(indices_element_type, indices_shp);

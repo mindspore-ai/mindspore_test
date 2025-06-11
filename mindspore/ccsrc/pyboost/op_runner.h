@@ -259,6 +259,12 @@ class PYBOOST_API OpRunner : public std::enable_shared_from_this<OpRunner> {
     }
   }
 
+  void CollectTrackerTensor(const tensor::TensorPtr &tensor, std::vector<tensor::TensorPtr> *tensors) {
+    if (tensor != nullptr) {
+      tensors->emplace_back(tensor);
+    }
+  }
+
   void CollectTrackerTensor(const ValueTuplePtr &tensor_tuple, std::vector<tensor::TensorPtr> *tensors) {
     for (const auto &val : tensor_tuple->value()) {
       CollectTrackerTensor(val, tensors);

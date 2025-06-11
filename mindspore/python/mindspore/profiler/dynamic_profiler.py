@@ -25,13 +25,13 @@ import multiprocessing
 from mindspore import log as logger
 from mindspore.train import Callback
 from mindspore.profiler import Profiler, tensorboard_trace_handler, schedule
-from mindspore.profiler.parser.ascend_analysis.file_manager import FileManager
-from mindspore.profiler.parser.ascend_analysis.path_manager import PathManager
-from mindspore.profiler.profiler_interface import ProfilerInterface
+from mindspore.profiler.common.file_manager import FileManager
+from mindspore.profiler.common.path_manager import PathManager
 from mindspore.profiler.dynamic_profile.dynamic_profiler_config_context import DynamicProfilerConfigContext
 from mindspore.profiler.dynamic_profile.dynamic_monitor_proxy import MsDynamicMonitorProxySingleton
 from mindspore.profiler.dynamic_profile.dynamic_profiler_utils import DynamicProfilerUtils
 from mindspore.profiler.common.util import no_exception_func
+from mindspore.profiler.profiler_interface import ProfilerInterface
 
 
 def print_msg(msg):
@@ -241,7 +241,8 @@ class DynamicProfilerMonitorBase(Callback):
             ...      for i in range(STEP_NUM):
             ...          print(f"step {i}")
             ...          train(net)
-            ...          # Modify the configuration file after step 7. For example, change start_step to 8 and stop_step to 10
+            ...          # Modify the configuration file after step 7
+            ...          # For example, change start_step to 8 and stop_step to 10
             ...          if i == 5:
             ...             # Modify parameters in the JSON file
             ...             change_cfg_json(os.path.join(output_path, "profiler_config.json"))
@@ -392,8 +393,9 @@ class DynamicProfilerMonitorBase(Callback):
             if not os.path.exists(self._cfg_json_path):
                 logger.info("cfg_path is not exist, create default cfg json")
                 default_dy_config_context = DynamicProfilerConfigContext({})
-                FileManager.create_json_file(self._cfg_path, default_dy_config_context.vars,
-                                             "profiler_config.json", indent=4)
+                PathManager.make_dir_safety(self._cfg_path)
+                config_file_path = os.path.join(self._cfg_path, "profiler_config.json")
+                FileManager.create_json_file(config_file_path, default_dy_config_context.vars, indent=4)
         else:
             logger.info("rank_id is not 0, skip init cfg json")
         print_msg(f"Init config json file: {self._cfg_json_path}")
@@ -442,7 +444,7 @@ class DynamicProfilerMonitorBase(Callback):
     def _get_pid_st_ctime(self, pid):
         """Get pid st_ctime"""
         try:
-            fd = os.open("/proc/" + str(pid), os.O_RDONLY, stat.S_IRUSR | stat.S_IRGRP)
+            fd = os.open(os.path.join('/proc', str(pid)), os.O_RDONLY, stat.S_IRUSR | stat.S_IRGRP)
             stat_ino = os.fstat(fd)
             os.close(fd)
             create_time = stat_ino.st_ctime
@@ -514,10 +516,11 @@ def worker_dyno_func(loop_flag, poll_interval, shm, rank_id):
             if not res:
                 continue
             data = DynamicProfilerUtils.dyno_str_to_dict(res)
-            data['is_valid'] = True
         except Exception as e:  # pylint: disable=broad-except
             data = {'is_valid': False}
             logger.error("Dynolog process load config failed: %s", e)
+        else:
+            data['is_valid'] = True
 
         # convert dyno config json to bytes
         byte_data = DynamicProfilerConfigContext.json_to_bytes(data)

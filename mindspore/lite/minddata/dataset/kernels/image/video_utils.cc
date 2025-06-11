@@ -387,8 +387,12 @@ bool FindStringInCodecContextExtradata(const AVCodecContext *codec_context, cons
 // Open the coder or decoder for the stream
 Status AVOpenStreamCodecContext(struct MediaContainer *container, bool enable_thread_frame, bool enable_fast) {
   AVStream *stream = container->stream;
-  AVCodecID codec_id = stream->codecpar->codec_id;
   std::string err_msg;
+  if (stream->codecpar == nullptr) {
+    err_msg = "The stream->codepar is nullptr";
+    RETURN_STATUS_UNEXPECTED(err_msg);
+  }
+  AVCodecID codec_id = stream->codecpar->codec_id;
   if (codec_id == AV_CODEC_ID_NONE) {
     err_msg = "Failed to support AV_CODEC_ID_NONE.";
     RETURN_STATUS_UNEXPECTED(err_msg);
@@ -407,10 +411,6 @@ Status AVOpenStreamCodecContext(struct MediaContainer *container, bool enable_th
   }
 
   // Set the codec's parameters according to the stream
-  if (stream->codecpar == nullptr) {
-    err_msg = "The stream->codepar is nullptr";
-    RETURN_STATUS_UNEXPECTED(err_msg);
-  }
   if (avcodec_parameters_to_context(codec_context, stream->codecpar) < 0) {
     err_msg = "Failed to set the parameters of " + std::string(codec->name);
     RETURN_STATUS_UNEXPECTED(err_msg);
@@ -420,7 +420,7 @@ Status AVOpenStreamCodecContext(struct MediaContainer *container, bool enable_th
   // thread_count = 0 means automatically.
   codec_context->thread_count = 0;
   codec_context->thread_type = FF_THREAD_SLICE;
-  if (enable_thread_frame == true && (codec->capabilities & AV_CODEC_CAP_FRAME_THREADS) > 0) {
+  if (enable_thread_frame && (codec->capabilities & AV_CODEC_CAP_FRAME_THREADS) > 0) {
     if (stream->nb_frames > 1) {
       codec_context->thread_type |= FF_THREAD_FRAME;
     }
@@ -428,7 +428,7 @@ Status AVOpenStreamCodecContext(struct MediaContainer *container, bool enable_th
 
   // Some decoders need unaligned memory access
   codec_context->flags |= AV_CODEC_FLAG_UNALIGNED;
-  if (enable_fast == true) {
+  if (enable_fast) {
     codec_context->flags2 |= AV_CODEC_FLAG2_FAST;
   }
 

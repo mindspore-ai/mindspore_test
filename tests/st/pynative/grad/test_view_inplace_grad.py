@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 from mindspore import Tensor, nn, mint, ops, _no_grad
 from mindspore.common.api import _pynative_executor
-from mindspore.ops.auto_generate.gen_ops_def import as_strided
+from mindspore.ops.auto_generate.gen_ops_def import as_strided, transpose, broadcast_to
 from tests.st.pynative.utils import GradOfAllInputs
 from tests.mark_utils import arg_mark
 
@@ -80,7 +80,7 @@ def tensor_index_copy_net(x, y):
 class CommonViewOpCopyNet1(nn.Cell):
     def construct(self, x, y):
         z = x * 2
-        z = mint.permute(z, (1, 0))
+        z = transpose(z, (1, 0))
         z.copy_(y)
         z = x * y
         return z
@@ -114,7 +114,7 @@ def common_view_op_copy_net2(x, y):
 class CommonViewOpCopyNet3(nn.Cell):
     def construct(self, x, y):
         z = x * 2
-        z = mint.broadcast_to(z, (3, 3))
+        z = broadcast_to(z, (3, 3))
         z.copy_(y)
         z = x * y
         return z
@@ -133,7 +133,7 @@ class MultiViewCopyNet(nn.Cell):
         z = x * 2
         view1 = as_strided(z, (2, 2), (3, 1))
         view2 = as_strided(view1, (2, 1), (2, 1))
-        view3 = mint.permute(view2, (1, 0))
+        view3 = transpose(view2, (1, 0))
         view3.copy_(y)
         return view2
 

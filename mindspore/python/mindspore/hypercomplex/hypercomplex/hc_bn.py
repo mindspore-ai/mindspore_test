@@ -164,7 +164,6 @@ class _BatchNorm(nn.Cell):
         self.parallel_mode = context.get_auto_parallel_context("parallel_mode")
 
         self._target = context.get_context("device_target")
-        self.is_graph_mode = context.get_context("mode") == context.GRAPH_MODE
         self.momentum = 1.0 - momentum
 
         self.features_dim = data_format.lower().find('c')

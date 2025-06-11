@@ -241,7 +241,6 @@ void StorageFormatConvertor::SetStorageFormatFromConfig(const AnfGraphPtr &anf_g
     UpdateTensorDesc(desc, format);
     if (!storage_format_info.expand_dims_.empty()) {
       MS_LOG(INFO) << "Set expand dims rule stub.";
-      // desc->SetExpandDimsRule(storage_format_info.expand_dims_);
     }
     UpdateParameterKernelInfo(param, store_fmt);
   }

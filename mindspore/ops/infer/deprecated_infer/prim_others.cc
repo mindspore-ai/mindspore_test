@@ -281,7 +281,9 @@ AbstractBasePtr InferImplIsTensorBoolCond(const AnalysisEnginePtr &, const Primi
   if (build_shape->IsDimUnknown()) {
     return std::make_shared<AbstractScalar>(std::make_shared<BoolImm>(true), kBool);
   }
-  auto shape = build_shape->cast<abstract::ShapePtr>()->shape();
+  auto shape_ptr = build_shape->cast<abstract::ShapePtr>();
+  MS_EXCEPTION_IF_NULL(shape_ptr);
+  auto shape = shape_ptr->shape();
   if (shape.size() == 0) {
     return std::make_shared<AbstractScalar>(std::make_shared<BoolImm>(true), kBool);
   }

@@ -44,7 +44,7 @@ namespace dataset {
 #define IM_TOOL_RETURN_STATUS_FAILED (2)
 
 #define INT16_CAST(X) \
-  static_cast<int16_t>(::std::min(::std::max(static_cast<int>(X + (X >= 0.f ? 0.5f : -0.5f)), -32768), 32767));
+  static_cast<int16_t>(::std::min(::std::max(static_cast<int>(X + (X >= 0.f ? 0.5f : -0.5f)), -32768), 32767))
 
 enum PaddBorderType {
   PADD_BORDER_CONSTANT = 0,                     /**< Fills the border with constant values. */

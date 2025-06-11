@@ -769,6 +769,7 @@ Value &Value::operator=(const Value &other) {
 bool Value::ContainsValueAny() const { return false; }
 
 ValueNode::ValueNode(const ValuePtr &value) : value_(value) {
+  MS_EXCEPTION_IF_NULL(value);
   if (value->ContainsValueAny()) {
     MS_LOG(EXCEPTION) << "Value of value node cannot be ValueAny. Value: " << value->ToString();
   }

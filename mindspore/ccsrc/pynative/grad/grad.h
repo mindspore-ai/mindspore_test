@@ -67,10 +67,10 @@ class PYNATIVE_EXPORT GradExecutor {
                      std::forward<decltype(PH3)>(PH3), std::forward<decltype(PH4)>(PH4),
                      std::forward<decltype(PH5)>(PH5), std::forward<decltype(PH6)>(PH6));
     };
-  std::function<void(const py::object &, const py::object &, const py::args &)> CallCustomBpropFunc =
+  std::function<py::object(const py::object &, const py::object &, const py::args &)> CallCustomBpropFunc =
     [this](auto &&PH1, auto &&PH2, auto &&PH3) {
-      CallCustomBprop(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2),
-                      std::forward<decltype(PH3)>(PH3));
+      return CallCustomBprop(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2),
+                             std::forward<decltype(PH3)>(PH3));
     };
   std::function<py::object(const py::args &)> GradJit = [this](auto &&PH1) {
     return jit()->GradJit(std::forward<decltype(PH1)>(PH1));
@@ -102,7 +102,7 @@ class PYNATIVE_EXPORT GradExecutor {
   void GetTopCellWithInputArgsRespectTo(const prim::GradOperationPtr &grad, const py::object &obj,
                                         const py::args &args);
   void ProcessOpGradInfo(const OpGradInfoPtr &op_run_info) const;
-  void CallCustomBprop(const py::object &obj, const py::object out, const py::args &args);
+  py::object CallCustomBprop(const py::object &obj, const py::object out, const py::args &args);
   AnfNodePtr GetInput(const ValuePtr &v, const string &obj_id) const;
   AnfNodePtr GetParamInput(const ValuePtr &v, const std::string &id) const;
   void ClearRes();

@@ -21,7 +21,7 @@
 #include "mindspore/ccsrc/pyboost/op_register.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "kernel/ascend/pyboost/auto_generate/transpose_view.h"
+#include "kernel/ascend/pyboost/auto_generate/transpose.h"
 #include "mindspore/ccsrc/pyboost/auto_generate/copy.h"
 
 namespace mindspore {
@@ -34,7 +34,7 @@ void TExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &i
   auto input_rank = input_tensor->shape().size();
 
   const auto &device_name = device_context->device_context_key_.device_name_;
-  auto transpose_op = CREATE_PYBOOST_OP(TransposeView, device_name);
+  auto transpose_op = CREATE_PYBOOST_OP(Transpose, device_name);
   std::vector<int64_t> perm(input_rank);
   for (size_t i = 0; i < input_rank; ++i) {
     perm[i] = static_cast<int64_t>(input_rank - i - 1);

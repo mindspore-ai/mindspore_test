@@ -467,11 +467,14 @@ class Morph(PrimitiveWithInfer):
     """
     The `Morph` Primitive is used to encapsulate a user-defined function `fn`, allowing it to be used as a custom
     Primitive.
-    The primary application scenario of the `Morph` Primitive is in the auto-parallel case after `GRAPH_MODE` mode,
-    where collective communication operators are used within the user-defined `fn` to implement custom parallel
-    computation logic, especially in scenarios where `fn` involves dynamic shapes.
+
+    The `Morph` Primitive is primarily designed for custom graph optimization in GRAPH mode. For example, it supports
+    encapsulation of irregular collective communications (such as :func:`mindspore.ops.AlltoAllV`) in distributed
+    auto-parallel training scenarios.
+
     When the `Morph` Primitive is applied to inputs, it is actually the encapsulated user-defined function `fn` that is
     applied to the inputs.
+
     The main difference between the `Morph` Primitive and :func:`mindspore.ops.Custom` is that the former is expanded
     and replaced by the user-defined `fn` before automatic differentiation, so there is no need to implement a backward
     function.

@@ -159,14 +159,6 @@ class FunctionalMapCppGenerator(BaseGenerator):
         sig_str += '}\n},'
         return sig_str
 
-    def _is_input_arg(self, arg_name, op_name):
-        res = False
-        if op_name in K.INPUT_NAME_MAP and arg_name == K.INPUT_NAME_MAP[op_name]:
-            res = True
-        elif op_name not in K.INPUT_NAME_MAP and arg_name in K.INPUT_ARGS_NAME:
-            res = True
-        return res
-
     def _generate_single_signature_str(self, func_api_name, tensor_proto, is_tensor_method) -> str:
         """
         Generates a single function signature string for the given operation prototype.
@@ -186,7 +178,7 @@ class FunctionalMapCppGenerator(BaseGenerator):
         arg_valid_types = []
         for _, arg in enumerate(op_proto.op_args):
             arg_name = arg.arg_name
-            if is_tensor_method and self._is_input_arg(arg_name, op_name):
+            if is_tensor_method and _is_input_arg(arg_name, op_name):
                 continue
 
             arg_valid_types = self._handle_arg_valid_types(arg, arg_name, arg_valid_types, func_api_name)
@@ -502,3 +494,12 @@ class FunctionalMapCppGenerator(BaseGenerator):
                 self._get_and_append_single_op_varargs_list(func_protos,
                                                             mint_varargs_list)
         return mint_varargs_list
+
+
+def _is_input_arg(arg_name, op_name):
+    res = False
+    if op_name in K.INPUT_NAME_MAP and arg_name == K.INPUT_NAME_MAP[op_name]:
+        res = True
+    elif op_name not in K.INPUT_NAME_MAP and arg_name in K.INPUT_ARGS_NAME:
+        res = True
+    return res

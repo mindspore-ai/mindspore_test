@@ -88,7 +88,9 @@ void MarkArgumentMutableWithParams(const py::tuple &args, const AnfNodePtrList &
         MS_LOG(INFO) << "Cannot find index of param: " << param->DebugString() << ", " << abstract->ToString();
         continue;
       }
-      auto index = *(abstract->user_data<size_t>(pipeline::kActualArgumentIndex));
+      std::shared_ptr<size_t> index_ptr = abstract->user_data<size_t>(pipeline::kActualArgumentIndex);
+      MS_EXCEPTION_IF_NULL(index_ptr);
+      auto index = *index_ptr;
       auto arg = args[index];
       if (GraphUtils::IsMutable(arg)) {
         continue;

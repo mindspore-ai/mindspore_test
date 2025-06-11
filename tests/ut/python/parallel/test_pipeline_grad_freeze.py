@@ -58,7 +58,6 @@ class PipelineSplitWithScalarLoss(nn.Cell):
     def __init__(self, strategy1, strategy2, dtype=ms.float32):
         super().__init__()
         self.cell = Net(strategy1, strategy2, dtype=dtype)
-        self.cell.block[0].matmul.add_prim_attr("parameter_start", 0)
         self.loss = P.ReduceSum()
 
     def construct(self, x, label):

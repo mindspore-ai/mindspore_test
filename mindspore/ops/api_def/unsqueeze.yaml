@@ -1,7 +1,14 @@
 unsqueeze:
-  - op_yaml: expand_dims_view_op.yaml
-    py_method: deprecated_tensor_unsqueeze
+  - op_yaml: expand_dims_op.yaml
+    py_method: tensor_unsqueeze
     Ascend: pyboost
     CPU: pyboost
     GPU: pyboost
-    interface: tensor, function
+    interface: tensor
+
+  - op_yaml: deprecated/unsqueeze_method.yaml
+    py_method: deprecated_tensor_unsqueeze # callback to python function "def deprecated_tensor_unsqueeze"
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: tensor

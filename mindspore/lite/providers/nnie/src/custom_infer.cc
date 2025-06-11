@@ -87,7 +87,8 @@ int GetCustomShape(const mindspore::schema::Custom *op, const std::string &attr,
 
 Status CustomInterface::Infer(std::vector<mindspore::MSTensor> *inputs, std::vector<mindspore::MSTensor> *outputs,
                               const mindspore::schema::Primitive *primitive) {
-  if ((inputs == nullptr) || (outputs == nullptr) || (primitive == nullptr)) {
+  auto check_param = inputs != nullptr && outputs != nullptr && primitive != nullptr;
+  if (!check_param) {
     LOGE("inputs, outputs or primitive is null");
     return kLiteError;
   }

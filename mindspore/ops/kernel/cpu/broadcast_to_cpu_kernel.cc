@@ -27,9 +27,6 @@ namespace broadcast_to_cpu {
 namespace {
 using complex64 = std::complex<float>;
 using complex128 = std::complex<double>;
-constexpr auto kBroadcastTo = "BroadcastTo";
-constexpr auto kBroadcastToView = "BroadcastToView";
-constexpr auto kDynamicBroadcastTo = "DynamicBroadcastTo";
 constexpr size_t kBroadcastToOutputsNum = 1;
 }  // namespace
 
@@ -39,21 +36,6 @@ constexpr size_t kBroadcastToOutputsNum = 1;
 
 std::map<std::string, std::vector<std::pair<KernelAttr, BroadcastToCpuKernelMod::BroadcastToFunc>>>
   BroadcastToCpuKernelMod::func_list_ = {{kBroadcastTo,
-                                          {{BROADCAST_TO_CPU_REG(kNumberTypeInt8, int8_t)},
-                                           {BROADCAST_TO_CPU_REG(kNumberTypeInt16, int16_t)},
-                                           {BROADCAST_TO_CPU_REG(kNumberTypeInt32, int32_t)},
-                                           {BROADCAST_TO_CPU_REG(kNumberTypeInt64, int64_t)},
-                                           {BROADCAST_TO_CPU_REG(kNumberTypeUInt8, uint8_t)},
-                                           {BROADCAST_TO_CPU_REG(kNumberTypeUInt16, uint16_t)},
-                                           {BROADCAST_TO_CPU_REG(kNumberTypeUInt32, uint32_t)},
-                                           {BROADCAST_TO_CPU_REG(kNumberTypeUInt64, uint64_t)},
-                                           {BROADCAST_TO_CPU_REG(kNumberTypeFloat16, float16)},
-                                           {BROADCAST_TO_CPU_REG(kNumberTypeFloat32, float)},
-                                           {BROADCAST_TO_CPU_REG(kNumberTypeFloat64, double)},
-                                           {BROADCAST_TO_CPU_REG(kNumberTypeComplex64, complex64)},
-                                           {BROADCAST_TO_CPU_REG(kNumberTypeComplex128, complex128)},
-                                           {BROADCAST_TO_CPU_REG(kNumberTypeBool, bool)}}},
-                                         {kBroadcastToView,
                                           {{BROADCAST_TO_CPU_REG(kNumberTypeInt8, int8_t)},
                                            {BROADCAST_TO_CPU_REG(kNumberTypeInt16, int16_t)},
                                            {BROADCAST_TO_CPU_REG(kNumberTypeInt32, int32_t)},
@@ -288,8 +270,6 @@ std::vector<KernelAttr> BroadcastToCpuKernelMod::GetOpSupport() {
 
 MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, BroadcastTo,
                                  []() { return std::make_shared<BroadcastToCpuKernelMod>(kBroadcastTo); });
-MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, BroadcastToView,
-                                 []() { return std::make_shared<BroadcastToCpuKernelMod>(kBroadcastToView); });
 MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, DynamicBroadcastTo,
                                  []() { return std::make_shared<BroadcastToCpuKernelMod>(kDynamicBroadcastTo); });
 }  // namespace broadcast_to_cpu

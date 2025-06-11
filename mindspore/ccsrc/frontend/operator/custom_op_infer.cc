@@ -356,7 +356,7 @@ TypePtr CustomInferTypeImpl(const PrimitivePtr &primitive, const std::vector<Abs
 
 #define REGISTER_PRIMITIVE_OP_CPP_INFER_IMPL(name, primitive, OP_INFER_ClASS, is_impl_infer_value) \
   const auto helper_op_infer_##name = abstract::RegisterStandardPrimitiveEvalHelper(               \
-    abstract::GetPrimitiveInferMapPtr(), primitive, std::make_shared<OP_INFER_ClASS>(), is_impl_infer_value);
+    abstract::GetPrimitiveInferMapPtr(), primitive, std::make_shared<OP_INFER_ClASS>(), is_impl_infer_value)
 
 class AGCustomInfer : public abstract::OpInferBase {
  public:
@@ -414,7 +414,7 @@ TypePtr CustomFuncImplInferType(const PrimitivePtr &primitive, const std::vector
 }
 
 struct CustomRegFunc {
-  CustomRegFunc() {
+  CustomRegFunc() noexcept {
     CustomExtFuncImpl::set_infer_shape_call_func(CustomFuncImplInferShape);
     CustomExtFuncImpl::set_infer_type_call_func(CustomFuncImplInferType);
   }

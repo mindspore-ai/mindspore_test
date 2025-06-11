@@ -14,8 +14,8 @@
 # ============================================================================
 """init file for GPU device context"""
 
+__all__ = ['device_count', 'is_available']
+
 from .device import device_count, is_available
 from .op_precision import *
 from .op_tuning import *
-
-__all__ = ["device_count", "is_available"]

@@ -352,7 +352,11 @@ class AscendCommunicationViewer(BaseViewer):
                 if bandwidth_msg in add_list:
                     total_bandwidth_info_dict[transport_type][bandwidth_msg] += value
                 if bandwidth_msg in dict_list:
-                    self._combine_size_distribution(value, total_bandwidth_info_dict[transport_type][bandwidth_msg])
+                    self._combine_size_distribution(
+                        value,
+                        total_bandwidth_info_dict.get(transport_type, {})
+                        .get(bandwidth_msg, defaultdict(lambda: [0, 0]))
+                    )
 
     def _compute_time_ratio(self, total_time_info_dict: dict):
         """compute time ratio"""

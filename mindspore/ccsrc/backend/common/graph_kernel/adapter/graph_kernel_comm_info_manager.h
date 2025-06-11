@@ -60,7 +60,7 @@ class GraphKernelCommInfoRegister {
 
 #define REG_GRAPH_KERNEL_COMM_INFO(DEVICE_TYPE, BUILDER_CLASS)                           \
   static const GraphKernelCommInfoRegister g_graph_kernel_comm_info_##DEVICE_TYPE##_reg( \
-    DEVICE_TYPE, []() { return std::make_shared<BUILDER_CLASS>(); });
+    DEVICE_TYPE, []() { return std::make_shared<BUILDER_CLASS>(); })
 }  // namespace graphkernel
 }  // namespace mindspore
 

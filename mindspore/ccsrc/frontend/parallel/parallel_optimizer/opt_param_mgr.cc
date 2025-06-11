@@ -62,7 +62,11 @@ class OptParamMgrImpl : public OptParamMgr {
 
  private:
   size_t ComputeShapeSize(const AnfNodePtr &parameter) const {
-    ShapeVector shape(parameter->Shape()->cast<abstract::ShapePtr>()->shape());
+    auto param_shape = parameter->Shape();
+    MS_EXCEPTION_IF_NULL(param_shape);
+    auto shape_ptr = param_shape->cast<abstract::ShapePtr>();
+    MS_EXCEPTION_IF_NULL(shape_ptr);
+    ShapeVector shape(shape_ptr->shape());
     size_t total_size = std::accumulate(shape.begin(), shape.end(), static_cast<size_t>(1), std::multiplies<size_t>());
     return total_size;
   }
@@ -80,7 +84,9 @@ class OptParamMgrImpl : public OptParamMgr {
       {kNumberTypeUInt64, sizeof(uint64_t)}, {kNumberTypeBFloat16, sizeof(bfloat16)}};
 
     size_t shape_size = ComputeShapeSize(parameter);
-    TypeId type_id = parameter->Type()->cast<mindspore::TensorTypePtr>()->element()->type_id();
+    auto tensor_type = parameter->Type()->cast<mindspore::TensorTypePtr>();
+    MS_EXCEPTION_IF_NULL(tensor_type);
+    TypeId type_id = tensor_type->element()->type_id();
     if (dtype_size_map.find(type_id) == dtype_size_map.end()) {
       MS_LOG_WITH_NODE(EXCEPTION, parameter) << "unsupported type of parameter: " << parameter->DebugString();
     }
@@ -99,13 +105,12 @@ class OptParamMgrImpl : public OptParamMgr {
     }
 
     auto param_ptr = parameter->cast<ParameterPtr>();
-    if ((!param_ptr) || (!param_ptr->has_default())) {
+    if ((param_ptr == nullptr) || (!param_ptr->has_default())) {
       MS_LOG(INFO) << "Parallel optimizer: " << parameter->ToString() << " is not a parameter.";
       return false;
     }
 
-    if (parameter->cast<ParameterPtr>()->param_info() &&
-        !parameter->cast<ParameterPtr>()->param_info()->parallel_optimizer()) {
+    if (param_ptr->param_info() != nullptr && !param_ptr->param_info()->parallel_optimizer()) {
       MS_LOG(INFO) << "Parallel optimizer: " << parameter->ToString() << " is manually set skipped.";
       return false;
     }
@@ -124,7 +129,8 @@ class OptParamMgrImpl : public OptParamMgr {
     if (param_size < param_split_threshold) {
       MS_LOG(INFO) << "Parallel optimizer: the size of " << parameter->ToString() << "(" << param_size
                    << "KB) is smaller than the threshold(" << param_split_threshold << "B). Skipped.";
-      parameter->cast<ParameterPtr>()->param_info()->set_parallel_optimizer(false);
+      MS_EXCEPTION_IF_NULL(param_ptr->param_info());
+      param_ptr->param_info()->set_parallel_optimizer(false);
       return false;
     }
     return true;

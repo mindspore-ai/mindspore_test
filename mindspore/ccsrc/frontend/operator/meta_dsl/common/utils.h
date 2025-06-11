@@ -44,11 +44,11 @@ namespace mindspore::prim {
 
 #define DECLARE_PARAMS_3(p1, p2, p3) \
   DECLARE_PARAMS_2(p1, p2);          \
-  DECLARE_PARAM(p3);
+  DECLARE_PARAM(p3)
 
 #define DECLARE_PARAMS_4(p1, p2, p3, p4) \
-  DECLARE_PARAMS_3(p1, p2, p3)           \
-  DECLARE_PARAM(p4);
+  DECLARE_PARAMS_3(p1, p2, p3);          \
+  DECLARE_PARAM(p4)
 
 #define DECLARE_PARAMS_5(p1, p2, p3, p4, p5) \
   DECLARE_PARAMS_4(p1, p2, p3, p4);          \

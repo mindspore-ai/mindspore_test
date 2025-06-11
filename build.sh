@@ -55,7 +55,6 @@ update_submodule()
   fi
   git submodule update --init mstt
   cp "${BASEPATH}/mstt/debug/accuracy_tools/msprobe/mindspore/dym_loader/"* "mindspore/ccsrc/backend/ge_backend/dump/"
-  cp "${BASEPATH}/mstt/debug/accuracy_tools/msprobe/mindspore/dym_loader/"* "mindspore/ccsrc/debug/hooker"
 }
 
 build_exit()

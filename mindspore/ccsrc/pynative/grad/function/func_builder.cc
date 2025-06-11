@@ -1078,7 +1078,18 @@ NodePtr FuncBuilder::TanhGrad(const NodePtr &y, const NodePtr &dy) { return Nati
 
 NodePtr FuncBuilder::Tanh(const NodePtr &input) { return NativeFunc::Tanh(input); }
 
-NodePtr FuncBuilder::Tile(const NodePtr &input, const NodePtr &dims) { return NativeFunc::Tile(input, dims); }
+NodePtr FuncBuilder::Tile(const NodePtr &input, const NodePtr &dims) {
+  MS_EXCEPTION_IF_NULL(input);
+  MS_EXCEPTION_IF_NULL(dims);
+  ValuePtr dims_ptr = dims->BuildValue();
+  if (dims_ptr->isa<ValueSequence>()) {
+    const auto &dims_seq = dims_ptr->cast<ValueSequencePtr>();
+    if (input->shape().size() == 0 && dims_seq->size() == 0) {
+      return input;
+    }
+  }
+  return NativeFunc::Tile(input, dims);
+}
 
 NodePtr FuncBuilder::TopkExt(const NodePtr &input, const NodePtr &k, const NodePtr &dim, const NodePtr &largest,
                              const NodePtr &sorted) {

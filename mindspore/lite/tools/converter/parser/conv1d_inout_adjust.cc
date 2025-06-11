@@ -189,6 +189,8 @@ bool Conv1DInOutAdjust::Run(const FuncGraphPtr &func_graph) {
       auto unsqueeze_weight =
         NewUnsqueezeOpNode(func_graph, weight_node, axis, cnode->fullname_with_scope() + "_unsqueeze_weight");
       MS_CHECK_TRUE_MSG(unsqueeze_weight != nullptr, false, "New unsqueeze node failed.");
+      MS_CHECK_TRUE_MSG(weight_node->abstract() != nullptr, false, "weight_node->abstract() is nullptr!");
+      unsqueeze_weight->set_abstract(weight_node->abstract()->Clone());
       (void)manager->SetEdge(cnode, THIRD_INPUT, unsqueeze_weight);
     } else {
       schema::Format schema_format = schema::Format::Format_KCHW;

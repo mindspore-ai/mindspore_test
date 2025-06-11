@@ -20,3 +20,4 @@ dist_comm_reduce_scatter_tensor:
         enable: True
         is_comm_op: True
         Ascend: DistCommReduceScatterTensorAscend
+    non-differentiable: True

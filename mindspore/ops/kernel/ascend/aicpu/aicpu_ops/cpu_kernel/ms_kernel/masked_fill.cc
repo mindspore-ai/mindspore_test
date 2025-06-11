@@ -134,7 +134,7 @@ uint32_t NoBcastCompute(CpuKernelContext &ctx) {
     type = BcastShapeType::Y_ONE_ELEMENT;
   }
 
-  auto shard_masked_fill = [&](int64_t start, int64_t end) {
+  auto shard_masked_fill = [type, value, y_ptr, mask_ptr, x_ptr, &ctx](int64_t start, int64_t end) {
     switch (type) {
       case BcastShapeType::SAME_SHAPE:
         for (int64_t i = start; i < end; ++i) {
@@ -190,7 +190,7 @@ uint32_t BcastCompute(CpuKernelContext &ctx, const Bcast &bcast) {
                           "type without overflow.");
   auto y_ptr = reinterpret_cast<T *>(ctx.Output(kFirstOutputIndex)->GetData());
   int64_t data_num = ctx.Output(kFirstOutputIndex)->NumElements();
-  auto shard_masked_fill = [&](int64_t start, int64_t end) {
+  auto shard_masked_fill = [value, y_ptr, mask_ptr, x_ptr, &bcast](int64_t start, int64_t end) {
     for (int64_t i = start; i < end; ++i) {
       y_ptr[i] = mask_ptr[bcast.GetBroadcastYIndex(i)] ? value : x_ptr[bcast.GetBroadcastXIndex(i)];
     }

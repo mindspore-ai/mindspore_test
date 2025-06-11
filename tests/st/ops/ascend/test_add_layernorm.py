@@ -50,7 +50,7 @@ class Add_LayerNorm(nn.Cell):
         return y, meanOut, rstdOut, res
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('tensor_type', [mstype.float32, mstype.float16, mstype.bfloat16])
 def test_add_layer_norm(tensor_type):
     """

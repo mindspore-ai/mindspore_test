@@ -16,7 +16,6 @@
 """Inner operators."""
 from types import FunctionType, MethodType
 from collections.abc import Iterable
-import os
 import weakref
 import numpy as np
 

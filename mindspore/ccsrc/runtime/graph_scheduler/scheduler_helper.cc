@@ -233,14 +233,13 @@ void SchedulerHelper::AddDeviceTensorStore(const AnfNodePtr &anf_node, const Ker
     auto real_node = common::AnfAlgo::FetchRealNodeSkipMonadControl({anf_node, 0}).first;
     MS_EXCEPTION_IF_NULL(real_node);
     if (real_node->isa<Parameter>() && common::AnfAlgo::IsParameterWeight(real_node->cast<ParameterPtr>())) {
+      // Push kernel tensor of weight into parameter store.
+      // Push the kernel tensor if store of the position has no one.
+      // If there are heterogeneous kernel tensors, push non cpu device address into store.
       auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
       MS_EXCEPTION_IF_NULL(graph_parameter_store);
       auto outer_idx = graph_parameter_store->GetFrontNodeToIndex(anf_node.get());
       auto store_kernel_tensor = graph_parameter_store->Fetch(outer_idx, 0);
-
-      // Push kernel tensor of weight into parameter store.
-      // Push the kernel tensor if store of the position has no one.
-      // If there are heterogeneous kernel tensors, push non cpu device address into store.
       if (store_kernel_tensor == nullptr || store_kernel_tensor->device_address() == nullptr) {
         graph_parameter_store->Push(outer_idx, 0, kernel_tensor, SIZE_MAX);
       } else if (store_kernel_tensor->device_address()->GetDeviceType() != device_tensor->GetDeviceType() &&

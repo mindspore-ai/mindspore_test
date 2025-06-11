@@ -110,8 +110,8 @@ class TaskManager:
             else workflow
         )
 
+        data = {}
         try:
-            data = {}
             for parser in parsers:
                 parser_start_time = time.perf_counter()
                 data = parser.parse(data)

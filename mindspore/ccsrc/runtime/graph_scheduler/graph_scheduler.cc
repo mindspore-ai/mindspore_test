@@ -67,9 +67,6 @@
 #ifdef ENABLE_DEBUGGER
 #include "include/backend/debug/debugger/debugger.h"
 #endif
-#ifndef ENABLE_SECURITY
-#include "debug/hooker/hook_debugger.h"
-#endif
 #include "debug/profiler/profiling.h"
 #include "include/common/debug/common.h"
 #include "include/backend/distributed/recovery/recovery_context.h"
@@ -84,6 +81,10 @@
 
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
 #include "utils/numa_interface.h"
+#endif
+
+#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
+#include "include/common/utils/signal_util.h"
 #endif
 
 #ifdef ENABLE_RPC_ACTOR
@@ -347,7 +348,7 @@ bool CheckInputOptimizeCondition(const GraphCompilerInfo &graph_compiler_info) {
     return false;
   };
 
-  auto IsKernelNotSupportKbkSubGraphMode = [&](const CNodePtr &kernel) {
+  auto IsKernelNotSupportKbkSubGraphMode = [&IsVirtualSummaryKernel](const CNodePtr &kernel) {
     MS_EXCEPTION_IF_NULL(kernel);
     return IsVirtualSummaryKernel(kernel);
   };
@@ -637,8 +638,8 @@ void GraphScheduler::Clear() {
 void GraphScheduler::ClearActorData(const ActorSet *actor_set) {
   MS_EXCEPTION_IF_NULL(actor_set);
 
-  // Clear the member of DeviceTensorCopyStore.
-  DeviceTensorCopyStore::GetInstance().Clear();
+  // Clear the member of KernelTensorCopyStore.
+  KernelTensorCopyStore::GetInstance().Clear();
 
   // Clear the output tensors of output actor.
   if (actor_set->output_actor_ != nullptr) {
@@ -801,13 +802,6 @@ void GraphScheduler::BuildAndScheduleGlobalActor() {
   auto debugger = Debugger::GetInstance();
   MS_EXCEPTION_IF_NULL(debugger);
   if (debugger->DebuggerBackendEnabled()) {
-    debugger_actor_need = true;
-  }
-#endif
-#ifndef ENABLE_SECURITY
-  // If dump hooker tool is enabled
-  auto &hookDebugger = hooker::HookDebugger::GetInstance();
-  if (hookDebugger.IsHookerEnabled()) {
     debugger_actor_need = true;
   }
 #endif
@@ -1175,6 +1169,11 @@ void RefreshGraphParameterStore(ActorSet *const actor_set, const VectorRef &args
 
 void GraphScheduler::Run(ActorSet *const actor_set, const std::vector<std::vector<TensorPtr>> &input_tensors,
                          const VectorRef &args, GraphExecutionStrategy strategy) {
+#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
+  if (!RegisterGlobalSignalHandler(DefaultIntHandler)) {
+    MS_EXCEPTION(RuntimeError) << "Failed to register the callback signal handling.";
+  }
+#endif
   // If spin is turned on in the configuration, it will be turned off when entering RunGraph.
   if (runtime::Pipeline::Get().frontend_stage()->Spin() && !is_shut_spin_ && is_bind_core_) {
     runtime::Pipeline::Get().SetSpin(false);

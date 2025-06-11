@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #include "pipeline/jit/pi/graph_guard/guard_utils.h"
+#include <cstdint>
 #include <regex>
 #include "pybind11/pybind11.h"
 #include "frontend/ir/primitive_py.h"
@@ -261,7 +262,7 @@ class BytesData : public ItemData {
   }
 
   std::string ToString() override {
-    size_t bytes = (size_t)(buf_.get());
+    uintptr_t bytes = reinterpret_cast<uintptr_t>(buf_.get());
     return DESC_STRING_L(bytes, len_) + DESC_END;
   }
 

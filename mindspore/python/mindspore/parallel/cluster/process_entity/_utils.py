@@ -85,8 +85,8 @@ def _get_local_ip(ip_address):
             CURRENT_IP = s.getsockname()[0]
             s.close()
         except Exception as e:
-            raise RuntimeError(f"Get local ip failed, from {e} Please check whether an accessible address "
-                               "is input by '--master_address'.")
+            raise RuntimeError("Get local ip has failed. Please verify that the accessible address has been "
+                               "specified in the '--master_address' parameter") from e
     return CURRENT_IP
 
 
@@ -126,8 +126,8 @@ def _convert_addr_to_ip(master_addr):
             logger.info(f"Convert input host name:{master_addr} to ip address:{ip_address}.")
             return ip_address
         except socket.gaierror as e:
-            raise RuntimeError(f"DNS resolution failed from {e} Please check whether a correct host name "
-                               "is input by '--master_address'.")
+            raise RuntimeError("DNS resolution has failed. Please verify that the correct hostname has been "
+                               "specified in the '--master_address' parameter") from e
 
 
 def _send_scale_num(url, scale_num):

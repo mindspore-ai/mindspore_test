@@ -97,6 +97,7 @@ void AscendProfiler::InitAscendProfilerConfig(const std::string &profiling_path,
   config_.pcie = options["pcie"];
   config_.sysIo = options["sys_io"];
   config_.sysInterconnection = options["sys_interconnection"];
+  config_.hostSys = options["host_sys"];
   config_.withStack = options["with_stack"];
   config_.parallelStrategy = options["parallel_strategy"];
   config_.profilerLevel = options["profiler_level"];

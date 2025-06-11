@@ -867,19 +867,13 @@ int InsertQuantNodeManager::InsertAscendAntiQuantNode(const FuncGraphPtr &func_g
 
   // Insert cast node
   CNodePtr cast_cnode = nullptr;
+  auto is_gather = opt::CheckPrimitiveType(cnode, prim::kPrimGather);
+  AnfNodePtr specify_input = is_gather ? cnode : input_node;
   if (ascend_backend == "910b") {
     MS_LOG(INFO) << "The ascend_backend is 910b, it will insert antiquant node";
-    if (opt::CheckPrimitiveType(cnode, prim::kPrimGather)) {
-      cast_cnode = NewAscendAntiQuantCNode(func_graph, cnode, dst_dtype);
-    } else {
-      cast_cnode = NewAscendAntiQuantCNode(func_graph, input_node, dst_dtype);
-    }
+    cast_cnode = NewAscendAntiQuantCNode(func_graph, specify_input, dst_dtype);
   } else {
-    if (opt::CheckPrimitiveType(cnode, prim::kPrimGather)) {
-      cast_cnode = NewCastNode(func_graph, cnode, dst_dtype);
-    } else {
-      cast_cnode = NewCastNode(func_graph, input_node, dst_dtype);
-    }
+    cast_cnode = NewCastNode(func_graph, specify_input, dst_dtype);
   }
 
   CHECK_NULL_RETURN(cast_cnode);
@@ -941,12 +935,7 @@ int InsertQuantNodeManager::InsertAscendAntiQuantNode(const FuncGraphPtr &func_g
     return RET_ERROR;
   }
 
-  AnfNodeIndexSet node_user;
-  if (opt::CheckPrimitiveType(cnode, prim::kPrimGather)) {
-    node_user = node_map[cnode];
-  } else {
-    node_user = node_map[input_node];
-  }
+  AnfNodeIndexSet node_user = node_map[specify_input];
   for (const auto &user : node_user) {
     manager->SetEdge(user.first, user.second, mul_cnode);
   }

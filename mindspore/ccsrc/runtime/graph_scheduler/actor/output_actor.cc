@@ -168,7 +168,7 @@ void OutputActor::FreeOutputNodeMem() {
     MS_EXCEPTION_IF_NULL(device_context);
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
       << "Free device address:" << output_device_tensor << " for actor:" << GetAID();
-    MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(output_device_tensor.get(), device_context,
+    MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(output_kernel_tensor.get(), device_context,
                                                             GetAID().Name());
   }
 }
@@ -587,17 +587,18 @@ void OutputActor::SetStubOutput(const stub::StubNodePtr &stub_output) {
 }
 
 namespace {
-void HandleEmptySequenceOutput(DeviceTensor *const device_tensor, const tensor::TensorPtr &tensor, size_t index,
+void HandleEmptySequenceOutput(KernelTensor *const kernel_tensor, const tensor::TensorPtr &tensor, size_t index,
                                const std::string &actor_name) {
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
+  auto device_tensor = kernel_tensor->device_address().get();
   MS_EXCEPTION_IF_NULL(device_tensor);
   MS_EXCEPTION_IF_NULL(tensor);
   MS_LOG(DEBUG) << "Empty sequence shape for input tensor index:" << index;
   const auto &device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
     {device_tensor->device_name(), device_tensor->device_id()});
   MS_EXCEPTION_IF_NULL(device_context);
-  MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-    << "Free device address:" << device_tensor << " for actor:" << actor_name;
-  MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(device_tensor, device_context, actor_name);
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "Free kernel tensor:" << kernel_tensor << " for actor:" << actor_name;
+  MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(kernel_tensor, device_context, actor_name);
   if (device_tensor->user_data() != nullptr && tensor->device_address() != nullptr) {
     auto tensor_device_address = std::dynamic_pointer_cast<DeviceTensor>(tensor->device_address());
     MS_EXCEPTION_IF_NULL(tensor_device_address);
@@ -634,7 +635,7 @@ void OutputActor::HandleOutput() {
     auto &tensor = outputs_[i];
     MS_EXCEPTION_IF_NULL(tensor);
     if (IsEmptySequence(tensor)) {
-      HandleEmptySequenceOutput(device_tensor.get(), tensor, i, GetAID().Name());
+      HandleEmptySequenceOutput(kernel_tensor.get(), tensor, i, GetAID().Name());
       continue;
     }
     auto tensor_device_address = std::dynamic_pointer_cast<DeviceTensor>(tensor->device_address());
@@ -697,9 +698,8 @@ void OutputActor::HandleOutput() {
     const auto &real_device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
       {device_tensor->device_name(), device_tensor->device_id()});
     MS_EXCEPTION_IF_NULL(real_device_context);
-    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-      << "Free device address:" << device_tensor << " for actor:" << GetAID();
-    MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(device_tensor.get(), real_device_context, GetAID().Name());
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "Free kernel tensor:" << kernel_tensor << " for actor:" << GetAID();
+    MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(kernel_tensor.get(), real_device_context, GetAID().Name());
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
       MarkTensorAsOutput, GetAID().Name(), device_tensor->device_name(), device_tensor->GetPtr(),
       device_tensor->type_id(), device_tensor->GetShapeVector(), device_tensor->GetTensorStorageInfo());

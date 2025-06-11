@@ -419,6 +419,7 @@ bool BpropExpander::IsCloneInplaceInput(const PynativeCallback &cb) {
 bool BpropExpander::RunBprop(const CNodePtr &cnode, const std::vector<ValuePtr> &input_values) {
   static const bool cache_env = (common::GetEnv("MS_DEV_DISABLE_BPROP_CACHE") != "on");
   const auto prim = GetCNodePrimitive(cnode);
+  MS_EXCEPTION_IF_NULL(prim);
   const auto name = prim->name();
   std::shared_ptr<PynativeIRBuilder> ir_builder;
   if (cache_env) {

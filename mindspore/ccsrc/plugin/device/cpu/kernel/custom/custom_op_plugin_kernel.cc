@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2024 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -154,7 +154,6 @@ int CustomOpPluginCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs
   if (ret != 0) {
     return ret;
   }
-  // kernel_info_.SetKernelInput(inputs);
   shapes_.clear();
   shape_list_.clear();
   ndims_.clear();

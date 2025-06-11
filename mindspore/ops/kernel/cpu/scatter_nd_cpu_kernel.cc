@@ -45,7 +45,7 @@ void ComputeOffset(ScatterNdCpuKernelMod *content, const ComputeParams<S, T> *pa
   S *indices = params->indices_;
   std::vector<int> *out_strides = params->out_strides_;
   size_t indices_unit_rank = IntToSize(params->indices_unit_rank_);
-  auto task = [&](size_t start, size_t end) {
+  auto task = [indices_unit_rank, indices, content, out_strides, params](size_t start, size_t end) {
     for (size_t i = start; i < end; i++) {
       int offset = 0;
       for (size_t j = 0; j < indices_unit_rank; j++) {

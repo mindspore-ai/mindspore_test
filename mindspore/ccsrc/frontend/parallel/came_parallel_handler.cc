@@ -50,7 +50,10 @@ namespace mindspore {
 namespace parallel {
 const std::string GetCNodeOpName(const CNodePtr &cnode) {
   // get the prim name of cnode
-  ValueNodePtr prim_anf_node = cnode->input(0)->cast<ValueNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
+  AnfNodePtr prim_anf_node_ptr = cnode->input(0);
+  MS_EXCEPTION_IF_NULL(prim_anf_node_ptr);
+  ValueNodePtr prim_anf_node = prim_anf_node_ptr->cast<ValueNodePtr>();
   MS_EXCEPTION_IF_NULL(prim_anf_node);
   PrimitivePtr node_prim = prim_anf_node->value()->cast<PrimitivePtr>();
   MS_EXCEPTION_IF_NULL(node_prim);
@@ -148,6 +151,7 @@ CameCommHandler::CameCommHandler(ParameterPtr origin, const std::vector<AnfNodeP
   cur_rank = g_device_manager->global_rank();
   full_rank_list = g_device_manager->GetDeviceListInThisStage();
 
+  MS_EXCEPTION_IF_NULL(origin);
   tensor_layout = origin->user_data<TensorLayout>();
   MS_EXCEPTION_IF_NULL(tensor_layout);
 
@@ -428,6 +432,7 @@ void CameCommHandler::InsertAllReduceAndRealDivToReduceMeanInput(CNodePtr reduce
   std::vector<AnfNodePtr> all_reduce_input = {NewValueNode(allreduce_pyop_instance), reduce_mean};
   auto all_reduce_node = func_graph->NewCNode(all_reduce_input);
   auto all_reduce_prim = GetCNodePrimitive(all_reduce_node);
+  MS_EXCEPTION_IF_NULL(all_reduce_prim);
   auto all_reduce_attrs = all_reduce_prim->attrs();
   all_reduce_attrs["op"] = MakeValue<std::string>(REDUCE_OP_SUM);
 

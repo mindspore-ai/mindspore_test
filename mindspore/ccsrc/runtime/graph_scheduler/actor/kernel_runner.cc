@@ -220,6 +220,8 @@ void InsertEventForInput(uint32_t stream_id, const DeviceContext *device_context
 using distributed::collective::CollectiveManager;
 using distributed::recovery::RecoveryContext;
 
+bool KernelRunner::is_high_perf_mode_ = true;
+
 KernelRunner::KernelRunner(const std::string &name, const CNodePtr &kernel, const DeviceContext *device_context,
                            const AID &memory_manager_aid, const AID *debug_aid, const AID *recorder_aid,
                            GraphExecutionStrategy strategy, const std::set<size_t> &modifiable_ref_input_indexes,
@@ -259,12 +261,16 @@ KernelRunner::KernelRunner(const std::string &name, const CNodePtr &kernel, cons
   MS_LOG(DEBUG) << "Input free index:" << input_free_index_ << " output free index:" << output_free_index_
                 << " need ref storage info:" << need_ref_for_storage_info_ << " for actor:" << GetAID()
                 << " kernel:" << kernel->DebugString();
+  const auto &prim = GetCNodePrimitive(kernel_);
+  if (prim) {
+    rw_write_index_ = prim->rw_write_input_indexes();
+  }
   // shape depend need kernel is cnode.
   SetShapeDependInfo();
 
   enable_uce_ = UCEException::IsEnableUCE();
   enable_arf_ = UCEException::GetInstance().enable_arf();
-  is_high_perf_mode_ = IsRunHighPerfMode();
+  KernelRunner::is_high_perf_mode_ = IsRunHighPerfMode();
 }
 
 void KernelRunner::Init() {
@@ -593,7 +599,7 @@ void KernelRunner::ConvertInputContiguous(OpContext<KernelTensor> *const context
       }
 
       // Check the inplace op not support the view input.
-      if (modifiable_ref_input_indexes_.count(i) > 0) {
+      if (std::find(rw_write_index_.begin(), rw_write_index_.end(), i) != rw_write_index_.end()) {
         std::string error_msg =
           kernel_->fullname_with_scope() +
           " is an inplace op and does not support view input. Please use other inplace op that support view "
@@ -637,17 +643,22 @@ void KernelRunner::ConvertInputContiguous(OpContext<KernelTensor> *const context
       }
       new_device_address->set_tensor_storage_info(nullptr);
       // Launch CopyInplace to make tensor contiguous.
-      if (!device_contexts_[0]->GetKernelExecutor(false)->ExecuteKernelTask(
-            runtime::KernelTaskType::kCONTIGUOUS_TASK, {input_device_tensor}, {new_device_address.get()}, stream_id)) {
-        MS_LOG(EXCEPTION) << "Graph mode executeKernelTask Contiguous failed.";
-      }
-      // Store the old tensor storage info , input device tensor and input kernel tensor.
-      // Recover them when launch finished.
-      if (cur_stream_id != stream_id) {
-        cross_stream_addresses_.emplace_back(0, input_kernel_tensors_[i]->device_ptr());
-        cross_stream_addresses_.emplace_back(0, new_kernel_tensor->device_ptr());
+      if (i >= depend_shape_input_list_.size() || !depend_shape_input_list_[i]) {
+        if (!device_contexts_[0]->GetKernelExecutor(false)->ExecuteKernelTask(runtime::KernelTaskType::kCONTIGUOUS_TASK,
+                                                                              {input_device_tensor},
+                                                                              {new_device_address.get()}, stream_id)) {
+          MS_LOG(EXCEPTION) << "Graph mode executeKernelTask Contiguous failed.";
+        }
+        // Store the old tensor storage info , input device tensor and input kernel tensor.
+        // Recover them when launch finished.
+        if (cur_stream_id != stream_id) {
+          cross_stream_addresses_.emplace_back(0, input_kernel_tensors_[i]->device_ptr());
+          cross_stream_addresses_.emplace_back(0, new_kernel_tensor->device_ptr());
+        }
       }
       temp_input_kernel_tensors_[i] = input_kernel_tensors_[i];
+      MS_LOG(DEBUG) << "Repalce input kernel tensor from:" << input_kernel_tensors_[i]->ToString()
+                    << " to:" << new_kernel_tensor->ToString() << " input index:" << i << " for actor:" << GetAID();
       input_kernel_tensors_[i] = new_kernel_tensor;
       input_launch_tensors_[i] = new_kernel_tensor.get();
     }
@@ -791,8 +802,8 @@ void *KernelRunner::GetSomasDevicePtr(size_t offset) const {
 
 void KernelRunner::TraceDynamicMemory() {
   for (size_t i = 0; i < output_kernel_tensors_.size(); i++) {
-    if (!is_output_kernel_[i]) {
-      const auto &kernel_tensor = output_kernel_tensors_[i];
+    const auto &kernel_tensor = output_kernel_tensors_[i];
+    if (!is_output_kernel_[i] && kernel_tensor->pointer_ref_count()->new_ref_count() != SIZE_MAX) {
       MemoryTraceManager::GetInstance().AddKernelMemoryTraceBlock(
         std::make_shared<KernelMemoryTraceBlock>(kernel_, kernel_tensor->device_ptr(), kernel_tensor->size(),
                                                  kOutputMem, i, kernel_tensor.get()),
@@ -883,7 +894,7 @@ void KernelRunner::SendMemoryFreeReq(OpContext<KernelTensor> *const context) {
       MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
         << "Free memory by ref count for kernel tensor:" << copy_input_kernel_tensor->ToString()
         << " for actor:" << GetAID();
-      MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(copy_input_device_tensor.get(), device_contexts_[0],
+      MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(copy_input_kernel_tensor.get(), device_contexts_[0],
                                                               GetAID().Name());
     }
   }
@@ -919,15 +930,6 @@ void KernelRunner::SetMemInfoForRdr() {
     mem_info_.workspaces_[i]->addr = workspace_kernel_tensors_[i]->device_address()->GetMutablePtr();
     mem_info_.workspaces_[i]->size = workspace_kernel_tensors_[i]->device_address()->GetSize();
   }
-}
-
-void KernelRunner::UpdateDeviceTensorCopyStore(DeviceTensor *const new_device_tensor,
-                                               DeviceTensor *const input_device_tensor, size_t input_index) {
-  MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-    << "Add device tensor copy store for device address:" << new_device_tensor
-    << " type:" << new_device_tensor->GetDeviceType() << " and " << input_device_tensor
-    << " type:" << input_device_tensor->GetDeviceType() << " for copy actor:" << GetAID();
-  DeviceTensorCopyStore::GetInstance().Insert(new_device_tensor, input_device_tensor);
 }
 
 void KernelRunner::CopyInputDeviceTensor(KernelTensorPtr kernel_tensor, size_t input_index,
@@ -1024,7 +1026,7 @@ void KernelRunner::CopyInputDeviceTensor(KernelTensorPtr kernel_tensor, size_t i
                                                   new_device_tensor->GetSize());
     }
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-      << "Increase new ref count for device address:" << new_device_tensor << " in actor:" << GetAID();
+      << "Increase new ref count for kernel tensor:" << new_kernel_tensor->ToString() << " in actor:" << GetAID();
   }
 
   MS_LOG(INFO) << GetAID().Name() << " the input position:" << input_index
@@ -1036,7 +1038,10 @@ void KernelRunner::CopyInputDeviceTensor(KernelTensorPtr kernel_tensor, size_t i
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(strategy_, *context, error_info);
   }
   if (modifiable_ref_input_indexes_.count(input_index) > 0) {
-    UpdateDeviceTensorCopyStore(new_device_tensor.get(), device_tensor, input_index);
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+      << "Add device tensor copy store for kernel tensor:" << new_kernel_tensor->ToString() << " and "
+      << kernel_tensor->ToString() << " for copy actor:" << GetAID();
+    KernelTensorCopyStore::GetInstance().Insert(new_kernel_tensor.get(), kernel_tensor.get());
   }
 }
 
@@ -1158,7 +1163,10 @@ void KernelRunner::CopyParameterDeviceTensor(KernelTensorPtr kernel_tensor, size
   graph_parameter_store->InsertDeviceTensorIntoCallback(device_tensor);
 
   if (modifiable_ref_input_indexes_.count(input_index) > 0) {
-    UpdateDeviceTensorCopyStore(new_device_tensor.get(), device_tensor.get(), input_index);
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+      << "Add device tensor copy store for kernel tensor:" << new_kernel_tensor->ToString() << " and "
+      << kernel_tensor->ToString() << " for copy actor:" << GetAID();
+    KernelTensorCopyStore::GetInstance().Insert(new_kernel_tensor.get(), kernel_tensor.get());
   }
   PROFILER_END(start_time, runtime::ProfilerModule::kKernel, runtime::ProfilerEvent::kPreLaunch,
                "CopyParameterDeviceTensor", false);
@@ -1213,7 +1221,7 @@ void KernelRunner::UpdateRefDeviceAddress(OpContext<KernelTensor> *const context
     }
     if (output_kernel_tensors_[pair.first] == nullptr || input_kernel_tensors_[pair.second] == nullptr) {
       std::stringstream error_info;
-      error_info << "Invalid ref input device address" << input_kernel_tensors_[pair.second]
+      error_info << "Invalid ref input kernel tensor:" << input_kernel_tensors_[pair.second]
                  << "and output kernel tensor:" << output_kernel_tensors_[pair.first]
                  << " for kernel:" + kernel_->fullname_with_scope();
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(strategy_, (*context), error_info.str());
@@ -1308,7 +1316,7 @@ bool KernelRunner::IsRunHighPerfMode() {
   // They should not be changed in runtime phase so that we could reach optimal performance by avoiding condition
   // judgement.
   std::vector<bool> conditions = {
-    common::IsEnableRuntimeConfig(common::kRuntimeDisableHPMode),
+    common::IsDisableRuntimeConfig(common::kRuntimeHPMode),
     debug_aid_ != nullptr,
     recorder_aid_ != nullptr,
     EnableExecuteOrderDump(),
@@ -1325,7 +1333,7 @@ bool KernelRunner::IsRunHighPerfMode() {
 }
 
 void KernelRunner::ExecuteLaunchKernelTask(OpContext<KernelTensor> *const context) {
-  if (is_high_perf_mode_) {
+  if (KernelRunner::is_high_perf_mode_) {
     ExecuteLaunchKernelTaskHP(context);
   } else {
     ExecuteLaunchKernelTaskDebug(context);
@@ -1361,9 +1369,6 @@ void KernelRunner::ExecuteLaunchKernelTaskDebug(OpContext<KernelTensor> *const c
   if (MS_UNLIKELY(ActorDispatcher::has_kernel_need_user_data())) {
     PreLaunchKernel(context);
   }
-
-  // 2. Launch kernel if need.
-  device_contexts_[0]->device_res_manager_->BindDeviceToCurrentThread(false);
 
   if (MS_UNLIKELY(debug_aid_ != nullptr)) {
     ActorDispatcher::SendSync(*debug_aid_, &DebugActor::DebugPreLaunch, kernel_, input_kernel_tensors_,
@@ -1432,9 +1437,6 @@ void KernelRunner::ExecuteLaunchKernelTaskHP(OpContext<KernelTensor> *const cont
   if (MS_UNLIKELY(ActorDispatcher::has_kernel_need_user_data())) {
     PreLaunchKernel(context);
   }
-
-  // 2. Launch kernel if need.
-  device_contexts_[0]->device_res_manager_->BindDeviceToCurrentThread(false);
 
   if (!LaunchKernelHP(context, IsSkippedLaunch(kernel_, nullptr))) {
     MS_LOG_WITH_NODE(EXCEPTION, kernel_) << "#umsg#Kernel error:#umsg#Launch kernel failed: " +
@@ -1929,25 +1931,24 @@ void KernelRunner::RefreshDeviceTensorCopyStore(OpContext<KernelTensor> *const c
     }
     auto &input_kernel_tensor = input_kernel_tensors_[ref_input_index];
     MS_EXCEPTION_IF_NULL(input_kernel_tensor);
-    auto input_device_tensor = input_kernel_tensor->device_address().get();
-    MS_EXCEPTION_IF_NULL(input_device_tensor);
-    auto need_refreshed_device_tensors = DeviceTensorCopyStore::GetInstance().Fetch(input_device_tensor);
+    auto need_refreshed_kernel_tensors = KernelTensorCopyStore::GetInstance().Fetch(input_kernel_tensor.get());
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-      << "Fetch input copy device tensor:" << input_device_tensor << " for actor:" << GetAID();
-    if (need_refreshed_device_tensors == nullptr) {
+      << "Fetch input copy kernel tensor:" << input_kernel_tensor->ToString() << " for actor:" << GetAID();
+    if (need_refreshed_kernel_tensors == nullptr) {
       continue;
     }
-    for (auto &new_device_tensor : *need_refreshed_device_tensors) {
-      MS_EXCEPTION_IF_NULL(new_device_tensor);
+    for (auto &new_kernel_tensor : *need_refreshed_kernel_tensors) {
+      MS_EXCEPTION_IF_NULL(new_kernel_tensor);
       MS_LOG(INFO) << GetAID().Name() << " the input position:" << ref_input_index
-                   << " refresh from device address:" << input_device_tensor->ToString()
-                   << " to device address:" << new_device_tensor->ToString();
+                   << " refresh from kernel tensor:" << input_kernel_tensor->ToString()
+                   << " to kernel tensor:" << new_kernel_tensor->ToString();
 
-      if (new_device_tensor->GetPtr() == nullptr || new_device_tensor->GetPtr() == input_device_tensor->GetPtr()) {
+      if (new_kernel_tensor->device_ptr() == nullptr ||
+          new_kernel_tensor->device_ptr() == input_kernel_tensor->device_ptr()) {
         continue;
       }
 
-      if (!Copy(new_device_tensor, input_device_tensor)) {
+      if (!Copy(new_kernel_tensor->device_address().get(), input_kernel_tensor->device_address().get())) {
         std::string error_info = "Copy input device tensor failed: " + GetAID().Name();
         SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(strategy_, *context, error_info);
       }
@@ -1960,27 +1961,23 @@ void KernelRunner::RefreshDeviceTensorCopyStore(OpContext<KernelTensor> *const c
     }
     auto &output_kernel_tensor = output_kernel_tensors_[ref_output_index];
     MS_EXCEPTION_IF_NULL(output_kernel_tensor);
-    auto output_device_tensor = output_kernel_tensor->device_address().get();
-    MS_EXCEPTION_IF_NULL(output_device_tensor);
-    auto need_refreshed_device_tensors = DeviceTensorCopyStore::GetInstance().Fetch(output_device_tensor);
+    auto need_refreshed_kernel_tensors = KernelTensorCopyStore::GetInstance().Fetch(output_kernel_tensor.get());
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-      << "Fetch output copy device tensor:" << output_device_tensor << " for actor:" << GetAID();
-    if (need_refreshed_device_tensors == nullptr) {
+      << "Fetch output copy kernel tensor:" << output_kernel_tensor->ToString() << " for actor:" << GetAID();
+    if (need_refreshed_kernel_tensors == nullptr) {
       continue;
     }
-    for (auto &new_device_tensor : *need_refreshed_device_tensors) {
-      MS_EXCEPTION_IF_NULL(new_device_tensor);
+    for (auto &new_kernel_tensor : *need_refreshed_kernel_tensors) {
+      MS_EXCEPTION_IF_NULL(new_kernel_tensor);
       MS_LOG(INFO) << GetAID().Name() << " the output position:" << ref_output_index
-                   << " refresh from device address:" << output_device_tensor
-                   << " ptr:" << output_device_tensor->GetPtr() << ", type:" << output_device_tensor->GetDeviceType()
-                   << ", format:" << output_device_tensor->format() << " to device address:" << new_device_tensor
-                   << " ptr:" << new_device_tensor->GetPtr() << ", type:" << new_device_tensor->GetDeviceType()
-                   << ", format:" << new_device_tensor->format();
-      if (new_device_tensor->GetPtr() == nullptr || new_device_tensor->GetPtr() == output_device_tensor->GetPtr()) {
+                   << " refresh from kernel tensor:" << output_kernel_tensor->ToString()
+                   << " to:" << new_kernel_tensor->ToString();
+      if (new_kernel_tensor->device_ptr() == nullptr ||
+          new_kernel_tensor->device_ptr() == output_kernel_tensor->device_ptr()) {
         continue;
       }
 
-      if (!Copy(new_device_tensor, output_device_tensor)) {
+      if (!Copy(new_kernel_tensor->device_address().get(), output_kernel_tensor->device_address().get())) {
         std::string error_info = "Copy output device tensor failed: " + GetAID().Name();
         SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(strategy_, *context, error_info);
       }

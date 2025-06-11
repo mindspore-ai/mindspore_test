@@ -26,7 +26,7 @@ std::string CheckNdSupported(TypeId data_type, const std::vector<ShapeVector> &s
   if (data_type != kNumberTypeFloat16) {
     return kOpFormat_DEFAULT;
   }
-  auto is_align = [&]() {
+  auto is_align = [shapes]() {
     return (!(static_cast<uint64_t>(shapes[0][0]) & 0x0000000F)) &&
            (!(static_cast<uint64_t>(shapes[0][1]) & 0x0000000F)) &&
            (!(static_cast<uint64_t>(shapes[1][0]) & 0x0000000F)) &&

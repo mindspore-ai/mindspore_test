@@ -102,6 +102,7 @@ CNodePtr CreateReduceScatterNode(const FuncGraphPtr &graph, const AnfNodePtr &in
   MS_EXCEPTION_IF_NULL(input_node);
   MS_EXCEPTION_IF_NULL(allreduce_node);
   auto allreduce_prim = GetCNodePrimitive(allreduce_node);
+  MS_EXCEPTION_IF_NULL(allreduce_prim);
   if (!allreduce_prim->HasAttr(OP) || !allreduce_prim->HasAttr(GROUP)) {
     return nullptr;
   }
@@ -323,9 +324,11 @@ size_t GetReshapeDim(const CNodePtr &reshape_cnode) {
   return shape_vector.size();
 }
 
-// case1:
-// BatchMatMul -> AllReduce （-> Reshape）-> StridedSlice change to
-// BatchMatMul -> Reshape -> Transpose -> ReduceScatter -> Transpose
+/*
+ * AllReduceSliceToReduceScatter Case1:
+ * BatchMatMul -> AllReduce （-> Reshape）-> StridedSlice change to
+ * BatchMatMul -> Reshape -> Transpose -> ReduceScatter -> Transpose
+ */
 void AllReduceSliceToReduceScatterCase1(const AllReduceSliceToReduceScatterParams &params) {
   auto transpose_dim = k4DTransposeDim;
   auto current_node = params.batch_matmul;
@@ -493,10 +496,12 @@ std::vector<int64_t> GetCase2TargetShapeFromStridedSlice(const AllReduceSliceToR
   return target_shape;
 }
 
-// case2:
-// BatchMatMul -> AllReduce (-> Reshape) -> StridedSlice (-> Reshape) -> BiasAdd -> Reshape ->
-// AlltoAll（-> AlltoAll -> Reshape）change to BatchMatMul -> Reshape -> Transpose -> ReduceScatter -> Transpose ->
-// BiasAdd
+/*
+ * AllReduceSliceToReduceScatter Case2:
+ * BatchMatMul -> AllReduce (-> Reshape) -> StridedSlice (-> Reshape) -> BiasAdd -> Reshape ->
+ * AlltoAll（-> AlltoAll -> Reshape）change to BatchMatMul -> Reshape -> Transpose -> ReduceScatter -> Transpose ->
+ * BiasAdd
+ */
 void AllReduceSliceToReduceScatterCase2(const AllReduceSliceToReduceScatterParams &params) {
   auto bias_add_cnode = params.bias_add->cast<CNodePtr>();
   if (bias_add_cnode == nullptr) {
@@ -578,9 +583,11 @@ bool CheckCase3Strategy(const AllReduceSliceToReduceScatterParams &params) {
   return true;
 }
 
-// case3:
-// BatchMatMul -> AllReduce -> StridedSlice -> BiasAdd
-// change to BatchMatMul -> Transpose -> ReduceScatter -> Transpose -> BiasAdd
+/*
+ * AllReduceSliceToReduceScatter Case3:
+ * BatchMatMul -> AllReduce -> StridedSlice -> BiasAdd
+ * change to BatchMatMul -> Transpose -> ReduceScatter -> Transpose -> BiasAdd
+ */
 void AllReduceSliceToReduceScatterCase3(const AllReduceSliceToReduceScatterParams &params) {
   auto bias_add_cnode = params.bias_add->cast<CNodePtr>();
   if (bias_add_cnode == nullptr) {
@@ -699,21 +706,23 @@ bool FillCase2Params(AllReduceSliceToReduceScatterParams *params) {
   return true;
 }
 
-// For Structure as following:
-// case1:
-// BatchMatMul -> AllReduce -> Reshape -> StridedSlice change to
-// BatchMatMul -> Reshape -> Transpose -> ReduceScatter -> Transpose
-//
-// case2:
-// BatchMatMul -> AllReduce (-> Reshape) -> StridedSlice (-> Reshape) -> BiasAdd -> Reshape ->
-// AlltoAll（-> AlltoAll -> Reshape）change to BatchMatMul -> Reshape -> Transpose -> ReduceScatter -> Transpose ->
-// (Reshape ->) BiasAdd (-> Reshape)
-//
-// case3:
-// BatchMatMul -> AllReduce -> StridedSlice -> BiasAdd
-// change to BatchMatMul -> Transpose -> ReduceScatter -> Transpose -> BiasAdd
-//
-// thus it can reduce half of the communication traffic.
+/*
+ * For Structure as following:
+ * AllReduceSliceToReduceScatter case1:
+ * BatchMatMul -> AllReduce -> Reshape -> StridedSlice change to
+ * BatchMatMul -> Reshape -> Transpose -> ReduceScatter -> Transpose
+ *
+ * AllReduceSliceToReduceScatter case2:
+ * BatchMatMul -> AllReduce (-> Reshape) -> StridedSlice (-> Reshape) -> BiasAdd -> Reshape ->
+ * AlltoAll（-> AlltoAll -> Reshape）change to BatchMatMul -> Reshape -> Transpose -> ReduceScatter -> Transpose ->
+ * (Reshape ->) BiasAdd (-> Reshape)
+ *
+ * AllReduceSliceToReduceScatter case3:
+ * BatchMatMul -> AllReduce -> StridedSlice -> BiasAdd
+ * change to BatchMatMul -> Transpose -> ReduceScatter -> Transpose -> BiasAdd
+ *
+ * thus it can reduce half of the communication traffic.
+ */
 bool AllReduceSliceToReduceScatter(const FuncGraphPtr &graph, const opt::OptimizerPtr &) {
   MS_EXCEPTION_IF_NULL(graph);
   // assume no change to graph

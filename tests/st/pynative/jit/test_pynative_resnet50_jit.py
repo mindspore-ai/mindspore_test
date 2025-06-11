@@ -336,7 +336,7 @@ def resnet50(num_classes):
 
 
 @arg_mark(plat_marks=['platform_ascend910b', 'platform_gpu'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_train_tensor(num_classes=10, epoch=3, batch_size=1):

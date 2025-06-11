@@ -38,15 +38,5 @@ void WarningOnce(const std::string &device_name, const std::string &type_name, c
   }
 }
 
-void WarningOnceCategory(const std::string &name) {
-  static std::set<std::string> warning_once;
-  if (warning_once.find(name) != warning_once.end()) {
-    return;
-  } else {
-    warning_once.insert(name);
-    MS_LOG(WARNING) << name << " category is not support!";
-  }
-}
-
 }  // namespace datadump
 }  // namespace mindspore

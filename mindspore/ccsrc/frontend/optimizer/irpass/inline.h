@@ -289,6 +289,7 @@ class InlinerBase : public AnfVisitor {
     auto old_size = params.size();
     constexpr auto print_deep = 10;
     if (old_size != new_params.size()) {
+      MS_EXCEPTION_IF_NULL(fg->output());
       MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, fg->output()) << "Parameter size not match." << old_size << " new "
                                                          << new_params.size() << fg->output()->DebugString(print_deep);
     }

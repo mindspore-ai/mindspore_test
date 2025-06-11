@@ -105,15 +105,24 @@ class PyboostKernelInfoAdapterGenerator(BaseGenerator):
             return
         kernel_info_adapter_h_str = self.kernel_info_adapter_h_template.replace(
             kernel_info_adapter_list=kernel_info_adapter_list)
-        save_path = os.path.join(work_path, K.MS_INTERNAL_PYBOOST_GEN_PATH)
-        save_file(save_path, "kernel_info_adapter.h", kernel_info_adapter_h_str)
         internal_kernel_info_adapter_h_str = self.internal_kernel_info_adapter_h_template.replace(
             internal_kernel_info_adapter_list=internal_kernel_info_adapter_list,
             merged_op_headers=merged_op_headers_list
         )
-        save_file(save_path, "internal_kernel_info_adapter.h", internal_kernel_info_adapter_h_str)
         kernel_info_adapter_cpp_str = self.kernel_info_adapter_cpp_template.replace(
             kernel_info_adapter_cpp_list=kernel_info_adapter_cpp_list,
             kernel_info_adapter_register=kernel_info_adapter_register
         )
-        save_file(save_path, "internal_kernel_info_adapter.cc", kernel_info_adapter_cpp_str)
+
+        self._save_files(work_path, kernel_info_adapter_h_str,
+                         internal_kernel_info_adapter_h_str, kernel_info_adapter_cpp_str)
+
+    @staticmethod
+    def _save_files(work_path, kernel_info_adapter, kernel_info_adapter_h, kernel_info_adapter_cpp):
+        """
+        Save the generated files.
+        """
+        save_path = os.path.join(work_path, K.MS_INTERNAL_PYBOOST_GEN_PATH)
+        save_file(save_path, "kernel_info_adapter.h", kernel_info_adapter)
+        save_file(save_path, "internal_kernel_info_adapter.h", kernel_info_adapter_h)
+        save_file(save_path, "internal_kernel_info_adapter.cc", kernel_info_adapter_cpp)

@@ -260,8 +260,12 @@ size_t GetAllReduceStartIdx(const CNodePtr &c_main, const CNodePtr &c_node) {
   size_t i = kAnfPrimitiveIndex;
   if (IsPrimitiveCNode(c_main, prim::kPrimAllReduce)) {
     // For AllReduce, we require inputs except Primitive to be equal, so we compare from the second input.
-    auto c_main_group = GetValue<std::string>(GetCNodePrimitive(c_main)->GetAttr("group"));
-    auto c_node_group = GetValue<std::string>(GetCNodePrimitive(c_node)->GetAttr("group"));
+    auto c_main_group_attr = GetCNodePrimitive(c_main)->GetAttr("group");
+    MS_EXCEPTION_IF_NULL(c_main_group_attr);
+    auto c_node_group_attr = GetCNodePrimitive(c_node)->GetAttr("group");
+    MS_EXCEPTION_IF_NULL(c_node_group_attr);
+    auto c_main_group = GetValue<std::string>(c_main_group_attr);
+    auto c_node_group = GetValue<std::string>(c_node_group_attr);
     MS_LOG(INFO) << "Enter allreduce cse process for node " << c_main->DebugString() << ", group is " << c_main_group
                  << ", and node " << c_node->DebugString() << ", group is " << c_node_group;
     if (c_main_group == c_node_group) {

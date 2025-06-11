@@ -1309,6 +1309,12 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('ger')(self, vec2)
 
+    def broadcast_to(self, shape):
+        """
+        For details, please refer to :func:`mindspore.ops.broadcast_to`.
+        """
+        return tensor_operator_registry.get('broadcast_to')(self, shape)
+
     def real(self):
         r"""
         For details, please refer to :func:`mindspore.ops.real`.
@@ -2113,7 +2119,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
                 self.init = init
                 global_seed = get_seed()
                 self._np_seed = np.random.get_state()[1][0]
-                self.need_set_seed = (slice_index is not None)
+                self.need_set_seed = slice_index is not None
                 self._global_seed = global_seed
                 self._seed_offset = 1
                 if self.need_set_seed:
@@ -3302,7 +3308,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
 
     def expand(self, size):
         r"""
-        For details, please refer to :func:`mindspore.mint.broadcast_to`.
+        For details, please refer to :func:`mindspore.ops.broadcast_to`.
         The parameter `size` of the current interface is the same as the parameter `shape` of the reference interface.
         """
         if isinstance(size, Tensor):

@@ -1021,7 +1021,8 @@ static void ConstructCNodeCostGraphEdges(const mindspore::CNodePtr &cnode, const
         if (is_cross) {
           break;
         }
-        if (!HasOperatorInfo(prev_cnode)) {
+        bool has_op_info = HasOperatorInfo(prev_cnode);
+        if (!has_op_info) {
           MS_LOG_WITH_NODE(EXCEPTION, prev_node) << "Did not create OperatorInfo for : " << prev_prim->name();
         }
         is_before_tuple_get_item = true;

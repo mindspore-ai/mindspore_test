@@ -667,7 +667,8 @@ void SynchronizeSequenceNodesElementsUseFlagsInner(const AnfNodeWeakPtrList &seq
     if (candidate_flags == current_flags) {
       continue;
     }
-
+    MS_EXCEPTION_IF_NULL(current_flags);
+    MS_EXCEPTION_IF_NULL(candidate_flags);
     // Merge the use flags, set true if either is true.
     for (size_t j = 0; j < candidate_flags->size(); ++j) {
       MS_LOG(DEBUG) << "Check elements_use_flags[" << j << "], this_flag: " << (*candidate_flags)[j]

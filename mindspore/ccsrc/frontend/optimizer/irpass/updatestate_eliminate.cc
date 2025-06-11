@@ -324,6 +324,7 @@ AnfNodePtr EliminateUpdateStateMakeTupleWithUselessLoadNode(const CNodePtr &upda
 }
 
 AnfNodePtr EliminateUpdateStateMakeTupleWithUselessNode(const CNodePtr &update_state, const CNodePtr &make_tuple) {
+  MS_EXCEPTION_IF_NULL(make_tuple);
   if (make_tuple->size() != kMakeTupleSize) {
     return nullptr;
   }

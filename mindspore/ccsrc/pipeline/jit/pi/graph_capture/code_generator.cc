@@ -154,8 +154,7 @@ static int GetOpcodeMaxStackEffect(int op, int arg, bool jump) {
   }
 #endif
 
-  int off;
-  off = PyCompile_OpcodeStackEffect(op, arg);
+  int off = PyCompile_OpcodeStackEffect(op, arg);
   if (op == NOP || op == EXTENDED_ARG) {
     return 0;
   }
@@ -1122,7 +1121,9 @@ py::object CodeBreakGenerator::MakeCapturedCode(std::vector<std::unique_ptr<Inst
 
   py::object code = code_gen.NewCode();
   auto parent = GetJitCompileResults(co_);
+  MS_EXCEPTION_IF_NULL(parent);
   JitCompileResults *child = CreateJitCompileResults(code.ptr());
+  MS_EXCEPTION_IF_NULL(child);
   child->set_stat(JitCompileResults::GRAPH_CAPTURED);
   child->set_conf(parent->conf());
   child->set_tbs(parent->tbs());

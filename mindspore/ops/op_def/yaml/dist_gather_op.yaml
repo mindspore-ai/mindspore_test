@@ -24,3 +24,4 @@ dist_comm_gather:
         is_comm_op: True
         Ascend: DistCommGatherAscend
         CPU: DistCommGatherCPU
+    non-differentiable: True

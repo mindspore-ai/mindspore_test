@@ -143,9 +143,12 @@ class LRScheduler:
 
 @jit_class
 class StepLR(LRScheduler):
-    """Decays the learning rate of each parameter group by gamma every
-    step_size epochs. Notice that such decay can happen simultaneously with
-    other changes to the learning rate from outside this scheduler.
+    """
+    During training, when calling `StepLR.step()` , if the current epoch number is an integer multiple of `step_size` ,
+    the learning rate will be decayed by multiplying it with `gamma` . The adjustment of the learning rate and
+    the parameter update of the optimizer are synergistically performed. The optimizer executes parameter optimization
+    operations based on the currently adjusted learning rate. The learning rate decay of StepLR may occur simultaneously
+    with external changes to the learning rate.
 
     .. warning::
         This is an experimental lr scheduler module that is subject to change.
@@ -804,7 +807,7 @@ class SequentialLR:
 
 @jit_class
 class ReduceLROnPlateau:
-    """
+    r"""
     Reduce learning rate when a metric has stopped improving.
     Models often benefit from reducing the learning rate by a factor
     of 2-10 once learning stagnates. The scheduler reads the metrics `metrics` during execution
@@ -886,7 +889,7 @@ class ReduceLROnPlateau:
         [Tensor(shape=[], dtype=Float32, value= 0.001)]
         [Tensor(shape=[], dtype=Float32, value= 0.001)]
         [Tensor(shape=[], dtype=Float32, value= 0.0001)]
-        """
+    """
 
     def __init__(self, optimizer, mode='min', factor=0.1, patience=10,
                  threshold=1e-4, threshold_mode='rel', cooldown=0,

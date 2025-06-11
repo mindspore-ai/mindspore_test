@@ -16,9 +16,7 @@
 #include "frontend/expander/bprop/bprop_irbuilder.h"
 #include "mindspore/ops/op_def/other_op_name.h"
 #include "grad/grad_utils.h"
-#include "include/common/utils/utils.h"
 #include "ir/anf.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore::expander::bprop {
 std::string GetStringFromNode(const NodePtr &node) {
@@ -34,9 +32,9 @@ std::string GetStringFromNode(const NodePtr &node) {
 
 REG_BPROP_BUILDERS_BEGIN(GradCommOps)
 REG_BPROP_BUILDER("AllReduce").SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto out = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex2);
+  auto x = ib->GetInput(i0);
+  auto out = ib->GetInput(i1);
+  auto dout = ib->GetInput(i2);
   auto op = GetValue<std::string>(ib->GetAttr("op"));
   auto dy = dout;
   if (op == "prod") {
@@ -61,7 +59,7 @@ REG_BPROP_BUILDER("AllReduce").SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("NeighborExchange").SetBody(BODYFUNC(ib) {
-  auto dout = ib->GetInput(kIndex2);
+  auto dout = ib->GetInput(i2);
   auto dx = ib->Emit("NeighborExchange", {dout},
                      {{"send_rank_ids", ib->GetAttr("recv_rank_ids")},
                       {"recv_rank_ids", ib->GetAttr("send_rank_ids")},
@@ -75,7 +73,7 @@ REG_BPROP_BUILDER("NeighborExchange").SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("AllGather").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
-  auto dout = ib->GetInput(kIndex2);
+  auto dout = ib->GetInput(i2);
   auto dx = ib->Emit(kReduceScatterOpName, {dout},
                      {{"op", MakeValue("sum")},
                       {"rank_size", ib->GetAttr("rank_size")},
@@ -97,7 +95,7 @@ REG_BPROP_BUILDER("AllGather").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("_MirrorOperator").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
-  auto dout = ib->GetInput(kIndex2);
+  auto dout = ib->GetInput(i2);
   auto dev_num = GetValue<int64_t>(ib->GetAttr("dev_num"));
   bool mean_flag = GetValue<bool>(ib->GetAttr("mean_flag"));
   if (dev_num == 1) {
@@ -120,12 +118,12 @@ REG_BPROP_BUILDER("_MirrorOperator").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(
 });
 
 REG_BPROP_BUILDER("InnerCommAllReduce").SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto op = ib->GetInput(kIndex1);
+  auto x = ib->GetInput(i0);
+  auto op = ib->GetInput(i1);
   const auto &op_type = GetStringFromNode(op);
-  auto group = ib->GetInput(kIndex2);
-  auto out = ib->GetInput(kIndex3);
-  auto dout = ib->GetInput(kIndex4);
+  auto group = ib->GetInput(i2);
+  auto out = ib->GetInput(i3);
+  auto dout = ib->GetInput(i4);
 
   auto dy = dout;
   if (op_type == "prod") {
@@ -152,9 +150,9 @@ REG_BPROP_BUILDER("InnerCommAllReduce").SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("InnerCommAllGather").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
-  auto rank_size = ib->GetInput(kIndex1);
-  auto group = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex4);
+  auto rank_size = ib->GetInput(i1);
+  auto group = ib->GetInput(i2);
+  auto dout = ib->GetInput(i4);
 
   auto rank_size_value = rank_size->BuildValue();
   auto group_value = group->BuildValue();
@@ -171,10 +169,10 @@ REG_BPROP_BUILDER("InnerCommAllGather").SetUnusedInputs({i0, i3}).SetBody(BODYFU
 });
 
 REG_BPROP_BUILDER("InnerCommReduceScatter").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
-  auto rank_size = ib->GetInput(kIndex1);
-  auto op = ib->GetInput(kIndex2);
+  auto rank_size = ib->GetInput(i1);
+  auto op = ib->GetInput(i2);
   auto op_type = GetStringFromNode(op);
-  auto group = ib->GetInput(kIndex3);
+  auto group = ib->GetInput(i3);
 
   if (op_type == "sum") {
     MS_LOG(EXCEPTION) << "The reducescatter bprop only support ReduceOp.SUM until now.";
@@ -182,7 +180,7 @@ REG_BPROP_BUILDER("InnerCommReduceScatter").SetUnusedInputs({i0}).SetBody(BODYFU
 
   auto group_value = group->BuildValue();
 
-  auto dout = ib->GetInput(kIndex5);
+  auto dout = ib->GetInput(i5);
   auto dx = ib->Emit(kAllGatherOpName, {dout}, {{"group", group_value}});
   auto ins_name = ib->GetInstanceName();
   dx->set_debug_info("grad" + ins_name);
@@ -190,12 +188,12 @@ REG_BPROP_BUILDER("InnerCommReduceScatter").SetUnusedInputs({i0}).SetBody(BODYFU
 });
 
 REG_BPROP_BUILDER("InnerCommIrecv").FreeUselessValues_IO({i2, i4}, {}).SetBody(BODYFUNC(ib) {
-  auto tag = ib->GetInput(kIndex0);
-  auto rank = ib->GetInput(kIndex1);
-  auto shape = ib->GetInput(kIndex2);
-  auto group = ib->GetInput(kIndex3);
-  auto dtype_node = ib->GetInput(kIndex4);
-  auto dout = ib->GetInput(kIndex6);
+  auto tag = ib->GetInput(i0);
+  auto rank = ib->GetInput(i1);
+  auto shape = ib->GetInput(i2);
+  auto group = ib->GetInput(i3);
+  auto dtype_node = ib->GetInput(i4);
+  auto dout = ib->GetInput(i6);
 
   auto out_tensor = ib->Tensor(0.0, kFloat16);
 
@@ -209,10 +207,10 @@ REG_BPROP_BUILDER("InnerCommIrecv").FreeUselessValues_IO({i2, i4}, {}).SetBody(B
 });
 
 REG_BPROP_BUILDER("InnerCommIsend").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib) {
-  auto input = ib->GetInput(kIndex0);
-  auto rank = ib->GetInput(kIndex1);
-  auto group = ib->GetInput(kIndex2);
-  auto tag = ib->GetInput(kIndex3);
+  auto input = ib->GetInput(i0);
+  auto rank = ib->GetInput(i1);
+  auto group = ib->GetInput(i2);
+  auto tag = ib->GetInput(i3);
 
   auto shape = ib->GetShape(input);
   auto dtype = ib->GetDtype(input);

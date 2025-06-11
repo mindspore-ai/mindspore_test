@@ -12,6 +12,7 @@ split_with_size:
   returns:
     output:
       dtype: tuple[tensor]
+  view: True
   dispatch:
     enable: True
     CPU: None

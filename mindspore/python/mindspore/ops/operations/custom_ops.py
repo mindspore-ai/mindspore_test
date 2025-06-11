@@ -1273,9 +1273,7 @@ class CustomOpBuilder:
         ... )
         >>> my_ops = builder.load()
     """
-    _mindspore_path = None
     _loaded_ops = {}
-    _ms_code_base = None
 
     def __init__(self, name, sources, backend=None, include_paths=None, cflags=None, ldflags=None, **kwargs):
         self.name = name
@@ -1286,12 +1284,10 @@ class CustomOpBuilder:
         self.ldflags = ldflags
         self.build_dir = kwargs.get("build_dir")
         self.enable_atb = kwargs.get("enable_atb", False)
-        if CustomOpBuilder._mindspore_path is None:
-            CustomOpBuilder._mindspore_path = os.path.dirname(os.path.abspath(ms.__file__))
-            CustomOpBuilder._ms_code_base = os.path.join(CustomOpBuilder._mindspore_path, "include")
+        self._ms_path = os.path.dirname(os.path.abspath(ms.__file__))
         if self.enable_atb:
             if backend is not None and backend != "Ascend":
-                raise ValueError("For 'CustomOpBuilder', when 'enable_atb' is set to True, the 'backend' must be " \
+                raise ValueError("For 'CustomOpBuilder', when 'enable_atb' is set to True, the 'backend' must be "
                                  f"'Ascend' (or left implicit), but got '{backend}'")
             self.backend = "Ascend"
         if self.backend == "Ascend":
@@ -1322,11 +1318,11 @@ class CustomOpBuilder:
             list[str], A list of include paths.
         """
         include_list = self.include_paths if self.include_paths is not None else []
-        include_list.append(CustomOpBuilder._mindspore_path)
-        include_list.append(os.path.join(CustomOpBuilder._mindspore_path, "include"))
-        include_list.append(os.path.join(CustomOpBuilder._mindspore_path, "include/third_party"))
-        include_list.append(os.path.join(CustomOpBuilder._mindspore_path, "include/third_party/robin_hood_hashing"))
-        include_list.append(os.path.join(CustomOpBuilder._mindspore_path, "include/third_party/securec/include"))
+        include_list.append(self._ms_path)
+        include_list.append(os.path.join(self._ms_path, "include"))
+        include_list.append(os.path.join(self._ms_path, "include", "third_party"))
+        include_list.append(os.path.join(self._ms_path, "include", "third_party", "robin_hood_hashing"))
+        include_list.append(os.path.join(self._ms_path, "include", "third_party", "securec", "include"))
 
         if self.backend == "Ascend":
             include_list.append(os.path.join(self.ascend_cann_path, "include"))
@@ -1337,16 +1333,16 @@ class CustomOpBuilder:
 
     def _get_ms_inner_includes(self):
         """include paths for inner module interface."""
-        ms_inner_code_base = os.path.join(CustomOpBuilder._mindspore_path, "include", "mindspore")
+        ms_inner_path = os.path.join(self._ms_path, "include", "mindspore")
         include_list = []
-        include_list.append(ms_inner_code_base + "/core/include")
-        include_list.append(ms_inner_code_base + "/core/mindrt/include")
-        include_list.append(ms_inner_code_base + "/core/mindrt")
-        include_list.append(ms_inner_code_base + "/ops")
-        include_list.append(ms_inner_code_base + "/ops/kernel/include")
-        include_list.append(ms_inner_code_base + "/ccsrc")
-        include_list.append(ms_inner_code_base + "/ccsrc/include")
-        include_list.append(ms_inner_code_base + "/ccsrc/minddata/mindrecord/include")
+        include_list.append(os.path.join(ms_inner_path, "core", "include"))
+        include_list.append(os.path.join(ms_inner_path, "core", "mindrt", "include"))
+        include_list.append(os.path.join(ms_inner_path, "core", "mindrt"))
+        include_list.append(os.path.join(ms_inner_path, "ops"))
+        include_list.append(os.path.join(ms_inner_path, "ops", "kernel", "include"))
+        include_list.append(os.path.join(ms_inner_path, "ccsrc"))
+        include_list.append(os.path.join(ms_inner_path, "ccsrc", "include"))
+        include_list.append(os.path.join(ms_inner_path, "ccsrc", "minddata", "mindrecord", "include"))
         return include_list
 
     def get_cflags(self):
@@ -1375,21 +1371,21 @@ class CustomOpBuilder:
         """
         flags = ['-Wl,-z,relro,-z,now,-z,noexecstack', '-Wl,--disable-new-dtags,--rpath', '-s']
         flags += [
-            '-L' + os.path.abspath(os.path.join(CustomOpBuilder._mindspore_path, 'lib')),
+            f"-L{os.path.abspath(os.path.join(self._ms_path, 'lib'))}",
             '-lmindspore_core',
             '-lmindspore_ms_backend',
             '-lmindspore_pynative',
             '-lmindspore_extension'
         ]
         if self.backend == "Ascend":
-            flags.append('-L' + os.path.abspath(os.path.join(CustomOpBuilder._mindspore_path, 'lib/plugin')))
-            flags.append('-L' + os.path.abspath(os.path.join(self.ascend_cann_path, "lib64")))
+            flags.append(f"-L{os.path.abspath(os.path.join(self._ms_path, 'lib', 'plugin'))}")
+            flags.append(f"-L{os.path.abspath(os.path.join(self.ascend_cann_path, 'lib64'))}")
             flags.append('-lascendcl')
             flags.append('-l:libmindspore_ascend.so.2')
             if self.enable_atb:
-                flags.append('-L' + os.path.abspath(os.path.join(CustomOpBuilder._mindspore_path, 'lib/plugin/ascend')))
+                flags.append(f"-L{os.path.abspath(os.path.join(self._ms_path, 'lib', 'plugin', 'ascend'))}")
                 flags.append('-lmindspore_extension_ascend_atb')
-                flags.append('-L' + os.path.abspath(os.path.join(self.atb_home_path, 'lib')))
+                flags.append(f"-L{os.path.abspath(os.path.join(self.atb_home_path, 'lib'))}")
                 flags.append('-latb')
         if self.ldflags is not None:
             flags.append(self.ldflags)

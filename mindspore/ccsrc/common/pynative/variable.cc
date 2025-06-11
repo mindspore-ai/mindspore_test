@@ -167,7 +167,7 @@ BackwardNodePtr GetUnsafeGradNodeImpl(const tensor::TensorPtr &tensor) {
   return nullptr;
 }
 
-bool requires_grad(const tensor::TensorPtr &tensor) {
+bool RequiresGrad(const tensor::TensorPtr &tensor) {
   auto grad_node = GetUnsafeGradNodeImpl(tensor);
   if (local_auto_diff_engine == nullptr) {
     return grad_node != nullptr;

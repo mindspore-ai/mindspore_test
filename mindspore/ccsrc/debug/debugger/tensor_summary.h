@@ -25,37 +25,6 @@
 #include "debug/debug_services.h"
 
 namespace mindspore {
-class RangeCountCalculator {
- public:
-  RangeCountCalculator();
-  ~RangeCountCalculator() = default;
-  void ProcessElement(double element);
-  double GetPercentInRange() const;
-  void set_range_start_inclusive(double value) { range_start_inclusive = value; }
-  void set_range_end_inclusive(double value) { range_end_inclusive = value; }
-
- private:
-  double range_start_inclusive;
-  double range_end_inclusive;
-  int count;
-  int total;
-};
-
-class AllCloseCalculator {
- public:
-  AllCloseCalculator();
-  ~AllCloseCalculator() = default;
-  void ProcessElement(double current, double previous);
-  bool IsAllClose() const;
-  void set_atol(double value) { atol = value; }
-  void set_rtol(double value) { rtol = value; }
-
- private:
-  double atol;
-  double rtol;
-  bool result;
-};
-
 class MeanCalculator {
  public:
   MeanCalculator();
@@ -66,21 +35,6 @@ class MeanCalculator {
  protected:
   double mean;
   int count;
-};
-
-class VarianceAndMeanCalculator {
- public:
-  VarianceAndMeanCalculator();
-  ~VarianceAndMeanCalculator() = default;
-  void ProcessElement(double value);
-  double GetStandardDeviation() const;
-  double GetVariance() const;
-  double GetMean() const;
-
- private:
-  double mean;
-  int count;
-  double m2;
 };
 
 class L2Calculator {
@@ -153,13 +107,7 @@ class TensorSummary : public ITensorSummary {
   uint64_t inf_count_;
   uint64_t nan_count_;
   uint64_t zero_count_;
-  double epsilon_;
-  bool mean_sd_cal_enabled_;
-  VarianceAndMeanCalculator current_mean_variance_;
   L2Calculator l2_calc_;
-  mindspore::HashMap<std::string, std::unique_ptr<MeanCalculator>> means_;
-  mindspore::HashMap<uint32_t, std::unique_ptr<AllCloseCalculator>> all_close_;
-  mindspore::HashMap<uint32_t, std::unique_ptr<RangeCountCalculator>> range_counts_;
   double_t GetZeroValPercent() const;
   void TensorStatisticsSingleThread();
 };

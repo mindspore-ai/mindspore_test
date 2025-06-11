@@ -35,15 +35,11 @@ void NonZeroAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
 bool NonZeroAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                            const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
-  auto res = GEN_EXECUTOR_CUST(op_type_, inputs[kIndex0], outputs[kIndex0]);
-  UpdateWorkspace(res);
-  executor_ = std::get<kIndex1>(res);
-  auto &all_tensor = std::get<kIndex2>(res);
-  RunOpSync(stream_ptr, workspace);
+  const auto &all_tensor = RunOpSync(stream_ptr, workspace, inputs[kIndex0], outputs[kIndex0]);
 
   // Update output shape.
   outputs_shape_.resize(1);
-  outputs_shape_[kIndex0] = device::ascend::UpdateOutputShape(all_tensor.get<kIndex1>());
+  outputs_shape_[kIndex0] = all_tensor.at(kIndex1);
   return true;
 }
 void NonZeroAscend::UpdateOutputShapeAndSize(const std::vector<KernelTensor *> &,

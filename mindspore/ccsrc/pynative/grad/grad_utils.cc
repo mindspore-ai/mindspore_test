@@ -65,7 +65,6 @@ const mindspore::HashSet<std::string> kGradBlackList{kMakeTupleOpName,         k
                                                      kTupleGetItemOpName,      kStopGradientOpName,
                                                      kUpdateStateOpName,       kNPUAllocFloatStatusOpName,
                                                      kNPUGetFloatStatusOpName, kNPUClearFloatStatusOpName,
-                                                     kZerosLikeExtOpName,      kOnesLikeExtOpName,
                                                      kInplaceStopGradientName};
 mindspore::HashMap<std::string, pipeline::ResourcePtr> jit_call_graph_compile_cache_;
 
@@ -516,8 +515,8 @@ void AutoGradUtil::BumpVersion(const ValuePtr &value) {
 
 bool AutoGradUtil::NeedGrad(const tensor::TensorPtr &input_tensor) {
   MS_EXCEPTION_IF_NULL(input_tensor);
-  if (IsParamRequiresGrad(input_tensor)) {
-    return true;
+  if (input_tensor->is_parameter()) {
+    return IsParamRequiresGrad(input_tensor);
   }
   return autograd::impl::GetUnsafeGradNodeImpl(input_tensor) != nullptr;
 }
@@ -944,6 +943,14 @@ ValuePtr AutoGradUtil::ShallowCopyAndDetach(const ValuePtr &value) {
     return std::make_shared<ValueTuple>(res);
   }
   return value;
+}
+
+TensorPtr AutoGradUtil::ViewAsSelfWithNoGrad(const TensorPtr &self) {
+  kernel::pyboost::OpStatus status{false, false, 0,
+                                   MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET)};
+  kernel::pyboost::OpRunStatus::Get().set_run_info(std::move(status));
+  kernel::pyboost::RequireGradGuard require_grad_guard(false);
+  return kernel::pyboost::view(self, self->shape());
 }
 
 bool BpropCallback::IsNotRequiresGrad(size_t index) const {

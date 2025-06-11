@@ -56,7 +56,7 @@ def test_ops_ge_normal(context_mode):
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_ops_ge_forward_dynamic_shape():

@@ -15,6 +15,7 @@
  */
 #define USE_DEPRECATED_API
 #include "tools/optimizer/fusion/flash_attention_fusion.h"
+#include <map>
 #include <memory>
 #include <utility>
 #include <string>
@@ -2862,70 +2863,89 @@ bool checkBinaryInputValidString(string checkValue, string v1, string v2) {
   return false;
 }
 
+bool ParseAttrInputLayout(const std::string &attr_value, FlashAttentionParm *fa_param) {
+  if (strcmp(attr_value.c_str(), kNameFAFormatBSH) == 0 || strcmp(attr_value.c_str(), kNameFAFormatBNSD) == 0 ||
+      strcmp(attr_value.c_str(), kNameFAFormatBNSDBSND) == 0) {
+    fa_param->input_layout = attr_value.c_str();
+    MS_LOG(INFO) << "Use user config, FA input_layout is: " << fa_param->input_layout;
+    return true;
+  }
+  MS_LOG(WARNING) << "FA input_layout only supports BSH, BNSD and BNSD_BSND, but get " << attr_value.c_str();
+  return false;
+}
+
+bool ParseAttrSeqThreshold(const std::string &attr_value, FlashAttentionParm *fa_param) {
+  int seq_threshold = std::atoi(attr_value.c_str());
+  if (std::to_string(seq_threshold) == attr_value && seq_threshold >= 0) {
+    fa_param->seq_threshold = mindspore::IntToLong(seq_threshold);
+    MS_LOG(INFO) << "Use user config, FA seq_threshold is: " << fa_param->seq_threshold;
+    return true;
+  }
+  MS_LOG(WARNING) << "FA seq_threshold only supports (>0 and int) number, but get " << attr_value;
+  return false;
+}
+
+bool ParseAttrInnerPrecise(const std::string &attr_value, FlashAttentionParm *fa_param) {
+  int inner_precise = std::atoi(attr_value.c_str());
+  if (std::to_string(inner_precise) == attr_value && checkRangeInputValidInt(inner_precise, 0, kNumInnerPrecise4)) {
+    MS_LOG(INFO) << "Use user config, FA inner_precise is: " << attr_value;
+    fa_param->inner_precise = inner_precise;
+    return true;
+  }
+  MS_LOG(WARNING) << "FA inner_precise only supports range 0-4, but get " << attr_value;
+  return false;
+}
+
+bool ParseAttrImplementMode(const std::string &attr_value, FlashAttentionParm *fa_param) {
+  std::string attr_value_lower = attr_value;
+  (void)std::transform(attr_value.begin(), attr_value.end(), attr_value_lower.begin(), ::tolower);
+  if (checkBinaryInputValidString(attr_value_lower, kPFAAscendC, kPFATik)) {
+    MS_LOG(INFO) << "Use user config, FA implement_mode is: " << attr_value_lower;
+    fa_param->implement_mode = attr_value_lower;
+    return true;
+  }
+  MS_LOG(WARNING) << "FA implement_mode only supports ascendc or tik, but get " << attr_value_lower;
+  return false;
+}
+
+bool ParseAttrSparseMode(const std::string &attr_value, FlashAttentionParm *fa_param) {
+  if (FlashAttentionFusion::GetSocVersion() != kSocVersionAscend310P) {
+    MS_LOG(WARNING) << "FA sparse_mode is only supported on Ascend310P, but get env "
+                    << FlashAttentionFusion::GetSocVersion();
+    return false;
+  }
+  int sparse_mode = std::atoi(attr_value.c_str());
+  if (std::to_string(sparse_mode) == attr_value && (checkBinaryInputValidInt(sparse_mode, 0, kNumSparseMode10))) {
+    MS_LOG(INFO) << "Use user config, FA sparse_mode is: " << attr_value;
+    fa_param->inner_precise = sparse_mode;
+    return true;
+  }
+  MS_LOG(WARNING) << "FA sparse_mode only supports 0 or 10, but get " << attr_value;
+  return false;
+}
+
 std::shared_ptr<FlashAttentionParm> FlashAttentionFusion::ParseFAParam() const {
   FlashAttentionParm fa_param;
   //  op_attrs=FlashAttention:input_layout:BSH;
   //           FlashAttention:seq_threshold:1024;
   //           FlashAttention:inner_precise:1;
   //           FlashAttention:sparse_mode:0
+  std::map<std::string, bool (*)(const std::string &attr_value, FlashAttentionParm *fa_param)> parse_attr_funcs = {
+    {"input_layout", ParseAttrInputLayout},
+    {"seq_threshold", ParseAttrSeqThreshold},
+    {"inner_precise", ParseAttrInnerPrecise},
+    {"implement_mode", ParseAttrImplementMode},
+    {"sparse_mode", ParseAttrSparseMode}};
   if (op_attrs_map_.find("FlashAttention") != op_attrs_map_.end()) {
     auto attr_map = op_attrs_map_.at("FlashAttention");
     for (const auto &attr : attr_map) {
-      auto attr_value = attr.second;
-      if (attr.first == "input_layout") {
-        if (strcmp(attr_value.c_str(), kNameFAFormatBSH) == 0 || strcmp(attr_value.c_str(), kNameFAFormatBNSD) == 0 ||
-            strcmp(attr_value.c_str(), kNameFAFormatBNSDBSND) == 0) {
-          fa_param.input_layout = attr_value.c_str();
-          MS_LOG(INFO) << "Use user config, FA input_layout is: " << fa_param.input_layout;
-        } else {
-          MS_LOG(WARNING) << "FA input_layout only supports BSH, BNSD and BNSD_BSND, but get " << attr_value.c_str();
-          return nullptr;
-        }
-      } else if (attr.first == "seq_threshold") {
-        int seq_threshold = std::atoi(attr_value.c_str());
-        if (std::to_string(seq_threshold) == attr_value && seq_threshold >= 0) {
-          fa_param.seq_threshold = mindspore::IntToLong(seq_threshold);
-          MS_LOG(INFO) << "Use user config, FA seq_threshold is: " << fa_param.seq_threshold;
-        } else {
-          MS_LOG(WARNING) << "FA seq_threshold only supports (>0 and int) number, but get " << attr_value;
-          return nullptr;
-        }
-      } else if (attr.first == "inner_precise") {
-        int inner_precise = std::atoi(attr_value.c_str());
-        if (std::to_string(inner_precise) == attr_value &&
-            checkRangeInputValidInt(inner_precise, 0, kNumInnerPrecise4)) {
-          MS_LOG(INFO) << "Use user config, FA inner_precise is: " << attr_value;
-          fa_param.inner_precise = inner_precise;
-        } else {
-          MS_LOG(WARNING) << "FA inner_precise only supports range 0-4, but get " << attr_value;
-          return nullptr;
-        }
-      } else if (attr.first == "implement_mode") {
-        std::transform(attr_value.begin(), attr_value.end(), attr_value.begin(), ::tolower);
-        if (checkBinaryInputValidString(attr_value, kPFAAscendC, kPFATik)) {
-          MS_LOG(INFO) << "Use user config, FA implement_mode is: " << attr_value;
-          fa_param.implement_mode = attr_value;
-        } else {
-          MS_LOG(WARNING) << "FA implement_mode only supports ascendc or tik, but get " << attr_value;
-          return nullptr;
-        }
-      } else if (attr.first == "sparse_mode") {
-        if (FlashAttentionFusion::GetSocVersion() != kSocVersionAscend310P) {
-          MS_LOG(WARNING) << "FA sparse_mode is only supported on Ascend310P, but get env "
-                          << FlashAttentionFusion::GetSocVersion();
-          return nullptr;
-        }
-        int sparse_mode = std::atoi(attr_value.c_str());
-        if (std::to_string(sparse_mode) == attr_value && (checkBinaryInputValidInt(sparse_mode, 0, kNumSparseMode10))) {
-          MS_LOG(INFO) << "Use user config, FA sparse_mode is: " << attr_value;
-          fa_param.inner_precise = sparse_mode;
-        } else {
-          MS_LOG(WARNING) << "FA sparse_mode only supports 0 or 10, but get " << attr_value;
-          return nullptr;
-        }
-      } else {
+      if (parse_attr_funcs.find(attr.first) == parse_attr_funcs.end()) {
         MS_LOG(WARNING) << "FA attr only supports input_layout, seq_threshold, inner_precise and sparse_mode, but get "
                         << attr.first;
+        return nullptr;
+      }
+      auto attr_value = attr.second;
+      if (!parse_attr_funcs[attr.first](attr_value, &fa_param)) {
         return nullptr;
       }
     }

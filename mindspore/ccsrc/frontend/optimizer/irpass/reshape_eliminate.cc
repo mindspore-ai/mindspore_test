@@ -77,8 +77,6 @@ void ReshapeSameShapeEliminater::Reset() {
   shape_ = nullptr;
 }
 
-// {PrimReshape, {PrimReshape, X, Y}, Shape}
-
 AnfNodePtr TwoReshapeEliminater::operator()(const OptimizerPtr &, const AnfNodePtr &node) {
   Reset();
   AnfVisitor::Match(prim::kPrimReshape, {IsCNode, IsNode})(node);

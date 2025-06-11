@@ -347,6 +347,7 @@ STATUS DealReshapeWithMultiOutputs(const FuncGraphPtr &func_graph, const CNodePt
   auto new_trans = func_graph->NewCNode({value_node, transpose, insert_trans_perm_param});
   MS_CHECK_TRUE_RET(new_trans != nullptr, lite::RET_ERROR);
   auto output_node_list = GetRealNodeUsedList(func_graph, reshape);
+  MS_CHECK_TRUE_RET(output_node_list != nullptr, lite::RET_ERROR);
 
   auto manager = func_graph->manager();
   MS_CHECK_TRUE_RET(manager != nullptr, lite::RET_ERROR);

@@ -108,7 +108,7 @@ const uint8_t YUV_GREYER_VALUE = 128;     // Filling value of the resized YUV im
       }                                                                              \
       dvppDataPtr = nullptr;                                                         \
     }                                                                                \
-  } while (0);
+  } while (0)
 
 class DvppCommon {
  public:

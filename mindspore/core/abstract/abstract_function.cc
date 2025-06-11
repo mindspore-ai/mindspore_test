@@ -173,7 +173,7 @@ bool PrimitiveAbstractClosure::operator==(const AbstractFunction &other) const {
   return (prim_ == other_abs.prim_) && (tracking_id_ == other_abs.tracking_id_);
 }
 
-std::size_t PrimitiveAbstractClosure::hash() const {
+std::size_t PrimitiveAbstractClosure::GetHash() const {
   auto hash_value = static_cast<std::size_t>(tid());
   hash_value = hash_combine(hash_value, PointerHash<PrimitivePtr>{}(prim_));
   if (tracking_id_ != 0) {
@@ -181,6 +181,8 @@ std::size_t PrimitiveAbstractClosure::hash() const {
   }
   return hash_value;
 }
+
+std::size_t PrimitiveAbstractClosure::hash() const { return hash_value_; }
 
 std::string PrimitiveAbstractClosure::ToString(bool verbose) const {
   if (verbose) {
@@ -194,8 +196,11 @@ bool FuncGraphAbstractClosure::operator==(const AbstractFunction &other) const {
     return false;
   }
   const auto &other_fg = static_cast<const FuncGraphAbstractClosure &>(other);
-  MS_EXCEPTION_IF_NULL(func_graph());
-  MS_EXCEPTION_IF_NULL(other_fg.func_graph());
+  if (func_graph() == nullptr && other_fg.func_graph() == nullptr) {
+    return hash_value_ == other.hash();
+  } else if (func_graph() == nullptr || other_fg.func_graph() == nullptr) {
+    return false;
+  }
   return func_graph() == other_fg.func_graph() && context_ == other_fg.context_ &&
          tracking_id_ == other_fg.tracking_id_;
 }
@@ -212,7 +217,7 @@ std::size_t FuncGraphAbstractClosure::HashWithoutTrackingId() const {
   return hash_combine(hash_value, PointerHash<AnalysisContextPtr>{}(context_));
 }
 
-std::size_t FuncGraphAbstractClosure::hash() const {
+std::size_t FuncGraphAbstractClosure::GetHash() const {
   MS_EXCEPTION_IF_NULL(func_graph());
   auto hash_value = hash_combine(tid(), PointerHash<FuncGraphPtr>{}(func_graph()));
   hash_value = hash_combine(hash_value, PointerHash<AnalysisContextPtr>{}(context_));
@@ -221,6 +226,8 @@ std::size_t FuncGraphAbstractClosure::hash() const {
   }
   return hash_value;
 }
+
+std::size_t FuncGraphAbstractClosure::hash() const { return hash_value_; }
 
 std::string FuncGraphAbstractClosure::ToString() const {
   std::stringstream ss;
@@ -249,7 +256,7 @@ bool MetaFuncGraphAbstractClosure::operator==(const AbstractFunction &other) con
   return (meta_func_graph_ == other_meta_fg.meta_func_graph_) && (tracking_id_ == other_meta_fg.tracking_id_);
 }
 
-std::size_t MetaFuncGraphAbstractClosure::hash() const {
+std::size_t MetaFuncGraphAbstractClosure::GetHash() const {
   MS_EXCEPTION_IF_NULL(meta_func_graph_);
   auto hash_value = hash_combine(tid(), PointerHash<MetaFuncGraphPtr>{}(meta_func_graph_));
   if (tracking_id_ != 0) {
@@ -257,6 +264,8 @@ std::size_t MetaFuncGraphAbstractClosure::hash() const {
   }
   return hash_value;
 }
+
+std::size_t MetaFuncGraphAbstractClosure::hash() const { return hash_value_; }
 
 std::string MetaFuncGraphAbstractClosure::ToString() const {
   MS_EXCEPTION_IF_NULL(meta_func_graph_);
@@ -314,7 +323,7 @@ bool PartialAbstractClosure::operator==(const AbstractFunction &other) const {
   return true;
 }
 
-std::size_t PartialAbstractClosure::hash() const {
+std::size_t PartialAbstractClosure::GetHash() const {
   // Avoid to recursively hashing.
   VisitedHistory history(this);
   if (history.IsVisited()) {
@@ -331,6 +340,8 @@ std::size_t PartialAbstractClosure::hash() const {
   }
   return hash_value;
 }
+
+std::size_t PartialAbstractClosure::hash() const { return hash_value_; }
 
 std::string PartialAbstractClosure::ToString() const {
   // Avoid to recursively ToString.
@@ -421,9 +432,11 @@ bool JTransformedAbstractClosure::operator==(const AbstractFunction &other) cons
   return fn_ == other_transformed.fn_;
 }
 
-std::size_t JTransformedAbstractClosure::hash() const {
+std::size_t JTransformedAbstractClosure::GetHash() const {
   return hash_combine(tid(), PointerHash<AbstractFuncAtomPtr>{}(fn_));
 }
+
+std::size_t JTransformedAbstractClosure::hash() const { return hash_value_; }
 
 bool TaylorTransformedAbstractClosure::operator==(const AbstractFunction &other) const {
   if (!other.isa<TaylorTransformedAbstractClosure>()) {
@@ -433,9 +446,11 @@ bool TaylorTransformedAbstractClosure::operator==(const AbstractFunction &other)
   return fn_ == other_transformed.fn_;
 }
 
-std::size_t TaylorTransformedAbstractClosure::hash() const {
+std::size_t TaylorTransformedAbstractClosure::GetHash() const {
   return hash_combine(tid(), PointerHash<AbstractFuncAtomPtr>{}(fn_));
 }
+
+std::size_t TaylorTransformedAbstractClosure::hash() const { return hash_value_; }
 
 bool ShardTransformedAbstractClosure::operator==(const AbstractFunction &other) const {
   if (!other.isa<ShardTransformedAbstractClosure>()) {
@@ -445,7 +460,9 @@ bool ShardTransformedAbstractClosure::operator==(const AbstractFunction &other) 
   return fn_ == other_transformed.fn_;
 }
 
-std::size_t ShardTransformedAbstractClosure::hash() const {
+std::size_t ShardTransformedAbstractClosure::hash() const { return hash_value_; }
+
+std::size_t ShardTransformedAbstractClosure::GetHash() const {
   return hash_combine(tid(), PointerHash<AbstractFuncAtomPtr>{}(fn_));
 }
 
@@ -457,9 +474,11 @@ bool AddAttrTransformedAbstractClosure::operator==(const AbstractFunction &other
   return fn_ == other_transformed.fn_;
 }
 
-std::size_t AddAttrTransformedAbstractClosure::hash() const {
+std::size_t AddAttrTransformedAbstractClosure::GetHash() const {
   return hash_combine(tid(), PointerHash<AbstractFuncAtomPtr>{}(fn_));
 }
+
+std::size_t AddAttrTransformedAbstractClosure::hash() const { return hash_value_; }
 
 bool VmapTransformedAbstractClosure::operator==(const AbstractFunction &other) const {
   if (!other.isa<VmapTransformedAbstractClosure>()) {
@@ -470,12 +489,14 @@ bool VmapTransformedAbstractClosure::operator==(const AbstractFunction &other) c
          out_axes_ == other_transformed.out_axes_;
 }
 
-std::size_t VmapTransformedAbstractClosure::hash() const {
+std::size_t VmapTransformedAbstractClosure::GetHash() const {
   auto hash_value = hash_combine(tid(), PointerHash<AbstractFuncAtomPtr>{}(fn_));
   hash_value = hash_combine(hash_value, PointerHash<ValuePtr>{}(in_axes_));
   hash_value = hash_combine(hash_value, PointerHash<ValuePtr>{}(out_axes_));
   return hash_value;
 }
+
+std::size_t VmapTransformedAbstractClosure::hash() const { return hash_value_; }
 
 bool VirtualAbstractClosure::operator==(const AbstractFunction &other) const {
   if (!other.isa<VirtualAbstractClosure>()) {
@@ -488,11 +509,13 @@ bool VirtualAbstractClosure::operator==(const AbstractFunction &other) const {
   return AbstractBasePtrListDeepEqual(args_abs_list_, other_virtual.args_abs_list_);
 }
 
-std::size_t VirtualAbstractClosure::hash() const {
+std::size_t VirtualAbstractClosure::GetHash() const {
   MS_EXCEPTION_IF_NULL(output_);
   auto hash_value = hash_combine(tid(), output_->hash());
   return hash_combine(hash_value, AbstractBasePtrListHash(args_abs_list_));
 }
+
+std::size_t VirtualAbstractClosure::hash() const { return hash_value_; }
 
 std::string VirtualAbstractClosure::ToString() const {
   std::ostringstream buffer;
@@ -532,6 +555,8 @@ bool TypedPrimitiveAbstractClosure::operator==(const AbstractFunction &other) co
   }
   return AbstractBasePtrListDeepEqual(args_abs_list_, other_typed.args_abs_list_);
 }
+
+std::size_t TypedPrimitiveAbstractClosure::GetHash() const { return hash_value_; }
 
 std::size_t TypedPrimitiveAbstractClosure::hash() const {
   // Avoid to recursively hashing.

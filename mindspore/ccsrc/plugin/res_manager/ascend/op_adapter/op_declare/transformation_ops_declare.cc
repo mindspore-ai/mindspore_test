@@ -72,7 +72,6 @@ ATTR_MAP(Transpose) = EMPTY_ATTR_MAP;
 // Do not set Transpose operator output descriptor
 OUTPUT_MAP(Transpose) = {{0, OUTPUT_DESC(y)}};
 REG_ADPT_DESC(Transpose, prim::kPrimTranspose->name(), ADPT_DESC(Transpose))
-REG_ADPT_DESC(TransposeView, prim::kPrimTransposeView->name(), ADPT_DESC(Transpose))
 REG_ADPT_DESC(TransposeD, prim::kPrimTransposeD->name(), ADPT_DESC(Transpose))
 
 // SpaceToDepth

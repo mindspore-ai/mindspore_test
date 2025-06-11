@@ -193,6 +193,7 @@ class KernelActor : public DebugAwareActor {
   bool is_dynamic_value_;
   bool is_dynamic_type_;
   bool has_dynamic_;
+  std::vector<size_t> rw_write_index_;
   // Whether enable asynchronously infer shape and resize kernel mod by KernelInferActor and KernelResizeActor.
   bool enable_async_infer_;
   AID kernel_async_infer_aid_;
@@ -293,14 +294,12 @@ class KernelActor : public DebugAwareActor {
   // Use for graph parameter.
   void CopyParameterDeviceTensor(KernelTensorPtr kernel_tensor, size_t input_index,
                                  OpContext<KernelTensor> *const context, size_t stream_id);
-  void UpdateDeviceTensorCopyStore(DeviceTensor *const new_device_tensor, DeviceTensor *const input_device_tensor,
-                                   size_t input_index);
   // The processing before kernel launch: update the info of kernel launch.
   void PreLaunchKernel(OpContext<KernelTensor> *const context);
   // The processing after kernel launch: 1.erase input, 2.free memory, 3.send output.
   void PostLaunchKernel(OpContext<KernelTensor> *const context);
   // Back refresh the dynamic device tensor stores that have been triggered copy.
-  void RefreshDeviceTensorCopyStore(OpContext<KernelTensor> *const context);
+  void RefreshKernelTensorCopyStore(OpContext<KernelTensor> *const context);
 
   void *GetSomasDevicePtr(size_t offset) const;
 

@@ -51,6 +51,15 @@ using ProcessCache = std::function<std::vector<ShapeVector>(const device::ascend
                                                             const std::vector<std::vector<void *>> &)>;
 using RunApiFunc = int (*)(void *, uint64_t, device::ascend::aclOpExecutor *, const aclrtStream);
 
+extern std::set<std::string> sync_launch_api;
+
+#define REGISTER_SYNC_OP(op_api)                              \
+  do {                                                        \
+    if (device::ascend::sync_launch_api.count(op_api) == 0) { \
+      device::ascend::sync_launch_api.insert(op_api);         \
+    }                                                         \
+  } while (false)
+
 class OPS_ASCEND_API OpApiDefaultResource {
  public:
   static OpApiDefaultResource &GetInstance();
@@ -277,8 +286,6 @@ class ApiCachePool {
 #define GEN_EXECUTOR(aclnn_api, ...)                                                                                   \
   [](const std::string &api_str, const std::string &workspace_api_name, const auto &... args) -> auto {                \
     static device::ascend::ApiCachePool api_cache_pool;                                                                \
-    static const std::set<std::string> sync_launch_api = {"aclnnNonzeroV2", "aclnnMaskedSelect", "aclnnNonzero",       \
-                                                          "aclnnUniqueDim", "aclnnUnique2"};                           \
     const char *api_name = api_cache_pool.get(api_str);                                                                \
     static const auto get_workspace_size_func_ptr = device::ascend::GetOpApiFunc(workspace_api_name.c_str());          \
     if (get_workspace_size_func_ptr == nullptr) {                                                                      \
@@ -290,7 +297,7 @@ class ApiCachePool {
     uint64_t *workspace_size_addr = &workspace_size;                                                                   \
     device::ascend::aclOpExecutor **executor_addr = &executor;                                                         \
     auto process_cache = device::ascend::ProcessCache(nullptr);                                                        \
-    if (sync_launch_api.find(std::string(api_name)) == sync_launch_api.end() &&                                        \
+    if (device::ascend::sync_launch_api.count(std::string(api_name)) == 0 &&                                           \
         HitCache(api_name, executor_addr, workspace_size_addr, args...)) {                                             \
       MS_LOG(DEBUG) << "gen executor aclnn cache hit.";                                                                \
       return std::make_tuple(workspace_size, executor, process_cache, release_func);                                   \

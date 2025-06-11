@@ -188,6 +188,7 @@ std::string GetPrimName(const ValuePtr &prim) {
 
 template <typename ContainerType>
 std::string HandleContainer(const ContainerType *container, const std::string &type_name) {
+  MS_EXCEPTION_IF_NULL(container);
   if (container->dynamic_len()) {
     return type_name;
   }

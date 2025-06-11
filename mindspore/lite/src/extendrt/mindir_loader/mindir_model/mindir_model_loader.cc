@@ -87,8 +87,6 @@ bool MindirModelLoader::ConvertModel(const mind_ir::ModelProto &model_proto) {
       MS_LOG(ERROR) << "MindirModelLoader: Import model failed, new sub graph failed.";
       return mindspore::lite::RET_ERROR;
     }
-    // MS_CHECK_FALSE_MSG(sub_graph == nullptr, mindspore::lite::RET_ERROR,
-    //                    "MindirModelLoader: Import model failed, new sub graph failed.");
     sub_graph->name_ = sub_graph_proto.name();
     MS_CHECK_TRUE_MSG(
       ConvertGraph(sub_graph_proto, sub_graph), false,

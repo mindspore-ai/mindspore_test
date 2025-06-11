@@ -39,7 +39,7 @@ def execute_command(cmd_list):
         res = out.decode()
         return res
     except FileNotFoundError as e:
-        raise RuntimeError(f"Failed to execute command, from {e}")
+        raise RuntimeError("Failed to execute command") from e
 
 
 def _validate_affinity_cpu_list(affinity_cpu_list):
@@ -58,7 +58,6 @@ def _validate_affinity_cpu_list(affinity_cpu_list):
     if affinity_cpu_list is None:
         return True
 
-    # TODO Remove this check until Mindformers is adapted.
     if not isinstance(affinity_cpu_list, list):
         raise TypeError(f"The parameter '{affinity_cpu_list}' must be list, but got {type(affinity_cpu_list)}")
 
@@ -85,7 +84,6 @@ def _validate_module_cpu_index(module_to_cpu_dict):
     if module_to_cpu_dict is None:
         return
 
-    # TODO Remove this check until Mindformers is adapted.
     if not isinstance(module_to_cpu_dict, dict):
         raise TypeError(f"The parameter '{module_to_cpu_dict}' must be dict, but got {type(module_to_cpu_dict)}")
 
@@ -346,7 +344,7 @@ def _assemble_env_info(available_devices, available_cpus, affinity_flag, numa_to
             numa_id = device_to_numa_map.get(device_id)
             affinity_cpu_start_idx = device_to_cpu_idx[numa_id]
             affinity_cpu = numa_to_cpu_map[numa_id][
-                affinity_cpu_start_idx : affinity_cpu_start_idx + cpu_num_per_device]
+                affinity_cpu_start_idx: affinity_cpu_start_idx + cpu_num_per_device]
             device_to_cpu_map[device_id].extend(affinity_cpu)
             device_to_cpu_idx[numa_id] = affinity_cpu_start_idx + len(affinity_cpu)
 
@@ -355,13 +353,13 @@ def _assemble_env_info(available_devices, available_cpus, affinity_flag, numa_to
                 unaffinity_cpu_num = cpu_num_per_device - len(affinity_cpu)
                 unaffinity_cpu_start_idx = device_to_cpu_idx[-1]
                 unaffinity_cpu = numa_to_cpu_map[-1][
-                    unaffinity_cpu_start_idx : unaffinity_cpu_start_idx + unaffinity_cpu_num]
+                    unaffinity_cpu_start_idx: unaffinity_cpu_start_idx + unaffinity_cpu_num]
                 device_to_cpu_map[device_id].extend(unaffinity_cpu)
                 device_to_cpu_idx[-1] = unaffinity_cpu_start_idx + unaffinity_cpu_num
     else:
         for device_rank, device_id in enumerate(available_devices):
             cpu_start = device_rank * cpu_num_per_device
-            device_to_cpu_map[device_id] = available_cpus[cpu_start : cpu_start + cpu_num_per_device]
+            device_to_cpu_map[device_id] = available_cpus[cpu_start: cpu_start + cpu_num_per_device]
 
     return device_to_cpu_map
 

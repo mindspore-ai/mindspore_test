@@ -56,7 +56,7 @@ tensor::TensorPtr ReshapeCustomize(const std::shared_ptr<OpRunner> &op, const Te
   TensorPtr real_tensor;
   if (old_storage_info == nullptr || old_storage_info->is_contiguous) {
     // Tensor is contiguous, reshape by view
-    storage_info_list = ops::ViewCalcImpl(input_tensor, shape);
+    storage_info_list = ops::ViewBasicTypeCalc(op->primitive(), input_tensor, shape);
     real_tensor = input_tensor;
   } else {
     // Tensor is not contiguous, need call copy first
@@ -64,7 +64,7 @@ tensor::TensorPtr ReshapeCustomize(const std::shared_ptr<OpRunner> &op, const Te
     copy_op->set_stream_id(op->stream_id());
     const auto copy_tensor = copy_op->Call(input_tensor);
     real_tensor = copy_tensor;
-    storage_info_list = ops::ViewCalcImpl(copy_tensor, shape);
+    storage_info_list = ops::ViewBasicTypeCalc(op->primitive(), copy_tensor, shape);
   }
   if (!storage_info_list.empty()) {
     tensor::TensorPtrList outputs;

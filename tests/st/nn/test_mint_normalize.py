@@ -86,7 +86,7 @@ def mint_nn_binary_case6(input_binary_data=None, output_binary_data=None):
     output = normalize_backward_func(Tensor(input_binary_data[0]), dim=0, eps=1)
     assert np.allclose(output.asnumpy(), output_binary_data[1], 1e-04, 1e-04)
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0',
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('context_mode', [ms.PYNATIVE_MODE, ms.GRAPH_MODE])
 def test_ops_rotated_iou_binary_cases(context_mode):

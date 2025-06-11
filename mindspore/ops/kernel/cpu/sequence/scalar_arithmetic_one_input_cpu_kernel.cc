@@ -25,7 +25,6 @@
 #include <complex>
 #include "mindspore/ops/op_def/arithmetic_ops.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
-#include "include/common/thread_pool.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 
 namespace mindspore {

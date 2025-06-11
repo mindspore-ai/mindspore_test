@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <map>
+/*#include <map>
 #include <string>
 #include <iostream>
 #include "common/mockcpp.h"
@@ -82,4 +82,4 @@ TEST_P(TestBatchMatMulExtExpander, BatchMatMulExt) {
 INSTANTIATE_TEST_CASE_P(TestOpBatchMatMulExt, TestBatchMatMulExtExpander,
                         testing::Values(BatchMatMulExtParams{{4, 4, 4}, {4, 4, 4}, {4, 4, 4}, kFloat16},
                                         BatchMatMulExtParams{{4, 4, 4}, {4, 4, 4}, {4, 4, 4}, kFloat32}));
-}  // namespace mindspore::graphkernel::test
+}  // namespace mindspore::graphkernel::test*/

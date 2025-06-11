@@ -232,13 +232,10 @@ static inline MS_FLOAT32X4 MS128_LOG_F32(MS_FLOAT32X4 src) {
   MS_FLOAT32X4 tmp1 = MS_MUL128_F32(square, MS_ADD128_F32(MS_MUL128_F32(square, tmp), data4));
   MS_FLOAT32X4 res =
     MS_ADD128_F32(MS_MUL128_F32(ln2, expsPD), MS_MUL128_F32(MS_MUL128_F32(div, MS_ADD128_F32(tmp1, data5)), data6));
-  // if (src == 0) res = -inf;
   MS_FLOAT32X4 mask = MS_CMPEQ128_F32(src, MS_MOV128_F32(0.0f));
   res = MS_BLEND128_F32(res, MS_MOV128_F32(-INFINITY), mask);
-  // if (src == inf) res = inf;
   mask = MS_CMPEQ128_F32(src, MS_MOV128_F32(INFINITY));
   res = MS_BLEND128_F32(res, MS_MOV128_F32(INFINITY), mask);
-  // if (src < 0 || src == nan) res = nan;
   mask = MS_OR128_F32(MS_CMPLT128_F32(src, MS_MOV128_F32(0.0f)), MS_CMPUNORD128_F32(src, MS_MOV128_F32(0.0f)));
   res = MS_BLEND128_F32(res, MS_MOV128_F32(NAN), mask);
   return res;

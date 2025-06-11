@@ -164,12 +164,14 @@ static py::object CreateTuple(const mindspore::abstract::BaseShapePtr &base_shap
   mindspore::abstract::SequenceShapePtr shape_tuple;
   size_t elem_count = 0;
   auto type_tuple = type->cast_ptr<mindspore::Tuple>();
+  MS_EXCEPTION_IF_NULL(type_tuple);
   if (base_shape->isa<mindspore::abstract::DynamicSequenceShape>()) {
     dynamic = true;
     elem_count = type_tuple->elements().size();
   } else {
     dynamic = false;
     shape_tuple = base_shape->cast<mindspore::abstract::TupleShapePtr>();
+    MS_EXCEPTION_IF_NULL(shape_tuple);
     elem_count = shape_tuple->size();
   }
   py::tuple tuple = py::tuple(elem_count);

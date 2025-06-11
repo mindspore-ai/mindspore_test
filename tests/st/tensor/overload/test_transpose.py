@@ -94,7 +94,10 @@ def test_method_transpose_python(mode):
         axes = (0, 3, 4)
         net(x, axes)
         _pynative_executor.sync()
-    assert "the perm value must be in" in str(error_info.value)
+    if mode == 0:
+        assert "the perm value must be in" in str(error_info.value)
+    elif mode == 1:
+        assert "dim value error." in str(error_info.value)
     # axes's shape not equal to input's shape
     with pytest.raises(ValueError) as error_info:
         axes = (0, 1)

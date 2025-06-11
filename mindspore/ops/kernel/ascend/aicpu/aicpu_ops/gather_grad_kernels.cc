@@ -43,7 +43,7 @@ static uint32_t GatherGrad(const WorkspaceInfo &workspace_info, const T *index, 
   }
   int64_t number = dim_before_axis * dim_at_axis_index * dim_after_axis;
   bool status = false;
-  auto shard_gather_grad = [&](size_t start, size_t end) {
+  auto shard_gather_grad = [&index, &status](size_t start, size_t end) {
     int64_t dim_input = dim_at_axis_index * dim_after_axis;
     int64_t dim_output = dim_at_axis_output * dim_after_axis;
     for (size_t id = start; id < end; ++id) {

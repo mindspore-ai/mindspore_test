@@ -402,7 +402,9 @@ AnfNodePtr RmsNormInfo::GetInputOutputNodeForSplitNormAxis(const CNodePtr &cnode
 
   auto pre_node_eps = cnode->input(kIndex3);  // eps
   MS_EXCEPTION_IF_NULL(pre_node_eps);
-  float eps_number = GetValue<float>(pre_node_eps->cast<ValueNodePtr>()->value());
+  auto pre_node_eps_ptr = pre_node_eps->cast<ValueNodePtr>();
+  MS_EXCEPTION_IF_NULL(pre_node_eps_ptr);
+  float eps_number = GetValue<float>(pre_node_eps_ptr->value());
   mindspore::tensor::TensorPtr eps_tensor_ptr =
     std::make_shared<mindspore::tensor::Tensor>(static_cast<float>(eps_number));
   AnfNodePtr add_eps = gen_g->PushBack({gen_g->NewOpInst(ADD), real_div_node, NewValueNode(MakeValue(eps_tensor_ptr))});

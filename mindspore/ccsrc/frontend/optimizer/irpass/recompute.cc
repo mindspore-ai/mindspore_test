@@ -116,7 +116,9 @@ AnfNodePtr GetPrimalFromFprop(const FuncGraphPtr &k_fg) {
   if (!IsPrimitiveCNode(k_fg->output(), prim::kPrimMakeTuple)) {
     return nullptr;
   }
-  auto k_fg_outputs = k_fg->output()->cast<CNodePtr>()->inputs();
+  auto k_fg_cnode = k_fg->output()->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(k_fg_cnode);
+  auto k_fg_outputs = k_fg_cnode->inputs();
   if (k_fg_outputs.size() != 3) {
     return nullptr;
   }

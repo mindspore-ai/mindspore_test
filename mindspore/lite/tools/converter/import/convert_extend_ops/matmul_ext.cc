@@ -103,7 +103,7 @@ AnfNodePtr GetBatchMatMulNode(const FuncGraphPtr &func_graph, const mindspore::A
   constexpr size_t kBatchMatMulRank = 3;
   auto input_shape_vec = GetNodeShape(input);
   auto other_shape_vec = GetNodeShape(other);
-  ShapeVector out_shape_vec = {kBatchMatMulRank, abstract::TensorShape::kShapeDimAny};
+  ShapeVector out_shape_vec(kBatchMatMulRank, abstract::TensorShape::kShapeDimAny);
   out_shape_vec[kIndex0] = input_shape_vec[kIndex0];
   out_shape_vec[kIndex1] = transpose_a ? input_shape_vec[kIndex2] : input_shape_vec[kIndex1];
   out_shape_vec[kIndex2] = transpose_b ? other_shape_vec[kIndex1] : other_shape_vec[kIndex2];
@@ -144,7 +144,7 @@ AnfNodePtr GetMatMulNode(const FuncGraphPtr &func_graph, const mindspore::AnfNod
 
   auto input_shape_vec = GetNodeShape(input);
   auto other_shape_vec = GetNodeShape(other);
-  ShapeVector out_shape_vec = {kMatMulRank, abstract::TensorShape::kShapeDimAny};
+  ShapeVector out_shape_vec(kMatMulRank, abstract::TensorShape::kShapeDimAny);
   out_shape_vec[kIndex0] = transpose_a ? input_shape_vec[kIndex1] : input_shape_vec[kIndex0];
   out_shape_vec[kIndex1] = transpose_b ? other_shape_vec[kIndex0] : other_shape_vec[kIndex1];
 

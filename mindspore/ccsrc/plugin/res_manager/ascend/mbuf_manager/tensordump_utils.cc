@@ -82,7 +82,7 @@ void TensorDumpUtils::SaveDatasetToNpyFile(const ScopeAclTdtDataset &dataset) {
   }
   auto tensor_ptr = std::get<mindspore::tensor::TensorPtr>(data_elem);
   std::string data_type = TypeIdToType(tensor_ptr->data_type())->ToString();
-  auto file_name = TensorDumpStepManager::GetInstance().ProcessFileName(tensor_name, data_type);
+  auto file_name = dump::TensorDumpStepManager::GetInstance().ProcessFileName(tensor_name, data_type);
   if (file_name.empty()) {  // update step or not need dump
     return;
   }

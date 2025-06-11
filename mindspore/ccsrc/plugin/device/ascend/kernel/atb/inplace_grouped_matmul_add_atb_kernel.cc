@@ -45,6 +45,7 @@ void InplaceGroupedMatmulAddATBKernelMod::SetTensorStorageInfo(const KernelTenso
 
 void InplaceGroupedMatmulAddATBKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                            const std::vector<KernelTensor *> &outputs) {
+#ifndef EXPERIMENT_A5
   atb::infer::GroupedMatmulInplaceAddParam param;
   param.transposeA = true;
   param.transposeB = false;
@@ -65,11 +66,13 @@ void InplaceGroupedMatmulAddATBKernelMod::GetWorkSpaceInfo(const std::vector<Ker
     .Input(out_tensor)
     .Output(out_tensor);
   UpdateWorkspace(device::ascend::GetWorkSpaceSize(op_, param_setter_.variant_pack, param_setter_.stream));
+#endif
 }
 
 bool InplaceGroupedMatmulAddATBKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
                                                  const std::vector<KernelTensor *> &workspace,
                                                  const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
+#ifndef EXPERIMENT_A5
   out_tensor_->set_device_ptr(inputs[kIndex3]->device_ptr());
   const auto &out_tensor = out_tensor_.get();
 
@@ -78,6 +81,7 @@ bool InplaceGroupedMatmulAddATBKernelMod::Launch(const std::vector<KernelTensor 
 
   param_setter_.Update(real_inputs, real_outputs);
   device::ascend::Launch(op_, param_setter_.variant_pack, workspace[0]->device_ptr(), workspace_size_list_, stream_ptr);
+#endif
   return true;
 }
 

@@ -38,7 +38,7 @@ class CPUSomas : public somas::Somas {
   bool InitDevSpecControlTensors(const session::KernelGraph &graph) override;
   bool DevSpecNodeProcess(const session::KernelGraph &graph) override;
 };
-REG_SOMAS(CPU, DeviceType::kCPU, CPUSomas)
+REG_SOMAS(CPU, DeviceType::kCPU, CPUSomas);
 }  // namespace cpu
 }  // namespace device
 }  // namespace mindspore

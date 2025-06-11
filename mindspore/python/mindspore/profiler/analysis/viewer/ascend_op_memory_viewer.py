@@ -20,10 +20,10 @@ from enum import Enum
 from typing import Any, Dict, List
 from abc import ABC
 
-from mindspore.profiler.parser.ascend_analysis.tlv_decoder import TLVDecoder
+from mindspore.profiler.common.tlv_decoder import TLVDecoder
 from mindspore.profiler.common.file_manager import FileManager
 from mindspore.profiler.common.log import ProfilerLogger
-from mindspore.profiler.common.constant import ProfilerActivity
+from mindspore.profiler.common.constant import ProfilerActivity, FileConstant
 
 
 class OpMemoryIndexEnum(Enum):
@@ -68,9 +68,7 @@ class OpMemoryEvent(BaseEvent):
 
     def __init__(self, data: Dict):
         super().__init__(data)
-        self.fix_size_data = struct.unpack(
-            self.FIX_DATA_FORMAT, self._origin_data.get("fix_size_bytes")
-        )
+        self.fix_size_data = self._origin_data[FileConstant.FIX_SIZE_DATA]
 
     @property
     def device_id(self):
@@ -237,9 +235,10 @@ class AscendOpMemoryViewer:
         self._logger.info("Read fwk binary file start")
         op_name_file_path = os.path.join(self._framework_path, self.FWK_BINARY_FILE_NAME)
         raw_bin_data = FileManager.read_file_content(op_name_file_path, mode="rb")
-        self._op_memory_events = TLVDecoder.decode(
-            raw_bin_data, OpMemoryEvent, OpMemoryEvent.FIX_DATA_SIZE
+        op_memory_decode_data = TLVDecoder.decode(
+            raw_bin_data, OpMemoryEvent.FIX_DATA_FORMAT, OpMemoryEvent.FIX_DATA_SIZE
         )
+        self._op_memory_events = [OpMemoryEvent(data) for data in op_memory_decode_data]
         self._op_memory_events = sorted(self._op_memory_events, key=lambda x: x.create_at)
         self._logger.info("Read fwk binary file done, %d events", len(self._op_memory_events))
 

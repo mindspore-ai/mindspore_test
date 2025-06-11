@@ -21,6 +21,7 @@ from mindspore.profiler.common.constant import (
     ProfilerLevel,
     AicoreMetrics,
     ExportType,
+    HostSystem
 )
 from mindspore.profiler.dynamic_profile.dynamic_profiler_utils import DynamicProfilerUtils
 
@@ -416,6 +417,7 @@ class DynamicProfilerConfigContext:
         self._activities = self._convert_activities(self._activities)
         self._aic_metrics = self._convert_aic_metrics(self._aic_metrics)
         self._export_type = self._convert_export_type(self._export_type)
+        self._host_sys = self._convert_host_sys(self._host_sys)
         not_supported_args = ['_start_step', '_stop_step', '_analyse_mode', '_is_valid']
         res = {}
         for key, value in self.__dict__.items():
@@ -472,7 +474,8 @@ class DynamicProfilerConfigContext:
 
         return json_data
 
-    def _convert_analyse_mode(self, analyse_mode: int) -> str:
+    @staticmethod
+    def _convert_analyse_mode(analyse_mode: int) -> str:
         """ Convert analyse_mode to real args in Profiler."""
         if analyse_mode == 0:
             return 'sync'
@@ -499,7 +502,8 @@ class DynamicProfilerConfigContext:
 
         return profiler_level
 
-    def _convert_int_profiler_level(self, profiler_level):
+    @staticmethod
+    def _convert_int_profiler_level(profiler_level):
         """ Convert int profiler_level to real args in Profiler."""
         if profiler_level == -1:
             return ProfilerLevel.LevelNone
@@ -531,7 +535,8 @@ class DynamicProfilerConfigContext:
 
         return converted_activities
 
-    def _convert_int_activities(self, activities):
+    @staticmethod
+    def _convert_int_activities(activities):
         """ Convert int activities to real args in Profiler."""
         if activities == 0:
             return [ProfilerActivity.CPU, ProfilerActivity.NPU]
@@ -565,7 +570,8 @@ class DynamicProfilerConfigContext:
 
         return aic_metrics
 
-    def _convert_int_aic_metrics(self, aic_metrics):
+    @staticmethod
+    def _convert_int_aic_metrics(aic_metrics):
         """ Convert int aic_metrics to real args in Profiler."""
         if aic_metrics == 0:
             return AicoreMetrics.PipeUtilization
@@ -607,7 +613,8 @@ class DynamicProfilerConfigContext:
 
         return converted_export_types
 
-    def _convert_int_export_type(self, export_types):
+    @staticmethod
+    def _convert_int_export_type(export_types):
         """ Convert int export_type to real args in Profiler."""
         if export_types == 1:
             return [ExportType.Db]

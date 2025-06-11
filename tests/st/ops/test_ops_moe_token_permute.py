@@ -51,35 +51,42 @@ def set_mode(mode):
     essential_mark="essential",
 )
 @pytest.mark.parametrize("mode", ["KBK", "PYBOOST"])
-def test_moe_token_permute(mode):
+@pytest.mark.parametrize("dtype", [ms.float16, ms.float32, ms.bfloat16])
+def test_moe_token_permute(mode, dtype):
     """
     Feature: moe_token_permute
     Description: test ops.moe_token_permute
     Expectation: expect correct result.
     """
     set_mode(mode)
+    loss = {ms.float16: 1e-3, ms.float32: 1e-4, ms.bfloat16: 4e-3}[dtype]
 
     tokens = Tensor([
-        [1, 1, 1], [0, 0, 0], [0, 0, 0], [3, 3, 3], [2, 2, 2], [1, 1, 1], [2, 2, 2], [3, 3, 3]
-    ], dtype=ms.bfloat16)
+        [1.41924731, -1.1341249, 11.987412], [0, 0, 0], [0, 0, 0], [3.1049871, -1233.91741, 15.13424], [2, 2, 2],
+        [1.12413, 1.1974134, -1.91741234], [2, 2, 2], [-3.14210, 33.24124, 3.917513]
+    ], dtype=dtype)
     indices = Tensor([0, 6, 7, 5, 3, 1, 2, 4], dtype=ms.int32)
     num_out_tokens = 0
     permuted_tokens, sorted_indices = permuted_forward_func(tokens, indices, num_out_tokens)
-    expect_permuted_tokens = np.array([[1.000000, 1.000000, 1.000000],
-                                       [1.000000, 1.000000, 1.000000],
+    expect_permuted_tokens = np.array([[1.41924731, -1.1341249, 11.987412],
+                                       [1.12413, 1.1974134, -1.91741234],
                                        [2.000000, 2.000000, 2.000000],
                                        [2.000000, 2.000000, 2.000000],
-                                       [3.000000, 3.000000, 3.000000],
-                                       [3.000000, 3.000000, 3.000000],
+                                       [-3.14210, 33.24124, 3.917513],
+                                       [3.1049871, -1233.91741, 15.13424],
                                        [0.000000, 0.000000, 0.000000],
                                        [0.000000, 0.000000, 0.000000]]).astype(np.float32)
     expect_sorted_indices = np.array([0, 6, 7, 5, 3, 1, 2, 4]).astype(np.float32)
-    np.allclose(permuted_tokens.float().asnumpy(), expect_permuted_tokens, 0.004, 0.004)
-    np.allclose(sorted_indices.float().asnumpy(), expect_sorted_indices, 0.004, 0.004)
+
+    assert np.allclose(permuted_tokens.float().asnumpy() if dtype == ms.bfloat16 else permuted_tokens.asnumpy(),
+                       expect_permuted_tokens, loss, loss)
+    assert np.allclose(sorted_indices.float().asnumpy() if dtype == ms.bfloat16 else sorted_indices.asnumpy(),
+                       expect_sorted_indices, loss, loss)
 
     permuted_grad = permuted_backward_func(tokens, indices, num_out_tokens)
-    expect_permuted_grad = (np.ones((8, 3)) * 0.5).astype(np.float32)
-    np.allclose(permuted_grad[0].float().asnumpy(), expect_permuted_grad, 0.004, 0.004)
+    expect_permuted_grad = (np.ones((8, 3))).astype(np.float32)
+    assert np.allclose(permuted_grad[0].float().asnumpy() if dtype == ms.bfloat16 else permuted_grad[0].asnumpy(),
+                       expect_permuted_grad, loss, loss)
 
 
 @arg_mark(

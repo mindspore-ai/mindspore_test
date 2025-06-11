@@ -534,4 +534,18 @@ bool GkUtils::InplaceWithViewInputs(const AnfNodePtr &node) {
   }
   return false;
 }
+
+bool GkUtils::IsShapeZero(const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
+  auto cb = Callback::Instance();
+  MS_EXCEPTION_IF_NULL(cb);
+  auto output_num = AnfUtils::GetOutputTensorNum(node);
+  for (size_t i = 0; i < output_num; ++i) {
+    auto shape = cb->GetOutputShape(node, i);
+    if (IsShapeNone(shape)) {
+      return true;
+    }
+  }
+  return false;
+}
 }  // namespace mindspore::graphkernel

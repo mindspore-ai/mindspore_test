@@ -21,3 +21,4 @@ dist_comm_batch_isend_irecv:
         enable: True
         is_comm_op: True
         Ascend: DistCommBatchIsendIrecvAscend
+    non-differentiable: True

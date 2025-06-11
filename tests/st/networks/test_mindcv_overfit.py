@@ -326,7 +326,7 @@ def test_inception_v3_1p():
     # assert average_step_time < 216.74, f"Average step time should shorter than 216.74ms"
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @test_utils.run_test_with_On
 def test_vit_b32_1p():
     """

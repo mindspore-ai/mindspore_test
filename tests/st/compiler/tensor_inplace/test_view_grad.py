@@ -20,7 +20,7 @@ from mindspore.ops.auto_generate.gen_ops_def import slice_ext_view_op as slice_e
 from mindspore.ops.functional import grad
 from tests.mark_utils import arg_mark
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_slice_ext_grad():
     """
     Feature: Support view grad.

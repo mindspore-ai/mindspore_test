@@ -457,7 +457,7 @@ MS_CORE_API bool UseSimulationApi();
   class name##InitFuncRegister {                                          \
    public:                                                                \
     name##InitFuncRegister() { MsContext::RegisterInitFunc(name, func); } \
-  } g_##name##_init_func_register;
+  } g_##name##_init_func_register
 }  // namespace mindspore
 
 #endif  // MINDSPORE_CORE_UTILS_MS_CONTEXT_H_

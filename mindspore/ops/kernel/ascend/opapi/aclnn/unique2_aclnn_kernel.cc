@@ -25,10 +25,10 @@ namespace unique2 {
 
 void Unique2Ascend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                      const std::vector<KernelTensor *> &outputs) {
-  auto sorted = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex1]);
-  auto return_inverse = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex2]);
-  auto return_counts = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex3]);
-  GetWorkspaceForResize(inputs[kIndex0], sorted, return_inverse, return_counts, outputs[kIndex0], outputs[kIndex1],
+  sorted_ = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex1]);
+  return_inverse_ = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex2]);
+  return_counts_ = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex3]);
+  GetWorkspaceForResize(inputs[kIndex0], sorted_, return_inverse_, return_counts_, outputs[kIndex0], outputs[kIndex1],
                         outputs[kIndex2]);
 }
 
@@ -36,25 +36,16 @@ bool Unique2Ascend::Launch(const std::vector<KernelTensor *> &inputs, const std:
                            const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
   MS_LOG(DEBUG) << "Run UniqueDim start.";
-
-  auto sorted = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex1]);
-  auto return_inverse = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex2]);
-  auto return_counts = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex3]);
-
-  auto res = GEN_EXECUTOR_CUST(op_type_, inputs[kIndex0], sorted, return_inverse, return_counts, outputs[kIndex0],
-                               outputs[kIndex1], outputs[kIndex2]);
-  UpdateWorkspace(res);
-  executor_ = std::get<kIndex1>(res);
-  auto &all_acl_tensor = std::get<kIndex2>(res);
-  RunOpSync(stream_ptr, workspace);
+  const auto &all_acl_tensor = RunOpSync(stream_ptr, workspace, inputs[kIndex0], sorted_, return_inverse_,
+                                         return_counts_, outputs[kIndex0], outputs[kIndex1], outputs[kIndex2]);
   MS_LOG(DEBUG) << "Run UniqueDim end.";
 
   // update output shape
   size_t output_size = 3;
   output_shapes_.resize(output_size);
-  output_shapes_[kIndex0] = device::ascend::UpdateOutputShape(all_acl_tensor.get<kIndex4>());
-  output_shapes_[kIndex1] = device::ascend::UpdateOutputShape(all_acl_tensor.get<kIndex5>());
-  output_shapes_[kIndex2] = device::ascend::UpdateOutputShape(all_acl_tensor.get<kIndex6>());
+  output_shapes_[kIndex0] = all_acl_tensor.at(kIndex4);
+  output_shapes_[kIndex1] = all_acl_tensor.at(kIndex5);
+  output_shapes_[kIndex2] = all_acl_tensor.at(kIndex6);
   return true;
 }
 

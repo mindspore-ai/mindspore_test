@@ -126,8 +126,14 @@ class COMMON_EXPORT ParallelContext {
   void set_pipeline_interleave(const bool pipeline_interleave);
   bool pipeline_interleave() const { return pipeline_interleave_; }
 
+  void set_pipeline_interleave_temp(const bool pipeline_interleave_temp);
+  bool pipeline_interleave_temp() const { return pipeline_interleave_temp_; }
+
   void set_pipeline_scheduler(const std::string &pipeline_scheduler);
   std::string pipeline_scheduler() const { return pipeline_scheduler_; }
+
+  void set_pipeline_scheduler_temp(const std::string &pipeline_scheduler_temp);
+  std::string pipeline_scheduler_temp() const { return pipeline_scheduler_temp_; }
 
   void set_global_rank(int64_t global_rank);
   int64_t global_rank() const { return global_rank_; }
@@ -298,6 +304,8 @@ class COMMON_EXPORT ParallelContext {
   int64_t pipeline_segment_split_num_;
   bool pipeline_interleave_;
   std::string pipeline_scheduler_;
+  bool pipeline_interleave_temp_;
+  std::string pipeline_scheduler_temp_;
   size_t pipeline_micro_size_;
   bool auto_pipeline_;
   bool parameter_broadcast_;

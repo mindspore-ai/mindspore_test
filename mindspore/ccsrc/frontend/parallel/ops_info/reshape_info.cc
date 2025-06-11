@@ -646,7 +646,9 @@ Status ReshapeInfo::Init(const StrategyPtr &in_strategy, const StrategyPtr &out_
       MS_LOG(ERROR) << name_ << ": skip_redistribution is not a bool.";
       return FAILED;
     }
-    is_skip_ = reshape_skip_redis_iter->second->cast<BoolImmPtr>()->value();
+    auto reshape_skip_redis_iter_ptr = reshape_skip_redis_iter->second->cast<BoolImmPtr>();
+    MS_EXCEPTION_IF_NULL(reshape_skip_redis_iter_ptr);
+    is_skip_ = reshape_skip_redis_iter_ptr->value();
   }
 
   ResetQueueMember();

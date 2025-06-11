@@ -177,8 +177,8 @@ def _compute_per_channel_loss(c1, c2, img1, img2, conv):
     sigma2_sq = sigma2_tmp - mu2_sq
     sigma12_tmp = conv(dot_img)
     sigma12 = sigma12_tmp - mu1_mu2
-    a = (2 * mu1_mu2 + c1)
-    b = (mu1_sq + mu2_sq + c1)
+    a = 2 * mu1_mu2 + c1
+    b = mu1_sq + mu2_sq + c1
     v1 = 2 * sigma12 + c2
     v2 = sigma1_sq + sigma2_sq + c2
     ssim = (a * v1) / (b * v2)

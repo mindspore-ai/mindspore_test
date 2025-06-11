@@ -333,6 +333,10 @@ def _process_multi_dim_index(self, indexes, remain_indexes, indexed_dims):
     need_index_prim = False
     for i, index in enumerate(indexes):
         if isinstance(index, (list, tuple, np.ndarray)):
+            if not F.isconstant(index):
+                raise IndexError(
+                    "Current Tensor indexing does not support mutable list/tuple or list containing tensors. "
+                    "Please use an immutable expression instead.")
             index = Tensor(index)
             if isinstance(index, Tensor) and \
                 F.dtype(index) in (mstype.int8, mstype.int16, mstype.uint16, mstype.uint32,

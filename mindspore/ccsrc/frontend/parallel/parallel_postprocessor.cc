@@ -103,10 +103,12 @@ static void MoveMicroMirrorOutCallFunc(const FuncGraphPtr &root) {
     }
     auto micro_mirror = node->cast<CNodePtr>();
     auto param_anf_node = ParamNodeForMoveMirror(micro_mirror);
+    MS_EXCEPTION_IF_NULL(param_anf_node);
     if (!param_anf_node->isa<Parameter>()) {
       continue;
     }
     auto param = param_anf_node->cast<ParameterPtr>();
+    MS_EXCEPTION_IF_NULL(param);
     if (param->has_default()) {
       continue;
     }
@@ -126,6 +128,7 @@ static void MoveMicroMirrorOutCallFunc(const FuncGraphPtr &root) {
         continue;
       }
       auto cnode = node_pair.first->first->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(cnode);
       call_nodes_func_graph = cnode->func_graph();
       auto cnode_input = cnode->input(curr_param_index + 1);
       if (!call_nodes_common_param_input) {
@@ -347,6 +350,7 @@ static AnfNodePtr GetMirrorOp(const NodeUsersMap &node_user_map, const AnfNodePt
   for (auto &param_pair : params_user_set) {
     auto cnode = param_pair.first->cast<CNodePtr>();
     std::vector<AnfNodePtr> candidate = {cnode};
+    MS_EXCEPTION_IF_NULL(cnode);
     if (!cnode->in_forward_flag()) {
       continue;
     }
@@ -407,6 +411,7 @@ static void MergeMicroMirrorForSharedParameter(const FuncGraphPtr &root) {
                     IsPrimitiveCNode(cnode, prim::kPrimMicroStepAllGather);
       return std::make_pair(filter, 1);
     });
+    MS_EXCEPTION_IF_NULL(param_anf_node);
     if (!param_anf_node->isa<Parameter>()) {
       continue;
     }
@@ -437,6 +442,7 @@ static void PostProcessActualSeqLenInputForFlashAttentionScore(const FuncGraphPt
       for (size_t index = ops::kFlashAttentionScoreInputActualSeqQlenIndex;
            index <= ops::kFlashAttentionScoreInputActualSeqKVlenIndex; ++index) {
         auto input = fa_inputs.at(index + 1);
+        MS_EXCEPTION_IF_NULL(input);
         auto input_abs = input->abstract();
         if (IsValueNode<None>(input)) {
           continue;
@@ -460,6 +466,7 @@ static void PostProcessActualSeqLenInputForFlashAttentionScore(const FuncGraphPt
 }
 
 static void BroadcastMultiOutputs(const FuncGraphPtr &root, const FuncGraphManagerPtr &manager, const Group &group) {
+  MS_EXCEPTION_IF_NULL(root);
   auto output = root->get_return()->input(1)->cast<CNodePtr>();
   auto output_abstract = output->abstract();
   MS_EXCEPTION_IF_NULL(output_abstract);
@@ -679,9 +686,11 @@ static void SetSharedAttrForOptimizerParameter(const FuncGraphPtr &root) {
 
     // find the be cloned parameter
     for (auto &be_cloned_parameter_node : sub_root_params) {
+      MS_EXCEPTION_IF_NULL(be_cloned_parameter_node);
       auto be_cloned_parameter = be_cloned_parameter_node->cast<ParameterPtr>();
       auto param_value_in = be_cloned_parameter->param_info();
       // get the be cloned index
+      MS_EXCEPTION_IF_NULL(param_value_in);
       auto &be_cloned_index = param_value_in->be_cloned_index();
       if (std::find(be_cloned_index.begin(), be_cloned_index.end(), cloned_index) != be_cloned_index.end()) {
         // add shared attr for cloned parameters

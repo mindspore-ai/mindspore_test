@@ -313,8 +313,10 @@ Status CustomInfo::GetAttrs() {
     MS_LOG(ERROR) << name_ << ": Can not find func_type attribute";
     return FAILED;
   }
-  auto func_type = func_type_iter->second->cast<StringImmPtr>()->value();
-  if ((func_type != "pyfunc") && func_type != "aot") {
+  auto func_type = func_type_iter->second->cast<StringImmPtr>();
+  MS_EXCEPTION_IF_NULL(func_type);
+  auto func_type_value = func_type->value();
+  if ((func_type_value != "pyfunc") && func_type_value != "aot") {
     MS_LOG(ERROR) << name_ << ": The func_type attribute must be 'pyfunc' or 'aot', but got " << func_type;
   }
   return SUCCESS;

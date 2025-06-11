@@ -556,6 +556,9 @@ class MS_CORE_API AbstractFunction : public AbstractBase {
   virtual AnalysisContextPtr context() const;
 
   static std::uintptr_t ToTrackingId(const AnfNodePtr &node);
+
+ protected:
+  std::size_t hash_value_;
 };
 
 using AbstractFunctionPtrList = std::vector<AbstractFunctionPtr>;

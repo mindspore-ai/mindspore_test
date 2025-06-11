@@ -49,7 +49,6 @@ class RedistributionParallelTensorDumpHandler {
     const std::vector<AnfNodePtr> &pre_nodes,
     const std::vector<std::pair<std::pair<AnfNodePtr, int>, std::vector<int>>> &next_nodes,
     const FuncGraphManagerPtr &fg_manager);
-  // void MakeInModeDumpAfterRedistribution();
   void HandleDumpAfterRedistributionNode();
 
  private:

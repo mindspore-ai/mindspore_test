@@ -761,8 +761,7 @@ bool ParseAction(const ResourcePtr &resource) {
 
   auto top_graph = converted_ret->cast<FuncGraphPtr>();
   if (top_graph == nullptr) {
-    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, top_graph->return_node())
-      << "Object to parse " << std::string(py::str(input)) << " is not function or cell.";
+    MS_LOG(INTERNAL_EXCEPTION) << "Object to parse " << std::string(py::str(input)) << " is not function or cell.";
   }
   if (py::hasattr(input, parse::PYTHON_PARSE_METHOD) || py::hasattr(input, "__jit_function__")) {
     (void)std::for_each(top_graph->parameters().begin(), top_graph->parameters().end(),
@@ -826,6 +825,7 @@ bool CombineLikeGraphs(const ResourcePtr &resource) {
     MS_LOG(DEBUG) << "Fg0 parameter_obj_nodes size :" << fg->parameter_obj_nodes().size();
 
     for (auto &g : graphs) {
+      MS_EXCEPTION_IF_NULL(fg->output());
       TraceGuard guard(MakeTraceInfo<TraceCopy>(fg->output()->debug_info()));
       auto &fvs = g->parameter_obj_nodes();
       std::vector<AnfNodePtr> new_node_inputs;
@@ -912,6 +912,7 @@ void GeneralizeReusingGraph(const FuncGraphPtr &func_graph, const FuncGraphPtr &
   for (auto &fv : fv_params) {
     auto param = reusing_graph->InsertFrontParameter();
     const auto &top_param = fv->cast<ParameterPtr>();
+    MS_EXCEPTION_IF_NULL(top_param);
     std::string name = "CR_" + top_param->name();
     if (param->debug_info() != nullptr) {
       param->debug_info()->set_name(name);
@@ -1795,6 +1796,7 @@ void ProcessCanNotInline(const FuncGraphPtr &func_graph, const std::shared_ptr<M
         continue;
       }
       auto cnode = node->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(cnode);
       if (IsCellReuse(cnode->input(0))) {
         micro_num++;
       }

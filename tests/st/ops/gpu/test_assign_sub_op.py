@@ -1,4 +1,4 @@
-# Copyright 2019 Huawei Technologies Co., Ltd
+# Copyright 2019-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,14 +13,13 @@
 # limitations under the License.
 # ============================================================================
 from tests.mark_utils import arg_mark
-
 import numpy as np
-import pytest
-
 import mindspore.context as context
 import mindspore.nn as nn
+import mindspore as ms
 from mindspore import Tensor, Parameter
 from mindspore.ops import operations as P
+from mindspore.common.initializer import initializer
 
 
 class AssignSub(nn.Cell):
@@ -114,3 +113,42 @@ def test_assign_sub_float16():
     sub = AssignSub(output1)
     output2 = sub(y2)
     assert (output2.asnumpy() == expect4).all()
+
+
+class AssignSubNet(nn.Cell):
+    def __init__(self):
+        super().__init__()
+        self.relu = nn.ReLU()
+        self.mean = P.ReduceMean(keep_dims=False)
+        self.assign_sub = P.AssignSub()
+        self.input_data = Parameter(initializer(1, [1, 3, 2, 2], ms.float32), name='value')
+
+    def construct(self, x):
+        x = self.assign_sub(self.input_data, x)
+        x = self.relu(x)
+        x = self.mean(x, (2, 3))
+        return x
+
+def use_build_train_network_check_primitive_out(network, level, input_x, label,
+                                                loss_flag=True,
+                                                **kwargs):
+    opt = nn.Momentum(learning_rate=0.0001, momentum=0.009, params=network.trainable_params())
+    loss = None
+    if loss_flag:
+        loss = nn.SoftmaxCrossEntropyWithLogits(sparse=False, reduction='mean')
+    train_network = ms.amp.build_train_network(network, opt, loss, level=level, **kwargs)
+    out_me = train_network(input_x, label)
+    return out_me
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_assignsub():
+    """
+    Feature: AssignSub bprop.
+    Description: test AssignSub bprop.
+    Expectation: no core dump problem.
+    """
+    net = AssignSubNet()
+    input32 = Tensor(np.ones([1, 3, 2, 2]).astype(np.float32))
+    label32 = Tensor(np.zeros([1, 3]).astype(np.float32))
+    use_build_train_network_check_primitive_out(net, "O2", input32, label32)

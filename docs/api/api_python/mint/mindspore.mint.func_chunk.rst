@@ -1,7 +1,7 @@
 mindspore.mint.chunk
 ====================
 
-.. py:function:: mindspore.mint.chunk(input, chunks, dim=0) -> tuple[Tensor]
+.. py:function:: mindspore.mint.chunk(input, chunks, dim=0)
 
     沿着指定轴 `dim` 将输入Tensor切分成 `chunks` 个sub-tensor。
 

@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2020-2022 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -203,6 +203,7 @@ void FuncGraph::GenerateKwargReplNode(const FuncGraphPtr &specialized_graph,
                                       mindspore::HashMap<AnfNodePtr, AnfNodePtr> *repl_nodes) const {
   if (has_kwarg() && !kwarg_keys_tuple_nodes.empty()) {
     MS_EXCEPTION_IF_NULL(specialized_graph);
+    MS_EXCEPTION_IF_NULL(specialized_graph->GetVariableKwargParameter());
     TraceGuard guard(MakeTraceInfo<TraceGenerateKwArg>(specialized_graph->GetVariableKwargParameter()->debug_info()));
     auto make_tuple_keys = specialized_graph->NewCNode(kwarg_keys_tuple_nodes);
     auto make_tuple_values = specialized_graph->NewCNode(kwarg_values_tuple_nodes);
@@ -259,6 +260,7 @@ FuncGraphPtr FuncGraph::GenerateFuncGraph(const AbstractBasePtrList &args_abs_li
     if (args_size != original_params_size) {
       std::vector<AnfNodePtr> new_params;
       set_parameters(new_params);
+      MS_EXCEPTION_IF_NULL(output());
       auto call_node = output()->cast<CNodePtr>();
       MS_EXCEPTION_IF_NULL(call_node);
       std::vector<AnfNodePtr> new_inputs{call_node->input(0)};

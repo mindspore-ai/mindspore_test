@@ -1,6 +1,6 @@
 # This is the Python adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
 #
-# Copyright 2020-2024 Huawei Technologies Co., Ltd
+# Copyright 2020-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -276,14 +276,13 @@ def __get_compile_cache_dep_files(file_path, compile_cache_dep_files, pkg):
             module = importlib.util.module_from_spec(module_spec)
             if hasattr(module, '__file__'):
                 dep_file_path = module.__file__
+                # Exclude the installed modules.
+                if not _in_sys_path(dep_file_path) and dep_file_path not in compile_cache_dep_files:
+                    logger.debug(f"dependent file path: {dep_file_path}")
+                    compile_cache_dep_files.append(dep_file_path)
+                    __get_compile_cache_dep_files(dep_file_path, compile_cache_dep_files, module.__package__)
             else:
                 continue
-            # Exclude the installed modules.
-            if not _in_sys_path(dep_file_path) and dep_file_path not in compile_cache_dep_files:
-                logger.debug(f"dependent file path: {dep_file_path}")
-                compile_cache_dep_files.append(dep_file_path)
-                __get_compile_cache_dep_files(dep_file_path, compile_cache_dep_files, module.__package__)
-
 
 def _get_compile_cache_dep_files():
     """Get the dependency files of the network"""
@@ -1035,9 +1034,8 @@ def _jit_ast(hash_obj, dynamic, jit_config):
         if hasattr(func, "construct"):
             if isinstance(func, ms.nn.Cell):
                 # Bound the cell object to get the self arg.
-                func.construct = types.MethodType(_jit_ast(hash_obj, dynamic, jit_config)(func.construct.__func__),
-                                                  func)
-            elif isinstance(func, type) and issubclass(func, ms.nn.Cell):
+                return types.MethodType(_jit_ast(hash_obj, dynamic, jit_config)(func.construct.__func__), func)
+            if isinstance(func, type) and issubclass(func, ms.nn.Cell):
                 func.construct = _jit_ast(hash_obj, dynamic, jit_config)(func.construct)
             return func
 
@@ -1050,7 +1048,6 @@ def _jit_ast(hash_obj, dynamic, jit_config):
 
         if hasattr(func, "__wrapped_by_jit__"):
             logger.warning(f"The func {func} should be wrapped by jit only once.")
-        setattr(func, "__wrapped_by_jit__", True)
 
         if hash_obj is None or not _is_inner_func(func):
             hash_obj = int(time.time() * 1e9)
@@ -1079,6 +1076,7 @@ def _jit_ast(hash_obj, dynamic, jit_config):
         # `__signature__` for the decorated function, `inspect.getfullargspec(func)` will get the specification of
         # original `func`.
         staging_specialize.__signature__ = inspect.signature(func)
+        setattr(staging_specialize, "__wrapped_by_jit__", True)
         return staging_specialize
 
     return wrap_func

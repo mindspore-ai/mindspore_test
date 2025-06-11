@@ -69,7 +69,7 @@ def test_count_nonzero_pyboost(mode):
     'cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend',
     'platform_ascend910b'
 ],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])

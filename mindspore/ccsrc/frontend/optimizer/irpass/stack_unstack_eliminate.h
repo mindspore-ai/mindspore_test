@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -83,7 +83,9 @@ class StackUnstackEliminator : public AnfVisitor {
     }
     auto axis_val = prim->GetAttr(kAttrAxis);
     MS_EXCEPTION_IF_NULL(axis_val);
+    MS_EXCEPTION_IF_NULL(dyn_cast<Int64Imm>(num_val));
     num_ = dyn_cast<Int64Imm>(num_val)->value();
+    MS_EXCEPTION_IF_NULL(dyn_cast<Int64Imm>(axis_val));
     axis_ = dyn_cast<Int64Imm>(axis_val)->value();
     return true;
   }

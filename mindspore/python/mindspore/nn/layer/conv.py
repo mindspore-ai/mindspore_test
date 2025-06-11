@@ -1225,7 +1225,7 @@ class Conv2dTranspose(_Conv):
         >>> output = net(x).shape
         >>> print(output)
         (1, 64, 19, 53)
-        """
+    """
 
     def __init__(self,
                  in_channels,

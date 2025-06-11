@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1039,6 +1039,7 @@ FuncGraphPtr GradAux::GenerateFuncGraph(const AbstractBasePtrList &args_abs_list
   (void)fg->add_parameter();
 
   AbstractScalarPtr get_value_ptr = dyn_cast<AbstractScalar>(args_abs_list[1]);
+  MS_EXCEPTION_IF_NULL(get_value_ptr);
   bool get_value_flag = GetValue<bool>(get_value_ptr->BuildValue());
   std::vector<AnfNodePtr> elements = {NewValueNode(prim::kPrimMakeTuple)};
   elements.push_back(
@@ -1143,6 +1144,7 @@ CNodePtr GradOperation::SetNodeByParameter(const CNodePtr &grad, const FuncGraph
       auto weight_ref = dyn_cast<abstract::AbstractRefTensor>(elements[i]);
       if (weight_ref != nullptr) {
         auto weight_key = weight_ref->ref_key_value()->cast<RefKeyPtr>();
+        MS_EXCEPTION_IF_NULL(weight_key);
         auto param_name = weight_key->value();
         auto grad_value =
           fg->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), grad, NewValueNode(static_cast<int64_t>(i))});
@@ -1409,6 +1411,7 @@ namespace {
 bool IsAxesAllNone(const ValuePtr &axes) {
   MS_EXCEPTION_IF_NULL(axes);
   ValueSequencePtr axes_seq = dyn_cast<ValueSequence>(axes);
+  MS_EXCEPTION_IF_NULL(axes_seq);
   auto axes_seq_value = axes_seq->value();
   if (std::all_of(axes_seq_value.begin(), axes_seq_value.end(), [](const ValuePtr &axes_value_ptr) {
         if (axes_value_ptr->isa<ValueSequence>()) {
@@ -2457,7 +2460,9 @@ FuncGraphPtr AccumulateDout::BuildAddOutputFG(const std::string &name, const Abs
     return fg;
   }
   auto dout_seq_abs = dyn_cast<AbstractSequence>(dout_tuple_abs);
+  MS_EXCEPTION_IF_NULL(dout_seq_abs);
   auto factor_seq_abs = dyn_cast<AbstractSequence>(factor_tuple_abs);
+  MS_EXCEPTION_IF_NULL(factor_seq_abs);
   if (dout_seq_abs->elements().size() != factor_seq_abs->elements().size()) {
     fg->set_output(cal_res);
     return fg;

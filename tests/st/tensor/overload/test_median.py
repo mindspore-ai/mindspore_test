@@ -41,7 +41,7 @@ class Net3(nn.Cell):
 
 
 @arg_mark(plat_marks=['platform_ascend910b'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize('mode', ['KBK', 'PYNATIVE'])

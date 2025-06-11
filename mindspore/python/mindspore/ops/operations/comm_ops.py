@@ -300,7 +300,7 @@ class AllGather(PrimitiveWithInfer):
 
     Outputs:
         Tensor. If the number of devices in the group is N,
-        then the shape of output is :math:`(N, x_1, x_2, ..., x_R)`.
+        then the shape of output is :math:`(N*x_1, x_2, ..., x_R)`.
 
     Raises:
         TypeError: If `group` is not a str.
@@ -2014,7 +2014,7 @@ class AlltoAllV(PrimitiveWithInfer):
 
         >>> import mindspore.nn as nn
         >>> from mindspore.communication import init, get_rank
-        >>> from mindspore.ops.operations.comm_ops import AlltoAllV
+        >>> from mindspore.ops import AlltoAllV
         >>> from mindspore import Tensor
         >>>
         >>> init()
@@ -2095,7 +2095,7 @@ class AllGatherV(PrimitiveWithInfer):
             This example should be run with 2 devices.
 
         >>> import mindspore as ms
-        >>> from mindspore.ops.operations.comm_ops import AllGatherV
+        >>> from mindspore.ops import AllGatherV
         >>> import mindspore.nn as nn
         >>> from mindspore.communication import init, get_rank
         >>> from mindspore import Tensor

@@ -26,8 +26,7 @@ GraphSummary::GraphSummary(const ::ge::CompiledGraphSummaryPtr &graph_summary) {
   MS_EXCEPTION_IF_NULL(graph_summary);
   is_static = graph_summary->IsStatic();
   if (is_static) {
-    ::ge::graphStatus status;
-    status = graph_summary->GetConstMemorySize(const_memory_size);
+    ::ge::graphStatus status = graph_summary->GetConstMemorySize(const_memory_size);
     if (status != ::ge::GRAPH_SUCCESS) {
       MS_LOG(EXCEPTION) << "GetConstMemorySize failed, status = " << status;
     }

@@ -64,8 +64,7 @@ def dispatch_threads_num(threads_num):
 
     return RuntimeConf.get_instance().set_dispatch_threads_num(threads_num)
 
-# TODO Remove this check until Mindformers is adapted.
-# @args_type_check(enable_affinity=bool, affinity_cpu_list=list, module_to_cpu_dict=dict)
+
 def set_cpu_affinity(enable_affinity, affinity_cpu_list=None, module_to_cpu_dict=None):
     """
     Enable thread-level core binding to allocate specific CPU cores for key MindSpore modules (main thread, pynative,
@@ -141,7 +140,7 @@ def set_cpu_affinity(enable_affinity, affinity_cpu_list=None, module_to_cpu_dict
     """
     pass_flag = _validate_affinity_cpu_list(affinity_cpu_list)
     _validate_module_cpu_index(module_to_cpu_dict)
-    # TODO Remove this check until Mindformers is adapted.
+
     if pass_flag is False and affinity_cpu_list:
         logger.warning("input affinity_cpu_list is a dict, which means Mindformers may not adapt to new API. "
                        "set_cpu_affinity is not enabled.")

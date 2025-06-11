@@ -275,10 +275,7 @@ def _update_param(param, new_param, strict_load):
 
         if param.data.dtype != new_param.data.dtype:
             if _type_convert(param, new_param, strict_load):
-                if new_param.data.dtype == mstype.bfloat16:
-                    new_tensor = cpu_cast(new_param.data, param.data.dtype)
-                else:
-                    new_tensor = Tensor(new_param.data.asnumpy(), param.data.dtype)
+                new_tensor = Tensor(new_param.data.asnumpy(), param.data.dtype)
                 param.set_data(new_tensor, param.sliced)
                 return
 
@@ -956,15 +953,10 @@ def _convert_cell_param_and_names_to_dict(save_obj, choice_func, is_parallel_mod
     """Convert cell.parameters_and_names to OrderedDict."""
     param_dict = OrderedDict()
     for _, param in save_obj.parameters_and_names():
-        if param.name.startswith("accu_grads") or param.name.endswith("expert_load"):
-            continue
-        not_sliced = not param.sliced
-        is_graph_mode = context.get_context('mode') == context.GRAPH_MODE
         # All parameters are initialized immediately under PyNative mode, skip this judgement.
-        judgment = not_sliced or param.has_init
         if param.param_info.is_pipeline_shared_param:
             continue
-        if is_graph_mode and is_parallel_mode and judgment:
+        if is_parallel_mode and (not param.sliced or param.has_init):
             continue
         if choice_func is not None and not choice_func(param.name):
             continue

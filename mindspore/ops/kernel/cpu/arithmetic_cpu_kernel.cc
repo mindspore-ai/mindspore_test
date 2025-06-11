@@ -349,7 +349,7 @@ void ArithmeticCpuTypeFunc<T>::Sub(const T *input1, const T *input2, T *out) {
   if (!is_init_broadcast_) {
     InitBroadCast();
   }
-  auto task = [&](size_t start, size_t end) {
+  auto task = [out, input1, input2, this](size_t start, size_t end) {
     for (size_t i = start; i < end; i++) {
       out[i] = static_cast<T>(input1[input_index1_[i]] - input2[input_index2_[i]]);
     }

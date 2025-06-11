@@ -26,7 +26,6 @@
 #include "utils/file_utils.h"
 
 namespace {
-
 template <typename T>
 std::string ReplacePlaceholder(const std::string &file_name, const std::string &placeholder, T value) {
   std::string result = file_name;
@@ -58,6 +57,7 @@ std::uint32_t GetRankId() {
 }
 }  // namespace
 namespace mindspore {
+namespace dump {
 
 std::string TensorDumpStepManager::TensorNameToArrayName(std::string tensor_path, std::string data_type,
                                                          const int mode) {
@@ -100,20 +100,20 @@ void TensorDumpStepManager::SetDumpStep(const std::vector<size_t> &steps) {
 }
 
 bool TensorDumpStepManager::NeedDump(const int mode) const {
-  MS_EXCEPTION_IF_CHECK_FAIL(mode == kPynativeMode || mode == kGraphMode, "Invalid mode");
+  MS_EXCEPTION_IF_CHECK_FAIL(mode == kCallFromPython || mode == kCallFromCXX, "Invalid mode");
   auto step = step_.at(mode);
   return valid_steps_.empty() || valid_steps_.find(step) != valid_steps_.end();
 }
 
 size_t TensorDumpStepManager::GetStep(const int mode) const {
-  MS_EXCEPTION_IF_CHECK_FAIL(mode == kPynativeMode || mode == kGraphMode, "Invalid mode");
+  MS_EXCEPTION_IF_CHECK_FAIL(mode == kCallFromPython || mode == kCallFromCXX, "Invalid mode");
   return step_.at(mode);
 }
 
 void TensorDumpStepManager::UpdateStep(const int mode) {
-  MS_EXCEPTION_IF_CHECK_FAIL(mode == kPynativeMode || mode == kGraphMode, "Invalid mode");
+  MS_EXCEPTION_IF_CHECK_FAIL(mode == kCallFromPython || mode == kCallFromCXX, "Invalid mode");
   step_.at(mode) += 1;
-  MS_VLOG(VL_PRINT_DUMP_V0) << "For 'TensorDump' ops, mode is " << (mode ? "PYNATIVE" : "GRAPH")
+  MS_VLOG(VL_PRINT_DUMP_V0) << "For 'TensorDump' ops, call from " << (mode ? "python(pynative)" : "c++(graph/jit)")
                             << ", after update step, current step is  " << step_.at(mode);
 }
 
@@ -133,4 +133,5 @@ std::string TensorDumpStepManager::ProcessFileName(const std::string &filename, 
 }
 
 void TensorDumpStepManager::SetAclDumpCallbackReg(void *callbackReg) { aclDumpCallbackReg_ = callbackReg; }
+}  // namespace dump
 }  // namespace mindspore

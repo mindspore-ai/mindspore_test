@@ -53,7 +53,7 @@ def run_basic(dtype):
     assert np.allclose(expect_np, output_np, 0.0001, 0.0001)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_basic_ascend_f16():
     """
     Feature: test graph kernel mint.sum
@@ -64,7 +64,7 @@ def test_basic_ascend_f16():
     run_basic(mindspore.float16)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_basic_ascend_f32():
     """
     Feature: test graph kernel mint.sum

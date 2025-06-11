@@ -54,7 +54,7 @@ namespace aicpu {
     if (status != kAicpuKernelStateSucess) { \
       return status;                         \
     }                                        \
-  } while (0);
+  } while (0)
 
 #define AICPU_CHECK_NULLPTR_VOID(value, logText...) \
   if (value == nullptr) {                           \

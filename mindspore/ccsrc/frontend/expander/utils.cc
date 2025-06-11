@@ -94,7 +94,9 @@ ValuePtr ConvertPrimToPrimPy(const PrimitivePtr &primc) {
   }
   auto new_prim = parallel::CreateOpInstance(attrs, primc->name(), "");
   MS_EXCEPTION_IF_NULL(new_prim);
-  (void)new_prim->cast<PrimitivePtr>()->SetAttrs(primc->attrs());
+  auto prim = new_prim->cast<PrimitivePtr>();
+  MS_EXCEPTION_IF_NULL(prim);
+  (void)prim->SetAttrs(primc->attrs());
   // prim can be cached when prim has no attrs
   constexpr size_t kOnlyIONames = 2;
   if ((primc->attrs().size() == kOnlyIONames) && primc->HasAttr("input_names") && primc->HasAttr("output_names")) {

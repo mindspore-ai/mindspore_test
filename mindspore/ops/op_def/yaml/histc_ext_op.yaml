@@ -22,3 +22,4 @@ histc_ext:
     enable: True
     CPU: None
     GPU: None
+  non-differentiable: True

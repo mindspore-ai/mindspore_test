@@ -31,6 +31,8 @@ class Visitor {
   bool Visit(const VectorRef &v_any, VectorRef *const values_ref, BaseRef *visit_out) const;
   bool Visit(const BaseRef &any, VectorRef *const values_ref, BaseRef *visit_out) const;
   void Visit(const AnfNodePtr &node, VectorRef *const values_ref, AnfNodePtr *output) const;
+
+ private:
   void Visit(const CNodePtr &cnode, VectorRef *const values_ref, AnfNodePtr *output) const;
   void Visit(const ValueNodePtr &vnode, VectorRef *const values_ref, AnfNodePtr *output) const;
 };

@@ -673,7 +673,7 @@ def test_dynamic_broadcast_to():
         def construct(self, x, y):
             out = self.mul(x, self.w)
             s = y.shape
-            out = ops.broadcast_to(self.relu(out), (16, s[1], s[2]))
+            out = self.relu(out).broadcast_to((16, s[1], s[2]))
             out = self.gelu(out)
             return out
 
@@ -711,7 +711,7 @@ def test_dynamic_broadcast_to_data_parallel():
         def construct(self, x, y):
             out = self.mul(x, self.w)
             s = y.shape
-            out = ops.broadcast_to(self.relu(out), (16, s[1], s[2]))
+            out = self.relu(out).broadcast_to((16, s[1], s[2]))
             out = self.gelu(out)
             return out
 
@@ -749,7 +749,7 @@ def test_dynamic_broadcast_to_neg_dst_shape():
         def construct(self, x, y):
             out = self.mul(x, self.w)
             s = y.shape
-            out = ops.broadcast_to(self.relu(out), (-1, -1, s[2]))
+            out = self.relu(out).broadcast_to((-1, -1, s[2]))
             out = self.gelu(out)
             return out
 
@@ -787,7 +787,7 @@ def test_dynamic_broadcast_to_dst_shape_larger_than_input_shape():
         def construct(self, x, y):
             out = self.mul(x, self.w)
             s = y.shape
-            out = ops.broadcast_to(self.relu(out), (32, -1, s[1], s[2]))
+            out = self.relu(out).broadcast_to((32, -1, s[1], s[2]))
             out = self.gelu(out)
             return out
 
@@ -825,7 +825,7 @@ def test_dynamic_broadcast_to_dst_shape_is_static():
 
         def construct(self, x, y):
             out = self.mul(x, self.w)
-            out = ops.broadcast_to(self.relu(out), (32, -1, 8, 8))
+            out = self.relu(out).broadcast_to((32, -1, 8, 8))
             out = self.gelu(out)
             return out
 

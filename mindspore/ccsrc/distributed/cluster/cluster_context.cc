@@ -322,8 +322,7 @@ bool ClusterContext::IsEnableCrossCluster() {
     return false;
   }
   try {
-    nlohmann::json rank_table_file_data;
-    rank_table_file_data = nlohmann::json::parse(jsonFile);
+    nlohmann::json rank_table_file_data = nlohmann::json::parse(jsonFile);
     if (rank_table_file_data.is_null()) {
       MS_LOG(WARNING) << "Failed to read data from rank table file.";
       return false;

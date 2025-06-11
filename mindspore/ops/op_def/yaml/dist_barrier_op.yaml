@@ -13,3 +13,4 @@ dist_comm_barrier:
         is_comm_op: True
         Ascend: DistCommBarrierAscend
         CPU: DistCommBarrierCPU
+    non-differentiable: True

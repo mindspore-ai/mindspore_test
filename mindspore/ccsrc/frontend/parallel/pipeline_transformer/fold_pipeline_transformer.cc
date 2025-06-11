@@ -92,6 +92,7 @@ void HandleSegment(const ValuePtr &value, const FuncGraphPtr &graph) {
   for (auto node : nodes) {
     if (node->isa<CNode>()) {
       auto cnode = node->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(cnode);
       MS_LOG(INFO) << "Handle Segment cnode: " << cnode->fullname_with_scope();
       cnode->AddPrimalAttr(SEGMENT, value);
     }
@@ -117,6 +118,7 @@ void FoldPipelineTransformer::Coloring() {
           continue;
         }
         auto graph = GetValueNode<FuncGraphPtr>(node);
+        MS_EXCEPTION_IF_NULL(graph);
         if (graph->stage() == -1) {
           continue;
         }
@@ -126,6 +128,7 @@ void FoldPipelineTransformer::Coloring() {
         HandleSegment(MakeValue(graph->segment()), graph);
         for (auto &user_pair : node_users) {
           auto user_node = user_pair.first->cast<CNodePtr>();
+          MS_EXCEPTION_IF_NULL(user_node);
           user_node->set_user_data<NodeStageInfo>(std::make_shared<NodeStageInfo>(graph->stage()));
           user_node->set_user_data<NodeSegmentInfo>(std::make_shared<NodeSegmentInfo>(graph->segment()));
           auto user_node_graph = user_node->func_graph();
@@ -191,9 +194,11 @@ void FoldPipelineTransformer::BroadCastColoring() {
         continue;
       }
       auto stage = stage_info->stage();
+      MS_EXCEPTION_IF_NULL(segment_info);
       auto segment = segment_info->segment();
       for (auto &user_pair : node_users[*node]) {
         auto user_node = user_pair.first->cast<CNodePtr>();
+        MS_EXCEPTION_IF_NULL(user_node);
         auto user_stage_info = user_node->user_data<NodeStageInfo>();
         auto user_segment_info = user_node->user_data<NodeSegmentInfo>();
         if (user_stage_info == nullptr) {
@@ -203,6 +208,7 @@ void FoldPipelineTransformer::BroadCastColoring() {
           continue;
         }
         auto user_node_stage = user_stage_info->stage();
+        MS_EXCEPTION_IF_NULL(user_segment_info);
         auto user_node_segment = user_segment_info->segment();
         if (stage > user_node_stage && segment == user_node_segment) {
           if (IsValueNode<FuncGraph>(user_node->input(0))) {
@@ -437,6 +443,7 @@ AnfNodePtr FoldPipelineTransformer::Reuse(const AnfNodePtr &node, int64_t stage,
     }
     if (cnode->input(1) == node) {
       auto prim = GetValueNode<PrimitivePtr>(cnode->input(0));
+      MS_EXCEPTION_IF_NULL(prim);
       auto dest_rank_send = GetValue<int64_t>(prim->GetAttr(tag));
       if (dest_rank_send == stage && node_segment == send_segment) {
         return input;
@@ -459,6 +466,7 @@ AnfNodePtr FoldPipelineTransformer::HandleParameterGraph(const AnfNodePtr &node,
       << "Parameter must be used by a graph, but got: " << use_cnode->DebugString();
   }
   auto use_graph = GetValueNode<FuncGraphPtr>(use_cnode->input(0));
+  MS_EXCEPTION_IF_NULL(use_graph);
   auto use_parameter_list = use_graph->parameters();
   auto parameter = use_parameter_list.at(pos - 1);
 
@@ -502,12 +510,15 @@ void FoldPipelineTransformer::CutBorderForNode(const FuncGraphPtr &graph, const 
                                                std::vector<AnfNodePtr> *receive_ops) {
   auto stage_info = node->user_data<NodeStageInfo>();
   auto segment_info = node->user_data<NodeSegmentInfo>();
+  MS_EXCEPTION_IF_NULL(segment_info);
   auto node_users = manager_->node_users()[node];
   AnfNodePtr receive = nullptr;
+
   for (auto &user_pair : node_users) {
     auto user_node = user_pair.first;
-    auto node_stage = stage_info->stage();
-    auto node_segment = segment_info->segment();
+    MS_EXCEPTION_IF_NULL(user_node);
+    const auto user_idx = user_pair.second;
+
     auto user_stage_info = user_node->user_data<NodeStageInfo>();
     if (user_stage_info == nullptr) {
       continue;
@@ -516,29 +527,33 @@ void FoldPipelineTransformer::CutBorderForNode(const FuncGraphPtr &graph, const 
     if (user_segment_info == nullptr) {
       continue;
     }
+
+    auto node_stage = stage_info->stage();
+    auto node_segment = segment_info->segment();
     auto user_node_stage = user_stage_info->stage();
+    auto user_node_segment = user_segment_info->segment();
+
     if (node_stage != stage_ && user_node_stage != stage_) {
       continue;
     }
+
     auto micro = user_node->cast<CNodePtr>()->GetPrimalAttr(MICRO);
-    auto user_node_segment = user_segment_info->segment();
     if (!micro) {
       MS_LOG(INFO) << "Can't find micro_batch information, use micro(0)";
       micro = MakeValue(int64_t(0));
     }
     auto stage_num = g_device_manager->stage_num();
-
     bool isEmbed = node_stage < user_node_stage && node_segment != user_node_segment;
+
     if (IsStageConflict(node_stage, user_node_stage, node_segment, user_node_segment, stage_num, isEmbed)) {
       if (node_stage == stage_) {
         if (IsParameterGraph(node) && isEmbed) {
-          auto send_depend = HandleParameterGraph(node, user_node, node_stage, user_node_stage, micro,
-                                                  IntToSize(user_pair.second), *send_ops);
-          if (!send_depend) {
-            continue;
+          auto send_depend =
+            HandleParameterGraph(node, user_node, node_stage, user_node_stage, micro, IntToSize(user_idx), *send_ops);
+          if (send_depend) {
+            (void)send_ops->insert(send_ops->cbegin(), send_depend);
+            (void)send_ops_segment->insert(send_ops_segment->begin(), node_segment);
           }
-          (void)send_ops->insert(send_ops->cbegin(), send_depend);
-          (void)send_ops_segment->insert(send_ops_segment->begin(), node_segment);
           continue;
         }
         if (Reuse(node, user_node_stage, user_node_segment, *send_ops, *send_ops_segment, DEST_RANK)) {
@@ -550,23 +565,25 @@ void FoldPipelineTransformer::CutBorderForNode(const FuncGraphPtr &graph, const 
         send_ops_segment->push_back(node_segment);
         send_out.depend->set_user_data<Type>(DTYPE, send_out.type);
         send_out.depend->set_user_data<ValueList>(SHAPE, send_out.shape);
-      } else {
+        continue;
+      }
+
+      if (receive) {
+        manager_->SetEdge(user_node, user_idx, receive);
+        continue;
+      }
+
+      if (IsParameterGraph(node)) {
+        receive =
+          HandleParameterGraph(node, user_node, node_stage, user_node_stage, micro, IntToSize(user_idx), *receive_ops);
         if (!receive) {
-          if (IsParameterGraph(node)) {
-            receive = HandleParameterGraph(node, user_node, node_stage, user_node_stage, micro,
-                                           IntToSize(user_pair.second), *receive_ops);
-            if (!receive) {
-              continue;
-            }
-            receive_ops->push_back(receive);
-          } else {
-            receive = InsertReceive(graph, node, user_node, user_pair.second, user_node_stage, node_stage, micro, node,
-                                    user_node_segment);
-            receive_ops->push_back(receive);
-          }
-        } else {
-          manager_->SetEdge(user_node, user_pair.second, receive);
+          continue;
         }
+        receive_ops->push_back(receive);
+      } else {
+        receive =
+          InsertReceive(graph, node, user_node, user_idx, user_node_stage, node_stage, micro, node, user_node_segment);
+        receive_ops->push_back(receive);
       }
       continue;
     }
@@ -616,10 +633,12 @@ std::pair<std::vector<AnfNodePtr>, std::vector<AnfNodePtr>> FoldPipelineTransfor
     for (auto &user : users) {
       auto node = user.first;
       auto cnode = node->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(cnode);
       auto graph = node->func_graph();
       if (IsValueNode<FuncGraph>(cnode->input(0))) {
         graph = GetValueNode<FuncGraphPtr>(cnode->input(0));
       }
+      MS_EXCEPTION_IF_NULL(graph);
       if (graph == root_ || graph->stage() == -1 || parameter_stage.count(stage_) == 0) {
         continue;
       }
@@ -674,6 +693,7 @@ void FoldPipelineTransformer::CutGraph() {
     auto make_tuple = CreateMakeTupleNode(main_graph_, send_ops);
 
     std::vector<AnfNodePtr> tuple_out_depend = {NewValueNode(prim::kPrimDepend)};
+    MS_EXCEPTION_IF_NULL(out_node);
     tuple_out_depend.push_back(out_node);
     tuple_out_depend.push_back(make_tuple);
 

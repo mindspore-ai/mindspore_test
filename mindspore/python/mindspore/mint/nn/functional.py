@@ -267,7 +267,7 @@ from mindspore.ops.function.clip_func import clamp
 # 427
 from mindspore.ops.function.math_func import norm_ext
 # 428
-from mindspore.ops.functional_overload import broadcast_to
+from mindspore.ops.functional import broadcast_to
 # 536
 from mindspore.ops.function.nn_func import glu_ext as glu
 # 537

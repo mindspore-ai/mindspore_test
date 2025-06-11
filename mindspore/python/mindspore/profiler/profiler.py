@@ -15,12 +15,13 @@
 """Profiling api file."""
 import os
 import json
+import warnings
 from typing import Optional, Dict, Callable, Any
 from sys import getsizeof
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
 from mindspore import log as logger
-from mindspore.profiler.common.constant import ProfilerStepNameConstant, DeviceTarget
+from mindspore.profiler.common.constant import ProfilerStepNameConstant
 from mindspore.profiler.common.profiler_context import ProfilerContext
 from mindspore.profiler.platform.npu_profiler import NPUProfilerAnalysis
 from mindspore.profiler.profiler_action_controller import ProfilerActionController
@@ -645,24 +646,10 @@ class Profiler:
             >>>
             >>> profiler.op_analyse(op_name=["BiasAdd", "Conv2D"])
         """
-        if self._prof_context.device_target == DeviceTarget.NPU.value:
-            raise RuntimeError("The Interface 'Profiler.op_analyse()' is not supported on Ascend currently.")
-
-        if device_id and not isinstance(device_id, int):
-            raise TypeError(f"For 'Profiler.op_analyse()', the parameter device_id must be int, "
-                            f"but got type {type(device_id)}")
-
-        if not isinstance(op_name, str) and not isinstance(op_name, list):
-            raise TypeError(f"For 'Profiler.op_analyse()', the parameter op_name must be str or list, "
-                            f"but got type {type(op_name)}")
-        if not op_name:
-            raise TypeError(f"For 'Profiler.op_analyse()', the parameter op_name cannot be "", '' or [].")
-
-        from mindspore.profiler.parser.framework_parser import GpuFrameWorkParser
-        dev_id = self._prof_context.device_id if device_id is None else device_id
-        parser = GpuFrameWorkParser(self._prof_context.framework_path, dev_id, op_name)
-        op_info = parser.parse()
-        return op_info
+        warnings.warn(
+            "This method is deprecated and will be removed in future versions.  "
+            "Please use the mindspore.profiler.profile instead. "
+        )
 
     def __enter__(self) -> 'Profiler':
         if not self._has_started:

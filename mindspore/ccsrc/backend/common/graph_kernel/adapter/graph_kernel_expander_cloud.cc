@@ -281,6 +281,9 @@ bool GraphKernelExpanderCloud::CanExpand(const CNodePtr &node) const {
   if (GkUtils::InplaceWithViewInputs(node)) {
     return false;
   }
+  if (GkUtils::IsShapeZero(node)) {
+    return false;
+  }
   if (is_dvm) {
     GkUtils::CheckOpLevel(node, expand_ops_with_level_dvm, OpLevel_1);
   }

@@ -2849,8 +2849,25 @@ bool AnfRuntimeAlgorithm::IsLaunchIgnoredInputAddressIdx(const AnfNodePtr &node,
   return true;
 }
 
+void AnfRuntimeAlgorithm::PrintKernelTensor(const std::vector<KernelTensor *> &kernel_tensors, const std::string &info,
+                                            size_t element_num) {
+  for (size_t i = 0; i < kernel_tensors.size(); ++i) {
+    const auto &kernel_tensor = kernel_tensors[i];
+    if (kernel_tensor == nullptr) {
+      return;
+    }
+    std::ostringstream ofs;
+    ofs << info << " index " << i << " kernel tensor:" << kernel_tensor->ToString();
+    if (kernel_tensor->device_address() != nullptr && kernel_tensor->device_address()->GetPtr() != nullptr) {
+      ofs << " value:" << GetValueByDeviceAddress(kernel_tensor->device_address().get(), element_num);
+    }
+    MS_LOG(WARNING) << ofs.str();
+  }
+}
+
 std::string AnfRuntimeAlgorithm::GetValueByDeviceAddress(DeviceAddress *const device_address, size_t element_num) {
-  if (device_address == nullptr || device_address->GetPtr() == nullptr) {
+  MS_EXCEPTION_IF_NULL(device_address);
+  if (device_address->GetPtr() == nullptr) {
     return "";
   }
   size_t size = device_address->GetSize();
@@ -2902,6 +2919,16 @@ std::string AnfRuntimeAlgorithm::GetValueByDeviceAddress(DeviceAddress *const de
       value += ", ";
     }
     result = " type float16, value:" + value;
+  } else if (device_address->type_id() == TypeId::kNumberTypeBFloat16) {
+    constexpr size_t kFloat16TypeSize = 2;
+    for (size_t i = 0; is_vaild_index(i, size / kFloat16TypeSize); ++i) {
+      float fp32 = 0;
+      uint32_t val = static_cast<uint32_t>((reinterpret_cast<uint16_t *>(buf))[i]) << 16;
+      std::memcpy(&fp32, &val, sizeof(float));
+      value += std::to_string(fp32);
+      value += ", ";
+    }
+    result = " type bfloat16, value:" + value;
   }
   if (device_address->GetDeviceType() != device::DeviceType::kCPU) {
     delete[] buf;

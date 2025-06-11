@@ -33,7 +33,7 @@ def parse_and_validate_bind_core(value):
     try:
         value_dict = json.loads(value)
     except json.JSONDecodeError as e:
-        raise ArgumentTypeError(f"Failed to parse json to dict, from {e}")
+        raise ArgumentTypeError("Failed to parse JSON into a dictionary") from e
 
     if isinstance(value_dict, dict):
         range_pattern = re.compile(r'^\d+-\d+$')

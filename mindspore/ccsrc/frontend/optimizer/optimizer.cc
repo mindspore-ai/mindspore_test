@@ -202,48 +202,8 @@ FuncGraphPtr Optimizer::step(FuncGraphPtr func_graph, bool use_profile, pipeline
 
   while (changes_) {
     changes_ = false;
-    auto run_runc = [&counter, use_profile, this]() {
-      size_t i = 0;
-      size_t jump_counter = 0;
-      while (i < passes_.size()) {
-        OptPass &opt = passes_[i];
-        current_pass_ = {counter, pass_names_[i]};
-        auto opt_func = std::bind(&Optimizer::OptProcess, this, &opt);
-        auto profiler_pass_name =
-          name_ + ".r" + std::to_string(counter) + ".j" + std::to_string(jump_counter) + "." + pass_names_[i];
-        if (FilterPass(profiler_pass_name)) {
-          ++i;
-          continue;
-        }
-
-        uint64_t start_time = profiler::GetClockSyscnt();
-        MS_LOG(INFO) << "Start " << profiler_pass_name;
-        auto last_version = FuncGraphManager::version();
-        use_profile ? ProfileExecute(MsProfile::GetProfile()->Step(pass_names_[i]), opt_func) : opt_func();
-        auto current_changed = (FuncGraphManager::version() != last_version);
-        MS_LOG(INFO) << "End " << profiler_pass_name << (current_changed ? ".changed" : ".unchanged");
-        (void)profiler::CollectHostInfo(pipeline::kCompiler, pipeline::kOptimize, profiler_pass_name, start_time,
-                                        profiler::GetClockSyscnt(), 0);
-        if (current_changed) {
-          UpdateRunningPasses(profiler_pass_name);
-        }
-#ifdef ENABLE_DUMP_IR
-        DumpStep(func_graph_, counter, i, jump_counter);
-#endif
-        if (current_changed && !opt.jump_to().empty()) {
-          auto iter = pass_name_idx.find(opt.jump_to());
-          if (iter == pass_name_idx.end()) {
-            MS_LOG(INTERNAL_EXCEPTION) << "Jump failed, pass `" << opt.jump_to() << "` is not in optimizer " << name_;
-          }
-          MS_LOG(DEBUG) << "Jump from " << pass_names_[i] << " to " << iter->second << "in optimizer " << name_;
-          i = iter->second;
-          ++jump_counter;
-        } else {
-          ++i;
-        }
-      }
-    };
-    use_profile ? (ProfileExecute(MsProfile::GetProfile()->Lap(counter), run_runc)) : run_runc();
+    auto run_func = std::bind(&Optimizer::RunFunc, this, &counter, use_profile);
+    use_profile ? (ProfileExecute(MsProfile::GetProfile()->Lap(counter), run_func)) : run_func();
     counter++;
 
     if (run_only_once_) {
@@ -251,6 +211,48 @@ FuncGraphPtr Optimizer::step(FuncGraphPtr func_graph, bool use_profile, pipeline
     }
   }
   return func_graph_;
+}
+
+void Optimizer::RunFunc(int *counter, bool use_profile) {
+  size_t i = 0;
+  size_t jump_counter = 0;
+  while (i < passes_.size()) {
+    OptPass &opt = passes_[i];
+    current_pass_ = {*counter, pass_names_[i]};
+    auto opt_func = std::bind(&Optimizer::OptProcess, this, &opt);
+    auto profiler_pass_name =
+      name_ + ".r" + std::to_string(*counter) + ".j" + std::to_string(jump_counter) + "." + pass_names_[i];
+    if (FilterPass(profiler_pass_name)) {
+      ++i;
+      continue;
+    }
+
+    uint64_t start_time = profiler::GetClockSyscnt();
+    MS_LOG(INFO) << "Start " << profiler_pass_name;
+    auto last_version = FuncGraphManager::version();
+    use_profile ? ProfileExecute(MsProfile::GetProfile()->Step(pass_names_[i]), opt_func) : opt_func();
+    auto current_changed = (FuncGraphManager::version() != last_version);
+    MS_LOG(INFO) << "End " << profiler_pass_name << (current_changed ? ".changed" : ".unchanged");
+    (void)profiler::CollectHostInfo(pipeline::kCompiler, pipeline::kOptimize, profiler_pass_name, start_time,
+                                    profiler::GetClockSyscnt(), 0);
+    if (current_changed) {
+      UpdateRunningPasses(profiler_pass_name);
+    }
+#ifdef ENABLE_DUMP_IR
+    DumpStep(func_graph_, *counter, i, jump_counter);
+#endif
+    if (current_changed && !opt.jump_to().empty()) {
+      auto iter = pass_name_idx.find(opt.jump_to());
+      if (iter == pass_name_idx.end()) {
+        MS_LOG(INTERNAL_EXCEPTION) << "Jump failed, pass `" << opt.jump_to() << "` is not in optimizer " << name_;
+      }
+      MS_LOG(DEBUG) << "Jump from " << pass_names_[i] << " to " << iter->second << "in optimizer " << name_;
+      i = iter->second;
+      ++jump_counter;
+    } else {
+      ++i;
+    }
+  }
 }
 
 pipeline::ResourceBasePtr Optimizer::resource() const { return resource_; }

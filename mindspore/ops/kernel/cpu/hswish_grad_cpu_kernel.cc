@@ -74,12 +74,46 @@ bool HSwishGradCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor
 
   auto task = [&](size_t start, size_t end) {
     for (uint64_t i = start; i < end; ++i) {
-      if (x[i] + three <= zero) {
+      if (x[i] + three < zero) {
         out[i] = zero;
-      } else if (x[i] >= three) {
+      } else if (x[i] > three) {
         out[i] = dy[i];
       } else {
         out[i] = dy[i] * (two * x[i] + three) / six;
+      }
+    }
+  };
+  ParallelLaunchAutoSearch(task, tensor_size_, this, &parallel_search_info_);
+  return true;
+}
+
+template <>
+bool HSwishGradCpuKernelMod::LaunchKernel<float16>(const std::vector<kernel::KernelTensor *> &inputs,
+                                                   const std::vector<kernel::KernelTensor *> &outputs) {
+  CHECK_KERNEL_INPUTS_NUM(inputs.size(), kHSwishGradInputsNum, kernel_name_);
+  CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kHSwishGradOutputsNum, kernel_name_);
+  const auto *dy = reinterpret_cast<float16 *>(inputs[0]->device_ptr());
+  MS_ERROR_IF_NULL_W_RET_VAL(dy, false);
+  const auto *x = reinterpret_cast<float16 *>(inputs[1]->device_ptr());
+  MS_ERROR_IF_NULL_W_RET_VAL(x, false);
+  auto *out = reinterpret_cast<float16 *>(outputs[0]->device_ptr());
+  MS_ERROR_IF_NULL_W_RET_VAL(out, false);
+
+  auto zero = static_cast<float>(0);
+  auto two = static_cast<float>(2);
+  auto three = static_cast<float>(3);
+  auto six = static_cast<float>(6);
+
+  auto task = [&](size_t start, size_t end) {
+    for (uint64_t i = start; i < end; ++i) {
+      float x_val = static_cast<float>(x[i]);
+      float dy_val = static_cast<float>(dy[i]);
+      if (x_val + three < zero) {
+        out[i] = static_cast<float16>(zero);
+      } else if (x_val > three) {
+        out[i] = dy[i];
+      } else {
+        out[i] = static_cast<float16>(dy_val * (two * x_val + three) / six);
       }
     }
   };

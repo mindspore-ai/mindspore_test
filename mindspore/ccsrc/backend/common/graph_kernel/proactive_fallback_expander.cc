@@ -30,8 +30,8 @@
 
 namespace mindspore::graphkernel {
 const std::unordered_set<std::string> &ProactiveFallbackExpander::GetFallbackOps() {
-  static const std::unordered_set<std::string> fallback_ops_list_ = {"OnesLikeExt", "ZerosLikeExt", "BatchMatMulExt",
-                                                                     "MatMulExt",   "ClampScalar",  "ClampTensor"};
+  static const std::unordered_set<std::string> fallback_ops_list_ = {"OnesLikeExt", "ZerosLikeExt", "ClampScalar",
+                                                                     "ClampTensor"};
   return fallback_ops_list_;
 }
 

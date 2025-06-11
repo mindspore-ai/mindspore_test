@@ -53,7 +53,9 @@ void CheckIfValidType(const TypePtr &type, debugger::TypeProto *const type_proto
 }
 
 void SetTensorTypeProto(const TypePtr &type, const BaseShapePtr &shape, debugger::TypeProto *type_proto) {
-  TypePtr elem_type = dyn_cast<TensorType>(type)->element();
+  TensorTypePtr tensor_type = dyn_cast<TensorType>(type);
+  MS_EXCEPTION_IF_NULL(tensor_type);
+  TypePtr elem_type = tensor_type->element();
   type_proto->mutable_tensor_type()->set_elem_type(GetDebuggerNumberDataType(elem_type));
   if (shape != nullptr && shape->isa<abstract::Shape>()) {
     abstract::ShapePtr shape_info = dyn_cast<abstract::Shape>(shape);
@@ -65,6 +67,7 @@ void SetTensorTypeProto(const TypePtr &type, const BaseShapePtr &shape, debugger
 
 void SetTupleTypeProto(const TypePtr &type, debugger::TypeProto *type_proto) {
   TuplePtr tuple_type = dyn_cast<Tuple>(type);
+  MS_EXCEPTION_IF_NULL(tuple_type);
   for (const auto &elem_type : tuple_type->elements()) {
     SetOutputType(elem_type, nullptr, type_proto->mutable_sequence_type()->add_elem_types());
   }
@@ -72,6 +75,7 @@ void SetTupleTypeProto(const TypePtr &type, debugger::TypeProto *type_proto) {
 
 void SetListTypeProto(const TypePtr &type, debugger::TypeProto *type_proto) {
   ListPtr list_type = dyn_cast<List>(type);
+  MS_EXCEPTION_IF_NULL(list_type);
   for (const auto &elem_type : list_type->elements()) {
     SetOutputType(elem_type, nullptr, type_proto->mutable_sequence_type()->add_elem_types());
   }
@@ -127,6 +131,7 @@ void DebuggerProtoExporter::SetValueToProto(const ValuePtr &val, debugger::Value
 
   if (val->isa<StringImm>()) {
     const StringImmPtr &value = dyn_cast<StringImm>(val);
+    MS_EXCEPTION_IF_NULL(value);
     value_proto->set_dtype(debugger::DT_STRING);
     value_proto->set_str_val(value->value());
   } else if (val->isa<Scalar>()) {
@@ -147,6 +152,7 @@ void DebuggerProtoExporter::SetValueToProto(const ValuePtr &val, debugger::Value
     value_proto->set_str_val("None");
   } else if (val->isa<SymbolicKeyInstance>()) {
     SymbolicKeyInstancePtr sym_inst = dyn_cast<SymbolicKeyInstance>(val);
+    MS_EXCEPTION_IF_NULL(sym_inst);
     ParameterPtr sym_node = dyn_cast<Parameter>(sym_inst->node());
     value_proto->set_dtype(debugger::DT_SYM_INST);
     value_proto->set_str_val(sym_node == nullptr ? std::string("nullptr") : sym_node->ToString());
@@ -154,6 +160,7 @@ void DebuggerProtoExporter::SetValueToProto(const ValuePtr &val, debugger::Value
     SetDictionaryToProto(dyn_cast<ValueDictionary>(val), value_proto);
   } else if (val->isa<tensor::Tensor>()) {
     tensor::TensorPtr tensor_ptr = dyn_cast<tensor::Tensor>(val);
+    MS_EXCEPTION_IF_NULL(tensor_ptr);
     value_proto->set_dtype(debugger::DT_TENSOR);
     debugger::TensorProto *tensor_proto = value_proto->mutable_tensor_val();
     tensor_proto->set_data_type(GetDebuggerNumberDataType(tensor_ptr->Dtype()));
@@ -166,7 +173,9 @@ void DebuggerProtoExporter::SetValueToProto(const ValuePtr &val, debugger::Value
 
     debugger::TypeProto *type_proto = value_proto->mutable_type_val();
     type_proto->set_data_type(debugger::DT_TENSOR);
-    TypePtr elem_type = dyn_cast<TensorType>(val)->element();
+    TensorTypePtr tensor_type = dyn_cast<TensorType>(val);
+    MS_EXCEPTION_IF_NULL(tensor_type);
+    TypePtr elem_type = tensor_type->element();
     type_proto->mutable_tensor_type()->set_elem_type(GetDebuggerNumberDataType(elem_type));
   } else {
     MS_LOG(INFO) << "Unsupported type " << val->type_name();
@@ -180,46 +189,57 @@ void DebuggerProtoExporter::SetScalarToProto(const ScalarPtr &val, debugger::Val
 
   if (val->isa<BoolImm>()) {
     const BoolImmPtr &value = dyn_cast<BoolImm>(val);
+    MS_EXCEPTION_IF_NULL(value);
     value_proto->set_dtype(debugger::DT_BOOL);
     value_proto->set_bool_val(value->value());
   } else if (val->isa<Int8Imm>()) {
     const Int8ImmPtr &value = dyn_cast<Int8Imm>(val);
+    MS_EXCEPTION_IF_NULL(value);
     value_proto->set_dtype(debugger::DT_INT8);
     value_proto->set_int_val(value->value());
   } else if (val->isa<Int16Imm>()) {
     const Int16ImmPtr &value = dyn_cast<Int16Imm>(val);
+    MS_EXCEPTION_IF_NULL(value);
     value_proto->set_dtype(debugger::DT_INT16);
     value_proto->set_int_val(value->value());
   } else if (val->isa<Int32Imm>()) {
     const Int32ImmPtr &value = dyn_cast<Int32Imm>(val);
+    MS_EXCEPTION_IF_NULL(value);
     value_proto->set_dtype(debugger::DT_INT32);
     value_proto->set_int_val(value->value());
   } else if (val->isa<Int64Imm>()) {
     const Int64ImmPtr &value = dyn_cast<Int64Imm>(val);
+    MS_EXCEPTION_IF_NULL(value);
     value_proto->set_dtype(debugger::DT_INT64);
     value_proto->set_int_val(value->value());
   } else if (val->isa<UInt8Imm>()) {
     const UInt8ImmPtr &value = dyn_cast<UInt8Imm>(val);
+    MS_EXCEPTION_IF_NULL(value);
     value_proto->set_dtype(debugger::DT_UINT8);
     value_proto->set_uint_val(value->value());
   } else if (val->isa<UInt16Imm>()) {
     const UInt16ImmPtr &value = dyn_cast<UInt16Imm>(val);
+    MS_EXCEPTION_IF_NULL(value);
     value_proto->set_dtype(debugger::DT_UINT16);
     value_proto->set_uint_val(value->value());
   } else if (val->isa<UInt32Imm>()) {
     const UInt32ImmPtr &value = dyn_cast<UInt32Imm>(val);
+    MS_EXCEPTION_IF_NULL(value);
     value_proto->set_dtype(debugger::DT_UINT32);
     value_proto->set_uint_val(value->value());
   } else if (val->isa<UInt64Imm>()) {
     const UInt64ImmPtr &value = dyn_cast<UInt64Imm>(val);
+    MS_EXCEPTION_IF_NULL(value);
     value_proto->set_dtype(debugger::DT_UINT64);
     value_proto->set_uint_val(value->value());
   } else if (val->isa<FP32Imm>()) {
     const FP32ImmPtr &value = dyn_cast<FP32Imm>(val);
+    MS_EXCEPTION_IF_NULL(value);
     value_proto->set_dtype(debugger::DT_FLOAT32);
     value_proto->set_float_val(value->value());
   } else if (val->isa<FP64Imm>()) {
     const FP64ImmPtr &value = dyn_cast<FP64Imm>(val);
+    MS_EXCEPTION_IF_NULL(value);
     value_proto->set_dtype(debugger::DT_FLOAT64);
     value_proto->set_double_val(value->value());
   } else {
@@ -234,12 +254,14 @@ void DebuggerProtoExporter::SetSequenceToProto(const ValueSequencePtr &val, debu
 
   if (val->isa<ValueTuple>()) {
     const ValueTuplePtr &value = dyn_cast<ValueTuple>(val);
+    MS_EXCEPTION_IF_NULL(value);
     value_proto->set_dtype(debugger::DT_TUPLE);
     for (const auto &item : value->value()) {
       SetValueToProto(item, value_proto->add_values());
     }
   } else if (val->isa<ValueList>()) {
     const ValueListPtr &value = dyn_cast<ValueList>(val);
+    MS_EXCEPTION_IF_NULL(value);
     value_proto->set_dtype(debugger::DT_LIST);
     for (const auto &item : value->value()) {
       SetValueToProto(item, value_proto->add_values());
@@ -279,6 +301,7 @@ void DebuggerProtoExporter::GetOpNodeTypeAndAttrs(const FuncGraphPtr &, const An
   }
 
   const PrimitivePtr &prim = GetValueNode<PrimitivePtr>(node);
+  MS_EXCEPTION_IF_NULL(prim);
   node_proto->set_op_type(prim->name());
   for (const auto &attr : prim->attrs()) {
     debugger::AttributeProto *attr_proto = node_proto->add_attribute();
@@ -520,10 +543,12 @@ void DebuggerProtoExporter::ExportValueNodes(const std::map<AnfNodePtr, size_t> 
     std::string node_name = GetKernelNodeName(item.first);
     GetFileKernelName(NOT_NULL(&node_name));
     named_value->set_full_name(node_name);
-    if (GetValueNode(item.first)->isa<tensor::Tensor>()) {
+    auto value = GetValueNode(item.first);
+    MS_EXCEPTION_IF_NULL(value);
+    if (value->isa<tensor::Tensor>()) {
       continue;
     }
-    SetValueToProto(GetValueNode(item.first), named_value->mutable_value());
+    SetValueToProto(value, named_value->mutable_value());
   }
 }
 

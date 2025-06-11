@@ -25,7 +25,6 @@
 #include "kernel/cpu/nnacl/fp32/add_fp32.h"
 #include "kernel/cpu/nnacl/errorcode.h"
 #include "utils/ms_utils.h"
-#include "include/common/thread_pool.h"
 #include "mindspore/ops/infer/sequence_stack.h"
 
 namespace mindspore {

@@ -223,7 +223,7 @@ def data_sink(fn, dataset, sink_size=1, jit_config=None, input_signature=None):
     loop = sink_size
     create_info = True
     if jit_config is None:
-        create_info = (loop == 1)
+        create_info = loop == 1
         loop = 1
     ori_next_op, is_info_queue = _init_sink_dataset(dataset, loop, input_signature, create_info)
 

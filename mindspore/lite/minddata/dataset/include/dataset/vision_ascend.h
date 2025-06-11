@@ -31,7 +31,7 @@ namespace mindspore {
 namespace dataset {
 // Transform operations for performing computer vision.
 namespace vision {
-/* ##################################### API class ###########################################*/
+/* ##################################### API class ########################################### */
 
 /// \brief Decode and resize JPEG image using the hardware algorithm of
 ///     Ascend series chip DVPP module.

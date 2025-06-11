@@ -133,6 +133,7 @@ void SetParamFirstUsedKernelActors(
   }
 
   if ((*param_first_used_kernel_actors)[graph_input_index].first == nullptr) {
+    MS_EXCEPTION_IF_NULL(kernel_actor);
     (*param_first_used_kernel_actors)[graph_input_index].first = *kernel_actor;
     (*param_first_used_kernel_actors)[graph_input_index].second = actor_input_index;
   }
@@ -390,9 +391,8 @@ void SuperKernelActor::FetchInputDeviceTensor(OpContext<KernelTensor> *const con
       MS_EXCEPTION_IF_NULL(input_kernel_tensors_[index]);
 
       if (IsNeedProfilieMemoryLog()) {
-        auto data = input_kernel_tensors_[index]->device_address().get();
-        MS_EXCEPTION_IF_NULL(data);
-        auto output_address = reinterpret_cast<std::uintptr_t>(data);
+        auto output_address = input_kernel_tensors_[index]->device_address().get();
+        MS_EXCEPTION_IF_NULL(output_address);
         MS_LOG(WARNING) << "Need Profile Memory, Memory use, actor name: " << GetAID().Name()
                         << ", kernel graph: " << graph_->ToString() << ", device address class ptr: " << output_address
                         << ", device address size: " << input_kernel_tensors_[index]->device_address()->GetSize()
@@ -703,10 +703,9 @@ bool SuperKernelActor::CopyHeterogeneousOutput(OpContext<KernelTensor> *const co
     }
     if (!ref_output_kernel_tensors.empty()) {
       MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-        << "Add device tensor copy store for device address:" << src_device_address
-        << " type:" << src_device_address->GetDeviceType() << " and " << dest_device_address
-        << " type:" << dest_device_address->GetDeviceType() << " for actor:" << GetAID();
-      DeviceTensorCopyStore::GetInstance().Insert(src_device_address, dest_device_address);
+        << "Add kernel tensor copy store for :" << src_kernel_tensor->ToString() << " and "
+        << dest_kernel_tensor->ToString() << " for actor:" << GetAID();
+      KernelTensorCopyStore::GetInstance().Insert(src_kernel_tensor.get(), dest_kernel_tensor.get());
     }
   }
   if (kernel_actor->new_memory_free_list_.size() > 0) {
@@ -796,7 +795,8 @@ void SuperKernelActor::FreeInputParamWithoutUser(OpContext<KernelTensor> *const 
           << " inner index:" << iter.second.first.second << " out index:" << iter.second.second
           << " kernel tensor:" << kernel_tensor->ToString()
           << " device context:" << device_contexts_[0]->device_context_key().ToString() << " for actor:" << GetAID();
-        MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(device_tensor, device_contexts_[0], GetAID().Name());
+        MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(kernel_tensor.get(), device_contexts_[0],
+                                                                GetAID().Name());
       }
     }
   }
@@ -1001,10 +1001,9 @@ void SuperKernelActor::DispatchParallelLaunchKernels(size_t index, OpContext<Ker
 
       if (!kernel_actor->is_launch_skipped_) {
         MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Begin launch kernel: " << kernel_actor->kernel_->fullname_with_scope();
-        auto ret = device_contexts_[0]->GetKernelExecutor(false)->LaunchKernel(
+        auto ret = device_contexts_[0]->GetKernelExecutor(false)->LaunchKernelHP(
           kernel_actor->kernel_, kernel_actor->input_launch_tensors_, kernel_actor->workspace_launch_tensors_,
           kernel_actor->output_launch_tensors_, kernel_actor->kernel_mod_, real_stream);
-
         if (!ret) {
           MS_LOG(EXCEPTION) << "Launch kernel failed, kernel name: " << kernel_actor->kernel_->fullname_with_scope();
         }
@@ -1439,7 +1438,8 @@ void SuperKernelActor::SendMemoryFreeReq(OpContext<KernelTensor> *const context)
   if (memory_free_lists_.size() > 0 && memory_free_lists_.back().size() > 0) {
     if (IsNeedProfilieMemoryLog()) {
       for (auto data : memory_free_lists_.back()) {
-        auto output_address = reinterpret_cast<std::uintptr_t>(data->device_address().get());
+        auto output_address = data->device_address().get();
+        MS_EXCEPTION_IF_NULL(output_address);
         MS_LOG(WARNING) << "Need Profile Memory, Memory need Decrease DynamicRefCount, actor name: " << GetAID().Name()
                         << ", kernel graph: " << graph_->ToString() << ", device address class ptr: " << output_address
                         << ", device address size: " << data->GetSize()
@@ -1756,8 +1756,10 @@ void SuperKernelActor::BuildKernelActors() {
 
     auto ref_input_indexes = FetchModifiableRefInputIndex(kernel);
     auto ref_output_indexes = FetchModifiableRefOutputIndex(kernel, graph_);
-    const auto &real_device_context = device::FetchRealDeviceContext(kernel, device_contexts_[0]);
+    auto real_device_context =
+      const_cast<device::DeviceContext *>(device::FetchRealDeviceContext(kernel, device_contexts_[0]));
     MS_EXCEPTION_IF_NULL(real_device_context);
+    KernelAsyncLaunchActor::GetInstance()->AddDeviceContext(real_device_context);
     if (IsRpcActor(kernel)) {
       MS_LOG(EXCEPTION) << "Can not launch a sub graph which contains rpc kernel by kbk.";
     } else if (IsInnerControlFlowActor(kernel)) {

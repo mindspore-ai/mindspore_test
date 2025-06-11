@@ -58,7 +58,7 @@ from mindspore.ops.auto_generate import (minimum, maximum, mul, muls, sin, sinc,
                                          xlogy_op, xlogy_scalar_other_op, xlogy_scalar_self_op, trunc, histc_ext, roll,
                                          bincount_ext, rotated_iou_op, cat, narrow, var_op, pow, inplace_erfinv_op,
                                          frac_ext, pow_tensor_scalar_op, not_equal_op, isinf, addmv_op, cdist,
-                                         addbmm_op, addmm_op, pow_scalar_tensor_op, narrow_view_op)
+                                         addbmm_op, addmm_op, pow_scalar_tensor_op)
 # 2
 from mindspore.ops.functional_overload import gmm
 # 3
@@ -1558,7 +1558,7 @@ def cov(input, *, correction=1, fweights=None, aweights=None):
 
     norm_factor = norm_factor.clip(min=0)
 
-    input_x = input_x - F.unsqueeze(avg, 1)
+    input_x = input_x - avg.unsqueeze(1)
     c = ops.mm(input_x, (input_x * w if w is not None else input_x).T)
     norm_factor = norm_factor.astype(mstype.float32)
     return ops.true_divide(c, _get_default_div_type(norm_factor)).squeeze()
@@ -5784,11 +5784,9 @@ def _diff_helper(input, n, dim):
 
     for i in range(n):  # pylint: disable=unused-variable
         if is_bool:
-            result = logical_xor(narrow_view_op(result, dim, 1, out_len),
-                                 narrow_view_op(result, dim, 0, out_len))
+            result = logical_xor(narrow(result, dim, 1, out_len), narrow(result, dim, 0, out_len))
         else:
-            result = sub_ext(narrow_view_op(result, dim, 1, out_len),
-                             narrow_view_op(result, dim, 0, out_len))
+            result = sub_ext(narrow(result, dim, 1, out_len), narrow(result, dim, 0, out_len))
 
         if out_len == 0:
             break

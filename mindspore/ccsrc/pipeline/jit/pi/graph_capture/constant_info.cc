@@ -52,6 +52,7 @@ bool IsDynamicShapeTensor(const py::object &obj) {
     return false;
   }
   auto tensor = tensor::ConvertToTensor(obj);
+  MS_EXCEPTION_IF_NULL(tensor);
   const ShapeVector &shape = tensor->shape();
   return std::any_of(shape.begin(), shape.end(), [](ShapeValueDType dim) { return dim < 0; });
 }

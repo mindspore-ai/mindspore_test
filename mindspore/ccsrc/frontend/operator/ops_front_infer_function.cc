@@ -474,6 +474,7 @@ AbstractBasePtr DoInferReduceShape(const AbstractTuplePtr &x_shape, const ValueP
       auto axis_v = MakeValue(static_cast<int64_t>(1));
       values.push_back(std::make_shared<AbstractScalar>(axis_v, axis_v->type()));
     } else {
+      MS_EXCEPTION_IF_NULL(x_shp_data[i]->cast<Int64ImmPtr>());
       int64_t dim_value = x_shp_data[i]->cast<Int64ImmPtr>()->value();
       auto dim = MakeValue(dim_value);
       values.push_back(std::make_shared<AbstractScalar>(dim, dim->type()));

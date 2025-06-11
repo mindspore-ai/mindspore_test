@@ -18,7 +18,6 @@
 #include <string>
 #include <vector>
 #include "mindspore/ops/op_def/array_ops.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 
 namespace mindspore::device::ascend {
@@ -38,7 +37,6 @@ ATTR_MAP(BroadcastTo) = EMPTY_ATTR_MAP;
 REG_ADPT_DESC(BroadcastToD, kNameBroadcastToD, ADPT_DESC(BroadcastTo))
 REG_ADPT_DESC(DynamicBroadcastTo, kDynamicBroadcastToOpName, ADPT_DESC(BroadcastTo))
 REG_ADPT_DESC(BroadcastTo, kNameBroadcastTo, ADPT_DESC(BroadcastTo))
-REG_ADPT_DESC(BroadcastToView, prim::kPrimBroadcastToView->name(), ADPT_DESC(BroadcastTo))
 
 // Diag
 INPUT_MAP(Diag) = {{1, INPUT_DESC(x)}};

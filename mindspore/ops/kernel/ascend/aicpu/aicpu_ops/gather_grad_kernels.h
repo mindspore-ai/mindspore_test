@@ -23,7 +23,7 @@ namespace aicpu {
 class GatherDGradV2Kernel : public KernelBase {
  public:
   GatherDGradV2Kernel() : KernelBase("GatherDGradV2Kernel") {}
-  ~GatherDGradV2Kernel() = default;
+  ~GatherDGradV2Kernel() override;
 
  protected:
   uint32_t ParseKernelParam() override;

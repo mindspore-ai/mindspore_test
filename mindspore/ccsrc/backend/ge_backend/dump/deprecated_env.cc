@@ -47,7 +47,7 @@ void PrintDeprecatedWarning(bool is_legacy_dump_set, bool is_ge_dump_enabled) {
   std::string warning_msg;
   if (is_legacy_dump_set) {
     warning_msg +=
-      "For 'Dump', in the scenario where 'jit_level' is 'O2', the 'MINDSPORE_DUMP_CONFIG' env has been deprecated "
+      "For 'Dump', in the scenario where 'backend' is 'GE', the 'MINDSPORE_DUMP_CONFIG' env has been deprecated "
       "since MindSpore 2.6. ";
   }
   if (is_ge_dump_enabled) {
@@ -57,9 +57,9 @@ void PrintDeprecatedWarning(bool is_legacy_dump_set, bool is_ge_dump_enabled) {
   constexpr int kMaxWarnings = 3;
   constexpr auto kWarningInterval = std::chrono::milliseconds(1000);
 
-  for (int i = 0; i < kMaxWarnings; ++i) {
+  for (int i = 1; i <= kMaxWarnings; ++i) {
     MS_LOG(WARNING)
-      << "[Dump Deprecated Alert " << i + 1 << "/" << kMaxWarnings << "]: " << warning_msg
+      << "[Dump Deprecated Alert " << i << "/" << kMaxWarnings << "]: " << warning_msg
       << "Please use msprobe tool instead. "
       << "For more details, please refer to https://gitee.com/ascend/mstt/tree/master/debug/accuracy_tools/msprobe.";
     std::this_thread::sleep_for(kWarningInterval);

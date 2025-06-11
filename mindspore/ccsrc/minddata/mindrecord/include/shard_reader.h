@@ -45,7 +45,6 @@
 #include "minddata/mindrecord/include/shard_category.h"
 #include "minddata/mindrecord/include/shard_column.h"
 #include "minddata/mindrecord/include/shard_distributed_sample.h"
-#include "minddata/mindrecord/include/shard_error.h"
 #include "minddata/mindrecord/include/shard_index_generator.h"
 #include "minddata/mindrecord/include/shard_operator.h"
 #include "minddata/mindrecord/include/shard_pk_sample.h"

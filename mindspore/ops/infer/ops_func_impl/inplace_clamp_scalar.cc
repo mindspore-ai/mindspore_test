@@ -38,13 +38,6 @@ std::vector<TypeId> InplaceClampScalarFuncImpl::InferType(const PrimitivePtr &pr
   if (input_infos[kInputIndex1]->IsNone() && input_infos[kInputIndex2]->IsNone()) {
     MS_EXCEPTION(ValueError) << "For Clamp, at least one of 'min' or 'max' must not be None.";
   }
-
-  if (input_infos[kInputIndex0]->GetType() == kNumberTypeBool ||
-      (input_infos[kInputIndex1]->IsNone() && input_infos[kInputIndex2]->GetType() == kNumberTypeBool) ||
-      (input_infos[kInputIndex2]->IsNone() && input_infos[kInputIndex1]->GetType() == kNumberTypeBool)) {
-    MS_EXCEPTION(ValueError) << "For Clamp, the dtype of 'input', 'min' and 'max' must not be bool.";
-  }
-
   return {input_infos[kInputIndex0]->GetType()};
 }
 }  // namespace ops

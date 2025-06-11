@@ -48,6 +48,7 @@ bool IsCreatedByViewOp(const AnfNodePtr &node) {
 
 std::vector<std::size_t> NeedCheckInplaceCNode(const CNodePtr &primal_cnode, const FuncGraphPtr &bprop_fg) {
   MS_EXCEPTION_IF_NULL(primal_cnode);
+  MS_EXCEPTION_IF_NULL(bprop_fg);
   const auto &prim = GetCNodePrimitive(primal_cnode);
   // InplaceOp(inplace_changed_input0, ... , unchanged_input0, ...)
   if (prim == nullptr || !prim->inplace_prim()) {
@@ -89,6 +90,7 @@ void ResetUselessFuncGraph(const FuncGraphPtr &func_graph, const std::vector<boo
   }
 #endif
   auto bprop_output = func_graph->output();
+  MS_EXCEPTION_IF_NULL(bprop_output);
   MS_LOG(INFO) << "Reset useless element for bprop_output: " << bprop_output->DebugString();
   if (!IsPrimitiveCNode(bprop_output, prim::kPrimMakeTuple)) {
     return;
@@ -284,14 +286,6 @@ void CheckInvalidDoutFromElementsUseFlag(const FuncGraphPtr &func_graph, bool ne
   // If passed, just return
   // If has invalid dout, do second check to avoid incorrect element_use_flag
 
-#ifdef ENABLE_DUMP_IR
-  auto context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context);
-  if (context->CanDump(kIntroductory)) {
-    DumpIR("opt_check_invalid_dout_before_first_check" + func_graph->ToString() + ".ir", func_graph);
-  }
-#endif
-
   if (!CheckInvalidDoutOfBprop(func_graph, false)) {
     return;
   }
@@ -300,6 +294,14 @@ void CheckInvalidDoutFromElementsUseFlag(const FuncGraphPtr &func_graph, bool ne
   if (need_clone) {
     check_func_graph = BasicClone(func_graph);
   }
+
+#ifdef ENABLE_DUMP_IR
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  if (context->CanDump(kIntroductory)) {
+    DumpIR("opt_check_invalid_dout_after_first_check" + check_func_graph->ToString() + ".ir", check_func_graph);
+  }
+#endif
 
   // Remark element use flag and remove unused nodes until not change
   bool is_changed = true;

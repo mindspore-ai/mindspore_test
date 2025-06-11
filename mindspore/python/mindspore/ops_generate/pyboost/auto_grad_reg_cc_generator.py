@@ -56,7 +56,7 @@ class AutoGradRegHeaderGenerator(BaseGenerator):
         op_grad_func_obj_list = []
         index = 0
         for op_proto in op_protos:
-            if op_proto.op_dispatch is None or op_proto.op_dispatch.is_comm_op:
+            if op_proto.op_dispatch is None:
                 continue
             op_type_enum_list.append(self.op_type_enum_template.replace(class_name=op_proto.op_class.name,
                                                                         enum_val=index))

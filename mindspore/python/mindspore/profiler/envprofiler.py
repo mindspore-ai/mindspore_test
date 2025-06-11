@@ -146,7 +146,7 @@ class EnvProfiler:
         """
         res = []
         for export_type in export_types:
-            if export_type != "text" and export_type != "db":
+            if export_type not in ("text", "db"):
                 logger.warning(
                     f"The value '{export_type}' of parameter '{ExportType.__name__}' is invalid, "
                     f"use default value '{default_value}' instead."

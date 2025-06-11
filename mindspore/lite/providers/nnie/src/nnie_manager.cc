@@ -491,16 +491,14 @@ int NNIEManager::FillData(std::vector<mindspore::MSTensor> *inputs, unsigned int
 
   if (nnie_cfg_.param_.model_->astSeg[nnie_cfg_.run_idx_.seg_idx_].enNetType == SVP_NNIE_NET_TYPE_ROI) {
     run_box = true;
-    for (i = 0; i < (input_size - 1); i++) {
-      if ((*inputs)[i].Name() == "proposal") {
-        FillRoiPooling(&(*inputs)[i]);
-        break;
-      }
-    }
-    if (i == (input_size - 1)) {
+    auto it =
+      std::find_if(inputs->begin(), inputs->end(), [](mindspore::MSTensor t) { return t.Name() == "proposal"; });
+    size_t distance = std::distance(inputs->begin(), it);
+    if (distance >= input_size - 1) {
       LOGE("Can't find proposal out!");
       return RET_ERROR;
     }
+    FillRoiPooling(&(*inputs)[distance]);
   } else if ((input_size < kNumInput2) ||
              (input_size - 1) != nnie_cfg_.param_.model_->astSeg[nnie_cfg_.run_idx_.seg_idx_].u16SrcNum) {
     LOGE("Input Size Err!");
@@ -524,8 +522,10 @@ int NNIEManager::FillData(std::vector<mindspore::MSTensor> *inputs, unsigned int
 
     auto input_data_type = (*inputs)[j].DataType();
     SVP_BLOB_TYPE_E src_type = nnie_cfg_.param_.seg_data_[seg_id].src_[i].enType;
-    if (SVP_BLOB_TYPE_U8 <= src_type && src_type <= SVP_BLOB_TYPE_YVU422SP) {
-      if (!(input_data_type == DataType::kNumberTypeUInt8 || input_data_type == DataType::kNumberTypeInt8)) {
+    bool need_i8_or_u8 = SVP_BLOB_TYPE_U8 <= src_type && src_type <= SVP_BLOB_TYPE_YVU422SP;
+    bool real_i8_or_u8 = input_data_type == DataType::kNumberTypeUInt8 || input_data_type == DataType::kNumberTypeInt8;
+    if (need_i8_or_u8) {
+      if (!real_i8_or_u8) {
         LOGE("Nnie input node type error!");
         return RET_ERROR;
       }

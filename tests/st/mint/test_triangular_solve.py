@@ -88,7 +88,7 @@ def mint_triangular_solve_binary_case1(input_binary_data=None,
 
 
 @arg_mark(plat_marks=['platform_ascend910b'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])

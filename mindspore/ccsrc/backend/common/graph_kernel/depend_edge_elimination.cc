@@ -27,6 +27,8 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
 #include "backend/common/graph_kernel/graph_kernel_helper.h"
 
 namespace mindspore::graphkernel {
@@ -41,9 +43,16 @@ bool DependEdgeElimination::Run(const FuncGraphPtr &func_graph) {
     if (!AnfUtils::IsGraphKernel(node)) {
       continue;
     }
-    auto func_graph = GetCNodeFuncGraph(node);
-    MS_EXCEPTION_IF_NULL(func_graph);
-    auto output = func_graph->output();
+    auto sub_graph = GetCNodeFuncGraph(node);
+    MS_EXCEPTION_IF_NULL(sub_graph);
+    auto graph_nodes = TopoSort(sub_graph->get_return());
+    if (!std::any_of(graph_nodes.begin(), graph_nodes.end(), [](const AnfNodePtr &node) {
+          return IsPrimitiveCNode(node, prim::kPrimBatchMatMul) || IsPrimitiveCNode(node, prim::kPrimMatMul) ||
+                 IsPrimitiveCNode(node, prim::kPrimGroupedMatmul);
+        })) {
+      continue;
+    }
+    auto output = sub_graph->output();
     if (!IsPrimitiveCNode(output, prim::kPrimMakeTuple)) {
       continue;
     }
@@ -59,12 +68,13 @@ bool DependEdgeElimination::Run(const FuncGraphPtr &func_graph) {
         auto tuple_index = common::AnfAlgo::GetTupleGetItemOutIndex(tuple_get_cnode);
         auto make_tuple_node = output->cast<CNodePtr>();
         MS_EXCEPTION_IF_NULL(make_tuple_node);
-        auto subgraph_ouput = make_tuple_node->input(tuple_index);
+        auto subgraph_ouput = make_tuple_node->input(tuple_index + 1);
         MS_EXCEPTION_IF_NULL(subgraph_ouput);
         auto &[real_user_node, index] = tuple_get_users.back();
         if (!IsPrimitiveCNode(subgraph_ouput, prim::kPrimAssign) && tuple_get_users.size() == 1 &&
             IsPrimitiveCNode(real_user_node, prim::kPrimDepend) && index == kIndex2) {
           depend_nodes.emplace_back(real_user_node);
+          continue;
         }
         com_node = tuple_get_node;
       }
@@ -79,6 +89,7 @@ bool DependEdgeElimination::Run(const FuncGraphPtr &func_graph) {
   }
   if (changed) {
     GkUtils::UpdateFuncGraphManager(mng, func_graph);
+    (void)std::make_shared<EliminateHangingOutput>()->Run(func_graph);
   }
   return changed;
 }

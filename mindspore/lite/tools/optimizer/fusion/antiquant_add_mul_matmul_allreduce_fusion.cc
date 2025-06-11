@@ -154,7 +154,9 @@ CNodePtr AntiquantAddMulMatMulAllReduceFusion::CreateAntiquantAddMulMatMulAllRed
 
   // add attr
   auto allreduce_prim = GetCNodePrimitive(allreduce_cnode);
+  MS_EXCEPTION_IF_NULL(allreduce_prim);
   auto mm_prim = GetCNodePrimitive(mm_cnode);
+  MS_EXCEPTION_IF_NULL(mm_prim);
   matmul_allreduce_prim->AddAttr(kAttrNameCommRenuse, allreduce_prim->GetAttr(kAttrNameCommRenuse));
   matmul_allreduce_prim->AddAttr(kAttrNameGroup, allreduce_prim->GetAttr(kAttrNameGroup));
   matmul_allreduce_prim->AddAttr(kAttrNameFusion, allreduce_prim->GetAttr(kAttrNameFusion));
@@ -191,6 +193,7 @@ AnfNodePtr AntiquantAddMulMatMulAllReduceFusion::Process(const std::string &patt
     return nullptr;
   }
   auto allreduce_cnode = node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(allreduce_cnode);
   if (allreduce_cnode->size() != kInputSizeTwo) {
     return nullptr;
   }

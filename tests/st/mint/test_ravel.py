@@ -78,7 +78,7 @@ def test_ravel_uncontiguous(mode):
     test_shape = (2, 3, 4, 5)
     x = generate_random_input(test_shape, np.float32)
     ms_data = ms.Tensor(x)
-    ms_data = ms_data.transpose(-1, -2)
+    ms_data = ms_data.transpose()
     assert not ms_data.is_contiguous()
     output = ravel_forward_func(ms_data)
     expect = ms_data.flatten()

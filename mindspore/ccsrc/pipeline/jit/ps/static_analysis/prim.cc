@@ -167,7 +167,10 @@ AbstractBasePtr ConvertTensorToRef(const AbstractBasePtr &abs) {
   auto ref_abs = std::make_shared<abstract::AbstractRefTensor>(tensor_abs, std::make_shared<RefKey>("None"));
   std::stringstream ss;
   ss << ref_abs.get();
-  ref_abs->set_ref_key_value(std::make_shared<RefKey>(ss.str()));
+  static std::atomic<size_t> index = 0;
+  // It is necessary to ensure the uniqueness of ref_key.
+  ref_abs->set_ref_key_value(std::make_shared<RefKey>(ss.str() + std::to_string(index++)));
+  MS_LOG(DEBUG) << "ref_abs: " << ref_abs->ToString();
   return ref_abs;
 }
 
@@ -945,7 +948,7 @@ AbstractBasePtr PrimitiveFunctionEvaluator::CheckAndInfer(const AbstractBasePtrL
       if (frontend_func_impl_ != nullptr) {
         auto infer_result = frontend_func_impl_->InferAbstract(prim_func_, args);
         if (infer_result != nullptr) {
-          return infer_result;
+          return ProcessViewInplaceAbstract(args, infer_result);
         }
       }
       auto type = op_def_->func_impl_.InferType(prim_func_, args);

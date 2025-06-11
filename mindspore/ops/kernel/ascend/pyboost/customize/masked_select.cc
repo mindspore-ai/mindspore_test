@@ -39,10 +39,8 @@ tensor::TensorPtr MaskedSelectAscendCustomize(const std::shared_ptr<OpRunner> &o
   PyBoostUtils::MallocOpInputs(device_context, input_tensor, mask_tensor);
   // Malloc for output tensors
   PyBoostUtils::MallocOpOutputs(device_context, outputs);
-  auto return_value =
+  const auto &all_acl_tensor =
     LAUNCH_ACLNN_SYNC(aclnnMaskedSelect, device_context, op->stream_id(), input_tensor, mask_tensor, outputs[0]);
-  const auto &cache_func_ptr = std::get<kIndex2>(return_value);
-  auto all_acl_tensor = cache_func_ptr(device::ascend::ProcessCacheType::kGetOutputShape, {});
 
   auto output_real_shape = all_acl_tensor[kIndex2];
   auto simple_infer_ptr = op->output_value_simple_info();
@@ -50,12 +48,6 @@ tensor::TensorPtr MaskedSelectAscendCustomize(const std::shared_ptr<OpRunner> &o
 
   op->UpdateOutputShape(op->output(kIndex0), output_real_shape);
   MS_LOG(DEBUG) << "Run device task MaskedSelect end";
-
-  const auto &release_func = std::get<kIndex3>(return_value);
-  if (release_func) {
-    release_func();
-  }
-
   return op->output(0);
 }
 }  // namespace pyboost

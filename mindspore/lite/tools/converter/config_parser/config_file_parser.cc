@@ -15,6 +15,7 @@
  */
 
 #include "tools/converter/config_parser/config_file_parser.h"
+#include <map>
 #include <set>
 #include "tools/common/parse_config_utils.h"
 #include "include/errorcode.h"
@@ -417,12 +418,10 @@ bool ConfigFileParser::SetParamByConfigfile(const std::shared_ptr<mindspore::Con
   }
   if (!plugin_custom_ops_vec.empty()) {
     param->ascendGeOptionCfg.plugin_custom_ops = plugin_custom_ops_vec;
+    // parse for ascend custom fusion op
+    param->aclModelOptionCfgParam.plugin_custom_ops = plugin_custom_ops_vec;
   } else if (!(ascend_string = FindInAscendMap(kEnableCustomOp, ascend_map)).empty()) {
     param->ascendGeOptionCfg.plugin_custom_ops = {"All"};
-  }
-  // parse for ascend custom fusion op
-  if (!plugin_custom_ops_vec.empty()) {
-    param->aclModelOptionCfgParam.plugin_custom_ops = plugin_custom_ops_vec;
   }
   auto custom_fusion_pattern_str = FindInAscendMap("custom_fusion_pattern", ascend_map);
   if (!custom_fusion_pattern_str.empty()) {
@@ -480,13 +479,14 @@ bool ConfigFileParser::SetParamByConfigfile(const std::shared_ptr<mindspore::Con
 
   it = ascend_map.find("output_type");
   if (it != ascend_map.end()) {
+    std::map<std::string, DataType> t2t_map{
+      {"FP16", DataType::kNumberTypeFloat16},
+      {"FP32", DataType::kNumberTypeFloat32},
+      {"UINT8", DataType::kNumberTypeUInt8},
+    };
     auto dtype_str = it->second;
-    if (dtype_str == "FP16") {
-      param->aclModelOptionCfgParam.output_type = DataType::kNumberTypeFloat16;
-    } else if (dtype_str == "FP32") {
-      param->aclModelOptionCfgParam.output_type = DataType::kNumberTypeFloat32;
-    } else if (dtype_str == "UINT8") {
-      param->aclModelOptionCfgParam.output_type = DataType::kNumberTypeUInt8;
+    if (t2t_map.find(dtype_str) != t2t_map.end()) {
+      param->aclModelOptionCfgParam.output_type = t2t_map[dtype_str];
     } else {
       MS_LOG(WARNING) << "Unsupported or invalid output_type, using default type";
     }

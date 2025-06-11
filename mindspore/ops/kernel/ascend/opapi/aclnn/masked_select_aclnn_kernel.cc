@@ -33,14 +33,11 @@ bool MaskedSelectAclnnKernelMod::Launch(const std::vector<KernelTensor *> &input
                                         const std::vector<KernelTensor *> &workspace,
                                         const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
-  auto res = GEN_EXECUTOR_CUST(op_type_, inputs[kIndex0], inputs[kIndex1], outputs[kIndex0]);
-  executor_ = std::get<1>(res);
-  auto &all_tensor = std::get<2>(res);
-  RunOpSync(stream_ptr, workspace);
+  const auto &all_tensor = RunOpSync(stream_ptr, workspace, inputs[kIndex0], inputs[kIndex1], outputs[kIndex0]);
 
   // Update output shape.
   outputs_shape_.resize(1);
-  outputs_shape_[kIndex0] = device::ascend::UpdateOutputShape(all_tensor.get<kIndex2>());
+  outputs_shape_[kIndex0] = all_tensor.at(kIndex2);
   return true;
 }
 

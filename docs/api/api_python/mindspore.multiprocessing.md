@@ -36,7 +36,7 @@ if __name__ == '__main__':
 
 运行结果如下：
 
-``` log
+```text
 ops.log(Tensor(2.0))= 0.6931472
 ```
 
@@ -58,7 +58,7 @@ if __name__ == '__main__':
 
 运行结果如下：
 
-``` log
+```text
 ops.log(Tensor(2.0))= [Tensor(shape=[], dtype=Float32, value= 0.693147), Tensor(shape=[], dtype=Float32, value= 0.693147)]
 ```
 
@@ -88,7 +88,7 @@ if __name__ == '__main__':
 
 运行结果如下：
 
-``` log
+```text
 parent process:ops.log(Tensor(2.0))= 0.6931472
 child process:ops.log(Tensor(2.0))= 0.6931472
 ```
@@ -118,7 +118,7 @@ if __name__ == '__main__':
 
 运行结果如下：
 
-``` log
+```text
 parent process:ops.log(Tensor(2.0))= 0.6931472
 child process:ops.log(Tensor(2.0))= 0.6931472
 ```
@@ -150,7 +150,7 @@ if __name__ == '__main__':
 
 运行结果如下：
 
-``` log
+```text
 child process:ops.log(Tensor(2.0))= 0.6931472
 parent process:ops.log(Tensor(2.0))= 0.6931472
 ```

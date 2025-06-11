@@ -41,6 +41,8 @@ class UniqueConsecutiveAscend : public AclnnKernelMod {
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
   std::vector<ShapeVector> output_shapes_;
   int64_t dim_{0};
+  bool return_inverse_;
+  bool return_counts_;
 };
 }  // namespace unique_consecutive
 }  // namespace kernel

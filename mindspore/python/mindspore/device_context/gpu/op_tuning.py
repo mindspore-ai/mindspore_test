@@ -27,7 +27,8 @@ function_status = {'conv_fprop_algo': False, 'conv_wgrad_algo': False, 'conv_dgr
 def conv_fprop_algo(mode):
     """
     Specifies convolution forward algorithm.
-    For detailed information, please refer to `NVIDA cuDNN about cudnnConvolutionForward <https://docs.nvidia.com/deeplearning/cudnn/latest/api/cudnn-cnn-library.html>`_.
+    For detailed information, please refer to `NVIDA cuDNN about cudnnConvolutionForward
+    <https://docs.nvidia.com/deeplearning/cudnn/latest/api/cudnn-cnn-library.html>`_.
 
     Args:
         mode (str): convolution forward algorithm. If not configured, the framework defaults to 'normal'.
@@ -80,7 +81,8 @@ def conv_fprop_algo(mode):
 def conv_wgrad_algo(mode):
     """
     Specifies convolution filter grad algorithm.
-    For detailed information, please refer to `NVIDA cuDNN <https://docs.nvidia.com/deeplearning/cudnn/latest/api/cudnn-cnn-library.html>`_.
+    For detailed information, please refer to `NVIDA cuDNN
+    <https://docs.nvidia.com/deeplearning/cudnn/latest/api/cudnn-cnn-library.html>`_.
 
     Args:
         mode (str): convolution filter grad algorithm. If not configured, the framework defaults to 'normal'.
@@ -129,7 +131,8 @@ def conv_wgrad_algo(mode):
 def conv_dgrad_algo(mode):
     """
     Specifies convolution data grad algorithm.
-    For detailed information, please refer to `NVIDA cuDNN <https://docs.nvidia.com/deeplearning/cudnn/latest/api/cudnn-cnn-library.html>`_.
+    For detailed information, please refer to `NVIDA cuDNN
+    <https://docs.nvidia.com/deeplearning/cudnn/latest/api/cudnn-cnn-library.html>`_.
 
     Args:
         mode (str): convolution data grad algorithm. If not configured, the framework defaults to 'normal'.

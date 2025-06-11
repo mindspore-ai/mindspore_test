@@ -357,6 +357,7 @@ class SwitchPartialEliminater : public ChoicePartialEliminater {
     const auto input0 = switch_call->input(0);
     MS_EXCEPTION_IF_NULL(input0);
     const auto switch_node = input0->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(switch_node);
     TraceGuard guard1(MakeTraceInfo<TraceCopy>(switch_node->debug_info()));
     // {Switch, cond, G1, G2}
     std::vector<AnfNodePtr> switch_inputs = {switch_node->input(0), switch_node->input(1)};

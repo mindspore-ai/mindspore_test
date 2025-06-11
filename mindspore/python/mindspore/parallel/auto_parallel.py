@@ -264,8 +264,10 @@ class AutoParallel(Cell):
         self._save_strategy_file_path = file_path
 
     def disable_strategy_file_only_for_trainable_params(self):
-        """By default, MindSpore only loads and saves trainable parameters. This API enables the loading and saving of
-        non-trainable parameters as well."""
+        """
+        By default, MindSpore only loads and saves trainable parameters. This API enables the loading and saving of
+        non-trainable parameters as well.
+        """
         self._only_trainable_params = False
 
     def save_operator_strategy_file(self, file_path):
@@ -414,7 +416,7 @@ class AutoParallel(Cell):
                 raise ValueError("For 'AutoParallel.dataset_strategy', the argument "
                                  "'config' must be 'full_batch' or 'data_parallel', but got the value : {}."
                                  .format(config))
-            self._full_batch = (config == "full_batch")
+            self._full_batch = config == "full_batch"
             self._dataset_strategy_config = config
             return
         if not isinstance(config, tuple):

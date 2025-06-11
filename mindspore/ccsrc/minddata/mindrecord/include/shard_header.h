@@ -24,7 +24,6 @@
 #include <vector>
 #include "minddata/mindrecord/include/common/shard_utils.h"
 #include "minddata/mindrecord/include/mindrecord_macro.h"
-#include "minddata/mindrecord/include/shard_error.h"
 #include "minddata/mindrecord/include/shard_index.h"
 #include "minddata/mindrecord/include/shard_page.h"
 #include "minddata/mindrecord/include/shard_schema.h"

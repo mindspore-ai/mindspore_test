@@ -702,14 +702,18 @@ static std::vector<std::pair<std::string, ValuePtr>> GetPrimAttrFromAddAttrNode(
     return kv_pair_vec;
   }
   CNodePtr addattr_cnode = addattr_node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(addattr_cnode);
   AnfNodePtr attr_pair_node = addattr_cnode->input(add_attr_attr_pair_index);
   MS_EXCEPTION_IF_NULL(attr_pair_node);
   ValueNodePtr attr_pair_vnode = attr_pair_node->cast<ValueNodePtr>();
   MS_EXCEPTION_IF_NULL(attr_pair_vnode);
+  MS_EXCEPTION_IF_NULL(attr_pair_vnode->value());
   if (!attr_pair_vnode->value()->isa<ValueTuple>()) {
     MS_LOG_WITH_NODE(EXCEPTION, addattr_node) << "Parse attr_pair to ValueTuple failed. Please check attr_pair format.";
   }
-  const std::vector<ValuePtr> attr_pair_vals = attr_pair_vnode->value()->cast<ValueTuplePtr>()->value();
+  ValueTuplePtr attr_value_tuple = attr_pair_vnode->value()->cast<ValueTuplePtr>();
+  MS_EXCEPTION_IF_NULL(attr_value_tuple);
+  const std::vector<ValuePtr> attr_pair_vals = attr_value_tuple->value();
   MS_LOG(INFO) << "In HandleAddAttr, Parse attr pairs success.";
   for (const ValuePtr &val : attr_pair_vals) {
     if (!val->isa<ValueTuple>()) {

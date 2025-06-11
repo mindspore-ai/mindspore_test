@@ -424,6 +424,7 @@ bool ConvTransformFusion::CheckCanFused(const FuncGraphPtr &func_graph, const CN
   }
   MS_ASSERT(conv_node->size() >= kConvNoBiasLen);
   auto conv_prim = GetValueNode<PrimitivePtr>(conv_node->input(kInputIndex));
+  MS_CHECK_TRUE_RET(conv_prim != nullptr, false);
   auto quant_attr = conv_prim->GetAttr("quant_params");
   if (quant_attr != nullptr) {
     auto quant_param_holder = quant_attr->cast<lite::QuantParamHolderPtr>();
@@ -443,8 +444,10 @@ bool ConvTransformFusion::CheckCanFused(const FuncGraphPtr &func_graph, const CN
   // Check weight is const.
   auto conv_weight_node = conv_node->input(kConvWeightIndex);
   bool is_value_node = conv_weight_node->isa<ValueNode>();
-  auto conv_weight_param =
-    conv_weight_node->isa<Parameter>() ? conv_weight_node->cast<ParameterPtr>()->default_param() : nullptr;
+  auto conv_weight_param = (conv_weight_node->isa<Parameter>() && conv_weight_node->cast<ParameterPtr>() != nullptr)
+                             ? conv_weight_node->cast<ParameterPtr>()->default_param()
+                             : nullptr;
+
   return is_value_node || conv_weight_param != nullptr;
 }
 }  // namespace mindspore::opt

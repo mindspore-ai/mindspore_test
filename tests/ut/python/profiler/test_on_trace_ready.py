@@ -60,7 +60,7 @@ class TestProfiler(unittest.TestCase):
         profiler = Profiler(start_profile=False, on_trace_ready=mock_tensorboard_trace_handler)
         prof_action_controller = profiler.action_controller
         self.assertEqual(
-            prof_action_controller.handle_normal_action(ProfilerAction.RECORD_AND_SAVE, ProfilerAction.NONE),
+            prof_action_controller.action_map.get((ProfilerAction.RECORD_AND_SAVE, ProfilerAction.NONE)),
             [
                 ProfilerInterface.stop,
                 ProfilerInterface.finalize,

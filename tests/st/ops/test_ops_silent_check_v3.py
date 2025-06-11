@@ -64,8 +64,7 @@ def generate_inputs():
             c_thresh_l1, c_thresh_l2, beta1, npu_asd_detect]
 
 
-@pytest.mark.skip(reason="Need update CANN.")
-@pytest.mark.level0
+@pytest.mark.level1
 @pytest.mark.env_onecard
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.parametrize("mode", ["kbk", "pyboost"])
@@ -84,7 +83,6 @@ def test_silent_check_v3_static_shape(mode):
           f"\nstep:\n{outs[2]}\nresult:\n{outs[3]}.")
 
 
-@pytest.mark.skip(reason="Need update CANN.")
 @pytest.mark.level1
 @pytest.mark.env_onecard
 @pytest.mark.platform_arm_ascend910b_training

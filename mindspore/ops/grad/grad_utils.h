@@ -45,6 +45,26 @@ constexpr size_t i13 = 13;
 constexpr size_t i14 = 14;
 constexpr size_t i15 = 15;
 constexpr size_t i16 = 16;
+constexpr size_t i17 = 17;
+constexpr size_t i18 = 18;
+constexpr size_t i19 = 19;
+constexpr size_t i20 = 20;
+constexpr size_t i21 = 21;
+constexpr size_t i22 = 22;
+constexpr size_t i23 = 23;
+constexpr size_t i24 = 24;
+constexpr size_t i25 = 25;
+constexpr size_t i26 = 26;
+constexpr size_t i27 = 27;
+constexpr size_t i28 = 28;
+constexpr size_t i29 = 29;
+constexpr size_t i30 = 30;
+constexpr size_t i31 = 31;
+constexpr size_t i32 = 32;
+constexpr size_t i33 = 33;
+constexpr size_t i34 = 34;
+constexpr size_t i35 = 35;
+
 inline const auto pi = std::acos(-1.0);
 inline const auto log_2 = std::log(2.0);
 inline const auto log_pi = std::log(pi);
@@ -53,7 +73,7 @@ NodePtrList ReturnZeros(BpropBuilder *ib);
 // normalize the axis to [0, rank)
 int64_t NormalizeAxis(int64_t axis, size_t rank);
 
-std::vector<int64_t> TupleDiv(const std::vector<int64_t> &x, const std::vector<int64_t> &y);
+std::vector<int64_t> ReduceShapeTupleDiv(const std::vector<int64_t> &x, const std::vector<int64_t> &y);
 
 std::vector<int64_t> ReduceShape(const std::vector<int64_t> &x, const std::vector<int64_t> &axis,
                                  bool skip_mode = false);

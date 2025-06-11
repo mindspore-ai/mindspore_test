@@ -585,12 +585,14 @@ std::vector<int64_t> Converter::ConvertIntVectorByCastDtype(const py::list &pyth
           source_type_[index] = cast_dtype;
           return value.value();
         }
+      } else {
+        MS_LOG(EXCEPTION) << "Can't find convert function for src_dtype[" << cast_dtype << "] and dst_type"
+                          << op_arg.arg_dtype_ << "].";
       }
     }
   }
-  MS_LOG(EXCEPTION) << "Can't find convert function for "
-                    << PyNativeAlgo::PyParser::BuilidPyInputTypeString(py::reinterpret_borrow<py::object>(input))
-                    << " to vector<int>.";
+  PyNativeAlgo::PyParser::PrintTypeCastError(op_def_, python_args, index);
+  return {};
 }
 
 std::optional<int64_t> ConvertTensorToInt64(const py::object &obj) {
@@ -649,12 +651,14 @@ int64_t Converter::ConvertIntByCastDtype(const py::list &python_args, const ops:
           source_type_[index] = cast_dtype;
           return value.value();
         }
+      } else {
+        MS_LOG(EXCEPTION) << "Can't find convert function for src_dtype[" << cast_dtype << "] and dst_type"
+                          << op_arg.arg_dtype_ << "].";
       }
     }
   }
-  MS_LOG(EXCEPTION) << "Can't find convert function for "
-                    << PyNativeAlgo::PyParser::BuilidPyInputTypeString(py::reinterpret_borrow<py::object>(input))
-                    << " to vector<int>.";
+  PyNativeAlgo::PyParser::PrintTypeCastError(op_def_, python_args, index);
+  return 0;
 }
 
 ValueTuplePtr Converter::ConvertValueTupleByCastDtype(const py::list &python_args, const ops::OpInputArg &op_arg,

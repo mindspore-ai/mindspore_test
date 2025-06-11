@@ -316,7 +316,7 @@ void EinsumExtMetaImpl::AdjustOperands(const std::vector<NodePtr> &operands_list
 
     for (auto &axis : perm_axis) {
       if (axis == kIdleIdx) {
-        operand = Call(Prim(ExpandDimsView), operand, Value(dim));
+        operand = Call(Prim(ExpandDims), operand, Value(dim));
         shape.insert(shape.begin() + dim, 1LL);
         axis = dim++;
       }

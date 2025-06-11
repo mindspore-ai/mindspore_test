@@ -30,6 +30,7 @@ namespace {
 bool IsLazyInlineBackward(const FuncGraphPtr &bg) {
   for (auto &entry : bg->func_graph_cnodes_index()) {
     auto cnode = entry.first->first->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     auto index = entry.first->second;
     if (index == 1 && IsPrimitive(cnode->inputs().at(kIndex0), prim::kPrimPartial)) {
       // To find real calling.
@@ -50,12 +51,15 @@ FuncGraphPtr GetAbstractFunc(const CNodePtr &node) {
     auto abs = node->input(kIndex0)->abstract();
     if (abs->isa<abstract::FuncGraphAbstractClosure>()) {
       const auto &abstract_func_graph = abs->cast<abstract::FuncGraphAbstractClosurePtr>();
+      MS_EXCEPTION_IF_NULL(abstract_func_graph);
       return abstract_func_graph->func_graph();
     } else if (abs->isa<abstract::PartialAbstractClosure>()) {
       const auto &abstract_partial_func = abs->cast<abstract::PartialAbstractClosurePtr>();
+      MS_EXCEPTION_IF_NULL(abstract_partial_func);
       const auto &abstract_fn = abstract_partial_func->fn();
       if (abstract_fn->isa<abstract::FuncGraphAbstractClosure>()) {
         const auto &abstract_func_graph = abstract_fn->cast<abstract::FuncGraphAbstractClosurePtr>();
+        MS_EXCEPTION_IF_NULL(abstract_func_graph);
         return abstract_func_graph->func_graph();
       }
     }
@@ -104,7 +108,9 @@ bool SkipBeginEndOverlapInline(const FuncGraphPtr &graph, FuncGraphPtr *fg, Func
   for (auto &node : graph_orders) {
     MS_EXCEPTION_IF_NULL(node);
     if (IsValueNode<FuncGraph>(node->input(kIndex0))) {
-      FuncGraphPtr sub_graph = node->input(kIndex0)->cast<ValueNodePtr>()->value()->cast<FuncGraphPtr>();
+      auto node_input_ptr = node->input(kIndex0)->cast<ValueNodePtr>();
+      MS_EXCEPTION_IF_NULL(node_input_ptr);
+      FuncGraphPtr sub_graph = node_input_ptr->value()->cast<FuncGraphPtr>();
       MS_EXCEPTION_IF_NULL(sub_graph);
       if (sub_graph->has_attr(FUNC_GRAPH_FLAG_NO_INLINE)) {
         (void)fg_call->emplace_back(node);

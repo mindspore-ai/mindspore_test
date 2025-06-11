@@ -185,8 +185,16 @@ void ParallelContext::set_pipeline_interleave(const bool pipeline_interleave) {
   pipeline_interleave_ = pipeline_interleave;
 }
 
+void ParallelContext::set_pipeline_interleave_temp(const bool pipeline_interleave_temp) {
+  pipeline_interleave_temp_ = pipeline_interleave_temp;
+}
+
 void ParallelContext::set_pipeline_scheduler(const std::string &pipeline_scheduler) {
   pipeline_scheduler_ = pipeline_scheduler;
+}
+
+void ParallelContext::set_pipeline_scheduler_temp(const std::string &pipeline_scheduler_temp) {
+  pipeline_scheduler_temp_ = pipeline_scheduler_temp;
 }
 
 void ParallelContext::set_pipeline_segment_split_num(const int64_t segment_num) {

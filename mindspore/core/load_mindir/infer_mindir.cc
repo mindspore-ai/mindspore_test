@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2022 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -316,6 +316,7 @@ void MindIREngine::EvalPartialPrimitive(const CNodePtr &node, const AbstractBase
 
 void MindIREngine::EvalPartialAbastract(const abstract::PartialAbstractClosurePtr &func, const CNodePtr &node,
                                         const AbstractBasePtrListPtr &args) {
+  MS_EXCEPTION_IF_NULL(func);
   AbstractBasePtrListPtr partial_args_list = std::make_shared<AbstractBasePtrList>();
   // Join arguments in partial and the rest arguments from args_conf_list.
   auto func_args = func->args();
@@ -365,6 +366,7 @@ void MindIREngine::SaveNodeInferResult(const AnfNodePtr &node, const AbstractBas
 
 void MindIREngine::EvalPrimitiveAbastract(const abstract::PrimitiveAbstractClosurePtr &func, const CNodePtr &node,
                                           const AbstractBasePtrListPtr &args) {
+  MS_EXCEPTION_IF_NULL(func);
   auto prim = func->prim();
   // Return Primitive
   if (prim->name() == prim::kPrimReturn->name()) {

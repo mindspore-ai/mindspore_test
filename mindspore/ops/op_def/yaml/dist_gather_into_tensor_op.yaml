@@ -22,3 +22,4 @@ dist_comm_gather_into_tensor:
         enable: True
         is_comm_op: True
         Ascend: DistCommGatherIntoTensorAscend
+    non-differentiable: True

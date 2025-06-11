@@ -33,7 +33,6 @@
 #include "minddata/dataset/util/queue.h"
 #include "minddata/dataset/util/status.h"
 #include "minddata/mindrecord/include/shard_column.h"
-#include "minddata/mindrecord/include/shard_error.h"
 #include "minddata/mindrecord/include/shard_reader.h"
 #include "minddata/mindrecord/include/common/shard_utils.h"
 #include "minddata/dataset/util/wait_post.h"

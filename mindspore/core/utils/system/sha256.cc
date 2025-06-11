@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2022 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,7 +68,7 @@ bool Padding(std::string *message) {
   // The length of the message needs to be stored in 8 bytes, supplemented at the end of the message.
   const int size_append = 8;
   const int size_required = kMessageBlockLength - size_append;
-  const int size_pad = size_required - remains + (size_required > remains ? 0 : kMessageBlockLength);
+  const int size_pad = size_required - remains + (remains < size_required ? 0 : kMessageBlockLength);
   if (size_pad < 1 || size_pad > kMessageBlockLength) {
     return false;
   }
