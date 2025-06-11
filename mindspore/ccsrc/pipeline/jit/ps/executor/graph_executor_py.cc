@@ -346,6 +346,7 @@ bool GraphExecutorPy::CompileInner(const FuncGraphPtr &graph, const py::tuple &a
 #endif
   CleanCompileRes(resource);
   PhaseManager::GetInstance().ClearPhase();
+  PhaseManager::GetInstance().ClearJitConfig();
   MS_LOG(INFO) << "Finish compiling.";
   return true;
 }
@@ -429,6 +430,7 @@ bool GraphExecutorPy::CompileInner(const py::object &source, const py::tuple &ar
   CleanCompileRes(resource);
   EventMessage::PrintCompileEndMsg(phase_, obj_desc_);
   PhaseManager::GetInstance().ClearPhase();
+  PhaseManager::GetInstance().ClearJitConfig();
   PROF_END(CleanCompileRes);
   MS_LOG(INFO) << "Finish compiling.";
   PROF_END(compile_graph);
@@ -652,6 +654,7 @@ py::object GraphExecutorPy::RunInner(const py::tuple &args, const py::object &ph
   py::object res = BaseRefToPyDataWithUserData(value, output_abs);
   ClearRunArgumentsResource(args.size(), &execute_info->arg_list);
   PhaseManager::GetInstance().ClearPhase();
+  PhaseManager::GetInstance().ClearJitConfig();
   MS_LOG(DEBUG) << "Run end";
   return res;
 }
