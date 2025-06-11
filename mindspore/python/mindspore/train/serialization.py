@@ -2246,7 +2246,7 @@ def _get_data_file(is_encrypt, kwargs, data_file_name):
     if is_encrypt():
         place_holder_data = _encrypt(place_holder_data, len(place_holder_data), kwargs["enc_key"],
                                      len(kwargs["enc_key"]), kwargs["enc_mode"])
-    parameter_size = (offset / 1024)
+    parameter_size = offset / 1024
     try:
         f = open(data_file_name, "wb")
         f.write(place_holder_data)
@@ -2288,9 +2288,11 @@ def _split_save(net_dict, model, file_name, is_encrypt, **kwargs):
     external_local = os.path.join(file_prefix + "_variables", "data_" + str(index))
     data_file_name = os.path.join(dirname, external_local)
     f, parameter_size, offset = _get_data_file(is_encrypt, kwargs, data_file_name)
+
+    round = 0
+    names = []
+
     try:
-        round = 0
-        names = []
         for param_proto in model.graph.parameter:
             name = param_proto.name[param_proto.name.find(":") + 1:]
             names.append((name, param_proto))

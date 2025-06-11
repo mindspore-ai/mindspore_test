@@ -1430,8 +1430,8 @@ bool IrExportBuilder::SetTypeToAttributeProto(const ValuePtr &value, mind_ir::At
     tensor_proto->set_data_type(data_type);
   } else if (value->isa<UInt>()) {
     tensor_proto->set_name("value0");
-    auto float_value = value->cast<UIntPtr>();
-    auto data_type = GetMindirDataBitsUIntType(float_value->nbits());
+    auto uint_value = value->cast<UIntPtr>();
+    auto data_type = GetMindirDataBitsUIntType(uint_value->nbits());
     if (data_type == mind_ir::TensorProto_DataType_UNDEFINED) {
       return false;
     }
@@ -1447,7 +1447,6 @@ bool IrExportBuilder::SetTypeToAttributeProto(const ValuePtr &value, mind_ir::At
   } else if (value->isa<BFloat>()) {
     tensor_proto->set_name("value0");
     auto bfloat_value = value->cast<BFloatPtr>();
-    MS_EXCEPTION_IF_NULL(bfloat_value);
     auto data_type = GetMindirDataBitsBFloatType(bfloat_value->nbits());
     if (data_type == mind_ir::TensorProto_DataType_UNDEFINED) {
       return false;

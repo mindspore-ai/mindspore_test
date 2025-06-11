@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-"""Define pijit context"""
-# pylint: disable=missing-docstring
+
+"""Define pijit context."""
+
 import inspect
 import types
 import functools
@@ -82,6 +83,9 @@ class PIJitCaptureContext:
             or inspect.isasyncgenfunction(fn) or inspect.isawaitable(fn)
 
     def _wrapper(self):
+        """
+        pijit wrapper of fn.
+        """
         def _fn(*args, **kwds):
             PreJit(args, kwds)
             disable_pijit = self.config.get('_disable_pijit', None)

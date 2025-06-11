@@ -833,6 +833,7 @@ void FuncGraphManager::OnEdgeAdded(const AnfNodePtr &node, int index, const AnfN
 }
 
 void FuncGraphManager::OnEdgeRemoved(const AnfNodePtr &node, int index, const AnfNodePtr &input) {
+  MS_EXCEPTION_IF_NULL(input);
   auto fg = node->func_graph();
   if (fg != nullptr && input->isa<ValueNode>()) {
     fg->DropValueNode(input);

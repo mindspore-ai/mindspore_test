@@ -41,7 +41,7 @@ class JNodeAndUserRematch : public AnfVisitor {
     if (cnode == nullptr || cnode->empty()) {
       return nullptr;
     }
-    auto input0 = node->cast<CNodePtr>()->input(0);
+    auto input0 = cnode->input(0);
     if (!IsPrimitiveCNode(input0, prim::kPrimJ)) {
       return nullptr;
     }

@@ -31,5 +31,5 @@
   static void Set##name##Handler(name##Handler handler) { name##_handler_ = std::move(handler); } \
                                                                                                   \
  private:                                                                                         \
-  inline static name##Handler name##_handler_;
+  inline static name##Handler name##_handler_
 #endif  // MINDSPORE_CORE_UTILS_CALLBACK_HANDLER_H_

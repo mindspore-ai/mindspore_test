@@ -46,6 +46,7 @@ class LoopUnrollBase : public AnfVisitor {
       return nullptr;
     }
     CNodePtr scan_cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(scan_cnode);
     const auto &inputs = scan_cnode->inputs();
     const size_t input_size = inputs.size();
     constexpr size_t expect_input_size = 6;

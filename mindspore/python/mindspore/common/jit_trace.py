@@ -34,7 +34,7 @@ class TraceJitContext(JitContext):
     """JIT Context for trace JIT."""
 
     def __init__(self):
-        JitContext.__init__(self)
+        super().__init__()
         self._is_nested = False
 
     def set_is_nested(self, status):

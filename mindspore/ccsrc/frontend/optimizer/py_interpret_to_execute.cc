@@ -261,13 +261,24 @@ CNodePtr Transform(const CNodePtr &cnode, const FuncGraphManagerPtr &manager,
 }
 }  // namespace
 
-// Convert PyInterpret into PyExecute:
-//   PyInterpret(script, global_dict, local_dict)
-//   -->
-//   PyExecute(script, local_dict_keys, local_dict_values),
-//   with side-effect operation:
-//     Merge global_dict to local dict.
-//     If there are arguments in global dict and local dict use local dict argument instead of global dict.
+/**
+ * \brief Convert PyInterpret into PyExecute:
+ *
+ * \example
+ * origin:
+ *    PyInterpret(script, global_dict, local_dict)
+ * new:
+ *    PyExecute(script, local_dict_keys, local_dict_values)
+ *
+ * \note
+ * with side-effect operation:
+ *   Merge global_dict to local dict.
+ *   If there are arguments in global dict and local dict use local dict argument instead of global dict.
+ *
+ * \param[in] resource Resource.
+ *
+ * \return True if convert success else false.
+ **/
 bool PyInterpretToExecute(const pipeline::ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
   auto manager = resource->manager();

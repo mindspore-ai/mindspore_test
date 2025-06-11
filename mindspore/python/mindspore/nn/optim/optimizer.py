@@ -514,7 +514,7 @@ class Optimizer(Cell):
             raise ValueError("For 'Optimizer', the property 'target' cannot be set to 'Ascend' "
                              "in the 'GPU' environment.")
 
-        self._is_device = (value != 'CPU')
+        self._is_device = value != 'CPU'
         self._target = value
 
     def _grad_sparse_indices_deduplicate(self, gradients):

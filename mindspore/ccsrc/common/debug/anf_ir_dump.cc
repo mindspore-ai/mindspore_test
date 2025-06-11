@@ -167,6 +167,7 @@ void GetMetaFuncGraphText(const MetaFuncGraphPtr &meta_func_graph, std::ostrings
 }
 
 void GetPrimitiveText(const PrimitivePtr &prim, std::ostringstream &oss) {
+  MS_EXCEPTION_IF_NULL(prim);
   if (!prim->instance_name().empty()) {
     oss << " {";
     oss << "instance name: ";
