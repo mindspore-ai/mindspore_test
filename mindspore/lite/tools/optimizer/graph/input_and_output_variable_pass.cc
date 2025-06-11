@@ -46,7 +46,7 @@ bool InputAndOutputVariablePass::Run(const FuncGraphPtr &graph) {
   }
   auto outputs = opt::GetNodeInputs(graph->get_return());
   if (outputs.size() < static_cast<size_t>(outputs_variable_index_.back()) + 1) {
-    MS_LOG(ERROR) << "The output number " << outputs.size() << " is less than " << outputs_variable_index_.back() + 1;
+    MS_LOG(ERROR) << "The output number " << outputs.size() << " is less than " << (outputs_variable_index_.back() + 1);
     return false;
   }
   if (inputs_variable_index_.size() != outputs_variable_index_.size()) {
