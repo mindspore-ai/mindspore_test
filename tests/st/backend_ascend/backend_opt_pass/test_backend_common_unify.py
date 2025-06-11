@@ -18,7 +18,7 @@ from mindspore import nn, Tensor, Parameter, ops
 from .util import Capture, capture, WrapNet, GradNetWrtX
 from tests.mark_utils import arg_mark
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_renorm():
     """
     Feature: Validate opt pass keep node scope and id.
@@ -73,7 +73,7 @@ def test_reduce_mean():
     cap.check_output(patterns)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_histogram_fixedwidth():
     """
     Feature: Validate opt pass keep node scope and id.
@@ -101,7 +101,7 @@ def test_histogram_fixedwidth():
     cap.check_output(patterns)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_clipbynorm():
     """
     Feature: Validate opt pass keep node scope and id.
@@ -241,7 +241,7 @@ def test_cdistgrad_fission():
     cap.check_output(patterns)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_sparse_softmax_entropy():
     """
     Feature: Validate opt pass keep node scope and id.
@@ -305,7 +305,7 @@ def test_dropout():
     cap.check_output(patterns)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_dropout_grad():
     """
     Feature: Validate opt pass keep node scope and id.
@@ -332,7 +332,7 @@ def test_dropout_grad():
     cap.check_output(patterns)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_batchnorm_grad():
     """
     Feature: Validate opt pass keep node scope and id.
