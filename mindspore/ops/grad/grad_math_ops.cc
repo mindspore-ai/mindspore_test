@@ -1527,7 +1527,10 @@ REG_BPROP_BUILDER("Mul").FreeUselessValues(FreeTensorsOfMul).SetBody(BODYFUNC(ib
   if (y->need_compute_grad_out()) {
     bc_dy = ib->Mul(x, dout);
   }
-  return BinopGradCommon(ib, x, y, bc_dx, bc_dy);
+  auto ret = BinopGradCommon(ib, x, y, bc_dx, bc_dy);
+  auto dx = x->need_compute_grad_out() ? ib->Cast(ret[i0], ib->GetDtype(x)) : ret[i0];
+  auto dy = y->need_compute_grad_out() ? ib->Cast(ret[i1], ib->GetDtype(y)) : ret[i1];
+  return {dx, dy};
 });
 
 REG_BPROP_BUILDER("Muls").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
