@@ -33,6 +33,9 @@
 #include "mindspore/ops/op_def/array_ops.h"
 #include "include/common/runtime_conf/runtime_conf.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ccsrc/include/backend/optimizer/helper.h"
+#include "mindspore/ccsrc/include/backend/optimizer/op_adaptation_info_factory.h"
 
 namespace mindspore {
 namespace kernel {
@@ -437,6 +440,33 @@ void PyBoostUtils::LaunchKernel(const PrimitivePtr &primitive, const DeviceConte
   runtime::DeviceAddressUtils::ProcessCrossStreamAddress(real_name, device_context, stream_id, input_address_info.first,
                                                          output_address_info.first);
   MS_LOG(DEBUG) << real_name << " Launch end";
+}
+
+void PyBoostUtils::GetConstInputToAttr(const PrimitivePtr &op_prim, const std::string &op_name,
+                                       const std::string &device_target, bool is_dynamic_shape,
+                                       mindspore::HashSet<size_t> *input_to_attr_index) {
+  if (op_name == prim::kPrimCustom->name()) {
+    // Custom op needs to set reg dynamically
+    mindspore::HashSet<size_t> attr_indexes;
+    PrimitiveReadLock read_lock(op_prim->shared_mutex());
+    opt::GetCustomOpAttrIndex(op_prim, input_to_attr_index);
+    return;
+  }
+
+  // Ascend const input to attr move to AscendVmOpAdapter
+  if (device_target == kAscendDevice) {
+    return;
+  }
+
+  auto reg_info =
+    opt::OpAdaptationInfoRegister::GetInstance().GetOpAdaptationInfo(op_name, device_target, is_dynamic_shape);
+  if (reg_info == nullptr) {
+    return;
+  }
+  MS_EXCEPTION_IF_NULL(input_to_attr_index);
+  for (auto &iter : reg_info->input_attr_map()) {
+    (void)input_to_attr_index->insert(iter.first);
+  }
 }
 
 namespace {

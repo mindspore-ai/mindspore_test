@@ -27,6 +27,56 @@ ${include_op_header}
 
 namespace mindspore::runtime {
 namespace {
+void ChangeInputToAttr(const PrimitivePtr &prim, const ValuePtr &input_names, const mindspore::HashSet<size_t> &input_to_attr, pynative::BaseOpRunInfo *op_run_info) {
+  MS_EXCEPTION_IF_NULL(input_names);
+  const auto &input_names_vec = GetValue<std::vector<std::string>>(input_names);
+  ValuePtrList new_inputs{};
+  std::vector<InputType> new_input_mask{};
+  size_t convert_size = 0;
+  const auto &inputs = op_run_info->expanded_input_values;
+  const auto &input_types = op_run_info->input_types;
+  size_t input_size = inputs.size();
+  for (size_t i = 0; i < input_size; ++i) {
+    const auto &value = inputs[i];
+    if (input_types[i] == InputType::kConstant && input_to_attr.find(i) != input_to_attr.end()) {
+      MS_LOG(DEBUG) << "start erase input[" << i << "] of op[" + prim->name() + "]";
+      if (i >= input_names_vec.size()) {
+        MS_LOG(EXCEPTION) << "Index " << i << " is larger than input names size [" << input_names_vec.size() << "]";
+      }
+      if (value->isa<tensor::Tensor>()) {
+        auto tensor = value->cast<tensor::TensorPtr>();
+        if (tensor->data().const_data() == nullptr && !tensor->has_user_data(kTensorValueIsEmpty)) {
+          return;
+        }
+      }
+      ++convert_size;
+      prim->set_attr(input_names_vec[i], value);
+    } else {
+      (void)new_inputs.emplace_back(inputs[i]);
+      (void)new_input_mask.emplace_back(input_types[i]);
+    }
+  }
+  if (convert_size > 0) {
+    (void)prim->AddAttr(kAttrConvertAttrNode, MakeValue(convert_size));
+  }
+  op_run_info->expanded_input_values = std::move(new_inputs);
+  op_run_info->input_types = std::move(new_input_mask);
+}
+
+void ConvertConstInputToAttr(const PrimitivePtr &prim, pynative::BaseOpRunInfo *op_run_info) {
+  mindspore::HashSet<size_t> input_to_attr = {};
+  kernel::pyboost::PyBoostUtils::GetConstInputToAttr(prim, prim->name(), op_run_info->device_target, false, &input_to_attr);
+  if (input_to_attr.empty()) {
+    return;
+  }
+  const auto &input_names = prim->GetAttr(kAttrInputNames);
+  if (input_names == nullptr) {
+    MS_LOG(DEBUG) << "input_names are nullptr";
+    return;
+  }
+  ChangeInputToAttr(prim, input_names, input_to_attr, op_run_info);
+}
+
 session::BackendOpRunInfoPtr GetBackendOpRunInfo(OpRunnerInfo *op_runner_info) {
   MS_EXCEPTION_IF_NULL(op_runner_info);
   MS_EXCEPTION_IF_NULL(op_runner_info->prim);
@@ -95,10 +145,11 @@ void PyBoostOpExecute::RunPyBoostCall(OpRunnerInfo *op_runner_info, VectorRef *o
 }
 
 void PyBoostOpExecute::RunOpDeprecated(OpRunnerInfo *op_runner_info, VectorRef *op_outputs) {
-  // For call runop
-  const auto &backend_op_run_info = GetBackendOpRunInfo(op_runner_info);
   // Do infer and refresh output abstract
   op_runner_info->output_abs = kernel::pyboost::PyBoostUtils::InferByOpDef(op_runner_info->prim, op_runner_info->inputs_abs);
+  // For call runop
+  const auto &backend_op_run_info = GetBackendOpRunInfo(op_runner_info);
+  ConvertConstInputToAttr(op_runner_info->prim, &backend_op_run_info->base_op_run_info);
   backend_op_run_info->base_op_run_info.abstract = op_runner_info->output_abs ;
   // Call single op graph run
   backend_op_run_info->base_op_run_info.use_dynamic_shape_process = true;

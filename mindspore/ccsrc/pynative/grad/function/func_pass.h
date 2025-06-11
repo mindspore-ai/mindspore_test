@@ -46,7 +46,6 @@ struct FuncPassForward {
                                                              bool is_graph_mode);
 
  private:
-  NodePtrList ConvertConstInputToAttr(const PrimitivePtr &prim, const NodePtrList &inputs);
   // Plant op input which is tuple, and set kAttrDynInputSizes attr
   NodePtrList ConvertMakeTupleInputToDynamicInput(const PrimitivePtr &prim, const NodePtrList &inputs);
 
