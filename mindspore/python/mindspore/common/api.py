@@ -1130,7 +1130,7 @@ def jit(
               subject to change and/or deletion.
 
         jit_level (str, optional): Used to control the compilation optimization level. Currently is only effective
-            with default backend. The value of jit_level should be ``O0`` or ``O1`` . Default: ``O0`` .
+            with ms_backend. The value of jit_level should be ``O0`` or ``O1`` . Default: ``O0`` .
 
             - `O0`: Except for optimizations that may affect functionality, all other optimizations are turned off.
             - `O1`: Using commonly used optimizations and automatic operator fusion optimizations. This optimization
@@ -1255,6 +1255,32 @@ def jit(
         ...
         >>> # Create a callable MindSpore graph by trace mode.
         >>> @jit(capture_mode="trace")
+        ... def tensor_add_by_trace(x, y):
+        ...     z = x + y
+        ...     return z
+        ...
+        >>> out = tensor_add_by_trace(x, y)
+        >>> print(out)
+        Tensor(shape=[1, 1, 3, 3], dtype=Float32, value=
+        [[[[ 2.00000000e+00,  2.00000000e+00,  2.00000000e+00],
+           [ 2.00000000e+00,  2.00000000e+00,  2.00000000e+00],
+           [ 2.00000000e+00,  2.00000000e+00,  2.00000000e+00]]]])
+        ...
+        >>> # Create a callable MindSpore graph with ms_backend and jit_level="O1".
+        >>> @jit(backend="ms_backend", jit_level="O1")
+        ... def tensor_add_by_trace(x, y):
+        ...     z = x + y
+        ...     return z
+        ...
+        >>> out = tensor_add_by_trace(x, y)
+        >>> print(out)
+        Tensor(shape=[1, 1, 3, 3], dtype=Float32, value=
+        [[[[ 2.00000000e+00,  2.00000000e+00,  2.00000000e+00],
+           [ 2.00000000e+00,  2.00000000e+00,  2.00000000e+00],
+           [ 2.00000000e+00,  2.00000000e+00,  2.00000000e+00]]]])
+        ...
+        >>> # Create a callable MindSpore graph with GE backend and some ge options on Ascend.
+        >>> @jit(backend="GE", ge_options={"global": {"ge.opSelectImplmode": "high_precision"}})
         ... def tensor_add_by_trace(x, y):
         ...     z = x + y
         ...     return z
