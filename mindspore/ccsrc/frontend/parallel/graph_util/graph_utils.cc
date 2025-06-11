@@ -106,6 +106,7 @@ std::set<FuncGraphPtr> FindForwardGraphByRootNodes(const std::vector<AnfNodePtr>
       continue;
     }
     auto expect_prim = GetValueNode<PrimitivePtr>(cnode->input(0));
+    MS_EXCEPTION_IF_NULL(expect_prim);
     if (expect_prim->name() != J && expect_prim->name() != SHARD) {
       continue;
     }
@@ -113,6 +114,7 @@ std::set<FuncGraphPtr> FindForwardGraphByRootNodes(const std::vector<AnfNodePtr>
       auto graph = GetValueNode<FuncGraphPtr>(cnode->input(1));
       MS_LOG(DEBUG) << "Find the forward graph success";
       (void)graph_set.insert(graph);
+      MS_EXCEPTION_IF_NULL(graph);
       auto manager = graph->manager();
       MS_EXCEPTION_IF_NULL(manager);
       auto graph_used = manager->func_graphs_used_total(graph);
@@ -402,6 +404,7 @@ int64_t CountDynamicAxis(const AnfNodePtrList &shape_input) {
   for (size_t i = 0; i < shape_input.size(); ++i) {
     if (shape_input[i]->isa<ValueNode>()) {
       auto val_node = shape_input[i]->cast<ValueNodePtr>();
+      MS_EXCEPTION_IF_NULL(val_node);
       MS_EXCEPTION_IF_NULL(val_node->value());
       int64_t index = GetValue<int64_t>(val_node->value());
       if (index == -1) {
@@ -499,6 +502,7 @@ AnfNodePtr ConvertConstParamToDynamic(const TensorRedistributionPtr &tensor_redi
     std::vector<int64_t> const_shape(shape_input.size());
     for (size_t i = 0; i < shape_input.size(); ++i) {
       auto val_node = shape_input[i]->cast<ValueNodePtr>();
+      MS_EXCEPTION_IF_NULL(val_node);
       MS_EXCEPTION_IF_NULL(val_node->value());
       int64_t value = GetValue<int64_t>(val_node->value());
       const_shape[i] = value;
@@ -884,6 +888,7 @@ CNodePtr InsertNode(const Operator &op, const CNodePtr &node, size_t index, cons
   auto new_node_value = node_input[0]->cast<ValueNodePtr>();
   MS_EXCEPTION_IF_NULL(new_node_value);
   auto new_node_prim = new_node_value->value()->cast<PrimitivePtr>();
+  MS_EXCEPTION_IF_NULL(new_node_prim);
   new_node_prim->set_instance_name(instance_name);
   new_node_prim->set_attr("keep_value_node_input", MakeValue(true));
   if (instance_name.find(NOT_RECOMPUTE) != std::string::npos) {
@@ -1087,6 +1092,7 @@ bool SkipSupplyForReshape(const CNodePtr &cnode) {
     return false;
   }
   auto prim = GetCNodePrimitive(cnode);
+  MS_EXCEPTION_IF_NULL(prim);
   if (prim->HasAttr(SKIP_REDISTRIBUTION)) {
     bool skip_redistribution = GetValue<bool>(prim->GetAttr(SKIP_REDISTRIBUTION));
     return skip_redistribution;
