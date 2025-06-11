@@ -249,12 +249,12 @@ bool CPUResManager::AsyncCopy(const DeviceSyncPtr &dst_device_sync, const Device
   auto src_type_id = src_device_address->type_id();
 
   if (src_type_id == dst_type_id) {
-    if (src_device_address->GetSize() < dst_device_address->GetSize()) {
+    if (src_device_address->GetSize() > dst_device_address->GetSize()) {
       MS_LOG(WARNING) << "Please check whether need sync data, src size: " << src_device_address->GetSize()
                       << ", dst size: " << dst_device_address->GetSize();
       return true;
     }
-    auto ret_code = memcpy_s(dst_ptr, src_device_address->GetSize(), src_ptr, dst_device_address->GetSize());
+    auto ret_code = memcpy_s(dst_ptr, src_device_address->GetSize(), src_ptr, src_device_address->GetSize());
     // Return ERANGE when the copy size is larger than SECUREC_MEM_MAX_LEN.
     if (ret_code == ERANGE) {
       ConvertSameType(dst_device_address->GetMutablePtr(), src_device_address->GetMutablePtr(),
