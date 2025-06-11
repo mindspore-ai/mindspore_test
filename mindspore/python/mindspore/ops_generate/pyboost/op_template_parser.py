@@ -29,7 +29,7 @@ from common.op_proto import OpProto
 from . import pyboost_utils
 from .pyboost_utils import get_input_dtype, tuple_input_to_cpp_type, get_return_type, \
     number_input_to_cpp_type, get_const_number_convert, get_tuple_input_convert, is_optional_param, \
-    get_input_args_type_str, basic_type_convert_str
+    get_input_args_type_str, basic_type_convert_str, input_dtype_to_cpp_type
 
 
 class OpTemplateParser:
@@ -79,7 +79,7 @@ class OpTemplateParser:
                                      "to_output_padding": "ops::OP_DTYPE::DT_TUPLE_INT",
                                      "to_rates": "ops::OP_DTYPE::DT_TUPLE_INT"}
 
-    def _parse_call_args_types(self, op_proto, basic_type=False):
+    def _parse_call_args_types(self, op_proto, basic_type=False, is_convert=False):
         """
         Parses the data types of the call arguments for the operator.
 
@@ -95,11 +95,18 @@ class OpTemplateParser:
             raise Exception("Only view op support basic type now, please check.")
         for op_arg in op_proto.op_args:
             is_optional = is_optional_param(op_arg)
-            call_args_types.append(get_input_dtype(
-                op_arg.arg_dtype, is_optional, basic_type))
+            if is_convert:
+                if op_arg.is_type_id:
+                    call_args_types.append('TypeId')
+                    continue
+                call_args_types.append(input_dtype_to_cpp_type(
+                    op_arg.arg_dtype, is_optional))
+            else:
+                call_args_types.append(get_input_dtype(
+                    op_arg.arg_dtype, is_optional, basic_type))
         return call_args_types
 
-    def parse_call_args_with_types(self, basic_type=False):
+    def parse_call_args_with_types(self, basic_type=False, is_convert=False):
         """
         Parses the original call arguments and their types for the operator.
 
@@ -107,8 +114,13 @@ class OpTemplateParser:
             list: A list of formatted strings representing the call arguments with their types.
         """
         call_args = OpTemplateParser.parse_original_call_args(self.op_proto.op_args)
-        call_args_types = self._parse_call_args_types(self.op_proto, basic_type)
+        call_args_after_convert, _, _ = self.op_args_converter()
+        call_args_types = self._parse_call_args_types(self.op_proto, basic_type, is_convert)
         call_args_with_types = []
+        if is_convert:
+            for type_name, arg_name in zip(call_args_types, call_args_after_convert):
+                call_args_with_types.append("const " + type_name + " &" + arg_name)
+            return call_args_with_types
         for type_name, arg_name in zip(call_args_types, call_args):
             call_args_with_types.append("const " + type_name + " &" + arg_name)
         return call_args_with_types

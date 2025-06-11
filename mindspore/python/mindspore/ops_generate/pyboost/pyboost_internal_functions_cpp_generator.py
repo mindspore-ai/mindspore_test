@@ -27,8 +27,6 @@ import common.gen_constants as K
 from common.gen_utils import save_file
 from common.base_generator import BaseGenerator
 
-from .pyboost_internal_functions_h_generator import PyboostInternalFunctionsHeaderGenerator
-
 from .op_template_parser import OpTemplateParser
 
 
@@ -41,7 +39,6 @@ class PyboostInternalFunctionsCppGenerator(BaseGenerator):
         """Initializes the PyboostInternalFunctionsCppGenerator with the necessary templates."""
         self.pyboost_internal_functions_source_template = template.PYBOOST_INTERNAL_FUNCTION_SOURCE_TEMPLATE
         self.pyboost_internal_functions_template = template.PYBOOST_INTERNAL_FUNCTION_TEMPLATE
-        self.header_generator = PyboostInternalFunctionsHeaderGenerator()
 
     def generate(self, work_path, op_protos):
         """
@@ -64,7 +61,7 @@ class PyboostInternalFunctionsCppGenerator(BaseGenerator):
             op_name = op_proto.op_class.name
             op_parser = OpTemplateParser(op_proto)
             call_args_after_convert, _, _ = op_parser.op_args_converter()
-            call_args_with_type = self.header_generator.get_call_args_with_type(op_proto)
+            call_args_with_type = op_parser.parse_call_args_with_types(is_convert=True)
             func_list.append(template.NEW_LINE + self.pyboost_internal_functions_template.replace(
                 operator_name=operator_name,
                 op_name=op_name,
