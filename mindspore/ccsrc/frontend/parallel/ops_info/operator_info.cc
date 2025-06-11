@@ -477,12 +477,14 @@ bool OperatorInfo::IsDynamicRank() {
 }
 
 bool OperatorInfo::IsSelfDefineShard() {
-  bool self_define_shard = false;
+  bool self_define_shard_value = false;
   auto attr_iter = attrs_.find(parallel::SELF_DEFINE_SHARD);
   if (attr_iter != attrs_.end()) {
-    self_define_shard = attr_iter->second->cast<BoolImmPtr>()->value();
+    auto self_define_shard = attr_iter->second->cast<BoolImmPtr>();
+    MS_EXCEPTION_IF_NULL(self_define_shard);
+    self_define_shard_value = self_define_shard->value();
   }
-  return self_define_shard;
+  return self_define_shard_value;
 }
 
 Status OperatorInfo::GetRepeatedNumInDevMatrixRight() {
@@ -1655,6 +1657,14 @@ Status OperatorInfo::InitWithTensorLayout(const std::vector<std::shared_ptr<Tens
   }
   ResumeShapes();
 
+  if (InitWithTensorLayoutPostProcess() != SUCCESS) {
+    MS_LOG(ERROR) << name_ << ": InitWithTensorLayoutPostProcess failed.";
+    return FAILED;
+  }
+  return SUCCESS;
+}
+
+Status OperatorInfo::InitWithTensorLayoutPostProcess() {
   // Need be override
   if (InferForwardCommunicationByLayout() != SUCCESS) {
     MS_LOG(ERROR) << name_ << ": InferForwardCommunication failed.";
@@ -1741,22 +1751,10 @@ Status OperatorInfo::InitWithTensorLayoutForNewShape(const std::vector<TensorLay
   }
   ResumeShapes();
 
-  // Need be override
-  if (InferForwardCommunicationByLayout() != SUCCESS) {
-    MS_LOG(ERROR) << name_ << ": InferForwardCommunication failed.";
+  if (InitWithTensorLayoutPostProcess() != SUCCESS) {
+    MS_LOG(ERROR) << name_ << ": InitWithTensorLayoutPostProcess failed.";
     return FAILED;
   }
-
-  if (InferMirrorOpsByLayout() != SUCCESS) {
-    MS_LOG(ERROR) << name_ << ": InferMirrorOps failed.";
-    return FAILED;
-  }
-  if (InferVirtualDivOpsByLayout() != SUCCESS) {
-    MS_LOG(ERROR) << name_ << ": InferVirtualDivOps failed.";
-    return FAILED;
-  }
-
-  InferReplaceOps();
   return SUCCESS;
 }
 

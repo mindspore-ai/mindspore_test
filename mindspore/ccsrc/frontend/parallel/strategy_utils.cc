@@ -133,6 +133,7 @@ ValuePtr CreateValuePtrFromVector(const std::vector<T> &vec) {
 
 void StrategyUtils::SetDatasetLayout(const CNodePtr &node, const std::string &attrName) {
   auto prim = GetValueNode<PrimitivePtr>(node->input(0));
+  MS_EXCEPTION_IF_NULL(prim);
   auto dataset_strategy_tensormap = ParallelContext::GetInstance()->dataset_strategy_tensormap();
   auto dataset_strategy_devmat = ParallelContext::GetInstance()->dataset_strategy_devmat();
   auto dataset_strategy_alias_name = ParallelContext::GetInstance()->dataset_strategy_alias_name();

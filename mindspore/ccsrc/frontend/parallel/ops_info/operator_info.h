@@ -584,6 +584,7 @@ class OperatorInfo {
                               const std::vector<std::shared_ptr<TensorLayout>> &out_tensor_layouts);
   Status InitWithTensorLayoutForNewShape(const std::vector<TensorLayoutBasePtr> &in_tensor_layouts,
                                          const std::vector<TensorLayoutBasePtr> &out_tensor_layouts);
+  Status InitWithTensorLayoutPostProcess();
   Status InitForCostModelWithAutoRepeatCalc(const StrategyPtr &in_strategy, const StrategyPtr &out_strategy);
   Status InferRepeatedCalcInfo();
   Status InferVirtualDivOps();
