@@ -88,6 +88,8 @@ class BACKEND_COMMON_EXPORT CollectiveManager {
   // Destroy the communication group.
   bool DestroyCommunicationGroup(const std::string &group_name);
 
+  void RemoveGroupInfoForARF(const std::string &group_name);
+
   // Destroy device communication group for resume training.
   bool DestroyDeviceSideCommunicationGroup(const std::string &group_name);
 

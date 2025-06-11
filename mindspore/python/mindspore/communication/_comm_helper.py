@@ -570,3 +570,14 @@ def _get_group_map():
 def _wait_all_comm_init():
     """Wait for all communicators to be initialized."""
     return CollectiveManager.get_instance().wait_all_comm_init()
+
+
+def _remove_group_info(group_name):
+    """
+    Remove group info after destroy group by user when using arf.
+
+    Args:
+        group_name (str): The user communication group name.
+
+    """
+    CollectiveManager.get_instance().remove_group_info(group_name)
