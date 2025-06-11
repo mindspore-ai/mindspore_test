@@ -240,7 +240,7 @@ def test_dynamic_layernorm():
     common_func(dynamic_range, input_shape, data_type, net)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_dynamic_conv2d():
     """
     Feature: Test Conv2d and its backward. The input shape is dynamic.
