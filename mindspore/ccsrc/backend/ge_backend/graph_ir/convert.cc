@@ -678,16 +678,12 @@ void DfGraphConvertor::DrawParamInitSubGraph(const std::string &name, const AnfN
   init_sout_ << "<td port='1'>resource</td>";
   init_sout_ << "<td port='2'>value</td>";
   init_sout_ << "</tr>" << endl;
-  init_sout_ << "<tr><td colspan=\"2\">"
-             << "\"assign_" << name << "\"</td></tr>" << endl;
+  init_sout_ << "<tr><td colspan=\"2\">\"assign_" << name << "\"</td></tr>" << endl;
   init_sout_ << "</table>> shape=plaintext]" << endl;
   init_sout_ << "param" << it.get() << "[shape=octagon, label=\"" << name << "\"]" << endl;
-  init_sout_ << "const" << it.get() << "[label= \"" << name << "_const"
-             << "\" shape=ellipse]" << endl;
-  init_sout_ << "param" << it.get() << "->"
-             << "op_assign" << it.get() << ":1" << endl;
-  init_sout_ << "const" << it.get() << "->"
-             << "op_assign" << it.get() << ":2" << endl;
+  init_sout_ << "const" << it.get() << "[label= \"" << name << "_const\" shape=ellipse]" << endl;
+  init_sout_ << "param" << it.get() << "->op_assign" << it.get() << ":1" << endl;
+  init_sout_ << "const" << it.get() << "->op_assign" << it.get() << ":2" << endl;
 }
 
 void DfGraphConvertor::SetupParamInitSubGraph(const TensorOrderMap &tensors,
@@ -817,9 +813,8 @@ bool DfGraphConvertor::NodeInputKeepUpdate(const FuncGraphManagerPtr &manager, c
     return true;
   }
   const auto &node_users = manager->node_users();
-  std::vector<PrimitivePtr> vec{
-    prim::kPrimAssign,        prim::kPrimKVCacheMgr,     prim::kPrimScatterUpdate,       prim::kPrimScatterNdUpdate,
-    prim::kPrimPromptKVCache, prim::kPrimDecoderKVCache, prim::kPrimKVCacheScatterUpdate};
+  std::vector<PrimitivePtr> vec{prim::kPrimAssign, prim::kPrimKVCacheMgr, prim::kPrimScatterUpdate,
+                                prim::kPrimScatterNdUpdate, prim::kPrimKVCacheScatterUpdate};
   auto user_it = node_users.find(node);
   if (user_it != node_users.end()) {
     auto &users = user_it->second;
@@ -1107,16 +1102,13 @@ void DfGraphConvertor::BuildSaveCheckpointGraph() {
       checkpoint_sout_ << "op_save" << &save_op << "[label=<";
       checkpoint_sout_ << "<table border='1' cellborder='1'>" << endl;
       checkpoint_sout_ << "<tr><td port='1'>tensor</td></tr>" << endl;
-      checkpoint_sout_ << "<tr><td colspan=\"1\">"
-                       << "\"saveop"
-                       << "\"</td></tr>" << endl;
+      checkpoint_sout_ << "<tr><td colspan=\"1\">\"saveop\"</td></tr>" << endl;
       checkpoint_sout_ << "</table>> shape=plaintext]" << endl;
     }
 
     checkpoint_sout_ << "param" << it.second << "[shape=octagon, label=\"" << name << "\"]" << endl;
 
-    checkpoint_sout_ << "param" << it.second << "->"
-                     << "op_save" << &save_op << ":1" << endl;
+    checkpoint_sout_ << "param" << it.second << "->op_save" << &save_op << ":1" << endl;
     save_op_is_active = 1;
   }
   if (save_op_is_active != 0) {
@@ -3473,8 +3465,7 @@ void DfGraphConvertor::RemoveIdentity(::ge::GNode identity_node) {
       ret = df_graph_->AddDataEdge(*node_input.first, node_input.second, *node_output.first, node_output.second);
       if (ret != ::ge::GRAPH_SUCCESS) {
         MS_LOG(EXCEPTION) << "Add data edge failed, src identity_node: " << GetGNodeName(*node_input.first)
-                          << ", index: "
-                          << ", dst identity_node: " << GetGNodeName(*node_output.first)
+                          << ", index: , dst identity_node: " << GetGNodeName(*node_output.first)
                           << ", index: " << node_output.second << ", ret: " << ret;
         return;
       }
