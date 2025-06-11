@@ -19,6 +19,7 @@
 #include <vector>
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/math_op_name.h"
 #include "mindspore/core/mindrt/include/thread/threadpool.h"
 #include "runtime/graph_scheduler/scheduler_helper.h"
 #include "runtime/graph_scheduler/actor/memory_manager_actor.h"

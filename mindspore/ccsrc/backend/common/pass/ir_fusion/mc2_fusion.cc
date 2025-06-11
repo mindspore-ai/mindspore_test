@@ -264,6 +264,12 @@ CNodePtr MatmulReduceScatterFusion::CreateFusionCNode(const FuncGraphPtr &func_g
 
   auto matmul_cnode_users = matmul_cnode->func_graph()->manager()->node_users()[matmul_cnode];
 
+  for (const auto &user : matmul_cnode_users) {
+    if (user.first != reduce_scatter_cnode && !IsPrimitiveCNode(user.first, prim::kPrimUpdateState)) {
+      return {};
+    }
+  }
+
   auto trans_input = GetInputValueFromCNode<bool>(matmul_cnode, kIndex3);
   auto trans_x2 = GetInputValueFromCNode<bool>(matmul_cnode, kIndex4);
   // Ensure trans_input is false for mc2 and lccl fusion
