@@ -208,7 +208,7 @@ MemoryInfo NUMAAdapter::GetNodeSize(int node_id) const {
   if (!Available() || node_id < 0) {
     return mem_info;
   }
-  mem_info.total = numa_interfaces_.numa_node_size64(node_id, &mem_info.free);
+  mem_info.total = numa_interfaces_.numa_node_size64(node_id, &mem_info.unused);
   return mem_info;
 }
 
