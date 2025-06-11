@@ -333,6 +333,7 @@ void DumpJsonParser::UpdateDumpIter(int cur_step_count) {
 }
 
 void DumpJsonParser::UpdateUserDumpStep(const uint32_t step) {
+  MS_LOG(INFO) << "Do dump step update:" << step;
   if (!dump_user_step_flag_) {
     MS_LOG(WARNING) << "Costomized step function has not enabled, step update does not work!";
   }
