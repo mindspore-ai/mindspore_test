@@ -67,7 +67,7 @@ tensor::TensorPtr IndexFillScalarAscendCustomize(const std::shared_ptr<OpRunner>
   }
 
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input);
-  PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), op->outputs());
+  PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
 
   // Async
   PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([op, input, dim_imm, index_vector, value]() {
