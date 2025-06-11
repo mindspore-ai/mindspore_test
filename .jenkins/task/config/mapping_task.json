@@ -1066,6 +1066,7 @@
       "mindspore/lite/CMakeLists.txt",
       "mindspore/lite/minddata/CMakeLists.txt",
       "mindspore/lite/minddata/dataset",
+      "mindspore/lite/minddata/wrapper",
       "mindspore/ccsrc/minddata/dataset/api",
       "mindspore/ccsrc/minddata/dataset/callback",
       "mindspore/ccsrc/minddata/dataset/core",
