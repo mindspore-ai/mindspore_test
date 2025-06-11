@@ -15,6 +15,7 @@
 """Test the feature with one stage"""
 import numpy
 import types
+import pytest
 from mindspore import Tensor, jit
 from mindspore._c_expression import get_code_extra
 from tests.mark_utils import arg_mark
@@ -23,7 +24,7 @@ from tests.st.pi_jit.share.utils import pi_jit_with_config
 
 cfg = {"print_after_all": False}
 
-
+@pytest.mark.skip(reason='no one stage now')
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_code_generator_with_complete_graph():
     """
@@ -57,7 +58,7 @@ def test_code_generator_with_complete_graph():
     assert non_code is None and non_phase is None
     assert isinstance(graph_phase, str) and isinstance(new_code, types.CodeType)
 
-
+@pytest.mark.skip(reason='no one stage now')
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_code_generator_with_exception():
     """
