@@ -46,7 +46,7 @@ mindspore.mint.nn.functional.conv2d
         - **dilation** (Union(int, tuple[int], list[int])，可选) - 卷积核元素间的间隔。数据类型为int或由2个int组成的tuple。若 :math:`k > 1` ，则卷积核间隔 `k` 个元素进行采样。垂直和水平方向上的 `k` ，其取值范围分别为[1, H]和[1, W]。默认值： ``1`` 。
         - **groups** (int，可选) - 将过滤器拆分为组。默认值： ``1`` 。
 
-          - :math:`(C_{in} \text{ % } \text{groups} == 0)` ， :math:`(C_{out} \text{ % } \text{groups} == 0)` ， :math:`(C_{out} >= \text{groups})` ， :math:`(\text{kernel_size[1]} = C_{in} / \text{groups})` 。
+          - :math:`(C_{in} \text{ % } \text{groups} == 0)` ， :math:`(C_{out} \text{ % } \text{groups} == 0)` ， :math:`(C_{out} >= \text{groups})` ， :math:`(\text{weight[1]} = C_{in} / \text{groups})` 。
 
     返回：
         Tensor，卷积后的值。shape为 :math:`(N, C_{out}, H_{out}, W_{out})` 。
