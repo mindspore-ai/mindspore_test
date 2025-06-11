@@ -88,6 +88,7 @@ bool MinMaximumGrad::IsOriginMaxMinGrad(const AnfNodePtr &node) {
 
   auto cnode = node->cast<CNodePtr>();
   auto prim = GetValueNode<PrimitivePtr>(cnode->input(0));
+  MS_EXCEPTION_IF_NULL(prim);
   auto x_v = prim->GetAttr("grad_x");
   auto y_v = prim->GetAttr("grad_y");
   if (x_v == nullptr || y_v == nullptr || !x_v->isa<BoolImm>() || !y_v->isa<BoolImm>()) {

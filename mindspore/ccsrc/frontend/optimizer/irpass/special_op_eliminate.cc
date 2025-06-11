@@ -82,7 +82,6 @@ AnfNodePtr SpecialOpEliminater::operator()(const OptimizerPtr &optimizer, const 
 
 // {PrimVirtualDataset, X} -> X
 // {PrimVirtualDataset, Xs} -> {prim::kPrimMakeTuple, Xs}
-
 AnfNodePtr VirtualDatasetEliminater::operator()(const OptimizerPtr &, const AnfNodePtr &node) {
   if (!IsPrimitiveCNode(node, prim::kPrimVirtualDataset) || node->func_graph() == nullptr ||
       parallel::HasNestedMetaFg(node->func_graph())) {
@@ -178,7 +177,6 @@ AnfNodePtr DumpGradientEliminater::operator()(const OptimizerPtr &, const AnfNod
 }
 
 // {prim::kPrimMiniStepAllGather, X, Z} -> {prim::kPrimAllGather, X}
-
 AnfNodePtr MiniStepAllGatherPass::operator()(const OptimizerPtr &, const AnfNodePtr &node) {
   if (!IsPrimitiveCNode(node, prim::kPrimMiniStepAllGather) || node->func_graph() == nullptr) {
     return nullptr;
@@ -222,7 +220,6 @@ AnfNodePtr MiniStepAllGatherPass::operator()(const OptimizerPtr &, const AnfNode
 }
 
 // {prim::kPrimMicroStepAllGather, X, Z} -> {prim::kPrimAllGather, X}
-
 AnfNodePtr MicroStepAllGatherPass ::operator()(const OptimizerPtr &, const AnfNodePtr &node) {
   if (!IsPrimitiveCNode(node, prim::kPrimMicroStepAllGather) || node->func_graph() == nullptr) {
     return nullptr;
@@ -282,8 +279,7 @@ AnfNodePtr ResetDeferInline::operator()(const OptimizerPtr &, const AnfNodePtr &
   return nullptr;
 }
 
-// {PrimZerosLike, Y} ->
-// {PrimFill, {PrimDType, Y}, {PrimShape, Y}, 0}
+// {PrimZerosLike, Y} -> {PrimFill, {PrimDType, Y}, {PrimShape, Y}, 0}
 ZeroLikeFillZero::ZeroLikeFillZero() {
   py::gil_scoped_acquire gil;
   PrimFill_ = prim::GetPythonOps("fill", "mindspore.ops.functional")->cast<PrimitivePtr>();
@@ -334,7 +330,6 @@ void ZeroLikeFillZero::Visit(const AnfNodePtr &node) { y_ = node; }
 
 // {prim::kPrimDepend, X, ValueCond} -> X
 // {prim::kPrimDepend, {prim, X, ...}, X} -> {prim, X, ...}
-
 AnfNodePtr DependValueElim::operator()(const OptimizerPtr &, const AnfNodePtr &node) {
   PatternNode<AnfNodePtr> x;
   PatternNode cond;
@@ -357,13 +352,14 @@ bool DependValueElim::IsUsedByOther(const AnfNodePtr &node, const AnfNodePtr &us
 // {{prim:getattr, {prim::resolve, SymbolStr, C}, zeros_like}, Xy} ->Tensor(0, shape(Xy))
 // {prim:getattr, {prim::resolve, SymbolStr, zeros_like}, Xy} ->Tensor(0, shape(Xy))
 // {{prim::resolve, CommonOPS, getitem}, (tensor0, tensor1,...), 0} -> tensor0
-
 bool PynativeEliminater::CheckNameSpaceVNode(const AnfNodePtr &node, const std::string &str_value) const {
   ValueNodePtr value_node = node->cast<ValueNodePtr>();
   if (value_node == nullptr) {
     return false;
   }
-  auto module_name = GetValueNode<parse::NameSpacePtr>(value_node)->module();
+  auto name_space = GetValueNode<parse::NameSpacePtr>(value_node);
+  MS_EXCEPTION_IF_NULL(name_space);
+  auto module_name = name_space->module();
   return module_name.find(str_value) != std::string::npos;
 }
 
@@ -372,14 +368,18 @@ bool PynativeEliminater::CheckSymbolVNode(const AnfNodePtr &node, const std::str
   if (value_node == nullptr) {
     return false;
   }
-  return GetValueNode<parse::SymbolPtr>(value_node)->symbol() == str_value;
+  auto symbol = GetValueNode<parse::SymbolPtr>(value_node);
+  MS_EXCEPTION_IF_NULL(symbol);
+  return symbol->symbol() == str_value;
 }
 bool PynativeEliminater::CheckStrVNode(const AnfNodePtr &node, const std::string &str_value) const {
   ValueNodePtr value_node = node->cast<ValueNodePtr>();
   if (value_node == nullptr) {
     return false;
   }
-  return GetValueNode<StringImmPtr>(value_node)->value() == str_value;
+  auto string_imm = GetValueNode<StringImmPtr>(value_node);
+  MS_EXCEPTION_IF_NULL(string_imm);
+  return string_imm->value() == str_value;
 }
 
 ValuePtr PynativeEliminater::FillGetItem(const ValuePtr &value, const ValuePtr &idx, const AnfNodePtr &node) const {
@@ -576,7 +576,10 @@ AnfNodePtr AllReduceConstElim::operator()(const OptimizerPtr &, const AnfNodePtr
     auto primitive = GetCNodePrimitive(prim_cnode);
     MS_EXCEPTION_IF_NULL(primitive);
     auto reduce_op = primitive->GetAttr("op");
-    auto group = primitive->GetAttr("group")->ToString();
+    MS_EXCEPTION_IF_NULL(reduce_op);
+    auto reduce_group = primitive->GetAttr("group");
+    MS_EXCEPTION_IF_NULL(reduce_group);
+    auto group = reduce_group->ToString();
     // For sum operation, multiply constant tensor by number of devices
     if (reduce_op->ToString() == "sum") {
       uint32_t num_of_devices;
