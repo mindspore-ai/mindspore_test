@@ -530,10 +530,11 @@ bool GPUResManager::Copy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncP
                   << " to:" << dst_device_address->PrintInfo();
     return true;
   }
+  size_t copy_size = src_device_address->GetSize();
   if (dst_device_address->GetSize() < src_device_address->GetSize()) {
-    MS_LOG(ERROR) << "Src size is greater than dst size, src device address:" << src_device_address->PrintInfo()
-                  << " dst:" << dst_device_address->PrintInfo();
-    return false;
+    MS_LOG(WARNING) << "Src size is greater than dst size, src device address:" << src_device_address->PrintInfo()
+                    << " dst:" << dst_device_address->PrintInfo();
+    copy_size = dst_device_address->GetSize();
   }
   if (copy_type == cudaMemcpyKind::cudaMemcpyDeviceToDevice &&
       (dst_device_address->format() != src_device_address->format() ||
@@ -553,7 +554,7 @@ bool GPUResManager::Copy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncP
   switch (copy_type) {
     case cudaMemcpyKind::cudaMemcpyDeviceToHost: {
       if (!CudaDriver::CopyDeviceMemToHostAsync(dst_device_address->GetDevicePtr(), src_device_address->GetDevicePtr(),
-                                                src_device_address->GetSize(), stream)) {
+                                                copy_size, stream)) {
         MS_LOG(ERROR) << "CopyDeviceMemToHostAsync failed from device address:" << src_device_address->PrintInfo()
                       << " to:" << dst_device_address->PrintInfo();
       }
@@ -561,7 +562,7 @@ bool GPUResManager::Copy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncP
     }
     case cudaMemcpyKind::cudaMemcpyHostToDevice: {
       if (!CudaDriver::CopyHostMemToDeviceAsync(dst_device_address->GetDevicePtr(), src_device_address->GetDevicePtr(),
-                                                src_device_address->GetSize(), stream)) {
+                                                copy_size, stream)) {
         MS_LOG(ERROR) << "CopyHostMemToDeviceAsync failed from device address:" << src_device_address->PrintInfo()
                       << " to:" << dst_device_address->PrintInfo();
         return false;
@@ -570,8 +571,7 @@ bool GPUResManager::Copy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncP
     }
     case cudaMemcpyKind::cudaMemcpyDeviceToDevice: {
       if (!CudaDriver::CopyDeviceMemToDeviceAsync(dst_device_address->GetDevicePtr(),
-                                                  src_device_address->GetDevicePtr(), src_device_address->GetSize(),
-                                                  stream)) {
+                                                  src_device_address->GetDevicePtr(), copy_size, stream)) {
         MS_LOG(ERROR) << "CopyDeviceMemToHostAsync failed from device address:" << src_device_address->PrintInfo()
                       << " to:" << dst_device_address->PrintInfo();
       }
