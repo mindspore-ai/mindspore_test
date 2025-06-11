@@ -696,8 +696,9 @@ int DecreaseTransposeAlgo::SetSubGraphOutput(const FuncGraphPtr &sub_graph) {
       continue;
     }
     auto trans_cnode = return_node->input(i)->cast<CNodePtr>();
-    MS_ASSERT(trans_cnode != nullptr);
+    MS_CHECK_TRUE_MSG(trans_cnode != nullptr, lite::RET_ERROR, "trans_cnode is nullptr!");
     auto trans_input = trans_cnode->input(1);
+    MS_CHECK_TRUE_MSG(trans_input != nullptr, lite::RET_ERROR, "trans_input is nullptr!");
     auto trans_input_name = trans_input->fullname_with_scope();
     if (utils::isa<ParameterPtr>(trans_input)) {
       trans_input->cast<ParameterPtr>()->set_name(node_name);

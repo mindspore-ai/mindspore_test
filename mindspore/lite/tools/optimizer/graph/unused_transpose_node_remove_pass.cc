@@ -48,7 +48,7 @@ std::vector<int> GetTransposePerm(const CNodePtr &node) {
     return perm;
   }
   auto perm_param = perm_node->cast<ParameterPtr>();
-  MS_ASSERT(perm_param != nullptr);
+  MS_EXCEPTION_IF_NULL(perm_param);
   if (!perm_param->has_default() || perm_param->default_param() == nullptr) {
     return perm;
   }

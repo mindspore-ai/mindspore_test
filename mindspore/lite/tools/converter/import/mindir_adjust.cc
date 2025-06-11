@@ -236,6 +236,7 @@ int MindirAdjust::ConvertQuantParams(std::shared_ptr<AnfNode> anf_node, const Fu
     return lite::RET_NO_CHANGE;
   }
   auto cnode = anf_node->cast<CNodePtr>();
+  MS_CHECK_TRUE_MSG(cnode != nullptr, lite::RET_NULL_PTR, "cnode is nullptr!");
   if (cnode->inputs().empty() || cnode->input(0) == nullptr) {
     MS_LOG(ERROR) << "the cnode is invalid.";
     return lite::RET_NULL_PTR;

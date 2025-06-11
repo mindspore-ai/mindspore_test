@@ -77,6 +77,7 @@ bool OutputVariablePass::Run(const FuncGraphPtr &graph) {
       return false;
     }
     abstract::ShapePtr shape = dyn_cast<abstract::Shape>(make_tuple_input->Shape());
+    MS_CHECK_TRUE_MSG(shape != nullptr, false, "shape is nullptr!");
     tensor::TensorPtr tensor_data = std::make_shared<tensor::Tensor>(type_ptr->type_id(), shape->shape());
 
     float *data_addr = static_cast<float *>(tensor_data->data_c());

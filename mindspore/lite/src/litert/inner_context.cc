@@ -76,6 +76,7 @@ int InnerContext::CreateThreadPool(bool is_control_flow) {
                                                             this->affinity_core_list_, bind_mode_, runner_id_);
       } else if (thread_num_ == 1 && !IsCpuFloat16Enabled() && !is_control_flow) {
         thread_pool_ = ThreadPool::CreateThreadPool(thread_num_ - 1);
+        MS_CHECK_TRUE_MSG(thread_pool_ != nullptr, RET_NULL_PTR, "Create Allocator failed");
         thread_pool_->SetCpuAffinity(static_cast<mindspore::BindMode>(bind_mode_));
       } else {
 #endif
@@ -86,6 +87,7 @@ int InnerContext::CreateThreadPool(bool is_control_flow) {
 #endif
 #else
       thread_pool_ = ThreadPool::CreateThreadPool(thread_num_ - 1);
+      MS_CHECK_TRUE_MSG(thread_pool_ != nullptr, RET_NULL_PTR, "Create Allocator failed");
       thread_pool_->SetCpuAffinity(static_cast<mindspore::BindMode>(bind_mode_));
 #endif
     }

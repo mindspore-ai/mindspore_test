@@ -399,6 +399,7 @@ CNodePtr GroupNormSiluFusion::CreateGroupNormSiluNodeForSDWithCast(const std::st
   MS_LOG(INFO) << "GroupNormSilu with cast";
   MS_CHECK_TRUE_RET(node != nullptr, nullptr);
   auto cnode = node->cast<CNodePtr>();  // mul_2
+  MS_CHECK_TRUE_RET(cnode != nullptr, nullptr);
 
   auto cast = cnode->input(1)->cast<CNodePtr>();
   MS_CHECK_TRUE_RET(cast != nullptr, nullptr);

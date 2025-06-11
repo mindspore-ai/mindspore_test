@@ -235,6 +235,7 @@ int AffineInt8Coder::PrepareIncreMatmulOp(CoderContext *const context) {
                               .data_type(kNumberTypeInt8)
                               .build(schema_version_);
   delete (node_);
+  MS_CHECK_TRUE_MSG(increment_matmul_coder_ != nullptr, RET_ERROR, "increment_matmul_coder_ is nullptr");
   MS_CHECK_RET_CODE(increment_matmul_coder_->Prepare(context), "increment matmul coder prepare failed.");
   return RET_OK;
 }

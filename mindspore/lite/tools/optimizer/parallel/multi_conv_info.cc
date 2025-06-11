@@ -179,7 +179,7 @@ bool MultiConvSplit::SplitSingleConv(const AnfNodePtr &ori_node, const std::vect
                                      std::vector<AnfNodePtr> *outputs_node) {
   MS_ASSERT(ori_node != nullptr && outputs_node != nullptr);
   auto ori_conv_cnode = ori_node->cast<CNodePtr>();
-  MS_ASSERT(ori_conv_cnode != nullptr);
+  MS_CHECK_TRUE_MSG(ori_conv_cnode != nullptr, false, "ori_conv_cnode is nullptr!");
   auto ori_attr = ops::GetOperator<ops::Conv2DFusion>(ori_conv_cnode->input(kAnfPrimitiveIndex));
   MS_ASSERT(ori_attr != nullptr);
   for (int output_conv_index = 0; output_conv_index < static_cast<int>(split_info_.out_num); output_conv_index++) {

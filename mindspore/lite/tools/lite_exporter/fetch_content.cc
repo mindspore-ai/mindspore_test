@@ -104,7 +104,9 @@ STATUS GetShapeVectorFromStringTensor(const tensor::TensorPtr &tensor_info, Shap
 }
 
 STATUS GetDataTypeAndShape(const ParameterPtr &param_node, TypeId *data_type, ShapeVector *shape_vector) {
-  MS_ASSERT(param_node != nullptr && data_type != nullptr && shape_vector != nullptr);
+  MS_CHECK_TRUE_MSG(param_node != nullptr, RET_ERROR, "param_node is nullptr");
+  MS_CHECK_TRUE_MSG(data_type != nullptr, RET_ERROR, "data_type is nullptr");
+  MS_CHECK_TRUE_MSG(shape_vector != nullptr, RET_ERROR, "shape_vector is nullptr");
   auto abstract_base = param_node->abstract();
   if (abstract_base == nullptr) {
     MS_LOG(ERROR) << "Abstract of parameter is nullptr, " << param_node->name();

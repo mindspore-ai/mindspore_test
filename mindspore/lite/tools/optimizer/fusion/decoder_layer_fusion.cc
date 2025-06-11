@@ -518,6 +518,7 @@ CNodePtr DecoderLayerFusion::CreateMaskedDecoderLayerFusionNode(const FuncGraphP
   auto new_node = func_graph->NewCNode(new_node_inputs);
   MS_CHECK_TRUE_RET(new_node != nullptr, nullptr);
   auto old_node = node->cast<CNodePtr>();
+  MS_CHECK_TRUE_RET(old_node != nullptr, nullptr);
   MS_CHECK_TRUE_RET(old_node->abstract() != nullptr, nullptr);
   new_node->set_abstract(old_node->abstract()->Clone());
   new_node->set_fullname_with_scope(node->fullname_with_scope() + "/decoder_layer");

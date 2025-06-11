@@ -182,7 +182,7 @@ OpParameter *PopulateSparseSoftmaxCrossEntropyWithLogitsParameter(const void *pr
   MS_CHECK_TRUE_MSG(ret == EOK, nullptr, "memset_s failed");
   auto primitive = static_cast<const schema::Primitive *>(prim);
   auto value = primitive->value_as_SparseSoftmaxCrossEntropyWithLogits();
-  MS_ASSERT(value != nullptr);
+  MS_CHECK_TRUE_MSG(value != nullptr, nullptr, "value is nullptr!");
   sce_param->op_parameter_.type_ = primitive->value_type();
   sce_param->is_grad_ = value->is_grad();
   return reinterpret_cast<OpParameter *>(sce_param);
@@ -445,7 +445,7 @@ OpParameter *PopulateBNGradParameter(const void *prim) {
   MS_CHECK_TRUE_MSG(ret == EOK, nullptr, "memset_s failed");
   auto primitive = static_cast<const schema::Primitive *>(prim);
   auto value = primitive->value_as_BatchNormGrad();
-  MS_ASSERT(value != nullptr);
+  MS_CHECK_TRUE_MSG(value != nullptr, nullptr, "value is nullptr!");
   bngrad_param->op_parameter_.type_ = primitive->value_type();
   bngrad_param->epsilon_ = value->epsilon();
   bngrad_param->is_training_ = value->is_training();
@@ -462,7 +462,7 @@ OpParameter *PopulateDropoutParameter(const void *prim) {
   MS_CHECK_TRUE_MSG(ret == EOK, nullptr, "memset_s failed");
   auto primitive = static_cast<const schema::Primitive *>(prim);
   auto value = primitive->value_as_Dropout();
-  MS_ASSERT(value != nullptr);
+  MS_CHECK_TRUE_MSG(value != nullptr, nullptr, "value is nullptr!");
   dropout_parameter->op_parameter_.type_ = primitive->value_type();
   dropout_parameter->ratio_ = value->keep_prob();
   if (dropout_parameter->ratio_ < 0.f || dropout_parameter->ratio_ > 1.f) {
