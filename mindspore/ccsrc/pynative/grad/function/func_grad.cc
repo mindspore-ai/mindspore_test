@@ -582,9 +582,31 @@ void ProcessForwardOutput(const ValuePtrList &flatten_outputs, const TensorPtrSe
   ProcessPost(flatten_outputs, dirty_tensors, output_tensors, num_diff_tensors);
 }
 
+bool CheckTupleNeedGrad(const ValueSequencePtr &seq) {
+  const auto &elements = seq->value();
+  for (const auto &element : elements) {
+    if (element->isa<ValueSequence>()) {
+      const auto &arg_tuple = element->cast<ValueSequencePtr>();
+      if (CheckTupleNeedGrad(arg_tuple)) {
+        return True;
+      }
+    } else if (element->isa<tensor::Tensor>()) {
+      const auto &tensor = element->cast<tensor::TensorPtr>();
+      if (impl::RequiresGrad(tensor)) {
+        return True;
+      }
+    }
+  }
+  return false;
+}
+
 std::vector<bool> GetNeedGradIndexes(const VectorRef &args) {
   std::vector<bool> need_grad_indexes;
   std::transform(args.begin(), args.end(), std::back_inserter(need_grad_indexes), [](const auto &arg) {
+    if (utils::isa<ValueSequence>(arg)) {
+      const auto &arg_tuple = utils::cast<ValueSequencePtr>(arg);
+      return CheckTupleNeedGrad(arg_tuple);
+    }
     if (!utils::isa<tensor::Tensor>(arg)) {
       return false;
     }
@@ -1074,6 +1096,12 @@ void GraphBackwardNode::FilterGraphOutput(bool is_filtered) {
     if (cache_filtered_graph != nullptr) {
       MS_LOG(INFO) << "Found cached filtered grad graph for hash key " << need_grad_hash;
       func_graph_ = cache_filtered_graph;
+      MS_EXCEPTION_IF_NULL(func_graph_->output());
+      auto graph_output = func_graph_->output()->cast<CNodePtr>();
+      if (graph_output == nullptr) {
+        MS_LOG(INFO) << "Do not filter grad output for constant output " << func_graph_->output()->DebugString();
+        return;
+      }
       UpdateNextEdge();
       return;
     }

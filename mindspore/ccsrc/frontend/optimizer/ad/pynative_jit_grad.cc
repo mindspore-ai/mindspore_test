@@ -51,8 +51,8 @@ mindspore::HashMap<std::string, FuncGraphPtr> origin_grad_graph_;
 mindspore::HashMap<std::string, mindspore::HashMap<size_t, FuncGraphPtr>> filtered_grad_graph;
 
 std::pair<FuncGraphPtr, FuncGraphPtr> GetGradAndForwardGraph(const std::string &key) {
-  auto iter = pass_grad_graph_param_.find(key);
-  if (iter == pass_grad_graph_param_.end()) {
+  auto iter = pass_grad_graph_.find(key);
+  if (iter == pass_grad_graph_.end()) {
     return std::make_pair(nullptr, nullptr);
   }
   return iter->second;
@@ -69,8 +69,7 @@ void StoreOriginGradGraph(const std::string &key, const FuncGraphPtr &fg) {
 FuncGraphPtr GetOriginGradGraph(const std::string &key) {
   auto iter = origin_grad_graph_.find(key);
   if (iter == origin_grad_graph_.end()) {
-    MS_LOG(ERROR) << "Key " << key << " can not find origin graph.";
-    return nullptr;
+    MS_LOG(EXCEPTION) << "Key " << key << " can not find origin graph.";
   }
   return iter->second;
 }
@@ -508,6 +507,8 @@ void ClearGradCache() {
   jit_forward_resource.clear();
   original_bprop_graph.clear();
   check_invalid_dout_bprop_graph.clear();
+  origin_grad_graph_.clear();
+  filtered_grad_graph.clear();
 }
 
 void CheckBpropGraphHasInvalidDout(const std::string &cache_key, const std::vector<bool> &need_grads) {
