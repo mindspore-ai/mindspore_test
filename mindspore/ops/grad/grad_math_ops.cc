@@ -152,7 +152,8 @@ inline NodePtr SelectScalar(BpropBuilder *ib, const NodePtr &cond, const NodePtr
     auto x = ib->Emit("FillV2", {ib->Shape(y), x_scalar});
     return ib->Select(cond, x, y);
   } else {
-    return ib->MaskedFill(y, cond, x_scalar);
+    (void)ib->Emit("InplaceMaskedFillTensor", {y, cond, x_scalar});
+    return {y};
   }
 }
 
