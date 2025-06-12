@@ -240,7 +240,7 @@ bool AscendMemAdapter::DeInitialize() {
 namespace {
 struct HugeMemReserver {
   HugeMemReserver(size_t size, size_t reserver_size) {
-    MS_LOG(INFO) << "Huge mem reserve size : " << size << ", reserve_size : " << reserver_size << ".";
+    MS_LOG(INFO) << "Allocate size : " << size << ", reserve_size : " << reserver_size << ".";
     if (reserver_size < kMBToByte) {
       return;
     }
@@ -251,8 +251,9 @@ struct HugeMemReserver {
     if (ret == ACL_ERROR_NONE) {
       if (free_size < reserver_size + size) {
         MS_LOG(WARNING) << "Free size of huge page mem[" << free_size
-                        << "] is not enough for reserving, reserver_size : " << reserver_size << ", size : " << size
-                        << ", total size : " << total_size << ", trigger reserve operation.";
+                        << "] is less than the sum of reserver_size and allocate size. Reserve size " << reserver_size
+                        << ", allocate size : " << size << ", total ACL_HBM_MEM_HUGE size : " << total_size
+                        << ", trigger reserve operation.";
         if (free_size < reserver_size) {
           MS_LOG(ERROR) << "Free size of huge page mem[" << free_size
                         << "] is less than reserver_size : " << reserver_size
