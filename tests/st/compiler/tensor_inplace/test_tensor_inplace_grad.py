@@ -263,7 +263,7 @@ def test_tensor_inplace_add_grad_all_inputs_and_param():
     assert output == ((6, 1), (1, 1))
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0',
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1',
           card_mark='onecard', essential_mark='unessential')
 def test_tensor_inplace_scatter_grad():
     """

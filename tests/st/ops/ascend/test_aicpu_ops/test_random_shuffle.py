@@ -55,7 +55,7 @@ def test_random_shuffle_op_dtype(mode, dtype):
     assert output.shape == expect_shape
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
 @pytest.mark.parametrize("shape", [(5,), (2, 3), (12, 3, 5)])
 def test_random_shuffle_op_tensor(mode, shape):
