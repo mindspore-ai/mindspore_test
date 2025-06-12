@@ -54,7 +54,7 @@ void SpeedFusionAttentionGradAscendCustomize(
   numels_tensor->data_sync();
   int64_t numels_value = *static_cast<int64_t *>(numels_tensor->data_c());
   double keep_prob_value = static_cast<double>(GetValue<float>(keep_prob));
-  if (0 < keep_prob_value && keep_prob_value < 1.) {
+  if (keep_prob_value > 0.0 && keep_prob_value < 1.0) {
     auto p = std::make_shared<FP32Imm>(static_cast<float>(1 - keep_prob_value));
     auto shape = std::make_shared<ValueTuple>(std::vector<ValuePtr>{MakeValue(numels_value)});
     auto dtype = std::make_shared<Int64Imm>(static_cast<int64_t>(query->Dtype()->type_id()));

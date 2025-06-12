@@ -1913,6 +1913,9 @@ def deprecated_pixel_shuffle(input, upscale_factor):
 
 def tensor_quant_matmul(x1, x2, scale, *, offset=None, pertoken_scale=None, bias=None, output_dtype=None,
                         x1_dtype=None, x2_dtype=None, pertoken_scale_dtype=None, scale_dtype=None, group_sizes=None):
+    r"""
+    For details, please refer to :func:`mindspore.ops.auto_generate.quant_matmul`.
+    """
     raise NotImplementedError('quant_matmul only supports Ascend.')
 
 

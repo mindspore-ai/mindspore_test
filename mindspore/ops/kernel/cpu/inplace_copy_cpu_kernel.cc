@@ -123,7 +123,7 @@ void ContinugousBroadCastTo(T *input, T *output, int64_t broadcast_dim, size_t b
   constexpr size_t kParallelDataLenThreshold = kGrainSize * sizeof(T);
   size_t copy_size = block_size * sizeof(T);
   if (copy_offsets.size() * copy_size > kParallelDataLenThreshold) {
-    auto copy_task = [&](size_t start, size_t end) {
+    auto copy_task = [input, output, &copy_offsets, copy_size](size_t start, size_t end) {
       for (size_t i = start; i < end; ++i) {
         auto ret = memcpy_s(output + copy_offsets[i].second, copy_size, input + copy_offsets[i].first, copy_size);
         if (ret != EOK) {
@@ -259,7 +259,7 @@ void InplaceCopyCpuKernelMod::InplaceCopySameDtypeSameShape(T *input, T *output,
       MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', memcpy_s error. Error no: " << ret << ".";
     }
   } else {
-    auto inplace_copy_task = [&](size_t start, size_t end) {
+    auto inplace_copy_task = [this, input, output](size_t start, size_t end) {
       size_t length = (end - start) * sizeof(T);
       auto ret = memcpy_s(output + start, length, input + start, length);
       if (ret != EOK) {
