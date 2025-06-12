@@ -56,7 +56,7 @@ from mindspore.ops.auto_generate import (reflection_pad_1d_op, reflection_pad_2d
                                          masked_fill_op, masked_select, ones, flatten_ext, conv_transpose2d,
                                          func_max_pool2d_op)
 # 2
-
+from mindspore.ops.auto_generate.pyboost_inner_prim import grid_sampler_2d_impl, grid_sampler_3d_impl
 # 3
 
 # 4
@@ -5366,7 +5366,7 @@ def max_pool3d(x, kernel_size, stride=None, padding=0, dilation=1, ceil_mode=Fal
     return out
 
 
-def grid_sample(input, grid, mode='bilinear', padding_mode='zeros', align_corners=False):
+def grid_sample(input, grid, mode='bilinear', padding_mode='zeros', align_corners=None):
     """
     Given an `input` and a flow-field `grid`, computes the `output` using `input` values and pixel locations from
     `grid`. Only spatial (4-D) and volumetric (5-D) `input` is supported.
@@ -5415,7 +5415,7 @@ def grid_sample(input, grid, mode='bilinear', padding_mode='zeros', align_corner
         align_corners (bool, optional): If set to `True`, the extrema (-1 and 1) are considered as referring to
             the center points of the input's corner pixels. If set to `False`, they are instead considered as referring
             to the corner points of the input's corner pixels, making the sampling more resolution agnostic. Default:
-            ``False`` .
+            ``None``, which is the same as ``False`` .
 
     Returns:
         Tensor, dtype is the same as `input` and whose shape is :math:`(N, C, H_{out}, W_{out})` (4-D) and
@@ -5452,11 +5452,10 @@ def grid_sample(input, grid, mode='bilinear', padding_mode='zeros', align_corner
           [[14.5      ]
            [14.8      ]]]]
     """
+    align_corners = False if align_corners is None else align_corners
     if input.ndim == 4:
-        _grid_sampler_2d = _get_cache_prim(NN_OPS.GridSampler2D)(mode, padding_mode, align_corners)
-        return _grid_sampler_2d(input, grid)
-    _grid_sampler_3d = _get_cache_prim(NN_OPS.GridSampler3D)(mode, padding_mode, align_corners)
-    return _grid_sampler_3d(input, grid)
+        return grid_sampler_2d_impl(input, grid, mode, padding_mode, align_corners)
+    return grid_sampler_3d_impl(input, grid, mode, padding_mode, align_corners)
 
 
 @constexpr
