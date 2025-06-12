@@ -505,7 +505,7 @@ def _count_redundancy_list(rank_num, param_name, redundancy_dict, device_num):
     return set()
 
 
-def _find_remove_redundancy_rank_id(pipe_param_list, single_param_dict, file_dict, saftensor_dict, redundancy_dict,
+def _find_remove_redundancy_rank_id(pipe_param_list, single_param_dict, file_dict, safetensor_dict, redundancy_dict,
                                     needed_rank, device_num, choice_func):
     """Find the rank_id under redundant groups."""
     io_time = 0
@@ -533,7 +533,7 @@ def _find_remove_redundancy_rank_id(pipe_param_list, single_param_dict, file_dic
                 if not isinstance(choice_out, (bool, str)):
                     raise ValueError("For 'unified_safetensors', the return value type of the function "
                                      f"'choice_func' must be bool or str, but got {type(choice_out)}.")
-            saftensor_dict[param_name] = output
+            safetensor_dict[param_name] = output
         else:
             raise ValueError(f"For _transform_safetensors_single, {param_name} should be in "
                              f"{redundancy_ranks}, but in {single_param_dict[param_name]}.")
@@ -588,10 +588,10 @@ def _transform_safetensors_single(needed_rank_list_map, all_safetensor_files_map
         needed_rank_list = needed_rank_list_key.split("-")
         for needed_rank in needed_rank_list:
             if pipe_param_list:
-                saftensor_dict = dict()
+                safetensor_dict = dict()
                 if src_strategy_file is not None:
                     io_time = _find_remove_redundancy_rank_id(pipe_param_list, single_param_dict, file_dict,
-                                                              saftensor_dict, redundancy_dict, needed_rank,
+                                                              safetensor_dict, redundancy_dict, needed_rank,
                                                               device_num, choice_func)
                     io_cost_time += io_time
                 else:
@@ -622,15 +622,15 @@ def _transform_safetensors_single(needed_rank_list_map, all_safetensor_files_map
                                 if not isinstance(choice_out, (bool, str)):
                                     raise ValueError("For 'unified_safetensors', the return value type of the function "
                                                      f"'choice_func' must be bool or str, but got {type(choice_out)}.")
-                            saftensor_dict[param_name] = output
+                            safetensor_dict[param_name] = output
             else:
                 start_time = time.time()
-                saftensor_dict = load_file(all_safetensor_files_map.get(int(needed_rank)))
+                safetensor_dict = load_file(all_safetensor_files_map.get(int(needed_rank)))
                 end_time = time.time()
                 cost_time = end_time - start_time
                 io_cost_time += cost_time
 
-            for param_name, param in saftensor_dict.items():
+            for param_name, param in safetensor_dict.items():
                 src_rank = int(needed_rank) % src_stage_device_num
                 param_total_dict[param_name][src_rank] = param
                 param_attr_dict[param_name][src_rank] = (True, False)
@@ -723,8 +723,8 @@ def transform_safetensors_by_stage(src_safetensors_dir, dst_safetensors_dir, ckp
         if not os.path.exists(local_file):
             raise ValueError("safetensor file {} in rank {} not exits: ".format(local_file, rank))
     for rank, file_name in safetensor_files_map.items():
-        saftensor_dict = load_file(file_name)
-        for param_name, param in saftensor_dict.items():
+        safetensor_dict = load_file(file_name)
+        for param_name, param in safetensor_dict.items():
             # cut the parameter not in the pipeline stage.
             if _parameter_not_in_local_stage(param_name, origin_src_strategy_list, src_strategy_list) \
                     and _parameter_not_in_local_stage(param_name, origin_dst_strategy_list, dst_strategy_list):
@@ -778,8 +778,8 @@ def transform_safetensors_by_rank(rank_id, safetensor_files_map, save_safetensor
     origin_dst_strategy_list = _extract_layout_map(dst_strategy_file)
     origin_src_strategy_list = _extract_layout_map(src_strategy_file)
     for rank, file_name in safetensor_files_map.items():
-        saftensor_dict = load_file(file_name)
-        for param_name, param in saftensor_dict.items():
+        safetensor_dict = load_file(file_name)
+        for param_name, param in safetensor_dict.items():
             # cut the parameter not in the pipeline stage.
             if _parameter_not_in_local_stage(param_name, origin_src_strategy_list, src_strategy_list) \
                     and _parameter_not_in_local_stage(param_name, origin_dst_strategy_list, dst_strategy_list):
@@ -914,7 +914,7 @@ def _transform_parallel_safetensor(rank_id, param_total_dict, param_attr_dict, s
         # when the from_layout is less devices, the safetensor_map for map[device_num] should using map[0]
         device_list = list(range(0, np.prod(from_tensor_layout[0])))
         if rank_id % device_num not in param_attr_dict[param_name] and src_strategy_file is None:
-            raise ValueError("The safetensor of rank {} is missing.".format(rank_id % device_num))
+            raise ValueError("The param: {} in rank {} is missing.".format(param_name, rank_id % device_num))
         param_rank_map = _get_needed_rank_transform_operator_map_by_layouts(from_tensor_layout, to_tensor_layout,
                                                                             device_list, rank_id)
 
@@ -1161,17 +1161,15 @@ def unified_safetensors(src_dir, src_strategy_file, dst_dir, merge_with_redundan
                 sub_list.append(item)
             else:
                 sub_list.append([-1])
+        split_num = end_index - start_index
+        res = list(range(start_index, end_index))
     else:
         sub_list = split_list
+        res = [i for i in range(split_num)]
 
     _save_hyper_param(split_dst_file, all_safetensor_files_map, name_list, dst_dir)
     _save_parameter_map_json(split_list, choice_func, split_dst_file, dst_dir, param_total_size)
 
-    if split_dst_file:
-        split_num = end_index - start_index
-        res = list(range(start_index, end_index))
-    else:
-        res = [i for i in range(split_num)]
     max_process = min(split_num, max_process_num)
     res = _split_list(res, max_process)
     processes = []
