@@ -37,3 +37,4 @@ quant_batch_matmul:
   dispatch:
     enable: True
     Ascend: QuantMatmulV4Ascend
+    InternalOpAscend: AutoGen
