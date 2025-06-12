@@ -34,7 +34,10 @@ struct CommKernelInfo {
   std::string group;
   int64_t src_rank{-1};
   int64_t dest_rank{-1};
-  std::string ToString() const { return name + group + std::to_string(src_rank) + std::to_string(dest_rank); }
+  std::string ToString() const {
+    return name + ", group:" + group + ", src_rank:" + std::to_string(src_rank) +
+           ", dest_rank:" + std::to_string(dest_rank);
+  }
 
   bool operator==(const CommKernelInfo &other) const {
     return (name == other.name) && (group == other.group) && (src_rank == other.src_rank) &&
