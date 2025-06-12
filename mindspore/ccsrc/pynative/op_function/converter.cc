@@ -930,6 +930,13 @@ bool ListTypeCheck(const py::object &obj, const ops::OP_DTYPE &type, int &idx, b
   return false;
 }
 
+static bool IsConverttablePythonType(const py::object &obj) {
+  if (obj.equal(py::type::of(py::bool_()))) {
+    return true;
+  }
+  return false;
+}
+
 bool TypeCheck(const py::object &obj, const ops::OP_DTYPE &type, int &idx, ConvertPair &convert_type) {
   switch (type) {
     case OP_DTYPE::DT_TENSOR:
@@ -960,7 +967,7 @@ bool TypeCheck(const py::object &obj, const ops::OP_DTYPE &type, int &idx, Conve
       }
       return false;
     case OP_DTYPE::DT_TYPE:
-      return py::isinstance<mindspore::Type>(obj);
+      return IsConverttablePythonType(obj) || py::isinstance<mindspore::Type>(obj);
     case OP_DTYPE::DT_STR:
       return py::isinstance<py::str>(obj);
     default:

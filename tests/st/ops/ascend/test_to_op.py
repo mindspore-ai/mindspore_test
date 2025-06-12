@@ -15,7 +15,6 @@
 from tests.mark_utils import arg_mark
 
 import numpy as np
-import pytest
 
 import mindspore as ms
 from mindspore import Tensor
@@ -65,3 +64,27 @@ def test_to_tensor_api_modes():
     test_to_tensor_api(ms.uint16)
     test_to_tensor_api(ms.int32)
     test_to_tensor_api(ms.int64)
+
+
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='unessential')
+def test_tensor_to():
+    """
+    Feature: Tensor 'to' method
+    Description: Test tensor to support deal python type 'bool'
+    Expectation: Success.
+    """
+    t0 = ms.Tensor([1, 2])
+    t0_bool = t0.to(bool)
+    assert t0_bool.dtype == ms.common.dtype.bool_
+    t1 = ms.Tensor([])
+    t1_bool = t1.to(bool)
+    assert t1_bool.shape == (0,)
+    t2 = ms.Tensor(np.random.randn(2, 4))
+    t2_bool = t2.to(bool)
+    assert t2_bool.dtype == ms.common.dtype.bool_
+    t3 = ms.Tensor([True, False])
+    t3_bool = t3.to(bool)
+    assert t3_bool.dtype == ms.common.dtype.bool_
