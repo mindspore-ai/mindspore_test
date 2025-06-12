@@ -18,7 +18,7 @@ from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
 import mindspore as ms
-from mindspore import mint, Tensor, jit, context, JitConfig, ops
+from mindspore import mint, Tensor, jit, context, ops
 
 
 @test_utils.run_with_cell
@@ -30,7 +30,7 @@ def scatter_backward_func(x, dim, index, src):
     return ops.grad(scatter_forward_func, (0, 3))(x, dim, index, src)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['GE', 'pynative', 'KBK'])
 def test_scatter_forward_backward(mode):
     """

@@ -80,7 +80,7 @@ def unique_consecutive_forward_func_dynamic(inputx, dim=1):
     return unique_consecutive(inputx, True, True, dim)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("mode", ["pynative", "KBK", "O2"])
 def test_ops_unique_consecutive_forward(mode):
     """
