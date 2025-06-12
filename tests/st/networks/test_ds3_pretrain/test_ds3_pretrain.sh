@@ -2,9 +2,8 @@
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
 export HCCL_CONNECT_TIMEOUT=3600
-export HCCL_IF_BASE_PORT=60010
 
-MindSpeed_LLM_PATH=../MindSpeed-Core-MS/MindSpeed-LLM
+MindSpeed_LLM_PATH=../scripts/LLM/MindSpeed-LLM
 
 export HCCL_DETERMINISTIC=true  # HCCL确定性
 export ASCEND_LAUNCH_BLOCKING=1  # 硬件确定性
@@ -17,7 +16,6 @@ NODE_RANK=0
 
 DATA_PATH="/home/workspace/mindspore_dataset/msadapter/test_input/net/test_ds3_pretrain/dataset/dataset/enwiki_text_document"
 TOKENIZER_MODEL="/home/workspace/mindspore_dataset/msadapter/test_input/net/test_ds3_pretrain/tokenizer"
-DATA_CACHE_PATH="./enwiki_text_document/"
 
 TP=1
 PP=2
@@ -54,7 +52,7 @@ MOE_ARGS="
     --first-k-dense-replace 1 \
     --moe-layer-freq 1 \
     --n-shared-experts 1 \
-    --num-experts 8 \
+    --num-experts 16 \
     --moe-router-topk 8 \
     --moe-intermediate-size 2048 \
     --moe-router-load-balancing-type noaux_tc \
@@ -76,8 +74,7 @@ ROPE_ARGS="
 
 GPT_ARGS="
     --spec mindspeed_llm.tasks.models.spec.deepseek_spec layer_spec \
-    --num-nextn-predict-layers 1 \
-    --share-mtp-embedding-and-output-weight \
+    --mtp-num-layers 1 \
     --no-shared-storage \
     --use-distributed-optimizer \
     --use-flash-attn \
@@ -91,7 +88,7 @@ GPT_ARGS="
     --context-parallel-size ${CP} \
     --context-parallel-algo  ${CP_TYPE} \
     --num-layers ${NUM_LAYERS} \
-    --hidden-size 2048 \
+    --hidden-size 7168 \
     --ffn-hidden-size 18432 \
     --num-attention-heads 128 \
     --tokenizer-type PretrainedFromHF  \
@@ -138,7 +135,6 @@ GPT_ARGS="
 
 DATA_ARGS="
     --data-path $DATA_PATH \
-    --data-cache-path $DATA_CACHE_PATH \
     --split 100,0,0
 "
 
@@ -159,4 +155,5 @@ msrun $DISTRIBUTED_ARGS ${MindSpeed_LLM_PATH}/pretrain_gpt.py \
     $MOE_ARGS \
     $OUTPUT_ARGS \
     --distributed-backend nccl \
+    --ai-framework mindspore \
     | tee ds3_pretrain.txt
