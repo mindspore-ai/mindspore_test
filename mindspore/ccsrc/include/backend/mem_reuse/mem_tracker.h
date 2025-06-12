@@ -39,9 +39,11 @@ namespace tracker {
 const char kStreamId[] = "stream_id";
 const char kEvent[] = "event";
 const char kGroup[] = "group";
+const char kSend[] = "Send";
 const char kCommRank[] = "comm_rank";
 const char kSrcRank[] = "src_rank";
 const char kDstRank[] = "dst_rank";
+const char kSendDstRank[] = "dest_rank";
 const char kRootRank[] = "root_rank";
 
 using DeviceMemPtr = const void *;
