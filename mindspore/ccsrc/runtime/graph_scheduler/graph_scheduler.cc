@@ -3838,10 +3838,9 @@ void GraphScheduler::OptimizeHeterInfoForSubGraphExecute(const GraphCompilerInfo
     MS_EXCEPTION_IF_NULL(kernel_info);
     if (common::AnfAlgo::GetOutputNumByAbstract(kernel->abstract()) !=
         kernel_info->output_kernel_tensor_list().size()) {
-      MS_LOG(WARNING) << "Invalid output abstract size:" << common::AnfAlgo::GetOutputNumByAbstract(kernel->abstract())
-                      << " and output kernel tensor size:" << kernel_info->output_kernel_tensor_list().size()
-                      << " for kernel:" << kernel->fullname_with_scope()
-                      << " in actor:" << super_kernel_actor->GetAID();
+      MS_LOG(DEBUG) << "Invalid output abstract size:" << common::AnfAlgo::GetOutputNumByAbstract(kernel->abstract())
+                    << " and output kernel tensor size:" << kernel_info->output_kernel_tensor_list().size()
+                    << " for kernel:" << kernel->fullname_with_scope() << " in actor:" << super_kernel_actor->GetAID();
       continue;
     }
     size_t output_num = kernel_info->output_kernel_tensor_list().size();
