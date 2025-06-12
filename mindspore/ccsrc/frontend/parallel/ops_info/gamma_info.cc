@@ -104,6 +104,7 @@ std::vector<StrategyPtr> GammaInfo::GenerateOpStrategies(int64_t stage_id) {
 void GammaInfo::UpdateShape(const CNodePtr &cnode) {
   MS_EXCEPTION_IF_NULL(cnode);
   auto input_node = cnode->input(1)->cast<ValueNodePtr>();
+  MS_EXCEPTION_IF_NULL(input_node);
   std::vector<int64_t> input_shape = GetValue<std::vector<int64_t>>(input_node->value());
   std::vector<Dimensions> stra = strategy_->GetInputDim();
   for (size_t i = 0; i < stra[0].size(); i++) {
@@ -141,6 +142,7 @@ void GammaInfo::ReplaceNodeInputOrAttrs() {
   }
 
   auto prim = GetValueNode<PrimitivePtr>(cnode->input(0));
+  MS_EXCEPTION_IF_NULL(prim);
   prim->set_attr(SEED, MakeValue(seed_ + seed_bias));
   prim->set_attr(SEED2, MakeValue(seed2_ + seed_bias));
 }

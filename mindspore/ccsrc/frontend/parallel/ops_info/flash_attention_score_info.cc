@@ -125,6 +125,7 @@ void FlashAttentionScoreInfo::UpdateDropoutGenMaskSliceShapeAndSeed(const CNodeP
 
   // Update seed according rank_id for DropoutGenMask
   PrimitivePtr prim = GetCNodePrimitive(dropout_gen_mask_cnode);
+  MS_EXCEPTION_IF_NULL(prim);
   auto seed_0 = GetValue<int64_t>(prim->GetAttr(SEED0));
   auto seed_1 = GetValue<int64_t>(prim->GetAttr(SEED1));
   int64_t rank_id = g_device_manager->rank_index_in_stage();
@@ -930,11 +931,10 @@ Status FlashAttentionScoreInfo::CheckStrategy(const StrategyPtr &strategy) {
          "set the strategy.";
     return FAILED;
   }
-  if (CheckStrategyExpected(strategy) == SUCCESS && CheckKVStrategy(name_, key_strategy, value_strategy) == SUCCESS) {
-    return SUCCESS;
-  } else {
+  if (CheckStrategyExpected(strategy) != SUCCESS || CheckKVStrategy(name_, key_strategy, value_strategy) != SUCCESS) {
     return FAILED;
   }
+  return SUCCESS;
 }
 
 Status FlashAttentionScoreInfo::CheckStrategyExpected(const StrategyPtr &strategy) {
@@ -1361,6 +1361,7 @@ void FlashAttentionScoreInfo::ReplaceNodeInputOrAttrs() {
       continue;
     }
     auto reshape_cnode = reshape_node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(reshape_cnode);
     if (!IsPrimitiveCNode(reshape_cnode->input(kIndex1), prim::kPrimDropoutGenMask)) {
       continue;
     }

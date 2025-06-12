@@ -224,6 +224,7 @@ void GetOriginRecomputeAndTargetNodes(const FuncGraphManagerPtr &mng,
 
 std::vector<AnfNodePtr> GetInputNodesWithFilter(const CNodePtr &node, std::function<bool(const AnfNodePtr &)> filter,
                                                 std::function<bool(const AnfNodePtr &)> push) {
+  MS_EXCEPTION_IF_NULL(node);
   auto func_graph = node->func_graph();
   MS_EXCEPTION_IF_NULL(func_graph);
   std::vector<AnfNodePtr> res;
@@ -268,6 +269,7 @@ void GetNewFirstTargetInputs(const std::vector<AnfNodePtr> &recompute_input_bord
       continue;
     }
     auto input_border_bprop_cnode = input_border_bprop_node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(input_border_bprop_cnode);
     for (size_t k = 1; k < input_border_bprop_cnode->size(); ++k) {
       if (!push_func(input_border_bprop_cnode->input(k))) {
         continue;
@@ -316,27 +318,29 @@ std::vector<AnfNodePtr> GetFirstTargetInputs(const std::vector<CNodePtr> &origin
                                              const mindspore::HashSet<CNodePtr> &target_nodes) {
   std::vector<AnfNodePtr> first_target_inputs;
   mindspore::HashMap<AnfNodePtr, bool> has_grad_inputs_map;
-  auto filt_func = [&](const AnfNodePtr &anode) {
+  auto filt_func = [&max_recomputed_sub_graph](const AnfNodePtr &anode) {
     if (!anode->isa<CNode>() || !anode->cast<CNodePtr>()->HasPrimalAttr(kPrimalAttrForwardUniqueId)) {
       return true;
     }
     auto c_node = anode->cast<CNodePtr>();
     auto forward_unique_id = GetValue<std::string>(c_node->GetPrimalAttr(kPrimalAttrForwardUniqueId));
-    return std::find_if(max_recomputed_sub_graph.begin(), max_recomputed_sub_graph.end(), [&](CNodePtr r_cnode) {
-             return r_cnode->HasPrimalAttr(kPrimalAttrUniqueId) &&
-                    GetValue<std::string>(r_cnode->GetPrimalAttr(kPrimalAttrUniqueId)) == forward_unique_id;
-           }) == max_recomputed_sub_graph.end();
+    return std::find_if(
+             max_recomputed_sub_graph.begin(), max_recomputed_sub_graph.end(), [&forward_unique_id](CNodePtr r_cnode) {
+               return r_cnode->HasPrimalAttr(kPrimalAttrUniqueId) &&
+                      GetValue<std::string>(r_cnode->GetPrimalAttr(kPrimalAttrUniqueId)) == forward_unique_id;
+             }) == max_recomputed_sub_graph.end();
   };
-  auto push_func = [&](const AnfNodePtr &anode) {
+  auto push_func = [&max_recomputed_sub_graph](const AnfNodePtr &anode) {
     if (!anode->isa<CNode>() || !anode->cast<CNodePtr>()->HasPrimalAttr(kPrimalAttrForwardUniqueId)) {
       return false;
     }
     auto c_node = anode->cast<CNodePtr>();
     auto forward_unique_id = GetValue<std::string>(c_node->GetPrimalAttr(kPrimalAttrForwardUniqueId));
-    return std::find_if(max_recomputed_sub_graph.begin(), max_recomputed_sub_graph.end(), [&](CNodePtr r_cnode) {
-             return r_cnode->HasPrimalAttr(kPrimalAttrUniqueId) &&
-                    GetValue<std::string>(r_cnode->GetPrimalAttr(kPrimalAttrUniqueId)) == forward_unique_id;
-           }) == max_recomputed_sub_graph.end();
+    return std::find_if(
+             max_recomputed_sub_graph.begin(), max_recomputed_sub_graph.end(), [&forward_unique_id](CNodePtr r_cnode) {
+               return r_cnode->HasPrimalAttr(kPrimalAttrUniqueId) &&
+                      GetValue<std::string>(r_cnode->GetPrimalAttr(kPrimalAttrUniqueId)) == forward_unique_id;
+             }) == max_recomputed_sub_graph.end();
   };
   for (const auto &node : origin_nodes_topological) {
     MS_EXCEPTION_IF_NULL(node);

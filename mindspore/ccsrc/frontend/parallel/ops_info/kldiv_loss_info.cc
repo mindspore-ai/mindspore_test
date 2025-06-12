@@ -123,14 +123,15 @@ Status KLDivLossInfo::InferForwardCommunication() {
   }
 
   forward_op_.clear();
+  auto outputs_tensor_dtype = outputs_dtype_->cast<mindspore::TensorTypePtr>();
+  MS_EXCEPTION_IF_NULL(outputs_tensor_dtype);
+  auto element_type = outputs_tensor_dtype->element();
   if (reduction_ == MEAN) {
-    auto element_type = outputs_dtype_->cast<mindspore::TensorTypePtr>()->element();
     forward_op_ = CreateReduceMeanForwardOp(group_list_, element_type);
   } else {
     (void)forward_op_.emplace_back(CreateAllReduceOp(REDUCE_OP_SUM, group_list_[0].name()));
     if (reduction_ == BATCH_MEAN) {
       // Divided by the number of devices in the Batch dimension
-      auto element_type = outputs_dtype_->cast<mindspore::TensorTypePtr>()->element();
       (void)forward_op_.emplace_back(CreateDivOpWithType(SizeToFloat(batch_split_num_), element_type));
     }
   }
