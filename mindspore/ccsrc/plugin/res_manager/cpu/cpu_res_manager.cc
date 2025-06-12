@@ -273,7 +273,7 @@ bool CPUResManager::AsyncCopy(const DeviceSyncPtr &dst_device_sync, const Device
   } else if (dst_type_id == kNumberTypeFloat64 && src_type_id == kNumberTypeFloat32) {
     FloatToDouble(dst_ptr, src_ptr, dst_device_address->GetSize() / sizeof(double));
   } else if (dst_type_id == kNumberTypeFloat32 && src_type_id == kNumberTypeFloat64) {
-    DoubleToFloat(dst_ptr, src_ptr, dst_device_address->GetSize() >> 1);
+    DoubleToFloat(dst_ptr, src_ptr, dst_device_address->GetSize() >> 2);
   } else if (dst_type_id == kNumberTypeInt16 && src_type_id == kNumberTypeInt32) {
     IntToShort(dst_ptr, src_ptr, dst_device_address->GetSize() >> 1);
   } else if (dst_type_id == kNumberTypeInt64 && src_type_id == kNumberTypeInt32) {

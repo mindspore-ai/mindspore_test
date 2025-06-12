@@ -67,6 +67,16 @@ class TestDeviceAddress : public DeviceAddress {
   }
   virtual void ClearDeviceMemory() {}
   DeviceType GetDeviceType() const override { return DeviceType::kCPU; }
+
+  void set_data(tensor::TensorDataPtr &&data) override { data_ = std::move(data); }
+
+  const tensor::TensorDataPtr &data() const override { return data_; }
+
+  bool has_data() const override { return data_ != nullptr; }
+
+ private:
+  // the data for numpy object.
+  tensor::TensorDataPtr data_;
 };
 
 class TestKernelMod : public kernel::KernelMod {
@@ -270,13 +280,10 @@ class TestResManager : public device::HalResBase {
   void FreePartMemorys(const std::vector<void *> &free_addrs, const std::vector<void *> &keep_addrs,
                        const std::vector<size_t> &keep_addr_sizes) const override {}
   bool SyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
-                size_t stream_id) const override {
-    return true;
-  }
-  bool AsyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
-                 size_t stream_id) const override {
-    return true;
-  }
+                size_t stream_id) const override;
+
+  bool AsyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id,
+                 bool) const override;
 };
 }  // namespace test
 }  // namespace runtime

@@ -375,9 +375,11 @@ TypeId Tensor::set_data_type(TypeId data_type) {
 }
 
 size_t Tensor::set_shape(const ShapeVector &shape) {
-  if (DataSize() < SizeOf(shape)) {
-    MS_LOG(WARNING) << "It's invalid to set " << ToString() << " shape to " << shape;
+  bool is_shape_unknown = std::any_of(shape_.begin(), shape_.end(), [](int64_t value) { return value < 0; });
+  if (!is_shape_unknown && DataSize() < SizeOf(shape)) {
+    MS_LOG(EXCEPTION) << "It's invalid to set " << ToString() << " shape to " << shape;
   }
+  MS_LOG(DEBUG) << "Change shape of Tensor " << ToString() << " to " << shape;
   return MetaTensor::set_shape(shape);
 }
 
@@ -503,6 +505,29 @@ void *Tensor::data_c() const {
     MS_LOG(ERROR) << "Only cpu Tensor can access data.";
     std::abort();
   }
+
+  // Load data from file
+  if (!offload_file_.empty()) {
+    auto fs = mindspore::system::Env::GetFileSystem();
+    MS_EXCEPTION_IF_NULL(fs);
+    if (fs->FileExist(offload_file_)) {
+      auto file = fs->CreateWriteFile(offload_file_, "r+");
+      if (device_sync_->GetMutablePtr() == nullptr) {
+        device_sync_ = MakeDeviceAddress(data_type_, shape_, true);
+      }
+      MS_EXCEPTION_IF_NULL(file);
+      bool success = file->PRead(device_sync_->GetMutablePtr(), DataNBytes(), 0);
+      if (!success) {
+        MS_LOG(WARNING) << "Tensor load data from file: " << offload_file_ << " failed!";
+      }
+      if (!file->Close()) {
+        MS_LOG(WARNING) << "Close tensor file: " << offload_file_ << " failed!";
+      }
+    } else {
+      MS_LOG(WARNING) << "Invalid tensor file path: " << offload_file_;
+    }
+  }
+
   return device_sync_->GetMutablePtr();
 }
 
@@ -613,7 +638,7 @@ bool Tensor::Offload(const std::string &file_path) {
   }
 
   // Make CPU device address and not init the data in device address.
-  device_sync_ = MakeDeviceAddress(data_type_, shape_);
+  device_sync_ = MakeDeviceAddress(data_type_, shape_, false);
   offload_file_ = file_path;
   return true;
 }
