@@ -25,20 +25,15 @@ internal::InternalOpPtr QuantV2::CreateKernel(const internal::InputsImmutableInf
   return internal::CreateQuantPerChannelOp(inputs, outputs, internal::kInternalQuantPerChannelOpName);
 }
 
-void QuantV2::Call(const std::shared_ptr<pyboost::OpRunner> &op, const BaseTensorPtr &x, const BaseTensorPtr &scale,
-                   const BaseTensorPtr &offset, const bool sqrt_mode, const int64_t rounding_mode,
-                   const int64_t dst_type) {
+void QuantV2::Call(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &op_key, const uint64_t &tiling_key,
+                   const BaseTensorPtr &x, const BaseTensorPtr &scale, const BaseTensorPtr &offset,
+                   const bool sqrt_mode, const int64_t rounding_mode, const int64_t dst_type) {
   std::vector<BaseTensorPtr> inputs = {x, scale, offset};
   BaseTensorPtrList outputs = op->outputs();
-  internal_inputs_shape_.resize(inputs.size());
-  internal_outputs_shape_.resize(outputs.size());
-  TransInternalShapes(&internal_inputs_shape_, inputs);
-  TransInternalShapes(&internal_outputs_shape_, outputs);
-
-  auto op_key = CalcInternalOpApiHash(kernel_name_, inputs, outputs);
-  GetOrCreateKernel(op, inputs, outputs, op_key);
+  TransInternalShapes(inputs, outputs);
+  GetOrCreateKernel(op, op_key, tiling_key, inputs, outputs);
   LAUNCH_INTERNAL(kernel_name_, op, internal_op_, inputs, outputs, tiling_info_);
 }
-MS_INTERNAL_KERNEL_INFO_FACTORY_REG(QuantV2, internal::kInternalQuantPerChannelOpName, QuantV2);
+MS_INTERNAL_KERNEL_INFO_FACTORY_REG(QuantV2, QuantV2);
 }  // namespace kernel
 }  // namespace mindspore

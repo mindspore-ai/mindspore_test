@@ -31,11 +31,11 @@ class PagedAttention : public InternalKernelInfo {
   ~PagedAttention() = default;
 
   void Call(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &op_key, const uint64_t &tiling_key,
-            const TensorPtr &query, const TensorPtr &key_cache, const std::optional<TensorPtr> &value_cache,
-            const std::optional<TensorPtr> &block_tabels, const std::optional<TensorPtr> &context_lens,
-            const std::optional<TensorPtr> &antiquant_scale, const std::optional<TensorPtr> &antiquant_offset,
-            const std::optional<TensorPtr> &attn_mask, const std::optional<TensorPtr> &q_seq_lens,
-            const std::optional<TensorPtr> &alibi_mask, const int64_t &head_num, const float &scale_value,
+            const BaseTensorPtr &query, const BaseTensorPtr &key_cache, const std::optional<BaseTensorPtr> &value_cache,
+            const std::optional<BaseTensorPtr> &block_tabels, const std::optional<BaseTensorPtr> &context_lens,
+            const std::optional<BaseTensorPtr> &antiquant_scale, const std::optional<BaseTensorPtr> &antiquant_offset,
+            const std::optional<BaseTensorPtr> &attn_mask, const std::optional<BaseTensorPtr> &q_seq_lens,
+            const std::optional<BaseTensorPtr> &alibi_mask, const int64_t &head_num, const float &scale_value,
             const int64_t &kv_head_num, const int64_t &kv_cache_quant_mode, const int64_t &mask_mode,
             const int64_t &mla_v_dim);
 

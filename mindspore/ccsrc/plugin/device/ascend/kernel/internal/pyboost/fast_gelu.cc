@@ -25,17 +25,14 @@ internal::InternalOpPtr FastGeLU::CreateKernel(const internal::InputsImmutableIn
   return internal::CreateFastGeLUOp(inputs, outputs, internal::kInternalFastGeLUOpName);
 }
 
-void FastGeLU::Call(const std::shared_ptr<pyboost::OpRunner> &op, const BaseTensorPtr &input_tensor) {
+void FastGeLU::Call(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &op_key, const uint64_t &tiling_key,
+                    const BaseTensorPtr &input_tensor) {
   BaseTensorPtrList inputs = {input_tensor};
   BaseTensorPtrList outputs = op->outputs();
-  internal_inputs_shape_.resize(inputs.size());
-  internal_outputs_shape_.resize(outputs.size());
-  TransInternalShapes(&internal_inputs_shape_, inputs);
-  TransInternalShapes(&internal_outputs_shape_, outputs);
-  auto op_key = CalcInternalOpApiHash(kernel_name_, inputs, outputs);
-  GetOrCreateKernel(op, inputs, outputs, op_key);
+  TransInternalShapes(inputs, outputs);
+  GetOrCreateKernel(op, op_key, tiling_key, inputs, outputs);
   LAUNCH_INTERNAL(kernel_name_, op, internal_op_, inputs, outputs, tiling_info_);
 }
-MS_INTERNAL_KERNEL_INFO_FACTORY_REG(FastGeLU, internal::kInternalFastGeLUOpName, FastGeLU);
+MS_INTERNAL_KERNEL_INFO_FACTORY_REG(FastGeLU, FastGeLU);
 }  // namespace kernel
 }  // namespace mindspore

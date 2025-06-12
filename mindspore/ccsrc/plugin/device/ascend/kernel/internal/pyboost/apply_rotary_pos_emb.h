@@ -31,8 +31,8 @@ class ApplyRotaryPosEmb : public InternalKernelInfo {
   ~ApplyRotaryPosEmb() = default;
 
   void Call(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &op_key, const uint64_t &tiling_key,
-            const TensorPtr &query_tensor, const TensorPtr &key_tensor, const TensorPtr &cos_tensor,
-            const TensorPtr &sin_tensor, const TensorPtr &position_ids_tensor, const int64_t &cos_format);
+            const BaseTensorPtr &query_tensor, const BaseTensorPtr &key_tensor, const BaseTensorPtr &cos_tensor,
+            const BaseTensorPtr &sin_tensor, const BaseTensorPtr &position_ids_tensor, const int64_t &cos_format);
 
  protected:
   internal::InternalOpPtr CreateKernel(const internal::InputsImmutableInfoList &inputs,

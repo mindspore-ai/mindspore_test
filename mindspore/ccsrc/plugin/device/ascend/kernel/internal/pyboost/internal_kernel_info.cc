@@ -22,8 +22,8 @@
 
 namespace mindspore {
 namespace kernel {
-void InternalKernelInfo::TransInternalShapes(internal::ShapeInfoList *shapelist, const TensorPtrList &tensorlist,
-                                             bool is_input) {
+void InternalKernelInfo::TransInternalShapes(internal::ShapeInfoList *shapelist,
+                                             const std::vector<BaseTensorPtr> &tensorlist, bool is_input) {
   for (size_t i = 0; i < tensorlist.size(); i++) {
     if (tensorlist[i] == nullptr) {
       shapelist->at(i) = internal::ShapeInfo{0};
@@ -46,6 +46,13 @@ void InternalKernelInfo::TransInternalShapes(internal::ShapeInfoList *shapelist,
       tensorlist[i]->data_type() != kMetaTypeNone ? TransInternalShape(tensorlist[i]->shape()) : internal::ShapeInfo{0};
     shapelist->at(i) = std::move(shape);
   }
+}
+
+void InternalKernelInfo::TransInternalShapes(const BaseTensorPtrList &inputs, const BaseTensorPtrList &outputs) {
+  internal_inputs_shape_.resize(inputs.size());
+  internal_outputs_shape_.resize(outputs.size());
+  TransInternalShapes(&internal_inputs_shape_, inputs, true);
+  TransInternalShapes(&internal_outputs_shape_, outputs);
 }
 
 void InternalKernelInfo::UpdateArgImmutableInfo(internal::ArgImmutableInfo *arginfo, const BaseTensorPtr &tensor,
@@ -83,28 +90,8 @@ bool InternalKernelInfo::IsInternalDtypeSupport(const std::vector<BaseTensorPtr>
       internal_inputs_dtype_[i] = internal::DataType::kTypeNone;
       continue;
     }
+
     internal_inputs_dtype_[i] = TransInternalDataType(ms_inputs->at(i)->data_type());
-  }
-
-  for (size_t i = 0; i < ms_outputs->size(); ++i) {
-    if (ms_outputs->at(i) == nullptr) {
-      internal_outputs_dtype_[i] = internal::DataType::kTypeNone;
-      continue;
-    }
-    internal_outputs_dtype_[i] = TransInternalDataType(ms_outputs->at(i)->data_type());
-  }
-
-  return internal::IsInternalKernelDtypesSupported(kernel_name_, internal_inputs_dtype_, internal_outputs_dtype_);
-}
-
-bool InternalKernelInfo::Init(const BaseTensorPtrList &input_tensors, std::vector<BaseTensorPtr> *inputs,
-                              std::vector<BaseTensorPtr> *outputs, const std::vector<BaseTensorPtr> &op_outputs) {
-  auto ms_inputs_idx_list = ms_inputs_idx_map_[kernel_name_];
-  auto ms_outputs_idx_list = ms_outputs_idx_map_[kernel_name_];
-  for (size_t i = 0; i < ms_inputs_idx_list.size(); i++) {
-    auto ms_index = ms_inputs_idx_list[i];
-    auto input_tensor = input_tensors[ms_index];
-    (void)inputs->emplace_back(input_tensor);
   }
 
   for (size_t i = 0; i < ms_outputs->size(); ++i) {
@@ -120,16 +107,17 @@ bool InternalKernelInfo::Init(const BaseTensorPtrList &input_tensors, std::vecto
 }
 
 void InternalKernelInfo::GetOrCreateKernel(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &op_key,
-                                           const uint64_t &tiling_key, const TensorPtrList &inputs,
-                                           const TensorPtrList &outputs) {
+                                           const uint64_t &tiling_key, const std::vector<BaseTensorPtr> &inputs,
+                                           const std::vector<BaseTensorPtr> &outputs) {
   auto key = GetOrGenerateOpKey(op_key);
   auto it = hash_map_.find(key);
   if (it != hash_map_.end()) {
     internal_op_ = it->second;
     MS_LOG(DEBUG) << "Internal Op [" << kernel_name_ << "] hit cache";
   } else {
+    MS_LOG(DEBUG) << "Internal Op [" << kernel_name_ << "] miss cache";
     if (!IsInternalDtypeSupport(&inputs, &outputs)) {
-      MS_EXCEPTION(TypeError) << "Input dtype is not supported for internal op [" << kernel_name_ << "]";
+      MS_LOG(EXCEPTION) << "Input dtype is not supported for internal op [" << kernel_name_ << "]";
     }
     UpdateArgImmutableInfo(&inputs_ii_, inputs, true);
     UpdateArgImmutableInfo(&outputs_ii_, outputs);
@@ -151,6 +139,7 @@ void InternalKernelInfo::GetOrCreateKernel(const std::shared_ptr<pyboost::OpRunn
   if (internal_ret != internal::kInternalOk) {
     MS_LOG(EXCEPTION) << "InternalKernel UpdateShape failed, kernel_name: " << kernel_name_;
   }
+}
 
   tiling_info_ = GetOrGenerateTiling(op, tiling_key);
   if (tiling_info_ == nullptr) {

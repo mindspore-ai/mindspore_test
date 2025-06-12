@@ -22,32 +22,29 @@ namespace mindspore {
 namespace kernel {
 internal::InternalOpPtr DynamicNTK::CreateKernel(const internal::InputsImmutableInfoList &inputs,
                                                  const internal::OutputsImmutableInfoList &outputs) {
-  internal::DynamicNTKParam param;
-  if (dtype_ == kNumberTypeFloat16) {
-    param.out_type = static_cast<int64_t>(DynamicNTKOutType::Float16);
-  } else if (dtype_ == kNumberTypeBFloat16) {
-    param.out_type = static_cast<int64_t>(DynamicNTKOutType::BFloat16);
-  } else if (dtype_ == kNumberTypeFloat32) {
-    param.out_type = static_cast<int64_t>(DynamicNTKOutType::Float32);
-  } else {
-    MS_LOG(EXCEPTION) << "Unsupported output type: " << dtype_;
-  }
-  return internal::CreateDynamicNTKOp(inputs, outputs, param, internal::kInternalDynamicNTKOpName);
+  return internal::CreateDynamicNTKOp(inputs, outputs, param_, internal::kInternalDynamicNTKOpName);
 }
 
-void DynamicNTK::Call(const std::shared_ptr<pyboost::OpRunner> &op, const BaseTensorPtr &position_ids_tensor,
-                      const BaseTensorPtr &inv_freq_tensor, const BaseTensorPtr &seq_lens_tensor, const TypeId &dtype) {
+void DynamicNTK::Call(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &op_key, const uint64_t &tiling_key,
+                      const BaseTensorPtr &position_ids_tensor, const BaseTensorPtr &inv_freq_tensor,
+                      const BaseTensorPtr &seq_lens_tensor, const TypeId &dtype) {
   BaseTensorPtrList inputs = {position_ids_tensor, inv_freq_tensor, seq_lens_tensor};
   BaseTensorPtrList outputs = op->outputs();
-  internal_inputs_shape_.resize(inputs.size());
-  internal_outputs_shape_.resize(outputs.size());
-  TransInternalShapes(&internal_inputs_shape_, inputs);
-  TransInternalShapes(&internal_outputs_shape_, outputs);
-  dtype_ = dtype;
-  auto op_key = CalcInternalOpApiHash(kernel_name_, inputs, dtype_, outputs);
-  GetOrCreateKernel(op, inputs, outputs, op_key);
+  TransInternalShapes(inputs, outputs);
+
+  if (dtype == kNumberTypeFloat16) {
+    param_.out_type = static_cast<int64_t>(DynamicNTKOutType::Float16);
+  } else if (dtype == kNumberTypeBFloat16) {
+    param_.out_type = static_cast<int64_t>(DynamicNTKOutType::BFloat16);
+  } else if (dtype == kNumberTypeFloat32) {
+    param_.out_type = static_cast<int64_t>(DynamicNTKOutType::Float32);
+  } else {
+    MS_LOG(EXCEPTION) << "Unsupported output type: " << dtype;
+  }
+
+  GetOrCreateKernel(op, op_key, tiling_key, inputs, outputs);
   LAUNCH_INTERNAL(kernel_name_, op, internal_op_, inputs, outputs, tiling_info_);
 }
-MS_INTERNAL_KERNEL_INFO_FACTORY_REG(DynamicNTK, internal::kInternalDynamicNTKOpName, DynamicNTK);
+MS_INTERNAL_KERNEL_INFO_FACTORY_REG(DynamicNTK, DynamicNTK);
 }  // namespace kernel
 }  // namespace mindspore

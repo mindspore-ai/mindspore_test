@@ -31,9 +31,9 @@ class FlashAttentionScore : public InternalKernelInfo {
   ~FlashAttentionScore() = default;
 
   void Call(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &op_key, const uint64_t &tiling_key,
-            const TensorPtr &query, const TensorPtr &key, const TensorPtr &value,
-            const std::optional<TensorPtr> &real_shift, const std::optional<TensorPtr> &drop_mask,
-            const std::optional<TensorPtr> &padding_mask, const std::optional<TensorPtr> &attn_mask,
+            const BaseTensorPtr &query, const BaseTensorPtr &key, const BaseTensorPtr &value,
+            const std::optional<BaseTensorPtr> &real_shift, const std::optional<BaseTensorPtr> &drop_mask,
+            const std::optional<BaseTensorPtr> &padding_mask, const std::optional<BaseTensorPtr> &attn_mask,
             const std::vector<int64_t> &prefix, const std::vector<int64_t> &actual_seq_len,
             const std::vector<int64_t> &actual_seq_kvlen, const int64_t &head_num, const float &keep_prob,
             const float &scale_value, const int64_t &pre_tokens, const int64_t &next_tokens,

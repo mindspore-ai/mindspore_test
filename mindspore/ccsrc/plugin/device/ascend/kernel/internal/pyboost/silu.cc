@@ -25,18 +25,15 @@ internal::InternalOpPtr SiLU::CreateKernel(const internal::InputsImmutableInfoLi
   return internal::CreateSwishOp(inputs, outputs, internal::kInternalSwishOpName);
 }
 
-void SiLU::Call(const std::shared_ptr<pyboost::OpRunner> &op, const BaseTensorPtr &x) {
+void SiLU::Call(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &op_key, const uint64_t &tiling_key,
+                const BaseTensorPtr &x) {
   std::vector<BaseTensorPtr> inputs = {x};
   BaseTensorPtrList outputs = op->outputs();
-  internal_inputs_shape_.resize(inputs.size());
-  internal_outputs_shape_.resize(outputs.size());
-  TransInternalShapes(&internal_inputs_shape_, inputs);
-  TransInternalShapes(&internal_outputs_shape_, outputs);
+  TransInternalShapes(inputs, outputs);
 
-  auto op_key = CalcInternalOpApiHash(kernel_name_, inputs, outputs);
-  GetOrCreateKernel(op, inputs, outputs, op_key);
+  GetOrCreateKernel(op, op_key, tiling_key, inputs, outputs);
   LAUNCH_INTERNAL(kernel_name_, op, internal_op_, inputs, outputs, tiling_info_);
 }
-MS_INTERNAL_KERNEL_INFO_FACTORY_REG(SiLU, internal::kInternalSwishOpName, SiLU);
+MS_INTERNAL_KERNEL_INFO_FACTORY_REG(SiLU, SiLU);
 }  // namespace kernel
 }  // namespace mindspore

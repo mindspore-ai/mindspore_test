@@ -27,11 +27,12 @@ namespace mindspore {
 namespace kernel {
 class DynamicNTK : public InternalKernelInfo {
  public:
-  DynamicNTK() : InternalKernelInfo(std::move("DynamicNTK")) {}
+  explicit DynamicNTK(std::string &&kernel_name) : InternalKernelInfo(std::move(kernel_name)) {}
   ~DynamicNTK() = default;
 
-  void Call(const std::shared_ptr<pyboost::OpRunner> &op, const BaseTensorPtr &position_ids_tensor,
-            const BaseTensorPtr &inv_freq_tensor, const BaseTensorPtr &seq_lens_tensor, const TypeId &dtype);
+  void Call(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &op_key, const uint64_t &tiling_key,
+            const BaseTensorPtr &position_ids_tensor, const BaseTensorPtr &inv_freq_tensor,
+            const BaseTensorPtr &seq_lens_tensor, const TypeId &dtype);
 
  protected:
   internal::InternalOpPtr CreateKernel(const internal::InputsImmutableInfoList &inputs,
@@ -39,7 +40,7 @@ class DynamicNTK : public InternalKernelInfo {
   enum class DynamicNTKOutType { Float16 = 0, BFloat16 = 1, Float32 = 2 };
 
  private:
-  TypeId dtype_;
+  internal::DynamicNTKParam param_;
 };
 }  // namespace kernel
 }  // namespace mindspore

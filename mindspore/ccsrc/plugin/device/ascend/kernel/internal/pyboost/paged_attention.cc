@@ -45,24 +45,24 @@ uint64_t PagedAttention::GetOrGenerateOpTilingKey(const uint64_t &tiling_key) co
   return CalcInternalOpTilingHash(kernel_name_, tiling_key, param_.q_seq_len, param_.kv_seq_len);
 }
 
-void PagedAttention::Call(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &op_key,
-                          const uint64_t &tiling_key, const TensorPtr &query, const TensorPtr &key_cache,
-                          const std::optional<TensorPtr> &value_cache, const std::optional<TensorPtr> &block_tabels,
-                          const std::optional<TensorPtr> &context_lens, const std::optional<TensorPtr> &antiquant_scale,
-                          const std::optional<TensorPtr> &antiquant_offset, const std::optional<TensorPtr> &attn_mask,
-                          const std::optional<TensorPtr> &q_seq_lens, const std::optional<TensorPtr> &alibi_mask,
-                          const int64_t &head_num, const float &scale_value, const int64_t &kv_head_num,
-                          const int64_t &kv_cache_quant_mode, const int64_t &mask_mode, const int64_t &mla_v_dim) {
-  TensorPtrList inputs = {query,
-                          key_cache,
-                          value_cache.has_value() ? value_cache.value() : nullptr,
-                          block_tabels.has_value() ? block_tabels.value() : nullptr,
-                          context_lens.has_value() ? context_lens.value() : nullptr,
-                          antiquant_scale.has_value() ? antiquant_scale.value() : nullptr,
-                          antiquant_offset.has_value() ? antiquant_offset.value() : nullptr,
-                          attn_mask.has_value() ? attn_mask.value() : nullptr,
-                          alibi_mask.has_value() ? alibi_mask.value() : nullptr};
-  TensorPtrList outputs = op->outputs();
+void PagedAttention::Call(
+  const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &op_key, const uint64_t &tiling_key,
+  const BaseTensorPtr &query, const BaseTensorPtr &key_cache, const std::optional<BaseTensorPtr> &value_cache,
+  const std::optional<BaseTensorPtr> &block_tabels, const std::optional<BaseTensorPtr> &context_lens,
+  const std::optional<BaseTensorPtr> &antiquant_scale, const std::optional<BaseTensorPtr> &antiquant_offset,
+  const std::optional<BaseTensorPtr> &attn_mask, const std::optional<BaseTensorPtr> &q_seq_lens,
+  const std::optional<BaseTensorPtr> &alibi_mask, const int64_t &head_num, const float &scale_value,
+  const int64_t &kv_head_num, const int64_t &kv_cache_quant_mode, const int64_t &mask_mode, const int64_t &mla_v_dim) {
+  std::vector<BaseTensorPtr> inputs = {query,
+                                       key_cache,
+                                       value_cache.has_value() ? value_cache.value() : nullptr,
+                                       block_tabels.has_value() ? block_tabels.value() : nullptr,
+                                       context_lens.has_value() ? context_lens.value() : nullptr,
+                                       antiquant_scale.has_value() ? antiquant_scale.value() : nullptr,
+                                       antiquant_offset.has_value() ? antiquant_offset.value() : nullptr,
+                                       attn_mask.has_value() ? attn_mask.value() : nullptr,
+                                       alibi_mask.has_value() ? alibi_mask.value() : nullptr};
+  std::vector<BaseTensorPtr> outputs = op->outputs();
   TransInternalShapes(inputs, outputs);
 
   param_.head_num = static_cast<int32_t>(head_num);
@@ -81,9 +81,7 @@ void PagedAttention::Call(const std::shared_ptr<pyboost::OpRunner> &op, const ui
   has_alibi_mask_ = alibi_mask.has_value();
   CheckMask();
 
-  auto op_key = CalcInternalOpApiHash(kernel_name_, inputs, head_num_, tor_, kv_head_num_, kv_cache_quant_mode_,
-                                      mask_mode_, mla_v_dim_, q_seq_len_, kv_seq_len_, outputs);
-  GetOrCreateKernel(op, inputs, outputs, op_key);
+  GetOrCreateKernel(op, op_key, tiling_key, inputs, outputs);
   LAUNCH_INTERNAL(kernel_name_, op, internal_op_, inputs, outputs, tiling_info_);
 }
 MS_INTERNAL_KERNEL_INFO_FACTORY_REG(PagedAttention, PagedAttention);
