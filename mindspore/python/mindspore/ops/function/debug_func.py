@@ -24,7 +24,7 @@ from .._primitive_cache import _get_cache_prim
 
 
 def print_(*input_x):
-    """
+    r"""
     Outputs the inputs to stdout.
     The outputs are printed to screen by default.
     It can also be saved in a file by setting the parameter  `print_file_path` in `context`.
@@ -40,7 +40,7 @@ def print_(*input_x):
         This function is used for debugging.
 
     Args:
-        input_x (Union[Tensor, bool, int, float, str, tuple, list]): The inputs of print_.
+        input_x (Union[Tensor, bool, int, float, str, tuple, list]): The inputs of print\_.
             Supports multiple inputs which are separated by ','.
 
     Returns:
