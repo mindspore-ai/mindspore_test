@@ -83,7 +83,8 @@ GVAR_DEF(PrimitivePtr, kPrimGenerateInverseIndex, std::make_shared<Primitive>("g
 GVAR_DEF(PrimitivePtr, kPrimCond, std::make_shared<Primitive>(kCondOpName));
 GVAR_DEF(PrimitivePtr, kPrimJoinedStr,
          std::make_shared<Primitive>(kJoinedStrOpName, mindspore::HashMap<std::string, ValuePtr>(
-                                                         {{std::string("primitive_target"), MakeValue("CPU")}})));
+                                                         {{std::string("primitive_target"), MakeValue("CPU")},
+                                                          {std::string("variable_length_inputs"), MakeValue(true)}})));
 GVAR_DEF(PrimitivePtr, kPrimTileSize, std::make_shared<Primitive>("TileSize"));
 GVAR_DEF(PrimitivePtr, kPrimNormalizeSlice, std::make_shared<Primitive>("NormalizeSlice"));
 GVAR_DEF(PrimitivePtr, kPrimNormalizeDimIndex, std::make_shared<Primitive>("NormalizeDimIndex"));
