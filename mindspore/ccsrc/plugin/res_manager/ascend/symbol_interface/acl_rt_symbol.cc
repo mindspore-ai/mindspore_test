@@ -67,6 +67,7 @@ aclrtSubscribeReportFunObj aclrtSubscribeReport_ = nullptr;
 aclrtSynchronizeEventFunObj aclrtSynchronizeEvent_ = nullptr;
 aclrtSynchronizeStreamFunObj aclrtSynchronizeStream_ = nullptr;
 aclrtSynchronizeStreamWithTimeoutFunObj aclrtSynchronizeStreamWithTimeout_ = nullptr;
+aclrtSynchronizeDeviceWithTimeoutFunObj aclrtSynchronizeDeviceWithTimeout_ = nullptr;
 aclrtUnmapMemFunObj aclrtUnmapMem_ = nullptr;
 aclrtReserveMemAddressFunObj aclrtReserveMemAddress_ = nullptr;
 aclrtMallocPhysicalFunObj aclrtMallocPhysical_ = nullptr;
@@ -133,6 +134,7 @@ void LoadAclRtApiSymbol(const std::string &ascend_path) {
   aclrtSynchronizeEvent_ = DlsymAscendFuncObj(aclrtSynchronizeEvent, handler);
   aclrtSynchronizeStream_ = DlsymAscendFuncObj(aclrtSynchronizeStream, handler);
   aclrtSynchronizeStreamWithTimeout_ = DlsymAscendFuncObj(aclrtSynchronizeStreamWithTimeout, handler);
+  aclrtSynchronizeDeviceWithTimeout_ = DlsymAscendFuncObj(aclrtSynchronizeDeviceWithTimeout, handler);
   aclrtUnmapMem_ = DlsymAscendFuncObj(aclrtUnmapMem, handler);
   aclrtReserveMemAddress_ = DlsymAscendFuncObj(aclrtReserveMemAddress, handler);
   aclrtMallocPhysical_ = DlsymAscendFuncObj(aclrtMallocPhysical, handler);
@@ -197,6 +199,7 @@ void LoadSimulationRtApi() {
   ASSIGN_SIMU(aclrtSynchronizeEvent);
   ASSIGN_SIMU(aclrtSynchronizeStream);
   ASSIGN_SIMU(aclrtSynchronizeStreamWithTimeout);
+  ASSIGN_SIMU(aclrtSynchronizeDeviceWithTimeout);
   ASSIGN_SIMU(aclrtUnmapMem);
   ASSIGN_SIMU(aclrtReserveMemAddress);
   ASSIGN_SIMU(aclrtMallocPhysical);

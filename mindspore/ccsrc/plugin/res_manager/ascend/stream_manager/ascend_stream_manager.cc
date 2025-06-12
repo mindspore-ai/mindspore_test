@@ -296,12 +296,20 @@ bool AscendStreamMng::SyncStream(aclrtStream stream) const {
 }
 
 bool AscendStreamMng::SyncAllStreams() const {
-  for (size_t i = 0; i < streams_.size(); ++i) {
-    const auto stream = streams_[i];
-    if (stream != nullptr && !SyncStream(stream)) {
-      MS_LOG(ERROR) << "SyncStream for stream id " << i << " failed.";
+  auto RET = ACL_ERROR_NONE;
+  try {
+    GilReleaseWithCheck gil_release;
+    RET = CALL_ASCEND_API(aclrtSynchronizeDeviceWithTimeout, -1);
+    if (RET != ACL_ERROR_NONE && RET != ACL_ERROR_RT_AICORE_OVER_FLOW) {
+      MS_LOG(ERROR) << "Call runtime aclrtSynchronizeDeviceWithTimeout error.";
       return false;
     }
+  } catch (const std::exception &e) {
+    MS_LOG(ERROR) << "aclrtSynchronizeDeviceWithTimeout failed. " << e.what();
+    return false;
+  }
+  if (RET == ACL_ERROR_RT_AICORE_OVER_FLOW) {
+    MS_LOG(WARNING) << "Call runtime aclrtSynchronizeDeviceWithTimeout, the stream get overflow.";
   }
   return true;
 }
