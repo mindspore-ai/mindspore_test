@@ -64,7 +64,7 @@ class MS_CORE_API DeviceAddressMaker {
   DeviceAddressMakerFunc maker_;
 };
 
-MS_CORE_API DeviceSyncPtr MakeDeviceAddress(TypeId data_type, const ShapeVector &shape, bool init = false,
+MS_CORE_API DeviceSyncPtr MakeDeviceAddress(TypeId data_type, const ShapeVector &shape, bool init = true,
                                             device::DeviceType device_type = device::DeviceType::kCPU);
 MS_CORE_API DeviceSyncPtr MakeDeviceAddress(TypeId data_type, const ShapeVector &shape,
                                             tensor::TensorDataPtr &&tensor_data,

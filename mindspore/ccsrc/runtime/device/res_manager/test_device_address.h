@@ -57,18 +57,29 @@ class TestDeviceAddress : public DeviceAddress {
                     uint32_t device_id)
       : DeviceAddress(ptr, size, format, type_id, device_name, device_id) {}
   ~TestDeviceAddress() {}
-  bool SyncDeviceToHost(const ShapeVector &shape, size_t size, TypeId type, void *host_ptr, bool sync_on_demand) const {
+  bool SyncDeviceToHost(const ShapeVector &shape, size_t size, TypeId type, void *host_ptr, bool sync_on_demand) const override {
     return true;
   }
   bool SyncHostToDevice(const ShapeVector &shape, size_t size, TypeId type, const void *host_ptr,
-                        const std::string &format) const {
+                        const std::string &format) const override {
     return true;
   }
-  void ClearDeviceMemory() {}
-  bool IsPtrValid() const {
+
+  void ClearDeviceMemory() override {}
+  bool IsPtrValid() const override {
     return GetDevicePtr() != nullptr || (hete_info_ != nullptr && hete_info_->host_ptr_ != nullptr);
   }
-  DeviceType GetDeviceType() const { return DeviceType::kCPU; }
+  DeviceType GetDeviceType() const override { return DeviceType::kCPU; }
+
+  void set_data(tensor::TensorDataPtr &&data) override { data_ = std::move(data); }
+
+  const tensor::TensorDataPtr &data() const override { return data_; }
+
+  bool has_data() const override { return data_ != nullptr; }
+
+ private:
+  // the data for numpy object.
+  tensor::TensorDataPtr data_;
 };
 
 class TestKernelMod : public kernel::KernelMod {
@@ -283,13 +294,10 @@ class TestResManager : public device::HalResBase {
   void FreePartMemorys(const std::vector<void *> &free_addrs, const std::vector<void *> &keep_addrs,
                        const std::vector<size_t> &keep_addr_sizes) const override {}
   bool SyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
-                size_t stream_id) const override {
-    return true;
-  }
-  bool AsyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
-                 size_t stream_id) const override {
-    return true;
-  }
+                size_t stream_id) const override;
+
+  bool AsyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id,
+                 bool) const override;
 };
 }  // namespace test
 }  // namespace runtime
