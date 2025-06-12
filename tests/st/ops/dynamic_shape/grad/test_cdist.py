@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+import os
 from tests.mark_utils import arg_mark
 
 import numpy as np
-import pytest
 from mindspore import nn
 from mindspore.ops import operations as P
 from mindspore import Tensor
@@ -40,11 +40,13 @@ def test_dynamic_shape_cdist():
     Description: Test case of dynamic shape for Cdist grad operator on CPU.
     Expectation: success.
     """
+    os.environ["GLOG_v"] = "0"
     context.set_context(mode=context.PYNATIVE_MODE)
     test_dynamic = TestDynamicGrad(NetCdist(2.))
     x1 = Tensor(np.array([[[1.0, 1.0], [2.0, 2.0]]]).astype(np.float32))
     x2 = Tensor(np.array([[[3.0, 3.0], [3.0, 3.0]]]).astype(np.float32))
     test_dynamic.test_dynamic_grad_net([x1, x2], False)
+    os.environ["GLOG_v"] = "2"
 
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
@@ -55,8 +57,10 @@ def test_dynamic_rank_cdist():
     Description: Test case of dynamic rank for Cdist grad operator on CPU.
     Expectation: success.
     """
+    os.environ["GLOG_v"] = "0"
     context.set_context(mode=context.PYNATIVE_MODE)
     test_dynamic = TestDynamicGrad(NetCdist(2.))
     x1 = Tensor(np.array([[[1.0, 1.0], [2.0, 2.0]]]).astype(np.float32))
     x2 = Tensor(np.array([[[3.0, 3.0], [3.0, 3.0]]]).astype(np.float32))
     test_dynamic.test_dynamic_grad_net([x1, x2], True)
+    os.environ["GLOG_v"] = "2"
