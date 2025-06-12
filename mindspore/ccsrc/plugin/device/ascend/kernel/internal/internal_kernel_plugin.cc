@@ -112,7 +112,12 @@ static std::unordered_map<std::string, std::vector<std::vector<std::vector<size_
   {kPagedAttentionOpName, {{{0, 1, 2, 7}, {0}}, {{0, 1, 2, 7}, {0}}}},
   {kFlashAttentionScoreOpName, {{{0, 1, 2, 6}, {3}}, {{0, 1, 2, 6}, {3}}}},
   {kReshapeAndCacheOpName, {{{2, 3}, {}}, {{2, 3}, {}}}},
-  {kGroupedMatmulName, {{{1}, {}}, {{1}, {}}}}};
+  {kPrimNameMatmulSplitSiluFastgeluAddMulOut1, {{{1}, {}}, {{1}, {}}}},
+  {kPrimNameMatmulSplitSiluMulOut1, {{{1}, {}}, {{1}, {}}}},
+  {kPrimNameQMatmulSplitSiluFastgeluAddMulOut1, {{{0, 1}, {}}, {{1}, {}}}},
+  {kPrimNameQMatmulSplitSiluMulOut1, {{{0, 1}, {}}, {{1}, {}}}},
+  {kGroupedMatmulName, {{{1}, {}}, {{1}, {}}}},
+  {kMlaPreprocessName, {{{5, 18}, {}}, {{5, 18}, {}}}}};
 
 // unordered_map mean:
 // key is input_idx, value is special_format value

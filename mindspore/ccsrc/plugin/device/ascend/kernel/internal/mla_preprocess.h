@@ -25,9 +25,9 @@
 
 namespace mindspore {
 namespace kernel {
-auto kMlaPreprocessParamNIndex = 25;
-auto kMlaPreprocessParamHeadNumIndex = 26;
-auto kMlaPreprocessParamCacheModeIndex = 27;
+auto kMlaPreprocessParamNIndex = 26;
+auto kMlaPreprocessParamHeadNumIndex = 27;
+auto kMlaPreprocessParamCacheModeIndex = 28;
 DECLARE_INTERNAL_KERNEL_MOD(MlaPreprocess)
 }  // namespace kernel
 }  // namespace mindspore

@@ -55,10 +55,11 @@ enum MlaPreprocessInputIndex : size_t {
   kMlaPreprocessDeScale2Index = 22,
   kMlaPreprocessCtkvScaleIndex = 23,
   kMlaPreprocessQnopeScaleIndex = 24,
-  kMlaPreprocessParamNIndex = 25,
-  kMlaPreprocessParamHeadNumIndex = 26,
-  kMlaPreprocessParamCacheModeIndex = 27,
-  kMlaPreProcessInputsNum = 28
+  kMlaPreprocessKropeCacheIndex = 25,
+  kMlaPreprocessParamNIndex = 26,
+  kMlaPreprocessParamHeadNumIndex = 27,
+  kMlaPreprocessParamCacheModeIndex = 28,
+  kMlaPreProcessInputsNum = 29
 };
 
 class OPS_API MlaPreprocessFuncImpl : public OpFuncImpl {
