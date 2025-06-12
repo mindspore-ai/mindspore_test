@@ -211,11 +211,11 @@ class DynamicProfilerConfigContext:
     def _parse_prof_path(self, json_data):
         """ Parse the prof_path from JSON data."""
         if self._is_dyno:
-            prof_path = json_data.get("log_file", "./data")
+            prof_path = json_data.get("log_file", "./")
             if not isinstance(prof_path, str):
                 logger.warning("The 'log-file' must be a string, "
-                               "will be set to default: './data'.")
-                prof_path = "./data"
+                               "will be set to default: './'.")
+                prof_path = "./"
             self._prof_path = prof_path
         else:
             self._prof_path = json_data.get("prof_path", None)
