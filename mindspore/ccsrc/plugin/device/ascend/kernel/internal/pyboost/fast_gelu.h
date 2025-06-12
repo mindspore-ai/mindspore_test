@@ -27,10 +27,11 @@ namespace mindspore {
 namespace kernel {
 class FastGeLU : public InternalKernelInfo {
  public:
-  FastGeLU() : InternalKernelInfo(std::move("FastGeLU")) {}
+  explicit FastGeLU(std::string &&kernel_name) : InternalKernelInfo(std::move(kernel_name)) {}
   ~FastGeLU() = default;
 
-  void Call(const std::shared_ptr<pyboost::OpRunner> &op, const BaseTensorPtr &input_tensor);
+  void Call(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &op_key, const uint64_t &tiling_key,
+            const BaseTensorPtr &input_tensor);
 
  protected:
   internal::InternalOpPtr CreateKernel(const internal::InputsImmutableInfoList &inputs,

@@ -20,6 +20,7 @@
 #include <string>
 #include <vector>
 #include "plugin/device/ascend/kernel/internal/pyboost/auto_gen/kernel_info_adapter.h"
+#include "plugin/device/ascend/kernel/internal/pyboost/internal_pyboost_utils.h"
 #include "plugin/device/ascend/kernel/internal/pyboost/internal_kernel_info.h"
 ${merged_op_headers}
 

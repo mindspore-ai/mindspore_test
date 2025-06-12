@@ -22,39 +22,36 @@ namespace mindspore {
 namespace kernel {
 internal::InternalOpPtr QuantBatchMatmul::CreateKernel(const internal::InputsImmutableInfoList &inputs,
                                                        const internal::OutputsImmutableInfoList &outputs) {
-  internal::MatmulParam param;
-  param.transpose_a = transpose_a_;
-  param.transpose_b = transpose_b_;
-  param.with_bias = with_bias_;
-  param.enable_shuffle = false;
-  param.enable_dequant = true;
-  output_format_ = outputs[0].GetFormat();
-  return internal::CreateMatmulOp(inputs, outputs, param, internal::kInternalMatMulOpName);
+  param_.enable_shuffle = false;
+  param_.enable_dequant = true;
+  return internal::CreateMatmulOp(inputs, outputs, param_, internal::kInternalMatMulOpName);
 }
 
-uint64_t QuantBatchMatmul::GenerateTilingKey(const std::string &kernel_name, const std::vector<BaseTensorPtr> &inputs) {
-  return CalcInternalOpTilingHash(kernel_name, inputs, output_format_);
+uint64_t QuantBatchMatmul::GetOrGenerateOpTilingKey(const uint64_t &tiling_key) const {
+  return CalcInternalOpTilingHash(kernel_name_, tiling_key, output_format_);
 }
 
-void QuantBatchMatmul::Call(const std::shared_ptr<pyboost::OpRunner> &op, const BaseTensorPtr &x,
-                            const BaseTensorPtr &y, const BaseTensorPtr &scale,
-                            const std::optional<BaseTensorPtr> &offset, const std::optional<BaseTensorPtr> &bias,
+void QuantBatchMatmul::Call(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &op_key,
+                            const uint64_t &tiling_key, const BaseTensorPtr &x, const BaseTensorPtr &y,
+                            const BaseTensorPtr &scale, const std::optional<BaseTensorPtr> &offset,
+                            const std::optional<BaseTensorPtr> &bias,
                             const std::optional<BaseTensorPtr> &pertoken_scale, const bool transpose_a,
                             const bool transpose_b, const int64_t dtype) {
   std::vector<BaseTensorPtr> inputs = {x, y, bias.has_value() ? bias.value() : nullptr, scale};
   BaseTensorPtrList outputs = op->outputs();
-  transpose_a_ = transpose_a;
-  transpose_b_ = transpose_b;
-  with_bias_ = bias.has_value();
-  internal_inputs_shape_.resize(inputs.size());
-  internal_outputs_shape_.resize(outputs.size());
-  TransInternalShapes(&internal_inputs_shape_, inputs);
-  TransInternalShapes(&internal_outputs_shape_, outputs);
+  TransInternalShapes(inputs, outputs);
 
-  auto op_key = CalcInternalOpApiHash(kernel_name_, inputs, transpose_a_, transpose_b_, outputs);
-  GetOrCreateKernel(op, inputs, outputs, op_key);
+  param_.transpose_a = transpose_a;
+  param_.transpose_b = transpose_b;
+  param_.with_bias = bias.has_value();
+  auto device_sync = outputs[kIndex0]->device_address();
+  auto device_address = std::dynamic_pointer_cast<device::DeviceAddress>(device_sync);
+  MS_EXCEPTION_IF_NULL(device_address);
+  output_format_ = TransInternalFormat(GetFormatFromStrToEnum(device_address->format()));
+
+  GetOrCreateKernel(op, op_key, tiling_key, inputs, outputs);
   LAUNCH_INTERNAL(kernel_name_, op, internal_op_, inputs, outputs, tiling_info_);
 }
-MS_INTERNAL_KERNEL_INFO_FACTORY_REG(QuantBatchMatmul, internal::kInternalMatMulOpName, QuantBatchMatmul);
+MS_INTERNAL_KERNEL_INFO_FACTORY_REG(QuantBatchMatmul, QuantBatchMatmul);
 }  // namespace kernel
 }  // namespace mindspore

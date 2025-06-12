@@ -27,35 +27,27 @@ namespace mindspore {
 namespace kernel {
 class FlashAttentionScore : public InternalKernelInfo {
  public:
-  FlashAttentionScore() : InternalKernelInfo(std::move("FlashAttentionScore")) {}
+  explicit FlashAttentionScore(std::string &&kernel_name) : InternalKernelInfo(std::move(kernel_name)) {}
   ~FlashAttentionScore() = default;
 
-  void Call(const std::shared_ptr<pyboost::OpRunner> &op, const BaseTensorPtr &query, const BaseTensorPtr &key,
-            const BaseTensorPtr &value, const std::optional<BaseTensorPtr> &real_shift,
-            const std::optional<BaseTensorPtr> &drop_mask, const std::optional<BaseTensorPtr> &padding_mask,
-            const std::optional<BaseTensorPtr> &attn_mask, const std::vector<int64_t> &prefix,
-            const std::vector<int64_t> &actual_seq_len, const std::vector<int64_t> &actual_seq_kvlen,
-            const int64_t &head_num, const float &keep_prob, const float &scale_value, const int64_t &pre_tokens,
-            const int64_t &next_tokens, const int64_t &inner_precise, const int64_t &input_layout,
-            const int64_t &sparse_mode);
+  void Call(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &op_key, const uint64_t &tiling_key,
+            const BaseTensorPtr &query, const BaseTensorPtr &key, const BaseTensorPtr &value,
+            const std::optional<BaseTensorPtr> &real_shift, const std::optional<BaseTensorPtr> &drop_mask,
+            const std::optional<BaseTensorPtr> &padding_mask, const std::optional<BaseTensorPtr> &attn_mask,
+            const std::vector<int64_t> &prefix, const std::vector<int64_t> &actual_seq_len,
+            const std::vector<int64_t> &actual_seq_kvlen, const int64_t &head_num, const float &keep_prob,
+            const float &scale_value, const int64_t &pre_tokens, const int64_t &next_tokens,
+            const int64_t &inner_precise, const int64_t &input_layout, const int64_t &sparse_mode);
 
  protected:
-  uint64_t GenerateTilingKey(const std::string &kernel_name, const std::vector<BaseTensorPtr> &inputs) override;
+  uint64_t GetOrGenerateOpTilingKey(const uint64_t &tiling_key) const override;
+  bool UpdateParam() override;
   internal::InternalOpPtr CreateKernel(const internal::InputsImmutableInfoList &inputs,
                                        const internal::OutputsImmutableInfoList &outputs) override;
 
  private:
-  int32_t head_num_;
-  int32_t inner_precise_;
-  int32_t pre_tokens_;
-  int32_t next_tokens_;
-  int32_t sparse_mode_;
-  int32_t mask_dtype_;
-  int32_t input_layout_;
-  std::vector<int64_t> mask_dims_;
-  std::vector<int32_t> kv_seq_len_;
-  std::vector<int32_t> q_seq_len_;
-  float tor_;
+  internal::FlashAttentionScoreParam param_;
+  bool created_flag_{false};
 };
 }  // namespace kernel
 }  // namespace mindspore

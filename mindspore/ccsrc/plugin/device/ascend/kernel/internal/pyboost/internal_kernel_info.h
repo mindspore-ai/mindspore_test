@@ -53,10 +53,9 @@ class InternalKernelInfo {
   explicit InternalKernelInfo(std::string &&op_name) : kernel_name_(std::move(op_name)) {}
   virtual ~InternalKernelInfo() = default;
 
-  bool Init(const BaseTensorPtrList &input_tensors, std::vector<BaseTensorPtr> *inputs,
-            std::vector<BaseTensorPtr> *outputs, const std::vector<BaseTensorPtr> &op_outputs);
-  void GetOrCreateKernel(const std::shared_ptr<pyboost::OpRunner> &op, const std::vector<BaseTensorPtr> &inputs,
-                         const std::vector<BaseTensorPtr> &outputs, uint64_t key);
+  void GetOrCreateKernel(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &op_key,
+                         const uint64_t &tiling_key, const std::vector<BaseTensorPtr> &inputs,
+                         const std::vector<BaseTensorPtr> &outputs);
   static void UpdateAddr(std::vector<internal::RawDeviceAddr> *addrlist, const std::vector<BaseTensorPtr> &tensorlist) {
     addrlist->resize(tensorlist.size());
     for (size_t i = 0; i < tensorlist.size(); i++) {
@@ -86,21 +85,21 @@ class InternalKernelInfo {
   }
 
  protected:
-  void GetInputAndOutputIndex(const std::shared_ptr<pyboost::OpRunner> &op, const BaseTensorPtrList &input_tensors);
   bool IsInternalDtypeSupport(const std::vector<BaseTensorPtr> *ms_inputs,
                               const std::vector<BaseTensorPtr> *ms_outputs);
-  TilingCacheItemPtr GetOrGenerateTiling(const std::shared_ptr<pyboost::OpRunner> &op,
-                                         const std::vector<BaseTensorPtr> &inputs);
-  virtual uint64_t GenerateTilingKey(const std::string &kernel_name, const std::vector<BaseTensorPtr> &inputs);
+  virtual uint64_t GetOrGenerateOpKey(const uint64_t &op_key) const { return op_key; }
+  virtual uint64_t GetOrGenerateOpTilingKey(const uint64_t &tiling_key) const { return tiling_key; }
+  virtual bool UpdateParam() { return true; }
+  TilingCacheItemPtr GetOrGenerateTiling(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &tiling_key);
   virtual internal::InternalOpPtr CreateKernel(const internal::InputsImmutableInfoList &inputs,
                                                const internal::OutputsImmutableInfoList &outputs) = 0;
-  void TransInternalShapes(internal::ShapeInfoList *shapelist, const std::vector<BaseTensorPtr> &tensorlist);
+  void TransInternalShapes(internal::ShapeInfoList *shapelist, const std::vector<BaseTensorPtr> &tensorlist,
+                           bool is_input = false);
+  void TransInternalShapes(const BaseTensorPtrList &inputs, const BaseTensorPtrList &outputs);
 
   std::string kernel_name_;
   internal::InternalOpPtr internal_op_{nullptr};
   inline static std::unordered_map<uint64_t, internal::InternalOpPtr> hash_map_;
-  inline static std::unordered_map<std::string, std::vector<size_t>> ms_inputs_idx_map_;
-  inline static std::unordered_map<std::string, std::vector<size_t>> ms_outputs_idx_map_;
   internal::DtypeInfoList internal_inputs_dtype_;
   internal::DtypeInfoList internal_outputs_dtype_;
   internal::ShapeInfoList internal_inputs_shape_;
@@ -118,9 +117,8 @@ class InternalKernelInfo {
 };
 using InternalKernelInfoPtr = std::shared_ptr<InternalKernelInfo>;
 
-#define MS_INTERNAL_KERNEL_INFO_FACTORY_REG(PRIM_NAME_STR, INTERNAL_NAME_VAR, DERIVE) \
-  MS_KERNEL_FACTORY_REG(InternalKernelInfo, PRIM_NAME_STR, DERIVE);                   \
-  static const NameMappingRegistrar g_##PRIM_NAME_STR##_ms_to_acme_pyboost_mapper(#PRIM_NAME_STR, INTERNAL_NAME_VAR);
+#define MS_INTERNAL_KERNEL_INFO_FACTORY_REG(PRIM_NAME_STR, DERIVE) \
+  MS_KERNEL_FACTORY_REG_WITH_NAME_PARAM(InternalKernelInfo, PRIM_NAME_STR, DERIVE);
 
 #define LAUNCH_INTERNAL_KERNEL(op, internal_op, device_context, tiling_ptr, inputs_addr, outputs_addr,             \
                                internal_wss_addr, kernel_name)                                                     \
