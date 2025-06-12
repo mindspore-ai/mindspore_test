@@ -21,7 +21,7 @@ import os
 from enum import Enum
 from safetensors import safe_open
 from mindspore.communication.management import get_rank
-from mindformers.experimental.infer.core.utils import get_tp_world_size
+from mindformers.parallel_core.inference.utils import get_tp_world_size
 
 
 class EPMethod(Enum):

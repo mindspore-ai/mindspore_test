@@ -27,6 +27,7 @@ workspace = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__f
 sys.path.insert(0, os.path.join(workspace, "networks/mindformers"))
 
 from mindspore.nn.utils import no_init_parameters
+import mindspore as ms
 
 from mindformers.models.llama.llama_tokenizer_fast import LlamaTokenizerFast
 from mindformers import build_context, MindFormerConfig, build_parallel_config, LlamaConfig
@@ -40,6 +41,7 @@ from research.deepseek3.deepseek3_model_infer import InferenceDeepseekV3ForCausa
 from deepseekv3_weight_processor import DeepseekV3WeightProcessor
 from qwen2_weight_processor import Qwen2WeightProcessor
 
+ms.runtime.set_kernel_launch_group()
 
 def parallel_qwen2_0_5b_predict_mp2():
     """test qwen2 0.5B predict in model_parallel=2 with dynamic shape"""
