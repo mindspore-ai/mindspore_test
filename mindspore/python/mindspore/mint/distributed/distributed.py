@@ -1175,7 +1175,7 @@ def all_gather_into_tensor_uneven(output, input, output_split_sizes=None, group=
 
     Note:
         - Input tensors must have identical shapes except for the first dimension.
-        - Output tensor's first dimension equals the sum of all devices' input first dimensions.
+        - Output tensor's first dimension should equal to the sum of all devices' input first dimensions.
 
     Args:
         output (Tensor): Concatenated output tensor with shape :math:`(\sum_{i=0}^{N-1} x_{i1}, x_2, ..., x_R)`,
@@ -1193,9 +1193,7 @@ def all_gather_into_tensor_uneven(output, input, output_split_sizes=None, group=
         CommHandle will be None, when `async_op` is False.
 
     Raises:
-        TypeError: If the type of the input_tensor or output parameter is not Tensor,
-            `group` is not a str, or async_op is not bool.
-        ValueError: the shape of `input` does not match the constraints of `output_split_sizes`.
+        ValueError: If the shape of `input` does not match the constraints of `output_split_sizes`.
         RuntimeError: If device target is invalid, or backend is invalid, or distributed initialization fails.
 
     Supported Platforms:
@@ -1353,17 +1351,17 @@ def reduce_scatter_tensor(output, input, op=ReduceOp.SUM, group=None, async_op=F
 def reduce_scatter_tensor_uneven(output, input, input_split_sizes=None, op=ReduceOp.SUM, group=None, async_op=False):
     r"""
     Reduce tensors from the specified communication group and scatter to the output tensor
-        according to input_split_sizes.
+        according to `input_split_sizes`.
 
     Note:
         - The input tensor must have identical shape and format across all processes.
-        - The first dimension of input tensor should equal to the sum of input_split_sizes.
+        - The first dimension of input tensor should equal to the sum of `input_split_sizes`.
 
     Args:
         output(Tensor): the output tensor has the same dtype as `input` with a shape of
             :math:`(input_split_sizes[rank], *)`, where rank is the local rank id of the device.
-        input(Tensor): The input tensor to be reduced and scattered, Expected shape :math:`(N, *)`,
-            where `*` means any number of additional dimensions. N must equal the sum of input_split_sizes across ranks.
+        input(Tensor): The input tensor to be reduced and scattered, Expected shape :math:`(N, *)`, where `*`
+            means any number of additional dimensions. N must equal the sum of `input_split_sizes` across ranks.
         input_split_sizes (list[int], optional): List specifying how to split the first dimension of input tensor.
             If ``None``, splits evenly according to group size. Default: ``None``.
         op (str, optional): Specifies an operation used for element-wise reductions,
@@ -1377,9 +1375,7 @@ def reduce_scatter_tensor_uneven(output, input, input_split_sizes=None, op=Reduc
         CommHandle will be None, when `async_op` is False.
 
     Raises:
-        TypeError: If the type of the input and output parameter is not Tensor, any of `op` and `group` is not a str.
-            async_op is not bool or 'op' is invalid.
-        ValueError: the shape of `output` does not match the constraints of `input_split_sizes`.
+        ValueError: If the shape of `output` does not match the constraints of `input_split_sizes`.
         RuntimeError: If device target is invalid, or backend is invalid, or distributed initialization fails.
 
     Supported Platforms:
