@@ -27,6 +27,7 @@
 #include "include/errorcode.h"
 #include "securec/include/securec.h"
 #include "src/common/file_utils.h"
+#include "src/common/decrypt.h"
 
 namespace mindspore::lite {
 namespace {

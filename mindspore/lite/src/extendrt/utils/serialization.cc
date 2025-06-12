@@ -25,6 +25,7 @@
 #include "utils/crypto.h"
 #include "extendrt/cxx_api/file_utils.h"
 #include "include/api/types.h"
+#include "src/common/crypto.h"
 
 namespace mindspore::infer {
 static mindspore::Status RealPath(const std::string &file, std::string *realpath_str) {
@@ -118,8 +119,8 @@ mindspore::Status Serialization::Load(const void *model_data, size_t data_size, 
         }
       } else {
         size_t plain_data_size;
-        auto plain_data = mindspore::Decrypt(&plain_data_size, reinterpret_cast<const unsigned char *>(model_data),
-                                             data_size, dec_key.key, dec_key.len, dec_mode);
+        auto plain_data = lite::Decrypt(&plain_data_size, reinterpret_cast<const unsigned char *>(model_data),
+                                        data_size, dec_key.key, dec_key.len, dec_mode);
         if (plain_data == nullptr) {
           err_msg << "Load model failed. Please check the valid of dec_key and dec_mode.";
           MS_LOG(ERROR) << err_msg.str();

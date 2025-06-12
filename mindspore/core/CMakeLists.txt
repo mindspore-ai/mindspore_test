@@ -20,14 +20,7 @@ if(NOT "${CMAKE_CXX_FLAGS}" STREQUAL "")
 endif()
 add_subdirectory(mindrt)
 
-if(CMAKE_SIZEOF_VOID_P EQUAL 4 OR NOT BUILD_LITE)
-    file(GLOB_RECURSE CORE_OPS_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "ops/*.cc")
-else()
-    include(${TOP_DIR}/mindspore/lite/cmake/merge.cmake)
-    merge_files(${CMAKE_CURRENT_SOURCE_DIR}/ops/ ${CMAKE_BINARY_DIR}/merge/mindspore/core ops_merge "")
-    file(GLOB_RECURSE CORE_OPS_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-        "${CMAKE_BINARY_DIR}/merge/mindspore/core/ops_merge*.cc")
-endif()
+file(GLOB_RECURSE CORE_OPS_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "ops/*.cc")
 
 set(OP_DEF_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../ops/op_def)
 list(APPEND CORE_OPS_LIST "${OP_DEF_DIR}/prim_def.cc")
@@ -56,15 +49,6 @@ if(ANDROID_NDK)
     add_definitions(-w)
     add_compile_definitions(KERNEL_EXECUTOR_ANDROID)
     set(TARGET_AOS_ARM ON)
-endif()
-
-if(NOT MSLITE_TARGET_SITEAI)
-    set(MSLITE_DEPS_OPENSSL on)
-    set(MSLITE_SIMPLEST_CLOUD_INFERENCE off)
-endif()
-
-if(MSLITE_DEPS_OPENSSL)
-    add_compile_definitions(ENABLE_OPENSSL)
 endif()
 
 if(NOT ONLY_BUILD_DEVICE_PLUGINS)
@@ -146,8 +130,7 @@ if(USE_GLOG)
     target_link_libraries(mindspore_core PRIVATE mindspore::glog)
 endif()
 
-if((${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR APPLE) AND (NOT TARGET_AOS_ARM) AND (NOT ANDROID_NDK) AND
-        (NOT MSLITE_SIMPLEST_CLOUD_INFERENCE))
+if((${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR APPLE) AND (NOT TARGET_AOS_ARM) AND (NOT ANDROID_NDK))
     target_link_libraries(mindspore_core PRIVATE mindspore::crypto -pthread)
 endif()
 
