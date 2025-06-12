@@ -26,8 +26,6 @@
 #include <string>
 #include <nlohmann/json.hpp>
 
-#include "atb_speed/log.h"
-
 namespace atb_speed {
 extern thread_local std::vector<std::pair<atb::Operation*, atb::common::EventParam>> g_eventOperationsOfModel;
 
