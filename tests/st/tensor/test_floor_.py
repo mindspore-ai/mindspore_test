@@ -38,7 +38,7 @@ def floor_forward_func_grad(x):
     return Net()(x)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_floor_std():
     """
     Feature: standard forward, backward features.

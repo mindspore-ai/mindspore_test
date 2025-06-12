@@ -59,7 +59,7 @@ def test_ftrl_net():
                                                  [[0.6821311, 0.6821311]]]))
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_lazy_adam_net():
     """
     Feature: Dynamic shape.

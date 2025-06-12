@@ -39,7 +39,7 @@ def copy_backward_func(x, y):
     return ops.grad(copy_forward_func, grad_position=(0, 1))(x, y)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'cpu_linux', 'cpu_windows', 'cpu_macos'],
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'],
           level_mark='level0',
           card_mark='onecard',
           essential_mark='essential')
