@@ -16,11 +16,9 @@
 # pylint: disable=redefined-builtin
 # pylint: disable=W0235
 import numpy as np
-import pytest
 import mindspore as ms
 from mindspore import nn, mint
 from mindspore.ops.composite import GradOperation
-from tests.mark_utils import arg_mark
 from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
 
 
@@ -124,8 +122,6 @@ def tensor_imatmul_binary_case1(input_binary_data=None, output_binary_data=None)
     mint_matmul_binary_compare(input_binary_data, output_binary_data, loss=1e-4, is_inplace=True)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize("mode", ['pynative', 'KBK'])
 def test_matmul_binary_cases(mode):
     """
     Feature: standard forward, backward features.

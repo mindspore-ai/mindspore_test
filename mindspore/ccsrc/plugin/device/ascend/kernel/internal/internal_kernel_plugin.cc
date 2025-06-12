@@ -416,11 +416,7 @@ void InternalKernelPlugin::GetValidKernelBuildInfoWithInternalFormat(const AnfNo
 
   size_t input_num = common::AnfAlgo::GetInputTensorNum(node);
 
-  auto changed = UpdateFormat(node, input_formats, output_formats);
-  if (!changed) {
-    return;
-  }
-
+  (void)UpdateFormat(node, input_formats, output_formats);
   std::vector<size_t> special_inputs;
   std::vector<int64_t> special_format_inputs;
   for (size_t i = 0; i < input_num; ++i) {
