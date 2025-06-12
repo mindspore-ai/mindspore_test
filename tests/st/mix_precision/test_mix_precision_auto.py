@@ -127,7 +127,7 @@ def test_auto_mix_precision_infer_auto(mode):
     assert np.allclose(out.asnumpy(), out2.asnumpy(), 0.0001, 0.0001)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize("mode", (context.GRAPH_MODE, context.PYNATIVE_MODE))
 def test_auto_mix_precision_train_auto(mode):
