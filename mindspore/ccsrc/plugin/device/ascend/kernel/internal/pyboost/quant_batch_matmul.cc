@@ -17,6 +17,7 @@
 #include "plugin/device/ascend/kernel/internal/pyboost/quant_batch_matmul.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 
+
 namespace mindspore {
 namespace kernel {
 internal::InternalOpPtr QuantBatchMatmul::CreateKernel(const internal::InputsImmutableInfoList &inputs,
