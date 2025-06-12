@@ -1,0 +1,25 @@
+#operator dist reduce scatter tensor uneven
+dist_comm_reduce_scatter_tensor_uneven:
+    args:
+        other:
+            dtype: tensor
+        input:
+            dtype: tensor
+        input_split_size:
+            dtype: tuple[int]
+            type_cast: list[int]
+        rank_size:
+            dtype: int
+        op_type:
+            dtype: str
+        group:
+            dtype: str
+    returns:
+        output:
+            dtype: tensor
+    function:
+        disable: True
+    dispatch:
+        enable: True
+        is_comm_op: True
+        Ascend: DistCommReduceScatterTensorUnevenAscend

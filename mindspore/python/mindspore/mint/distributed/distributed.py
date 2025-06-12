@@ -58,9 +58,11 @@ from mindspore.ops.auto_generate.gen_ops_prim import (
     dist_comm_isend_op,
     dist_comm_all_to_all_v_op,
     dist_comm_reduce_scatter_tensor_op,
+    dist_comm_reduce_scatter_tensor_uneven_op,
     dist_comm_all_to_all_v_single_op,
     dist_comm_broadcast_op,
     dist_comm_all_gather_into_tensor_op,
+    dist_comm_all_gather_into_tensor_uneven_op,
     dist_comm_irecv_op,
     dist_comm_scatter_tensor_op,
     dist_comm_gather_into_tensor_op,
@@ -988,6 +990,20 @@ def _check_all_tensor_same_dtype_and_shape(*tensor_lists):
                         f"but got {consistent_shape} and {shape}."
                     )
 
+@_primexpr
+def _check_output_shape(output, expected_shape, op_name):
+    if output.shape != expected_shape:
+        raise TypeError(
+            f"For {op_name}, the output shape should be {expected_shape}, "
+            f"but got {output.shape}.")
+
+@_primexpr
+def _check_output_dtype(output, expected_dtype, op_name):
+    if output.dtype != expected_dtype:
+        raise TypeError(
+            f"For {op_name}, the output dtype should be {expected_dtype}, "
+            f"but got {output.dtype}.")
+
 
 def all_reduce(tensor, op=ReduceOp.SUM, group=None, async_op=False):
     """
@@ -1153,6 +1169,97 @@ def all_gather_into_tensor(output_tensor, input_tensor, group=None, async_op=Fal
     return handle
 
 
+def all_gather_into_tensor_uneven(output, input, output_split_sizes=None, group=None, async_op=False):
+    r"""
+    Gathers and concatenates tensors across devices with uneven first dimensions.
+
+    Note:
+        - Input tensors must have identical shapes except for the first dimension.
+        - Output tensor's first dimension equals the sum of all devices' input first dimensions.
+
+    Args:
+        output (Tensor): Concatenated output tensor with shape :math:`(\sum_{i=0}^{N-1} x_{i1}, x_2, ..., x_R)`,
+            where N is the number of devices in the group.
+        input (Tensor): Local input tensor with shape :math:`(x_{k1}, x_2, ..., x_R)`, where k is current device's rank.
+        output_split_sizes (list[int], optional): Specifies first dimension sizes from each device.
+            Must match actual input dimensions when provided.
+            If ``None``, assumes equal split sizes across devices. Default: ``None``.
+        group (str, optional): The communication group to work on. If ``None``,
+            which means ``"hccl_world_group"`` in Ascend. Default: ``None``.
+        async_op (bool, optional): Whether this operator should be an async operator. Default: ``False``.
+
+    Returns:
+        CommHandle, CommHandle is an async work handle, if `async_op` is set to True.
+        CommHandle will be None, when `async_op` is False.
+
+    Raises:
+        TypeError: If the type of the input_tensor or output parameter is not Tensor,
+            `group` is not a str, or async_op is not bool.
+        ValueError: the shape of `input` does not match the constraints of `output_split_sizes`.
+        RuntimeError: If device target is invalid, or backend is invalid, or distributed initialization fails.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        .. note::
+            Before running the following examples, you need to configure the communication environment variables.
+
+            For Ascend devices, it is recommended to use the msrun startup method
+            without any third-party or configuration file dependencies.
+            Please see the `msrun start up
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
+            for more details.
+
+            This example should be run with 2 devices.
+
+        >>> import numpy as np
+        >>> import mindspore as ms
+        >>> from mindspore import ops
+        >>> from mindspore.mint.distributed import init_process_group
+        >>> from mindspore.mint.distributed import all_gather_into_tensor_uneven
+        >>> from mindspore import Tensor
+        >>>
+        >>> ms.set_device(device_target="Ascend")
+        >>> init_process_group()
+        >>> if get_rank() == 0:
+        >>>     input_tensor = Tensor(np.ones([3, 4]).astype(np.float32))
+        >>> else:
+        >>>     input_tensor = Tensor(np.ones([2, 4]).astype(np.float32))
+        >>> out_tensor = Tensor(np.zeros([5, 4]).astype(np.float32))
+        >>> output_split_sizes = [3, 2]
+        >>> output = all_gather_into_tensor_uneven(out_tensor, input_tensor, output_split_sizes)
+        >>> print(out_tensor)
+        [[1. 1. 1. 1.]
+         [1. 1. 1. 1.]
+         [1. 1. 1. 1.]
+         [1. 1. 1. 1.]
+         [1. 1. 1. 1.]]
+    """
+    if not output.dtype == input.dtype:
+        raise TypeError(
+            "For all_gather_into_tensor_uneven, the input tensor and output tensor dtype must be the same"
+        )
+    if group is None:
+        group = GlobalComm.WORLD_COMM_GROUP
+    if not isinstance(group, str):
+        raise TypeError(
+            "The argument 'group' must be type of string, "
+            "but got 'group' type : {}.".format(type(group))
+        )
+    if not isinstance(async_op, bool):
+        raise TypeError(
+            f"The argument 'async_op' must be a bool, but got {type(async_op)}."
+        )
+    group_size = get_cache_group_size(group)
+    output_split_sizes = [] if output_split_sizes is None else output_split_sizes
+    result = dist_comm_all_gather_into_tensor_uneven_op(
+        output, input, output_split_sizes, group_size, group
+    )
+    _, handle = _deal_comm_outputs(result, async_op)
+    return handle
+
+
 def reduce_scatter_tensor(output, input, op=ReduceOp.SUM, group=None, async_op=False):
     r"""
     Reduces and scatters tensors from the specified communication group and
@@ -1239,6 +1346,103 @@ def reduce_scatter_tensor(output, input, op=ReduceOp.SUM, group=None, async_op=F
         )
     rank_size = get_cache_group_size(group)
     result = dist_comm_reduce_scatter_tensor_op(output, input, rank_size, op, group)
+    _, handle = _deal_comm_outputs(result, async_op)
+    return handle
+
+
+def reduce_scatter_tensor_uneven(output, input, input_split_sizes=None, op=ReduceOp.SUM, group=None, async_op=False):
+    r"""
+    Reduce tensors from the specified communication group and scatter to the output tensor
+        according to input_split_sizes.
+
+    Note:
+        - The input tensor must have identical shape and format across all processes.
+        - The first dimension of input tensor should equal to the sum of input_split_sizes.
+
+    Args:
+        output(Tensor): the output tensor has the same dtype as `input` with a shape of
+            :math:`(input_split_sizes[rank], *)`, where rank is the local rank id of the device.
+        input(Tensor): The input tensor to be reduced and scattered, Expected shape :math:`(N, *)`,
+            where `*` means any number of additional dimensions. N must equal the sum of input_split_sizes across ranks.
+        input_split_sizes (list[int], optional): List specifying how to split the first dimension of input tensor.
+            If ``None``, splits evenly according to group size. Default: ``None``.
+        op (str, optional): Specifies an operation used for element-wise reductions,
+            One of ReduceOp: 'SUM', 'MIN', 'MAX'. Default: ``ReduceOp.SUM``.
+        group (str, optional): The communication group to work on. If ``None``, which means ``"hccl_world_group"`` in
+            Ascend. Default: ``None``.
+        async_op (bool, optional): Whether this operator should be an async operator. Default: ``False``.
+
+    Returns:
+        CommHandle, CommHandle is an async work handle, if `async_op` is set to True.
+        CommHandle will be None, when `async_op` is False.
+
+    Raises:
+        TypeError: If the type of the input and output parameter is not Tensor, any of `op` and `group` is not a str.
+            async_op is not bool or 'op' is invalid.
+        ValueError: the shape of `output` does not match the constraints of `input_split_sizes`.
+        RuntimeError: If device target is invalid, or backend is invalid, or distributed initialization fails.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        .. note::
+            Before running the following examples, you need to configure the communication environment variables.
+
+            For Ascend devices, it is recommended to use the msrun startup method
+            without any third-party or configuration file dependencies.
+            Please see the `msrun start up
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
+            for more details.
+
+            This example should be run with 2 devices.
+
+        >>> import mindspore as ms
+        >>> from mindspore import Tensor
+        >>> from mindspore.mint.distributed import init_process_group
+        >>> from mindspore.mint.distributed import reduce_scatter_tensor_uneven
+        >>> import numpy as np
+        >>>
+        >>> ms.set_device(device_target="Ascend")
+        >>> init_process_group()
+        >>> input_tensor = Tensor(np.ones([5, 8]).astype(np.float32))
+        >>> if get_rank() == 0:
+        >>>     output_tensor = Tensor(np.ones([2, 8]).astype(np.float32))
+        >>> else:
+        >>>     output_tensor = Tensor(np.ones([3, 8]).astype(np.float32))
+        >>> input_split_sizes = [2, 3]
+        >>> output = reduce_scatter_tensor_uneven(output_tensor, input_tensor, input_split_sizes)
+        >>> print(output_tensor)
+        rank 0:
+        [[2. 2. 2. 2. 2. 2. 2. 2.]
+         [2. 2. 2. 2. 2. 2. 2. 2.]]
+        rank 1:
+        [[2. 2. 2. 2. 2. 2. 2. 2.]
+         [2. 2. 2. 2. 2. 2. 2. 2.]
+         [2. 2. 2. 2. 2. 2. 2. 2.]]
+    """
+    if not isinstance(op, str):
+        raise TypeError("For reduce_scatter_tensor_uneven, the input op type must be str")
+    if op not in ("sum", "min", "max"):
+        raise TypeError(
+            "For reduce_scatter_tensor_uneven, the input op value must be one of sum, prod, min, max"
+        )
+    if group is None:
+        group = GlobalComm.WORLD_COMM_GROUP
+    if not isinstance(group, str):
+        raise TypeError(
+            "The argument 'group' must be type of string, "
+            "but got 'group' type : {}.".format(type(group))
+        )
+    if not isinstance(async_op, bool):
+        raise TypeError(
+            f"The argument 'async_op' must be a bool, but got {type(async_op)}."
+        )
+    input_split_sizes = [] if input_split_sizes is None else input_split_sizes
+    rank_size = get_cache_group_size(group)
+    result = dist_comm_reduce_scatter_tensor_uneven_op(
+        output, input, input_split_sizes, rank_size, op, group
+    )
     _, handle = _deal_comm_outputs(result, async_op)
     return handle
 
@@ -2386,10 +2590,7 @@ def all_to_all_single(output,
 
 def _check_tensor_list(tensor_list, tensor, group_size):
     """check all elements in tensor_list are type of Tensor or tuple or list"""
-    if not tensor_list or len(tensor_list) != group_size:
-        raise TypeError(
-            f"The argument list tensor len must be equal to group rank size, but got {len(tensor_list)}."
-        )
+    _check_group_tensor_list(tensor_list, group_size)
     if tensor.dtype != tensor_list[0].dtype:
         raise TypeError(
             f"The argument list tensor type must be equal to tensor type, but got {tensor_list[0].dtype}."
@@ -2399,13 +2600,15 @@ def _check_tensor_list(tensor_list, tensor, group_size):
             f"The argument list tensor shape must be equal to tensor shape, but got {tensor_list[0].shape}."
         )
 
+def _check_group_tensor_list(tensor_list, group_size):
+    if not tensor_list or len(tensor_list) != group_size:
+        raise TypeError(
+            f"The argument list tensor len must be equal to group rank size, but got {len(tensor_list)}."
+        )
 
 def all_gather(tensor_list, tensor, group=None, async_op=False):
     """
     Gathers tensors from the specified communication group and returns the tensor list which is all gathered.
-
-    Note:
-        The tensors must have the same shape and format in all processes of the collection.
 
     Args:
         tensor_list (list[Tensor]): Output list.
@@ -2461,7 +2664,7 @@ def all_gather(tensor_list, tensor, group=None, async_op=False):
 
     """
     _check_all_tensors(tensor_list)
-    _check_all_tensor_same_dtype_and_shape(tensor_list)
+    _check_all_tensor_same_dtype(tensor_list)
     if not isinstance(tensor, (Tensor, Tensor_)):
         raise TypeError("For all_gather_into_tensor, the input tensor must be tensor")
     if group is None:
@@ -2476,7 +2679,10 @@ def all_gather(tensor_list, tensor, group=None, async_op=False):
             f"The argument 'async_op' must be a bool, but got {type(async_op)}."
         )
     group_size = get_cache_group_size(group)
-    _check_tensor_list(tensor_list, tensor, group_size)
+    _check_group_tensor_list(tensor_list, group_size)
+    rank_id = get_group_rank_from_world_rank(get_rank(), group)
+    _check_output_shape(tensor, tensor_list[rank_id].shape, "all_gather")
+    _check_output_dtype(tensor, tensor_list[0].dtype, "all_gather")
     result = dist_comm_all_gather_op(tensor_list, tensor, group_size, group)
     _, handle = _deal_comm_outputs(result, async_op)
     return handle
@@ -2486,9 +2692,6 @@ def reduce_scatter(output, input_list, op=ReduceOp.SUM, group=None, async_op=Fal
     r"""
     Reduces and scatters tensors from the specified communication group and
     returns the tensor which is reduced and scattered.
-
-    Note:
-        The tensors must have the same shape and format in all processes of the collection.
 
     Args:
         output (Tensor): the output tensor.
@@ -2543,7 +2746,7 @@ def reduce_scatter(output, input_list, op=ReduceOp.SUM, group=None, async_op=Fal
     """
 
     _check_all_tensors(input_list)
-    _check_all_tensor_same_dtype_and_shape(input_list)
+    _check_all_tensor_same_dtype(input_list)
     if not isinstance(output, (Tensor, Tensor_)):
         raise TypeError("For reduce_scatter, the output tensor must be tensor")
     if group is None:
@@ -2564,7 +2767,11 @@ def reduce_scatter(output, input_list, op=ReduceOp.SUM, group=None, async_op=Fal
             "For reduce_scatter, the input op value must be one of sum, prod, min, max"
         )
     rank_size = get_cache_group_size(group)
-    _check_tensor_list(input_list, output, rank_size)
+    _check_group_tensor_list(input_list, rank_size)
+
+    rank_id = get_group_rank_from_world_rank(get_rank(), group)
+    _check_output_shape(output, input_list[rank_id].shape, "reduce_scatter")
+    _check_output_dtype(output, input_list[0].dtype, "reduce_scatter")
     result = dist_comm_reduce_scatter_op(output, input_list, rank_size, op, group)
     _, handle = _deal_comm_outputs(result, async_op)
     return handle

@@ -32,15 +32,16 @@ ShapeArray DistCommAllGatherFuncImpl::InferShape(const PrimitivePtr &primitive,
 
   auto input_shape = input_infos[kIndex1]->GetShape();
   auto x_list = input_infos[kIndex0]->GetSequenceElements();
-  for (size_t i = 0; i < x_list.size(); i++) {
-    const auto &output_shape = x_list[i]->GetShape();
-    CheckInferShape(primitive->name(), input_shape, output_shape);
+  auto output_shape = x_list[0]->GetShape();
+  for (size_t i = 1; i < x_list.size(); i++) {
+    auto out_shape = x_list[i]->GetShape();
+    output_shape[0] += out_shape[0];
   }
+
   if (input_shape.size() == 0) {
     return {ShapeVector({static_cast<int64_t>(rank_size)})};
   }
-  input_shape[kIndex0] = input_shape[kIndex0] * rank_size;
-  return {input_shape};
+  return {output_shape};
 }
 
 std::vector<TypeId> DistCommAllGatherFuncImpl::InferType(const PrimitivePtr &primitive,
