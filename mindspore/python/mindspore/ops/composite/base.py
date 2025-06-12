@@ -782,7 +782,7 @@ class MultitypeFuncGraph(MultitypeFuncGraph_):
         if len(self.entries) == 1:
             output = self.entries[0][1](*args)
             return output
-        types = tuple(map(mstype.get_py_obj_dtype, args))
+        types = tuple(map(mstype._get_py_obj_dtype, args))  # pylint:disable=protected-access
         for sigs, fn in self.entries:
             if len(sigs) != len(types):
                 continue

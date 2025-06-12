@@ -14,7 +14,7 @@ mindspore.Tensor.sub
         - 两个输入和alpha遵循隐式类型转换规则，使数据类型保持一致。
 
     参数：
-        - **other** (Union[Tensor, number.Number, bool]) - 另外一个输入，数据类型为 `number.Number`、 `bool` 或者数据类型为 `number <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.dtype.html>`_ 或 `bool_ <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.dtype.html>`_ 的Tensor。
+        - **other** (Union[Tensor, number.Number, bool]) - 另外一个输入，数据类型为 `number.Number`、 `bool` 或者数据类型为 `number <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.dtype.html>`_ 或 `bool <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.dtype.html>`_ 的Tensor。
 
     关键字参数：
         - **alpha** (number.Number，可选) - 应用于 `other` 的缩放因子，默认值为 ``1`` 。

@@ -21,7 +21,7 @@ import mindspore.nn as nn
 import mindspore.ops.operations as P
 from mindspore.common.initializer import initializer
 from mindspore.common.parameter import Parameter
-from mindspore.common.dtype import pytype_to_dtype
+from mindspore.common.dtype import _pytype_to_dtype
 from mindspore import Tensor
 
 import pytest
@@ -86,7 +86,8 @@ def test_signature_error_info():
     class NetScatterDiv(nn.Cell):
         def __init__(self):
             super(NetScatterDiv, self).__init__()
-            self.b = Parameter(initializer(1, [5, 3], pytype_to_dtype(np.int8)), name='input')
+            # pylint:disable=protected-access
+            self.b = Parameter(initializer(1, [5, 3], _pytype_to_dtype(np.int8)), name='input')
             self.scatter = P.ScatterDiv(False)
 
         def construct(self, idx, x):

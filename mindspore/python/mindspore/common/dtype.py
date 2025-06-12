@@ -17,20 +17,24 @@
 """Data type for MindSpore."""
 from __future__ import absolute_import
 
+import builtins
 import enum
 from inspect import isfunction
 import numpy as np
+from mindspore import log as logger
 from mindspore._c_expression import typing
 from mindspore._c_expression.typing import Type
 from mindspore._c_expression.np_dtypes import np_version_valid
 if np_version_valid(False):
     from mindspore._c_expression.np_dtypes import bfloat16 as np_bfloat16
 
+# bool, int, float are not defined in __all__ to avoid conflict with built-in types.
 __dtype__ = [
+    "bool_",
     "int8", "byte",
     "int16", "short",
     "int32", "intc",
-    "int64", "intp",
+    "int64", "long", "intp",
     "uint8", "ubyte",
     "uint16", "ushort",
     "uint32", "uintc",
@@ -38,17 +42,15 @@ __dtype__ = [
     "float16", "half",
     "float32", "single",
     "float64", "double",
-    "bool_", "float_",
-    "list_", "tuple_",
-    "int_", "uint",
+    "complex64", "cfloat",
+    "complex128", "cdouble",
+    "qint4x2", "bfloat16",
+    "float8_e4m3fn", "float8_e5m2", "hifloat8",
+    "int_", "uint", "float_",
+    "list_", "tuple_", "string",
     "number", "tensor_type",
-    "string", "type_none",
-    "TensorType", "_null",
-    "Type", "Int",
-    "complex64", "complex128",
-    "bfloat16", "qint4x2",
-    "float8_e4m3fn", "float8_e5m2",
-    "hifloat8"
+    "type_none", "_null",
+    "TensorType", "Type", "Int",
 ]
 
 __method__ = [
@@ -61,16 +63,18 @@ __all__.extend(__dtype__)
 __all__.extend(__method__)
 
 # type definition
-bool_ = typing.kBool
+bool = typing.kBool
+bool_ = bool
 
-qint4x2 = typing.kInt4
 int8 = typing.kInt8
 byte = int8
 int16 = typing.kInt16
 short = int16
 int32 = typing.kInt32
+int = int32
 intc = int32
 int64 = typing.kInt64
+long = int64
 intp = int64
 
 uint8 = typing.kUInt8
@@ -85,15 +89,21 @@ uintp = uint64
 float16 = typing.kFloat16
 half = float16
 float32 = typing.kFloat32
+float = float32
 single = float32
 float64 = typing.kFloat64
 double = float64
+
+qint4x2 = typing.kInt4
 float8_e4m3fn = typing.kFloat8E4M3FN
 float8_e5m2 = typing.kFloat8E5M2
 hifloat8 = typing.kHiFloat8
 bfloat16 = typing.kBFloat16
+
 complex64 = typing.kComplex64
+cfloat = complex64
 complex128 = typing.kComplex128
+cdouble = complex128
 
 number = typing.kNumber
 int_ = typing.kInt
@@ -136,42 +146,30 @@ AnythingType = typing.TypeAny
 RefType = typing.RefType
 _NullType = typing.TypeNull
 
-number_type = (int8,
-               int16,
-               int32,
-               int64,
-               uint8,
-               uint16,
-               uint32,
-               uint64,
-               float16,
-               float32,
-               float64,
-               bfloat16,
-               complex64,
-               complex128,
-               qint4x2,
-               float8_e4m3fn,
-               float8_e5m2,
-               hifloat8)
+number_type = (int8, int16, int32, int64, uint8, uint16, uint32, uint64, float16, float32, float64, bfloat16, complex64,
+               complex128, qint4x2, float8_e4m3fn, float8_e5m2, hifloat8)
 
 int_type = (int8, int16, int32, int64,)
 uint_type = (uint8, uint16, uint32, uint64,)
 float_type = (float16, float32, float64, bfloat16, float8_e4m3fn, float8_e5m2, hifloat8)
-signed_type = (int8, byte, int16, short, int32, intc, int64, intp, float16, half, float32, single, float64, double,
-               bfloat16, complex64, complex128, float8_e4m3fn, float8_e5m2, hifloat8)
+signed_type = (int8, int16, int32, int64, float16, float32, float64, bfloat16, complex64, complex128, qint4x2,
+               float8_e4m3fn, float8_e5m2, hifloat8)
 complex_type = (complex64, complex128,)
-all_types = (bool_, int8, uint8, int16, int32, int64, float16, float32, float64, bfloat16, complex64, complex128,
-             float8_e4m3fn, float8_e5m2, hifloat8)
-implicit_conversion_seq = {t: idx for idx, t in enumerate(all_types)}
+all_types = (bool, int8, int16, int32, int64, uint8, uint16, uint32, uint64, float16, float32, float64, bfloat16,
+             complex64, complex128, qint4x2, float8_e4m3fn, float8_e5m2, hifloat8)
+implicit_conversion_seq = {
+    t: idx
+    for idx, t in enumerate(
+        (bool, int8, uint8, int16, int32, int64, float16, float32, float64, bfloat16, complex64, complex128))
+}
 
 _simple_types = {
     list: list_,
     tuple: tuple_,
     type(None): type_none,
-    bool: bool_,
-    int: int64,
-    float: float64,
+    builtins.bool: bool_,
+    builtins.int: int64,
+    builtins.float: float64,
     complex: complex128,
     str: string,
     np.bool_: bool_,
@@ -194,6 +192,9 @@ def pytype_to_dtype(obj):
     """
     Convert python type to MindSpore type.
 
+    Note:
+        The interface is deprecated from version 2.7 and will be removed in a future version.
+
     Args:
         obj (type): A python type object.
 
@@ -208,6 +209,15 @@ def pytype_to_dtype(obj):
         >>> out = ms.pytype_to_dtype(bool)
         >>> print(out)
         Bool
+    """
+    logger.warning("The interface 'mindspore.pytype_to_dtype' is deprecated from version 2.7 "
+                   "and will be removed in a future version.")
+    return _pytype_to_dtype(obj)
+
+
+def _pytype_to_dtype(obj):
+    """
+    Convert python type to MindSpore type.
     """
 
     if isinstance(obj, np.dtype):
@@ -226,6 +236,9 @@ def get_py_obj_dtype(obj):
     """
     Get the MindSpore data type, which corresponds to python type or variable.
 
+    Note:
+        The interface is deprecated from version 2.7 and will be removed in a future version.
+
     Args:
         obj (type): An object of python type, or a variable of python type.
 
@@ -236,6 +249,15 @@ def get_py_obj_dtype(obj):
         >>> import mindspore as ms
         >>> ms.get_py_obj_dtype(1)
         mindspore.int64
+    """
+    logger.warning("The interface 'mindspore.get_py_obj_dtype' is deprecated from version 2.7 "
+                   "and will be removed in a future version.")
+    return _get_py_obj_dtype(obj)
+
+
+def _get_py_obj_dtype(obj):
+    """
+    Get the MindSpore data type, which corresponds to python type or variable.
     """
     # Tensor
     if hasattr(obj, 'shape') and hasattr(obj, 'dtype') and isinstance(obj.dtype, typing.Type):
@@ -260,6 +282,9 @@ def dtype_to_nptype(type_):
     r"""
     Convert MindSpore dtype to numpy data type.
 
+    Note:
+        The interface is deprecated from version 2.7 and will be removed in a future version.
+
     Args:
         type\_ (:class:`mindspore.dtype`): MindSpore's dtype.
 
@@ -270,6 +295,15 @@ def dtype_to_nptype(type_):
         >>> import mindspore as ms
         >>> ms.dtype_to_nptype(ms.int8)
         <class 'numpy.int8'>
+    """
+    logger.warning("The interface 'mindspore.dtype_to_nptype' is deprecated from version 2.7 "
+                   "and will be removed in a future version.")
+    return _dtype_to_nptype(type_)
+
+
+def _dtype_to_nptype(type_):
+    """
+    Convert MindSpore dtype to numpy data type.
     """
     _dtype_nptype_dict = {
         bool_: np.bool_,
@@ -302,6 +336,9 @@ def dtype_to_pytype(type_):
     r"""
     Convert MindSpore dtype to python data type.
 
+    Note:
+        The interface is deprecated from version 2.7 and will be removed in a future version.
+
     Args:
         type\_ (:class:`mindspore.dtype`): MindSpore's dtype.
 
@@ -314,23 +351,31 @@ def dtype_to_pytype(type_):
         >>> print(out)
         <class 'bool'>
     """
+    logger.warning("The interface 'mindspore.dtype_to_pytype' is deprecated from version 2.7 "
+                   "and will be removed in a future version.")
+    return _dtype_to_pytype(type_)
 
+
+def _dtype_to_pytype(type_):
+    """
+    Convert MindSpore dtype to python data type.
+    """
     return {
-        bool_: bool,
-        int_: int,
-        int8: int,
-        int16: int,
-        int32: int,
-        int64: int,
-        uint8: int,
-        uint16: int,
-        uint32: int,
-        uint64: int,
-        float_: float,
-        float16: float,
-        float32: float,
-        float64: float,
-        bfloat16: float,
+        bool_: builtins.bool,
+        int_: builtins.int,
+        int8: builtins.int,
+        int16: builtins.int,
+        int32: builtins.int,
+        int64: builtins.int,
+        uint8: builtins.int,
+        uint16: builtins.int,
+        uint32: builtins.int,
+        uint64: builtins.int,
+        float_: builtins.float,
+        float16: builtins.float,
+        float32: builtins.float,
+        float64: builtins.float,
+        bfloat16: builtins.float,
         list_: list,
         tuple_: tuple,
         string: str,
@@ -418,7 +463,7 @@ class QuantDtype(enum.Enum):
     def __str__(self):
         return f"{self.name}"
 
-    def value(self) -> int:
+    def value(self) -> builtins.int:
         """
         Return value of `QuantDtype`. This interface is currently used to serialize or deserialize `QuantDtype`
         primarily.

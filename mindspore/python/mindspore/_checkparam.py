@@ -694,7 +694,7 @@ def check_scalar_or_tensor_types_same(args, valid_values, prim_name, allow_mix=F
             raise TypeError(f'For \'{prim_name}\', the type of \'{arg_key}\' must be in {valid_values},' \
                             f' but got {arg_val}.')
         return arg
- 
+
     def _check_types_same(arg1, arg2):
         arg1_name, arg1_type = arg1
         arg2_name, arg2_type = arg2
@@ -785,9 +785,9 @@ def check_astype_dtype(dtype):
     if isinstance(dtype, str):
         if dtype.lower() not in all_types:
             raise TypeError(f"For Tensor.astype, the input type must be one of {all_types}, but got '{dtype}'.")
-        dtype = mstype.pytype_to_dtype(np.dtype(dtype.lower()))
+        dtype = mstype._pytype_to_dtype(np.dtype(dtype.lower()))  # pylint:disable=protected-access
     elif isinstance(dtype, type):
-        dtype = mstype.pytype_to_dtype(dtype)
+        dtype = mstype._pytype_to_dtype(dtype)  # pylint:disable=protected-access
     elif not dtype in mstype.number_type + (mstype.bool_,):
         raise TypeError(f"For Tensor.astype, the input type must be one of {mstype.number_type + (mstype.bool_,)}," \
                         f" but got '{dtype}'.")

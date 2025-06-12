@@ -16,7 +16,7 @@
 from functools import wraps
 import mindspore.ops as ops
 from mindspore import context
-from mindspore.common.dtype import pytype_to_dtype
+from mindspore.common.dtype import _pytype_to_dtype
 from mindspore.common.api import jit
 from mindspore.train._utils import _exec_datagraph, _get_types_and_shapes, enable_data_broadcast
 from mindspore.train.dataset_helper import _has_dynamic_shape, _check_inputs
@@ -94,7 +94,7 @@ def _get_next_op(dataset, ori_next_op, is_info_queue):
 
     queue_name = dataset.__transfer_dataset__.queue_name
     dataset_types, dataset_shapes = dataset.__transfer_dataset__.get_data_info()
-    dataset_types = [pytype_to_dtype(x) for x in dataset_types]
+    dataset_types = [_pytype_to_dtype(x) for x in dataset_types]  # pylint:disable=protected-access
     key = str(dataset_types) + str(dataset_shapes)
     if key in dataset.__sink_aux__.next_ops:
         next_op = dataset.__sink_aux__.next_ops[key]

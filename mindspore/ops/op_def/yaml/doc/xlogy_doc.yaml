@@ -12,10 +12,10 @@ xlogy:
         Inputs:
             - **input** (Tensor) - The first input is a tensor whose data
               type is `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
-              `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
+              `bool <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
             - **other** (Tensor) - The second input is a tensor whose data
               type is `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
-              `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
+              `bool <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
 
         Outputs:
             - **y** (Tensor) - the shape is the broadcast of `input` and `other`,

@@ -2,7 +2,7 @@ from mindspore.nn import Cell
 from mindspore import jit, context, Tensor, ops
 from ...grad import GradOfAllInputsAndParams
 from ...utils import allclose_nparray
-from mindspore.common import dtype_to_nptype
+from mindspore.common.dtype import _dtype_to_nptype
 import numpy as np
 
 
@@ -118,4 +118,4 @@ class DenseMock(DenseFactory):
         in_c = w.shape[-1]
         out_c = w.shape[0]
         d = x.dtype
-        super().__init__(x.shape, in_c, out_c, dtype_to_nptype(d))
+        super().__init__(x.shape, in_c, out_c, _dtype_to_nptype(d))  # pylint:disable=protected-access

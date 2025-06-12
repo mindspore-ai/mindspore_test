@@ -15,7 +15,7 @@ pow_scalar_tensor:
             input (Number): The first input is a Number.
             exponent (Tensor): The second input is a tensor whose data type is
                 `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
-                `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
+                `bool <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
 
         Returns:
             Tensor, the shape is the same as the one after broadcasting,

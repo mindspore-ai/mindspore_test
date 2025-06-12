@@ -59,7 +59,7 @@ def vm_impl_zeroslike(self):
 @vm_impl_getters.register(P.Zeros)
 def vm_impl_zeros(self):
     def vm_impl(x, y):
-        out = np.zeros(x, mstype.dtype_to_nptype(typing.type_id_to_type(y)))
+        out = np.zeros(x, mstype._dtype_to_nptype(typing.type_id_to_type(y)))  # pylint:disable=protected-access
         return Tensor(out)
 
     return vm_impl
@@ -68,7 +68,7 @@ def vm_impl_zeros(self):
 @vm_impl_getters.register(P.Ones)
 def vm_impl_ones(self):
     def vm_impl(x, y):
-        out = np.ones(x, mstype.dtype_to_nptype(typing.type_id_to_type(y)))
+        out = np.ones(x, mstype._dtype_to_nptype(typing.type_id_to_type(y)))  # pylint:disable=protected-access
         return Tensor(out)
 
     return vm_impl

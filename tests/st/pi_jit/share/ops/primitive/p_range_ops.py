@@ -21,7 +21,7 @@ class OpsRangeFactory():
         self.limit = limit
         self.delta = delta
         self.dtype = dtype
-        self.input_dtype = common.dtype.pytype_to_dtype(self.dtype)
+        self.input_dtype = common.dtype._pytype_to_dtype(self.dtype)  # pylint:disable=protected-access
         self.out_grad_np = None
         if self.dtype == np.float16:
             self.loss = 1e-3

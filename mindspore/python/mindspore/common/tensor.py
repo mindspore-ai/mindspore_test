@@ -2095,9 +2095,9 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         try:
             dtype_ = mstype.int8 if is_qint4x2 else self.dtype
             if isinstance(self.init, ZeroInitializer):
-                data = np.zeros(data_shape, dtype=mstype.dtype_to_nptype(dtype_))
+                data = np.zeros(data_shape, dtype=mstype._dtype_to_nptype(dtype_))  # pylint:disable=protected-access
             else:
-                data = np.ndarray(data_shape, dtype=mstype.dtype_to_nptype(dtype_))
+                data = np.ndarray(data_shape, dtype=mstype._dtype_to_nptype(dtype_))  # pylint:disable=protected-access
         except ValueError as e:
             msg = "Error shape={}".format(shape)
             logger.critical(msg)
@@ -3656,7 +3656,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
             >>> import mindspore
             >>> from mindspore import Tensor
             >>> x = Tensor(np.array([1., 2., 3., 4.]), mindspore.float32)
-            >>> mask = Tensor(np.array([True, True, False, True]), mindspore.bool_)
+            >>> mask = Tensor(np.array([True, True, False, True]), mindspore.bool)
             >>> tensor = Tensor(np.array([5., 6., 7.]), mindspore.float32)
             >>> output = x.masked_scatter(mask, tensor)
             >>> print(output)
@@ -3977,9 +3977,9 @@ def _check_astype_and_convert(dtype):
         if dtype.lower() not in all_types:
             raise TypeError(f"For Tensor.astype, the string input type must be one of {all_types}, "
                             f"but got '{dtype}'.")
-        dtype = mstype.pytype_to_dtype(np.dtype(dtype.lower()))
+        dtype = mstype._pytype_to_dtype(np.dtype(dtype.lower()))  # pylint:disable=protected-access
     elif isinstance(dtype, type):
-        dtype = mstype.pytype_to_dtype(dtype)
+        dtype = mstype._pytype_to_dtype(dtype)  # pylint:disable=protected-access
     elif dtype not in mstype.number_type + (mstype.bool_,):
         raise TypeError(
             f"For Tensor.astype, the input type must be one of {list(mstype.number_type + (mstype.bool_,) + np_types)},"

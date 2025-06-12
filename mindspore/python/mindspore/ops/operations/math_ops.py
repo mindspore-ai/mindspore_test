@@ -882,7 +882,7 @@ class Sub(_MathBinaryOp):
     Note:
         - When the two inputs have different shapes, they must be able to broadcast to a common shape.
         - The two inputs can not be bool type at the same time,
-          [True, Tensor(True, bool\_), Tensor(np.array([True]), bool\_)] are all considered bool type.
+          [True, Tensor(True), Tensor(np.array([True]))] are all considered bool type.
         - The two inputs comply with the implicit type conversion rules to make the data types
           consistent.
 
@@ -890,7 +890,7 @@ class Sub(_MathBinaryOp):
         - **x** (Union[Tensor, number.Number, bool]) - The first input is a number.Number or
           a bool or a tensor whose data type is
           `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
-          `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
+          `bool <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
         - **y** (Union[Tensor, number.Number, bool]) - The second input, when the first input is a Tensor,
           the second input should be a number.Number or bool value, or a Tensor whose data type is number or bool.
 
@@ -1289,10 +1289,10 @@ class DivNoNan(Primitive):
         - **x1** (Union[Tensor, number.Number, bool]) - The first input is a number.Number or
           a bool or a tensor whose data type is
           `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
-          `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
+          `bool <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
         - **x2** (Union[Tensor, number.Number, bool]) - The second input is a number.Number or
-          a bool when the first input is a bool or a tensor whose data type is number or bool\_.
-          When the first input is Scalar, the second input must be a Tensor whose data type is number or bool\_.
+          a bool when the first input is a bool or a tensor whose data type is number or bool.
+          When the first input is Scalar, the second input must be a Tensor whose data type is number or bool.
 
     Outputs:
         Tensor, the shape is the same as the one after broadcasting,

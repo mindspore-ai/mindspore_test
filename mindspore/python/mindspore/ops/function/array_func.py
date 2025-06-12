@@ -781,7 +781,7 @@ def full_ext(size, fill_value, *, dtype=None):  # pylint: disable=redefined-oute
 
     Keyword Args:
         dtype (mindspore.dtype, optional): The specified type of output tensor.
-            `bool_` and `number` are supported, for details,
+            `bool` and `number` are supported, for details,
             please refer to :class:`mindspore.dtype` . Default: ``None`` .
 
     Returns:
@@ -854,7 +854,7 @@ def full_like_ext(input, fill_value, *, dtype=None):
         fill_value (Number): Value to fill the returned tensor. Complex numbers are not supported for now.
 
     Keyword Args:
-        dtype (mindspore.dtype, optional): The specified type of output tensor. `bool_` and `number` are supported,
+        dtype (mindspore.dtype, optional): The specified type of output tensor. `bool` and `number` are supported,
             for details, please refer to :class:`mindspore.dtype` . Default: ``None`` .
 
     Returns:
@@ -5022,7 +5022,7 @@ def max(input, axis=None, keepdims=False, *, initial=None, where=None):  # pylin
         >>> # case 4: Use "where" to include only specific elements in computing the maximum.
         >>> where = mindspore.tensor([[0, 0, 1, 0],
         ...                           [0, 0, 1, 1],
-        ...                           [1, 1, 1, 0]], dtype=mindspore.bool_)
+        ...                           [1, 1, 1, 0]], dtype=mindspore.bool)
         >>> mindspore.ops.max(input, axis=1, keepdims=True, initial=0, where=where)
         (Tensor(shape=[3, 1], dtype=Int64, value=
          [[4],
@@ -5162,7 +5162,7 @@ def min(input, axis=None, keepdims=False, *, initial=None, where=None):  # pylin
         >>> # case 4: Use "where" to include only specific elements in computing the minimum.
         >>> where = mindspore.tensor([[1, 0, 1, 0],
         ...                           [0, 0, 1, 1],
-        ...                           [1, 1, 1, 0]], dtype=mindspore.bool_)
+        ...                           [1, 1, 1, 0]], dtype=mindspore.bool)
         >>> mindspore.ops.min(input, axis=1, keepdims=True, initial=0, where=where)
         (Tensor(shape=[3, 1], dtype=Int64, value=
          [[ 0],

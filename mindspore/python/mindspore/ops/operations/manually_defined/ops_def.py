@@ -977,7 +977,7 @@ class ScalarToTensor(PrimitiveWithInfer):
     def __call__(self, x, dtype=mstype.float32):
         validator.check_value_type("x", x, [bool, int, float], self.name)
         validator.check_subclass("dtype", dtype, mstype.number, self.name)
-        data_type = mstype.dtype_to_nptype(dtype)
+        data_type = mstype._dtype_to_nptype(dtype)  # pylint:disable=protected-access
         return Tensor(np.array(x, data_type), dtype=dtype)
 
 
@@ -1150,7 +1150,7 @@ def scalar_cast(input_x, input_y):
     Args:
         input_x (scalar): The input scalar.
         input_y (mindspore.dtype): The type to be cast. Only constant value is allowed.
-            The value should only be mindspore.int64, mindspore.float64, or mindspore.bool\_.
+            The value should only be mindspore.int64, mindspore.float64, or mindspore.bool.
 
     Returns:
         Scalar, the type is the same as the python type corresponding to `input_y`.
@@ -1715,7 +1715,7 @@ def infer_value_for_Arange(start, end, step, dtype=None):
         if has_float:
             np_dtype = np.float32
     else:
-        np_dtype = mstype.dtype_to_nptype(typing.type_id_to_type(dtype))
+        np_dtype = mstype._dtype_to_nptype(typing.type_id_to_type(dtype))  # pylint:disable=protected-access
     return Tensor(np.arange(start, end, step, dtype=np_dtype))
 
 
@@ -1739,7 +1739,7 @@ def _infer_value_for_ReduceExtand(input_x, axis, keep_dims, dtype, prim_name):
             else:
                 axis = tuple(range(len(value.shape)))
             if dtype is not None:
-                np_dtype = mstype.dtype_to_nptype(typing.type_id_to_type(dtype))
+                np_dtype = mstype._dtype_to_nptype(typing.type_id_to_type(dtype))  # pylint:disable=protected-access
                 value = np_reduce_extand_func(value, axis, dtype=np_dtype, keepdims=keep_dims)
             else:
                 value = np_reduce_extand_func(value, axis, keepdims=keep_dims)
@@ -1772,7 +1772,7 @@ def infer_value_for_Cast(x, dst_type_enum=None):
     if x is None or dst_type_enum is None:
         return None
     dst_type = typing.type_id_to_type(dst_type_enum)
-    src_type = mstype.get_py_obj_dtype(x)
+    src_type = mstype._get_py_obj_dtype(x)  # pylint:disable=protected-access
     validator.check_subclass("input_x", src_type, [mstype.tensor_type, mstype.number], "Cast")
     validator.check_subclass("type", dst_type, mstype.number, "Cast")
 
@@ -1782,7 +1782,7 @@ def infer_value_for_Cast(x, dst_type_enum=None):
         dst_type = dst_type.element_type()
 
     value = None
-    np_dst_type = mstype.dtype_to_nptype(dst_type)
+    np_dst_type = mstype._dtype_to_nptype(dst_type)  # pylint:disable=protected-access
     if isinstance(x, (int, float)):
         value = Tensor(np.array(x).astype(np_dst_type), dtype=dst_type)
     else:
@@ -2840,8 +2840,8 @@ class WhileLoop(Primitive):
             while cond_func(val):
                 val = loop_func(val)
         except Exception as e:
-            raise ValueError("Invalid loop_func, please check input arguments and \
-                             return value, error info: {}".format(e))
+            raise ValueError(f"Invalid loop_func, please check input arguments and "
+                             f"return value, error info: {e}")
         return val
 
 
@@ -2936,8 +2936,8 @@ class Scan(Primitive):
                 ys.append(y)
                 i = i + 1
         except Exception as e:
-            raise ValueError("Invalid loop_func, please check input arguments and \
-                             return value, error info: {}".format(e))
+            raise ValueError(f"Invalid loop_func, please check input arguments and "
+                             f"return value, error info: {e}")
         return carry, ys
 
 
@@ -3012,6 +3012,6 @@ class ForiLoop(Primitive):
             for i in range(lower, upper):
                 val = loop_func(i, val)
         except Exception as e:
-            raise ValueError("Invalid loop_func, please check input arguments and \
-                             return value, error info: {}".format(e))
+            raise ValueError(f"Invalid loop_func, please check input arguments and "
+                             f"return value, error info: {e}")
         return val

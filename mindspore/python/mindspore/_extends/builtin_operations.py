@@ -19,7 +19,7 @@ from mindspore.ops import functional as F
 from mindspore.ops import composite as C
 from mindspore.common.tensor import Tensor
 import mindspore.common.dtype as mstype
-from mindspore.common.dtype import dtype_to_nptype, get_py_obj_dtype
+from mindspore.common.dtype import _dtype_to_nptype, _get_py_obj_dtype
 from mindspore._c_expression import TensorPy as CTensor
 
 
@@ -164,7 +164,7 @@ def Load(value, u=None):
 
 def scalar_cast(x, t):
     """Implement scalar_cast."""
-    np_type = dtype_to_nptype(t)
+    np_type = _dtype_to_nptype(t)  # pylint:disable=protected-access
     value = np_type(x)
     cast_value = np.ndarray.item(value)
     return cast_value
@@ -172,7 +172,7 @@ def scalar_cast(x, t):
 
 def typeof(x):
     """Implement typeof."""
-    return get_py_obj_dtype(x)
+    return _get_py_obj_dtype(x)  # pylint:disable=protected-access
 
 
 def tuple_to_array(x):

@@ -17,11 +17,11 @@ mindspore.mint.mul
         - **input** (Union[Tensor, number.Number, bool]) - 第一个输入。是一个 number.Number、
           一个 bool 或一个数据类型为
           `number <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.dtype.html>`_ 或
-          `bool_ <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.dtype.html>`_ 的Tensor。
+          `bool <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.dtype.html>`_ 的Tensor。
         - **other** (Union[Tensor, number.Number, bool]) - 第二个输入。是一个 number.Number、
           一个 bool 或一个数据类型为
           `number <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.dtype.html>`_ 或
-          `bool_ <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.dtype.html>`_ 的Tensor。
+          `bool <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.dtype.html>`_ 的Tensor。
 
     返回：
         Tensor，shape与广播后的shape相同，数据类型为两个输入中精度较高的类型。

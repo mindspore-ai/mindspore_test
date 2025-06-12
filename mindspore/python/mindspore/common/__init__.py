@@ -17,11 +17,11 @@ from __future__ import absolute_import
 from mindspore.common import dtype
 from mindspore.common.api import ms_memory_recycle, jit, jit_class, _no_grad, \
     flops_collection, set_recursion_limit
-from mindspore.common.dtype import Type, int8, byte, int16, short, int32, intc, int64, intp, \
+from mindspore.common.dtype import Type, int8, byte, int16, short, int, int32, intc, long, int64, intp, \
     uint8, ubyte, uint16, ushort, uint32, uintc, uint64, uintp, float16, half, \
-    float32, single, float64, bfloat16, double, bool_, float_, list_, tuple_, int_, \
+    float, float32, single, float64, bfloat16, double, bool, bool_, float_, list_, tuple_, int_, \
     uint, number, tensor_type, string, type_none, TensorType, Int, \
-    complex64, complex128, dtype_to_nptype, _null, _NullType, \
+    cfloat, complex64, cdouble, complex128, dtype_to_nptype, _null, _NullType, \
     dtype_to_pytype, pytype_to_dtype, get_py_obj_dtype, QuantDtype, qint4x2, \
     float8_e4m3fn, float8_e5m2, hifloat8
 from mindspore.common.dump import set_dump
@@ -66,11 +66,13 @@ except ImportError:
     pass
 
 # symbols from dtype
+# bool, int, float are not defined in __all__ to avoid conflict with built-in types.
 __all__ = [
+    "bool_",
     "int8", "byte",
     "int16", "short",
     "int32", "intc",
-    "int64", "intp",
+    "int64", "long", "intp",
     "uint8", "ubyte",
     "uint16", "ushort",
     "uint32", "uintc",
@@ -78,20 +80,20 @@ __all__ = [
     "float16", "half",
     "float32", "single",
     "float64", "double",
-    "bool_", "float_",
-    "list_", "tuple_",
+    "float_", "list_", "tuple_",
     "int_", "uint",
     "number", "tensor_type",
     "string", "type_none",
     "_null",
     "TensorType", "QuantDtype",
     "Type", "Int", "_NullType",
-    "complex64", "complex128",
+    "complex64", "cfloat",
+    "complex128", "cdouble",
+    "bfloat16", "qint4x2",
+    "float8_e4m3fn", "float8_e5m2", "hifloat8",
     # __method__ from dtype
     "dtype_to_nptype", "dtype_to_pytype",
-    "pytype_to_dtype", "get_py_obj_dtype",
-    "bfloat16", "qint4x2",
-    "float8_e4m3fn", "float8_e5m2", "hifloat8"
+    "pytype_to_dtype", "get_py_obj_dtype"
 ]
 
 __all__.extend([

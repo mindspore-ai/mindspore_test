@@ -111,8 +111,8 @@ def do_test_matmul_dtypes(valid_dtypes, is_ge_only=False):
         matmul.set_jit_config(JitConfig(jit_level="O0"))
     all_dtypes = mstype.all_types
     for dtype in all_dtypes:
-        # bfloat16/float8 is not supported yet
-        if dtype in (mstype.bfloat16, mstype.float8_e4m3fn, mstype.float8_e5m2, mstype.hifloat8):
+        # qint4x2/bfloat16/float8 is not supported yet
+        if dtype in (mstype.qint4x2, mstype.bfloat16, mstype.float8_e4m3fn, mstype.float8_e5m2, mstype.hifloat8):
             continue
         x_ms = Tensor(x_np).astype(dtype)
         y_ms = Tensor(y_np).astype(dtype)

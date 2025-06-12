@@ -17,10 +17,10 @@ add:
     Args:
         input (Union[Tensor, number.Number, bool]): `input` is a number.Number or a bool or a tensor whose data type is
             `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
-            `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
+            `bool <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
         other (Union[Tensor, number.Number, bool]): `other` is a number.Number or a bool or a tensor whose data type is
             `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
-            `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
+            `bool <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
     
     Keyword Args:
         alpha (number.Number, optional): A scaling factor applied to `other`, default ``1``.

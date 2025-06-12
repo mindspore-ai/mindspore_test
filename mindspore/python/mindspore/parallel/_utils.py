@@ -21,7 +21,7 @@ import mindspore as ms
 from mindspore import context, log as logger
 from mindspore._c_expression import reset_op_id, reset_op_id_with_offset
 from mindspore.common.tensor import Tensor
-from mindspore.common.dtype import dtype_to_nptype
+from mindspore.common.dtype import _dtype_to_nptype
 from mindspore.common import dtype as mstype
 from mindspore.communication.management import get_group_size, get_rank
 from mindspore.communication._comm_helper import _is_initialized
@@ -452,7 +452,7 @@ def _to_full_tensor(elem, global_device_num, global_rank, scaling_sens=None):
                     batchsize_per_device = item
                 else:
                     new_shape += (item,)
-            new_tensor_numpy = np.zeros(new_shape, dtype_to_nptype(type_))
+            new_tensor_numpy = np.zeros(new_shape, _dtype_to_nptype(type_))  # pylint:disable=protected-access
             start = stage_rank * batchsize_per_device
             new_tensor_numpy[start: start + batchsize_per_device] = data.asnumpy()
         else:
@@ -466,7 +466,7 @@ def _to_full_tensor(elem, global_device_num, global_rank, scaling_sens=None):
                 end = (stage_rank % dataset_strategy[index][i] + 1) * item
                 s = slice(start, end, 1)
                 slice_index += (s,)
-            new_tensor_numpy = np.zeros(new_shape, dtype_to_nptype(type_))
+            new_tensor_numpy = np.zeros(new_shape, _dtype_to_nptype(type_))  # pylint:disable=protected-access
             new_tensor_numpy[slice_index] = data.asnumpy()
         new_tensor = Tensor(new_tensor_numpy, dtype=type_)
         lst.append(new_tensor)

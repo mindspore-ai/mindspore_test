@@ -1218,7 +1218,7 @@ def logical_not(input):
 
     Examples:
         >>> import mindspore
-        >>> x = mindspore.tensor([True, False, True], mindspore.bool_)
+        >>> x = mindspore.tensor([True, False, True], mindspore.bool)
         >>> output = mindspore.ops.logical_not(x)
         >>> print(output)
         [False  True False]
@@ -1250,23 +1250,23 @@ def logical_or(input, other):
 
     Examples:
         >>> import mindspore
-        >>> x = mindspore.tensor([True, False, True], mindspore.bool_)
-        >>> y = mindspore.tensor([True, True, False], mindspore.bool_)
+        >>> x = mindspore.tensor([True, False, True], mindspore.bool)
+        >>> y = mindspore.tensor([True, True, False], mindspore.bool)
         >>> output = mindspore.ops.logical_or(x, y)
         >>> print(output)
         [ True  True  True]
-        >>> x = mindspore.tensor(1, mindspore.bool_)
-        >>> y = mindspore.tensor(0, mindspore.bool_)
+        >>> x = mindspore.tensor(1, mindspore.bool)
+        >>> y = mindspore.tensor(0, mindspore.bool)
         >>> output = mindspore.ops.logical_or(x, y)
         >>> print(output)
         True
         >>> x = True
-        >>> y = mindspore.tensor(0, mindspore.bool_)
+        >>> y = mindspore.tensor(0, mindspore.bool)
         >>> output = mindspore.ops.logical_or(x, y)
         >>> print(output)
         True
         >>> x = True
-        >>> y = mindspore.tensor([True, False], mindspore.bool_)
+        >>> y = mindspore.tensor([True, False], mindspore.bool)
         >>> output = mindspore.ops.logical_or(x, y)
         >>> print(output)
         [True True]
@@ -1298,23 +1298,23 @@ def logical_and(input, other):
 
     Examples:
         >>> import mindspore
-        >>> x = mindspore.tensor([True, False, True], mindspore.bool_)
-        >>> y = mindspore.tensor([True, True, False], mindspore.bool_)
+        >>> x = mindspore.tensor([True, False, True], mindspore.bool)
+        >>> y = mindspore.tensor([True, True, False], mindspore.bool)
         >>> output = mindspore.ops.logical_and(x, y)
         >>> print(output)
         [ True False False]
-        >>> x = mindspore.tensor(1, mindspore.bool_)
-        >>> y = mindspore.tensor(0, mindspore.bool_)
+        >>> x = mindspore.tensor(1, mindspore.bool)
+        >>> y = mindspore.tensor(0, mindspore.bool)
         >>> output = mindspore.ops.logical_and(x, y)
         >>> print(output)
         False
         >>> x = True
-        >>> y = mindspore.tensor(0, mindspore.bool_)
+        >>> y = mindspore.tensor(0, mindspore.bool)
         >>> output = mindspore.ops.logical_and(x, y)
         >>> print(output)
         False
         >>> x = True
-        >>> y = mindspore.tensor([True, False], mindspore.bool_)
+        >>> y = mindspore.tensor([True, False], mindspore.bool)
         >>> output = mindspore.ops.logical_and(x, y)
         >>> print(output)
         [True False]
@@ -1782,10 +1782,10 @@ def pow_ext(input, exponent):
     Args:
         input (Union[Tensor, Number]): The first input is a Number or a tensor whose data type is
             `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
-            `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
+            `bool <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
         exponent (Union[Tensor, Number]): The second input is a Number or a tensor whose data type is
             `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
-            `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
+            `bool <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
 
     Returns:
         Tensor, the shape is the same as the one after broadcasting,
@@ -6639,7 +6639,7 @@ def amin(input, axis=None, keepdims=False, *, initial=None, where=None):
         >>> # case 4: Use "where" to include only specific elements in computing the minimum.
         >>> where = mindspore.tensor([[1, 0, 1, 0],
         ...                           [0, 0, 1, 1],
-        ...                           [1, 1, 1, 0]], dtype=mindspore.bool_)
+        ...                           [1, 1, 1, 0]], dtype=mindspore.bool)
         >>> mindspore.ops.amin(input, axis=1, keepdims=True, initial=0, where=where)
         Tensor(shape=[3, 1], dtype=Int64, value=
          [[ 0],
@@ -6721,7 +6721,7 @@ def amax(input, axis=None, keepdims=False, *, initial=None, where=None):
         >>> # case 4: Use "where" to include only specific elements in computing the maximum.
         >>> where = mindspore.tensor([[0, 0, 1, 0],
         ...                           [0, 0, 1, 1],
-        ...                           [1, 1, 1, 0]], dtype=mindspore.bool_)
+        ...                           [1, 1, 1, 0]], dtype=mindspore.bool)
         >>> mindspore.ops.amax(input, axis=1, keepdims=True, initial=0, where=where)
         Tensor(shape=[3, 1], dtype=Int64, value=
         [[4],
@@ -9174,10 +9174,10 @@ def remainder_ext(input, other):
         input (Union[Tensor, numbers.Number, bool]): The dividend is a numbers.Number or
             a bool or a tensor whose data type is
             `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
-            `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
+            `bool <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
         other (Union[Tensor, numbers.Number, bool]): The divisor is a numbers.Number or
-            a bool or a tensor whose data type is number or bool\_ when the dividend is a tensor.
-            When the dividend is Scalar, the divisor must be a Tensor whose data type is number or bool\_.
+            a bool or a tensor whose data type is number or bool when the dividend is a tensor.
+            When the dividend is Scalar, the divisor must be a Tensor whose data type is number or bool.
 
     Returns:
         Tensor, with dtype promoted and shape broadcasted.
@@ -10193,23 +10193,23 @@ def logical_xor(input, other):
 
     Examples:
         >>> import mindspore
-        >>> x = mindspore.tensor([True, False, True], mindspore.bool_)
-        >>> y = mindspore.tensor([True, True, False], mindspore.bool_)
+        >>> x = mindspore.tensor([True, False, True], mindspore.bool)
+        >>> y = mindspore.tensor([True, True, False], mindspore.bool)
         >>> output = mindspore.ops.logical_xor(x, y)
         >>> print(output)
         [False  True  True]
-        >>> x = mindspore.tensor(1, mindspore.bool_)
-        >>> y = mindspore.tensor(0, mindspore.bool_)
+        >>> x = mindspore.tensor(1, mindspore.bool)
+        >>> y = mindspore.tensor(0, mindspore.bool)
         >>> output = mindspore.ops.logical_xor(x, y)
         >>> print(output)
         True
         >>> x = True
-        >>> y = mindspore.tensor(0, mindspore.bool_)
+        >>> y = mindspore.tensor(0, mindspore.bool)
         >>> output = mindspore.ops.logical_xor(x, y)
         >>> print(output)
         True
         >>> x = True
-        >>> y = mindspore.tensor([True, False], mindspore.bool_)
+        >>> y = mindspore.tensor([True, False], mindspore.bool)
         >>> output = mindspore.ops.logical_xor(x, y)
         >>> print(output)
         [False  True]
@@ -10668,7 +10668,7 @@ def _canonicalize_fft_shape_and_dim(input, shape, dim):
 
 
 def as_strided(x, shape=None, strides=None):
-    n = np.dtype(mstype.dtype_to_nptype(x.dtype)).itemsize
+    n = np.dtype(mstype._dtype_to_nptype(x.dtype)).itemsize  # pylint:disable=protected-access
     strides = tuple(np.array(strides) * n)
     if x.dtype == mstype.bfloat16:
         return Tensor(np.lib.stride_tricks.as_strided(x.float().asnumpy(), shape, strides, False, True), dtype=x.dtype)
@@ -10719,7 +10719,7 @@ def _permute_input(input, input_dim, ret_dim):
         (dim_permute_a if not is_transformed_dim[i] else dim_permute_b).append(value)
 
     # strides
-    type_size = np.dtype(mstype.dtype_to_nptype(input.dtype)).itemsize
+    type_size = np.dtype(mstype._dtype_to_nptype(input.dtype)).itemsize  # pylint:disable=protected-access
     input_strides = [int(x / type_size) for x in input.strides]
 
     def cmp(x, y):
@@ -10832,7 +10832,7 @@ def _handle_fftwithsize_output(out, input_dim, batch_dims, dim_permute, out_size
     for i in range(batch_dims, input_dim):
         out_strides[dim_permute[i]] = out.strides[1 + (i - batch_dims)]
 
-    type_size = np.dtype(mstype.dtype_to_nptype(out.dtype)).itemsize
+    type_size = np.dtype(mstype._dtype_to_nptype(out.dtype)).itemsize  # pylint:disable=protected-access
     if out.shape != out_sizes or out.strides != out_strides:
         out = as_strided(out, out_sizes, [int(i / type_size) for i in out_strides])
     return out
@@ -11210,7 +11210,7 @@ def count_nonzero(x, axis=(), keep_dims=False, dtype=mstype.int32):
             Default ``()`` , which counts all non-zero elements.
         keep_dims (bool, optional): Whether to maintain dimensions specified by `axis`.
             Default ``False`` , don't keep these dimensions.
-        dtype (Union[Number, mindspore.bool\_], optional): The data type returned.
+        dtype (Union[Number, mindspore.bool], optional): The data type returned.
             Default ``mstype.int32`` .
 
 
@@ -12099,11 +12099,11 @@ def mul_ext(input, other):
         input (Union[Tensor, number.Number, bool]): The first input is a number.Number or
             a bool or a tensor whose data type is
             `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
-            `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
+            `bool <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
         other (Union[Tensor, number.Number, bool]): The second input, is a number.Number or
             a bool or a tensor whose data type is
             `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
-            `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
+            `bool <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
 
     Returns:
         Tensor, the shape is the same as the one after broadcasting,

@@ -26,7 +26,7 @@ import numpy as np
 from mindspore.common.tensor import Tensor
 from mindspore._c_expression import TensorPy as Tensor_
 from mindspore._c_expression import MSContext, ms_ctx_param
-from mindspore.common.dtype import dtype_to_nptype, pytype_to_dtype
+from mindspore.common.dtype import _dtype_to_nptype, _pytype_to_dtype
 from mindspore.common import dtype as mstype
 from mindspore import context
 from mindspore import log as logger
@@ -54,7 +54,7 @@ def _convert_type(types):
     """
     ms_types = []
     for np_type in types:
-        ms_type = pytype_to_dtype(np_type)
+        ms_type = _pytype_to_dtype(np_type)  # pylint:disable=protected-access
         ms_types.append(ms_type)
     return ms_types
 
@@ -131,7 +131,7 @@ def _construct_tensor_list(types, shapes, batch_expand_num=1):
                 new_shape += (item * batch_expand_num,)
             else:
                 new_shape += (item,)
-        tensor = Tensor(np.zeros(new_shape, dtype_to_nptype(type_)), dtype=type_)
+        tensor = Tensor(np.zeros(new_shape, _dtype_to_nptype(type_)), dtype=type_)  # pylint:disable=protected-access
         tensor.virtual_flag = True
         tensor_list.append(tensor)
     return tensor_list

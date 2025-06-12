@@ -32,7 +32,7 @@ def generate_random_input(shape, dtype):
 def generate_expect_forward_output(x, size, dtype):
     if dtype is None:
         dtype = x.dtype
-    return np.zeros(size, mstype.dtype_to_nptype(dtype))
+    return np.zeros(size, mstype._dtype_to_nptype(dtype))  # pylint:disable=protected-access
 
 
 def generate_expect_backward_output():
