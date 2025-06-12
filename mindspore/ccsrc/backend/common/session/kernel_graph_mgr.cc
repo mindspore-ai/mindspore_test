@@ -1151,11 +1151,8 @@ ValueNodePtr KernelGraphMgr::CreateNewValueNode(const AnfNodePtr &anf, KernelGra
       MS_LOG(INFO) << "Data sync for Tensor " << tensor->ToString();
     }
   }
-  auto new_value_node = value_node;
-  if (!graph->has_flag(kFlagIsPyNativeBpropKernelGraph)) {
-    new_value_node = graph->NewValueNode(value_node);
-    graph->FrontBackendMapAdd(anf, new_value_node);
-  }
+  auto new_value_node = graph->NewValueNode(value_node);
+  graph->FrontBackendMapAdd(anf, new_value_node);
   graph->AddValueNodeToGraph(new_value_node);
   return new_value_node;
 }
@@ -1318,7 +1315,6 @@ ParameterPtr KernelGraphMgr::CreateNewParameterFromParameter(const AnfNodePtr &a
   ParameterPtr new_parameter = nullptr;
   auto func_graph = anf->func_graph();
   MS_EXCEPTION_IF_NULL(func_graph);
-  bool is_pynative_bprop_kernel_graph = graph->has_flag(kFlagIsPyNativeBpropKernelGraph);
   if (func_graph->manager() != nullptr && func_graph->exist_multi_target() &&
       graph->device_target() == device::DeviceType::kCPU) {
     auto iter = default_param_map_.find(anf);
@@ -1333,41 +1329,35 @@ ParameterPtr KernelGraphMgr::CreateNewParameterFromParameter(const AnfNodePtr &a
     }
     TraceGuard trace_guard(MakeTraceInfo<TraceCopy>(anf->debug_info()));
     new_parameter = anf->cast<ParameterPtr>();
-    if (!is_pynative_bprop_kernel_graph) {
-      new_parameter = graph->NewParameter(new_parameter);
-    }
+    new_parameter = graph->NewParameter(new_parameter);
     graph_inputs->push_back(new_parameter);
     valid_inputs->push_back(true);
     default_param_map_[anf] = new_parameter;
     return new_parameter;
   }
   // if parameter's python parameter has been exist a backend parameter, reuse the exist parameter
-  if (!is_pynative_bprop_kernel_graph) {
-    auto context = MsContext::GetInstance();
-    if (!context->IsKByKExecutorMode() && param_value != nullptr) {
-      new_parameter = param_value->parameter();
-    }
-    if (new_parameter == nullptr) {
-      TraceGuard trace_guard(MakeTraceInfo<TraceCopy>(anf->debug_info()));
-      new_parameter = graph->NewParameter(anf->cast<ParameterPtr>());
-
-      auto input_node_iter = partial_parameters_map_.find(anf);
-      if (input_node_iter != partial_parameters_map_.end()) {
-        InitInternalOutputParameter(input_node_iter->second, new_parameter);
-      }
-
-      if (param_value != nullptr) {
-        param_value->set_parameter(new_parameter);
-      }
-    } else {
-      // The name of parameter cached in param_info may not be same with frontend parameter. For example, when param
-      // object is net's "x" input in first run and "y" input in second run, the cached name need to be updated to "y".
-      new_parameter->set_name(anf->cast<ParameterPtr>()->name());
-    }
-    new_parameter->IncreaseUsedGraphCount();
-  } else {
-    new_parameter = anf->cast<ParameterPtr>();
+  auto context = MsContext::GetInstance();
+  if (!context->IsKByKExecutorMode() && param_value != nullptr) {
+    new_parameter = param_value->parameter();
   }
+  if (new_parameter == nullptr) {
+    TraceGuard trace_guard(MakeTraceInfo<TraceCopy>(anf->debug_info()));
+    new_parameter = graph->NewParameter(anf->cast<ParameterPtr>());
+
+    auto input_node_iter = partial_parameters_map_.find(anf);
+    if (input_node_iter != partial_parameters_map_.end()) {
+      InitInternalOutputParameter(input_node_iter->second, new_parameter);
+    }
+
+    if (param_value != nullptr) {
+      param_value->set_parameter(new_parameter);
+    }
+  } else {
+    // The name of parameter cached in param_info may not be same with frontend parameter. For example, when param
+    // object is net's "x" input in first run and "y" input in second run, the cached name need to be updated to "y".
+    new_parameter->set_name(anf->cast<ParameterPtr>()->name());
+  }
+  new_parameter->IncreaseUsedGraphCount();
   (void)graph_inputs->emplace_back(new_parameter);
   (void)valid_inputs->emplace_back(true);
   return new_parameter;

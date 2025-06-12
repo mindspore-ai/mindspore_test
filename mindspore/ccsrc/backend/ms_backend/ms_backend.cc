@@ -107,14 +107,7 @@ runtime::ActorSet *MSBackend::RealCompileGraphBeforeRunActor(BackendGraphId grap
     }
     (void)graph_compiler_->CompileGraphImpl(graph, device_contexts[i]);
     pynative::GraphAdapter::RemoveUnusedValueNodes(graph);
-    // PyNative use kernel graph will result in front node and back node is the same; But in pynative task sink, backend
-    // still create new kernel graph
-    if (graph_compiler_info.root_func_graph_->has_flag(kFlagIsPyNativeBpropKernelGraph) &&
-        !pynative::GraphAdapter::PyNativeEnableTaskSink(graph_compiler_info.root_func_graph_)) {
-      graph->CacheGraphOutputToFrontNodeWithIndex({graph->output()}, {graph->output()});
-    } else {
-      graph->CacheGraphOutputToFrontNodeWithIndex({graph->output()}, graph->front_outputs());
-    }
+    graph->CacheGraphOutputToFrontNodeWithIndex({graph->output()}, graph->front_outputs());
     // Clear front outputs after the outputs is cached.
     graph->set_front_outputs({});
     AnfAlgo::UpdateGraphValidRefPair(graph);
@@ -242,11 +235,6 @@ void MSBackend::RunActorSet(BackendGraphId graph_id, runtime::ActorSet *actor_se
   auto output = graph_compiler_info.root_func_graph_->output();
   if (output != nullptr) {
     MS_LOG(DEBUG) << "Current out " << output->DebugString();
-  }
-  if (graph_compiler_info.root_func_graph_->has_flag(kFlagIsPyNativeBpropKernelGraph)) {
-    MS_EXCEPTION_IF_NULL(graph_compiler_info.origin_output_node_);
-    MS_LOG(DEBUG) << "Origin out:" << graph_compiler_info.origin_output_node_->DebugString();
-    graph_compiler_info.root_func_graph_->set_output(graph_compiler_info.origin_output_node_);
   }
   ConstructOutputs(actor_set, outputs, graph_compiler_info.root_func_graph_,
                    graph_compiler_info.enable_graph_pipeline_);
