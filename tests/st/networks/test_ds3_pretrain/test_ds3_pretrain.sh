@@ -48,7 +48,7 @@ MOE_ARGS="
     --first-k-dense-replace 1 \
     --moe-layer-freq 1 \
     --n-shared-experts 1 \
-    --num-experts 8 \
+    --num-experts 16 \
     --moe-router-topk 8 \
     --moe-intermediate-size 2048 \
     --moe-router-load-balancing-type noaux_tc \
@@ -84,7 +84,7 @@ GPT_ARGS="
     --context-parallel-size ${CP} \
     --context-parallel-algo  ${CP_TYPE} \
     --num-layers ${NUM_LAYERS} \
-    --hidden-size 2048 \
+    --hidden-size 7168 \
     --ffn-hidden-size 18432 \
     --num-attention-heads 128 \
     --tokenizer-type PretrainedFromHF  \
