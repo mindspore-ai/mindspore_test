@@ -56,6 +56,7 @@ TensorStorageInfoPtrList TransposeStridesCalc(const OldTensorInfoPtr old_tensor_
 TensorStorageInfoPtrList TransposeBasicTypeCalc(const PrimitivePtr &prim,
                                                 const mindspore::tensor::TensorPtr &input_tensor,
                                                 const std::vector<int64_t> &dims) {
+  MS_EXCEPTION_IF_NULL(input_tensor);
   const auto &x_shape = input_tensor->shape();
   auto x_rank = x_shape.size();
   MS_CHECK_VALUE(dims.size() == x_rank, CheckAndConvertUtils::FormatCommMsg(

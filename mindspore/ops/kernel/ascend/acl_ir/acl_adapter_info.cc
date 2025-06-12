@@ -126,7 +126,7 @@ std::string GetGraphInfoForAscendSpecial(const std::vector<ValuePtr> &expanded_i
 }
 
 struct AclAdapterCallbackRegister {
-  AclAdapterCallbackRegister() {
+  AclAdapterCallbackRegister() noexcept {
     acl_adapter::AclAdapterCallback::SetGetAclGraphInfoFuncHandler(
       [](const std::vector<ValuePtr> &expanded_input_values, const PrimitivePtr &op_prim,
          const std::string &graph_info) -> std::string {

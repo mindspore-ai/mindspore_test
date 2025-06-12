@@ -24,6 +24,7 @@
 
 namespace mindspore::ops {
 TensorStorageInfoPtrList UnstackExtViewBasicTypeCalc(const tensor::TensorPtr &x_tensor, const int64_t &dim) {
+  MS_EXCEPTION_IF_NULL(x_tensor);
   auto type = x_tensor->Dtype();
   (void)CheckAndConvertUtils::CheckTypeValid("input", type, common_valid_types_with_complex_and_bool, "UnstackExt");
   auto old_tensor_info = GetOldTensorInfo(x_tensor);

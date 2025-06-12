@@ -173,7 +173,6 @@ using ViewAutoGradMetaDataPtr = std::shared_ptr<ViewAutoGradMetaData>;
 
 struct Edge {
   /// \brief Constructor.
-  ///
   /// \param[in] Grad node the grad node represents object need calculate gradient.
   /// \param[in] input_index The input index is variable output index.
   explicit Edge(BackwardNodePtr grad_node, size_t input_index)
@@ -196,7 +195,6 @@ class COMMON_EXPORT BackwardNode : public std::enable_shared_from_this<BackwardN
   /// \param output_size
   explicit BackwardNode(string name, size_t output_size = 1) noexcept;
   /// \brief Constructor.
-  ///
   /// \param[in] name The name represents op name.
   /// \param[in] output_size The output_size is output size for op.
   explicit BackwardNode(string name, uint64_t seq_id, size_t output_size) noexcept;
@@ -205,7 +203,6 @@ class COMMON_EXPORT BackwardNode : public std::enable_shared_from_this<BackwardN
   DISABLE_COPY_AND_ASSIGN(BackwardNode);
 
   /// \brief CallBackward function is used to calculate gradient of this node.
-  ///
   /// \param[in] grads Grads is this node output's gradients.
   virtual ValuePtrList CallBackward(const ValuePtrList &grads) { return {}; }
 
@@ -232,55 +229,44 @@ class COMMON_EXPORT BackwardNode : public std::enable_shared_from_this<BackwardN
 
   /// \brief The PostProcess function is used to represent this node's inputs, which can
   /// backpropagation gradients.
-  ///
   /// \return next edges
   const std::vector<Edge> &next_edges() const { return next_edges_; }
 
   /// \brief Set next edge for backward node.
-  ///
   void set_next_edge(Edge &&edge, size_t i) { next_edges_[i] = std::move(edge); }
 
   /// \brief Set next edges for backward node.
-  ///
   void set_next_edges(std::vector<Edge> &&next_edges) { next_edges_ = next_edges; }
 
   /// \brief Add next edges for backward node.
-  ///
   void add_next_edge(Edge edge) { (void)next_edges_.emplace_back(std::move(edge)); }
 
   /// \brief name of this Node.
-  ///
   /// \return name
   const std::string &name() const { return name_; }
 
   /// \brief Check func to check whether the version of input is changed.
-  ///
   /// \return check_func
   const std::function<void(const std::string &op_name)> &check_func() const { return check_func_; }
 
   /// \brief Set check func.
-  ///
   void set_check_func(const std::function<void(const std::string &op_name)> &check_func) { check_func_ = check_func; }
 
   /// \brief Backward hook for backward node.
-  ///
   /// \return backward_hooks
   const OrderedMap<uint64_t, std::unique_ptr<PyTensorBackwardNodePreHook>> &py_tensor_pre_hooks() const {
     return py_tensor_pre_hooks_;
   }
 
   /// \brief The sequence number of current node.
-  ///
   /// \return sequence number
   size_t seq_id() const { return seq_id_; }
 
   /// \brief The size of node output.
-  ///
   /// \return output size
   size_t output_size() const { return output_size_; }
 
   /// \brief Release resource
-  ///
   /// \return void
   virtual void Release() {}
 

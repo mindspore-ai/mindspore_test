@@ -32,7 +32,10 @@ TensorPyWrapperPtr ConvertToTensorPyWrapper(const py::handle &obj) {
   return result;
 }
 
-py::object GetTensorFromTensorPyWrapper(const TensorPyWrapperPtr &self) { return self->GetTensorWrapper(); }
+py::object GetTensorFromTensorPyWrapper(const TensorPyWrapperPtr &self) {
+  MS_EXCEPTION_IF_NULL(self);
+  return self->GetTensorWrapper();
+}
 
 abstract::AbstractBasePtr TensorPyWrapper::ToAbstract() {
   py::object baseTensor = GetTensorWrapper();
@@ -50,12 +53,8 @@ py::object GetTensorPyFromValue(const ValuePtr &value) {
     auto tensor = value->cast<TensorPtr>();
     return PackTensorToPyObject(tensor);
   }
-
-  if (value->isa<Tensor>()) {
-    auto tensor = value->cast<TensorPtr>();
-    return PackTensorToPyObject(tensor);
-  }
   TensorPyWrapperPtr result = value->cast<TensorPyWrapperPtr>();
+  MS_EXCEPTION_IF_NULL(result);
   py::object back = GetTensorFromTensorPyWrapper(result);
   if (back == py::none()) {
     MS_LOG(ERROR) << "GetTensorPyFromValue back is none";
