@@ -393,6 +393,8 @@ COMMON_EXPORT bool JitCompiling();
 COMMON_EXPORT bool JitPipelineCompiling();
 // Return whether it is compiling by graph mode pipeline.
 COMMON_EXPORT bool GraphPipelineCompiling();
+// Return whether GraphPipelineCompiling was executed
+COMMON_EXPORT bool IsGraphPipelineCompiled();
 // Return whether it is running in jit compilation.
 COMMON_EXPORT bool JitRunning();
 // Return format mode.

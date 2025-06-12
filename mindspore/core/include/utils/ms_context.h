@@ -322,6 +322,9 @@ class MS_CORE_API MsContext {
   void set_jit_status(const JitStatus &status) { jit_status_ = status; }
   enum JitStatus jit_status() const { return jit_status_; }
 
+  void set_graph_pipeline_compiled(bool graph_pipeline_compiled) { graph_pipeline_compiled_ = graph_pipeline_compiled; }
+  bool graph_pipeline_compiled() const { return graph_pipeline_compiled_; }
+
  private:
   void RefreshExecutionMode();
   void RefreshMemoryOffload();
@@ -361,6 +364,7 @@ class MS_CORE_API MsContext {
   enum CellReuseLevel cell_reuse_level_ = CellReuseLevel::kNoCellReuse;
   bool not_convert_jit_{false};
   enum JitStatus jit_status_ = JitStatus::kNotJit;
+  bool graph_pipeline_compiled_ = false;
 
   std::optional<bool> enable_infer_boost_ = std::nullopt;
   std::set<std::string> ms_internal_enable_custom_kernel_list_;

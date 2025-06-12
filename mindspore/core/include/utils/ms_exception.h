@@ -163,7 +163,7 @@ class MS_CORE_API UCEException {
   bool is_reboot_node() const { return is_reboot_node_; }
   void set_is_arf(bool flag) { is_arf_ = flag; }
   bool is_arf() const { return is_arf_; }
-  bool enable_arf() { return arf_env_; }
+  bool enable_arf();
   void set_rebuild_group_flag(bool flag) { rebuild_group_ = flag; }
   bool rebuild_group_flag() const { return rebuild_group_; }
 
@@ -183,6 +183,8 @@ class MS_CORE_API UCEException {
 
   void ProcessUceError(const FuncInfo &fn_info, int error_code, FuncGetRecentErrMsg fn_get_recent_err_msg,
                        UCEError error_type);
+
+  void SetGraphPipelineCompiled(bool value) { is_graph_pipeline_compiled_ = value; }
 
   const char *GetUceErrorMsg() const {
     if (uce_error_type_ == UCEError::kDeviceMemError) {
@@ -211,6 +213,7 @@ class MS_CORE_API UCEException {
   bool rebuild_group_{false};
   uint64_t uce_occur_time_{0};
   UCEError uce_error_type_{UCEError::kNoneError};
+  bool is_graph_pipeline_compiled_{false};
 };
 }  // namespace mindspore
 

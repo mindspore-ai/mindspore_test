@@ -497,6 +497,12 @@ bool GraphPipelineCompiling() {
   return context->jit_status() == JitStatus::kGraphCompiling;
 }
 
+bool IsGraphPipelineCompiled() {
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  return context->graph_pipeline_compiled();
+}
+
 bool JitRunning() {
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);

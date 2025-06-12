@@ -112,11 +112,29 @@ uint64_t UCEException::ExtractUceTime(const char *error_msg) {
   }
 }
 
+bool UCEException::enable_arf() {
+  static bool is_enable_arf = [this]() {
+    if (!arf_env_) {
+      return false;
+    }
+    if (!UCEException::GetInstance().is_graph_pipeline_compiled_) {
+      MS_LOG(WARNING) << "For network which was not compiled by graph pipeline, ARF can not be enabled.";
+      return false;
+    }
+    return true;
+  }();
+  return is_enable_arf;
+}
+
 bool UCEException::IsEnableUCE() {
   static bool is_enable_uce = []() {
     auto tftEnv = common::GetEnv("MS_ENABLE_TFT");
     constexpr std::string_view optUCE = "UCE:1";
     if (!tftEnv.empty() && (tftEnv.find(optUCE) != std::string::npos)) {
+      if (!UCEException::GetInstance().is_graph_pipeline_compiled_) {
+        MS_LOG(WARNING) << "For network which was not compiled by graph pipeline, UCE can not be enabled.";
+        return false;
+      }
       MS_LOG(WARNING) << "UCE enabled.";
       return true;
     }
@@ -130,6 +148,10 @@ bool UCEException::IsEnableHCCE() {
     auto tftEnv = common::GetEnv("MS_ENABLE_TFT");
     constexpr std::string_view optCCE = "HCCE:1";
     if (!tftEnv.empty() && (tftEnv.find(optCCE) != std::string::npos)) {
+      if (!UCEException::GetInstance().is_graph_pipeline_compiled_) {
+        MS_LOG(WARNING) << "For network which was not compiled by graph pipeline, HCCE can not be enabled.";
+        return false;
+      }
       MS_LOG(WARNING) << "HCCE enabled.";
       return true;
     }
