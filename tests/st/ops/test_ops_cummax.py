@@ -41,7 +41,7 @@ def cummax_vmap_func(x, axis):
     return ops.vmap(cummax_forward_func, in_axes=(0, None), out_axes=(0, None))(x, axis)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0',
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 @pytest.mark.parametrize("dtype", [np.int8, np.int16, np.int32, np.int64, np.uint8,

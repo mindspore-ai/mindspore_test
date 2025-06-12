@@ -40,7 +40,7 @@ def logsigmoid_backward_func(x):
     return ms.grad(logsigmoid_forward_func, (0,))(x)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', ['KBK', 'pynative'])
 def test_mint_logsigmoid_normal(mode):
     """

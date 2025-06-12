@@ -17,7 +17,7 @@ from tests.mark_utils import arg_mark
 from mindspore import context
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_level0_ascend_cases():
     """
     Feature: control flow.

@@ -90,7 +90,7 @@ def test_bias_add_grad_5d(data_type, mode):
     assert np.all(output.asnumpy() == expect_output), "bias_add_grad execute failed, please check current code commit"
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE])
 @test_utils.run_test_with_On
 def test_bias_add_grad_vmap(mode):
