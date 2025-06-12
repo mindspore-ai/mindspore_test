@@ -258,7 +258,7 @@ class AscendEnvChecker(EnvChecker):
 
     def __init__(self, library_path):
         self.library_path = library_path
-        self.version = ["7.7", "7.8"]
+        self.version = ["7.7", "7.8", "8.2"]
 
         # env
         self.path = os.getenv("PATH")
@@ -293,7 +293,7 @@ class AscendEnvChecker(EnvChecker):
 
         cur_version = self._read_version(self.compiler_version)
         custom_version_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                           "../lib/plugin/ascend/custom_ascendc_910/version.info")
+                                           "../lib/plugin/ascend/custom_ascendc_910b/version.info")
         with open(custom_version_path, 'r') as f:
             all_info = f.readlines()
             for line in all_info:
