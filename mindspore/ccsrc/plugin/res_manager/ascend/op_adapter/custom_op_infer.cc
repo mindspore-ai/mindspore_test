@@ -112,11 +112,9 @@ TypeId const ConvertGeDataType(const ge::DataType &type) {
     {ge::DataType::DT_BOOL, TypeId::kNumberTypeBool},
     {ge::DataType::DT_STRING, TypeId::kObjectTypeString},
     {ge::DataType::DT_BF16, TypeId::kNumberTypeBFloat16},
-#ifdef EXPERIMENT_A5
     {ge::DataType::DT_HIFLOAT8, TypeId::kNumberTypeHiFloat8},
     {ge::DataType::DT_FLOAT8_E5M2, TypeId::kNumberTypeFloat8E5M2},
     {ge::DataType::DT_FLOAT8_E4M3FN, TypeId::kNumberTypeFloat8E4M3FN},
-#endif
   };
   auto iter = ge_ms_type.find(type);
   if (iter != ge_ms_type.end()) {

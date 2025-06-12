@@ -28,9 +28,6 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
 
 using ge::DT_BF16;
-using ge::DT_FLOAT8_E4M3FN;
-using ge::DT_FLOAT8_E5M2;
-using ge::DT_HIFLOAT8;
 using ge::DT_BOOL;
 using ge::DT_COMPLEX128;
 using ge::DT_COMPLEX32;
@@ -41,6 +38,14 @@ using ge::DT_DUAL_SUB_INT8;
 using ge::DT_DUAL_SUB_UINT8;
 using ge::DT_FLOAT;
 using ge::DT_FLOAT16;
+using ge::DT_FLOAT4_E1M2;
+using ge::DT_FLOAT4_E2M1;
+using ge::DT_FLOAT6_E2M3;
+using ge::DT_FLOAT6_E3M2;
+using ge::DT_FLOAT8_E4M3FN;
+using ge::DT_FLOAT8_E5M2;
+using ge::DT_FLOAT8_E8M0;
+using ge::DT_HIFLOAT8;
 using ge::DT_INT16;
 using ge::DT_INT2;
 using ge::DT_INT32;
@@ -90,6 +95,11 @@ std::vector<enum ge::DataType> ParseGeTypes(const std::string &op_name, const st
     {"DT_HIFLOAT8", {DT_HIFLOAT8}},
     {"DT_FLOAT8_E5M2", {DT_FLOAT8_E5M2}},
     {"DT_FLOAT8_E4M3FN", {DT_FLOAT8_E4M3FN}},
+    {"DT_FLOAT8_E8M0", {DT_FLOAT8_E8M0}},
+    {"DT_FLOAT6_E3M2", {DT_FLOAT6_E3M2}},
+    {"DT_FLOAT6_E2M3", {DT_FLOAT6_E2M3}},
+    {"DT_FLOAT4_E2M1", {DT_FLOAT4_E2M1}},
+    {"DT_FLOAT4_E1M2", {DT_FLOAT4_E1M2}},
     {"DT_BOOL", {DT_BOOL}},
     {"DT_COMPLEX128", {DT_COMPLEX128}},
     {"DT_COMPLEX64", {DT_COMPLEX64}},
