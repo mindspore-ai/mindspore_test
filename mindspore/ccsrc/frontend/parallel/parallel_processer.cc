@@ -887,13 +887,13 @@ static void BackwardCommunication(const FuncGraphPtr &root, const OperatorInfoPt
   }
 }
 
-static void SplitTensorList(const AnfNodePtr &node, const CNodePtr &next_node, int index) {
+static CNodePtr CreateSliceForTensorList(const AnfNodePtr &node, const CNodePtr &next_node, int index) {
   MS_EXCEPTION_IF_NULL(node);
   MS_EXCEPTION_IF_NULL(next_node);
   if ((next_node->size() != kSizeTwo || index != 1) && !IsSupportNewShapeBaseNode(next_node)) {
     MS_LOG(INFO) << next_node->fullname_with_scope() << " Inputs must have only one input, get "
                  << (next_node->size() - 1) << " index should be 1, get " << index;
-    return;
+    return nullptr;
   }
   OperatorInfoPtr op_info = next_node->user_data<OperatorInfo>();
   MS_EXCEPTION_IF_NULL(op_info);
@@ -939,7 +939,7 @@ static void SplitTensorList(const AnfNodePtr &node, const CNodePtr &next_node, i
     if (tensor_info == TensorInfo()) {
       MS_LOG(INFO) << "Tensor info for " << i << "th input of node " << node->DebugString()
                    << " is TensorInfo. It is not need to split";
-      return;
+      return nullptr;
     }
     auto value_ptr = inputs_values[i];
     auto tensor = value_ptr->cast<tensor::TensorPtr>();
@@ -961,30 +961,30 @@ static void SplitTensorList(const AnfNodePtr &node, const CNodePtr &next_node, i
   }
 
   CNodePtr make_tuple = func_graph->NewCNode(make_tuple_inputs);
-  (void)manager->Replace(node, make_tuple);
   auto prim = GetValueNode<PrimitivePtr>(next_node->input(0));
   if (prim == nullptr) {
-    return;
+    return nullptr;
   }
   (void)prim->AddAttr(KEEP_ALIVE, MakeValue(true));
+  return make_tuple;
 }
 
-static void SplitTensor(const AnfNodePtr &node, const CNodePtr &next_node, int64_t index) {
+static CNodePtr CreateSliceForTensor(const AnfNodePtr &node, const CNodePtr &next_node, int64_t index) {
   MS_EXCEPTION_IF_NULL(node);
   MS_EXCEPTION_IF_NULL(next_node);
   OperatorInfoPtr op_info = next_node->user_data<OperatorInfo>();
   if (!op_info) {
-    return;
+    return nullptr;
   }
 
   if (op_info->name().find(FILLV2) != std::string::npos) {
     MS_LOG(INFO) << "FillV2 operator info no need to split tensor";
-    return;
+    return nullptr;
   }
 
   if (op_info->name().find(STAND_ALONE) != std::string::npos) {
     MS_LOG(INFO) << "Stand alone operator info no need to split tensor";
-    return;
+    return nullptr;
   }
 
   // If the shape of tensor is [] or [1], no need to split it.
@@ -998,7 +998,7 @@ static void SplitTensor(const AnfNodePtr &node, const CNodePtr &next_node, int64
   if (shape.empty() || ((shape.size() == 1) && (shape[0] == 1))) {
     MS_LOG(INFO) << "Split tensor for " << op_info->name() << ": The shape is " << shape_str
                  << ", no need to split it.";
-    return;
+    return nullptr;
   }
 
   MS_LOG(INFO) << "Split tensor for " << op_info->name() << ": The shape of tensor is " << shape_str;
@@ -1010,7 +1010,7 @@ static void SplitTensor(const AnfNodePtr &node, const CNodePtr &next_node, int64
   if (LongToSize(index - 1) >= inputs_info_size) {
     if (IsIgnoreSplitTensor(next_node, index - 1)) {
       MS_LOG(INFO) << op_info->name() << ": no need to split tensor for index " << (index - 1);
-      return;
+      return nullptr;
     }
     MS_LOG_WITH_NODE(EXCEPTION, next_node) << op_info->name() << ": The index is out of range, index is  "
                                            << (index - 1) << ", vector size is  " << inputs_info_size;
@@ -1027,25 +1027,31 @@ static void SplitTensor(const AnfNodePtr &node, const CNodePtr &next_node, int64
   FuncGraphPtr func_graph = next_node->func_graph();  // only cnode can get the graph
   MS_EXCEPTION_IF_NULL(func_graph);
   Operator op = CreateGetTensorSliceOp(tensor_layout);
-  InsertGetTensorSliceOp(op, next_node, func_graph, index, SPLIT_TENSOR);
+  const AnfNodePtrList get_tensor_slice_input = CreateInput(op, node, SPLIT_TENSOR);
+  CNodePtr slice_node = func_graph->NewCNode(get_tensor_slice_input);
   if (!op_info->sub_ops().empty()) {
     auto sub_ops = op_info->sub_ops();
     for (size_t i = 0; i < sub_ops.size(); i++) {
       if (!sub_ops.at(i).empty()) {
-        InsertGetTensorSliceOp(sub_ops.at(i).at(0), next_node, func_graph, index, SUB);
+        const AnfNodePtrList sub_input = CreateInput(sub_ops.at(i).at(0), slice_node, SUB);
+        const CNodePtr new_sub_node = func_graph->NewCNode(sub_input);
+        slice_node = new_sub_node;
       }
     }
   }
   auto prim = GetValueNode<PrimitivePtr>(next_node->input(0));
   if (prim == nullptr) {
-    return;
+    return nullptr;
   }
   (void)prim->AddAttr(KEEP_ALIVE, MakeValue(true));
+  return slice_node;
 }
 
-static void StepSplitTensor(const AnfNodePtr &node, const FuncGraphManagerPtr &manager) {
+static void CollectTensorRealUser(const AnfNodePtr &node, const FuncGraphManagerPtr &manager,
+                                  mindspore::CompactSet<std::pair<AnfNodePtr, int>> *collect_set) {
   MS_EXCEPTION_IF_NULL(node);
   MS_EXCEPTION_IF_NULL(manager);
+  MS_EXCEPTION_IF_NULL(collect_set);
   static const std::set<std::string> NO_INPUT_TENSOR_OPS = {UNIFORM_REAL, STANDARD_NORMAL};
   AnfNodeIndexSet node_set = manager->node_users()[node];
   for (auto &node_pair : node_set) {
@@ -1057,21 +1063,46 @@ static void StepSplitTensor(const AnfNodePtr &node, const FuncGraphManagerPtr &m
     MS_EXCEPTION_IF_NULL(prim_anf_node);
     PrimitivePtr use_cnode_prim = prim_anf_node->value()->cast<PrimitivePtr>();
     MS_EXCEPTION_IF_NULL(use_cnode_prim);
-    if ((use_cnode_prim->name() == DEPEND && node_pair.second != 1) ||
+    if ((use_cnode_prim->name() == DEPEND && node_pair.second != 1) || use_cnode_prim->name() == TENSORDUMP ||
         NO_INPUT_TENSOR_OPS.find(use_cnode_prim->name()) != NO_INPUT_TENSOR_OPS.end()) {
       continue;
+    }
+    if ((use_cnode_prim->name() == DEPEND && node_pair.second == 1) || IsSomePrimitive(use_cnode, DUMPGRADIENT)) {
+      CollectTensorRealUser(use_cnode, manager, collect_set);
     }
     if (IsParallelCareNode(use_cnode)) {
       if (IsPrimitiveCNode(use_cnode, prim::kPrimReceive)) {
         continue;
       }
-      if (IsValueNode<ValueList>(node) || IsValueNode<ValueTuple>(node)) {
-        SplitTensorList(node, use_cnode, node_pair.second);
-      } else {
-        SplitTensor(node, use_cnode, node_pair.second);
-      }
+      // Find parallel care node, collect it.
+      collect_set->insert(node_pair);
     }
   }
+}
+
+static void StepSplitTensor(const AnfNodePtr &node, const FuncGraphManagerPtr &manager) {
+  MS_EXCEPTION_IF_NULL(node);
+  MS_EXCEPTION_IF_NULL(manager);
+  mindspore::CompactSet<std::pair<AnfNodePtr, int>> real_kernel_collector;
+  (void)CollectTensorRealUser(node, manager, &real_kernel_collector);
+  if (real_kernel_collector.size() == SIZE_ZERO) {
+    return;
+  }
+  // Todo: Need check whether the input tensor split strategies are consistent.
+  std::pair<AnfNodePtr, int> node_with_parallel_info = *(real_kernel_collector.cbegin());
+  CNodePtr slice_node = nullptr;
+  if (IsValueNode<ValueList>(node) || IsValueNode<ValueTuple>(node)) {
+    // Create _GetTensorSlice tuple to split tensor list.
+    slice_node =
+      CreateSliceForTensorList(node, node_with_parallel_info.first->cast<CNodePtr>(), node_with_parallel_info.second);
+  } else {
+    slice_node =
+      CreateSliceForTensor(node, node_with_parallel_info.first->cast<CNodePtr>(), node_with_parallel_info.second);
+  }
+  if (slice_node) {
+    (void)manager->Replace(node, slice_node);
+  }
+  return;
 }
 
 static void StepReplaceOp(OperatorVector replace_op, const CNodePtr &node) {
