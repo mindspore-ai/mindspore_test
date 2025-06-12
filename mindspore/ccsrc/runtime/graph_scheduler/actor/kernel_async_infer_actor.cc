@@ -46,9 +46,10 @@ void KernelAsyncInferActor::InferShape(OpContext<KernelTensor> *const context, K
   }
 }
 
-void KernelAsyncInferActor::InferShapeV2(OpContext<KernelTensor> *const context, KernelRunner *kernel_runner) {
+void KernelAsyncInferActor::InferShapeV2(OpContext<KernelTensor> *const context, KernelRunner *kernel_runner,
+                                         bool high_perf) {
   try {
-    kernel_runner->ExecuteInferShapeTask(context);
+    kernel_runner->ExecuteInferShapeTask(context, high_perf);
   } catch (const std::exception &e) {
     if (context->error_info_.empty()) {
       MsException::Instance().SetException();

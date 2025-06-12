@@ -32,12 +32,14 @@
 #include "runtime/graph_scheduler/actor/kernel_async_resize_actor.h"
 #include "runtime/hardware/device_context.h"
 #include "runtime/pipeline/async_rqueue.h"
+#include "debug/profiler/profiling.h"
 #include "ir/anf.h"
 
 namespace mindspore {
 namespace runtime {
 using mindspore::device::DeviceAddress;
 using mindspore::device::DeviceContext;
+using profiler::Profiler;
 
 struct OutputMemoryInfo {
   size_t size;
@@ -126,6 +128,10 @@ class SuperKernelActor : public DebugAwareActor {
                                  const mindspore::HashMap<AnfNodePtr, KernelRunner *> &kernel_to_actor,
                                  const std::map<uint32_t, std::vector<CNodePtr>> &inplace_groups,
                                  const std::string &actor_name);
+
+  // Collect conditions at compilation and execution phase to judge whether running with high performance mode.
+  bool IsHighPerfModeAtComp();
+  bool IsHighPerfModeAtExec();
 
  protected:
   void Init() override;
@@ -280,6 +286,9 @@ class SuperKernelActor : public DebugAwareActor {
 
   // Whether the actor include a control flow actor.
   bool enable_inline_control_flow_{false};
+
+  std::vector<std::shared_ptr<Profiler>> prof_instances_;
+  bool is_high_perf_mode_{true};
 };
 
 using SuperKernelActorPtr = std::shared_ptr<SuperKernelActor>;
