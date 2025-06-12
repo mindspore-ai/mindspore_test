@@ -1090,8 +1090,192 @@ def test_setitem_refactor_exception(mode):
     assert "Invalid index of a 0-dim tensor." in str(exc.value)
 
 
+class IndexDynamicShapeNet(nn.Cell):
+    def construct(self, x, index, value):
+        x = ops.abs(x)
+        x[0:2, index] = value
+        return x
+
+
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('mode', [ms.GRAPH_MODE,])
+@pytest.mark.parametrize('capture_mode', ['ast', 'bytecode'])
+@pytest.mark.parametrize('x_shape', [(3, 3, None), (3, 3, 3)])
+@pytest.mark.parametrize('index_shape', [(2, None), (2, 2)])
+@pytest.mark.parametrize('value_shape', [(None,), (1,)])
+def test_setitem_index_dynamic_shape_test(capture_mode, x_shape, index_shape, value_shape):
+    """
+    Feature: tensor setitem with index dynamic shape
+    Description: Verify the result of tensor setitem with index dynamic shape
+    Expectation: success
+    """
+    @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
+    def func(net, x, index, value):
+        return net(x, index, value)
+
+    @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
+    def grad_func(net, x, index, value):
+        return ms.grad(net)(x, index, value)
+
+    os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
+    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
+
+    pt_result = np.array([[[-1., -1., -1.], [-1., -1., -1.], [6., 7., 8.]],
+                          [[-1., -1., -1.], [-1., -1., -1.], [15., 16., 17.]],
+                          [[18., 19., 20.], [21., 22., 23.], [24., 25., 26.]]])
+    pt_grad = np.array([[[0., 0., 0.], [0., 0., 0.], [1., 1., 1.]],
+                        [[0., 0., 0.], [0., 0., 0.], [1., 1., 1.]],
+                        [[1., 1., 1.], [1., 1., 1.], [1., 1., 1.]]])
+
+    net = IndexDynamicShapeNet()
+    ms_x = Tensor(np.arange(3 * 3 * 3).reshape((3, 3, 3)).astype(np.float32))
+    index = Tensor([[0, 1], [0, 1]])
+    value = Tensor(-1, ms.float32)
+    x_dyn = Tensor(shape=x_shape, dtype=ms.float32) if None in x_shape else ms_x
+    index_dyn = Tensor(shape=index_shape, dtype=ms.int64) if None in index_shape else index
+    value_dyn = Tensor(shape=value_shape, dtype=ms.float32) if None in value_shape else value
+    net.set_inputs(x_dyn, index_dyn, value_dyn)
+
+    ms_result = func(net, ms_x, index, value)
+    assert np.allclose(pt_result, ms_result.asnumpy()), f"pt_result: {pt_result}, " \
+                                                        f"ms_result: {ms_result.asnumpy()}"
+
+    ms_grad = grad_func(net, ms_x, index, value)
+    assert np.allclose(pt_grad, ms_grad.asnumpy()), f"pt_grad: {pt_grad}, " \
+                                                    f"ms_grad: {ms_grad.asnumpy()}"
+
+
+class IndexDynamicRankNet(nn.Cell):
+    def construct(self, x, index1, index2, cond, value):
+        x = ops.abs(x)
+        if cond:
+            index = index1
+        else:
+            index = index2
+        x[0:2, index] = value
+        return x
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('capture_mode', ['ast', 'bytecode'])
+def test_setitem_index_dynamic_rank_test(capture_mode):
+    """
+    Feature: tensor setitem with index dynamic rank
+    Description: Verify the result of tensor setitem with index dynamic rank
+    Expectation: success
+    """
+    @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
+    def func(net, x, index1, index2, cond, value):
+        return net(x, index1, index2, cond, value)
+
+    @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
+    def grad_func(net, x, index1, index2, cond, value):
+        return ms.grad(net)(x, index1, index2, cond, value)
+
+    os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
+    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
+
+    pt_result = np.array([[[0., 1., 2.], [-1., -1., -1.], [6., 7., 8.]],
+                          [[9., 10., 11.], [-1., -1., -1.], [15., 16., 17.]],
+                          [[18., 19., 20.], [21., 22., 23.], [24., 25., 26.]]])
+    pt_grad = np.array([[[0., 1., 1.], [0., 0., 0.], [1., 1., 1.]],
+                        [[1., 1., 1.], [0., 0., 0.], [1., 1., 1.]],
+                        [[1., 1., 1.], [1., 1., 1.], [1., 1., 1.]]])
+
+    net = IndexDynamicRankNet()
+    ms_x = Tensor(np.arange(3 * 3 * 3).reshape((3, 3, 3)).astype(np.float32))
+    index1 = Tensor([1])
+    index2 = Tensor([[0, 1], [0, 1]])
+    cond = Tensor(True)
+    value = Tensor(-1, ms.float32)
+    ms_result = func(net, ms_x, index1, index2, cond, value)
+    assert np.allclose(pt_result, ms_result.asnumpy()), f"pt_result: {pt_result}, " \
+                                                        f"ms_result: {ms_result.asnumpy()}"
+
+    ms_grad = grad_func(net, ms_x, index1, index2, cond, value)
+    assert np.allclose(pt_grad, ms_grad.asnumpy()), f"pt_grad: {pt_grad}, " \
+                                                    f"ms_grad: {ms_grad.asnumpy()}"
+
+
+
+class IndexDynamicRank2Net(nn.Cell):
+    def construct(self, x, index1, index2, value):
+        x = ops.abs(x)
+        mask = index1 == index2
+        index = index1[mask]
+        value = value[mask]
+        x[0:1, index] = value
+        return x
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('capture_mode', ['ast', 'bytecode'])
+def test_setitem_index_dynamic_rank_test2(capture_mode):
+    """
+    Feature: tensor setitem with index dynamic rank
+    Description: Verify the result of tensor setitem with index dynamic rank
+    Expectation: success
+    """
+    @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
+    def func(net, x, index1, index2, value):
+        return net(x, index1, index2, value)
+
+    @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
+    def grad_func(net, x, index1, index2, value):
+        return ms.grad(net)(x, index1, index2, value)
+
+    os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
+    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
+
+    pt_result = np.array([[[0., 1., 2.], [3., 4., 5.], [-3., -3., -3.]],
+                          [[9., 10., 11.], [12., 13., 14.], [15., 16., 17.]],
+                          [[18., 19., 20.], [21., 22., 23.], [24., 25., 26.]]])
+    pt_grad = np.array([[[0., 1., 1.], [1., 1., 1.], [0., 0., 0.]],
+                        [[1., 1., 1.], [1., 1., 1.], [1., 1., 1.]],
+                        [[1., 1., 1.], [1., 1., 1.], [1., 1., 1.]]])
+
+    net = IndexDynamicRank2Net()
+    ms_x = Tensor(np.arange(3 * 3 * 3).reshape((3, 3, 3)).astype(np.float32))
+    index1 = Tensor([0, 1, 2])
+    index2 = Tensor([1, 2, 2])
+    value = Tensor([-1, -2, -3], ms.float32)
+    ms_result = func(net, ms_x, index1, index2, value)
+    assert np.allclose(pt_result, ms_result.asnumpy()), f"pt_result: {pt_result}, " \
+                                                        f"ms_result: {ms_result.asnumpy()}"
+
+    ms_grad = grad_func(net, ms_x, index1, index2, value)
+    assert np.allclose(pt_grad, ms_grad.asnumpy()), f"pt_grad: {pt_grad}, " \
+                                                    f"ms_grad: {ms_grad.asnumpy()}"
+
+
+class NetWithIndexAndMul(nn.Cell):
+    def construct(self, x):
+        a = ms.mint.zeros_like(x)
+        a[:, 0:1] = 1
+        b = x * a
+        return b
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+def test_setitem_with_mul(mode):
+    """
+    Feature: tensor setitem
+    Description: Verify the result of network with mul after setitem.
+    Expectation: success
+    """
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
+    os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
+    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
+
+    ms_x = Tensor([[0, 0], [2, 0]])
+    net = NetWithIndexAndMul()
+    ms_y = net(ms_x)
+    np_expect = np.array([[0, 0], [2, 0]])
+    assert np.allclose(np_expect, ms_y.asnumpy()), f"np_expect:{np_expect}, ms_y:{ms_y}"
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_setitem_graph_mode(mode):
     """
     Feature: tensor setitem
