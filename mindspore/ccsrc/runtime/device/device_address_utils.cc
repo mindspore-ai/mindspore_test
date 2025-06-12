@@ -172,6 +172,25 @@ void DeviceAddressUtils::CopyNoneTensorDataToDevice(const device::DeviceContext 
   const void *node_value = kernel_tensor->GetValuePtr();
   MS_EXCEPTION_IF_NULL(node_value);
   device_context->device_res_manager_->SyncAllStreams();
+  if (device_address->type_id() == TypeId::kObjectTypeString && kernel_tensor->IsConstValue()) {
+    auto value = GetValue<std::string>(kernel_tensor->GetValueTrack());
+    size_t tensor_size = value.size();
+    ShapeVector shape{SizeToLong(tensor_size)};
+    auto string_tensor =
+      std::make_shared<tensor::Tensor>(TypeId::kObjectTypeString, shape, const_cast<void *>(node_value), tensor_size);
+    const auto &host_device_address = (dynamic_cast<device::DeviceAddress *>(string_tensor->device_address().get()));
+    MS_EXCEPTION_IF_NULL(host_device_address);
+    host_device_address->SetSize(tensor_size + 1);
+    MS_LOG(DEBUG) << "Sync string to device size:" << tensor_size
+                  << " device address:" << host_device_address->PrintInfo()
+                  << " dst device address:" << device_address->PrintInfo();
+    if (!SyncCopy(device_address, string_tensor->device_address(), kDefaultStreamIndex)) {
+      MS_LOG(ERROR) << "Failed sync string to device size:" << tensor_size
+                    << " device address:" << host_device_address->PrintInfo()
+                    << " dst device address:" << device_address->PrintInfo();
+    }
+    return;
+  }
   if (!device_context->device_res_manager_->Copy(device_address->GetMutablePtr(), node_value, data_size,
                                                  device::CopyType::kH2D, device_address->stream_id())) {
     MS_LOG(EXCEPTION) << "SyncHostToDevice failed";
