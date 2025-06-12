@@ -40,7 +40,7 @@ def generate_expect_backward_output(input_x, mat2):
     grad = ops.grad(ops.matmul)(input_x, mat2)
     return grad
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 @pytest.mark.parametrize('dtype', [np.float16, np.float32])
 def test_ops(mode, dtype):

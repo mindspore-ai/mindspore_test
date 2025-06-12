@@ -41,7 +41,7 @@ def elu_grad_ext_vmap_func(dy, y, alpha):
     return ms.ops.vmap(elu_grad_ext_forward_func, in_axes=(0, 0, None), out_axes=0)(dy, y, alpha)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("mode", [ms.PYNATIVE_MODE, ms.GRAPH_MODE])
 def test_elu_grad_ext_forward(mode):
     """

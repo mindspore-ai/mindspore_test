@@ -55,7 +55,7 @@ def test_nllloss_forward(mode, data_type):
     assert np.allclose(actual_output[1].asnumpy(), expect_total_weight)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE])
 @pytest.mark.parametrize('data_type', [np.float32])
 @test_utils.run_test_with_On

@@ -95,7 +95,7 @@ def test_ops_index_forward(context_mode):
         print(output_index_error)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 @test_utils.run_test_with_On
 def test_ops_index_backward(context_mode):

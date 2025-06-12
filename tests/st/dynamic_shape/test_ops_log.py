@@ -12,16 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-import pytest
+
 import numpy as np
 from tests.st.utils import test_utils
+from tests.mark_utils import arg_mark
 import mindspore.nn as nn
 from mindspore import Tensor, context
 from mindspore.common import dtype as mstype
 from mindspore.common.api import jit
 from mindspore.ops import auto_generate as P
 from mindspore.ops.composite import GradOperation
-from tests.mark_utils import arg_mark
 
 
 class LogNet(nn.Cell):
@@ -86,7 +86,7 @@ def test_op_log_gpu():
     op_log_backward_testcase()
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @test_utils.run_test_with_On
 def test_op_log_ascend():
     """

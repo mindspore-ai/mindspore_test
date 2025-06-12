@@ -72,7 +72,7 @@ def compare_grad(x, p, grad):
     assert (elem_count * (keep_prob - 0.02)) < nonzero_count < (elem_count * (keep_prob + 0.02))
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['kbk', 'pynative'])
 @pytest.mark.parametrize('dtype', [np.float16, np.float32])
 def test_func_dropout_normal(mode, dtype):
