@@ -39,7 +39,7 @@ void RegRuntimeConf(py::module *m) {
          "Set thread_bind_core configured.")
     .def("thread_bind_core_with_policy", &RuntimeConf::BindCoreWithPolicy,
          "Bind thread to specific cpus with policy generated")
-    .def("set_kernel_launch_capture", &RuntimeConf::SetKernelLaunchCapture,
+    .def("set_kernel_launch_capture", &RuntimeConf::SetEnableKernelLaunchCapture,
          "Enable capture graph when launch some kernels")
     .def("get_enable_kernel_launch_capture", &RuntimeConf::GetEnableKernelLaunchCapture,
          "Is kernel launch capture configured");

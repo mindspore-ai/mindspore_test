@@ -35,12 +35,12 @@
 #include "runtime/hardware/deprecated_interface.h"
 #include "runtime/device/res_manager/auto_mem_offload.h"
 #include "runtime/device/res_manager/memory_manager.h"
+#include "runtime/device/res_manager/capture_graph.h"
 #include "include/backend/optimizer/graph_optimizer.h"
 #include "runtime/pipeline/task/task.h"
 #include "ir/device_event.h"
 #include "utils/ms_context.h"
 #include "ir/tensor.h"
-#include "ir/capture_graph.h"
 #ifdef __APPLE__
 #include "async/spinlock.h"
 #endif

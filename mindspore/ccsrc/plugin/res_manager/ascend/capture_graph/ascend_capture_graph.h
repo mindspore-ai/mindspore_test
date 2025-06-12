@@ -17,9 +17,9 @@
 #ifndef MINDSPORE_ASCEND_CAPTURE_GRAPH_H
 #define MINDSPORE_ASCEND_CAPTURE_GRAPH_H
 
-#include "ir/capture_graph.h"
 #include "acl/acl_mdl.h"
 #include "plugin/res_manager/ascend/visible.h"
+#include "runtime/device/res_manager/capture_graph.h"
 
 namespace mindspore::device::ascend {
 

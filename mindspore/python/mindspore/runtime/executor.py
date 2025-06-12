@@ -200,12 +200,15 @@ def set_kernel_launch_group(thread_num=2, kernel_group_num=8):
 def set_kernel_launch_capture(enable_capture_graph):
     """
     In O0/O1 mode, the incremental inference scenario supports graph capture.
-    By capturing the host-side operator dispatch behavior into a graph,
-    the performance of host-side operator dispatch is improved.
+    By capturing the CPU-side operator dispatch behavior into a graph,
+    the performance of CPU-side operator dispatch is improved.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
 
     Args:
-        enable_capture_graph (bool, optional): Whether to enable graph capture.
-        It can be turned on or off at any position in the script.
+        enable_capture_graph (bool): Whether to enable graph capture.
+            It can be turned on or off at any position in the script.
 
     Examples:
         >>> import mindspore as ms

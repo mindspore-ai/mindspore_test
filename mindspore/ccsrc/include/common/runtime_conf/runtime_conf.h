@@ -130,7 +130,7 @@ class COMMON_EXPORT RuntimeConf {
     ThreadBindCore::GetInstance().enable_thread_bind_core_with_policy(module_bind_core_policy);
   }
 
-  void SetKernelLaunchCapture(bool enable_capture_graph) { enable_capture_graph_ = enable_capture_graph; }
+  void SetEnableKernelLaunchCapture(bool enable_capture_graph) { enable_capture_graph_ = enable_capture_graph; }
 
   bool GetEnableKernelLaunchCapture() { return enable_capture_graph_; }
 

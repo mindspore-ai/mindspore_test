@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CORE_IR_CAPTURE_GRAPH_H
-#define MINDSPORE_CORE_IR_CAPTURE_GRAPH_H
+#ifndef MINDSPORE_CCSRC_RUNTIME_DEVICE_CAPTURE_GRAPH_H_
+#define MINDSPORE_CCSRC_RUNTIME_DEVICE_CAPTURE_GRAPH_H_
 
 #include <memory>
 #include <vector>
@@ -31,6 +31,5 @@ class CaptureGraph {
   virtual bool HasCapturedGraph() const = 0;
 };
 using CaptureGraphPtr = std::shared_ptr<CaptureGraph>;
-//  using DeviceEventPtrList = std::vector<DeviceEventPtr>;
 }  // namespace mindspore
-#endif  // MINDSPORE_CORE_IR_CAPTURE_GRAPH_H
+#endif  // MINDSPORE_CCSRC_RUNTIME_DEVICE_CAPTURE_GRAPH_H_
