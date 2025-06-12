@@ -281,23 +281,33 @@ void CustomV2AclnnKernelMod::GetWorkspaceForResize(const std::vector<std::vector
                                                    const std::vector<std::vector<KernelTensor *>> &outputs) {
   hash_id_ = device::ascend::CustomAclnnHash(op_type_, inputs, outputs, input_output_types_);
   size_t cur_workspace = 0;
-  auto iter = hash_map_.find(hash_id_);
-  if (iter != hash_map_.end()) {
+  std::optional<std::list<CacheTuple>::iterator> found_iter;
+  {
+    std::shared_lock read_lock(cache_mutex);
+    if (auto iter = hash_map.find(hash_id_); iter != hash_map.end()) {
+      found_iter = iter->second;
+    }
+  }
+  if (found_iter) {
     MS_LOG(DEBUG) << "op " << op_type_ << " hit cache with hash id: " << hash_id_;
+    std::unique_lock write_lock(cache_mutex);
     MS_VLOG(VL_CUSTOM_OP) << "op " << op_type_ << " hit cache with hash id: " << hash_id_;
-    hash_cache_.splice(hash_cache_.begin(), hash_cache_, iter->second);
-    cur_workspace = std::get<kWorkspaceIndex>(hash_cache_.front());
+    hash_cache.splice(hash_cache.begin(), hash_cache, *found_iter);
+    cur_workspace = std::get<kWorkspaceIndex>(hash_cache.front());
   } else {
     auto [workspace, executor, cache, fail_cache] = GenCustomExecutorForResize(inputs, outputs);
     cur_workspace = workspace;
     if (!fail_cache) {
-      hash_cache_.emplace_front(hash_id_, executor, cache, workspace);
-      hash_map_[hash_id_] = hash_cache_.begin();
-      if (hash_cache_.size() > capacity_) {
-        hash_map_.erase(std::get<0>(hash_cache_.back()));
-        auto release_func = std::get<kReleaseFuncIndex>(hash_cache_.back());
+      std::unique_lock write_lock(cache_mutex);
+      hash_cache.emplace_front(hash_id_, executor, cache, workspace);
+      hash_map[hash_id_] = hash_cache.begin();
+      if (hash_cache.size() > capacity) {
+        auto release_data = std::move(hash_cache.back());
+        hash_map.erase(std::get<0>(release_data));
+        hash_cache.pop_back();
+        write_lock.unlock();
+        auto release_func = std::get<2>(release_data);
         release_func(device::ascend::ProcessCacheType::kReleaseParamsAndExecutor, {});
-        hash_cache_.pop_back();
       }
     } else {
       hash_id_ = 0;
@@ -477,14 +487,17 @@ ExecutorTuple CustomV2AclnnKernelMod::GenCustomExecutor(const std::vector<std::v
 
 std::pair<aclOpExecutor *, std::function<void()>> CustomV2AclnnKernelMod::GetExecutor(
   const std::vector<std::vector<KernelTensor *>> &inputs, const std::vector<std::vector<KernelTensor *>> &outputs) {
-  auto iter = hash_map_.find(hash_id_);
-  if (capacity_ == 0 || hash_id_ == 0 || iter == hash_map_.end()) {
+  std::shared_lock read_lock(cache_mutex);
+  auto iter = hash_map.find(hash_id_);
+  if (capacity == 0 || hash_id_ == 0 || iter == hash_map.end()) {
+    read_lock.unlock();
     aclOpExecutor *executor;
     std::function<void()> release_func;
     std::tie(std::ignore, executor, release_func, hash_id_, std::ignore) = GenCustomExecutor(inputs, outputs);
     return std::make_pair(executor, release_func);
   }
-  const auto &cur_run = *(iter->second);
+  const auto cur_run = *(iter->second);
+  read_lock.unlock();
   UpdateTensorForLaunch(inputs, outputs, std::get<kReleaseFuncIndex>(cur_run));
   const auto &executor = std::get<1>(cur_run);
   return std::make_pair(executor, nullptr);
