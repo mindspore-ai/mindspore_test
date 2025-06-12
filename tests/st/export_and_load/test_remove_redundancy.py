@@ -78,7 +78,7 @@ parameter_layout_dict = {
 }
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='allcards', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='allcards', essential_mark='essential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE])
 def test_remove_redundancy_1_1(mode):
     '''

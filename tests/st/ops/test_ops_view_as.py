@@ -43,7 +43,7 @@ def view_as_backward_func(x, y):
     return ms.grad(view_as_forward_func, (0))(x, y)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0',
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_ops_view_as_normal0(mode):

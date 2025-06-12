@@ -15,7 +15,6 @@
 from tests.mark_utils import arg_mark
 import os
 import re
-import pytest
 import mindspore.context as context
 from tensor_print_utils import run_net
 
@@ -59,7 +58,7 @@ def num_to_asterisk(data):
     return re.sub(r'\d|\+|\-', '*', data.group())
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_tensor_print():
     path = os.path.split(os.path.realpath(__file__))[0]
     cmd = f"python {path}/tensor_print_utils.py"

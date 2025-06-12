@@ -82,9 +82,8 @@ def xlogy_vmap_func(x, y, in_axes=0):
     return ops.vmap(xlogy_forward_func, in_axes, out_axes=0)(x, y)
 
 
-@pytest.mark.level0
+@pytest.mark.level1
 @pytest.mark.platform_arm_ascend_training
-@pytest.mark.platform_x86_ascend_training
 @pytest.mark.env_onecard
 @pytest.mark.parametrize("mode", ["pynative", "KBK"])
 def test_ops_xlogy(mode):

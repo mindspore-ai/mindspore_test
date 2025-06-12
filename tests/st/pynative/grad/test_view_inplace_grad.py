@@ -359,7 +359,7 @@ def test_view_copy():
 
 
 @arg_mark(plat_marks=['platform_ascend'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_tensor_slice_copy():
@@ -393,7 +393,7 @@ def test_tensor_slice_copy():
 
 
 @arg_mark(plat_marks=['platform_ascend'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_common_view_copy():
@@ -443,7 +443,7 @@ def test_common_view_copy():
 
 
 @arg_mark(plat_marks=['platform_ascend'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_multi_view_copy():
@@ -521,7 +521,7 @@ def test_multi_view_copy():
 
 
 @arg_mark(plat_marks=['platform_ascend'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_view_multi_copy():
@@ -548,7 +548,7 @@ def test_view_multi_copy():
 
 
 @arg_mark(plat_marks=['platform_ascend'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_no_grad_copy():
@@ -610,7 +610,7 @@ def test_as_strided_overlap_grad():
 
 
 @arg_mark(plat_marks=['platform_ascend'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_view_inplace_with_bprop():
@@ -638,7 +638,7 @@ def test_view_inplace_with_bprop():
 
 
 @arg_mark(plat_marks=['platform_ascend'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_view_inplace_grad_check_exception():

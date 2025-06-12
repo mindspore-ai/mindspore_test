@@ -35,7 +35,7 @@ def sort_backward_func(x, dim, descending, stable):
     return ops.grad(sort_forward_func, (0, 1, 2, 3))(x, dim=dim, descending=descending, stable=stable)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("descending", [True, False])
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 def test_sort_std(descending, mode):

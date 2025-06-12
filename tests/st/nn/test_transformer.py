@@ -134,7 +134,7 @@ def test_transformerencoder_square_input_cpu(dtype, training, jit):
     np.allclose(result.asnumpy(), ref_output.asnumpy(), rtol=1e-7, atol=1e-5)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('dtype', [ms.float16, ms.float32])
 @pytest.mark.parametrize('training', [True, False])
 @pytest.mark.parametrize('jit', [False, True])
@@ -293,7 +293,7 @@ def test_transformerdecoder_cpu(dtype, training, jit):
     assert result.shape == tgt.shape
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('dtype', [ms.float16, ms.float32])
 @pytest.mark.parametrize('training', [True, False])
 @pytest.mark.parametrize('jit', [False, True])
@@ -386,7 +386,7 @@ def test_transformer_gpu(dtype, training, jit):
     assert result.shape == tgt.shape
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('dtype', [ms.float16, ms.float32])
 @pytest.mark.parametrize('training', [True, False])
 @pytest.mark.parametrize('jit', [False, True])
