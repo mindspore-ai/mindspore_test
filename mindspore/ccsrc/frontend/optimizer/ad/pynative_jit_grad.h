@@ -46,7 +46,8 @@ class BpropGenerator {
   void Init();
   FuncGraphPtr GenerateBpropGraph();
   FuncGraphPtr GenerateForwardGraph(const FuncGraphPtr &jit_forward_graph, bool do_renormalize);
-  void set_forward_output_abs(const abstract::AbstractBasePtr &forward_abs);
+  void SetForwardOutputAbs(const abstract::AbstractBasePtr &forward_abs, const FuncGraphPtr &bprop_graph);
+  void EreaseUnusedReuseCNode(const FuncGraphPtr &bprop_fg);
 
  private:
   FuncGraphPtr fprop_graph_;
@@ -56,6 +57,7 @@ class BpropGenerator {
   std::vector<ValuePtr> input_value_{};
   abstract::AbstractBasePtr out_abs_{nullptr};
   bool need_reuse_forward_node_{false};
+  size_t bprop_origin_param_size_{0};
   std::vector<FuncGraphPtr> fprop_sub_fgs_{};
   AnfNodePtrList replace_nodes_{};
   abstract::AbstractBasePtrList replace_nodes_abs_{};
