@@ -51,7 +51,7 @@ def topk_backward_func(x, k, dim=-1, largest=True, issorted=True):
     return ms.grad(topk_forward_func, (0, 1, 2, 3, 4))(x, k, dim, largest, issorted)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("context_mode", [ms.PYNATIVE_MODE])
 def test_ops_topk_ext_normal0(context_mode):
     """

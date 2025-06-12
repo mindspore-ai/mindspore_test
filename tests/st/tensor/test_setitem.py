@@ -1090,7 +1090,7 @@ def test_setitem_refactor_exception(mode):
     assert "Invalid index of a 0-dim tensor." in str(exc.value)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE,])
 def test_setitem_graph_mode(mode):
     """
