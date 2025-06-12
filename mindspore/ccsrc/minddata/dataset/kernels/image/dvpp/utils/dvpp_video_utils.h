@@ -74,7 +74,6 @@ class VideoDecoder {
   hi_s32 dvpp_free(hi_void *dev_ptr);
 
   device::DeviceContext *device_context_;
-  size_t stream_id_;
 
  private:
   std::mutex channelMutex_[VDEC_MAX_CHNL_NUM];
