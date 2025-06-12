@@ -164,10 +164,8 @@ void AscendDeviceContext::Initialize() {
 
   InitDump();
   // open tsd
-  if (!common::UseDynamicCluster()) {
-    if (!GetDeprecatedInterface()->OpenTsd(ms_context)) {
-      MS_LOG(EXCEPTION) << "Open tsd failed";
-    }
+  if (!GetDeprecatedInterface()->OpenTsd(ms_context)) {
+    MS_LOG(EXCEPTION) << "Open tsd failed";
   }
   initialized_ = true;
   pid_ = GetCurrentPID();  // set the pid when first initialize
