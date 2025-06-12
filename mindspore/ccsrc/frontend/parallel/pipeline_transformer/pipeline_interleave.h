@@ -101,6 +101,7 @@ class PipelinePostProcess {
 
  private:
   void LabelInterleaveIndex();
+  void RemoveUselessOriginSharedCell();
   std::vector<AnfNodePtr> PartitionChunkGraph(const FuncGraphPtr &fg, int64_t chunk);
   void GetSendsRecvs(const FuncGraphPtr &fg, int64_t chunk, std::vector<AnfNodePtr> *recvs,
                      std::vector<AnfNodePtr> *sends, std::vector<AnfNodePtr> *temp);
