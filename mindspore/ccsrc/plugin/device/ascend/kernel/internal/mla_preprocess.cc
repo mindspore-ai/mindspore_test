@@ -22,7 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
-#define INPUT_NUM_25 25
+#define INPUT_NUM_26 26
 #define INDEX_11 11
 #define INDEX_12 12
 #define INDEX_13 13
@@ -37,6 +37,7 @@ namespace kernel {
 #define INDEX_22 22
 #define INDEX_23 23
 #define INDEX_24 24
+#define INDEX_25 25
 
 internal::InternalOpPtr InternalMlaPreprocess::CreateKernel(const internal::InputsImmutableInfoList &inputs_ii,
                                                             const internal::OutputsImmutableInfoList &outputs_ii,
@@ -58,10 +59,10 @@ internal::InternalOpPtr InternalMlaPreprocess::CreateKernel(const internal::Inpu
 }
 
 MS_INTERNAL_KERNEL_FACTORY_REG(MlaPreprocess, internal::kInternalMlaPreprocessOpName, InternalMlaPreprocess);
-REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(MlaPreprocess, INPUT_NUM_25, INDEX_0, INDEX_1, INDEX_2, INDEX_3, INDEX_4, INDEX_5,
+REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(MlaPreprocess, INPUT_NUM_26, INDEX_0, INDEX_1, INDEX_2, INDEX_3, INDEX_4, INDEX_5,
                                      INDEX_6, INDEX_7, INDEX_8, INDEX_9, INDEX_10, INDEX_11, INDEX_12, INDEX_13,
                                      INDEX_14, INDEX_15, INDEX_16, INDEX_17, INDEX_18, INDEX_19, INDEX_20, INDEX_21,
-                                     INDEX_22, INDEX_23, INDEX_24);
+                                     INDEX_22, INDEX_23, INDEX_24, INDEX_25);
 REG_MS_TO_INTERNAL_OUT_TENSOR_IDX_MAP(MlaPreprocess, OUTPUT_NUM_4, INDEX_0, INDEX_1, INDEX_2, INDEX_3);
 }  // namespace kernel
 }  // namespace mindspore
