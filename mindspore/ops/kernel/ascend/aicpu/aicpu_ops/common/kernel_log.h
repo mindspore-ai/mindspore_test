@@ -34,19 +34,19 @@ namespace aicpu {
 
 #define AICPU_LOGD(fmt, ...)                                                                                  \
   dlog_debug(AICPU_MODULE_NAME, "[%s][%s:%d][tid:%lu]:" fmt, KERNEL_MODULE, __FUNCTION__, __LINE__, GetTid(), \
-             ##__VA_ARGS__);
+             ##__VA_ARGS__)
 #define AICPU_LOGI(fmt, ...)                                                                                 \
   dlog_info(AICPU_MODULE_NAME, "[%s][%s:%d][tid:%lu]:" fmt, KERNEL_MODULE, __FUNCTION__, __LINE__, GetTid(), \
-            ##__VA_ARGS__);
+            ##__VA_ARGS__)
 #define AICPU_LOGW(fmt, ...)                                                                                 \
   dlog_warn(AICPU_MODULE_NAME, "[%s][%s:%d][tid:%lu]:" fmt, KERNEL_MODULE, __FUNCTION__, __LINE__, GetTid(), \
-            ##__VA_ARGS__);
+            ##__VA_ARGS__)
 #define AICPU_LOGE(fmt, ...)                                                                                  \
   dlog_error(AICPU_MODULE_NAME, "[%s][%s:%d][tid:%lu]:" fmt, KERNEL_MODULE, __FUNCTION__, __LINE__, GetTid(), \
-             ##__VA_ARGS__);
+             ##__VA_ARGS__)
 #define AICPU_LOGEVENT(fmt, ...)                                                                              \
   dlog_event(AICPU_MODULE_NAME, "[%s][%s:%d][tid:%lu]:" fmt, KERNEL_MODULE, __FUNCTION__, __LINE__, GetTid(), \
-             ##__VA_ARGS__);
+             ##__VA_ARGS__)
 
 #define AICPU_CHK_STATUS_RET(expr...)        \
   do {                                       \
@@ -76,19 +76,19 @@ namespace aicpu {
 
 #define KERNEL_LOG_DEBUG(fmt, ...)                                                                            \
   dlog_debug(AICPU_MODULE_NAME, "[%s][%s:%d][tid:%lu]:" fmt, KERNEL_MODULE, __FUNCTION__, __LINE__, GetTid(), \
-             ##__VA_ARGS__);
+             ##__VA_ARGS__)
 #define KERNEL_LOG_INFO(fmt, ...)                                                                            \
   dlog_info(AICPU_MODULE_NAME, "[%s][%s:%d][tid:%lu]:" fmt, KERNEL_MODULE, __FUNCTION__, __LINE__, GetTid(), \
-            ##__VA_ARGS__);
+            ##__VA_ARGS__)
 #define KERNEL_LOG_WARN(fmt, ...)                                                                            \
   dlog_warn(AICPU_MODULE_NAME, "[%s][%s:%d][tid:%lu]:" fmt, KERNEL_MODULE, __FUNCTION__, __LINE__, GetTid(), \
-            ##__VA_ARGS__);
+            ##__VA_ARGS__)
 #define KERNEL_LOG_ERROR(fmt, ...)                                                                            \
   dlog_error(AICPU_MODULE_NAME, "[%s][%s:%d][tid:%lu]:" fmt, KERNEL_MODULE, __FUNCTION__, __LINE__, GetTid(), \
-             ##__VA_ARGS__);
+             ##__VA_ARGS__)
 #define KERNEL_LOG_EVENT(fmt, ...)                                                                            \
   dlog_event(AICPU_MODULE_NAME, "[%s][%s:%d][tid:%lu]:" fmt, KERNEL_MODULE, __FUNCTION__, __LINE__, GetTid(), \
-             ##__VA_ARGS__);
+             ##__VA_ARGS__)
 
 #define KERNEL_CHECK_NULLPTR_VOID(value, logText...) \
   if (value == nullptr) {                            \

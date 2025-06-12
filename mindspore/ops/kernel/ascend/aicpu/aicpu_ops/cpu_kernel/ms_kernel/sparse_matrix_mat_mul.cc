@@ -129,7 +129,6 @@ uint32_t SparseMatrixMatMulCpuKernel::ValidParam(CpuKernelContext &ctx) {
       checkStatus = CheckMatMul<int64_t>(ctx);
       break;
     default:
-      // CUST_KERNEL_LOG_ERROR(ctx, "data type of dense shape is not int32 or int64");
       return KERNEL_STATUS_PARAM_INVALID;
   }
   if (checkStatus != KERNEL_STATUS_OK) {

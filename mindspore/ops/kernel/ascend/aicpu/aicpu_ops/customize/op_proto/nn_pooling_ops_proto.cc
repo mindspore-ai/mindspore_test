@@ -232,7 +232,7 @@ CUST_IMPLEMT_INFERFUNC(AdaptiveMaxPool3d, AdaptiveMaxPool3dInferShape) {
 
   const size_t input_num_dims = input.GetShape().GetDimNum();
   const std::vector<int64_t> output_size_shape = output_size.GetShape().GetDims();
-  if ((input_num_dims == 4 || input_num_dims == 5) == false) {
+  if (!(input_num_dims == 4 || input_num_dims == 5)) {
     OP_LOGE(TbeGetName(op), "Input dimensions must be equal to 4 or 5.");
     return GRAPH_FAILED;
   }

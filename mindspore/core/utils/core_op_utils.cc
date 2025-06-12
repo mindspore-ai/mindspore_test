@@ -116,6 +116,7 @@ size_t GetOpInputsNum(const std::string &op_name) {
 // For example, {PrimAvgPool, x, kernel_size, strides, pad_mode, data_format} =>
 //              {PrimAvgPool, x}
 CNodePtr ConvertArgsToAttr(const CNodePtr &cnode) {
+  MS_EXCEPTION_IF_NULL(cnode);
   auto prim = GetValueNode<PrimitivePtr>(cnode->input(0));
   MS_EXCEPTION_IF_NULL(prim);
   auto prim_name = prim->name();

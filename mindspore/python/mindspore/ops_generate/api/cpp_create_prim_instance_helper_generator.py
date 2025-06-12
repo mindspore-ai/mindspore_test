@@ -53,7 +53,7 @@ class CppCreatePrimInstanceHelperGenerator(BaseGenerator):
         """
         py_arg_default = self.generate_op_arg_default_value(op_protos)
         py_labels = self.generate_op_labels(op_protos)
-        res_str = (template.PY_LICENSE_STR + py_arg_default + py_labels)
+        res_str = template.PY_LICENSE_STR + py_arg_default + py_labels
 
         save_path = os.path.join(work_path, K.PY_AUTO_GEN_PATH)
         file_name = "cpp_create_prim_instance_helper.py"

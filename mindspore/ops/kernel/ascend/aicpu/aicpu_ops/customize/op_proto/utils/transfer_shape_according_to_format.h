@@ -86,7 +86,7 @@ class ShapeTransferAccordingToFormat {
 
   ShapeTransferAccordingToFormat &operator=(const ShapeTransferAccordingToFormat &) = delete;
 
-  bool GetShapeAccordingToFormat(ShapeAndFormat &inputAndOutputInfo, int64_t *c = nullptr);
+  bool GetShapeAccordingToFormat(ShapeAndFormat &shapeAndFormatInfo, int64_t *c = nullptr);
 
   /* ----------Below is the function of getting new shape---------------------- */
   static bool GetNCHWShapeByAxisValue(ge::Shape &newShape, const int64_t &implType, const vector<int64_t> &axisValue,

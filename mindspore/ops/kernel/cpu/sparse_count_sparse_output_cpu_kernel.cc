@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
+#include "kernel/cpu/sparse_count_sparse_output_cpu_kernel.h"
 #include <algorithm>
 #include <cstdio>
 #include <vector>
 #include <map>
 #include <limits>
 #include <memory>
-#include "kernel/cpu/sparse_count_sparse_output_cpu_kernel.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "infer/sparse_count_sparse_output.h"
 

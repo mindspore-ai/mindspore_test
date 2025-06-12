@@ -28,7 +28,7 @@
 
 #define REGISTER_MS_CPU_KERNEL(type, clazz) \
   REGISTER_CPU_KERNEL(type, clazz);         \
-  REGISTER_CUST_KERNEL(type, clazz);
+  REGISTER_CUST_KERNEL(type, clazz)
 
 enum KernelStatus : uint32_t {
   KERNEL_STATUS_OK = 0,

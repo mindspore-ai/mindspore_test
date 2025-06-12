@@ -31,7 +31,7 @@ struct MsTypeToCppType {};
   template <>                                      \
   struct MsTypeToCppType<MS_TYPE> {                \
     using type = CPP_TYPE;                         \
-  };
+  }
 
 REG_MS_TYPE_TO_CPP_TYPE(kNumberTypeDouble, double);
 REG_MS_TYPE_TO_CPP_TYPE(kNumberTypeFloat64, double);
@@ -71,93 +71,93 @@ using MS_TYPE_TO_CPP_TYPE = typename MsTypeToCppType<T>::type;
       using scalar_t = MS_TYPE_TO_CPP_TYPE<DTYPE>; \
       return __VA_ARGS__();                        \
     } while (0);                                   \
-    break;
+    break
 
-#define TYPE_SWITCH_COMPLEX_CASES(...)                 \
-  TYPE_SWITCH_CASE(kNumberTypeComplex128, __VA_ARGS__) \
+#define TYPE_SWITCH_COMPLEX_CASES(...)                  \
+  TYPE_SWITCH_CASE(kNumberTypeComplex128, __VA_ARGS__); \
   TYPE_SWITCH_CASE(kNumberTypeComplex64, __VA_ARGS__)
 
 #define TYPE_SWITCH_BOOL_CASES(...) TYPE_SWITCH_CASE(kNumberTypeBool, __VA_ARGS__)
 
-#define TYPE_SWITCH_FLOATING_CASES(...)             \
-  TYPE_SWITCH_CASE(kNumberTypeDouble, __VA_ARGS__)  \
-  TYPE_SWITCH_CASE(kNumberTypeFloat, __VA_ARGS__)   \
-  TYPE_SWITCH_CASE(kNumberTypeFloat64, __VA_ARGS__) \
-  TYPE_SWITCH_CASE(kNumberTypeFloat32, __VA_ARGS__) \
-  TYPE_SWITCH_CASE(kNumberTypeFloat16, __VA_ARGS__) \
+#define TYPE_SWITCH_FLOATING_CASES(...)              \
+  TYPE_SWITCH_CASE(kNumberTypeDouble, __VA_ARGS__);  \
+  TYPE_SWITCH_CASE(kNumberTypeFloat, __VA_ARGS__);   \
+  TYPE_SWITCH_CASE(kNumberTypeFloat64, __VA_ARGS__); \
+  TYPE_SWITCH_CASE(kNumberTypeFloat32, __VA_ARGS__); \
+  TYPE_SWITCH_CASE(kNumberTypeFloat16, __VA_ARGS__); \
   TYPE_SWITCH_CASE(kNumberTypeBFloat16, __VA_ARGS__)
 
 #define TYPE_SWITCH_FLOATING_CASES_AND(EXTRA_TYPE, ...) \
-  TYPE_SWITCH_FLOATING_CASES(__VA_ARGS__)               \
+  TYPE_SWITCH_FLOATING_CASES(__VA_ARGS__);              \
   TYPE_SWITCH_CASE(EXTRA_TYPE, __VA_ARGS__)
 
 #define TYPE_SWITCH_FLOATING_CASES_AND2(EXTRA_TYPE1, EXTRA_TYPE2, ...) \
-  TYPE_SWITCH_FLOATING_CASES(__VA_ARGS__)                              \
-  TYPE_SWITCH_CASE(EXTRA_TYPE1, __VA_ARGS__)                           \
+  TYPE_SWITCH_FLOATING_CASES(__VA_ARGS__);                             \
+  TYPE_SWITCH_CASE(EXTRA_TYPE1, __VA_ARGS__);                          \
   TYPE_SWITCH_CASE(EXTRA_TYPE2, __VA_ARGS__)
 
 #define TYPE_SWITCH_FLOATING_CASES_AND_COMPLEX(...) \
-  TYPE_SWITCH_FLOATING_CASES(__VA_ARGS__)           \
+  TYPE_SWITCH_FLOATING_CASES(__VA_ARGS__);          \
   TYPE_SWITCH_COMPLEX_CASES(__VA_ARGS__)
 
-#define TYPE_SWITCH_SIGNED_INT_CASES(...)         \
-  TYPE_SWITCH_CASE(kNumberTypeInt8, __VA_ARGS__)  \
-  TYPE_SWITCH_CASE(kNumberTypeInt16, __VA_ARGS__) \
-  TYPE_SWITCH_CASE(kNumberTypeInt32, __VA_ARGS__) \
+#define TYPE_SWITCH_SIGNED_INT_CASES(...)          \
+  TYPE_SWITCH_CASE(kNumberTypeInt8, __VA_ARGS__);  \
+  TYPE_SWITCH_CASE(kNumberTypeInt16, __VA_ARGS__); \
+  TYPE_SWITCH_CASE(kNumberTypeInt32, __VA_ARGS__); \
   TYPE_SWITCH_CASE(kNumberTypeInt64, __VA_ARGS__)
 
-#define TYPE_SWITCH_UNSIGNED_INT_CASES(...)        \
-  TYPE_SWITCH_CASE(kNumberTypeUInt8, __VA_ARGS__)  \
-  TYPE_SWITCH_CASE(kNumberTypeUInt16, __VA_ARGS__) \
-  TYPE_SWITCH_CASE(kNumberTypeUInt32, __VA_ARGS__) \
+#define TYPE_SWITCH_UNSIGNED_INT_CASES(...)         \
+  TYPE_SWITCH_CASE(kNumberTypeUInt8, __VA_ARGS__);  \
+  TYPE_SWITCH_CASE(kNumberTypeUInt16, __VA_ARGS__); \
+  TYPE_SWITCH_CASE(kNumberTypeUInt32, __VA_ARGS__); \
   TYPE_SWITCH_CASE(kNumberTypeUInt64, __VA_ARGS__)
 
-#define TYPE_SWITCH_INT_CASES(...)          \
-  TYPE_SWITCH_SIGNED_INT_CASES(__VA_ARGS__) \
+#define TYPE_SWITCH_INT_CASES(...)           \
+  TYPE_SWITCH_SIGNED_INT_CASES(__VA_ARGS__); \
   TYPE_SWITCH_UNSIGNED_INT_CASES(__VA_ARGS__)
 
 #define TYPE_SWITCH_INT_CASES_AND(EXTRA_TYPE, ...) \
-  TYPE_SWITCH_INT_CASES(__VA_ARGS__)               \
+  TYPE_SWITCH_INT_CASES(__VA_ARGS__);              \
   TYPE_SWITCH_CASE(EXTRA_TYPE, __VA_ARGS__)
 
 #define TYPE_SWITCH_INT_CASES_AND_BOOL(...) TYPE_SWITCH_INT_CASES_AND(kNumberTypeBool, __VA_ARGS__)
 
 #define TYPE_SWITCH_INT_CASES_AND2(EXTRA_TYPE1, EXTRA_TYPE2, ...) \
-  TYPE_SWITCH_INT_CASES(__VA_ARGS__)                              \
-  TYPE_SWITCH_CASE(EXTRA_TYPE1, __VA_ARGS__)                      \
+  TYPE_SWITCH_INT_CASES(__VA_ARGS__);                             \
+  TYPE_SWITCH_CASE(EXTRA_TYPE1, __VA_ARGS__);                     \
   TYPE_SWITCH_CASE(EXTRA_TYPE2, __VA_ARGS__)
 
-#define TYPE_SWITCH_FULL_INT_CASES(...)     \
-  TYPE_SWITCH_SIGNED_INT_CASES(__VA_ARGS__) \
+#define TYPE_SWITCH_FULL_INT_CASES(...)      \
+  TYPE_SWITCH_SIGNED_INT_CASES(__VA_ARGS__); \
   TYPE_SWITCH_UNSIGNED_INT_CASES(__VA_ARGS__)
 
 #define TYPE_SWITCH_FULL_INT_CASES_AND(EXTRA_TYPE, ...) \
-  TYPE_SWITCH_FULL_INT_CASES(__VA_ARGS__)               \
+  TYPE_SWITCH_FULL_INT_CASES(__VA_ARGS__);              \
   TYPE_SWITCH_CASE(EXTRA_TYPE, __VA_ARGS__)
 
 #define TYPE_SWITCH_FULL_INT_CASES_AND2(EXTRA_TYPE1, EXTRA_TYPE2, ...) \
-  TYPE_SWITCH_FULL_INT_CASES(__VA_ARGS__)                              \
-  TYPE_SWITCH_CASE(EXTRA_TYPE1, __VA_ARGS__)                           \
+  TYPE_SWITCH_FULL_INT_CASES(__VA_ARGS__);                             \
+  TYPE_SWITCH_CASE(EXTRA_TYPE1, __VA_ARGS__);                          \
   TYPE_SWITCH_CASE(EXTRA_TYPE2, __VA_ARGS__)
 
-#define TYPE_SWITCH_ALL_CASES(...)   \
-  TYPE_SWITCH_INT_CASES(__VA_ARGS__) \
+#define TYPE_SWITCH_ALL_CASES(...)    \
+  TYPE_SWITCH_INT_CASES(__VA_ARGS__); \
   TYPE_SWITCH_FLOATING_CASES(__VA_ARGS__)
 
 #define TYPE_SWITCH_ALL_CASES_AND(EXTRA_TYPE, ...) \
-  TYPE_SWITCH_ALL_CASES(__VA_ARGS__)               \
+  TYPE_SWITCH_ALL_CASES(__VA_ARGS__);              \
   TYPE_SWITCH_CASE(EXTRA_TYPE, __VA_ARGS__)
 
 #define TYPE_SWITCH_ALL_CASES_AND2(EXTRA_TYPE1, EXTRA_TYPE2, ...) \
-  TYPE_SWITCH_ALL_CASES(__VA_ARGS__)                              \
-  TYPE_SWITCH_CASE(EXTRA_TYPE1, __VA_ARGS__)                      \
+  TYPE_SWITCH_ALL_CASES(__VA_ARGS__);                             \
+  TYPE_SWITCH_CASE(EXTRA_TYPE1, __VA_ARGS__);                     \
   TYPE_SWITCH_CASE(EXTRA_TYPE2, __VA_ARGS__)
 
-#define TYPE_SWITCH_FULL_CASES(...)           \
-  TYPE_SWITCH_BOOL_CASES(__VA_ARGS__)         \
-  TYPE_SWITCH_COMPLEX_CASES(__VA_ARGS__)      \
-  TYPE_SWITCH_SIGNED_INT_CASES(__VA_ARGS__)   \
-  TYPE_SWITCH_UNSIGNED_INT_CASES(__VA_ARGS__) \
+#define TYPE_SWITCH_FULL_CASES(...)            \
+  TYPE_SWITCH_BOOL_CASES(__VA_ARGS__);         \
+  TYPE_SWITCH_COMPLEX_CASES(__VA_ARGS__);      \
+  TYPE_SWITCH_SIGNED_INT_CASES(__VA_ARGS__);   \
+  TYPE_SWITCH_UNSIGNED_INT_CASES(__VA_ARGS__); \
   TYPE_SWITCH_FLOATING_CASES(__VA_ARGS__)
 
 // floating + signed + unsigned
