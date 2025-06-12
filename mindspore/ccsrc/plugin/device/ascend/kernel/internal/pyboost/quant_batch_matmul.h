@@ -36,6 +36,7 @@ class QuantBatchMatmul : public InternalKernelInfo {
             const bool transpose_a, const bool transpose_b, const int64_t dtype);
 
  protected:
+  uint64_t GetOrGenerateOpTilingKey(const uint64_t &tiling_key) const override;
   internal::InternalOpPtr CreateKernel(const internal::InputsImmutableInfoList &inputs,
                                        const internal::OutputsImmutableInfoList &outputs) override;
   uint64_t GetOrGenerateOpTilingKey(const uint64_t &tiling_key) const override;

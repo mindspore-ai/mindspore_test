@@ -21,7 +21,8 @@ namespace mindspore {
 namespace kernel {
 internal::InternalOpPtr QuantBatchMatmul::CreateKernel(const internal::InputsImmutableInfoList &inputs,
                                                        const internal::OutputsImmutableInfoList &outputs) {
-  output_format_ = outputs[0].GetFormat();
+  param_.enable_shuffle = false;
+  param_.enable_dequant = true;
   return internal::CreateMatmulOp(inputs, outputs, param_, internal::kInternalMatMulOpName);
 }
 
