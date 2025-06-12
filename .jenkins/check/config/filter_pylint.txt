@@ -296,6 +296,7 @@
 "mindspore/tests/st/tensor/test_offload.py"                                                             "protected-access"
 "mindspore/tests/st/tensor/test_getitem.py"                                                             "multiple-statements"
 "mindspore/tests/st/tensor/test_setitem.py"                                                             "multiple-statements"
+"mindspore/tests/st/ops/test_ops_lin_space_ext.py"                                                 "not-callable"
 
 #MindSpore Lite
 "mindspore/mindspore/ops/kernel/cpu/nnacl/experimental/HPC-generator/generator.py"                                         "redefined-builtin"

@@ -71,7 +71,7 @@ def generate_expect_backward_output(x, dout, n, dim):
     return dout.astype(x.dtype)
 
 @arg_mark(plat_marks=['platform_ascend', 'cpu_linux', 'cpu_windows',
-                      'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+                      'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_ops_hfft_normal(mode):
     """

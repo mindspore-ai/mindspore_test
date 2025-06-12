@@ -26,7 +26,7 @@ def test_convert_return():
     utils.run_testcase('ge_convert', 'test_convert_return')
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_convert_update_state():
     """
     Feature: convert ge graph
@@ -66,7 +66,7 @@ def test_convert_tuple_get_item():
     utils.run_testcase('ge_convert', 'test_convert_tuple_get_item')
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_convert_make_tuple_make_tuple():
     """
     Feature: convert ge graph

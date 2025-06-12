@@ -91,7 +91,7 @@ def pad_nd_backward(input_x, padding, value, mode):
     return ms.grad(pad_nd_forward, (0))(input_x, padding, value, mode)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0',
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("context_mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_nn_PadNd_normal(context_mode):
