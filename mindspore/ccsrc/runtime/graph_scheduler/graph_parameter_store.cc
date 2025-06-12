@@ -129,7 +129,7 @@ void GraphParameterStore::ResetAddrRefCount(size_t outer_index, size_t inner_ind
           device_tensor->IncreaseNewRefCount(name, user_cnt - 1);
         }
         device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
-        MS_LOG(DEBUG) << "Parameter store set new ref count:" << user_cnt - 1
+        MS_LOG(DEBUG) << "Parameter store set new ref count:" << (user_cnt - 1)
                       << " for kernel tensor:" << kernel_tensor_with_info.first->ToString();
       } else {
         MS_LOG(DEBUG) << "User count:0 for parameter store outer index:" << outer_index

@@ -1538,7 +1538,7 @@ void DumpActorInfo(AbstractActor *actor, size_t index, ActorInfoMap *actor_info,
   // Dump input data.
   ofs << "%" << index << " = " << GetActorSubName(actor) << "(";
   for (const auto &pair : actor_inputs) {
-    ofs << std::get<0>(pair.second);
+    ofs << (std::get<0>(pair.second));
     if (pair.first < actor_inputs.size() - 1) {
       ofs << ", ";
     }
@@ -1556,7 +1556,7 @@ void DumpActorInfo(AbstractActor *actor, size_t index, ActorInfoMap *actor_info,
       const auto &input_actor = FetchActor(aid);
       ofs << "%";
       if ((*actor_info).find(input_actor) != (*actor_info).end()) {
-        ofs << std::get<0>((*actor_info)[input_actor]);
+        ofs << (std::get<0>((*actor_info)[input_actor]));
       } else {
         ofs << aid;
       }

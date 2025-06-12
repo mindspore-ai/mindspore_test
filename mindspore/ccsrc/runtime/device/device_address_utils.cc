@@ -348,10 +348,13 @@ device::DeviceAddressPtrList DeviceAddressUtils::CreateDeviceAddressForTensorVal
   TypeId output_type_id = AnfAlgo::GetOutputDeviceDataType(value_node, output_idx);
   if (output_type_id == kTypeUnknown) {
     output_type_id = common::AnfAlgo::GetOutputInferDataType(value_node, output_idx);
-    if (output_type_id == kTypeUnknown && value_node->value() != nullptr && value_node->value()->isa<ValueTuple>() &&
-        value_node->value()->cast<ValueTuplePtr>()->size() == 0) {
-      MS_LOG(DEBUG) << "Set int64 type for empty value tuple node:" << value_node->DebugString();
-      output_type_id = TypeId::kNumberTypeInt64;
+    if (output_type_id == kTypeUnknown && value_node->value() != nullptr && value_node->value()->isa<ValueTuple>()) {
+      const auto &value_tuple = value_node->value()->cast<ValueTuplePtr>();
+      MS_EXCEPTION_IF_NULL(value_tuple);
+      if (value_tuple->size() == 0) {
+        MS_LOG(DEBUG) << "Set int64 type for empty value tuple node:" << value_node->DebugString();
+        output_type_id = TypeId::kNumberTypeInt64;
+      }
     }
   }
   std::string output_format = AnfAlgo::GetOutputFormat(value_node, output_idx);

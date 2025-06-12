@@ -157,6 +157,7 @@ bool IsLazyInlineCall(const AnfNodePtr &node) {
     return false;
   }
   const auto &get_item_cnode = get_item_node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(get_item_cnode);
   if (get_item_cnode->size() == 0 || (!IsValueNode<FuncGraph>(get_item_cnode->input(0)))) {
     return false;
   }

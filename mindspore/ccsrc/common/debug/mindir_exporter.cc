@@ -576,6 +576,7 @@ bool IrExportBuilder::SetQuantizationParamToAttrProto(const std::shared_ptr<Quan
 }
 
 bool IrExportBuilder::SetFuncGraphToAttrProto(const FuncGraphPtr &g, mind_ir::AttributeProto *const attr_proto) {
+  MS_EXCEPTION_IF_NULL(g);
   auto *g_proto = attr_proto->mutable_g();
   attr_proto->set_type(mind_ir::AttributeProto_AttributeType_GRAPH);
   g_proto->set_name(g->ToString());

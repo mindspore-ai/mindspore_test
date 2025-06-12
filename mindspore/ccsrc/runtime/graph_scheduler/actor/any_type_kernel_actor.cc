@@ -397,7 +397,9 @@ KernelGraphPtr AnyTypeKernelActor::CompileRealKernelGraph(OpContext<KernelTensor
       MS_LOG(EXCEPTION) << "Invalid device context for actor:" << GetAID();
     }
     AnfNodePtrList inputs{};
-    AnfNodePtrList outputs{return_node->cast<CNodePtr>()->input(1)};
+    const auto &return_cnode = return_node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(return_cnode);
+    AnfNodePtrList outputs{return_cnode->input(1)};
     auto io_nodes = std::make_pair(inputs, outputs);
     device_contexts()[0]->device_res_manager_->BindDeviceToCurrentThread(false);
     auto new_graph =

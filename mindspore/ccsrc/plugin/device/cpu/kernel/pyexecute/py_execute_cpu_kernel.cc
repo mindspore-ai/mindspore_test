@@ -98,6 +98,7 @@ bool PyExecuteCpuKernelMod::Launch(const std::vector<KernelTensor *> &inputs, co
   }
   const auto &user_data_obj =
     outputs[0]->user_data()->get<kernel::PyExecuteOutputUserData>(kernel::PyExecuteOutputUserData::key);
+  MS_EXCEPTION_IF_NULL(user_data_obj);
   const auto &obj = user_data_obj->obj;
   try {
     const auto &abstract = pyexecute::GenerateAbstractFromPyObject(obj);

@@ -574,10 +574,13 @@ AnfNodePtr KernelGraph::TransParameterTuple(const AbstractBasePtr &abstract) {
     mindspore::NewValueNode(std::make_shared<Primitive>(prim::kPrimMakeTuple->name()))};
   for (size_t index = 0; index < tuple_abstract->size(); ++index) {
     const auto &abs = (*tuple_abstract)[index];
-    if (abs != nullptr && abs->isa<abstract::AbstractSequence>() &&
-        abs->cast<abstract::AbstractSequencePtr>()->dynamic_len()) {
-      make_tuple_inputs.push_back(NewParameter(abs));
-      continue;
+    if (abs != nullptr && abs->isa<abstract::AbstractSequence>()) {
+      const auto seq_abs = abs->cast<abstract::AbstractSequencePtr>();
+      MS_EXCEPTION_IF_NULL(seq_abs);
+      if (seq_abs->dynamic_len()) {
+        make_tuple_inputs.push_back(NewParameter(abs));
+        continue;
+      }
     }
     make_tuple_inputs.push_back(TransParameterTuple(abs));
   }
@@ -1224,9 +1227,13 @@ void KernelGraph::CacheGraphOutputToFrontNodeWithIndex(const AnfNodePtrList &bac
 }
 
 bool IsTupleGetItemOutputDynamicSequence(const CNodePtr &get_item, size_t index) {
-  return index == 0 && get_item != nullptr && get_item->abstract() != nullptr &&
-         get_item->abstract()->isa<abstract::AbstractSequence>() &&
-         get_item->abstract()->cast<abstract::AbstractSequencePtr>()->dynamic_len();
+  if (index != 0 || get_item == nullptr || get_item->abstract() == nullptr ||
+      !get_item->abstract()->isa<abstract::AbstractSequence>()) {
+    return false;
+  }
+  const auto &seq_abs = get_item->abstract()->cast<abstract::AbstractSequencePtr>();
+  MS_EXCEPTION_IF_NULL(seq_abs);
+  return seq_abs->dynamic_len();
 }
 
 kernel::KernelObjectType GetTupleGetItemOutputKernelObjectType(const AnfNodePtr &node) {
