@@ -765,9 +765,9 @@ def normal_ext(mean=0.0, std=1.0, size=None, generator=None):
     Generates random numbers according to the standard Normal (or Gaussian) random number distribution.
 
     Args:
-        mean (Union[float, Tensor]): Mean value of each element, the shape of the `mean` tensor
+        mean (Union[Tensor]): Mean value of each element, the shape of the `mean` tensor
             should be the same as that of the `std` tensor.
-        std (Union[float, Tensor]): Standard deviation for each element, the shape of the `std` tensor
+        std (Union[Tensor]): Standard deviation for each element, the shape of the `std` tensor
             should be the same as that of the `mean` tensor. The value of `std` should be greater than or equal to 0.
 
     Keyword Args:
@@ -788,6 +788,33 @@ def normal_ext(mean=0.0, std=1.0, size=None, generator=None):
         >>> from mindspore import ops
         >>> from mindspore import Tensor
         >>> mean = Tensor(np.array([1.0, 2.0, 3.0]), mindspore.float32)
+        >>> std = Tensor(np.array([1.0, 2.0, 3.0]), mindspore.float32)
+        >>> output = ops.function.random_func.normal_ext(mean, std)
+        >>> print(output.shape)
+        (3,)
+
+    .. function:: normal(mean, std) -> Tensor
+        :noindex:
+
+    Similar to the function above, but the means are shared among all drawn elements.
+
+    Args:
+        mean (float): Mean value of each element.
+        std (Tensor): Standard deviation for each element. The value of `std` should be greater
+            than or equal to 0.
+
+    Returns:
+        Outputs a tensor with the same shape as `std`.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import ops
+        >>> from mindspore import Tensor
+        >>> mean = 1.
         >>> std = Tensor(np.array([1.0, 2.0, 3.0]), mindspore.float32)
         >>> output = ops.function.random_func.normal_ext(mean, std)
         >>> print(output.shape)
