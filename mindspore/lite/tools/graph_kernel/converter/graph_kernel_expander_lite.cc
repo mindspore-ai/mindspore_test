@@ -159,7 +159,9 @@ AnfNodePtr InferValueDeco::Run(const AnfNodePtr &node) {
 }
 
 AnfNodePtr PoolLayoutDeco::Run(const AnfNodePtr &node) {
+  MS_CHECK_TRUE_MSG(node != nullptr, nullptr, "node is a nullptr.");
   auto cnode = QuickCloneCNode(node);
+  MS_CHECK_TRUE_MSG(cnode != nullptr, nullptr, "cnode is a nullptr.");
   auto prev_node = AnfUtils::VisitKernel(node->cast<CNodePtr>()->input(1), 0).first;
   if (prev_node != nullptr) {
     auto sub_graph = GetCNodeFuncGraph(prev_node);

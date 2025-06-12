@@ -319,6 +319,7 @@ STATUS DeleteRedundantTranspose::CopyQuantParam(const CNodePtr &cnode, const CNo
     }
   } else if (input_node->isa<mindspore::CNode>()) {
     auto input_cnode = input_node->cast<mindspore::CNodePtr>();
+    MS_CHECK_TRUE_MSG(input_cnode != nullptr, RET_ERROR, "input_cnode is nullptr!");
     auto input_primitive = GetValueNode<PrimitivePtr>(input_cnode->input(0));
     CHECK_NULL_RETURN(input_primitive);
     if (cnode_primitive->HasAttr(lite::quant::kQuantParam)) {

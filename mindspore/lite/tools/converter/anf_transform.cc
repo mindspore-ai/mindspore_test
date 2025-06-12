@@ -411,6 +411,7 @@ int AnfTransform::RunParallelPass(const FuncGraphPtr &old_graph, const std::shar
     for (const auto &graph_input : graph_inputs) {
       if (utils::isa<Parameter>(graph_input)) {
         auto input_parameter = dyn_cast<Parameter>(graph_input);
+        MS_CHECK_TRUE_MSG(input_parameter != nullptr, RET_ERROR, "input_parameter is nullptr!");
         MSLITE_CHECK_PTR(input_parameter->Shape());
         auto shape_ptr = input_parameter->Shape()->cast<abstract::ShapePtr>();
         MSLITE_CHECK_PTR(shape_ptr);

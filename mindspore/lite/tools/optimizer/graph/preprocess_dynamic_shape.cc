@@ -548,6 +548,7 @@ int StackInferShape(const CNodePtr &cnode, const std::vector<ShapeVector> &in_sh
     return lite::RET_NOT_SUPPORT;
   }
   auto prim = GetCNodePrimitive(cnode);
+  MS_CHECK_TRUE_MSG(prim != nullptr, lite::RET_NULL_PTR, "prim is nullptr!");
   auto axis = prim->GetAttr(ops::kAxis) == nullptr ? 0 : GetValue<int64_t>(prim->GetAttr(ops::kAxis));
   if (axis < 0) {
     axis += static_cast<int64_t>(dims);

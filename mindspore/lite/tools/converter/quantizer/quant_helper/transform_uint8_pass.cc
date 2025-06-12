@@ -329,6 +329,7 @@ bool TransformUint8Pass::CheckNeedDTypeTrans(const CNodePtr &cnode) {
     return false;
   }
   auto curr_quant_param_holder = GetCNodeQuantHolder(cnode);
+  MS_CHECK_TRUE_MSG(curr_quant_param_holder != nullptr, false, "curr_quant_param_holder is nullptr!");
   if (curr_quant_param_holder->get_output_quant_params().empty()) {
     return false;
   }
