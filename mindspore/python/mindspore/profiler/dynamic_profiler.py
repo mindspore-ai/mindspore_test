@@ -312,7 +312,8 @@ class DynamicProfilerMonitorBase(Callback):
                 ),
                 "on_trace_ready": tensorboard_trace_handler(
                     dir_name=prof_path,
-                    analyse_flag=args.analyse
+                    analyse_flag=args.analyse,
+                    async_mode=args.analyse_mode == "async",
                 ),
                 **args.args
             }
