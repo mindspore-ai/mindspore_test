@@ -36,7 +36,7 @@ def pow_backward_func(x, y):
     return ops.grad(pow_forward_func, (0, 1))(x, y) # pylint: disable=not-callable
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize("context_mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 @pytest.mark.parametrize("data_type", [np.float32])
