@@ -675,9 +675,10 @@ bool AddKernelGraphCompileInfo(const KernelGraphPtr &kernel_graph, const session
       const auto &cnode = node->cast<CNodePtr>();
       MS_EXCEPTION_IF_NULL(cnode);
       // Bprop cut use prim_py, no need change
-      if (auto prim = GetValueNode<PrimitivePtr>(cnode->input(kIndex0));
-          !IsPrimitiveEquals(prim, prim::kPrimBpropCut)) {
+      auto prim = GetValueNode<PrimitivePtr>(cnode->input(kIndex0));
+      if ((prim != nullptr) && !IsPrimitiveEquals(prim, prim::kPrimBpropCut)) {
         auto new_prim = std::make_shared<Primitive>(*prim);
+        MS_EXCEPTION_IF_NULL(new_prim);
         cnode->set_input(kIndex0, NewValueNode(new_prim));
       }
       kernel_graph->PostNewCNode(cnode);
@@ -691,6 +692,8 @@ bool AddKernelGraphCompileInfo(const KernelGraphPtr &kernel_graph, const session
       }
     }
   }
+
+  MS_EXCEPTION_IF_NULL(kernel_graph->output());
   auto output_node = kernel_graph->NewCNode({NewValueNode(prim::kPrimMakeTuple), kernel_graph->output()});
   MS_EXCEPTION_IF_NULL(output_node);
   AbstractBasePtrList output_abs_list{kernel_graph->output()->abstract()};
@@ -1264,9 +1267,10 @@ bool MSBackendBase::LoadBackendInfo() {
     const auto &control_nodes_ids_json = control_node_json[kControlNodeId];
     for (const auto &control_node_id : control_nodes_ids_json) {
       const auto &control_node = context.FindFrontNodeByFrontName(control_node_id.get<std::string>());
-      MS_LOG(DEBUG) << "control_node_id: " << control_node_id << " control_node: " << control_node->DebugString();
       if (control_node == nullptr) {
         MS_LOG(ERROR) << "Fail to find front control node by control_node_id: " << control_node_id << ".";
+      } else {
+        MS_LOG(DEBUG) << "control_node_id: " << control_node_id << " control_node: " << control_node->DebugString();
       }
       control_nodes_.emplace_back(control_node);
     }
@@ -1706,7 +1710,9 @@ void MSBackendBase::ConstructOutputs(const AnfNodePtr &output_node,
   auto outputs_num = AnfAlgo::GetOutputElementNum(output_node);
   // The value node uses the value to be output, to avoid the host memory of value free due to value node destruction.
   if (output_node->isa<ValueNode>()) {
-    auto value = output_node->cast<ValueNodePtr>()->value();
+    auto value_node = output_node->cast<ValueNodePtr>();
+    MS_EXCEPTION_IF_NULL(value_node);
+    auto value = value_node->value();
     MS_EXCEPTION_IF_NULL(value);
     if (value->isa<ValueSequence>()) {
       outputs->emplace_back(value);
