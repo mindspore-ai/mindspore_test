@@ -48,7 +48,7 @@ mindspore.ops.rotary_position_embedding
         * - sin
           - 同 `cos`
           - 同 `cos`
-      
+
     .. note::
         layout是BNSD，并且D是32bytes对齐、B * N > 8S 时，因为性能不好，不允许调用。
 

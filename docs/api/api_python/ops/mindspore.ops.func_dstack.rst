@@ -10,7 +10,7 @@ mindspore.ops.dstack
         - 除了第三个轴外，所有的tensor必须有相同的shape。如果是一维或二维tensor，则它们的shape必须相同。
 
     参数：
-        - **tensors** (Union(List[Tensor], Tuple[Tensor])) - 输入tensors。
+        - **tensors** (Union(List[Tensor], tuple[Tensor])) - 输入tensors。
 
     返回：
         Tensor

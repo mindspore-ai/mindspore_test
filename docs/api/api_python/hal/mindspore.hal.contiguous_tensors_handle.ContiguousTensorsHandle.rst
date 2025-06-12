@@ -6,7 +6,7 @@ mindspore.hal.contiguous_tensors_handle.ContiguousTensorsHandle
     连续内存管理器。
 
     参数：
-        - **tensor_list** (list[Tensor]，Tuple[Tensor]) - 需要申请连续内存的Tensor列表。
+        - **tensor_list** (list[Tensor], tuple[Tensor]) - 需要申请连续内存的Tensor列表。
         - **enable_mem_align** (bool，可选) - 是否启用内存对齐功能。暂不支持 ``False``。默认 ``True``。
 
     返回：
