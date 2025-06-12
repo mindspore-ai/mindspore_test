@@ -503,16 +503,16 @@ def tensor_allclose(input, other, rtol=1e-05, atol=1e-08, equal_nan=False):
 
 
 # 8 any
-def tensor_any(x, axis=None, keep_dims=False):
+def reduce_tensor_any(x, axis=None, keep_dims=False):
     if axis is None:
         axis = ()
     return any(x, axis, keep_dims)
 
 
-def deprecated_tensor_any(x, dim=None, keepdim=False):
+def tensor_any(input, dim=None, keepdim=False):
     if dim is None:
         dim = ()
-    return any(x, dim, keepdim)
+    return any(input, dim, keepdim)
 
 
 # 9 arctan2

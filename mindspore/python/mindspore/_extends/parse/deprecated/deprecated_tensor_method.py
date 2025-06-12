@@ -33,7 +33,7 @@ deprecated_tensor_method_map = {
     # 7 allclose
     "allclose": "tensor_allclose",
     # 8 any
-    "any": "tensor_any",
+    "any": "reduce_tensor_any",
     # 9 arctan2
     "arctan2": "tensor_arctan2",
     # 10 argmax

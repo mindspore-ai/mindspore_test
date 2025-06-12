@@ -1,0 +1,16 @@
+#operator any
+any:
+  args:
+    input:
+      dtype: tensor
+  returns:
+    output:
+      dtype: tensor
+  function:
+    disable: True
+  bprop_expander: False
+  dispatch:
+    enable: True
+    Ascend: AnyAscend
+    CPU: AnyCPU
+    GPU: AnyGPU

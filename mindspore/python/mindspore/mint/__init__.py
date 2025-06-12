@@ -291,7 +291,7 @@ from mindspore.ops.function.nn_func import softmax_ext
 # 118
 
 # 119
-
+from mindspore.ops.functional_overload import any
 # 120
 from mindspore.ops.auto_generate import isneginf_ext as isneginf
 # 121
@@ -488,46 +488,6 @@ from mindspore.ops.auto_generate.gen_ops_prim import equal_ext_op
 
 # 1023
 from mindspore.ops.function.array_func import unbind_ext as unbind
-
-
-def any(input, dim=None, keepdim=False):
-    r"""
-    Tests if any element in `input` evaluates to `True` along the given axes.
-
-    Args:
-        input (Tensor): The input tensor.
-        dim (Union[int, tuple(int), list(int), Tensor], optional): The dimensions to reduce. If ``None`` ,
-                all dimensions are reduced. Default ``None`` .
-        keepdim (bool, optional): Whether the output tensor has dim retained or not. Default ``False`` .
-
-    Returns:
-        Tensor
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import mindspore
-        >>> input = mindspore.tensor([[True, False], [True, True]])
-        >>>
-        >>> # case 1:  By default, mindspore.mint.any tests along all the axes.
-        >>> mindspore.mint.any(input)
-        Tensor(shape=[], dtype=Bool, value= True)
-        >>>
-        >>> # case 2: Reduces a dimension along dim 1, with keepdim False.
-        >>> mindspore.mint.any(input, dim=1)
-        Tensor(shape=[2], dtype=Bool, value= [ True,  True])
-        >>>
-        >>> # case 3: Reduces a dimension along dim (0, 1), with keepdim False.
-        >>> mindspore.mint.any(input, dim=(0,1))
-        Tensor(shape=[], dtype=Bool, value= True)
-        >>>
-        >>> # case 4: Reduces a dimension along dim [0, 1], with keepdim True.
-        >>> mindspore.mint.any(input, dim=[0,1], keepdim=True)
-        Tensor(shape=[1, 1], dtype=Bool, value=
-        [[ True]])
-    """
-    return ops.functional.any(input, dim, keepdim)
 
 
 def all(input, dim=None, keepdim=False):

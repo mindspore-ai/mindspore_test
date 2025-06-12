@@ -1,0 +1,41 @@
+any:
+  description: |
+    any(input) -> Tensor
+
+    Tests if any element in `input` evaluates to `True`.
+
+    Args:
+        input (Tensor): The input tensor.
+    
+    Returns:
+        Tensor
+    
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+    
+    Examples:
+        >>> import mindspore
+        >>> input = mindspore.tensor([[True, False], [True, True]])
+        >>> mindspore.ops.functional_overload.any(input)
+        Tensor(shape=[], dtype=Bool, value= True)
+
+    .. function:: any(input, dim, keepdim=False) -> Tensor
+
+    Tests if any element in `input` evaluates to `True` along the given axes.
+
+    Args:
+        input (Tensor): The input tensor.
+        dim (int): The dimensions to reduce.
+        keepdim (bool, optional): Whether the output tensor has dim retained or not. Default ``False`` .
+
+    Returns:
+        Tensor
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> input = mindspore.tensor([[True, False], [True, True]])
+        >>> mindspore.ops.functional_overload.any(input, dim=1)
+        Tensor(shape=[2], dtype=Bool, value= [ True,  True])

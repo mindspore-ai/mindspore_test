@@ -42,8 +42,7 @@ any:
       Tests if any element in tensor evaluates to `True` along the given axes.
   
       Args:
-          dim (Union[int, tuple(int), list(int), Tensor], optional): The dimensions to reduce. If ``None`` ,
-                all dimensions are reduced. Default ``None`` .
+          dim (int, optional): The dimensions to reduce. If ``None`` , all dimensions are reduced. Default ``None`` .
           keepdim (bool, optional): Whether the output tensor has dim retained or not. Default ``False`` .
   
       Returns:
@@ -63,12 +62,3 @@ any:
           >>> # case 2: Reduces a dimension along dim 1, with keepdim False.
           >>> x.any(dim=1)
           Tensor(shape=[2], dtype=Bool, value= [ True,  True])
-          >>>
-          >>> # case 3: Reduces a dimension along dim (0, 1), with keepdim False.
-          >>> x.any(dim=(0,1))
-          Tensor(shape=[], dtype=Bool, value= True)
-          >>>
-          >>> # case 4: Reduces a dimension along dim [0, 1], with keepdim True.
-          >>> x.any(dim=[0,1], keepdim=True)
-          Tensor(shape=[1, 1], dtype=Bool, value=
-          [[ True]])

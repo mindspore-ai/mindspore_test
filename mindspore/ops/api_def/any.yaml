@@ -1,20 +1,20 @@
 any:
-  - op_yaml: reduce_any_op.yaml
+  - op_yaml: any_op.yaml
     py_method: tensor_any
     Ascend: pyboost
     CPU: pyboost
     GPU: pyboost
-    interface: tensor
+    interface: tensor, function
+  
+  - op_yaml: any_ext_op.yaml
+    py_method: tensor_any
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: tensor, function
 
   - op_yaml: deprecated/reduce_any_method.yaml
-    py_method: tensor_any
-    Ascend: py_method
-    CPU: py_method
-    GPU: py_method
-    interface: tensor
-
-  - op_yaml: deprecated/any_method.yaml
-    py_method: deprecated_tensor_any
+    py_method: reduce_tensor_any
     Ascend: py_method
     CPU: py_method
     GPU: py_method

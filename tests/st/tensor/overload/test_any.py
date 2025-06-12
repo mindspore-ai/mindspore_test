@@ -22,11 +22,16 @@ from mindspore import Tensor
 
 class Net(nn.Cell):
     def construct(self, x, axis=(), keep_dims=False):
-        return x.any(axis, keep_dims)
+        return x.any(axis=axis, keep_dims=keep_dims)
 
 
 class Net2(nn.Cell):
-    def construct(self, x, dim=None, keepdim=False):
+    def construct(self, x):
+        return x.any()
+
+
+class Net3(nn.Cell):
+    def construct(self, x, dim, keepdim=False):
         return x.any(dim=dim, keepdim=keepdim)
 
 
@@ -43,26 +48,29 @@ def test_tensor_any(mode):
     """
     ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     net = Net()
-    net2 = Net2()
 
     x = Tensor(np.array([[True, False], [False, False]]))
     output = net(x, keep_dims=True)
-    output_2 = net2(x, keepdim=True)
-    assert np.allclose(output.asnumpy(), np.array([True]))
+    assert np.allclose(output.asnumpy(), np.array([[True]]))
     assert np.allclose(output.shape, (1, 1))
-    assert np.allclose(output_2.asnumpy(), np.array([True]))
-    assert np.allclose(output_2.shape, (1, 1))
 
     output2 = net(x, axis=0)
-    output2_2 = net2(x, dim=0)
     assert np.allclose(output2.asnumpy(), np.array([True, False]))
     assert np.allclose(output2.shape, (2,))
+
+    output3 = net(x, axis=1)
+    assert np.allclose(output3.asnumpy(), np.array([True, False]))
+    assert np.allclose(output3.shape, (2,))
+
+    output_2 = Net2()(x)
+    assert np.allclose(output_2.asnumpy(), np.array([True]))
+    assert np.allclose(output_2.shape, ())
+
+    net3 = Net3()
+    output2_2 = net3(x, dim=0)
     assert np.allclose(output2_2.asnumpy(), np.array([True, False]))
     assert np.allclose(output2_2.shape, (2,))
 
-    output3 = net(x, axis=1)
-    output3_2 = net2(x, dim=1)
-    assert np.allclose(output3.asnumpy(), np.array([True, False]))
-    assert np.allclose(output3.shape, (2,))
+    output3_2 = net3(x, dim=1)
     assert np.allclose(output3_2.asnumpy(), np.array([True, False]))
     assert np.allclose(output3_2.shape, (2,))
