@@ -416,7 +416,7 @@ bool CheckKbkSubGraphExecConditon(const std::vector<KernelGraphPtr> &graphs) {
   };
 
   // Note: Kbk sub graph mode doesn't support 'RpcSend, RpcRecv, PyExecute' currently.
-  auto IsKernelNotSupportKbkSubGraphMode = [&](const CNodePtr &kernel) {
+  auto IsKernelNotSupportKbkSubGraphMode = [&IsFallBackKernel](const CNodePtr &kernel) {
     MS_EXCEPTION_IF_NULL(kernel);
     return (IsRpcActor(kernel) || IsFallBackKernel(kernel));
   };

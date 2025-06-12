@@ -28,7 +28,7 @@ namespace cpu {
     if (ret != (status)) {                                 \
       MS_LOG(EXCEPTION) << (message);                      \
     }                                                      \
-  } while (0);
+  } while (0)
 }  // namespace cpu
 }  // namespace device
 }  // namespace mindspore

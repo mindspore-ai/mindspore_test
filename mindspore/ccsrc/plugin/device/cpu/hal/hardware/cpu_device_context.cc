@@ -615,7 +615,7 @@ void CPUKernelExecutor::PreprocessBeforeRun(const FuncGraphPtr &graph) const {
 bool CPUKernelExecutor::LaunchKernel(const CNodePtr &kernel, const std::vector<KernelTensor *> &inputs,
                                      const std::vector<KernelTensor *> &workspace,
                                      const std::vector<KernelTensor *> &outputs, KernelMod *kernel_mod,
-                                     void * /* stream*/) const {
+                                     void * /* stream */) const {
   MS_EXCEPTION_IF_NULL(kernel);
 
   const auto &profiler_inst = profiler::cpu::CPUProfiler::GetInstance();
