@@ -61,8 +61,6 @@ class ExecOrderBuilder {
   bool IsTrivialNode(const AnfNodePtr &node);
   void GetTrivialInputNode(const AnfNodePtr &node, SeenNum seen);
 
-  // If PyNative graph has is_pynative_kernel_graph_ true, means no control flow and no loop need to be checked
-  bool is_pynative_kernel_graph_{false};
   std::vector<CNodePtr> *execution_order_{nullptr};
   KernelGraph *graph_{nullptr};
   std::stack<AnfNodePtr> independent_nodes_;

@@ -633,77 +633,6 @@ void BuildSymbolEngine(const FuncGraphPtr &func_graph) {
 #endif
 }
 
-void AddGraphDynamicShapeAttr(const KernelGraphPtr &kernel_graph) {
-  MS_EXCEPTION_IF_NULL(kernel_graph);
-  if (kernel_graph->is_dynamic_shape()) {
-    return;
-  }
-
-  const auto &nodes = TopoSort(kernel_graph->output());
-  for (const auto &node : nodes) {
-    MS_EXCEPTION_IF_NULL(node);
-    if (node->isa<CNode>() && common::AnfAlgo::IsDynamicShape(node)) {
-      kernel_graph->SetGraphDynamicAttr(true);
-      break;
-    }
-  }
-}
-
-bool AddKernelGraphCompileInfo(const KernelGraphPtr &kernel_graph, const session::SessionPtr &session_ptr) {
-  MS_EXCEPTION_IF_NULL(kernel_graph);
-  MS_EXCEPTION_IF_NULL(session_ptr);
-  const auto &parameters = kernel_graph->parameters();
-  // Just have a return node or empty graph
-  if ((kernel_graph->nodes().size() - parameters.size()) < kIndex2) {
-    return false;
-  }
-  // Update parameters info
-  const auto &manager = kernel_graph->manager();
-  MS_EXCEPTION_IF_NULL(manager);
-  const auto &users = manager->node_users();
-  for (const auto &p : parameters) {
-    // Exclude parameter not used in graph, such as constant input
-    if (users.find(p) != users.end()) {
-      (void)session_ptr->CreateNewParameterFromParameter(p, kernel_graph.get());
-      kernel_graph->SetKernelInfoForNode(p);
-    }
-  }
-  const auto &nodes = TopoSort(kernel_graph->get_return());
-  for (const auto &node : nodes) {
-    MS_EXCEPTION_IF_NULL(node);
-    if (node->isa<CNode>()) {
-      const auto &cnode = node->cast<CNodePtr>();
-      MS_EXCEPTION_IF_NULL(cnode);
-      // Bprop cut use prim_py, no need change
-      auto prim = GetValueNode<PrimitivePtr>(cnode->input(kIndex0));
-      if ((prim != nullptr) && !IsPrimitiveEquals(prim, prim::kPrimBpropCut)) {
-        auto new_prim = std::make_shared<Primitive>(*prim);
-        MS_EXCEPTION_IF_NULL(new_prim);
-        cnode->set_input(kIndex0, NewValueNode(new_prim));
-      }
-      kernel_graph->PostNewCNode(cnode);
-    } else {
-      if (node->isa<ValueNode>()) {
-        session_ptr->CreateNewValueNode(node, kernel_graph.get());
-      }
-      // Kernel graph new value node will create kernel info
-      if (node->kernel_info() == nullptr) {
-        kernel_graph->SetKernelInfoForNode(node);
-      }
-    }
-  }
-
-  MS_EXCEPTION_IF_NULL(kernel_graph->output());
-  auto output_node = kernel_graph->NewCNode({NewValueNode(prim::kPrimMakeTuple), kernel_graph->output()});
-  MS_EXCEPTION_IF_NULL(output_node);
-  AbstractBasePtrList output_abs_list{kernel_graph->output()->abstract()};
-  auto abstract_tuple = std::make_shared<abstract::AbstractTuple>(output_abs_list);
-  output_node->set_abstract(abstract_tuple);
-  kernel_graph->set_output(output_node);
-  MS_LOG(INFO) << "Insert make tuple for output";
-  return true;
-}
-
 std::string GetUniqueNodeId(const AnfNodePtr &node, bool must_have_unique_name = true) {
   MS_EXCEPTION_IF_NULL(node);
   const auto &name = node->user_data<std::string>(kUniqueCacheName);
@@ -760,27 +689,6 @@ void PushTupleTensor(const VectorRef &args, const std::vector<AnfNodePtr> &param
   auto tensor_input = flatten_value[index];
   MS_EXCEPTION_IF_NULL(tensor_input);
   input_tensors->push_back(tensor_input);
-}
-
-bool GetTensorFromForwardOutputParameter(const AnfNodePtr &input_node, std::vector<tensor::TensorPtr> *input_tensors) {
-  MS_EXCEPTION_IF_NULL(input_node);
-  MS_EXCEPTION_IF_NULL(input_tensors);
-  // if input_node if from ValueNode,
-  // push Tensor of ValueNode to input_tensors.
-  if (input_node->isa<Parameter>()) {
-    auto parameter = input_node->cast<ParameterPtr>();
-    MS_EXCEPTION_IF_NULL(parameter);
-    if (parameter->has_user_data(kForwardOutput)) {
-      auto value = parameter->user_data<Value>(kForwardOutput);
-      auto tensor = value->cast<tensor::TensorPtr>();
-      MS_EXCEPTION_IF_NULL(tensor);
-      (void)input_tensors->emplace_back(tensor);
-      MS_LOG(DEBUG) << "Get forward output tensor " << tensor->ToString()
-                    << " for graph input, address:" << tensor->device_address().get();
-      return true;
-    }
-  }
-  return false;
 }
 
 bool IsEmptySequence(const AnfNodePtr &output_node, const std::vector<tensor::TensorPtr> &output_tensors,
@@ -990,63 +898,29 @@ void MSBackendBase::TransformGraphToActorDAG(const GraphCompilerInfo &graph_comp
   runtime::GraphScheduler::GetInstance().Schedule(actor_set);
 }
 
-void MSBackendBase::CompileKernelGraph(const KernelGraphPtr &kernel_graph,
-                                       const std::pair<AnfNodePtrList, AnfNodePtrList> &io_nodes,
-                                       DeviceContext *device_context) {
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto ms_execution_mode = ms_context->get_param<int>(MS_CTX_EXECUTION_MODE);
-  GraphId graph_id = graph_compiler_->CompileGraph(kernel_graph, io_nodes, device_context, device::RunMode::kKernelMode,
-                                                   ms_execution_mode == kPynativeMode);
-  CacheFuncGraphWithKernelGraphId(kernel_graph, graph_id, device_context);
-}
-
 void MSBackendBase::CompileGraph(const FuncGraphPtr &func_graph, const BackendJitConfig &backend_jit_config) {
   MS_EXCEPTION_IF_NULL(func_graph);
-  if (!func_graph->has_flag(kFlagIsPyNativeBpropKernelGraph)) {
-    uint64_t start_time = profiler::GetClockSyscnt();
-    // Split graph to segments.
-    auto ms_context = MsContext::GetInstance();
-    MS_EXCEPTION_IF_NULL(ms_context);
-    auto backend_name = ms_context->backend_policy();
-    auto &cut_list = compile::GetMsNonlinearOps();
-    auto graph_partition = std::make_shared<GraphPartition>(cut_list, backend_name);
-    MS_EXCEPTION_IF_NULL(graph_partition);
-    const auto &segments = graph_partition->Partition(func_graph);
-    (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageGraphPartition, start_time,
-                                    profiler::GetClockSyscnt(), 1);
-    MS_LOG(INFO) << "Compile graph: " << func_graph->ToString() << ", Split segments size: " << segments.size();
+  uint64_t start_time = profiler::GetClockSyscnt();
+  // Split graph to segments.
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto backend_name = ms_context->backend_policy();
+  auto &cut_list = compile::GetMsNonlinearOps();
+  auto graph_partition = std::make_shared<GraphPartition>(cut_list, backend_name);
+  MS_EXCEPTION_IF_NULL(graph_partition);
+  const auto &segments = graph_partition->Partition(func_graph);
+  (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageGraphPartition, start_time,
+                                  profiler::GetClockSyscnt(), 1);
+  MS_LOG(INFO) << "Compile graph: " << func_graph->ToString() << ", Split segments size: " << segments.size();
 
-    // Foreach the segments to compile graph.
-    for (const auto &segment : segments) {
-      CompileGraphFromSegment(segment, backend_jit_config);
-    }
-  } else {
-    auto kernel_graph = func_graph->cast<KernelGraphPtr>();
-    AddGraphDynamicShapeAttr(kernel_graph);
-    MS_EXCEPTION_IF_NULL(kernel_graph);
-    const auto &session = graph_compiler_->session_ptr();
-    MS_EXCEPTION_IF_NULL(session);
-    session->SetKernelGraphId(kernel_graph);
-    MS_LOG(INFO) << "Compile graph: " << kernel_graph->ToString() << ", kernel graph";
-    if (AddKernelGraphCompileInfo(kernel_graph, session)) {
-      kernel_graph->SetExecOrderByDefault();
-      auto context_ptr = MsContext::GetInstance();
-      MS_EXCEPTION_IF_NULL(context_ptr);
-      auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-        {context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET), device_id_});
-      MS_EXCEPTION_IF_NULL(device_context);
-      device_context->Initialize();
-      CompileKernelGraph(kernel_graph, std::make_pair(kernel_graph->inputs(), kernel_graph->outputs()), device_context);
-    }
+  // Foreach the segments to compile graph.
+  for (const auto &segment : segments) {
+    CompileGraphFromSegment(segment, backend_jit_config);
   }
 }
 
 void MSBackendBase::CompileSubGraph(const FuncGraphPtr &func_graph, const BackendJitConfig &backend_jit_config) {
-  auto root_graph = func_graph;
-  if (!func_graph->has_flag(kFlagIsPyNativeBpropKernelGraph)) {
-    root_graph = compile::WrapPrimitives(func_graph);
-  }
+  auto root_graph = compile::WrapPrimitives(func_graph);
   MS_EXCEPTION_IF_NULL(root_graph);
   auto manager = root_graph->manager();
   CompileGraph(root_graph, backend_jit_config);
@@ -1460,23 +1334,13 @@ std::vector<std::vector<tensor::TensorPtr>> MSBackendBase::GetRunGraphInputs(
   for (const auto &kernel_graph : graph_compiler_info.graphs_) {
     std::vector<tensor::TensorPtr> input_tensors;
     MS_EXCEPTION_IF_NULL(kernel_graph);
-    bool is_pynative_bprop_kernel_graph = kernel_graph->has_flag(kFlagIsPyNativeBpropKernelGraph);
     for (const auto &input_node : kernel_graph->input_nodes()) {
-      if (is_pynative_bprop_kernel_graph && GetTensorFromForwardOutputParameter(input_node, &input_tensors)) {
-        continue;
-      }
-
       auto element_pair = kernel_graph->GetElementInTupleBackendFrontIndexMap(input_node);
       if (element_pair.first) {
         PushTupleTensor(args, origin_parameters, element_pair.first, element_pair.second, &flatten_values,
                         &input_tensors);
       } else {
         const auto &front_node = kernel_graph->GetFrontAnfByBackendAnf(input_node);
-        // Use kernel graph in compile
-        if (front_node == nullptr && is_pynative_bprop_kernel_graph) {
-          PushTensor(args, origin_parameters, input_node, &input_tensors);
-          continue;
-        }
         PushTensor(args, origin_parameters, front_node, &input_tensors);
       }
     }
