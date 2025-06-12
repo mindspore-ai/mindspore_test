@@ -25,7 +25,6 @@
 #include <functional>
 
 #include "atb_speed/utils/TaskQueue.h"
-#include "atb_speed/log.h"
 
 namespace atb_speed {
 
