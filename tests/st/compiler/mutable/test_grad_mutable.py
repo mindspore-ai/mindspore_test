@@ -432,7 +432,7 @@ def test_grad_mutable_list_tensor_jit_function():
     assert compare(output, expect)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_grad_mutable_unused_tuple_tensor():
     """
     Feature: Set Constants mutable.
@@ -476,7 +476,7 @@ def test_grad_mutable_unused_tuple_tensor():
     assert compare(output, expect)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_grad_mutable_unused_list_tensor():
     """
     Feature: Set Constants mutable.
@@ -521,7 +521,7 @@ def test_grad_mutable_unused_list_tensor():
     assert compare(output, expect)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_grad_mutable_unused_dict_tensor():
     """
     Feature: Set Constants mutable.

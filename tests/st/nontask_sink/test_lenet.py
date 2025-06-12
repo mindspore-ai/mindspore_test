@@ -192,7 +192,7 @@ def test_ascend_lenet3():
     assert loss_output.asnumpy() > 0.003
 
 
-@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="onecard", essential_mark="essential")
 def test_ascend_lenet4():
     """
     Feature: Ascend kernel by kernel and Ascend VMM.
@@ -207,7 +207,7 @@ def test_ascend_lenet4():
     assert loss_output.asnumpy() > 0.003
 
 
-@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="onecard", essential_mark="essential")
 def test_ascend_lenet5():
     """
     Feature: Ascend kernel by kernel and Ascend VMM.

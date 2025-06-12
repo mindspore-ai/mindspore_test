@@ -22,22 +22,8 @@ from tests.mark_utils import arg_mark
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 
 
-<<<<<<< HEAD
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_empty_like_normal1():
-=======
-class Net(ms.nn.Cell):
-    def construct(self, x, dtype=None, device=None):
-        return mint.empty_like(x, dtype=dtype, device=device)
-
-
-@arg_mark(plat_marks=['platform_ascend'],
-          level_mark='level1',
-          card_mark='onecard',
-          essential_mark='essential')
-@pytest.mark.parametrize('mode', ['pynative', 'KBK'])
-def test_empty_like_normal1(mode):
->>>>>>> 59c461e20e5 (change st level0 to level1 according to the success rate for optimizing)
     """
     Feature: Ops.
     Description: test empty_like.

@@ -32,7 +32,7 @@ def ones_like_backward_func(input_tensor, dtype=None):
     return input_grad
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['GE', 'pynative', 'KBK'])
 def test_ones_like_normal(mode):
     """
