@@ -35,12 +35,12 @@ class MsprofTimelineCreator(BaseTimelineCreator):
         self.msprof_timeline_raw_data = []
         self.acl_to_npu_flow_dict: Dict[int, Dict[str, List[MsprofCompleteEvent]]] = {}
 
-    def create(self, msprof_timeline_data: List[Dict]) -> None:
+    def create(self, data: List[Dict]) -> None:
         """Create timeline event pools from MsProf timeline data."""
-        if not msprof_timeline_data:
+        if not data:
             return
-        self.msprof_timeline_raw_data = msprof_timeline_data
-        flow_dict, complete_event_map = self._create_base_events(msprof_timeline_data)
+        self.msprof_timeline_raw_data = data
+        flow_dict, complete_event_map = self._create_base_events(data)
         self._create_acl_to_npu_flow_dict(flow_dict, complete_event_map)
 
     def _create_base_events(self, msprof_timeline_data: List[Dict]) -> Tuple[Dict, Dict]:
