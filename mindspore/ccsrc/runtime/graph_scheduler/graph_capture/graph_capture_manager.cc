@@ -130,7 +130,8 @@ bool GraphCaptureManager::FindSupportCaptureKernelPositions(const std::vector<Ke
 
 void GraphCaptureManager::Initialize(const DeviceContext *device_context) {
   if (init_) {
-    MS_LOG(EXCEPTION) << "GraphCaptureManager has already initialized.";
+    Reset(device_context);
+    MS_LOG(INFO) << "GraphCaptureManager has already initialized.";
   }
 
   for (size_t i = 0; i < capture_graph_num_; i++) {
@@ -145,17 +146,15 @@ void GraphCaptureManager::Initialize(const DeviceContext *device_context) {
 }
 
 void GraphCaptureManager::Reset(const DeviceContext *device_context) {
-  if (capture_graph_ && capture_graph_->HasCapturedGraph()) {
-    capture_graphs_.clear();
+  capture_graphs_.clear();
 
-    for (size_t i = 0; i < capture_graph_num_; i++) {
-      capture_graphs_.push_back(device_context->device_res_manager_->CreateCaptureGraph());
-    }
+  for (size_t i = 0; i < capture_graph_num_; i++) {
+    capture_graphs_.push_back(device_context->device_res_manager_->CreateCaptureGraph());
+  }
 
-    if (!capture_graphs_.empty()) {
-      capture_graph_ = capture_graphs_.front();
-      MS_EXCEPTION_IF_NULL(capture_graph_);
-    }
+  if (!capture_graphs_.empty()) {
+    capture_graph_ = capture_graphs_.front();
+    MS_EXCEPTION_IF_NULL(capture_graph_);
   }
   if (!fixed_addrs_for_update_.empty()) {
     fixed_addrs_for_update_.clear();
