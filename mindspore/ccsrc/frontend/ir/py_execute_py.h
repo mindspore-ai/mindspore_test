@@ -157,6 +157,7 @@ class PyExecuteInitializer {
       size_t offset = 0;
       std::vector<ValuePtr> values;
       auto seq_value = value->cast_ptr<ValueSequence>();
+      MS_EXCEPTION_IF_NULL(seq_value);
       for (size_t i = 0; i < seq_value->size(); ++i) {
         auto [value, offset_inner] = ConstructInputValue((*seq_value)[i], input_abstract, input_index + offset);
         MS_EXCEPTION_IF_NULL(value);
@@ -211,6 +212,7 @@ class PyExecuteInitializer {
   static abstract::AbstractBasePtr GenerateAbstract(const py::object &output) {
     if (tensor::IsTensorPy(output)) {
       const auto &tensor = tensor::ConvertToTensor(output);
+      MS_EXCEPTION_IF_NULL(tensor);
       const auto &infer_shape = std::make_shared<abstract::Shape>(tensor->shape());
       return tensor->ToAbstract();
     } else if (py::isinstance<py::bool_>(output)) {

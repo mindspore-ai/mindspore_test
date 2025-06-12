@@ -813,9 +813,10 @@ AnfNodePtrList InsertTypeTransformOp::ProcessTupleToTupleUnfoldForTupleGetItem(c
   auto abs = GenerateAbsByOpInfer(prim::kPrimRealTupleGetItem, {input, index_input});
   MS_EXCEPTION_IF_NULL(abs);
   if (common::AnfAlgo::HasAbstractRef(node) && abs->isa<abstract::AbstractTensor>()) {
-    abs = std::make_shared<abstract::AbstractRefTensor>(
-      abs->cast<abstract::AbstractTensorPtr>(),
-      node->abstract()->cast<std::shared_ptr<abstract::AbstractRefTensor>>()->ref_key_value());
+    const auto &node_ref_abs = node->abstract()->cast<std::shared_ptr<abstract::AbstractRefTensor>>();
+    MS_EXCEPTION_IF_NULL(node_ref_abs);
+    abs = std::make_shared<abstract::AbstractRefTensor>(abs->cast<abstract::AbstractTensorPtr>(),
+                                                        node_ref_abs->ref_key_value());
   }
   MS_LOG(DEBUG) << "Abstract for RealTupleGetItem op is " << abs->ToString();
   node->set_abstract(abs);
@@ -853,12 +854,19 @@ AnfNodePtrList InsertTypeTransformOp::ProcessTupleToTensor(const FuncGraphPtr &f
   }
   // There might be nested tuples, we need to find one step further to get element's data type.
   if (data_type == kObjectTypeTuple) {
-    auto seq_abs = input->abstract();
-    MS_EXCEPTION_IF_NULL(seq_abs);
-    if (!seq_abs->isa<abstract::AbstractSequence>()) {
+    auto input_abs = input->abstract();
+    MS_EXCEPTION_IF_NULL(input_abs);
+    if (!input_abs->isa<abstract::AbstractSequence>()) {
       MS_LOG_WITH_NODE(EXCEPTION, input) << "Input " << input->DebugString() << " is not tuple output";
     }
-    data_type = seq_abs->cast<abstract::AbstractSequencePtr>()->ElementsType()[kIndex0]->type_id();
+    const auto &seq_abs = input_abs->cast<abstract::AbstractSequencePtr>();
+    MS_EXCEPTION_IF_NULL(seq_abs);
+    const auto &element_types = seq_abs->ElementsType();
+    if (element_types.size() < 1) {
+      MS_LOG(EXCEPTION) << "Invalid element type for abs:" << seq_abs->ToString();
+    }
+    MS_EXCEPTION_IF_NULL(element_types[kIndex0]);
+    data_type = element_types[kIndex0]->type_id();
     MS_LOG(DEBUG) << "Input " << input->DebugString() << " real data type is " << data_type;
   }
   auto type_id_value_node = AnfAlgo::CreateTypeIdValueNodeToKernelGraph(func_graph, data_type);

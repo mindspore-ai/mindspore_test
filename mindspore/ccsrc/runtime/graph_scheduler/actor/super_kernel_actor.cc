@@ -1941,7 +1941,7 @@ void SuperKernelActor::GetRefCountForGraphOutput(const std::vector<AnfNodePtr> &
     MS_EXCEPTION_IF_NULL(actor_iter->second);
     actor_iter->second->increase_ref_count_size_[0] += group.second.size() - 1;
     kernel_actor_to_increase_new_ref_count[actor_iter->second][0] += group.second.size() - 1;
-    MS_LOG(DEBUG) << "Add new ref count:" << group.second.size() - 1
+    MS_LOG(DEBUG) << "Add new ref count:" << (group.second.size() - 1)
                   << " for inplace group first node:" << group.second[0]->fullname_with_scope();
   }
 
