@@ -94,7 +94,7 @@ class CPUKernelExecutor : public KernelExecutor {
 
   bool LaunchKernel(const CNodePtr &kernel, const std::vector<KernelTensor *> &inputs,
                     const std::vector<KernelTensor *> &workspace, const std::vector<KernelTensor *> &outputs,
-                    KernelMod *kernel_mod, void * /*stream*/) const override;
+                    KernelMod *kernel_mod, void * /* stream */) const override;
   bool LaunchKernelHP(const CNodePtr &kernel, const std::vector<KernelTensor *> &inputs,
                       const std::vector<KernelTensor *> &workspace, const std::vector<KernelTensor *> &outputs,
                       KernelMod *kernel_mod, void *stream) const override {
