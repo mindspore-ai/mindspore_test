@@ -1252,6 +1252,8 @@ class MetaTensorData : public ItemData {
     StoreTensor(GetStubInfo(obj));
   }
 
+  ~MetaTensorData() override = default;
+
   const auto &shape() const { return shape_; }
   const auto &data_type() const { return data_type_; }
 
