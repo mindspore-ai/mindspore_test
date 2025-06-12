@@ -139,7 +139,7 @@ void ErrorManagerAdapter::TaskExceptionCallback(aclrtExceptionInfo *task_fail_in
   auto error_code = CALL_ASCEND_API(aclrtGetErrorCodeFromExceptionInfo, task_fail_info);
   auto device_id = CALL_ASCEND_API(aclrtGetDeviceIdFromExceptionInfo, task_fail_info);
   auto tid = CALL_ASCEND_API(aclrtGetThreadIdFromExceptionInfo, task_fail_info);
-  if (UCEException::IsEnableUCE() && aclrt_get_last_error != nullptr) {
+  if ((UCEException::IsEnableUCE() || UCEException::IsEnableHCCE()) && aclrt_get_last_error != nullptr) {
     auto last_error = aclrt_get_last_error(thread_level);
     auto error_type = GetErrorType(last_error);
     UCEException::GetInstance().ProcessUceError(

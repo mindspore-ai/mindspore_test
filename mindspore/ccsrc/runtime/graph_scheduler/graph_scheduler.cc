@@ -1052,8 +1052,10 @@ void GraphScheduler::RefreshContextAndThreadPool(ActorSet *const actor_set, Acto
 }
 
 void CheckUceBeforeGraphRun(ActorSet *const actor_set) {
-  if (UCEException::IsEnableUCE() || UCEException::GetInstance().enable_arf()) {
-    if (UCEException::GetInstance().get_uce_flag()) {
+  if (UCEException::IsEnableUCE() || UCEException::IsEnableHCCE() || UCEException::GetInstance().enable_arf()) {
+    if (UCEException::GetInstance().get_cce_flag()) {
+      MS_LOG(INFO) << "Restart from step after a cce error occurs.";
+    } else if (UCEException::GetInstance().get_uce_flag()) {
       MS_LOG(INFO) << "Restart from step after a uce error occurs.";
     } else if (UCEException::GetInstance().get_force_stop_flag()) {
       MS_LOG(EXCEPTION) << "ForceStopError occurs when execute.";
@@ -1131,7 +1133,7 @@ void ClearKernelActorDataForUce(ActorSet *const actor_set) {
 }
 
 void GraphScheduler::ProcessUceError(ActorSet *const actor_set) {
-  if (!(UCEException::IsEnableUCE() || UCEException::GetInstance().enable_arf())) {
+  if (!(UCEException::IsEnableUCE() || UCEException::IsEnableHCCE() || UCEException::GetInstance().enable_arf())) {
     return;
   }
 
@@ -1139,7 +1141,9 @@ void GraphScheduler::ProcessUceError(ActorSet *const actor_set) {
     if (UCEException::GetInstance().get_force_stop_flag()) {
       MS_LOG(WARNING) << "There is a ForceStop error, reset the actor state.";
     }
-    if (UCEException::GetInstance().get_uce_flag()) {
+    if (UCEException::GetInstance().get_cce_flag()) {
+      MS_LOG(WARNING) << "There is a CCE error, reset the actor state.";
+    } else if (UCEException::GetInstance().get_uce_flag()) {
       MS_LOG(WARNING) << "There is a UCE error, reset the actor state.";
     }
     MS_LOG(WARNING) << "Clear state start.";
