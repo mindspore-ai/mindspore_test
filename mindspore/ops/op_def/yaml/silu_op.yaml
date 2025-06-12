@@ -11,3 +11,4 @@ silu:
     dispatch:
         enable: True
         CPU: SiLUCPU
+        InternalOpAscend: AutoGen
