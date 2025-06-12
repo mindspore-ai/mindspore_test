@@ -17,7 +17,8 @@ import subprocess
 import shutil
 import numpy as np
 from mindspore.nn import Cell
-from mindspore.common import Tensor
+from mindspore.common import Tensor, Parameter
+from mindspore.common.lazy_inline import lazy_inline
 import mindspore.ops.operations as P
 from mindspore import ops, nn, jit, context
 from tests.mark_utils import arg_mark
@@ -140,3 +141,47 @@ def test_recompute_block_recompute2():
 
     if os.path.exists(save_graphs_path):
         shutil.rmtree(save_graphs_path)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_recompute_lazy_inline():
+    """
+    Feature: Recompute with lazyinline
+    Description: Recompute with lazyinline
+    Expectation: Run successfully.
+    """
+    class Block1(nn.Cell):
+        def __init__(self, weight_shape=(32, 32)):
+            super(Block1, self).__init__()
+            self.mul = P.MatMul()
+            self.add = P.Add()
+            self.relu = P.ReLU()
+            self.mul_weight = Parameter(Tensor(np.ones(weight_shape).astype(np.float32)), name="mul_weight")
+
+        def construct(self, x):
+            out = self.mul(x, self.mul_weight)
+            out = self.relu(out)
+            out = self.add(out, out)
+            return out
+
+    class Net(nn.Cell):
+        @lazy_inline
+        def __init__(self):
+            super(Net, self).__init__()
+            self.blocks = nn.CellList()
+            b = Block1()
+            self.blocks.append(b)
+
+        @jit(backend="ms_backend")
+        def construct(self, x):
+            out = x
+            out = self.blocks[0](out)
+            return out
+
+    net1 = Net()
+    net2 = Net()
+    net1.blocks[0].recompute()
+    x = Tensor(np.random.randint(low=0, high=64, size=(32, 32)).astype(np.float32))
+    grad1 = ops.grad(net1)(x)
+    grad2 = ops.grad(net2)(x)
+    assert np.allclose(grad1, grad2)
