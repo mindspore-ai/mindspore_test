@@ -129,8 +129,8 @@ TEST_F(TestTensor, PyArrayScalarTest) {
 
 TEST_F(TestTensor, InitScalarTest) {
   std::vector<int64_t> dimensions;
-  Tensor tensor(TypeId::kNumberTypeInt64, dimensions);
-  uint8_t *data_buf = reinterpret_cast<uint8_t *>(tensor.data_c());
+  TensorPtr tensor = tensor::empty(TypeId::kNumberTypeInt64, dimensions, device::DeviceType::kCPU);
+  uint8_t *data_buf = reinterpret_cast<uint8_t *>(tensor->data_c());
 
   int64_t num = 1;
   errno_t ret = memcpy_s(data_buf, sizeof(int64_t), &num, sizeof(int64_t));
@@ -140,19 +140,19 @@ TEST_F(TestTensor, InitScalarTest) {
   ASSERT_EQ(num, *data_buf);
 
   // Test type
-  ASSERT_EQ(TypeId::kNumberTypeInt64, tensor.data_type());
+  ASSERT_EQ(TypeId::kNumberTypeInt64, tensor->data_type());
 
   // Test dimensions
-  ASSERT_EQ(0, tensor.DataDim());
+  ASSERT_EQ(0, tensor->DataDim());
 
   // Test shape
-  ASSERT_EQ(0, tensor.shape().size());
+  ASSERT_EQ(0, tensor->shape().size());
   std::vector<int64_t> empty_shape;
-  ASSERT_EQ(empty_shape, tensor.shape());
+  ASSERT_EQ(empty_shape, tensor->shape());
 
   // Test number of elements
-  ASSERT_EQ(1, tensor.ElementsNum());
-  ASSERT_EQ(1, tensor.DataSize());
+  ASSERT_EQ(1, tensor->ElementsNum());
+  ASSERT_EQ(1, tensor->DataSize());
 }
 
 TEST_F(TestTensor, InitTensorPtrTest) {
@@ -241,7 +241,7 @@ TEST_F(TestTensor, ValueEqualTest) {
   TensorPtr t3 = tensor::empty(kInt32->type_id(), shape, device::DeviceType::kCPU);
   TensorPtr t4 = tensor::empty(kInt32->type_id(), shape, device::DeviceType::kCPU);
   ASSERT_TRUE(t3->ValueEqual(*t3));
-  ASSERT_FALSE(t3->ValueEqual(*t4));
+  ASSERT_TRUE(t3->ValueEqual(*t4));
   ASSERT_FALSE(t3->ValueEqual(*t1));
   ASSERT_FALSE(t1->ValueEqual(*t3));
 
@@ -346,17 +346,17 @@ TEST_F(TestTensor, TensorDataTest) {
   float ge_tensor_data[] = {1.1, 2.2, 3.3, 4.4, 5.5, 6.6};
 
   // Create a Tensor with wanted data type and shape
-  Tensor tensor(TypeId::kNumberTypeFloat32, std::vector<int64_t>({2, 3}));
+  TensorPtr tensor = tensor::empty(TypeId::kNumberTypeFloat32, std::vector<int64_t>({2, 3}), device::DeviceType::kCPU);
 
   // Get the writable data pointer from the tensor
-  float *me_tensor_data = reinterpret_cast<float *>(tensor.data_c());
+  float *me_tensor_data = reinterpret_cast<float *>(tensor->data_c());
 
   // Copy data from buffer to tensor's data
-  errno_t ret = memcpy_s(me_tensor_data, tensor.DataNBytes(), ge_tensor_data, sizeof(ge_tensor_data));
+  errno_t ret = memcpy_s(me_tensor_data, tensor->DataNBytes(), ge_tensor_data, sizeof(ge_tensor_data));
   ASSERT_EQ(0, ret);
 
   // Testify if the data has been copied to the tensor data
-  py::array_t<float> data = py::cast<py::array_t<float>>(TensorPybind::AsNumpy(tensor));
+  py::array_t<float> data = py::cast<py::array_t<float>>(TensorPybind::AsNumpy(*tensor));
   auto array = data.mutable_unchecked();
   for (int i = 0; i < array.shape(0); i++) {
     for (int j = 0; j < array.shape(1); j++) {
@@ -413,31 +413,29 @@ TEST_F(TestTensor, TensorWithUserData) {
 TEST_F(TestTensor, TensorSetShapeDataTest) {
   // Create a Tensor with wanted data type and shape
   std::vector<int64_t> old_shape({2, 3});
-  Tensor tensor(TypeId::kNumberTypeInt64, std::vector<int64_t>(old_shape));
-  tensor.set_shape(old_shape);
-  ASSERT_EQ(6, tensor.DataSize());
-  ASSERT_EQ(nullptr, tensor.unsafe_data());
+  TensorPtr tensor = tensor::empty(TypeId::kNumberTypeInt64, std::vector<int64_t>(old_shape), device::DeviceType::kCPU);
+  tensor->set_shape(old_shape);
+  ASSERT_EQ(6, tensor->DataSize());
+  ASSERT_NE(nullptr, tensor->unsafe_data());
 
   // Init a data buffer
   int64_t ge_tensor_data[] = {1, 2, 3, 4, 5, 6};
   // Get the writable data pointer from the tensor
-  int64_t *tensor_data = reinterpret_cast<int64_t *>(tensor.data_c());
+  int64_t *tensor_data = reinterpret_cast<int64_t *>(tensor->data_c());
   // Copy data from buffer to tensor's data
-  errno_t ret = memcpy_s(tensor_data, tensor.DataNBytes(), ge_tensor_data, sizeof(ge_tensor_data));
+  errno_t ret = memcpy_s(tensor_data, tensor->DataNBytes(), ge_tensor_data, sizeof(ge_tensor_data));
   ASSERT_EQ(0, ret);
-  ASSERT_NE(nullptr, tensor.unsafe_data());
+  ASSERT_NE(nullptr, tensor->unsafe_data());
 
   // Shape change larger
   std::vector<int64_t> large_shape({3, 4});
-  tensor.set_shape(large_shape);
-  ASSERT_EQ(12, tensor.DataSize());
-  ASSERT_EQ(nullptr, tensor.unsafe_data());
+  EXPECT_THROW(tensor->set_shape(large_shape), std::runtime_error);
 
   // Shape change litter
   std::vector<int64_t> little_shape({1, 2});
-  tensor.set_shape(little_shape);
-  ASSERT_EQ(2, tensor.DataSize());
-  ASSERT_EQ(nullptr, tensor.unsafe_data());
+  tensor->set_shape(little_shape);
+  ASSERT_EQ(2, tensor->DataSize());
+  ASSERT_NE(nullptr, tensor->unsafe_data());
 }
 
 /// Feature: Tensor offload
@@ -446,22 +444,22 @@ TEST_F(TestTensor, TensorSetShapeDataTest) {
 TEST_F(TestTensor, TensorOffloadTest) {
   // Create a Tensor with wanted data type and shape
   std::vector<int64_t> tensor_shape({2, 3});
-  Tensor tensor(TypeId::kNumberTypeInt64, tensor_shape);
-  ASSERT_EQ(6, tensor.DataSize());
-  ASSERT_EQ(nullptr, tensor.unsafe_data());
+  TensorPtr tensor = tensor::empty(TypeId::kNumberTypeInt64, tensor_shape, device::DeviceType::kCPU);
+  ASSERT_EQ(6, tensor->DataSize());
+  ASSERT_NE(nullptr, tensor->unsafe_data());
 
   // Init a data buffer
   int64_t init_data[] = {1, 2, 3, 4, 5, 6};
-  errno_t ret = memcpy_s(tensor.data_c(), tensor.DataNBytes(), init_data, sizeof(init_data));
+  errno_t ret = memcpy_s(tensor->data_c(), tensor->DataNBytes(), init_data, sizeof(init_data));
   ASSERT_EQ(0, ret);
-  ASSERT_NE(nullptr, tensor.unsafe_data());
+  ASSERT_NE(nullptr, tensor->unsafe_data());
   auto const kTmpFilePath = "./test_file_path";
-  tensor.Offload(kTmpFilePath);
-  ASSERT_EQ(tensor.GetOffloadFilePath(), kTmpFilePath);
+  tensor->Offload(kTmpFilePath);
+  ASSERT_EQ(tensor->GetOffloadFilePath(), kTmpFilePath);
 
   // Check tensor data
   int64_t load_data[] = {0, 0, 0, 0, 0, 0};
-  ret = memcpy_s(load_data, tensor.DataNBytes(), tensor.data_c(), sizeof(load_data));
+  ret = memcpy_s(load_data, tensor->DataNBytes(), tensor->data_c(), sizeof(load_data));
   ASSERT_EQ(0, ret);
   const size_t kElemNum = 6;
   for (size_t i = 0; i < kElemNum; ++i) {
