@@ -922,6 +922,7 @@ CNodePtr ParameterServerMode::CreateNodeWithInterProcessEdgeOnPServer(const std:
     new_node_inputs[i] = func_graph_->NewCNode(mock_node_inputs);
     MS_EXCEPTION_IF_NULL(new_node_inputs[i]);
     new_node_inputs[i]->set_abstract(real_input->abstract());
+    MS_EXCEPTION_IF_NULL(new_node_inputs[i]->cast<CNodePtr>());
     new_node_inputs[i]->cast<CNodePtr>()->set_fullname_with_scope(real_input->fullname_with_scope());
 
     // Set operator label for new node's inputs.
@@ -952,6 +953,7 @@ CNodePtr ParameterServerMode::CreateNodeWithInterProcessEdgeOnPServer(const std:
     common::AnfAlgo::SetNodeAttr("n", MakeValue(static_cast<int64_t>(total_inputs_number)), new_node);
     new_node->set_abstract(real_input->abstract());
   } else if (many_to_one_node_name == kConcatOpName) {
+    MS_EXCEPTION_IF_NULL(real_input->abstract());
     auto origin_abs = real_input->abstract()->cast<abstract::AbstractTensorPtr>();
     MS_EXCEPTION_IF_NULL(origin_abs);
 
@@ -1661,6 +1663,7 @@ void GraphSplitter::AddControlEdgeForProcessWithoutIndegree() {
     node_labels_[tuple_of_control_dst_nodes] = default_label_;
 
     // Add dependency to the Return node so control-edge nodes won't be optimized out.
+    MS_EXCEPTION_IF_NULL(func_graph_->output());
     AnfNodePtrList depend_inputs = {NewValueNode(prim::kPrimDepend), func_graph_->output(), tuple_of_control_dst_nodes};
     auto final_output_node = func_graph_->NewCNode(depend_inputs);
     MS_EXCEPTION_IF_NULL(final_output_node);
@@ -2081,6 +2084,7 @@ void GraphSplitter::AddDependencyBetweenSegments(const InOutDegreeList &in_out_d
     } else {
       auto make_tuple_node = func_graph_->NewCNode(send_node_tuple_inputs);
       for (auto &recv : concerned_out_degree_nodes) {
+        MS_EXCEPTION_IF_NULL(recv->cast<CNodePtr>());
         std::vector<AnfNodePtr> depend_input = {NewValueNode(prim::kPrimDepend), recv->cast<CNodePtr>()->inputs()[1],
                                                 make_tuple_node};
         auto depend = func_graph_->NewCNode(depend_input);

@@ -123,6 +123,8 @@ struct InterProcessOpEdge {
   bool operator<(const InterProcessOpEdge &e) const { return to_string() < e.to_string(); }
 
   std::string to_string() const {
+    MS_EXCEPTION_IF_NULL(src_node);
+    MS_EXCEPTION_IF_NULL(dst_node);
     return src_node->fullname_with_scope() + "_" + src_label.to_string() + "->" + dst_node->fullname_with_scope() +
            "_" + dst_label.to_string();
   }
