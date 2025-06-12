@@ -63,7 +63,7 @@ void CPUE2eDump::DumpRunIter(const KernelGraphPtr &graph, uint32_t rank_id) {
     MS_LOG(WARNING) << "Open file for saving graph global execution order failed.";
     return;
   }
-  fout << std::to_string(json_parser.cur_dump_iter()) + "\n";
+  fout << std::to_string(json_parser.cur_dump_iter()) << "\n";
   fout.close();
   ChangeFileMode(file_name, S_IRUSR);
   prev_run_iter_ = json_parser.cur_dump_iter();
