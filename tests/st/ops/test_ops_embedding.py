@@ -29,7 +29,7 @@ def embedding_func(input_x, weight, padding_idx=None, max_norm=None, norm_type=2
     return ops.embedding(input_x, weight, padding_idx, max_norm=max_norm, norm_type=norm_type)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_embedding_static_shape():
     """
     Feature: static shape of embedding.

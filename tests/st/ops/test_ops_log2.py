@@ -47,7 +47,7 @@ def log2_backward_func(x):
     return ms.grad(log2_forward_func, (0))(x)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("context_mode", ['pynative', 'KBK'])
 def test_ops_log2_normal(context_mode):
     """
