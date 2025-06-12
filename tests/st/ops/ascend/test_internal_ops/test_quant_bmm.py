@@ -65,10 +65,10 @@ class QbmmAdd(ms.nn.Cell):
         return self.add(self.dbmm(x, self.weight, self.scale, None, None), self.bias)
 
 
-def qbmm(m, k, n, trans_a=False, trans_b=False, with_outer_add=False, is_dyn=False):
+def qbmm(m, k, n, trans_a=False, trans_b=False, with_outer_add=False, is_dyn=False, mode=ms.GRAPH_MODE):
     if "ASCEND_HOME_PATH" not in os.environ:
         os.environ['ASCEND_HOME_PATH'] = "/usr/local/Ascend/latest"
-    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
+    context.set_context(mode=mode, device_target="Ascend")
     context.set_context(jit_config={"jit_level": "O0", "infer_boost": "on"})
 
     # NOTE: 在多卡并行的场景里，要控制随机种子以防多卡numpy生成不一致
@@ -116,14 +116,15 @@ def qbmm(m, k, n, trans_a=False, trans_b=False, with_outer_add=False, is_dyn=Fal
 @pytest.mark.env_onecard
 @pytest.mark.parametrize('input_shape', [(128, 2560, 5120),
                                          (1024, 1024, 1024)])
-def test_qbmm_False_True(input_shape):
+@pytest.mark.parametrize("mode", [context.GRAPH_MODE, context.PYNATIVE_MODE])
+def test_qbmm_False_True(input_shape, mode):
     """
-    Feature: testqbmm operator in graph mode
+    Feature: testqbmm operator in graph/pynative mode
     Description: testqbmm.
     Expectation: the result is correct
     """
     m, k, n = input_shape
-    qbmm(m, k, n, trans_a=False, trans_b=True)
+    qbmm(m, k, n, trans_a=False, trans_b=True, mode=mode)
 
 
 @pytest.mark.level1
