@@ -38,6 +38,7 @@ AnfNodePtr GetBpropGetter(const FuncGraphManagerPtr &manager, const CNodePtr &no
 
 AnfNodePtr GetBpropCaller(const FuncGraphManagerPtr &manager, const AnfNodePtr &bprop_getter) {
   MS_EXCEPTION_IF_NULL(manager);
+  MS_EXCEPTION_IF_NULL(bprop_getter);
   const auto &node_users = manager->node_users();
   auto iter = node_users.find(bprop_getter);
   if (iter == node_users.end()) {

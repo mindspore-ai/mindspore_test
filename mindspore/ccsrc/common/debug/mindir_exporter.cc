@@ -138,7 +138,10 @@ bool IrExportBuilder::SetAbstractFuncToAttributeProto(const abstract::AbstractBa
   MS_EXCEPTION_IF_NULL(attr_proto);
   if (abstract->isa<abstract::FuncGraphAbstractClosure>()) {
     attr_proto->set_type(mind_ir::AttributeProto_AttributeType_FUNCGRAPHCLOSURE);
-    auto func_name = abstract->cast<abstract::FuncGraphAbstractClosurePtr>()->func_graph()->ToString();
+    auto abs_func = abstract->cast<abstract::FuncGraphAbstractClosurePtr>();
+    auto func_graph = abs_func->func_graph();
+    MS_EXCEPTION_IF_NULL(func_graph);
+    auto func_name = func_graph->ToString();
     attr_proto->set_s(func_name);
   } else if (abstract->isa<abstract::PrimitiveAbstractClosure>()) {
     attr_proto->set_type(mind_ir::AttributeProto_AttributeType_PRIMITIVECLOSURE);
@@ -1379,7 +1382,9 @@ bool IrExportBuilder::SetAttributeProto(const AnfNodePtr &node, mind_ir::NodePro
 
 bool IrExportBuilder::SetTensorTypeToAttributeProto(const ValuePtr &value, mind_ir::TensorProto *tensor_proto) {
   tensor_proto->set_name("tensor0");
-  auto elem_type = value->cast<TensorTypePtr>()->element();
+  auto tensor_type = value->cast<TensorTypePtr>();
+  MS_EXCEPTION_IF_NULL(tensor_type);
+  auto elem_type = tensor_type->element();
   if (elem_type->isa<Int>()) {
     auto int_value = elem_type->cast<IntPtr>();
     auto data_type = GetMindirDataBitsIntType(int_value->nbits());

@@ -521,6 +521,7 @@ void BindAxis(const AnfNodePtr &node, const FuncGraphPtr &func_graph, const Func
       continue;
     }
     auto user_node = pair.first->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(user_node);
     MS_LOG(DEBUG) << "user_node: " << user_node->DebugString();
     if (IsPrimitiveCNode(user_node, prim::kPrimPartial) || IsPrimitiveCNode(user_node, prim::kPrimVmapStackAssign) ||
         IsPrimitiveCNode(user_node, prim::kPrimVmapUnstackAssign)) {

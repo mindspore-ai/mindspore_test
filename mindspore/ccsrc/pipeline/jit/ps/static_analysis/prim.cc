@@ -3974,7 +3974,9 @@ class ScanEvaluator : public Evaluator {
   }
 
   FuncGraphPtr CheckLoopFunc(const AbstractFunctionPtr &loop_func) {
-    const FuncGraphPtr &loop_func_node = loop_func->cast<abstract::FuncGraphAbstractClosurePtr>()->func_graph();
+    auto loop_func_ptr = loop_func->cast<abstract::FuncGraphAbstractClosurePtr>();
+    MS_EXCEPTION_IF_NULL(loop_func_ptr);
+    const FuncGraphPtr &loop_func_node = loop_func_ptr->func_graph();
     constexpr size_t loop_func_expect_input_size = 2;
     auto loop_func_params = loop_func_node->get_inputs();
     auto loop_func_input_size = loop_func_params.size();

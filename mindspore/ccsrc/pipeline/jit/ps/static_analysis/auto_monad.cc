@@ -355,11 +355,17 @@ class SccFinder {
       }
       // If all used func graphs are visited, pop it and check if it's SCC root.
       auto current_graph = current_info.graph;
-      if (*current_graph->user_data<size_t>("low") != *current_graph->user_data<size_t>("index")) {
+      auto user_low = current_graph->user_data<size_t>("low");
+      MS_EXCEPTION_IF_NULL(user_low);
+      auto user_index = current_graph->user_data<size_t>("index");
+      MS_EXCEPTION_IF_NULL(user_index);
+      if (*user_low != *user_index) {
         // Update low when pop.
         visit_stack.pop();
         auto &next_info = visit_stack.top();
-        auto min_low = std::min(*next_info.graph->user_data<size_t>("low"), *current_graph->user_data<size_t>("low"));
+        auto next_low = next_info.graph->user_data<size_t>("low");
+        MS_EXCEPTION_IF_NULL(next_low);
+        auto min_low = std::min(*next_low, *user_low);
         next_info.graph->set_user_data<size_t>("low", std::make_shared<size_t>(min_low));
         MS_LOG(DEBUG) << "Update low [" << min_low << "] for " << next_info.graph->ToString() << " by "
                       << current_graph->ToString();

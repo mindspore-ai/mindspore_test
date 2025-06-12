@@ -1065,6 +1065,7 @@ bool Parser::HandleSetAttrClassMemberForInplace(const FunctionBlockPtr &block, c
   }
   // attr_cnode: self.attr
   auto attr_cnode = attr_node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(attr_cnode);
   MS_LOG(DEBUG) << "attr cnode: " << attr_cnode->DebugString(recursive_level);
   const auto &attr_cnode_inputs = attr_cnode->inputs();
   constexpr size_t target_index = 1;

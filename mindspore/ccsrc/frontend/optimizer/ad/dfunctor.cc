@@ -581,6 +581,7 @@ AdjointPtr DFunctor::MapMorphism(const AnfNodePtr &morph) {
   }
   ScopeGuard scope_guard(morph->scope());
   auto cnode_morph = morph->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode_morph);
 
   std::vector<AnfNodePtr> inputs;
   std::vector<AdjointPtr> param_adjoints;

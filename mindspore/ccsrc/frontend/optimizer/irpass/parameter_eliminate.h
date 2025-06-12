@@ -34,6 +34,7 @@ namespace mindspore {
 namespace opt {
 namespace irpass {
 static inline void CheckSwitchCallValid(const CNodePtr &switch_call) {
+  MS_EXCEPTION_IF_NULL(switch_call);
   if (switch_call->size() > 1) {
     // Means call switch(arg1, ...) has args.
     constexpr auto recursive_count = 2;
