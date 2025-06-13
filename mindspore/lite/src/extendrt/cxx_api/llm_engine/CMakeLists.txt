@@ -7,7 +7,6 @@ add_compile_definitions(ENABLE_SECURITY)
 file(GLOB LLM_ENGINE_PLUGIN_SRC
     ${CMAKE_CURRENT_SOURCE_DIR}/llm_engine_plugin.cc
     ${CCSRC_DIR}/utils/config_manager.cc
-    ${CCSRC_DIR}/plugin/device/ascend/hal/common/ascend_utils.cc
     )
 
 add_library(llm_engine_plugin SHARED ${LLM_ENGINE_PLUGIN_SRC})

@@ -16,6 +16,7 @@
 
 #include "plugin/res_manager/ascend/collective/multi_ascend_communication_group.h"
 #include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
+#include "plugin/device/ascend/kernel/dvm/dvm_comm_info.h"
 
 namespace mindspore {
 namespace device {
@@ -45,7 +46,7 @@ bool MultiAscendCommunicationGroup::Initialize(void *root_info) {
     }
   }
 #endif
-  if (device::ascend::EnableDvmComm() && dvm_group_ != nullptr) {
+  if (graphkernel::EnableDvmComm() && dvm_group_ != nullptr) {
     if (!dvm_group_->Initialize(root_info)) {
       MS_LOG(ERROR) << "Failed to initialize DVM communication group";
       return false;
@@ -69,7 +70,7 @@ bool MultiAscendCommunicationGroup::Finalize() {
     MS_LOG(INFO) << "Successfully finalize LCCL group " << name_;
   }
 #endif
-  if (device::ascend::EnableDvmComm() && dvm_group_ != nullptr) {
+  if (graphkernel::EnableDvmComm() && dvm_group_ != nullptr) {
     if (!dvm_group_->Finalize()) {
       MS_LOG(ERROR) << "Failed to finalize DVM communication group";
       return false;
