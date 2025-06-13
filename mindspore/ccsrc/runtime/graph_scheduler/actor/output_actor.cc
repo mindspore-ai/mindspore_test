@@ -102,6 +102,8 @@ device::DeviceAddressPtr MakeTensorContiguousCallback(const DeviceSyncPtr &addre
 
 void SyncOutputFromTensor(const DeviceTensorPtr &tensor_device_address, const DeviceTensorPtr &device_tensor,
                           const AnfNodePtr &output_node) {
+  MS_EXCEPTION_IF_NULL(tensor_device_address);
+  MS_EXCEPTION_IF_NULL(device_tensor);
   if (common::IsDisableRuntimeConfig(common::kRuntimeCopyAsync)) {
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
       << "Sync device data from device tensor: " << device_tensor << ", to device tensor: " << tensor_device_address

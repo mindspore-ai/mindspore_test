@@ -807,7 +807,7 @@ uintptr_t TensorPybind::DataPtr(const TensorPtr &tensor) {
 TensorPtr TensorPybind::MoveTo(const Tensor &self, const std::string &to, bool blocking) {
   py::gil_scoped_release gil_release;
   MS_LOG(INFO) << "Try move tensor to " << to;
-  auto target_tensor = tensor::empty(self.data_type(), self.shape(), device::DeviceType::kNone);
+  auto target_tensor = tensor::empty(self.data_type(), self.shape(), device::DeviceType::kCPU);
   bool return_self = false;
   // make sure op execute end before data copy
   runtime::Pipeline::Get().WaitForward();
