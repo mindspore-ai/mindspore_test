@@ -115,6 +115,7 @@ void Summary::SummaryTensor(KernelGraph *graph) {
     auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
     MS_EXCEPTION_IF_NULL(res_manager);
     res_manager->SyncAllStreams();
+    MS_EXCEPTION_IF_NULL(tensor->device_address());
     if (!SyncCopy(tensor->device_address(), address, address->stream_id())) {
       MS_LOG(ERROR) << "Failed to sync output from device to host.";
     }

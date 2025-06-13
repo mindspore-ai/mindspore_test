@@ -176,6 +176,7 @@ void MemoryManagerActor::AllocateContinuousMemory(const std::vector<std::vector<
           device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
         kernel_tensor->set_stream_id(old_dev_addr->stream_id());
         auto new_dev_addr = kernel_tensor->device_address();
+        MS_EXCEPTION_IF_NULL(new_dev_addr);
         MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
           << "Create device tensor:" << new_dev_addr << " type:" << new_dev_addr->type_id();
         (void)SyncCopy(new_dev_addr, old_dev_addr, stream_id);
