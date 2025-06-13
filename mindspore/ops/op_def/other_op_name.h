@@ -61,6 +61,8 @@ constexpr auto kBarrierOpName = "Barrier";
 constexpr auto kMatMulAllReduceOpName = "MatMulAllReduce";
 constexpr auto kBatchISendIRecvOpName = "BatchISendIRecv";
 constexpr auto kCustomExtOpName = "CustomExt";
+constexpr auto kMoeDistributeCombine = "MoeDistributeCombine";
+constexpr auto kMoeDistributeDispatch = "MoeDistributeDispatch";
 // View op
 constexpr auto kBroadcastToViewOpName = "BroadcastToView";
 constexpr auto kTransposeExtViewOpName = "TransposeExtView";

@@ -1100,8 +1100,11 @@ void GeKernelExecutor::DoStreamAssign(
   MS_EXCEPTION_IF_NULL(ms_context);
   MS_EXCEPTION_IF_NULL(kernel_graph);
   if (ms_context->IsEnableInferBoost()) {
-    MS_LOG(INFO) << "InferBoost mode, skip assign stream.";
-    return;
+    // multi-stream is disabled by default during inference
+    if (common::GetConfigValue(common::kRuntimeConf, common::kRuntimeMultiStream).empty()) {
+      MS_LOG(INFO) << "InferBoost mode, skip assign stream.";
+      return;
+    }
   }
   MS_LOG(INFO) << "Status record: start stream assign, " << kernel_graph->ToString();
   // stream assign
