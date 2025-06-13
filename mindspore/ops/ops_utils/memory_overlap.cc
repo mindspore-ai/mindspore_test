@@ -45,7 +45,6 @@ MemOverlap IsInternalOverlap(const TensorPtr &variable_tensor) {
 // b = mint.broadcast_to(a, (3,2))
 // c = [[1, 2], [1, 2], [1, 2]]
 // d = b.copy_ext(c)
-//
 void ThrowExpectionWhenInternalOverlap(const TensorPtr &variable_tensor) {
   if (IsInternalOverlap(variable_tensor) == MemOverlap::Yes) {
     MS_LOG(EXCEPTION) << "This tensor has multi element reference to the same memory address,"

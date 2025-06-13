@@ -54,7 +54,7 @@ std::string CheckBMMNdSupported(TypeId data_type, const std::vector<ShapeVector>
   if (dim_0 < special_bmm_size || dim_1 < special_bmm_size) {
     return kOpFormat_DEFAULT;
   }
-  auto is_align = [&]() {
+  auto is_align = [&shapes, dim_0, dim_1]() {
     return (!(static_cast<uint64_t>(shapes[0][dim_0 - 1]) & 0x0000000F)) &&
            (!(static_cast<uint64_t>(shapes[0][dim_0 - 2]) & 0x0000000F)) &&
            (!(static_cast<uint64_t>(shapes[1][dim_1 - 1]) & 0x0000000F)) &&
