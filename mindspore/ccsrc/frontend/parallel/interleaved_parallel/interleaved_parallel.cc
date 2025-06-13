@@ -207,9 +207,9 @@ void MergeOpBeforeInterleaveSlice(const FuncGraphPtr &func_graph, const CNodePtr
 }
 
 void TagFineGrainedInterleavedBlockIndex(const CNodePtr &virtual_converter_end, const CNodePtr &replaced_concat) {
-  if (GetCNodePrimitive(virtual_converter_end)->HasAttr(kAttrFineGrainedInterleavedBlockIndex)) {
-    auto virtual_converter_end_prim = GetCNodePrimitive(virtual_converter_end);
-    MS_EXCEPTION_IF_NULL(virtual_converter_end_prim);
+  auto virtual_converter_end_prim = GetCNodePrimitive(virtual_converter_end);
+  if (virtual_converter_end_prim != nullptr &&
+      virtual_converter_end_prim->HasAttr(kAttrFineGrainedInterleavedBlockIndex)) {
     auto block_index = GetValue<int64_t>(virtual_converter_end_prim->GetAttr(kAttrFineGrainedInterleavedBlockIndex));
     if (std::find(fine_grain_concat_used.begin(), fine_grain_concat_used.end(), block_index) ==
         fine_grain_concat_used.end()) {
