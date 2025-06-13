@@ -235,7 +235,7 @@ def _redistribute(tensor, dst_dtensor_info):
     global REDIST_CELL_CACHE
     redist_cache_key = (f"{src_layout_info['device_matrix']}, {src_layout_info['tensor_map']} -> "
                         f"{dst_layout_info['device_matrix']}, {dst_layout_info['tensor_map']}")
-    if redist_cache_key in REDIST_CELL_CACHE.keys():
+    if redist_cache_key in REDIST_CELL_CACHE:
         logger.debug(f"redist_cache_key is {redist_cache_key}, match cache")
         redist_func = REDIST_CELL_CACHE[redist_cache_key]
     else:
