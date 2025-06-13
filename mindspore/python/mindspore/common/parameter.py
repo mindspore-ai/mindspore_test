@@ -924,13 +924,10 @@ class Parameter(Tensor_):
         incoming_tensor_is_init = isinstance(data, Tensor) and not data.has_init
         current_tensor_is_init = isinstance(self, Tensor) and not self.has_init
         if self.dtype != data.dtype:
-            if mstype.implicit_conversion_seq.get(self.dtype) < mstype.implicit_conversion_seq.get(data.dtype):
-                self._raise_type_error(data.dtype)
-            else:
-                from mindspore.ops import functional as F
-                if isinstance(data, Tensor) and data.init is not None:
-                    data.init_data()
-                data = F.cast(data, self.dtype)
+            from mindspore.ops import functional as F
+            if isinstance(data, Tensor) and data.init is not None:
+                data.init_data()
+            data = F.cast(data, self.dtype)
         if isinstance(data, Tensor) and data.has_init:
             # The parameter has been initialized, directly update by the data
             if current_tensor_is_init:
