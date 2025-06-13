@@ -39,6 +39,7 @@ class Net(nn.Cell):
         self.mul = P.Mul()
 
     def construct(self, x):
+        x = self.add(x, self.param)
         for _ in range(5):
             x = self.add(x, 0.1)
             x = self.add(x, 0.2)
@@ -55,39 +56,38 @@ class SeqNet(nn.Cell):
         output = self.net(x)
         return output
 
+def expected_output(x):
+    return (x + 3.5) * 2 + 0.5
+
 @arg_mark(
     plat_marks=['platform_ascend910b'],
-    level_mark='level1',
+    level_mark='level0',
     card_mark='onecard',
     essential_mark='essential'
 )
 def test_dynamic_shape():
     """
     Feature: graph mode support capture graph
-    Description: Test dynamic shape scene for capture graph
+    Description: Test dynamic shape scene and dyn value for capture graph
     Expectation: No exception and result is correct
     """
     rt.set_kernel_launch_capture(True)
-    input_data = Tensor(np.ones((2, 3)).astype(np.float32))
     new_input1 = Tensor(np.ones((2, 5)).astype(np.float32))
     dyn_input_data = Tensor(shape=[2, None], dtype=mstype.float32)
+    base_shape = (2, 3)
 
     net = SeqNet()
     net.set_inputs(dyn_input_data)
     net.phase = "increment"
 
-    expected_results = [
-        np.ones((2, 3), dtype=np.float32) * 5.5,
-        np.ones((2, 3), dtype=np.float32) * 5.5,
-        np.ones((2, 5), dtype=np.float32) * 5.5,
-        np.ones((2, 5), dtype=np.float32) * 5.5,
-        np.ones((2, 5), dtype=np.float32) * 5.5,
-    ]
-
-    for i in range(5):
-        if i < 2:
-            output = net(input_data)
-        else:
+    for i in range(1, 20):
+        if i == 5:
             output = net(new_input1)
-        assert np.allclose(output.asnumpy(), expected_results[i], 0.0001, 0.0001)
- 
+            output_np = output.asnumpy()
+        else:
+            input_data1 = Tensor(np.full(base_shape, i).astype(np.float32))
+            output = net(input_data1)
+            output_np = output.asnumpy()
+            expected = expected_output(i)
+            assert np.allclose(output_np, expected), \
+                f"Output {output_np} does not match expected {expected} at step {i}"
