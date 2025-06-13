@@ -346,7 +346,7 @@ def ops_one_hot_binary_case5(input_binary_data=None, output_binary_data=None):
     ops_one_hot_binary_compare(input_binary_data, output_binary_data, 8)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ["pynative", "kbk", "ge"])
 def test_ops_onehot_binary_cases(mode):
     """

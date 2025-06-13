@@ -555,7 +555,7 @@ def test_heter_control_flow_input_heter_for_assign():
     assert out[1] == 10
 
 
-@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="onecard", essential_mark="essential")
 def test_heter_inplace_add_input():
     """
     Feature: Support tensor inplace.
@@ -706,7 +706,7 @@ def test_heter_control_flow_inplace_from_entrance_actor():
     assert out == 17
 
 
-@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="onecard", essential_mark="essential")
 def test_heter_inplace_by_output():
     """
     Feature: Support tensor inplace.
@@ -799,7 +799,7 @@ def test_heter_control_flow_inplace_from_stack_actor():
     assert out == 17
 
 
-@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="onecard", essential_mark="essential")
 def test_heter_backoff_inplace_in_super_kernel_actor():
     """
     Feature: Support tensor inplace.
@@ -1005,7 +1005,7 @@ def test_inplace_parameter_multi_output():
     assert out[1] == 3
 
 
-@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="onecard", essential_mark="essential")
 def test_inplace_cnode_multi_output():
     """
     Feature: Support tensor inplace.
@@ -1231,7 +1231,7 @@ def test_cnode_inplace_nopnode2():
     assert np.all(out[1].asnumpy() == [5, 5, 5, 5])
 
 
-@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="onecard", essential_mark="essential")
 def test_heter_inplace_dynamic_shape():
     """
     Feature: Support tensor inplace.
@@ -1274,7 +1274,7 @@ def test_heter_inplace_dynamic_shape():
     assert np.all(out2.asnumpy() == [37, 37, 37])
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_cnode_execute_twice():
     """
     Feature: Support tensor inplace.
