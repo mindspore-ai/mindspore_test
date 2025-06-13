@@ -591,6 +591,7 @@ const AnfNodePtr RealInputNode(const CNodePtr cnode, size_t index) {
     MS_LOG_WITH_NODE(EXCEPTION, cnode) << "cnode inputs size: " << cnode->size() << " is less equal index: " << index;
   }
   auto input0 = cnode->input(index);
+  MS_EXCEPTION_IF_NULL(input0);
   if (!IsPrimitiveCNode(input0)) {
     return input0;
   }

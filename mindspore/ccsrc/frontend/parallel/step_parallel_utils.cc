@@ -1712,6 +1712,7 @@ AnfNodePtr GetInputNodeWithFilter(const AnfNodePtr &node,
 std::vector<std::pair<AnfNodePtr, int>> GetOutputNodesWithFilter(const AnfNodePtr &node,
                                                                  std::function<bool(const AnfNodePtr &)> filter,
                                                                  bool get_all_nodes_according_search) {
+  MS_EXCEPTION_IF_NULL(node);
   auto func_graph = node->func_graph();
   MS_EXCEPTION_IF_NULL(func_graph);
   auto manager = func_graph->manager();

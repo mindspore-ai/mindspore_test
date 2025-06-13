@@ -437,6 +437,7 @@ size_t PipelineTransformer::GetBatchAxisForInput(const AnfNodeIndexSet &input_no
     }
     for (const auto &node : strided_slice_nodes) {
       auto cnode = node->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(cnode);
       auto value = GetValueNode(cnode->input(2));
       if (value == nullptr) {
         return 0;  // simply return 0 when dynamic shape
