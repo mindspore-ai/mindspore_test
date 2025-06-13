@@ -166,7 +166,7 @@ void EnablePipelineForTupleTensor(const ValueTuplePtr &tuple) {
 }
 
 std::optional<std::vector<int64_t>> ConvertIntToIntVector(const py::object &obj) {
-  if (py::isinstance<py::bool_>(obj) || py::isinstance<py::int_>(obj)) {
+  if (py::isinstance<py::int_>(obj) && !py::isinstance<py::bool_>(obj)) {
     return std::vector<int64_t>({py::cast<int64_t>(obj)});
   }
   return std::nullopt;
@@ -198,7 +198,7 @@ Converter::Converter(ops::OpDef *op_def)
 int64_t Converter::ToBasicInt(const py::list &python_args, size_t i) {
   const py::object &obj = python_args[i];
   source_type_[i] = OP_DTYPE::DT_BEGIN;
-  if (py::isinstance<py::bool_>(obj) || py::isinstance<py::int_>(obj)) {
+  if (py::isinstance<py::int_>(obj) && !py::isinstance<py::bool_>(obj)) {
     return py::cast<int64_t>(obj);
   }
   const auto &op_arg = op_def_->args_[i];
@@ -621,7 +621,7 @@ std::optional<int64_t> ConvertTensorToInt64(const py::object &obj) {
 }
 
 std::optional<int64_t> ConvertToInt64(const py::object &obj) {
-  if (py::isinstance<py::bool_>(obj) || py::isinstance<py::int_>(obj)) {
+  if (py::isinstance<py::int_>(obj) && !py::isinstance<py::bool_>(obj)) {
     return py::cast<int64_t>(obj);
   }
   return std::nullopt;
