@@ -27,7 +27,7 @@ GRAPH_KERNEL_FLAGS=${8:-None}
 
 export HCCL_IF_BASE_PORT=$BASE_PORT
 export RANK_SIZE="$RANK_SIZE"
-export MF_PATH=${BASE_PATH}/../../mindformers
+export MF_PATH=${BASE_PATH}/../mindformers
 export PYTHONPATH=${MF_PATH}:${MF_PATH}/research/deepseek3/:${PYTHONPATH}
 export MS_DEV_DUMP_IR_PASSES="step_parallel,validate,hwopt_d_after_inline_graph"
 if [ "$CELL_REUSE" = "pp" ]; then

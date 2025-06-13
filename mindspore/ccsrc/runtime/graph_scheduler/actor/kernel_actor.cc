@@ -1031,7 +1031,7 @@ void KernelActor::SetMemInfoForRdr() {
 }
 
 void KernelActor::CopyInputDeviceTensor(KernelTensorPtr kernel_tensor, size_t input_index,
-                                        OpContext<KernelTensor> *const context) {
+                                        OpContext<KernelTensor> *const context, bool parallel_dispatch_param) {
   // The ignored input address that is not used in the kernel launch and no need copy.
   MS_EXCEPTION_IF_NULL(kernel_tensor);
   auto device_tensor = kernel_tensor->device_address().get();
@@ -1056,7 +1056,10 @@ void KernelActor::CopyInputDeviceTensor(KernelTensorPtr kernel_tensor, size_t in
       device_tensor->type_id() == real_input_info->type_id_) {
     return;
   }
-
+  if (parallel_dispatch_param) {
+    MS_LOG(EXCEPTION) << GetAID().Name()
+                      << " not support copy parameter input for parallel dispatch, input index: " << input_index;
+  }
   uint64_t start_time = 0;
   PROFILER_START(start_time);
   if (!WaitRuntimePipelineFinish(context, GetAID().Name())) {
@@ -1183,7 +1186,7 @@ void KernelActor::FetchInputDeviceTensor(OpContext<KernelTensor> *const context)
   if (data_iter != input_op_datas_.end()) {
     for (auto &input_data : data_iter->second) {
       UpdateInputDeviceTensor(input_data, context);
-      CopyInputDeviceTensor(input_data->data_, IntToSize(input_data->index_), context);
+      CopyInputDeviceTensor(input_data->data_, IntToSize(input_data->index_), context, false);
     }
   }
 
