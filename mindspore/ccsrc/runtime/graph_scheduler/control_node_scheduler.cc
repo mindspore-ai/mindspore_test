@@ -1142,6 +1142,7 @@ void ControlNodeScheduler::OptimizeDynamicRefCountForStackActor(const ActorSetPt
     }
     for (const auto &pair : stack_actor->input_data_arrow_aids()) {
       const auto &data_arrow = pair.second;
+      MS_EXCEPTION_IF_NULL(data_arrow);
       MS_LOG(DEBUG) << "to index:" << data_arrow->to_input_index_ << " for stack actor:" << stack_actor->GetAID();
       if (data_arrow == nullptr || ignore_index.find(data_arrow->to_input_index_) == ignore_index.end()) {
         continue;
@@ -2823,7 +2824,7 @@ std::map<size_t, InputInfo> GetInputName(AbstractActor *const actor, const Contr
   for (const auto &pair : input_aids) {
     MS_LOG(DEBUG) << "index:" << pair.first << " input:" << pair.second.name << " index:" << pair.second.index;
   }
-  MS_LOG(EXCEPTION) << " invalid input size:" << max_index + 1 << " for actor:" << actor->GetAID();
+  MS_LOG(EXCEPTION) << " invalid input size:" << (max_index + 1) << " for actor:" << actor->GetAID();
 }
 
 std::vector<AbstractActorPtr> InsertExecuteActor(std::vector<AbstractActor *> *actors,

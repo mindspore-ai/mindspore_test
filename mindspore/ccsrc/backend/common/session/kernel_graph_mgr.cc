@@ -655,6 +655,7 @@ void SaveNodesKernelInfoAndParamsName(const KernelGraphPtr &kg, const std::vecto
     for (auto attr : prim->attrs()) {
       if (attr.first == "func_graph") {
         auto g = attr.second->cast<FuncGraphPtr>();
+        MS_EXCEPTION_IF_NULL(g);
         AnfNodePtrList n = g->TopoSort(g->get_return());
         nodes.insert(nodes.end(), n.begin(), n.end());
       }
@@ -2228,7 +2229,9 @@ void UpdateRefForCNode(const CNodePtr &cnode) {
   }
   MS_LOG(INFO) << "Set ref to origin node:" << real_node_with_index.first->DebugString()
                << " by new cnode:" << cnode->fullname_with_scope();
-  auto ref_key = cnode->abstract()->cast<std::shared_ptr<abstract::AbstractRefTensor>>()->ref_key_value();
+  const auto &ref_abs = cnode->abstract()->cast<std::shared_ptr<abstract::AbstractRefTensor>>();
+  MS_EXCEPTION_IF_NULL(ref_abs);
+  auto ref_key = ref_abs->ref_key_value();
   auto ref_abstract = std::make_shared<abstract::AbstractRefTensor>(
     real_node_with_index.first->abstract()->cast<abstract::AbstractTensorPtr>(), ref_key);
   real_node_with_index.first->set_abstract(ref_abstract);
@@ -2840,11 +2843,12 @@ void UpdateDefaultParamForFrontParameter(const KernelGraphPtr &kernel_graph) {
                     << " front node:" << (front_node == nullptr ? "null" : front_node->DebugString());
       continue;
     }
-    if (front_parameters.find(front_node) == front_parameters.end() ||
-        front_node->cast<ParameterPtr>()->has_default()) {
+    const auto &front_parameter = front_node->cast<ParameterPtr>();
+    MS_EXCEPTION_IF_NULL(front_parameter);
+    if (front_parameters.find(front_parameter) == front_parameters.end() || front_parameter->has_default()) {
       continue;
     }
-    front_node->cast<ParameterPtr>()->set_default_param(parameter->cast<ParameterPtr>()->default_param_raw());
+    front_parameter->set_default_param(parameter->cast<ParameterPtr>()->default_param_raw());
     MS_LOG(INFO) << "After load parameter:" << parameter->DebugString()
                  << " set default value to front node:" << front_node->DebugString();
   }

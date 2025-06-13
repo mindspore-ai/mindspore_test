@@ -475,14 +475,15 @@ size_t AnfAlgo::GetOutputNumByAbstract(const AbstractBasePtr &node_abstract) {
   MS_EXCEPTION_IF_NULL(node_abstract);
   size_t result = 0;
 
-  if (!node_abstract->isa<abstract::AbstractSequence>() ||
-      node_abstract->cast<abstract::AbstractSequencePtr>()->dynamic_len() ||
-      node_abstract->cast<abstract::AbstractSequencePtr>()->dynamic_len_element_abs() != nullptr) {
+  if (!node_abstract->isa<abstract::AbstractSequence>()) {
     return 1;
   }
 
   auto tuple_abstract = node_abstract->cast<abstract::AbstractSequencePtr>();
   MS_EXCEPTION_IF_NULL(tuple_abstract);
+  if (tuple_abstract->dynamic_len() || tuple_abstract->dynamic_len_element_abs() != nullptr) {
+    return 1;
+  }
   const auto &sub_abstracts = tuple_abstract->elements();
   for (const auto &sub_abstract : sub_abstracts) {
     MS_EXCEPTION_IF_NULL(sub_abstract);
@@ -2600,15 +2601,21 @@ abstract::BaseShapePtr AnfAlgo::GetDynamicSequenceShape(const AnfNodePtr &node, 
 
 abstract::AbstractBasePtr AnfAlgo::FetchAbstractByIndex(const AbstractBasePtr &abstract, size_t index) {
   MS_EXCEPTION_IF_NULL(abstract);
-  if (!abstract->isa<abstract::AbstractSequence>() || abstract->cast<abstract::AbstractSequencePtr>()->dynamic_len()) {
+  if (!abstract->isa<abstract::AbstractSequence>()) {
     if (index != 0) {
       MS_LOG(INTERNAL_EXCEPTION) << "Invalid abstract index:" << index << " for abstract:" << abstract->ToString();
     }
     return abstract;
   }
-
   auto tuple_abstract = abstract->cast<abstract::AbstractSequencePtr>();
   MS_EXCEPTION_IF_NULL(tuple_abstract);
+  if (tuple_abstract->dynamic_len()) {
+    if (index != 0) {
+      MS_LOG(INTERNAL_EXCEPTION) << "Invalid abstract index:" << index
+                                 << " for dynamic len abstract:" << abstract->ToString();
+    }
+    return abstract;
+  }
   const auto &sub_abstracts = tuple_abstract->elements();
   size_t real_index = index;
   for (const auto &sub_abstract : sub_abstracts) {
@@ -2750,6 +2757,7 @@ void IterateFindTensor(ValuePtrList *value_list, const VectorRef &ref_list) {
 bool HasAbstractFunction(const AbstractBasePtr &abs) {
   if (abs->isa<abstract::AbstractSequence>() && !abs->isa<abstract::AbstractSparseTensor>()) {
     auto abs_seq = abs->cast<abstract::AbstractSequencePtr>();
+    MS_EXCEPTION_IF_NULL(abs_seq);
     if (abs_seq->dynamic_len()) {
       return HasAbstractFunction(abs_seq->dynamic_len_element_abs());
     }
@@ -2784,49 +2792,59 @@ bool AcceptableReturnValue(const CNodePtr &cnode, const AnfNodePtr &input0) {
 
 bool SupportInlinePartial(const AnfNodePtr &input0) {
   // inline partial
-  if (IsPrimitiveCNode(input0, prim::kPrimTupleGetItem)) {
-    auto tuple_get_node = input0->cast<CNodePtr>();
-    MS_EXCEPTION_IF_NULL(tuple_get_node);
-    auto get_from_node = tuple_get_node->input(1);
-    auto idx = common::AnfAlgo::GetTupleGetItemOutIndex(tuple_get_node);
-    MS_EXCEPTION_IF_NULL(get_from_node);
-    // tuple get item from a call subgraph output
-    if (get_from_node->isa<CNode>() && IsValueNode<FuncGraph>(get_from_node->cast<CNodePtr>()->input(0))) {
-      auto call_graph = GetValueNode<FuncGraphPtr>(get_from_node->cast<CNodePtr>()->input(0));
-      MS_EXCEPTION_IF_NULL(call_graph);
-      auto graph_out = call_graph->output();
-      MS_EXCEPTION_IF_NULL(graph_out);
-      size_t tuple_input_num = common::AnfAlgo::GetInputTensorNum(graph_out);
-      // the partial must be the last output
-      if (graph_out->isa<CNode>() && tuple_input_num == idx + 1) {
-        int partial_cnt = 0;
-        for (size_t i = 0; i < tuple_input_num; i++) {
-          auto input = graph_out->cast<CNodePtr>()->input(i + 1);
-          if (IsPrimitiveCNode(input, prim::kPrimPartial)) {
-            partial_cnt++;
-          }
-        }
-        auto partial = graph_out->cast<CNodePtr>()->input(idx + 1);
-        MS_EXCEPTION_IF_NULL(partial);
-        // we only support one partial func at the last return value now
-        if (partial_cnt != 1 || !IsPrimitiveCNode(partial, prim::kPrimPartial)) {
-          if (partial_cnt != 0) {
-            MS_LOG(INFO) << "Partial func cnt: " << partial_cnt
-                         << ", last return value: " << partial->fullname_with_scope();
-          }
-          return false;
-        }
-        auto partial_inputs = partial->cast<CNodePtr>()->inputs();
-        // the input of partial can't be FuncGraph/Partial
-        bool has_illegal_input = std::any_of(
-          partial_inputs.begin() + kPartialMinInputSize, partial_inputs.end(), [](const AnfNodePtr &partial_input) {
-            return IsValueNode<FuncGraph>(partial_input) || IsPrimitiveCNode(partial_input, prim::kPrimPartial);
-          });
-        return !has_illegal_input;
-      }
+  if (!IsPrimitiveCNode(input0, prim::kPrimTupleGetItem)) {
+    return false;
+  }
+  auto tuple_get_node = input0->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(tuple_get_node);
+  auto get_from_node = tuple_get_node->input(1);
+  auto idx = common::AnfAlgo::GetTupleGetItemOutIndex(tuple_get_node);
+  MS_EXCEPTION_IF_NULL(get_from_node);
+  // tuple get item from a call subgraph output
+  if (!get_from_node->isa<CNode>()) {
+    return false;
+  }
+  const auto &get_from_cnode = get_from_node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(get_from_cnode);
+  if (!IsValueNode<FuncGraph>(get_from_cnode->input(0))) {
+    return false;
+  }
+  auto call_graph = GetValueNode<FuncGraphPtr>(get_from_cnode->input(0));
+  MS_EXCEPTION_IF_NULL(call_graph);
+  auto graph_out = call_graph->output();
+  MS_EXCEPTION_IF_NULL(graph_out);
+  size_t tuple_input_num = common::AnfAlgo::GetInputTensorNum(graph_out);
+  // the partial must be the last output
+  if (!graph_out->isa<CNode>() || tuple_input_num != idx + 1) {
+    return false;
+  }
+  const auto &graph_out_cnode = graph_out->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(graph_out_cnode);
+  int partial_cnt = 0;
+  for (size_t i = 0; i < tuple_input_num; i++) {
+    auto input = graph_out_cnode->input(i + 1);
+    if (IsPrimitiveCNode(input, prim::kPrimPartial)) {
+      partial_cnt++;
     }
   }
-  return false;
+  auto partial = graph_out_cnode->input(idx + 1);
+  MS_EXCEPTION_IF_NULL(partial);
+  // we only support one partial func at the last return value now
+  if (partial_cnt != 1 || !IsPrimitiveCNode(partial, prim::kPrimPartial)) {
+    if (partial_cnt != 0) {
+      MS_LOG(INFO) << "Partial func cnt: " << partial_cnt << ", last return value: " << partial->fullname_with_scope();
+    }
+    return false;
+  }
+  const auto &partial_cnode = partial->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(partial_cnode);
+  auto partial_inputs = partial_cnode->inputs();
+  // the input of partial can't be FuncGraph/Partial
+  bool has_illegal_input = std::any_of(
+    partial_inputs.begin() + kPartialMinInputSize, partial_inputs.end(), [](const AnfNodePtr &partial_input) {
+      return IsValueNode<FuncGraph>(partial_input) || IsPrimitiveCNode(partial_input, prim::kPrimPartial);
+    });
+  return !has_illegal_input;
 }
 }  // namespace
 
@@ -2846,6 +2864,7 @@ ValuePtrList AnfAlgo::TransformVectorRefToMultiValue(const VectorRef &base_ref) 
 }
 
 bool AnfAlgo::HasIncorporateCallNode(const CNodePtr &cnode) {
+  MS_EXCEPTION_IF_NULL(cnode);
   if (!IsValueNode<Primitive>(cnode->input(0))) {  // If cnode is a call node.
     auto input0 = cnode->input(0);
     if (IsPrimitiveCNode(input0, prim::kPrimSwitch) || IsPrimitiveCNode(input0, prim::kPrimSwitchLayer) ||
@@ -2885,10 +2904,13 @@ bool AnfAlgo::IsDynamicGraph(const FuncGraphPtr &func_graph) {
         break;
       }
       // Dynamic len sequence.
-      if (node->abstract()->isa<abstract::AbstractSequence>() &&
-          node->abstract()->cast<abstract::AbstractSequencePtr>()->dynamic_len()) {
-        dynamic_node = node;
-        break;
+      if (node->abstract()->isa<abstract::AbstractSequence>()) {
+        const auto &seq_abs = node->abstract()->cast<abstract::AbstractSequencePtr>();
+        MS_EXCEPTION_IF_NULL(seq_abs);
+        if (seq_abs->dynamic_len()) {
+          dynamic_node = node;
+          break;
+        }
       }
       // PyExecute node exist
       if (IsPrimitiveCNode(node, prim::kPrimPyExecute)) {

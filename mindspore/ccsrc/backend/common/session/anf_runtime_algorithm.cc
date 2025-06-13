@@ -2167,6 +2167,7 @@ TypeId AnfRuntimeAlgorithm::GetOutputObjectType(const AnfNodePtr &node, size_t o
   auto abstract = node->abstract();
   if (abstract->isa<AbstractTuple>()) {
     auto tuple_abs = abstract->cast<abstract::AbstractTuplePtr>();
+    MS_EXCEPTION_IF_NULL(tuple_abs);
     auto items = tuple_abs->elements();
     MS_EXCEPTION_IF_CHECK_FAIL(output_idx < items.size(), "invalid output_idx");
     return AnfAlgo::GetAbstractObjectType(items[output_idx]);
@@ -2468,6 +2469,7 @@ tensor::TensorPtr AnfRuntimeAlgorithm::SequenceToTensor(const ValuePtr &value) {
   }
 
   const auto &sequence_value = value->cast<ValueSequencePtr>();
+  MS_EXCEPTION_IF_NULL(sequence_value);
   const auto &values = sequence_value->value();
   if (values.empty()) {
     auto tensor = std::make_shared<tensor::Tensor>();
@@ -2924,7 +2926,7 @@ std::string AnfRuntimeAlgorithm::GetValueByDeviceAddress(DeviceAddress *const de
     for (size_t i = 0; is_vaild_index(i, size / kFloat16TypeSize); ++i) {
       float fp32 = 0;
       uint32_t val = static_cast<uint32_t>((reinterpret_cast<uint16_t *>(buf))[i]) << 16;
-      std::memcpy(&fp32, &val, sizeof(float));
+      memcpy_s(&fp32, sizeof(float), &val, sizeof(float));
       value += std::to_string(fp32);
       value += ", ";
     }
