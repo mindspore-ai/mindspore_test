@@ -363,6 +363,7 @@ TypeId Tensor::set_data_type(TypeId data_type) {
       device_sync_ = cpu_tensor->device_address();
     }
     auto new_dtype_address = MakeDeviceAddress(data_type, shape_, true);
+    MS_EXCEPTION_IF_NULL(new_dtype_address);
     if (!SyncCopy(new_dtype_address, device_sync_, device_sync_->stream_id())) {
       MS_LOG(EXCEPTION) << "Sync copy failed";
     }
@@ -523,6 +524,7 @@ TensorPtr Tensor::cpu() const {
     return std::make_shared<Tensor>(data_type_, shape_, device_address);
   }
   auto dst = MakeDeviceAddress(data_type_, shape_, true);
+  MS_EXCEPTION_IF_NULL(dst);
   SyncCopy(dst, device_address, device_address->stream_id());
   return std::make_shared<Tensor>(data_type_, shape_, dst);
 }

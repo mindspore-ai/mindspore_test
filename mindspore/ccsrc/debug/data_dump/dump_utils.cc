@@ -241,6 +241,7 @@ bool AscendDumpMemToFile(const device::DeviceAddress &addr, const std::string &f
     auto clone_device_address = res_manager->CreateDeviceAddress(
       addr.GetMutablePtr(), addr.GetSize(), addr.GetShapeVector(), kernel::GetFormatFromStrToEnum(addr.format()),
       addr.type_id(), addr.device_name(), addr.device_id(), addr.stream_id());
+    MS_EXCEPTION_IF_NULL(out_tensor->device_address());
     ret = SyncCopy(out_tensor->device_address(), clone_device_address, addr.stream_id());
     if (!ret) {
       MS_LOG(ERROR) << "Copy device mem to host failed";
