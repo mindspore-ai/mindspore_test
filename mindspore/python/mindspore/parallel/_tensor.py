@@ -908,8 +908,8 @@ def _infer_pp_op_map(from_layout, to_layout, self_rank):
     diff_rank_id = [
         rank_id for rank_id in to_rank_list if rank_id not in from_rank_list]
     end_stage = from_dev_num_in_stage * (current_rank_stage_id + 1)
-    rank_pos_in_stage = [rank_id for rank_id in range(from_dev_num_in_stage * current_rank_stage_id,
-                                                      end_stage)].index(self_rank)
+    start_stage = from_dev_num_in_stage * current_rank_stage_id
+    rank_pos_in_stage = [rank_id for rank_id in range(start_stage, end_stage)].index(self_rank)
     root_idx = from_rank_list[rank_pos_in_stage]
     broadcast_rank_list = [root_idx]
     while rank_pos_in_stage < len(diff_rank_id):
