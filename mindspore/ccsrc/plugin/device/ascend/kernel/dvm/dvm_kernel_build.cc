@@ -29,7 +29,6 @@
 #include "mindspore/ops/op_def/other_ops.h"  // collective communication operations
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
 #include "backend/common/graph_kernel/graph_kernel_helper.h"
-#include "plugin/device/ascend/hal/common/ascend_utils.h"
 #include "plugin/res_manager/ascend/collective/dvm_collective_comm_lib.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"

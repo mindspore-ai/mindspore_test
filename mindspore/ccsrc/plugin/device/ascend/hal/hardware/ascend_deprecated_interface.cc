@@ -21,7 +21,6 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/pytypes.h"
 #include "plugin/res_manager/ascend/mbuf_manager/tensorprint_utils.h"
-#include "plugin/device/ascend/hal/common/ascend_utils.h"
 #include "plugin/device/ascend/hal/profiler/parallel_strategy_profiling.h"
 #include "plugin/res_manager/ascend/mbuf_manager/tensorsummary_utils.h"
 #include "plugin/res_manager/ascend/mbuf_manager/tensordump_utils.h"

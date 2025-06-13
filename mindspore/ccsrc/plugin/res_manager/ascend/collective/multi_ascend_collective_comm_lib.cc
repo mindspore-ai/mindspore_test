@@ -17,6 +17,7 @@
 #include "plugin/res_manager/ascend/collective/multi_ascend_collective_comm_lib.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
+#include "plugin/device/ascend/kernel/dvm/dvm_comm_info.h"
 
 namespace mindspore {
 namespace device {
@@ -87,7 +88,7 @@ bool MultiAscendCollectiveCommLib::Initialize(uint32_t global_rank, uint32_t glo
     MS_LOG(INFO) << "Successfully initialize LCCL.";
   }
 #endif
-  if (device::ascend::EnableDvmComm()) {
+  if (graphkernel::EnableDvmComm()) {
     dvm_collective_comm_lib_ = &DvmCollectiveCommLib::GetInstance();
     MS_EXCEPTION_IF_NULL(dvm_collective_comm_lib_);
     dvm_collective_comm_lib_->Initialize(global_rank, global_rank_size, local_rank_id);
@@ -115,7 +116,7 @@ bool MultiAscendCollectiveCommLib::DestroyCommunicationGroup(const std::string &
     MS_LOG(INFO) << "Successfully destroy LCCL communication group " << group_name;
   }
 #endif
-  if (device::ascend::EnableDvmComm() && dvm_comm_enabled_groups.find(group_name) != dvm_comm_enabled_groups.end()) {
+  if (graphkernel::EnableDvmComm() && dvm_comm_enabled_groups.find(group_name) != dvm_comm_enabled_groups.end()) {
     RETURN_IF_FALSE_WITH_LOG(dvm_collective_comm_lib_->DestroyCommunicationGroup(group_name),
                              "Failed to destroy DVM communication group " + group_name);
     dvm_comm_enabled_groups.erase(group_name);
@@ -164,7 +165,7 @@ bool MultiAscendCollectiveCommLib::CreateCommunicationGroup(const std::string &g
     MS_LOG(INFO) << "Successfully create LCCL communication group " << group_name;
   }
 #endif
-  if (device::ascend::EnableDvmComm()) {
+  if (graphkernel::EnableDvmComm()) {
     RETURN_IF_FALSE_WITH_LOG(
       dvm_collective_comm_lib_->CreateCommunicationGroup(group_name, group_ranks, local_group_rank, local_group_size),
       "Failed to create DVM communication group" + group_name);

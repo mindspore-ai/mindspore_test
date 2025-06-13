@@ -19,12 +19,47 @@
 #include <unordered_set>
 
 #include "ir/anf.h"
+#include "ir/primitive.h"
+#include "utils/ms_context.h"
 #include "include/common/utils/utils.h"
+#include "backend/common/graph_kernel/graph_kernel_flags.h"
 #include "plugin/res_manager/ascend/collective/multi_ascend_collective_comm_lib.h"
 
 namespace mindspore {
 namespace graphkernel {
-bool DvmCommInfo::EnableComm() { return device::ascend::EnableDvmComm(); }
+bool EnableDvmComm() {
+  // There are 2 requirements for enabling collective communication in DVM
+  // 1. Jit level is set to O1
+  // 2. At least one of the collective communication primitives is included in `enable_cluster_ops` or
+  // `enable_cluster_ops_only` of graph kernel flags
+  auto ascend_soc_version = MsContext::GetInstance()->ascend_soc_version();
+  if (ascend_soc_version != "ascend910b") {
+    return false;
+  }
+
+  const auto &jit_level = MsContext::GetInstance()->GetJitLevel();
+  if (jit_level != "O1") {
+    return false;
+  }
+  const auto &gk_flags = graphkernel::GraphKernelFlags::GetInstance();
+  const auto &enable_cluster_ops = gk_flags.enable_cluster_ops;
+  const auto &enable_cluster_ops_only = gk_flags.enable_cluster_ops_only;
+  auto check_func = [](const std::string &op) {
+    return op == "AllReduce" || op == "AllGather" || op == "ReduceScatter";
+  };
+  if (std::any_of(enable_cluster_ops.begin(), enable_cluster_ops.end(), check_func)) {
+    return true;
+  }
+  if (std::any_of(enable_cluster_ops_only.begin(), enable_cluster_ops_only.end(), check_func)) {
+    return true;
+  }
+  return false;
+}
+
+bool DvmCommInfo::EnableComm() {
+  static bool enable_comm = EnableDvmComm();
+  return enable_comm;
+}
 
 bool DvmCommInfo::IsTargetCommOp(const AnfNodePtr node) {
   auto prim = GetCNodePrimitive(node);

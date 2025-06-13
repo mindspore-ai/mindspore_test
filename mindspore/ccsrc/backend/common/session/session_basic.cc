@@ -409,7 +409,6 @@ BaseRef SessionBasic::CreateNodeOutputTensors(const AnfNodePtr &anf, const Kerne
 
 void SessionBasic::InitExecutor(const std::string &device_name, uint32_t device_id) {
   device_id_ = device_id;
-  context_ = std::make_shared<Context>(device_name, device_id);
   executor_ = ExecutorManager::Instance().GetExecutor(device_name, device_id);
 }
 

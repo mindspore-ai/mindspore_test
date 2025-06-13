@@ -24,7 +24,6 @@
 
 #include "utils/file_utils.h"
 #include "kernel/framework_utils.h"
-#include "plugin/device/ascend/hal/common/ascend_utils.h"
 
 namespace mindspore {
 namespace kernel {

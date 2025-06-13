@@ -24,7 +24,6 @@
 #include <set>
 #include "utils/hash_map.h"
 #include "backend/common/session/kernel_graph_mgr.h"
-#include "backend/common/session/session_context.h"
 #include "include/backend/kernel_graph.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
@@ -98,7 +97,7 @@ class Executor;
 class BACKEND_COMMON_EXPORT SessionBasic : public KernelGraphMgr, public std::enable_shared_from_this<SessionBasic> {
  public:
   using KernelGraphMgr::ConstructKernelGraph;
-  SessionBasic() : context_(nullptr), summary_callback_(nullptr), device_id_(0) {
+  SessionBasic() : summary_callback_(nullptr), device_id_(0) {
 #if defined(ENABLE_DEBUGGER) && !defined(_WIN32) && !defined(_WIN64)
     debugger_ = nullptr;
 #endif
@@ -268,7 +267,6 @@ class BACKEND_COMMON_EXPORT SessionBasic : public KernelGraphMgr, public std::en
   virtual std::string GetCommWorldGroup() { return std::string(); }
   void GetConstValueDepend(const CNodePtr &cnode, std::set<int64_t> *const_input_attr_index) const;
   mindspore::HashMap<GraphInfo, std::shared_ptr<KernelGraph>> run_op_graphs_;
-  std::shared_ptr<Context> context_;
   CallBackFunc summary_callback_;
   uint32_t device_id_;
   // rank id of physical device
