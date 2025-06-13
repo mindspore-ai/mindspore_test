@@ -1,7 +1,7 @@
 mindspore.Tensor.remainder\_
 ============================
 
-.. py:method:: mindspore.Tensor.remainder_(other)
+.. py:method:: mindspore.Tensor.remainder_(other) -> Tensor
 
     逐元素计算 `self` 除以 `other` 后的余数。结果与除数 `other` 同号且绝对值小于除数的绝对值。
 
@@ -18,7 +18,7 @@ mindspore.Tensor.remainder\_
         - 当 `self` 和 `other` 具有不同的shape时， `other` 必须能向 `self` 广播。
 
     参数：
-        - **other** (Union[Tensor, number, bool]) - 除数为数值型，或bool，或数据类型为数值型或bool的Tensor。
+        - **other** (Union[Tensor, number, bool]) - 除数为数值型、bool，或者数据类型为数值型或bool的Tensor。
 
     返回：
         Tensor，shape与 `self` 的shape相同，数据类型和 `self` 的数据类型相同。
