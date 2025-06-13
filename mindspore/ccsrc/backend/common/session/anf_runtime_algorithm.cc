@@ -2022,7 +2022,7 @@ bool AnfRuntimeAlgorithm::IsNodeSupportKernelSelectBackoff(const AnfNodePtr &nod
   if (graph == nullptr) {
     return false;
   }
-  if (graph->is_from_single_op() || graph->has_flag(kFlagIsPyNativeBpropKernelGraph)) {
+  if (graph->is_from_single_op()) {
     MS_LOG(INFO) << "The pynative single op does not support the kernel backoff ability for graph:"
                  << graph->graph_id();
     return false;
