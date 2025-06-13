@@ -43,9 +43,11 @@ bool MoveToD2H(const tensor::TensorPtr &src_tensor, const DeviceAddressPtr &src_
       device::ResKey{src_device_ptr->GetDeviceType(), src_device_ptr->device_id()});
     MS_EXCEPTION_IF_NULL(res_manager);
     (void)res_manager->SyncAllStreams();
+    MS_EXCEPTION_IF_NULL(dst_tensor->device_address());
     ret = SyncCopy(dst_tensor->device_address(), src_device_ptr, src_device_ptr->stream_id());
   } else {
     status = "AsyncDeviceToHost";
+    MS_EXCEPTION_IF_NULL(dst_tensor->device_address());
     ret = AsyncCopy(dst_tensor->device_address(), src_device_ptr, src_device_ptr->stream_id());
   }
   if (!ret) {
