@@ -73,18 +73,11 @@ static const std::unordered_map<std::string, bool (GraphJitConfig::*)(PyObject *
   {"recapture_loop_body", &GraphJitConfig::SetBool<GraphJitConfig::kReCaptureLoopBody>},
 };
 
-static const std::unordered_map<std::string, GraphJitConfig::LogConfig> key_to_log_map = {
-  {"print_after_all", GraphJitConfig::kAll},
-  {"print_bytecode", GraphJitConfig::kBytecode},
-  {"print_guard", GraphJitConfig::kGuard},
-  {"LOG_GRAPH_BREAK", GraphJitConfig::kGraphBreak},
-};
-
-static const std::unordered_map<std::string, GraphJitConfig::LogConfig> log_map = {
-  {"all", GraphJitConfig::kAll},
-  {"bytecode", GraphJitConfig::kBytecode},
-  {"guard", GraphJitConfig::kGuard},
-  {"graph_break", GraphJitConfig::kGraphBreak},
+static const std::unordered_map<std::string, LogConfig> key_to_log_map = {
+  {"print_after_all", LogConfig::kAll},
+  {"print_bytecode", LogConfig::kBytecode},
+  {"print_guard", LogConfig::kGuard},
+  {"LOG_GRAPH_BREAK", LogConfig::kGraphBreak},
 };
 
 GraphJitConfig::GraphJitConfig() : int_conf{0}, bool_conf{false} {
@@ -283,7 +276,7 @@ void GraphJitConfig::Update(const py::object &c) {
                         << "' has been deprecated. Please use the "
                            "environment variable 'MS_JIT_BYTECODE_LOGS' instead. For more details, please refer to "
                            "https://www.mindspore.cn/docs/en/master/api_python/env_var_list.html.";
-        log_conf_[log_iter->second] = value;
+        g_pijit_log_conf[static_cast<int>(log_iter->second)] = value;
         continue;
       }
     }
@@ -304,9 +297,9 @@ void GraphJitConfig::Update(const py::object &c) {
   }
 
   for (const auto &t : tokens) {
-    auto it = log_map.find(t);
-    if (it != log_map.end()) {
-      log_conf_[it->second] = true;
+    auto it = g_pijit_log_map.find(t);
+    if (it != g_pijit_log_map.end()) {
+      g_pijit_log_conf[static_cast<int>(it->second)] = true;
       MS_LOG(DEBUG) << it->first << "=true";
     }
   }
