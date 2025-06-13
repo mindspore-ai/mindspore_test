@@ -663,8 +663,8 @@ NodePtr ScatterOrTensorScatterElements(BpropBuilder *ib, const NodePtr &input, c
   auto dim_val = dim->BuildValue();
   if (!IsValueKnown(dim_val)) {
     NodePtr dx_zeros = ib->Zeros(input);
-    auto dx = ib->Emit("Scatter", {dx_zeros, dim, index, src, ib->EmitValue(MakeValue<int64_t>(0))});
-    return dx;
+    (void)ib->Emit("InplaceScatterSrc", {dx_zeros, dim, index, src});
+    return dx_zeros;
   }
   auto input_shape = ib->GetShape(input);
   if (input_shape.size() == 0) {
@@ -675,12 +675,12 @@ NodePtr ScatterOrTensorScatterElements(BpropBuilder *ib, const NodePtr &input, c
     auto scatter_zero_dim_impl = [&input, &dim, &index, &src, &reduce](Emitter *e) -> NodePtrList {
       return {ScatterZeroDim(e, input, dim, index, src, reduce)};
     };
-    auto scatter_impl = [&input, &dim, &index, &src, &reduce](Emitter *e) -> NodePtrList {
-      return {e->Emit("Scatter", {input, dim, index, src, reduce})};
+    auto scatter_impl = [&input, &dim, &index, &src](Emitter *e) -> NodePtrList {
+      return {e->Emit("InplaceScatterSrc", {input, dim, index, src})};
     };
     return ib->Conditional(is_zero_dim_cond, scatter_zero_dim_impl, scatter_impl);
   }
-  return ib->Emit("Scatter", {input, dim, index, src, reduce});
+  return ib->Emit("InplaceScatterSrc", {input, dim, index, src});
 }
 
 NodePtr ArgminOrArgmaxGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr &axis, const NodePtr &keep_dims,

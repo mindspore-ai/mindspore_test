@@ -704,12 +704,12 @@ inline NodePtr ReduceExtOpGetMask(BpropBuilder *ib, const NodePtr &x, const Node
 
 inline NodePtr ReduceExtOpGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr &out, const NodePtr &dout) {
   auto mask = ReduceExtOpGetMask(ib, x, out);
-  auto x_zeros = ib->Zeros(x);
+  auto out_grad = ib->Zeros(x);
   auto mask_sum = ib->SumExt(mask, ib->EmitValue(kNone), ib->Value(false), ib->EmitValue(kNone));
   auto grad_div_mask_sum = ib->Div(dout, ib->Cast(mask_sum, ib->GetDtype(dout)));
   grad_div_mask_sum = ib->Reshape(ib->Cast(grad_div_mask_sum, ib->GetDtype(x)), ShapeVector{});
-  auto dx = ib->MaskedFill(x_zeros, mask, grad_div_mask_sum);
-  return {dx};
+  (void)ib->Emit("InplaceMaskedFillTensor", {out_grad, mask, grad_div_mask_sum});
+  return {out_grad};
 }
 
 class DiagonalShapeCalc : public ShapeCalcFunctor {
