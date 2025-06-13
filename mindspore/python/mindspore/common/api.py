@@ -584,7 +584,8 @@ class _JitExecutor:
         The result of pipeline running in graph mode.
     """
 
-    def __init__(self, fn, ms_create_time, input_signature=None, obj=None, jit_config=None, dynamic=0):
+    def __init__(self, fn, ms_create_time, input_signature=None, obj=None, jit_config=None, dynamic=0,
+                 cell_cache_key_extend=''):
         init_pipeline()
         if not isinstance(fn, (types.FunctionType, types.MethodType)):
             raise RuntimeError('fn {} is not function or method'.format(fn))
@@ -604,6 +605,7 @@ class _JitExecutor:
         self._compile_args = None
         self._enable_auto_dynamic = dynamic == 1
         self.jit_config_dict = jit_config.jit_config_dict if jit_config else None
+        self._cell_cache_key_extend = cell_cache_key_extend
 
     def _predict(self, *args, **kwargs):
         """Dedicated routine for predict."""
@@ -737,6 +739,8 @@ class _JitExecutor:
         phase = generate_name + '.' + str(key)
 
         update_auto_dynamic_shape_phase_with_check_input_signature(compile_args, key_id, phase, self.input_signature)
+
+        phase = phase + self._cell_cache_key_extend
 
         if phase in ms_compile_cache and self._graph_executor.has_compiled(phase) and not parameter_hook_updated():
             # Release resource should be released when CompileInner won't be executed, such as cur_convert_input_
@@ -1028,20 +1032,22 @@ def _check_options(options, backend):
         _check_option_value(option, value)
 
 
-def _jit_ast(hash_obj, dynamic, jit_config):
+def _jit_ast(hash_obj, dynamic, jit_config, jit_graph_name):
     """Return the wrapped function for ast mode jit."""
     def wrap_func(func):
         nonlocal hash_obj
         if hasattr(func, "construct"):
             if isinstance(func, ms.nn.Cell):
                 # Bound the cell object to get the self arg.
-                return types.MethodType(_jit_ast(hash_obj, dynamic, jit_config)(func.construct.__func__), func)
+                return types.MethodType(_jit_ast(
+                    hash_obj, dynamic, jit_config, func._jit_graph_name)(func.construct.__func__), func)
             if isinstance(func, type) and issubclass(func, ms.nn.Cell):
-                func.construct = _jit_ast(hash_obj, dynamic, jit_config)(func.construct)
+                func.construct = _jit_ast(
+                    hash_obj, dynamic, jit_config, '')(func.construct)
             return func
 
         if isinstance(func, types.MethodType):
-            return types.MethodType(_jit_ast(hash_obj, dynamic, jit_config)(func.__func__), func.__self__)
+            return types.MethodType(_jit_ast(hash_obj, dynamic, jit_config, '')(func.__func__), func.__self__)
 
         if not isinstance(func, types.FunctionType):
             logger.warning(f"The func should be function, method or cell instance/class, but got {func}")
@@ -1069,7 +1075,11 @@ def _jit_ast(hash_obj, dynamic, jit_config):
                 else:
                     setattr(func, "amp_strategy", get_curr_amp_strategy())
 
-            jit_executor = _JitExecutor(func, hash_obj, None, process_obj, jit_config, dynamic)
+            jit_graph_name = ''
+            if hasattr(staging_specialize, "__jit_graph_name__"):
+                jit_graph_name = staging_specialize.__jit_graph_name__
+            jit_executor = _JitExecutor(
+                func, hash_obj, None, process_obj, jit_config, dynamic, jit_graph_name)
             out = jit_executor(*args, **kwargs)
             return out
 
@@ -1078,6 +1088,7 @@ def _jit_ast(hash_obj, dynamic, jit_config):
         # original `func`.
         staging_specialize.__signature__ = inspect.signature(func)
         setattr(staging_specialize, "__wrapped_by_jit__", True)
+        setattr(staging_specialize, "__jit_graph_name__", jit_graph_name)
         return staging_specialize
 
     return wrap_func
@@ -1275,7 +1286,7 @@ def jit(
                            infer_boost=infer_boost, backend=backend, options=options_str)
 
     if capture_mode == "ast":
-        wrap_func = _jit_ast(hash_obj, dynamic, jit_config)
+        wrap_func = _jit_ast(hash_obj, dynamic, jit_config, '')
     elif capture_mode == "bytecode":
         wrap_func = PIJitCaptureContext(fullgraph=fullgraph, jit_config=jit_config)
     else:
