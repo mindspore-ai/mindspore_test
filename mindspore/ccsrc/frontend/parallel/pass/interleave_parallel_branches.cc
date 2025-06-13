@@ -212,7 +212,8 @@ void InterleaveParallelBranches(const FuncGraphPtr &graph) {
   for (auto &interleave_scope : interleave_scopes) {
     InterleaveParallelBranches(interleave_scope, true);
   }
-  circle_handler::DetectAndRevertGraphCircle(graph, manager, "InterleaveParallelBranches");
+  circle_handler::DetectAndRevertGraphCircle(graph, manager, "InterleaveParallelBranches",
+                                             "enable_interleave_parallel_branch");
 }
 }  // namespace parallel
 }  // namespace mindspore

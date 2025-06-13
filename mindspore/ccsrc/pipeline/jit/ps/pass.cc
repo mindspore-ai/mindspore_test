@@ -1395,7 +1395,8 @@ bool BeginEndOverlapInlinePass(const ResourcePtr &resource) {
   OptPassGroupMap map({{"get_item_eliminator", get_item_eliminator_pass}});
   auto get_item_eliminator = opt::Optimizer::MakeOptimizer("get_item_eliminator", resource, map);
   (void)get_item_eliminator->step(func_graph, false);
-  circle_handler::DetectAndRevertGraphCircle(func_graph, resource->manager(), "BeginEndOverlapInlinePass");
+  circle_handler::DetectAndRevertGraphCircle(func_graph, resource->manager(), "BeginEndOverlapInlinePass",
+                                             "enable_begin_end_inline_opt");
   return true;
 }
 

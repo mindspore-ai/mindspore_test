@@ -226,7 +226,8 @@ void OverlapRecomputeAllGatherAndFlashAttentionGrad(const FuncGraphPtr &graph) {
       AddDependForRecomputedAllGatherAndGradientReduceScatter(backward_graph);
     }
   }
-  circle_handler::DetectAndRevertGraphCircle(graph, manager, "OverlapRecomputeAllGatherAndFlashAttentionGrad");
+  circle_handler::DetectAndRevertGraphCircle(graph, manager, "OverlapRecomputeAllGatherAndFlashAttentionGrad",
+                                             "recompute_allgather_overlap_fagrad");
 }
 }  // namespace parallel
 }  // namespace mindspore

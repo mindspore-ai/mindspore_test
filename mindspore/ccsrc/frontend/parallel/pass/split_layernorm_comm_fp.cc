@@ -442,7 +442,8 @@ void SplitLayerNormCommFp(const FuncGraphPtr &func_graph) {
   for (const auto &node : todo) {
     SplitIntoInterleaved(func_graph, manager, node);
   }
-  circle_handler::DetectAndRevertGraphCircle(func_graph, manager, "SplitMatmulCommElementwiseFp");
+  circle_handler::DetectAndRevertGraphCircle(func_graph, manager, "SplitMatmulCommElementwiseFp",
+                                             "interleaved_layernorm_comm");
 }
 }  // namespace parallel
 }  // namespace mindspore

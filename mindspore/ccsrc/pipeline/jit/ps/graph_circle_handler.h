@@ -27,7 +27,8 @@ constexpr auto kCircleDetect = "circle_detect";
 AnfNodePtrList FindGraphCircle(const FuncGraphPtr &fg);
 void SetAttrToDepend(const FuncGraphPtr &fg);
 bool RevertDependNode(const FuncGraphPtr &fg, const FuncGraphManagerPtr &mng);
-void DetectAndRevertGraphCircle(const FuncGraphPtr &fg, const FuncGraphManagerPtr &mng, const std::string &pass_name);
+void DetectAndRevertGraphCircle(const FuncGraphPtr &fg, const FuncGraphManagerPtr &mng, const std::string &pass_name,
+                                const std::string &switch_name = "");
 }  // namespace circle_handler
 }  // namespace mindspore
 
