@@ -443,7 +443,12 @@ Status MapOp::WorkerEntry(int32_t worker_id) {
     }
     start_time = GetSyscnt();
     // Fetch next data row and map job list
-    RETURN_IF_NOT_OK(FetchNextWork(worker_id, &in_row, &job_list));
+    // Occasionally, due to interrupt, the ReleaseResource is not triggered
+    auto stats = FetchNextWork(worker_id, &in_row, &job_list);
+    if (stats == kMDInterrupted) {
+      RETURN_IF_NOT_OK(ReleaseResource(worker_id));
+      return stats;
+    }
     RETURN_IF_NOT_OK(
       CollectOpInfo(this->NameWithID(), "WorkerGet", start_time, {{"TensorRowFlags", in_row.FlagName()}}));
     row_timer_start = GetMilliTimeStamp();
