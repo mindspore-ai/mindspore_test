@@ -89,6 +89,7 @@ TEST_F(TestGraphCycle, TestSingleGraphCycleWithDependDetect) {
 // Description: Test function RevertDependNode.
 // Expectation: Found graph circle as expected.
 TEST_F(TestGraphCycle, TestSingleGraphCycleWithDependRecovery) {
+  common::SetEnv("MS_DEV_ENABLE_PASS_CIRCLE_RECOVERY", "1");
   FuncGraphPtr graph = std::make_shared<FuncGraph>();
   auto input1 = graph->add_parameter();
   auto input2 = graph->add_parameter();

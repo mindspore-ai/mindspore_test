@@ -36,12 +36,17 @@ AnfNodePtrList CollectSortingCircleList(const std::deque<AnfNodePtr> &todo, cons
   return ret;
 }
 
-std::string GenerateCircleDebugString(const AnfNodePtrList &circle, const std::string &pass_name) {
+std::string GenerateCircleDebugString(const AnfNodePtrList &circle, const std::string &pass_name,
+                                      const std::string &switch_name) {
   if (circle.empty()) {
     return "";
   }
   std::stringstream buffer;
-  buffer << "Encounter graph circle for pass: " << pass_name << ", circles are:\n";
+  buffer << "Encounter graph circle for pass: " << pass_name;
+  if (switch_name != "") {
+    buffer << ". It can be disabled by turning off: " << switch_name;
+  }
+  buffer << ". circles are:\n";
   for (size_t i = 0; i < circle.size(); ++i) {
     buffer << std::to_string(i) << ": " << circle[i]->DebugString() << "\n";
   }
@@ -92,8 +97,8 @@ AnfNodePtrList FindGraphCircle(const FuncGraphPtr &fg) {
 }
 
 void SetAttrToDepend(const FuncGraphPtr &fg) {
-  std::string disable_recovery = common::GetEnv("MS_DEV_DISABLE_PASS_CIRCLE_RECOVERY");
-  if (disable_recovery == "1") {
+  std::string enable_recovery = common::GetEnv("MS_DEV_ENABLE_PASS_CIRCLE_RECOVERY");
+  if (enable_recovery != "1") {
     return;
   }
   const auto &all_nodes = TopoSort(fg->output(), SuccDeeperSimple);
@@ -123,16 +128,18 @@ bool RevertDependNode(const FuncGraphPtr &fg, const FuncGraphManagerPtr &mng) {
   return circle_nodes.empty();
 }
 
-void DetectAndRevertGraphCircle(const FuncGraphPtr &fg, const FuncGraphManagerPtr &mng, const std::string &pass_name) {
+void DetectAndRevertGraphCircle(const FuncGraphPtr &fg, const FuncGraphManagerPtr &mng, const std::string &pass_name,
+                                const std::string &switch_name) {
   const auto &circle_nodes = FindGraphCircle(fg);
   if (circle_nodes.empty()) {
     MS_LOG(INFO) << "No graph circle for pass: " << pass_name;
     return;
   }
-  const auto &debug_str = GenerateCircleDebugString(circle_nodes, pass_name);
-  std::string disable_recovery = common::GetEnv("MS_DEV_DISABLE_PASS_CIRCLE_RECOVERY");
-  if (disable_recovery == "1") {
-    MS_LOG(EXCEPTION) << debug_str;
+  const auto &debug_str = GenerateCircleDebugString(circle_nodes, pass_name, switch_name);
+  std::string enable_recovery = common::GetEnv("MS_DEV_ENABLE_PASS_CIRCLE_RECOVERY");
+  if (enable_recovery != "1") {
+    MS_LOG(EXCEPTION) << debug_str
+                      << "You can set MS_DEV_ENABLE_PASS_CIRCLE_RECOVERY=1 to skip the pass that encounter graph cycle";
   } else {
     MS_LOG(WARNING) << debug_str;
   }

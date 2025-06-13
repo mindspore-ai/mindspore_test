@@ -312,7 +312,8 @@ void FullMicroInterleavedOrderControl(const FuncGraphPtr &graph) {
     return;
   }
   MicroInterleavedOrderControlPipeline(manager, origin_nodes_topological);
-  circle_handler::DetectAndRevertGraphCircle(graph, manager, "FullMicroInterleavedOrderControl");
+  circle_handler::DetectAndRevertGraphCircle(graph, manager, "FullMicroInterleavedOrderControl",
+                                             "interleaved_extra_group");
 }
 }  // namespace parallel
 }  // namespace mindspore

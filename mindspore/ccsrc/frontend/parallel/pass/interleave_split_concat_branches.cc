@@ -133,7 +133,8 @@ void InterleaveSplitConcatBranches(const FuncGraphPtr &graph) {
     InterleaveParallelBranches(interleave_scope);
   }
 
-  circle_handler::DetectAndRevertGraphCircle(graph, manager, "InterleaveSplitConcatBranches");
+  circle_handler::DetectAndRevertGraphCircle(graph, manager, "InterleaveSplitConcatBranches",
+                                             "enable_interleave_split_concat_branch");
 }
 }  // namespace parallel
 }  // namespace mindspore

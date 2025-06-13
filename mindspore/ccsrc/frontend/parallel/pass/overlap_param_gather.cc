@@ -176,7 +176,8 @@ void OverlapParamGather(const FuncGraphPtr &func_graph) {
   }
   InsertDependByOrder(ordered_param_gather_nodes);
 
-  circle_handler::DetectAndRevertGraphCircle(func_graph, func_graph->manager(), "OverlapParamGather");
+  circle_handler::DetectAndRevertGraphCircle(func_graph, func_graph->manager(), "OverlapParamGather",
+                                             "enable_opt_shard_comm_opt");
 }
 }  // namespace parallel
 }  // namespace mindspore

@@ -277,7 +277,8 @@ void OverlapGradMatmulAndGradAllreduce(const FuncGraphPtr &graph) {
   } else {
     DoOverLapWay(manager, graph, graph);
   }
-  circle_handler::DetectAndRevertGraphCircle(graph, manager, "OverlapGradMatmulAndGradAllreduce");
+  circle_handler::DetectAndRevertGraphCircle(graph, manager, "OverlapGradMatmulAndGradAllreduce",
+                                             "matmul_grad_comm_overlap");
 }
 }  // namespace parallel
 }  // namespace mindspore
