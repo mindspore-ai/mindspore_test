@@ -2,3 +2,7 @@ approvers:
 - liangchenghui #
 - panzhihui1
 - probiotics_53
+- changzherui
+
+options:
+    no_parent_owners: true
