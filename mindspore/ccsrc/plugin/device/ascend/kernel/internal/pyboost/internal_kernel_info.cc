@@ -113,7 +113,8 @@ bool InternalKernelInfo::IsInternalDtypeSupport(const TensorPtrList *ms_inputs, 
     internal_outputs_dtype_[i] = TransInternalDataType(ms_outputs->at(i)->data_type());
   }
 
-  return internal::IsInternalKernelDtypesSupported(kernel_name_, internal_inputs_dtype_, internal_outputs_dtype_);
+  auto internal_op_name = TransInternalOpName(kernel_name_);
+  return internal::IsInternalKernelDtypesSupported(internal_op_name, internal_inputs_dtype_, internal_outputs_dtype_);
 }
 
 bool InternalKernelInfo::Init(const TensorPtrList &input_tensors, TensorPtrList *inputs, TensorPtrList *outputs,
