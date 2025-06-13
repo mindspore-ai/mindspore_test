@@ -435,12 +435,13 @@ AnfNodePtr FoldPipelineTransformer::Reuse(const AnfNodePtr &node, int64_t stage,
     auto input = zipp.first;
     auto send_segment = zipp.second;
     auto cnode = input->cast<CNodePtr>();
-    if (!cnode) {
+    if (cnode == nullptr) {
       continue;
     }
     if (IsPrimitiveCNode(cnode, prim::kPrimDepend)) {
       cnode = cnode->input(DEPEND_NODE_SOURCE_INDEX)->cast<CNodePtr>();
     }
+    MS_EXCEPTION_IF_NULL(cnode);
     if (cnode->input(1) == node) {
       auto prim = GetValueNode<PrimitivePtr>(cnode->input(0));
       MS_EXCEPTION_IF_NULL(prim);
@@ -538,8 +539,10 @@ void FoldPipelineTransformer::CutBorderForNode(const FuncGraphPtr &graph, const 
       continue;
     }
 
-    auto micro = user_node->cast<CNodePtr>()->GetPrimalAttr(MICRO);
-    if (!micro) {
+    auto user_cnode = user_node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(user_cnode);
+    auto micro = user_cnode->GetPrimalAttr(MICRO);
+    if (micro == nullptr) {
       MS_LOG(INFO) << "Can't find micro_batch information, use micro(0)";
       micro = MakeValue(int64_t(0));
     }
