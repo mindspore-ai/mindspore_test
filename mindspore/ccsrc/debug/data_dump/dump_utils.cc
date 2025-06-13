@@ -51,7 +51,7 @@ bool SplitInt8ToInt4x2(const void *int4_data, size_t in_data_len, void *int8_dat
                      "with int4 data type.";
     return false;
   }
-  const int8_t *src_data = static_cast<int8_t *>(const_cast<void *>(int4_data));
+  const int8_t *src_data = static_cast<const int8_t *>(int4_data);
   int8_t *dst_data = static_cast<int8_t *>(int8_data);
   for (size_t i = 0; i < in_data_len; ++i) {
     int8_t s = *src_data;
