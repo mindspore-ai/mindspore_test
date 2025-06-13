@@ -70,7 +70,7 @@ def test_remainder_scalar_tensor_kwargs_pynative():
 
 
 @arg_mark(plat_marks=['platform_ascend'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='unessential')
 def test_remainder_scalar_tensor_args_graph():
