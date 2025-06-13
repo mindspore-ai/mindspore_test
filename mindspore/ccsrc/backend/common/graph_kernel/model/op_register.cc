@@ -94,6 +94,7 @@ OP_REGISTER("Atan", ElemwiseOp);
 OP_REGISTER("Atan2", ElemwiseOp);
 OP_REGISTER("Expm1", ElemwiseOp);
 OP_REGISTER("FastGeLU", ElemwiseOp);
+OP_REGISTER("TensorMove", ElemwiseOp);
 // broadcast ops
 OP_REGISTER("BroadcastTo", BroadcastOp);
 OP_REGISTER("Tile", BroadcastOp);
