@@ -218,8 +218,9 @@ NodePtrList CumMaxMinGrad(BpropBuilder *ib) {
 
   auto dout = ib->GetInput(i3);
   auto dout0 = ib->TupleGetItem(dout, i0);
-  auto zero_cum = ib->Emit("ZerosLikeExt", {x, ib->Value(static_cast<int64_t>(ib->GetDtypeId(x)))});
-  return {ib->Emit("ScatterAddExt", {zero_cum, axis, indices, dout0}), ib->OutZeros(axis)};
+  auto out_grad = ib->Emit("ZerosLikeExt", {x, ib->Value(static_cast<int64_t>(ib->GetDtypeId(x)))});
+  (void)ib->Emit("InplaceScatterAdd", {out_grad, axis, indices, dout0});
+  return {out_grad, ib->OutZeros(axis)};
 }
 
 NodePtrList IndexAddGrad(BpropBuilder *ib) {
