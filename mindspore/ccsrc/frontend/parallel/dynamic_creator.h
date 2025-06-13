@@ -30,7 +30,7 @@ namespace parallel {
   OperatorInfoPtr objectCreator##opName(std::string name, Shapes in, Shapes out, PrimitiveAttrs &attrs) { \
     return std::make_shared<className>(name, in, out, attrs);                                             \
   }                                                                                                       \
-  RegisterAction opName##Register(#opName, reinterpret_cast<CreatFn>(objectCreator##opName));
+  RegisterAction opName##Register(#opName, reinterpret_cast<CreatFn>(objectCreator##opName))
 
 typedef OperatorInfoPtr (*CreatFn)(const std::string &name, const Shapes &shape_in, const Shapes shape_out,
                                    const PrimitiveAttrs &attrs);
