@@ -142,6 +142,7 @@ void TrilInfo::ReplaceNodeInputOrAttrs() {
   for (auto &node : cnodes_) {
     auto prim = GetValueNode<PrimitivePtr>(node->input(0));
     auto new_diag = GetDiag();
+    MS_EXCEPTION_IF_NULL(prim);
     prim->set_attr("diagonal", MakeValue(new_diag));
   }
 }

@@ -57,6 +57,7 @@ Status TileInfo::GetAttrs() {
   for (auto &element : elements) {
     MS_EXCEPTION_IF_NULL(element);
     if (element->isa<Int64Imm>()) {
+      MS_EXCEPTION_IF_NULL(element->cast<Int64ImmPtr>());
       int64_t axis = static_cast<int64_t>(element->cast<Int64ImmPtr>()->value());
       full_multiples_.push_back(axis);
     } else {
@@ -86,7 +87,7 @@ Status TileInfo::GetAttrs() {
 
 // the len of strategy is equal to multiples
 // 1. If multiple > 1,split the multiple.
-// 2. If multiple = 1:
+// 2. If multiple = 1
 //    1) If the dimension corresponding to multiple is empty: can not split
 //    2) Otherwise, split the input shape
 // 3. If multiple = -1: can not split

@@ -313,6 +313,7 @@ Status CustomInfo::GetAttrs() {
     MS_LOG(ERROR) << name_ << ": Can not find func_type attribute";
     return FAILED;
   }
+  MS_EXCEPTION_IF_NULL(func_type_iter->second);
   auto func_type = func_type_iter->second->cast<StringImmPtr>();
   MS_EXCEPTION_IF_NULL(func_type);
   auto func_type_value = func_type->value();

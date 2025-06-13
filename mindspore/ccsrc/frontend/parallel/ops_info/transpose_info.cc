@@ -75,6 +75,7 @@ Status TransposeInfo::ComputeAxis() {
   for (auto &element : elements) {
     MS_EXCEPTION_IF_NULL(element);
     if (element->isa<Int64Imm>()) {
+      MS_EXCEPTION_IF_NULL(element->cast<Int64ImmPtr>());
       int64_t axis = element->cast<Int64ImmPtr>()->value();
       axis_v_.push_back(axis);
     } else {
