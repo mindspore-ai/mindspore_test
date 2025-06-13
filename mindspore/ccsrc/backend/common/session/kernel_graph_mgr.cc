@@ -652,6 +652,7 @@ void SaveNodesKernelInfoAndParamsName(const KernelGraphPtr &kg, const std::vecto
   // add node in graphkernel attributes.
   for (auto node : kg->execution_order()) {
     auto prim = GetCNodePrimitive(node);
+    MS_EXCEPTION_IF_NULL(prim);
     for (auto attr : prim->attrs()) {
       if (attr.first == "func_graph") {
         auto g = attr.second->cast<FuncGraphPtr>();
