@@ -1086,7 +1086,19 @@ void PipelinePostProcess::ModifySendRecvAttr(const std::vector<AnfNodePtr> &all_
     } else {
       auto op_info = pre_node->cast<CNodePtr>()->user_data<OperatorInfo>();
       MS_EXCEPTION_IF_NULL(op_info);
-      auto tensor_info = op_info->outputs_tensor_info();
+      std::vector<TensorInfo> tensor_info;
+      if (!op_info->outputs_tensor_info_new().empty()) {
+        MS_LOG(DEBUG) << "node: " << node->DebugString() << ", has tensor info new";
+        auto tensor_info_new_vec = op_info->outputs_tensor_info_new();
+        for (const auto &tensor_info_new : tensor_info_new_vec) {
+          if (tensor_info_new->is_list()) {
+            MS_LOG(EXCEPTION) << "node: " << node->DebugString() << ", its tensorinfo is list";
+          }
+          tensor_info.push_back(tensor_info_new->GetValue());
+        }
+      } else {
+        tensor_info = op_info->outputs_tensor_info();
+      }
       if (pre_node_pair.second != -1 && tensor_info.size() > 1) {
         slice_shape = tensor_info.at(pre_node_pair.second).slice_shape();
         node->set_user_data<TensorLayout>(
