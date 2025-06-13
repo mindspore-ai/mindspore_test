@@ -2480,7 +2480,7 @@ AObject *GraphBuilder::BuildSuperObject(PyCodeObject *co) {
 }
 
 void LogGuardFailed(ValueNode *node, const GraphJitConfig &conf, const std::string &msg) {
-  if (!conf.GetLogConfig(GraphJitConfig::kGraphBreak)) {
+  if (!IsPiJitDebugLogOn(LogConfig::kGraphBreak)) {
     return;
   }
   auto tr = GetTrace(node, false, true, 0, -1);
@@ -2697,7 +2697,7 @@ AbstractWrapperPtrList GraphBuilder::HandleInputArgs(const std::vector<ValueNode
       }
       s << std::endl << root_->GetGraph()->ToString() << std::endl;
       std::string debug_string = s.str();
-      if (graph_->Config().GetLogConfig(GraphJitConfig::kAll)) {
+      if (IsPiJitDebugLogOn(LogConfig::kOthers)) {
         GRAPH_JIT_LOG_F("%s", debug_string.c_str());
       }
       MS_LOG(INTERNAL_EXCEPTION) << "the node can't be found " << arg->ToString() << std::endl;
@@ -3697,7 +3697,7 @@ bool GraphBuilder::TraceRunForIter(const Instr &instr) {
     return false;
   }
   if (!succ) {
-    if (graph_->Config().GetLogConfig(GraphJitConfig::kGraphBreak)) {
+    if (IsPiJitDebugLogOn(LogConfig::kGraphBreak)) {
       GRAPH_JIT_LOG_F("loop unsupported by trace, iter node is [%s]", iter_node->ToString().c_str());
     }
     graph_->StopTraceAt(cur_bci_, StopTraceReason::kStopTraceLoop_Failed);
@@ -3812,11 +3812,11 @@ bool IsSatisfyPruneLimit(int cond, Graph *graph_, ValueNode *cond_node, Opcode o
 
 static void LogPrunBranch(ValueNode *cond, const Instr &instr, const GraphJitConfig &conf) {
   MS_LOG(INFO) << "Fail to prune branch, instr: " << instr.ToString() << ", condition: " << cond->ToString();
-  if (conf.GetLogConfig(GraphJitConfig::kGuard)) {
+  if (IsPiJitDebugLogOn(LogConfig::kGuard)) {
     GRAPH_JIT_LOG_F("Fail to prune bytecode [%s]!\n", instr.ToString().c_str());
   }
 
-  if (conf.GetLogConfig(GraphJitConfig::kGraphBreak)) {
+  if (IsPiJitDebugLogOn(LogConfig::kGraphBreak)) {
     if (CondIsTrue(cond) == -1) {
       GRAPH_JIT_LOG_F("infer failed\n");
     } else {
@@ -3912,12 +3912,10 @@ bool GraphBuilder::TraceRunControl(const Instr &instr) {
 }
 
 StopTraceReason GraphBuilder::TraceRun() {
-  if (graph_->Config().GetLogConfig(GraphJitConfig::kAll)) {
-    GRAPH_JIT_LOG_F("Trace %s", GetNameAndLocation(graph_).c_str());
-  }
-  if (graph_->Config().GetLogConfig(GraphJitConfig::kBytecode)) {
+  PIJIT_DEBUG_LOG(LogConfig::kTraceSource) << "Trace source: " << GetNameAndLocation(graph_).c_str();
+  if (IsPiJitDebugLogOn(LogConfig::kBytecode)) {
     auto code = reinterpret_cast<PyObject *>(graph_->GetCodeObj());
-    PY_PRINTF("*** Print bytecode of function [%A] ***", code);
+    PY_PRINTF_WITH_FLUSH("ORIGINAL BYTECODE of %A", code);
     Utils::DisFuncObject(code);
   }
   current_block_ = graph_->GetCFG()->GetFirstBB();

@@ -51,7 +51,7 @@ def test_pijit_log_bytecode():
     log_config = "bytecode"
     data = run_test_case(test_case_name, log_config)
 
-    assert "Print bytecode of" in data
+    assert "ORIGINAL BYTECODE of" in data
 
     os.remove(f"{test_case_name}_log.txt")
 
@@ -82,7 +82,7 @@ def test_pijit_log_all():
     data = run_test_case(test_case_name, log_config)
 
     assert "generated guard at" in data
-    assert "Print bytecode of" in data
+    assert "ORIGINAL BYTECODE of" in data
     assert "UD analyze: enter GetAliveNodes" in data
 
     os.remove(f"{test_case_name}_log.txt")
@@ -99,7 +99,7 @@ def test_pijit_log_mix_guard_bytecode():
     data = run_test_case(test_case_name, log_config)
 
     assert "generated guard at" in data
-    assert "Print bytecode of" in data
+    assert "ORIGINAL BYTECODE of" in data
     assert "UD analyze: enter GetAliveNodes" not in data
 
     os.remove(f"{test_case_name}_log.txt")
@@ -116,7 +116,7 @@ def test_pijit_log_mix_guard_bytecode_2():
     data = run_test_case(test_case_name, log_config)
 
     assert "generated guard at" in data
-    assert "Print bytecode of" in data
+    assert "ORIGINAL BYTECODE of" in data
     assert "UD analyze: enter GetAliveNodes" not in data
 
     os.remove(f"{test_case_name}_log.txt")
@@ -133,7 +133,7 @@ def test_pijit_log_mix_guard_all():
     data = run_test_case(test_case_name, log_config)
 
     assert "generated guard at" in data
-    assert "Print bytecode of" in data
+    assert "ORIGINAL BYTECODE of" in data
     assert "UD analyze: enter GetAliveNodes" in data
 
     os.remove(f"{test_case_name}_log.txt")
