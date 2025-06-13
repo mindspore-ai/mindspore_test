@@ -1,7 +1,7 @@
 mindspore.ops.grid_sample
 =========================
 
-.. py:function:: mindspore.ops.grid_sample(input, grid, mode='bilinear', padding_mode='zeros', align_corners=False)
+.. py:function:: mindspore.ops.grid_sample(input, grid, mode='bilinear', padding_mode='zeros', align_corners=None)
 
     给定一个输入和一个网格，使用网格中的输入值和像素位置计算输出。`input` 只支持4-D（GridSampler2D）和5-D（GridSampler3D）。
 
@@ -25,7 +25,7 @@ mindspore.ops.grid_sample
           - ``'trilinear'``：三线性插值。这是双线性插值在三维数据上的扩展。它在两个空间维度上执行双线性插值，并沿第三个维度进行线性插值。通常用于体积或三维图像插值。
 
         - **padding_mode** (str，可选) - 填充方法。可选方法为 ``'zeros'``，``'border'`` 和 ``'reflection'``。默认 ``'zeros'`` 。
-        - **align_corners** (bool，可选) - 如果设置成 `True`，-1和1被视为引用输入角像素的中心点。如果设置为 `False`，将被视为引用到输入角像素的角点，使采样更不受分辨率影响。默认值为 `False`。
+        - **align_corners** (bool，可选) - 如果设置成 ``True``，-1和1被视为引用输入角像素的中心点。如果设置为 ``False``，将被视为引用到输入角像素的角点，使采样更不受分辨率影响。默认值: ``None``，其与 ``False`` 相同。
 
     返回：
         Tensor，数据类型与 `input` 相同，4-D场景下，shape为 :math:`(N, C, H_{out}, W_{out})`，5-D场景下，shape为 :math:`(N, C, D_{out}, H_{out}, W_{out})`。
