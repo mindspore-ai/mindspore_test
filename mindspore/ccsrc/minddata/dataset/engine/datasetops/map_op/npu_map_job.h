@@ -35,13 +35,13 @@ class NpuMapJob : public MapJob {
   ~NpuMapJob();
 
   // A pure virtual run function to execute a npu map job
-  Status Run(std::vector<TensorRow> in, std::vector<TensorRow> *out) override {
+  Status Run(const std::vector<TensorRow> &in, std::vector<TensorRow> *out) override {
     RETURN_STATUS_UNEXPECTED("The run operation is not implemneted in NPU platform.");
   }
 
   // A pure virtual run function to execute a npu map job for Ascend910B DVPP
-  Status Run(std::vector<TensorRow> in, std::vector<TensorRow> *out, mindspore::device::DeviceContext *device_context,
-             const size_t &stream_id) override;
+  Status Run(const std::vector<TensorRow> &in, std::vector<TensorRow> *out,
+             mindspore::device::DeviceContext *device_context, const size_t &stream_id) override;
 
   MapTargetDevice Type() override { return MapTargetDevice::kAscend910B; }
 };

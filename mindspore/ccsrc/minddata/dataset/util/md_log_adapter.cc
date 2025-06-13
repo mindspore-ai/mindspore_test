@@ -45,18 +45,16 @@ std::string MDLogAdapter::ConstructMsg(const enum StatusCode &status_code, const
   }
 
   /// Python Stack
-  std::string user_err;
-  std::string user_stack;
+  std::string user_err = err_ori;
+  std::string user_stack = err_ori;
   if (status_code == StatusCode::kMDPyFuncException) {
     std::string at_stack = "\n\nAt:\n";
     if (err_ori.find(at_stack) != std::string::npos) {
       user_stack = err_ori.substr(0, err_ori.find(at_stack));
-      user_err = "Execute user Python code failed, check 'Python Call Stack' above.";
-      ss << kSplitLine << "- Python Call Stack: \n" << kSplitLine;
-      ss << user_stack << "\n\n";
-    } else {
-      user_err = err_ori;
     }
+    user_err = "Execute user Python code failed, check 'Python Call Stack' above.";
+    ss << kSplitLine << "- Python Call Stack: \n" << kSplitLine;
+    ss << user_stack << "\n\n";
   }
 
   /// Summary Message

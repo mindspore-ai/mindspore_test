@@ -20,6 +20,7 @@
 #include <functional>
 #include <map>
 #include <mutex>
+#include <string>
 #include <thread>
 #include <vector>
 
@@ -34,11 +35,18 @@ namespace mindspore {
 namespace dataset {
 class PythonMultiprocessingRuntime {
  public:
+  // used by generator op in multiprocess mode
   virtual void launch(int32_t id) = 0;
+  // used by map op / batch op in multiprocess mode
+#if !defined(_WIN32) && !defined(_WIN64)
+  virtual void launch(int32_t id, std::string op_type, std::vector<key_t> ftok_keys) = 0;
+#endif
   virtual void terminate() = 0;
   virtual bool is_mp_enabled() = 0;
-  virtual void add_new_workers(int32_t num_new_workers) = 0;
-  virtual void remove_workers(int32_t num_removed_workers) = 0;
+#if !defined(_WIN32) && !defined(_WIN64)
+  virtual void add_new_workers(int32_t num_new_workers, std::string op_type, std::vector<key_t> ftok_keys) = 0;
+  virtual void remove_workers(int32_t num_removed_workers, std::string op_type, std::vector<key_t> ftok_keys) = 0;
+#endif
   virtual std::vector<int32_t> get_pids() = 0;
 #ifdef ENABLE_PYTHON
   virtual py::dict get_worker_ids() = 0;
@@ -61,17 +69,21 @@ class PyPythonMultiprocessingRuntime : public PythonMultiprocessingRuntime {
   //                        launch                         /* Name of function in C++ (must match Python name) */
 
   void launch(int32_t id) override { PYBIND11_OVERLOAD_PURE(void, PythonMultiprocessingRuntime, launch, id); }
+#if !defined(_WIN32) && !defined(_WIN64)
+  void launch(int32_t id, std::string op_type, std::vector<key_t> ftok_keys) override {
+    PYBIND11_OVERLOAD_PURE(void, PythonMultiprocessingRuntime, launch, id, op_type, ftok_keys);
+  }
+#endif
   void terminate() override { PYBIND11_OVERLOAD_PURE(void, PythonMultiprocessingRuntime, terminate); }
   bool is_mp_enabled() override { PYBIND11_OVERLOAD_PURE(bool, PythonMultiprocessingRuntime, is_mp_enabled); }
-
-  void add_new_workers(int32_t num_workers) override {
-    PYBIND11_OVERLOAD_PURE(void, PythonMultiprocessingRuntime, add_new_workers, num_workers);
+#if !defined(_WIN32) && !defined(_WIN64)
+  void add_new_workers(int32_t num_workers, std::string op_type, std::vector<key_t> ftok_keys) override {
+    PYBIND11_OVERLOAD_PURE(void, PythonMultiprocessingRuntime, add_new_workers, num_workers, op_type, ftok_keys);
   }
-
-  void remove_workers(int32_t num_workers) override {
-    PYBIND11_OVERLOAD_PURE(void, PythonMultiprocessingRuntime, remove_workers, num_workers);
+  void remove_workers(int32_t num_workers, std::string op_type, std::vector<key_t> ftok_keys) override {
+    PYBIND11_OVERLOAD_PURE(void, PythonMultiprocessingRuntime, remove_workers, num_workers, op_type, ftok_keys);
   }
-
+#endif
   std::vector<int32_t> get_pids() override {
     PYBIND11_OVERLOAD_PURE(std::vector<int32_t>, PythonMultiprocessingRuntime, get_pids);
   }

@@ -36,6 +36,7 @@
 #include "minddata/dataset/core/data_type.h"
 #include "minddata/dataset/core/tensor.h"
 #include "minddata/dataset/core/tensor_row.h"
+#include "minddata/dataset/engine/datasetops/batch_info.h"
 #include "minddata/dataset/util/status.h"
 
 namespace mindspore {
@@ -56,6 +57,13 @@ const int kTensorDataLen = 8;
 // The following types represent the actual data types stored in the tensor.
 const int kNormalCTensor = 0;
 const int kPythonDictObject = 1;
+
+// The following data type indicates the memory size occupied by TensorTable serialization.
+const int kTensorRowSizeInTensorTable = 4;
+const int kInt32Type = 4;
+const int kInt64Type = 8;
+const int kInt8Type = 1;
+const int kBoolType = 1;
 
 class DATASET_API SharedMemoryQueue {
  public:
@@ -84,6 +92,25 @@ class DATASET_API SharedMemoryQueue {
 
   Status ToTensorRowWithNoCopy(TensorRow *out_row);
 
+  // Convert TensorTable and CBatchInfo to shared memory
+  //     TensorTable: vector<TensorRow>
+  //     CBatchInfo: contains epoch_num_, batch_num_, total_batch_num_, ctrl_
+  //     bool: concat batch
+  // The shared memory format like below:
+  // size: uint32_t, Indicates how many tensor_row
+  // TensorRow1, TensorRow2, TensorRow3, ...
+  // CBatchInfo
+  //     epoch_num_, int64_t
+  //     batch_num_, int64_t
+  //     total_batch_num_, int64_t
+  //     ctrl_, uint32_t
+  // concat_batch
+  //     bool
+  Status FromTensorTable(const TensorTable &input, const CBatchInfo *info, const bool *concat_batch);
+
+  Status ToTensorTable(TensorTable *out, CBatchInfo *info, bool *concat_batch, const int &shm_id,
+                       const uint64_t &shm_size);
+
   void SetReleaseFlag(bool flag);
 
   key_t GetKey();
@@ -101,9 +128,15 @@ class DATASET_API SharedMemoryQueue {
 
   Status CalculateShmSize(const TensorRow &in_row, uint64_t *size);
 
-  Status Serialize(const TensorRow &in_row);
+  Status CalculateTensorTableShmSize(const TensorTable &input, uint64_t *size);
 
-  Status Deserialize(TensorRow *in_row);
+  Status Serialize(const TensorRow &in_row, uint64_t *shm_offset = nullptr);
+
+  Status SerializeTensorTable(const TensorTable &input, const CBatchInfo *info, const bool *concat_batch);
+
+  Status Deserialize(TensorRow *out_row, uint64_t *shm_offset = nullptr);
+
+  Status DeserializeTensorTable(TensorTable *out, CBatchInfo *info, bool *concat_batch);
 
  private:
   key_t key_;          // the shm key
@@ -112,6 +145,18 @@ class DATASET_API SharedMemoryQueue {
   uint64_t shm_size_;  // the shm size
   bool release_flag_;  // whether release the shm when deconstruct
 };
+
+// used by map_op
+Status ConvertTensorRowToPyTuple(const TensorRow &input, py::tuple *output);
+
+Status ConvertPyTupleToTensorRow(const py::tuple &input, TensorRow *output);
+
+// used by batch_op
+// The tuple indicate the multi columns
+// The list indicate the multi rows
+Status ConvertTensorTableToPyTupleList(const TensorTable &input, py::tuple *output);
+
+Status ConvertPyTupleListToTensorTable(const py::tuple &input, TensorTable *output, bool *concat_batch);
 #endif
 }  // namespace dataset
 }  // namespace mindspore

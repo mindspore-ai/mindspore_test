@@ -32,7 +32,9 @@
 #include "minddata/dataset/kernels/image/image_utils.h"
 #endif
 #include "minddata/dataset/engine/ir/datasetops/map_node.h"
+#include "minddata/dataset/kernels/py_func_op.h"
 #include "minddata/dataset/kernels/tensor_op.h"
+#include "minddata/dataset/util/ftok_key.h"
 #include "minddata/dataset/util/log_adapter.h"
 #include "minddata/dataset/util/random.h"
 #include "minddata/dataset/util/task_manager.h"
@@ -75,6 +77,10 @@ MapOp::MapOp(const std::vector<std::string> &in_col_names, const std::vector<std
   if (out_columns_.empty() || out_columns_[0].empty()) {
     out_columns_ = in_columns_;
   }
+
+#if !defined(_WIN32) && !defined(_WIN64)
+  ftok_keys_.resize(num_workers);
+#endif
 }
 
 // A print method typically used for debugging
@@ -780,44 +786,127 @@ Status MapOp::SendQuitFlagToWorker(int32_t worker_id) {
   return Status::OK();
 }
 
+#if !defined(_WIN32) && !defined(_WIN64)
 Status MapOp::AddNewWorkers(int32_t num_new_workers) {
   RETURN_IF_NOT_OK(ParallelOp::AddNewWorkers(num_new_workers));
-  for (int32_t i = 0; i < num_new_workers; i++) {
+  for (int32_t wkr_id = 0; wkr_id < num_new_workers; wkr_id++) {
     tfuncs_.push_back(std::vector<std::shared_ptr<TensorOp>>());
     (void)std::transform(
       tensor_operations_.begin(), tensor_operations_.end(), std::back_inserter(tfuncs_[tfuncs_.size() - 1]),
       [](std::shared_ptr<TensorOperation> operation) -> std::shared_ptr<TensorOp> { return operation->Build(); });
+
+    if (python_multiprocessing_runtime_ != nullptr) {
+      // add new ftok key for new workers
+      ftok_keys_.push_back(0);
+
+      // Create new ftok key for PyFunc which will be used to create msg queue and shared memory queue
+      auto new_worker_id = ftok_keys_.size() - 1;
+      auto status = GetKey(&ftok_keys_[new_worker_id]);
+      if (status != Status::OK()) {
+        MS_LOG(EXCEPTION) << status.GetErrDescription();
+      }
+      MS_LOG(INFO) << "Get new ftok key: " << std::to_string(ftok_keys_[new_worker_id])
+                   << " for worker: " << std::to_string(new_worker_id);
+
+      // Update tfuncs_
+      for (auto &op : tfuncs_[new_worker_id]) {
+        if (op->Name() == kPyFuncOp && dynamic_cast<PyFuncOp *>(op.get()) != nullptr) {
+          dynamic_cast<PyFuncOp *>(op.get())->CreateMsgQueueAndShmQueue(new_worker_id, ftok_keys_[new_worker_id]);
+        }
+      }
+    }
   }
+
   if (python_multiprocessing_runtime_ != nullptr) {
+    MS_LOG(INFO) << "Launch all workers for MapOp.";
     CHECK_FAIL_RETURN_UNEXPECTED(num_new_workers > 0, "Number of workers added should be greater than 0.");
-    python_multiprocessing_runtime_->add_new_workers(num_new_workers);
+    python_multiprocessing_runtime_->add_new_workers(num_new_workers, kMapOp, ftok_keys_);
+
+    auto worker_pids = GetMPWorkerPIDs();
+    for (int32_t wkr_id = 0; wkr_id < num_workers_; wkr_id++) {
+      // set the process id for the py_func_op
+      for (auto &op : tfuncs_[wkr_id]) {
+        if (op->Name() == kPyFuncOp && dynamic_cast<PyFuncOp *>(op.get()) != nullptr) {
+          dynamic_cast<PyFuncOp *>(op.get())->SetProcessID(worker_pids[wkr_id]);
+        }
+      }
+    }
   }
+
   return Status::OK();
 }
 
 Status MapOp::RemoveWorkers(int32_t num_workers) {
   RETURN_IF_NOT_OK(ParallelOp::RemoveWorkers(num_workers));
+
   for (int32_t i = 0; i < num_workers; i++) {
     tfuncs_.pop_back();
+    if (python_multiprocessing_runtime_ != nullptr) {
+      ftok_keys_.pop_back();
+    }
   }
+
   if (python_multiprocessing_runtime_ != nullptr) {
     CHECK_FAIL_RETURN_UNEXPECTED(num_workers > 0, "Number of workers removed should be greater than 0.");
-    python_multiprocessing_runtime_->remove_workers(num_workers);
+    python_multiprocessing_runtime_->remove_workers(num_workers, kMapOp, ftok_keys_);
+
+    auto worker_pids = GetMPWorkerPIDs();
+    for (int32_t wkr_id = 0; wkr_id < num_workers_; wkr_id++) {
+      // set the process id for the py_func_op
+      for (auto &op : tfuncs_[wkr_id]) {
+        if (op->Name() == kPyFuncOp && dynamic_cast<PyFuncOp *>(op.get()) != nullptr) {
+          dynamic_cast<PyFuncOp *>(op.get())->SetProcessID(worker_pids[wkr_id]);
+        }
+      }
+    }
   }
+
   return Status::OK();
 }
+#endif
+
 void MapOp::SetPythonMp(std::shared_ptr<PythonMultiprocessingRuntime> python_multiprocessing_runtime) {
   python_multiprocessing_runtime_ = std::move(python_multiprocessing_runtime);
+
+#if !defined(_WIN32) && !defined(_WIN64)
+  for (int32_t wkr_id = 0; wkr_id < num_workers_; wkr_id++) {
+    // Create new ftok key for PyFunc which will be used to create msg queue and shared memory queue
+    auto status = GetKey(&ftok_keys_[wkr_id]);
+    if (status != Status::OK()) {
+      MS_LOG(EXCEPTION) << status.GetErrDescription();
+    }
+    MS_LOG(INFO) << "Get new ftok key: " << std::to_string(ftok_keys_[wkr_id])
+                 << " for worker: " << std::to_string(wkr_id);
+
+    // Update tfuncs_
+    for (auto &op : tfuncs_[wkr_id]) {
+      if (op->Name() == kPyFuncOp && dynamic_cast<PyFuncOp *>(op.get()) != nullptr) {
+        dynamic_cast<PyFuncOp *>(op.get())->CreateMsgQueueAndShmQueue(wkr_id, ftok_keys_[wkr_id]);
+      }
+    }
+  }
+#endif
 }
 
+#if !defined(_WIN32) && !defined(_WIN64)
 Status MapOp::Launch() {
   // launch python multiprocessing. This will create the MP pool and shared memory if needed.
   if (python_multiprocessing_runtime_) {
     MS_LOG(DEBUG) << "Launch Python Multiprocessing for MapOp:" << id();
-    python_multiprocessing_runtime_->launch(id());
+    python_multiprocessing_runtime_->launch(id(), kMapOp, ftok_keys_);
     std::vector<int32_t> worker_ids = python_multiprocessing_runtime_->get_pids();
     for (int i = 0; i < worker_ids.size(); i++) {
       BindThreadCoreForMindDataOp("dataset::MapOp", worker_ids[i], false);
+    }
+
+    auto worker_pids = GetMPWorkerPIDs();
+    for (int32_t wkr_id = 0; wkr_id < num_workers_; wkr_id++) {
+      // set the process id for the py_func_op
+      for (auto &op : tfuncs_[wkr_id]) {
+        if (op->Name() == kPyFuncOp && dynamic_cast<PyFuncOp *>(op.get()) != nullptr) {
+          dynamic_cast<PyFuncOp *>(op.get())->SetProcessID(worker_pids[wkr_id]);
+        }
+      }
     }
   }
   return DatasetOp::Launch();
@@ -838,6 +927,7 @@ std::vector<int32_t> MapOp::GetMPWorkerPIDs() const {
   }
   return DatasetOp::GetMPWorkerPIDs();
 }
+#endif
 
 Status MapOp::GetNextRowPullMode(TensorRow *const row) {
 #if defined(ENABLE_D)

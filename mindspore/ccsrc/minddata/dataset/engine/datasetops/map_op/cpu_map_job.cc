@@ -32,7 +32,7 @@ CpuMapJob::CpuMapJob(std::vector<std::shared_ptr<TensorOp>> operations) : MapJob
 CpuMapJob::~CpuMapJob() = default;
 
 // A function to execute a cpu map job
-Status CpuMapJob::Run(std::vector<TensorRow> in, std::vector<TensorRow> *out) {
+Status CpuMapJob::Run(const std::vector<TensorRow> &in, std::vector<TensorRow> *out) {
   RETURN_UNEXPECTED_IF_NULL(out);
   int32_t num_rows = in.size();
   for (int32_t row = 0; row < num_rows; row++) {

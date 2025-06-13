@@ -145,15 +145,17 @@ class MapOp : public ParallelOp<std::unique_ptr<MapWorkerJob>, TensorRow> {
   /// \param python_multiprocessing_runtime PythonMultiprocessingRuntime
   void SetPythonMp(std::shared_ptr<PythonMultiprocessingRuntime> python_multiprocessing_runtime);
 
+#if !defined(_WIN32) && !defined(_WIN64)
   /// Return the list of PIDs of worker processes
   /// \return vector of int
   std::vector<int32_t> GetMPWorkerPIDs() const override;
 
-  Status GetNextRowPullMode(TensorRow *const row) override;
-
   /// Used by independent dataset mode to stop the subprocess
   /// \return Status The status code returned
   Status Terminate() override;
+#endif
+
+  Status GetNextRowPullMode(TensorRow *const row) override;
 
  private:
   // A helper function to create jobs for workers.
@@ -184,6 +186,9 @@ class MapOp : public ParallelOp<std::unique_ptr<MapWorkerJob>, TensorRow> {
 
   std::shared_ptr<PythonMultiprocessingRuntime> python_multiprocessing_runtime_;  // python multiprocessing instance
 
+#if !defined(_WIN32) && !defined(_WIN64)
+  std::vector<key_t> ftok_keys_;  // used to create msg queue and shm queue for PyFunc in process mode
+#endif
   // Private function for worker/thread to loop continuously. It comprises the main
   // logic of MapOp: getting the data from previous Op, validating user specified column names,
   // applying a list of TensorOps to each of the data, process the results and then
@@ -237,9 +242,11 @@ class MapOp : public ParallelOp<std::unique_ptr<MapWorkerJob>, TensorRow> {
 #endif
 
  protected:
+#if !defined(_WIN32) && !defined(_WIN64)
   Status Launch() override;
   Status AddNewWorkers(int32_t num_new_workers) override;
   Status RemoveWorkers(int32_t num_workers) override;
+#endif
 
   /// \brief Gets the implementation status for operator in pull mode
   /// \return implementation status
