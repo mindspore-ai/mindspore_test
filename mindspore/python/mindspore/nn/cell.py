@@ -206,6 +206,7 @@ class Cell(Cell_):
         super().__setattr__("_recompute_cell", None)
         super().__setattr__("mixed_precision_type", None)
         super().__setattr__("_lazy_construct_sig", None)
+        super().__setattr__("_jit_graph_name", '')
         init_pipeline()
 
         # call gc to release GE session resources used by non-used cell objects
@@ -3702,6 +3703,12 @@ class Cell(Cell_):
             self._jit_config_dict = network.jit_config_dict
         if hasattr(network, "_amp_level"):
             self._amp_level = getattr(network, "_amp_level")
+
+    def _set_jit_graph_name(self, key):
+        """
+        Set jit graph name.
+        """
+        self._jit_graph_name = key
 
 
 class GraphCell(Cell):
