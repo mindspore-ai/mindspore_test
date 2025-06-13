@@ -108,7 +108,7 @@ class RingQueue {
 
   bool spin() { return false; }
 
-  void set_spin(bool /*spin*/) {}
+  void set_spin(bool /* spin */) {}
 
  private:
   std::array<T, Capacity> buffer_;

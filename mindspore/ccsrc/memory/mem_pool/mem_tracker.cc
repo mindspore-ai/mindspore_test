@@ -45,8 +45,7 @@ constexpr size_t kLogPersentage = 100;
 void MemoryTrackerEnabled::AddTask(const std::string &task_name, const std::string &node_name,
                                    const std::string &graph_name, const bool to_graph, const std::string &file_name,
                                    size_t line_num) {
-  std::string python_stack;
-  python_stack = GetPythonStackStr();
+  std::string python_stack = GetPythonStackStr();
 
   std::lock_guard lock(mutex_);
   if (!is_init_enable_hccl_) {

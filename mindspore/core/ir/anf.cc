@@ -673,6 +673,7 @@ const ValuePtr &Parameter::default_param_raw() const { return default_param_; }
 ValuePtr Parameter::default_param() const {
   if (default_param_ != nullptr && default_param_->isa<tensor::TensorPyWrapperBase>()) {
     auto tensorpy = default_param_->cast<tensor::TensorPyWrapperBasePtr>();
+    MS_EXCEPTION_IF_NULL(tensorpy);
     return tensorpy->GetTensorWrapper();
   }
   return default_param_;
