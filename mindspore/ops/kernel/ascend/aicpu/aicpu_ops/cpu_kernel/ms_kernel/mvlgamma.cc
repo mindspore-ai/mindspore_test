@@ -122,7 +122,7 @@ uint32_t MvlgammaCpuKernel::MvlgammaCompute(CpuKernelContext &ctx) {
   }
   CUST_KERNEL_HANDLE_ERROR(ctx, CpuKernelUtils::ParallelFor(ctx, data_num, data_num / max_core_num, shard_mvlgamma),
                            "Mvlgamma Compute failed.");
-  if (error == true) {
+  if (error) {
     return KERNEL_STATUS_PARAM_INVALID;
   } else {
     return KERNEL_STATUS_OK;

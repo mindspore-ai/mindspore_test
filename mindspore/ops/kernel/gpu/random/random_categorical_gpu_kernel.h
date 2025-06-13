@@ -47,10 +47,8 @@ class RandomCategoricalGpuKernelMod : public NativeGpuKernelMod {
     MS_EXCEPTION_IF_NULL(logits_addr);
     MS_EXCEPTION_IF_NULL(output_addr);
 
-    std::unique_ptr<double *[]> host_cdf;
-    std::unique_ptr<double *[]> host_rand;
-    host_cdf = std::make_unique<double *[]>(batch_size_);
-    host_rand = std::make_unique<double *[]>(batch_size_);
+    std::unique_ptr<double *[]> host_cdf = std::make_unique<double *[]>(batch_size_);
+    std::unique_ptr<double *[]> host_rand = std::make_unique<double *[]>(batch_size_);
     for (size_t i = 0; i < batch_size_; i++) {
       host_cdf[i] = GetDeviceAddress<double>(workspaces, i);
     }
@@ -66,8 +64,7 @@ class RandomCategoricalGpuKernelMod : public NativeGpuKernelMod {
                       reinterpret_cast<cudaStream_t>(stream_ptr)),
       "Random_categorica cudaMemcpyAsync dev_cdf failed");
     std::uniform_real_distribution<> dist(0, 1);
-    std::unique_ptr<double[]> host_1d_rand;
-    host_1d_rand = std::make_unique<double[]>(num_samples_);
+    std::unique_ptr<double[]> host_1d_rand = std::make_unique<double[]>(num_samples_);
 
     for (size_t i = 0; i < batch_size_; i++) {
       for (size_t j = 0; j < num_samples_; j++) {
@@ -112,8 +109,7 @@ class RandomCategoricalGpuKernelMod : public NativeGpuKernelMod {
     }
 
     num_samples_ = LongToSize(inputs[kIndex1]->GetValueWithCheck<int64_t>());
-    int64_t input_seed;
-    input_seed = inputs[kIndex2]->GetValueWithCheck<int64_t>();
+    int64_t input_seed = inputs[kIndex2]->GetValueWithCheck<int64_t>();
     if (init_state_ || input_seed != init_seed_) {
       if (init_state_) {
         init_state_ = false;

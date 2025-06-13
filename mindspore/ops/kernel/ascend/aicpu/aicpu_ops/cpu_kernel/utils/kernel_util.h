@@ -133,7 +133,7 @@ std::string GetOpName(CpuKernelContext &ctx);
 
 /**
  * Get primary-format from format,
- * in bits field:
+ * in bits field
  * ------------------------------------------
  * |  1 byte  |   2 bytes  |     1 byt      |
  * |----------|------------|----------------|

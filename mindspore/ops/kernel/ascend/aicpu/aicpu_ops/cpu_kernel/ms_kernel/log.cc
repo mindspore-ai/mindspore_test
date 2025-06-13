@@ -107,17 +107,14 @@ uint32_t LogCpuKernel::LogCompute(CpuKernelContext &ctx) {
   auto output_y = reinterpret_cast<T *>(ctx.Output(0)->GetData());
 
   AttrValue *base_ptr = ctx.GetAttr("base");
-  T base_;
-  base_ = static_cast<T>(base_ptr->GetFloat());
+  T base_ = static_cast<T>(base_ptr->GetFloat());
   if (base_ == static_cast<T>(-1.0)) {
     base_ = static_cast<T>(exp(1.0));
   }
   AttrValue *scale_ptr = ctx.GetAttr("scale");
-  T scale_;
-  scale_ = static_cast<T>(scale_ptr->GetFloat());
+  T scale_ = static_cast<T>(scale_ptr->GetFloat());
   AttrValue *shift_ptr = ctx.GetAttr("shift");
-  T shift_;
-  shift_ = static_cast<T>(shift_ptr->GetFloat());
+  T shift_ = static_cast<T>(shift_ptr->GetFloat());
 
   size_t data_num = ctx.Input(0)->NumElements();
   if (data_num <= 4 * 1024) {
@@ -165,17 +162,14 @@ uint32_t LogCpuKernel::LogCompute2(CpuKernelContext &ctx) {
     }
   }
   AttrValue *base_ptr = ctx.GetAttr("base");
-  Eigen::half base_;
-  base_ = static_cast<Eigen::half>(base_ptr->GetFloat());
+  Eigen::half base_ = static_cast<Eigen::half>(base_ptr->GetFloat());
   if (base_ == static_cast<Eigen::half>(-1.0)) {
     base_ = static_cast<Eigen::half>(exp(1.0));
   }
   AttrValue *scale_ptr = ctx.GetAttr("scale");
-  Eigen::half scale_;
-  scale_ = static_cast<Eigen::half>(scale_ptr->GetFloat());
+  Eigen::half scale_ = static_cast<Eigen::half>(scale_ptr->GetFloat());
   AttrValue *shift_ptr = ctx.GetAttr("shift");
-  Eigen::half shift_;
-  shift_ = static_cast<Eigen::half>(shift_ptr->GetFloat());
+  Eigen::half shift_ = static_cast<Eigen::half>(shift_ptr->GetFloat());
 
   typedef Eigen::Array<Eigen::half, Eigen::Dynamic, Eigen::Dynamic> ArrayxXd;
   ArrayxXd array_x(1, data_num);
@@ -216,17 +210,14 @@ uint32_t LogCpuKernel::LogCompute3(CpuKernelContext &ctx) {
   auto output_y = reinterpret_cast<T *>(ctx.Output(0)->GetData());
   size_t data_num = ctx.Input(0)->NumElements();
   AttrValue *base_ptr = ctx.GetAttr("base");
-  T base_;
-  base_ = static_cast<T>(base_ptr->GetFloat());
+  T base_ = static_cast<T>(base_ptr->GetFloat());
   if (base_ == static_cast<T>(-1.0)) {
     base_ = static_cast<T>(exp(1.0));
   }
   AttrValue *scale_ptr = ctx.GetAttr("scale");
-  T scale_;
-  scale_ = static_cast<T>(scale_ptr->GetFloat());
+  T scale_ = static_cast<T>(scale_ptr->GetFloat());
   AttrValue *shift_ptr = ctx.GetAttr("shift");
-  T shift_;
-  shift_ = static_cast<T>(shift_ptr->GetFloat());
+  T shift_ = static_cast<T>(shift_ptr->GetFloat());
 
   if (data_num <= 4 * 1024) {
     for (size_t i = 0; i < data_num; i++) {

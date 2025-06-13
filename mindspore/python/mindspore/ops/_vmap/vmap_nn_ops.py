@@ -2069,13 +2069,14 @@ def get_sparse_apply_adagrad_vmap_rule(prim, axis_size):
         if var_dim is None:
             if any(dim is not None for dim in [accum_dim, grad_dim, indices_dim]):
                 ValueError("The source axis of `var` is None, but the source "
-                           "axis of `accum/grad/indices` is not None. The execution order of "
-                           "operator `{}` cannot be guaranteed.".format(prim_name))
+                           "axis of `accum/grad/indices` is not None. The execution "
+                           "order of operator `{}` cannot be guaranteed.".format(prim_name))
             var, accum = prim(var, accum, grad, indices, u_monad)
             return (var, None), (accum, None)
         if var_dim != 0 or accum_dim != var_dim:
-            ValueError("For `{}`, the source axis of `var` must be equal to `accum`, and not equal to 0, "
-                       "but got the source axis of `var`: {}, `accum`: {}.".format(prim_name, var_dim, accum_dim))
+            ValueError("For `{}`, the source axis of `var` must be equal to `accum`, "
+                       "and not equal to 0, but got the source axis of `var`: {}, "
+                       "`accum`: {}.".format(prim_name, var_dim, accum_dim))
 
         grad = _bdim_at_front(grad, grad_dim, axis_size)
         indices = _bdim_at_front(indices, indices_dim, axis_size)
