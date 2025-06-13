@@ -307,6 +307,7 @@ OpInfoPtr GetBpNodeInfo(const CNodePtr &node, std::unordered_map<std::string, Op
 }
 
 void GetFwdNodeInfos(std::unordered_map<std::string, OpInfoPtr> *op_info_map_dx_dw_map, const FuncGraphPtr &graph) {
+  MS_EXCEPTION_IF_NULL(graph);
   auto manager = graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
   for (const auto &each_graph : manager->func_graphs()) {
@@ -379,6 +380,7 @@ void GetCalOps(const FuncGraphPtr &graph, size_t *op_id, std::unordered_map<std:
   for (auto &node : graph_orders) {
     MS_EXCEPTION_IF_NULL(node);
     if (IsValueNode<FuncGraph>(node->input(0))) {
+      MS_EXCEPTION_IF_NULL(node->input(0)->cast<ValueNodePtr>());
       FuncGraphPtr sub_graph = node->input(0)->cast<ValueNodePtr>()->value()->cast<FuncGraphPtr>();
       GetCalOps(sub_graph, op_id, all_op_info, op_info_map_dx_dw_map, bprop_op_info_map_dx_dw_map);
     } else if (GetCNodePrimitive(node) &&
@@ -390,14 +392,17 @@ void GetCalOps(const FuncGraphPtr &graph, size_t *op_id, std::unordered_map<std:
       auto abs = node->input(0)->abstract();
       if (abs->isa<abstract::FuncGraphAbstractClosure>()) {
         const auto &abstract_func_graph = abs->cast<abstract::FuncGraphAbstractClosurePtr>();
+        MS_EXCEPTION_IF_NULL(abstract_func_graph);
         MS_EXCEPTION_IF_NULL(abstract_func_graph->func_graph());
         GetCalOps(abstract_func_graph->func_graph(), op_id, all_op_info, op_info_map_dx_dw_map,
                   bprop_op_info_map_dx_dw_map);
       } else if (abs->isa<abstract::PartialAbstractClosure>()) {
         const auto &abstract_partial_func = abs->cast<abstract::PartialAbstractClosurePtr>();
+        MS_EXCEPTION_IF_NULL(abstract_partial_func);
         const auto &abstract_fn = abstract_partial_func->fn();
         if (abstract_fn->isa<abstract::FuncGraphAbstractClosure>()) {
           const auto &abstract_func_graph = abstract_fn->cast<abstract::FuncGraphAbstractClosurePtr>();
+          MS_EXCEPTION_IF_NULL(abstract_func_graph);
           MS_EXCEPTION_IF_NULL(abstract_func_graph->func_graph());
           GetCalOps(abstract_func_graph->func_graph(), op_id, all_op_info, op_info_map_dx_dw_map,
                     bprop_op_info_map_dx_dw_map);
