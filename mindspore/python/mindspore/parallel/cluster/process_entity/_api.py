@@ -550,10 +550,12 @@ class _ProcessManager:
         Args:
             rank_ids: worker process's local rank list, which is also device_id.
         """
+        if not isinstance(rank_ids, list):
+            raise TypeError(f"The type of 'rank_ids' must be a list, but got:{rank_ids}")
         for idx in rank_ids:
             self._start_single_worker(idx)
         worker_status = self.monitor_rank_status(rank_ids)
-        for i in range(rank_ids):
+        for i in rank_ids:
             if worker_status[i]["status"] is not None:
                 return 1
         return 0
