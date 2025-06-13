@@ -597,7 +597,7 @@ bool GraphAnalyzer::AnalyzeTopGraphAliveNodes(const std::vector<ValueNode *> &al
     if (!IsValidOutput(node) || is_not_in_top_graph) {
       auto msg = (is_not_in_top_graph ? "Not in top graph node : " : "Invalid output : ");
       MS_LOG(INFO) << msg << node->ToString();
-      if (graph_->Config().GetLogConfig(GraphJitConfig::kGraphBreak) && Opcode(node->GetOpcode()).IsCall()) {
+      if (IsPiJitDebugLogOn(LogConfig::kGraphBreak) && Opcode(node->GetOpcode()).IsCall()) {
         GRAPH_JIT_LOG_F("This call node will executed in pynative : [%s]", node->ToString().c_str());
       }
       // The side effect node will be handled by side_effect_handler, avoid exec twice.
@@ -666,7 +666,7 @@ namespace {
 // Get the alive nodes and side-effect alive nodes in this graph before the break bci.
 std::vector<ValueNode *> GetAliveNodes(const Graph *graph) {
   int bci = graph->GetStopTraceBci();
-  if (graph->Config().GetLogConfig(GraphJitConfig::kGraphBreak)) {
+  if (IsPiJitDebugLogOn(LogConfig::kGraphBreak)) {
     GRAPH_JIT_LOG_F("UD analyze: enter GetAliveNodes bci %d", bci);
   }
   std::vector<ValueNode *> alive_nodes = graph->CollectAliveNode(bci);
@@ -675,7 +675,7 @@ std::vector<ValueNode *> GetAliveNodes(const Graph *graph) {
     uniques.insert(node);
   }
 
-  if (graph->Config().GetLogConfig(GraphJitConfig::kGraphBreak)) {
+  if (IsPiJitDebugLogOn(LogConfig::kGraphBreak)) {
     GRAPH_JIT_LOG_F("UD analyze: alive node size : %ld", alive_nodes.size());
     for (auto node : alive_nodes) {
       if (node) {

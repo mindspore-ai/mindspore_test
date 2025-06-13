@@ -20,7 +20,6 @@
 #include "ir/map_tensor.h"
 #include "pipeline/jit/pi/python_adapter/pydef.h"
 #include "pybind11/pybind11.h"
-#include "utils/log_adapter.h"
 #include "pipeline/jit/pi/utils/opcode_util.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "pipeline/jit/pi/utils/opcode_declare.h"
@@ -615,18 +614,19 @@ std::string TimeRecorder::TimeData::ToString() {
   return s.str();
 }
 
-static size_t GetPIJitLogMinSize() {
-  if (!(IS_OUTPUT_ON(mindspore::kWarning))) {
-    // if MS_LOG is disable, print all to stderr
-    return 0;
-  }
-  return 20000;
-}
+bool g_pijit_log_conf[static_cast<int>(LogConfig::kLogMax)] = {false};
 
-size_t PIJitLogMinSize() {
-  static size_t s = GetPIJitLogMinSize();
-  return s;
-}
+const std::unordered_map<std::string, LogConfig> g_pijit_log_map = {
+  {"all", LogConfig::kAll},
+  {"trace_source", LogConfig::kTraceSource},
+  {"trace_bytecode", LogConfig::kTraceBytecode},
+  {"guard", LogConfig::kGuard},
+  {"graph_break", LogConfig::kGraphBreak},
+  {"bytecode", LogConfig::kBytecode},
+  {"recompiles", LogConfig::kRecompiles},
+  {"recompiles_verbose", LogConfig::kRecompilesVerbose},
+  {"others", LogConfig::kOthers},
+};
 
 }  // namespace pijit
 }  // namespace mindspore

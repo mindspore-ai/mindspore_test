@@ -327,7 +327,7 @@ static bool TryLoopBodyReCapture(JitCompileResults *jcr, const GraphBuilderPtr &
 static auto HandleBreakAtLoop(JitCompileResults *jcr, const GraphBuilderPtr &g) {
   // one stage need adapter
   if (jcr->conf()->GetBoolConfig(GraphJitConfig::kLoopUnrolling) && g->GetGraph()->IsBreakAtLoop()) {
-    if (jcr->conf()->GetLogConfig(GraphJitConfig::kGraphBreak)) {
+    if (IsPiJitDebugLogOn(LogConfig::kGraphBreak)) {
       GRAPH_JIT_LOG_F("===> graph break after loop unrolling\n%s\n", g->GetGraph()->ToString(1).c_str());
     }
     MS_LOG(INFO) << "Top graph is graph break at loop after unrolling. Disable loop unrolling and re-capture graph";
@@ -388,7 +388,6 @@ static void GraphCapture(JitCompileResults *jcr) {
   TimeRecorder recorder(__FUNCTION__, kPIJitConfigDefault.GetBoolConfig(GraphJitConfig::kLogPerf));
   MS_EXCEPTION_IF_NULL(jcr->code());
 
-  GraphJitConfig &conf = *jcr->conf();
   GraphBuilderPtr g = TraceRun(jcr);
   if (HandleUnsupportedSyntax(jcr, g)) {
     return;
@@ -397,7 +396,7 @@ static void GraphCapture(JitCompileResults *jcr) {
     return;
   }
   if (g->GetGraph()->ShouldNeverCompile()) {
-    if (jcr->conf()->GetLogConfig(GraphJitConfig::kGraphBreak)) {
+    if (IsPiJitDebugLogOn(LogConfig::kGraphBreak)) {
       GRAPH_JIT_LOG_F("===> graph break after loop unrolling\n%s\n", g->GetGraph()->ToString(1).c_str());
     }
     MS_LOG(INFO) << "Cannot capture graph, mark it as NEVER_COMPILE: " << ToString(jcr->origin_frame().GetCode());
@@ -411,7 +410,7 @@ static void GraphCapture(JitCompileResults *jcr) {
   MarkBreak(g->GetGraph());
 
   // dump DFG
-  if (conf.GetLogConfig(GraphJitConfig::kAll)) {
+  if (IsPiJitDebugLogOn(LogConfig::kOthers)) {
     g->DumpDFG();
     const auto &debug_str = analyzer->GetCaptureInfo().ToString();
     PY_PRINTF_WITH_FLUSH("*** Dump One Stage ByteCode Collection After CodeGen *** \n%s", debug_str.c_str());
@@ -423,10 +422,9 @@ static void GraphCapture(JitCompileResults *jcr) {
     jcr->set_stat(JitCompileResults::GRAPH_CALLABLE);
   }
 
-  if (conf.GetLogConfig(GraphJitConfig::kAll)) {
-    PY_PRINTF("*** Dump ByteCode After CodeGen on [%A] ***", new_code.ptr());
+  if (IsPiJitDebugLogOn(LogConfig::kBytecode)) {
+    PY_PRINTF_WITH_FLUSH("MODIFIED BYTECODE of %A", new_code.ptr());
     Utils::DisFuncObject(new_code.ptr());
-    GRAPH_JIT_LOG_F("\n\n");
   }
 
   // collect stop trace reason to traceback
@@ -512,7 +510,7 @@ static bool JitCompile(PyThreadState *tstate, JitCompileResults *c) {
 
   CollectTraceBack(c, c->code()->GetPythonCode(), c->code()->GetNativeFunc() != nullptr);
 
-  if (c->conf()->GetLogConfig(GraphJitConfig::kGuard)) {
+  if (IsPiJitDebugLogOn(LogConfig::kGuard)) {
     GRAPH_JIT_LOG_F("%s\n", c->tbs()->Dump().c_str());
 
     GRAPH_JIT_LOG_F("generated guard at %s\n", std::string(py::str(reinterpret_cast<PyObject *>(code))).c_str());
@@ -641,7 +639,7 @@ static bool CheckGuard(JitCompileResults *c, const PyFrameWrapper &f) {
   GuardContext context;
 
   bool log_perf = c->conf()->GetBoolConfig(GraphJitConfig::kLogGuardPerf);
-  bool print_guard = c->conf()->GetLogConfig(GraphJitConfig::kGuard);
+  bool print_guard = IsPiJitDebugLogOn(LogConfig::kGuard);
   if (c->code()->GetGuard()->Check(f, print_guard, log_perf)) {
     return true;
   }
