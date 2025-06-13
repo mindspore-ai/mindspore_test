@@ -108,8 +108,8 @@ void CommonCommAscendFunc(const std::shared_ptr<OpRunner> &op, const TensorPtr &
     comm_stream_id = device_context->device_res_manager_->GetCommunicationStreamIDByGroup(group_str);
   }
 
-  auto func = [device_context, op, group_str, input_tensor, op_stream_id = op->stream_id(), comm_handle, hccl_comm,
-               comm_stream_id, op_name, launch_func, rank]() {
+  auto func = [device_context, group_str, op_stream_id = op->stream_id(), comm_handle, hccl_comm, comm_stream_id,
+               op_name, launch_func]() {
     runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kPyNativeLaunchTask,
                                        op_name, false);
 
@@ -119,15 +119,6 @@ void CommonCommAscendFunc(const std::shared_ptr<OpRunner> &op, const TensorPtr &
     CommUtils::GetInstance().SyncOpStream(device_context, op_stream_id, comm_stream_id);
     device::tracker::CALL_MEMORY_TRACKER(EmptyCache);
 
-    static runtime::KernelCache &cache = runtime::KernelCache::GetInstance();
-    if (cache.need_add) {
-      cache.AddPyboostKernel(op->primitive()->name(), group_str, tensor::ShapeToString(input_tensor->shape()),
-                             tensor::ShapeToString(op->output(0)->shape()), rank);
-    }
-    if (EnableExecuteOrderDump()) {
-      auto &execute_order_tracker = ExecuteOrderTracker::GetInstance();
-      execute_order_tracker.ProcessPyboostCommOp(op, group_str, comm_stream_id, input_tensor, op->output(0), rank);
-    }
     auto comm_stream_ptr = device::ascend::AscendStreamMng::GetInstance().GetStream(comm_stream_id);
 
     if (launch_func) {
@@ -147,6 +138,17 @@ void CommonCommAscendFunc(const std::shared_ptr<OpRunner> &op, const TensorPtr &
   }
 
   runtime::OpExecutor::DispatchLaunchTask(func);
+
+  static runtime::KernelCache &cache = runtime::KernelCache::GetInstance();
+  if (MS_UNLIKELY(cache.need_add)) {
+    cache.AddPyboostKernel(op->primitive()->name(), group_str, tensor::ShapeToString(input_tensor->shape()),
+                           tensor::ShapeToString(op->output(0)->shape()), rank);
+  }
+  if (MS_UNLIKELY(EnableExecuteOrderDump())) {
+    auto &execute_order_tracker = ExecuteOrderTracker::GetInstance();
+    execute_order_tracker.ProcessPyboostCommOp(op, group_str, comm_stream_id, input_tensor, op->output(0), rank);
+  }
+
   if (post_func) {
     post_func(comm_handle->event(), comm_stream_id);
   } else if (input_tensor != nullptr) {
