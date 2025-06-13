@@ -1571,7 +1571,8 @@ def set_context(**kwargs):
         check_bprop (bool): This parameter will be deprecated and removed in future versions.
         enable_reduce_precision (bool): This parameter will be deprecated and removed in a future versions.
         grad_for_scalar (bool): This parameter will be deprecated and removed in future versions.
-        support_binary (bool): Whether to support run .pyc or .so in graph mode.
+        support_binary (bool): Whether to support run .pyc or .so in graph mode. This parameter will be deprecated and
+            removed in a future version. Please use the environment variable `MS_SUPPORT_BINARY` instead.
 
     Examples:
         >>> import mindspore as ms
