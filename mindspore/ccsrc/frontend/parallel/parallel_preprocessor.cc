@@ -414,6 +414,7 @@ OperatorInfoPtr CreateOperatorInfoForMakeTuple(const CNodePtr make_tuple_node, c
       (void)make_tuple_prim->DelAttr(STAND_ALONE);
     }
     OperatorInfoPtr next_operator = next_node->user_data<OperatorInfo>();
+    MS_EXCEPTION_IF_NULL(next_operator);
     if (!next_operator->mirror_ops_new().empty()) {
       if (next_operator->mirror_ops_new().size() <= LongToSize(input_pos)) {
         MS_LOG(EXCEPTION) << "The size of mirror ops is not enough, which is " << next_operator->mirror_ops_new().size()
@@ -499,6 +500,9 @@ static OperatorInfoPtr SetMakeListForIFA(CNodePtr make_list, const CNodePtr &nex
   int kv_index = 1;
   OperatorInfoPtr operator_make_list = CreateOperatorInfo(make_list);
   auto make_list_prim = GetValueNode<PrimitivePtr>(make_list->input(0));
+  if (make_list_prim == nullptr) {
+    return nullptr;
+  }
   if (make_list_prim->HasAttr(STAND_ALONE)) {
     (void)make_list_prim->DelAttr(STAND_ALONE);
   }
@@ -647,6 +651,7 @@ static void InsertAllGatherOp(const FuncGraphPtr &root, const std::string &group
   if (param_ptr->user_data<TensorLayout>()) {
     auto opt_shard_mirror_group = param_ptr->user_data<TensorLayout>()->opt_shard_mirror_group();
     is_with_mirror = !opt_shard_mirror_group.empty();
+    MS_EXCEPTION_IF_NULL(param_ptr->param_info());
     if (!param_ptr->param_info()->parallel_optimizer() ||
         param_ptr->user_data<TensorLayout>()->opt_shard_slice_shape().empty()) {
       auto mirror_group = mirror_group_list(param_ptr->user_data<TensorLayout>());
