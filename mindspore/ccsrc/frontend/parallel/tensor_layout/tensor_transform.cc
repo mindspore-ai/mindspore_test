@@ -36,6 +36,7 @@ const size_t kIndex2 = 2;
 const size_t kSize1 = 1;
 const size_t kSize2 = 2;
 const size_t kSize3 = 3;
+const size_t kSize4 = 4;
 
 TensorTransform::TensorTransform() {}
 
@@ -55,6 +56,7 @@ void TensorTransform::InitTransforOperator() {
   transform_operator_[SPLIT] = [this](auto op_pair) { return ExtractSplitOp(op_pair); };
   transform_operator_[CONCAT] = [this](auto op_pair) { return ExtractConcatOp(op_pair); };
   transform_operator_[STRIDEDSLICE] = [this](auto op_pair) { return ExtractStridedSliceOp(op_pair); };
+  transform_operator_[ALL_TO_ALL] = [this](auto op_pair) { return ExtractAlltoAllOp(op_pair); };
 
   infer_shape_operator_[RESHAPE] = [this](Shape ori_shape, std::vector<int64_t> op_pair) {
     return InferReshapeOp(ori_shape, op_pair);
@@ -71,12 +73,16 @@ void TensorTransform::InitTransforOperator() {
   infer_shape_operator_[SLICE] = [this](Shape ori_shape, std::vector<int64_t> op_pair) {
     return InferSliceOp(ori_shape, op_pair);
   };
+  infer_shape_operator_[ALL_TO_ALL] = [this](Shape ori_shape, std::vector<int64_t> op_pair) {
+    return InferAlltoAllOp(ori_shape, op_pair);
+  };
 
   construct_op_operator_[RESHAPE] = [this](auto op_pair) { return ConstructReshapeOp(op_pair); };
   construct_op_operator_[ALL_GATHER] = [this](auto op_pair) { return ConstructAllGatherOp(op_pair); };
   construct_op_operator_[SPLIT] = [this](auto op_pair) { return ConstructSplitOp(op_pair); };
   construct_op_operator_[CONCAT] = [this](auto op_pair) { return ConstructConcatOp(op_pair); };
   construct_op_operator_[STRIDED_SLICE] = [this](auto op_pair) { return ConstructStrideSliceOp(op_pair); };
+  construct_op_operator_[ALL_TO_ALL] = [this](auto op_pair) { return ConstructAlltoAllOp(op_pair); };
   inited_function_ = true;
 }
 
@@ -152,6 +158,51 @@ RedisOpPair TensorTransform::ExtractStridedSliceOp(const Operator &slice_op_pair
   (void)std::copy(end.begin(), end.end(), std::back_inserter(stride_attr));
   (void)std::copy(stride.begin(), stride.end(), std::back_inserter(stride_attr));
   return std::make_pair(op_name, stride_attr);
+}
+
+RedisOpPair TensorTransform::ExtractAlltoAllOp(const Operator &a2a_op_pair) const {
+  auto op_name = a2a_op_pair.first;
+  auto op_attrs = a2a_op_pair.second.first;
+  if (op_attrs.size() != kSize4) {
+    MS_LOG(EXCEPTION) << "The AlltoAll has wrong number of attrs, expected: " << kSize4
+                      << ", but got: " << op_attrs.size();
+  }
+  auto split_count_attr = op_attrs[0].second;
+  auto split_count = GetValue<int64_t>(split_count_attr);
+  auto split_dim_attr = op_attrs[1].second;
+  auto split_dim = GetValue<int64_t>(split_dim_attr);
+  auto concat_dim_attr = op_attrs[2].second;
+  auto concat_dim = GetValue<int64_t>(concat_dim_attr);
+  auto group_name_attr = op_attrs[3].second;
+  auto group_name = GetValue<std::string>(group_name_attr);
+
+  RankList rank_list;
+  if (virtual_rank_ < 0) {
+    rank_list = g_device_manager->FindRankListByHashName(group_name);
+  } else {
+    std::string rank_str = "";
+    std::string rank_list_name = group_name + "-";
+    for (size_t i = 0; i < rank_list_name.size(); i++) {
+      if (rank_list_name[i] == '-') {
+        int64_t rank_id;
+        try {
+          rank_id = std::stoi(rank_str.c_str());
+        } catch (std::invalid_argument &) {
+          MS_LOG(EXCEPTION) << "Invalid rank string for a parameter: " << rank_str;
+        }
+        rank_list.push_back(rank_id);
+        rank_str = "";
+      } else if (rank_list_name[i] <= '9' && rank_list_name[i] >= '0') {
+        rank_str.push_back(rank_list_name[i]);
+      } else {
+        MS_LOG(EXCEPTION) << "The rank list name cannot convert to rank list: " << rank_list_name;
+      }
+    }
+  }
+
+  std::vector<int64_t> aa = {split_count, split_dim, concat_dim};
+  (void)std::copy(rank_list.begin(), rank_list.end(), std::back_inserter(aa));
+  return std::make_pair(op_name, aa);
 }
 
 // AllGather(rank_list..., 0)->Split(0, split_num)->Concat(axis>0) => AllConcat(rank_list..., axis)
@@ -317,11 +368,15 @@ Status TensorTransform::TransSliceToStridedSlice(const Shape &input_shape,
 
 std::vector<std::pair<std::string, std::vector<int64_t>>> TensorTransform::TransformOperators(
   const Shapes &from, const Shapes &to, const RankList &dev_list, const bool redist_opt, int64_t rank_id) {
+  virtual_rank_ = rank_id;
   TensorLayout from_layout;
   (void)from_layout.InitFromVector(from[kIndex0], from[kIndex1], from[kIndex2]);
   TensorLayout to_layout;
   (void)to_layout.InitFromVector(to[kIndex0], to[kIndex1], to[kIndex2]);
-  ParallelContext::GetInstance()->set_do_transform(true);
+  if (!(redist_opt && ParallelContext::GetInstance()->enable_all2all())) {
+    ParallelContext::GetInstance()->set_do_transform(true);
+  }
+
   tensor_redistribution_.SetVirtualRank(rank_id);
   (void)tensor_redistribution_.Init(from_layout, to_layout, dev_list);
   RedistributionOpListPtr redistribution_oplist_ptr = tensor_redistribution_.InferTensorRedistributionOperatorList();
@@ -346,7 +401,9 @@ std::vector<std::pair<std::string, std::vector<int64_t>>> TensorTransform::Trans
     transform_op_list.push_back(it->second(op_pair));
   }
   TransAllGatherToAllConcat(&transform_op_list);
-  ParallelContext::GetInstance()->set_do_transform(false);
+  if (!(redist_opt && ParallelContext::GetInstance()->enable_all2all())) {
+    ParallelContext::GetInstance()->set_do_transform(false);
+  }
   return transform_op_list;
 }
 
@@ -404,6 +461,31 @@ Shape TensorTransform::InferSliceOp(const Shape &ori_shape, const std::vector<in
   }
   auto new_shape = ori_shape;
   new_shape[axis] /= slice_num;
+  return new_shape;
+}
+
+Shape TensorTransform::InferAlltoAllOp(const Shape &ori_shape, const std::vector<int64_t> &op) const {
+  if (op.size() < kSize3) {
+    MS_LOG(EXCEPTION) << "Infer shape for AlltoAll failed, the input size must be no less than: " << kSize3
+                      << ", but got " << op.size();
+  }
+  auto split_count = op[kIndex0];
+  auto split_dim = op[kIndex1];
+  auto concat_dim = op[kIndex2];
+  if (split_dim >= SizeToLong(ori_shape.size()) || concat_dim >= SizeToLong(ori_shape.size())) {
+    MS_LOG(EXCEPTION) << "Infer shape for AlltoAll failed, the split_dim is: " << split_dim
+                      << ", and concat_dim is: " << concat_dim << ", but the shape size is: " << ori_shape.size();
+  }
+  if (split_count == 0) {
+    MS_LOG(EXCEPTION) << "The split_count is 0 in inferring AlltoAll shape.";
+  }
+  if (split_dim == concat_dim) {
+    MS_LOG(EXCEPTION) << "The split_dim and concat_dim is equal in inferring AlltoAll shape.";
+  }
+
+  auto new_shape = ori_shape;
+  new_shape[split_dim] /= split_count;
+  new_shape[concat_dim] *= split_count;
   return new_shape;
 }
 
@@ -523,6 +605,44 @@ Operator TensorTransform::ConstructStrideSliceOp(const std::vector<int64_t> &inp
   OperatorArgs op_args = std::make_pair(attrs, params);
 
   return std::make_pair(STRIDED_SLICE, op_args);
+}
+
+Operator TensorTransform::ConstructAlltoAllOp(const std::vector<int64_t> &inputs) {
+  if (inputs.size() <= kSize3) {
+    MS_LOG(EXCEPTION) << "When constructing AlltoAll, the input size must be greater than: " << kSize3
+                      << ", but got: " << inputs.size();
+  }
+  ValuePtr split_count_value = MakeValue(inputs[0]);
+  Attr attr_split_count = std::make_pair(SPLIT_COUNT, split_count_value);
+  ValuePtr split_dim_value = MakeValue(inputs[1]);
+  Attr attr_split_dim = std::make_pair(SPLIT_DIM, split_dim_value);
+  ValuePtr concat_dim_value = MakeValue(inputs[2]);
+  Attr attr_concat_dim = std::make_pair(CONCAT_DIM, concat_dim_value);
+
+  RankList rank_list(inputs.begin() + kSize3, inputs.end());
+  Group group;
+  if (virtual_rank_ < 0) {
+    if (g_device_manager->CreateGroup(rank_list, &group) != SUCCESS) {
+      MS_LOG(EXCEPTION) << "AlltoAll op: create group failed.";
+    }
+  } else {
+    std::vector<Device> dev_list;
+    (void)std::transform(rank_list.begin(), rank_list.end(), std::back_inserter(dev_list),
+                         [](auto &rank_id) { return Device(rank_id); });
+    DeviceManager tmp_dm;
+    auto group_name = tmp_dm.GenerateGroupNameByRanks(rank_list);
+    (void)group.Init(group_name, dev_list);
+  }
+
+  ValuePtr attr_value = MakeValue(group.name());
+  Attr attr_group = std::make_pair(GROUP, attr_value);
+  ValuePtr attr_ranks_value = MakeValue(rank_list);
+  Attr attr_ranks = std::make_pair(GROUP_RANKS, attr_ranks_value);
+
+  OperatorAttrs attrs = {attr_split_count, attr_split_dim, attr_concat_dim, attr_group};  // attr_ranks
+  OperatorParams params;
+  OperatorArgs args = std::make_pair(attrs, params);
+  return std::make_pair(ALL_TO_ALL, args);
 }
 
 void TensorTransform::ShowRedisOpList(const Shape &input_shape, const std::vector<RedisOpPair> &transform_op_list) {

@@ -56,18 +56,21 @@ class FRONTEND_EXPORT TensorTransform {
   std::pair<std::string, std::vector<int64_t>> ExtractSplitOp(const Operator &split_op_pair) const;
   std::pair<std::string, std::vector<int64_t>> ExtractConcatOp(const Operator &concat_op_pair) const;
   std::pair<std::string, std::vector<int64_t>> ExtractStridedSliceOp(const Operator &slice_op_pair) const;
+  std::pair<std::string, std::vector<int64_t>> ExtractAlltoAllOp(const Operator &a2a_op_pair) const;
 
   Operator ConstructReshapeOp(const std::vector<int64_t> &inputs);
   Operator ConstructAllGatherOp(const std::vector<int64_t> &inputs);
   Operator ConstructSplitOp(const std::vector<int64_t> &inputs);
   Operator ConstructStrideSliceOp(const std::vector<int64_t> &inputs);
   Operator ConstructConcatOp(const std::vector<int64_t> &inputs);
+  Operator ConstructAlltoAllOp(const std::vector<int64_t> &inputs);
 
   Shape InferReshapeOp(const Shape &ori_shape, const std::vector<int64_t> &op) const;
   Shape InferAllGatherOp(const Shape &ori_shape, const std::vector<int64_t> &op) const;
   Shape InferAllConcatOp(const Shape &ori_shape, const std::vector<int64_t> &op) const;
   Shape InferStridedSliceOp(const Shape &ori_shape, const std::vector<int64_t> &op) const;
   Shape InferSliceOp(const Shape &ori_shape, const std::vector<int64_t> &op) const;
+  Shape InferAlltoAllOp(const Shape &ori_shape, const std::vector<int64_t> &op) const;
 
   std::vector<Shape> GetRedistributionOpShape(const Shape &ori_shape,
                                               const std::vector<RedisOpPair> &transform_op_list);

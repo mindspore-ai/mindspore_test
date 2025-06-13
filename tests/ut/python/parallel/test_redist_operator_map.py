@@ -14,6 +14,7 @@
 
 
 from mindspore.parallel._tensor import _get_resharding_operator_map, _get_pipeline_operator_map
+from mindspore import context
 
 
 def test_merge_pipeline_stages_2_1():
@@ -192,3 +193,34 @@ def test_reshard_operator_map_6():
         f"rank id is 0, reshard map is not expected. expect {reshard_ground_truth_1}, but got {reshard_op_map_1}"
     assert reshard_op_map_2 == reshard_ground_truth_2, \
         f"rank id is 0, reshard map is not expected. expect {reshard_ground_truth_2}, but got {reshard_op_map_2}"
+
+def test_reshard_operator_map_7():
+    """
+    Feature: generating redis list from python
+    Description: generate redis op list including alltoall
+    Expectation: assert no error.
+    """
+    context.set_auto_parallel_context(enable_alltoall=True)
+    rank_list = list(range(8))
+    from_layout = ([8,], [0, -1], [8, 8], rank_list)
+    to_layout = ([8,], [-1, 0], [8, 8], rank_list)
+    reshard_op_map = _get_resharding_operator_map(from_layout, to_layout, 0)
+    reshard_truth = {0: [('AlltoAll', [8, 1, 0, 0, 1, 2, 3, 4, 5, 6, 7])]}
+    assert reshard_op_map == reshard_truth
+
+def test_reshard_operator_map_8():
+    """
+    Feature: generating redis list from python
+    Description: generate redis op list including alltoall
+    Expectation: assert no error.
+    """
+    context.set_auto_parallel_context(enable_alltoall=True)
+    rank_list = list(range(32))
+    from_layout = ([8, 4], [1, -1, -1], [256, 2048, 7168], rank_list)
+    to_layout = ([32,], [-1, -1, 0], [256, 2048, 7168], rank_list)
+    reshard_op_map = _get_resharding_operator_map(from_layout, to_layout, 0)
+    reshard_truth = {0: [('Reshape', [32, 2048, 8, 896]),
+                         ('StridedSlice', [0, 0, 0, 0, 32, 2048, 8, 224, 1, 1, 1, 1]),
+                         ('AlltoAll', [8, 2, 0, 0, 4, 8, 12, 16, 20, 24, 28]),
+                         ('Reshape', [256, 2048, 224])]}
+    assert reshard_op_map == reshard_truth
