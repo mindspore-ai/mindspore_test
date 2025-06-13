@@ -95,11 +95,13 @@ IndexTable MlaNzIndicesGetter(const AnfNodePtr &node) {
 }
 
 IndexTable QbmmNzIndicesGetter(const AnfNodePtr &node) { return {{{1}, {}}, {{1}, {}}}; }
+IndexTable MlaPreprocessNzIndicesGetter(const AnfNodePtr &node) { return {{{5, 18}, {}}, {{5, 18}, {}}}; }
 
 static std::unordered_map<std::string, GetNzIndicesFunc> kNzIndicesGetterMap = {
   {prim::kPrimGroupedMatmulV4->name(), GroupedMatmulV4NzIndicesGetter},
   {prim::kPrimMla->name(), MlaNzIndicesGetter},
   {prim::kPrimQuantBatchMatmul->name(), QbmmNzIndicesGetter},
+  {prim::kPrimMlaPreprocess->name(), MlaPreprocessNzIndicesGetter},
 };
 
 // unordered_map vector<vector<vector<size_t>>> represents:
