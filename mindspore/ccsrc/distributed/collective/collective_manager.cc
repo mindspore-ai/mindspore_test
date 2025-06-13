@@ -879,6 +879,7 @@ bool CollectiveManager::CreateSimulationGroup(const std::string &group_name, con
       "Failed to create dummy device communication group " + group_name);
 
     CommunicationGroupPtr group = device_comm_lib_instance_->GetGroup(group_name);
+    MS_EXCEPTION_IF_NULL(group);
     size_t root_info_size = 0;
     void *root_info = group->GenerateRootInfo(&root_info_size);
     MS_EXCEPTION_IF_NULL(device_ctx_);
