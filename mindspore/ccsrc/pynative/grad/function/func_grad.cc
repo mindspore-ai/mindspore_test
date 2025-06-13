@@ -1389,7 +1389,8 @@ std::vector<BackwardNodePtr> AutoDiff::GetWeightsNode(const tensor::TensorPtrLis
   for (const auto &weight : weights) {
     MS_EXCEPTION_IF_NULL(weight);
     auto auto_grad_meta_data = weight->auto_grad_meta_data();
-    if (auto_grad_meta_data == nullptr || auto_grad_meta_data->UnsafeGetGradNodeImpl() == nullptr) {
+    if (!AutoGradUtil::IsParamRequiresGrad(weight) || auto_grad_meta_data == nullptr ||
+        auto_grad_meta_data->UnsafeGetGradNodeImpl() == nullptr) {
       MS_LOG(DEBUG) << "weight has not auto grad meta data or grad node!";
       // Fake leaf just for zeros
       (void)weights_node.emplace_back(
