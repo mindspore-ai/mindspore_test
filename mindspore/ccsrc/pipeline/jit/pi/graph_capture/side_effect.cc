@@ -386,7 +386,7 @@ void SideEffectHandler::AnalyzeCallNodeScope(CallNode *node) const {
     side_effect_handler->Run();
     if (graph_->GetStopTraceBci() == -1) {
       auto ret = sub_graph->GetRetVal();
-      if (ret->GetScope() & AObject::Scope::SCOPE_FREE_VAR && ret->GetGraph() == node->GetGraph()) {
+      if ((ret->GetScope() & AObject::Scope::SCOPE_FREE_VAR) && ret->GetGraph() == node->GetGraph()) {
         node->SetScope(AObject::Scope::SCOPE_LOCAL);
       } else {
         node->SetScope(ret->GetScope());

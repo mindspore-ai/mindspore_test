@@ -321,6 +321,7 @@ bool PrimitiveConverter::CheckPositionArgs(PrimitiveAttr *cur_prim) {
   const auto kwonly_list =
     is_method_ ? GetMethodKwonlyArgs(cur_prim->prim_name) : GetFunctionKwonlyArgs(cur_prim->prim_name);
   const auto &op_def = ops::GetOpDef(cur_prim->prim_name);
+  MS_EXCEPTION_IF_NULL(op_def);
   const auto &expect_op_args = op_def->args_;
 
   if (cur_prim->has_varargs && input_position_args_dtype_.size() > cur_prim->varargs_index) {

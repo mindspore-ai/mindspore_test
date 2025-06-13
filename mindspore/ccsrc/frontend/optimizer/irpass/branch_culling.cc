@@ -547,6 +547,7 @@ AnfNodePtr GenerateMergeNodes(const std::vector<AnfNodePtr> &block_nodes,
   } else {
     auto true_branch_tuple = branch_output_abs[0]->cast<abstract::AbstractTuplePtr>();
     auto false_branch_tuple = branch_output_abs[1]->cast<abstract::AbstractTuplePtr>();
+    MS_EXCEPTION_IF_NULL(false_branch_tuple);
 
     std::vector<AnfNodePtr> make_tuple_nodes;
     make_tuple_nodes.push_back(NewValueNode(prim::kPrimMakeTuple));

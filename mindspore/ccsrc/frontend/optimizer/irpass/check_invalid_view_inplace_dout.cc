@@ -166,6 +166,7 @@ void SetAbstractSeqElementsUseFlags(const AbstractBasePtr &abstract) {
   }
   for (auto seq_node : *seq_nodes) {
     auto indexes = GetSequenceNodeElementsUseFlags(seq_node.lock());
+    MS_EXCEPTION_IF_NULL(indexes);
     bool no_need_reset = std::all_of((*indexes).begin(), (*indexes).end(), [](const auto index) { return index; });
     if (!no_need_reset) {
       SetSequenceElementsUseFlagsRecursively(seq_abstract, false);
