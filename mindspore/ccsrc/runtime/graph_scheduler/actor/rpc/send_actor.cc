@@ -79,7 +79,7 @@ bool SendActor::ConnectServer() {
 void SendActor::FlushData() {
   MS_EXCEPTION_IF_NULL(client_);
   if (!client_->Flush(server_url_)) {
-    MS_LOG(EXCEPTION) << "Failed to flush client for server " << server_url_;
+    MS_LOG(WARNING) << "Failed to flush client for server " << server_url_;
   }
 }
 
@@ -174,7 +174,7 @@ void SendActor::Flush() {
   for (const auto &url : peer_actor_urls_) {
     MS_LOG(DEBUG) << "Flush for url " << url.second;
     if (!client_->Flush(url.second)) {
-      MS_LOG(EXCEPTION) << "Failed to flush for url " << url.second;
+      MS_LOG(WARNING) << "Failed to flush for url " << url.second;
     }
   }
 }
