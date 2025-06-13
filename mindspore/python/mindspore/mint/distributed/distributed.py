@@ -1234,10 +1234,6 @@ def all_gather_into_tensor_uneven(output, input, output_split_sizes=None, group=
          [1. 1. 1. 1.]
          [1. 1. 1. 1.]]
     """
-    if not output.dtype == input.dtype:
-        raise TypeError(
-            "For all_gather_into_tensor_uneven, the input tensor and output tensor dtype must be the same"
-        )
     if group is None:
         group = GlobalComm.WORLD_COMM_GROUP
     if not isinstance(group, str):

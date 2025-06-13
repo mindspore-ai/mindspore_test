@@ -434,7 +434,7 @@ def test_hccl_all_gather_into_tensor_uneven():
         )
         _pynative_executor.sync()
     output_tensor = ms.Tensor(np.zeros([total_size]).astype(np.int32))
-    with pytest.raises(TypeError):
+    with pytest.raises(ValueError):
         all_gather_into_tensor_uneven(output_tensor, input_tensor)
         _pynative_executor.sync()
 
@@ -544,7 +544,7 @@ def test_hccl_reduce_scatter_tensor_uneven():
     input_tensor = ms.Tensor(np.concatenate([np.ones([r + 1, 2]) * r for r in range(size)]).astype(np.float32))
     output_tensor = ms.Tensor(np.zeros([rank + 1, 2]).astype(np.float32))
     input_split_sizes = [r + 1 for r in range(size)]
-    expected_output = np.array([np.ones([rank + 1, 2]) * rank])
+    expected_output = np.array([np.ones([rank + 1, 2]) * rank * size])
     output_handle = reduce_scatter_tensor_uneven(
         output_tensor, input_tensor, input_split_sizes=input_split_sizes
     )
