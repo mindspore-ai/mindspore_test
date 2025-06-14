@@ -18,16 +18,18 @@ import sys
 import time
 import tempfile
 from contextlib import contextmanager
+
+import mindspore
 from tests.mark_utils import arg_mark
 import numpy as np
 import mindspore.nn as nn
 import mindspore as ms
-from mindspore import context
-from mindspore import Tensor
-from mindspore import ops
+from mindspore import Tensor, jit, ops, context
 from mindspore.ops.composite import GradOperation
-from tests.st.pi_jit.share.utils import assert_no_graph_break
+from tests.st.pi_jit.share.utils import assert_no_graph_break, assert_executed_by_graph_mode, match_array
 from tests.st.pi_jit.share.utils import pi_jit_with_config
+from tests.st.pi_jit.one_stage.test_utils import save_graph_ir, check_ir_num
+
 
 class Capture():
     def __init__(self):
@@ -317,3 +319,34 @@ def test_base_grad_operation_with_side_effect():
         time.sleep(2.0)
 
     count_output(cap.output, "x + y", 1)
+
+
+@save_graph_ir(ir_name='graph_before_compile')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_Tensor_inplace_copy_v1():
+    """
+    Feature: test Tensor.copy_().
+    Description: Tensor.copy_() is a memory side-effect op.
+    Expectation: no graph break.
+    """
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+
+    def fn(x: Tensor, y: Tensor):
+        y = y + 1
+        x.copy_(y)
+        return y
+
+    x1 = mindspore.tensor([1, 2, 3])
+    y1 = mindspore.tensor([2, 3, 3])
+    o1 = fn(x1, y1)
+
+    compiled_fn = jit(fn, capture_mode='bytecode', fullgraph=True)
+    x2 = mindspore.tensor([1, 2, 3])
+    y2 = mindspore.tensor([2, 3, 3])
+    o2 = compiled_fn(x2, y2)
+
+    match_array(o1, o2)
+    match_array(x1, x2)
+    assert_executed_by_graph_mode(compiled_fn)
+    check_ir_num('graph_before_compile', 1)

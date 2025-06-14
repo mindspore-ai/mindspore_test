@@ -1983,6 +1983,8 @@ AbstractBasePtr FromValueInside(const ValuePtr &value, bool broaden) {
 }
 
 EvalResultPtr EvalOnePrim(const PrimitivePtr &primitive, const AbstractBasePtrList &arg_specs) {
+  MS_EXCEPTION_IF_NULL(primitive);
+  MS_LOG(DEBUG) << "Start eval Primitive: " << primitive->ToString();
   auto evaluator = GetPrimEvaluator(primitive, nullptr);
   if (evaluator == nullptr) {
     MS_LOG(ERROR) << "The evaluator of the primitive is not defined (" << primitive->name() << ").";

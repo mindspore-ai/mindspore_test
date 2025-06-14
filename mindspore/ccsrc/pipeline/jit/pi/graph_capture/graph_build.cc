@@ -4191,8 +4191,8 @@ bool GraphBuilder::FGAddOutput() {
   }
   bool succ = FGAddSideEffectOutput();
   if (succ) {
-    MS_LOG(DEBUG) << "Add graph output success, total outputs num: " << FGBuilder()->GetOutputSize()
-                  << ", side effect num: " << side_effect_outputs_.size();
+    MS_LOG(INFO) << "Add graph output success, total outputs num: " << FGBuilder()->GetOutputSize()
+                 << ", side effect num: " << side_effect_outputs_.size();
   } else {
     MS_LOG(INFO) << "Add graph output failed, total outputs num: " << FGBuilder()->GetOutputSize()
                  << ", side effect num: " << side_effect_outputs_.size();

@@ -88,6 +88,8 @@ std::pair<AbstractBasePtr, bool> EvalValue(const ValuePtr &value, const Abstract
     } else if (value->ToAbstract()->isa<abstract::AbstractFunction>()) {
       auto analyze_res = pipeline::AbstractAnalyze(value, inputs_abs_list);
       if (analyze_res.eval_result != nullptr) {
+        MS_LOG(DEBUG) << "Eval result, has_side_effect: "
+                      << (analyze_res.eval_result->has_side_effect_node() ? "true" : "false");
         return std::make_pair(analyze_res.eval_result->abstract(), analyze_res.eval_result->has_side_effect_node());
       }
     }
@@ -117,6 +119,8 @@ void SetParameterName(const ParameterPtr &param) {
 }  // namespace
 
 std::pair<AbstractBasePtr, bool> InferAndCheck(const ValuePtr &value, const AbstractBasePtrList &input_abs_list) {
+  MS_EXCEPTION_IF_NULL(value);
+  MS_LOG(DEBUG) << "Start to infer callable: " << value->ToString();
   const auto &res = EvalValue(value, input_abs_list);
   auto abs = res.first;
   if (abs == nullptr) {
