@@ -238,6 +238,7 @@ void HcclAdapter::FinalizePlugin() {
   hccl_exec_finalize_ = nullptr;
   hccl_exec_enqueue_op_ = nullptr;
   hccl_exec_enqueue_all_to_all_v_ = nullptr;
+  hccl_comm_working_dev_nic_set_ = nullptr;
   launch_hccl_all_to_allv_ = nullptr;
   launch_hccl_reduce_scatterv_ = nullptr;
   launch_hccl_all_gatherv_ = nullptr;
@@ -805,6 +806,14 @@ HcclResult HcclAdapter::HcclGetGroupRankFromWorldRank(uint32_t world_rank, const
     CHECK_SYMBOL_NULL(hccl_get_group_rank_by_world_rank_);
     return hccl_get_group_rank_by_world_rank_(world_rank, group.c_str(), local_rank);
   }
+}
+
+HcclResult HcclAdapter::HcclCommWorkingDevNicSet(HcclComm comm, uint32_t *ranks, bool *useBackup, uint32_t nRanks) {
+  if (hccl_comm_working_dev_nic_set_ == nullptr) {
+    hccl_comm_working_dev_nic_set_ = DlsymFuncObj(HcclCommWorkingDevNicSet, plugin_handle_);
+  }
+  CHECK_SYMBOL_NULL(hccl_comm_working_dev_nic_set_);
+  return hccl_comm_working_dev_nic_set_(comm, ranks, useBackup, nRanks);
 }
 
 bool HcclAdapter::InitHcclExec() {

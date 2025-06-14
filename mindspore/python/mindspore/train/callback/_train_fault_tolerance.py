@@ -36,6 +36,7 @@ from mindspore.ops.operations.manually_defined._inner import TensorReport
 import mindspore
 import mindspore.common.dtype as mstype
 from mindspore.parallel._recovery_context import _set_recovery_context
+from mindspore import runtime
 
 
 def _get_ckpt_dir(step, ckpt_save_path, is_tmp_file):
@@ -306,6 +307,12 @@ class TrainFaultTolerance(Callback):
 
     def __init__(self, ckpt_save_path=None, **kwargs):
         super(TrainFaultTolerance, self).__init__()
+        logger.info(f"MS_ENABLE_TFT: {os.getenv('MS_ENABLE_TFT', '')}")
+        if self._only_enable_tsp():
+            self.tft = _tft_handler.get_tft()
+            self._check_init()
+            self.tft.tft_register_stream_sync_handler(runtime.synchronize, self)
+            return
         self.save_cb = kwargs.get("ckpt_save_fn", None)
         self.ckpt_save_path = ckpt_save_path
         if self.save_cb is None and self.ckpt_save_path is None:
@@ -321,10 +328,13 @@ class TrainFaultTolerance(Callback):
         # `def load_checkpoint() -> tuple(dict, bool)`, the return value is a tuple containing 2 values,
         # i.e. (param_dict, remove_redundancy)
         self.ckpt_load_func = kwargs.get("ckpt_load_fn", None)
-        self.tft = _tft_handler.get_tft()
         if self._only_enable_tre():
             return
+        self.tft = _tft_handler.get_tft()
         self._check_init()
+        if self._only_enable_tre_and_tsp():
+            self.tft.tft_register_stream_sync_handler(runtime.synchronize, self)
+            return
         self.global_step = None
         self.learning_rate = None
         self.has_init_replica = False
@@ -343,6 +353,22 @@ class TrainFaultTolerance(Callback):
         if any(flag in env_enable for flag in non_tre_flags):
             return False
         return "TRE:1" in env_enable
+
+    def _only_enable_tsp(self):
+        """Check if only configured MS_ENABLE_TFT='{TSP:1}'"""
+        env_enable = os.getenv("MS_ENABLE_TFT", "")
+        non_tsp_flags = ["TTP:1", "UCE:1", "ARF:1", "TRE:1"]
+        if any(flag in env_enable for flag in non_tsp_flags):
+            return False
+        return "TSP:1" in env_enable
+
+    def _only_enable_tre_and_tsp(self):
+        """Check if only configured MS_ENABLE_TFT='{TRE:1, TSP:1}'"""
+        env_enable = os.getenv("MS_ENABLE_TFT", "")
+        other_flags = ["TTP:1", "UCE:1", "ARF:1"]
+        if any(flag in env_enable for flag in other_flags):
+            return False
+        return "TRE:1" in env_enable and "TSP:1" in env_enable
 
     def _check_init(self):
         """Check if the mindio-ttp had inited"""
@@ -435,6 +461,7 @@ class TrainFaultTolerance(Callback):
         self.tft.tft_register_clean_handler(_tft_clean_callback, self)
         self.tft.tft_register_repair_handler(_tft_repair_callback, self)
         self.tft.tft_register_rebuild_group_handler(_tft_rebuild_sub_groups, self)
+        self.tft.tft_register_stream_sync_handler(runtime.synchronize, self)
 
     def _reset_acc_grads(self):
         accu_grad_params = map(lambda e: e[1],
@@ -461,13 +488,18 @@ class TrainFaultTolerance(Callback):
         if self._only_enable_tre():
             return
 
-        if self.has_init_replica is False:
-            self.has_init_replica = True
-            self._set_tft_optimizer_replica(run_context)
         cb_params = run_context.original_args()
         logger.info("START Set optimizer finish step status to TFT. step: {}".format(cb_params.cur_step_num))
         self.cur_step_num = cb_params.cur_step_num
         self.cur_epoch_num = cb_params.cur_epoch_num
+        if self._only_enable_tsp() or self._only_enable_tre_and_tsp():
+            logger.info("Go into tft_pause_train.")
+            self.tft.tft_pause_train(self.cur_step_num)
+            return
+
+        if self.has_init_replica is False:
+            self.has_init_replica = True
+            self._set_tft_optimizer_replica(run_context)
         if cb_params.optimizer is not None:
             self.global_step = cb_params.optimizer.global_step.clone()
             self.assign(cb_params.optimizer.tft_g_one_flag, self.g_one)
@@ -481,6 +513,9 @@ class TrainFaultTolerance(Callback):
             self.clean_unique_id = False
         self._clear_unique_id()
         logger.info("END Set optimizer finish step status to TFT.")
+        if "TSP:1" in os.getenv("MS_ENABLE_TFT", ""):
+            logger.info("Go into tft_pause_train.")
+            self.tft.tft_pause_train(self.cur_step_num)
 
     def on_train_begin(self, run_context):
         """
@@ -490,6 +525,8 @@ class TrainFaultTolerance(Callback):
             run_context (RunContext): Context of the train running. Refer to
                                       :class:`mindspore.train.RunContext` for detail.
         """
+        if self._only_enable_tsp():
+            return
         cb_params = run_context.original_args()
         if self._only_enable_tre():
             self.cb_params = cb_params
@@ -509,6 +546,6 @@ class TrainFaultTolerance(Callback):
             run_context (RunContext): Context of the train running. Refer to
                                       :class:`mindspore.train.RunContext` for detail.
         """
-        if self._only_enable_tre():
+        if self._only_enable_tre() or self._only_enable_tsp() or self._only_enable_tre_and_tsp():
             return
         _tft_handler.unregister_tft()

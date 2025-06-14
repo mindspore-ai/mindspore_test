@@ -21,7 +21,7 @@ from mindspore.communication._comm_helper import Backend, _get_rank_helper, _get
     _get_world_rank_from_group_rank_helper, _get_group_rank_from_world_rank_helper, \
     _create_group_helper, _destroy_group_helper, HCCL_WORLD_COMM_GROUP, NCCL_WORLD_COMM_GROUP, \
     MCCL_WORLD_COMM_GROUP, DEVICE_TO_BACKEND, _get_local_rank_helper, _get_local_size_helper, GlobalComm, \
-    _check_mpi_envs, _set_elegant_exit_handle, _get_group_ranks, _get_comm_name_helper
+    _check_mpi_envs, _set_elegant_exit_handle, _get_group_ranks, _get_comm_name_helper, _comm_switch_nic_helper
 from mindspore._c_expression import init_hccl, finalize_hccl, init_cluster, MSContext, ms_ctx_param
 from mindspore.hal.device import is_initialized
 
@@ -754,3 +754,61 @@ def get_process_group_ranks(group=GlobalComm.WORLD_COMM_GROUP):
 
     """
     return _get_group_ranks(group=_get_group(group))
+
+
+def _comm_switch_nic(global_ranks, use_backup):
+    """Switch network interface card between the primary and the secondary NIC.
+
+    Args:
+        global_ranks (list[int], tuple[int]): list of integers. The global rank ids that need switch network interface .
+        use_backup (list[bool], tuple[int]): list of bool. For each rank id in global_ranks, determine whether to use
+            the backup network interface card. True means use, False means not use.
+
+    Returns:
+        bool, whether the network card switch is successful.
+            If one fails, return False. If all are successful, return True.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        .. note::
+            Before running the following examples, you need to configure the communication environment variables.
+
+            For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
+            without any third-party or configuration file dependencies.
+
+            Please see the `msrun start up
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
+            for more details.
+
+            This example should be run with 4 devices.
+
+        >>> import numpy as np
+        >>> from mindspore.communication import init, _comm_switch_nic
+        >>> from mindspore.communication.management import _comm_switch_nic
+        >>>
+        >>> init()
+        >>> ret = _comm_switch_nic([0, 1], [True, False])
+        >>> print(ret)
+        True
+
+    """
+    max_rank = get_group_size() - 1
+    if not all(isinstance(i, (list, tuple)) for i in (global_ranks, use_backup)):
+        raise ValueError(f"For _comm_switch_nic, the args 'global_ranks' and 'use_backup' should be list or tuple, "
+                         f"but got 'global_ranks' type {type(global_ranks)}, 'use_backup' type {type(use_backup)}")
+    if not all(isinstance(rank, int) and not isinstance(rank, bool) and rank <= max_rank for rank in global_ranks):
+        raise ValueError(f"For _comm_switch_nic, the all elements  in 'global_ranks' should be int number, and less "
+                         f"than {get_group_size()}, but got 'global_ranks' : {global_ranks}.")
+    if not all(isinstance(ub, bool) for ub in use_backup):
+        raise ValueError(f"For _comm_switch_nic, the all elements  in 'use_backup' should be bool, but got "
+                         f"'use_backup' : {use_backup}.")
+    if len(set(global_ranks)) != len(global_ranks):
+        raise ValueError(f"For _comm_switch_nic, the all elements  in 'global_ranks' should be different, but got "
+                         f"'global_ranks' : {global_ranks}.")
+    if len(global_ranks) != len(use_backup):
+        raise ValueError(f"For _comm_switch_nic, the elements number in 'global_ranks' should be equal to 'use_backup',"
+                         f" but got 'global_ranks' {len(global_ranks)} elements: {global_ranks},"
+                         f" 'use_backup' {len(use_backup)} elements:  {use_backup},.")
+    return _comm_switch_nic_helper(global_ranks, use_backup)

@@ -150,8 +150,12 @@ class BACKEND_COMMON_EXPORT CollectiveManager {
   bool FinalizeDummyCommLib();
 
   bool ResumeHcclComm();
+
   // clean unique if after group build success when using ARF
   void ClearUniqueID(const std::string &group_name);
+
+  // switch network interface card between the primary and the secondary NIC.
+  bool CommSwitchNic(const std::vector<uint32_t> &global_ranks, const std::vector<bool> &use_backup);
 
   // Return whether initializing global comm asynchronizely.
   bool IsAsyncInitGlobalComm();

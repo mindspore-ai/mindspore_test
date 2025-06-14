@@ -95,6 +95,11 @@ class BACKEND_COMMON_EXPORT CollectiveCommunicationLib {
   // Destroy the communication group.
   virtual bool DestroyCommunicationGroup(const std::string &group_name);
 
+  // Switch network interface card due to borrowing or switchback
+  virtual bool CommSwitchNic(const std::vector<uint32_t> &global_ranks, const std::vector<bool> &use_backup) {
+    return true;
+  }
+
   // Get the inner communicator name of the specified group.
   virtual std::string CommName(const std::string &group_name) { return ""; }
 

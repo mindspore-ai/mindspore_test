@@ -1044,6 +1044,13 @@ void CollectiveManager::ClearUniqueID(const std::string &group_name) {
   MS_LOG(INFO) << "Delete unique id end.";
 }
 
+bool CollectiveManager::CommSwitchNic(const std::vector<uint32_t> &global_ranks, const std::vector<bool> &use_backup) {
+  MS_EXCEPTION_IF_NULL(device_comm_lib_instance_);
+  MS_LOG(INFO) << "Switch communication network interface card, the global ranks: " << global_ranks
+               << ", the use backup: " << use_backup;
+  return device_comm_lib_instance_->CommSwitchNic(global_ranks, use_backup);
+}
+
 bool CollectiveManager::IsAsyncInitGlobalComm() {
   // Use async manner when three conditions below are satisfied.
   // 1.Runtime dev config is not set to false.

@@ -356,6 +356,48 @@ uint32_t AscendCollectiveCommLib::GetGroupRankFromWorldRank(uint32_t world_rank,
   return local_rank_id;
 }
 
+bool AscendCollectiveCommLib::CommSwitchNic(const std::vector<uint32_t> &global_ranks,
+                                            const std::vector<bool> &use_backup) {
+  MS_LOG(INFO) << "global ranks: " << global_ranks << ", use backup: " << use_backup;
+  // Firstly, traverse the communication domain to check whether there is an intersection
+  // between the ranks in the communication domain and the ranks that need to switch NIC.
+  for (const auto &kv : groups_) {
+    std::vector<uint32_t> sec_global_ranks;
+    std::vector<uint32_t> sec_group_ranks;
+    std::vector<bool> sec_use_backup_v;
+    auto group_ranks = kv.second->group_ranks();
+    for (size_t i = 0; i < global_ranks.size(); i++) {
+      if (std::find(group_ranks.begin(), group_ranks.end(), global_ranks[i]) != group_ranks.end()) {
+        sec_global_ranks.push_back(global_ranks[i]);
+        sec_use_backup_v.push_back(use_backup[i]);
+        sec_group_ranks.push_back(kv.second->GetGroupRank(global_ranks[i]));
+      }
+    }
+
+    // If there is no intersection, continue to traverse the next communication domain.
+    if (sec_global_ranks.empty()) {
+      MS_LOG(INFO) << "group: " << kv.first << ", group ranks(global): " << group_ranks
+                   << ", sec global ranks is empty.";
+      continue;
+    }
+
+    // If there is intersection, obtain the group ranks corresponding to the intersection global ranks,
+    // and the hccl comm  corresponding to the group name, then call the HcclCommWorkingDevNicSet to switch NIC.
+    bool *sec_use_backup = new bool[sec_use_backup_v.size()];
+    for (size_t i = 0; i < sec_use_backup_v.size(); i++) {
+      sec_use_backup[i] = sec_use_backup_v[i];
+    }
+    MS_LOG(INFO) << "group: " << kv.first << ", group ranks(global): " << group_ranks
+                 << ", sec global ranks: " << sec_global_ranks << ", sec group ranks: " << sec_group_ranks
+                 << ", sec use backup: " << sec_use_backup_v;
+    HCCL_RUN_CHECK(std::string("switch network interface card"), kv.first,
+                   hccl::HcclAdapter::GetInstance().HcclCommWorkingDevNicSet(
+                     GetHcomByGroup(kv.first), sec_group_ranks.data(), sec_use_backup, sec_group_ranks.size()));
+    delete[] sec_use_backup;
+  }
+  return true;
+}
+
 bool AscendCollectiveCommLib::ResumeHcclComm() {
   for (auto &group : groups_) {
     auto hccl_comm = HcclCommunicator(group.first);
