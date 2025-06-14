@@ -24,10 +24,9 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr ApplyRotaryPosEmbExtAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                          const BaseTensorPtr &query, const BaseTensorPtr &key,
-                                                          const BaseTensorPtr &cos, const BaseTensorPtr &sin,
-                                                          const Int64ImmPtr &layout) {
+tensor::TensorPtr ApplyRotaryPosEmbExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &query,
+                                                      const TensorPtr &key, const TensorPtr &cos, const TensorPtr &sin,
+                                                      const Int64ImmPtr &layout) {
   MS_LOG(DEBUG) << "Call ApplyRotaryPosEmb start";
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), query, key, cos, sin);
   op->set_outputs({query, key});

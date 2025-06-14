@@ -48,10 +48,16 @@ const AnfNodePtr AddRmsNormFusion::Process(const FuncGraphPtr &graph, const AnfN
                                            const EquivPtr &equiv) const {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
+  bool use_internal_op = false;
   if (ms_context->IsEnableInferBoost()) {
 #ifndef ENABLE_INTERNAL_KERNELS
     return nullptr;
 #endif
+    auto enable_op_list = ms_context->ms_internal_enable_custom_kernel_list();
+    use_internal_op = (std::find(enable_op_list.begin(), enable_op_list.end(), fusion_op_name) != enable_op_list.end());
+  }
+
+  if (!use_internal_op) {
     // aclnnAddRmsNorm can not support different input types
     auto x_dtype = common::AnfAlgo::GetPrevNodeOutputInferDataType(node, 0);
     auto gamma_dtype = common::AnfAlgo::GetPrevNodeOutputInferDataType(node, 1);

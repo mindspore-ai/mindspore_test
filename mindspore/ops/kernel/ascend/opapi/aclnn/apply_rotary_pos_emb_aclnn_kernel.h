@@ -19,12 +19,12 @@
 #include <utility>
 #include <string>
 #include "ops/base_operator.h"
+#include "op_def/op_enum.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
 #include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
-constexpr int64_t APPLY_ROTARY_POS_EMB_LAYOUT_BSND = 1;
 class ApplyRotaryPosEmbAclnnKernelMod : public AclnnKernelMod {
  public:
   ApplyRotaryPosEmbAclnnKernelMod() : AclnnKernelMod(std::move("aclnnApplyRotaryPosEmb")) {}
@@ -35,6 +35,7 @@ class ApplyRotaryPosEmbAclnnKernelMod : public AclnnKernelMod {
 
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
+  int64_t layout_ = 1;
   static constexpr int64_t bsnd_layout_ = 1;
 };
 }  // namespace kernel

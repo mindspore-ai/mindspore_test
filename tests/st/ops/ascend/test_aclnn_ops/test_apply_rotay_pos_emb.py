@@ -19,7 +19,7 @@ import mindspore.nn as nn
 import mindspore as ms
 from mindspore import context, Tensor
 from mindspore.common.np_dtype import bfloat16
-from mindspore.ops.operations import ApplyRotaryPosEmbExt
+from mindspore.ops.auto_generate.gen_ops_prim  import ApplyRotaryPosEmbExt
 
 from tests.mark_utils import arg_mark
 
@@ -58,7 +58,7 @@ class RotaryEmbedding(nn.Cell):
         self.cos_format = cos_format
 
     def construct(self, query, key):
-        query_embed, key_embed = self.apply_rotary_pos_emb(query, key, self.cos, self.sin, 1)
+        query_embed, key_embed = self.apply_rotary_pos_emb(query, key, self.cos, self.sin, layout="BSND")
         return query_embed, key_embed
 
     def rotate_half1(self, x):
@@ -66,7 +66,7 @@ class RotaryEmbedding(nn.Cell):
         x2 = x[..., x.shape[-1] // 2:]
         return np.concatenate((-x2, x1), axis=-1)
 
-    def cal_truth_numpy(self, query, key, position_ids, query_dtype, cos_format):
+    def cal_truth_numpy(self, query, key, query_dtype, cos_format):
         query = query.astype(query_dtype).astype(np.float32)
         key = key.astype(query_dtype).astype(np.float32)
         cos1 = self.cos_np.astype(query_dtype).astype(np.float32)
@@ -100,7 +100,7 @@ def run(net, seqLen, batch, num_head_q, num_head_k, hidden_dim, max_seq_len, que
     key1 = key2.reshape((batch, seqLen, num_head_k, hidden_dim)).transpose((0, 2, 1, 3))
     #[B, N, S, D]->B, S, N, D
     print("query1.shape:", query1.shape)
-    query_embed2, key_embed2 = net.cal_truth_numpy(query1, key1, position_ids, query_dtype, cos_format)
+    query_embed2, key_embed2 = net.cal_truth_numpy(query1, key1, query_dtype, cos_format)
     query_embed2 = query_embed2.transpose((0, 2, 1, 3)).reshape(query.shape)
     key_embed2 = key_embed2.transpose((0, 2, 1, 3)).reshape(key.shape)
 
@@ -108,7 +108,6 @@ def run(net, seqLen, batch, num_head_q, num_head_k, hidden_dim, max_seq_len, que
         tmp_shape1, tmp_shape2 = query_embed2.shape, key_embed2.shape
         query_embed2 = query_embed2.reshape(-1, 2, hidden_dim // 2).transpose((0, 2, 1)).reshape(tmp_shape1)
         key_embed2 = key_embed2.reshape(-1, 2, hidden_dim // 2).transpose((0, 2, 1)).reshape(tmp_shape2)
-    print("zhanghan query_embed1 query_embed2")
     np.testing.assert_allclose(query_embed1, query_embed2, rtol=1e-2, atol=1e-2)
     np.testing.assert_allclose(key_embed1, key_embed2, rtol=1e-2, atol=1e-2)
 

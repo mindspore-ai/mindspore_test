@@ -139,7 +139,6 @@ from ..deprecated import (identity, DropoutDoMask, MaxPoolWithArgmax, DropoutGen
 from .manually_defined._inner import ScalarCast
 from .manually_defined import WhileLoop, Scan, ForiLoop
 from .reshard_ops import (Reshard)
-from ._infer_ops import (ApplyRotaryPosEmbExt)
 
 __all__ = [
     'HSVToRGB',
@@ -724,7 +723,6 @@ __all__ = [
     "GroupTopk",
     "RmsNorm",
     "Reshard",
-    "ApplyRotaryPosEmbExt",
 ]
 
 __custom__ = [
