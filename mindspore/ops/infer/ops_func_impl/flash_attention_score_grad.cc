@@ -297,7 +297,7 @@ TypePtr FlashAttentionScoreGradFuncImpl::InferType(const PrimitivePtr &prim,
     (void)types1.emplace("softmax_out", input_args[kFASGradInputSoftmaxOutIndex]->GetType());
   }
   (void)types1.emplace("dy", input_args[kFASGradInputDyIndex]->GetType());
-  auto type = CheckAndConvertUtils::CheckTensorTypeSame(types1, {kFloat16, kBFloat16}, op_name);
+  auto type = CheckAndConvertUtils::CheckTensorTypeSame(types1, {kFloat16, kBFloat16, kFloat32}, op_name);
   if (!types2.empty()) {
     (void)CheckAndConvertUtils::CheckTensorTypeSame(types2, {kFloat32}, op_name);
   }

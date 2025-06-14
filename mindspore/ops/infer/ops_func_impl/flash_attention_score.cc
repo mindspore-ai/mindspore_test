@@ -388,7 +388,7 @@ BaseShapePtr FlashAttentionScoreFuncImpl::InferShape(const PrimitivePtr &primiti
 
 TypePtr FlashAttentionScoreFuncImpl::InferType(const PrimitivePtr &prim,
                                                const std::vector<AbstractBasePtr> &input_args) const {
-  const std::set valid_types = {kFloat16, kBFloat16};
+  const std::set valid_types = {kFloat16, kBFloat16, kFloat32};
   auto op_name = prim->name();
   std::map<std::string, TypePtr> types;
 
