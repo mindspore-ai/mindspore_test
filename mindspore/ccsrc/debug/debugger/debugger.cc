@@ -39,6 +39,7 @@
 #include "include/backend/debug/debugger/proto_exporter.h"
 #include "debug/debugger/debugger_utils.h"
 #include "debug/debug_services.h"
+#include "debug/dump/utils.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "proto/debug_graph.pb.h"
 
@@ -259,17 +260,6 @@ void Debugger::PreExecute(const KernelGraphPtr &graph_ptr) {
  * Feature group: Dump.
  * Target device group: Ascend, GPU.
  * Runtime category: MindRT.
- * Description: Returns the rank_id for GPU and Ascend kernel-bykernel mindRT.
- */
-uint32_t Debugger::GetRankID() {
-  uint32_t rank_id = GetRankId();
-  return rank_id;
-}
-
-/*
- * Feature group: Dump.
- * Target device group: Ascend, GPU.
- * Runtime category: MindRT.
  * Description: When dump is enabled, this function: 1) Dumps parameters for the current root_graph_id to the
  * root_graph's directory. 2) Dumps constant data once for each graph. 3) Dumps graph run history for each graph.
  */
@@ -278,7 +268,7 @@ void Debugger::DumpParamsAndConstAndHistory() {
     return;
   }
   LoadParametersAllGraphs();
-  E2eDump::DumpParametersData(GetRankID(), debugger_.get());
+  E2eDump::DumpParametersData(datadump::GetRankID(), debugger_.get());
   // Whether constant data was already dumped for the current root graph.
   bool cur_root_graph_checked = std::find(visited_root_graph_ids_.begin(), visited_root_graph_ids_.end(),
                                           cur_root_graph_id_) != visited_root_graph_ids_.end();
@@ -286,7 +276,7 @@ void Debugger::DumpParamsAndConstAndHistory() {
     if (!cur_root_graph_checked) {
       LoadConstsForGraph(graph);
       // Dump constant data for GPU.
-      E2eDump::DumpConstantData(graph.get(), GetRankID(), debugger_.get());
+      E2eDump::DumpConstantData(graph.get(), datadump::GetRankID(), debugger_.get());
       // Dump constant data for Ascend.
       DumpConstantDataAscend(graph);
     }
@@ -299,7 +289,7 @@ void Debugger::DumpParamsAndConstAndHistory() {
     if (debugger->GetAscendKernelByKernelFlag() && (*kernel_graph)->graph_id() != (*kernel_graph)->root_graph_id()) {
       MS_LOG(INFO) << "current graph graph_id = " << (*kernel_graph)->graph_id() << " is not root graph.";
     } else {
-      E2eDump::DumpRunIter(*kernel_graph, GetRankID());
+      E2eDump::DumpRunIter(*kernel_graph, datadump::GetRankID());
     }
   }
   if (!cur_root_graph_checked) {
@@ -314,7 +304,7 @@ void Debugger::DumpConstantDataAscend(const KernelGraphPtr &graph) {
   auto &json_parser = DumpJsonParser::GetInstance();
   if (json_parser.e2e_dump_enabled() || json_parser.async_dump_enabled()) {
     // Dump constant data for ascend mindRT, for old runtime constant data is dumped in session_basic.
-    uint32_t rank_id = GetRankID();
+    uint32_t rank_id = datadump::GetRankID();
     std::string cst_file_dir = GenerateDumpPath(graph->root_graph_id(), rank_id, true);
     DumpConstantInfo(graph, cst_file_dir);
   }
@@ -328,7 +318,7 @@ void Debugger::DumpConstantDataAscend(const KernelGraphPtr &graph) {
  */
 void Debugger::DumpSingleNode(const CNodePtr &node, uint32_t graph_id, const DeviceContext *device_context) const {
   if (debugger_ && debugger_->DebuggerBackendEnabled()) {
-    uint32_t rank_id = GetRankID();
+    uint32_t rank_id = datadump::GetRankID();
     (void)E2eDump::DumpSingleNodeData(node, graph_id, rank_id, debugger_.get(), device_context);
   }
 }
@@ -346,7 +336,7 @@ void Debugger::DumpInGraphCompiler(const KernelGraphPtr &kernel_graph) {
   }
   auto &json_parser = DumpJsonParser::GetInstance();
   if (json_parser.e2e_dump_enabled()) {
-    uint32_t rank_id = GetRankID();
+    uint32_t rank_id = datadump::GetRankID();
     kernel_graph->set_root_graph_id(kernel_graph->graph_id());
     std::string final_graph = "trace_code_graph_" + std::to_string(kernel_graph->graph_id());
     std::string root_dir = json_parser.path() + "/rank_" + std::to_string(rank_id);

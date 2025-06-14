@@ -71,7 +71,6 @@
 #include "utils/compile_config.h"
 #include "backend/graph_compiler/transform.h"
 #include "load_mindir/infer_mindir.h"
-#include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
 #include "debug/profiler/profiling.h"
 #include "frontend/optimizer/fallback_rewriter.h"
@@ -1970,9 +1969,6 @@ bool TaskEmitAction(const ResourcePtr &resource) {
   bool is_control_flow = !func_graph->func_graphs_used_total().empty();
   if (mode == kGraphMode || (mode == kPynativeMode && (func_graph->has_flag(kFlagJitCallGraph) || is_control_flow))) {
     func_graph->SetMultiTarget();
-    if (func_graph->exist_multi_target() && DumpJsonParser::GetInstance().IsDumpEnabled()) {
-      MS_LOG(WARNING) << "Multi device target is detected, CPU data is dumped in rank_0 directory";
-    }
   }
 
   if (backend != kMsConvert && backend != kGeVm) {

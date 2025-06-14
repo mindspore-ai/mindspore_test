@@ -292,33 +292,6 @@ void DumpJsonParser::CopyDumpJsonToDir(uint32_t rank_id) {
 
 /*
  * Feature group: Dump.
- * Target device group: Ascend.
- * Runtime category: Old runtime, MindRT.
- * Description: Copy the hccl configuration file to the root directory of dump path.
- */
-void DumpJsonParser::CopyHcclJsonToDir(uint32_t rank_id) {
-  if (!IsDumpEnabled()) {
-    return;
-  }
-  std::string config_path = common::GetEnv("MINDSPORE_HCCL_CONFIG_PATH");
-  if (config_path.empty()) {
-    config_path = common::GetEnv("RANK_TABLE_FILE");
-    if (config_path.empty()) {
-      MS_LOG(INFO) << "Get hccl json config failed.";
-      return;
-    }
-  }
-  std::ifstream json_file(config_path);
-  auto realpath = Common::CreatePrefixPath(path_ + "/rank_" + std::to_string(rank_id) + "/.dump_metadata/hccl.json");
-  if (!realpath.has_value()) {
-    MS_LOG(ERROR) << "Get real path failed in CopyHcclJsonToDir.";
-  } else {
-    WriteJsonFile(realpath.value(), json_file);
-  }
-}
-
-/*
- * Feature group: Dump.
  * Target device group: Ascend, GPU and CPU.
  * Runtime category: Old runtime, MindRT.
  * Description: Copy the mindspore configuration file to the root directory of dump path. It provides the device and
@@ -1135,41 +1108,6 @@ void DumpJsonParser::PrintUnusedKernel() {
       MS_LOG(WARNING) << "[DataDump] Unused Kernel in json: " << iter.first;
     }
   }
-}
-
-/*
- * Feature group: Online debugger.
- * Target device group: Ascend.
- * Runtime category: Old runtime, MindRT.
- * Description: Generate the directory path where overflow bin file locates.
- */
-std::string DumpJsonParser::GetOpOverflowBinPath(uint32_t graph_id) const {
-  std::string bin_path;
-  bin_path.append(path_);
-  bin_path.append("/");
-  bin_path.append("rank_");
-
-  uint32_t rank_id = 0;
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto env_rank_id = common::GetEnv("RANK_ID");
-  if (ms_context->get_param<bool>(MS_CTX_ENABLE_HCCL) && !env_rank_id.empty()) {
-    // get actual rank id if it's distribution training case.
-    if (!CommManager::GetInstance().GetRankID(kHcclWorldGroup, &rank_id)) {
-      MS_LOG(INFO) << "Failed to get rank id.";
-    }
-  }
-  bin_path.append(std::to_string(rank_id));
-
-  bin_path.append("/");
-  bin_path.append(net_name_);
-  bin_path.append("/");
-  bin_path.append(std::to_string(graph_id));
-  bin_path.append("/");
-  bin_path.append(std::to_string(cur_dump_iter_));
-  bin_path.append("/");
-
-  return bin_path;
 }
 
 bool DumpJsonParser::InputNeedDump() const {
