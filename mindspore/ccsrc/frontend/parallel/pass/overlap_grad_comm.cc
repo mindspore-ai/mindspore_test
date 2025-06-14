@@ -63,7 +63,10 @@ std::vector<CNodePtr> GetDwRelyNodes(const CNodePtr &dw_matmul) {
       if (!IsPrimitiveCNode(queue_front->input(i))) {
         continue;
       }
-      auto input_cnode = queue_front->input(i)->cast<CNodePtr>();
+      auto input_node = queue_front->input(i);
+      MS_EXCEPTION_IF_NULL(input_node);
+      auto input_cnode = input_node->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(input_cnode);
       cnode_queue.push(input_cnode);
       if (input_cnode->HasAttr(kAttrDuplicated)) {
         continue;
