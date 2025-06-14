@@ -24,6 +24,19 @@
 
 namespace mindspore {
 namespace ops {
+enum ApplyRotaryPosEmbExtInputIndex : size_t {
+  kApplyRotaryPosEmbExtQueryIndex = 0,
+  kApplyRotaryPosEmbExtKeyIndex,
+  kApplyRotaryPosEmbExtCosIndex,
+  kApplyRotaryPosEmbExtSinIndex,
+  kApplyRotaryPosEmbExtLayoutIndex,
+  kApplyRotaryPosEmbExtInputsNum,
+};
+
+enum ApplyRotaryPosEmbExtEnum : size_t {
+  kApplyRotaryPosEmbExtShapeSize = 4,
+};
+
 class ApplyRotaryPosEmbExtFuncImpl : public OpFuncImpl {
  public:
   ShapeArray InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
