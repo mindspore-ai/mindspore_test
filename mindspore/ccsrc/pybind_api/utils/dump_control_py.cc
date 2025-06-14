@@ -23,7 +23,7 @@
 
 namespace py = pybind11;
 namespace mindspore {
-namespace dump {
+namespace datadump {
 void RegDumpControl(py::module *m) {
   m->def("_dump_set_dynamic", []() { DumpControl::GetInstance().SetDynamicDump(); })
     .def("_dump_start", []() { DumpControl::GetInstance().DynamicDumpStart(); })
@@ -41,6 +41,6 @@ void RegDumpControl(py::module *m) {
       py::arg("step") = 1);
 }
 
-}  // namespace dump
+}  // namespace datadump
 
 }  // namespace mindspore
