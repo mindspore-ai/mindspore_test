@@ -689,7 +689,6 @@ std::vector<KernelTensorPtr> DeviceAddressUtils::CreateGraphOutputKernelTensor(
       address_size, output_format, output_type, shape, device_context->device_context_key().device_name_,
       device_context->device_context_key().device_id_, cache_output_kernel_tensor->user_data());
     new_kernel_tensor->set_stream_id(stream_id);
-    AnfAlgo::SetOutputKernelTensor(new_kernel_tensor, index, output_node.get());
     MS_LOG(DEBUG) << "Create addr for node:" << output_node->DebugString()
                   << " kernel tensor:" << new_kernel_tensor->ToString();
     output_kernel_tensor_list.push_back(new_kernel_tensor);
