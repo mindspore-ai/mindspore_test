@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "ms_extension/all.h"
+#include "ms_extension/api.h"
 
 using PyboostRunner = ms::pynative::PyboostRunner;
 using TypeId = ms::TypeId;
@@ -52,10 +52,26 @@ py::object pyboost_tensor_value(T v, const std::string &dtype) {
   return PyboostRunner::Call<1>(tensor_value<T>, v, dtype);
 }
 
+ms::Tensor ones(const ShapeVector &shape, const std::string &dtype) {
+  return ms::ones(shape, type_str_to_type_id(dtype));
+}
+auto pyboost_ones(const ShapeVector &shape, const std::string &dtype) {
+  return ms::pynative::PyboostRunner::Call<1>(ones, shape, dtype);
+}
+
+ms::Tensor zeros(const ShapeVector &shape, const std::string &dtype) {
+  return ms::zeros(shape, type_str_to_type_id(dtype));
+}
+auto pyboost_zeros(const ShapeVector &shape, const std::string &dtype) {
+  return ms::pynative::PyboostRunner::Call<1>(zeros, shape, dtype);
+}
+
 PYBIND11_MODULE(MS_EXTENSION_NAME, m) {
   m.def("reshape_fp32", &pyboost_reshape, "reshape and cast to fp32");
   m.def("tensor_int", &pyboost_tensor_value<int64_t>, "tensor_int");
   m.def("tensor_double", &pyboost_tensor_value<double>, "tensor_double");
   m.def("tensor_int_list", &pyboost_tensor_value<std::vector<int64_t>>, "tensor_int_list");
   m.def("tensor_double_list", &pyboost_tensor_value<std::vector<double>>, "tensor_double_list");
+  m.def("ones", &pyboost_ones, "ones");
+  m.def("zeros", &pyboost_zeros, "zeros");
 }

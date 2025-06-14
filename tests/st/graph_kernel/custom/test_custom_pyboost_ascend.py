@@ -46,7 +46,7 @@ def test_pyboost_atb_swiglu():
     np.allclose(output.asnumpy(), expect, 1e-3, 1e-3)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level2', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_pyboost_atb_rope():
     """
     Feature: CustomOpBuilder.
@@ -54,7 +54,6 @@ def test_pyboost_atb_rope():
     Expectation: success.
     """
     ms.set_device("Ascend")
-    my_ops = CustomOpBuilder("atb_rope", "jit_test_files/atb_rope.cpp", enable_atb=True).load()
     ntokens = 4
     head_size = 8
     hiddenSizeQ = 16
@@ -67,7 +66,7 @@ def test_pyboost_atb_rope():
     sequenceLength = None
     previousTokenCount = -1
 
-    def run_bencmkark(positions, query, key, head_size, cos_sin_cache, is_neox_style):
+    def run_bencmkark(my_ops, positions, query, key, head_size, cos_sin_cache, is_neox_style):
         nonlocal cosCacheNeox
         nonlocal sinCacheNeox
         nonlocal cosCache
@@ -90,6 +89,7 @@ def test_pyboost_atb_rope():
         rotaryCoeff = 2 if is_neox_style else head_size
         my_ops.rope_native_atb(query, key, cos, sin, sequenceLength, rotaryCoeff)
 
+    my_ops = CustomOpBuilder("atb_rope", "jit_test_files/atb_rope.cpp", enable_atb=True).load()
     np.random.seed(100)
     const_positions = ms.Tensor(np.array([0, 2, 4, 6], dtype=np.int32))
     np_query = np.random.rand(ntokens, hiddenSizeQ).astype(np.float16)
@@ -102,9 +102,9 @@ def test_pyboost_atb_rope():
     benchmark_key = ms.Tensor(np_key)
 
     my_ops.npu_rope(const_positions, run_query, run_key, head_size, const_cos_sin_cache, False)
-    run_bencmkark(const_positions, benchmark_query, benchmark_key, head_size, const_cos_sin_cache, False)
+    run_bencmkark(my_ops, const_positions, benchmark_query, benchmark_key, head_size, const_cos_sin_cache, False)
     my_ops.npu_rope(const_positions, run_query, run_key, head_size, const_cos_sin_cache, True)
-    run_bencmkark(const_positions, benchmark_query, benchmark_key, head_size, const_cos_sin_cache, True)
+    run_bencmkark(my_ops, const_positions, benchmark_query, benchmark_key, head_size, const_cos_sin_cache, True)
     assert np.allclose(run_query.asnumpy(), benchmark_query.asnumpy(), 1e-3, 1e-3)
     assert np.allclose(run_key.asnumpy(), benchmark_key.asnumpy(), 1e-3, 1e-3)
 
@@ -146,3 +146,5 @@ def test_pyboost_tensor_api():
     assert np.allclose(my_ops.tensor_int_list([1, 2, 3], "int64").asnumpy(), np.array([1, 2, 3], np.int64), 1e-3, 1e-3)
     assert np.allclose(my_ops.tensor_double_list(
         [1.1, 2.2, 3.3], "float32").asnumpy(), np.array([1.1, 2.2, 3.3], np.float32), 1e-3, 1e-3)
+    assert np.allclose(my_ops.ones([3, 4], "float16").asnumpy(), np.ones([3, 4], np.float16), 1e-3, 1e-3)
+    assert np.allclose(my_ops.zeros([3, 4], "float32").asnumpy(), np.zeros([3, 4], np.float32), 1e-3, 1e-3)

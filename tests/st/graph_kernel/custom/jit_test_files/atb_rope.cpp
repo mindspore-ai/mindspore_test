@@ -45,8 +45,8 @@ void InitializeCosSinCache(const ms::Tensor &cos_sin_cache) {
   sinCacheNeox = cosSinChunks[1].repeat({1, 2});
 }
 
-std::vector<ms::Tensor> npu_rope(const ms::Tensor &positions, ms::Tensor query, ms::Tensor key, int64_t head_size,
-                                 const ms::Tensor &cos_sin_cache, bool is_neox_style) {
+void npu_rope(const ms::Tensor &positions, ms::Tensor query, ms::Tensor key, int64_t head_size,
+              const ms::Tensor &cos_sin_cache, bool is_neox_style) {
   if (!cosCache.is_defined() || !sinCache.is_defined()) {
     InitializeCosSinCache(cos_sin_cache);
   }
@@ -69,27 +69,25 @@ std::vector<ms::Tensor> npu_rope(const ms::Tensor &positions, ms::Tensor query, 
   std::vector<ms::Tensor> outputs = {query, key};
 
   ms::pynative::RunAtbOp("Rope", param, inputs, outputs);
-  return outputs;
 }
 
 auto pyboost_npu_rope(const ms::Tensor &positions, ms::Tensor query, ms::Tensor key, int64_t head_size,
                       const ms::Tensor &cos_sin_cache, bool is_neox_style) {
-  return ms::pynative::PyboostRunner::Call<2>(npu_rope, positions, query, key, head_size, cos_sin_cache, is_neox_style);
+  return ms::pynative::PyboostRunner::Call<0>(npu_rope, positions, query, key, head_size, cos_sin_cache, is_neox_style);
 }
 
-std::vector<ms::Tensor> rope_native_atb(ms::Tensor query, ms::Tensor key, ms::Tensor cos, ms::Tensor sin,
-                                        ms::Tensor seqLen, int32_t rotaryCoeff) {
+void rope_native_atb(ms::Tensor query, ms::Tensor key, ms::Tensor cos, ms::Tensor sin, ms::Tensor seqLen,
+                     int32_t rotaryCoeff) {
   RopeParam param;
   param.rotaryCoeff = rotaryCoeff;
   std::vector<ms::Tensor> inputs = {query, key, cos, sin, sequenceLength};
   std::vector<ms::Tensor> outputs = {query, key};
   ms::pynative::RunAtbOp("Rope", param, inputs, outputs);
-  return outputs;
 }
 
 auto pyboost_rope_native_atb(ms::Tensor query, ms::Tensor key, ms::Tensor cos, ms::Tensor sin, ms::Tensor seqLen,
                              int32_t rotaryCoeff) {
-  return ms::pynative::PyboostRunner::Call<2>(rope_native_atb, query, key, cos, sin, seqLen, rotaryCoeff);
+  return ms::pynative::PyboostRunner::Call<0>(rope_native_atb, query, key, cos, sin, seqLen, rotaryCoeff);
 }
 
 PYBIND11_MODULE(MS_EXTENSION_NAME, m) {

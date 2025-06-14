@@ -44,9 +44,9 @@ class CustomAddUncontiguous : public ms::pynative::PyboostRunner {
       for (int64_t j = 0; j < x_shape[1]; ++j) {
         for (int64_t k = 0; k < x_shape[2]; ++k) {
           // Compute linear indices for x, y, and z
-          int64_t x_index = x.storage_offset() + i * x_stride[0] + j * x_stride[1] + k * x_stride[2];
-          int64_t y_index = y.storage_offset() + i * y_stride[0] + j * y_stride[1] + k * y_stride[2];
-          int64_t z_index = z.storage_offset() + i * z_stride[0] + j * z_stride[1] + k * z_stride[2];
+          int64_t x_index = i * x_stride[0] + j * x_stride[1] + k * x_stride[2];
+          int64_t y_index = i * y_stride[0] + j * y_stride[1] + k * y_stride[2];
+          int64_t z_index = i * z_stride[0] + j * z_stride[1] + k * z_stride[2];
 
           // Perform element-wise addition
           z_base_ptr[z_index] = x_base_ptr[x_index] + y_base_ptr[y_index];
@@ -104,7 +104,42 @@ auto pyboost_add2(const ms::Tensor &x, const ms::Tensor &y) {
   return ms::pynative::PyboostRunner::Call<1>(add_contiguous, x, y);
 }
 
+class CustomAdd3 : public ms::pynative::PyboostRunner {
+ public:
+  using PyboostRunner::PyboostRunner;
+  size_t CalcWorkspace() override { return inputs()[0].numel() * sizeof(int32_t); }
+  void LaunchKernel() override {
+    auto &x = inputs()[0];
+    auto &y = inputs()[1];
+    auto &z = inputs()[2];
+    auto &out = outputs()[0];
+    const int32_t *x_base_ptr = static_cast<const int32_t *>(x.GetDataPtr());
+    const int32_t *y_base_ptr = static_cast<const int32_t *>(y.GetDataPtr());
+    const int32_t *z_base_ptr = static_cast<const int32_t *>(z.GetDataPtr());
+    int32_t *ws_base_ptr = static_cast<int32_t *>(workspace_ptr());
+    int32_t *out_base_ptr = static_cast<int32_t *>(out.GetDataPtr());
+    for (size_t i = 0; i < x.numel(); i++) {
+      ws_base_ptr[i] = x_base_ptr[i] + y_base_ptr[i];
+    }
+    for (size_t i = 0; i < x.numel(); i++) {
+      out_base_ptr[i] = z_base_ptr[i] + ws_base_ptr[i];
+    }
+  }
+  static ms::Tensor Eval(const ms::Tensor &x, const ms::Tensor &y, const ms::Tensor &z) {
+    // assume the shapes of x, y and z are same.
+    auto out = ms::Tensor(x.data_type(), x.shape());
+    auto runner = std::make_shared<CustomAdd3>("Add3");
+    runner->Run({x, y, z}, {out});
+    return out;
+  }
+};
+
+auto pyboost_add3(const ms::Tensor &x, const ms::Tensor &y, const ms::Tensor &z) {
+  return ms::pynative::PyboostRunner::Call<1>(CustomAdd3::Eval, x, y, z);
+}
+
 PYBIND11_MODULE(MS_EXTENSION_NAME, m) {
   m.def("add_uncontiguous", &pyboost_add1, "add, support uncontiguous", pybind11::arg("x"), pybind11::arg("y"));
   m.def("add_contiguous", &pyboost_add2, "add, only support contiguous", pybind11::arg("x"), pybind11::arg("y"));
+  m.def("add3", &pyboost_add3, "the result of 'x + y + z'", pybind11::arg("x"), pybind11::arg("y"), pybind11::arg("z"));
 }

@@ -146,8 +146,8 @@ Tensor Tensor::repeat(const std::vector<int64_t> &repeats) const {
   return Tensor(mindspore::kernel::pyboost::repeat(tensor(), MakeI64Tuple(repeats)));
 }
 
-Tensor Tensor::repeat_interleave(const Tensor &repeats, std::optional<int64_t> dim,
-                                 std::optional<int64_t> output_size) const {
+Tensor Tensor::repeat_interleave(const Tensor &repeats, const std::optional<int64_t> &dim,
+                                 const std::optional<int64_t> &output_size) const {
   std::optional<mindspore::Int64ImmPtr> dim_opt = std::nullopt;
   std::optional<mindspore::Int64ImmPtr> output_size_opt = std::nullopt;
   if (dim.has_value()) {
@@ -160,8 +160,8 @@ Tensor Tensor::repeat_interleave(const Tensor &repeats, std::optional<int64_t> d
     mindspore::kernel::pyboost::repeat_interleave_tensor(tensor(), repeats.tensor(), dim_opt, output_size_opt));
 }
 
-Tensor Tensor::repeat_interleave(int64_t repeats, std::optional<int64_t> dim,
-                                 std::optional<int64_t> output_size) const {
+Tensor Tensor::repeat_interleave(int64_t repeats, const std::optional<int64_t> &dim,
+                                 const std::optional<int64_t> &output_size) const {
   std::optional<mindspore::Int64ImmPtr> dim_opt = std::nullopt;
   std::optional<mindspore::Int64ImmPtr> output_size_opt = std::nullopt;
   if (dim.has_value()) {
@@ -179,7 +179,11 @@ namespace pybind11 {
 namespace detail {
 bool type_caster<ms::Tensor>::load(handle src, bool) {
   if (mindspore::tensor::IsTensorPy(src)) {
-    value = ms::Tensor(mindspore::tensor::ConvertToValue(src));
+    auto v = mindspore::tensor::ConvertToValue(src);
+    if (v->isa<mindspore::tensor::Tensor>()) {
+      v->cast<mindspore::tensor::TensorPtr>()->set_need_pipeline_sync(true);
+    }
+    value = ms::Tensor(v);
     return true;
   }
   // the value is initialized as an undefined Tensor for None input.
