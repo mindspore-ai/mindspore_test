@@ -195,7 +195,7 @@ class WithGradCell(Cell):
         self.network = network
         self.loss_fn = loss_fn
         self.weights = ParameterTuple(network.trainable_params())
-        self.grad = C.GradOperation(get_by_list=True, sens_param=(sens is not None))
+        self.grad = ops.GradOperation(get_by_list=True, sens_param=(sens is not None))
         self.sens = sens
         if loss_fn is None:
             self.network_with_loss = network

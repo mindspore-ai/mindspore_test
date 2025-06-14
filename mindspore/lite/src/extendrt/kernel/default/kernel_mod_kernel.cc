@@ -48,6 +48,9 @@ int KernelModKernel::Run() {
   for (size_t &i : workspace_size) {
     auto buffer = context_->allocator->Malloc(i);
     auto tensor = new (std::nothrow) kernel::KernelTensor();
+    if (tensor == nullptr) {
+      return RET_ERROR;
+    }
     tensor->set_device_ptr(buffer);
     workspace.push_back(tensor);
   }
