@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace opt {
+auto const kSplitConcatDepend = "split_concat_depend";
 void OptimizerUtils::MoveContrlDepend(const FuncGraphPtr &func_graph, const AnfNodePtr &from_node,
                                       const AnfNodePtr &to_node) {
   MS_EXCEPTION_IF_NULL(func_graph);
@@ -58,9 +59,14 @@ std::vector<CNodePtr> OptimizerUtils::MoveDataDepend(const FuncGraphPtr &func_gr
     }
     auto cnode_user = node_user.first->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(cnode_user);
-    if (cnode_user->input(kDependDataIdx) == from_node) {
-      data_depend_nodes.emplace_back(cnode_user);
+    if (cnode_user->input(kDependDataIdx) != from_node) {
+      continue;
     }
+
+    if (!cnode_user->HasAttr(kSplitConcatDepend)) {
+      continue;
+    }
+    data_depend_nodes.emplace_back(cnode_user);
   }
 
   for (auto &depend_node : data_depend_nodes) {
