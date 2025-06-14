@@ -100,7 +100,7 @@ void CheckRealDivisorSize(const Shapes &shapes, const Shapes &real_divisor_shape
   }
 }
 
-// real divisor:
+// real divisor
 // 1, For static shape elements, the real divisor of symbol is static shape.
 // 2, For dynamic shape elements, if remainder != 0, the real divisor of symbol is the maximum common divisor of divisor
 // and remainder, else equal to divisor
