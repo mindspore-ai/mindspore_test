@@ -317,7 +317,7 @@ def generate_unpad_full_attn_mask(batch, seq_len, actual_seq_qlen, actual_seq_kv
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.context.GRAPH_MODE, ms.context.PYNATIVE_MODE])
-@pytest.mark.parametrize('dtype', [mstype.float16, mstype.bfloat16])
+@pytest.mark.parametrize('dtype', [mstype.float16, mstype.bfloat16, mstype.float32])
 def test_ops_flash_attention_score_tnd(mode, dtype):
     """
     Feature: Test the precision for TND.
