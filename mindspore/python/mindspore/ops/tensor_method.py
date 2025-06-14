@@ -1527,6 +1527,7 @@ def tensor_new_empty(input, size, *, dtype=None, device=None):
     raise NotImplementedError(
         "This is a function for new_empty should not be called. Please check the implementation.")
 
+
 def deprecated_tensor_logaddexp(input, other):
     return F.logaddexp(input, other)
 
