@@ -39,7 +39,9 @@
 namespace mindspore::graphkernel::inner {
 std::vector<int64_t> GetListInt(const ValuePtr &attr_value) {
   std::vector<int64_t> list_int;
-  const auto &vals = attr_value->cast<ValueSequencePtr>()->value();
+  const auto &val_seq = attr_value->cast<ValueSequencePtr>();
+  MS_EXCEPTION_IF_NULL(val_seq);
+  const auto &vals = val_seq->value();
   (void)std::transform(vals.begin(), vals.end(), std::back_inserter(list_int),
                        [](const ValuePtr &v) { return AnfUtils::GetIntValue(v); });
   return list_int;

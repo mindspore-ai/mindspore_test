@@ -1727,8 +1727,6 @@ void CodeBreakGenerator::CallUntrackedCode(CodeGenerator *code_gen) {
 }
 
 py::object CodeBreakGenerator::MakeDispatchCode() {
-  auto jcr = GetJitCompileResults(co_);
-
   CodeGenerator code_gen(&interpret_, true);
 
   if (IsCopyCapturedInstructions()) {
@@ -1767,6 +1765,8 @@ py::object CodeBreakGenerator::MakeDispatchCode() {
   MakeReturn(&code_gen);
 
   std::string co_name = PyUnicode_AsUTF8(co_->co_name);
+  auto jcr = GetJitCompileResults(co_);
+  MS_EXCEPTION_IF_NULL(jcr);
   co_name = std::to_string(jcr->IncCodeCount()) + "R." + co_name;
 
   int nlocals = SizeToInt(code_gen.GetLocalsMap().size());
@@ -2412,6 +2412,7 @@ bool LoopBodyReCaptureCodeGenerator::Prepare() {
 
 py::object LoopBodyReCaptureCodeGenerator::Build() {
   auto jcr = GetJitCompileResults(co_);
+  MS_EXCEPTION_IF_NULL(jcr);
   if (jcr->conf()->GetLogConfig(GraphJitConfig::kAll)) {
     std::stringstream ss;
     ss << "Instrs Before ReCapture:" << std::endl;

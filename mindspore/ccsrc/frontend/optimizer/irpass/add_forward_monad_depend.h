@@ -95,43 +95,53 @@ void PropagateUMonadInput(const FuncGraphManagerPtr &manager, const FuncGraphPtr
 }
 }  // namespace internal
 
-// The origin pattern:
-// %0 = U
-// %1 = call fprop(x, y, %0)
-// %2 = get_item(%1, 1)
-// %3 = %2[@@bprop](dout)
-//
-// graph bprop(dout):
-//   %0 = side_effect_mem_op(dout)
-//
-// After the pass:
-// kLevelNone(no changes)
-// %0 = U
-// %1 = call fprop(x, y, %0)
-// %2 = get_item(%1, 1)
-// %3 = %2[@@bprop](dout)
-//
-// graph bprop(dout):
-//   %0 = side_effect_mem_op(dout)
-//
-// kLevelTop
-// %0 = U
-// %1 = call fprop(x, y, %0)
-// %2 = get_item(%1, 1)
-// %3 = %2[@@bprop](dout, %0)
-//
-// graph bprop(dout, u):
-//   %0 = side_effect_mem_op(dout, u)
-//
-// kLevelWhole
-// %0 = U
-// %1 = call fprop(x, y, %0)
-// %2 = UpdateState(U, %1)
-// %3 = get_item(%1, 1)
-// %4 = %3[@@bprop](dout, %2)
-//
-// graph bprop(dout, u):
-//   %0 = side_effect_mem_op(dout, u)
+/**
+ * \brief Pass of add forward monad depend.
+ *
+ * \example
+ * The origin pattern:
+ * %0 = U
+ * %1 = call fprop(x, y, %0)
+ * %2 = get_item(%1, 1)
+ * %3 = %2[@@bprop](dout)
+ *
+ * graph bprop(dout):
+ *   %0 = side_effect_mem_op(dout)
+ *
+ * After the pass:
+ * kLevelNone(no changes)
+ * %0 = U
+ * %1 = call fprop(x, y, %0)
+ * %2 = get_item(%1, 1)
+ * %3 = %2[@@bprop](dout)
+ *
+ * graph bprop(dout):
+ *   %0 = side_effect_mem_op(dout)
+ *
+ * kLevelTop
+ * %0 = U
+ * %1 = call fprop(x, y, %0)
+ * %2 = get_item(%1, 1)
+ * %3 = %2[@@bprop](dout, %0)
+ *
+ * graph bprop(dout, u):
+ *   %0 = side_effect_mem_op(dout, u)
+ *
+ * kLevelWhole
+ * %0 = U
+ * %1 = call fprop(x, y, %0)
+ * %2 = UpdateState(U, %1)
+ * %3 = get_item(%1, 1)
+ * %4 = %3[@@bprop](dout, %2)
+ *
+ * graph bprop(dout, u):
+ *   %0 = side_effect_mem_op(dout, u)
+ *
+ * \param[in] root The root func graph.
+ * \param[in] opt The optimizer.
+ *
+ * \return True if root func graph changed, else false.
+ **/
 bool AddForwardMonadDepend(const FuncGraphPtr &root, const opt::OptimizerPtr &opt) {
   MS_EXCEPTION_IF_NULL(root);
   MS_EXCEPTION_IF_NULL(opt);

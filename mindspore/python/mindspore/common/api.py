@@ -17,6 +17,8 @@
 """Providing interface methods."""
 from __future__ import absolute_import
 
+__all__ = ['ms_memory_recycle', 'jit', 'jit_class', 'flops_collection']
+
 import gc
 import types
 import sys
@@ -2240,5 +2242,3 @@ def flops_collection(phase='train'):
 
 _cell_graph_executor = _CellGraphExecutor()
 _pynative_executor = _PyNativeExecutor()
-
-__all__ = ['ms_memory_recycle', 'jit', 'jit_class', 'flops_collection']

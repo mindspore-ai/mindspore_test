@@ -148,6 +148,7 @@ PyObject *RunGraph(const std::string &phase, const py::tuple &args, const std::s
   py::tuple args_tuple = EliminateSelf(args, name);
   args_tuple = MakeNewArgsTuple(args_tuple);
   auto origin_fg = graph_executor->GetFuncGraph(phase);
+  MS_EXCEPTION_IF_NULL(origin_fg);
   const auto &params = origin_fg->parameters();
   MarkArgumentMutableWithParams(args_tuple, params);
   MarkArgumentMutable(args_tuple);

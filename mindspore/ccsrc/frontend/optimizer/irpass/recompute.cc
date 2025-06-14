@@ -195,6 +195,7 @@ bool AddNewPrimalNode(const FuncGraphManagerPtr &manager, const FuncGraphPtr &fg
 }
 
 bool IsRecomputeCell(const FuncGraphPtr &k_fg) {
+  MS_EXCEPTION_IF_NULL(k_fg);
   auto primal_iter = k_fg->transforms().find("primal");
   if (primal_iter == k_fg->transforms().end()) {
     MS_LOG_WITH_NODE(EXCEPTION, k_fg->return_node()) << "The k_fg: " << k_fg << " should have primal part.";
@@ -473,7 +474,9 @@ void AddCseAttr(const FuncGraphPtr &root, bool changed) {
   auto all_node = TopoSort(root->get_return(), SuccDeeperSimple, AlwaysInclude);
   for (const auto &node : all_node) {
     if (WithRecomputedScope(node)) {
-      node->cast<CNodePtr>()->AddAttr(kAttrNeedCseAfterRecompute, MakeValue(true));
+      auto cnode = node->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(cnode);
+      cnode->AddAttr(kAttrNeedCseAfterRecompute, MakeValue(true));
     }
   }
 }

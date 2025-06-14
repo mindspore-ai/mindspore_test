@@ -52,13 +52,24 @@ void SetSequenceElementsUseFlagsForStarred(const AbstractBasePtrList &args_abs_l
 }
 }  // namespace
 
-// x = (1, 2, 3, 4)
-// a, *b, c = x    // targets(a, *b, c) = assign(x)
-// a = 1, *b = [2, 3], c = 4
-// convert:
-// StarredGetItem(sequence, position_in_target, targets_num)
-// *b: StarredGetItem(x, 1, 3)
-// output: *b = makelist(getitem(x, 1), getitem(x, 2))
+/**
+ * \brief Generate func graph of Primitive `StarredGetItem`.
+ *
+ * \example
+ * origin:
+ *   x = (1, 2, 3, 4)
+ *   a, *b, c = x    // targets(a, *b, c) = assign(x)
+ *   a = 1, *b = [2, 3], c = 4
+ * convert:
+ *   StarredGetItem(sequence, position_in_target, targets_num)
+ *   *b: StarredGetItem(x, 1, 3)
+ * output:
+ *   *b = makelist(getitem(x, 1), getitem(x, 2))
+ *
+ * \param[in] args_abs_list List of input abstract.
+ *
+ * \return The generated func graph.
+ **/
 FuncGraphPtr StarredGetItem::GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) {
   // Check inputs
   constexpr size_t starred_getitem_args_size = 3;
@@ -116,13 +127,23 @@ FuncGraphPtr StarredGetItem::GenerateFuncGraph(const AbstractBasePtrList &args_a
   return ret_graph;
 }
 
-// x = [1, 2, 3, 4]
-// a = *x,    // targets(a) = assign(*x,)
-// a = (1, 2, 3, 4)
-// convert:
-// StarredUnpackMerge(StarredUnpack(sequence))
-// StarredUnpackMerge(((1, 2, 3, 4), )
-// StarredUnpackMerge(tuple_getitem(x, 0), ...)
+/**
+ * \brief Generate func graph of Primitive `StarredUnpack`.
+ *
+ * \example
+ * origin:
+ *   x = [1, 2, 3, 4]
+ *   a = *x,    // targets(a) = assign(*x,)
+ *   a = (1, 2, 3, 4)
+ * convert:
+ *   StarredUnpackMerge(StarredUnpack(sequence))
+ *   StarredUnpackMerge(((1, 2, 3, 4), )
+ *   StarredUnpackMerge(tuple_getitem(x, 0), ...)
+ *
+ * \param[in] args_abs_list List of input abstract.
+ *
+ * \return The generated func graph.
+ **/
 FuncGraphPtr StarredUnpack::GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) {
   // Check inputs
   constexpr size_t starred_unpack_args_size = 1;
@@ -213,11 +234,21 @@ std::pair<std::vector<int64_t>, int64_t> StarredUnpackMerge::GetStarredUnpackMer
   return {starred_flags, is_tuple};
 }
 
-// a = *[1, 2], (3, 4)
-// convert:
-// StarredUnpackMerge(assign_node1, assign_node2, starred_flags_node, is_tuple)
-// StarredUnpackMerge(StarredUnpack(*[1, 2]), (3, 4), (1, 0), 1) --> (1, 2, (3, 4))
-// a: (1, 2, (3, 4))
+/**
+ * \brief Generate func graph of Primitive `StarredUnpackMerge`.
+ *
+ * \example
+ * origin:
+ *   a = *[1, 2], (3, 4)
+ * convert:
+ *   StarredUnpackMerge(assign_node1, assign_node2, starred_flags_node, is_tuple)
+ *   StarredUnpackMerge(StarredUnpack(*[1, 2]), (3, 4), (1, 0), 1) --> (1, 2, (3, 4))
+ *   a: (1, 2, (3, 4))
+ *l
+ * \param[in] args_abs_list List of input abstract.
+ *
+ * \return The generated func graph.
+ **/
 FuncGraphPtr StarredUnpackMerge::GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) {
   SetSequenceElementsUseFlagsForStarred(args_abs_list);
   // Check inputs, and get flags info.

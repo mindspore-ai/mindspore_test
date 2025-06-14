@@ -128,11 +128,11 @@ namespace mindspore::prim {
 
 #define _REGISTER_META_IMPL(name)      \
   const auto meta_impl_helper_##name = \
-    RegMetaImplFactory::RegHelper(#name, []() { return std::make_shared<name##MetaImpl>(); });
+    RegMetaImplFactory::RegHelper(#name, []() { return std::make_shared<name##MetaImpl>(); })
 
 #define _REGISTER_META_IMPL_WITH_CHECK(name, check_func)              \
   const auto meta_impl_helper_##name = RegMetaImplFactory::RegHelper( \
-    #name, []() { return std::make_shared<name##MetaImpl>(); }, check_func);
+    #name, []() { return std::make_shared<name##MetaImpl>(); }, check_func)
 
 // Definition of MetaImpl subclass.
 #define _DEFINE_META_IMPL(name)                 \
@@ -142,16 +142,16 @@ namespace mindspore::prim {
     ~name##MetaImpl() override = default;       \
     MS_DECLARE_PARENT(name##MetaImpl, MetaImpl) \
     void GenerateFunction() override;           \
-  };
+  }
 
 // DEFINE_FUNCTION_OP(op_name) -> _DEFINE_FUNCTION_OP
 #define _DEFINE_FUNCTION_OP(name) \
-  _DEFINE_META_IMPL(name)         \
+  _DEFINE_META_IMPL(name);        \
   _REGISTER_META_IMPL(name)
 
 // DEFINE_FUNCTION_OP(op_name, check_func) -> _DEFINE_FUNCTION_OP_WITH_CHECK
 #define _DEFINE_FUNCTION_OP_WITH_CHECK(name, check_func) \
-  _DEFINE_META_IMPL(name)                                \
+  _DEFINE_META_IMPL(name);                               \
   _REGISTER_META_IMPL_WITH_CHECK(name, check_func)
 
 #define _EXPAND(x) x

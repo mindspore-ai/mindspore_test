@@ -1210,6 +1210,7 @@ class AfterOptARewriter : public BaseRewriter {
       return nullptr;
     }
 
+    MS_EXCEPTION_IF_NULL(node);
     const auto &fg = node->func_graph();
     MS_EXCEPTION_IF_NULL(fg);
 

@@ -549,7 +549,9 @@ void CheckTensorCondValid(const AbstractBasePtr &cond) {
   // Tensor condition must be one element or dynamic shape.
   auto base_shape = cond->BuildShape();
   MS_EXCEPTION_IF_NULL(base_shape);
-  ShapeVector cond_shape = base_shape->cast<ShapePtr>()->shape();
+  auto shape_ptr = base_shape->cast<ShapePtr>();
+  MS_EXCEPTION_IF_NULL(shape_ptr);
+  ShapeVector cond_shape = shape_ptr->shape();
   if (cond_shape.empty()) {
     return;
   }
@@ -2382,7 +2384,7 @@ EvalResultPtr DoTransPrimitiveFunctionEvaluator::EvalPrim(const AnalysisEnginePt
   }
   if (cnode->size() != args_abs_list.size() + 1) {
     MS_LOG(INTERNAL_EXCEPTION) << "For Operator[" << prim_name << "], the number of cnode inputs should be "
-                               << args_abs_list.size() + 1 << ", but got " << cnode->size()
+                               << (args_abs_list.size() + 1) << ", but got " << cnode->size()
                                << ".\nnode: " << cnode->DebugString();
   }
   // Handle primitive labels.
@@ -3181,7 +3183,7 @@ class PyInterpretEvaluator final : public TransitionPrimEvaluator {
     }
     if (args_abs_list.size() < interpret_min_len - 1) {
       MS_LOG(INTERNAL_EXCEPTION) << "The minimum number for PyInterpret input abstract should be "
-                                 << interpret_min_len - 1 << " but got " << args_abs_list.size();
+                                 << (interpret_min_len - 1) << " but got " << args_abs_list.size();
     }
     constexpr size_t local_index = 3;
     auto local_node = cnode->input(local_index);
@@ -4162,7 +4164,9 @@ class ForiLoopEvaluator : public Evaluator {
     auto loop_func = CheckArg<AbstractFunction>("fori_loop", args_abs_list, loop_func_index);
     auto init_value = args_abs_list[init_index];
     auto init_node = cnode->input(init_index + 1);
-    auto loop_func_node = loop_func->cast<abstract::FuncGraphAbstractClosurePtr>()->func_graph();
+    auto loop_func_abs = loop_func->cast<abstract::FuncGraphAbstractClosurePtr>();
+    MS_EXCEPTION_IF_NULL(loop_func_abs);
+    auto loop_func_node = loop_func_abs->func_graph();
     auto length_node = GetLength(args_abs_list[lower_index], args_abs_list[upper_index]);
     AnfNodePtr final_node = nullptr;
 
@@ -4244,12 +4248,21 @@ class ForiLoopEvaluator : public Evaluator {
     return NewValueNode(unroll);
   }
 
-  // Build scan loop func graph
-  // --> def scan_loop_func_graph(loop_carry, _):
-  // -->   index, item = loop_carry
-  // -->   body_output = loop_func_node(index, item)
-  // -->   new_index = index + 1
-  // -->   return (new_index, body_output), item
+  /**
+   * \brief Build scan loop func graph.
+   *
+   * \example
+   *     # python
+   *     def scan_loop_func_graph(loop_carry, _):
+   *       index, item = loop_carry
+   *       body_output = loop_func_node(index, item)
+   *       new_index = index + 1
+   *       return (new_index, body_output), item
+   *
+   * \param[in] loop_func_node loop function node.
+   *
+   * \return The built scan loop func graph.
+   **/
   FuncGraphPtr BuildLoopFuncGraphOfScan(const FuncGraphPtr &loop_func_node) {
     auto scan_loop_func_graph = std::make_shared<FuncGraph>();
     auto loop_carry = scan_loop_func_graph->add_parameter();
@@ -4269,10 +4282,17 @@ class ForiLoopEvaluator : public Evaluator {
     return scan_loop_func_graph;
   }
 
-  // Build while cond func graph
-  //--> def cond_func_graph(loop_carry):
-  //-->   cond_index, cond_upper, _ = loop_carry
-  //-->   return cond_index < cond_upper
+  /**
+   * \brief Build while cond func graph.
+   *
+   * \example
+   *     # python
+   *     def cond_func_graph(loop_carry):
+   *       cond_index, cond_upper, _ = loop_carry
+   *       return cond_index < cond_upper
+   *
+   * \return The built while condition func graph.
+   **/
   FuncGraphPtr BuildCondFuncGraphOfWhileLoop() {
     auto cond_func_graph = std::make_shared<FuncGraph>();
     auto cond_carry = cond_func_graph->add_parameter();
@@ -4287,12 +4307,21 @@ class ForiLoopEvaluator : public Evaluator {
     return cond_func_graph;
   }
 
-  // Build while loop func graph
-  //--> def loop_func_graph(loop_carry):
-  //-->   loop_index, loop_upper, loop_x = loop_carry
-  //-->   body_output = loop_func_node(loop_index, loop_x)
-  //-->   new_index = loop_index + 1
-  //-->   return (new_index, loop_upper, body_output)
+  /**
+   * \brief Build while loop func graph.
+   *
+   * \example
+   *     # python
+   *     def loop_func_graph(loop_carry):
+   *       loop_index, loop_upper, loop_x = loop_carry
+   *       body_output = loop_func_node(loop_index, loop_x)
+   *       new_index = loop_index + 1
+   *       return (new_index, loop_upper, body_output)
+   *
+   * \param[in] loop_func_node loop function node.
+   *
+   * \return The built while loop func graph.
+   **/
   FuncGraphPtr BuildLoopFuncGraphOfWhileLoop(const FuncGraphPtr &loop_func_node) {
     auto loop_func_graph = std::make_shared<FuncGraph>();
     auto loop_carry = loop_func_graph->add_parameter();

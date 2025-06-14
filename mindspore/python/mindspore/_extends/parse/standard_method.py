@@ -1234,7 +1234,7 @@ def pow(x, y):  # pylint: disable=redefined-builtin
     return F.pow(x, y)
 
 
-def put_(x, index, source, accumulate=False):  # pylint: disable=redefined-builtin
+def put_(x, index, source, accumulate=False):
     """
     Copies the elements from source into the positions specified by index.
     """

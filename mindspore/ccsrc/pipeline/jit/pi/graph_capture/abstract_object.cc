@@ -1003,8 +1003,9 @@ bool AbstractSequence::SetItem(AObject *k, AObject *v) {
     }
   }
   auto seq = static_cast<AbstractSequence *>(MakeAObject(type_, type_object_, nullptr, elements));
-  seq->element_type_ =
-    v->GetType() == element_type_ ? element_type_ : v->GetType() == kTypeAnyValue ? kTypeAnyValue : kTypeMultiType;
+  seq->element_type_ = v->GetType() == element_type_   ? element_type_
+                       : v->GetType() == kTypeAnyValue ? kTypeAnyValue
+                                                       : kTypeMultiType;
   SetNextVersion(seq);
   return true;
 }
@@ -1489,10 +1490,20 @@ mindspore::abstract::AbstractTensorPtr InferWithPrim(const AbstractBasePtr &left
                                                             {BINARY_TRUE_DIVIDE, prim::kPrimDiv},
                                                             {BINARY_FLOOR_DIVIDE, prim::kPrimFloorDiv}};
 
-  auto left_dtype_ptr = dyn_cast_ptr<mindspore::abstract::AbstractTensor>(left)->element()->BuildType();
+  auto left_abs_ptr = dyn_cast_ptr<mindspore::abstract::AbstractTensor>(left);
+  MS_EXCEPTION_IF_NULL(left_abs_ptr);
+  auto left_element = left_abs_ptr->element();
+  MS_EXCEPTION_IF_NULL(left_element);
+  auto left_dtype_ptr = left_element->BuildType();
   MS_EXCEPTION_IF_NULL(left_dtype_ptr);
-  auto right_dtype_ptr = dyn_cast_ptr<mindspore::abstract::AbstractTensor>(right)->element()->BuildType();
+
+  auto right_abs_ptr = dyn_cast_ptr<mindspore::abstract::AbstractTensor>(right);
+  MS_EXCEPTION_IF_NULL(right_abs_ptr);
+  auto right_element = right_abs_ptr->element();
+  MS_EXCEPTION_IF_NULL(right_element);
+  auto right_dtype_ptr = right_element->BuildType();
   MS_EXCEPTION_IF_NULL(right_dtype_ptr);
+
   if (left_dtype_ptr->type_id() != right_dtype_ptr->type_id() || prim_func.find(opcode) == prim_func.end()) {
     return InferWithMetaFunc(left, right, opcode);
   }
@@ -1635,6 +1646,7 @@ AObject *AbstractTensor::GetAttr(const std::string &name) {
   if (attr->GetType() == kTypeBoundMethod) {
     attr->SetAttr("__self__", this);
     Py_INCREF(Py_None);
+    MS_EXCEPTION_IF_NULL(op);
     Py_SETREF(PyMethod_GET_SELF(op), Py_None);
   } else {
     // not initialized attribute is not accept

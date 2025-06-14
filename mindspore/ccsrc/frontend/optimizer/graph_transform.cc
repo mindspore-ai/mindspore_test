@@ -83,6 +83,7 @@ bool FuncGraphHasConstantSequenceInput(const FuncGraphPtr &fg) {
 
 std::vector<AnfNodePtr> TransformSequenceArgument(const FuncGraphPtr &fg, const AnfNodePtr &node,
                                                   const abstract::AbstractSequencePtr &abs) {
+  MS_EXCEPTION_IF_NULL(abs);
   auto &elements = abs->elements();
   std::vector<AnfNodePtr> sequence_node_expanded;
   for (size_t i = 0; i < elements.size(); i++) {

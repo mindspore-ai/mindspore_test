@@ -100,14 +100,14 @@ class SequenceSliceSetItemInfer : public abstract::OpInferBase {
     auto target_shape = input_args[target_index]->GetShape()->cast<abstract::SequenceShapePtr>();
     for (size_t i = 1; i < sequence_shape->size(); ++i) {
       if ((*sequence_shape)[i]->GetShapeVector() != (*sequence_shape)[i - 1]->GetShapeVector()) {
-        MS_EXCEPTION(ValueError) << "SequenceShape[" << i - 1 << "]: " << (*sequence_shape)[i]->ToString()
+        MS_EXCEPTION(ValueError) << "SequenceShape[" << (i - 1) << "]: " << (*sequence_shape)[i]->ToString()
                                  << " and SequenceShape[" << i << "]: " << (*sequence_shape)[i]->ToString()
                                  << " should be equal.";
       }
     }
     for (size_t i = 1; i < target_shape->size(); ++i) {
       if ((*target_shape)[i]->GetShapeVector() != (*target_shape)[i - 1]->GetShapeVector()) {
-        MS_EXCEPTION(ValueError) << "TargetShape[" << i - 1 << "]: " << (*target_shape)[i]->ToString()
+        MS_EXCEPTION(ValueError) << "TargetShape[" << (i - 1) << "]: " << (*target_shape)[i]->ToString()
                                  << " and TargetShape[" << i << "]: " << (*target_shape)[i]->ToString()
                                  << " should be equal.";
       }
@@ -144,7 +144,7 @@ class SequenceSliceSetItemInfer : public abstract::OpInferBase {
     }
     for (size_t i = 1; i < target_type->size(); ++i) {
       if (!((*target_type)[i] == (*target_type)[i - 1])) {
-        MS_EXCEPTION(ValueError) << "TargetType[" << i - 1 << "]: " << (*target_type)[i]->ToString()
+        MS_EXCEPTION(ValueError) << "TargetType[" << (i - 1) << "]: " << (*target_type)[i]->ToString()
                                  << " and TargetType[" << i << "]: " << (*target_type)[i]->ToString()
                                  << " should be equal.";
       }

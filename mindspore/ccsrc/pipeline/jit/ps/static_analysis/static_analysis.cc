@@ -487,8 +487,20 @@ bool IsFuncGraphAbstractInput(const CNodePtr &origin_cnode, const AnalysisEngine
   return !MatchMetaFg(value);
 }
 
-// {{meta_fg, g, w}, Ys} => {{meta_fg, {UnpackGraph, g, Ys}, w}, Ys}
-// {UnpackCall, {meta_fg, g, w}, Ys} => {UnpackCall, {meta_fg, {UnpackGraph, g, Ys}, w}, Ys}
+/**
+ * \brief Insert `UnpackGraph` Primitive to `AnfNode`.
+ *
+ * \example
+ *     {{meta_fg, g, w}, Ys} => {{meta_fg, {UnpackGraph, g, Ys}, w}, Ys}.
+ *     {UnpackCall, {meta_fg, g, w}, Ys} => {UnpackCall, {meta_fg, {UnpackGraph, g, Ys}, w}, Ys}.
+ *
+ * \param[in] origin_cnode Original Cnode.
+ * \param[in] value Primitive value.
+ * \param[in] conf Anfnode config.
+ * \param[in] engine Analysis engine.
+ *
+ * \return The `AnfNode` after `UnpackGraph` Primitive is inserted.
+ **/
 AnfNodePtr InsertUnpackGraph(const CNodePtr &origin_cnode, const ValuePtr &value, const AnfNodeConfigPtr &conf,
                              const AnalysisEnginePtr &engine) {
   // origin_cnode is {meta_fg, g, ...}
