@@ -54,6 +54,7 @@ void ExtractForwardMatMul(const std::vector<CNodePtr> &origin_nodes_topological,
       continue;
     }
     auto matmul_cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(matmul_cnode);
     if (!matmul_cnode->HasPrimalAttr(kPrimalAttrUniqueId)) {
       continue;
     }
@@ -103,6 +104,7 @@ std::vector<CNodePtr> GetCommInputMatMulNode(const AnfNodePtr &node,
       continue;
     }
     auto cnode_queue_end = queue_end->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode_queue_end);
     if (cnode_queue_end->HasAttr(kAttrDuplicated)) {
       continue;
     }

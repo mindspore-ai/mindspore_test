@@ -45,7 +45,12 @@ bool is_allgather_comm_ops(const AnfNodePtr &node) {
 
   for (const auto &prim : kAllGatherOpsPrim) {
     if (IsPrimitiveCNode(node, prim)) {
-      auto allgather_instance_name = GetCNodePrimitive(node->cast<CNodePtr>())->instance_name();
+      MS_EXCEPTION_IF_NULL(node);
+      auto cnode = node->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(cnode);
+      auto cnode_primitive = GetCNodePrimitive(cnode);
+      MS_EXCEPTION_IF_NULL(cnode_primitive);
+      auto allgather_instance_name = cnode_primitive->instance_name();
       if (allgather_instance_name.find(parallel::PARALLEL_OPTIMIZER) == std::string::npos) {
         return false;
       }
@@ -58,6 +63,7 @@ bool is_allgather_comm_ops(const AnfNodePtr &node) {
 bool is_first_receive(const AnfNodePtr &node) {
   if (IsPrimitiveCNode(node, prim::kPrimReceive)) {
     auto recv_node = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(recv_node);
     if (recv_node->HasPrimalAttr(kPrimalAttrForwardNodeName)) {
       return false;
     }
