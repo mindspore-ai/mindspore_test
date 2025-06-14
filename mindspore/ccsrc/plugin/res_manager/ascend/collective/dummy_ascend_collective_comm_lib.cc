@@ -43,11 +43,6 @@ bool DummyAscendCollectiveCommLib::Initialize(uint32_t global_rank, uint32_t glo
   std::string rank_id_str = std::to_string(0);
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  const auto &device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-    {kAscendDevice, ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
-  MS_EXCEPTION_IF_NULL(device_context);
-  MS_EXCEPTION_IF_NULL(device_context->GetDeprecatedInterface());
-  (void)device_context->GetDeprecatedInterface()->OpenTsd(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   (void)hccl::HcclAdapter::GetInstance().InitHccl(device_id, rank_id_str);
   return true;
