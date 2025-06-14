@@ -427,24 +427,21 @@ TEST_F(TestAbstractDynamicMemPool, test_free_part_tensor_mems_keep_multi_part) {
 /// Expectation: all interface work normally and can not throw exception.
 TEST_F(TestAbstractDynamicMemPool, test_memory_stats) {
   auto mem_pool = std::make_shared<LinearDynamicMemPool>();
-  auto &&block_counts = mem_pool->BlockCountsStatistics();
-  EXPECT_EQ(block_counts.size(), 2);
-  EXPECT_EQ(block_counts.count(kPersistentMemPoolType), 1);
-  EXPECT_EQ(block_counts[kPersistentMemPoolType], 0);
-  EXPECT_EQ(block_counts.count(kCommonMemPoolType), 1);
-  EXPECT_EQ(block_counts[kCommonMemPoolType], 0);
+  auto &&block_stats = mem_pool->GetBlockStatistics();
+  EXPECT_EQ(block_stats.size(), 4);
+  EXPECT_EQ(block_stats.count(kPersistentMemPoolCounts), 1);
+  EXPECT_EQ(block_stats[kPersistentMemPoolCounts], 0);
+  EXPECT_EQ(block_stats.count(kCommonMemPoolCounts), 1);
+  EXPECT_EQ(block_stats[kCommonMemPoolCounts], 0);
+  EXPECT_EQ(block_stats.count(kPersistentMemPoolUnitSize), 1);
+  EXPECT_EQ(block_stats[kPersistentMemPoolUnitSize], kGBToByte);
+  EXPECT_EQ(block_stats.count(kCommonMemPoolUnitSize), 1);
+  EXPECT_EQ(block_stats[kCommonMemPoolUnitSize], kGBToByte);
 
-  auto &&block_unit_size = mem_pool->BlockUnitSizeStatistics();
-  EXPECT_EQ(block_unit_size.size(), 2);
-  EXPECT_EQ(block_unit_size.count(kPersistentMemPoolType), 1);
-  EXPECT_EQ(block_unit_size[kPersistentMemPoolType], kGBToByte);
-  EXPECT_EQ(block_unit_size.count(kCommonMemPoolType), 1);
-  EXPECT_EQ(block_unit_size[kPersistentMemPoolType], kGBToByte);
-
-  auto &&common_mem_blocks_info = mem_pool->CommonMemBlocksInfoStatistics();
+  auto &&common_mem_blocks_info = mem_pool->GetBlocksInfo().first;
   EXPECT_EQ(common_mem_blocks_info.size(), 0);
 
-  auto &&persistent_mem_blocks_info = mem_pool->PersistentMemBlocksInfoStatistics();
+  auto &&persistent_mem_blocks_info = mem_pool->GetBlocksInfo().second;
   EXPECT_EQ(persistent_mem_blocks_info.size(), 0);
 
   std::vector<size_t> sizes{1 * kDynamicMemAlignSize, 2 * kDynamicMemAlignSize, 3 * kDynamicMemAlignSize,
@@ -453,15 +450,15 @@ TEST_F(TestAbstractDynamicMemPool, test_memory_stats) {
   for (auto size : sizes) {
     (void)addresses.emplace_back(mem_pool->AllocTensorMem(size));
   }
-  auto &&cur_block_counts = mem_pool->BlockCountsStatistics();
-  EXPECT_EQ(cur_block_counts.size(), 2);
-  EXPECT_EQ(cur_block_counts.count(kPersistentMemPoolType), 1);
-  EXPECT_EQ(cur_block_counts[kPersistentMemPoolType], 0);
-  EXPECT_EQ(cur_block_counts.count(kCommonMemPoolType), 1);
-  EXPECT_EQ(cur_block_counts[kCommonMemPoolType], 1);
+  auto &&cur_block_stats = mem_pool->GetBlockStatistics();
+  EXPECT_EQ(cur_block_stats.size(), 4);
+  EXPECT_EQ(cur_block_stats.count(kPersistentMemPoolCounts), 1);
+  EXPECT_EQ(cur_block_stats[kPersistentMemPoolCounts], 0);
+  EXPECT_EQ(cur_block_stats.count(kCommonMemPoolCounts), 1);
+  EXPECT_EQ(cur_block_stats[kCommonMemPoolCounts], 1);
   // assert block count.
-  EXPECT_EQ(mem_pool->CommonMemBlocksInfoStatistics().size(), 1);
-  EXPECT_EQ(mem_pool->PersistentMemBlocksInfoStatistics().size(), 0);
+  EXPECT_EQ(mem_pool->GetBlocksInfo().first.size(), 1);
+  EXPECT_EQ(mem_pool->GetBlocksInfo().second.size(), 0);
 }
 
 /// Feature: test memory reserved size for abstract dynamic mem pool.

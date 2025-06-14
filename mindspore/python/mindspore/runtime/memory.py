@@ -16,11 +16,12 @@
 """Memory interfaces."""
 import os
 from mindspore._c_expression import RuntimeConf, DeviceManagerConf, _memory_stats, \
-    _reset_max_mem_reserved, _reset_max_mem_allocated, DeviceContextManager, _empty_cache, _memory_replay
+    _reset_max_mem_reserved, _reset_max_mem_allocated, DeviceContextManager, _empty_cache, \
+    _memory_replay, _get_total_reserved_memory, _get_max_reserved_memory, _get_total_allocated_memory, \
+    _get_max_allocated_memory, _reset_peak_memory_stats
 from mindspore import _checkparam as Validator
 from mindspore._checkparam import args_type_check
 from mindspore import log as logger
-import mindspore as ms
 
 _MEMORY_PATTERN = r'[1-9][0-9]*(\.)?[0-9]*GB|0\.[0-9]*GB'
 _RESERVE_PATTERN = r'[0-9][0-9]*(\.)?[0-9]*GB|0\.[0-9]*GB'
@@ -100,14 +101,6 @@ def _check_memory_conf_valid(memory_size):
     if memory_size == "0GB" or memory_size == "0.0GB":
         raise ValueError("The memory value should not be \"0GB\".")
 
-def _is_initialized(device_target):
-    """
-    Returns whether specified backend is initialized.
-    """
-    _device_context = _device_context_mgr.get_device_context(device_target)
-    if _device_context is None:
-        return False
-    return _device_context.initialized()
 
 def memory_stats():
     """
@@ -137,11 +130,7 @@ def memory_stats():
         {<capsule object NULL at 0x7f7e8c27b030>: {'block_stream_id': 0, 'block_memory_size': 1073741824}}},
         'persistent_mem_pool_stats': {'block_unit_size': 1073741824, 'block_counts': 0, 'blocks_info': {}}}
     """
-    device_target = ms.context.get_context("device_target")
-    if not _is_initialized(device_target):
-        logger.warning(f"Backend {device_target} is not initialized yet. Return empty dict.")
-        return {}
-    return _memory_stats(device_target)
+    return _memory_stats()
 
 
 def memory_reserved():
@@ -168,11 +157,7 @@ def memory_reserved():
         >>> print(ms.runtime.memory_reserved())
         1073741824
     """
-    device_target = ms.context.get_context("device_target")
-    if not _is_initialized(device_target):
-        logger.warning(f"Backend {device_target} is not initialized yet. Return 0.")
-        return 0
-    return _memory_stats(device_target).get("total_reserved_memory", 0)
+    return _get_total_reserved_memory()
 
 
 def max_memory_reserved():
@@ -199,11 +184,7 @@ def max_memory_reserved():
         >>> print(ms.runtime.max_memory_reserved())
         1073741824
     """
-    device_target = ms.context.get_context("device_target")
-    if not _is_initialized(device_target):
-        logger.warning(f"Backend {device_target} is not initialized yet. Return 0.")
-        return 0
-    return _memory_stats(device_target).get("max_reserved_memory", 0)
+    return _get_max_reserved_memory()
 
 
 def empty_cache():
@@ -217,11 +198,7 @@ def empty_cache():
     Supported Platforms:
         ``Ascend``
     """
-    device_target = ms.context.get_context("device_target")
-    if not _is_initialized(device_target):
-        logger.warning(f"Backend {device_target} is not initialized yet.")
-        return
-    release_size = _empty_cache(device_target)
+    release_size = _empty_cache()
     logger.info(f"The empty_cache operation is executed successfully, release size: {release_size}.")
 
 
@@ -250,9 +227,7 @@ def reset_peak_memory_stats():
         >>> print(ms.runtime.max_memory_allocated())
         0
     """
-    device_target = ms.context.get_context("device_target")
-    _reset_max_mem_reserved(device_target)
-    _reset_max_mem_allocated(device_target)
+    _reset_peak_memory_stats()
 
 
 def memory_summary():
@@ -328,11 +303,7 @@ def memory_allocated():
         >>> print(ms.runtime.memory_allocated())
         1024
     """
-    device_target = ms.context.get_context("device_target")
-    if not _is_initialized(device_target):
-        logger.warning(f"Backend {device_target} is not initialized yet. Return 0.")
-        return 0
-    return _memory_stats(device_target).get("total_allocated_memory", 0)
+    return _get_total_allocated_memory()
 
 
 def max_memory_allocated():
@@ -359,11 +330,7 @@ def max_memory_allocated():
         >>> print(ms.runtime.max_memory_allocated())
         1536
     """
-    device_target = ms.context.get_context("device_target")
-    if not _is_initialized(device_target):
-        logger.warning(f"Backend {device_target} is not initialized yet. Return 0.")
-        return 0
-    return _memory_stats(device_target).get("max_allocated_memory", 0)
+    return _get_max_allocated_memory()
 
 
 def reset_max_memory_reserved():
@@ -387,8 +354,7 @@ def reset_max_memory_reserved():
         >>> print(ms.runtime.max_memory_reserved())
         0
     """
-    device_target = ms.context.get_context("device_target")
-    _reset_max_mem_reserved(device_target)
+    _reset_max_mem_reserved()
 
 
 def reset_max_memory_allocated():
@@ -412,19 +378,19 @@ def reset_max_memory_allocated():
         >>> print(ms.runtime.max_memory_allocated())
         0
     """
-    device_target = ms.context.get_context("device_target")
-    _reset_max_mem_allocated(device_target)
+    _reset_max_mem_allocated()
 
 
 def memory_replay(file_path):
     """
-    Replay the memory operation of the specified file.
+    Replay the memory operation based on the application and release order of
+    memory_block.csv.
+
+    Args:
+        file_path (str): The path of memory_block.csv.
 
     Supported Platforms:
         ``Ascend``
-
-    Args:
-        file_path (str): The path of memory operation file.
 
     Examples:
         >>> import mindspore as ms

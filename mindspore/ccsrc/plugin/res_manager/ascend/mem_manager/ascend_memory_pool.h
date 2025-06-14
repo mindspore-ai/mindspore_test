@@ -22,7 +22,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
-
+#include <map>
 #include "include/backend/mem_reuse/abstract_dynamic_mem_pool.h"
 #include "include/backend/mem_reuse/mem_dynamic_allocator.h"
 #include "plugin/res_manager/ascend/visible.h"
@@ -167,27 +167,15 @@ class ASCEND_RES_MANAGER_EXPORT DefaultEnhancedAscendMemoryPool : public Default
 
   size_t ActualPeakStatistics() const override { return instance_->ActualPeakStatistics(); }
 
-  std::unordered_map<std::string, std::size_t> BlockCountsStatistics() const override {
-    return std::move(instance_->BlockCountsStatistics());
-  }
+  std::map<std::string, std::size_t> GetBlockStatistics() const override { return instance_->GetBlockStatistics(); }
 
-  std::unordered_map<std::string, std::size_t> BlockUnitSizeStatistics() const override {
-    return std::move(instance_->BlockUnitSizeStatistics());
-  }
-
-  std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>> CommonMemBlocksInfoStatistics()
-    const override {
-    return std::move(instance_->CommonMemBlocksInfoStatistics());
-  }
-
-  std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>> PersistentMemBlocksInfoStatistics()
-    const override {
-    return std::move(instance_->PersistentMemBlocksInfoStatistics());
-  }
+  BlocksInfoPair GetBlocksInfo() const override { return instance_->GetBlocksInfo(); }
 
   void ResetMaxMemReserved() override { instance_->ResetMaxMemReserved(); }
 
   void ResetMaxMemAllocated() override { instance_->ResetMaxMemAllocated(); }
+
+  void ResetPeakMemoryStats() override { instance_->ResetPeakMemoryStats(); }
 
   const bool IsEnableEagerFree() const override { return instance_->IsEnableEagerFree(); }
 

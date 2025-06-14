@@ -88,12 +88,8 @@ class AscendDeviceResManager : public DeviceResManager {
   size_t GetTotalEagerFreeMemStatistics() const override;
   size_t GetUsedMemPeakStatistics() const override;
   size_t GetReservedMemPeakStatistics() const override;
-  std::unordered_map<std::string, std::size_t> GetBlockCountsStatistics() const override;
-  std::unordered_map<std::string, std::size_t> GetBlockUnitSizeStatistics() const override;
-  std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>> GetCommonMemBlocksInfoStatistics()
-    const override;
-  std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>
-  GetPersistentMemBlocksInfoStatistics() const override;
+  std::map<std::string, std::size_t> GetBlockStatistics() const override;
+  BlocksInfoPair GetBlocksInfo() const override;
   void ResetMaxMemoryReserved() override;
   void ResetMaxMemoryAllocated() override;
 

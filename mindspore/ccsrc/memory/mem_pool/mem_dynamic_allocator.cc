@@ -1405,11 +1405,10 @@ bool DynamicMemPoolBestFit::SyncAllEventsInner() {
   return true;
 }
 
-std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>
-DynamicMemPoolBestFit::ExtractBlocksListInfo(const MemStatusManagerPtr &mem_mng) const {
-  std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>> blocks_list_info;
+DeviceMemInfo DynamicMemPoolBestFit::ExtractBlocksListInfo(const MemStatusManagerPtr &mem_mng) const {
+  DeviceMemInfo blocks_list_info;
   for (auto iter = mem_mng->mem_block_list_.begin(); iter != mem_mng->mem_block_list_.end(); ++iter) {
-    std::unordered_map<std::string, size_t> block_info;
+    std::map<std::string, size_t> block_info;
     block_info[kBlockMemorySize] = (*iter)->size();
     block_info[kBlockStreamId] = (*iter)->stream_id_;
     blocks_list_info[(std::string *)(*iter)->device_addr()] = block_info;
@@ -1424,60 +1423,61 @@ size_t DynamicMemPoolBestFit::TotalMemStatistics() const {
   }
   return common_mem_->mps_.total_mem_size_ + persistent_mem_->mps_.total_mem_size_;
 }
+
 size_t DynamicMemPoolBestFit::TotalUsedMemStatistics() const {
   return common_mem_->mps_.total_used_mem_size_ + persistent_mem_->mps_.total_used_mem_size_;
 }
 size_t DynamicMemPoolBestFit::TotalUsedByEventMemStatistics() const {
   return common_mem_->mps_.total_used_by_event_mem_size_ + persistent_mem_->mps_.total_used_by_event_mem_size_;
 }
+
 size_t DynamicMemPoolBestFit::TotalIdleMemStatistics() const {
   return common_mem_->mps_.total_idle_mem_size_ + persistent_mem_->mps_.total_idle_mem_size_;
 }
+
 size_t DynamicMemPoolBestFit::TotalEagerFreeMemStatistics() const {
   return common_mem_->mps_.total_eager_free_mem_size_ + persistent_mem_->mps_.total_eager_free_mem_size_;
 }
+
 size_t DynamicMemPoolBestFit::UsedMemPeakStatistics() const {
   return common_mem_->mps_.used_mem_peak_size_ + persistent_mem_->mps_.used_mem_peak_size_;
 }
+
 size_t DynamicMemPoolBestFit::MaxMemAllocatedStatistics() const {
   return common_mem_->mps_.iter_used_mem_peak_size_ + persistent_mem_->mps_.iter_used_mem_peak_size_;
 }
+
 size_t DynamicMemPoolBestFit::MaxMemReservedStatistics() const {
   if (IsEnableVmm()) {
     return common_mem_->mps_.iter_total_mem_peak_size_;
   }
   return common_mem_->mps_.iter_total_mem_peak_size_ + persistent_mem_->mps_.iter_total_mem_peak_size_;
 }
+
 size_t DynamicMemPoolBestFit::ActualPeakStatistics() const {
   if (IsEnableVmm()) {
     return GetVmmUsedMemSize();
   }
   return common_mem_->CalActualPeak() + persistent_mem_->CalActualPeak();
 }
-std::unordered_map<std::string, std::size_t> DynamicMemPoolBestFit::BlockCountsStatistics() const {
+
+std::map<std::string, std::size_t> DynamicMemPoolBestFit::GetBlockStatistics() const {
   size_t common_mem_block_counts = common_mem_->mem_block_list_.size();
   size_t persistent_mem_block_counts = persistent_mem_->mem_block_list_.size();
-  std::unordered_map<std::string, std::size_t> block_count_stats;
-  block_count_stats[kCommonMemPoolType] = common_mem_block_counts;
-  block_count_stats[kPersistentMemPoolType] = persistent_mem_block_counts;
-  return block_count_stats;
-}
-std::unordered_map<std::string, std::size_t> DynamicMemPoolBestFit::BlockUnitSizeStatistics() const {
   size_t common_mem_block_unit_size = common_mem_->unit_size_;
   size_t persistent_mem_block_unit_size = persistent_mem_->unit_size_;
-  std::unordered_map<std::string, std::size_t> block_unit_size_stats;
-  block_unit_size_stats[kCommonMemPoolType] = common_mem_block_unit_size;
-  block_unit_size_stats[kPersistentMemPoolType] = persistent_mem_block_unit_size;
-  return block_unit_size_stats;
+  std::map<std::string, std::size_t> block_stats;
+  block_stats[kCommonMemPoolCounts] = common_mem_block_counts;
+  block_stats[kPersistentMemPoolCounts] = persistent_mem_block_counts;
+  block_stats[kCommonMemPoolUnitSize] = common_mem_block_unit_size;
+  block_stats[kPersistentMemPoolUnitSize] = persistent_mem_block_unit_size;
+  return block_stats;
 }
-std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>
-DynamicMemPoolBestFit::CommonMemBlocksInfoStatistics() const {
-  return ExtractBlocksListInfo(common_mem_);
+
+BlocksInfoPair DynamicMemPoolBestFit::GetBlocksInfo() const {
+  return std::make_pair(ExtractBlocksListInfo(common_mem_), ExtractBlocksListInfo(persistent_mem_));
 }
-std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>
-DynamicMemPoolBestFit::PersistentMemBlocksInfoStatistics() const {
-  return ExtractBlocksListInfo(persistent_mem_);
-}
+
 void DynamicMemPoolBestFit::ResetMaxMemReserved() {
   if (IsEnableVmm()) {
     common_mem_->mps_.iter_total_mem_peak_size_ = GetVmmUsedMemSize();
@@ -1486,9 +1486,15 @@ void DynamicMemPoolBestFit::ResetMaxMemReserved() {
     persistent_mem_->mps_.iter_total_mem_peak_size_ = persistent_mem_->mps_.total_mem_size_;
   }
 }
+
 void DynamicMemPoolBestFit::ResetMaxMemAllocated() {
   common_mem_->mps_.iter_used_mem_peak_size_ = common_mem_->mps_.total_used_mem_size_;
   persistent_mem_->mps_.iter_used_mem_peak_size_ = persistent_mem_->mps_.total_used_mem_size_;
+}
+
+void DynamicMemPoolBestFit::ResetPeakMemoryStats() {
+  ResetMaxMemReserved();
+  ResetMaxMemAllocated();
 }
 }  // namespace device
 }  // namespace mindspore

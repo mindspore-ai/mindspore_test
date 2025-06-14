@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <string>
 #include <unordered_map>
+#include <map>
 
 #include "plugin/res_manager/ascend/mem_manager/ascend_memory_adapter.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
@@ -74,20 +75,10 @@ size_t AscendMemoryManager::GetUsedMemPeakStatistics() const {
 size_t AscendMemoryManager::GetReservedMemPeakStatistics() const {
   return AscendMemoryPool::GetInstance().MaxMemReservedStatistics();
 }
-std::unordered_map<std::string, std::size_t> AscendMemoryManager::GetBlockCountsStatistics() const {
-  return AscendMemoryPool::GetInstance().BlockCountsStatistics();
+std::map<std::string, std::size_t> AscendMemoryManager::GetBlockStatistics() const {
+  return AscendMemoryPool::GetInstance().GetBlockStatistics();
 }
-std::unordered_map<std::string, std::size_t> AscendMemoryManager::GetBlockUnitSizeStatistics() const {
-  return AscendMemoryPool::GetInstance().BlockUnitSizeStatistics();
-}
-std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>
-AscendMemoryManager::GetCommonMemBlocksInfoStatistics() const {
-  return AscendMemoryPool::GetInstance().CommonMemBlocksInfoStatistics();
-}
-std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>
-AscendMemoryManager::GetPersistentMemBlocksInfoStatistics() const {
-  return AscendMemoryPool::GetInstance().PersistentMemBlocksInfoStatistics();
-}
+BlocksInfoPair AscendMemoryManager::GetBlocksInfo() const { return AscendMemoryPool::GetInstance().GetBlocksInfo(); }
 void AscendMemoryManager::ResetMaxMemoryReserved() { AscendMemoryPool::GetInstance().ResetMaxMemReserved(); }
 void AscendMemoryManager::ResetMaxMemoryAllocated() { AscendMemoryPool::GetInstance().ResetMaxMemAllocated(); }
 size_t AscendMemoryManager::EmptyCache() { return AscendMemoryPool::GetInstance().EmptyCache(); }

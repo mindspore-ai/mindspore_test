@@ -19,7 +19,7 @@
 
 #include <vector>
 #include <string>
-
+#include <map>
 #include <unordered_map>
 #include "runtime/device/res_manager/memory_manager.h"
 #include "plugin/res_manager/ascend/mem_manager/ascend_memory_pool.h"
@@ -60,12 +60,8 @@ class ASCEND_RES_MANAGER_EXPORT AscendMemoryManager : public MemoryManager {
   size_t GetTotalEagerFreeMemStatistics() const override;
   size_t GetUsedMemPeakStatistics() const override;
   size_t GetReservedMemPeakStatistics() const override;
-  std::unordered_map<std::string, std::size_t> GetBlockCountsStatistics() const override;
-  std::unordered_map<std::string, std::size_t> GetBlockUnitSizeStatistics() const override;
-  std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>> GetCommonMemBlocksInfoStatistics()
-    const override;
-  std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>
-  GetPersistentMemBlocksInfoStatistics() const override;
+  std::map<std::string, std::size_t> GetBlockStatistics() const override;
+  BlocksInfoPair GetBlocksInfo() const override;
   void ResetMaxMemoryReserved() override;
   void ResetMaxMemoryAllocated() override;
   size_t EmptyCache() override;

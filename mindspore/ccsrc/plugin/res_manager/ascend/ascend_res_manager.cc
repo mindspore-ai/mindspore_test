@@ -517,24 +517,14 @@ size_t AscendResManager::GetReservedMemPeakStatistics() const {
   return mem_manager_->GetReservedMemPeakStatistics();
 }
 
-std::unordered_map<std::string, std::size_t> AscendResManager::GetBlockCountsStatistics() const {
+std::map<std::string, std::size_t> AscendResManager::GetBlockStatistics() const {
   MS_EXCEPTION_IF_NULL(mem_manager_);
-  return mem_manager_->GetBlockCountsStatistics();
+  return mem_manager_->GetBlockStatistics();
 }
 
-std::unordered_map<std::string, std::size_t> AscendResManager::GetBlockUnitSizeStatistics() const {
+BlocksInfoPair AscendResManager::GetBlocksInfo() const {
   MS_EXCEPTION_IF_NULL(mem_manager_);
-  return mem_manager_->GetBlockUnitSizeStatistics();
-}
-
-DeviceMemInfo AscendResManager::GetCommonMemBlocksInfoStatistics() const {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  return mem_manager_->GetCommonMemBlocksInfoStatistics();
-}
-
-DeviceMemInfo AscendResManager::GetPersistentMemBlocksInfoStatistics() const {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  return mem_manager_->GetPersistentMemBlocksInfoStatistics();
+  return mem_manager_->GetBlocksInfo();
 }
 
 void AscendResManager::ResetMaxMemoryReserved() {
@@ -549,6 +539,13 @@ void AscendResManager::ResetMaxMemoryAllocated() {
   auto memory_pool = mem_manager_->GetMemoryPool();
   MS_EXCEPTION_IF_NULL(memory_pool);
   memory_pool->ResetMaxMemAllocated();
+}
+
+void AscendResManager::ResetPeakMemoryStats() {
+  MS_EXCEPTION_IF_NULL(mem_manager_);
+  auto memory_pool = mem_manager_->GetMemoryPool();
+  MS_EXCEPTION_IF_NULL(memory_pool);
+  memory_pool->ResetPeakMemoryStats();
 }
 
 size_t AscendResManager::EmptyCache() {

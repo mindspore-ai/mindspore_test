@@ -248,27 +248,17 @@ class DefaultAscendMemoryPoolImpl : public DefaultAscendMemoryPool {
   }
 
   ConstCounter block_counts_statistics_{0};
-  std::unordered_map<std::string, std::size_t> BlockCountsStatistics() const override {
-    block_counts_statistics_++;
-    return {};
-  }
-
   ConstCounter block_unit_size_statistics_{0};
-  std::unordered_map<std::string, std::size_t> BlockUnitSizeStatistics() const override {
+  std::map<std::string, std::size_t> GetBlockStatistics() const override {
+    block_counts_statistics_++;
     block_unit_size_statistics_++;
     return {};
   }
 
   ConstCounter common_mem_blocks_info_statistics_{0};
-  std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>> CommonMemBlocksInfoStatistics()
-    const override {
-    common_mem_blocks_info_statistics_++;
-    return {};
-  }
-
   ConstCounter persistent_mem_blocks_info_statistics_{0};
-  std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>> PersistentMemBlocksInfoStatistics()
-    const override {
+  BlocksInfoPair GetBlocksInfo() const override {
+    common_mem_blocks_info_statistics_++;
     persistent_mem_blocks_info_statistics_++;
     return {};
   }
@@ -496,16 +486,12 @@ TEST_F(TestAscendMemoryPool, test_default_enhanced_ascend_memory_pool_proxy) {
   enhanced_pool->ActualPeakStatistics();
   EXPECT_EQ(pool->actual_peak_statistics_.Get(), 2);
 
-  enhanced_pool->BlockCountsStatistics();
+  enhanced_pool->GetBlockStatistics();
   EXPECT_EQ(pool->block_counts_statistics_.Get(), 1);
-
-  enhanced_pool->BlockUnitSizeStatistics();
   EXPECT_EQ(pool->block_unit_size_statistics_.Get(), 1);
 
-  enhanced_pool->CommonMemBlocksInfoStatistics();
+  enhanced_pool->GetBlocksInfo();
   EXPECT_EQ(pool->common_mem_blocks_info_statistics_.Get(), 1);
-
-  enhanced_pool->PersistentMemBlocksInfoStatistics();
   EXPECT_EQ(pool->persistent_mem_blocks_info_statistics_.Get(), 1);
 
   enhanced_pool->ResetMaxMemReserved();

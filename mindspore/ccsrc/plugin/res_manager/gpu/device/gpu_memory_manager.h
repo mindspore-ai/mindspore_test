@@ -19,6 +19,7 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
+#include <map>
 #include "runtime/device/res_manager/memory_manager.h"
 #include "plugin/res_manager/gpu/visible.h"
 
@@ -49,12 +50,8 @@ class GPU_RES_MANAGER_EXPORT GPUMemoryManager : public MemoryManager {
   size_t GetTotalEagerFreeMemStatistics() const override;
   size_t GetUsedMemPeakStatistics() const override;
   size_t GetReservedMemPeakStatistics() const override;
-  std::unordered_map<std::string, std::size_t> GetBlockCountsStatistics() const override;
-  std::unordered_map<std::string, std::size_t> GetBlockUnitSizeStatistics() const override;
-  std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>> GetCommonMemBlocksInfoStatistics()
-    const override;
-  std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>
-  GetPersistentMemBlocksInfoStatistics() const override;
+  std::map<std::string, std::size_t> GetBlockStatistics() const override;
+  BlocksInfoPair GetBlocksInfo() const override;
   void ResetMaxMemoryReserved() override;
   void ResetMaxMemoryAllocated() override;
 

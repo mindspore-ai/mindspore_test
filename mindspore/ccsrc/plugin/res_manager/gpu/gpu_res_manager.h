@@ -20,6 +20,7 @@
 #include <string>
 #include <unordered_map>
 #include <memory>
+#include <map>
 #include "runtime/device/res_manager/hal_res_base.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
 #include "runtime/device/res_manager/swap_manager.h"
@@ -30,7 +31,6 @@ namespace gpu {
 #define SUPPORTED_CAP 5.3
 #define RECOMMEND_SM 7
 #define BASE 10.0
-using DeviceMemInfo = std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>;
 
 class GPUResManager : public HalResBase {
  public:
@@ -108,14 +108,11 @@ class GPUResManager : public HalResBase {
   size_t GetTotalEagerFreeMemStatistics() const override;
   size_t GetUsedMemPeakStatistics() const override;
   size_t GetReservedMemPeakStatistics() const override;
-  std::unordered_map<std::string, std::size_t> GetBlockCountsStatistics() const override;
-  std::unordered_map<std::string, std::size_t> GetBlockUnitSizeStatistics() const override;
-  std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>> GetCommonMemBlocksInfoStatistics()
-    const override;
-  std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>
-  GetPersistentMemBlocksInfoStatistics() const override;
+  std::map<std::string, std::size_t> GetBlockStatistics() const override;
+  BlocksInfoPair GetBlocksInfo() const override;
   void ResetMaxMemoryReserved() override;
   void ResetMaxMemoryAllocated() override;
+  void ResetPeakMemoryStats() override;
   bool InitDevice();
 
  private:

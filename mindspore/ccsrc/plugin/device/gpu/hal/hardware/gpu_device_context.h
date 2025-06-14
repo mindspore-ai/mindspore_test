@@ -23,6 +23,7 @@
 #include <string>
 #include <utility>
 #include <unordered_map>
+#include <map>
 #include "runtime/hardware/device_context.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "plugin/device/gpu/hal/hardware/gpu_deprecated_interface.h"
@@ -116,12 +117,8 @@ class GPUDeviceResManager : public DeviceResManager {
   size_t GetTotalEagerFreeMemStatistics() const override;
   size_t GetUsedMemPeakStatistics() const override;
   size_t GetReservedMemPeakStatistics() const override;
-  std::unordered_map<std::string, std::size_t> GetBlockCountsStatistics() const override;
-  std::unordered_map<std::string, std::size_t> GetBlockUnitSizeStatistics() const override;
-  std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>> GetCommonMemBlocksInfoStatistics()
-    const override;
-  std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>
-  GetPersistentMemBlocksInfoStatistics() const override;
+  std::map<std::string, std::size_t> GetBlockStatistics() const override;
+  BlocksInfoPair GetBlocksInfo() const override;
   void ResetMaxMemoryReserved() override;
   void ResetMaxMemoryAllocated() override;
 

@@ -22,6 +22,7 @@
 #include <tuple>
 #include <utility>
 #include <unordered_set>
+#include <map>
 #include "plugin/res_manager/gpu/device_context_conf/op_precision_conf.h"
 #include "plugin/res_manager/gpu/device_context_conf/op_tuning_conf.h"
 #include "plugin/device/gpu/hal/device/kernel_info_setter.h"
@@ -206,20 +207,10 @@ size_t GPUDeviceResManager::GetUsedMemPeakStatistics() const { return gpu_res_ma
 size_t GPUDeviceResManager::GetReservedMemPeakStatistics() const {
   return gpu_res_manager_->GetReservedMemPeakStatistics();
 }
-std::unordered_map<std::string, std::size_t> GPUDeviceResManager::GetBlockCountsStatistics() const {
-  return gpu_res_manager_->GetBlockCountsStatistics();
+std::map<std::string, std::size_t> GPUDeviceResManager::GetBlockStatistics() const {
+  return gpu_res_manager_->GetBlockStatistics();
 }
-std::unordered_map<std::string, std::size_t> GPUDeviceResManager::GetBlockUnitSizeStatistics() const {
-  return gpu_res_manager_->GetBlockUnitSizeStatistics();
-}
-std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>
-GPUDeviceResManager::GetCommonMemBlocksInfoStatistics() const {
-  return gpu_res_manager_->GetCommonMemBlocksInfoStatistics();
-}
-std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>
-GPUDeviceResManager::GetPersistentMemBlocksInfoStatistics() const {
-  return gpu_res_manager_->GetPersistentMemBlocksInfoStatistics();
-}
+BlocksInfoPair GPUDeviceResManager::GetBlocksInfo() const { return gpu_res_manager_->GetBlocksInfo(); }
 void GPUDeviceResManager::ResetMaxMemoryReserved() { gpu_res_manager_->ResetMaxMemoryReserved(); }
 void GPUDeviceResManager::ResetMaxMemoryAllocated() { gpu_res_manager_->ResetMaxMemoryAllocated(); }
 

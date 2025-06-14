@@ -19,6 +19,7 @@
 #include <utility>
 #include <vector>
 #include <string>
+#include <map>
 #include "plugin/res_manager/gpu/device/gpu_memory_manager.h"
 #include "plugin/res_manager/gpu/device_context_conf/op_precision_conf.h"
 #include "plugin/res_manager/gpu/device_context_conf/op_tuning_conf.h"
@@ -342,21 +343,13 @@ size_t GPUResManager::GetReservedMemPeakStatistics() const {
   MS_EXCEPTION_IF_NULL(mem_manager_);
   return mem_manager_->GetReservedMemPeakStatistics();
 }
-std::unordered_map<std::string, std::size_t> GPUResManager::GetBlockCountsStatistics() const {
+std::map<std::string, std::size_t> GPUResManager::GetBlockStatistics() const {
   MS_EXCEPTION_IF_NULL(mem_manager_);
-  return mem_manager_->GetBlockCountsStatistics();
+  return mem_manager_->GetBlockStatistics();
 }
-std::unordered_map<std::string, std::size_t> GPUResManager::GetBlockUnitSizeStatistics() const {
+BlocksInfoPair GPUResManager::GetBlocksInfo() const {
   MS_EXCEPTION_IF_NULL(mem_manager_);
-  return mem_manager_->GetBlockUnitSizeStatistics();
-}
-DeviceMemInfo GPUResManager::GetCommonMemBlocksInfoStatistics() const {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  return mem_manager_->GetCommonMemBlocksInfoStatistics();
-}
-DeviceMemInfo GPUResManager::GetPersistentMemBlocksInfoStatistics() const {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  return mem_manager_->GetPersistentMemBlocksInfoStatistics();
+  return mem_manager_->GetBlocksInfo();
 }
 void GPUResManager::ResetMaxMemoryReserved() {
   MS_EXCEPTION_IF_NULL(mem_manager_);
@@ -364,6 +357,12 @@ void GPUResManager::ResetMaxMemoryReserved() {
 }
 void GPUResManager::ResetMaxMemoryAllocated() {
   MS_EXCEPTION_IF_NULL(mem_manager_);
+  mem_manager_->ResetMaxMemoryAllocated();
+}
+
+void GPUResManager::ResetPeakMemoryStats() {
+  MS_EXCEPTION_IF_NULL(mem_manager_);
+  mem_manager_->ResetMaxMemoryReserved();
   mem_manager_->ResetMaxMemoryAllocated();
 }
 

@@ -53,8 +53,10 @@ const size_t kMinimumAllocMem = 10 << 20;
 
 const char kBlockMemorySize[] = "block_memory_size";
 const char kBlockStreamId[] = "block_stream_id";
-const char kCommonMemPoolType[] = "common_mem_pool";
-const char kPersistentMemPoolType[] = "persistent_mem_pool";
+const char kCommonMemPoolCounts[] = "common_mem_pool_counts";
+const char kCommonMemPoolUnitSize[] = "common_mem_pool_unit_size";
+const char kPersistentMemPoolCounts[] = "persistent_mem_pool_counts";
+const char kPersistentMemPoolUnitSize[] = "persistent_mem_pool_unit_size";
 
 // The status of memory buf.
 enum class BACKEND_EXPORT DynamicMemBufStatus : int { kMemBufIdle, kMemBufUsed, kMemBufEagerFree, kMemBufUsedByEvent };
@@ -94,6 +96,8 @@ struct pair_hash {
 };
 
 struct BACKEND_EXPORT MemBuf;
+using DeviceMemInfo = std::map<device::DeviceMemPtr, std::map<std::string, size_t>>;
+using BlocksInfoPair = std::pair<DeviceMemInfo, DeviceMemInfo>;
 
 // Interface of dynamic memory pool.
 class BACKEND_EXPORT DynamicMemPool {
@@ -213,19 +217,15 @@ class BACKEND_EXPORT DynamicMemPool {
 
   virtual size_t ActualPeakStatistics() const = 0;
 
-  virtual std::unordered_map<std::string, std::size_t> BlockCountsStatistics() const = 0;
+  virtual std::map<std::string, std::size_t> GetBlockStatistics() const = 0;
 
-  virtual std::unordered_map<std::string, std::size_t> BlockUnitSizeStatistics() const = 0;
-
-  virtual std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>
-  CommonMemBlocksInfoStatistics() const = 0;
-
-  virtual std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>
-  PersistentMemBlocksInfoStatistics() const = 0;
+  virtual BlocksInfoPair GetBlocksInfo() const = 0;
 
   virtual void ResetMaxMemReserved() = 0;
 
   virtual void ResetMaxMemAllocated() = 0;
+
+  virtual void ResetPeakMemoryStats() = 0;
 
   virtual std::string GetMemoryPoolType() const { return "Other"; }
 

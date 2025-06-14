@@ -219,16 +219,8 @@ class BACKEND_COMMON_EXPORT DeviceResManager {
   virtual size_t GetTotalEagerFreeMemStatistics() const { return 0; }
   virtual size_t GetUsedMemPeakStatistics() const { return 0; }
   virtual size_t GetReservedMemPeakStatistics() const { return 0; }
-  virtual std::unordered_map<std::string, std::size_t> GetBlockCountsStatistics() const { return {}; }
-  virtual std::unordered_map<std::string, std::size_t> GetBlockUnitSizeStatistics() const { return {}; }
-  virtual std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>
-  GetCommonMemBlocksInfoStatistics() const {
-    return {};
-  }
-  virtual std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>
-  GetPersistentMemBlocksInfoStatistics() const {
-    return {};
-  }
+  virtual std::map<std::string, std::size_t> GetBlockStatistics() const { return {}; }
+  virtual BlocksInfoPair GetBlocksInfo() const { return {}; }
   virtual void ResetMaxMemoryReserved() {}
   virtual void ResetMaxMemoryAllocated() {}
 

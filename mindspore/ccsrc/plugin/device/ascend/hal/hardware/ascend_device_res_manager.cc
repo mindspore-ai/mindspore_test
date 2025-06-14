@@ -169,24 +169,14 @@ size_t AscendDeviceResManager::GetReservedMemPeakStatistics() const {
   return ascend_res_manager_->GetReservedMemPeakStatistics();
 }
 
-std::unordered_map<std::string, std::size_t> AscendDeviceResManager::GetBlockCountsStatistics() const {
+std::map<std::string, std::size_t> AscendDeviceResManager::GetBlockStatistics() const {
   MS_EXCEPTION_IF_NULL(ascend_res_manager_);
-  return ascend_res_manager_->GetBlockCountsStatistics();
+  return ascend_res_manager_->GetBlockStatistics();
 }
 
-std::unordered_map<std::string, std::size_t> AscendDeviceResManager::GetBlockUnitSizeStatistics() const {
+BlocksInfoPair AscendDeviceResManager::GetBlocksInfo() const {
   MS_EXCEPTION_IF_NULL(ascend_res_manager_);
-  return ascend_res_manager_->GetBlockUnitSizeStatistics();
-}
-
-DeviceMemInfo AscendDeviceResManager::GetCommonMemBlocksInfoStatistics() const {
-  MS_EXCEPTION_IF_NULL(ascend_res_manager_);
-  return ascend_res_manager_->GetCommonMemBlocksInfoStatistics();
-}
-
-DeviceMemInfo AscendDeviceResManager::GetPersistentMemBlocksInfoStatistics() const {
-  MS_EXCEPTION_IF_NULL(ascend_res_manager_);
-  return ascend_res_manager_->GetPersistentMemBlocksInfoStatistics();
+  return ascend_res_manager_->GetBlocksInfo();
 }
 
 void AscendDeviceResManager::ResetMaxMemoryReserved() {
