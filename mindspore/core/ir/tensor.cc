@@ -608,6 +608,7 @@ bool Tensor::Offload(const std::string &file_path) {
     offload_file_.clear();
   }
 
+  // Make CPU device address and not init the data in device address.
   device_sync_ = MakeDeviceAddress(data_type_, shape_);
   offload_file_ = file_path;
   return true;
