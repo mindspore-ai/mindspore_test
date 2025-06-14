@@ -245,7 +245,9 @@ CallableGraph GraphCompiler::Compile(const FuncGraphPtr &func_graph, const py::t
 
 std::pair<std::string, CallableGraph> GraphCompiler::Compile(const FuncGraphPtr &func_graph,
                                                              const CompileInfo &compile_info) {
+  MS_LOG(INFO) << "Start FuncGraph compile";
   if (func_graph == nullptr) {
+    MS_LOG(INFO) << "FuncGraph is NULL!";
     return std::make_pair("", nullptr);
   }
   std::string phase =
@@ -269,6 +271,7 @@ std::pair<std::string, CallableGraph> GraphCompiler::Compile(const FuncGraphPtr 
   }
   phase += ".pi_jit";
   CallableGraph callable = GraphCompiler::Compile(func_graph, args, py::dict(), phase, compile_info);
+  MS_LOG(INFO) << "End FuncGraph compile";
   return std::make_pair(phase, callable);
 }
 }  // namespace pijit

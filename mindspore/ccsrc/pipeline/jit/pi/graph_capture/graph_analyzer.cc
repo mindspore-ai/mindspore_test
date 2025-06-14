@@ -175,8 +175,8 @@ void GraphAnalyzer::GraphArgumentOpt() {
 }
 
 void GraphAnalyzer::Analyze() {
-  BeforeAnalyze();
   MS_LOG(INFO) << "Start graph analyze";
+  BeforeAnalyze();
   auto collect_trace_nodes = [this]() {
     const auto &nodes = graph_->GetTracedNodes();
     if (graph_->GetStopTraceBci() == -1) {
@@ -246,6 +246,7 @@ void GraphAnalyzer::Analyze() {
   }
   need_interpret_ = !graph_->GetSideEffect()->IsEmpty() || !GetCaptureInfo().outputs_optimize_.operations.empty() ||
                     param_index != graph_->GetCodeObj()->co_argcount;
+  MS_LOG(INFO) << "End graph analyze";
 }
 
 void GraphAnalyzer::CollectClosureSideEffect() {
