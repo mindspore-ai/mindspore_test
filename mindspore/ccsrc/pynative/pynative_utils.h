@@ -68,9 +68,6 @@ struct Common {
   static std::optional<ValueTuplePtr> ConvertStubNodeToValueTuple(const std::optional<ValueTuplePtr> &v,
                                                                   bool need_contiguous, bool requires_grad);
   static ValuePtr StubNodeToValueInner(const ValuePtr &v);
-  static void GetConstInputToAttr(const PrimitivePtr &op_prim, const std::string &op_name,
-                                  const std::string &device_target, bool is_dynamic_shape,
-                                  mindspore::HashSet<size_t> *input_to_attr_index);
   static ValueNodePtr CreateValueNodeByValue(const ValuePtr &v, const abstract::AbstractBasePtr &abs = nullptr);
   static void SetOutputUsedInBpropGraph(const ValuePtr &value);
   static ValuePtr CreateFakeValueWithoutDeviceAddress(const ValuePtr &value, bool is_force_create_fake = false);
