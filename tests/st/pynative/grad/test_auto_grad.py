@@ -164,6 +164,10 @@ def test_auto_grad_input_asnumpy():
     assert np.allclose(grads[0][0].asnumpy(), np.array([4], dtype=np.float32), 0.00001, 0.00001)
 
 
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
 def test_auto_grad_multi_input():
     """
     Feature: Test auto grad multi input
@@ -179,6 +183,10 @@ def test_auto_grad_multi_input():
     assert np.allclose(grads[0].asnumpy(), np.array([4], dtype=np.float32), 0.00001, 0.00001)
 
 
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
 def test_auto_grad_multi_input_op():
     """
     Feature: Test auto grad multi input op
@@ -194,6 +202,10 @@ def test_auto_grad_multi_input_op():
     assert np.allclose(grads[1].asnumpy(), np.array([1], dtype=np.float32), 0.00001, 0.00001)
 
 
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
 def test_auto_grad_stack_op():
     """
     Feature: Test auto grad multi input op
@@ -209,6 +221,10 @@ def test_auto_grad_stack_op():
     assert np.allclose(grads[1].asnumpy(), np.array([1], dtype=np.float32), 0.00001, 0.00001)
 
 
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
 def test_ir_grad_multi_output():
     """
     Feature: Test auto grad multi output
@@ -221,6 +237,10 @@ def test_ir_grad_multi_output():
     assert np.allclose(grad.asnumpy(), np.array([1, 1, 1, 1, 1, 1, 1, 1, 1], dtype=np.float32), 0.00001, 0.00001)
 
 
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
 def test_auto_grad_multi_output_add_gradient():
     """
     Feature: Test auto grad multi output add.
@@ -233,6 +253,10 @@ def test_auto_grad_multi_output_add_gradient():
     assert np.allclose(grad.asnumpy(), np.array([3, 3, 3, 2, 2, 2, 0, 0, 0], dtype=np.float32), 0.00001, 0.00001)
 
 
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
 def test_auto_grad_not_register_expander_op():
     """
     Feature: Test auto grad not expander
@@ -245,6 +269,10 @@ def test_auto_grad_not_register_expander_op():
     assert np.allclose(grad.asnumpy(), np.array([32], dtype=np.float32), 0.00001, 0.00001)
 
 
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
 def test_auto_grad_weights_grad():
     """
     Feature: Test auto grad weights grad.
@@ -258,6 +286,10 @@ def test_auto_grad_weights_grad():
     assert np.allclose(grads[0][0].asnumpy(), np.array([2], dtype=np.float32), 0.00001, 0.00001)
 
 
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
 def test_auto_grad_single_weight():
     """
     Feature: Test auto grad single input.
@@ -271,6 +303,10 @@ def test_auto_grad_single_weight():
     assert np.allclose(grads[0][0].asnumpy(), np.array([2], dtype=np.float32), 0.00001, 0.00001)
 
 
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
 def test_auto_grad_with_sens():
     """
     Feature: Test auto grad single input.
@@ -285,6 +321,10 @@ def test_auto_grad_with_sens():
     assert np.allclose(grads[0][0].asnumpy(), np.array([2], dtype=np.float32), 0.00001, 0.00001)
 
 
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
 def test_auto_grad_none_inputs_and_weights():
     """
     Feature: Test auto grad none inputs and weights.
@@ -301,6 +341,10 @@ def test_auto_grad_none_inputs_and_weights():
     assert not grads[1]
 
 
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
 def test_auto_grad_by_position():
     """
     Feature: Test auto grad by position.
@@ -313,6 +357,10 @@ def test_auto_grad_by_position():
     assert np.allclose(grad.asnumpy(), np.array([2], dtype=np.float32), 0.00001, 0.00001)
 
 
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
 def test_auto_grad_return_param():
     """
     Feature: Test auto grad return param.
@@ -326,6 +374,10 @@ def test_auto_grad_return_param():
     assert np.allclose(grads[1][0].asnumpy(), np.array([1], dtype=np.float32), 0.00001, 0.00001)
 
 
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
 def test_auto_grad_stop_gradient():
     """
     Feature: Test auto grad stop gradient.
@@ -340,6 +392,10 @@ def test_auto_grad_stop_gradient():
     assert np.allclose(grads[1][0].asnumpy(), np.array([4], dtype=np.float32), 0.00001, 0.00001)
 
 
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
 def test_auto_grad_bprop_net():
     """
     Feature: Test auto grad stop gradient.
@@ -352,6 +408,10 @@ def test_auto_grad_bprop_net():
     assert np.allclose(grad.asnumpy(), np.array([8], dtype=np.float32), 0.00001, 0.00001)
 
 
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
 class NoneCustomNet(nn.Cell):
     def construct(self, x, y):
         y = x * x
@@ -373,6 +433,10 @@ class NoneAddNet(nn.Cell):
         return h
 
 
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
 def test_auto_grad_none_add_net():
     """
     Feature: Test auto grad none add
@@ -390,7 +454,7 @@ def first_grad_net(x):
 
 
 def nested_grad_net(x):
-    grad_param = GradOperation(True, True, False)
+    grad_param = GradOperation(True, False, False)
     _pynative_executor.set_grad_flag(True)
     _pynative_executor.check_run(grad_param, first_grad_net, None, None, True, x, create_graph=False)
     _pynative_executor.new_graph(first_grad_net, x)
@@ -400,6 +464,10 @@ def nested_grad_net(x):
     return grads + x
 
 
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
 def test_check_run_first_order_net():
     """
     Feature: Test auto grad check run.
@@ -425,6 +493,10 @@ class TestRequiresGradMatmulNet(nn.Cell):
         return z
 
 
+@arg_mark(plat_marks=['platform_ascend'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
 def test_requires_grad_memory_check():
     """
     Feature: Test auto grad requires grad memory.
@@ -436,3 +508,33 @@ def test_requires_grad_memory_check():
     _ = mindspore.grad(net)(x)
     print('memory', mindspore.hal.max_memory_allocated())
     assert mindspore.hal.max_memory_allocated() < 500100000
+
+
+class TestRequiresGradFalseNet(nn.Cell):
+    def __init__(self):
+        super(TestRequiresGradFalseNet, self).__init__()
+        self.p1 = Parameter(Tensor(2.0, dtype=mindspore.float32))
+        self.p2 = Parameter(Tensor(3.0, dtype=mindspore.float32))
+
+    def construct(self, x):
+        y = ops.mul(x, self.p1)
+        z = y * self.p2
+        self.p2.requires_grad = False
+        return z
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_requires_grad_false():
+    """
+    Feature: Test auto grad requires grad false.
+    Description: Test auto grad requires grad.
+    Expectation: Success.
+    """
+    x = Tensor([4.], dtype=mindspore.float32)
+    net = TestRequiresGradFalseNet()
+    grads = mindspore.grad(net, weights=[net.p1, net.p2])(x)
+    assert np.allclose(grads[1][0].asnumpy(), np.array([12.0], dtype=np.float32))
+    assert np.allclose(grads[1][1].asnumpy(), np.array([0.0], dtype=np.float32))
