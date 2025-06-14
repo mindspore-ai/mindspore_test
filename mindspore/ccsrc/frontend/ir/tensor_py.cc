@@ -699,12 +699,13 @@ void TensorPybind::Offload(const TensorPtr &tensor, bool release) {
       {device_address->device_name(), device_address->device_id()});
     MS_EXCEPTION_IF_NULL(device_context);
     device_context->device_res_manager_->SyncAllStreams();
-    SyncCopy(tensor->device_address(), device_address, device_address->stream_id());
+    auto cpu_tensor = tensor->cpu();
+    tensor->set_device_address(cpu_tensor->device_address());
     device_address->ClearDeviceMemory();
   } else {
     auto cpu_tensor = tensor->cpu();
     // Release device address of graph output tensor.
-    const_cast<TensorPtr &>(cpu_tensor)->set_device_address(cpu_tensor->device_address());
+    tensor->set_device_address(cpu_tensor->device_address());
   }
 }
 
@@ -720,20 +721,28 @@ void TensorPybind::Load(const Tensor &tensor) {
     MS_LOG(WARNING) << "Tensor has no DeviceAddress, can not be loaded.";
     return;
   }
-  if (tensor.data_c() == nullptr) {
-    MS_LOG(WARNING) << "Tensor has no cpu data, can not be loaded.";
+  if (device_address->GetDeviceType() != device::DeviceType::kCPU) {
+    MS_LOG(DEBUG) << "No need to load, because the data is already on device:"
+                  << device::GetDeviceNameByType(device_address->GetDeviceType());
     return;
   }
-  const auto device = device_address->device_name();
+
+  auto ms_context = MsContext::GetInstance();
+  const auto &device_target = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
   auto device_ctx = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-    {device, MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
+    {ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET), ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
   // make sure op execute end before data copy
   runtime::Pipeline::Get().WaitForward();
-  device_ctx->device_res_manager_->AllocateMemory(device_address.get());
-  MS_LOG(INFO) << "Tensor Load start, the tensor's device_address is : " << device_address.get()
-               << ", the tensor's size is : " << device_address->GetSize();
+  auto new_device_address = std::static_pointer_cast<device::DeviceAddress>(
+    MakeDeviceAddress(tensor.data_type(), tensor.shape(), false, device::GetDeviceTypeByName(device_target)));
+
+  device_ctx->Initialize();
+  device_ctx->device_res_manager_->AllocateMemory(new_device_address.get());
+  MS_LOG(INFO) << "Tensor Load start, the tensor's device_address is : " << new_device_address.get()
+               << ", the tensor's size is : " << new_device_address->GetSize();
   device_ctx->device_res_manager_->SyncAllStreams();
-  SyncCopy(device_address, tensor.device_address(), device_address->stream_id());
+  SyncCopy(new_device_address, device_address, new_device_address->stream_id());
+  const_cast<tensor::Tensor &>(tensor).set_device_address(new_device_address);
 }
 
 void TensorPybind::SetDeviceAddress(const TensorPtr &tensor, uintptr_t addr, const ShapeVector &shape,

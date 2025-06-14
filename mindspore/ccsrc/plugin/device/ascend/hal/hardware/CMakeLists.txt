@@ -18,6 +18,7 @@ file(GLOB_RECURSE MS_HARDWARE_910B RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "acl_stream_assign.cc"
         "gpto.cc"
         "stress_detect.cc"
+        "ascend_device_address_maker.cc"
         )
 
 set_property(SOURCE ${MS_HARDWARE_910B} PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_DEVICE)
