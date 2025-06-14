@@ -723,9 +723,6 @@ void FuncGraphBuilder::MarkNodeIsolated(const AnfNodePtr &node, bool force) {
     return;
   }
   auto callable = callable_node->cast<ValueNodePtr>()->value();
-  if (!callable->isa<Primitive>() && !callable->isa<FuncGraph>()) {
-    return;
-  }
   if (callable->isa<Primitive>()) {
     auto prim = callable->cast<PrimitivePtr>();
     if (force || IsSideEffectPrimitive(prim)) {
@@ -736,15 +733,23 @@ void FuncGraphBuilder::MarkNodeIsolated(const AnfNodePtr &node, bool force) {
     }
     return;
   }
-  auto fg = callable->cast<FuncGraphPtr>();
-  if (!force && !fg->has_side_effect_node()) {
+  if (callable->isa<FuncGraph>()) {
+    auto fg = callable->cast<FuncGraphPtr>();
+    if (force || fg->has_side_effect_node()) {
+      (void)isolated_nodes_.emplace_back(cnode);
+      node->set_user_data<bool>(kCandidateIsolatedFlag, std::make_shared<bool>(true));
+      cnode->set_has_side_effect_node(true);
+      graph_->set_has_side_effect_node(true);
+      MS_LOG(INFO) << "Mark function graph call node isolated, node: " << node->DebugString();
+    }
     return;
   }
-  (void)isolated_nodes_.emplace_back(cnode);
-  node->set_user_data<bool>(kCandidateIsolatedFlag, std::make_shared<bool>(true));
-  cnode->set_has_side_effect_node(true);
-  graph_->set_has_side_effect_node(true);
-  MS_LOG(INFO) << "Mark function graph call node isolated, node: " << node->DebugString();
+  if (force) {
+    (void)isolated_nodes_.emplace_back(cnode);
+    cnode->set_has_side_effect_node(true);
+    graph_->set_has_side_effect_node(true);
+    MS_LOG(INFO) << "Mark side effect cnode isolated, node: " << node->DebugString();
+  }
 }
 
 void FuncGraphBuilder::EraseCandidateIsolatedNode(const AnfNodePtr &node) {
@@ -790,6 +795,8 @@ bool FuncGraphBuilder::GetInputNodesAndAbstracts(const ValuePtr &callable_value,
 CNodePtr FuncGraphBuilder::DoPrimitiveInferAndCheck(const PrimitivePtr &primitive,
                                                     const AnfNodePtrList &input_node_list,
                                                     const AbstractBasePtrList &args_abs_list) {
+  MS_EXCEPTION_IF_NULL(primitive);
+  MS_LOG(DEBUG) << "Start to infer Primitive: " << primitive->ToString();
   try {
     MS_LOG_TRY_CATCH_SCOPE;
     const CNodePtr &new_node = AddPrimitiveCNode(primitive, input_node_list, args_abs_list);
