@@ -978,8 +978,9 @@ void CodeGenerator::BuildOper(ValueNode *node, int index) {
   if (IsNonLocalValue(node)) {
     return;
   }
-
   if ((vm_mode_ && !node->IsVmNode()) || (!vm_mode_ && !node->IsGraphNode())) {
+    MS_LOG(INFO) << "Codegen mode and node mode mismatch, skip it! codegen mode:" << (vm_mode_ ? "vm" : "graph")
+                 << ", node: " << ToString(node);
     return;
   }
 
@@ -2138,6 +2139,7 @@ static bool FindBlock(int start_bci, const CFG *cfg, int *end_bci, int *stack_ef
 
 py::object MakeCodeFromCodeGen(const GraphBuilderPtr &builder, const GraphAnalyzerPtr &analyzer, PyObject *globals) {
   TimeRecorder time_recorder(__FUNCTION__, kPIJitConfigDefault.GetBoolConfig(GraphJitConfig::kLogPerf));
+  MS_LOG(INFO) << "Start MakeCodeFromCodeGen";
   int break_bci = builder->GetGraph()->GetStopTraceBci();
   bool skip_compile = analyzer->GetCaptureInfo().captured_.operations.empty() && break_bci == -1;
 #ifdef IS_PYTHON_3_11_PLUS
@@ -2161,6 +2163,7 @@ py::object MakeCodeFromCodeGen(const GraphBuilderPtr &builder, const GraphAnalyz
   auto cg = std::make_shared<CodeBreakGenerator>(builder, py::cast<py::dict>(globals), graph->GetCodeObj());
   cg->Init(*analyzer, graph);
   py::object code = analyzer->NeedInterpret() ? cg->MakeDispatchCode() : cg->MakeCapturedCode();
+  MS_LOG(INFO) << "End MakeCodeFromCodeGen";
   return code;
 }
 

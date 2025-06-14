@@ -284,7 +284,11 @@ std::vector<ValueNode *> EliminateWeightsSideEffect(const std::vector<ValueNode 
     if (obj.ptr() == nullptr || !py::hasattr(obj, attr_name)) {
       return false;
     }
-    return IsParameterObject(obj.attr(attr_name));
+    bool eliminate = IsParameterObject(obj.attr(attr_name));
+    if (eliminate) {
+      MS_LOG(DEBUG) << "Eliminate Parameter SideEffect node: " << node->ToString();
+    }
+    return eliminate;
   };
   auto remove_if = std::remove_if(side_effect_nodes.begin(), side_effect_nodes.end(), is_remove);
   side_effect_nodes.erase(remove_if, side_effect_nodes.end());
@@ -530,6 +534,7 @@ std::vector<ValueNode *> SideEffectHandler::CollectSideEffectOperations() const 
       continue;
     }
     if (node->GetScope() == AObject::Scope::SCOPE_LOCAL) {
+      MS_LOG(DEBUG) << "Eliminate local scope SideEffect node: " << node->ToString();
       continue;
     }
     MS_LOG(DEBUG) << "Collect Side-Effect Operation : [" << node->GetScopeDesc() << "] " << node->ToString();
@@ -636,6 +641,7 @@ std::vector<ValueNode *> SideEffectHandler::EliminateRedundantSideEffect(const s
     auto is_int = opcode == DELETE_DEREF || opcode == STORE_DEREF || opcode == DELETE_SUBSCR || opcode == STORE_SUBSCR;
     auto arg = is_int ? std::to_string(node->GetOparg()) : node->GetName();
     if (cache->find(base) != cache->end() && cache->at(base).find(arg) != cache->at(base).end()) {
+      MS_LOG(DEBUG) << "Eliminate redundant SideEffect node: " << ToString(side_effect_nodes[cache->at(base).at(arg)]);
       side_effect_nodes[cache->at(base).at(arg)] = nullptr;
     }
     (*cache)[base][arg] = index;
