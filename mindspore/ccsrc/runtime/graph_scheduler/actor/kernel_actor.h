@@ -290,7 +290,8 @@ class KernelActor : public DebugAwareActor {
   void FetchOutputDeviceTensor(OpContext<KernelTensor> *const context);
   void FetchWorkspaceDeviceTensor();
   // Need copy when the data type or format between real parameters and formal parameters are inconsistent.
-  void CopyInputDeviceTensor(KernelTensorPtr kernel_tensor, size_t input_index, OpContext<KernelTensor> *const context);
+  void CopyInputDeviceTensor(KernelTensorPtr kernel_tensor, size_t input_index, OpContext<KernelTensor> *const context,
+                             bool parallel_dispatch_param);
   // The processing before kernel launch: update the info of kernel launch.
   void PreLaunchKernel(OpContext<KernelTensor> *const context);
   // The processing after kernel launch: 1.erase input, 2.free memory, 3.send output.

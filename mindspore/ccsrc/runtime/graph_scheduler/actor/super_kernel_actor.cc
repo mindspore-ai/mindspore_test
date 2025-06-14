@@ -769,7 +769,7 @@ void SuperKernelActor::FetchParameterInput(const KernelRunnerPtr &kernel_actor, 
     }
 
     kernel_actor->CopyInputDeviceTensor(kernel_actor->input_kernel_tensors_[parameter_index.first],
-                                        parameter_index.first, context);
+                                        parameter_index.first, context, enable_parallel_dispatch_);
   }
 }
 
@@ -818,7 +818,7 @@ bool SuperKernelActor::FetchMsgInputAndConstValueForKernel(KernelRunner *kernel_
                     << " graph:" << graph_->ToString();
       kernel_actor->SetInputDeviceTensor(input_kernel_tensors_[item.second], item.first);
       kernel_actor->memory_free_list_[item.first] = input_kernel_tensors_[item.second];
-      kernel_actor->CopyInputDeviceTensor(input_kernel_tensors_[item.second], item.first, context);
+      kernel_actor->CopyInputDeviceTensor(input_kernel_tensors_[item.second], item.first, context, false);
     }
   }
   // 2. Prepare const value.
