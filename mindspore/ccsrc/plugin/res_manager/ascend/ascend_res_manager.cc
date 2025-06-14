@@ -963,7 +963,7 @@ bool AscendResManager::AsyncDeviceToHost(const DeviceSyncPtr &dst_device_sync, c
   MS_EXCEPTION_IF_NULL(src_device_address);
   if (src_device_address->GetTensorStorageInfo() != nullptr || dst_device_address->GetTensorStorageInfo() != nullptr) {
     MS_LOG(EXCEPTION) << "Invalid sync device to host for tensor storage info in device address:"
-                      << src_device_address->PrintInfo() << " and:" << dst_device_address->PrintInfo();
+                      << src_device_address->ToString() << " and:" << dst_device_address->ToString();
   }
   BindDeviceToCurrentThread(false);
   // Check hete info.
@@ -1166,7 +1166,7 @@ bool AscendResManager::AsyncHostToDevice(const DeviceSyncPtr &dst_device_sync, c
   MS_EXCEPTION_IF_NULL(src_device_address);
   if (src_device_address->GetTensorStorageInfo() != nullptr || dst_device_address->GetTensorStorageInfo() != nullptr) {
     MS_LOG(EXCEPTION) << "Invalid sync host to device for tensor storage info in device address:"
-                      << src_device_address->PrintInfo() << " and:" << dst_device_address->PrintInfo();
+                      << src_device_address->ToString() << " and:" << dst_device_address->ToString();
   }
   BindDeviceToCurrentThread(false);
   // Check hete info.

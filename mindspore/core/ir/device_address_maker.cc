@@ -49,8 +49,7 @@ DeviceAddressMakerFunc GetDeviceAddressMaker(device::DeviceType device_target) {
 DeviceSyncPtr MakeDeviceAddress(TypeId data_type, const ShapeVector &shape, bool init, device::DeviceType device_type) {
   // todo: set allocator
   auto tensor_data = tensor::MakeTensorData(data_type, shape);
-  // todo: use init after tensor::empty is replaced.
-  return DeviceAddressMaker(tensor_data->data(), data_type, shape)
+  return DeviceAddressMaker(init ? tensor_data->data() : nullptr, data_type, shape)
     .set_deleter([tensor_data](void *, bool) {})
     .set_maker(GetDeviceAddressMaker(device_type))
     .make_device_address();
