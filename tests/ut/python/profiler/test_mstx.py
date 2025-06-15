@@ -102,7 +102,7 @@ class TestMstx(unittest.TestCase):
         with patch('mindspore.log.warning') as mock_warning:
             mstx.range_end("invalid_id")
             mock_warning.assert_called_once_with(
-                "Invalid message for mstx.range_start func. Please input return value from mstx.range_start."
+                "Invalid range_id for mstx.range_end func. Please input return value from mstx.range_start."
             )
             self.mock_profiler.mstx_range_end.assert_not_called()
 
