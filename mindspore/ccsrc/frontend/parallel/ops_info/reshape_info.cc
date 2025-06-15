@@ -386,6 +386,14 @@ bool SkipTensorRedistribution(const TensorLayout &from_layout, const TensorLayou
   return false;
 }
 
+void ReportRedistributionError(const std::string &name, const bool &is_generating_costs, const std::string &error_msg) {
+  if (is_generating_costs) {
+    MS_LOG(DEBUG) << "For " << name << error_msg;
+  } else {
+    MS_LOG(ERROR) << "For " << name << error_msg;
+  }
+}
+
 Status ReshapeInfo::ComputeReplaceOp() {
   MS_LOG(INFO) << "Infer reshape redistribution for " << this->cnode_->fullname_with_scope() << "." << std::endl
                << "input_layout_: " << this->input_layout_.ToString() << std::endl
@@ -424,11 +432,7 @@ Status ReshapeInfo::ComputeReplaceOp() {
 
     bool is_multi_dynamic_reshape = std::count(output_tensor_shape.begin(), output_tensor_shape.end(), -1) > 1;
     if (tensor_redistribution->Init(input_layout_, output_layout_, dev_list, is_multi_dynamic_reshape) == FAILED) {
-      if (is_generating_costs_) {
-        MS_LOG(DEBUG) << name_ << ": tensor_redistribution init failed.";
-      } else {
-        MS_LOG(ERROR) << name_ << ": tensor_redistribution init failed.";
-      }
+      ReportRedistributionError(name_, is_generating_costs_, ", tensor_redistribution init failed.");
       return FAILED;
     }
     MS_LOG(DEBUG) << name_ << ": input " << input_layout_.ToString();
@@ -464,11 +468,7 @@ Status ReshapeInfo::ComputeReplaceOp() {
         redistribution_oplist_ptr, tensor_redistribution->input_shape());
     }
     if (redistribution_oplist_ptr == nullptr) {
-      if (is_generating_costs_) {
-        MS_LOG(DEBUG) << name_ << "InferTensorRedistribution failed.";
-      } else {
-        MS_LOG(ERROR) << name_ << "InferTensorRedistribution failed.";
-      }
+      ReportRedistributionError(name_, is_generating_costs_, ", InferTensorRedistribution failed.");
       return FAILED;
     }
     if (!redistribution_oplist_ptr->first.empty() && tensor_redistribution->original_reshape_shape() == nullptr &&
