@@ -58,18 +58,6 @@ mindspore.nn.Optimizer
         返回：
             tuple[Tensor]，衰减权重后的梯度。
 
-    .. py:method:: flatten_gradients(gradients)
-
-        如果网络参数已经使用了连续内存，则梯度也将按数据类型分组使用连续内存。
-
-        一种网络参数和梯度都使用连续内存的性能优化方法。继承 :class:`mindspore.nn.Optimizer` 自定义优化器时，需调用该接口使能连续内存优化。
-
-        参数：
-            - **gradients** (tuple[Tensor]) - 网络参数的梯度，形状（shape）与网络参数相同。
-
-        返回：
-            tuple[Tensor]，如果网络参数使用了连续内存，则返回按数据类型分组使用连续内存后的梯度，否则原样返回输入的梯度。
-
     .. py:method:: get_lr()
 
         优化器调用该接口获取当前步骤（step）的学习率。继承 :class:`mindspore.nn.Optimizer` 自定义优化器时，可在参数更新前调用该接口获取学习率。
