@@ -125,8 +125,6 @@ class LARS(Optimizer):
         self.weight_decay = optimizer.weight_decay
         self.global_step = optimizer.global_step
         self.parameters = optimizer.parameters
-        if optimizer._use_flattened_params:  # pylint: disable=W0212
-            self.opt._use_flattened_params = False  # pylint: disable=W0212
         self._user_parameters += [param.name for param in self.parameters]
         self.use_clip = use_clip
         self.lars_flag = tuple(lars_filter(x) for x in self.parameters)
