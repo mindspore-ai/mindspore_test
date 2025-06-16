@@ -85,7 +85,7 @@ class WithParameter(nn.Cell):
         return self.param1 * self.param2 * dout, 2 * y
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_with_param():
     with_param = WithParameter()
     with pytest.raises(RuntimeError):
@@ -416,7 +416,7 @@ class MulAddWithWrongOutputNum(nn.Cell):
         return (2 * dout,)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_grad_mul_add_with_wrong_output_num():
     compile_config.CHECK_BPROP = 1
     mul_add = MulAddWithWrongOutputNum()
@@ -434,7 +434,7 @@ class MulAddWithWrongOutputType(nn.Cell):
         return 2 * dout, 2
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_grad_mul_add_with_wrong_output_type():
     compile_config.CHECK_BPROP = 1
     mul_add = MulAddWithWrongOutputType()
@@ -456,7 +456,7 @@ class MulAddWithWrongOutputShape(nn.Cell):
         return 2, self.ones
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_grad_mul_add_with_wrong_output_shape():
     compile_config.CHECK_BPROP = 1
     mul_add = MulAddWithWrongOutputShape()

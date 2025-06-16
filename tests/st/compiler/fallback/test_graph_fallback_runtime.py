@@ -389,7 +389,7 @@ class MakeTensorWithShapeDtype(nn.Cell):
         return output1 + output2
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_make_tensor_with_dynamic_shape_dtype():
     """
@@ -542,7 +542,7 @@ def test_np_save_with_call_kw2():
     os.remove("data_from_kw_with_if.npy")
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_pyexecute_raise_error_with_dynamic_length_sequence():
     """

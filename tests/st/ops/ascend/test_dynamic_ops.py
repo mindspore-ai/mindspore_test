@@ -369,7 +369,7 @@ def test_dynamic_add2():
 
 
 @pytest.mark.skip(reason='Operator Shape is not support in backend yet.')
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_tensor_shape_value_infer():
     """
     Feature: Test shape tensor infer mechanism.
@@ -404,7 +404,7 @@ def test_dynamic_softmax():
 
 
 @pytest.mark.skip(reason="his bug")
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_dynamic_batchnorm():
     """
     Feature: Test Batchnorm2D and its backward. The input shape is dynamic.
