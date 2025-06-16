@@ -1646,8 +1646,26 @@ static PyMethodDef Tensor_methods[] = {
                                 )mydelimiter"},
   {"_has_auto_grad", (PyCFunction)TensorPython_HasAutoGrad, METH_VARARGS | METH_KEYWORDS, "HasAutoGrad."},
   {"hooks", (PyCFunction)TensorPython_GetHooks, METH_VARARGS | METH_KEYWORDS, "get hooks."},
-  {"storage", (PyCFunction)TensorPython_Storage, METH_VARARGS | METH_KEYWORDS, "get storage."},
-  {"untyped_storage", (PyCFunction)TensorPython_Storage, METH_VARARGS | METH_KEYWORDS, "get storage."},
+  {"storage", (PyCFunction)TensorPython_Storage, METH_VARARGS | METH_KEYWORDS, R"mydelimiter(
+                                Returns the tensor's storage, which is dtype-agnostic.
+                                Currently only supported on the Ascend platform.
+
+                                Returns:
+                                    UntypedStorage, the underlying storage implementation.
+
+                                Raises:
+                                    RuntimeError: The storage of the tensor does not exist on Ascend.
+                                )mydelimiter"},
+  {"untyped_storage", (PyCFunction)TensorPython_Storage, METH_VARARGS | METH_KEYWORDS, R"mydelimiter(
+                                Returns the tensor's storage, which is dtype-agnostic.
+                                Currently only supported on the Ascend platform.
+
+                                Returns:
+                                    UntypedStorage, the underlying storage implementation.
+
+                                Raises:
+                                    RuntimeError: The storage of the tensor does not exist on Ascend.
+                                )mydelimiter"},
   {"_data_ptr", (PyCFunction)TensorPython_GetDataPtr, METH_VARARGS, "get Data ptr."},
   {"_need_contiguous", (PyCFunction)TensorPython_NeedContiguous, METH_VARARGS | METH_KEYWORDS, "need Contiguous."},
   {"_load", (PyCFunction)TensorPython_SetLoad, METH_VARARGS, "SetLoad."},
