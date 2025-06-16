@@ -232,6 +232,7 @@ const std::vector<OpWithLevel> expand_ops_with_level_dvm = {
   {kAscendDevice, OpLevel_0, prim::kPrimSoftplusExt},
   {kAscendDevice, OpLevel_0, prim::kPrimSoftplusGradExt},
   {kAscendDevice, OpLevel_0, prim::kPrimLeakyReLUExt},
+  {kAscendDevice, OpLevel_0, prim::kPrimZerosLikeExt},
   {kAscendDevice, OpLevel_2, prim::kSoftmaxGradExt},
 };
 }  // namespace

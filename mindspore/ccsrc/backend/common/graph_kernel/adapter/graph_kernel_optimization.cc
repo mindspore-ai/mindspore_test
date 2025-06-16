@@ -70,7 +70,6 @@
 #include "backend/common/graph_kernel/convert_bfloat16.h"
 #include "backend/common/graph_kernel/deal_with_side_effect.h"
 #include "backend/common/graph_kernel/fold_updatestate.h"
-#include "backend/common/graph_kernel/proactive_fallback_expander.h"
 #include "backend/common/graph_kernel/transpose_matmul_fusion.h"
 #include "backend/common/graph_kernel/shrink_only_shape_needed.h"
 #include "backend/common/graph_kernel/depend_edge_elimination.h"
@@ -106,10 +105,6 @@ PassManagerPtr GraphKernelOptimizer::PreProcess() const {
   auto pm = std::make_shared<GraphKernelPassManager>(0, "preprocess");
   // Remove redundant TupleGetItem to enable cluster ops before and after TupleGetItem
   pm->Add(std::make_shared<GetitemTuple>(), OptLevel_1);
-
-  // Fallback some operations for further expanding or fusing
-  pm->Add(std::make_shared<ProactiveFallbackExpander>(), OptLevel_1,
-          is_dvm && !(common::GetEnv(kDisableKernelBackoff) == "1"));
 
   // convert input to attr adapter for dyn-shape
   pm->Add(std::make_shared<ConvertFrontEndToGraphKernel>(), OptLevel_1);

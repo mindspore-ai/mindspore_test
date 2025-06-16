@@ -46,6 +46,27 @@ REG_EXPANDER_FUNC("ZerosLike").SetBody(BODYFUNC(ib) {
   return {result};
 });
 
+REG_EXPANDER_FUNC("ZerosLikeExt").SetBody(BODYFUNC(ib) {
+  const auto &input = ib->input(kIndex0);
+  auto input_type = input->GetDtype();
+  auto dtype = ib->input(kIndex1);
+  auto input_shape = input->GetShape();
+  auto out_type = dtype->GetDtype() != TypeIdToType(kMetaTypeNone)
+                    ? TypeIdToType(static_cast<TypeId>(GetValue<int64_t>(dtype->GetValue())))
+                    : input_type;
+  if (IsDynamic(input_shape)) {
+    MS_LOG(DEBUG) << "ZerosLikeExt Skip dynamic shape case";
+    return {};
+  }
+  if (IsShapeEmpty(input_shape)) {
+    MS_LOG(DEBUG) << "ZerosLikeExt Skip empty shape case";
+    return {};
+  }
+  auto const_zero = ib->Tensor(0, out_type);
+  auto result = ib->BroadcastTo(const_zero, ib->Value(input_shape));
+  return {result};
+});
+
 REG_EXPANDER_FUNC("FillV2").SetBody(BODYFUNC(ib) {
   const auto &shape = ib->input(kIndex0);
   auto shape_value_ptr = shape->GetValue();
