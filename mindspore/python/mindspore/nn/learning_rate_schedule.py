@@ -19,7 +19,7 @@ from __future__ import division
 import math
 
 from mindspore.common import dtype as mstype
-from mindspore.ops import operations as P
+from mindspore import ops
 from mindspore.nn.cell import Cell
 from mindspore import _checkparam as validator
 
@@ -119,13 +119,13 @@ class ExponentialDecayLR(LearningRateSchedule):
         self.decay_rate = decay_rate
         self.decay_steps = decay_steps
         self.is_stair = is_stair
-        self.pow = P.Pow()
-        self.cast = P.Cast()
+        self.pow = ops.Pow()
+        self.cast = ops.Cast()
 
     def construct(self, global_step):
         p = self.cast(global_step, mstype.float32) / self.decay_steps
         if self.is_stair:
-            p = P.Floor()(p)
+            p = ops.Floor()(p)
         return self.learning_rate * self.pow(self.decay_rate, p)
 
 
@@ -191,13 +191,13 @@ class NaturalExpDecayLR(LearningRateSchedule):
         self.decay_steps = decay_steps
         self.is_stair = is_stair
         self.math_e = math.e
-        self.pow = P.Pow()
-        self.cast = P.Cast()
+        self.pow = ops.Pow()
+        self.cast = ops.Cast()
 
     def construct(self, global_step):
         p = self.cast(global_step, mstype.float32)
         if self.is_stair:
-            p = P.FloorDiv()(p, self.decay_steps) * self.decay_steps
+            p = ops.FloorDiv()(p, self.decay_steps) * self.decay_steps
         return self.learning_rate * self.pow(self.math_e, -self.decay_rate * p)
 
 
@@ -264,12 +264,12 @@ class InverseDecayLR(LearningRateSchedule):
         self.decay_rate = decay_rate
         self.decay_steps = decay_steps
         self.is_stair = is_stair
-        self.cast = P.Cast()
+        self.cast = ops.Cast()
 
     def construct(self, global_step):
         p = self.cast(global_step, mstype.float32) / self.decay_steps
         if self.is_stair:
-            p = P.Floor()(p)
+            p = ops.Floor()(p)
         return self.learning_rate / (1 + self.decay_rate * p)
 
 
@@ -334,10 +334,10 @@ class CosineDecayLR(LearningRateSchedule):
         self.decay_steps = decay_steps
         self.math_pi = math.pi
         self.delta = 0.5 * (max_lr - min_lr)
-        self.cos = P.Cos()
-        self.sin = P.Sin()
-        self.min = P.Minimum()
-        self.cast = P.Cast()
+        self.cos = ops.Cos()
+        self.sin = ops.Sin()
+        self.min = ops.Minimum()
+        self.cast = ops.Cast()
 
     def construct(self, global_step):
         p = self.cast(self.min(global_step, self.decay_steps), mstype.float32)
@@ -425,13 +425,13 @@ class PolynomialDecayLR(LearningRateSchedule):
         self.diff_learning_rate = learning_rate - end_learning_rate
         self.power = power
         self.update_decay_steps = update_decay_steps
-        self.pow = P.Pow()
-        self.ceil = P.Ceil()
-        self.min = P.Minimum()
-        self.max = P.Maximum()
+        self.pow = ops.Pow()
+        self.ceil = ops.Ceil()
+        self.min = ops.Minimum()
+        self.max = ops.Maximum()
 
     def construct(self, global_step):
-        tmp_global_step = P.Cast()(global_step, mstype.float32)
+        tmp_global_step = ops.Cast()(global_step, mstype.float32)
         tmp_decay_step = self.decay_steps
         if self.update_decay_steps:
             tmp_decay_step = tmp_decay_step * self.max(self.ceil(tmp_global_step / tmp_decay_step), 1)
@@ -498,8 +498,8 @@ class WarmUpLR(LearningRateSchedule):
         validator.check_positive_int(warmup_steps, 'warmup_steps', self.cls_name)
         self.warmup_steps = warmup_steps
         self.learning_rate = learning_rate
-        self.min = P.Minimum()
-        self.cast = P.Cast()
+        self.min = ops.Minimum()
+        self.cast = ops.Cast()
 
     def construct(self, global_step):
         warmup_percent = self.cast(self.min(global_step, self.warmup_steps), mstype.float32) / self.warmup_steps

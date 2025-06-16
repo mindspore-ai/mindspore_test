@@ -22,9 +22,7 @@ import numpy as np
 import mindspore.common.dtype as mstype
 import mindspore.ops as ops
 from mindspore.common.tensor import Tensor
-from mindspore.ops import operations as P
 from mindspore.ops.operations import _inner_ops as inner
-from mindspore.ops import functional as F
 from mindspore.ops.primitive import constexpr, _primexpr
 from mindspore import _checkparam as validator
 from mindspore.nn.layer.conv import Conv2d
@@ -80,21 +78,21 @@ class ImageGradients(Cell):
         super(ImageGradients, self).__init__()
 
     def construct(self, images):
-        _check_input_4d(F.shape(images), "images", self.cls_name)
-        batch_size, depth, height, width = P.Shape()(images)
+        _check_input_4d(ops.shape(images), "images", self.cls_name)
+        batch_size, depth, height, width = ops.Shape()(images)
         if height == 1:
-            dy = F.fill(P.DType()(images), (batch_size, depth, 1, width), 0)
+            dy = ops.fill(ops.DType()(images), (batch_size, depth, 1, width), 0)
         else:
             dy = images[:, :, 1:, :] - images[:, :, :height - 1, :]
-            dy_last = F.fill(P.DType()(images), (batch_size, depth, 1, width), 0)
-            dy = P.Concat(2)((dy, dy_last))
+            dy_last = ops.fill(ops.DType()(images), (batch_size, depth, 1, width), 0)
+            dy = ops.Concat(2)((dy, dy_last))
 
         if width == 1:
-            dx = F.fill(P.DType()(images), (batch_size, depth, height, 1), 0)
+            dx = ops.fill(ops.DType()(images), (batch_size, depth, height, 1), 0)
         else:
             dx = images[:, :, :, 1:] - images[:, :, :, :width - 1]
-            dx_last = F.fill(P.DType()(images), (batch_size, depth, height, 1), 0)
-            dx = P.Concat(3)((dx, dx_last))
+            dx_last = ops.fill(ops.DType()(images), (batch_size, depth, height, 1), 0)
+            dx = ops.Concat(3)((dx, dx_last))
         return dy, dx
 
 
@@ -102,8 +100,8 @@ def _convert_img_dtype_to_float32(img, max_val):
     """convert img dtype to float32"""
     # Usually max_val is 1.0 or 255, we will do the scaling if max_val > 1.
     # We will scale img pixel value if max_val > 1. and just cast otherwise.
-    ret = F.cast(img, mstype.float32)
-    max_val = F.scalar_cast(max_val, mstype.float32)
+    ret = ops.cast(img, mstype.float32)
+    max_val = ops.scalar_cast(max_val, mstype.float32)
     if max_val > 1.:
         scale = 1. / max_val
         ret = ret * scale
@@ -157,8 +155,8 @@ def _create_window(size, sigma):
 
 
 def _split_img(x):
-    _, c, _, _ = F.shape(x)
-    img_split = P.Split(1, c)
+    _, c, _, _ = ops.shape(x)
+    img_split = ops.Split(1, c)
     output = img_split(x)
     return output, c
 
@@ -209,7 +207,7 @@ class SSIM(Cell):
     r"""
     Returns SSIM index between two images.
 
-    Its implementation is based on Wang, Z., Bovik, A. C., Sheikh, H. R., & Simoncelli, E. P. (2004) `Image quality
+    Its implementation is based on Wang, Z., Bovik, A. C., Sheikh, H. R., & Simoncelli, E. ops. (2004) `Image quality
     assessment: from error visibility to structural similarity <https://ieeexplore.ieee.org/document/1284395>`_ .
 
     SSIM is a measure of the similarity of two pictures.
@@ -275,14 +273,14 @@ class SSIM(Cell):
         window = _create_window(filter_size, filter_sigma)
         self.conv = _conv2d(1, 1, filter_size, Tensor(window))
         self.conv.weight.requires_grad = False
-        self.reduce_mean = P.ReduceMean()
-        self.concat = P.Concat(axis=1)
+        self.reduce_mean = ops.ReduceMean()
+        self.concat = ops.Concat(axis=1)
 
     def construct(self, img1, img2):
-        _check_input_dtype(F.dtype(img1), "img1", [mstype.float32, mstype.float16], self.cls_name)
-        _check_input_filter_size(F.shape(img1), "img1", self.filter_size, self.cls_name)
+        _check_input_dtype(ops.dtype(img1), "img1", [mstype.float32, mstype.float16], self.cls_name)
+        _check_input_filter_size(ops.shape(img1), "img1", self.filter_size, self.cls_name)
         inner.SameTypeShape()(img1, img2)
-        dtype_max_val = _get_dtype_max(F.dtype(img1))
+        dtype_max_val = _get_dtype_max(ops.dtype(img1))
         max_val = _convert_img_dtype_to_float32(self.max_val, dtype_max_val)
         img1 = _convert_img_dtype_to_float32(img1, dtype_max_val)
         img2 = _convert_img_dtype_to_float32(img2, dtype_max_val)
@@ -308,7 +306,7 @@ class MSSSIM(Cell):
 
     Its implementation is based on `Multiscale structural similarity
     for image quality assessment <https://ieeexplore.ieee.org/document/1292216>`_
-    by Zhou Wang, Eero P. Simoncelli, and Alan C. Bovik, published on Signals, Systems and Computers in 2004.
+    by Zhou Wang, Eero ops. Simoncelli, and Alan C. Bovik, published on Signals, Systems and Computers in 2004.
 
     .. math::
 
@@ -377,19 +375,19 @@ class MSSSIM(Cell):
         self.weight_tensor = Tensor(power_factors, mstype.float32)
         self.avg_pool = AvgPool2d(kernel_size=2, stride=2, pad_mode='valid')
         self.relu = ReLU()
-        self.reduce_mean = P.ReduceMean()
-        self.prod = P.ReduceProd()
-        self.pow = P.Pow()
-        self.stack = P.Stack(axis=-1)
-        self.concat = P.Concat(axis=1)
+        self.reduce_mean = ops.ReduceMean()
+        self.prod = ops.ReduceProd()
+        self.pow = ops.Pow()
+        self.stack = ops.Stack(axis=-1)
+        self.concat = ops.Concat(axis=1)
 
     def construct(self, img1, img2):
-        _check_input_4d(F.shape(img1), "img1", self.cls_name)
-        _check_input_4d(F.shape(img2), "img2", self.cls_name)
+        _check_input_4d(ops.shape(img1), "img1", self.cls_name)
+        _check_input_4d(ops.shape(img2), "img2", self.cls_name)
         valid_type = [mstype.float64, mstype.float32, mstype.float16, mstype.uint8]
-        _check_input_dtype(F.dtype(img1), 'img1', valid_type, self.cls_name)
+        _check_input_dtype(ops.dtype(img1), 'img1', valid_type, self.cls_name)
         inner.SameTypeShape()(img1, img2)
-        dtype_max_val = _get_dtype_max(F.dtype(img1))
+        dtype_max_val = _get_dtype_max(ops.dtype(img1))
         max_val = _convert_img_dtype_to_float32(self.max_val, dtype_max_val)
         img1 = _convert_img_dtype_to_float32(img1, dtype_max_val)
         img2 = _convert_img_dtype_to_float32(img2, dtype_max_val)
@@ -463,16 +461,16 @@ class PSNR(Cell):
         self.max_val = max_val
 
     def construct(self, img1, img2):
-        _check_input_4d(F.shape(img1), "img1", self.cls_name)
-        _check_input_4d(F.shape(img2), "img2", self.cls_name)
+        _check_input_4d(ops.shape(img1), "img1", self.cls_name)
+        _check_input_4d(ops.shape(img2), "img2", self.cls_name)
         inner.SameTypeShape()(img1, img2)
-        dtype_max_val = _get_dtype_max(F.dtype(img1))
+        dtype_max_val = _get_dtype_max(ops.dtype(img1))
         max_val = _convert_img_dtype_to_float32(self.max_val, dtype_max_val)
         img1 = _convert_img_dtype_to_float32(img1, dtype_max_val)
         img2 = _convert_img_dtype_to_float32(img2, dtype_max_val)
 
-        mse = P.ReduceMean()(F.square(img1 - img2), (-3, -2, -1))
-        psnr = 10 * P.Log()(F.square(max_val) / mse) / F.scalar_log(10.0)
+        mse = ops.ReduceMean()(ops.square(img1 - img2), (-3, -2, -1))
+        psnr = 10 * ops.Log()(ops.square(max_val) / mse) / ops.scalar_log(10.0)
 
         return psnr
 
@@ -545,10 +543,10 @@ class CentralCrop(Cell):
         validator.check_value_type("central_fraction", central_fraction, [float], self.cls_name)
         validator.check_float_range(central_fraction, 0.0, 1.0, validator.INC_RIGHT, 'central_fraction', self.cls_name)
         self.central_fraction = central_fraction
-        self.slice = P.Slice()
+        self.slice = ops.Slice()
 
     def construct(self, image):
-        image_shape = F.shape(image)
+        image_shape = ops.shape(image)
         rank = len(image_shape)
         _check_rank(rank, image_shape, "image", self.cls_name)
         if self.central_fraction == 1.0:

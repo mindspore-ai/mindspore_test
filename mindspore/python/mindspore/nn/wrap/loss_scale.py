@@ -26,33 +26,31 @@ from mindspore.common import Tensor
 from mindspore.common.sparse_tensor import RowTensorInner
 from mindspore.common.parameter import Parameter
 from mindspore.ops.operations.math_ops import NPUGetFloatStatusV2, NPUClearFloatStatusV2
-from mindspore.ops import functional as F
-from mindspore.ops import composite as C
-from mindspore.ops import operations as P
+from mindspore import ops
 from mindspore.ops.operations.nn_ops import AllFinite
 from mindspore.common import dtype as mstype
 from mindspore._c_expression import MSContext
 from mindspore.run_check._check_version import AscendEnvChecker
 from mindspore import log as logger
 
-_grad_scale = C.MultitypeFuncGraph("grad_scale")
-reciprocal = P.Reciprocal()
+_grad_scale = ops.MultitypeFuncGraph("grad_scale")
+reciprocal = ops.Reciprocal()
 
 
 @_grad_scale.register("Tensor", "Tensor")
 def tensor_grad_scale(scale, grad):
-    return grad * F.cast(reciprocal(scale), F.dtype(grad))
+    return grad * ops.cast(reciprocal(scale), ops.dtype(grad))
 
 
 @_grad_scale.register("Tensor", "RowTensor")
 def tensor_grad_scale_row_tensor(scale, grad):
     return RowTensorInner(grad.indices,
-                          grad.values * F.cast(reciprocal(scale), F.dtype(grad.values)),
+                          grad.values * ops.cast(reciprocal(scale), ops.dtype(grad.values)),
                           grad.dense_shape)
 
 
-_grad_overflow = C.MultitypeFuncGraph("_grad_overflow")
-grad_overflow = P.FloatStatus()
+_grad_overflow = ops.MultitypeFuncGraph("_grad_overflow")
+grad_overflow = ops.FloatStatus()
 
 
 @_grad_overflow.register("Tensor")
@@ -65,8 +63,8 @@ def _tensor_grad_overflow_row_tensor(grad):
     return grad_overflow(grad.values)
 
 
-_ascend_grad_overflow = C.MultitypeFuncGraph("_ascend_grad_overflow")
-ascend_grad_overflow = P.IsFinite()
+_ascend_grad_overflow = ops.MultitypeFuncGraph("_ascend_grad_overflow")
+ascend_grad_overflow = ops.IsFinite()
 
 
 @_ascend_grad_overflow.register("Tensor")
@@ -74,7 +72,7 @@ def _tensor_ascend_grad_overflow(grad):
     status = ascend_grad_overflow(grad)
     base = Tensor(1.0, dtype=mstype.float32)
     output = base - status.all()
-    output = P.Reshape()(output, ((-1,)))
+    output = ops.Reshape()(output, ((-1,)))
     return output
 
 
@@ -83,7 +81,7 @@ def _tensor_ascend_grad_overflow_row_tensor(grad):
     status = ascend_grad_overflow(grad.values)
     base = Tensor(1.0, dtype=mstype.float32)
     output = base - status.all()
-    output = P.Reshape()(output, ((1,)))
+    output = ops.Reshape()(output, ((1,)))
     return output
 
 
@@ -154,14 +152,14 @@ class DynamicLossScaleUpdateCell(Cell):
 
         self.cur_iter = Parameter(Tensor(1, dtype=mstype.int32), name="current_iterator_step")
         self.last_overflow_iter = Parameter(Tensor(0, dtype=mstype.int32), name="last_overflow_iterator_step")
-        self.select = P.Select()
-        self.max = P.Maximum()
+        self.select = ops.Select()
+        self.max = ops.Maximum()
         self.minimum_loss_scale = Tensor(1.0, dtype=mstype.float32)
-        self.reciprocal = P.Reciprocal()
-        self.less_equal = P.LessEqual()
-        self.logic_and = P.LogicalAnd()
-        self.logic_not = P.LogicalNot()
-        self.logic_or = P.LogicalOr()
+        self.reciprocal = ops.Reciprocal()
+        self.less_equal = ops.LessEqual()
+        self.logic_and = ops.LogicalAnd()
+        self.logic_not = ops.LogicalNot()
+        self.logic_or = ops.LogicalOr()
         self.const_true = Tensor(True, dtype=mstype.bool_)
 
     def get_loss_scale(self):
@@ -187,14 +185,14 @@ class DynamicLossScaleUpdateCell(Cell):
         should_inc = self.less_equal(self.scale_window, self.cur_iter - self.last_overflow_iter)
         last_iter_cond = self.logic_or(overflow_cond, should_inc)
         last_overflow_iter = self.select(last_iter_cond, self.cur_iter, self.last_overflow_iter)
-        last_iter = F.assign(self.last_overflow_iter, last_overflow_iter)
+        last_iter = ops.assign(self.last_overflow_iter, last_overflow_iter)
         update_scale_cond = self.logic_and(should_inc, self.logic_not(overflow_cond))
         scale_mul_res = loss_scale_on_overflow * self.scale_factor
         scaled_loss_scale = self.select(update_scale_cond, scale_mul_res, loss_scale_on_overflow)
-        F.assign(loss_scale, scaled_loss_scale)
+        ops.assign(loss_scale, scaled_loss_scale)
         inc_cur_iter = self.cur_iter + 1
-        inc_cur_iter = F.depend(inc_cur_iter, last_iter)
-        F.assign(self.cur_iter, inc_cur_iter)
+        inc_cur_iter = ops.depend(inc_cur_iter, last_iter)
+        ops.assign(self.cur_iter, inc_cur_iter)
         return overflow
 
 
@@ -360,15 +358,15 @@ class TrainOneStepWithLossScaleCell(TrainOneStepCell):
 
     def __init__(self, network, optimizer, scale_sense):
         super(TrainOneStepWithLossScaleCell, self).__init__(network, optimizer, sens=None)
-        self.hyper_map = C.HyperMap()
+        self.hyper_map = ops.HyperMap()
         self.base = Tensor(1, mstype.float32)
         self.base0 = Tensor(0, mstype.int32)
-        self.reduce_sum = P.ReduceSum(keep_dims=False)
-        self.reduce_all = P.ReduceAll(keep_dims=False)
-        self.less_equal = P.LessEqual()
-        self.equal = P.Equal()
-        self.logic_not = P.LogicalNot()
-        self.allreduce = P.AllReduce()
+        self.reduce_sum = ops.ReduceSum(keep_dims=False)
+        self.reduce_all = ops.ReduceAll(keep_dims=False)
+        self.less_equal = ops.LessEqual()
+        self.equal = ops.Equal()
+        self.logic_not = ops.LogicalNot()
+        self.allreduce = ops.AllReduce()
         self.is_distributed = (self.parallel_mode != ParallelMode.STAND_ALONE)
         self.gpu_target = context.get_context("device_target") == "GPU"
         self.ascend_910a_target = MSContext.get_instance().get_ascend_soc_version() == 'ascend910'
@@ -420,9 +418,9 @@ class TrainOneStepWithLossScaleCell(TrainOneStepCell):
         scaling_sens = self.scale_sense
         status = Tensor([0] * 8, mstype.int32)
 
-        scaling_sens_filled = C.ones_like(loss) * F.cast(scaling_sens, F.dtype(loss))
+        scaling_sens_filled = ops.ones_like(loss) * ops.cast(scaling_sens, ops.dtype(loss))
         grads = self.grad(self.network, weights)(*inputs, scaling_sens_filled)
-        grads = self.hyper_map(F.partial(_grad_scale, scaling_sens), grads)
+        grads = self.hyper_map(ops.partial(_grad_scale, scaling_sens), grads)
         # apply grad reducer on grads
         grads = self.grad_reducer(grads)
 
@@ -431,7 +429,7 @@ class TrainOneStepWithLossScaleCell(TrainOneStepCell):
         overflow = self.process_loss_scale(cond)
         # if there is no overflow, do optimize
         if not overflow:
-            loss = F.depend(loss, self.optimizer(grads))
+            loss = ops.depend(loss, self.optimizer(grads))
         return loss, cond, scaling_sens
 
     def set_sense_scale(self, sens):
@@ -475,18 +473,18 @@ class TrainOneStepWithLossScaleCell(TrainOneStepCell):
         status = Tensor([0] * 8, mstype.int32)
         if self.ascend_910a_target or (self.ascend_910b_target and \
                                        self._ascend_check_overflow_mode == "SATURATION_MODE"):
-            status = F.depend(status, pre_cond)
+            status = ops.depend(status, pre_cond)
             # clear overflow buffer
             clear_status = NPUClearFloatStatusV2()(status)
-            compute_input = F.depend(compute_input, clear_status)
+            compute_input = ops.depend(compute_input, clear_status)
         return status, compute_input
 
     def _check_overflow_status_on_infnan_mode(self, grad_overflow_check_func, compute_output):
         """check overflow status on infnan mode."""
-        flag_sum = self.hyper_map(F.partial(grad_overflow_check_func), compute_output)
-        flag_sum = P.AddN()(flag_sum)
+        flag_sum = self.hyper_map(ops.partial(grad_overflow_check_func), compute_output)
+        flag_sum = ops.AddN()(flag_sum)
         # convert flag_sum to scalar
-        flag_sum = P.Reshape()(flag_sum, (()))
+        flag_sum = ops.Reshape()(flag_sum, (()))
         return flag_sum
 
     def _get_distributed_overflow_status_on_infnan_mode(self, grad_overflow_check_func, compute_output):
@@ -506,8 +504,8 @@ class TrainOneStepWithLossScaleCell(TrainOneStepCell):
         overflow = AllFinite()(compute_output)
 
         if self.is_distributed:
-            overflow = P.Cast()(overflow, mstype.float32)
-            overflow = P.Cast()(self.allreduce(overflow), mstype.bool_)
+            overflow = ops.Cast()(overflow, mstype.float32)
+            overflow = ops.Cast()(self.allreduce(overflow), mstype.bool_)
         return overflow
 
     def _get_gpu_overflow_status(self, compute_output):
@@ -526,7 +524,7 @@ class TrainOneStepWithLossScaleCell(TrainOneStepCell):
 
     def _get_ascend_overflow_status_on_saturation_mode(self, status, compute_output):
         """get overflow status of ascend on saturation mode"""
-        status = F.depend(status, compute_output)
+        status = ops.depend(status, compute_output)
         get_status = NPUGetFloatStatusV2()(status)
 
         if self.is_distributed:
@@ -534,15 +532,15 @@ class TrainOneStepWithLossScaleCell(TrainOneStepCell):
             flag_reduce = self.allreduce(get_status)
             # get_status not equal to [0]*8 means overflow
             flag = self.equal(self.base0, flag_reduce)
-            status = F.depend(status, flag)
+            status = ops.depend(status, flag)
             # distributed needs to skip allreduce to avoid its overflow affecting the next step
             clear_status = NPUClearFloatStatusV2()(status)
-            flag = F.depend(flag, clear_status)
+            flag = ops.depend(flag, clear_status)
             overall_finite = self.reduce_all(flag)
         else:
-            status = F.depend(status, get_status)
+            status = ops.depend(status, get_status)
             clear_status = NPUClearFloatStatusV2()(status)
-            get_status = F.depend(get_status, clear_status)
+            get_status = ops.depend(get_status, clear_status)
             flag = self.equal(self.base0, get_status)
             overall_finite = self.reduce_all(flag)
         overflow = self.logic_not(overall_finite)
@@ -592,26 +590,26 @@ class TrainOneStepWithLossScaleCell(TrainOneStepCell):
         return overflow
 
 
-grad_scale = C.MultitypeFuncGraph("grad_scale")
-shard_grad_scale = C.MultitypeFuncGraph("shard_grad_scale")
-reciprocal = P.Reciprocal()
+grad_scale = ops.MultitypeFuncGraph("grad_scale")
+shard_grad_scale = ops.MultitypeFuncGraph("shard_grad_scale")
+reciprocal = ops.Reciprocal()
 
 
 @grad_scale.register("Tensor", "Tensor", "Tensor")
 def tensor_grad_scale_pipeline(scale, grad, accu_grad):
-    accu_grad = F.depend(accu_grad, grad)
+    accu_grad = ops.depend(accu_grad, grad)
     new_grad = accu_grad * reciprocal(scale)
-    accu_grad = F.depend(accu_grad, new_grad)
-    zeros = F.tensor_mul(accu_grad, 0.0)
-    new_grad = F.depend(new_grad, F.assign(accu_grad, zeros))
+    accu_grad = ops.depend(accu_grad, new_grad)
+    zeros = ops.tensor_mul(accu_grad, 0.0)
+    new_grad = ops.depend(new_grad, ops.assign(accu_grad, zeros))
     return new_grad
 
 
 @shard_grad_scale.register("Tensor", "Tensor", "Tensor")
 def tensor_shard_grad_scale_pipeline(scale, grad, accu_grad):
     new_grad = grad * reciprocal(scale)
-    accu_grad = F.depend(accu_grad, new_grad)
-    new_grad = F.depend(new_grad, F.assign(accu_grad, F.zeros_like(accu_grad)))
+    accu_grad = ops.depend(accu_grad, new_grad)
+    new_grad = ops.depend(new_grad, ops.assign(accu_grad, ops.zeros_like(accu_grad)))
     return new_grad
 
 
@@ -633,23 +631,23 @@ class _TrainGradAccuWithLossScaleCell(TrainOneStepCell):
         self.weights = optimizer.parameters
         self.accu_grads = self.weights.clone(prefix="accu_grads", init="zeros")
         self.optimizer = optimizer
-        self.grad = C.GradOperation(get_by_list=True, sens_param=True)
+        self.grad = ops.GradOperation(get_by_list=True, sens_param=True)
         self.grad_reducer = nn.Identity()
         self.degree = 1
-        self.cast = P.Cast()
-        self.alloc_status = P.NPUAllocFloatStatus()
-        self.get_status = P.NPUGetFloatStatus()
-        self.clear_before_grad = P.NPUClearFloatStatus()
-        self.reduce_sum = P.ReduceSum(keep_dims=False)
+        self.cast = ops.Cast()
+        self.alloc_status = ops.NPUAllocFloatStatus()
+        self.get_status = ops.NPUGetFloatStatus()
+        self.clear_before_grad = ops.NPUClearFloatStatus()
+        self.reduce_sum = ops.ReduceSum(keep_dims=False)
         if self.parallel_mode not in [ParallelMode.SEMI_AUTO_PARALLEL, ParallelMode.AUTO_PARALLEL]:
             raise ValueError(f"ParallelMode must be one of "
                              f"[ParallelMode.SEMI_AUTO_PARALLEL, ParallelMode.AUTO_PARALLEL], but found "
                              f"{self.parallel_mode}.")
-        self.allreduce = P.AllReduce()
+        self.allreduce = ops.AllReduce()
         self.base = Tensor(1, mstype.float32)
-        self.less_equal = P.LessEqual()
-        self.hyper_map = C.HyperMap()
-        self.reshape = P.Reshape()
+        self.less_equal = ops.LessEqual()
+        self.hyper_map = ops.HyperMap()
+        self.reshape = ops.Reshape()
         self.loss_scaling_manager = None
         if isinstance(scale_sense, Cell):
             self.loss_scaling_manager = scale_sense
@@ -669,19 +667,19 @@ class _TrainGradAccuWithLossScaleCell(TrainOneStepCell):
         loss = self.network(*inputs)
         scaling_sens = self.scale_sense
         init = self.alloc_status()
-        scaling_sens_filled = C.ones_like(loss) * F.cast(scaling_sens, F.dtype(loss))
-        scaling_sens_filled = F.depend(scaling_sens_filled, self.clear_before_grad(init))
+        scaling_sens_filled = ops.ones_like(loss) * ops.cast(scaling_sens, ops.dtype(loss))
+        scaling_sens_filled = ops.depend(scaling_sens_filled, self.clear_before_grad(init))
         grads = self.grad(self.network, self.weights)(*inputs, scaling_sens_filled)
-        init = F.depend(init, grads)
+        init = ops.depend(init, grads)
         get_status = self.get_status(init)
-        init = F.depend(init, get_status)
+        init = ops.depend(init, get_status)
         flag_sum = self.reduce_sum(init, (0,))
         if self.opt_shard:
             grads = self.grad_reducer(grads)
-            grads = self.hyper_map(F.partial(shard_grad_scale, scaling_sens * self.degree), grads, self.accu_grads)
+            grads = self.hyper_map(ops.partial(shard_grad_scale, scaling_sens * self.degree), grads, self.accu_grads)
         else:
             accu_grads = self.grad_reducer(self.accu_grads)
-            grads = self.hyper_map(F.partial(grad_scale, scaling_sens * self.degree), grads, accu_grads)
+            grads = self.hyper_map(ops.partial(grad_scale, scaling_sens * self.degree), grads, accu_grads)
         # sum overflow flag over devices
         flag_reduce = self.allreduce(flag_sum)
         cond = self.less_equal(self.base, flag_reduce)

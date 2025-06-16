@@ -19,8 +19,6 @@ import mindspore.common.dtype as mstype
 import mindspore.ops as ops
 from mindspore import log as logger
 from mindspore.common.tensor import Tensor
-from mindspore.ops import operations as P
-from mindspore.ops import functional as F
 from mindspore.common.parameter import Parameter
 from mindspore.common.parameter import _get_unique_parameter_key
 from mindspore.common.initializer import initializer, Normal
@@ -130,17 +128,17 @@ class Embedding(Cell):
             self.init_tensor = Tensor(self.init_tensor, init_tensor_type)
         self.embedding_table = Parameter(
             self.init_tensor, name='embedding_table')
-        self.expand = P.ExpandDims()
-        self.reshape_flat = P.Reshape()
+        self.expand = ops.ExpandDims()
+        self.reshape_flat = ops.Reshape()
         self.shp_flat = (-1,)
-        self.gather = P.Gather()
-        self.one_hot = P.OneHot()
+        self.gather = ops.Gather()
+        self.one_hot = ops.OneHot()
         self.on_value = Tensor(1.0, self.dtype)
         self.off_value = Tensor(0.0, self.dtype)
-        self.array_mul = P.MatMul()
-        self.reshape = P.Reshape()
-        self.get_shp = P.Shape()
-        self.concat = P.Concat()
+        self.array_mul = ops.MatMul()
+        self.reshape = ops.Reshape()
+        self.get_shp = ops.Shape()
+        self.concat = ops.Concat()
 
     def construct(self, ids):
         out_shape = self.get_shp(ids) + (self.embedding_size,)
@@ -311,9 +309,9 @@ class EmbeddingLookup(Cell):
 
     Note:
         When 'target' is set to 'CPU', this module will use
-        P.EmbeddingLookup().set_device('CPU') which
+        ops.EmbeddingLookup().set_device('CPU') which
         specified 'offset = 0' to lookup table.
-        When 'target' is set to 'DEVICE', this module will use P.Gather() which
+        When 'target' is set to 'DEVICE', this module will use ops.Gather() which
         specified 'axis = 0' to lookup table.
         In field slice mode, the manual_shapes must be given. It is a tuple ,where
         the element is vocab[i], vocab[i] is the row numbers for i-th part.
@@ -407,10 +405,10 @@ class EmbeddingLookup(Cell):
             raise ValueError(f"For '{self.cls_name}', 'sparse' must be True when 'target' is \"CPU\", "
                              f"but got 'sparse': {sparse} and 'target': {target}")
         if sparse:
-            self.gatherv2 = P.SparseGatherV2()
+            self.gatherv2 = ops.SparseGatherV2()
         else:
-            self.gatherv2 = P.Gather()
-        self.embeddinglookup = P.EmbeddingLookup().set_device('CPU')
+            self.gatherv2 = ops.Gather()
+        self.embeddinglookup = ops.EmbeddingLookup().set_device('CPU')
         self.is_ps_server = False
         enable_ps = _get_ps_context("enable_ps")
         if enable_ps:
@@ -422,13 +420,13 @@ class EmbeddingLookup(Cell):
         parallel_mode = _get_parallel_mode()
         is_auto_parallel = parallel_mode in (
             ParallelMode.SEMI_AUTO_PARALLEL, ParallelMode.AUTO_PARALLEL)
-        self.gather_revert = P.Gather()
-        self.reshape_first = P.Reshape()
-        self.reshape = P.Reshape()
-        self.unique = P.Unique()
-        self.shape = P.Shape()
+        self.gather_revert = ops.Gather()
+        self.reshape_first = ops.Reshape()
+        self.reshape = ops.Reshape()
+        self.unique = ops.Unique()
+        self.shape = ops.Shape()
         if is_auto_parallel:
-            self.unique = P.Unique().shard(((1,),))
+            self.unique = ops.Unique().shard(((1,),))
         if self.cache_enable and enable_ps:
             self._set_voacb_cache_enable_for_ps(
                 vocab_cache_size, embedding_size, vocab_size, param_init, dtype=dtype)
@@ -582,12 +580,12 @@ class EmbeddingLookup(Cell):
 
             # Add EmbeddingLookup ops on different servers.
             if self.target == 'CPU':
-                embedding_lookup = P.EmbeddingLookup().set_device('CPU')
+                embedding_lookup = ops.EmbeddingLookup().set_device('CPU')
             else:
                 if self.sparse:
-                    embedding_lookup = P.SparseGatherV2()
+                    embedding_lookup = ops.SparseGatherV2()
                 else:
-                    embedding_lookup = P.Gather()
+                    embedding_lookup = ops.Gather()
                 embedding_lookup.add_prim_attr(
                     'offset', self.embedding_offset[i])
             embedding_lookup.add_prim_attr('rank_id', i)
@@ -596,7 +594,7 @@ class EmbeddingLookup(Cell):
 
         # For now unique operation is not applied,
         # so we need to reduce the lookup results from different servers with AddN.
-        self.reduce_lookup_result = P.AddN()
+        self.reduce_lookup_result = ops.AddN()
 
     def _do_server_embedding_lookup(self, indices):
         '''
@@ -647,7 +645,7 @@ class EmbeddingLookup(Cell):
             else:
                 out = self.gatherv2(self.embedding_table, indices, 0)
         if self.max_norm is not None:
-            axis = _make_axis_range(F.rank(indices), F.rank(out))
+            axis = _make_axis_range(ops.rank(indices), ops.rank(out))
             clip_by_norm = ClipByNorm(axis)
             out = clip_by_norm(out, self.max_norm)
         return out
@@ -660,9 +658,9 @@ class MultiFieldEmbeddingLookup(EmbeddingLookup):
 
     Note:
         When 'target' is set to 'CPU', this module will use
-        P.EmbeddingLookup().set_device('CPU') which
+        ops.EmbeddingLookup().set_device('CPU') which
         specified 'offset = 0' to lookup table.
-        When 'target' is set to 'DEVICE', this module will use P.Gather() which
+        When 'target' is set to 'DEVICE', this module will use ops.Gather() which
         specified 'axis = 0' to lookup table.
         The vectors with the same field_ids  will be combined by the `operator`, such as 'SUM', 'MAX' and
         'MEAN'. Ensure the input_values of the padded id is zero, so that they can be ignored. The final
@@ -753,29 +751,29 @@ class MultiFieldEmbeddingLookup(EmbeddingLookup):
             field_size, 'field_size', self.cls_name)
         self.operator = operator
 
-        self.mul = P.Mul()
-        self.inf_mask_mul = P.Mul()
-        self.bias_add = P.Add()
-        self.inf_add = P.Add()
+        self.mul = ops.Mul()
+        self.inf_mask_mul = ops.Mul()
+        self.bias_add = ops.Add()
+        self.inf_add = ops.Add()
         self.merge_op = None
-        self.count_op = P.UnsortedSegmentSum()
-        self.abs = P.Abs()
-        self.equal = P.Equal()
-        self.add = P.Add()
-        self.cast = P.Cast()
-        self.div_no_nan = P.DivNoNan()
-        self.expand = P.ExpandDims()
-        self.max_mask_mul = P.Mul()
-        self.max_no_equal = P.NotEqual()
+        self.count_op = ops.UnsortedSegmentSum()
+        self.abs = ops.Abs()
+        self.equal = ops.Equal()
+        self.add = ops.Add()
+        self.cast = ops.Cast()
+        self.div_no_nan = ops.DivNoNan()
+        self.expand = ops.ExpandDims()
+        self.max_mask_mul = ops.Mul()
+        self.max_no_equal = ops.NotEqual()
 
         Validator.check_string(
             operator, ['SUM', 'MAX', 'MEAN'], 'operator', self.cls_name)
         if operator == MultiFieldEmbeddingLookup.OPERATOR_SUM:
-            self.merge_op = P.UnsortedSegmentSum()
+            self.merge_op = ops.UnsortedSegmentSum()
         elif operator == MultiFieldEmbeddingLookup.OPERATOR_MAX:
-            self.merge_op = P.UnsortedSegmentMax()
+            self.merge_op = ops.UnsortedSegmentMax()
         else:
-            self.merge_op = P.UnsortedSegmentSum()
+            self.merge_op = ops.UnsortedSegmentSum()
 
 
         parallel_mode = _get_parallel_mode()
@@ -822,16 +820,16 @@ class MultiFieldEmbeddingLookup(EmbeddingLookup):
         self.negative_inf_value = -3.402823466E+38
 
     def construct(self, input_indices, input_values, field_ids):
-        _check_input_2d(F.shape(input_indices), "input_indices", self.cls_name)
-        _check_input_2d(F.shape(input_values), "input_values", self.cls_name)
-        _check_input_2d(F.shape(field_ids), "field_ids", self.cls_name)
-        _check_input_dtype(F.dtype(input_indices), "input_indices", [mstype.int32, mstype.int64], self.cls_name)
-        _check_input_dtype(F.dtype(input_values), "input_values", [mstype.float32], self.cls_name)
-        _check_input_dtype(F.dtype(field_ids), "field_ids", [mstype.int32], self.cls_name)
+        _check_input_2d(ops.shape(input_indices), "input_indices", self.cls_name)
+        _check_input_2d(ops.shape(input_values), "input_values", self.cls_name)
+        _check_input_2d(ops.shape(field_ids), "field_ids", self.cls_name)
+        _check_input_dtype(ops.dtype(input_indices), "input_indices", [mstype.int32, mstype.int64], self.cls_name)
+        _check_input_dtype(ops.dtype(input_values), "input_values", [mstype.float32], self.cls_name)
+        _check_input_dtype(ops.dtype(field_ids), "field_ids", [mstype.int32], self.cls_name)
 
         batch_size = self.shape(input_indices)[0]
         num_segments = batch_size * self.field_size
-        bias = F.tuple_to_array(F.make_range(0, num_segments, self.field_size))
+        bias = ops.tuple_to_array(ops.make_range(0, num_segments, self.field_size))
         bias = self.reshape(bias, (batch_size, -1))
         field_ids = self.bias_add(field_ids, bias)
 
@@ -848,7 +846,7 @@ class MultiFieldEmbeddingLookup(EmbeddingLookup):
             else:
                 out = self.gatherv2(self.embedding_table, input_indices, 0)
         if self.max_norm is not None:
-            axis = _make_axis_range(F.rank(input_indices), F.rank(out))
+            axis = _make_axis_range(ops.rank(input_indices), ops.rank(out))
             clip_by_norm = ClipByNorm(axis)
             out = clip_by_norm(out, self.max_norm)
 

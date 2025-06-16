@@ -20,7 +20,7 @@ from mindspore import log as logger
 from mindspore.nn.cell import Cell
 from mindspore.communication.management import GlobalComm, get_group_size
 from mindspore.common.sparse_tensor import RowTensorInner
-from mindspore.ops import functional as F, composite as C, operations as P
+from mindspore import ops
 from mindspore.ops.operations.comm_ops import AllReduce, AllGather
 from mindspore.parallel._auto_parallel_context import auto_parallel_context
 import mindspore.common.dtype as mstype
@@ -33,7 +33,7 @@ from mindspore.parallel._utils import _get_enable_parallel_optimizer
 __all__ = ['DistributedGradReducer']
 
 
-reduce_opt = C.MultitypeFuncGraph("reduce_opt")
+reduce_opt = ops.MultitypeFuncGraph("reduce_opt")
 
 
 def _init_allreduce_operators(length, split_indices, group=GlobalComm.WORLD_COMM_GROUP):
@@ -114,7 +114,7 @@ def _tensors_allreduce(degree, mean, allgather, allreduce, allreduce_filter, gra
     if allreduce_filter:
         grad = allreduce(grad)
         if mean:
-            grad = F.tensor_mul(grad, F.cast(degree, F.dtype(grad)))
+            grad = ops.tensor_mul(grad, ops.cast(degree, ops.dtype(grad)))
         return grad
     return grad
 
@@ -135,7 +135,7 @@ def _tensors_allreduce_post(degree, mean, allreduce_filter, grad):
     """
     if allreduce_filter:
         if mean:
-            grad = F.tensor_mul(grad, F.cast(degree, F.dtype(grad)))
+            grad = ops.tensor_mul(grad, ops.cast(degree, ops.dtype(grad)))
             return grad
     return grad
 
@@ -163,7 +163,7 @@ def _tensors_allreduce_ps(degree, mean, allgather, allreduce, allreduce_filter, 
     if allreduce_filter:
         grad = allreduce(grad)
         if mean:
-            grad = F.tensor_mul(grad, F.cast(degree, F.dtype(grad)))
+            grad = ops.tensor_mul(grad, ops.cast(degree, ops.dtype(grad)))
         return grad
     return grad
 
@@ -189,7 +189,7 @@ def _tensors_allreduce_with_sparse(degree, mean, allgather, allreduce, allreduce
         indices = allgather(grad.indices)
         dout = allgather(grad.values)
         if mean:
-            dout = F.tensor_mul(dout, F.cast(degree, F.dtype(dout)))
+            dout = ops.tensor_mul(dout, ops.cast(degree, ops.dtype(dout)))
         grad = RowTensorInner(indices, dout, grad.dense_shape)
     return grad
 
@@ -219,12 +219,12 @@ def _tensors_allreduce_with_sparse_ps(degree, mean, allgather, allreduce, allred
         indices = allgather(grad.indices)
         dout = allgather(grad.values)
         if mean:
-            dout = F.tensor_mul(dout, F.cast(degree, F.dtype(dout)))
+            dout = ops.tensor_mul(dout, ops.cast(degree, ops.dtype(dout)))
         grad = RowTensorInner(indices, dout, grad.dense_shape)
     return grad
 
 
-_get_datatype = C.MultitypeFuncGraph("_get_datatype")
+_get_datatype = ops.MultitypeFuncGraph("_get_datatype")
 
 
 @_get_datatype.register("Tensor")
@@ -238,7 +238,7 @@ def _tensors_get_datatype(grad):
     Returns:
         mstype, the datatype of gradient.
     """
-    return F.dtype(grad)
+    return ops.dtype(grad)
 
 
 @_get_datatype.register("RowTensor")
@@ -252,10 +252,10 @@ def _tensors_get_datatype_with_sparse(grad):
     Returns:
         mstype, the datatype of gradient.
     """
-    return F.dtype(grad.values)
+    return ops.dtype(grad.values)
 
 
-_cast_datatype = C.MultitypeFuncGraph("_cast_datatype")
+_cast_datatype = ops.MultitypeFuncGraph("_cast_datatype")
 
 
 @_cast_datatype.register("TypeType", "Tensor")
@@ -270,7 +270,7 @@ def _tensors_cast_datatype(datatype, grad):
     Returns:
         Tensor, the gradient tensor after operation.
     """
-    return F.cast(grad, datatype)
+    return ops.cast(grad, datatype)
 
 
 @_cast_datatype.register("TypeType", "RowTensor")
@@ -285,7 +285,7 @@ def _tensors_cast_datatype_with_sparse(datatype, grad):
     Returns:
         RowTensor, the gradient after operation.
     """
-    dout = F.cast(grad.values, datatype)
+    dout = ops.cast(grad.values, datatype)
     return RowTensorInner(grad.indices, dout, grad.dense_shape)
 
 
@@ -361,7 +361,7 @@ class DistributedGradReducer(Cell):
         ...     def construct(self, *args):
         ...         weights = self.weights
         ...         loss = self.network(*args)
-        ...         sens = F.fill(ops.DType()(loss), ops.Shape()(loss), self.sens)
+        ...         sens = ops.fill(ops.DType()(loss), ops.Shape()(loss), self.sens)
         ...         grads = self.grad(self.network, weights)(*args, sens)
         ...         if self.reducer_flag:
         ...             # apply grad reducer on grads
@@ -395,7 +395,7 @@ class DistributedGradReducer(Cell):
     def __init__(self, parameters, mean=None, degree=None, fusion_type=1, group=GlobalComm.WORLD_COMM_GROUP):
         super(DistributedGradReducer, self).__init__(auto_prefix=False)
         self._check_parallel_mode()
-        self.map_ = C.Map()
+        self.map_ = ops.Map()
         self.mean = mean
         if mean is None:
             self.mean = auto_parallel_context().get_gradients_mean()
@@ -443,24 +443,24 @@ class DistributedGradReducer(Cell):
         Returns:
             new_grads (Union[Tensor, tuple[Tensor]]), the gradient tensor or tuple after operation.
         """
-        datatypes = self.map_(F.partial(_get_datatype), grads)
-        grads = self.map_(F.partial(_cast_datatype, mstype.float32), grads)
+        datatypes = self.map_(ops.partial(_get_datatype), grads)
+        grads = self.map_(ops.partial(_cast_datatype, mstype.float32), grads)
 
         if self.split_fusion:
             if self.enable_parameter_server:
-                new_grad = self.map_(F.partial(reduce_opt, self.degree, self.mean, self.allgather),
+                new_grad = self.map_(ops.partial(reduce_opt, self.degree, self.mean, self.allgather),
                                      self.op_list, self.allreduce_filter, grads, self.ps_parameters)
             else:
-                new_grad = self.map_(F.partial(reduce_opt, self.degree, self.mean, self.allgather),
+                new_grad = self.map_(ops.partial(reduce_opt, self.degree, self.mean, self.allgather),
                                      self.op_list, self.allreduce_filter, grads)
         else:
             if self.enable_parameter_server:
-                new_grad = self.map_(F.partial(reduce_opt, self.degree, self.mean, self.allgather,
-                                               self.allreduce), self.allreduce_filter, grads, self.ps_parameters)
+                new_grad = self.map_(ops.partial(reduce_opt, self.degree, self.mean, self.allgather,
+                                                 self.allreduce), self.allreduce_filter, grads, self.ps_parameters)
             else:
-                new_grad = self.map_(F.partial(reduce_opt, self.degree, self.mean, self.allgather,
-                                               self.allreduce), self.allreduce_filter, grads)
-        new_grad = self.map_(F.partial(_cast_datatype), datatypes, new_grad)
+                new_grad = self.map_(ops.partial(reduce_opt, self.degree, self.mean, self.allgather,
+                                                 self.allreduce), self.allreduce_filter, grads)
+        new_grad = self.map_(ops.partial(_cast_datatype), datatypes, new_grad)
         return new_grad
 
     def _check_parallel_mode(self):
@@ -471,26 +471,26 @@ class DistributedGradReducer(Cell):
             raise RuntimeError("{} can not use DistributedGradReducer in graph mode".format(parallel_mode))
 
 
-grad_scale = C.MultitypeFuncGraph("grad_scale")
-shard_grad_scale = C.MultitypeFuncGraph("shard_grad_scale")
-reciprocal = P.Reciprocal()
+grad_scale = ops.MultitypeFuncGraph("grad_scale")
+shard_grad_scale = ops.MultitypeFuncGraph("shard_grad_scale")
+reciprocal = ops.Reciprocal()
 
 
 @grad_scale.register("Tensor", "Tensor", "Tensor")
 def tensor_grad_scale_pipeline(scale, grad, accu_grad):
-    accu_grad = F.depend(accu_grad, grad)
+    accu_grad = ops.depend(accu_grad, grad)
     new_grad = accu_grad * reciprocal(scale)
-    accu_grad = F.depend(accu_grad, new_grad)
-    zeros = F.tensor_mul(accu_grad, 0.0)
-    new_grad = F.depend(new_grad, F.assign(accu_grad, zeros))
+    accu_grad = ops.depend(accu_grad, new_grad)
+    zeros = ops.tensor_mul(accu_grad, 0.0)
+    new_grad = ops.depend(new_grad, ops.assign(accu_grad, zeros))
     return new_grad
 
 
 @shard_grad_scale.register("Tensor", "Tensor", "Tensor")
 def tensor_shard_grad_scale_pipeline(scale, grad, accu_grad):
     new_grad = grad * reciprocal(scale)
-    accu_grad = F.depend(accu_grad, new_grad)
-    new_grad = F.depend(new_grad, F.assign(accu_grad, F.zeros_like(accu_grad)))
+    accu_grad = ops.depend(accu_grad, new_grad)
+    new_grad = ops.depend(new_grad, ops.assign(accu_grad, ops.zeros_like(accu_grad)))
     return new_grad
 
 
@@ -592,7 +592,7 @@ class PipelineGradReducer(Cell):
         self.grad_reducer = Identity()
         self.degree = Tensor(1, mstype.float32)
         self.scale_sense = Parameter(scale_sense, name='scale_sense')
-        self.hyper_map = C.HyperMap()
+        self.hyper_map = ops.HyperMap()
         if opt_shard is None:
             self.opt_shard = _get_enable_parallel_optimizer()
         else:
@@ -603,11 +603,11 @@ class PipelineGradReducer(Cell):
         new_grads = None
         if self.opt_shard:
             grads = self.grad_reducer(grads)
-            new_grads = self.hyper_map(F.partial(shard_grad_scale, self.scale_sense * self.degree),
+            new_grads = self.hyper_map(ops.partial(shard_grad_scale, self.scale_sense * self.degree),
                                        grads, self.accu_grads)
         else:
             accu_grads = self.grad_reducer(self.accu_grads)
-            new_grads = self.hyper_map(F.partial(grad_scale, self.scale_sense * self.degree), grads, accu_grads)
+            new_grads = self.hyper_map(ops.partial(grad_scale, self.scale_sense * self.degree), grads, accu_grads)
         return new_grads
 
     def _check_mode(self):
