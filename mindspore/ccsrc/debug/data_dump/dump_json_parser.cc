@@ -127,27 +127,7 @@ bool DumpJsonParser::IsDumpEnabled() {
     return false;
   }
   MS_LOG(INFO) << "Dump config path is " << config_path;
-
-  auto context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context);
-  if (context->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode &&
-      context->get_param<std::string>(MS_CTX_DEVICE_TARGET) != kAscendDevice) {
-    MS_LOG(EXCEPTION) << "In GPU or CPU, Dump is disabled in PyNative mode. Please set mode to GRAPH_MODE in context.";
-  }
-  if (context->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode &&
-      context->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kAscendDevice && e2e_dump_enabled_) {
-    MS_LOG(EXCEPTION) << "Dump is only support asynchronous for Ascend in PyNative mode.";
-  }
   return true;
-}
-
-void DumpJsonParser::PyNativeModeCheck() {
-  auto context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context);
-  if (context->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode &&
-      dump_mode_ == static_cast<uint32_t>(DUMP_KERNELS_WITH_FLAG)) {
-    MS_LOG(EXCEPTION) << "Cell dump is only supported in GRAPH mode. Please set dump_mode to 0 or 1 in PyNative mode.";
-  }
 }
 
 void DumpJsonParser::CheckE2eSetting() {
@@ -201,7 +181,6 @@ void DumpJsonParser::Parse() {
 
   ParseE2eDumpSetting(j);
   ParseCommonDumpSetting(j);
-  PyNativeModeCheck();
   CheckE2eSetting();
   JudgeDumpEnabled();
   CheckStatCalcModeVaild();
