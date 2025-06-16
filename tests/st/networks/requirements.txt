@@ -1,6 +1,5 @@
 omegaconf           # for st test
 einops              # for st test
-ftfy                # for st test
 regex               # for st test
 albumentations      # for st test
 pandas              # for st test
@@ -33,6 +32,25 @@ word2number
 tensordict        # for st test
 hydra-core        # for st test
 codetiming        # for st test
-ray==2.10.0        # for st test
+ray==2.42.1        # for st test
 latex2sympy2        # for st test
 tokenizers>=0.21,<0.22        # for st test
+numba==0.60.0         # for st test vllm
+blake3        # for st test vllm
+fastapi[standard]>=0.107.0, < 0.113.0; python_version < '3.9'        # for st test vllm
+fastapi[standard]>=0.107.0, != 0.113.*, != 0.114.0; python_version >= '3.9'
+openai>=1.52.0        # for st test vllm
+prometheus_client>=0.18.0        # for st test vllm
+prometheus-fastapi-instrumentator>=7.0.0        # for st test vllm
+lm-format-enforcer>=0.10.9, < 0.11        # for st test vllm
+outlines==0.1.11        # for st test vllm
+lark==1.2.2        # for st test vllm
+xgrammar==0.1.11; platform_machine == "x86_64"        # for st test vllm
+partial-json-parser        # for st test vllm
+pyzmq        # for st test vllm
+msgspec        # for st test vllm
+gguf==0.10.0        # for st test vllm
+importlib_metadata        # for st test vllm
+mistral_common[opencv]>=1.5.0        # for st test vllm
+compressed-tensors==0.9.1        # for st test vllm
+depyf==0.18.0        # for st test vllm
