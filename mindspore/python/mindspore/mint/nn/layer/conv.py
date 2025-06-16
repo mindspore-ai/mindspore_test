@@ -178,9 +178,6 @@ class Conv1d(_Conv):
     For more details about convolution layer, please refer to `Gradient Based Learning Applied to Document Recognition
     <http://vision.stanford.edu/cs598_spring07/papers/Lecun98.pdf>`_.
 
-    Note:
-        Empty tensor is currently not supported.
-
     Args:
         in_channels (int): The channel number of the input tensor of the Conv1d layer.
         out_channels (int): The channel number of the output tensor of the Conv1d layer.
@@ -215,19 +212,19 @@ class Conv1d(_Conv):
             this 1D convolution layer also can be called 1D depthwise convolution layer. Default: ``1`` .
             The following restraints must be met:
 
-              - :math:`(C_{in} \text{ % } \text{groups} == 0)`
-              - :math:`(C_{out} \text{ % } \text{groups} == 0)`
-              - :math:`(C_{out} >= \text{groups})`
-              - :math:`(\text{weight[1]} = C_{in} / \text{groups})`
+            - :math:`(C_{in} \text{ % } \text{groups} == 0)`
+            - :math:`(C_{out} \text{ % } \text{groups} == 0)`
+            - :math:`(C_{out} >= \text{groups})`
+            - :math:`(\text{weight[1]} = C_{in} / \text{groups})`
 
         bias (bool, optional): Whether the Conv1d layer has a bias parameter. Default: ``True`` .
         dtype (:class:`mindspore.dtype`, optional): Dtype of Parameters. Default: ``None``, using ``mstype.float32``.
 
     Variables:
         - **weight** (Tensor) - The weight of the convolution layer, with shape :math:
-            `(C_{out}, C_{in} / \text{groups}, \text{kernel_size[0]})`.
+          `(C_{out}, C_{in} / \text{groups}, \text{kernel_size[0]})`.
         - **bias** (Tensor) - The bias of the convolution layer, with shape :math:
-            `(C_{out})`. If bias is False, this will be None.
+          `(C_{out})`. If bias is False, this will be None.
 
     Inputs:
         - **input** (Tensor) - Tensor of shape :math:`(N, C_{in}, L_{in})` \
@@ -366,9 +363,6 @@ class Conv2d(_Conv):
     For more details about convolution layer, please refer to `Gradient Based Learning Applied to Document Recognition
     <http://vision.stanford.edu/cs598_spring07/papers/Lecun98.pdf>`_.
 
-    Note:
-        Empty tensor is currently not supported.
-
     Args:
         in_channels (int): The channel number of the input tensor of the Conv2d layer.
         out_channels (int): The channel number of the output tensor of the Conv2d layer.
@@ -419,40 +413,41 @@ class Conv2d(_Conv):
             - :math:`(\text{weight[1]} = C_{in} / \text{groups})`
 
         bias (bool, optional): Whether the Conv2d layer has a bias parameter. Default: ``True`` .
-            dtype (:class:`mindspore.dtype`, optional): Dtype of Parameters. Default: ``None``, using ``mstype.float32``.
+        dtype (:class:`mindspore.dtype`, optional): Dtype of Parameters. Default: ``None``, using ``mstype.float32``.
 
     Variables:
         - **weight** (Tensor) - The weight of the convolution layer, with shape :math:
-            (C_{out}, C_{in} / \text{groups}, \text{kernel_size[0]}, \text{kernel_size[1]}).
+          `(C_{out}, C_{in} / \text{groups}, \text{kernel_size[0]}, \text{kernel_size[1]})`.
         - **bias** (Tensor) - The bias of the convolution layer, with shape :math:
-            (C_{out}). If bias is False, this will be None.
+          `(C_{out})`. If bias is False, this will be None.
 
     Inputs:
         - **Input** (Tensor) - Tensor of shape :math:`(N, C_{in}, H_{in}, W_{in})` or :math:`(C_{in}, H_{in}, W_{in})`.
+          When it's an empty Tesnor, backpropagation is currently not supported.
 
     Outputs:
-      Tensor of shape :math:`(N, C_{out}, H_{out}, W_{out})` or :math:`(C_{out}, H_{out}, W_{out})`.
-
-      padding is ``'same'``:
-
-      .. math::
-        \begin{array}{ll} \\
-          H_{out} = \left \lceil{\frac{H_{in}}{\text{stride[0]}}} \right \rceil \\
-          W_{out} = \left \lceil{\frac{W_{in}}{\text{stride[1]}}} \right \rceil \\
-        \end{array}
-
-      padding is ``'valid'``:
-
-      .. math::
-        \begin{array}{ll} \\
-          H_{out} = \left \lfloor{\frac{H_{in} - \text{dilation[0]} \times (\text{kernel_size[0]} - 1) - 1}
-          {\text{stride[0]}}} \right \rfloor + 1 \\
-          W_{out} = \left \lfloor{\frac{W_{in} - \text{dilation[1]} \times (\text{kernel_size[1]} - 1) - 1}
-          {\text{stride[1]}}} \right \rfloor + 1 \\
-        \end{array}
-
-      padding is int or tuple/list:
-
+        Tensor of shape :math:`(N, C_{out}, H_{out}, W_{out})` or :math:`(C_{out}, H_{out}, W_{out})`.
+  
+        padding is ``'same'``:
+  
+        .. math::
+            \begin{array}{ll} \\
+              H_{out} = \left \lceil{\frac{H_{in}}{\text{stride[0]}}} \right \rceil \\
+              W_{out} = \left \lceil{\frac{W_{in}}{\text{stride[1]}}} \right \rceil \\
+            \end{array}
+  
+        padding is ``'valid'``:
+  
+        .. math::
+            \begin{array}{ll} \\
+              H_{out} = \left \lfloor{\frac{H_{in} - \text{dilation[0]} \times (\text{kernel_size[0]} - 1) - 1}
+              {\text{stride[0]}}} \right \rfloor + 1 \\
+              W_{out} = \left \lfloor{\frac{W_{in} - \text{dilation[1]} \times (\text{kernel_size[1]} - 1) - 1}
+              {\text{stride[1]}}} \right \rfloor + 1 \\
+            \end{array}
+  
+        padding is int or tuple/list:
+  
         .. math::
             \begin{array}{ll} \\
                 H_{out} = \left \lfloor{\frac{H_{in} + 2 \times padding[0] - \text{dilation[0]} \times
@@ -575,9 +570,6 @@ class Conv3d(_Conv):
 
     For the detail of limitations of the parameters, please refer to :func:`mindspore.mint.nn.functional.conv3d`.
 
-    Note:
-        Empty tensor is currently not supported.
-
     Args:
         in_channels (int): The channel number of the input tensor of the Conv3d layer.
         out_channels (int): The channel number of the output tensor of the Conv3d layer.
@@ -622,9 +614,9 @@ class Conv3d(_Conv):
 
     Variables:
         - **weight** (Tensor) - The weight of the convolution layer, with shape :math:
-            (C_{out}, C_{in} / \text{groups}, \text{kernel_size[0]}, \text{kernel_size[1]}, \text{kernel_size[2]}).
+          `(C_{out}, C_{in} / \text{groups}, \text{kernel_size[0]}, \text{kernel_size[1]}, \text{kernel_size[2]})`.
         - **bias** (Tensor) - The bias of the convolution layer, with shape :math:
-            (C_{out}). If bias is False, this will be None.
+          `(C_{out})`. If bias is False, this will be None.
 
     Inputs:
         - **input** (Tensor) - Tensor of shape :math:`(N, C_{in}, D_{in}, H_{in}, W_{in})` \
