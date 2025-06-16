@@ -15,20 +15,20 @@
 """adadelta"""
 from __future__ import absolute_import
 
-from mindspore.ops import functional as F, composite as C, operations as P
+from mindspore import ops
 import mindspore.common.dtype as mstype
 from mindspore.experimental.optim.optimizer import Optimizer, check_not_less_than, check_not_less_than_without_equal
 from mindspore import _checkparam as validator
 from mindspore import jit
 
-_adadelta_opt = C.MultitypeFuncGraph("adadelta_opt")
+_adadelta_opt = ops.MultitypeFuncGraph("adadelta_opt")
 
 
 @_adadelta_opt.register("Function", "Number", "Number", "Tensor", "Tensor", "Tensor", "Tensor", "Tensor")
 def _tensor_run_opt(opt, rho, epsilon, learning_rate, weight, accum, accum_update, gradient):
     """Apply adadelta optimizer to the weight parameter."""
     success = True
-    success = F.depend(success, opt(weight, accum, accum_update, learning_rate, rho, epsilon, gradient))
+    success = ops.depend(success, opt(weight, accum, accum_update, learning_rate, rho, epsilon, gradient))
     return success
 
 
@@ -129,18 +129,18 @@ class Adadelta(Optimizer):
 
         self.accum = self.parameters.clone(prefix="accum", init=0)
         self.accum_update = self.parameters.clone(prefix="accum_update", init=0)
-        self.opt = P.ApplyAdadelta()
-        self.op_cast = P.Cast()
+        self.opt = ops.ApplyAdadelta()
+        self.op_cast = ops.Cast()
 
     @jit
     def implementation(self, lr, rho, eps, maximize, weight_decay, start_id, end_id, gradients):
         """Extract the common computing part for acceleration"""
         params = self.parameters[start_id: end_id]
-        grads = tuple([grad if not maximize else F.neg(grad) for grad in gradients[start_id: end_id]])
+        grads = tuple([grad if not maximize else ops.neg(grad) for grad in gradients[start_id: end_id]])
         grads = self._decay_weight(weight_decay, params, grads)
         accum = self.accum[start_id: end_id]
         accum_update = self.accum_update[start_id: end_id]
-        self.hyper_map(F.partial(_adadelta_opt, self.opt, rho, eps, lr),
+        self.hyper_map(ops.partial(_adadelta_opt, self.opt, rho, eps, lr),
                        params, accum, accum_update, grads)
         return True
 

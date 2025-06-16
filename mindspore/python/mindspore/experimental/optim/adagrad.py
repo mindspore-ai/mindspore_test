@@ -15,20 +15,20 @@
 """adagrad"""
 from __future__ import absolute_import
 
-from mindspore.ops import functional as F, composite as C, operations as P
+from mindspore import ops
 from mindspore.common import Tensor, Parameter
 import mindspore.common.dtype as mstype
 from mindspore.experimental.optim.optimizer import Optimizer, check_not_less_than, check_not_less_than_without_equal
 from mindspore import jit
 
-_adagrad_opt = C.MultitypeFuncGraph("adagrad_opt")
+_adagrad_opt = ops.MultitypeFuncGraph("adagrad_opt")
 
 
 @_adagrad_opt.register("Function", "Tensor", "Tensor", "Tensor", "Tensor")
 def _tensor_run_opt(opt, learning_rate, weight, accum, gradient):
     """Apply adagrad optimizer to the weight parameter."""
     success = True
-    success = F.depend(success, opt(weight, accum, learning_rate, gradient))
+    success = ops.depend(success, opt(weight, accum, learning_rate, gradient))
     return success
 
 
@@ -129,22 +129,22 @@ class Adagrad(Optimizer):
         super(Adagrad, self).__init__(params, defaults)
 
         self.accum = self.parameters.clone(prefix="accum", init=initial_accumulator_value)
-        self.op_cast = P.Cast()
+        self.op_cast = ops.Cast()
         self.step_t = Parameter(Tensor(0, mstype.int32), "step_t")
         self.increase_tensor = Tensor(1, mstype.int32)
-        self.assignadd = P.AssignAdd()
-        self.assign = P.Assign()
+        self.assignadd = ops.AssignAdd()
+        self.assign = ops.Assign()
 
     @jit
     def implementation(self, eps, lr, lr_decay, maximize, weight_decay, start_id, end_id, gradients):
         """Extract the common computing part for acceleration"""
-        opt = P.ApplyAdagradV2(epsilon=eps, update_slots=True)
+        opt = ops.ApplyAdagradV2(epsilon=eps, update_slots=True)
         decay_lr = lr / (1 + self.step_t * lr_decay)
         params = self.parameters[start_id: end_id]
-        grads = tuple([grad if not maximize else F.neg(grad) for grad in gradients[start_id: end_id]])
+        grads = tuple([grad if not maximize else ops.neg(grad) for grad in gradients[start_id: end_id]])
         grads = self._decay_weight(weight_decay, params, grads)
         accum = self.accum[start_id: end_id]
-        self.hyper_map(F.partial(_adagrad_opt, opt, decay_lr), params, accum, grads)
+        self.hyper_map(ops.partial(_adagrad_opt, opt, decay_lr), params, accum, grads)
         return True
 
     def construct(self, gradients):
