@@ -36,6 +36,14 @@ enum InplaceCopyMode : int {
   CastAndBroadCast,
 };
 
+void InplaceCopyParallelLaunch(const CTask &task, size_t data_size) {
+  constexpr size_t kGrainSize = 32768;
+  auto kernel_thread_num = SizeToLong(GetActorMgrInnerThreadPool()->GetKernelThreadNum());
+  auto block_size = LongToSize((SizeToLong(data_size) + kernel_thread_num - 1) / kernel_thread_num);
+  block_size = std::max(block_size, kGrainSize);
+  ParallelLaunch(task, data_size, SizeToFloat(block_size));
+}
+
 template <typename T>
 void UncontinugousBroadCastTo(T *input, T *output, const std::vector<int64_t> &input_shape,
                               const std::vector<int64_t> &output_shape) {
@@ -147,7 +155,7 @@ void ContinugousBroadCastTo(T *input, T *output, int64_t broadcast_dim, size_t b
         }
       }
     };
-    ParallelLaunch(copy_task, copy_offsets.size(), 1.0);
+    InplaceCopyParallelLaunch(copy_task, copy_offsets.size());
   } else {
     for (size_t i = 0; i < copy_offsets.size(); ++i) {
       auto ret = memcpy_s(output + copy_offsets[i].second, copy_size, input + copy_offsets[i].first, copy_size);
@@ -298,7 +306,7 @@ void InplaceCopyCpuKernelMod::InplaceCopySameDtypeSameShape(T *input, T *output,
         }
       }
     };
-    ParallelLaunchAutoSearch(inplace_copy_task, data_size / sizeof(T), this, &parallel_search_info_);
+    InplaceCopyParallelLaunch(inplace_copy_task, data_size / sizeof(T));
   }
 }
 
