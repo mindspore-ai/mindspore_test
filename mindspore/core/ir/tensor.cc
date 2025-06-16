@@ -562,6 +562,10 @@ std::string Tensor::DataToString(bool use_comma) const {
   if (device_sync_->GetDeviceType() != device::DeviceType::kCPU) {
     return "<" + device::GetDeviceNameByType(device_sync_->GetDeviceType()) + ">";
   }
+  if (device_sync_->has_data()) {
+    const auto &data = device_sync_->data();
+    return data->ToString(data_type_, shape_, false);
+  }
   return GetTensorDataString(data_type_, shape_, device_sync_->GetMutablePtr(), DataSize(), DataDim(), use_comma);
 }
 
