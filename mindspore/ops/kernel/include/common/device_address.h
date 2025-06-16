@@ -365,16 +365,6 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
 
   virtual DeviceAddressPtr CloneDeviceAddress() { MS_LOG(EXCEPTION) << "Not implemented."; }
 
-  virtual mindspore::tensor::TensorPtr LoadMemToHost(const std::string &tensor_name, const ShapeVector &host_shape,
-                                                     TypeId host_type, bool trans_flag, bool async_copy = true) const {
-    return nullptr;
-  }
-
-  virtual bool CopyDeviceToHostWithoutSyncStream(void *dst, size_t dst_size, const void *src, size_t src_size) {
-    return true;
-  }
-  virtual bool CopyDeviceToHost(void *dst, const void *src, const size_t &size) const { return true; }
-  virtual bool CopyHostToDevice(void *dst, const void *src, const size_t &size) const { return true; }
   virtual DeviceSynchronizerPtr NewDeviceSynchronizer() { MS_LOG(EXCEPTION) << "Not implemented."; }
 
   const void *GetPtr() const;
@@ -406,6 +396,7 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   void *GetMutablePtr() const override;
   // Get the shape vector for Tensor/Sequence/Scalar.
   const ShapeVector &GetShapeVector() const;
+  void SetShapeVector(const ShapeVector &shape_vector);
 
   const TensorStorageInfoPtr GetTensorStorageInfo() const override;
   void set_tensor_storage_info(const TensorStorageInfoPtr &tensor_storage_info);
@@ -543,6 +534,16 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   void set_continuous_device_addresses(const ContinuousDeviceAddressesPtr &continuous_device_addresses);
 
  protected:
+  virtual mindspore::tensor::TensorPtr LoadMemToHost(const std::string &tensor_name, const ShapeVector &host_shape,
+                                                     TypeId host_type, bool trans_flag, bool async_copy = true) const {
+    return nullptr;
+  }
+
+  virtual bool CopyDeviceToHostWithoutSyncStream(void *dst, size_t dst_size, const void *src, size_t src_size) {
+    return true;
+  }
+  virtual bool CopyDeviceToHost(void *dst, const void *src, const size_t &size) const { return true; }
+  virtual bool CopyHostToDevice(void *dst, const void *src, const size_t &size) const { return true; }
   virtual bool AsyncHostToDevice(size_t size, TypeId /* type */, const void *host_ptr,
                                  size_t stream_id = SIZE_MAX) const {
     return true;
