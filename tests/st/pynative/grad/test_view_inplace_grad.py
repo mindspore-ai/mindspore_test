@@ -323,7 +323,7 @@ class TorchViewInplaceHasBprop(torch.autograd.Function):
         return a, b
 
 @arg_mark(plat_marks=['platform_ascend'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_view_copy():
