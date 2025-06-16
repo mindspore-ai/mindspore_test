@@ -53,9 +53,7 @@ def test_parameter_ms_function_3():
     def test_parameter_ms_function():
         return param_a + param_b
 
-    with pytest.raises(RuntimeError, match="its name 'Parameter' already exists."):
-        res = test_parameter_ms_function()
-        assert res == 3
+    test_parameter_ms_function()
 
 
 def test_parameter_ms_function_4():
@@ -82,12 +80,9 @@ def test_parameter_ms_function_5():
     Description: Check the name of parameter in ms_function.
     Expectation: No exception.
     """
-    with pytest.raises(ValueError, match="its name 'Parameter' already exists."):
-        param_a = ParameterTuple((Parameter(Tensor([1], ms.float32)), Parameter(Tensor([2], ms.float32))))
+    param_a = ParameterTuple((Parameter(Tensor([1], ms.float32)), Parameter(Tensor([2], ms.float32))))
 
-        @jit
-        def test_parameter_ms_function():
-            return param_a[0] + param_a[1]
-
-        res = test_parameter_ms_function()
-        assert res == 3
+    @jit
+    def test_parameter_ms_function():
+        return param_a[0] + param_a[1]
+    test_parameter_ms_function()

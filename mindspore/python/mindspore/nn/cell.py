@@ -42,7 +42,6 @@ import mindspore as ms
 from mindspore._checkparam import args_type_check, check_hook_fn
 from mindspore.common._auto_dynamic import is_auto_dynamic, convert_inputs_to_dynamic
 from mindspore import log as logger
-from mindspore.common.parameter import PARAMETER_NAME_DEFAULT
 from mindspore.common.hook_handle import HookHandle
 from mindspore import context
 from mindspore._c_expression import init_pipeline, update_func_graph_hyper_params, Cell_, FuncGraph, MixedPrecisionType
@@ -52,7 +51,7 @@ from mindspore.common.api import _cell_graph_executor, _pynative_executor, _get_
     _no_grad
 from mindspore.common.api import _convert_python_data, _get_args_for_run_predict
 from mindspore.common.api import _process_dyn_args, _generate_dyn_compile_args
-from mindspore.common.parameter import _Buffer, Parameter, ParameterTuple
+from mindspore.common.parameter import _Buffer, Parameter, ParameterTuple, _is_parameter_generated
 from mindspore.common.tensor import Tensor
 from mindspore.ops.primitive import Primitive
 from mindspore.ops.operations import _inner_ops as inner
@@ -1413,16 +1412,14 @@ class Cell(Cell_):
                     # If there are multiple identical objects, their names only check once.
                     continue
                 exist_objs.add(item)
-                if item.name == PARAMETER_NAME_DEFAULT:
-                    logger.warning("For 'Cell', the parameter definition is deprecated.\n"
-                                   "Please set a unique name for the parameter in ParameterTuple '{}'.".format(value))
-                    item.name = item.name + "$" + str(self._id)
+                if _is_parameter_generated(item.name):
+                    item.name = "Parameter$" + str(self._id)
                     self._id += 1
-                self.insert_param_to_cell(item.name, item, check_name_contain_dot=False)
                 if item.name in exist_names:
                     raise ValueError("The value {} , its name '{}' already exists. "
                                      "Please set a unique name for the parameter.".format(value, item.name))
                 exist_names.add(item.name)
+                self.insert_param_to_cell(item.name, item, check_name_contain_dot=False)
 
             if context._get_mode() == context.PYNATIVE_MODE:
                 if name in self.__dict__:
@@ -1442,9 +1439,6 @@ class Cell(Cell_):
                 # If there are multiple identical objects, their names only check once.
                 continue
             self.exist_objs.add(item)
-            if item.name == PARAMETER_NAME_DEFAULT:
-                item.name = item.name + "$" + str(self._id)
-                self._id += 1
             if item.name in self.exist_names:
                 raise ValueError(f"The value {value} , its name '{item.name}' already exists. "
                                  "Please set a unique name for the parameter.")
@@ -1776,7 +1770,7 @@ class Cell(Cell_):
         if not isinstance(param, Parameter) and param is not None:
             raise TypeError(f"For 'insert_param_to_cell', the argument 'param' must be 'Parameter' if not None, "
                             f"but got {type(param)}.")
-        if isinstance(param, Parameter) and param.name == PARAMETER_NAME_DEFAULT:
+        if isinstance(param, Parameter) and _is_parameter_generated(param.name):
             param.name = param_name
         self._params[param_name] = param
 
