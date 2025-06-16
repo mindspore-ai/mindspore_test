@@ -50,7 +50,6 @@ foreach(a_comp ${ASCEND_SUB_COMP})
 endforeach()
 
 set(ASCEND_COMMON_SUB
-        hal/common
         hal/profiler
         hal/special
         )

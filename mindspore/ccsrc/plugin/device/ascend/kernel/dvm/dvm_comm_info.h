@@ -19,6 +19,7 @@
 #include "utils/ms_context.h"
 namespace mindspore {
 namespace graphkernel {
+bool EnableDvmComm();
 class DvmCommInfo : public GraphKernelCommInfo {
  public:
   DvmCommInfo() = default;

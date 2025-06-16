@@ -19,7 +19,6 @@
 #include <string>
 
 #include "include/backend/distributed/collective/collective_manager.h"
-#include "plugin/device/ascend/hal/common/ascend_utils.h"
 
 namespace mindspore {
 namespace kernel {

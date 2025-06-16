@@ -25,7 +25,6 @@
 #ifdef ENABLE_INTERNAL_KERNELS
 #include "plugin/res_manager/ascend/collective/lowlatency_communication_group.h"
 #endif
-#include "plugin/device/ascend/hal/common/ascend_utils.h"
 #include "utils/dlopen_macro.h"
 
 namespace mindspore {
