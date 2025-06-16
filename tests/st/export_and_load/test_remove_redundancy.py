@@ -16,7 +16,6 @@ import os
 import pytest
 import socket
 import shutil
-import random
 
 import mindspore.nn as nn
 from mindspore import context
@@ -43,8 +42,7 @@ def is_port_free(port):
 
 def set_port():
     """Set hccl port."""
-    start = random.randint(2000, 2666) * 15
-    for i in range(start, 60000, 16):
+    for i in range(61000, 65400, 16):
         flag = True
         for j in range(i, i + 16):
             if not is_port_free(j):
