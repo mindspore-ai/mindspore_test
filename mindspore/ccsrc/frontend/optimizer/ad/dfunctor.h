@@ -137,10 +137,10 @@ class DFunctor : public std::enable_shared_from_this<DFunctor> {
   // Cut off stopped objects in category D.
   bool need_cut_;
   bool is_top_;
-  bool is_grad_by_j_;
   static mindspore::HashMap<FuncGraphPtr, std::shared_ptr<DFunctor>> func_graph_to_functor_;
   static mindspore::HashMap<AnfNodePtr, AdjointPtr> anfnode_to_adjoin_definition_;
   bool is_view_inplace_;
+  bool is_grad_by_j_;
 };
 
 // D Functor's rules to map primitive object.

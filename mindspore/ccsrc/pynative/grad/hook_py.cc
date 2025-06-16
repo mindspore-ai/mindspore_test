@@ -57,8 +57,6 @@ BackwardNodePtr BuildAutoGradMeta(const tensor::TensorPtr &tensor) {
 }
 }  // namespace
 
-std::unordered_map<uint64_t, std::weak_ptr<BackwardNode>> RegisterHook::hook_id_node_map_ = {};
-
 PyTensorBackwardNodePreHook::PyTensorBackwardNodePreHook(const py::function &hook_fn, size_t output_idx)
     : hook_fn_(hook_fn), output_idx_(output_idx) {}
 
@@ -100,6 +98,9 @@ uint64_t RegisterHook::RegisterTensorBackwardHook(const tensor::TensorPtr &tenso
 void RegisterHook::RemoveTensorBackwardHook(uint64_t handle_id) {
   MS_LOG(DEBUG) << "Remove hook by id " << handle_id;
 
+  runtime::Pipeline::Get().WaitFrontend();
+  runtime::Pipeline::Get().WaitBpropStage();
+
   if (const auto iter = hook_id_node_map_.find(handle_id); iter != hook_id_node_map_.end()) {
     if (auto grad_node = iter->second.lock(); grad_node != nullptr) {
       grad_node->RemovePyTensorHook(handle_id);
@@ -110,8 +111,10 @@ void RegisterHook::RemoveTensorBackwardHook(uint64_t handle_id) {
 
 py::list RegisterHook::GetHooks(const tensor::TensorPtr &tensor) {
   py::list hooks;
+
   runtime::Pipeline::Get().WaitFrontend();
   runtime::Pipeline::Get().WaitBpropStage();
+
   if (const auto auto_grad_meta_data = impl::GetAutogradMetaImpl(tensor)) {
     const auto output_idx = auto_grad_meta_data->output_index();
     if (const auto grad_node = auto_grad_meta_data->UnsafeGetGradNodeImpl()) {
