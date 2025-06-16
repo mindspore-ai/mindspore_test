@@ -15,14 +15,14 @@
 """SGD"""
 from __future__ import absolute_import
 
-from mindspore.ops import functional as F, composite as C
+from mindspore import ops
 from mindspore.common.parameter import Parameter
 from mindspore.common.tensor import Tensor
 from mindspore.common import dtype as mstype
 from mindspore.experimental.optim.optimizer import Optimizer
 from mindspore import _checkparam as validator
 from mindspore import mint
-hyper_map = C.HyperMap()
+hyper_map = ops.HyperMap()
 
 
 def _tensor_weight_decay(weight_decay, weight, gradient):
@@ -162,10 +162,10 @@ class SGD(Optimizer):
             end_id = self.group_start_id[group_id + 1]
             grads = tuple([grad if not group.get('maximize') else -grad for grad in gradients[start_id: end_id]])
             if group.get('weight_decay') != 0.:
-                grads = self.map_(F.partial(_tensor_weight_decay, group.get('weight_decay')),
+                grads = self.map_(ops.partial(_tensor_weight_decay, group.get('weight_decay')),
                                   self.parameters[start_id: end_id], grads)
-            self.hyper_map(F.partial(_run_optim_sgd_opt, self.step_t.value(), group.get('lr_float'),
-                                     group.get('momentum'), group.get('dampening'), group.get('nesterov')),
+            self.hyper_map(ops.partial(_run_optim_sgd_opt, self.step_t.value(), group.get('lr_float'),
+                                       group.get('momentum'), group.get('dampening'), group.get('nesterov')),
                            self.parameters[start_id: end_id], self.momentum_buf[start_id: end_id], grads)
         self.step_t.add_(self.increase_tensor)
         return True
