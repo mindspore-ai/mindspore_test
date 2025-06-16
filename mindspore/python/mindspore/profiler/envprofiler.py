@@ -22,6 +22,7 @@ from mindspore.profiler.common.constant import (
     AicoreMetrics,
     ProfilerActivity,
     ExportType,
+    HostSystem
 )
 from mindspore.profiler.common.profiler_parameters import ProfilerParameters
 
@@ -105,8 +106,12 @@ class EnvProfiler:
         for param, (_, default_value) in ProfilerParameters.PARAMS.items():
             if param in options and param not in cls.NOT_SUPPORTED_PARAMS:
                 if param == "activities" and isinstance(options[param], list):
-                    params[param] = cls._convert_activities_to_list(
-                        options[param], default_value
+                    params[param] = cls._convert_enums_to_list(
+                        options[param], default_value, ProfilerActivity
+                    )
+                elif param == "host_sys" and isinstance(options[param], list):
+                    params[param] = cls._convert_enums_to_list(
+                        options[param], default_value, HostSystem
                     )
                 elif param == "aic_metrics":
                     params[param] = cls._convert_option_to_enum_value(
@@ -125,15 +130,15 @@ class EnvProfiler:
         return params
 
     @classmethod
-    def _convert_activities_to_list(cls, activities, default_value):
+    def _convert_enums_to_list(cls, values, default_value, enum_class):
         """
-        Convert the activities to the list.
+        Convert the enums to the list.
         """
         res = []
-        for activity in activities:
+        for value in values:
             res.append(
                 cls._convert_option_to_enum_value(
-                    ProfilerActivity, activity, default_value
+                    enum_class, value, default_value
                 )
             )
         # remove duplicate

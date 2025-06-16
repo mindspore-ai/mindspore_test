@@ -49,7 +49,7 @@ class DynamicProfilerConfigContext:
         self._analyse = True
         self._is_valid = False
         self._record_shapes = False
-        self._prof_path = None
+        self._prof_path = "./"
         self._mstx_domain_include = []
         self._mstx_domain_exclude = []
         self._host_sys = []
@@ -218,7 +218,7 @@ class DynamicProfilerConfigContext:
                 prof_path = "./"
             self._prof_path = prof_path
         else:
-            self._prof_path = json_data.get("prof_path", None)
+            self._prof_path = json_data.get("prof_path", "./")
 
     def _parse_host_sys(self, json_data):
         """ Parse the host_sys from JSON data."""
@@ -284,10 +284,11 @@ class DynamicProfilerConfigContext:
             '_analyse_mode': (int, -1),
             '_profile_memory': (bool, False),
             '_mstx': (bool, False),
+            '_l2_cache': (bool, False),
+            '_analyse': (bool, False),
             '_parallel_strategy': (bool, False),
             '_with_stack': (bool, False),
             '_data_simplification': (bool, True),
-            '_is_valid': (bool, False),
             '_record_shapes': (bool, False),
             '_mstx_domain_include': (list, []),
             '_mstx_domain_exclude': (list, []),
@@ -318,6 +319,7 @@ class DynamicProfilerConfigContext:
         self._check_profiler_level()
         self._check_activities()
         self._check_export_type()
+        self._check_prof_path()
 
     def _check_aic_metrics(self):
         """ Check aic_metrics."""
@@ -362,6 +364,12 @@ class DynamicProfilerConfigContext:
                 f"Will be reset to default value: '[ExportType.Text]'."
             )
             self._export_type = [ExportType.Text.value]
+
+    def _check_prof_path(self):
+        """ Check prof_path."""
+        if not isinstance(self._prof_path, str):
+            logger.warning(f"'prof_path' should be str, but got {type(self._prof_path).__name__}. ")
+            self._prof_path = "./"
 
     @property
     def start_step(self):
@@ -443,6 +451,7 @@ class DynamicProfilerConfigContext:
             "l2_cache": self._l2_cache,
             "analyse": self._analyse,
             "record_shapes": self._record_shapes,
+            "prof_path": self._prof_path,
             "mstx_domain_include": self._mstx_domain_include,
             "mstx_domain_exclude": self._mstx_domain_exclude,
             "sys_io": self._sys_io,
@@ -475,12 +484,17 @@ class DynamicProfilerConfigContext:
         return json_data
 
     @staticmethod
-    def _convert_analyse_mode(analyse_mode: int) -> str:
-        """ Convert analyse_mode to real args in Profiler."""
-        if analyse_mode == 0:
-            return 'sync'
-        if analyse_mode == 1:
-            return 'async'
+    def _convert_analyse_mode(analyse_mode: int):
+        """Convert analyse_mode to real args in Profiler."""
+        mode_map = {
+            0: 'sync',
+            1: 'async',
+            -1: None
+        }
+        if analyse_mode in mode_map:
+            return mode_map[analyse_mode]
+        logger.warning(f"'analyse_mode' needs to be set to one of '-1, 0, and 1', but got '{analyse_mode}', "
+                       f"will be reset to default: 'None'.")
         return None
 
     def _convert_profiler_level(self, profiler_level):
@@ -507,11 +521,15 @@ class DynamicProfilerConfigContext:
         """ Convert int profiler_level to real args in Profiler."""
         if profiler_level == -1:
             return ProfilerLevel.LevelNone
+        if profiler_level == 0:
+            return ProfilerLevel.Level0
         if profiler_level == 1:
             return ProfilerLevel.Level1
         if profiler_level == 2:
             return ProfilerLevel.Level2
 
+        logger.warning(f"'profiler_level' needs to be set to one of '-1, 0, 1 and 2', but got '{profiler_level}',"
+                       f"will be reset to default: '{ProfilerLevel.Level0}'.")
         return ProfilerLevel.Level0
 
     def _convert_activities(self, activities):
@@ -545,6 +563,8 @@ class DynamicProfilerConfigContext:
         if activities == 2:
             return [ProfilerActivity.NPU]
 
+        logger.warning(f"'activities' needs to be set to one of '0, 1 and 2', but got '{activities}',"
+                       f"will be reset to default: '{[ProfilerActivity.CPU, ProfilerActivity.NPU]}'.")
         return [ProfilerActivity.CPU, ProfilerActivity.NPU]
 
     def _convert_aic_metrics(self, aic_metrics):
@@ -590,6 +610,8 @@ class DynamicProfilerConfigContext:
         if aic_metrics == 7:
             return AicoreMetrics.MemoryAccess
 
+        logger.warning(f"'aic_metrics' needs to be set to one of '0, 1, 2, 3, 4, 5, 6, and 7',"
+                       f"but got '{aic_metrics}', will be reset to default: '{AicoreMetrics.AiCoreNone}'.")
         return AicoreMetrics.AiCoreNone
 
     def _convert_export_type(self, export_types):
@@ -621,6 +643,8 @@ class DynamicProfilerConfigContext:
         if export_types == 2:
             return [ExportType.Text, ExportType.Db]
 
+        logger.warning(f"'export_types' needs to be set to one of '1 and 2', but got '{export_types}', "
+                       f"will be reset to default: '{[ExportType.Text]}'.")
         return [ExportType.Text]
 
     @staticmethod
