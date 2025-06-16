@@ -53,13 +53,8 @@ class GPUDeviceAddress : public LoadableDeviceAddress {
   }
   ~GPUDeviceAddress() override;
 
-  bool CopyDeviceToHost(void *dst, const void *src, const size_t &size) const override;
-  bool CopyHostToDevice(void *dst, const void *src, const size_t &size) const override;
-
   void ClearDeviceMemory() override;
   DeviceType GetDeviceType() const override { return DeviceType::kGPU; }
-  mindspore::tensor::TensorPtr LoadMemToHost(const std::string &tensor_name, const ShapeVector &host_shape,
-                                             TypeId host_type, bool trans_flag, bool async_copy = true) const override;
 
   void ClearUserData() override;
 
@@ -74,6 +69,10 @@ class GPUDeviceAddress : public LoadableDeviceAddress {
                         const UserDataPtr &user_data = nullptr) const override;
 
  protected:
+  mindspore::tensor::TensorPtr LoadMemToHost(const std::string &tensor_name, const ShapeVector &host_shape,
+                                             TypeId host_type, bool trans_flag, bool async_copy = true) const override;
+  bool CopyDeviceToHost(void *dst, const void *src, const size_t &size) const override;
+  bool CopyHostToDevice(void *dst, const void *src, const size_t &size) const override;
   bool SyncDeviceToHost(size_t size, void *host_ptr) const override;
   bool SyncHostToDevice(size_t size, const void *host_ptr) const override;
   bool SyncDeviceToHost(const ShapeVector &shape, size_t size, TypeId type, void *host_ptr,
