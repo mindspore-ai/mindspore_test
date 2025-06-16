@@ -26,8 +26,6 @@ from mindspore.common.seed import _get_graph_seed
 from mindspore.common.tensor import Tensor
 from mindspore.common.initializer import initializer, HeUniform, Uniform
 from mindspore import ops
-from mindspore.ops import operations as P
-from mindspore.ops import functional as F
 from mindspore.ops.operations import _inner_ops as inner
 from mindspore.ops.primitive import constexpr, Primitive, _primexpr
 from mindspore.common.parameter import Parameter
@@ -97,13 +95,13 @@ class L1Regularizer(Cell):
         if math.isinf(scale) or math.isnan(scale):
             raise ValueError(
                 f"For '{self.cls_name}', the 'scale' can not be INF or NAN, but got {scale}.")
-        self.abs = P.Abs()
-        self.reduce_sum = P.ReduceSum()
+        self.abs = ops.Abs()
+        self.reduce_sum = ops.ReduceSum()
         self.scale = Tensor(scale, dtype=mstype.float32)
 
     def construct(self, weights):
         const_utils.check_type_valid(
-            F.dtype(weights), mstype.number_type, 'weights')
+            ops.dtype(weights), mstype.number_type, 'weights')
         l1_regularization = self.scale * self.reduce_sum(self.abs(weights))
         return l1_regularization
 
@@ -179,14 +177,14 @@ class Dropout(Cell):
                 raise ValueError(f"For '{self.cls_name}', the 'keep_prob' must be a number in range (0, 1], "
                                  f"but got {keep_prob}.")
             seed0, seed1 = _get_graph_seed(0, "dropout")
-            self.dropout = P.Dropout(keep_prob, seed0, seed1)
+            self.dropout = ops.Dropout(keep_prob, seed0, seed1)
         else:
             Validator.check_value_type('p', p, [float, int], self.cls_name)
             if p < 0 or p >= 1:
                 raise ValueError(f"For '{self.cls_name}', the 'p' must be a number in range [0, 1), "
                                  f"but got {p}.")
             seed0, seed1 = _get_graph_seed(0, "dropout")
-            self.dropout = P.Dropout(1.0 - p, seed0, seed1)
+            self.dropout = ops.Dropout(1.0 - p, seed0, seed1)
         self.p = p
         self.keep_prob = keep_prob
 
@@ -336,7 +334,7 @@ class Dropout1d(Cell):
         if not self.training or self.prob == 0:
             return x
 
-        out = F.dropout1d(x, self.prob)
+        out = ops.dropout1d(x, self.prob)
         return out
 
 
@@ -377,7 +375,7 @@ class Dropout2d(Cell):
             raise ValueError(f"For '{self.cls_name}', the 'p' must be a number in range [0, 1], "
                              f"but got {p}.")
         self.keep_prob = 1.0 - p
-        self.dropout2d = P.Dropout2D(self.keep_prob)
+        self.dropout2d = ops.Dropout2D(self.keep_prob)
 
     def construct(self, x):
         if not self.training or self.keep_prob == 1:
@@ -428,7 +426,7 @@ class Dropout3d(Cell):
             raise ValueError(f"For '{self.cls_name}', the 'p' must be a number in range [0, 1], "
                              f"but got {p}.")
         self.keep_prob = 1.0 - p
-        self.dropout3d = P.Dropout3D(self.keep_prob)
+        self.dropout3d = ops.Dropout3D(self.keep_prob)
 
     def construct(self, x):
         if not self.training or self.keep_prob == 1:
@@ -476,8 +474,8 @@ class Upsample(Cell):
         self.recompute_scale_factor = recompute_scale_factor
 
     def construct(self, x):
-        out = F.interpolate(x, self.size, self.scale_factor, self.mode,
-                            self.align_corners, self.recompute_scale_factor)
+        out = ops.interpolate(x, self.size, self.scale_factor, self.mode,
+                              self.align_corners, self.recompute_scale_factor)
         return out
 
 
@@ -577,11 +575,11 @@ class Flatten(Cell):
             raise ValueError("'start_dim' or 'end_dim' out of range.")
 
     def construct(self, x):
-        x_rank = F.rank(x)
+        x_rank = ops.rank(x)
         ndim = x_rank if x_rank != 0 else 1
         self.check_axis_valid(self.start_dim, ndim)
         self.check_axis_valid(self.end_dim, ndim)
-        return F.flatten(x, start_dim=self.start_dim, end_dim=self.end_dim)
+        return ops.flatten(x, start_dim=self.start_dim, end_dim=self.end_dim)
 
 
 class Identity(Cell):
@@ -704,8 +702,8 @@ class Dense(Cell):
             out_channels, "out_channels", self.cls_name)
         self.has_bias = Validator.check_bool(
             has_bias, "has_bias", self.cls_name)
-        self.reshape = P.Reshape()
-        self.shape_op = P.Shape()
+        self.reshape = ops.Reshape()
+        self.shape_op = ops.Shape()
 
         if isinstance(weight_init, Tensor):
             if weight_init.ndim != 2 or weight_init.shape[0] != out_channels or \
@@ -731,9 +729,9 @@ class Dense(Cell):
                 bias_init = Uniform(scale=bound)
             self.bias = Parameter(initializer(
                 bias_init, [out_channels], dtype=dtype), name="bias")
-            self.bias_add = P.BiasAdd()
+            self.bias_add = ops.BiasAdd()
 
-        self.matmul = P.MatMul(transpose_b=True)
+        self.matmul = ops.MatMul(transpose_b=True)
         self.activation = get_activation(activation) if isinstance(
             activation, str) else activation
         if activation is not None and not isinstance(self.activation, (Cell, Primitive)):
@@ -751,7 +749,7 @@ class Dense(Cell):
         if self.activation_flag:
             x = self.activation(x)
         if len(x_shape) != 2:
-            out_shape = x_shape[:-1] + (F.shape(x)[-1],)
+            out_shape = x_shape[:-1] + (ops.shape(x)[-1],)
             x = self.reshape(x, out_shape)
         return x
 
@@ -847,7 +845,7 @@ class Linear(Cell):
             out_features, "out_features", self.cls_name)
         self.has_bias = Validator.check_bool(
             bias, "has_bias", self.cls_name)
-        self.dense = P.Dense()
+        self.dense = ops.Dense()
         if dtype is None:
             dtype = mstype.float32
         if isinstance(weight_init, Tensor):
@@ -890,7 +888,7 @@ class Linear(Cell):
 def _is_equal_one(x):
     if x is None:
         return False
-    return F.equal(F.reduce_mean(x), 1.0)
+    return ops.equal(ops.reduce_mean(x), 1.0)
 
 
 @constexpr
@@ -983,12 +981,12 @@ class Norm(Cell):
             "keep_dims", keep_dims, [bool], self.cls_name)
         self.axis = axis
         self.keep_dims = keep_dims
-        self.reduce_sum = P.ReduceSum(True)
-        self.sqrt = P.Sqrt()
-        self.squeeze = P.Squeeze(self.axis)
+        self.reduce_sum = ops.ReduceSum(True)
+        self.sqrt = ops.Sqrt()
+        self.squeeze = ops.Squeeze(self.axis)
 
     def construct(self, x):
-        x = self.sqrt(self.reduce_sum(F.square(x), self.axis))
+        x = self.sqrt(self.reduce_sum(ops.square(x), self.axis))
 
         if not self.keep_dims:
             x = self.squeeze(x)
@@ -1008,14 +1006,15 @@ class OneHot(Cell):
     def __init__(self, axis=-1, depth=1, on_value=1.0, off_value=0.0, dtype=mstype.float32):
         """Initialize OneHot."""
         super(OneHot, self).__init__()
-        self.onehot = P.OneHot(axis)
+        self.onehot = ops.OneHot(axis)
         self.depth = depth
         self.dtype = dtype
         self.on_value = on_value
         self.off_value = off_value
 
     def construct(self, indices):
-        return self.onehot(indices, self.depth, F.cast(self.on_value, self.dtype), F.cast(self.off_value, self.dtype))
+        return self.onehot(indices, self.depth, ops.cast(self.on_value, self.dtype),
+                           ops.cast(self.off_value, self.dtype))
 
 
 class Pad(Cell):
@@ -1171,10 +1170,10 @@ class Pad(Cell):
             raise ValueError(f"For '{self.cls_name}', only 'paddings' up to 4 dims is supported, but got "
                              f"{len(paddings)}.")
         if mode == "CONSTANT":
-            self.pad = P.Pad(self.paddings)
+            self.pad = ops.Pad(self.paddings)
         else:
             self.paddings = Tensor(np.array(self.paddings), dtype=mstype.int64)
-            self.pad = P.MirrorPad(mode=mode)
+            self.pad = ops.MirrorPad(mode=mode)
 
     def construct(self, x):
         if self.mode == "CONSTANT":
@@ -1340,7 +1339,7 @@ class Fold(Cell):
 def tril(x_shape, x_dtype, k):
     Validator.check_int(len(x_shape), 1, Validator.GE, "x rank", "tril")
     Validator.check_is_int(k, "k value", "tril")
-    value = F.cast(P.Tril(diagonal=k)(F.ones(x_shape, x_dtype)), x_dtype)
+    value = ops.cast(ops.Tril(diagonal=k)(ops.ones(x_shape, x_dtype)), x_dtype)
     return value
 
 
@@ -1354,9 +1353,9 @@ class Tril(Cell):
     def __init__(self):
         """Initialize Tril."""
         super(Tril, self).__init__()
-        self.dtype = P.DType()
-        self.mul = P.Mul()
-        self.cast = P.Cast()
+        self.dtype = ops.DType()
+        self.mul = ops.Mul()
+        self.cast = ops.Cast()
 
     def construct(self, x, k=0):
         assist = tril(x.shape, self.dtype(x), k)
@@ -1369,7 +1368,7 @@ class Tril(Cell):
 def triu(x_shape, x_dtype, k):
     Validator.check_int(len(x_shape), 1, Validator.GE, "x rank", "triu")
     Validator.check_is_int(k, "k value", "triu")
-    value = F.cast(P.Triu(k)(F.ones(x_shape, x_dtype)), x_dtype)
+    value = ops.cast(ops.Triu(k)(ops.ones(x_shape, x_dtype)), x_dtype)
     return value
 
 
@@ -1383,9 +1382,9 @@ class Triu(Cell):
     def __init__(self):
         """Initialize Triu."""
         super(Triu, self).__init__()
-        self.dtype = P.DType()
-        self.mul = P.Mul()
-        self.cast = P.Cast()
+        self.dtype = ops.DType()
+        self.mul = ops.Mul()
+        self.cast = ops.Cast()
 
     def construct(self, x, k=0):
         assist = triu(x.shape, self.dtype(x), k)
@@ -1398,14 +1397,14 @@ class Triu(Cell):
 def _get_matrix_diag_assist(x_shape, x_dtype):
     """Get matrix diag assist"""
     Validator.check_int(len(x_shape), 1, Validator.GE, "x rank", "_get_matrix_diag_assist")
-    base_eye = F.reshape(
-        F.eye(x_shape[-1], x_shape[-1], x_dtype), (x_shape[-1] * x_shape[-1],))
+    base_eye = ops.reshape(
+        ops.eye(x_shape[-1], x_shape[-1], x_dtype), (x_shape[-1] * x_shape[-1],))
     if len(x_shape) == 1:
-        assist = F.reshape(base_eye, x_shape + (x_shape[-1],))
+        assist = ops.reshape(base_eye, x_shape + (x_shape[-1],))
     else:
-        assist = F.reshape(
-            F.tile(base_eye, x_shape[:-1]), x_shape + (x_shape[-1],))
-    value = F.cast(assist, x_dtype)
+        assist = ops.reshape(
+            ops.tile(base_eye, x_shape[:-1]), x_shape + (x_shape[-1],))
+    value = ops.cast(assist, x_dtype)
     return value
 
 
@@ -1413,13 +1412,13 @@ def _get_matrix_diag_assist(x_shape, x_dtype):
 def _get_matrix_diag_part_assist(x_shape, x_dtype):
     """Get matrix diag part assist"""
     Validator.check_int(len(x_shape), 2, Validator.GE, "x rank", "_get_matrix_diag_part_assist")
-    base_eye = F.reshape(
-        F.eye(x_shape[-2], x_shape[-1], x_dtype), (x_shape[-2] * x_shape[-1],))
+    base_eye = ops.reshape(
+        ops.eye(x_shape[-2], x_shape[-1], x_dtype), (x_shape[-2] * x_shape[-1],))
     if len(x_shape) <= 2:
-        assist = F.reshape(base_eye, x_shape)
+        assist = ops.reshape(base_eye, x_shape)
     else:
-        assist = F.reshape(F.tile(base_eye, x_shape[:-2]), x_shape)
-    value = F.cast(assist, x_dtype)
+        assist = ops.reshape(ops.tile(base_eye, x_shape[:-2]), x_shape)
+    value = ops.cast(assist, x_dtype)
     return value
 
 
@@ -1434,10 +1433,10 @@ class MatrixDiag(Cell):
         """Initialize MatrixDiag."""
         super(MatrixDiag, self).__init__()
         self.matrix_diag = inner.MatrixDiag()
-        self.dtype = P.DType()
+        self.dtype = ops.DType()
 
     def construct(self, input_x):
-        x_shape = F.shape(input_x)
+        x_shape = ops.shape(input_x)
         x_dtype = self.dtype(input_x)
         assist = _get_matrix_diag_assist(x_shape, x_dtype)
         out_matrix_diag = self.matrix_diag(input_x, assist)
@@ -1455,10 +1454,10 @@ class MatrixDiagPart(Cell):
         """Initialize MatrixDiagPart."""
         super(MatrixDiagPart, self).__init__()
         self.matrix_diag_part = inner.MatrixDiagPart()
-        self.dtype = P.DType()
+        self.dtype = ops.DType()
 
     def construct(self, input_x):
-        x_shape = F.shape(input_x)
+        x_shape = ops.shape(input_x)
         x_dtype = self.dtype(input_x)
         assist = _get_matrix_diag_part_assist(x_shape, x_dtype)
         out_matrix_diag_part = self.matrix_diag_part(input_x, assist)
@@ -1516,10 +1515,10 @@ class MatrixSetDiag(Cell):
         """Initialize MatrixSetDiag."""
         super(MatrixSetDiag, self).__init__()
         self.matrix_set_diag = inner.MatrixSetDiag()
-        self.dtype = P.DType()
+        self.dtype = ops.DType()
 
     def construct(self, input_x, diagonal):
-        x_shape = F.shape(input_x)
+        x_shape = ops.shape(input_x)
         x_dtype = self.dtype(input_x)
         assist = _get_matrix_diag_part_assist(x_shape, x_dtype)
         out_matrix_set_diag = self.matrix_set_diag(input_x, diagonal, assist)
@@ -1545,7 +1544,7 @@ class Roll(Cell):
             "shift", shift, [int, tuple, list], self.cls_name)
         Validator.check_value_type(
             "axis", axis, [int, tuple, list], self.cls_name)
-        self.shape_op = P.Shape()
+        self.shape_op = ops.Shape()
         self.shift = shift
         self.axis = axis
         self.op_list = []
@@ -1562,7 +1561,7 @@ class Roll(Cell):
                 Validator.check_is_int(s_axis, "axis", "Roll")
             for s_shift in self.shift:
                 Validator.check_is_int(s_shift, "shift", "Roll")
-            self.roll = P.Roll(self.shift, self.axis)
+            self.roll = ops.Roll(self.shift, self.axis)
             self.gpu = True
             if len(self.shift) != len(self.axis):
                 raise ValueError(f"For '{self.cls_name}', the shape of 'shift' and the shape of 'axis' must be "
@@ -1571,7 +1570,7 @@ class Roll(Cell):
         else:
             if not isinstance(self.axis, (list, tuple)):
                 self.op_list.append(
-                    (P.Roll(shifts=self.shift, dims=0), self.axis))
+                    (ops.Roll(shifts=self.shift, dims=0), self.axis))
             else:
                 if len(self.shift) != len(self.axis):
                     raise ValueError(f"For '{self.cls_name}', the shape of 'shift' and the shape of 'axis' must be "
@@ -1579,7 +1578,7 @@ class Roll(Cell):
                                      f"and the length of 'axis' {len(self.axis)}.")
                 for idx, _ in enumerate(self.axis):
                     self.op_list.append(
-                        (P.Roll(shifts=self.shift[idx], dims=0), self.axis[idx]))
+                        (ops.Roll(shifts=self.shift[idx], dims=0), self.axis[idx]))
 
     def construct(self, input_x):
         dim = len(self.shape_op(input_x))
@@ -1642,8 +1641,8 @@ class Unflatten(Cell):
     def __init__(self, axis, unflattened_size):
         """Initialize Unflatten."""
         super(Unflatten, self).__init__()
-        self.shape = P.Shape()
-        self.reshape = P.Reshape()
+        self.shape = ops.Shape()
+        self.reshape = ops.Reshape()
         Validator.check_is_int(axis, 'axis', 'Unflatten')
         Validator.check_value_type(
             'unflattended_size', unflattened_size, (list, tuple), 'Unflatten')

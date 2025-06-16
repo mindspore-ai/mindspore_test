@@ -15,8 +15,8 @@
 """Sparse related tools."""
 from __future__ import absolute_import
 
+from mindspore import ops
 from mindspore import log as logger
-from mindspore.ops import operations as P
 from mindspore.nn.cell import Cell
 
 
@@ -76,7 +76,7 @@ class SparseToDense(Cell):
         logger.warning("'nn.SparseToDense' is deprecated from version 2.0 and will be removed in a future version. " +
                        "Please use 'COOTensor.to_dense()' instead.")
         super(SparseToDense, self).__init__()
-        self.sparse_to_dense = P.SparseToDense()
+        self.sparse_to_dense = ops.SparseToDense()
 
     def construct(self, sparse_tensor):
         return self.sparse_to_dense(sparse_tensor.indices,
@@ -141,7 +141,7 @@ class SparseTensorDenseMatmul(Cell):
         super(SparseTensorDenseMatmul, self).__init__()
         self.adj_st = adjoint_st
         self.adj_dt = adjoint_dt
-        self.sparse_dense_matmul = P.SparseTensorDenseMatmul(adjoint_st=self.adj_st, adjoint_dt=self.adj_dt)
+        self.sparse_dense_matmul = ops.SparseTensorDenseMatmul(adjoint_st=self.adj_st, adjoint_dt=self.adj_dt)
 
     def construct(self, indices, values, sparse_shape, dense):
         return self.sparse_dense_matmul(indices, values, sparse_shape, dense)

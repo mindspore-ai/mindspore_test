@@ -13,7 +13,7 @@
 # limitations under the License.
 # ============================================================================
 """channel shuffle"""
-from mindspore.ops import operations as P
+from mindspore import ops
 from mindspore.nn.cell import Cell
 
 __all__ = ['ChannelShuffle']
@@ -78,9 +78,9 @@ class ChannelShuffle(Cell):
             raise ValueError(f"For ChannelShuffle, the param `groups` must be larger than 0, but got {groups}.")
 
         self.groups = groups
-        self.shape = P.Shape()
-        self.reshape = P.Reshape()
-        self.transpose = P.Transpose()
+        self.shape = ops.Shape()
+        self.reshape = ops.Reshape()
+        self.transpose = ops.Transpose()
 
     def construct(self, x):
         x_shape = self.shape(x)
