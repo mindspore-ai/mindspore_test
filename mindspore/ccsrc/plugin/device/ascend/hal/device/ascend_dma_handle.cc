@@ -67,21 +67,21 @@ void AscendDmaHandle::InitDmaMem() {
 #if defined(RT_MEMORY_P2PDMA)
   uint16_t app_module_id = static_cast<uint16_t>(APP);
   auto ret = CALL_ASCEND_API(aclrtSetDevice, device_id_);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(EXCEPTION) << "aclrtSetDevice failed:" << ret;
   }
   ret = CALL_ASCEND_API(aclrtGetMemInfo, ACL_HBM_MEM, &device_hbm_free_size_, &device_hbm_total_size_);
   MS_LOG(INFO) << "InitDmaMem device_hbm_free_size_:" << device_hbm_free_size_
                << ", device_hbm_total_size_:" << device_hbm_total_size_;
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(EXCEPTION) << "rtMemGetInfo failed:" << ret;
   }
   ret = rtMalloc(&dargs_, hbm_alloc_size_, RT_MEMORY_P2PDMA, app_module_id);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(EXCEPTION) << "rtMalloc failed:" << ret;
   }
   ret = CALL_ASCEND_API(aclrtMemset, dargs_, hbm_alloc_size_, 0x44, hbm_alloc_size_);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(EXCEPTION) << "aclrtMemset failed:" << ret;
   }
   std::string p2p_device_name = "/dev/p2pdma" + std::to_string(device_id_);

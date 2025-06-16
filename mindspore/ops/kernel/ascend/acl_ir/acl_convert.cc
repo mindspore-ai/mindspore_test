@@ -460,7 +460,7 @@ bool AclConverter::IsNeedSkipExecute(const std::string &kernel_name, const std::
       aclError status =
         CALL_ASCEND_API(aclrtMemcpyAsync, outputs[0]->device_ptr(), outputs[0]->size(), inputs[0]->device_ptr(),
                         inputs[0]->size(), ACL_MEMCPY_DEVICE_TO_DEVICE, stream_ptr);
-      if (status != ACL_ERROR_NONE) {
+      if (status != ACL_SUCCESS) {
         MS_LOG(EXCEPTION) << "MemCpyAsync op aclrtMemcpyAsync failed, ret:" << status
                           << " destMax:" << outputs[0]->size() << " count:" << inputs[0]->size();
       }

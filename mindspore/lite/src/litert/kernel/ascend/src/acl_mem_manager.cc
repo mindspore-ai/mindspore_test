@@ -116,7 +116,7 @@ STATUS AclMemManager::GetModelWorkMem(AclModelMemInfo *acl_work_mem_info, int32_
     }
     auto acl_ret =
       CALL_ASCEND_API(aclrtMalloc, &(it->second.first.mem_addr), it->second.first.mem_size, ACL_MEM_MALLOC_HUGE_FIRST);
-    if (acl_ret != ACL_ERROR_NONE) {
+    if (acl_ret != ACL_SUCCESS) {
       MS_LOG(ERROR) << "Call aclrtMalloc failed, err_code = " << acl_ret;
       return lite::RET_ERROR;
     }
@@ -144,7 +144,7 @@ STATUS AclMemManager::GetModelWorkMem(void **work_ptr, int32_t device_id) {
     MS_LOG(DEBUG) << "Begin alloc mem addr.";
     auto acl_ret =
       CALL_ASCEND_API(aclrtMalloc, &(it->second.first.mem_addr), it->second.first.mem_size, ACL_MEM_MALLOC_HUGE_FIRST);
-    if (acl_ret != ACL_ERROR_NONE) {
+    if (acl_ret != ACL_SUCCESS) {
       MS_LOG(ERROR) << "Call aclrtMalloc failed, err_code = " << acl_ret;
       return lite::RET_ERROR;
     }
@@ -162,7 +162,7 @@ STATUS AclMemManager::GetModelWeightMem(AclModelMemInfo *acl_weight_mem_info) {
     }
     auto acl_ret =
       CALL_ASCEND_API(aclrtMalloc, &weight_mem_info_.mem_addr, weight_mem_info_.mem_size, ACL_MEM_MALLOC_HUGE_FIRST);
-    if (acl_ret != ACL_ERROR_NONE) {
+    if (acl_ret != ACL_SUCCESS) {
       MS_LOG(ERROR) << "Call aclrtMalloc failed, err_code = " << acl_ret;
       return lite::RET_ERROR;
     }
@@ -192,7 +192,7 @@ STATUS AclMemManager::GetModelWeightMem(void **weight_ptr, std::string model_pat
     }
     auto acl_ret = CALL_ASCEND_API(aclrtMalloc, &(share_mem_info.mem_info.mem_addr), share_mem_info.mem_info.mem_size,
                                    ACL_MEM_MALLOC_HUGE_FIRST);
-    if (acl_ret != ACL_ERROR_NONE) {
+    if (acl_ret != ACL_SUCCESS) {
       MS_LOG(ERROR) << "Call aclrtMalloc failed, err_code : " << acl_ret << "!";
       return lite::RET_ERROR;
     }

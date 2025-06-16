@@ -58,7 +58,7 @@ uint8_t *GeMemoryManager::MallocHostMemory(const std::string &purpose, size_t si
   info.malloc_size = ALIGN_UP(size);
   info.purpose = purpose;
   auto ret = CALL_ASCEND_API(aclrtMallocHost, &info.malloc_addr, size);
-  if (ret != ACL_ERROR_NONE || info.malloc_addr == nullptr) {
+  if (ret != ACL_SUCCESS || info.malloc_addr == nullptr) {
     MS_LOG(INFO) << "Malloc host memory success, malloc size " << info.malloc_size << ", real size " << size
                  << ", memory purpose " << purpose;
     return nullptr;
@@ -74,7 +74,7 @@ uint8_t *GeMemoryManager::MallocHostMemory(const std::string &purpose, size_t si
 bool GeMemoryManager::MemcpyHost2Device(void *dst_addr, size_t dst_max_size, const void *src_addr, size_t src_size) {
   MS_CHECK_TRUE_RET(dst_addr != nullptr && src_addr != nullptr, false);
   auto ret = CALL_ASCEND_API(aclrtMemcpy, dst_addr, dst_max_size, src_addr, src_size, ACL_MEMCPY_HOST_TO_DEVICE);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Call aclrtMemcpy data from host to device failed, dst size: " << dst_max_size
                   << ", src size: " << src_size;
     return false;
@@ -84,7 +84,7 @@ bool GeMemoryManager::MemcpyHost2Device(void *dst_addr, size_t dst_max_size, con
 
 bool GeMemoryManager::MemcpyDevice2Host(void *dst_addr, size_t dst_max_size, const void *src_addr, size_t src_size) {
   auto ret = CALL_ASCEND_API(aclrtMemcpy, dst_addr, dst_max_size, src_addr, src_size, ACL_MEMCPY_DEVICE_TO_HOST);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Call aclrtMemcpy data from device to host failed, dst size: " << dst_max_size
                   << ", src size: " << src_size;
     return false;
@@ -101,7 +101,7 @@ void GeMemoryManager::FreeDeviceMemory(void *mem) {
   }
   auto info = *it;
   auto ret = CALL_ASCEND_API(aclrtFree, info.malloc_addr);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Free device memory failed, malloc size " << info.malloc_size << ", real size " << info.use_size
                   << ", memory purpose " << info.purpose;
     return;
@@ -120,7 +120,7 @@ void GeMemoryManager::FreeHostMemory(void *mem) {
   }
   auto info = *it;
   auto ret = CALL_ASCEND_API(aclrtFreeHost, info.malloc_addr);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Free host memory failed, malloc size " << info.malloc_size << ", real size " << info.use_size
                   << ", memory purpose " << info.purpose;
     return;
@@ -135,7 +135,7 @@ void GeMemoryManager::FreeAllMemory() {
     MS_LOG(INFO) << "Free device memory, malloc size " << info.malloc_size << ", real size " << info.use_size
                  << ", memory purpose " << info.purpose;
     auto ret = CALL_ASCEND_API(aclrtFree, info.malloc_addr);
-    if (ret != ACL_ERROR_NONE) {
+    if (ret != ACL_SUCCESS) {
       MS_LOG(ERROR) << "Free device memory failed, malloc size " << info.malloc_size << ", real size " << info.use_size
                     << ", memory purpose " << info.purpose;
       continue;
@@ -148,7 +148,7 @@ void GeMemoryManager::FreeAllMemory() {
     MS_LOG(INFO) << "Free host memory, malloc size " << info.malloc_size << ", real size " << info.use_size
                  << ", memory purpose " << info.purpose;
     auto ret = CALL_ASCEND_API(aclrtFreeHost, info.malloc_addr);
-    if (ret != ACL_ERROR_NONE) {
+    if (ret != ACL_SUCCESS) {
       MS_LOG(ERROR) << "Free host memory failed, malloc size " << info.malloc_size << ", real size " << info.use_size
                     << ", memory purpose " << info.purpose;
       continue;

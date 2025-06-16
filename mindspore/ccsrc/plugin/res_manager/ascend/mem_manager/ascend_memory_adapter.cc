@@ -113,7 +113,7 @@ bool AscendMemAdapter::Initialize() {
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
   auto ret = CALL_ASCEND_API(aclrtGetMemInfo, ACL_HBM_MEM, &device_hbm_free_size_, &device_hbm_total_size_);
-  if (ret != ACL_ERROR_NONE || device_hbm_total_size_ == 0) {
+  if (ret != ACL_SUCCESS || device_hbm_total_size_ == 0) {
     MS_LOG(EXCEPTION) << "Internal Error: Get Device MOC memory size failed, ret = " << ret
                       << ", total MOC size :" << device_hbm_total_size_;
   }
@@ -245,7 +245,7 @@ struct HugeMemReserver {
     size_t total_size = 0;
     auto ret = CALL_ASCEND_API(aclrtGetMemInfo, ACL_HBM_MEM_HUGE, &free_size, &total_size);
     MS_LOG(INFO) << "Huge mem reserve free_size : " << free_size << ", total_size : " << total_size << ".";
-    if (ret == ACL_ERROR_NONE) {
+    if (ret == ACL_SUCCESS) {
       if (free_size < reserver_size + size) {
         MS_LOG(WARNING) << "Free size of huge page mem[" << free_size
                         << "] is not enough for reserving, reserver_size : " << reserver_size << ", size : " << size
@@ -272,7 +272,7 @@ struct HugeMemReserver {
   ~HugeMemReserver() {
     if (addr_ != nullptr) {
       auto ret = CALL_ASCEND_API(aclrtFree, addr_);
-      if (ret != ACL_ERROR_NONE) {
+      if (ret != ACL_SUCCESS) {
         MS_LOG(ERROR) << "aclrtFree mem [" << addr_ << "] fail, ret[" << ret << "]";
       } else {
         MS_LOG(INFO) << "Huge mem reserve success, free : " << addr_ << ".";
@@ -324,7 +324,7 @@ bool AscendMemAdapter::FreeToRts(void *devPtr, const size_t size) const {
       return AscendGmemAdapter::GetInstance().MunmapMemory(devPtr, size);
     }
     auto ret = CALL_ASCEND_API(aclrtFree, devPtr);
-    if (ret != ACL_ERROR_NONE) {
+    if (ret != ACL_SUCCESS) {
       MS_LOG(ERROR) << "aclrtFree mem [" << devPtr << "] fail, ret[" << ret << "]";
       return false;
     }

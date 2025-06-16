@@ -62,7 +62,7 @@ void AscendHalManager::InitDevice(uint32_t device_id) {
   }
 
   auto ret = CALL_ASCEND_API(aclrtSetDevice, UintToInt(device_id));
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     auto device_count = GetDeviceCount();
     MS_EXCEPTION(DeviceProcessError) << "Call aclrtSetDevice failed, ret[" << static_cast<int>(ret)
                                      << "]. Got device count[" << device_count << "] and device id[" << device_id
@@ -71,7 +71,7 @@ void AscendHalManager::InitDevice(uint32_t device_id) {
 
   aclrtContext rt_context;
   ret = CALL_ASCEND_API(aclrtGetCurrentContext, &rt_context);
-  if (ret != ACL_ERROR_NONE || rt_context == nullptr) {
+  if (ret != ACL_SUCCESS || rt_context == nullptr) {
     MS_EXCEPTION(DeviceProcessError) << "Call aclrtGetCurrentContext failed, ret[" << ret << "]";
     return;
   }
@@ -83,7 +83,7 @@ void AscendHalManager::InitDevice(uint32_t device_id) {
 void AscendHalManager::ResetDevice(uint32_t device_id) {
   if (initialized_device_set_.find(device_id) != initialized_device_set_.end()) {
     auto ret = CALL_ASCEND_API(aclrtResetDevice, UintToInt(device_id));
-    if (ret != ACL_ERROR_NONE) {
+    if (ret != ACL_SUCCESS) {
       MS_EXCEPTION(DeviceProcessError) << "Call aclrtResetDevice, ret[" << ret << "]";
     }
     default_device_context_map_[device_id] = nullptr;
@@ -94,7 +94,7 @@ void AscendHalManager::ResetDevice(uint32_t device_id) {
 uint32_t AscendHalManager::GetDeviceCount() {
   uint32_t device_count = 0;
   auto ret = CALL_ASCEND_API(aclrtGetDeviceCount, &device_count);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_EXCEPTION(DeviceProcessError) << "Call rtGetDeviceCount, ret[" << static_cast<int>(ret) << "]";
   }
   return device_count;
@@ -164,7 +164,7 @@ void AscendHalManager::SetContextForce(uint32_t device_id) {
     return;
   }
   auto ret = CALL_ASCEND_API(aclrtSetCurrentContext, default_device_context_map_[device_id]);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_EXCEPTION(DeviceProcessError) << "Call aclrtSetCurrentContext, ret[" << ret << "]";
   }
 }
@@ -177,7 +177,7 @@ void AscendHalManager::SetContext(uint32_t device_id) {
     return;
   }
   auto ret = CALL_ASCEND_API(aclrtSetCurrentContext, default_device_context_map_[device_id]);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_EXCEPTION(DeviceProcessError) << "Call aclrtSetCurrentContext, ret[" << ret << "]";
   }
   thread_local_rt_context = default_device_context_map_[device_id];
@@ -202,7 +202,7 @@ void AscendHalManager::InitializeAcl() {
   }
   aclError ret = CALL_ASCEND_API(aclInit, realpath.value().c_str());
   TempFileManager::GetInstance().RemoveFile(realpath.value());
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(WARNING) << "Call aclInit failed, the error number is " << ret << ", json is " << json_str;
   } else {
     MS_LOG(INFO) << "Call aclInit successfully, json is " << json_str;

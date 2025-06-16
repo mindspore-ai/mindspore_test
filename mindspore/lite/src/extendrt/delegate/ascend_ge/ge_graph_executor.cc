@@ -919,7 +919,7 @@ bool GeGraphExecutor::InitRefDataDeviceTensor() {
     }
     desc->SetPlacement(::ge::kPlacementDevice);
     auto ret = item.ge_tensor.SetTensorDesc(*desc);
-    if (ret != ACL_ERROR_NONE) {
+    if (ret != ACL_SUCCESS) {
       MS_LOG(ERROR) << "Failed to call ge::Tensor::SetTensorDesc, ret " << ret;
       return false;
     }
@@ -989,7 +989,7 @@ bool GeGraphExecutor::InitInOutDeviceBuffer(const std::string &name, const Shape
   }
   desc->SetPlacement(::ge::kPlacementDevice);
   auto ret = info.ge_tensor.SetTensorDesc(*desc);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Failed to call ge::Tensor::SetTensorDesc, ret " << ret;
     return false;
   }

@@ -277,7 +277,7 @@ int ParamReplication::SendRecv(const std::vector<tensor::TensorPtr> &params, int
   size_t device_hbm_free_size;
   size_t device_hbm_total_size;
   auto ret = CALL_ASCEND_API(aclrtGetMemInfo, ACL_HBM_MEM, &device_hbm_free_size, &device_hbm_total_size);
-  if (ret != ACL_ERROR_NONE || device_hbm_total_size == 0) {
+  if (ret != ACL_SUCCESS || device_hbm_total_size == 0) {
     MS_LOG(EXCEPTION) << "Internal Error: Get Device MOC memory size failed, ret = " << ret
                       << ", total MOC size :" << device_hbm_total_size;
   }

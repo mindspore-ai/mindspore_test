@@ -65,7 +65,7 @@ bool GetAclDataType(const std::string &str_type, aclDataType *acl_type) {
 }
 
 void CheckRtRetWithError(aclError error, const std::string &msg) {
-  if (error != ACL_ERROR_NONE) {
+  if (error != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Rt error: " << msg << " | Error number: " << error;
   }
 }
@@ -215,7 +215,7 @@ AscendTdtQueue::AscendTdtQueue(const std::string &channel_name) : DataQueue(chan
   device_id_ = MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID);
 
   aclError ret = CALL_ASCEND_API(aclrtSetDevice, device_id_);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Acl open device " << device_id_ << " failed.";
   }
 
@@ -283,7 +283,7 @@ AscendTdtQueue::~AscendTdtQueue() {
     DataQueueMgr::GetInstance().Free(channel_name_);
   }
   aclError rt_ret = CALL_ASCEND_API(aclrtResetDevice, device_id_);
-  if (rt_ret != ACL_ERROR_NONE) {
+  if (rt_ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Reset device " << device_id_ << " failed.";
   }
 }

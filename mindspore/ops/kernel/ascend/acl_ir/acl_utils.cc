@@ -98,7 +98,7 @@ class AclDumper {
       return;
     }
 
-    if (CALL_ASCEND_API(aclmdlInitDump) != ACL_ERROR_NONE) {
+    if (CALL_ASCEND_API(aclmdlInitDump) != ACL_SUCCESS) {
       acl_dump_config_ = "";
       MS_LOG(WARNING) << "Call aclmdlInitDump failed, , acl data dump function will be unusable.";
     }
@@ -110,7 +110,7 @@ class AclDumper {
       return;
     }
 
-    if (CALL_ASCEND_API(aclmdlFinalizeDump) != ACL_ERROR_NONE) {
+    if (CALL_ASCEND_API(aclmdlFinalizeDump) != ACL_SUCCESS) {
       MS_LOG(WARNING) << "Call aclmdlFinalizeDump failed.";
     }
   }
@@ -120,7 +120,7 @@ class AclDumper {
     if (acl_dump_config_.empty()) {
       return;
     }
-    if (CALL_ASCEND_API(aclmdlSetDump, acl_dump_config_.c_str()) != ACL_ERROR_NONE) {
+    if (CALL_ASCEND_API(aclmdlSetDump, acl_dump_config_.c_str()) != ACL_SUCCESS) {
       MS_LOG(WARNING)
         << "Call aclmdlSetDump failed, acl data dump function will be unusable. Please check whether the config file `"
         << acl_dump_config_ << "` set by environment variable `" << kAclDumpConfigPath
@@ -312,7 +312,7 @@ void AclRunner::AoeDump() {
                       const_cast<aclDataBuffer **>(acl_param_.input_buffer.data()), GetNumRealOutputs(),
                       const_cast<aclTensorDesc **>(acl_param_.output_desc.data()), acl_param_.output_buffer.data(),
                       acl_param_.attr, ACL_ENGINE_SYS, const_cast<char *>(real_path.value().c_str()), nullptr);
-    if (dump_ret != ACL_ERROR_NONE) {
+    if (dump_ret != ACL_SUCCESS) {
       MS_LOG(EXCEPTION) << "Acl dump graph failed!";
     }
     if (is_dynamic_) {

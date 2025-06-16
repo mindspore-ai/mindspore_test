@@ -112,14 +112,14 @@ bool AscendHostQueue::HostQueueInit() {
   attr.flowCtrlDropTime = 0;
   attr.overWriteFlag = false;
   rt_ret = rtMemQueueCreate(device_id_, &attr, &queue_id_);
-  if (rt_ret != ACL_ERROR_NONE) {
+  if (rt_ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Call rtMemQueueCreate failed, ret = " << rt_ret;
     return false;
   }
 
   rtMemBuffCfg_t buff_cfg = {};
   rt_ret = rtMbufInit(&buff_cfg);
-  if (rt_ret != ACL_ERROR_NONE && rt_ret != ACL_ERROR_RT_REPEATED_INIT) {
+  if (rt_ret != ACL_SUCCESS && rt_ret != ACL_ERROR_RT_REPEATED_INIT) {
     MS_LOG(ERROR) << "Call rtMbufInit failed, ret =" << rt_ret;
     return false;
   }
@@ -183,7 +183,7 @@ bool AscendHostQueue::EnqueueData(void *buff, bool *need_resend) {
     return false;
   }
   rt_error = rtMemQueueEnQueue(device_id_, queue_id_, buff);
-  if (rt_error == ACL_ERROR_NONE) {
+  if (rt_error == ACL_SUCCESS) {
     return true;
   } else if (rt_error == ACL_ERROR_RT_QUEUE_FULL) {
     *need_resend = true;
@@ -317,7 +317,7 @@ AscendHostQueue::DataItemInfo AscendHostQueue::BuildDataItemInfo(acltdtTensorTyp
 
 void AscendHostQueue::HostQueueFreeBuff(void *buff) {
   auto rt_ret = rtMbufFree(buff);
-  if (rt_ret != ACL_ERROR_NONE) {
+  if (rt_ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Call rtMbufFree failed, ret = " << rt_ret;
   }
 }

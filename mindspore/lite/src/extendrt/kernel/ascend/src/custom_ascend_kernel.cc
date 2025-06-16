@@ -119,7 +119,7 @@ AclModelOptionsPtr CustomAscendKernelMod::GenAclOptions() {
   }
   // set device id
   uint32_t device_count;
-  if (CALL_ASCEND_API(aclrtGetDeviceCount, &device_count) != ACL_ERROR_NONE) {
+  if (CALL_ASCEND_API(aclrtGetDeviceCount, &device_count) != ACL_SUCCESS) {
     MS_LOG(WARNING) << "Get device count failed, set default device id 0.";
     return acl_options_ptr;
   }

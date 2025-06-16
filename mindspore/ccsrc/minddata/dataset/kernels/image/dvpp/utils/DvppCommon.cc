@@ -75,39 +75,39 @@ APP_ERROR DvppCommon::InitVdec() {
 
   // channelId: 0-15
   aclError ret = aclvdecSetChannelDescChannelId(vdecChannelDesc_, vdecConfig_.channelId);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Failed to set vdec channel id, ret = " << ret << ".";
     return APP_ERR_ACL_FAILURE;
   }
 
   ret = aclvdecSetChannelDescThreadId(vdecChannelDesc_, vdecConfig_.threadId);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Failed to set thread id, ret = " << ret << ".";
     return APP_ERR_ACL_FAILURE;
   }
 
   // callback func
   ret = aclvdecSetChannelDescCallback(vdecChannelDesc_, vdecConfig_.callback);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Failed to set vdec callback function, ret = " << ret << ".";
     return APP_ERR_ACL_FAILURE;
   }
 
   ret = aclvdecSetChannelDescEnType(vdecChannelDesc_, vdecConfig_.inFormat);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Failed to set encoded type of input video, ret = " << ret << ".";
     return APP_ERR_ACL_FAILURE;
   }
 
   ret = aclvdecSetChannelDescOutPicFormat(vdecChannelDesc_, vdecConfig_.outFormat);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Failed to set vdec output format, ret = " << ret << ".";
     return APP_ERR_ACL_FAILURE;
   }
 
   // create vdec channel
   ret = aclvdecCreateChannel(vdecChannelDesc_);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Failed to create vdec channel, ret = " << ret << ".";
     return APP_ERR_ACL_FAILURE;
   }
@@ -1550,7 +1550,7 @@ APP_ERROR DvppCommon::VdecSendEosFrame() const {
 
   // set eos for eos stream desc
   APP_ERROR ret = acldvppSetStreamDescEos(eosStreamDesc, 1);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Fail to set eos for stream desc, ret = " << ret << ".";
     (void)acldvppDestroyStreamDesc(eosStreamDesc);
     return ret;
@@ -1558,7 +1558,7 @@ APP_ERROR DvppCommon::VdecSendEosFrame() const {
 
   // send eos and synchronize
   ret = aclvdecSendFrame(vdecChannelDesc_, eosStreamDesc, nullptr, nullptr, nullptr);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Fail to send eos, ret = " << ret << ".";
     (void)acldvppDestroyStreamDesc(eosStreamDesc);
     return ret;
@@ -1566,7 +1566,7 @@ APP_ERROR DvppCommon::VdecSendEosFrame() const {
 
   // destroy input stream desc
   ret = acldvppDestroyStreamDesc(eosStreamDesc);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Fail to destroy dvpp stream desc for eos, ret = " << ret << ".";
     return ret;
   }

@@ -66,7 +66,7 @@ auto RunAscendApi(Function f, const char *file, int line, const char *call_f, co
                                                                 error_code, acl_get_recent_err_msg, error_type, true);
     }
     if (mindspore::UCEException::GetInstance().enable_arf()) {
-      if (ret != ACL_ERROR_NONE && aclrt_get_last_error != nullptr) {
+      if (ret != ACL_SUCCESS && aclrt_get_last_error != nullptr) {
         auto error_code = aclrt_get_last_error(thread_level);
         MS_LOG(DEBUG) << "Call ascend api <" << func_name << "> in <" << call_f << "> at " << file << ":" << line
                       << " failed, error code [" << error_code << "].";
@@ -99,7 +99,7 @@ auto RunAscendApi(Function f, const char *file, int line, const char *call_f, co
                                                                 error_code, acl_get_recent_err_msg, error_type, true);
     }
     if (mindspore::UCEException::GetInstance().enable_arf()) {
-      if (ret != ACL_ERROR_NONE && aclrt_get_last_error != nullptr) {
+      if (ret != ACL_SUCCESS && aclrt_get_last_error != nullptr) {
         auto error_code = aclrt_get_last_error(thread_level);
         MS_LOG(DEBUG) << "Call ascend api <" << func_name << "> in <" << call_f << "> at " << file << ":" << line
                       << " failed, error code [" << error_code << "].";
