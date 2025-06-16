@@ -22,7 +22,7 @@ from tests.mark_utils import arg_mark
 
 
 @pytest.mark.parametrize("cleanup_temporary_files", ["./dataset_bind_out_1.log"], indirect=True)
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 def test_dataset_bind_core(cleanup_temporary_files):
     """
