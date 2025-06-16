@@ -49,7 +49,7 @@ mindspore.mint.nn.Conv3d
             如果设置了此模式，则 `padding` 必须为0。
           - ``"valid"``：输入没有填充，输出返回最大可能的高度和宽度。无法完成整个步幅的额外像素将被丢弃。如果设置了此模式，则 `padding` 必须为0。
 
-        - **padding_mode** (str，可选) - 使用填充值0指定填充模式。它可以设置为： ``"zeros"`` 、 ``"reflect"`` 、 ``"circular"`` 或 ``"replicate"`` 。默认值： ``"zeros"`` 。
+        - **padding_mode** (str，可选) - 使用填充值0指定填充模式。它可以设置为： ``"zeros"`` 、 ``"reflect"`` 或 ``"replicate"`` 。默认值： ``"zeros"`` 。
         - **dilation** (Union[int, tuple[int], list[int]]，可选) - 控制内核点之间的空间。默认值： ``1`` 。
         - **groups** (int，可选) - 拆分过滤成组， `in_channel` 和 `out_channels` 必须能被 `groups` 整除。如果组等于 `in_channels` 和 `out_channels` 。默认值： `1` 。
         - **bias** (bool，可选) - Conv3d层是否具有偏置参数。默认值： `True` 。
