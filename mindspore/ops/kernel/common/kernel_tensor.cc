@@ -124,6 +124,7 @@ KernelTensor::KernelTensor(const DeviceAddressPtr &device_address, const abstrac
   address_common_->pointer_ref_count_->set_ptr(device_ptr);
   auto pointer_ref_count = device_address_->address_common()->pointer_ref_count_;
   address_common_->pointer_ref_count_->set_deleter(pointer_ref_count->deleter());
+  address_common_->pointer_ref_count_->set_allocator(pointer_ref_count->allocator());
   address_common_->size_ = size;
   address_common_->format_ = GetFormatFromStrToEnum(format);
   address_common_->dtype_id_ = dtype_id;
