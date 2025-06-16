@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,8 @@
 
 namespace mindspore {
 namespace ad {
+constexpr auto kTopCellWithRecompute = "top_cell_with_recompute";
+constexpr auto kOutputNoRecompute = "output_no_recompute";
 
 class BpropGenerator {
  public:
@@ -45,10 +47,11 @@ class BpropGenerator {
   void Init();
   FuncGraphPtr GenerateBpropGraph();
   FuncGraphPtr GenerateForwardGraph(const FuncGraphPtr &jit_forward_graph, bool do_renormalize);
-  void set_forward_output_abs(const abstract::AbstractBasePtr &forward_abs);
+  void SetForwardOutputAbs(const abstract::AbstractBasePtr &forward_abs, const FuncGraphPtr &bprop_graph);
+  void EreaseUnusedReuseCNode(const FuncGraphPtr &bprop_fg);
 
  private:
-  void ReusePrimalCNode(const FuncGraphPtr &k_fg, const FuncGraphPtr &top_fg);
+  void ReusePrimalCNode(const FuncGraphPtr &k_fg, const FuncGraphPtr &top_fg, bool top_cell_do_recompute);
   void ReuseCustomBpropForwardOutput(const FuncGraphPtr &k_fg, const FuncGraphPtr &top_fg);
 
   FuncGraphPtr fprop_graph_;
@@ -58,6 +61,7 @@ class BpropGenerator {
   std::vector<ValuePtr> input_value_{};
   abstract::AbstractBasePtr out_abs_{nullptr};
   bool need_reuse_forward_node_{false};
+  size_t bprop_origin_param_size_{0};
   std::vector<FuncGraphPtr> fprop_sub_fgs_{};
   AnfNodePtrList replace_nodes_{};
   abstract::AbstractBasePtrList replace_nodes_abs_{};

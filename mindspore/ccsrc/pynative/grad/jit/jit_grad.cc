@@ -300,6 +300,14 @@ bool Jit::GetJitGradGraph(const pipeline::ResourcePtr &resource, const std::stri
   auto primal_fg = BasicClone(jit_forward_graph);
   graph_executor->SetJitPrimalFuncGraph(primal_fg, graph_phase_);
   bool is_control_flow = PyNativeAlgo::Common::IsControlFlowGraph(jit_forward_graph);
+
+  // Get top cell recompute flag
+  py::object input = resource->source_input();
+  if (input != py::none() && py::hasattr(input, ad::kOutputNoRecompute)) {
+    MS_LOG(INFO) << "Top cell with recompute flag, do not do recompute again in gradjit, cell: " << py::str(input);
+    primal_fg->set_flag(ad::kTopCellWithRecompute, true);
+  }
+
   // Using adgrad to generate fprop func graph for jit function in pynative mode
   // Using cloned jit_forward_graph --> primal_fg as input
   // Ensure that the primal graph found by fprop in GradJit is not affected by subsequent compilation passes.
