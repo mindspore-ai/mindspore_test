@@ -990,12 +990,14 @@ def _check_all_tensor_same_dtype_and_shape(*tensor_lists):
                         f"but got {consistent_shape} and {shape}."
                     )
 
+
 @_primexpr
 def _check_output_shape(output, expected_shape, op_name):
     if output.shape != expected_shape:
         raise TypeError(
             f"For {op_name}, the output shape should be {expected_shape}, "
             f"but got {output.shape}.")
+
 
 @_primexpr
 def _check_output_dtype(output, expected_dtype, op_name):
@@ -2592,11 +2594,13 @@ def _check_tensor_list(tensor_list, tensor, group_size):
             f"The argument list tensor shape must be equal to tensor shape, but got {tensor_list[0].shape}."
         )
 
+
 def _check_group_tensor_list(tensor_list, group_size):
     if not tensor_list or len(tensor_list) != group_size:
         raise TypeError(
             f"The argument list tensor len must be equal to group rank size, but got {len(tensor_list)}."
         )
+
 
 def all_gather(tensor_list, tensor, group=None, async_op=False):
     """
