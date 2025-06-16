@@ -1008,9 +1008,13 @@ void SuperKernelActor::DispatchParallelLaunchKernels(size_t index, OpContext<Ker
 
       if (!kernel_actor->is_launch_skipped_) {
         MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Begin launch kernel: " << kernel_actor->kernel_->fullname_with_scope();
-        auto ret = device_contexts_[0]->GetKernelExecutor(false)->LaunchKernelHP(
-          kernel_actor->kernel_, kernel_actor->input_launch_tensors_, kernel_actor->workspace_launch_tensors_,
-          kernel_actor->output_launch_tensors_, kernel_actor->kernel_mod_, real_stream);
+        uint64_t start_time = 0;
+        PROFILER_START(start_time);
+        auto ret = kernel_actor->kernel_mod_->Launch(kernel_actor->input_launch_tensors_,
+                                                     kernel_actor->workspace_launch_tensors_,
+                                                     kernel_actor->output_launch_tensors_, real_stream);
+        PROFILER_END(start_time, runtime::ProfilerModule::kKernel, runtime::ProfilerEvent::kKernelLaunch,
+                     kernel_actor->GetAID().Name(), false, kernel_actor->input_launch_tensors_);
         if (!ret) {
           MS_LOG(EXCEPTION) << "Launch kernel failed, kernel name: " << kernel_actor->kernel_->fullname_with_scope();
         }
@@ -1058,9 +1062,13 @@ void SuperKernelActor::DispatchSerialLaunchKernels(OpContext<KernelTensor> *cons
 
     MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Begin serial launch kernel: "
                                          << kernel_actor->kernel_->fullname_with_scope();
-    auto ret = device_contexts_[0]->GetKernelExecutor(false)->LaunchKernel(
-      kernel_actor->kernel_, kernel_actor->input_launch_tensors_, kernel_actor->workspace_launch_tensors_,
-      kernel_actor->output_launch_tensors_, kernel_actor->kernel_mod_, default_stream);
+    uint64_t start_time = 0;
+    PROFILER_START(start_time);
+    auto ret =
+      kernel_actor->kernel_mod_->Launch(kernel_actor->input_launch_tensors_, kernel_actor->workspace_launch_tensors_,
+                                        kernel_actor->output_launch_tensors_, default_stream);
+    PROFILER_END(start_time, runtime::ProfilerModule::kKernel, runtime::ProfilerEvent::kKernelLaunch,
+                 kernel_actor->GetAID().Name(), false, kernel_actor->input_launch_tensors_);
     if (!ret) {
       MS_LOG(EXCEPTION) << "Launch kernel failed, kernel name: " << kernel_actor->kernel_->fullname_with_scope();
     }
