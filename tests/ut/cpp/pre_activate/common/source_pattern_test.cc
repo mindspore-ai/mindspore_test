@@ -88,11 +88,11 @@ TEST_F(TestSrcPattern, Var) {
   ASSERT_TRUE(build_pattern_map(mul1_cnode));
 
   // check
-  ASSERT_TRUE(opt::AnfEqual(m_->Get("anode1"), anode1));
-  ASSERT_TRUE(opt::AnfEqual(m_->Get("anode2"), anode2));
-  ASSERT_TRUE(opt::AnfEqual(m_->Get("anode3"), anode3));
-  ASSERT_TRUE(opt::AnfEqual(m_->Get("mul1_cnode"), mul1_cnode));
-  ASSERT_TRUE(opt::AnfEqual(m_->Get("mul2_cnode"), mul2_cnode));
+  ASSERT_TRUE(AnfUtils::AnfEqual(m_->Get("anode1"), anode1));
+  ASSERT_TRUE(AnfUtils::AnfEqual(m_->Get("anode2"), anode2));
+  ASSERT_TRUE(AnfUtils::AnfEqual(m_->Get("anode3"), anode3));
+  ASSERT_TRUE(AnfUtils::AnfEqual(m_->Get("mul1_cnode"), mul1_cnode));
+  ASSERT_TRUE(AnfUtils::AnfEqual(m_->Get("mul2_cnode"), mul2_cnode));
 }
 
 /// Feature: PatternToPattern Pass
@@ -118,13 +118,13 @@ TEST_F(TestSrcPattern, SeqVar) {
   ASSERT_TRUE(build_pattern_map(mul1_cnode));
 
   // check
-  ASSERT_TRUE(opt::AnfEqual(m_->Get("anode1"), anode1));
-  ASSERT_TRUE(opt::AnfEqual(m_->Get("mul1_cnode"), mul1_cnode));
-  ASSERT_TRUE(opt::AnfEqual(m_->Get("mul2_cnode"), mul2_cnode));
+  ASSERT_TRUE(AnfUtils::AnfEqual(m_->Get("anode1"), anode1));
+  ASSERT_TRUE(AnfUtils::AnfEqual(m_->Get("mul1_cnode"), mul1_cnode));
+  ASSERT_TRUE(AnfUtils::AnfEqual(m_->Get("mul2_cnode"), mul2_cnode));
   auto &v = m_->GetSeq("Sv");
   ASSERT_EQ(v.size(), std::size_t(2));
-  ASSERT_TRUE(opt::AnfEqual(v[0], anode2));
-  ASSERT_TRUE(opt::AnfEqual(v[1], anode3));
+  ASSERT_TRUE(AnfUtils::AnfEqual(v[0], anode2));
+  ASSERT_TRUE(AnfUtils::AnfEqual(v[1], anode3));
 }
 
 /// Feature: PatternToPattern Pass
@@ -159,12 +159,12 @@ TEST_F(TestSrcPattern, RepeatedVar) {
   ASSERT_TRUE(build_pattern_map(mul3_cnode));
 
   // check
-  ASSERT_TRUE(opt::AnfEqual(m_->Get("anode1"), anode1));
-  ASSERT_TRUE(opt::AnfEqual(m_->Get("anode2"), anode2));
-  ASSERT_TRUE(opt::AnfEqual(m_->Get("anode3"), anode3));
-  ASSERT_TRUE(opt::AnfEqual(m_->Get("mul1_cnode"), mul1_cnode));
-  ASSERT_TRUE(opt::AnfEqual(m_->Get("mul2_cnode"), mul2_cnode));
-  ASSERT_TRUE(opt::AnfEqual(m_->Get("mul3_cnode"), mul3_cnode));
+  ASSERT_TRUE(AnfUtils::AnfEqual(m_->Get("anode1"), anode1));
+  ASSERT_TRUE(AnfUtils::AnfEqual(m_->Get("anode2"), anode2));
+  ASSERT_TRUE(AnfUtils::AnfEqual(m_->Get("anode3"), anode3));
+  ASSERT_TRUE(AnfUtils::AnfEqual(m_->Get("mul1_cnode"), mul1_cnode));
+  ASSERT_TRUE(AnfUtils::AnfEqual(m_->Get("mul2_cnode"), mul2_cnode));
+  ASSERT_TRUE(AnfUtils::AnfEqual(m_->Get("mul3_cnode"), mul3_cnode));
 }
 
 /// Feature: PatternToPattern Pass
@@ -202,15 +202,15 @@ TEST_F(TestSrcPattern, RepeatedSeqVar) {
   ASSERT_TRUE(build_pattern_map(mul4_cnode));
 
   // check
-  ASSERT_TRUE(opt::AnfEqual(m_->Get("anode1"), anode1));
-  ASSERT_TRUE(opt::AnfEqual(m_->Get("mul1_cnode"), mul1_cnode));
-  ASSERT_TRUE(opt::AnfEqual(m_->Get("mul2_cnode"), mul2_cnode));
-  ASSERT_TRUE(opt::AnfEqual(m_->Get("mul3_cnode"), mul3_cnode));
-  ASSERT_TRUE(opt::AnfEqual(m_->Get("mul4_cnode"), mul4_cnode));
+  ASSERT_TRUE(AnfUtils::AnfEqual(m_->Get("anode1"), anode1));
+  ASSERT_TRUE(AnfUtils::AnfEqual(m_->Get("mul1_cnode"), mul1_cnode));
+  ASSERT_TRUE(AnfUtils::AnfEqual(m_->Get("mul2_cnode"), mul2_cnode));
+  ASSERT_TRUE(AnfUtils::AnfEqual(m_->Get("mul3_cnode"), mul3_cnode));
+  ASSERT_TRUE(AnfUtils::AnfEqual(m_->Get("mul4_cnode"), mul4_cnode));
   auto &v = m_->GetSeq("Sv");
   ASSERT_EQ(v.size(), std::size_t(2));
-  ASSERT_TRUE(opt::AnfEqual(v[0], anode2));
-  ASSERT_TRUE(opt::AnfEqual(v[1], anode3));
+  ASSERT_TRUE(AnfUtils::AnfEqual(v[0], anode2));
+  ASSERT_TRUE(AnfUtils::AnfEqual(v[1], anode3));
 }
 
 /// Feature: PatternToPattern Pass
