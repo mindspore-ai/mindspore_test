@@ -424,7 +424,12 @@ class MS_CORE_API Tensor : public MetaTensor {
 
   size_t DataSize() const { return SizeOf(shape_); }
 
-  ssize_t DataItemSize() const { return static_cast<ssize_t>(abstract::TypeIdSize(data_type_)); }
+  ssize_t DataItemSize() const {
+    if (device_sync_ != nullptr && device_sync_->has_data()) {
+      return device_sync_->data()->itemsize();
+    }
+    return static_cast<ssize_t>(abstract::TypeIdSize(data_type_));
+  }
 
   size_t DataNBytes() const { return DataSize() * DataItemSize(); }
 
