@@ -17,10 +17,10 @@
 #include "ir/device_sync.h"
 
 namespace mindspore {
-CopyFunc g_sync_copy_func[static_cast<int>(device::DeviceType::kDeviceEnd)];
-CopyFunc g_async_copy_func[static_cast<int>(device::DeviceType::kDeviceEnd)];
+SyncCopyFunc g_sync_copy_func[static_cast<int>(device::DeviceType::kDeviceEnd)];
+AsyncCopyFunc g_async_copy_func[static_cast<int>(device::DeviceType::kDeviceEnd)];
 
-MS_CORE_API void SetCopyFunc(device::DeviceType device_type, CopyFunc &&sync_func, CopyFunc &&async_func) {
+MS_CORE_API void SetCopyFunc(device::DeviceType device_type, SyncCopyFunc &&sync_func, AsyncCopyFunc &&async_func) {
   MS_LOG(WARNING) << "Resigter copy function for device type:" << device_type;
   g_sync_copy_func[static_cast<int>(device_type)] = sync_func;
   g_async_copy_func[static_cast<int>(device_type)] = async_func;
@@ -62,15 +62,17 @@ bool AsyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_de
   if (dst_device_sync->GetDeviceType() == device::DeviceType::kCPU &&
       src_device_sync->GetDeviceType() == device::DeviceType::kCPU) {
     MS_EXCEPTION_IF_NULL(g_sync_copy_func[static_cast<int>(device::DeviceType::kCPU)]);
-    return g_async_copy_func[static_cast<int>(device::DeviceType::kCPU)](dst_device_sync, src_device_sync, stream_id);
+    return g_async_copy_func[static_cast<int>(device::DeviceType::kCPU)](dst_device_sync, src_device_sync, stream_id,
+                                                                         keep_host);
   }
   if (dst_device_sync->GetDeviceType() == device::DeviceType::kAscend ||
       src_device_sync->GetDeviceType() == device::DeviceType::kAscend) {
     MS_EXCEPTION_IF_NULL(g_sync_copy_func[static_cast<int>(device::DeviceType::kAscend)]);
-    return g_async_copy_func[static_cast<int>(device::DeviceType::kAscend)](dst_device_sync, src_device_sync,
-                                                                            stream_id);
+    return g_async_copy_func[static_cast<int>(device::DeviceType::kAscend)](dst_device_sync, src_device_sync, stream_id,
+                                                                            keep_host);
   }
   MS_EXCEPTION_IF_NULL(g_sync_copy_func[static_cast<int>(device::DeviceType::kGPU)]);
-  return g_async_copy_func[static_cast<int>(device::DeviceType::kGPU)](dst_device_sync, src_device_sync, stream_id);
+  return g_async_copy_func[static_cast<int>(device::DeviceType::kGPU)](dst_device_sync, src_device_sync, stream_id,
+                                                                       keep_host);
 }
 }  // namespace mindspore

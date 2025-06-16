@@ -67,10 +67,10 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public HalResBase {
 
   bool SyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
                 size_t stream_id) const override;
-  bool AsyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
-                 size_t stream_id) const override;
+  bool AsyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id,
+                 bool keep_src) const override;
   bool Copy(void *dst, const void *src, uint64_t size, CopyType kind, size_t stream_id) const override;
-
+  bool CopyDirectly(void *dst, size_t src_size, const void *src, uint64_t dst_size, CopyType kind) const override;
   bool LoadCollectiveCommLib() override;
   bool IsEnableVmm() const override;
 
@@ -174,8 +174,8 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public HalResBase {
                           size_t stream_id) const;
   bool AsyncDeviceToHost(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
                          size_t stream_id) const;
-  bool AsyncHostToDevice(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
-                         size_t stream_id) const;
+  bool AsyncHostToDevice(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id,
+                         bool keep_src) const;
   bool AsyncDeviceToDevice(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
                            size_t stream_id) const;
   bool CopyDeviceToHostForDiffFormat(const DeviceAddress *dst_device_address, const DeviceAddress *src_device_address,

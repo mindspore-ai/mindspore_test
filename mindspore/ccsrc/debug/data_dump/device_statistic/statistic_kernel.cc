@@ -41,14 +41,17 @@ TensorPtr SyncDeviceToHostTensor(KernelTensorPtr kernel_tensor) {
   auto dtype_id = kernel_tensor->dtype_id();
   const auto &shape_vec = kernel_tensor->GetShapeVector();
 
-  mindspore::tensor::TensorPtr out_tensor = std::make_shared<tensor::Tensor>(dtype_id, shape_vec);
+  mindspore::tensor::TensorPtr out_tensor = tensor::empty(dtype_id, shape_vec, device::DeviceType::kCPU);
   MS_EXCEPTION_IF_NULL(out_tensor->device_address());
   device::ResKey res_key{device_addr->GetDeviceType(), device_addr->device_id()};
   auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
   MS_EXCEPTION_IF_NULL(res_manager);
   if (!res_manager->SyncAllStreams() ||
       !SyncCopy(out_tensor->device_address(), device_addr, device_addr->stream_id())) {
-    MS_LOG(EXCEPTION) << "Convert format or Copy device mem to host failed";
+    const auto &dst_address = dynamic_cast<device::DeviceAddress *>(out_tensor->device_address().get());
+    MS_EXCEPTION_IF_NULL(dst_address);
+    MS_LOG(EXCEPTION) << "Convert format or Copy device mem to host failed, from device address:"
+                      << device_addr->PrintInfo() << " to:" << dst_address->PrintInfo();
   }
   return out_tensor;
 }

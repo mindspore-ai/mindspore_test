@@ -94,14 +94,13 @@ class DeviceSync {
   }
 };
 using DeviceSyncPtr = std::shared_ptr<DeviceSync>;
-
-using CopyFunc =
-  std::function<bool(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id)>;
-MS_CORE_API void SetCopyFunc(device::DeviceType device_type, CopyFunc &&sync_func, CopyFunc &&async_func);
+using SyncCopyFunc = std::function<bool(const DeviceSyncPtr &, const DeviceSyncPtr &, size_t)>;
+using AsyncCopyFunc = std::function<bool(const DeviceSyncPtr &, const DeviceSyncPtr &, size_t, bool)>;
+MS_CORE_API void SetCopyFunc(device::DeviceType device_type, SyncCopyFunc &&sync_func, AsyncCopyFunc &&async_func);
 
 template <device::DeviceType t>
 struct MS_CORE_API CopyFuncRegister {
-  explicit CopyFuncRegister(CopyFunc &&sync_func, CopyFunc &&async_func) {
+  explicit CopyFuncRegister(SyncCopyFunc &&sync_func, AsyncCopyFunc &&async_func) {
     SetCopyFunc(t, std::move(sync_func), std::move(async_func));
   }
 };
@@ -113,6 +112,6 @@ struct MS_CORE_API CopyFuncRegister {
 
 MS_CORE_API bool SyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id);
 MS_CORE_API bool AsyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id,
-                           bool keep_host = true);
+                           bool keep_src = true);
 }  // namespace mindspore
 #endif  // MINDSPORE_CORE_IR_DEVICE_SYNC_H_

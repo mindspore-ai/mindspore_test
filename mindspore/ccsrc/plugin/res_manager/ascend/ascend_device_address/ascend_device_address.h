@@ -62,12 +62,8 @@ class ASCEND_RES_MANAGER_EXPORT AscendDeviceAddress : public LoadableDeviceAddre
 
   DeviceAddressPtr CloneDeviceAddress() override;
 
-  bool CopyDeviceToHost(void *dst, const void *src, const size_t &size) const override;
-  bool CopyHostToDevice(void *dst, const void *src, const size_t &size) const override;
   void ClearDeviceMemory() override;
   DeviceType GetDeviceType() const override { return DeviceType::kAscend; }
-  mindspore::tensor::TensorPtr LoadMemToHost(const std::string &tensor_name, const ShapeVector &host_shape,
-                                             TypeId host_type, bool trans_flag, bool async_copy = true) const override;
 
   void set_communication_ptr(uint8_t *communication_ptr) override {
     communication_ptr_ = communication_ptr;
@@ -75,7 +71,6 @@ class ASCEND_RES_MANAGER_EXPORT AscendDeviceAddress : public LoadableDeviceAddre
     // deleter.
     SetDevicePtrDeleter();
   }
-  bool CopyDeviceToHostWithoutSyncStream(void *dst, size_t dst_size, const void *src, size_t src_size);
   bool SyncDeviceToHost(void *host_ptr, const void *device_ptr, size_t size, const std::string &device_name,
                         uint32_t device_id, mindspore::Format format, const ShapeVector &shape, size_t stream_id,
                         const UserDataPtr &user_data = nullptr) const override;
@@ -85,6 +80,11 @@ class ASCEND_RES_MANAGER_EXPORT AscendDeviceAddress : public LoadableDeviceAddre
                         const UserDataPtr &user_data = nullptr) const override;
 
  protected:
+  mindspore::tensor::TensorPtr LoadMemToHost(const std::string &tensor_name, const ShapeVector &host_shape,
+                                             TypeId host_type, bool trans_flag, bool async_copy = true) const override;
+  bool CopyDeviceToHostWithoutSyncStream(void *dst, size_t dst_size, const void *src, size_t src_size);
+  bool CopyDeviceToHost(void *dst, const void *src, const size_t &size) const override;
+  bool CopyHostToDevice(void *dst, const void *src, const size_t &size) const override;
   bool SyncDeviceToHost(size_t size, void *const host_ptr) const override;
   bool SyncHostToDevice(size_t size, const void *host_ptr) const override;
   bool SyncDeviceToHost(const ShapeVector &shape, size_t size, TypeId type, void *host_ptr,

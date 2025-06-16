@@ -427,7 +427,7 @@ bool GPUResManager::SyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceS
 }
 
 bool GPUResManager::AsyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
-                              size_t stream_id) const {
+                              size_t stream_id, bool) const {
   MS_EXCEPTION_IF_NULL(dst_device_sync);
   MS_EXCEPTION_IF_NULL(src_device_sync);
   if (dst_device_sync->GetDeviceType() == DeviceType::kGPU && src_device_sync->GetDeviceType() == DeviceType::kCPU) {
@@ -470,6 +470,12 @@ bool GPUResManager::Copy(void *dst, const void *src, uint64_t size, CopyType kin
       MS_LOG(EXCEPTION) << "Invalid copy type:" << kind;
   }
   return true;
+}
+
+bool GPUResManager::CopyDirectly(void *dst, size_t src_size, const void *src, uint64_t dst_size, CopyType kind) const {
+  MS_EXCEPTION_IF_NULL(dst);
+  MS_EXCEPTION_IF_NULL(src);
+  return GPUDeviceManager::GetInstance().CopyDeviceMemToHost(dst, src, src_size > dst_size ? dst_size : src_size);
 }
 
 bool GPUResManager::SyncDeviceToHost(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
@@ -757,14 +763,14 @@ MS_REGISTER_HAL_COPY_FUNC(
     MS_EXCEPTION_IF_NULL(res_manager);
     return res_manager->SyncCopy(dst_device_sync, src_device_sync, stream_id);
   }),
-  ([](const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id) {
+  ([](const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id, bool) {
     auto context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(context);
     auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
     device::ResKey res_key{DeviceType::kGPU, device_id};
     auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
     MS_EXCEPTION_IF_NULL(res_manager);
-    return res_manager->SyncCopy(dst_device_sync, src_device_sync, stream_id);
+    return res_manager->AsyncCopy(dst_device_sync, src_device_sync, stream_id, keep_src);
   }));
 
 MS_REGISTER_HAL_RES_MANAGER(kGPUDevice, DeviceType::kGPU, GPUResManager);

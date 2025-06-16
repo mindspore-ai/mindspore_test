@@ -552,9 +552,12 @@ void LaunchDumpCallback(const std::vector<TensorInfoForDump> &tensor_info_list, 
       }
       auto device_tensor = tensor_info.kernel_tensor->device_address();
       MS_EXCEPTION_IF_NULL(device_tensor);
-      auto ret_rt_memcpy = device_tensor->CopyDeviceToHostWithoutSyncStream(out_tensor->data_c(), host_size,
-                                                                            tensor_info.device_ptr, device_size);
-      MS_LOG(DEBUG) << "Callback aclrtmemcpy for " << file_path << ". result is: " << ret_rt_memcpy << file_path;
+      device::ResKey res_key{device_tensor->GetDeviceType(), device_tensor->device_id()};
+      auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+      MS_EXCEPTION_IF_NULL(res_manager);
+      auto ret = res_manager->CopyDirectly(out_tensor->data_c(), host_size, tensor_info.device_ptr, device_size,
+                                           device::CopyType::kD2H);
+      MS_LOG(DEBUG) << "Callback aclrtmemcpy for " << file_path << ". result is: " << ret << file_path;
 
       // Tensor must be saved before statistic. Because the tensor would be changed in DumpTensorStatsToFile when data
       // type is int4, if tensor saved after statistic, the tensor value would be wrong.
@@ -680,7 +683,10 @@ inline mindspore::tensor::TensorPtr KernelTensor2Tensor(device::KernelTensorPtr 
     MS_LOG(WARNING) << "kernel tensor size is 0, skip it.";
     return out_tensor;
   }
-  device_tensor->CopyDeviceToHostWithoutSyncStream(out_tensor->data_c(), host_size, src, host_size);
+  device::ResKey res_key{device_tensor->GetDeviceType(), device_tensor->device_id()};
+  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+  MS_EXCEPTION_IF_NULL(res_manager);
+  res_manager->CopyDirectly(out_tensor->data_c(), host_size, src, host_size, device::CopyType::kD2H);
   return out_tensor;
 }
 

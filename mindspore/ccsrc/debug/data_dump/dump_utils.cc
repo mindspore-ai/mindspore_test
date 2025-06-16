@@ -298,7 +298,73 @@ void DumpToFile(const std::string &file_name, const std::string &dump_str) {
   file.close();
   ChangeFileMode(real_path_str, S_IRUSR);
 }
+
 #ifdef ENABLE_DEBUGGER
+mindspore::tensor::TensorPtr LoadDeviceAddressToHost(const device::DeviceAddress &addr, const std::string &tensor_name,
+                                                     const ShapeVector &host_shape, TypeId host_type, bool trans_flag,
+                                                     bool async_copy) {
+  device::ResKey res_key{addr.GetDeviceType(), addr.device_id()};
+  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+  MS_EXCEPTION_IF_NULL(res_manager);
+  res_manager->SyncAllStreams();
+  ShapeVector corrected_host_shape = host_shape;
+  if (host_type == kNumberTypeInt4 && !corrected_host_shape.empty()) {
+    constexpr int64_t kNumber2 = 2;
+    corrected_host_shape.back() *= kNumber2;
+  }
+  mindspore::tensor::TensorPtr out_tensor = tensor::empty(host_type, corrected_host_shape, device::DeviceType::kCPU);
+  MS_EXCEPTION_IF_NULL(out_tensor);
+  size_t host_size = LongToSize(out_tensor->DataNBytes());
+  if (host_size == 0) {
+    MS_LOG(INFO) << "Tensor size is 0 for tensor: " << tensor_name;
+    return std::make_shared<mindspore::tensor::Tensor>();
+  }
+  if (host_type == kNumberTypeInt4) {
+    const int int4_nums_per_byte = 2;
+    host_size = out_tensor->DataSize() / int4_nums_per_byte;
+  }
+  bool ret_sync = false;
+  if (async_copy) {
+    if (trans_flag) {
+      MS_EXCEPTION_IF_NULL(out_tensor->device_address());
+      const auto &host_device_address = dynamic_cast<device::DeviceAddress *>(out_tensor->device_address().get());
+      MS_EXCEPTION_IF_NULL(host_device_address);
+      const auto &clone_dst_device_address = host_device_address->CloneDeviceAddress();
+      MS_EXCEPTION_IF_NULL(clone_dst_device_address);
+      clone_dst_device_address->set_ptr(host_device_address->GetMutablePtr());
+      clone_dst_device_address->SetSize(host_size);
+      clone_dst_device_address->SetShapeVector(corrected_host_shape);
+      auto clone_src_device_address = res_manager->CreateDeviceAddress(
+        addr.GetMutablePtr(), addr.GetSize(), addr.GetShapeVector(), kernel::GetFormatFromStrToEnum(addr.format()),
+        addr.type_id(), addr.device_name(), addr.device_id(), addr.stream_id());
+      MS_EXCEPTION_IF_NULL(clone_src_device_address);
+      MS_LOG(DEBUG) << "src device address:" << addr.PrintInfo() << " clone:" << clone_src_device_address->PrintInfo()
+                    << "dst device address shape:" << corrected_host_shape << " size:" << host_size
+                    << " type:" << host_type << " clone:" << clone_dst_device_address->PrintInfo();
+      ret_sync = SyncCopy(clone_dst_device_address, clone_src_device_address, addr.stream_id());
+    } else {
+      ret_sync = res_manager->Copy(out_tensor->data_c(), addr.GetMutablePtr(), host_size, device::CopyType::kD2H,
+                                   addr.stream_id());
+    }
+  } else {
+    // copy device to host using sync mode
+    auto ret = res_manager->CopyDirectly(out_tensor->data_c(), host_size, addr.GetMutablePtr(), addr.GetSize(),
+                                         device::CopyType::kD2H);
+    if (!ret) {
+      MS_LOG(ERROR) << "SyncDeviceToHost fail, dst addr:" << out_tensor->data_c()
+                    << " src addr:" << addr.GetMutablePtr() << " size:" << host_size;
+      return nullptr;
+    } else {
+      ret_sync = true;
+    }
+  }
+  if (!ret_sync) {
+    MS_LOG(ERROR) << "Convert format or Copy device mem to host failed";
+    return nullptr;
+  }
+  return out_tensor;
+}
+
 bool LoadMemToHost(const device::DeviceAddress &addr, const std::string &tensor_name, int execution_order,
                    const std::string &host_fmt, const ShapeVector &host_shape, TypeId host_type, size_t slot,
                    bool keep_prev, uint32_t root_graph_id, bool force_update, bool trans_flag, bool async_copy) {
@@ -321,7 +387,7 @@ bool LoadMemToHost(const device::DeviceAddress &addr, const std::string &tensor_
     MS_VLOG(VL_DUMP) << "Cannot create tensor with type: " << TypeIdLabel(host_type);
     return false;
   }
-  auto out_tensor = addr.LoadMemToHost(tensor_name, host_shape, host_type, trans_flag, async_copy);
+  auto out_tensor = LoadDeviceAddressToHost(addr, tensor_name, host_shape, host_type, trans_flag, async_copy);
   if (!out_tensor) {
     MS_LOG(ERROR) << tensor_name << " load mem to host failed.";
     return false;
