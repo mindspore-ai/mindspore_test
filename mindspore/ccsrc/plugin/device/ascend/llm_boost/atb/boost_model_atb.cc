@@ -291,8 +291,8 @@ const tensor::TensorPtr BoostModelATB::CreateMsTensorFromTensorDesc(const atb::T
     msTensorShape.push_back(tensorDesc.shape.dims[i]);
   }
   tensor::TensorDataPtr data = tensor::MakeTensorData(msTensorType, msTensorShape);
-  tensor::TensorPtr msTensor =
-    std::make_shared<tensor::Tensor>(msTensorType, msTensorShape, MakeDeviceAddress(msTensorType, msTensorShape, data));
+  tensor::TensorPtr msTensor = std::make_shared<tensor::Tensor>(
+    msTensorType, msTensorShape, MakeDeviceAddress(msTensorType, msTensorShape, std::move(data)));
 
   auto device_sync = msTensor->device_address();
   auto device_address = std::dynamic_pointer_cast<device::DeviceAddress>(device_sync);

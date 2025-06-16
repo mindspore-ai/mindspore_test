@@ -323,6 +323,7 @@ TensorPtr TensorPybind::MakeTensorOfNumpy(const py::array &input) {
                           .set_deleter([tensor_data](void *, bool) {})
                           .set_maker(GetDeviceAddressMaker(device::DeviceType::kCPU))
                           .make_device_address();
+  device_address->set_data(std::move(tensor_data));
 
   return std::make_shared<Tensor>(dtype, shape, device_address);
 }
@@ -664,6 +665,13 @@ py::array TensorPybind::AsNumpy(const Tensor &tensor) {
   // by other operations such as AssignValue().
   py::gil_scoped_acquire acquire;
   py::object owner = py::cast(tensor.device_address());
+  if (tensor.device_address() != nullptr && tensor.device_address()->has_data()) {
+    const auto &data = tensor.device_address()->data();
+    auto raw_data = dynamic_cast<TensorDataNumpy *>(data.get());
+    if (raw_data != nullptr) {
+      return raw_data->py_array(owner);
+    }
+  }
   // Create numpy array by buffer protocol.
   auto info = GetPyBufferInfo(tensor);
   py::dtype np_dtype = (tensor.data_type() == kNumberTypeBFloat16)

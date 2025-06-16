@@ -383,6 +383,22 @@ class Optimizer(Cell):
         """
         return _is_ps_mode()
 
+    def flatten_gradients(self, gradients):
+        """
+        Flatten gradients into several chunk tensors grouped by data type if network parameters are flattened.
+
+        A method to enable performance improvement by using contiguous memory for parameters and gradients.
+        User-defined optimizers based on :class:`mindspore.nn.Optimizer` should call this interface to support
+        contiguous memory for network parameters.
+
+        Args:
+            gradients (tuple[Tensor]): The gradients of network parameters.
+
+        Returns:
+            tuple[Tensor], The gradients after flattened, or the original gradients if parameters are not flattened.
+        """
+        return gradients
+
     def decay_weight(self, gradients):
         """
         Weight decay.

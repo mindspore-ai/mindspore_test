@@ -19,8 +19,10 @@
 
 #include <string>
 #include <vector>
+#include <utility>
 #include "plugin/res_manager/cpu/visible.h"
 #include "common/device_address.h"
+#include "ir/tensor_data.h"
 
 namespace mindspore {
 namespace device {
@@ -71,6 +73,12 @@ class CPU_RES_MANAGER_EXPORT CPUDeviceAddress : public DeviceAddress {
 
   DeviceType GetDeviceType() const override { return DeviceType::kCPU; }
 
+  void set_data(tensor::TensorDataPtr &&data) override { data_ = std::move(data); }
+
+  const tensor::TensorDataPtr &data() const override { return data_; }
+
+  bool has_data() const override { return data_ != nullptr; }
+
  protected:
   bool SyncDeviceToHost(const ShapeVector &shape, size_t size, TypeId type, void *host_ptr,
                         bool sync_on_demand = false) const override;
@@ -83,6 +91,10 @@ class CPU_RES_MANAGER_EXPORT CPUDeviceAddress : public DeviceAddress {
                          size_t) const override;
   bool SyncDeviceToDevice(const ShapeVector &shape, size_t size, TypeId type, const void *src_ptr,
                           const std::string &format) const override;
+
+ private:
+  // the data for numpy object.
+  tensor::TensorDataPtr data_;
 };
 }  // namespace cpu
 }  // namespace device

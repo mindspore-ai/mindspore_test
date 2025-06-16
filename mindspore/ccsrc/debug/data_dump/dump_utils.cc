@@ -338,9 +338,9 @@ mindspore::tensor::TensorPtr LoadDeviceAddressToHost(const device::DeviceAddress
         addr.GetMutablePtr(), addr.GetSize(), addr.GetShapeVector(), kernel::GetFormatFromStrToEnum(addr.format()),
         addr.type_id(), addr.device_name(), addr.device_id(), addr.stream_id());
       MS_EXCEPTION_IF_NULL(clone_src_device_address);
-      MS_LOG(DEBUG) << "src device address:" << addr.PrintInfo() << " clone:" << clone_src_device_address->PrintInfo()
+      MS_LOG(DEBUG) << "src device address:" << addr.ToString() << " clone:" << clone_src_device_address->ToString()
                     << "dst device address shape:" << corrected_host_shape << " size:" << host_size
-                    << " type:" << host_type << " clone:" << clone_dst_device_address->PrintInfo();
+                    << " type:" << host_type << " clone:" << clone_dst_device_address->ToString();
       ret_sync = SyncCopy(clone_dst_device_address, clone_src_device_address, addr.stream_id());
     } else {
       ret_sync = res_manager->Copy(out_tensor->data_c(), addr.GetMutablePtr(), host_size, device::CopyType::kD2H,

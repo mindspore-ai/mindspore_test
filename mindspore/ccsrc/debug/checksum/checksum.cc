@@ -35,20 +35,21 @@ inline TensorPtr KernelTensor2Tensor(KernelTensorPtr kernel_tensor) {
   if (!kernel_tensor) {
     return nullptr;
   }
-  const void *src = kernel_tensor->device_ptr();
   auto host_type = kernel_tensor->dtype_id();
   auto host_shape = kernel_tensor->GetShapeVector();
   auto device_tensor = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_tensor);
 
-  TensorPtr out_tensor = std::make_shared<Tensor>(host_type, host_shape);
+  auto out_tensor = tensor::empty(host_type, host_shape, device::DeviceType::kCPU);
   MS_EXCEPTION_IF_NULL(out_tensor);
   size_t host_size = out_tensor->DataNBytes();
   if (host_size == 0) {
     MS_LOG(WARNING) << "kernel tensor size is 0, skip it.";
     return out_tensor;
   }
-  device_tensor->CopyDeviceToHostWithoutSyncStream(out_tensor->data_c(), host_size, src, host_size);
+  if (!SyncCopy(out_tensor->device_address(), device_tensor, device_tensor->stream_id())) {
+    MS_LOG(EXCEPTION) << "Copy D2H failed";
+  }
   return out_tensor;
 }
 

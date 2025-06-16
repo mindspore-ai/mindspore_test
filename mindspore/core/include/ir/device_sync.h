@@ -72,6 +72,10 @@ class DeviceSync {
     return true;
   }
 
+  virtual void set_data(tensor::TensorDataPtr &&data) { MS_LOG(DEBUG) << "Skip device address set_data"; }
+  virtual const tensor::TensorDataPtr &data() const { MS_LOG(EXCEPTION) << "Not implement exception"; }
+  virtual bool has_data() const { return false; }
+
  protected:
   // Used to sync data between different device addresses, only need the data size and data ptr. The CPU device doesn't
   // need use the interfaces, so need the default implementation.

@@ -51,7 +51,7 @@ TensorPtr SyncDeviceToHostTensor(KernelTensorPtr kernel_tensor) {
     const auto &dst_address = dynamic_cast<device::DeviceAddress *>(out_tensor->device_address().get());
     MS_EXCEPTION_IF_NULL(dst_address);
     MS_LOG(EXCEPTION) << "Convert format or Copy device mem to host failed, from device address:"
-                      << device_addr->PrintInfo() << " to:" << dst_address->PrintInfo();
+                      << device_addr->ToString() << " to:" << dst_address->ToString();
   }
   return out_tensor;
 }
