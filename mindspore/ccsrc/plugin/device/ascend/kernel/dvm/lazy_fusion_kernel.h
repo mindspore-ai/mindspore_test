@@ -42,6 +42,7 @@ class LazyFusionQueue : public runtime::AsyncRQueue {
   void Push(const runtime::AsyncTaskPtr &task) override;
   void Wait() override;
   bool Empty() override;
+  void WorkerJoin() override;
   runtime::kThreadWaitLevel GetCurrentLevel();
 };
 

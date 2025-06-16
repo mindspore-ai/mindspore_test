@@ -75,7 +75,7 @@ class RUNTIME_PIPELINE_EXPORT AsyncRQueue {
   void Reset();
 
   // Thread join before the process exit.
-  void WorkerJoin();
+  virtual void WorkerJoin();
 
   // Reinit resources after fork occurs.
   void ChildAfterFork();

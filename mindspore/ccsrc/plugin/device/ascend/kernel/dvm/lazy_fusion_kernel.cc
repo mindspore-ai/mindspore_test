@@ -37,9 +37,6 @@ void LazyFusionQueue::Push(const runtime::AsyncTaskPtr &task) {
 }
 
 void LazyFusionQueue::Wait() {
-  if (worker_ == nullptr) {
-    return;
-  }
   auto current_level = GetCurrentLevel();
   if (current_level >= wait_level_) {
     MS_LOG(DEBUG) << "No need to wait, current level " << current_level << " AsyncQueue name " << name_;
@@ -59,6 +56,15 @@ bool LazyFusionQueue::Empty() {
   }
   // if LazyFusionManager::current_ is not null, means LazyFusionManager::Flush has not been called.
   return g_lazy_fusion_manager.Empty();
+}
+
+void LazyFusionQueue::WorkerJoin() {
+  // If the process exit without calling asnumpy()/sync(), the atexit function will call WorkerJoin()
+  // first, then call Wait(). The WorkerJoin function will exit the thread, then when call Wait(), it
+  // push a dvm task to the queue, and will stuck in the dead loop because the dvm task will never be
+  // executed as the thread already exit. So we need to push dvm task to the queue inside WorkerJoin() first.
+  FlushLazyFusion();
+  runtime::AsyncRQueue::WorkerJoin();
 }
 
 runtime::kThreadWaitLevel LazyFusionQueue::GetCurrentLevel() {
