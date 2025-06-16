@@ -117,6 +117,7 @@
 #include "frontend/optimizer/irpass/add_forward_monad_depend.h"
 #include "frontend/optimizer/irpass/check_invalid_view_inplace_dout.h"
 #include "pipeline/jit/ps/pass_config.h"
+#include "pipeline/jit/ps/graph_circle_handler.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
@@ -1125,6 +1126,7 @@ bool GroupedPairwiseExchangeAllToAllPass(const ResourcePtr &resource) {
 bool OffloadingPackedExpertFrontPass2(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
   FuncGraphPtr func_graph = resource->func_graph();
+  circle_handler::SetAttrToDepend(func_graph);
   bool res = parallel::SetOffloadingPackedExpert(func_graph);
   if (res) {
     abstract::AbstractBasePtrList args_abs;
@@ -1135,7 +1137,7 @@ bool OffloadingPackedExpertFrontPass2(const ResourcePtr &resource) {
     resource->set_func_graph(new_fg);
     resource->set_args_abs(args_abs);
   }
-
+  circle_handler::DetectAndRevertGraphCircle(func_graph, resource->manager(), "OffloadingPackedExpertFrontPass2");
   return true;
 }
 
@@ -1177,7 +1179,10 @@ bool OverlapGradRingAttentionPass(const ResourcePtr &resource) {
   if (IsPassDisableForGPTO()) {
     return true;
   }
-  parallel::OverlapGradRingAttention(resource->func_graph());
+  const auto &graph = resource->func_graph();
+  circle_handler::SetAttrToDepend(graph);
+  parallel::OverlapGradRingAttention(graph);
+  circle_handler::DetectAndRevertGraphCircle(graph, resource->manager(), "OverlapGradRingAttentionPass");
   return true;
 }
 
@@ -1186,11 +1191,12 @@ bool OverlapGradFlashSP(const ResourcePtr &resource) {
   if (IsPassDisableForGPTO()) {
     return true;
   }
-  if (parallel::OverlapGradFlashSP(resource->func_graph())) {
-    FuncGraphPtr func_graph = resource->func_graph();
-    FuncGraphPtr new_fg = LiftingClone(func_graph);
+  const auto &graph = resource->func_graph();
+  if (parallel::OverlapGradFlashSP(graph)) {
+    FuncGraphPtr new_fg = LiftingClone(graph);
     resource->set_func_graph(new_fg);
   }
+  circle_handler::DetectAndRevertGraphCircle(graph, resource->manager(), "OverlapGradFlashSP");
   return true;
 }
 
@@ -1382,12 +1388,15 @@ bool BeginEndOverlapInlinePass(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
   FuncGraphPtr func_graph = resource->func_graph();
   MS_EXCEPTION_IF_NULL(func_graph);
+  circle_handler::SetAttrToDepend(func_graph);
   parallel::BeginEndOverlapInlineOpt(resource->func_graph());
   opt::irpass::OptimizeIRPassLib irpass;
   opt::OptPassConfig get_item_eliminator_pass = opt::OptPassConfig({irpass.tuple_list_get_item_eliminator_});
   OptPassGroupMap map({{"get_item_eliminator", get_item_eliminator_pass}});
   auto get_item_eliminator = opt::Optimizer::MakeOptimizer("get_item_eliminator", resource, map);
   (void)get_item_eliminator->step(func_graph, false);
+  circle_handler::DetectAndRevertGraphCircle(func_graph, resource->manager(), "BeginEndOverlapInlinePass",
+                                             "enable_begin_end_inline_opt");
   return true;
 }
 
@@ -1432,7 +1441,10 @@ bool OverlapRecomputeAndGradModelParallel(const ResourcePtr &resource) {
   if (IsPassDisableForGPTO()) {
     return true;
   }
-  parallel::OverlapRecomputeAndGradModelParallel(resource->func_graph());
+  const auto &graph = resource->func_graph();
+  circle_handler::SetAttrToDepend(graph);
+  parallel::OverlapRecomputeAndGradModelParallel(graph);
+  circle_handler::DetectAndRevertGraphCircle(graph, resource->manager(), "OverlapRecomputeAndGradModelParallel");
   return true;
 }
 
@@ -1564,10 +1576,12 @@ bool ControlDataBroadcastOrderPass(const ResourcePtr &resource) {
     return true;
   }
   auto graph = resource->func_graph();
+  circle_handler::SetAttrToDepend(graph);
   parallel::FreezeParallelOptimizerCommOrder(graph);
   parallel::ReplaceGetnextWithBroadcast(graph);
   parallel::ControlOptShardCommAndDataBroadcastOrder(graph);
   parallel::ControlPipelineCommAndDataBroadcastOrder(graph);
+  circle_handler::DetectAndRevertGraphCircle(graph, resource->manager(), "ControlDataBroadcastOrderPass");
   return true;
 }
 
