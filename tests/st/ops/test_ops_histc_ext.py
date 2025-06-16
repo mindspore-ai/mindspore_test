@@ -15,7 +15,7 @@
 import numpy as np
 import pytest
 import mindspore as ms
-from mindspore import mint
+from mindspore import mint, ops
 from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
