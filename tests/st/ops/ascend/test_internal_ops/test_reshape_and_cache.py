@@ -16,6 +16,7 @@
 Test ReshapeAndCache plugin custom ops.
 """
 import os
+from enum import Enum
 import numpy as np
 import pytest
 import mindspore.nn as nn
@@ -31,6 +32,11 @@ s = 32
 h = 40
 d = 128
 
+class CacheConfig(Enum):
+    KEY_VALUE_CACHE = 0
+    KEY_CACHE = 1
+    KEY_VALUE_CACHE_KVSCALE_CACHE = 2
+
 
 class ReshapeAndCacheNet(nn.Cell):
     """
@@ -45,6 +51,19 @@ class ReshapeAndCacheNet(nn.Cell):
         out = self.reshape_and_cache(key, value, key_cache, value_cache, slot_map)
         return out
 
+
+class ReshapeAndCacheAll(nn.Cell):
+    """
+    ReshapeAndCacheAll.
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.reshape_and_cache = ops.ReshapeAndCache()
+
+    def construct(self, key, value=None, key_cache=None, value_cache=None, slot_map=None):
+        out = self.reshape_and_cache(key, value, key_cache, value_cache, slot_map)
+        return out
 
 def np_inference(key, value, key_cache, value_cache, slot_map):
     """
@@ -78,18 +97,25 @@ def create_ms_inputs(np_k, np_v, np_k_cache, np_v_cache, np_slot_map):
     return ms_key, ms_value, ms_key_cache, ms_value_cache, ms_slot_map
 
 
-def create_np_inputs(dtype=np.float16):
+def create_np_inputs(dtype=np.float16, kv_dim=3):
     """
     create_np_inputs
     """
     cache_shape = (num_slots, slot_size, h, d)
+    if kv_dim == 2:
+        update_shape = (b * s, h * d)
+        num_tokens = update_shape[0]
+    elif kv_dim == 3:
+        update_shape = (b, s, h * d)
+        num_tokens = update_shape[0] * update_shape[1]
+    else:
+        raise Exception("Key's dim should be 2 or 3, but got {0}".format(kv_dim))
     update_shape = (b, s, h * d)
     key_update = np.random.rand(*update_shape).astype(dtype)
     value_update = np.random.rand(*update_shape).astype(dtype)
     key_cache = np.random.rand(*cache_shape).astype(dtype)
     value_cache = np.random.rand(*cache_shape).astype(dtype)
 
-    num_tokens = update_shape[0] * update_shape[1]
     slot_map = np.random.choice(np.arange(num_tokens), num_tokens,
                                 replace=False).astype(np.int32)
 
@@ -124,3 +150,31 @@ def test_reshape_and_cache_net(np_dtype, mode):
     else:
         assert np.allclose(ms_k_cache.asnumpy(), np_k_cache_out, 0.001, 0.001)
         assert np.allclose(ms_v_cache.asnumpy(), np_v_cache_out, 0.001, 0.001)
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize('np_dtype', [np.float16, np.int8, bfloat16])
+@pytest.mark.parametrize('kv_dim', [2, 3])
+def test_reshape_and_cache_key(np_dtype, kv_dim):
+    """
+    Feature: Test ReshapeAndCache.
+    Description: Test float16 inputs.
+    Expectation: Assert that results are consistent with numpy.
+    """
+    context.set_context(device_target="Ascend", mode=context.GRAPH_MODE)
+    context.set_context(jit_config={"jit_level": "O0", "infer_boost": "on"})
+    net = ReshapeAndCacheAll()
+
+    np_k, np_v, np_k_cache, np_v_cache, np_slot_map = create_np_inputs(
+        np_dtype, kv_dim)
+    np_k_cache_out, _ = np_inference(
+        np_k, np_v, np_k_cache, np_v_cache, np_slot_map)
+
+    ms_k, _, ms_k_cache, _, ms_slot_map = create_ms_inputs(
+        np_k, np_v, np_k_cache, np_v_cache, np_slot_map)
+    _ = net(ms_k, key_cache=ms_k_cache, slot_map=ms_slot_map)
+
+    if np_dtype == bfloat16:
+        assert np.allclose(ms_k_cache.float().asnumpy(),
+                           np_k_cache_out.astype(np.float32), 0.001, 0.001)
+    else:
+        assert np.allclose(ms_k_cache.asnumpy(), np_k_cache_out, 0.001, 0.001)
