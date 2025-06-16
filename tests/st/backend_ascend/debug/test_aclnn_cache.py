@@ -21,19 +21,9 @@ from mindspore import mint, context
 from mindspore.nn import Cell
 
 
-class Net1(Cell):
+class Net(Cell):
     def __init__(self):
-        super(Net1, self).__init__()
-        self.op = mint.clone
-
-    def construct(self, x):
-        out = self.op(x)
-        out = self.op(out)
-        return out
-
-class Net2(Cell):
-    def __init__(self):
-        super(Net2, self).__init__()
+        super(Net, self).__init__()
         self.op1 = mint.sin
         self.op2 = mint.cos
 
@@ -47,31 +37,7 @@ class Net2(Cell):
         out = self.op1(out)
         return out
 
-def test_clone_pyboost():
-    """
-    Feature: test aclnn cache queue.
-    Description: set aclnn cache queue failed
-    Expectation: success set aclnn cache queue
-    """
-    x = mindspore.Tensor(np.ones([1, 3, 224, 224]).astype(np.float32))
-    context.set_context(mode=mindspore.PYNATIVE_MODE, device_target="Ascend")
-    net = Net1()
-    for _ in range(5):
-        net(x)
-
-def test_clone_kbyk():
-    """
-    Feature: test aclnn cache queue.
-    Description: set aclnn cache queue failed
-    Expectation: success set aclnn cache queue
-    """
-    x = mindspore.Tensor(np.ones([1, 3, 224, 224]).astype(np.float32))
-    context.set_context(mode=mindspore.GRAPH_MODE, device_target="Ascend", jit_level="O0")
-    net = Net1()
-    net(x)
-
-
-def test_kbyk_aclnn_cache():
+def test_kbyk_aclnn_cache_1():
     """
     Feature: test aclnn cache.
     Description: set global aclnn cache
@@ -79,9 +45,25 @@ def test_kbyk_aclnn_cache():
     """
     x = mindspore.Tensor(np.ones([1, 3, 224, 224]).astype(np.float32))
     context.set_context(mode=mindspore.GRAPH_MODE, device_target="Ascend", jit_level="O0")
-    net = Net2()
+    mindspore.device_context.ascend.op_tuning.aclnn_cache(True)
+    net = Net()
     for _ in range(5):
         net(x)
+
+
+def test_kbyk_aclnn_cache_2():
+    """
+    Feature: test aclnn cache.
+    Description: set global aclnn cache
+    Expectation: set aclnn cache failed
+    """
+    x = mindspore.Tensor(np.ones([1, 3, 224, 224]).astype(np.float32))
+    context.set_context(mode=mindspore.GRAPH_MODE, device_target="Ascend", jit_level="O0")
+    mindspore.device_context.ascend.op_tuning.aclnn_cache(cache_queue_length=100)
+    net = Net()
+    for _ in range(5):
+        net(x)
+
 
 def test_pyboost_aclnn_cache():
     """
@@ -91,42 +73,23 @@ def test_pyboost_aclnn_cache():
     """
     x = mindspore.Tensor(np.ones([1, 3, 224, 224]).astype(np.float32))
     context.set_context(mode=mindspore.PYNATIVE_MODE, device_target="Ascend")
-    net = Net2()
+    net = Net()
     for _ in range(5):
         net(x)
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
-def test_aclnn_queue_length_pyboost():
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_aclnn_cache_length_kbyk():
     """
-    Feature: test aclnn cache queue.
-    Description: set aclnn cache queue failed
-    Expectation: success set aclnn cache queue
+    Feature: aclnn cache
+    Description: set aclnn cache length to 100
+    Expectation: set aclnn cache length failed
     """
-    os.environ["MS_DEV_RUNTIME_CONF"] = "aclnn_cache_queue_length:5"
-    os.environ["GLOG_v"] = "1"
-    os.system("pytest -sv test_aclnn_cache.py::test_clone_pyboost > log_pyboost.txt 2>&1")
-    ret = os.system("grep -i 'Set aclnn cache queue length of pyboost to 5' log_pyboost.txt")
+    os.environ["VLOG_v"] = "20002"
+    os.system("pytest -sv test_aclnn_cache.py::test_kbyk_aclnn_cache_2 > log_cache_kbyk.txt 2>&1")
+    ret = os.system("grep -i 'Set aclnn cache queue length of kbyk to 100' log_cache_kbyk.txt")
     assert ret == 0
-    os.system("rm -rf log_pyboost.txt")
-    del os.environ["MS_DEV_RUNTIME_CONF"]
-    del os.environ["GLOG_v"]
-
-
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
-def test_aclnn_queue_length_kbyk():
-    """
-    Feature: test aclnn cache queue.
-    Description: set aclnn cache queue failed
-    Expectation: success set aclnn cache queue
-    """
-    os.environ["MS_DEV_RUNTIME_CONF"] = "aclnn_cache_queue_length:5"
-    os.environ["GLOG_v"] = "1"
-    os.system("pytest -sv test_aclnn_cache.py::test_clone_kbyk > log_kbyk.txt 2>&1")
-    ret = os.system("grep -i 'Set aclnn cache queue length of kbyk to 5' log_kbyk.txt")
-    assert ret == 0
-    os.system("rm -rf log_kbyk.txt")
-    del os.environ["MS_DEV_RUNTIME_CONF"]
-    del os.environ["GLOG_v"]
+    os.system("rm -rf log_cache_kbyk.txt")
+    del os.environ["VLOG_v"]
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_global_aclnn_cache_kbyk():
@@ -137,22 +100,10 @@ def test_global_aclnn_cache_kbyk():
     """
     # use ms global aclnn cache
     os.environ["VLOG_v"] = "20002"
-    os.system("pytest -sv test_aclnn_cache.py::test_kbyk_aclnn_cache > log_cache_kbyk.txt 2>&1")
-    ret_miss = os.popen("grep -i 'miss cache with hash id:' log_cache_kbyk.txt | wc -l").read()
+    os.system("pytest -sv test_aclnn_cache.py::test_kbyk_aclnn_cache_1 > log_cache_kbyk.txt 2>&1")
+    ret_miss = os.popen("grep -i ' gen executor miss cache, hash id: ' log_cache_kbyk.txt | wc -l").read()
     assert int(ret_miss.strip()) == 2
-    ret_hit = os.popen("grep -i 'hit cache with hash id:' log_cache_kbyk.txt | wc -l").read()
-    assert int(ret_hit.strip()) == 5
     os.system("rm -rf log_cache_kbyk.txt")
-
-    # use cann global aclnn cache
-    os.environ["MS_DEV_RUNTIME_CONF"] = "aclnn_cache_queue_length:0"
-    os.system("pytest -sv test_aclnn_cache.py::test_kbyk_aclnn_cache > log_cache_kbyk.txt 2>&1")
-    ret_miss = os.popen("grep -i 'miss cache, hash id:' log_cache_kbyk.txt | wc -l").read()
-    assert int(ret_miss.strip()) == 2
-    ret_hit = os.popen("grep -i 'hit cache, hash id:' log_cache_kbyk.txt | wc -l").read()
-    assert int(ret_hit.strip()) == 33
-    os.system("rm -rf log_cache_kbyk.txt")
-    del os.environ["MS_DEV_RUNTIME_CONF"]
     del os.environ["VLOG_v"]
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')

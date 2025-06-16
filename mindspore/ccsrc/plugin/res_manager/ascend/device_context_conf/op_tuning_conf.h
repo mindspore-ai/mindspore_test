@@ -44,6 +44,17 @@ class ASCEND_RES_MANAGER_EXPORT OpTuningConf {
   bool IsJitCompileConfigured() const { return !jit_compile_.empty(); }
   bool IsAoeTuneModeConfigured() const { return !aoe_tune_mode_.empty(); }
   bool IsAoeJobTypeConfigured() const { return is_aoe_job_type_configured_; }
+  bool IsEnableAclnnGlobalCache() const { return is_enable_aclnn_global_cache_; }
+  size_t AclnnCacheQueueLength() const { return cache_queue_length_; }
+  bool IsAclnnCacheConfigured() const { return is_aclnn_cache_configured_; }
+  void SetAclnnGlobalCache(bool set_aclnn_global_cache) {
+    is_enable_aclnn_global_cache_ = set_aclnn_global_cache;
+    is_aclnn_cache_configured_ = true;
+  }
+  void SetAclnnCacheQueueLength(size_t cache_queue_length) {
+    cache_queue_length_ = cache_queue_length;
+    is_aclnn_cache_configured_ = true;
+  }
 
  private:
   static std::shared_ptr<OpTuningConf> inst_context_;
@@ -51,6 +62,9 @@ class ASCEND_RES_MANAGER_EXPORT OpTuningConf {
   std::string aoe_tune_mode_{""};
   std::string aoe_job_type_{"2"};
   bool is_aoe_job_type_configured_{false};
+  bool is_enable_aclnn_global_cache_{false};
+  bool is_aclnn_cache_configured_{false};
+  size_t cache_queue_length_{10000};
 };
 
 ASCEND_RES_MANAGER_EXPORT void RegOpTuningConf(py::module *m);

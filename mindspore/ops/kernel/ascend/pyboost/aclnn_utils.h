@@ -136,7 +136,7 @@ using CacheTuple = std::tuple<uint64_t, mindspore::device::ascend::aclOpExecutor
     static std::list<CacheTuple> hash_cache_;                                                                     \
     static size_t capacity_{1024};                                                                                \
     static std::mutex mutex_;                                                                                     \
-    static int64_t capaticy_from_user = ops::GetCacheCapaticy();                                                  \
+    static int64_t capaticy_from_user = device::ascend::GetCacheCapaticy();                                       \
     static bool not_set_capaticy = true;                                                                          \
     if (capaticy_from_user >= 0 && not_set_capaticy) {                                                            \
       capacity_ = LongToSize(capaticy_from_user);                                                                 \
@@ -192,7 +192,7 @@ using CacheTuple = std::tuple<uint64_t, mindspore::device::ascend::aclOpExecutor
     static std::list<CacheTuple> hash_cache_;                                                                 \
     static size_t capacity_{1024};                                                                            \
     static std::mutex mutex_;                                                                                 \
-    static int64_t capaticy_from_user = ops::GetCacheCapaticy();                                              \
+    static int64_t capaticy_from_user = device::ascend::GetCacheCapaticy();                                   \
     static bool not_set_capaticy = true;                                                                      \
     REGISTER_SYNC_OP(aclnn_name);                                                                             \
     if (capaticy_from_user >= 0 && not_set_capaticy) {                                                        \

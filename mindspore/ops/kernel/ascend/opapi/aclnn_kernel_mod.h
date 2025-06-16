@@ -74,7 +74,6 @@ using CacheTuple = std::tuple<uint64_t, aclOpExecutor *, ProcessCache, size_t>;
     }                                                                                                                \
     hash_id_##FUNC_NAME##_ = device::ascend::AclnnHash(op_type_##FUNC_NAME##_, args...);                             \
     auto iter = hash_map_.find(hash_id_##FUNC_NAME##_);                                                              \
-    size_t cur_workspace = 0;                                                                                        \
     if (iter != hash_map_.end()) {                                                                                   \
       MS_VLOG(VL_ACLNN_OP) << "Op " << op_type_##FUNC_NAME##_                                                        \
                            << " hit cache with hash id: " << hash_id_##FUNC_NAME##_;                                 \
@@ -193,7 +192,6 @@ using CacheTuple = std::tuple<uint64_t, aclOpExecutor *, ProcessCache, size_t>;
       return;                                                                                                   \
     }                                                                                                           \
     hash_id_ = device::ascend::AclnnHash(op_type_, args...);                                                    \
-    size_t cur_workspace = 0;                                                                                   \
     auto iter = hash_map_.find(hash_id_);                                                                       \
     if (iter != hash_map_.end()) {                                                                              \
       MS_VLOG(VL_ACLNN_OP) << "op " << op_type_ << " hit cache with hash id: " << hash_id_;                     \
@@ -356,7 +354,7 @@ struct MemBlock {
 class OPS_ASCEND_API AclnnKernelMod : public KernelMod {
  public:
   explicit AclnnKernelMod(std::string &&op_type) : op_type_(std::move(op_type)) {
-    auto capaticy_from_user = ops::GetCacheCapaticy();
+    auto capaticy_from_user = device::ascend::GetCacheCapaticy();
     if (capaticy_from_user >= 0) {
       capacity_ = LongToSize(capaticy_from_user);
       MS_VLOG(VL_ACLNN_OP) << "Set aclnn cache queue length of kbyk to " << capacity_;
@@ -417,7 +415,7 @@ class OPS_ASCEND_API AclnnKernelMod : public KernelMod {
   static bool is_dynamic_;
   std::unordered_map<uint64_t, std::list<CacheTuple>::iterator> hash_map_;
   std::list<CacheTuple> hash_cache_;
-  size_t capacity_{128};
+  size_t capacity_{64};
 
   static constexpr size_t kWsSizeIndex = 0;
   static constexpr size_t kHashIdIndex = 3;

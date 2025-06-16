@@ -21,7 +21,7 @@ except ImportError:
 from .device import _is_supported
 
 function_status = {'op_compile': False, 'aoe_tune_mode': False,
-                   'aoe_job_type': False}
+                   'aoe_job_type': False, 'aclnn_cache': False}
 
 
 def op_compile(value):
@@ -121,3 +121,37 @@ def aoe_job_type(config):
             f"For 'aoe_job_type', the config must be one of {aoe_cfgs}, but got {config}."
         )
     AscendOpTuningConf.get_instance().set_aoe_job_type(config)
+
+
+def aclnn_cache(enable_global_cache=False, cache_queue_length=10000):
+    """
+    Configure aclnn cache parameters.
+
+    Args:
+        enable_global_cache (bool): Set the calnn cache to global when GRAPH_MODE.
+            Default: ``False``.
+        cache_queue_length (int): Set the cache queue length.
+            Default: ``10000``.
+
+    Examples:
+        >>> import mindspore as ms
+        >>> ms.device_context.ascend.op_tuning.aclnn_cache(True, 10000)
+    """
+    if not function_status['aclnn_cache']:
+        function_status['aclnn_cache'] = True
+        if not _is_supported():
+            return
+    # Check the configuration environment whether valid
+    if AscendOpTuningConf.get_instance().is_aclnn_cache_configured():
+        raise RuntimeError("The 'aclnn_cache' can not be set repeatedly.")
+    cache_cfgs = [True, False]
+    if enable_global_cache not in cache_cfgs:
+        raise ValueError(
+            f"For 'aclnn_cache', the config must be one of {cache_cfgs}, but got {enable_global_cache}."
+        )
+    AscendOpTuningConf.get_instance().set_aclnn_global_cache(enable_global_cache)
+    if cache_queue_length < 0:
+        raise ValueError(
+            f"For 'aclnn_cache', the config must greater than 0, but got {enable_global_cache}."
+        )
+    AscendOpTuningConf.get_instance().set_cache_queue_length(cache_queue_length)
