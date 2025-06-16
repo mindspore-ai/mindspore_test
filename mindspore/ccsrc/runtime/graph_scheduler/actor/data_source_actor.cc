@@ -208,6 +208,64 @@ void HostQueueDataSourceActor::AddCopyDataCallBack(
   }
 }
 
+namespace {
+void CopyHostTensorToKernelTensor(const tensor::TensorPtr &host_tensor, const kernel::KernelTensorPtr &kernel_tensor,
+                                  bool enable_async_copy, const KernelWithIndex &node_index,
+                                  OpContext<KernelTensor> *const context) {
+  MS_EXCEPTION_IF_NULL(host_tensor);
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
+  MS_EXCEPTION_IF_NULL(context);
+  auto device_tensor = kernel_tensor->device_address().get();
+  MS_EXCEPTION_IF_NULL(device_tensor);
+  // No used device address need skip.
+  if (TEST_FLAG(device_tensor->flag(), device::kDeviceAddressFlagNotUsed)) {
+    device_tensor->IncreaseNewRefCount("data source actor");
+    MS_LOG(DEBUG) << "Data source actor input kernel tensor is not used:" << kernel_tensor->ToString();
+    return;
+  }
+  auto tensor_device_address = std::dynamic_pointer_cast<DeviceTensor>(host_tensor->device_address());
+  // Sync data from host_tensor_device_address to device_tensor.
+  if (tensor_device_address != nullptr) {
+    // Already set same pointer ref count.
+    if (tensor_device_address->GetPtr() == device_tensor->GetPtr()) {
+      return;
+    }
+    if (!Copy(device_tensor, tensor_device_address.get())) {
+      SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "Copy data failed.");
+    }
+    return;
+  }
+  if (host_tensor->data_ptr() == nullptr && device_tensor->GetSize() == 0) {
+    MS_LOG(INFO) << "Empty tuple sync";
+    return;
+  }
+  if (common::AnfAlgo::HasAbstractRef(node_index.first)) {
+    MS_LOG(DEBUG) << "Set device address:" << kernel_tensor->device_address()->ToString()
+                  << " to host tensor:" << host_tensor->ToString()
+                  << " by data node:" << node_index.first->DebugString();
+    host_tensor->set_device_address(kernel_tensor->device_address());
+    kernel_tensor->device_address()->set_new_ref_count(SIZE_MAX);
+  }
+  if (enable_async_copy) {
+    MS_LOG(INFO) << "Node : " << node_index.first->DebugString();
+    if (!device_tensor->AsyncHostToDevice(LongToSize(host_tensor->data().nbytes()), host_tensor->data_type(),
+                                          host_tensor->data_ptr()->data())) {
+      SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "SyncHostToDevice failed.");
+    }
+  } else {
+    if (!device_tensor->SyncHostToDevice(AnfAlgo::GetRuntimePaddingShape(node_index.first, node_index.second),
+                                         LongToSize(host_tensor->data().nbytes()), host_tensor->data_type(),
+                                         host_tensor->device_info().host_format_, host_tensor->data_ptr())) {
+      SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "SyncHostToDevice failed.");
+    }
+  }
+
+  if (IsDynamic(kernel_tensor->host_shape())) {
+    kernel_tensor->set_host_shape(host_tensor->shape());
+  }
+}
+}  // namespace
+
 void HostQueueDataSourceActor::OnMemoryAllocFinish(OpContext<KernelTensor> *const context) {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
@@ -238,53 +296,10 @@ void HostQueueDataSourceActor::OnMemoryAllocFinish(OpContext<KernelTensor> *cons
   PROFILER_START(start_time);
   auto enable_async_copy = (ms_context->IsEnableInferBoost() || is_infer_phase_) && !sync_copy_input;
   try {
+    KernelWithIndex empty_node{nullptr, 0};
     for (size_t i = 0; i < host_tensors.size(); ++i) {
-      auto &host_tensor = host_tensors[i];
-      auto device_tensor = kernel_tensors[i]->device_address().get();
-      MS_EXCEPTION_IF_NULL(device_tensor);
-      MS_EXCEPTION_IF_NULL(host_tensor);
-      // No used device address need skip.
-      if (TEST_FLAG(device_tensor->flag(), device::kDeviceAddressFlagNotUsed)) {
-        device_tensor->IncreaseNewRefCount(GetAID().Name());
-        MS_LOG(DEBUG) << GetAID().Name() << " input index " << i << " is not used.";
-        continue;
-      }
-      auto tensor_device_address = std::dynamic_pointer_cast<DeviceTensor>(host_tensor->device_address());
-      // Sync data from host_tensor_device_address to device_tensor.
-      if (tensor_device_address != nullptr) {
-        // Already set same pointer ref count.
-        if (tensor_device_address->GetPtr() == device_tensor->GetPtr()) {
-          continue;
-        }
-        if (!Copy(device_tensor, tensor_device_address.get())) {
-          SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "Copy data failed.");
-        }
-        continue;
-      }
-      if (host_tensor->data_ptr() == nullptr && device_tensor->GetSize() == 0) {
-        MS_LOG(INFO) << "Empty tuple sync";
-        continue;
-      }
-
-      if (enable_async_copy) {
-        MS_LOG(INFO) << "Index :" << i
-                     << ", data_node_with_indexs_[i].first : " << data_node_with_indexs_[i].first->DebugString();
-        if (!device_tensor->AsyncHostToDevice(LongToSize(host_tensor->data().nbytes()), host_tensor->data_type(),
-                                              host_tensor->data_ptr()->data())) {
-          SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "SyncHostToDevice failed.");
-        }
-      } else {
-        if (!device_tensor->SyncHostToDevice(
-              AnfAlgo::GetRuntimePaddingShape(data_node_with_indexs_[i].first, data_node_with_indexs_[i].second),
-              LongToSize(host_tensor->data().nbytes()), host_tensor->data_type(),
-              host_tensor->device_info().host_format_, host_tensor->data_ptr())) {
-          SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "SyncHostToDevice failed.");
-        }
-      }
-
-      if (IsDynamic(kernel_tensors[i]->host_shape())) {
-        kernel_tensors[i]->set_host_shape(host_tensor->shape());
-      }
+      CopyHostTensorToKernelTensor(host_tensors[i], kernel_tensors[i], enable_async_copy,
+                                   i < data_node_with_indexs_.size() ? data_node_with_indexs_[i] : empty_node, context);
     }
     AddCopyDataCallBack(enable_async_copy, host_tensors, kernel_tensors);
   } catch (const std::exception &e) {
