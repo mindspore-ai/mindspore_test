@@ -19,6 +19,7 @@
 #include <vector>
 #include "debug/data_dump/device_statistic/kernel_launcher.h"
 #include "debug/debugger/debugger_utils.h"
+#include "debug/dump/utils.h"
 #include "debug/utils.h"
 #include "include/backend/debug/common/csv_writer.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
@@ -103,7 +104,7 @@ void DumpKernelTensorStats(const DeviceContext *device_context, std::vector<Kern
   MS_LOG(DEBUG) << "Start calc " << node_name << " node statistics.";
   const string csv_header = CsvHeaderUtil::GetInstance().GetStatCsvHeader();
   const std::vector<string> &stat_name_list = DumpJsonParser::GetInstance().statistic_category();
-  uint32_t rank_id = GetRankId();
+  uint32_t rank_id = GetRankID();
   string filename = GenerateDumpPath(graph_id, rank_id) + "/" + kCsvFileName;
   CsvWriter csv;
   std::lock_guard<std::mutex> lock(CsvFileMutexManager::GetInstance().GetCsvMutex(filename));

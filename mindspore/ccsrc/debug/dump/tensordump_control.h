@@ -25,7 +25,7 @@
 #include "include/common/visible.h"
 
 namespace mindspore {
-namespace dump {
+namespace datadump {
 
 inline constexpr int kCallFromCXX = 0;
 inline constexpr int kCallFromPython = 1;
@@ -54,7 +54,7 @@ class DUMP_EXPORT TensorDumpStepManager {
   std::set<size_t> valid_steps_;
   void *aclDumpCallbackReg_;
 };
-}  // namespace dump
+}  // namespace datadump
 }  // namespace mindspore
 
 #endif

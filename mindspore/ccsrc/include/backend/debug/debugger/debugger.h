@@ -81,8 +81,6 @@ class BACKEND_COMMON_EXPORT Debugger : public std::enable_shared_from_this<Debug
   // don't need a graph_ptr because it is saved during pre_execute
   void PostExecute();
 
-  static uint32_t GetRankID();
-
   void DumpConstantDataAscend(const KernelGraphPtr &graph);
 
   void DumpSingleNode(const CNodePtr &node, uint32_t graph_id, const DeviceContext *device_context = nullptr) const;

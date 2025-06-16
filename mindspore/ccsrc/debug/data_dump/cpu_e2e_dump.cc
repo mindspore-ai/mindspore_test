@@ -16,6 +16,7 @@
 
 #include "debug/data_dump/cpu_e2e_dump.h"
 #include <map>
+#include "debug/dump/utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/debug/anf_dump_utils.h"
@@ -33,7 +34,8 @@ void CPUE2eDump::DumpCNodeData(const CNodePtr &node, uint32_t graph_id) {
 
   MS_LOG(DEBUG) << "E2e dump CNode data start: " << kernel_name << ", current iteration is "
                 << dump_json_parser.cur_dump_iter();
-  std::string dump_path = GenerateDumpPath(graph_id);
+  auto rank_id = datadump::GetRankID();
+  std::string dump_path = GenerateDumpPath(graph_id, rank_id);
   if (dump_json_parser.InputNeedDump()) {
     DumpCNodeInputs(node, dump_path);
   }
@@ -200,7 +202,8 @@ void CPUE2eDump::DumpParameters(const session::KernelGraph *graph, uint32_t grap
     return;
   }
   MS_LOG(INFO) << "Start e2e dump parameters.";
-  const std::string &dump_path = GenerateDumpPath(graph_id);
+  auto rank_id = datadump::GetRankID();
+  const std::string &dump_path = GenerateDumpPath(graph_id, rank_id);
 
   // dump parameters
   const auto &parameters = graph->inputs();
@@ -227,7 +230,8 @@ void CPUE2eDump::DumpConstants(const session::KernelGraph *graph, uint32_t graph
   if (cur_iteration != 0) {
     return;
   }
-  const std::string &dump_path = GenerateDumpPath(graph_id, 0, true);
+  auto rank_id = datadump::GetRankID();
+  const std::string &dump_path = GenerateDumpPath(graph_id, rank_id, true);
 
   // dump constants
   const auto value_nodes = graph->graph_value_nodes();
