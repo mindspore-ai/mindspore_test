@@ -270,6 +270,7 @@ def _single_parameter_broadcast(net, layout, param_not_load=None, param_loaded=N
     param_loaded.add(cur_rank)
     total_num = get_group_size()
     total_param_loaded = [None] * total_num
+    synchronize()
     all_gather_object(total_param_loaded, param_loaded)
     total_param_loaded = _check_total_param_loaded(total_param_loaded)
     group_map = _get_sorted_group_map()
