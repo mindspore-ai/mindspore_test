@@ -75,5 +75,7 @@ class OPS_ASCEND_API AclUtil {
 
   static void SetOpPrecisionMode();
 };
+
+OPS_ASCEND_API int64_t GetCacheCapaticy();
 }  // namespace  mindspore::device::ascend
 #endif  // MINDSPORE_CCSRC_TRANSFORM_ACL_IR_OP_API_UTIL_H_

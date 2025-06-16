@@ -25,11 +25,6 @@
 
 namespace mindspore {
 namespace kernel {
-mindspore::HashMap<uint64_t, std::list<CacheTuple>::iterator> hash_map;
-std::list<CacheTuple> hash_cache;
-size_t capacity{10000};
-bool is_set_capacity{false};
-std::shared_mutex cache_mutex;
 
 bool AclnnKernelMod::is_dynamic_ = false;
 bool AclnnKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {

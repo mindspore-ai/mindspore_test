@@ -64,28 +64,22 @@ class CustomAclnnKernelMod : public AclnnKernelMod {
     hash_id_ = device::ascend::AclnnHash(op_type_, args...);
     size_t cur_workspace = 0;
     std::optional<std::list<CacheTuple>::iterator> found_iter;
-    {
-      std::shared_lock read_lock(cache_mutex);
-      if (auto iter = hash_map.find(hash_id_); iter != hash_map.end()) {
-        found_iter = iter->second;
-      }
+    if (auto iter = hash_map.find(hash_id_); iter != hash_map.end()) {
+      found_iter = iter->second;
     }
     if (found_iter) {
-      std::unique_lock write_lock(cache_mutex);
       hash_cache.splice(hash_cache.begin(), hash_cache, *found_iter);
       cur_workspace = std::get<kWorkspaceIndex>(hash_cache.front());
     } else {
       auto [workspace, executor, cache, fail_cache] = GEN_CUSTOM_EXECUTOR_FOR_RESIZE(op_type_, args...);
       cur_workspace = workspace;
       if (!fail_cache) {
-        std::unique_lock write_lock(cache_mutex);
         hash_cache.emplace_front(hash_id_, executor, cache, workspace);
         hash_map[hash_id_] = hash_cache.begin();
         if (hash_cache.size() > capacity) {
           auto release_data = std::move(hash_cache.back());
           hash_map.erase(std::get<0>(release_data));
           hash_cache.pop_back();
-          write_lock.unlock();
           auto release_func = std::get<2>(release_data);
           release_func(device::ascend::ProcessCacheType::kReleaseParamsAndExecutor, {});
         }
@@ -121,16 +115,13 @@ class CustomAclnnKernelMod : public AclnnKernelMod {
 
   template <typename... Args>
   std::pair<aclOpExecutor *, std::function<void()>> GetExecutor(const Args &... args) {
-    std::shared_lock read_lock(cache_mutex);
     if (hash_id_ == 0 || !hash_map.count(hash_id_)) {
-      read_lock.unlock();
       aclOpExecutor *executor;
       std::function<void()> release_func;
       std::tie(std::ignore, executor, std::ignore, release_func) = GEN_CUSTOM_EXECUTOR(op_type_, args...);
       return std::make_pair(executor, release_func);
     }
     const auto cur_run = *hash_map[hash_id_];
-    read_lock.unlock();
     UPDATE_TENSOR_FOR_LAUNCH(std::get<kReleaseFuncIndex>(cur_run), args...);
     const auto &executor = std::get<1>(cur_run);
     return std::make_pair(executor, nullptr);

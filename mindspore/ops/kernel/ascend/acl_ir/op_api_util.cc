@@ -28,6 +28,7 @@
 #include "plugin/res_manager/ascend/symbol_interface/acl_compiler_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 #include "plugin/res_manager/ascend/device_context_conf/op_precision_conf.h"
+#include "plugin/res_manager/ascend/device_context_conf/op_tuning_conf.h"
 #include "common/kernel_callback.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
@@ -237,5 +238,26 @@ void AclUtil::SetOpPrecisionMode() {
   if (ret != ACL_SUCCESS) {
     MS_LOG(EXCEPTION) << "Acl set op precision mode failed! error flag is " << ret;
   }
+}
+
+int64_t GetCacheCapaticy() {
+  static bool has_init = false;
+  static int64_t ms_cache_capaticy = 0;
+  if (has_init) {
+    return ms_cache_capaticy;
+  }
+  bool is_configured = device::ascend::OpTuningConf::GetInstance()->IsAclnnCacheConfigured();
+  bool global_cache = device::ascend::OpTuningConf::GetInstance()->IsEnableAclnnGlobalCache();
+  size_t capaticy_from_user = device::ascend::OpTuningConf::GetInstance()->AclnnCacheQueueLength();
+  if (!is_configured) {
+    ms_cache_capaticy = -1;
+  } else if (global_cache) {
+    common::SetEnv("ACLNN_CACHE_LIMIT", std::to_string(capaticy_from_user).c_str());
+    ms_cache_capaticy = 0;
+  } else if (capaticy_from_user > 0) {
+    ms_cache_capaticy = capaticy_from_user;
+  }
+  has_init = true;
+  return ms_cache_capaticy;
 }
 }  // namespace  mindspore::device::ascend
