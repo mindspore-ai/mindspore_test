@@ -38,6 +38,7 @@ class PYNATIVE_EXPORT PyNativeExecutor : public std::enable_shared_from_this<PyN
     std::lock_guard<std::mutex> i_lock(instance_lock_);
     if (executor_ == nullptr) {
       executor_ = std::shared_ptr<PyNativeExecutor>(new (std::nothrow) PyNativeExecutor());
+      MS_EXCEPTION_IF_NULL(executor_);
       Init();
     }
     return executor_;
