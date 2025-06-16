@@ -1118,7 +1118,7 @@ def test_multitype_generated_by_inner_method_2():
     assert np.allclose(res.asnumpy(), np.array([0, 1, 2, 2]))
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_multitype_funcgraph_with_slice_in_tuple():
     """

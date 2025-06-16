@@ -63,7 +63,7 @@ input_ = Tensor(np.ones([32, 128]).astype(np.float32) * 0.01)
 label_ = Tensor(np.zeros([32, 128]).astype(np.float32))
 
 
-@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="onecard", essential_mark="essential")
 def test_run_graph_kbk():
     """
     Feature: simulation level.
@@ -90,7 +90,7 @@ def test_run_graph_kbk():
     os.environ["MS_SIMULATION_LEVEL"] = ""
 
 
-@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="onecard", essential_mark="essential")
 def test_get_rank_id_env():
     """
     Feature: simulation level.
@@ -106,7 +106,7 @@ def test_get_rank_id_env():
     os.environ["MS_SIMULATION_LEVEL"] = ""
 
 
-@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="onecard", essential_mark="essential")
 def test_get_local_rank_id():
     """
     Feature: simulation level.
@@ -122,7 +122,7 @@ def test_get_local_rank_id():
     os.environ["MS_SIMULATION_LEVEL"] = ""
 
 
-@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="onecard", essential_mark="essential")
 def test_create_group():
     """
     Feature: simulation level.
@@ -161,7 +161,7 @@ def test_destroy_group():
     os.environ["MS_SIMULATION_LEVEL"] = ""
 
 
-@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="onecard", essential_mark="essential")
 def test_get_world_rank_from_group_rank():
     """
     Feature: simulation level.
@@ -180,7 +180,7 @@ def test_get_world_rank_from_group_rank():
     os.environ["MS_SIMULATION_LEVEL"] = ""
 
 
-@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="onecard", essential_mark="essential")
 def test_get_group_rank_from_world_rank():
     """
     Feature: simulation level.
