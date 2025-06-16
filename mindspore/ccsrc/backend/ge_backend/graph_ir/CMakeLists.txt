@@ -8,11 +8,12 @@ if(ENABLE_D OR ENABLE_ACL)
 
       # mindspore_graph_ir is used by GE and lite.
     if(BUILD_LITE)
-        add_subdirectory(${TOP_DIR}/mindspore/ccsrc/plugin/res_manager/ascend/op_adapter/
+        add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../../plugin/res_manager/ascend/op_adapter/
             _mindspore_ascend_op_adapter_obj)
-        add_subdirectory(${TOP_DIR}/mindspore/ccsrc/plugin/res_manager/ascend/symbol_interface
+        add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../../plugin/res_manager/ascend/symbol_interface
             _mindspore_ascend_symbol_obj)
-        list(APPEND _TRANSFORM_SRC_LIST "${TOP_DIR}/mindspore/ccsrc/utils/config_manager.cc")
+        list(APPEND _TRANSFORM_SRC_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../../../utils/config_manager.cc")
+        list(APPEND _TRANSFORM_SRC_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../../../common/debug/common.cc")
         add_library(mindspore_graph_ir SHARED ${_TRANSFORM_SRC_LIST} $<TARGET_OBJECTS:_mindspore_ascend_symbol_obj>
             $<TARGET_OBJECTS:_mindspore_ascend_op_adapter_obj>)
     else()
