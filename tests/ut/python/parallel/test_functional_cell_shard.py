@@ -21,9 +21,11 @@ import mindspore.nn as nn
 from mindspore import Tensor, Parameter, context
 from mindspore.ops import operations as P
 from mindspore.ops import composite as C
+from mindspore.parallel.auto_parallel import AutoParallel
 from mindspore.parallel.shard import Layout
 from parallel.utils.utils import ParallelValidator, check_layout_config, compile_net
 from tests.ut.python.ops.test_math_ops import VirtualLoss
+from .test_pipeline_split import DatasetLenet
 
 def setup_function():
     context.set_auto_parallel_context(dataset_strategy="full_batch")
@@ -410,3 +412,94 @@ def test_ms_shard_function_with_parameter_exception():
     net = GradWrap(NetWithLoss(FuncShardNetWithParam(in_layout1)))
     with pytest.raises(RuntimeError):
         compile_net(net, x)
+
+
+class MatMulNetShard(nn.Cell):
+    def __init__(self):
+        super().__init__()
+        self.matmul = P.MatMul()
+
+    def construct(self, x, w):
+        x = self.matmul(x, w)
+        return x
+
+class MatMulNet(nn.Cell):
+    def __init__(self):
+        super().__init__()
+        self.matmul = MatMulNetShard()
+        self.matmul_fn = ms.shard(self.matmul, in_strategy=((4, 1), (1, 1)))
+
+    def construct(self, x, w):
+        x = self.matmul_fn(x, w)
+        return x
+
+
+class AddNet(nn.Cell):
+    def __init__(self):
+        super().__init__()
+        self.add = P.Add()
+
+    def construct(self, x, w):
+        x = self.add(x, w)
+        return x
+
+
+class AddMatmulNet(nn.Cell):
+    def __init__(self, matmul_weight_shape, add_weight_shape, **kwargs):
+        super().__init__()
+        self.matmul_weight = Parameter(Tensor(np.ones(matmul_weight_shape), ms.float32), name="matmul_weight")
+        self.add_weight = Parameter(Tensor(np.ones(add_weight_shape), ms.float32), name="add_weight")
+        self.matmul = MatMulNet()
+        self.add = AddNet()
+
+    def construct(self, x):
+        x = self.matmul(x, self.matmul_weight)
+        x = self.add(x, self.add_weight)
+        return x
+
+
+class WithLossCell(nn.Cell):
+    @ms.lazy_inline
+    def __init__(self, backbone, loss_fn):
+        super(WithLossCell, self).__init__(auto_prefix=False)
+        self._backbone = backbone
+        self._loss_fn = loss_fn
+        self._get_attr_from_cell(backbone)
+
+    def construct(self, data, label):
+        out = self._backbone(data)
+        return self._loss_fn(out, label)
+
+
+def test_ms_shard_pp_interleave_with_correct_group_rank_ids():
+    """
+    Feature: Test ms.shard with given layout inside a pp stage and group_rank_ids are correct.
+    Description: dev_num is 8.
+    Expectation: compile with runtime error raised.
+    """
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation",
+                                      device_num=8, global_rank=0)
+    case_name = "test_ms_shard_pp_interleave_with_correct_group_rank_ids"
+    ir_graph_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "layout_ir", case_name)
+    context.set_context(save_graphs=True, save_graphs_path=ir_graph_path)
+    x = Tensor(np.ones([128, 128]), dtype=ms.float32)
+    net_2 = AddMatmulNet(matmul_weight_shape=(128, 128), add_weight_shape=(1, 128))
+    loss_2 = nn.SoftmaxCrossEntropyWithLogits(sparse=False)
+    withlosscell = WithLossCell(net_2, loss_2)
+    pipeline_cell = nn.PipelineCell(withlosscell, micro_size=4,
+                                    stage_config={"_backbone.matmul": 0, "_backbone.add": 1})
+    pipeline_net = AutoParallel(pipeline_cell, parallel_mode="semi_auto")
+    pipeline_net.pipeline(stages=2, interleave=True)
+    pipeline_net.dataset_strategy("full_batch")
+
+    y = Tensor(np.ones([128, 128]), dtype=ms.float32)
+    dataset = DatasetLenet(x, y, 3)
+    params = pipeline_cell.trainable_params()
+    optimizer = nn.Lamb(params, learning_rate=0.01)
+    model = ms.train.Model(pipeline_net, optimizer=optimizer)
+    model.train(2, dataset, dataset_sink_mode=False)
+
+    file = f"{ir_graph_path}/rank_0/*_validate_*"
+    para1_str = "= Send("
+    group_rank_ids_str = 'group_rank_ids: (0, 4)'
+    check_layout_config(para1_str, file, group_rank_ids_str)

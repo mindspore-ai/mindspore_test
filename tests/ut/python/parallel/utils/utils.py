@@ -243,7 +243,8 @@ def check_layout_config(param, file, *configs):
     output = subprocess.check_output(["grep -r '%s' %s" % (param, file)], shell=True)
     out = str(output, 'utf-8').strip()
     for config in configs:
-        assert config in out
+        if config not in out:
+            raise AssertionError(f"String '{config}' not found in '{out}'")
 
 
 class BasicValidator:
