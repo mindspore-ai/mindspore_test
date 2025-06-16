@@ -130,8 +130,28 @@ EvalResultPtr GetEvalResult(const AnfNodeConfigPtr &conf) {
   }
 }
 
+bool ExistInplaceAbsInSequence(const AbstractBasePtr &abs_base) {
+  if (abs_base->isa<abstract::AbstractTuple>() || abs_base->isa<abstract::AbstractList>()) {
+    const auto &tuple_elements = abs_base->cast<abstract::AbstractSequencePtr>()->elements();
+    return std::any_of(tuple_elements.begin(), tuple_elements.end(), [](const auto &ele) {
+      if (ele->inplace_abstract() != nullptr) {
+        MS_LOG(DEBUG) << "Exist inplace_abstract in Sequence: " << ele->inplace_abstract()->ToString();
+        return true;
+      }
+      return false;
+    });
+  }
+  return false;
+}
+
 AnfNodePtr BuildValueNode(const ValuePtr &v, const AnfNodePtr &origin_node, const AbstractBasePtr &abs_base) {
   MS_EXCEPTION_IF_NULL(abs_base);
+  if (ExistInplaceAbsInSequence(abs_base)) {
+    MS_LOG(DEBUG)
+      << "Do not perform constant folding on sequences whose inputs contain inplace_abstract. The Sequence node is: "
+      << origin_node->DebugString();
+    return origin_node;
+  }
   AnfNodePtr value_node = NewValueNode(v);
   value_node->set_abstract(abs_base);
   value_node->set_debug_info(origin_node->debug_info());
