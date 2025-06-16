@@ -106,6 +106,7 @@ const char kRuntimeAsyncInitComm[] = "async_init_comm";
 const char kRuntimeCpuAffinityList[] = "cpu_affinity_list";
 const char kRuntimeCpuAffinityMoudule[] = "cpu_affinity_module";
 const char kRuntimeActorThreadFixBind[] = "actor_thread_fix_bind";
+const char kRuntimeOnlyInitLocalMachine[] = "only_local_comm";
 const char kRuntimeInputOptimize[] = "input_optimize";
 const char kRuntimeCommInitLcclOnly[] = "comm_init_lccl_only";
 // Runtime debug config.

@@ -58,17 +58,13 @@ bool MsCollectiveCommLib::Initialize(uint32_t global_rank, uint32_t global_rank_
 
   // Only use AllReduceLauncher when this is CPU backend.
   // Do not initialize AllReduceLauncher if this is a large-scale cluster.
-  if (MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode ||
-      (MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kCPUDevice &&
-       global_rank_size <= kClusterScaleBound)) {
-    launcher_ = std::make_unique<AllReduceLauncher>();
-    CHECK_IF_NULL(launcher_);
-    if (!launcher_->Initialize()) {
-      MS_LOG(EXCEPTION) << "Failed to initialize the allreduce launcher.";
-    }
-    node_ = launcher_->collective_node();
-    MS_LOG(INFO) << "Node initialize success!";
+  launcher_ = std::make_unique<AllReduceLauncher>();
+  CHECK_IF_NULL(launcher_);
+  if (!launcher_->Initialize()) {
+    MS_LOG(EXCEPTION) << "Failed to initialize the allreduce launcher.";
   }
+  node_ = launcher_->collective_node();
+  MS_LOG(INFO) << "Node initialize success!";
 
   cgn_ = std::dynamic_pointer_cast<distributed::cluster::topology::ComputeGraphNode>(
     ClusterContext::instance()->node_base());

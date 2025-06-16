@@ -31,6 +31,7 @@
 #include "include/backend/distributed/cluster/cluster_context.h"
 #include "include/backend/distributed/collective/collect_hccl_init_info.h"
 #include "plugin/res_manager/ascend/hal_manager/ascend_err_manager.h"
+#include "include/backend/distributed/collective/collective_manager.h"
 
 namespace mindspore {
 namespace device {
@@ -48,10 +49,27 @@ AscendCommunicationGroup::AscendCommunicationGroup(
   }
 }
 
+bool isGroupWithinLocalMachine(const std::vector<uint32_t> &group_ranks) {
+  std::vector<size_t> all_host_hashs = distributed::collective::CollectiveManager::instance()->GetAllHostHashs();
+  if (all_host_hashs.empty()) {
+    MS_LOG(WARNING) << "The all_host_hashs_ is empty. Please check whether the local rank ids are successfully "
+                       "assigned when initializing collective communication";
+    return false;
+  }
+  return std::all_of(group_ranks.begin() + 1, group_ranks.end(),
+                     [&](uint32_t rank) { return all_host_hashs[rank] == all_host_hashs[group_ranks[0]]; });
+}
+
 bool AscendCommunicationGroup::Initialize(void *root_info) {
   if (initialized_) {
     return true;
   }
+
+  if (common::IsEnableRuntimeConfig(common::kRuntimeOnlyInitLocalMachine) && !isGroupWithinLocalMachine(group_ranks_)) {
+    MS_LOG(WARNING)<<"This group "<<name_<<" is inter-node, do not initialize rank list: "<<group_ranks_;
+    return true;
+  }
+  
   if (hccl::HcclAdapter::GetInstance().UseHcclCM()) {
     // If using hccl CM envs to launch distributed job, no need to call HcclCommInitRootInfo. The group will be
     // initialized in rank table way.

@@ -732,7 +732,7 @@ void MsContext::SetMsInternalEnableCustomKernelList() {
     "AddRmsNormDynamicQuant,MatMulElemwise,RmsNormQuant,MatMulSigmoidCastAdd,TransposeBatchMatmulTranspose,"
     "FusedAddTopKDiv,SwiGLUDynamicQuant,SwiGLUReshapeDynamicQuant,QbmmAllReduceConvertBias";
   const std::string k310pDefaultEnabledOpList =
-    "MatMul,QuantBatchMatmul,QuantLinearSparse,QbmmAllReduceAdd,QbmmAdd,InferenceGatedFFN,MatMulElemwise";
+    "MatMul,QuantBatchMatmul,QuantLinearSparse,QbmmAllReduceAdd,QbmmAdd,InferenceGatedFFN,MatMulElemwise,QbmmAllReduceConvertBias";
   auto internal_op_boost_env = common::GetEnv("MS_ENABLE_INTERNAL_BOOST");
   bool is_enable_internal_op = true;
   bool is_310p = ascend_soc_version() == "ascend310p";

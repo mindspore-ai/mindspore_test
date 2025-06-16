@@ -21,17 +21,16 @@ from tests.mark_utils import arg_mark
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='allcards', essential_mark='essential')
-def test_msrun():
+def test_mccl_310():
     """
-    Feature: 'msrun' launch utility.
-    Description: Launch distributed training job with dynamic cluster using msrun.
-    Expectation: All workers are successfully spawned and running training.
+    How to launch in one node:
+        pytest -s test_entry_msrun.py::test_mccl_310
+    To launch in multi-nodes, change msrun parameters below.
     """
-    ms.set_context(jit_level='O0')
     return_code = os.system(
-        "msrun --worker_num=4 --local_worker_num=4 --master_addr=127.0.0.1 "\
+        "msrun --worker_num=8 --local_worker_num=8 --master_addr=127.0.0.1 "\
         "--master_port=10969 --join=True "\
-        "test_msrun.py --device_target=Ascend --dataset_path=/home/workspace/mindspore_dataset/mnist"
+        "test_mccl_and_hccl.py"
     )
     assert return_code == 0
 
