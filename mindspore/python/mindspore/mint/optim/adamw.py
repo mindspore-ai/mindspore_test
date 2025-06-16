@@ -15,7 +15,7 @@
 """adamw"""
 from __future__ import absolute_import
 
-from mindspore.ops import functional as F, composite as C
+from mindspore import ops
 from mindspore.common.parameter import Parameter
 from mindspore.common.tensor import Tensor
 from mindspore.common import dtype as mstype
@@ -23,7 +23,7 @@ from mindspore.ops import auto_generate as gen
 from mindspore.experimental.optim.optimizer import Optimizer
 from mindspore import _checkparam as validator
 
-hyper_map = C.HyperMap()
+hyper_map = ops.HyperMap()
 
 
 def _run_optim_adamw_amsgrad_opt(opt, beta1, beta2, lr, eps, weight_decay, step, amsgrad, maximize, parameters, grads,
@@ -190,15 +190,15 @@ class AdamW(Optimizer):
             grads = tuple(gradients[start_id: end_id])
 
             if group.get("amsgrad"):
-                self.hyper_map(F.partial(_run_optim_adamw_amsgrad_opt, self.adamw_opt, beta1, beta2, float(lr),
-                                         group.get("eps"), group.get("weight_decay"), self.state_step,
-                                         group.get("amsgrad"), maximize),
+                self.hyper_map(ops.partial(_run_optim_adamw_amsgrad_opt, self.adamw_opt, beta1, beta2, float(lr),
+                                           group.get("eps"), group.get("weight_decay"), self.state_step,
+                                           group.get("amsgrad"), maximize),
                                self.parameters[start_id: end_id], grads, self.exp_avg[start_id: end_id],
                                self.exp_avg_sq[start_id: end_id], group.get("max_exp_avg_sq"))
             else:
-                self.hyper_map(F.partial(_run_optim_adamw_opt, self.adamw_opt, beta1, beta2, float(lr),
-                                         group.get("eps"), group.get("weight_decay"), self.state_step,
-                                         group.get("amsgrad"), maximize),
+                self.hyper_map(ops.partial(_run_optim_adamw_opt, self.adamw_opt, beta1, beta2, float(lr),
+                                           group.get("eps"), group.get("weight_decay"), self.state_step,
+                                           group.get("amsgrad"), maximize),
                                self.parameters[start_id: end_id], grads, self.exp_avg[start_id: end_id],
                                self.exp_avg_sq[start_id: end_id])
 
