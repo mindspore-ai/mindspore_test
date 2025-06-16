@@ -36,10 +36,9 @@ from functools import partial
 import math
 import sys
 import time
-import google
 import numpy as np
-
 from safetensors.numpy import save_file
+import google
 
 from mindspore.train.checkpoint_pb2 import Checkpoint
 from mindspore.train.mind_ir_pb2 import ModelProto as mindir_model
@@ -1883,9 +1882,10 @@ def _save_graph(network, file_name):
         file_name (str): Graph file name into which the graph will be saved.
     """
     logger.info("Execute the process of saving graph.")
-
     file_name = os.path.realpath(file_name)
     graph_pb = network.get_func_graph_proto()
+    if os.path.isfile(file_name) and graph_pb:
+        os.remove(file_name)
     if graph_pb:
         with open(file_name, "wb") as f:
             os.chmod(file_name, stat.S_IRUSR | stat.S_IWUSR)
