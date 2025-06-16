@@ -2221,10 +2221,10 @@ def all_to_all(output_tensor_list, input_tensor_list, group=None, async_op=False
     recv_shape_list = []
 
     for tensor in input_tensor_list:
-        send_numel_list.append(tensor.size)
+        send_numel_list.append(tensor.numel())
         send_flatten_tensor.append(tensor.reshape(-1))
     for tensor in output_tensor_list:
-        recv_numel_list.append(tensor.size)
+        recv_numel_list.append(tensor.numel())
         recv_shape_list.append(tensor.shape)
 
     send_flatten_tensor = cat(send_flatten_tensor)
