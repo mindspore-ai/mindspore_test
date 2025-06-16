@@ -15,16 +15,16 @@
 """nadam"""
 from __future__ import absolute_import
 
-from mindspore.ops import functional as F, composite as C, operations as P
+from mindspore import ops
 from mindspore.common import Parameter, Tensor
 import mindspore.common.dtype as mstype
 from mindspore import _checkparam as validator
 from mindspore.experimental.optim.optimizer import Optimizer, check_not_less_than, check_not_less_than_without_equal
 from mindspore import jit
 
-_nadam_opt = C.MultitypeFuncGraph("nadam_opt")
+_nadam_opt = ops.MultitypeFuncGraph("nadam_opt")
 
-op_sqrt = P.Sqrt()
+op_sqrt = ops.Sqrt()
 
 
 @_nadam_opt.register("Number", "Number", "Number", "Number", "Tensor", "Tensor", "Tensor",
@@ -34,15 +34,15 @@ def _tensor_run_opt(beta1, beta2, momentum_decay, eps, step_t, lr, param, grad, 
     bias_correction2 = 1 - beta2 ** step_t
     mu = beta1 * (1. - 0.5 * (0.96 ** (step_t * momentum_decay)))
     mu_next = beta1 * (1. - 0.5 * (0.96 ** ((step_t + 1) * momentum_decay)))
-    F.assign(mu_product, mu_product * mu)
-    F.assign(exp_avg, exp_avg * beta1 + grad * (1 - beta1))
-    F.assign(exp_avg_sq, exp_avg_sq * beta2 + grad * grad * (1 - beta2))
+    ops.assign(mu_product, mu_product * mu)
+    ops.assign(exp_avg, exp_avg * beta1 + grad * (1 - beta1))
+    ops.assign(exp_avg_sq, exp_avg_sq * beta2 + grad * grad * (1 - beta2))
 
     denom = op_sqrt(exp_avg_sq / bias_correction2) + eps
 
     mu_product_next = mu_product * mu_next
-    F.assign(param, param - lr * (1. - mu) / (1. - mu_product) * grad / denom)
-    F.assign(param, param - (lr * mu_next) / (1. - mu_product_next) * exp_avg / denom)
+    ops.assign(param, param - lr * (1. - mu) / (1. - mu_product) * grad / denom)
+    ops.assign(param, param - (lr * mu_next) / (1. - mu_product_next) * exp_avg / denom)
 
     return True
 
@@ -122,8 +122,8 @@ class NAdam(Optimizer):
         self.mu_product = [Parameter(Tensor(1.), "mu_product_" + param.name) for param in self.parameters]
 
         self.increase_tensor = Tensor(1, mstype.int32)
-        self.assignadd = P.AssignAdd()
-        self.op_cast = P.Cast()
+        self.assignadd = ops.AssignAdd()
+        self.op_cast = ops.Cast()
 
     @jit
     def implementation(self, lr, beta1, beta2, weight_decay, momentum_decay, eps, start_id, end_id, gradients):
@@ -135,7 +135,7 @@ class NAdam(Optimizer):
         exp_avg_sq = self.exp_avg_sq[start_id: end_id]
         mu_product = self.mu_product[start_id: end_id]
 
-        self.hyper_map(F.partial(_nadam_opt, beta1, beta2, momentum_decay, eps, self.step_t, lr),
+        self.hyper_map(ops.partial(_nadam_opt, beta1, beta2, momentum_decay, eps, self.step_t, lr),
                        params, grads, exp_avg, exp_avg_sq, mu_product)
         return True
 

@@ -20,8 +20,6 @@ from mindspore import ops, Tensor, Parameter
 from mindspore.experimental.optim.optimizer import Optimizer
 from mindspore.common.api import jit_class
 import mindspore.common.dtype as mstype
-from mindspore.ops import functional as F
-from mindspore.ops import operations as P
 from mindspore import _checkparam as Validator
 
 __all__ = ['StepLR', 'LinearLR', 'LRScheduler', 'ExponentialLR', 'PolynomialLR',
@@ -434,8 +432,8 @@ class PolynomialLR(LRScheduler):
             raise TypeError(f"For 'PolynomialLR', the type of total_iters must be int, but got {type(total_iters)}.")
         self.total_iters = total_iters
         self.power = power
-        self.min = P.Minimum()
-        self.cast = P.Cast()
+        self.min = ops.Minimum()
+        self.cast = ops.Cast()
         super(PolynomialLR, self).__init__(optimizer, last_epoch)
 
     def get_lr(self):
@@ -918,8 +916,8 @@ class ReduceLROnPlateau:
         self.cooldown_counter = 0
         self.eps = eps
         self.mode_worse = None
-        self.assign = P.Assign()
-        self.cast = P.Cast()
+        self.assign = ops.Assign()
+        self.cast = ops.Cast()
         self.last_epoch = Parameter(Tensor(0, dtype=mstype.int32),
                                     name='last_epoch_' + self.__class__.__name__)
 
@@ -1120,7 +1118,7 @@ class CyclicLR(LRScheduler):
         self._scale_fn_custom = scale_fn
         self.scale_mode = scale_mode
         self._init_scale_fn()
-        self.floor = P.Floor()
+        self.floor = ops.Floor()
 
         super(CyclicLR, self).__init__(optimizer, last_epoch)
         self.base_lrs = [Tensor(lr) for lr in base_lrs]
@@ -1255,12 +1253,12 @@ class CosineAnnealingWarmRestarts(LRScheduler):
         self.zero_tensor = Tensor(0, mstype.int32)
 
         self.math_pi = math.pi
-        self.cos = P.Cos()
-        self.cast = P.Cast()
-        self.log = P.Log()
-        self.cast = P.Cast()
-        self.assign = P.Assign()
-        self.floor = P.Floor()
+        self.cos = ops.Cos()
+        self.cast = ops.Cast()
+        self.log = ops.Log()
+        self.cast = ops.Cast()
+        self.assign = ops.Assign()
+        self.floor = ops.Floor()
         self._last_lr = [group["lr"] for group in optimizer.param_groups]
         super(CosineAnnealingWarmRestarts, self).__init__(optimizer, last_epoch)
 
@@ -1309,7 +1307,7 @@ class CosineAnnealingWarmRestarts(LRScheduler):
 
         for i, data in enumerate(zip(self.optimizer.param_groups, self.get_lr())):
             _, lr = data
-            F.assign(self.optimizer.param_groups[i]["lr"], lr)
+            ops.assign(self.optimizer.param_groups[i]["lr"], lr)
 
 
 @jit_class
@@ -1374,8 +1372,8 @@ class CosineAnnealingLR(LRScheduler):
         self.T_max = T_max
         self.eta_min = eta_min
         self.math_pi = math.pi
-        self.cos = P.Cos()
-        self.cast = P.Cast()
+        self.cos = ops.Cos()
+        self.cast = ops.Cast()
         super(CosineAnnealingLR, self).__init__(optimizer, last_epoch)
 
     def get_lr(self):

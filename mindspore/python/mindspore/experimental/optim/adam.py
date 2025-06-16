@@ -15,15 +15,15 @@
 """adam"""
 from __future__ import absolute_import
 
-from mindspore.ops import functional as F, composite as C, operations as P
+from mindspore import ops
 from mindspore.common.parameter import Parameter
 from mindspore.common.tensor import Tensor
 import mindspore.common.dtype as mstype
 from mindspore.experimental.optim.optimizer import Optimizer
 from mindspore.common.api import jit
 
-_adam_opt = C.MultitypeFuncGraph("adam_opt")
-adam_op = P.Adam(False, False)
+_adam_opt = ops.MultitypeFuncGraph("adam_opt")
+adam_op = ops.Adam(False, False)
 
 
 @_adam_opt.register("Tensor", "Tensor", "Float", "Float", "Float", "Tensor",
@@ -160,12 +160,12 @@ class Adam(Optimizer):
         self.max_exp_avg_sq = self.parameters.clone(prefix="max_exp_avg_sq", init='zeros')
         self.state_step = Parameter(Tensor(0, mstype.int32), "state_step")
         self.increase_tensor = Tensor(1, mstype.int32)
-        self.assignadd = P.AssignAdd()
-        self.op_add = P.AddN()
-        self.op_mul = P.Mul()
-        self.op_pow = P.Pow()
-        self.adam_opt = P.Adam(False, False)
-        self.op_cast = P.Cast()
+        self.assignadd = ops.AssignAdd()
+        self.op_add = ops.AddN()
+        self.op_mul = ops.Mul()
+        self.op_pow = ops.Pow()
+        self.adam_opt = ops.Adam(False, False)
+        self.op_cast = ops.Cast()
 
     @jit
     def implementation(self, beta1, beta2, eps, lr, start_id, end_id, gradients, maximize, weight_decay):
@@ -173,9 +173,9 @@ class Adam(Optimizer):
         beta1_power = self.op_pow(beta1, self.state_step)
         beta2_power = self.op_pow(beta2, self.state_step)
         params = self.parameters[start_id: end_id]
-        grads = tuple([grad if not maximize else F.neg(grad) for grad in gradients[start_id: end_id]])
+        grads = tuple([grad if not maximize else ops.neg(grad) for grad in gradients[start_id: end_id]])
         grads = self._decay_weight(weight_decay, params, grads)
-        self.hyper_map(F.partial(_adam_opt, beta1_power, beta2_power, beta1, beta2, eps, lr),
+        self.hyper_map(ops.partial(_adam_opt, beta1_power, beta2_power, beta1, beta2, eps, lr),
                        grads, params,
                        self.exp_avg[start_id: end_id], self.exp_avg_sq[start_id: end_id])
         return True

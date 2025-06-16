@@ -15,34 +15,33 @@
 """rmsprop"""
 from __future__ import absolute_import
 
-from mindspore.ops import functional as F, composite as C, operations as P
 import mindspore.common.dtype as mstype
 from mindspore.experimental.optim.optimizer import Optimizer, check_not_less_than, check_not_less_than_without_equal
 from mindspore import ops
 from mindspore import jit
 
-_rmsprop_opt = C.MultitypeFuncGraph("rmsprop_opt")
+_rmsprop_opt = ops.MultitypeFuncGraph("rmsprop_opt")
 
-op_mul = P.Mul()
-op_sqrt = P.Sqrt()
+op_mul = ops.Mul()
+op_sqrt = ops.Sqrt()
 
 
 @_rmsprop_opt.register("Bool", "Number", "Number", "Number", "Tensor", "Tensor", "Tensor", "Tensor", "Tensor", "Tensor")
 def _run_rmsprop_opt(centered, alpha, eps, momentum, lr, weight, mean_square, mean_grad, mom, grad):
     """Apply rmsprop optimizer to the weight parameter using dynamic learning rate."""
-    F.assign(mean_square, ops.addcmul(op_mul(mean_square, alpha), grad, grad, 1 - alpha))
+    ops.assign(mean_square, ops.addcmul(op_mul(mean_square, alpha), grad, grad, 1 - alpha))
 
     if centered:
-        F.assign(mean_grad, op_mul(mean_grad, alpha) + op_mul(grad, 1 - alpha))
+        ops.assign(mean_grad, op_mul(mean_grad, alpha) + op_mul(grad, 1 - alpha))
         avg = op_sqrt(ops.addcmul(mean_square, mean_grad, mean_grad, -1.)) + eps
     else:
         avg = op_sqrt(mean_square) + eps
 
     if momentum > 0:
-        F.assign(mom, op_mul(mom, momentum) + grad / avg)
-        F.assign(weight, weight - mom * lr)
+        ops.assign(mom, op_mul(mom, momentum) + grad / avg)
+        ops.assign(weight, weight - mom * lr)
     else:
-        F.assign(weight, weight - lr * grad / avg)
+        ops.assign(weight, weight - lr * grad / avg)
     return True
 
 
@@ -124,7 +123,7 @@ class RMSprop(Optimizer):
         self.mean_grad = self.parameters.clone(prefix="mean_grad", init='zeros')
         self.mean_square = self.parameters.clone(prefix="mean_square", init='zeros')
         self.moment = self.parameters.clone(prefix="moment", init='zeros')
-        self.op_cast = P.Cast()
+        self.op_cast = ops.Cast()
 
     @jit
     def implementation(self, group_id, lr, gradients, maximize, weight_decay, centered, alpha, eps, momentum):
@@ -132,12 +131,12 @@ class RMSprop(Optimizer):
         start_id = self.group_start_id[group_id]
         end_id = self.group_start_id[group_id + 1]
         params = self.parameters[start_id: end_id]
-        grads = tuple([grad if not maximize else F.neg(grad) for grad in gradients[start_id: end_id]])
+        grads = tuple([grad if not maximize else ops.neg(grad) for grad in gradients[start_id: end_id]])
         grads = self._decay_weight(weight_decay, params, grads)
         mean_grad = self.mean_grad[start_id: end_id]
         mean_square = self.mean_square[start_id: end_id]
         moment = self.moment[start_id: end_id]
-        self.hyper_map(F.partial(_rmsprop_opt, centered, alpha, eps, momentum, lr),
+        self.hyper_map(ops.partial(_rmsprop_opt, centered, alpha, eps, momentum, lr),
                        params, mean_square, mean_grad, moment, grads)
         return True
 
