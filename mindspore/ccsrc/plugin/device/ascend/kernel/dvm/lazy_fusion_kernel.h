@@ -41,6 +41,8 @@ class LazyFusionQueue : public runtime::AsyncRQueue {
 
   void Push(const runtime::AsyncTaskPtr &task) override;
   void Wait() override;
+  bool Empty() override;
+  runtime::kThreadWaitLevel GetCurrentLevel();
 };
 
 class LazyFusionKernelAscend;
@@ -52,6 +54,7 @@ class LazyFusionManager {
   LazyFusionKernelAscend *Get(const device::DeviceContext *context, size_t stream);
 
   void Flush();
+  bool Empty() { return current_ == nullptr; }
 
   void FreeKernel(LazyFusionKernelAscend *k) {
     std::lock_guard<std::mutex> guard(mutex_);

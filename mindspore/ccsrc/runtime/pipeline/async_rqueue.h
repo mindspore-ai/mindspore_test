@@ -66,7 +66,7 @@ class RUNTIME_PIPELINE_EXPORT AsyncRQueue {
   virtual void Wait();
 
   // Check if the queue is empty.
-  bool Empty();
+  virtual bool Empty();
 
   // clear tasks of queue, and wait last task.
   void Clear();

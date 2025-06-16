@@ -104,16 +104,33 @@ bool InputCheck(const TensorPtr &x, const std::function<bool(const TypeId &type)
   return !NeedSync() && x->is_contiguous() && type_check(x->data_type());
 }
 
+bool CheckShapeBroadcast(const ShapeVector &shape1, const ShapeVector &shape2) {
+  auto check_func = [](const auto &shape_s, const auto &shape_l) {
+    auto diff = shape_l.size() - shape_s.size();
+    for (size_t i = 0; i < shape_s.size(); ++i) {
+      auto sh1 = shape_s[i];
+      auto sh2 = shape_l[i + diff];
+      if (sh1 != sh2 && sh1 != 1 && sh2 != 1) {
+        return false;
+      }
+    }
+    return true;
+  };
+  return shape1.size() < shape2.size() ? check_func(shape1, shape2) : check_func(shape2, shape1);
+}
+
 bool BinaryInputCheck(const TensorPtr &input_tensor, const TensorPtr &other_tensor,
                       const std::function<bool(const TypeId &type)> &type_check = IsFloatType) {
   return !NeedSync() && input_tensor->is_contiguous() && other_tensor->is_contiguous() &&
-         type_check(input_tensor->data_type()) && other_tensor->data_type() == input_tensor->data_type();
+         type_check(input_tensor->data_type()) && other_tensor->data_type() == input_tensor->data_type() &&
+         CheckShapeBroadcast(input_tensor->shape(), other_tensor->shape());
 }
 
 inline bool BinaryExtCheck(const TensorPtr &input_tensor, const TensorPtr &other_tensor, bool inplace) {
   if (inplace) {
     // inplace op support different data type
-    return InputCheck(input_tensor) && InputCheck(other_tensor);
+    return InputCheck(input_tensor) && InputCheck(other_tensor) &&
+           CheckShapeBroadcast(input_tensor->shape(), other_tensor->shape());
   }
   // non inplace op should have same data type
   return BinaryInputCheck(input_tensor, other_tensor);
