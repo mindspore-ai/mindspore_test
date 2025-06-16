@@ -1254,6 +1254,15 @@ class CustomOpBuilder:
         ldflags (str, optional): Extra linker flags to be used during linking. Default: ``None``.
         kwargs (dict, optional): Additional keyword arguments for future extensions or specific custom requirements.
 
+            - build_dir (str, optional): The directory used to generate the operator build files.
+              If this argument is set, the provided path will be used directly.
+              If not set, a subdirectory named after the operator's name will be created under the path specified by
+              the environment variable `MS_COMPILER_CACHE_PATH` (defaulting to "./kernel_meta"), and the files will
+              be placed in this subdirectory. Default: ``None``.
+
+            - enable_atb (bool, optional): Whether to call ATB (Ascend Transformer Boost) operator. If set to ``True``,
+              the `backend` must be ``Ascend`` or left empty. Default: ``False``.
+
     .. note::
         - If the `backend` argument is provided, additional default flags will be automatically added to
           the compilation and linking steps to support the operator's target backend. The default options
