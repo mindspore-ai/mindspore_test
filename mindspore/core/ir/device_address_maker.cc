@@ -49,19 +49,24 @@ DeviceAddressMakerFunc GetDeviceAddressMaker(device::DeviceType device_target) {
 DeviceSyncPtr MakeDeviceAddress(TypeId data_type, const ShapeVector &shape, bool init, device::DeviceType device_type) {
   // todo: set allocator
   auto tensor_data = tensor::MakeTensorData(data_type, shape);
-  return DeviceAddressMaker(init ? tensor_data->data() : nullptr, data_type, shape)
-    .set_deleter([tensor_data](void *, bool) {})
-    .set_maker(GetDeviceAddressMaker(device_type))
-    .make_device_address();
+  // todo: use init after tensor::empty is replaced.
+  auto ret = DeviceAddressMaker(init ? tensor_data->data() : nullptr, data_type, shape)
+               .set_deleter([tensor_data](void *, bool) {})
+               .set_maker(GetDeviceAddressMaker(device_type))
+               .make_device_address();
+  ret->set_data(std::move(tensor_data));
+  return ret;
 }
 
-DeviceSyncPtr MakeDeviceAddress(TypeId data_type, const ShapeVector &shape, const tensor::TensorDataPtr &tensor_data,
+DeviceSyncPtr MakeDeviceAddress(TypeId data_type, const ShapeVector &shape, tensor::TensorDataPtr &&tensor_data,
                                 device::DeviceType device_type) {
   // Just GET data ptr of tensor_data and don't init the data.
   // todo: use const_data() after tensor::empty is replaced.
-  return DeviceAddressMaker(tensor_data->data(), data_type, shape)
-    .set_deleter([tensor_data](void *, bool) {})
-    .set_maker(GetDeviceAddressMaker(device_type))
-    .make_device_address();
+  auto ret = DeviceAddressMaker(tensor_data->data(), data_type, shape)
+               .set_deleter([tensor_data](void *, bool) {})
+               .set_maker(GetDeviceAddressMaker(device_type))
+               .make_device_address();
+  ret->set_data(std::move(tensor_data));
+  return ret;
 }
 }  // namespace mindspore
