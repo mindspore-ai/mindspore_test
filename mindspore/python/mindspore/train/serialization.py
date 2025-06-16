@@ -927,11 +927,12 @@ def _convert_dict_to_param_dict(save_obj, choice_func):
 def _convert_cell_param_and_names_to_dict(save_obj, choice_func, is_parallel_mode):
     """Convert cell.parameters_and_names to OrderedDict."""
     param_dict = OrderedDict()
+    is_graph_mode = context.get_context('mode') == context.GRAPH_MODE
     for _, param in save_obj.parameters_and_names():
         # All parameters are initialized immediately under PyNative mode, skip this judgement.
         if param.param_info.is_pipeline_shared_param:
             continue
-        if is_parallel_mode and (not param.sliced or param.has_init):
+        if is_parallel_mode and is_graph_mode and (not param.sliced or param.has_init):
             continue
         if choice_func is not None and not choice_func(param.name):
             continue
