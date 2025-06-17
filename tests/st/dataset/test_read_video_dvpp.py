@@ -172,18 +172,8 @@ def test_read_video_with_h265_start_pts_end_pts():
     check_mindspore_data(mindspore_output, expected_output)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize("independent_process", ("True",))
-@pytest.mark.parametrize("multiprocessing_case", ([True, "fork"],))
-def test_read_video_pipeline(independent_process, multiprocessing_case):
-    """
-    Feature: read_video
-    Description: Read video in GeneratorDataset with multithreading and multiprocess
-    Expectation: The output is as expected
-    """
-
+def read_video_pipeline(independent_process, python_multiprocessing, start_method):
     os.environ['MS_INDEPENDENT_DATASET'] = independent_process
-    python_multiprocessing, start_method = multiprocessing_case
     if python_multiprocessing:
         ds.config.set_multiprocessing_start_method(start_method)
 
@@ -210,3 +200,64 @@ def test_read_video_pipeline(independent_process, multiprocessing_case):
         ds.config.set_multiprocessing_start_method("fork")
 
     del os.environ['MS_INDEPENDENT_DATASET']
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_read_video_pipeline_multithreading():
+    """
+    Feature: read_video
+    Description: Read video in GeneratorDataset with multithreading
+    Expectation: The output is as expected
+    """
+
+    read_video_pipeline(independent_process="False", python_multiprocessing=False, start_method=None)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_read_video_pipeline_multiprocessing_fork():
+    """
+    Feature: read_video
+    Description: Read video in GeneratorDataset with multiprocess in fork mode
+    Expectation: The output is as expected
+    """
+    read_video_pipeline(independent_process="False", python_multiprocessing=True, start_method="fork")
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_read_video_pipeline_multiprocessing_spawn():
+    """
+    Feature: read_video
+    Description: Read video in GeneratorDataset with multiprocess in spawn mode
+    Expectation: The output is as expected
+    """
+    read_video_pipeline(independent_process="False", python_multiprocessing=True, start_method="spawn")
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_read_video_pipeline_multithreading_independent():
+    """
+    Feature: read_video
+    Description: Read video in GeneratorDataset with multithreading in independent mode
+    Expectation: The output is as expected
+    """
+    read_video_pipeline(independent_process="True", python_multiprocessing=False, start_method=None)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_read_video_pipeline_multiprocessing_fork_independent():
+    """
+    Feature: read_video
+    Description: Read video in GeneratorDataset with multiprocess in fork and independent mode
+    Expectation: The output is as expected
+    """
+    read_video_pipeline(independent_process="True", python_multiprocessing=True, start_method="fork")
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_read_video_pipeline_multiprocessing_spawn_independent():
+    """
+    Feature: read_video
+    Description: Read video in GeneratorDataset with multiprocess in fork and independent mode
+    Expectation: The output is as expected
+    """
+    read_video_pipeline(independent_process="True", python_multiprocessing=True, start_method="spawn")

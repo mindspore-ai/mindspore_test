@@ -48,7 +48,8 @@ from .datasets import UnionBaseDataset, MappableDataset, Schema, to_list, _Pytho
 from .queue import _SharedQueue
 from .validators import check_generator_dataset, check_numpy_slices_dataset, check_padded_dataset
 from ..core.config import get_enable_shared_mem, get_prefetch_size, get_multiprocessing_timeout_interval, \
-    get_enable_watchdog, get_debug_mode, get_seed, set_seed, get_multiprocessing_start_method
+    get_enable_watchdog, get_debug_mode, get_seed, set_seed, get_multiprocessing_start_method, get_video_backend, \
+    set_video_backend
 from ..core.datatypes import mstypelist_to_detypelist
 from ..core.py_util_helpers import ExceptionHandler
 from ..core.validator_helpers import type_check
@@ -442,9 +443,10 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
                     "process(es): {}".format(self.cleaning_process.pid, [worker.pid for worker in self.workers]))
 
         if get_enable_watchdog():
-            worker_ids = [worker.pid for worker in self.workers]
+            worker_ids = [os.getpid()]
+            worker_ids.extend([worker.pid for worker in self.workers])
             worker_ids.append(self.cleaning_process.pid)
-            cde.register_worker_pids(id(self), set(worker_ids))
+            cde.register_worker_pids(id(self), worker_ids)
 
     def _release_fd(self):
         """Release the file descriptor by subprocess"""
@@ -519,8 +521,8 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
         if hasattr(self, 'eof') and self.eof is not None:
             self.eof.set()
             # send QUIT flag to workers, and the worker's while loop could check the eof flag
-            for idx in len(self.workers):
-                self.workers[idx].put("QUIT")
+            for worker in self.workers:
+                worker.put("QUIT")
         if hasattr(self, 'cleaning_process') and self.cleaning_process is not None:
             # let the quit event notify the cleaning process to exit
             self.cleaning_process.join(timeout=5)
@@ -562,7 +564,8 @@ def _main_process_already_exit(eof, is_multiprocessing, idx_queue, result_queue,
     return False
 
 
-def _generator_worker_loop(dataset, idx_queue, result_queue, eof, is_multiprocessing, worker_id, ppid=-1):
+def _generator_worker_loop(dataset, idx_queue, result_queue, eof, is_multiprocessing, worker_id, ppid=-1,
+                           video_backend=None):
     """
     Multithread or multiprocess generator worker process loop.
     """
@@ -570,6 +573,9 @@ def _generator_worker_loop(dataset, idx_queue, result_queue, eof, is_multiproces
     cde.register_worker_handlers()
 
     if is_multiprocessing:
+        if video_backend is not None:
+            set_video_backend(video_backend)
+
         result_queue.cancel_join_thread()  # Ensure that the process does not hang when exiting
 
         # init the random seed and np.random seed for the subprocess
@@ -671,8 +677,9 @@ class _GeneratorWorkerMp(multiprocessing.Process):
         else:
             self.res_queue = multiprocessing.Queue(queue_size)
         self.idx_queue.cancel_join_thread()  # Ensure that the process does not hang when exiting
+        video_backend = get_video_backend() if multiprocessing.get_start_method() == "spawn" else None
         super().__init__(target=_generator_worker_loop,
-                         args=(dataset, self.idx_queue, self.res_queue, eof, True, worker_id, ppid),
+                         args=(dataset, self.idx_queue, self.res_queue, eof, True, worker_id, ppid, video_backend),
                          name="GeneratorWorkerProcess" + str(worker_id))
 
     def put(self, item):

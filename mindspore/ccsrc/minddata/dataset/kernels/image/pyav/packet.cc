@@ -44,7 +44,7 @@ int Packet::GetDTS() const {
   return -1;
 }
 
-bool Packet::IsKeyFrame() const { return static_cast<bool>(packet_->flags & AV_PKT_FLAG_KEY); }
+bool Packet::IsKeyFrame() const { return static_cast<bool>(static_cast<uint32_t>(packet_->flags) & AV_PKT_FLAG_KEY); }
 
 AVRational *Packet::GetTimeBase() { return time_base_; }
 

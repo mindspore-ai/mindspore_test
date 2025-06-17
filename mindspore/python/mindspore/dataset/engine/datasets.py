@@ -71,7 +71,8 @@ from .validators import check_batch, check_shuffle, check_map, check_filter, che
     check_total_batch, check_sync_update
 from ..core.config import get_callback_timeout, _init_device_info, get_enable_shared_mem, get_num_parallel_workers, \
     get_enable_watchdog, get_seed, set_seed, get_debug_mode, get_multiprocessing_timeout_interval, \
-    _get_debug_hook_list, get_multiprocessing_start_method, get_error_samples_mode, ErrorSamplesMode
+    _get_debug_hook_list, get_multiprocessing_start_method, get_error_samples_mode, get_video_backend, \
+    set_video_backend, ErrorSamplesMode
 from ..core.datatypes import mstype_to_detype
 from ..core.validator_helpers import replace_none
 from ..core.py_util_helpers import ExceptionHandler
@@ -3053,7 +3054,7 @@ def _main_process_already_exit():
     return False
 
 
-def _worker_loop(quit_signal, operations, worker_id, op_type, key):
+def _worker_loop(quit_signal, operations, worker_id, op_type, key, video_backend=None):
     """
     Multiprocess worker process loop.
     The worker process(Python Layer) gets data from / sends data to map / batch thread(C++ layer) by message queue
@@ -3062,6 +3063,9 @@ def _worker_loop(quit_signal, operations, worker_id, op_type, key):
     """
     # Initialize C++ side signal handlers
     cde.register_worker_handlers()
+
+    if video_backend is not None:
+        set_video_backend(video_backend)
 
     def _ignore_sigint():
         """
@@ -3237,10 +3241,13 @@ class WorkerTarget:
         self.worker_id = worker_id
         self.op_type = op_type
         self.ftok_key = ftok_key
-        logger.info("Multiprocessing start method: {}".format(multiprocessing.get_start_method()))
+        start_method = multiprocessing.get_start_method()
+        logger.info("Multiprocessing start method: {}".format(start_method))
+        self.video_backend = get_video_backend() if start_method == 'spawn' else None
 
     def __call__(self):
-        return _worker_loop(self.quit_signal, self.operations, self.worker_id, self.op_type, self.ftok_key)
+        return _worker_loop(self.quit_signal, self.operations, self.worker_id, self.op_type, self.ftok_key,
+                            self.video_backend)
 
 
 def worker_is_alive(worker):
@@ -3584,9 +3591,10 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
                         "process(es): {}".format(self.cleaning_process.pid, self.get_pids()))
 
             if get_enable_watchdog():
-                worker_ids = [worker.pid for worker in self.workers]
+                worker_ids = [os.getpid()]
+                worker_ids.extend([worker.pid for worker in self.workers])
                 worker_ids.append(self.cleaning_process.pid)
-                cde.register_worker_pids(id(self), set(worker_ids))
+                cde.register_worker_pids(id(self), worker_ids)
 
     def _abort_monitor(self):
         """Deregister workers monitored by the watch dog and join clean process."""

@@ -31,11 +31,17 @@ namespace mindspore {
 namespace dataset {
 constexpr uint32_t MAX_CHN_HEIGHT = 4096;
 constexpr uint32_t MAX_CHN_WIDTH = 4096;
+constexpr uint32_t MAX_CHN = 3;
 constexpr int32_t SEND_TIMEOUT = 30;
 constexpr uint32_t WAIT_TIMEOUT = 5000000;  // 5000000us
 constexpr uint32_t REF_FRAME_NUM = 16;
 constexpr uint32_t DISPLAY_FRAME_NUM = 16;
 constexpr uint32_t FRAME_BUF_CNT = REF_FRAME_NUM + DISPLAY_FRAME_NUM + 1;
+constexpr uint8_t VDEC_DECODE_SUCCESS = 0;
+constexpr uint8_t VDEC_DECODE_FAILED = 1;
+constexpr uint8_t VDEC_DECODE_INTERLACED_FIELD_STREAM = 2;
+constexpr uint8_t VDEC_DECODE_FRAME_NUMBER_ERROR = 3;
+constexpr uint8_t VDEC_DECODE_FRAME_SIZE_ERROR = 4;
 
 pthread_t g_vdec_get_thread[VDEC_MAX_CHNL_NUM] = {0};
 uint32_t g_get_exit_state[VDEC_MAX_CHNL_NUM] = {0};
@@ -56,16 +62,8 @@ static inline bool ValidChnNum(uint32_t chn) { return (chn < VDEC_MAX_CHNL_NUM);
 
 static inline void get_current_time_us(uint64_t &timeUs) {
   struct timeval curTime;
-  gettimeofday(&curTime, NULL);
+  gettimeofday(&curTime, nullptr);
   timeUs = static_cast<uint64_t>(curTime.tv_sec) * 1000000 + curTime.tv_usec;  // 1s = 1000000 us
-}
-
-template <class T>
-static inline void LoadFunc(void *const handle, T &funPtr, const std::string &funName) {
-  funPtr = reinterpret_cast<T>(dlsym(handle, funName.c_str()));
-  if (funPtr == nullptr) {
-    MS_EXCEPTION(RuntimeError) << "vdec function not load, func name " << funName.c_str();
-  }
 }
 
 VideoDecoder &VideoDecoder::GetInstance() {
@@ -74,7 +72,6 @@ VideoDecoder &VideoDecoder::GetInstance() {
 }
 
 VideoDecoder::VideoDecoder() {
-  // LoadFunctions();
   for (uint32_t i = 0; i < VDEC_MAX_CHNL_NUM; ++i) {
     channelStatus_[i] = ChnStatus::DESTROYED;
   }
@@ -101,36 +98,36 @@ void VideoDecoder::PutChn(uint32_t chn) {
   channelStatus_[chn] = ChnStatus::DESTROYED;
 }
 
-bool VideoDecoder::ChannelCreated(uint32_t chn) {
-  const std::lock_guard<std::mutex> guard(channelMutex_[chn]);
-  return (channelStatus_[chn] == ChnStatus::CREATED);
-}
+static std::once_flag init_once_flag;
 
 hi_s32 VideoDecoder::sys_init(void) {
-  auto ms_context = MsContext::GetInstance();
-  if (ms_context == nullptr) {
-    MS_EXCEPTION(RuntimeError) << "Get ms context failed by MsContext::GetInstance()";
-  }
-  device_context_ = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-    {ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET), ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
-  if (device_context_ == nullptr) {
-    MS_EXCEPTION(RuntimeError) << "Get device context failed by ms context";
-  }
-  device_context_->Initialize();
-  if (device_context_->device_res_manager_ == nullptr) {
-    MS_EXCEPTION(RuntimeError) << "The device resource manager is null";
-  }
+  hi_s32 ret = HI_SUCCESS;
+  std::call_once(init_once_flag, [this, &ret]() {
+    auto ms_context = MsContext::GetInstance();
+    if (ms_context == nullptr) {
+      MS_EXCEPTION(RuntimeError) << "Get ms context failed by MsContext::GetInstance()";
+    }
+    device_context_ = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
+      {ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET), ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
+    if (device_context_ == nullptr) {
+      MS_EXCEPTION(RuntimeError) << "Get device context failed by ms context";
+    }
+    device_context_->Initialize();
+    if (device_context_->device_res_manager_ == nullptr) {
+      MS_EXCEPTION(RuntimeError) << "The device resource manager is null";
+    }
 
-  std::string soc_version;
-  if (GetSocName(&soc_version) != APP_ERR_OK) {
-    MS_EXCEPTION(RuntimeError) << "Get Soc Version failed.";
-  }
-  if (soc_version.find("Ascend910B") == std::string::npos && soc_version.find("Ascend910_93") == std::string::npos) {
-    // reset the device_context_, because the Soc is not support yet
-    device_context_ = nullptr;
-    MS_EXCEPTION(RuntimeError) << "The SoC: " << soc_version << " is not Ascend910B / Ascend910_93";
-  }
-  auto ret = hi_mpi_sys_init();
+    std::string soc_version;
+    if (GetSocName(&soc_version) != APP_ERR_OK) {
+      MS_EXCEPTION(RuntimeError) << "Get Soc Version failed.";
+    }
+    if (soc_version.find("Ascend910B") == std::string::npos && soc_version.find("Ascend910_93") == std::string::npos) {
+      // reset the device_context_, because the Soc is not support yet
+      device_context_ = nullptr;
+      MS_EXCEPTION(RuntimeError) << "The SoC: " << soc_version << " is not Ascend910B / Ascend910_93";
+    }
+    ret = hi_mpi_sys_init();
+  });
   return ret;
 }
 
@@ -178,12 +175,6 @@ hi_s32 VideoDecoder::get_frame(hi_vdec_chn chn, hi_video_frame_info *frame_info,
 hi_s32 VideoDecoder::release_frame(hi_vdec_chn chn, const hi_video_frame_info *frame_info) {
   return hi_mpi_vdec_release_frame(chn, frame_info);
 }
-
-hi_s32 VideoDecoder::dvpp_malloc(hi_u32 dev_id, hi_void **dev_ptr, hi_u64 size) {
-  return hi_mpi_dvpp_malloc(dev_id, dev_ptr, size);
-}
-
-hi_s32 VideoDecoder::dvpp_free(hi_void *dev_ptr) { return hi_mpi_dvpp_free(dev_ptr); }
 
 static void vdec_reset_chn(uint32_t chn) {
   int32_t ret = VideoDecoder::GetInstance().stop_recv_stream(chn);
@@ -241,7 +232,7 @@ void *get_pic(void *args) {
   int32_t ret = HI_SUCCESS;
   hi_video_frame_info frame{};
   hi_vdec_stream stream{};
-  int32_t decResult = 0;  // Decode result
+  int32_t decResult = VDEC_DECODE_SUCCESS;  // Decode result
   hi_u64 outputBuffer = 0;
   uint32_t successCnt = 0;
   uint32_t failCnt = 0;
@@ -256,7 +247,7 @@ void *get_pic(void *args) {
       // Flush decode end time
       outputBuffer = static_cast<hi_u64>(reinterpret_cast<uintptr_t>(frame.v_frame.virt_addr[0]));
       decResult = frame.v_frame.frame_flag;
-      if (decResult == 0) {  // 0: Decode success
+      if (decResult == VDEC_DECODE_SUCCESS) {  // 0: Decode success
         const std::lock_guard<std::mutex> guard(outTensorMapMutex[chanId]);
         auto iter = outTensorMap[chanId].find(outputBuffer);
         if (iter != outTensorMap[chanId].end()) {
@@ -264,16 +255,16 @@ void *get_pic(void *args) {
           outTensorMap[chanId].erase(iter);
           successCnt++;
         }
-      } else if (decResult == 1) {  // 1: Decode fail
+      } else if (decResult == VDEC_DECODE_FAILED) {  // 1: Decode fail
         failCnt++;
         MS_LOG(WARNING) << "chn " << chanId << " GetFrame Success, decode failed, fail count " << failCnt;
-      } else if (decResult == 2) {
+      } else if (decResult == VDEC_DECODE_INTERLACED_FIELD_STREAM) {
         // 2:This result is returned for the second field of
         // the interlaced field stream, which is normal.
-      } else if (decResult == 3) {  // 3: Reference frame number set error
+      } else if (decResult == VDEC_DECODE_FRAME_NUMBER_ERROR) {  // 3: Reference frame number set error
         failCnt++;
         MS_LOG(WARNING) << "chn " << chanId << " GetFrame Success, refFrame num Error, fail count " << failCnt;
-      } else if (decResult == 4) {  // 4: Reference frame size set error
+      } else if (decResult == VDEC_DECODE_FRAME_SIZE_ERROR) {  // 4: Reference frame size set error
         failCnt++;
         MS_LOG(WARNING) << "chn " << chanId << " GetFrame Success, refFrame Size Error, fail count " << failCnt;
       }
@@ -312,7 +303,7 @@ int64_t dvpp_vdec_create_chnl(int64_t pType) {
   chnAttr.mode = HI_VDEC_SEND_MODE_FRAME;  // Only support frame mode
   chnAttr.pic_width = MAX_CHN_WIDTH;
   chnAttr.pic_height = MAX_CHN_HEIGHT;
-  chnAttr.stream_buf_size = MAX_CHN_WIDTH * MAX_CHN_HEIGHT * 3 / 2;
+  chnAttr.stream_buf_size = MAX_CHN_WIDTH * MAX_CHN_HEIGHT * MAX_CHN / 2;
   chnAttr.frame_buf_cnt = FRAME_BUF_CNT;
   hi_pic_buf_attr buf_attr{
     MAX_CHN_WIDTH, MAX_CHN_HEIGHT, 0, HI_DATA_BIT_WIDTH_10, HI_PIXEL_FORMAT_YUV_SEMIPLANAR_420, HI_COMPRESS_MODE_NONE};
@@ -567,12 +558,6 @@ int64_t dvpp_vdec_destroy_chnl(int64_t chnId) {
   }
   return 0;
 }
-
-int64_t dvpp_malloc(uint32_t dev_id, void **dev_ptr, uint64_t size) {
-  return static_cast<int64_t>(VideoDecoder::GetInstance().dvpp_malloc(dev_id, dev_ptr, size));
-}
-
-int64_t dvpp_free(void *dev_ptr) { return static_cast<int64_t>(VideoDecoder::GetInstance().dvpp_free(dev_ptr)); }
 
 int64_t dvpp_memcpy(const std::shared_ptr<DeviceBuffer> &src, void *dest) {
   return aclrtMemcpy(dest, src->GetBufferSize(), src->GetBuffer(), src->GetBufferSize(), ACL_MEMCPY_DEVICE_TO_HOST);
