@@ -3179,7 +3179,7 @@ def _get_slice_scatter_const(x_shape, axis, start, end, step):
     x_rank = len(x_shape)
     axis = axis if axis >= 0 else axis + x_rank
     start = start if start is not None else 0
-    start = start if start >= 0 else start + x_rank
+    start = start if start >= 0 else start + x_shape[axis]
     end = end if end is not None else x_shape[axis]
     end = end if end >= 0 else end + x_shape[axis]
     end = end if end < x_shape[axis] else x_shape[axis]
