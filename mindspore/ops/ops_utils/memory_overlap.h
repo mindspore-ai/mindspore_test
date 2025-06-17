@@ -23,7 +23,6 @@ namespace mindspore {
 using TensorPtr = tensor::TensorPtr;
 enum class MemOverlap { No, Yes, TooHard };
 /// \brief To judge tensor whether there is memory over lap, only for view.
-///
 /// \param[in] variable_tensor The tensor to be judged.
 /// \return No:no overlap, Yes:has overlap, TooHard:too hard to judge.
 MS_CORE_API MemOverlap IsInternalOverlap(const TensorPtr &variable_tensor);

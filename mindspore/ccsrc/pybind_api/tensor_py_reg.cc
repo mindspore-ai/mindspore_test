@@ -629,8 +629,7 @@ static PyObject *TensorIndex_setitem_index_info(PyObject *self, PyObject *args) 
   pybind11::object index = pybind11::reinterpret_borrow<pybind11::object>(py_index);
   pybind11::object value = pybind11::reinterpret_borrow<pybind11::object>(py_value);
   pybind11::bool_ ascend = static_cast<bool>(is_ascend);
-  py::object result;
-  result = TensorIndex::SetItemIndexInfo(data, index, value, ascend);
+  py::object result = TensorIndex::SetItemIndexInfo(data, index, value, ascend);
   return result.release().ptr();
   HANDLE_MS_EXCEPTION_END
 }

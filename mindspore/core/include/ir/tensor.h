@@ -107,6 +107,22 @@ constexpr auto kThreshold1D = 1000;
 constexpr auto kThreshold1DFloat = kThreshold * 2;
 constexpr auto kThreshold1DInt = kThreshold * 4;
 constexpr auto kThreshold1DBool = kThreshold * 2;
+
+template <typename T>
+inline constexpr bool IsNonTrivialCastType = false;
+
+#define DEFINE_NON_TRIVIAL_CAST_TYPE(TYPE) \
+  template <>                              \
+  inline constexpr bool IsNonTrivialCastType<TYPE> = true;
+
+DEFINE_NON_TRIVIAL_CAST_TYPE(float16)
+DEFINE_NON_TRIVIAL_CAST_TYPE(float8_e4m3fn)
+DEFINE_NON_TRIVIAL_CAST_TYPE(float8_e5m2)
+DEFINE_NON_TRIVIAL_CAST_TYPE(hifloat8)
+DEFINE_NON_TRIVIAL_CAST_TYPE(bfloat16)
+DEFINE_NON_TRIVIAL_CAST_TYPE(ComplexStorage<float>)
+DEFINE_NON_TRIVIAL_CAST_TYPE(ComplexStorage<double>)
+
 template <typename T, typename U>
 std::unique_ptr<T[]> NewData(const U *input, size_t size) {
   if (input == nullptr || size == 0) {
@@ -117,14 +133,7 @@ std::unique_ptr<T[]> NewData(const U *input, size_t size) {
   }
 
   auto data = std::make_unique<T[]>(size);
-  if constexpr (!std::is_same<T, U>::value &&
-                (std::is_same<T, float16>::value || std::is_same<U, float16>::value ||
-                 std::is_same<T, float8_e4m3fn>::value || std::is_same<U, float8_e4m3fn>::value ||
-                 std::is_same<T, float8_e5m2>::value || std::is_same<U, float8_e5m2>::value ||
-                 std::is_same<T, hifloat8>::value || std::is_same<U, hifloat8>::value ||
-                 std::is_same<T, bfloat16>::value || std::is_same<U, bfloat16>::value ||
-                 std::is_same<T, ComplexStorage<float>>::value || std::is_same<U, ComplexStorage<float>>::value ||
-                 std::is_same<T, ComplexStorage<double>>::value || std::is_same<U, ComplexStorage<double>>::value)) {
+  if constexpr (!std::is_same_v<T, U> && (IsNonTrivialCastType<T> || IsNonTrivialCastType<U>)) {
     // Because float16 and bfloat16 do not support implicit cast from/to other types,
     // We can not use std::copy() on array of float16 and bfloat16, use a loop here.
     for (size_t i = 0; i < size; ++i) {

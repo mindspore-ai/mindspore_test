@@ -62,7 +62,6 @@ using TensorPyWrapperPtr = std::shared_ptr<TensorPyWrapper>;
 COMMON_EXPORT TensorPyWrapperPtr ConvertToTensorPyWrapper(const py::handle &obj);
 
 /// \brief Make default_parameter of Parameter to TensorPy, and return to Pybind.
-///
 /// \param[in] value [ValuePtr] The given input parameter.
 ///
 /// \return A TensorPy.

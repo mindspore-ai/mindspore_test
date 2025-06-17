@@ -173,7 +173,6 @@ using ViewAutoGradMetaDataPtr = std::shared_ptr<ViewAutoGradMetaData>;
 
 struct Edge {
   /// \brief Constructor.
-  ///
   /// \param[in] Grad node the grad node represents object need calculate gradient.
   /// \param[in] input_index The input index is variable output index.
   explicit Edge(BackwardNodePtr grad_node, size_t input_index)
