@@ -1005,31 +1005,38 @@ class Parser:
                              "the code 'def __init__(self, combine_fn=lambda x: x + 1):' rewritten as\n"
                              "'def __init__(self, combine_fn=\nlambda x: x + 1\n):' will solve the problem.")
 
+    def save_source_code(self, attr_name, source_lines):
+        """Save cell and func source code to support run graph mode with pyc or so."""
+        if '/mindspore/' in self.filename or '\\mindspore\\' in self.filename:
+            return
+        if getattr(self.fn, attr_name, None) == source_lines:
+            return
+        if not os.access(self.filename, os.W_OK):
+            raise PermissionError(f"Don't have the write permission on the file {self.filename}.")
+        with open(self.filename, 'a') as f:
+            logger.debug(f"setattr for {self.fn}, attr: {attr_name}, value: {source_lines}")
+            f.write(f"\n# Set source attribute for function {self.function_name} "
+                    f"to support run so or pyc file in Graph Mode."
+                    f"\nsetattr({self.function_name}, '{attr_name}', {source_lines})\n")
+            setattr(self.fn, attr_name, source_lines)
+
     def parse(self):
         """Parse the function or method."""
         logger.debug("fn: %r", self.fn)
         if isinstance(self.fn, (types.FunctionType, types.MethodType)) or \
            type(self.fn).__name__ == 'cython_function_or_method':
-            attr = 'source'
+            attr_name = 'source'
             try:
                 source_lines = inspect.getsourcelines(self.fn)
-                support_binary = context.get_context('support_binary') or os.getenv('MS_SUPPORT_BINARY', None) == '1'
-                if support_binary and '/mindspore/' not in self.filename and '\\mindspore\\' not in self.filename and \
-                   (not hasattr(self.fn, attr) or getattr(self.fn, attr) != source_lines):
-                    if not os.access(self.filename, os.W_OK):
-                        raise PermissionError(f"Don't have the write permission on the file {self.filename}.")
-                    with open(self.filename, 'a') as f:
-                        f.write(f"\n# Set source attribute for function {self.function_name} "
-                                f"to support run so or pyc file in Graph Mode."
-                                f"\nsetattr({self.function_name}, '{attr}', {source_lines})\n")
-                        setattr(self.fn, attr, source_lines)
+                if context.get_context('support_binary') or os.getenv('MS_SUPPORT_BINARY', None) == '1':
+                    self.save_source_code(attr_name, source_lines)
             except (OSError, TypeError) as e:
-                if hasattr(self.fn, attr):
-                    source_lines = getattr(self.fn, attr)
+                if hasattr(self.fn, attr_name):
+                    source_lines = getattr(self.fn, attr_name)
+                elif e.__str__() == "could not get source code":
+                    raise OSError(f"Mindspore can not compile temporary source code in terminal. "
+                                  f"Please write source code to a python file and run the file.")
                 else:
-                    if e.__str__() == "could not get source code":
-                        raise OSError(f"Mindspore can not compile temporary source code in terminal. "
-                                      f"Please write source code to a python file and run the file.")
                     raise e
             self.lines, self.line_offset = source_lines
             original_src = ''.join(self.lines)
@@ -1040,7 +1047,7 @@ class Parser:
                 self.col_offset = \
                     len(original_src.split('\n')[0]) - len(src.split('\n')[0])
                 logger.debug("Get source: %s", src)
-                if not hasattr(self.fn, attr):
+                if not hasattr(self.fn, attr_name):
                     self.check_lambda(src)
                 try:
                     ast_tokens = asttokens.ASTTokens(src, parse=True)
