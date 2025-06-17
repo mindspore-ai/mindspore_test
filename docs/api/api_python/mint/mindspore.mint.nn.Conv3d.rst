@@ -35,15 +35,12 @@ mindspore.mint.nn.Conv3d
 
     参数的约束细节，请参考 :func:`mindspore.mint.nn.functional.conv3d` 。
 
-    .. note::
-        暂不支持空Tensor输入。
-
     参数：
         - **in_channels** (int) - Conv3d层输入Tensor的空间维度。
         - **out_channels** (int) - Conv3d层输出Tensor的空间维度。
-        - **kernel_size** (Union[int, tuple[int], list[int]]) - 指定三维卷积核的深度、高度和宽度。数据类型为int或三个int的tuple/list。一个int表示卷积核的深度、高度和宽度均为该值。三个int的tuple/list分别表示卷积核的深度、高度和宽度。
-        - **stride** (Union[int, tuple[int], list[int]]，可选) - 三维卷积核的移动步长。数据类型为int或三个int的tuple/list。若为一个int，则表示在深度、高度和宽度方向的移动步长均为该int值；若为三个int的tuple/list，则分别表示在深度、高度和宽度方向的移动步长。默认值： ``1`` 。
-        - **padding** (Union[int, tuple[int], list[int], str]，可选) - 输入的深度、高度和宽度方向的填充数。数据类型是int或string{ ``"valid"`` ，  ``"same"`` }或三个int的tuple/list。该值应大于或等于0。默认值： ``0`` 。
+        - **kernel_size** (Union[int, tuple[int], list[int]]) - 指定三维卷积核的深度、高度和宽度。可以为单个int，或者由3个int组成的tuple/list。单个int表示卷积核的深度、高度和宽度均为该值；tuple/list中的3个int分别表示卷积核的深度、高度和宽度。
+        - **stride** (Union[int, tuple[int], list[int]]，可选) - 三维卷积核的移动步长。可以为单个int，或者由3个int组成的tuple/list。单个int表示在深度、高度和宽度方向的移动步长均为该值；tuple/list中的3个int分别表示在深度、高度和宽度方向的移动步长。默认值： ``1`` 。
+        - **padding** (Union[int, tuple[int], list[int], str]，可选) - 输入的深度、高度和宽度方向的填充数。可以为单个int、由3个int组成的tuple/list，或者string{ ``"valid"`` ，  ``"same"`` }。该值应大于或等于0。默认值： ``0`` 。
 
           - ``"same"``：在输入的边缘加上衬垫，这样当 `stride` 设置为“1”时，输入和输出的形状是相同的。填充量由运算符内部计算。如果填充量是偶数，则均匀分布在输入周围；如果填充量为奇数，则多余的填充量会流向右侧/底部。
           - ``"valid"``：输入没有填充，输出返回最大可能的高度和宽度。无法完成整个步幅的额外像素将被丢弃。
