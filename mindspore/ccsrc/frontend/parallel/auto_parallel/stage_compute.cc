@@ -112,6 +112,7 @@ bool HasRecompute(const FuncGraphPtr &root) {
     MS_EXCEPTION_IF_NULL(cnode);
     if (IsValueNode<FuncGraph>(cnode->input(0))) {
       auto fg = GetValueNode<FuncGraphPtr>(cnode->input(0));
+      MS_EXCEPTION_IF_NULL(fg);
       if (fg->has_flag(FUNC_GRAPH_RECOMPUTE_GRAD_GRAPH) || fg->has_flag(FUNC_GRAPH_RECOMPUTE_K_GRAPH)) {
         MS_LOG(DEBUG) << "found recompute cell " << fg->ToString();
         return true;
