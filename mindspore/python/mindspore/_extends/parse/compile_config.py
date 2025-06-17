@@ -306,15 +306,6 @@ Value Range:
 DEBUG_LEVEL = ''
 
 """
-Name: PYNATIVE_JIT_GRAD_MODE
-Function: Which method used for grad jit in pynative mode
-Value Range:
-    1: Replace ValueNode
-    Default: Parametrization
-"""
-PYNATIVE_JIT_GRAD_MODE = ''
-
-"""
 Name: PIJIT_SUBGRAPH_BREAK_OPTIMIZE
 Function: Whether to enable subgraph break optimization in PIJit.
 Value Range:
@@ -404,7 +395,6 @@ __all__ = [
     "CHECK_BPROP",
     "GRAD_FOR_SCALAR",
     "DEBUG_LEVEL",
-    "PYNATIVE_JIT_GRAD_MODE",
     "PIJIT_SUBGRAPH_BREAK_OPTIMIZE",
     "ENABLE_ELIMINATE_UNUSED_PARAMS",
     "PUT_ALL_CNODE_INTO_ORDER_LIST",

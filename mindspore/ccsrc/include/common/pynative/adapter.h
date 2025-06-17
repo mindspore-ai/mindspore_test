@@ -39,9 +39,6 @@ class COMMON_EXPORT PyNativeAdapter {
   HANDLER_DEFINE(bool, GetJitBpropGraph, const pipeline::ResourcePtr &, const std::string &);
   HANDLER_DEFINE(py::object, GradJit, const py::args &);
   HANDLER_DEFINE(void, SetGraphPhase, const std::string &);
-  HANDLER_DEFINE(void, ProcessCnodeFromAdGrad, const CNodePtr &, const CNodePtr &);
-  HANDLER_DEFINE(void, SetEliminateForward, bool);
-  HANDLER_DEFINE(bool, GetEliminateForward);
 };
 
 class COMMON_EXPORT HookAdapter {

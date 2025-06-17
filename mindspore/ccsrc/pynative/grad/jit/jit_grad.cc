@@ -23,7 +23,6 @@
 #include "op_def/sequence_ops.h"
 #include "pynative/grad/grad_utils.h"
 #include "pynative/pynative_utils.h"
-#include "pynative/grad/jit/jit_dfunctor.h"
 #include "pipeline/jit/ps/pipeline.h"
 #include "pipeline/jit/ps/executor/jit_executor_py.h"
 #include "ir/func_graph_cloner.h"
@@ -139,282 +138,11 @@ bool JitOutputHasDict(const abstract::AbstractBasePtr &abs) {
   }
   return false;
 }
-
-// Functions for valuenode replacement
-FrontendOpRunInfoPtr GetOpRunInfo(const py::object &out, const py::args &args, const std::string &graph_phase,
-                                  bool modify_output, const FuncGraphPtr &jit_forward_graph, ValuePtr *added_out_v) {
-  auto op_run_info = std::make_shared<FrontendOpRunInfo>();
-  op_run_info->requires_grad = true;
-  op_run_info->is_jit_input = true;
-  op_run_info->base_op_run_info.op_name = graph_phase;
-  // Dict input for graph should be converted to tuple after compile.
-  const auto &new_args = ConvertDictArgs(args);
-  PyNativeAlgo::PyParser::ParseOpInputByPythonObj(op_run_info, new_args);
-  // Set input abs
-  const auto &original_params = jit_forward_graph->parameters();
-  for (size_t i = 0; i < op_run_info->input_size; ++i) {
-    op_run_info->op_grad_info->input_abs[i] = original_params[i]->abstract();
-  }
-  if (modify_output) {
-    if (!py::isinstance<py::tuple>(out)) {
-      MS_LOG(EXCEPTION) << "The output value of jit func graph should be a tuple.";
-    }
-    auto tuple_out = py::cast<py::tuple>(out);
-    constexpr size_t tuple_out_size = 2;
-    if (tuple_out.size() != tuple_out_size) {
-      MS_LOG(EXCEPTION) << "The tuple size of output value of jit func graph should be 2.";
-    }
-    MS_EXCEPTION_IF_NULL(added_out_v);
-    // Forward output of op in jit graph
-    *added_out_v = parse::data_converter::PyObjToValue(tuple_out[1]);
-    op_run_info->real_out = parse::data_converter::PyObjToValue(tuple_out[0]);
-  } else {
-    op_run_info->real_out = parse::data_converter::PyObjToValue(out);
-  }
-  return op_run_info;
-}
-
-// Modify the output node of func_graph to add forward nodes used in bprop graph.
-void ModifyOutputNode(const FuncGraphPtr &func_graph) {
-  MS_EXCEPTION_IF_NULL(func_graph);
-  const auto &used_forward_nodes = func_graph->used_forward_nodes();
-  if (used_forward_nodes.empty()) {
-    return;
-  }
-
-  // Create a new make tuple node to hold all forward used nodes.
-  abstract::AbstractBasePtrList added_abs_list;
-  AnfNodePtrList added_node_list{NewValueNode(prim::kPrimMakeTuple)};
-  for (const auto &node : used_forward_nodes) {
-    MS_EXCEPTION_IF_NULL(node);
-    (void)added_node_list.emplace_back(node);
-    (void)added_abs_list.emplace_back(node->abstract());
-  }
-  AnfNodePtr added_output_node = func_graph->NewCNode(std::move(added_node_list));
-  AbstractBasePtr added_output_abs = std::make_shared<abstract::AbstractTuple>(added_abs_list);
-  added_output_node->set_abstract(added_output_abs);
-
-  // Get original output node and abstract, and merge original output node and used forward nodes to return node.
-  auto original_output_node = func_graph->output();
-  MS_EXCEPTION_IF_NULL(original_output_node);
-  auto original_output_abs = original_output_node->abstract();
-  MS_EXCEPTION_IF_NULL(original_output_abs);
-  AnfNodePtrList new_output_nodes{NewValueNode(prim::kPrimMakeTuple), original_output_node, added_output_node};
-  auto merge_node = func_graph->NewCNode(std::move(new_output_nodes));
-  abstract::AbstractBasePtrList new_output_abs{original_output_abs, added_output_abs};
-  merge_node->set_abstract(std::make_shared<abstract::AbstractTuple>(new_output_abs));
-  func_graph->set_output(merge_node);
-
-  // Clear
-  func_graph->set_modify_output(true);
-  func_graph->ClearUsedForwardNodes();
-}
-
-CNodePtr GetAddedNode(const FuncGraphPtr &jit_forward_graph) {
-  MS_EXCEPTION_IF_NULL(jit_forward_graph);
-  if (!jit_forward_graph->modify_output()) {
-    return nullptr;
-  }
-  // Get added forward nodes.
-  auto merge_node = jit_forward_graph->output();
-  MS_EXCEPTION_IF_NULL(merge_node);
-  auto merge_make_tuple = merge_node->cast<CNodePtr>();
-  MS_EXCEPTION_IF_NULL(merge_make_tuple);
-  constexpr size_t merge_output_size = 3;
-  // First is make_tuple, second is actual output, third is added output
-  if (merge_make_tuple->size() != merge_output_size) {
-    MS_LOG(EXCEPTION) << "The input size of merge make tuple node should be 3, but it is: " << merge_make_tuple->size();
-  }
-  constexpr size_t added_output_index = 2;
-  return merge_make_tuple->input(added_output_index)->cast<CNodePtr>();
-}
 }  // namespace
-
-// Functions for valuenode replacement
-void Jit::RunReplace(const CNodePtr &added_node, const ValuePtrList &total_output_tensors) const {
-  MS_EXCEPTION_IF_NULL(added_node);
-  size_t index = 0;
-  for (size_t i = 1; i < added_node->size(); ++i) {
-    const auto &input_i = added_node->input(i);
-    MS_EXCEPTION_IF_NULL(input_i);
-    auto cnode = input_i->cast<CNodePtr>();
-    MS_EXCEPTION_IF_NULL(cnode);
-    MS_LOG(DEBUG) << "Replace output tensors for cnode: " << cnode->DebugString();
-    const auto &output_vnode = cnode->forward().first;
-    MS_EXCEPTION_IF_NULL(output_vnode);
-    MS_LOG(DEBUG) << "Old output value node: " << output_vnode->ToString();
-    MS_EXCEPTION_IF_NULL(output_vnode->abstract());
-    bool is_tuple_out = output_vnode->abstract()->isa<abstract::AbstractSequence>();
-    size_t output_num = GetTensorNumFromAbstract(cnode->abstract());
-    if (output_num == 0) {
-      MS_LOG(DEBUG) << "The output value out is not include tensor";
-      continue;
-    }
-    if (index + output_num > total_output_tensors.size()) {
-      MS_LOG(EXCEPTION) << "The size of total_output_tensors: " << total_output_tensors.size()
-                        << ", but the current index: " << index << ", output num: " << output_num;
-    }
-    // Get new tensors.
-    std::vector<ValuePtr> new_values;
-    for (size_t j = index; j < index + output_num; ++j) {
-      // If jit graph reused in dynamic shape, added output tensor should be update tensor address in run actor
-      auto tensor = total_output_tensors[j]->cast<tensor::TensorPtr>();
-      if (tensor != nullptr) {
-        tensor->set_is_forward_output(true);
-      }
-      (void)new_values.emplace_back(total_output_tensors[j]);
-    }
-    index = index + output_num;
-    // Replace new tensors.
-    // Cannot use output_num > 1, because output can be (a), tuple just have only one element
-    if (is_tuple_out) {
-      output_vnode->set_value(std::make_shared<ValueTuple>(new_values));
-    } else {
-      output_vnode->set_value(new_values[0]);
-    }
-    MS_LOG(DEBUG) << "New output value node: " << output_vnode->ToString();
-  }
-  // Save op info with new tensors for current running jit func graph.
-  if (index != total_output_tensors.size()) {
-    MS_LOG(EXCEPTION) << "The index: " << index
-                      << " should be equal to the size of total_output_tensors: " << total_output_tensors.size();
-  }
-}
-
-void Jit::ReplaceAddedCnodeActualOutput(const CNodePtr &added_node, const ValuePtrList &total_output_tensors) const {
-  MS_EXCEPTION_IF_NULL(added_node);
-  // Replace new output tensors for forward nodes, it will also work in grad graph with the same value node.
-  MS_LOG(DEBUG) << "The added forward make tuple node info: " << added_node->DebugString();
-  // The forward node in jit graph is created during compilation and is a placeholder.
-  // After running jit, need to update to real value.
-  RunReplace(added_node, total_output_tensors);
-}
-
-void Jit::GradJitInner(const FrontendOpRunInfoPtr &op_run_info, const GradExecutor *grad_executor,
-                       const FuncGraphPtr &primal_func_graph, const FuncGraphPtr &jit_grad_graph,
-                       const CNodePtr &added_node, const ValuePtr &added_out_v, const std::string &graph_phase) {
-  MS_EXCEPTION_IF_NULL(op_run_info);
-  MS_EXCEPTION_IF_NULL(grad_executor);
-  compile_info_ = jit_compile_info_.at(graph_phase);
-  // Step 1: Get jit op info
-  const auto &top_cell = grad_executor->top_cell();
-  top_cell->GetOpInfo(op_run_info->op_grad_info, op_run_info->base_op_run_info.op_name, true);
-
-  // Step 2: Flatten output value for replacement
-  ValuePtrList flatten_actual_output_list;
-  CommonUtils::FlattenValueSeqArg(op_run_info->real_out, false, true, &flatten_actual_output_list);
-  auto flatten_replace_value = std::make_shared<ValueTuple>(flatten_actual_output_list);
-  op_run_info->op_grad_info->out_value = flatten_replace_value;
-  MS_LOG(DEBUG) << "jit actual output value: " << op_run_info->real_out->ToString() << ", output id "
-                << PyNativeAlgo::Common::GetIdByValue(op_run_info->real_out);
-
-  auto &&grad_param = CreateJitGradParam(op_run_info, grad_executor, primal_func_graph, jit_grad_graph, graph_phase);
-  grad_param->op_grad_info->out_value = op_run_info->real_out;
-  UpdateAddCnodeFoward(grad_param->op_grad_info, grad_executor, added_node, added_out_v, grad_param->graph_cache_key);
-  if (!autograd::KPynativeWithFProp(grad_param)) {
-    MS_LOG(EXCEPTION) << "Failed to make adjoint for jit cnode";
-  }
-  top_cell->set_jit_out_has_dict(grad_param->jit_out_has_dict);
-}
-
-void Jit::UpdateAddCnodeFoward(const OpGradInfoPtr &op_grad_info, const GradExecutor *grad_executor,
-                               const CNodePtr &added_node, const ValuePtr &added_out_v,
-                               const std::string &graph_phase) {
-  // Replace added cnode forward with actual output
-  ValuePtr flatten_v = added_out_v;
-  bool added_v_is_empty = true;
-  if (added_out_v != nullptr) {
-    ValuePtrList total_output_tensors;
-    CommonUtils::FlattenValueSeqArg(added_out_v, false, true, &total_output_tensors);
-    flatten_v = std::make_shared<ValueTuple>(total_output_tensors);
-    added_v_is_empty = total_output_tensors.empty();
-    ReplaceAddedCnodeActualOutput(added_node, total_output_tensors);
-  }
-
-  // Update output tensors of added forward nodes, which are added to return node of jit func graph.
-  if (!added_v_is_empty) {
-    if (!grad_executor->is_high_order_top_cell()) {
-      // If jit is not control flow, the jit is executed by actor under dynamic shape, and valuenode
-      // will be updated
-      if (!compile_info_.is_control_flow_) {
-        UpdateJitForwardTensorInfoInBpropGraph(op_grad_info->op_info + kAddedValue, flatten_v, graph_phase);
-      }
-    }
-  }
-}
-
-void Jit::UpdateJitForwardTensorInfoInBpropGraph(const std::string &op_info, const ValuePtr &v,
-                                                 const std::string &graph_phase) {
-  const auto it = graph_phase_with_replace_info_.find(graph_phase);
-  if (it == graph_phase_with_replace_info_.end()) {
-    MS_LOG(DEBUG) << "Jit " << graph_phase << " run firstly";
-    auto &replace_info = graph_phase_with_replace_info_[graph_phase];
-    SetIdWithOpInfo(v, op_info, kIndex0, &(replace_info.id_with_op_info));
-    return;
-  }
-  // Not first run
-  if (it->second.op_info_with_tensor_object.find(op_info) != it->second.op_info_with_tensor_object.end()) {
-    MS_LOG(DEBUG) << "Update jit forward output tensor info " << op_info;
-    UpdateForwardOutputTensorInfo(op_info, v, it->second);
-  }
-}
-
-void Jit::SaveForwardOutputTensorInfoInBpropGraph(const FuncGraphPtr &func_graph, const std::string &graph_phase) {
-  const auto it = graph_phase_with_replace_info_.find(graph_phase);
-  if (it == graph_phase_with_replace_info_.end()) {
-    MS_LOG(EXCEPTION) << "Can not find graph phase " << graph_phase << " in graph_phase_with_replace_info";
-  }
-  MS_LOG(DEBUG) << "Save jit forward output tensor info";
-  auto manager = MakeManager();
-  MS_EXCEPTION_IF_NULL(manager);
-  manager->AddFuncGraph(func_graph);
-  SaveForwardOutputTensorInfo(func_graph, true, &(it->second));
-}
-
-void Jit::ProcessCnodeFromAdGrad(const CNodePtr &k_app, const CNodePtr &cnode_morph) {
-  // Run grad process for func_graph and replace forward nodes with its output tensors.
-  if (eliminate_forward_) {
-    ReplaceEquivOut(k_app, cnode_morph);
-  }
-}
 
 void Jit::ClearAutoGradCache() {
   ad::ClearGradCache();
   AutoGradUtil::ClearAutoGradStaticCache();
-}
-
-GradParamPtr Jit::CreateJitGradParam(const FrontendOpRunInfoPtr &op_run_info, const GradExecutor *grad_executor,
-                                     const FuncGraphPtr &jit_forward_graph, const FuncGraphPtr &jit_grad_graph,
-                                     const std::string &graph_phase) {
-  MS_EXCEPTION_IF_NULL(op_run_info);
-  MS_EXCEPTION_IF_NULL(grad_executor);
-  PyNativeAlgo::Common::SetGraphInputAndWeightsInfo(op_run_info, jit_forward_graph);
-  (void)AutoGradUtil::SetValueGradInfo(op_run_info->real_out, InputType::kOpOutput);
-  MS_EXCEPTION_IF_NULL(jit_forward_graph);
-  RecordForwardGraphForJit(op_run_info, grad_executor, jit_forward_graph);
-
-  MS_EXCEPTION_IF_NULL(jit_forward_graph->output()->abstract());
-  if (jit_forward_graph->output()->abstract()->isa<abstract::AbstractAny>()) {
-    op_run_info->op_grad_info->out_abs =
-      CommonUtils::SetAbstractValueToAnyValue(op_run_info->op_grad_info->out_value->ToAbstract());
-  } else {
-    op_run_info->op_grad_info->out_abs = jit_forward_graph->output()->abstract();
-  }
-
-  auto grad_param = std::make_shared<GradParam>(op_run_info->op_grad_info);
-  grad_param->is_control_flow = compile_info_.is_control_flow_;
-
-  grad_param->has_added_v = jit_compile_info_[graph_phase].has_added_v_;
-  grad_param->is_jit_graph = true;
-  // As long as the jit is in the process of dynamic shape,
-  // let it run actor execution to avoid backend pass
-  grad_param->is_jit_self_dynamic_shape = compile_info_.is_dynamic_shape_;
-  grad_param->is_high_order = grad_executor->top_cell()->is_high_order_top_cell();
-  grad_param->fg = jit_grad_graph;
-  grad_param->source_fg = jit_forward_graph;
-  grad_param->graph_cache_key = graph_phase;
-  grad_param->jit_out_has_dict = JitOutputHasDict(op_run_info->op_grad_info->out_abs);
-  return grad_param;
 }
 
 void Jit::GetInputArgsNode(const FrontendOpRunInfoPtr &op_run_info, const GradExecutor *grad_executor,
@@ -570,14 +298,6 @@ bool Jit::GetJitGradGraph(const pipeline::ResourcePtr &resource, const std::stri
   auto primal_fg = BasicClone(jit_forward_graph);
   graph_executor->SetJitPrimalFuncGraph(primal_fg, graph_phase_);
   bool is_control_flow = PyNativeAlgo::Common::IsControlFlowGraph(jit_forward_graph);
-  const auto &output = jit_forward_graph->output();
-  MS_EXCEPTION_IF_NULL(output);
-  const auto &output_abs = output->abstract();
-  MS_EXCEPTION_IF_NULL(output_abs);
-  auto jit_output_has_dict = JitOutputHasDict(output_abs);
-
-  static bool enable_valuenode_replace = (common::GetCompileConfig("PYNATIVE_JIT_GRAD_MODE") == "1");
-  set_eliminate_forward(!is_control_flow && !jit_output_has_dict && enable_valuenode_replace);
   // Using adgrad to generate fprop func graph for jit function in pynative mode
   // Using cloned jit_forward_graph --> primal_fg as input
   // Ensure that the primal graph found by fprop in GradJit is not affected by subsequent compilation passes.
@@ -591,11 +311,6 @@ bool Jit::GetJitGradGraph(const pipeline::ResourcePtr &resource, const std::stri
   jit_compile_info_[graph_phase_].is_control_flow_ = is_control_flow;
   jit_compile_info_[graph_phase_].is_dynamic_shape_ = IsGraphDynamic(jit_forward_graph);
   CommonUtils::DumpGraphIR("jit_modify_before_forward_graph.ir", jit_forward_graph);
-  if (enable_valuenode_replace) {
-    // Append reused forward cnode in forward graph‘s output
-    ModifyOutputNode(jit_forward_graph);
-    jit_compile_info_[graph_phase_].has_added_v_ = jit_forward_graph->modify_output();
-  }
   MS_LOG(DEBUG) << "Func graph is control flow: " << jit_compile_info_[graph_phase_].is_control_flow_
                 << " , is dynamic shape: " << jit_compile_info_[graph_phase_].is_dynamic_shape_;
 
@@ -603,17 +318,10 @@ bool Jit::GetJitGradGraph(const pipeline::ResourcePtr &resource, const std::stri
   auto manager = resource->manager();
   MS_EXCEPTION_IF_NULL(manager);
   manager->KeepRoots({jit_forward_graph});
-  set_eliminate_forward(false);
   return true;
 }
 
 void Jit::Reset() { graph_phase_.clear(); }
-
-void Jit::Clear() {
-  for (auto &t : graph_phase_with_replace_info_) {
-    t.second.clear();
-  }
-}
 
 py::object Jit::GradJit(const py::args &args) {
   if (graph_phase_.empty()) {
@@ -647,54 +355,22 @@ py::object Jit::GradJit(const py::args &args) {
   auto jit_primal_graph = executor->GetJitPrimalFuncGraph(graph_phase_);
   MS_EXCEPTION_IF_NULL(jit_primal_graph);
 
-  // Process according to PYNATIVE_JIT_GRAD_MODE config
   py::object ret;
-  if (common::GetCompileConfig("PYNATIVE_JIT_GRAD_MODE") != "1") {
-    MS_LOG(INFO) << "Using parametrization grad jit methond under pynative mode.";
-    const auto &op_run_info = GetOpRunInfo(args, graph_phase_, jit_forward_graph);
-    MS_LOG(DEBUG) << "Start gradjit using forward primal graph and adgrad graph";
-    GradJitInner(op_run_info, grad_executor.get(), jit_primal_graph, jit_grad_graph);
-    MS_EXCEPTION_IF_NULL(op_run_info->real_out);
-    ret = py::reinterpret_steal<py::object>(tensor::Wrap(op_run_info->real_out));
-  } else {
-    MS_LOG(INFO) << "Using valuenode replacement grad jit methond under pynative mode.";
-    ret = executor->Run(args, py::str(graph_phase_));
-    bool modify_output = compile_info_.has_added_v_;
-    ValuePtr added_out_v = nullptr;
-    const auto &op_run_info = GetOpRunInfo(ret, args, graph_phase_, modify_output, jit_forward_graph, &added_out_v);
-    GradJitInner(op_run_info, grad_executor.get(), jit_primal_graph, jit_grad_graph, GetAddedNode(jit_forward_graph),
-                 added_out_v, graph_phase_);
-    if (modify_output) {
-      auto tuple_out = py::cast<py::tuple>(ret);
-      if (!py::isinstance<py::tuple>(tuple_out) || !tuple_out.size()) {
-        MS_LOG(EXCEPTION) << "Run forward graph with invalid output: " << py::str(ret);
-      }
-      ret = tuple_out[kIndex0];
-      MS_LOG(ERROR) << "Run forward graph and get result: " << py::str(ret);
-    }
-  }
+  const auto &op_run_info = GetOpRunInfo(args, graph_phase_, jit_forward_graph);
+  MS_LOG(DEBUG) << "Start gradjit using forward primal graph and adgrad graph";
+  GradJitInner(op_run_info, grad_executor.get(), jit_primal_graph, jit_grad_graph);
+  MS_EXCEPTION_IF_NULL(op_run_info->real_out);
+  ret = py::reinterpret_steal<py::object>(tensor::Wrap(op_run_info->real_out));
   Reset();
   return ret;
-}
-
-bool GetJitBpropGraphInner(const pipeline::ResourcePtr &resource, const std::string &phase) {
-  return pynative::PyNativeExecutor::GetInstance()->grad_executor()->jit()->GetJitGradGraph(resource, phase);
 }
 
 struct JitGradRegister {
   JitGradRegister() {
     PyNativeAdapter::SetGetJitBpropGraphHandler(
       [](const pipeline::ResourcePtr &resource, const std::string &phase) -> bool {
-        return GetJitBpropGraphInner(resource, phase);
+        return pynative::PyNativeExecutor::GetInstance()->grad_executor()->jit()->GetJitGradGraph(resource, phase);
       });
-    PyNativeAdapter::SetProcessCnodeFromAdGradHandler([](const CNodePtr &k_app, const CNodePtr &cnode_morph) -> void {
-      pynative::PyNativeExecutor::GetInstance()->grad_executor()->jit()->ProcessCnodeFromAdGrad(k_app, cnode_morph);
-    });
-    PyNativeAdapter::SetSetEliminateForwardHandler([](bool eliminate_forward) -> void {
-      pynative::PyNativeExecutor::GetInstance()->grad_executor()->jit()->set_eliminate_forward(eliminate_forward);
-    });
-    PyNativeAdapter::SetGetEliminateForwardHandler(
-      []() -> bool { return pynative::PyNativeExecutor::GetInstance()->grad_executor()->jit()->eliminate_forward(); });
   }
 } grad_jit_register;
 }  // namespace pynative

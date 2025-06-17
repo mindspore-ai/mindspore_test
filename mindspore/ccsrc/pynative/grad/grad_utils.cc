@@ -804,8 +804,6 @@ void AutoGradUtil::CreateHighOrderGraph(const FuncGraphPtr &func_graph, const Ve
   (void)first_grad_fg->transforms().erase(kGrad);
   op_run_info->op_grad_info->out_value = out_value;
   op_run_info->op_grad_info->out_abs = first_grad_fg->output()->abstract();
-  const auto &grad_executor = mindspore::pynative::PyNativeExecutor::grad_executor();
-  grad_executor->jit()->set_eliminate_forward(false);
   auto resource = std::make_shared<pipeline::Resource>();
   auto opt = opt::Optimizer::MakeEmptyOptimizer(resource);
   opt->set_is_first_order_j(false);
@@ -813,7 +811,6 @@ void AutoGradUtil::CreateHighOrderGraph(const FuncGraphPtr &func_graph, const Ve
   py::gil_scoped_acquire gil;
   first_grad_fg = pipeline::HighGradBpropGraphPass(resource);
   auto grad_graph = ad::Grad(first_grad_fg, opt);
-  grad_executor->jit()->set_eliminate_forward(true && common::GetCompileConfig("PYNATIVE_JIT_GRAD_MODE") == "1");
   MS_EXCEPTION_IF_NULL(grad_graph);
   MS_LOG(INFO) << "Finish using adgrad generate second order graph of graph: " << first_grad_fg->ToString();
   auto grad_param = std::make_shared<GradParam>(op_run_info->op_grad_info);

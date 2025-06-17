@@ -906,7 +906,6 @@ void GradExecutor::ClearRes() {
   finded_top_cell_ = nullptr;
   ready_run_top_cell_.clear();
   dynamic_inputs_cells_.clear();
-  jit()->Clear();
 }
 
 void GradExecutor::WorkerJoin() { runtime::Pipeline::Get().bprop_stage()->WorkerJoin(); }

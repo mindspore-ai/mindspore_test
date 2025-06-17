@@ -36,7 +36,6 @@
 #include "frontend/operator/composite/composite.h"
 #include "pipeline/jit/ps/resource.h"
 #include "pynative/base.h"
-#include "pynative/grad/ir/bprop_tensor_replace.h"
 #include "utils/ms_context.h"
 #include "include/common/pynative/variable.h"
 

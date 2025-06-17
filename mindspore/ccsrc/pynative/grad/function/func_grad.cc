@@ -708,13 +708,6 @@ BackwardNodePtr BuildGraphBackwardNode(const GradParamPtr &grad_param) {
   grad_param->is_jit_graph = true;
   auto [cache_hit, bprop_graph] = mindspore::ad::GetBpropGraph(grad_param);
   MS_LOG(DEBUG) << "Bprop Graph cache hit: " << cache_hit;
-  bool is_jit_dynamic_shape = grad_param->is_jit_graph;
-  // Save replace info in first time
-  if (!cache_hit && is_jit_dynamic_shape && grad_param->has_added_v &&
-      common::GetCompileConfig("PYNATIVE_JIT_GRAD_MODE") == "1") {
-    const auto &jit = PyNativeExecutor::grad_executor()->jit();
-    jit->SaveForwardOutputTensorInfoInBpropGraph(bprop_graph, grad_param->graph_cache_key);
-  }
 
   CommonUtils::DumpGraphIR("call_graph.ir", bprop_graph);
   ValuePtrList flatten_outputs;
