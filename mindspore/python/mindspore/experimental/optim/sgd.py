@@ -15,14 +15,14 @@
 """sgd"""
 from __future__ import absolute_import
 
-from mindspore.ops import functional as F, composite as C, operations as P
+from mindspore import ops
 from mindspore.common.tensor import Tensor
 import mindspore.common.dtype as mstype
 from mindspore import _checkparam as Validator
 from mindspore.experimental.optim.optimizer import Optimizer
 from mindspore import jit
 
-_sgd_opt = C.MultitypeFuncGraph("sgd_opt")
+_sgd_opt = ops.MultitypeFuncGraph("sgd_opt")
 
 
 @_sgd_opt.register("Function", "Tensor", "Tensor", "Tensor", "Tensor", "Tensor", "Tensor")
@@ -129,7 +129,7 @@ class SGD(Optimizer):
                              "equal to 0.0, but got 'momentum' {}, 'dampening' {}".format(momentum, dampening))
         self.accum = self.parameters.clone(prefix="accum", init='zeros')
         self.stat = self.parameters.clone(prefix="stat", init='ones')
-        self.op_cast = P.Cast()
+        self.op_cast = ops.Cast()
 
     @jit
     def implementation(self, momentum, lr, group_id, gradients, maximize, dampening, weight_decay, nesterov):
@@ -137,9 +137,9 @@ class SGD(Optimizer):
         start_id = self.group_start_id[group_id]
         end_id = self.group_start_id[group_id + 1]
         momentum = self.op_cast(momentum, mstype.float32)
-        opt = P.SGD(dampening, weight_decay, nesterov)
-        grads = tuple([grad if not maximize else F.neg(grad) for grad in gradients[start_id: end_id]])
-        self.hyper_map(F.partial(_sgd_opt, opt, momentum, lr), grads,
+        opt = ops.SGD(dampening, weight_decay, nesterov)
+        grads = tuple([grad if not maximize else ops.neg(grad) for grad in gradients[start_id: end_id]])
+        self.hyper_map(ops.partial(_sgd_opt, opt, momentum, lr), grads,
                        self.parameters[start_id: end_id], self.accum[start_id: end_id],
                        self.stat[start_id: end_id])
         return True

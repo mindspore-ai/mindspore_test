@@ -15,7 +15,6 @@
 """adamw"""
 from __future__ import absolute_import
 
-from mindspore.ops import functional as F, composite as C, operations as P
 from mindspore.common.parameter import Parameter
 from mindspore.common.tensor import Tensor
 import mindspore.common.dtype as mstype
@@ -25,14 +24,14 @@ from mindspore.ops import auto_generate as gen
 from mindspore import ops
 from mindspore import jit
 
-_adamw_opt = C.MultitypeFuncGraph("adamw_opt")
-_speed_adamw_opt = C.MultitypeFuncGraph("speed_adamw_opt")
+_adamw_opt = ops.MultitypeFuncGraph("adamw_opt")
+_speed_adamw_opt = ops.MultitypeFuncGraph("speed_adamw_opt")
 
-op_mul = P.Mul()
-op_pow = P.Pow()
-op_sqrt = P.Sqrt()
-op_maximum = P.Maximum()
-hyper_map = C.HyperMap()
+op_mul = ops.Mul()
+op_pow = ops.Pow()
+op_sqrt = ops.Sqrt()
+op_maximum = ops.Maximum()
+hyper_map = ops.HyperMap()
 
 
 @_speed_adamw_opt.register("Function", "Float", "Float", "Tensor", "Float", "Float", "Bool", "Bool", "Tensor", "Tensor",
@@ -76,18 +75,18 @@ def _run_adamw_opt(weight_decay_new, step_size, amsgrad, eps, bias_correction2_s
     """Apply adamw optimizer to the weight parameter."""
     success = True
     next_param = op_mul(param, weight_decay_new)
-    F.assign(exp_avg, op_mul(exp_avg, beta1) + op_mul(grad, 1 - beta1))
-    F.assign(exp_avg_sq, ops.addcmul(op_mul(exp_avg_sq, beta2), grad, grad, 1 - beta2))
+    ops.assign(exp_avg, op_mul(exp_avg, beta1) + op_mul(grad, 1 - beta1))
+    ops.assign(exp_avg_sq, ops.addcmul(op_mul(exp_avg_sq, beta2), grad, grad, 1 - beta2))
 
     if amsgrad:
         next_max_exp_avg = op_maximum(max_exp_avg_sq, exp_avg_sq)
         denom = op_sqrt(next_max_exp_avg) / bias_correction2_sqrt + eps
-        F.assign(max_exp_avg_sq, next_max_exp_avg)
+        ops.assign(max_exp_avg_sq, next_max_exp_avg)
     else:
         denom = op_sqrt(exp_avg_sq) / bias_correction2_sqrt + eps
 
     return_param = next_param - op_mul(exp_avg / denom, step_size)
-    F.assign(param, return_param)
+    ops.assign(param, return_param)
     return success
 
 
@@ -205,16 +204,16 @@ class AdamW(Optimizer):
         self.max_exp_avg_sq = self.parameters.clone(prefix="max_exp_avg_sq", init='zeros')
         self.state_step = Parameter(Tensor(0, mstype.int32), "state_step")
         self.increase_tensor = Tensor(1, mstype.int32)
-        self.assignadd = P.AssignAdd()
-        self.op_cast = P.Cast()
+        self.assignadd = ops.AssignAdd()
+        self.op_cast = ops.Cast()
 
     @jit
     def implementation(self, lr, weight_decay, beta1, beta2, amsgrad, eps, grads, start_id, end_id):
         """Extract the common computing part for acceleration"""
         weight_decay_new, step_size, bias_correction2_sqrt = prepare_func(lr, weight_decay,
                                                                           self.state_step, beta1, beta2)
-        self.hyper_map(F.partial(_adamw_opt, weight_decay_new, step_size, amsgrad,
-                                 eps, bias_correction2_sqrt, beta1, beta2),
+        self.hyper_map(ops.partial(_adamw_opt, weight_decay_new, step_size, amsgrad,
+                                   eps, bias_correction2_sqrt, beta1, beta2),
                        self.parameters[start_id: end_id], grads, self.exp_avg[start_id: end_id],
                        self.exp_avg_sq[start_id: end_id], self.max_exp_avg_sq[start_id: end_id])
         return True
@@ -228,7 +227,8 @@ class AdamW(Optimizer):
             lr = self.lrs[group_id]
             if isinstance(group.get("lr"), float):
                 lr = self.op_cast(group.get("lr"), mstype.float32)
-            grads = tuple([grad if not group.get("maximize") else F.neg(grad) for grad in gradients[start_id: end_id]])
+            grads = tuple([grad if not group.get("maximize") else ops.neg(grad) \
+                           for grad in gradients[start_id:end_id]])
 
             self.implementation(lr, group.get("weight_decay"), beta1, beta2, group.get("amsgrad"), group.get("eps"),
                                 grads, start_id, end_id)
@@ -265,7 +265,7 @@ class SpeedAdamW(Optimizer):
         self.exp_avg_sq = self.parameters.clone(prefix="exp_avg_sq", init='zeros')
         self.state_step = Parameter(Tensor([0], mstype.float32), "state_step")
         self.increase_tensor = Tensor(1, mstype.float32)
-        self.assignadd = P.AssignAdd()
+        self.assignadd = ops.AssignAdd()
         self.adamw_opt = gen.ApplyAdamW()
 
     def construct(self, gradients):
@@ -285,9 +285,9 @@ class SpeedAdamW(Optimizer):
             if group.get("amsgrad"):
                 raise ValueError("For SpeedAdamW, the value of amsgrad can only be False.")
 
-            self.hyper_map(F.partial(_speed_adamw_opt, self.adamw_opt, beta1, beta2, lr,
-                                     group.get("eps"), group.get("weight_decay"),
-                                     group.get("amsgrad"), maximize, bias_correction1, bias_correction2),
+            self.hyper_map(ops.partial(_speed_adamw_opt, self.adamw_opt, beta1, beta2, lr,
+                                       group.get("eps"), group.get("weight_decay"),
+                                       group.get("amsgrad"), maximize, bias_correction1, bias_correction2),
                            self.parameters[start_id: end_id], grads, self.exp_avg[start_id: end_id],
                            self.exp_avg_sq[start_id: end_id])
 
