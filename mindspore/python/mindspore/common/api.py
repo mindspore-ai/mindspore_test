@@ -341,7 +341,7 @@ def _get_parameter_layout():
     return layout
 
 
-def _handle_arg(obj, arg, compile_arg):
+def _handle_arg(obj, arg, has_mutable_arg):
     """Handle arg for runtime .If need handle the arg, return True"""
     from mindspore._extends.parse import compile_config
     if isinstance(arg, PythonTensor):
@@ -351,7 +351,7 @@ def _handle_arg(obj, arg, compile_arg):
             return arg
     elif isinstance(arg, (Tensor, CSRTensor, COOTensor)):
         return arg
-    elif compile_arg is not None and hasattr(compile_arg, "__ms_mutable__") and getattr(compile_arg, "__ms_mutable__"):
+    elif has_mutable_arg:
         # mutable([]) will be eliminated by FuncGraphSpecializer, and empty list is not supported by backend.
         if isinstance(arg, list) and not arg:
             return None
@@ -365,7 +365,7 @@ def _handle_arg(obj, arg, compile_arg):
     return None
 
 
-def _handle_arg_predict(obj, arg, compile_arg):
+def _handle_arg_predict(obj, arg, has_mutable_arg):
     """Handle arg for runtime .If need handle the arg, return True"""
     if arg is None:
         return None
@@ -374,8 +374,7 @@ def _handle_arg_predict(obj, arg, compile_arg):
         return None
 
     if isinstance(arg, (list, tuple)):
-        if compile_arg is not None and hasattr(compile_arg, "__ms_mutable__") and \
-                getattr(compile_arg, "__ms_mutable__"):
+        if has_mutable_arg:
             # mutable([]) will be eliminated by FuncGraphSpecializer, and empty list is not supported by backend.
             if isinstance(arg, list) and not arg:
                 return None
@@ -387,35 +386,30 @@ def _handle_arg_predict(obj, arg, compile_arg):
     return arg
 
 
-def _get_args_for_run(obj, args, kwargs, compile_args):
+def _get_args_for_run(obj, args, kwargs, has_mutable_args_list, is_predict):
     """Get the actual input args and kwargs for runtime."""
     new_args = []
-    for arg, compile_arg in zip(args, compile_args):
-        new_arg = _handle_arg(obj, arg, compile_arg)
+    fn = _handle_arg_predict if is_predict else _handle_arg
+    for arg, has_mutable_arg in zip(args, has_mutable_args_list):
+        new_arg = fn(obj, arg, has_mutable_arg)
         if new_arg is not None:
             new_args.append(new_arg)
 
     for _, value in kwargs.items():
-        new_value = _handle_arg(obj, value, None)
+        new_value = fn(obj, value, None)
         if new_value is not None:
             new_args.append(new_value)
 
     return new_args
 
 
-def _get_args_for_run_predict(obj, args, kwargs, compile_args):
-    """Get the actual input args and kwargs for runtime."""
+def _get_mutable_flags(compile_args):
+    """Get a list of booleans indicating whether each argument is marked as mutable"""
     new_args = []
-    for arg, compile_arg in zip(args, compile_args):
-        new_arg = _handle_arg_predict(obj, arg, compile_arg)
-        if new_arg is not None:
-            new_args.append(new_arg)
-
-    for _, value in kwargs.items():
-        new_value = _handle_arg_predict(obj, value, None)
-        if new_value is not None:
-            new_args.append(new_value)
-
+    for compile_arg in compile_args:
+        has_mutable_arg = compile_arg is not None and hasattr(compile_arg, "__ms_mutable__") and \
+                          getattr(compile_arg, "__ms_mutable__")
+        new_args.append(has_mutable_arg)
     return new_args
 
 
@@ -883,7 +877,7 @@ class _JitExecutor:
         Returns:
             new_inputs, new input args, which are required for running.
         """
-        return _get_args_for_run(self, args_list, kwargs, self._compile_args)
+        return _get_args_for_run(self, args_list, kwargs, _get_mutable_flags(self._compile_args), False)
 
     def _get_func_graph_proto(self, obj, exec_id, ir_type="onnx_ir", use_prefix=False, incremental=False):
         """Get graph proto from pipeline."""

@@ -48,8 +48,8 @@ from mindspore._c_expression import init_pipeline, update_func_graph_hyper_param
 from mindspore import _checkparam as Validator
 from mindspore.common import dtype as mstype
 from mindspore.common.api import _cell_graph_executor, _pynative_executor, _get_args_for_run, cells_compile_cache, \
-    _no_grad
-from mindspore.common.api import _convert_python_data, _get_args_for_run_predict
+    _no_grad, _get_mutable_flags
+from mindspore.common.api import _convert_python_data
 from mindspore.common.api import _process_dyn_args, _generate_dyn_compile_args
 from mindspore.common.parameter import _Buffer, Parameter, ParameterTuple, _is_parameter_generated
 from mindspore.common.tensor import Tensor
@@ -232,7 +232,7 @@ class Cell(Cell_):
         super().__setattr__("_has_config_recompute", False)
         super().__setattr__("_lazy_user_parameters", None)
         super().__setattr__("_dynamic_shape_inputs", None)
-        super().__setattr__("_compile_args", None)
+        super().__setattr__("_has_mutable_args_list", None)
         super().__setattr__("_jit_config_dict", dict())
         super().__setattr__("grad_ops_label", False)
         super().__setattr__("_is_check_and_refresh", False)
@@ -1295,7 +1295,7 @@ class Cell(Cell_):
         if not hasattr(self, "phase"):
             return False, None
         if (self.phase == "prefill" or self.phase == 'increment') and self.phase in self.phase_cache:
-            new_args = _get_args_for_run_predict(self, args, kwargs, self._compile_args)
+            new_args = _get_args_for_run(self, args, kwargs, self._has_mutable_args_list, True)
             if self.jit_config_dict:
                 jit_config_dict = self.jit_config_dict
             else:
@@ -1697,8 +1697,9 @@ class Cell(Cell_):
             kwargs (dict): Kwargs of the Cell object.
         """
         _init_auto_parallel_context(self)
-        self._compile_args = self._get_compile_args(args)
-        _cell_graph_executor.compile(self, *self._compile_args, phase=self.phase,
+        compile_args = self._get_compile_args(args)
+        self._has_mutable_args_list = _get_mutable_flags(compile_args)
+        _cell_graph_executor.compile(self, *compile_args, phase=self.phase,
                                      jit_config_dict=self._jit_config_dict, **kwargs)
         _clear_auto_parallel_context(self)
 
@@ -1717,7 +1718,7 @@ class Cell(Cell_):
             Object, the result of executing.
         """
         self.compile(*args, **kwargs)
-        new_args = _get_args_for_run(self, args, kwargs, self._compile_args)
+        new_args = _get_args_for_run(self, args, kwargs, self._has_mutable_args_list, False)
         if self.jit_config_dict:
             jit_config_dict = self.jit_config_dict
         else:
