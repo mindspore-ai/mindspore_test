@@ -95,7 +95,9 @@ bool IsInWhiteList(const CNodePtr &cnode) {
 
 static AbstractBasePtr GetRealAbstract(const AnfNodePtr &node) {
   if (IsPrimitiveCNode(node, prim::kPrimDepend)) {
-    auto &input = node->cast<CNodePtr>()->input(1);
+    auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
+    auto &input = cnode->input(1);
     MS_EXCEPTION_IF_NULL(input);
     return input->abstract();
   }
@@ -119,6 +121,7 @@ void PipelineTransformer::BroadCastGraphStage(const FuncGraphPtr &fg) {
 }
 
 FuncGraphPtr FindNodeGraph(const CNodePtr &cnode) {
+  MS_EXCEPTION_IF_NULL(cnode);
   auto graph = cnode->func_graph();
   if (IsValueNode<FuncGraph>(cnode->input(0))) {
     graph = GetValueNode<FuncGraphPtr>(cnode->input(0));
@@ -347,6 +350,7 @@ AnfNodePtr PipelineTransformer::GetArgumentsByParameter(const AnfNodePtr &parame
         continue;
       }
       auto cur_fg = cur_fg_use.first->first->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(cur_fg);
       auto argument = cur_fg->input(pos + 1);
       if (argument->isa<Parameter>()) {
         return GetArgumentsByParameter(argument);
@@ -400,6 +404,7 @@ bool PipelineTransformer::LabelParameterStart(const FuncGraphPtr &graph) {
     }
     if (NeedGrad(cnode)) {
       auto prim = GetCNodePrimitive(cnode);
+      MS_EXCEPTION_IF_NULL(prim);
       if (enable_share_cell_) {
         (void)prim->AddAttr(PARAMETER_START_SHARE_CELL, MakeValue(0));
       } else {
@@ -1734,7 +1739,9 @@ AnfNodePtr PipelineTransformer::GenNewRecvFromOld(const AnfNodePtr &node, const 
   auto recv_tag = recv_tag_map[src_rank];
   recv_tag_map[src_rank]++;
   auto dtype = node->user_data<Type>(SLICE_DTYPE);
-  auto slice_shape = *(cnode->user_data<Shape>(SLICE_SHAPE));
+  auto slice_shape_ptr = cnode->user_data<Shape>(SLICE_SHAPE);
+  MS_EXCEPTION_IF_NULL(slice_shape_ptr);
+  auto slice_shape = *slice_shape_ptr;
   auto shape = GetShapeValue(slice_shape);
   Attr attr_tag = std::make_pair(SR_TAG, MakeValue(recv_tag));
   Attr attr_rank = std::make_pair(SRC_RANK, MakeValue(src_rank));
