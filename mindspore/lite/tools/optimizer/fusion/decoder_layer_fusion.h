@@ -60,6 +60,7 @@ class DecoderLayerFusion : public MultiplePatternProcessPass {
   bool IsActGELU(const FuncGraphPtr &func_graph, const EquivPtr &equiv) const;
   lite::STATUS GetEps(const EquivPtr &equiv, VarPtr node_name, float *eps) const;
   VectorRef DefineDecoderLayerNorm(VectorRef input, VarPtr gamma, VarPtr eps) const;
+  VectorRef InitInputs(bool post_layernorm, bool layernorm_fusion, bool is_position_bias) const;
 
  protected:
   const std::string kPatternDecoderLayerPre = "PatternDecoderLayerPre";

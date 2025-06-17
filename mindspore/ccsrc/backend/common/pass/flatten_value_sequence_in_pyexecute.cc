@@ -131,7 +131,9 @@ const AnfNodePtr FlattenValueSequenceInPyExecute::Process(const FuncGraphPtr &fu
       input_build_info.kernel_object_types.emplace_back(input_kernel_object_types[i - 1]);
       continue;
     }
-    const auto &value = input->cast<ValueNodePtr>()->value();
+    const auto &value_node = input->cast<ValueNodePtr>();
+    MS_EXCEPTION_IF_NULL(value_node);
+    const auto &value = value_node->value();
     if (value == nullptr || (!value->isa<ValueSequence>())) {
       new_inputs.emplace_back(input);
       if (i != 0) {

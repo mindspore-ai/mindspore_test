@@ -400,9 +400,18 @@ def _tensor_getitem(self, index):
 
 def do_copy(dst, src):
     """do copy"""
-    if F.shape(src) == (1,):
-        src = src.squeeze()
-    return inplace_copy_op(dst, src)
+    src_shape = F.shape(src)
+    dst_shape = F.shape(dst)
+    if F.is_sequence_value_unknown(src_shape) or F.is_sequence_value_unknown(dst_shape):
+        return inplace_copy_op(dst, src)
+    if src_shape == dst_shape or not src_shape:
+        return inplace_copy_op(dst, src)
+    # remove all leading 1, e.g. (1, 1, 2, 3) -> (2, 3)
+    idx = 0
+    while idx < len(src_shape) and src_shape[idx] == 1:
+        idx += 1
+    src_viewed = src.view(src_shape[idx:])
+    return inplace_copy_op(dst, src_viewed)
 
 
 def _tensor_setitem(self, index, value):

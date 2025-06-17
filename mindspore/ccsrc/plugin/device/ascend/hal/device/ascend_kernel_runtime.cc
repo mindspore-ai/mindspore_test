@@ -30,7 +30,6 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/common/utils/anfalgo.h"
-#include "plugin/device/ascend/hal/common/ascend_utils.h"
 #include "plugin/res_manager/ascend/mem_manager/ascend_memory_manager.h"
 #include "plugin/res_manager/ascend/event/ascend_event.h"
 #include "debug/profiler/profiling.h"

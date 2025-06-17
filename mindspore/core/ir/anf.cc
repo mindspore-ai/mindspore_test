@@ -673,6 +673,7 @@ const ValuePtr &Parameter::default_param_raw() const { return default_param_; }
 ValuePtr Parameter::default_param() const {
   if (default_param_ != nullptr && default_param_->isa<tensor::TensorPyWrapperBase>()) {
     auto tensorpy = default_param_->cast<tensor::TensorPyWrapperBasePtr>();
+    MS_EXCEPTION_IF_NULL(tensorpy);
     return tensorpy->GetTensorWrapper();
   }
   return default_param_;
@@ -1143,6 +1144,7 @@ PrimitivePtr GetPrimitiveFromValueNode(const AnfNodePtr &node) {
 }
 
 static std::string GetNodeTargetForVarInputNode(const CNodePtr &cnode) {
+  MS_EXCEPTION_IF_NULL(cnode);
   auto &inputs = cnode->inputs();
   AnfNodeWeakPtrList real_inputs;
   const size_t update_state_valid_input_index = 2;

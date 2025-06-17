@@ -250,6 +250,7 @@ std::vector<FuncGraphPtr> BroadFirstSearchGraphUsed(const FuncGraphPtr &root, co
 
 // To get CNode inputs to a vector as successors for TopoSort().
 static void FetchCNodeSuccessors(const CNodePtr &cnode, AnfNodeWeakPtrList *vecs) {
+  MS_EXCEPTION_IF_NULL(cnode);
   auto &inputs = cnode->weak_inputs();
   vecs->reserve(vecs->size() + inputs.size());
 

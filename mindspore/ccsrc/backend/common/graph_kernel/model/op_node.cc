@@ -39,7 +39,9 @@
 namespace mindspore::graphkernel::inner {
 std::vector<int64_t> GetListInt(const ValuePtr &attr_value) {
   std::vector<int64_t> list_int;
-  const auto &vals = attr_value->cast<ValueSequencePtr>()->value();
+  const auto &val_seq = attr_value->cast<ValueSequencePtr>();
+  MS_EXCEPTION_IF_NULL(val_seq);
+  const auto &vals = val_seq->value();
   (void)std::transform(vals.begin(), vals.end(), std::back_inserter(list_int),
                        [](const ValuePtr &v) { return AnfUtils::GetIntValue(v); });
   return list_int;
@@ -737,6 +739,7 @@ void PagedAttentionOp::RectifyAbstract(const PrimitivePtr &prim, AbstractBasePtr
   constexpr size_t PA_INPUT_NUM = 5;
   constexpr size_t PA_MASK_INPUT_NUM = 6;
   if (abs_list->size() == PA_INPUT_NUM || abs_list->size() == PA_MASK_INPUT_NUM) {
+    MS_EXCEPTION_IF_NULL(prim);
     CHECK_ATTR(prim->attrs(), "head_num");
     (void)abs_list->emplace_back(prim->GetAttr("head_num")->ToAbstract());
     CHECK_ATTR(prim->attrs(), "scale_value");

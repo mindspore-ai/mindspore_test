@@ -30,6 +30,7 @@
 #include "backend/common/graph_kernel/graph_kernel_helper.h"
 #include "backend/common/graph_kernel/adapter/graph_kernel_comm_info_manager.h"
 #include "mindspore/ops/op_def/other_ops.h"  // collective communication operations
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
@@ -502,6 +503,7 @@ const std::vector<OpWithLevel> clusterable_ops_with_level_dvm = {
   {kAscendDevice, OpLevel_0, prim::kPrimFloor},        {kAscendDevice, OpLevel_0, prim::kPrimCeil},
   {kAscendDevice, OpLevel_0, prim::kPrimTrunc},        {kAscendDevice, OpLevel_1, prim::kPrimMatMul},
   {kAscendDevice, OpLevel_1, prim::kPrimBatchMatMul},  {kAscendDevice, OpLevel_1, prim::kPrimGroupedMatmul},
+  {kAscendDevice, OpLevel_2, prim::kPrimTensorMove},
 };
 
 bool IsComplexDataType(const AnfNodePtr &node) {

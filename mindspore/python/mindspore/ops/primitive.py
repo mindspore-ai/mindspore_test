@@ -1035,7 +1035,6 @@ def _run_op(obj, op_name, args):
     res = _pynative_executor.run_op_async(obj, op_name, args)
     # Add for jit context.
     if jit_context():
-        # todo support TensorPy
         return jit_context().run_op(obj, res, *args)
     return res
 

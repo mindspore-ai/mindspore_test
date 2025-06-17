@@ -1080,9 +1080,8 @@ REG_BPROP_BUILDER("SortExt").FreeUselessValues_IO({i0, i2, i3}, {i0}).SetBody(BO
 
   auto indices = ib->TupleGetItem(ib->GetInput(i4), i1);
   auto dout0 = ib->TupleGetItem(ib->GetInput(i5), i0);
-  auto zeros = ib->ZerosLikeExt(input, ib->Value(static_cast<int64_t>(ib->GetDtypeId(dout0))));
-  auto reduce = ib->Value(static_cast<int64_t>(Reduce::REDUCE_NONE));
-  auto res = ib->Emit("Scatter", {zeros, dim, indices, dout0, reduce});
+  auto res = ib->ZerosLikeExt(input, ib->Value(static_cast<int64_t>(ib->GetDtypeId(dout0))));
+  (void)ib->Emit("InplaceScatterSrc", {res, dim, indices, dout0});
   return {res, ib->OutZeros(dim), ib->OutZeros(ib->GetInput(i2)), ib->OutZeros(ib->GetInput(i3))};
 });
 

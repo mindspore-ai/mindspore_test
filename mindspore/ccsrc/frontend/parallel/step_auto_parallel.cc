@@ -1186,6 +1186,7 @@ void AugmentCostGraph(const std::vector<AnfNodePtr> &all_nodes) {
       MS_EXCEPTION_IF_NULL(target_cnode);
       auto input_index = target.second;
       auto target_op_info = target_cnode->user_data<OperatorInfo>();
+      MS_EXCEPTION_IF_NULL(target_op_info);
       if (!target_op_info->repeated_num_in_dev_matrix_right() && tmp_identity_ptr->repeated_num_in_dev_matrix_right()) {
         tmp_identity_ptr->set_repeated_num_in_dev_matrix_right(false);
         tmp_identity_ptr->ClearStrategyCost();

@@ -688,6 +688,7 @@ def get_operation_namespace_symbol(var: str):
     logger.debug("get operation ops info: %r", ops_info)
     return ops_info
 
+
 def get_ast_type(node):
     """Get the ast type."""
     ast_type = AST_SUB_TYPE_UNKNOWN
@@ -904,6 +905,7 @@ def get_method_info(obj):
     class_name_and_method_name = obj.__qualname__.split('.')
     return class_name_and_method_name[0], class_name_and_method_name[1]
 
+
 def can_constant_fold(obj):
     """Check if the obj is the function can be constantly folded."""
     return obj in constant_fold_functions
@@ -1011,8 +1013,8 @@ class Parser:
             attr = 'source'
             try:
                 source_lines = inspect.getsourcelines(self.fn)
-                if context.get_context('support_binary') and \
-                   '/mindspore/' not in self.filename and '\\mindspore\\' not in self.filename and \
+                support_binary = context.get_context('support_binary') or os.getenv('MS_SUPPORT_BINARY', None) == '1'
+                if support_binary and '/mindspore/' not in self.filename and '\\mindspore\\' not in self.filename and \
                    (not hasattr(self.fn, attr) or getattr(self.fn, attr) != source_lines):
                     if not os.access(self.filename, os.W_OK):
                         raise PermissionError(f"Don't have the write permission on the file {self.filename}.")

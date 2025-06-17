@@ -32,7 +32,6 @@
 #include "plugin/res_manager/ascend/collective/multi_ascend_communication_group.h"
 #include "plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
 #include "plugin/res_manager/ascend/collective/dvm_collective_comm_lib.h"
-#include "plugin/device/ascend/hal/common/ascend_utils.h"
 #include "utils/dlopen_macro.h"
 
 #ifndef EXPORT_WRAPPER
@@ -82,6 +81,8 @@ class EXPORT_WRAPPER MultiAscendCollectiveCommLib : public CollectiveCommunicati
   std::string CommName(const std::string &group_name) override;
 
   bool ResumeHcclComm() override;
+
+  bool CommSwitchNic(const std::vector<uint32_t> &global_ranks, const std::vector<bool> &use_backup) override;
 
   bool AllGather(const void *send_buff, void *recv_buff, size_t send_count, TypeId data_type,
                  const std::string &group_name, void *stream = nullptr) override;

@@ -29,7 +29,6 @@
 #include "plugin/res_manager/ascend/device_context_conf/op_precision_conf.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "plugin/device/ascend/hal/hardware/ge_graph_optimization.h"
-#include "plugin/device/ascend/hal/common/ascend_utils.h"
 #include "plugin/device/ascend/hal/hardware/acl_somas.h"
 #include "plugin/device/ascend/hal/hardware/acl_stream_assign.h"
 #include "plugin/device/ascend/hal/hardware/gpto.h"
@@ -330,6 +329,12 @@ void InlineSubGraph(const KernelGraphPtr &graph, const KernelGraphPtr &sub_graph
   auto main_graph = kernel_cnode->func_graph();
   MS_EXCEPTION_IF_NULL(main_graph);
   auto mng = main_graph->manager();
+  if (mng == nullptr) {
+    mng = MakeManager({main_graph});
+    MS_EXCEPTION_IF_NULL(mng);
+    mng->AddFuncGraph(main_graph);
+    main_graph->set_manager(mng);
+  }
   auto kernel_info = dynamic_cast<device::KernelInfo *>(kernel_cnode->kernel_info());
   MS_EXCEPTION_IF_NULL(kernel_info);
   AnfNodePtrList inp;
@@ -991,6 +996,33 @@ void FixExecutionOrderForInlineControlFlowGraph(const KernelGraphPtr &graph) {
   }
   graph->set_execution_order(execution_order);
 }
+
+void SavePrevStepWeight(const std::vector<AnfNodePtr> &weights, aclrtStream stream) {
+  for (const auto &node : weights) {
+    if (!node->isa<Parameter>()) {
+      continue;
+    }
+    auto param = node->cast<ParameterPtr>();
+    MS_EXCEPTION_IF_NULL(param);
+    if (common::AnfAlgo::IsParameterWeight(param)) {
+      auto tensor = param->default_param()->cast<tensor::TensorPtr>();
+      MS_EXCEPTION_IF_NULL(tensor);
+      auto out_addr = AnfAlgo::GetMutableOutputAddr(param, 0, false);
+      if (out_addr == nullptr || out_addr->GetPtr() == nullptr || IsOneOfHWSpecialFormat(out_addr->format())) {
+        // skip async copy if addr is nullptr.
+        // special format need convert to default format at host, so skip async copy if format is a special format.
+        continue;
+      }
+      auto size = tensor->Size();
+      auto ret = CALL_ASCEND_API(aclrtMemcpyAsync, tensor->data_c(), size, out_addr->GetMutablePtr(), size,
+                                 ACL_MEMCPY_DEVICE_TO_HOST, stream);
+      if (ret != ACL_ERROR_NONE) {
+        MS_LOG_WITH_NODE(EXCEPTION, param) << "Call aclrtMemcpyAsync failed, param: " << param->DebugString();
+      }
+      tensor->set_copy_done_flag(true);
+    }
+  }
+}
 }  // namespace
 
 void GeKernelExecutor::Initialize() {
@@ -1369,8 +1401,6 @@ bool GeKernelExecutor::LaunchKernelHP(const CNodePtr &kernel, const std::vector<
                                       const std::vector<KernelTensor *> &workspace,
                                       const std::vector<KernelTensor *> &outputs, KernelMod *kernel_mod,
                                       void *stream) const {
-  uint64_t start_time = 0;
-  PROFILER_START(start_time);
   if (nop_op_to_memcpy_.find(kernel) != nop_op_to_memcpy_.end()) {
     if (!MemoryCopyAsync(kernel, inputs, outputs, stream)) {
       MS_LOG(ERROR) << "Memory copy failed for kernel " << kernel->fullname_with_scope();
@@ -1392,8 +1422,6 @@ bool GeKernelExecutor::LaunchKernelHP(const CNodePtr &kernel, const std::vector<
       return false;
     }
   }
-  PROFILER_END(start_time, runtime::ProfilerModule::kKernel, runtime::ProfilerEvent::kKernelLaunch,
-               kernel->fullname_with_scope(), false);
   return true;
 }
 

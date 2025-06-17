@@ -25,6 +25,7 @@
 #include "debug/data_dump/tensor_info_collect.h"
 #include "debug/data_dump/tensor_statistic.h"
 #include "debug/data_dump/overflow_counter.h"
+#include "debug/dump/utils.h"
 #include "debug/utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/debug/common/csv_writer.h"
@@ -647,7 +648,7 @@ TensorInfoCommForDump GetTensorInfoCommFromCnode(const CNodePtr &cnode) {
   MS_EXCEPTION_IF_NULL(kernel_graph);
   auto root_graph_id = kernel_graph->root_graph_id();
 
-  uint32_t rank_id = GetRankId();
+  uint32_t rank_id = datadump::GetRankID();
   std::string dump_path = GenerateDumpPath(root_graph_id, rank_id);
   std::string op_type = common::AnfAlgo::GetCNodeName(cnode);
   std::string op_name = GetKernelNodeName(cnode);
@@ -836,25 +837,6 @@ std::string CheckDatasetSinkMode(const KernelGraphPtr &graph_ptr) {
     error_info = "e2e_dump is not supported on GPU with dataset_sink_mode=True. Please set dataset_sink_mode=False";
   }
   return error_info;
-}
-
-void Dump(const KernelGraphPtr &graph, uint32_t rank_id) {
-  MS_LOG(DEBUG) << "Start!";
-  MS_EXCEPTION_IF_NULL(graph);
-  E2eDump::DumpData(graph.get(), rank_id);
-  MS_LOG(DEBUG) << "Finish!";
-}
-
-uint32_t GetRankID() {
-  uint32_t rank_id = 0;
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto env_rank_id = common::GetEnv("RANK_ID");
-  if (ms_context->get_param<bool>(MS_CTX_ENABLE_HCCL) && !env_rank_id.empty()) {
-    // get actual rank id if it's distribution training case.
-    rank_id = GetRankId();
-  }
-  return rank_id;
 }
 
 std::string GetTensorFullName(const debugger::TensorProto &tensor) {

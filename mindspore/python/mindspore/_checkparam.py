@@ -1288,6 +1288,33 @@ def _expand_tuple(n_dimensions):
     return convert
 
 
+def _check_int_sequence_len(sequence, valid_len):
+    if not len(sequence) is valid_len:
+        raise TypeError(f"When expanding an sequence to tuple, input sequence dimension must be {valid_len}, " \
+                        f"but got {sequence}")
+    for i in sequence:
+        if not isinstance(i, int) or isinstance(i, bool):
+            raise TypeError(f"When expanding an sequence to tuple, " \
+                            f"the type of element in input sequence must be an integer, but got {type(i)}.")
+
+
+def _expand_sequence_to_tuple(n_dimensions):
+    """To expand an int number to tuple."""
+
+    def convert(m):
+        if not isinstance(m, (tuple, list)):
+            if isinstance(m, int) and not isinstance(m, bool):
+                return tuple(repeat(m, n_dimensions))
+            raise TypeError(f"When expanding an input to tuple, input type must be integer or tuple[int]/list[int], " \
+                            f"but got {type(m)}")
+        _check_int_sequence_len(m, n_dimensions)
+        if isinstance(m, list):
+            return tuple(m)
+        return m
+
+    return convert
+
+
 def _check_data_type_valid(data, valid_type):
     """Check data type valid."""
     if valid_type is None:
@@ -1342,7 +1369,9 @@ def check_output_data(data):
 once = _expand_tuple(1)
 twice = _expand_tuple(2)
 triple = _expand_tuple(3)
-
+once_sequence = _expand_sequence_to_tuple(1)
+twice_sequence = _expand_sequence_to_tuple(2)
+triple_sequence = _expand_sequence_to_tuple(3)
 
 def args_type_check(*type_args, **type_kwargs):
     """Check whether input data type is correct."""

@@ -25,15 +25,19 @@ def set_dump(target, enabled=True):
     Enable or disable dump for the `target` and its contents.
 
     `target` should be an instance of :class:`mindspore.nn.Cell` or :class:`mindspore.ops.Primitive` .
-    Please note that this API takes effect only when Synchronous Dump is enabled and the `dump_mode`
-    field in dump config file is ``"2"`` . See the `dump document
-    <https://www.mindspore.cn/tutorials/en/master/debug/dump.html>`_ for details.
+    Please note that this API takes effect only when used with the `ms_backend` compilation backend
+    (refer to the backend parameter in
+    `jit <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.jit.html>`_),
+    and when Dump is enabled with the dump_mode field in the dump configuration file set to "2". See the
+    `dump document <https://www.mindspore.cn/tutorials/en/master/debug/dump.html>`_ for details.
     The default enabled status for
     a :class:`mindspore.nn.Cell` or :class:`mindspore.ops.Primitive` is False.
 
     Note:
-        1. This API is only effective for GRAPH_MODE whose graph compilation level is O0/O1 with Ascend backend,
-           and can not work for fusion Primitive operators.
+        1. This API is only available for JIT compilation, requires 'Ascend' as the device_target and
+           `ms_backend` as the compilation backend (please refer to the backend parameter in
+           `jit <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.jit.html>`_),
+            and does not support fused operators.
         2. This API only supports being called before training starts.
            If you call this API during training, it may not be effective.
         3. After using `set_dump(Cell, True)` , operators in forward and backward
@@ -66,7 +70,6 @@ def set_dump(target, enabled=True):
         >>> import mindspore.nn as nn
         >>> from mindspore import Tensor, set_dump
         >>>
-        >>> ms.set_context(mode=ms.GRAPH_MODE)
         >>> ms.set_device(device_target="Ascend")
         >>>
         >>> class MyNet(nn.Cell):
@@ -75,6 +78,7 @@ def set_dump(target, enabled=True):
         ...         self.conv1 = nn.Conv2d(5, 6, 5, pad_mode='valid')
         ...         self.relu1 = nn.ReLU()
         ...
+        ...     @jit
         ...     def construct(self, x):
         ...         x = self.conv1(x)
         ...         x = self.relu1(x)
@@ -108,15 +112,6 @@ def set_dump(target, enabled=True):
              "Only Ascend device target is supported currently. "
              "If you have Ascend device, consider set device_target to Ascend "
              "before calling set_dump.".format(current_target))
-
-    current_mode = context.get_context("mode")
-    if current_mode != context.GRAPH_MODE:
-        # We will not return here in case user changed mode later.
-        warn(
-            "Current mode is PYNATIVE_MODE, which is not supported by set_dump. "
-            "Only GRAPH_MODE is supported currently. "
-            "Consider set mode to GRAPH_MODE "
-            "before calling set_dump.")
 
     # The actual set dump logic.
     if isinstance(target, nn.Cell):

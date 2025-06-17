@@ -331,24 +331,26 @@ size_t FetchOutputSizeByNode(const AnfNodePtr &node, size_t index, TypeId type_i
   if (node->isa<ValueNode>() && node->abstract() != nullptr) {
     const auto &abs = common::AnfAlgo::FetchAbstractByIndex(node->abstract(), index);
     MS_EXCEPTION_IF_NULL(abs);
-    const auto &shape_ptr = abs->BuildShape();
-    MS_EXCEPTION_IF_NULL(shape_ptr);
-    if (shape_ptr->isa<abstract::Shape>()) {
-      const auto &shapes = shape_ptr->cast<abstract::ShapePtr>()->shape();
+    const auto &base_shape_ptr = abs->BuildShape();
+    MS_EXCEPTION_IF_NULL(base_shape_ptr);
+    if (base_shape_ptr->isa<abstract::Shape>()) {
+      const auto &shape_ptr = base_shape_ptr->cast<abstract::ShapePtr>();
+      MS_EXCEPTION_IF_NULL(shape_ptr);
+      const auto &shapes = shape_ptr->shape();
       size = std::accumulate(shapes.begin(), shapes.end(), size, std::multiplies<int64_t>());
-    } else if (shape_ptr->isa<abstract::DynamicSequenceShape>()) {
+    } else if (base_shape_ptr->isa<abstract::DynamicSequenceShape>()) {
       const auto &value_node = node->cast<ValueNodePtr>();
       MS_EXCEPTION_IF_NULL(value_node);
       const auto &value = value_node->value();
       MS_EXCEPTION_IF_NULL(value);
       size = FetchOutputSizeByValue(value);
       MS_LOG(INFO) << "Abstract;" << abs->ToString() << " for node:" << node->DebugString() << " index:" << index
-                   << " shape:" << shape_ptr->ToString() << " size:" << size;
+                   << " shape:" << base_shape_ptr->ToString() << " size:" << size;
     } else if (abs->isa<abstract::AbstractMonad>() || abs->isa<abstract::AbstractScalar>()) {
       MS_LOG(DEBUG) << "For scalar, the output shape is 1.";
     } else {
       MS_LOG_WITH_NODE(EXCEPTION, node) << "Invalid abstract;" << abs->ToString() << " for node:" << node->DebugString()
-                                        << " index:" << index << " shape:" << shape_ptr->ToString();
+                                        << " index:" << index << " shape:" << base_shape_ptr->ToString();
     }
   } else {
     size = AnfAlgo::GetOutputTensorMemSize(node, index);
@@ -365,8 +367,9 @@ void CreateDeviceTensorForValueNode(const KernelWithIndex &front_node_with_index
   MS_EXCEPTION_IF_NULL(device_context);
   const auto &front_node = front_node_with_index.first;
   MS_EXCEPTION_IF_NULL(front_node);
-
-  const auto &node_value = front_node->cast<ValueNodePtr>()->value();
+  const auto &front_value_node = front_node->cast<ValueNodePtr>();
+  MS_EXCEPTION_IF_NULL(front_value_node);
+  const auto &node_value = front_value_node->value();
   MS_EXCEPTION_IF_NULL(node_value);
   if (node_value->isa<FuncGraph>() || node_value->isa<Primitive>() ||
       (node_value->isa<ValueSequence>() && node_value->cast<ValueSequencePtr>()->size() == 0)) {
@@ -378,9 +381,12 @@ void CreateDeviceTensorForValueNode(const KernelWithIndex &front_node_with_index
   if (output_type_id == kTypeUnknown) {
     output_type_id = common::AnfAlgo::GetOutputInferDataType(backend_node, 0);
   }
-  if (front_node->abstract() != nullptr && front_node->abstract()->isa<abstract::AbstractSequence>() &&
-      front_node->abstract()->cast<abstract::AbstractSequencePtr>()->dynamic_len()) {
-    tensor_size = FetchOutputSizeByNode(front_node, front_node_with_index.second, output_type_id);
+  if (front_node->abstract() != nullptr && front_node->abstract()->isa<abstract::AbstractSequence>()) {
+    const auto &sequence_abstract = front_node->abstract()->cast<abstract::AbstractSequencePtr>();
+    MS_EXCEPTION_IF_NULL(sequence_abstract);
+    if (sequence_abstract->dynamic_len()) {
+      tensor_size = FetchOutputSizeByNode(front_node, front_node_with_index.second, output_type_id);
+    }
   }
   CreateBuildInfoForFrontNode(front_node_with_index, backend_node);
   device::DeviceAddressPtr address = nullptr;
@@ -436,10 +442,16 @@ void CreateDeviceTensorForFrontNode(const KernelWithIndex &front_node_with_index
   MS_EXCEPTION_IF_NULL(builder);
 
   if (node->isa<ValueNode>()) {
-    const auto &node_value = node->cast<ValueNodePtr>()->value();
+    const auto value_node = node->cast<ValueNodePtr>();
+    MS_EXCEPTION_IF_NULL(value_node);
+    const auto &node_value = value_node->value();
     MS_EXCEPTION_IF_NULL(node_value);
-    if (node_value->isa<ValueSequence>() && node_value->cast<ValueSequencePtr>()->size() == 0) {
-      return;
+    if (node_value->isa<ValueSequence>()) {
+      const auto &sequence_node_value = node_value->cast<ValueSequencePtr>();
+      MS_EXCEPTION_IF_NULL(sequence_node_value);
+      if (sequence_node_value->size() == 0) {
+        return;
+      }
     }
   }
 
@@ -586,7 +598,9 @@ std::vector<KernelWithIndex> FetchInputNodeByNode(const AnfNodePtr &node) {
 
   // 4 Other.
   if (common::AnfAlgo::CheckPrimitiveType(real_node, prim::kPrimTupleGetItem)) {
-    if (real_node->cast<CNodePtr>()->HasAttr(kAttrReplaceRealKernelInBackend) && real_node->abstract() != nullptr) {
+    const auto &real_cnode = real_node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(real_cnode);
+    if (real_cnode->HasAttr(kAttrReplaceRealKernelInBackend) && real_node->abstract() != nullptr) {
       size_t output_num = common::AnfAlgo::GetOutputNumByAbstract(real_node->abstract());
       MS_LOG(INFO) << "Fetch an tuple get item with repalce flag:" << real_node->DebugString()
                    << " output num:" << output_num;
@@ -1346,7 +1360,10 @@ void ControlNodeParser::ParserSinglePartialFuncgraph(const std::vector<AnfNodePt
     const auto &partial_cnode = partial_node->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(partial_cnode);
     size_t partial_arg_size = partial_cnode->size() - 2;
-    size_t call_arg_size = pair.second[0]->cast<CNodePtr>()->size() - 1;
+    MS_EXCEPTION_IF_NULL(pair.second[0]);
+    const auto &call_cnode = pair.second[0]->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(call_cnode);
+    size_t call_arg_size = call_cnode->size() - 1;
     size_t para_size = func_graph->parameters().size();
     if (partial_arg_size + call_arg_size != para_size) {
       MS_LOG(WARNING) << "Invalid args size for partial:" << partial_cnode->DebugString()

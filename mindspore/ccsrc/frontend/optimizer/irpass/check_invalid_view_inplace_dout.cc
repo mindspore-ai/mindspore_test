@@ -166,6 +166,7 @@ void SetAbstractSeqElementsUseFlags(const AbstractBasePtr &abstract) {
   }
   for (auto seq_node : *seq_nodes) {
     auto indexes = GetSequenceNodeElementsUseFlags(seq_node.lock());
+    MS_EXCEPTION_IF_NULL(indexes);
     bool no_need_reset = std::all_of((*indexes).begin(), (*indexes).end(), [](const auto index) { return index; });
     if (!no_need_reset) {
       SetSequenceElementsUseFlagsRecursively(seq_abstract, false);
@@ -367,6 +368,7 @@ void MarkInvalidInplaceOpDout(const FuncGraphPtr &fprop_graph) {
     const auto &primal_cnode = primal_cnode_iter->second.primal_cnode();
     MS_EXCEPTION_IF_NULL(k_fg->output());
     auto k_fg_output_cnode = k_fg->output()->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(k_fg_output_cnode);
     auto bprop_node = k_fg_output_cnode->input(2);
     auto bprop_fg = GetValueNode<FuncGraphPtr>(bprop_node);
     const auto &check_inputs = NeedCheckInplaceCNode(primal_cnode, bprop_fg);

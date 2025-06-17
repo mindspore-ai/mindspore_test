@@ -38,7 +38,7 @@ def bitwise_or_backward_func(x, y):
     return ops.grad(bitwise_or_forward_func, 0)(x, y)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0',
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("mode", ['pynative', 'KBK'])
 def test_bitwise_or_forward_backward(mode):

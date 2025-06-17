@@ -60,6 +60,7 @@ Status TensorDotInfo::GetAttrs() {
 
   MS_EXCEPTION_IF_NULL(axes_iter->second);
   if (axes_iter->second->isa<Int32Imm>()) {
+    MS_EXCEPTION_IF_NULL(axes_iter->second->cast<Int32ImmPtr>());
     axes_int_ = axes_iter->second->cast<Int32ImmPtr>()->value();
     if ((axes_int_ < 0) || (IntToSize(axes_int_) > inputs_shape_[0].size()) ||
         (IntToSize(axes_int_) > inputs_shape_[1].size())) {
@@ -76,6 +77,7 @@ Status TensorDotInfo::GetAttrs() {
 
     for (size_t i = 0; i < var_tuple.size(); ++i) {
       if (var_tuple[i]->isa<Int32Imm>()) {
+        MS_EXCEPTION_IF_NULL(var_tuple[i]->cast<Int32ImmPtr>());
         int32_t ele_var = var_tuple[i]->cast<Int32ImmPtr>()->value();
         if (ele_var < 0) {
           ele_var += SizeToInt(inputs_shape_[i].size());

@@ -30,6 +30,7 @@
 #include "frontend/parallel/step_parallel.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/pass/pass_utils.h"
+#include "pipeline/jit/ps/graph_circle_handler.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
@@ -532,6 +533,7 @@ void MicroInterleavedOrderControl(const FuncGraphPtr &graph) {
   if (!parallel::ParallelContext::GetInstance()->enable_fine_grained_micro_interleaved()) {
     return;
   }
+  circle_handler::SetAttrToDepend(graph);
   MS_EXCEPTION_IF_NULL(graph);
   auto manager = graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
@@ -540,6 +542,7 @@ void MicroInterleavedOrderControl(const FuncGraphPtr &graph) {
 
   if (graph_reuse) {
     CellReuseProcess(manager, kAttrFineGrainedInterleavedBlockIndex);
+    circle_handler::DetectAndRevertGraphCircle(graph, manager, "MicroInterleavedOrderControl");
     return;
   }
   std::list<CNodePtr> orders = graph->GetOrderedCnodes();
@@ -548,6 +551,7 @@ void MicroInterleavedOrderControl(const FuncGraphPtr &graph) {
   if (is_fine_grained) {
     MicroInterleavedOrderControlInBlock(graph, manager, origin_nodes_topological,
                                         kAttrFineGrainedInterleavedBlockIndex);
+    circle_handler::DetectAndRevertGraphCircle(graph, manager, "MicroInterleavedOrderControl");
     return;
   }
   if (parallel::ParallelContext::GetInstance()->pipeline_stage_split_num() == 1) {
@@ -565,9 +569,11 @@ void MicroInterleavedOrderControl(const FuncGraphPtr &graph) {
     }
     MicroInterleavedOrderControlProcess(manager, micro_interleaved_forward_node_list,
                                         micro_interleaved_backward_node_list, origin_nodes_topological);
+    circle_handler::DetectAndRevertGraphCircle(graph, manager, "MicroInterleavedOrderControl");
     return;
   }
   MicroInterleavedOrderControlInBlock(graph, manager, origin_nodes_topological);
+  circle_handler::DetectAndRevertGraphCircle(graph, manager, "MicroInterleavedOrderControl");
 }
 }  // namespace parallel
 }  // namespace mindspore

@@ -411,8 +411,6 @@ class CheckpointConfig:
             handle_append_info["epoch_num"] = 0
         if "step_num" in append_info:
             handle_append_info["step_num"] = 0
-        if "random_op" in append_info:
-            handle_append_info["random_op"] = 0
         dict_num = 0
         for element in append_info:
             if not isinstance(element, str) and not isinstance(element, dict):
@@ -588,8 +586,6 @@ class ModelCheckpoint(Callback):
         # save graph (only once)
         if not self._graph_saved:
             graph_file_name = os.path.join(self._directory, self._prefix + '-graph.meta')
-            if os.path.isfile(graph_file_name):
-                os.remove(graph_file_name)
             _save_graph(cb_params.train_network, graph_file_name)
             self._graph_saved = True
         self._save_ckpt(cb_params)

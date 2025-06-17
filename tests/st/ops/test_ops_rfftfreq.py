@@ -31,7 +31,7 @@ def generate_expect_forward_output(n, d=1.0):
     return np.fft.rfftfreq(n, d)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
+@arg_mark(plat_marks=['platform_ascend', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['GE', 'KBK', 'pynative'])
 def test_ops_rfftfreq_forward(mode):

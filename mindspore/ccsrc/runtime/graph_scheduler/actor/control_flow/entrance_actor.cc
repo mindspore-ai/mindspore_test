@@ -145,9 +145,7 @@ void EntranceActor::FetchInput(OpContext<KernelTensor> *const context) {
       }
       input_kernel_tensors_[kernel_tensor.first] = kernel_tensor.second;
       if (kernel_tensor.second != nullptr) {
-        MS_LOG(DEBUG) << "Entrance actor:" << GetAID() << " receive device tensor:" << kernel_tensor.second
-                      << " ptr:" << kernel_tensor.second->device_address()->GetPtr()
-                      << " type:" << kernel_tensor.second->device_address()->GetDeviceType()
+        MS_LOG(DEBUG) << "Entrance actor:" << GetAID() << " receive kernel tensor:" << kernel_tensor.second->ToString()
                       << " index:" << kernel_tensor.first;
       }
     }

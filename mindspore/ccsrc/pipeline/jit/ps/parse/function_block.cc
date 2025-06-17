@@ -98,6 +98,7 @@ void ReplaceNode(const FuncGraphManagerPtr &mng, const AnfNodePtr &hidden_node, 
 
   for (const auto &[node, idx] : mng->node_users()[hidden_node]) {
     auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     if (cnode->input(idx) == hidden_node && !IsDescendant(cnode, new_node)) {
       MS_LOG(DEBUG) << "Replace the " << idx << "'th input (" << hidden_node->DebugString() << ") of "
                     << cnode->DebugString() << " with " << new_node->DebugString();

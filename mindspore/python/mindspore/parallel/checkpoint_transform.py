@@ -582,6 +582,8 @@ def transform_checkpoints(src_checkpoints_dir, dst_checkpoints_dir, ckpt_prefix,
         The number of multiprocess settings is related to the size of the host, and it is not recommended to set it
         too large, otherwise it may cause freezing.
 
+        This function does not support converting remove_redundancy's checkpoint file.
+
     Args:
         src_checkpoints_dir (str): The source checkpoints directory.
         dst_checkpoints_dir (str): The destination checkpoints directory to save the converted checkpoints.

@@ -75,6 +75,9 @@ std::function<void(const HcclComm &, void *)> CallAllToAllVList(const std::share
     uint64_t offset = 0;
     for (size_t i = 0; i < output_tensors.size(); i++) {
       auto size = output_tensors[i]->Size();
+      if (size == 0) {
+        continue;
+      }
       auto data_ptr = GetDevicePtrFromTensor(op_name, output_tensors[i]);
       auto cp_ret = CALL_ASCEND_API(aclrtMemcpyAsync, data_ptr, size, static_cast<char *>(output_data_ptr) + offset,
                                     size, ACL_MEMCPY_DEVICE_TO_DEVICE, comm_stream_ptr);

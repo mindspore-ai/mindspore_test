@@ -201,6 +201,7 @@ class FRONTEND_EXPORT Parser {
                                       const py::object &getattr_obj, const FuncGraphPtr &cur_fg);
   // Process class type define.
   AnfNodePtr ParseAttribute(const FunctionBlockPtr &block, const py::object &node);
+  AnfNodePtr ParseSelfAttribute(const FunctionBlockPtr &block, const py::object &node);
   // Process ms Tensor.
   AnfNodePtr ParseMsTensor(const FunctionBlockPtr &block, const py::object &node, const py::object &value_body,
                            const AnfNodePtr &value_node);
@@ -414,6 +415,15 @@ class FRONTEND_EXPORT Parser {
   void ProcessPopOperationInAugAssign(const FunctionBlockPtr &block, const AnfNodePtr &value_node,
                                       const AnfNodePtr &target_node, const AnfNodePtr &op_node,
                                       const py::object &target_object);
+
+  void ProcessBranch(const py::object &branch_node, const FunctionBlockPtr &block, const FunctionBlockPtr &branch_block,
+                     const FunctionBlockPtr &after_block, bool is_true_branch,
+                     std::pair<FunctionBlockPtr, FunctionBlockPtr> *branch_graphs);
+
+  void ProcessNonConstCond(const AnfNodePtr &bool_node, const FunctionBlockPtr &block,
+                           const FunctionBlockPtr &true_block, const FunctionBlockPtr &false_block,
+                           std::pair<FunctionBlockPtr, FunctionBlockPtr> *true_branch_graphs,
+                           std::pair<FunctionBlockPtr, FunctionBlockPtr> *false_branch_graphs);
 
   // The shared_ptr will be hold by GraphManager, so just hold a weak ref here.
   static FuncGraphWeakPtr top_func_graph_;

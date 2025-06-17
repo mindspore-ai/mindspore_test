@@ -16,6 +16,7 @@ import os
 os.environ["MS_SIMULATION_LEVEL"] = "3"
 
 import numpy as np
+import mindspore as ms
 import mindspore.nn as nn
 import mindspore.dataset as ds
 from mindspore import context, Tensor
@@ -26,6 +27,7 @@ from mindspore.nn import PipelineCell
 from mindspore.communication.management import init, create_group, destroy_group, get_group_size, get_rank, \
     get_local_rank, get_world_rank_from_group_rank, get_group_rank_from_world_rank
 from mindspore.communication.comm_func import barrier
+from mindspore.mint.distributed.distributed import init_process_group, broadcast, recv, all_gather
 from tests.mark_utils import arg_mark
 
 context.set_context(mode=context.GRAPH_MODE)
@@ -61,7 +63,7 @@ input_ = Tensor(np.ones([32, 128]).astype(np.float32) * 0.01)
 label_ = Tensor(np.zeros([32, 128]).astype(np.float32))
 
 
-@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="onecard", essential_mark="essential")
 def test_run_graph_kbk():
     """
     Feature: simulation level.
@@ -88,7 +90,7 @@ def test_run_graph_kbk():
     os.environ["MS_SIMULATION_LEVEL"] = ""
 
 
-@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="onecard", essential_mark="essential")
 def test_get_rank_id_env():
     """
     Feature: simulation level.
@@ -104,7 +106,7 @@ def test_get_rank_id_env():
     os.environ["MS_SIMULATION_LEVEL"] = ""
 
 
-@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="onecard", essential_mark="essential")
 def test_get_local_rank_id():
     """
     Feature: simulation level.
@@ -120,7 +122,7 @@ def test_get_local_rank_id():
     os.environ["MS_SIMULATION_LEVEL"] = ""
 
 
-@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="onecard", essential_mark="essential")
 def test_create_group():
     """
     Feature: simulation level.
@@ -159,7 +161,7 @@ def test_destroy_group():
     os.environ["MS_SIMULATION_LEVEL"] = ""
 
 
-@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="onecard", essential_mark="essential")
 def test_get_world_rank_from_group_rank():
     """
     Feature: simulation level.
@@ -178,7 +180,7 @@ def test_get_world_rank_from_group_rank():
     os.environ["MS_SIMULATION_LEVEL"] = ""
 
 
-@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="onecard", essential_mark="essential")
 def test_get_group_rank_from_world_rank():
     """
     Feature: simulation level.
@@ -334,3 +336,32 @@ def test_simu_execute_simu_barrier():
     context.set_context(jit_level='O0')
     barrier()
     os.environ["MS_SIMULATION_LEVEL"] = ""
+
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="onecard", essential_mark="essential")
+def test_pyboost_comm():
+    """
+    Feature: simulation level.
+    Description: run pyboost comm op when set simulation level 3.
+    Expectation: no exception.
+    """
+    os.environ["MS_SIMULATION_LEVEL"] = "3"
+    init_process_group()
+    rank = get_rank()
+    context.set_auto_parallel_context(
+        parallel_mode=ms.ParallelMode.DATA_PARALLEL, gradients_mean=True
+    )
+    context.set_context(mode=context.PYNATIVE_MODE, device_target="Ascend")
+    tensor = ms.Tensor(np.arange(8).reshape([2, 4]).astype(np.float32))
+    output_handle = broadcast(tensor, src=0)
+    assert output_handle is None
+    except_output_tensor = ms.Tensor(np.full(shape=(2, 4), fill_value=0.1, dtype=np.float32))
+    assert np.allclose(tensor.asnumpy(), except_output_tensor.asnumpy())
+
+    output_tensor = [ms.Tensor(np.arange(8).reshape([2, 4]).astype(np.float32))]
+    output_handle = all_gather(output_tensor, tensor)
+    assert output_handle is None
+    assert np.allclose(output_tensor[0].asnumpy(), except_output_tensor.asnumpy())
+
+    out = recv(tensor, src=rank + 1)
+    assert out == 0
+    assert np.allclose(tensor.asnumpy(), except_output_tensor)

@@ -222,6 +222,7 @@ py::object GetPyObjForPrimitiveAbstract(const PrimitiveAbstractClosurePtr &prim_
       return py::none();
     }
     auto prim_py = value->cast_ptr<PrimitivePy>();
+    MS_EXCEPTION_IF_NULL(prim_py);
     return prim_py->GetPyObj();
   }
   if (prim->isa<PrimitivePy>()) {

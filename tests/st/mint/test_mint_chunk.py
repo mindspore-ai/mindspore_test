@@ -34,9 +34,9 @@ def chunk_backward_func(x, chunks, dim):
     return ops.grad(chunk_forward_func, (0,))(x, chunks, dim)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("mode", ['GE', 'pynative', 'KBK'])
-def test_chunk_foward_backward(mode):
+def test_chunk_forward_backward(mode):
     """
     Feature: Auto grad.
     Description: test auto grad of op Chunk.

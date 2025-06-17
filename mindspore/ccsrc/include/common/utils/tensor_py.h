@@ -513,7 +513,6 @@ using TensorPyPtr = std::shared_ptr<TensorPy>;
 using TensorPyPtrList = std::vector<std::shared_ptr<TensorPy>>;
 
 /// \brief Check whether the object is TensorPy.
-///
 /// \param[in] obj [py::handle] The python object.
 ///
 /// \return Is TensorPy or not.

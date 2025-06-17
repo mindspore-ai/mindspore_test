@@ -1527,6 +1527,7 @@ def tensor_new_empty(input, size, *, dtype=None, device=None):
     raise NotImplementedError(
         "This is a function for new_empty should not be called. Please check the implementation.")
 
+
 def deprecated_tensor_logaddexp(input, other):
     return F.logaddexp(input, other)
 
@@ -1913,6 +1914,9 @@ def deprecated_pixel_shuffle(input, upscale_factor):
 
 def tensor_quant_matmul(x1, x2, scale, *, offset=None, pertoken_scale=None, bias=None, output_dtype=None,
                         x1_dtype=None, x2_dtype=None, pertoken_scale_dtype=None, scale_dtype=None, group_sizes=None):
+    r"""
+    For details, please refer to :func:`mindspore.ops.auto_generate.quant_matmul`.
+    """
     raise NotImplementedError('quant_matmul only supports Ascend.')
 
 

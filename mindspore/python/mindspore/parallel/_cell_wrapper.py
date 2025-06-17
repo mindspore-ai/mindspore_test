@@ -26,7 +26,7 @@ from mindspore.ops.operations.comm_ops import AllGather
 from mindspore.communication import GlobalComm, get_rank
 from mindspore.common import jit
 from mindspore.communication import create_group, destroy_group, get_group_size
-from mindspore.communication._comm_helper import _get_group_map
+from mindspore.communication._comm_helper import _get_group_map, _remove_group_info
 from mindspore.train._utils import get_parameter_redundancy, remove_param_redundancy
 from mindspore.parallel.shard import Layout
 
@@ -189,6 +189,7 @@ def _communicate_allreduce(allreduce_input, group_map, group):
         real_param.set_data(communicator(Tensor(real_param)), real_param.sliced)
     if is_manual_communication_group:
         destroy_group(group_name)
+        _remove_group_info(group_name)
 
 
 def _create_allreduce_input(params, group, net_param_dict, total_param_loaded, param_not_load, cur_rank):
@@ -269,6 +270,7 @@ def _single_parameter_broadcast(net, layout, param_not_load=None, param_loaded=N
     param_loaded.add(cur_rank)
     total_num = get_group_size()
     total_param_loaded = [None] * total_num
+    synchronize()
     all_gather_object(total_param_loaded, param_loaded)
     total_param_loaded = _check_total_param_loaded(total_param_loaded)
     group_map = _get_sorted_group_map()
@@ -336,8 +338,8 @@ class CommTensorDataForPP(Cell):
         global ALLREDUCE_GROUP_LIST
         current_rank_stage_id = self._current_rank_id // self._from_dev_num_in_stage
         end_stage = self._from_dev_num_in_stage * (current_rank_stage_id + 1)
-        rank_pos_in_stage = [rank_id for rank_id in range(self._from_dev_num_in_stage * current_rank_stage_id,
-                                                          end_stage)].index(self._current_rank_id)
+        start_stage = self._from_dev_num_in_stage * current_rank_stage_id
+        rank_pos_in_stage = [rank_id for rank_id in range(start_stage, end_stage)].index(self._current_rank_id)
         root_idx = self._from_rank_id[rank_pos_in_stage]
         all_reduce_rank_list = [self._from_rank_id[rank_pos_in_stage]]
         while rank_pos_in_stage < len(self._diff_rank_id):

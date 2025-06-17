@@ -219,7 +219,7 @@ class _ProcessManager:
         self.proc_rank_map = {}
         self.enable_mindx = False
         tft_env = os.getenv("MS_ENABLE_TFT", "")
-        if ("TTP:1" in tft_env) or ("UCE:1" in tft_env) or ("ARF:1" in tft_env):
+        if any(v in tft_env for v in ('TTP:1', 'UCE:1', 'ARF:1', 'TSP:1')):
             try:
                 from taskd.python.framework.agent.ms_mgr.msrun_plugin import MSRunPlugin
                 self.msmgr = MSRunPlugin()
@@ -539,7 +539,7 @@ class _ProcessManager:
         self.start_workers()
         worker_status = self.monitor_rank_status([-1])
         for i in range(self.local_worker_num):
-            if worker_status[i]["status"] != None:  # pylint: disable=singleton-comparison
+            if worker_status[i]["status"] is not None:
                 return 1
         return 0
 
@@ -550,11 +550,13 @@ class _ProcessManager:
         Args:
             rank_ids: worker process's local rank list, which is also device_id.
         """
+        if not isinstance(rank_ids, list):
+            raise TypeError(f"The type of 'rank_ids' must be a list, but got:{rank_ids}")
         for idx in rank_ids:
             self._start_single_worker(idx)
         worker_status = self.monitor_rank_status(rank_ids)
-        for i in range(rank_ids):
-            if worker_status[i]["status"] != None:  # pylint: disable=singleton-comparison
+        for i in rank_ids:
+            if worker_status[i]["status"] is not None:
                 return 1
         return 0
 

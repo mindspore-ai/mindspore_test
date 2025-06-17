@@ -635,6 +635,7 @@ int InsertQuantNodeManager::InsertBackwardCastNode(const FuncGraphPtr &graph, co
   auto node_users = manager->node_users()[cnode];
   for (auto &node_user : node_users) {
     auto output_cnode = node_user.first->cast<CNodePtr>();
+    MS_CHECK_TRUE_MSG(output_cnode != nullptr, RET_ERROR, "output_cnode is nullptr!");
     quant::QuantType post_quant_type;
     if (GetQuantType(output_cnode, &post_quant_type) != RET_OK) {
       MS_LOG(ERROR) << "Get quant type failed, cnode name: " << output_cnode->fullname_with_scope();

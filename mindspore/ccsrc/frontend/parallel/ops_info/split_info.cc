@@ -59,6 +59,7 @@ Status SplitInfo::GetAttrs() {
   inputs_shape_ = Shapes{inputs_shape_[0]};  // Truncation for Strategy check.
 
   auto prim = GetCNodePrimitive(cnode_);
+  MS_EXCEPTION_IF_NULL(prim);
   if (prim->HasAttr(parallel::SKIP_REDISTRIBUTION)) {
     skip_redistribution_ = GetValue<bool>(prim->GetAttr(parallel::SKIP_REDISTRIBUTION));
   }
@@ -73,6 +74,7 @@ Status SplitVInfo::GetAttrs() {
   if (axis_iter != attrs_.end()) {
     MS_EXCEPTION_IF_NULL(axis_iter->second);
     if (axis_iter->second->isa<Int64Imm>()) {
+      MS_EXCEPTION_IF_NULL(axis_iter->second->cast<Int64ImmPtr>());
       axis = axis_iter->second->cast<Int64ImmPtr>()->value();
     } else {
       MS_LOG(ERROR) << name_ << ": The value of axis is not int";
@@ -94,6 +96,7 @@ Status SplitVInfo::GetAttrs() {
   axis_ = LongToSize(axis);
 
   auto prim = GetCNodePrimitive(cnode_);
+  MS_EXCEPTION_IF_NULL(prim);
   if (prim->HasAttr(parallel::SKIP_REDISTRIBUTION)) {
     skip_redistribution_ = GetValue<bool>(prim->GetAttr(parallel::SKIP_REDISTRIBUTION));
   }
@@ -122,6 +125,7 @@ Status SplitWithSizeInfo::GetAttrs() {
   inputs_shape_ = Shapes{inputs_shape_[0]};  // Truncation for Strategy check.
 
   auto prim = GetCNodePrimitive(cnode_);
+  MS_EXCEPTION_IF_NULL(prim);
   if (prim->HasAttr(parallel::SKIP_REDISTRIBUTION)) {
     skip_redistribution_ = GetValue<bool>(prim->GetAttr(parallel::SKIP_REDISTRIBUTION));
   }
@@ -150,6 +154,7 @@ Status SplitTensorInfo::GetAttrs() {
   inputs_shape_ = Shapes{inputs_shape_[0]};  // Truncation for Strategy check.
 
   auto prim = GetCNodePrimitive(cnode_);
+  MS_EXCEPTION_IF_NULL(prim);
   if (prim->HasAttr(parallel::SKIP_REDISTRIBUTION)) {
     skip_redistribution_ = GetValue<bool>(prim->GetAttr(parallel::SKIP_REDISTRIBUTION));
   }

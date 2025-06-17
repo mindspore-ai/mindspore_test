@@ -369,15 +369,19 @@ class SummaryRecord:
         global SUMMARY_TENSOR_CACHE
         for tag in tags:
             item_name = name + tag
-            time_out = 10
-            start = time.time()
+            time_out = 30
+            start_time = time.time()
+            last_size = len(SUMMARY_TENSOR_CACHE)
             while item_name not in SUMMARY_TENSOR_CACHE:
-                if time.time() - start > time_out:
-                    logger.warning(
-                        f"For '{self.__class__.__name__}', {tag} summary op sync tag"
-                        f"was not received within {time_out} seconds. The data may be incomplete."
+                current_size = len(SUMMARY_TENSOR_CACHE)
+                if current_size != last_size:
+                    start_time = time.time()
+                    last_size = current_size
+                if time.time() - start_time > time_out:
+                    raise RuntimeError(
+                        f"For '{self.__class__.__name__}', {tag} summary op sync tag "
+                        f"was not received within {time_out} seconds, indicating potential mbuf issues."
                     )
-                    break
                 time.sleep(0.004)
 
         with _summary_lock:
@@ -424,8 +428,7 @@ class SummaryRecord:
             if graph_proto is None and train_network is not None:
                 graph_proto = _cell_graph_executor.get_optimize_graph_proto(train_network)
             if graph_proto is None:
-                if not context.get_context("mode") == context.PYNATIVE_MODE:
-                    logger.error("Failed to get proto for graph.")
+                logger.warning("Failed to get proto for graph.")
             else:
                 self._event_writer.write({'graph': [{'step': step, 'value': graph_proto}]})
                 self._status['has_graph'] = True

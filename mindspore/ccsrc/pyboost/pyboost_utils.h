@@ -305,6 +305,9 @@ class PYBOOST_API PyBoostUtils {
     return input_tensor->data_type() >= TypeId::kNumberTypeComplex &&
            input_tensor->data_type() <= TypeId::kNumberTypeComplex128;
   }
+  static void GetConstInputToAttr(const PrimitivePtr &op_prim, const std::string &op_name,
+                                  const std::string &device_target, bool is_dynamic_shape,
+                                  mindspore::HashSet<size_t> *input_to_attr_index);
 
  private:
   inline static uint32_t cur_stream_id_ = kDefaultStreamIndex;

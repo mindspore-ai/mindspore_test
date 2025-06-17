@@ -42,7 +42,7 @@ class AddNet(nn.Cell):
         return z
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_adjust_print_for_ge():
     """
     Feature: Validate opt pass keep node scope and id.

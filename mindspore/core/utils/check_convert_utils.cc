@@ -1057,6 +1057,7 @@ TypePtr CheckAndConvertUtils::CheckSubClass(const std::string &type_name, const 
       buffer << ", ";
     }
   }
+  MS_EXCEPTION_IF_NULL(type);
   buffer << "}, but got " << type->ToString();
   buffer << ".";
   MS_EXCEPTION(TypeError) << buffer.str();

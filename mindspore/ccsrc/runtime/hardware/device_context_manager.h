@@ -111,7 +111,7 @@ class BACKEND_COMMON_EXPORT DeviceContextRegister {
   static const DeviceContextRegister g_device_##DEVICE_NAME##_reg(       \
     DEVICE_NAME, [](const DeviceContextKey &device_context_key) {        \
       return std::make_shared<DEVICE_CONTEXT_CLASS>(device_context_key); \
-    });
+    })
 
 class BACKEND_COMMON_EXPORT StatelessFuncCbRegister {
  public:

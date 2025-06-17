@@ -103,6 +103,7 @@ void OptStrategy::MakeGCStrategy(OptCodeHubPtr hub, int limit_size, int limit_co
         std::string phase = item->GetPhase();
         if (phase.size() > 0) {
           FuncGraphPtr ms_func_graph = graph_executor->GetFuncGraph(phase);
+          MS_EXCEPTION_IF_NULL(ms_func_graph);
           int node_count = SizeToInt(ms_func_graph->nodes().size());
           for (auto fg : ms_func_graph->func_graphs_used_total()) {
             node_count += SizeToInt(fg->nodes().size());

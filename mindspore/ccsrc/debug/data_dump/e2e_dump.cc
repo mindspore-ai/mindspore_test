@@ -675,7 +675,7 @@ void E2eDump::DumpRunIter(const KernelGraphPtr &graph, uint32_t rank_id) {
       fout << (std::to_string(step) + "\n");
     }
   } else {
-    fout << std::to_string(json_parser.cur_dump_iter()) + "\n";
+    fout << std::to_string(json_parser.cur_dump_iter()) << "\n";
   }
   fout.close();
   ChangeFileMode(file_name, S_IRUSR);

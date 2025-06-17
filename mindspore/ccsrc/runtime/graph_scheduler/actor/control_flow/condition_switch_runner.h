@@ -46,9 +46,10 @@ class ConditionSwitchRunner : public KernelRunner {
  protected:
   void Init() override;
   void UpdateRefDeviceAddress(OpContext<KernelTensor> *const context, bool increase_ref_count) override;
-  void ExecuteInferShapeTask(OpContext<KernelTensor> *const context) override;
-  void ExecuteResizeKernelModTask(OpContext<KernelTensor> *const context) override;
+  void ExecuteInferShapeTask(OpContext<KernelTensor> *const context, bool high_perf) override;
+  void ExecuteResizeKernelModTask(OpContext<KernelTensor> *const context, bool high_perf) override;
   void ExecuteLaunchKernelTask(OpContext<KernelTensor> *const context) override;
+  void ExecuteLaunchKernelTaskHP(OpContext<KernelTensor> *const context) override;
   void UpdateMemoryFreeList(OpContext<KernelTensor> *const context) override;
 
  private:

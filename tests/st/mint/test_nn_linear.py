@@ -95,7 +95,7 @@ def mint_nn_linear_binary_case1(input_binary_data=None, output_binary_data=None,
 
 @arg_mark(
     plat_marks=["platform_ascend"],
-    level_mark="level0",
+    level_mark="level1",
     card_mark="onecard",
     essential_mark="essential",
 )

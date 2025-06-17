@@ -89,6 +89,7 @@ using DeviceTensor = mindspore::device::DeviceAddress;
 namespace {
 
 bool CheckAllTensor(const ValueTuplePtr &value_tuple) {
+  MS_EXCEPTION_IF_NULL(value_tuple);
   auto elements = value_tuple->value();
   for (auto element : elements) {
     MS_EXCEPTION_IF_NULL(element);
@@ -158,6 +159,7 @@ bool CheckArgValid(const py::handle &arg) {
 
   if (tensor::IsTensorPy(arg)) {
     auto tensor = tensor::ConvertToTensor(arg);
+    MS_EXCEPTION_IF_NULL(tensor);
     if (tensor->data_type() == kNumberTypeBool) {
       MS_LOG(INFO) << "It is not recommended to use a tensor of bool data type as network input, which may cause "
                    << "operator compilation failure. For more details, please refer to the FAQ at "
@@ -411,6 +413,7 @@ py::bool_ VerifyInputSignature(const py::list &input_signature, const py::tuple 
     if (m_tensor != nullptr) {
       MS_LOG(DEBUG) << "Verify Tensor";
       auto sig = tensor::ConvertToTensor(input_signature[count]);
+      MS_EXCEPTION_IF_NULL(sig);
       ShapeVector sig_shape = sig->shape();
       TypePtr sig_type = sig->Dtype();
 
@@ -867,7 +870,6 @@ void FinalizeHccl() {
 #ifdef WITH_BACKEND
   auto backend = ms_context->backend_policy();
   if (backend == "ge") {
-    FinalizeBackend();
     return;
   }
 #endif
@@ -1077,20 +1079,6 @@ FuncGraphPtr SplitDynamicMindIR(const std::string &file_name, size_t device_num,
   return func_graph;
 }
 
-void CloseTsd(bool force) {
-#ifdef WITH_BACKEND
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
-  if (context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kAscendDevice) {
-    const auto &device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-      {kAscendDevice, context_ptr->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
-    MS_EXCEPTION_IF_NULL(device_context);
-    MS_EXCEPTION_IF_NULL(device_context->GetDeprecatedInterface());
-    (void)device_context->GetDeprecatedInterface()->CloseTsd(context_ptr, force);
-  }
-#endif
-}
-
 void InitPipeline() {
   // set python env flag
   RecordInitStatus();
@@ -1099,8 +1087,6 @@ void InitPipeline() {
   MS_EXCEPTION_IF_NULL(ms_context);
   CompileConfigManager::GetInstance().CollectCompileConfig();
 }
-
-void FinalizeBackend() { CloseTsd(); }
 
 void BindDeviceCtx() { device::DeviceContextManager::GetInstance().BindDeviceCtx(); }
 

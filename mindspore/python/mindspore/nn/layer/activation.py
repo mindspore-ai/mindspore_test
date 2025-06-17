@@ -22,11 +22,9 @@ from mindspore._extends import cell_attr_register
 from mindspore.common import dtype as mstype
 from mindspore.common.parameter import Parameter
 from mindspore.common.tensor import Tensor
-from mindspore.ops import functional as F
-from mindspore.ops import operations as P
+from mindspore import ops
 from mindspore.ops.operations import nn_ops as NN_OPS
 from mindspore.nn.cell import Cell
-from mindspore import ops
 from mindspore.ops.primitive import _primexpr
 
 __all__ = ['Softmin',
@@ -114,7 +112,7 @@ class CELU(Cell):
     def __init__(self, alpha=1.0):
         """Initialize CELU."""
         super(CELU, self).__init__()
-        self.celu = P.CeLU(alpha=alpha)
+        self.celu = ops.CeLU(alpha=alpha)
 
     def construct(self, x):
         return self.celu(x)
@@ -213,8 +211,8 @@ class Softmax2d(Cell):
     def __init__(self):
         """Initialize Softmax2d."""
         super(Softmax2d, self).__init__()
-        self.softmax = P.Softmax(axis=-3)
-        self.shape = P.Shape()
+        self.softmax = ops.Softmax(axis=-3)
+        self.shape = ops.Shape()
 
     @staticmethod
     @_primexpr
@@ -277,7 +275,7 @@ class Softmax(Cell):
     def __init__(self, axis=-1):
         """Initialize Softmax."""
         super(Softmax, self).__init__()
-        self.softmax = P.Softmax(axis)
+        self.softmax = ops.Softmax(axis)
 
     def construct(self, input):
         return self.softmax(input)
@@ -356,7 +354,7 @@ class LogSoftmax(Cell):
     def __init__(self, axis=-1):
         """Initialize LogSoftmax."""
         super(LogSoftmax, self).__init__()
-        self.log_softmax = P.LogSoftmax(axis)
+        self.log_softmax = ops.LogSoftmax(axis)
 
     def construct(self, x):
         return self.log_softmax(x)
@@ -400,7 +398,7 @@ class LogSoftmaxExt(Cell):
     def __init__(self, dim=None):
         """Initialize LogSoftmaxExt."""
         super(LogSoftmaxExt, self).__init__()
-        self.log_softmax = P.LogSoftmaxExt()
+        self.log_softmax = ops.LogSoftmaxExt()
         self.dim = dim
 
     def construct(self, x):
@@ -459,7 +457,7 @@ class ELU(Cell):
     def __init__(self, alpha=1.0):
         """Initialize ELU."""
         super(ELU, self).__init__()
-        self.elu = P.Elu(alpha)
+        self.elu = ops.Elu(alpha)
 
     def construct(self, x):
         return self.elu(x)
@@ -510,7 +508,7 @@ class ReLU(Cell):
     def __init__(self):
         """Initialize ReLU."""
         super(ReLU, self).__init__()
-        self.relu = P.ReLU()
+        self.relu = ops.ReLU()
 
     def construct(self, input):
         return self.relu(input)
@@ -560,7 +558,7 @@ class ReLU6(Cell):
     def __init__(self):
         """Initialize ReLU6."""
         super(ReLU6, self).__init__()
-        self.relu6 = P.ReLU6()
+        self.relu6 = ops.ReLU6()
 
     def construct(self, x):
         return self.relu6(x)
@@ -679,7 +677,7 @@ class RReLU(Cell):
                              f"but got upper: {upper}, lower: {lower}. ")
         self.lower = Tensor(lower, dtype=mstype.float32)
         self.upper = Tensor(upper, dtype=mstype.float32)
-        self.sign = P.Sign()
+        self.sign = ops.Sign()
 
     def construct(self, x):
         if not isinstance(x, Tensor):
@@ -725,7 +723,7 @@ class SeLU(Cell):
     def __init__(self):
         """Initialize SeLU"""
         super(SeLU, self).__init__()
-        self.selu = P.SeLU()
+        self.selu = ops.SeLU()
 
     def construct(self, input_x):
         return self.selu(input_x)
@@ -825,7 +823,7 @@ class Tanh(Cell):
     def __init__(self):
         """Initialize Tanh."""
         super(Tanh, self).__init__()
-        self.tanh = P.Tanh()
+        self.tanh = ops.Tanh()
 
     def construct(self, x):
         return self.tanh(x)
@@ -871,7 +869,7 @@ class Tanhshrink(Cell):
         super(Tanhshrink, self).__init__()
 
     def construct(self, x):
-        return F.tanhshrink(x)
+        return ops.tanhshrink(x)
 
 
 class Hardtanh(Cell):
@@ -937,7 +935,7 @@ class Hardtanh(Cell):
                              f"but got {self.min_val} and {self.max_val}")
 
     def construct(self, x):
-        return F.hardtanh(x, self.min_val, self.max_val)
+        return ops.hardtanh(x, self.min_val, self.max_val)
 
 
 class GELU(Cell):
@@ -1064,7 +1062,7 @@ class FastGelu(Cell):
     def __init__(self):
         """Initialize FastGelu."""
         super(FastGelu, self).__init__()
-        self.fast_gelu = P.FastGeLU()
+        self.fast_gelu = ops.FastGeLU()
 
     def construct(self, x):
         return self.fast_gelu(x)
@@ -1115,7 +1113,7 @@ class Sigmoid(Cell):
     def __init__(self):
         """Initialize Sigmoid."""
         super(Sigmoid, self).__init__()
-        self.sigmoid = P.Sigmoid()
+        self.sigmoid = ops.Sigmoid()
 
     def construct(self, x):
         return self.sigmoid(x)
@@ -1149,7 +1147,7 @@ class Softsign(Cell):
     def __init__(self):
         """Initialize Softsign."""
         super(Softsign, self).__init__()
-        self.softsign = P.Softsign()
+        self.softsign = ops.Softsign()
 
     def construct(self, x):
         return self.softsign(x)
@@ -1243,10 +1241,10 @@ class PReLU(Cell):
             raise TypeError(f"For '{self.cls_name}', the 'w' only supported float, list and tensor, "
                             f"but got {type(w).__name__}.")
         self.w = Parameter(w, name='a')
-        self.prelu = P.PReLU()
+        self.prelu = ops.PReLU()
 
     def construct(self, x):
-        return self.prelu(x, F.cast(self.w, x.dtype))
+        return self.prelu(x, ops.cast(self.w, x.dtype))
 
 
 class PReLUExt(Cell):
@@ -1361,7 +1359,7 @@ class HSwish(Cell):
     def __init__(self):
         """Initialize HSwish."""
         super(HSwish, self).__init__()
-        self.hswish = P.HSwish()
+        self.hswish = ops.HSwish()
 
     def construct(self, input):
         return self.hswish(input)
@@ -1413,7 +1411,7 @@ class HSigmoid(Cell):
     def __init__(self):
         """Initialize HSigmoid."""
         super(HSigmoid, self).__init__()
-        self.hsigmoid = P.HSigmoid()
+        self.hsigmoid = ops.HSigmoid()
 
     def construct(self, input):
         return self.hsigmoid(input)
@@ -1462,11 +1460,11 @@ class LogSigmoid(Cell):
     def __init__(self):
         """Initialize LogSigmoid."""
         super(LogSigmoid, self).__init__()
-        self.mul = P.Mul()
-        self.exp = P.Exp()
-        self.add = P.Add()
-        self.rec = P.Reciprocal()
-        self.log = P.Log()
+        self.mul = ops.Mul()
+        self.exp = ops.Exp()
+        self.add = ops.Add()
+        self.rec = ops.Reciprocal()
+        self.log = ops.Log()
 
     def construct(self, input_x):
         neg_input = self.mul(input_x, -1)
@@ -1566,7 +1564,7 @@ class SoftShrink(Cell):
 
     def __init__(self, lambd=0.5):
         super(SoftShrink, self).__init__()
-        self.softshrink = P.SoftShrink(lambd)
+        self.softshrink = ops.SoftShrink(lambd)
 
     def construct(self, input):
         output = self.softshrink(input)
@@ -1626,7 +1624,7 @@ class HShrink(Cell):
 
     def __init__(self, lambd=0.5):
         super(HShrink, self).__init__()
-        self.hshrink = P.HShrink(lambd)
+        self.hshrink = ops.HShrink(lambd)
 
     def construct(self, input):
         return self.hshrink(input)
@@ -1679,7 +1677,7 @@ class Threshold(Cell):
         self.value = value
 
     def construct(self, input_x):
-        return F.threshold(input_x, self.threshold, self.value)
+        return ops.threshold(input_x, self.threshold, self.value)
 
 
 class Mish(Cell):
@@ -1755,8 +1753,8 @@ class GLU(Cell):
         """Initialize GLU."""
         super().__init__("GLU")
         self.dim = axis
-        self.spilt = P.Split(axis=axis, output_num=2)
-        self.sigmoid = P.Sigmoid()
+        self.spilt = ops.Split(axis=axis, output_num=2)
+        self.sigmoid = ops.Sigmoid()
 
     def construct(self, x):
         x1, x2 = self.spilt(x)

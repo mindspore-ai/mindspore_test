@@ -72,6 +72,6 @@ class GraphKernelInfoRegister {
 
 #define REG_GRAPH_KERNEL_INFO(DEVICE_TYPE, KERNEL_CLASS)                           \
   static const GraphKernelInfoRegister g_graph_kernel_info_##DEVICE_TYPE##_##_reg( \
-    DEVICE_TYPE, []() { return std::make_shared<KERNEL_CLASS>(); });
+    DEVICE_TYPE, []() { return std::make_shared<KERNEL_CLASS>(); })
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_KERNEL_GRAPH_KERNEL_INFO_H_

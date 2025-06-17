@@ -51,7 +51,7 @@ def test_seq_to_tensor0():
     assert np.allclose(res_y.asnumpy(), expect_y0, 1.e-4, 1.e-4, equal_nan=True)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_seq_to_tensor1():
     """
     Feature: test xxToTensor.

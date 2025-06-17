@@ -523,6 +523,7 @@ tensor::TensorPtr GetTensorInfo(const AnfNodePtr &node) {
   if (!utils::isa<ParameterPtr>(node)) {
     if (utils::isa<ValueNodePtr>(node)) {
       auto valueNode = node->cast<ValueNodePtr>();
+      MS_CHECK_TRUE_MSG(valueNode != nullptr, nullptr, "valueNode is nullptr!");
       auto value_ptr = valueNode->value();
       MS_CHECK_TRUE_RET(value_ptr != nullptr, nullptr);
       auto value = value_ptr->cast<tensor::TensorPtr>();
@@ -534,7 +535,7 @@ tensor::TensorPtr GetTensorInfo(const AnfNodePtr &node) {
     return nullptr;
   }
   auto param = node->cast<ParameterPtr>();
-  MS_ASSERT(param != nullptr);
+  MS_CHECK_TRUE_MSG(param != nullptr, nullptr, "param is nullptr!");
   if (!param->has_default() || param->default_param() == nullptr) {
     return nullptr;
   }
@@ -1794,6 +1795,7 @@ int DetermineCertainVarInputHasInferred(const CNodePtr &cnode, size_t index, boo
   }
   MS_CHECK_TRUE_MSG(value_ptr->isa<ValueSequeue>(), RET_ERROR, "infer flag should be a vector.");
   auto value_sequence = value_ptr->cast<ValueSequeuePtr>();
+  MS_CHECK_TRUE_MSG(value_sequence != nullptr, lite::RET_NULL_PTR, "value_sequence is nullptr!");
   auto elements = value_sequence->value();
   MS_CHECK_TRUE_MSG(!elements.empty(), RET_ERROR, "infer_info has no content.");
   auto first_element = elements.front();

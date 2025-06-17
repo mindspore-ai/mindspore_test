@@ -65,7 +65,7 @@ def test_gather_nd_backward(mode):
     assert np.allclose(output.asnumpy(), expect, rtol=0.001)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'cpu_linux'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'cpu_linux'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_gather_nd_backward_1d(mode):

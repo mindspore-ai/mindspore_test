@@ -75,6 +75,8 @@ class Location {
   bool operator<(const Location &other) const;
 
  private:
+  bool ReadSectionDebugInfoFromFile(SourceLineTip tip, int start_line, std::stringstream &section_debug_info_ss);
+
   std::string file_name_;
   int line_;
   int column_;

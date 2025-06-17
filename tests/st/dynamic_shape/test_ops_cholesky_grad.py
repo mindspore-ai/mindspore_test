@@ -12,15 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-import pytest
 import numpy as np
 from tests.st.utils import test_utils
+from tests.mark_utils import arg_mark
 import mindspore.nn as nn
 from mindspore import Tensor
 import mindspore.context as context
 from mindspore.common import dtype as mstype
 from mindspore.ops import auto_generate as P
-from tests.mark_utils import arg_mark
 
 
 class CholeskyGradNet(nn.Cell):
@@ -32,7 +31,7 @@ class CholeskyGradNet(nn.Cell):
         return self.cholesky_grad(x, dx)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @test_utils.run_test_with_On
 def test_cholesky_grad_ascend():
     """

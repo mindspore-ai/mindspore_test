@@ -213,11 +213,7 @@ void *OpenCLAllocator::_Malloc(MemType mem_type, void *data, size_t size, const 
 
   total_size_ += size;
   const uint64_t max_size = ocl_runtime_->GetGlobalMemSize() * 0.8;
-  if (total_size_ >= max_size) {
-    is_oversize_ = true;
-  } else {
-    is_oversize_ = false;
-  }
+  CheckOversize(&max_size);
 
   cl::Buffer *buffer = nullptr;
   cl::Image2D *image = nullptr;
@@ -271,6 +267,14 @@ void *OpenCLAllocator::_Malloc(MemType mem_type, void *data, size_t size, const 
                 << ", device addr: " << mem_buf->device_ptr_ << ", image_addr: " << image
                 << ", total size: " << total_size_;
   return host_ptr;
+}
+
+void OpenCLAllocator::CheckOversize(const uint64_t *max_size) {
+  if (total_size_ >= *max_size) {
+    is_oversize_ = true;
+  } else {
+    is_oversize_ = false;
+  }
 }
 
 void OpenCLAllocator::Free(void *buf) {

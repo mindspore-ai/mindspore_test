@@ -51,7 +51,6 @@ class BACKEND_COMMON_EXPORT DumpJsonParser {
   static bool DumpToFile(const std::string &filename, const void *data, size_t len, const ShapeVector &shape,
                          TypeId type);
   void CopyDumpJsonToDir(uint32_t rank_id);
-  void CopyHcclJsonToDir(uint32_t rank_id);
   void CopyMSCfgJsonToDir(uint32_t rank_id);
   bool NeedDump(const std::string &op_full_name);
   void MatchKernel(const std::string &kernel_name);
@@ -89,12 +88,10 @@ class BACKEND_COMMON_EXPORT DumpJsonParser {
   bool DumpEnabledForIter() const;
   bool InputNeedDump() const;
   bool OutputNeedDump() const;
-  std::string GetOpOverflowBinPath(uint32_t graph_id) const;
   void GetCellDumpFlag(const session::KernelGraph &kernel_graph);
   void UpdateNeedDumpKernels(const session::KernelGraph &kernel_graph);
   bool IsDumpEnabled();
   bool IsDeviceCalcStats() const;
-  void PyNativeModeCheck();
   void CheckE2eSetting();
   bool IsHCCLKernelInput(const std::string &kernel_name) const;
   bool IsCallbackRegistered() { return dumpdatacallback_registered_; }

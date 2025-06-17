@@ -67,6 +67,7 @@ ORIGIN_METHOD_WITH_SIMU(aclrtSubscribeReport, aclError, uint64_t, aclrtStream)
 ORIGIN_METHOD_WITH_SIMU(aclrtSynchronizeEvent, aclError, aclrtEvent)
 ORIGIN_METHOD_WITH_SIMU(aclrtSynchronizeStream, aclError, aclrtStream)
 ORIGIN_METHOD_WITH_SIMU(aclrtSynchronizeStreamWithTimeout, aclError, aclrtStream, int32_t)
+ORIGIN_METHOD_WITH_SIMU(aclrtSynchronizeDeviceWithTimeout, aclError, int32_t)
 ORIGIN_METHOD_WITH_SIMU(aclrtUnmapMem, aclError, void *)
 ORIGIN_METHOD_WITH_SIMU(aclrtReserveMemAddress, aclError, void **, size_t, size_t, void *, uint64_t)
 ORIGIN_METHOD_WITH_SIMU(aclrtMallocPhysical, aclError, aclrtDrvMemHandle *, size_t, const aclrtPhysicalMemProp *,

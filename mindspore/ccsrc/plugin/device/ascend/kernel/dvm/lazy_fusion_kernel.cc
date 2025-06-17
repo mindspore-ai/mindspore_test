@@ -37,8 +37,45 @@ void LazyFusionQueue::Push(const runtime::AsyncTaskPtr &task) {
 }
 
 void LazyFusionQueue::Wait() {
+  auto current_level = GetCurrentLevel();
+  if (current_level >= wait_level_) {
+    MS_LOG(DEBUG) << "No need to wait, current level " << current_level << " AsyncQueue name " << name_;
+    // Only need to wait the low level thread.
+    return;
+  }
   FlushLazyFusion();
   AsyncRQueue::Wait();
+}
+
+bool LazyFusionQueue::Empty() {
+  // This function only been called by OpExecutor::RunQueueEmpty, which only be called in non-pyboost sync running.
+  // In case async running + sync running in the same process, AsyncRQueue::Empty does not means the queue is really
+  // empty, maybe the dvm kernel has not been enqueued.
+  if (!runtime::AsyncRQueue::Empty()) {
+    return false;
+  }
+  // if LazyFusionManager::current_ is not null, means LazyFusionManager::Flush has not been called.
+  return g_lazy_fusion_manager.Empty();
+}
+
+void LazyFusionQueue::WorkerJoin() {
+  // If the process exit without calling asnumpy()/sync(), the atexit function will call WorkerJoin()
+  // first, then call Wait(). The WorkerJoin function will exit the thread, then when call Wait(), it
+  // push a dvm task to the queue, and will stuck in the dead loop because the dvm task will never be
+  // executed as the thread already exit. So we need to push dvm task to the queue inside WorkerJoin() first.
+  FlushLazyFusion();
+  runtime::AsyncRQueue::WorkerJoin();
+}
+
+runtime::kThreadWaitLevel LazyFusionQueue::GetCurrentLevel() {
+  runtime::kThreadWaitLevel current_level{runtime::kThreadWaitLevel::kLevelUnknown};
+  auto thread_id = std::this_thread::get_id();
+  std::unique_lock<std::mutex> lock(level_mutex_);
+  auto iter = thread_id_to_wait_level_.find(thread_id);
+  if (iter != thread_id_to_wait_level_.end()) {
+    current_level = iter->second;
+  }
+  return current_level;
 }
 
 LazyFusionManager g_lazy_fusion_manager;
@@ -270,6 +307,7 @@ void LazyFusionKernelAscend::Flush() {
           dump_buf_ << "[lazy_fusion before split] "
                     << "kernel id : " << id() << "\n";
           dump_buf_ << Dump() << "\n";
+          DumpToFile();
           EagerCodeGen(reloc_entry_.data(), reloc_entry_.size());
           dump_buf_ << "[lazy_fusion after split] "
                     << "kernel id : " << id() << "\n";

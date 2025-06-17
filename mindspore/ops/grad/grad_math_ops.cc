@@ -218,8 +218,9 @@ NodePtrList CumMaxMinGrad(BpropBuilder *ib) {
 
   auto dout = ib->GetInput(i3);
   auto dout0 = ib->TupleGetItem(dout, i0);
-  auto zero_cum = ib->Emit("ZerosLikeExt", {x, ib->Value(static_cast<int64_t>(ib->GetDtypeId(x)))});
-  return {ib->Emit("ScatterAddExt", {zero_cum, axis, indices, dout0}), ib->OutZeros(axis)};
+  auto out_grad = ib->Emit("ZerosLikeExt", {x, ib->Value(static_cast<int64_t>(ib->GetDtypeId(x)))});
+  (void)ib->Emit("InplaceScatterAdd", {out_grad, axis, indices, dout0});
+  return {out_grad, ib->OutZeros(axis)};
 }
 
 NodePtrList IndexAddGrad(BpropBuilder *ib) {
@@ -704,12 +705,12 @@ inline NodePtr ReduceExtOpGetMask(BpropBuilder *ib, const NodePtr &x, const Node
 
 inline NodePtr ReduceExtOpGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr &out, const NodePtr &dout) {
   auto mask = ReduceExtOpGetMask(ib, x, out);
-  auto x_zeros = ib->Zeros(x);
+  auto out_grad = ib->Zeros(x);
   auto mask_sum = ib->SumExt(mask, ib->EmitValue(kNone), ib->Value(false), ib->EmitValue(kNone));
   auto grad_div_mask_sum = ib->Div(dout, ib->Cast(mask_sum, ib->GetDtype(dout)));
   grad_div_mask_sum = ib->Reshape(ib->Cast(grad_div_mask_sum, ib->GetDtype(x)), ShapeVector{});
-  auto dx = ib->MaskedFill(x_zeros, mask, grad_div_mask_sum);
-  return {dx};
+  (void)ib->Emit("InplaceMaskedFillTensor", {out_grad, mask, grad_div_mask_sum});
+  return {out_grad};
 }
 
 class DiagonalShapeCalc : public ShapeCalcFunctor {
@@ -1527,7 +1528,10 @@ REG_BPROP_BUILDER("Mul").FreeUselessValues(FreeTensorsOfMul).SetBody(BODYFUNC(ib
   if (y->need_compute_grad_out()) {
     bc_dy = ib->Mul(x, dout);
   }
-  return BinopGradCommon(ib, x, y, bc_dx, bc_dy);
+  auto ret = BinopGradCommon(ib, x, y, bc_dx, bc_dy);
+  auto dx = x->need_compute_grad_out() ? ib->Cast(ret[i0], ib->GetDtype(x)) : ret[i0];
+  auto dy = y->need_compute_grad_out() ? ib->Cast(ret[i1], ib->GetDtype(y)) : ret[i1];
+  return {dx, dy};
 });
 
 REG_BPROP_BUILDER("Muls").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {

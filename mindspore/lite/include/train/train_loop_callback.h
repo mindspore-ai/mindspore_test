@@ -47,24 +47,19 @@ class TrainLoopCallBack {
   virtual ~TrainLoopCallBack() = default;
 
   /// \brief This method is called once before the network executing
-  ///
   /// \param[in] cb_data info about current execution
   virtual void Begin(const TrainLoopCallBackData &cb_data) {}
 
   /// \brief This method is called once following the network execution
-  ///
   /// \param[in] cb_data info about current execution
   virtual void End(const TrainLoopCallBackData &cb_data) {}
 
   /// \brief This method is called at the beginning of each epoch
-  ///
   /// \param[in] cb_data info about current execution
   virtual void EpochBegin(const TrainLoopCallBackData &cb_data) {}
 
   /// \brief This method is called after the run of each epoch
-  ///
   /// \param[in] cb_data info about current execution
-  ///
   /// \return indication if to continue in the train loop:
   ///         RET_CONTINUE -- continue training
   ///         RET_STOP_TRAINING -- stop training (e.g., due to achieved accuracy)
@@ -72,12 +67,10 @@ class TrainLoopCallBack {
   virtual int EpochEnd(const TrainLoopCallBackData &cb_data) { return RET_CONTINUE; }
 
   /// \brief This method is called at the beginning of each step
-  ///
   /// \param[in] cb_data info about current execution
   virtual void StepBegin(const TrainLoopCallBackData &cb_data) {}
 
   /// \brief This method is called after each step is ran
-  ///
   /// \param[in] cb_data info about current execution
   virtual void StepEnd(const TrainLoopCallBackData &cb_data) {}
 };

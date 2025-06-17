@@ -135,6 +135,8 @@ class ASCEND_RES_MANAGER_EXPORT HcclAdapter {
 
   HcclResult HcclCommResume(HcclComm comm) const;
 
+  HcclResult HcclCommWorkingDevNicSet(HcclComm comm, uint32_t *ranks, bool *useBackup, uint32_t nRanks);
+
   // Return whether using CM to initialize HCCL.
   bool UseHcclCM() const;
   static void AddCMEnvToHcclOption(std::map<std::string, std::string> *hccl_opt_map);
@@ -163,6 +165,7 @@ class ASCEND_RES_MANAGER_EXPORT HcclAdapter {
   static std::string GetHcclModeString(HcclMode hccl_mode);
   string DoGetHcomGroup(const string &original_group, const std::vector<uint32_t> &rank_ids) const;
 
+  static bool IsSimulation();
   void *plugin_handle_ = nullptr;
 
   InitHcomGraphAdapterFunObj init_hcom_graph_adapter_ = nullptr;
@@ -205,6 +208,7 @@ class ASCEND_RES_MANAGER_EXPORT HcclAdapter {
   HcomGetLocalRankSizeFunObj hccl_get_local_rank_size_ = nullptr;
   HcomGetWorldRankFromGroupRankFunObj hccl_get_world_rank_by_group_rank_ = nullptr;
   HcomGetGroupRankFromWorldRankFunObj hccl_get_group_rank_by_world_rank_ = nullptr;
+  HcclCommWorkingDevNicSetFunObj hccl_comm_working_dev_nic_set_ = nullptr;
 
   HcomExecInitializeFunObj hccl_exec_initialize_ = nullptr;
   HcomExecFinalizeFunObj hccl_exec_finalize_ = nullptr;

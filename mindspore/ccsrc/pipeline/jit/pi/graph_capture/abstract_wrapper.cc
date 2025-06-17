@@ -50,6 +50,7 @@ py::object ConvertToPyTensorOrParameter(const py::object &cpp_tensor) {
     return py::object();
   }
   auto tensor = tensor::ConvertToTensor(cpp_tensor);
+  MS_EXCEPTION_IF_NULL(tensor);
   if (tensor->is_parameter()) {
     ParamInfoPtr param_info = tensor->param_info();
     MS_EXCEPTION_IF_NULL(param_info);
@@ -257,6 +258,7 @@ py::object ConvertToPyObj(const AbstractBasePtr &abs) {
 }
 
 py::object ConvertToPyNamedtuple(const abstract::AbstractNamedTuplePtr &abstract) {
+  MS_EXCEPTION_IF_NULL(abstract);
   auto sz = abstract->key().size();
   MS_EXCEPTION_IF_CHECK_FAIL(abstract->elements().size() == sz, "keys.size and elements.size not equal!");
   // Collect namedtuple's elements into a tuple.
@@ -419,6 +421,7 @@ std::vector<py::object> AbstractWrapper::GetDictKeysObject() const {
     MS_LOG(EXCEPTION) << "Can not get keys non-dict abstract wrapper: " << ToString();
   }
   auto dict_abstract = abstract_->cast<abstract::AbstractDictionaryPtr>();
+  MS_EXCEPTION_IF_NULL(dict_abstract);
   const auto &pairs = dict_abstract->elements();
   std::vector<py::object> ret;
   std::transform(pairs.begin(), pairs.end(), std::back_inserter(ret), [](const auto &e) {

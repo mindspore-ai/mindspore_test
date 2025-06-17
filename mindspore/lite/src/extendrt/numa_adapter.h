@@ -45,7 +45,7 @@ struct NUMAInterface {
 
 struct MemoryInfo {
   int64_t total = 0;
-  int64_t free = 0;
+  int64_t unused = 0;
 };
 
 class NUMAAdapter {

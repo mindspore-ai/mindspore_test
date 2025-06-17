@@ -17,8 +17,8 @@ from typing import List, Dict, Any
 from decimal import Decimal
 from collections import defaultdict
 
-from mindspore import context
 from mindspore import log as logger
+from mindspore.profiler.common.log import ProfilerLogger
 from mindspore.profiler.common.constant import EventConstant, TimelineLayerName, ProfilerLevel, JitLevel
 from mindspore.profiler.analysis.parser.timeline_event.base_event import BaseEvent
 from mindspore.profiler.analysis.parser.timeline_event.timeline_event_pool import TimelineEventPool
@@ -39,9 +39,10 @@ class AscendTimelineAssembler(BaseTimelineAssembler):
     def __init__(self, **kwargs):
         super().__init__()
         self._profiler_level = kwargs.get("profiler_level")
-        self._context_mode = kwargs.get("context_mode")
         self._jit_level = kwargs.get("jit_level")
         self._init_creators()
+        ProfilerLogger.init(kwargs.get("ascend_ms_dir"))
+        self._logger = ProfilerLogger.get_instance()
 
     def _init_creators(self):
         """Initialize trace creators."""
@@ -136,9 +137,8 @@ class AscendTimelineAssembler(BaseTimelineAssembler):
         if not fwk_launch_op_list and self._jit_level != JitLevel.GRAPH_LEVEL:
             logger.warning("Cannot find launch op in MindSpore framework.")
             return []
-        if (set(acl_to_npu_flow_dict.keys()) != set(fwk_launch_op_list.keys()) and
-                self._context_mode == context.PYNATIVE_MODE):
-            logger.warning(
+        if set(acl_to_npu_flow_dict.keys()) != set(fwk_launch_op_list.keys()):
+            self._logger.warning(
                 "The number of launch op threads in MindSpore framework is inconsistent with the CANN layer.")
 
         fwk_to_npu_flows = []

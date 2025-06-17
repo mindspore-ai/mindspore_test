@@ -119,3 +119,29 @@ def test_msrun_model_parallel_mp_1_2_2_2_shared_params():
                     "--join=True --log_dir=./model_parallel_functional_programming_logs/strategy_1_2_2_2 pytest -s -v "
                     "pipeline_inference.py::test_pipeline_inference_shared_params")
     assert ret == 0
+
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level1", card_mark="allcards", essential_mark="unessential")
+def test_parallel_pp_cfg_lazy_init_inline_sink_gpipe():
+    '''
+    Feature: Model parallel, strategy:((1,2),(2,2)).
+    Description: Test model parallel.
+    Expectation: The error of the loss is within the allowable range.
+    '''
+    ret = os.system("export GLOG_v=2 && msrun --worker_num=8 --local_worker_num=8 "
+                    "--master_addr=127.0.0.1 --master_port=10807 "
+                    "--join=True --log_dir=./model_parallel_functional_programming_logs/strategy_1_2_2_2 pytest -s -v "
+                    "model_parallel_pipeline.py::test_parallel_mp_compare_context_auto_sink_gpipe")
+    assert ret == 0
+
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level1", card_mark="allcards", essential_mark="unessential")
+def test_parallel_pp_cfg_lazy_init_inline_sink_seqpipe():
+    '''
+    Feature: Model parallel, strategy:((1,2),(2,2)).
+    Description: Test model parallel.
+    Expectation: The error of the loss is within the allowable range.
+    '''
+    ret = os.system("export GLOG_v=2 && msrun --worker_num=8 --local_worker_num=8 "
+                    "--master_addr=127.0.0.1 --master_port=10807 "
+                    "--join=True --log_dir=./model_parallel_functional_programming_logs/strategy_1_2_2_2 pytest -s -v "
+                    "model_parallel_pipeline.py::test_parallel_mp_compare_context_auto_sink_seqpipe")
+    assert ret == 0

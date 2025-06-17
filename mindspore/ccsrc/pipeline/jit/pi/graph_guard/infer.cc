@@ -480,17 +480,15 @@ void GeneratePrimitiveArgs(PrimitivePtr prim, std::vector<PyObject *> *list, PyO
   }
 }
 
-// return new reference
-PyObject *InferEngine::InferPrimitive(PyObject *primitive, const std::vector<PyObject *> &args, bool *is_abstract) {
-  if (!SupportInfer(primitive)) {
-    return nullptr;
-  }
-  int monad_count = 0;
-  bool has_tensor = false;
-  std::vector<PyObject *> arglist = args;
+namespace {
+mindspore::PrimitivePtr GetPrim(PyObject *primitive) {
+  MS_EXCEPTION_IF_NULL(primitive);
+
   bool isPrimitiveFunction = py::hasattr(primitive, PYTHON_PRIMITIVE_FUNCTION_FLAG);
   py::object adapter_obj = py::reinterpret_borrow<py::object>(primitive);
-  mindspore::PrimitivePtr prim;
+
+  mindspore::PrimitivePtr prim = nullptr;
+
   if (isPrimitiveFunction) {
     PrimitiveFunctionAdapterPtr prim_func_adapter = adapter_obj.cast<PrimitiveFunctionAdapterPtr>();
     MS_EXCEPTION_IF_NULL(prim_func_adapter);
@@ -511,6 +509,75 @@ PyObject *InferEngine::InferPrimitive(PyObject *primitive, const std::vector<PyO
     prim = primitive_py;
   }
 
+  return prim;
+}
+
+PyObject *InferByAbstract(const AbstractBasePtr &abs, bool *is_abstract) {
+  MS_EXCEPTION_IF_NULL(abs);
+  MS_EXCEPTION_IF_NULL(is_abstract);
+
+  py::object pyObj;
+  if (abs != nullptr) {
+    pyObj = AbstractWrapper::ConvertToPyObject(abs);
+    if (pyObj.ptr() == nullptr) {
+      pyObj = MakeObjectFromAbstract(abs->BuildShape(), abs->BuildType(), is_abstract);
+    }
+    if (pyObj.ptr() != nullptr) {
+      pyObj = ConvertCppTensorToMsTensor(pyObj);
+    }
+  }
+  return pyObj.inc_ref().ptr();
+}
+
+PyObject *InferByPrimitive(PyObject *primitive, bool has_tensor, int monad_count,
+                           const std::vector<PyObject *> &arglist, bool *is_abstract) {
+  MS_EXCEPTION_IF_NULL(primitive);
+  MS_EXCEPTION_IF_NULL(is_abstract);
+
+  py::object adapter_obj = py::reinterpret_borrow<py::object>(primitive);
+
+  if (py::hasattr(primitive, PY_PRIM_METHOD_INFER)) {
+    size_t list_count = arglist.size() - size_t(monad_count);
+    py::tuple py_vals(list_count);
+    for (size_t i = 0; i < list_count; ++i) {
+      py_vals[i] = py::reinterpret_borrow<py::object>(arglist[i]);
+    }
+    auto infer_func = adapter_obj.attr(PY_PRIM_METHOD_INFER);
+    py::dict output = infer_func(*py_vals);
+    if (output[ATTR_VALUE].is_none()) {
+      auto ret = MakeObjectFromPyObject(output[ATTR_SHAPE], output[ATTR_DTYPE], is_abstract);
+      Py_INCREF(ret.ptr());
+      return ret.ptr();
+    } else {
+      Py_INCREF(output[ATTR_VALUE].ptr());
+      return output[ATTR_VALUE].ptr();
+    }
+  } else if (!has_tensor && py::hasattr(primitive, PY_PRIM_METHOD_INFER_VALUE)) {
+    // Tensor maybe uninitialized, avoid infer value and allocate data.
+    // because tensor has no data when doing inference for type, infer_value will crash!
+    py::tuple py_vals(arglist.size());
+    for (size_t i = 0; i < arglist.size(); ++i) {
+      py_vals[i] = py::reinterpret_borrow<py::object>(arglist[i]);
+    }
+    auto infer_value = adapter_obj.attr(PY_PRIM_METHOD_INFER_VALUE);
+    auto output = infer_value(*py_vals);
+    Py_INCREF(output.ptr());
+    return output.ptr();
+  }
+  return nullptr;
+}
+}  // namespace
+
+// return new reference
+PyObject *InferEngine::InferPrimitive(PyObject *primitive, const std::vector<PyObject *> &args, bool *is_abstract) {
+  if (!SupportInfer(primitive)) {
+    return nullptr;
+  }
+  int monad_count = 0;
+  bool has_tensor = false;
+  std::vector<PyObject *> arglist = args;
+  mindspore::PrimitivePtr prim = GetPrim(primitive);
+
   PyObject *special_type = InferSpecialPrimitive(primitive, arglist);
   if (special_type != nullptr) {
     return special_type;
@@ -526,48 +593,11 @@ PyObject *InferEngine::InferPrimitive(PyObject *primitive, const std::vector<PyO
   std::optional<AbstractBasePtr> opt_res = mindspore::abstract::TryInferAbstract(prim, list);
   if (opt_res.has_value()) {
     auto abs = opt_res.value();
-    py::object pyObj;
-    if (abs != nullptr) {
-      pyObj = AbstractWrapper::ConvertToPyObject(abs);
-      if (pyObj.ptr() == nullptr) {
-        pyObj = MakeObjectFromAbstract(abs->BuildShape(), abs->BuildType(), is_abstract);
-      }
-      if (pyObj.ptr() != nullptr) {
-        pyObj = ConvertCppTensorToMsTensor(pyObj);
-      }
-    }
-    return pyObj.inc_ref().ptr();
+    return InferByAbstract(abs, is_abstract);
   } else if (primitive) {
-    if (py::hasattr(primitive, PY_PRIM_METHOD_INFER)) {
-      size_t list_count = arglist.size() - size_t(monad_count);
-      py::tuple py_vals(list_count);
-      for (size_t i = 0; i < list_count; ++i) {
-        py_vals[i] = py::reinterpret_borrow<py::object>(arglist[i]);
-      }
-      auto infer_func = adapter_obj.attr(PY_PRIM_METHOD_INFER);
-      py::dict output = infer_func(*py_vals);
-      if (output[ATTR_VALUE].is_none()) {
-        auto ret = MakeObjectFromPyObject(output[ATTR_SHAPE], output[ATTR_DTYPE], is_abstract);
-        Py_INCREF(ret.ptr());
-        return ret.ptr();
-      } else {
-        Py_INCREF(output[ATTR_VALUE].ptr());
-        return output[ATTR_VALUE].ptr();
-      }
-    } else if (!has_tensor && py::hasattr(primitive, PY_PRIM_METHOD_INFER_VALUE)) {
-      // Tensor maybe uninitialized, avoid infer value and allocate data.
-      // because tensor has no data when doing inference for type, infer_value will crash!
-      py::tuple py_vals(arglist.size());
-      for (size_t i = 0; i < arglist.size(); ++i) {
-        py_vals[i] = py::reinterpret_borrow<py::object>(arglist[i]);
-      }
-      auto infer_value = adapter_obj.attr(PY_PRIM_METHOD_INFER_VALUE);
-      auto output = infer_value(*py_vals);
-      Py_INCREF(output.ptr());
-      return output.ptr();
-    }
-    return nullptr;
+    return InferByPrimitive(primitive, has_tensor, monad_count, arglist, is_abstract);
   }
+
   return nullptr;
 }
 

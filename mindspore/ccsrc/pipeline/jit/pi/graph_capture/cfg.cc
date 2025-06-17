@@ -179,7 +179,9 @@ static void SetInstructionName(PyCodeWrapper co, Instr *cur) {
     index = opcode == LOAD_GLOBAL ? (index >> 1) : index;
 #endif
     py::object names = co.co_names();
-    cur->set_name(PyUnicode_AsUTF8(PyTuple_GET_ITEM(names.ptr(), index)));
+    auto names_ptr = names.ptr();
+    MS_EXCEPTION_IF_NULL(names_ptr);
+    cur->set_name(PyUnicode_AsUTF8(PyTuple_GET_ITEM(names_ptr, index)));
   }
 }
 

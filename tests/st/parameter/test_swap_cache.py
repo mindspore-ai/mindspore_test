@@ -14,7 +14,6 @@
 # ============================================================================
 
 import numpy as np
-import pytest
 import mindspore as ms
 from mindspore._c_expression import swap_cache
 from mindspore.common.api import jit
@@ -38,7 +37,7 @@ def swap_numpy(dst_np, src_np, block_mapping_np):
     return dst_np
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_swap_cache():
     """
     Feature: test swap cache api.

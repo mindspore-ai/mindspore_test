@@ -204,7 +204,8 @@ void RegModule(py::module *m) {
   RegSendRecv(m);
   RegResetParams(m);
   RegCleanTdtChannel(m);
-  mindspore::dump::RegDumpControl(m);
+  mindspore::datadump::RegDumpControl(m);
+  mindspore::checksum::RegCheckSum(m);
   RegTFT(m);
   RegTensorDoc(m);
   RegReuseDataPtr(m);
@@ -269,7 +270,7 @@ PYBIND11_MODULE(_c_expression, m) {
     .def("get_random_status", &GraphExecutorPy::GetRandomStatus, py::arg("phase") = py::str(""),
          "Get random status from graph")
     .def("compile", &GraphExecutorPy::Compile, py::arg("obj"), py::arg("args"), py::arg("kwargs"),
-         py::arg("phase") = py::str(""), "Compile obj by executor.")
+         py::arg("phase") = py::str(""), py::arg("jit_config") = py::dict(), "Compile obj by executor.")
     .def("updata_param_node_default_input", &GraphExecutorPy::UpdataParamNodeDefaultInput, py::arg("phase"),
          py::arg("params"), "Fetch the inputs of Conv or Matmul for quant export.")
     .def("get_parameter_layout", &GraphExecutorPy::GetParameterLayout, py::arg("phase") = py::str("train"),
@@ -328,7 +329,7 @@ PYBIND11_MODULE(_c_expression, m) {
     .def("del_net_res", &JitExecutorPy::DelNetRes, py::arg("obj"), py::arg("network_id") = py::set(),
          "Delete network resource.")
     .def("compile", &JitExecutorPy::Compile, py::arg("obj"), py::arg("args"), py::arg("kwargs"),
-         py::arg("phase") = py::str(""), "Compile obj by executor.")
+         py::arg("phase") = py::str(""), py::arg("jit_config") = py::dict(), "Compile obj by executor.")
     .def("has_compiled", &JitExecutorPy::HasCompiled, py::arg("phase") = py::str(""),
          "Get if the cell or function has been compiled.")
     .def("set_enable_tuple_broaden", &JitExecutorPy::set_enable_tuple_broaden,
@@ -712,6 +713,7 @@ PYBIND11_MODULE(_c_expression, m) {
     .def("create_group", &CollectiveManager::CreateCommunicationGroup, "Create collective group.",
          pybind11::arg("group_name"), pybind11::arg("rank_list"), pybind11::arg("options") = GroupOptions())
     .def("destroy_group", &CollectiveManager::DestroyCommunicationGroup, "Destroy collective group.")
+    .def("remove_group_info", &CollectiveManager::RemoveGroupInfoForARF, "Remove group info for arf.")
     .def("get_group_map", &CollectiveManager::get_group_map, "Get the group map")
     .def("get_local_rank_id", &CollectiveManager::GetLocalRankId, "Get the node rank id.")
     .def("get_local_group_size", &CollectiveManager::GetLocalGroupSize, "Get the node rank id.")
@@ -725,8 +727,9 @@ PYBIND11_MODULE(_c_expression, m) {
     .def("get_comm_name", &CollectiveManager::GetCommName,
          "Get inner communicator name for the specified communication group.")
     .def("resume_hccl_comm", &CollectiveManager::ResumeHcclComm, "resume hccl comm.")
-    .def("wait_all_comm_init", &CollectiveManager::WaitAllCommInitDone,
-         "Wait for all communicators to be initialized.");
+    .def("wait_all_comm_init", &CollectiveManager::WaitAllCommInitDone, "Wait for all communicators to be initialized.")
+    .def("comm_switch_nic", &CollectiveManager::CommSwitchNic,
+         "Switch network interface card between the primary and the secondary NIC.");
 
   (void)py::class_<TCPStoreClient, std::shared_ptr<TCPStoreClient>>(m, "TCPStoreClient")
     .def_static("get_instance", &TCPStoreClient::instance, "Get TCPStore Client instance.")

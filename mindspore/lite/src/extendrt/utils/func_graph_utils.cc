@@ -52,6 +52,7 @@ ValuePtr FuncGraphUtils::GetNodeValuePtr(AnfNodePtr input_node) {
     }
   } else if (input_node->isa<Parameter>()) {
     auto parameter = input_node->cast<ParameterPtr>();
+    MS_EXCEPTION_IF_NULL(parameter);
     if (parameter->has_default()) {
       value = parameter->default_param();
     }

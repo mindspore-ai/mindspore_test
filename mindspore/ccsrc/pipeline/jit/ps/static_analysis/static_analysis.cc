@@ -487,8 +487,20 @@ bool IsFuncGraphAbstractInput(const CNodePtr &origin_cnode, const AnalysisEngine
   return !MatchMetaFg(value);
 }
 
-// {{meta_fg, g, w}, Ys} => {{meta_fg, {UnpackGraph, g, Ys}, w}, Ys}
-// {UnpackCall, {meta_fg, g, w}, Ys} => {UnpackCall, {meta_fg, {UnpackGraph, g, Ys}, w}, Ys}
+/**
+ * \brief Insert `UnpackGraph` Primitive to `AnfNode`.
+ *
+ * \example
+ *     {{meta_fg, g, w}, Ys} => {{meta_fg, {UnpackGraph, g, Ys}, w}, Ys}.
+ *     {UnpackCall, {meta_fg, g, w}, Ys} => {UnpackCall, {meta_fg, {UnpackGraph, g, Ys}, w}, Ys}.
+ *
+ * \param[in] origin_cnode Original Cnode.
+ * \param[in] value Primitive value.
+ * \param[in] conf Anfnode config.
+ * \param[in] engine Analysis engine.
+ *
+ * \return The `AnfNode` after `UnpackGraph` Primitive is inserted.
+ **/
 AnfNodePtr InsertUnpackGraph(const CNodePtr &origin_cnode, const ValuePtr &value, const AnfNodeConfigPtr &conf,
                              const AnalysisEnginePtr &engine) {
   // origin_cnode is {meta_fg, g, ...}
@@ -1597,7 +1609,9 @@ std::string JoinBranchesFailedInfo(const AbstractBasePtr &abs, const AbstractBas
     if (IsPrimitiveCNode(tuple_node, prim::kPrimMakeTuple)) {
       const auto &cnode = tuple_node->cast_ptr<CNode>();
       for (size_t i = 1; i < cnode->size(); i++) {
-        auto out_node = GetValueNode<FuncGraphPtr>(cnode->input(i))->get_return();
+        auto input = GetValueNode<FuncGraphPtr>(cnode->input(i));
+        MS_EXCEPTION_IF_NULL(input);
+        auto out_node = input->get_return();
         MS_EXCEPTION_IF_NULL(out_node);
         buffer << ", branch" << i << ": " << cnode->input(i)->ToString() << "\n"
                << trace::GetDebugInfoStr(out_node->debug_info());

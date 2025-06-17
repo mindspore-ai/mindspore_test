@@ -20,7 +20,6 @@
 #include <unordered_map>
 #include <vector>
 #include "utils/log_adapter.h"
-#include "plugin/device/ascend/hal/common/ascend_utils.h"
 #include "acl/acl_rt.h"
 
 namespace mindspore {

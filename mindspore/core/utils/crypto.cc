@@ -24,7 +24,7 @@
 #include "utils/log_adapter.h"
 #include "utils/convert_utils_base.h"
 
-#if !defined(_MSC_VER) && !defined(_WIN32) && defined(ENABLE_OPENSSL)
+#if !defined(_MSC_VER) && !defined(_WIN32)
 #include <openssl/aes.h>
 #include <openssl/evp.h>
 #include <openssl/rand.h>
@@ -74,7 +74,7 @@ bool IsCipherFile(const Byte *model_data) {
   auto flag = ByteToInt(int_buf.data(), int_buf.size());
   return static_cast<unsigned int>(flag) == GCM_MAGIC_NUM || static_cast<unsigned int>(flag) == CBC_MAGIC_NUM;
 }
-#if defined(_MSC_VER) || defined(_WIN32) || !defined(ENABLE_OPENSSL)
+#if defined(_MSC_VER) || defined(_WIN32)
 std::unique_ptr<Byte[]> Encrypt(size_t *, const Byte *, size_t, const Byte *, size_t, const std::string &) {
   MS_LOG(ERROR) << "Unsupported feature in Windows platform.";
   return nullptr;
@@ -661,10 +661,10 @@ std::unique_ptr<Byte[]> Decrypt(size_t *decrypt_len, const std::string &encrypt_
     }
     for (size_t i = 0; i < real_thread_used; i++) {
       size_t capacity = std::min(file_size - *decrypt_len, SECUREC_MEM_MAX_LEN);
-      errno_t ret = memcpy_s(decrypt_data.get() + *decrypt_len, capacity, decrypt_block_bufs[i].data(),
+      errno_t err = memcpy_s(decrypt_data.get() + *decrypt_len, capacity, decrypt_block_bufs[i].data(),
                              static_cast<int32_t>(decrypt_block_lens[i]));
-      if (ret != EOK) {
-        MS_LOG(INTERNAL_EXCEPTION) << "memcpy_s error, errorno " << ret;
+      if (err != EOK) {
+        MS_LOG(INTERNAL_EXCEPTION) << "memcpy_s error, errorno " << err;
       }
       *decrypt_len += static_cast<size_t>(decrypt_block_lens[i]);
     }

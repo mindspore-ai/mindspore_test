@@ -57,7 +57,7 @@ def expect_func(var, indices, updates, axis):
     return output
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_kvcachescatterupdate_forward_mode():
     """
     Feature: Test kv_cache_scatter_update with static shape in GE.
@@ -100,7 +100,8 @@ def test_scatter_value(mode):
     elif mode == 'KBK':
         context.set_context(mode=ms.GRAPH_MODE)
         output = (jit(kvcachescatterupdate_forward_func, jit_level="O0"))(Parameter(Tensor(var), "var"),
-                                                                          Tensor(indices), Tensor(updates), -1, 'update')
+                                                                          Tensor(indices), Tensor(updates),
+                                                                          -1, 'update')
     else:
         context.set_context(mode=ms.GRAPH_MODE)
         output = (jit(kvcachescatterupdate_forward_func, backend="GE"))(Parameter(Tensor(var), "var"),

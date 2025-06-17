@@ -667,11 +667,12 @@ void AttachPyObjToAbs(const AbstractBasePtr &abs, const py::object &obj, bool cr
     }
     return;
   }
-  auto abs_tuple = abs->cast<abstract::AbstractTuplePtr>();
   if (!py::isinstance<py::tuple>(obj)) {
     MS_INTERNAL_EXCEPTION(TypeError) << "Object should be tuple but got: " << py::str(obj);
   }
   auto tuple_obj = py::tuple(obj);
+  auto abs_tuple = abs->cast<abstract::AbstractTuplePtr>();
+  MS_EXCEPTION_IF_NULL(abs_tuple);
   for (size_t i = 0; i < abs_tuple->size(); ++i) {
     auto element_abs = abs_tuple->elements()[i];
     auto element_obj = tuple_obj[i];

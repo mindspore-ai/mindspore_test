@@ -188,7 +188,11 @@ TracePtr OptimizePyObjectGetItem(const OpTracePtr &tr) {
     {GenSignature({&PyTuple_Type, &PyLong_Type}), FoldTupleGetItem},
     {GenSignature({&PyList_Type, &PyLong_Type}), FoldTupleGetItem},
   };
-  auto sig = GenSignature({Py_TYPE(tr->GetParam(0)->GetObject()), Py_TYPE(tr->GetParam(1)->GetObject())});
+  auto param0 = tr->GetParam(0);
+  MS_EXCEPTION_IF_NULL(param0);
+  auto param1 = tr->GetParam(1);
+  MS_EXCEPTION_IF_NULL(param1);
+  auto sig = GenSignature({Py_TYPE(param0->GetObject()), Py_TYPE(param1->GetObject())});
   auto iter = fold_map.find(sig);
   auto new_tr = iter == fold_map.end() ? tr : iter->second(tr);
   if (new_tr != tr) {
@@ -202,7 +206,11 @@ TracePtr OptimizePyNumberAdd(const OpTracePtr &tr) {
     {GenSignature({&PyTuple_Type, &PyTuple_Type}), FoldTupleAdd},
     {GenSignature({&PyList_Type, &PyList_Type}), FoldTupleAdd},
   };
-  auto sig = GenSignature({Py_TYPE(tr->GetParam(0)->GetObject()), Py_TYPE(tr->GetParam(1)->GetObject())});
+  auto param0 = tr->GetParam(0);
+  MS_EXCEPTION_IF_NULL(param0);
+  auto param1 = tr->GetParam(1);
+  MS_EXCEPTION_IF_NULL(param1);
+  auto sig = GenSignature({Py_TYPE(param0->GetObject()), Py_TYPE(param1->GetObject())});
   auto iter = fold_map.find(sig);
   return iter == fold_map.end() ? tr : iter->second(tr);
 }
@@ -301,6 +309,7 @@ TracePtr FoldTupleAdd(const OpTracePtr &trace) {
 TracePtr FoldTupleLengthTrace(const OpTracePtr &trace) {
   bool is_call = Opcode(trace->GetOpCode()).IsCall();  // maybe opcode GET_LEN
   TracePtr input = trace->GetParam(is_call);
+  MS_EXCEPTION_IF_NULL(input);
   if (input->GetTraceType() != TraceType::Operation) {
     return trace;
   }
@@ -332,7 +341,9 @@ const InfoPack &FastTraceBase::Info() {
 
 template <Py_ssize_t (&func_ref)(PyObject *o)>
 py::object FastTraceBase::Len(FastTraceBase *this_p, PTraceContext context, bool perf) {
-  py::object src_object = this_p->GetParam(1)->Retrieve(context, perf);
+  auto param1 = this_p->GetParam(1);
+  MS_EXCEPTION_IF_NULL(param1);
+  py::object src_object = param1->Retrieve(context, perf);
   if (src_object.ptr() == nullptr) {
     return {};
   }
@@ -354,23 +365,29 @@ py::object FastTraceBase::Len4Dict(FastTraceBase *this_p, PTraceContext context,
   return FastTraceBase::Len<PyDict_Size>(this_p, context, perf);
 }
 py::object FastTraceBase::Len4Tensor(FastTraceBase *this_p, PTraceContext context, bool perf) {
-  py::object src_object = this_p->GetParam(1)->Retrieve(context, perf);
+  auto param1 = this_p->GetParam(1);
+  MS_EXCEPTION_IF_NULL(param1);
+  py::object src_object = param1->Retrieve(context, perf);
   return src_object.ptr() ? py::int_(PyObject_Size(src_object.ptr())) : py::object{};
 }
 
-#define ITEM_FUNC_COMMON                                                                                  \
-  py::object src_object = this_p->GetParam(0)->Retrieve(context, perf);                                   \
-  if (src_object.ptr() == nullptr) {                                                                      \
-    return {};                                                                                            \
-  }                                                                                                       \
-  bool type_match = Py_IS_TYPE(src_object.ptr(), this_p->src_type_);                                      \
-  bool retrieve_index = !type_match || !this_p->has_data_;                                                \
-  py::object index_object = retrieve_index ? this_p->GetParam(1)->Retrieve(context, perf) : py::object(); \
-  if (retrieve_index && index_object.ptr() == nullptr) {                                                  \
-    return py::object();                                                                                  \
-  }                                                                                                       \
-  if (!type_match) {                                                                                      \
-    return py::reinterpret_steal<py::object>(PyObject_GetItem(src_object.ptr(), index_object.ptr()));     \
+#define ITEM_FUNC_COMMON                                                                              \
+  auto param0 = this_p->GetParam(0);                                                                  \
+  MS_EXCEPTION_IF_NULL(param0);                                                                       \
+  py::object src_object = param0->Retrieve(context, perf);                                            \
+  if (src_object.ptr() == nullptr) {                                                                  \
+    return {};                                                                                        \
+  }                                                                                                   \
+  bool type_match = Py_IS_TYPE(src_object.ptr(), this_p->src_type_);                                  \
+  bool retrieve_index = !type_match || !this_p->has_data_;                                            \
+  auto param1 = this_p->GetParam(1);                                                                  \
+  MS_EXCEPTION_IF_NULL(param1);                                                                       \
+  py::object index_object = retrieve_index ? param1->Retrieve(context, perf) : py::object();          \
+  if (retrieve_index && index_object.ptr() == nullptr) {                                              \
+    return py::object();                                                                              \
+  }                                                                                                   \
+  if (!type_match) {                                                                                  \
+    return py::reinterpret_steal<py::object>(PyObject_GetItem(src_object.ptr(), index_object.ptr())); \
   }
 
 py::object FastTraceBase::Item4TupleList_Int(FastTraceBase *this_p, PTraceContext context, bool perf) {
@@ -463,7 +480,9 @@ py::object MsCell__getattr__(PyObject *self, const MsCellNames &names) {
 
 using FastTraceAttr4MsCell = FastTrace<MsCellNames, decltype(FastTraceBase::Attr4MsCell), FastTraceBase::Attr4MsCell>;
 py::object FastTraceBase::Attr4MsCell(FastTraceBase *this_p, PTraceContext context, bool perf) {
-  py::object src_object = this_p->GetParam(0)->Retrieve(context, perf);
+  auto param0 = this_p->GetParam(0);
+  MS_EXCEPTION_IF_NULL(param0);
+  py::object src_object = param0->Retrieve(context, perf);
   if (src_object.ptr() == nullptr) {
     return {};
   }
@@ -471,7 +490,9 @@ py::object FastTraceBase::Attr4MsCell(FastTraceBase *this_p, PTraceContext conte
   if (this_p->has_data_) {
     name_object = static_cast<FastTraceAttr4MsCell *>(this_p)->cache_.attr_name_;
   } else {
-    name_object = this_p->GetParam(1)->Retrieve(context, perf);
+    auto param1 = this_p->GetParam(1);
+    MS_EXCEPTION_IF_NULL(param1);
+    name_object = param1->Retrieve(context, perf);
   }
   if (name_object.ptr() == nullptr) {
     return py::object();
@@ -614,8 +635,10 @@ TracePtr OpTrace::Fold() {
   }
   is_fold_ = true;
   for (size_t i = 0, size = this->GetParamCount(); i < size; ++i) {
-    if (this->GetParam(i)->GetTraceType() == TraceType::Operation) {
-      OpTracePtr input = std::static_pointer_cast<OpTrace>(this->GetParam(i));
+    auto param = this->GetParam(i);
+    MS_EXCEPTION_IF_NULL(param);
+    if (param->GetTraceType() == TraceType::Operation) {
+      OpTracePtr input = std::static_pointer_cast<OpTrace>(param);
       if (!input->is_fold_) {
         MS_LOG(DEBUG) << "The trace not fold: " << input->ToString();
         this->params_[i] = input->Fold();
@@ -629,34 +652,49 @@ TracePtr OpTrace::Fold() {
 void SimpleStringUnary(const OpTrace *this_p, std::ostream *s) {
   int c = this_p->GetOpCode();
   const char *op = c == UNARY_INVERT ? "~" : c == UNARY_NEGATIVE ? "-" : c == UNARY_NOT ? "(not " : "+";
-  this_p->GetParam(0)->SimpleString(&((*s) << op));
+  auto param0 = this_p->GetParam(0);
+  MS_EXCEPTION_IF_NULL(param0);
+  param0->SimpleString(&((*s) << op));
   (*s) << (c == UNARY_NOT ? ")" : "");
 }
 void SimpleStringBinary(const OpTrace *this_p, std::ostream *s) {
   Opcode c(this_p->GetOpCode());
   (*s) << "(";
-  this_p->GetParam(0)->SimpleString(s);
+  auto param0 = this_p->GetParam(0);
+  MS_EXCEPTION_IF_NULL(param0);
+  auto param1 = this_p->GetParam(1);
+  MS_EXCEPTION_IF_NULL(param1);
+  param0->SimpleString(s);
   (*s) << " " << c.BinaryMathString(this_p->GetOpArgs()) << " ";
-  this_p->GetParam(1)->SimpleString(s);
+  param1->SimpleString(s);
   (*s) << ")";
 }
 void SimpleStringCall(const OpTrace *this_p, std::ostream *s) {
   Opcode c(this_p->GetOpCode());
-  this_p->GetParam(0)->SimpleString(s);
+  auto param0 = this_p->GetParam(0);
+  MS_EXCEPTION_IF_NULL(param0);
+  param0->SimpleString(s);
   (*s) << "(";
   int input_size = this_p->GetParamCount();
   int i = 1;
   bool is_unpack = c == CALL_FUNCTION_EX;
+
+  auto param_simple_string = [&this_p, &i, &s]() {
+    auto param = this_p->GetParam(i++);
+    MS_EXCEPTION_IF_NULL(param);
+    param->SimpleString(s);
+  };
+
   if (is_unpack) {
     (*s) << "*";
-    this_p->GetParam(i++)->SimpleString(s);
+    param_simple_string();
     if (input_size > i) {
       (*s) << ", **";
-      this_p->GetParam(i++)->SimpleString(s);
+      param_simple_string();
     }
   } else {
     for (; i < input_size; ++i) {
-      this_p->GetParam(i)->SimpleString(s);
+      param_simple_string();
       (*s) << ",";
     }
     if (input_size) {
@@ -666,13 +704,19 @@ void SimpleStringCall(const OpTrace *this_p, std::ostream *s) {
   (*s) << ")";
 }
 void SimpleStringSubscript(const OpTrace *this_p, std::ostream *s) {
-  this_p->GetParam(0)->SimpleString(s);
+  auto param0 = this_p->GetParam(0);
+  auto param1 = this_p->GetParam(1);
+  MS_EXCEPTION_IF_NULL(param0);
+  MS_EXCEPTION_IF_NULL(param1);
+  param0->SimpleString(s);
   (*s) << '[';
-  this_p->GetParam(1)->SimpleString(s);
+  param1->SimpleString(s);
   (*s) << ']';
 }
 void SimpleStringAttr(const OpTrace *this_p, std::ostream *s) {
-  this_p->GetParam(0)->SimpleString(s);
+  auto param0 = this_p->GetParam(0);
+  MS_EXCEPTION_IF_NULL(param0);
+  param0->SimpleString(s);
   (*s) << '.' << this_p->GetName();
 }
 

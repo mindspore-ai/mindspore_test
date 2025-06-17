@@ -30,6 +30,7 @@
 #include "frontend/parallel/step_parallel_utils.h"
 #include "include/common/utils/utils.h"
 #include "include/common/utils/comm_manager.h"
+#include "pipeline/jit/ps/graph_circle_handler.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
@@ -44,7 +45,12 @@ bool is_allgather_comm_ops(const AnfNodePtr &node) {
 
   for (const auto &prim : kAllGatherOpsPrim) {
     if (IsPrimitiveCNode(node, prim)) {
-      auto allgather_instance_name = GetCNodePrimitive(node->cast<CNodePtr>())->instance_name();
+      MS_EXCEPTION_IF_NULL(node);
+      auto cnode = node->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(cnode);
+      auto cnode_primitive = GetCNodePrimitive(cnode);
+      MS_EXCEPTION_IF_NULL(cnode_primitive);
+      auto allgather_instance_name = cnode_primitive->instance_name();
       if (allgather_instance_name.find(parallel::PARALLEL_OPTIMIZER) == std::string::npos) {
         return false;
       }
@@ -57,6 +63,7 @@ bool is_allgather_comm_ops(const AnfNodePtr &node) {
 bool is_first_receive(const AnfNodePtr &node) {
   if (IsPrimitiveCNode(node, prim::kPrimReceive)) {
     auto recv_node = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(recv_node);
     if (recv_node->HasPrimalAttr(kPrimalAttrForwardNodeName)) {
       return false;
     }
@@ -105,6 +112,7 @@ void OverlapOptShardInPipeline(const FuncGraphPtr &graph) {
   if (parallel::ParallelContext::GetInstance()->enable_fold_pipeline()) {
     return;
   }
+  circle_handler::SetAttrToDepend(graph);
   std::list<CNodePtr> orders = graph->GetOrderedCnodes();
   std::vector<CNodePtr> origin_nodes_topological(orders.cbegin(), orders.cend());
   std::vector<CNodePtr> first_receive_cnode_list;
@@ -134,6 +142,7 @@ void OverlapOptShardInPipeline(const FuncGraphPtr &graph) {
     depend_node->AddAttr("RecAllGatherDepend", MakeValue(True));
     (void)manager->SetEdge(first_receive_cnode, kIndex1, depend_node);
   }
+  circle_handler::DetectAndRevertGraphCircle(graph, manager, "OverlapOptShardInPipeline");
 }
 
 static std::vector<CNodePtr> GetOptShardReduceScatter(const std::vector<AnfNodePtr> &all_nodes) {
@@ -174,6 +183,7 @@ void OverlapOptShardGradInPipeline(const FuncGraphPtr &graph) {
   if (stage_num <= 1) {
     return;
   }
+  circle_handler::SetAttrToDepend(graph);
   auto ret_after = graph->get_return();
   MS_EXCEPTION_IF_NULL(ret_after);
   auto all_nodes = TopoSort(ret_after, SuccDeeperSimple);
@@ -213,6 +223,7 @@ void OverlapOptShardGradInPipeline(const FuncGraphPtr &graph) {
       manager->SetEdge(rs, 1, depend);
     }
   }
+  circle_handler::DetectAndRevertGraphCircle(graph, graph->manager(), "OverlapOptShardGradInPipeline");
 }
 }  // namespace parallel
 }  // namespace mindspore

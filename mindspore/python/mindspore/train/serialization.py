@@ -36,10 +36,9 @@ from functools import partial
 import math
 import sys
 import time
-import google
 import numpy as np
-
 from safetensors.numpy import save_file
+import google
 
 from mindspore.train.checkpoint_pb2 import Checkpoint
 from mindspore.train.mind_ir_pb2 import ModelProto as mindir_model
@@ -383,9 +382,6 @@ def _exec_save(ckpt_file_name, data_list, enc_key=None, enc_mode="AES-GCM", map_
 
                     crc_num = 0
                     for name, value in data_list.items():
-                        if name == "random_op":
-                            _write_random_seed(name, value, f)
-                            continue
                         if value[0] == "mapparameter":
                             _write_mapparameter(name, value, f, map_param_inc)
                             continue
@@ -467,18 +463,6 @@ def _exec_save(ckpt_file_name, data_list, enc_key=None, enc_mode="AES-GCM", map_
         logger.critical("Failed to save the checkpoint file %s. Maybe don't have the permission to write files, "
                         "or the disk space is insufficient and so on.", ckpt_file_name)
         raise e
-
-
-def _write_random_seed(name, value, f):
-    """Write random op into protobuf file."""
-    checkpoint_list = Checkpoint()
-    param_value = checkpoint_list.value.add()
-    param_value.tag = name
-    param_tensor = param_value.tensor
-    param_tensor.dims.extend(0)
-    param_tensor.tensor_type = "random_op"
-    param_tensor.tensor_content = value
-    f.write(checkpoint_list.SerializeToString())
 
 
 def _write_parameter_data(name, value, f, enc_key, plain_data, crc_num=0, crc_check=False, ckpt_total_io_time=0):
@@ -604,7 +588,7 @@ def _check_save_obj_and_ckpt_file_name(save_obj, ckpt_file_name, format):
     return ckpt_file_name
 
 
-def _check_load_checkpoint_upsupported_param(format, dec_key, dec_mode):
+def _check_load_checkpoint_unsupported_param(format, dec_key, dec_mode):
     """check load checkpoint unsupported param"""
     if format != "safetensors":
         return
@@ -619,7 +603,7 @@ def _check_load_checkpoint_upsupported_param(format, dec_key, dec_mode):
                              f"be set to default value '{default_value}', but got '{current_value}'.")
 
 
-def _check_save_checkpoint_upsupported_param(format, enc_key, enc_mode, map_param_inc=False, global_step_num=None):
+def _check_save_checkpoint_unsupported_param(format, enc_key, enc_mode, map_param_inc=False, global_step_num=None):
     """check save checkpoint unsupported param"""
     if format != "safetensors":
         return
@@ -746,7 +730,7 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
     global_step_num = kwargs.get('global_step_num', None)
     remove_redundancy = kwargs.get('remove_redundancy', None)
     remove_redundancy = Validator.check_isinstance("remove_redundancy", remove_redundancy, (type(None), bool))
-    _check_save_checkpoint_upsupported_param(format, enc_key, enc_mode, map_param_inc, global_step_num)
+    _check_save_checkpoint_unsupported_param(format, enc_key, enc_mode, map_param_inc, global_step_num)
 
     if append_dict and "__exception_save__" in append_dict:
         s1 = mindspore.hal.Stream()
@@ -775,16 +759,6 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
     data_list_np = OrderedDict()
     with _ckpt_mutex:
         for param in save_obj:
-            if param["name"] == "random_op":
-                if os.getenv("AITURBO") == "1":
-                    data_list_np["random_op"] = []
-                    data_list_np["random_op"].append(param["data"])
-                    if crc_check:
-                        bytes_value = bytes(data_list_np[key][0])
-                        data_list_np[key].append(binascii.crc32(bytes_value))
-                else:
-                    data_list["random_op"] = param["data"]
-                continue
             key = param["name"]
             data_list[key] = []
             data_list_np[key] = []
@@ -939,7 +913,7 @@ def _convert_dict_to_param_dict(save_obj, choice_func):
                 continue
             if isinstance(value, np.ndarray):
                 each_param = {"name": key, "data": Parameter(Tensor.from_numpy(value))}
-            if (isinstance(value, (Parameter, str)) or _is_buffer_type(value)):
+            if isinstance(value, (Parameter, str)) or _is_buffer_type(value):
                 each_param = {"name": key, "data": value}
             param_list.append(each_param)
         else:
@@ -952,11 +926,12 @@ def _convert_dict_to_param_dict(save_obj, choice_func):
 def _convert_cell_param_and_names_to_dict(save_obj, choice_func, is_parallel_mode):
     """Convert cell.parameters_and_names to OrderedDict."""
     param_dict = OrderedDict()
+    is_graph_mode = context.get_context('mode') == context.GRAPH_MODE
     for _, param in save_obj.parameters_and_names():
         # All parameters are initialized immediately under PyNative mode, skip this judgement.
         if param.param_info.is_pipeline_shared_param:
             continue
-        if is_parallel_mode and (not param.sliced or param.has_init):
+        if is_parallel_mode and is_graph_mode and (not param.sliced or param.has_init):
             continue
         if choice_func is not None and not choice_func(param.name):
             continue
@@ -980,12 +955,6 @@ def _convert_cell_to_param_list(save_obj, integrated_save, append_dict, choice_f
     if not is_parallel_mode:
         save_obj.init_parameters_data()
     param_dict = _convert_cell_param_and_names_to_dict(save_obj, choice_func, is_parallel_mode)
-    if append_dict and "random_op" in append_dict:
-        phase = 'train' + '.' + str(save_obj.create_time) + '.' + str(id(save_obj)) + '.' + save_obj.arguments_key
-        if phase in save_obj.compile_cache and _executor.has_compiled(phase):
-            random_byte = _executor._graph_executor.get_random_status(phase)
-            param_list.append({"name": "random_op", "data": random_byte})
-            append_dict.pop("random_op")
     for (key, value) in param_dict.items():
         each_param = {"name": key}
         if isinstance(value, MapParameter):
@@ -1285,9 +1254,6 @@ def _load_into_param_dict(ckpt_file_name, parameter_dict, specify_prefix, filter
             logger.warning("For load_checkpoint, this parameter `filter_prefix` will be deprecated, "
                            "please use `choice_func` instead.")
         for element_id, element in enumerate(checkpoint_list.value):
-            if element.tag == "random_op":
-                parameter_dict["random_op"] = element.tensor.tensor_content
-                continue
             if not _whether_load_param(specify_prefix, filter_prefix, element.tag):
                 continue
             if specify_prefix is None and filter_prefix is None and \
@@ -1426,7 +1392,7 @@ def load_checkpoint(ckpt_file_name, net=None, strict_load=False, filter_prefix=N
     dec_mode = Validator.check_isinstance('dec_mode', dec_mode, str)
     crc_check = Validator.check_isinstance('crc_check', crc_check, bool)
     remove_redundancy = Validator.check_isinstance('remove_redundancy', remove_redundancy, bool)
-    _check_load_checkpoint_upsupported_param(format, dec_key, dec_mode)
+    _check_load_checkpoint_unsupported_param(format, dec_key, dec_mode)
     logger.info("Execute the process of loading checkpoint files.")
 
     parameter_dict = {}
@@ -1700,9 +1666,6 @@ def _check_load_param_into_net(net, parameter_dict):
         msg = ("For 'load_param_into_net', the argument 'parameter_dict' should be a dict, "
                "but got {}.".format(type(parameter_dict)))
         raise TypeError(msg)
-    if "random_op" in parameter_dict.keys():
-        net._add_attr("random_op_snapshot", parameter_dict["random_op"])
-        parameter_dict.pop("random_op")
     for key, value in parameter_dict.items():
         if not isinstance(key, str) or not isinstance(value, (Parameter, str, list)):
             logger.critical("Load parameters into net failed.")
@@ -1919,9 +1882,10 @@ def _save_graph(network, file_name):
         file_name (str): Graph file name into which the graph will be saved.
     """
     logger.info("Execute the process of saving graph.")
-
     file_name = os.path.realpath(file_name)
     graph_pb = network.get_func_graph_proto()
+    if os.path.isfile(file_name) and graph_pb:
+        os.remove(file_name)
     if graph_pb:
         with open(file_name, "wb") as f:
             os.chmod(file_name, stat.S_IRUSR | stat.S_IWUSR)
@@ -2283,7 +2247,7 @@ def _get_data_file(is_encrypt, kwargs, data_file_name):
     if is_encrypt():
         place_holder_data = _encrypt(place_holder_data, len(place_holder_data), kwargs["enc_key"],
                                      len(kwargs["enc_key"]), kwargs["enc_mode"])
-    parameter_size = (offset / 1024)
+    parameter_size = offset / 1024
     try:
         f = open(data_file_name, "wb")
         f.write(place_holder_data)
@@ -2325,9 +2289,11 @@ def _split_save(net_dict, model, file_name, is_encrypt, **kwargs):
     external_local = os.path.join(file_prefix + "_variables", "data_" + str(index))
     data_file_name = os.path.join(dirname, external_local)
     f, parameter_size, offset = _get_data_file(is_encrypt, kwargs, data_file_name)
+
+    round = 0
+    names = []
+
     try:
-        round = 0
-        names = []
         for param_proto in model.graph.parameter:
             name = param_proto.name[param_proto.name.find(":") + 1:]
             names.append((name, param_proto))

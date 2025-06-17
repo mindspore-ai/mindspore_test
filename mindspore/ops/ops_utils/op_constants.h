@@ -67,6 +67,10 @@ constexpr size_t kDim3 = 3;
 constexpr size_t kDim4 = 4;
 constexpr size_t kDim5 = 5;
 constexpr size_t kDim6 = 6;
+// output size of op
+constexpr size_t kOutputSize1 = 1;
+constexpr size_t kOutputSize2 = 2;
+constexpr size_t kOutputSize3 = 3;
 
 // Number of input
 constexpr size_t kInputNum0 = 0;

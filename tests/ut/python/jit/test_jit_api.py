@@ -404,3 +404,22 @@ def test_jit_ast_function_for_cell_instance_twice():
     jit_net2(x, y)
     glob_list = glob.glob(os.path.join(graph_save_path, '*_validate*.ir'))
     assert len(glob_list) == 1
+
+
+def test_jit_ast_function_for_cell_instance_twice_and_set_graph_name():
+    """
+    Feature: Use jit api to create two callable MindSpore graph for a cell instance but reset graph name.
+    Description: Use the jit api as a function.
+    Expectation: Success to create two callable MindSpore graphs and compile twice.
+    """
+
+    x = Tensor([[0.5, 0.6, 0.4], [1.2, 1.3, 1.1]], dtype=mstype.float32)
+    y = Tensor([[0.01, 0.3, 1.1], [0.1, 0.2, 1.3]], dtype=mstype.float32)
+    net = Net()
+    jit_net1 = jit(net)
+    jit_net1(x, y)
+    net._set_jit_graph_name('second_net')  # pylint: disable=protected-access
+    jit_net2 = jit(net)
+    jit_net2(x, y)
+    glob_list = glob.glob(os.path.join(graph_save_path, '*_validate*.ir'))
+    assert len(glob_list) == 2

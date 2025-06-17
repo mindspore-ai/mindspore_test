@@ -34,14 +34,14 @@ ConditionGatherRunner::~ConditionGatherRunner() {
            [](const device::DeviceAddressPtr &device_address) { device_address->set_ptr(nullptr); });
 }
 
-void ConditionGatherRunner::ExecuteInferShapeTask(OpContext<KernelTensor> *const context) {
+void ConditionGatherRunner::ExecuteInferShapeTask(OpContext<KernelTensor> *const context, bool high_perf) {
   MS_EXCEPTION_IF_NULL(kernel_);
   MS_LOG(DEBUG) << "Begin InferShape for kernel: " << kernel_->fullname_with_scope();
-  Async(kernel_async_resize_aid_, &KernelAsyncResizeActor::ResizeKernelModV2, context, this);
+  Async(kernel_async_resize_aid_, &KernelAsyncResizeActor::ResizeKernelModV2, context, this, high_perf);
   MS_LOG(DEBUG) << "End InferShape for kernel: " << kernel_->fullname_with_scope();
 }
 
-void ConditionGatherRunner::ExecuteResizeKernelModTask(OpContext<KernelTensor> *const context) {
+void ConditionGatherRunner::ExecuteResizeKernelModTask(OpContext<KernelTensor> *const context, bool) {
   Async(kernel_async_launch_aid_, &KernelAsyncLaunchActor::LaunchKernelV2, context, this);
 }
 
@@ -93,6 +93,10 @@ void ConditionGatherRunner::ExecuteLaunchKernelTask(OpContext<KernelTensor> *con
     SendMemoryFreeReq(context);
   }
   MS_LOG(DEBUG) << "End launch kernel: " << kernel_->fullname_with_scope();
+}
+
+void ConditionGatherRunner::ExecuteLaunchKernelTaskHP(OpContext<KernelTensor> *const context) {
+  ExecuteLaunchKernelTask(context);
 }
 
 void ConditionGatherRunner::Init() {

@@ -55,7 +55,7 @@ def index_fill_scalar_backward(input_x, dim, index, value):
 
 @arg_mark(
     plat_marks=["platform_ascend"],
-    level_mark="level0",
+    level_mark="level1",
     card_mark="onecard",
     essential_mark="essential",
 )

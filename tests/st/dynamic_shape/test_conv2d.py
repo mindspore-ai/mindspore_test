@@ -16,7 +16,6 @@
 """ Test conv2d. """
 
 import numpy as np
-import pytest
 
 import mindspore as ms
 from mindspore import ops, nn, Tensor
@@ -28,7 +27,7 @@ class Net(nn.Cell):
         return ops.conv2d(x, w, None, (1, 1), 'pad', (1, 1), (1, 1), 1)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_conv2d_forward_fp16():
     """
     Feature: conv2d.

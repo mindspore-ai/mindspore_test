@@ -39,6 +39,7 @@ class PartialDeferInline : public AnfVisitor {
       return nullptr;
     }
     auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     constexpr auto func_index = 1;
     auto func_abs = cnode->input(func_index)->abstract();
     MS_EXCEPTION_IF_NULL(func_abs);

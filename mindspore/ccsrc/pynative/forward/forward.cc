@@ -741,9 +741,9 @@ FrontendOpRunInfoPtr ForwardExecutor::GenerateOpRunInfo(const py::args &args, bo
   op_run_info->base_op_run_info.device_target = GetCurrentDeviceTarget(op_run_info->op_grad_info->op_prim);
   bool is_dynamic_shape =
     op_run_info->base_op_run_info.has_dynamic_output || op_run_info->base_op_run_info.use_dynamic_shape_process;
-  PyNativeAlgo::Common::GetConstInputToAttr(op_run_info->op_grad_info->op_prim, op_run_info->base_op_run_info.op_name,
-                                            op_run_info->base_op_run_info.device_target, is_dynamic_shape,
-                                            &op_run_info->input_to_attr);
+  kernel::pyboost::PyBoostUtils::GetConstInputToAttr(
+    op_run_info->op_grad_info->op_prim, op_run_info->base_op_run_info.op_name,
+    op_run_info->base_op_run_info.device_target, is_dynamic_shape, &op_run_info->input_to_attr);
   bool is_dynamic_inputs = IsDynamicInputs(op_run_info);
   if (!op_run_info->input_to_attr.empty() || is_dynamic_inputs) {
     MS_LOG(DEBUG) << "Op_prim need clone:" << op_run_info->base_op_run_info.op_name

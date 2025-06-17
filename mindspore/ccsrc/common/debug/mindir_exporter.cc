@@ -138,7 +138,10 @@ bool IrExportBuilder::SetAbstractFuncToAttributeProto(const abstract::AbstractBa
   MS_EXCEPTION_IF_NULL(attr_proto);
   if (abstract->isa<abstract::FuncGraphAbstractClosure>()) {
     attr_proto->set_type(mind_ir::AttributeProto_AttributeType_FUNCGRAPHCLOSURE);
-    auto func_name = abstract->cast<abstract::FuncGraphAbstractClosurePtr>()->func_graph()->ToString();
+    auto abs_func = abstract->cast<abstract::FuncGraphAbstractClosurePtr>();
+    auto func_graph = abs_func->func_graph();
+    MS_EXCEPTION_IF_NULL(func_graph);
+    auto func_name = func_graph->ToString();
     attr_proto->set_s(func_name);
   } else if (abstract->isa<abstract::PrimitiveAbstractClosure>()) {
     attr_proto->set_type(mind_ir::AttributeProto_AttributeType_PRIMITIVECLOSURE);
@@ -573,6 +576,7 @@ bool IrExportBuilder::SetQuantizationParamToAttrProto(const std::shared_ptr<Quan
 }
 
 bool IrExportBuilder::SetFuncGraphToAttrProto(const FuncGraphPtr &g, mind_ir::AttributeProto *const attr_proto) {
+  MS_EXCEPTION_IF_NULL(g);
   auto *g_proto = attr_proto->mutable_g();
   attr_proto->set_type(mind_ir::AttributeProto_AttributeType_GRAPH);
   g_proto->set_name(g->ToString());
@@ -1379,7 +1383,9 @@ bool IrExportBuilder::SetAttributeProto(const AnfNodePtr &node, mind_ir::NodePro
 
 bool IrExportBuilder::SetTensorTypeToAttributeProto(const ValuePtr &value, mind_ir::TensorProto *tensor_proto) {
   tensor_proto->set_name("tensor0");
-  auto elem_type = value->cast<TensorTypePtr>()->element();
+  auto tensor_type = value->cast<TensorTypePtr>();
+  MS_EXCEPTION_IF_NULL(tensor_type);
+  auto elem_type = tensor_type->element();
   if (elem_type->isa<Int>()) {
     auto int_value = elem_type->cast<IntPtr>();
     auto data_type = GetMindirDataBitsIntType(int_value->nbits());
@@ -1424,8 +1430,8 @@ bool IrExportBuilder::SetTypeToAttributeProto(const ValuePtr &value, mind_ir::At
     tensor_proto->set_data_type(data_type);
   } else if (value->isa<UInt>()) {
     tensor_proto->set_name("value0");
-    auto float_value = value->cast<UIntPtr>();
-    auto data_type = GetMindirDataBitsUIntType(float_value->nbits());
+    auto uint_value = value->cast<UIntPtr>();
+    auto data_type = GetMindirDataBitsUIntType(uint_value->nbits());
     if (data_type == mind_ir::TensorProto_DataType_UNDEFINED) {
       return false;
     }
@@ -1441,7 +1447,6 @@ bool IrExportBuilder::SetTypeToAttributeProto(const ValuePtr &value, mind_ir::At
   } else if (value->isa<BFloat>()) {
     tensor_proto->set_name("value0");
     auto bfloat_value = value->cast<BFloatPtr>();
-    MS_EXCEPTION_IF_NULL(bfloat_value);
     auto data_type = GetMindirDataBitsBFloatType(bfloat_value->nbits());
     if (data_type == mind_ir::TensorProto_DataType_UNDEFINED) {
       return false;

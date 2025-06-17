@@ -21,6 +21,7 @@
 #include <algorithm>
 
 #include "debug/dump/tensordump_control.h"
+#include "debug/dump/utils.h"
 #include "utils/distributed_meta.h"
 #include "utils/log_adapter.h"
 #include "utils/file_utils.h"
@@ -47,17 +48,9 @@ bool EndsWith(const std::string &s, const std::string &sub) {
   }
   return s.rfind(sub) == (s.length() - sub.length()) ? true : false;
 }
-
-std::uint32_t GetRankId() {
-  std::uint32_t rank_id = 0;
-  if (mindspore::DistributedMeta::GetInstance()->initialized()) {
-    rank_id = mindspore::DistributedMeta::GetInstance()->global_rank_id();
-  }
-  return rank_id;
-}
 }  // namespace
 namespace mindspore {
-namespace dump {
+namespace datadump {
 
 std::string TensorDumpStepManager::TensorNameToArrayName(std::string tensor_path, std::string data_type,
                                                          const int mode) {
@@ -65,7 +58,7 @@ std::string TensorDumpStepManager::TensorNameToArrayName(std::string tensor_path
   const std::string separator = "_";
 
   tensor_path = ReplacePlaceholder(tensor_path, "step", GetStep(mode));
-  tensor_path = ReplacePlaceholder(tensor_path, "rank", GetRankId());
+  tensor_path = ReplacePlaceholder(tensor_path, "rank", GetRankID());
   std::transform(data_type.begin(), data_type.end(), data_type.begin(),
                  [](unsigned char c) { return std::tolower(c); });
 
@@ -133,5 +126,5 @@ std::string TensorDumpStepManager::ProcessFileName(const std::string &filename, 
 }
 
 void TensorDumpStepManager::SetAclDumpCallbackReg(void *callbackReg) { aclDumpCallbackReg_ = callbackReg; }
-}  // namespace dump
+}  // namespace datadump
 }  // namespace mindspore

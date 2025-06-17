@@ -39,7 +39,7 @@ def reshape_backward_func(x, shape):
     return ms.grad(reshape_forward_func)(x, shape)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0',
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 def test_ops_mint_reshape(mode):

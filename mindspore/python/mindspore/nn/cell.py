@@ -42,7 +42,6 @@ import mindspore as ms
 from mindspore._checkparam import args_type_check, check_hook_fn
 from mindspore.common._auto_dynamic import is_auto_dynamic, convert_inputs_to_dynamic
 from mindspore import log as logger
-from mindspore.common.parameter import PARAMETER_NAME_DEFAULT
 from mindspore.common.hook_handle import HookHandle
 from mindspore import context
 from mindspore._c_expression import init_pipeline, update_func_graph_hyper_params, Cell_, FuncGraph, MixedPrecisionType
@@ -52,7 +51,7 @@ from mindspore.common.api import _cell_graph_executor, _pynative_executor, _get_
     _no_grad
 from mindspore.common.api import _convert_python_data, _get_args_for_run_predict
 from mindspore.common.api import _process_dyn_args, _generate_dyn_compile_args
-from mindspore.common.parameter import _Buffer, Parameter, ParameterTuple
+from mindspore.common.parameter import _Buffer, Parameter, ParameterTuple, _is_parameter_generated
 from mindspore.common.tensor import Tensor
 from mindspore.ops.primitive import Primitive
 from mindspore.ops.operations import _inner_ops as inner
@@ -60,6 +59,7 @@ from mindspore.parallel.shard import Shard
 from mindspore.parallel._utils import _init_auto_parallel_context, _clear_auto_parallel_context
 from mindspore._check_jit_forbidden_api import jit_forbidden_register
 from mindspore.common._register_for_recompute import recompute_registry
+from mindspore.common.jit_config import JitConfig
 
 _global_buffer_registration_hooks: Dict[int, Callable] = OrderedDict()
 _EXTRA_STATE_KEY_SUFFIX = "_extra_state"
@@ -161,13 +161,13 @@ class Cell(Cell_):
     global_cells = weakref.WeakKeyDictionary()
     _no_auto_lazy_inline = True
 
-    def __new__(class_, *args, **kwargs):
+    def __new__(cls, *args, **kwargs):
         # Use class_ to avoid name conflicts with input args and kwargs.
-        this = Cell_.__new__(class_, *args, **kwargs)
+        this = Cell_.__new__(cls, *args, **kwargs)
         if Cell._no_auto_lazy_inline:
             return this
 
-        Cell.global_cells[this] = (class_, args, kwargs)
+        Cell.global_cells[this] = (cls, args, kwargs)
         return this
 
     def __init__(self, auto_prefix=True, flags=None):
@@ -205,6 +205,7 @@ class Cell(Cell_):
         super().__setattr__("_recompute_cell", None)
         super().__setattr__("mixed_precision_type", None)
         super().__setattr__("_lazy_construct_sig", None)
+        super().__setattr__("_jit_graph_name", '')
         init_pipeline()
 
         # call gc to release GE session resources used by non-used cell objects
@@ -1290,10 +1291,16 @@ class Cell(Cell_):
             self._is_check_and_refresh = True
 
     def _predict(self, *args, **kwargs):
+        '''Graph executor for predict'''
         if not hasattr(self, "phase"):
             return False, None
         if (self.phase == "prefill" or self.phase == 'increment') and self.phase in self.phase_cache:
             new_args = _get_args_for_run_predict(self, args, kwargs, self._compile_args)
+            if self.jit_config_dict:
+                jit_config_dict = self.jit_config_dict
+            else:
+                jit_config_dict = JitConfig().jit_config_dict
+            _cell_graph_executor._graph_executor.set_jit_config(jit_config_dict)
             res = _cell_graph_executor._graph_executor(tuple(new_args), self.phase_cache[self.phase])
             res = _convert_python_data(res)
             return True, res
@@ -1405,16 +1412,14 @@ class Cell(Cell_):
                     # If there are multiple identical objects, their names only check once.
                     continue
                 exist_objs.add(item)
-                if item.name == PARAMETER_NAME_DEFAULT:
-                    logger.warning("For 'Cell', the parameter definition is deprecated.\n"
-                                   "Please set a unique name for the parameter in ParameterTuple '{}'.".format(value))
-                    item.name = item.name + "$" + str(self._id)
+                if _is_parameter_generated(item.name):
+                    item.name = "Parameter$" + str(self._id)
                     self._id += 1
-                self.insert_param_to_cell(item.name, item, check_name_contain_dot=False)
                 if item.name in exist_names:
                     raise ValueError("The value {} , its name '{}' already exists. "
                                      "Please set a unique name for the parameter.".format(value, item.name))
                 exist_names.add(item.name)
+                self.insert_param_to_cell(item.name, item, check_name_contain_dot=False)
 
             if context._get_mode() == context.PYNATIVE_MODE:
                 if name in self.__dict__:
@@ -1434,9 +1439,6 @@ class Cell(Cell_):
                 # If there are multiple identical objects, their names only check once.
                 continue
             self.exist_objs.add(item)
-            if item.name == PARAMETER_NAME_DEFAULT:
-                item.name = item.name + "$" + str(self._id)
-                self._id += 1
             if item.name in self.exist_names:
                 raise ValueError(f"The value {value} , its name '{item.name}' already exists. "
                                  "Please set a unique name for the parameter.")
@@ -1716,6 +1718,11 @@ class Cell(Cell_):
         """
         self.compile(*args, **kwargs)
         new_args = _get_args_for_run(self, args, kwargs, self._compile_args)
+        if self.jit_config_dict:
+            jit_config_dict = self.jit_config_dict
+        else:
+            jit_config_dict = JitConfig().jit_config_dict
+        _cell_graph_executor._graph_executor.set_jit_config(jit_config_dict)
         return _cell_graph_executor(self, *new_args, phase=self.phase)
 
     def insert_param_to_cell(self, param_name, param, check_name_contain_dot=True):
@@ -1763,7 +1770,7 @@ class Cell(Cell_):
         if not isinstance(param, Parameter) and param is not None:
             raise TypeError(f"For 'insert_param_to_cell', the argument 'param' must be 'Parameter' if not None, "
                             f"but got {type(param)}.")
-        if isinstance(param, Parameter) and param.name == PARAMETER_NAME_DEFAULT:
+        if isinstance(param, Parameter) and _is_parameter_generated(param.name):
             param.name = param_name
         self._params[param_name] = param
 
@@ -3690,6 +3697,12 @@ class Cell(Cell_):
             self._jit_config_dict = network.jit_config_dict
         if hasattr(network, "_amp_level"):
             self._amp_level = getattr(network, "_amp_level")
+
+    def _set_jit_graph_name(self, key):
+        """
+        Set jit graph name.
+        """
+        self._jit_graph_name = key
 
 
 class GraphCell(Cell):

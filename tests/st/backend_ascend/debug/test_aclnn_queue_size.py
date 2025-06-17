@@ -54,7 +54,7 @@ def test_clone_kbyk():
     net = Net()
     net(x)
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_aclnn_queue_length_pyboost():
     """
     Feature: test aclnn cache queue.
@@ -71,7 +71,7 @@ def test_aclnn_queue_length_pyboost():
     del os.environ["GLOG_v"]
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_aclnn_queue_length_kbyk():
     """
     Feature: test aclnn cache queue.

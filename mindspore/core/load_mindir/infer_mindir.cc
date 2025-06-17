@@ -32,7 +32,8 @@ namespace mindspore {
 namespace {
 class MindIREngine {
  public:
-  explicit MindIREngine(const FuncGraphPtr &root) : func_graph_(root), nodeuser_map_(root->manager()->node_users()) {}
+  explicit MindIREngine(const FuncGraphPtr &root, const bool &is_lite)
+      : func_graph_(root), nodeuser_map_(root->manager()->node_users()), is_lite_(is_lite) {}
   ~MindIREngine() = default;
   MindIREngine(const MindIREngine &) = delete;
   MindIREngine &operator=(const MindIREngine &) = delete;
@@ -74,6 +75,7 @@ class MindIREngine {
   std::set<AnfNodePtr> todo_;
   NodeUsersMap nodeuser_map_;
   bool raise_exception_ = false;
+  bool is_lite_ = false;
 };
 
 // Infer the root function graph.
@@ -155,7 +157,6 @@ void MindIREngine::Init(const AbstractBasePtrList &args) {
   MS_LOG(DEBUG) << "Finish init. Size of nodes:" << manager->all_nodes().size();
 }
 
-#if !defined(BUILD_LITE)
 void CheckInferInput(const PrimitivePtr &prim, const AbstractBasePtrList &args_abs_list) {
   const auto &name = prim->name();
   for (size_t i = 0; i < args_abs_list.size(); ++i) {
@@ -164,27 +165,25 @@ void CheckInferInput(const PrimitivePtr &prim, const AbstractBasePtrList &args_a
     }
   }
 }
-#endif
 
 // Infer primitive using C++ implement.
 AbstractBasePtr MindIREngine::InferPrimitiveShape(const PrimitivePtr &prim,
                                                   const AbstractBasePtrList &args_abs_list) const {
   MS_EXCEPTION_IF_NULL(prim);
-#if !defined(BUILD_LITE)
-  // For lite, there are MindIR with old primitives that attributes are not converted to inputs.
-  // This would cause input number check fail.
-  CheckInferInput(prim, args_abs_list);
-#endif
+  if (!is_lite_) {
+    // For lite, there are MindIR with old primitives that attributes are not converted to inputs.
+    // This would cause input number check fail.
+    CheckInferInput(prim, args_abs_list);
+  }
   try {
     MS_LOG_TRY_CATCH_SCOPE;
     // For Lite, the op is with old format, it will fail in new infer function, so skip it.
-#ifndef BUILD_LITE
-    auto abstract_optional = abstract::InferAbstractByFuncImpl(prim, args_abs_list);
-    if (abstract_optional.has_value()) {
-      return abstract_optional.value();
+    if (!is_lite_) {
+      auto abstract_optional = abstract::InferAbstractByFuncImpl(prim, args_abs_list);
+      if (abstract_optional.has_value()) {
+        return abstract_optional.value();
+      }
     }
-#endif
-
     auto found = abstract::GetPrimitiveInferImpl(prim);
     if (found.has_value()) {
       auto infer = found.value();
@@ -192,12 +191,12 @@ AbstractBasePtr MindIREngine::InferPrimitiveShape(const PrimitivePtr &prim,
         return infer.InferShapeAndType(nullptr, prim, args_abs_list);
       }
     } else {
-#if !defined(BUILD_LITE)
-      auto infer_res = abstract::InferAbstractByFuncImpl(prim, args_abs_list);
-      if (infer_res.has_value()) {
-        return infer_res.value();
+      if (!is_lite_) {
+        auto infer_res = abstract::InferAbstractByFuncImpl(prim, args_abs_list);
+        if (infer_res.has_value()) {
+          return infer_res.value();
+        }
       }
-#endif
     }
 
     if (raise_exception_) {
@@ -576,8 +575,8 @@ void MindIREngine::InferCNode(const AnfNodePtr &node) {
   }
 }
 }  // namespace
-bool InferMindir(const FuncGraphPtr &root, const AbstractBasePtrList &args, bool raise_exception) {
-  auto engine = std::make_shared<MindIREngine>(root);
+bool InferMindir(const FuncGraphPtr &root, const AbstractBasePtrList &args, bool raise_exception, bool is_lite) {
+  auto engine = std::make_shared<MindIREngine>(root, is_lite);
   engine->SetException(raise_exception);
   return engine->InferShape(args);
 }
@@ -593,7 +592,7 @@ bool ValidMindir(const FuncGraphPtr &root) {
   return true;
 }
 
-void InferFuncGraphLoaded(const FuncGraphPtr &root) {
+void InferFuncGraphLoaded(const FuncGraphPtr &root, bool is_lite) {
   abstract::AbstractBasePtrList func_args;
   const auto &inputs = root->get_inputs();
   (void)std::transform(inputs.begin(), inputs.end(), std::back_inserter(func_args),
@@ -604,6 +603,6 @@ void InferFuncGraphLoaded(const FuncGraphPtr &root) {
                          }
                          return arg->abstract();
                        });
-  (void)InferMindir(root, func_args);
+  (void)InferMindir(root, func_args, false, is_lite);
 }
 }  // namespace mindspore

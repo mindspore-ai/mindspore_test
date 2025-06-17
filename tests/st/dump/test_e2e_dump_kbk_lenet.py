@@ -243,7 +243,7 @@ def run_kbk_data_dump_dynamic(test_name):
         del os.environ['MINDSPORE_DUMP_CONFIG']
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @security_off_wrap
 def test_kbk_dynamic_data_dump():
     """
@@ -254,7 +254,7 @@ def test_kbk_dynamic_data_dump():
     run_kbk_data_dump_dynamic("test_e2e_dump_lenet")
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @security_off_wrap
 def test_ascend_kbk_lenet_op_fullname():
     """

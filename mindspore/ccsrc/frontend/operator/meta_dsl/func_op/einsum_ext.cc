@@ -54,8 +54,8 @@ void EinsumExtFuncOpParseEquation(const std::string &equation_str, bool *arrow_e
     l_equation = equation;
   }
 
-  auto convert_equation_to_subscript = [=](const std::string equation_in,
-                                           std::vector<std::vector<int64_t>> *ops_labels) -> void {
+  auto convert_equation_to_subscript = [](const std::string equation_in,
+                                          std::vector<std::vector<int64_t>> *ops_labels) -> void {
     auto letter_to_subscript = [](unsigned char letter) -> int64_t {
       if (letter == '.') {
         return kEllipsisLabel;
@@ -176,7 +176,9 @@ void EinsumExtFuncOpInferOutput(const std::vector<std::vector<int64_t>> &ops_lab
     perm_idx = ellipsis_max_dimnum;
     find_ellipsis = true;
     for (size_t label = 0; label < kTotalLabelNum; label++) {
-      if (labels_count[label] != 1) continue;
+      if (labels_count[label] != 1) {
+        continue;
+      }
       (*labels_perm_idx)[label] = perm_idx++;
     }
   }
@@ -346,7 +348,10 @@ NodePtr EinsumExtMetaImpl::Multiplication(const NodePtr &left_operand, const Nod
   std::vector<int64_t> batch_dims;
   std::vector<int64_t> lonly_dims;
   std::vector<int64_t> ronly_dims;
-  int64_t batch_size = 1, lonly_size = 1, ronly_size = 1, sum_size = 1;
+  int64_t batch_size = 1;
+  int64_t lonly_size = 1;
+  int64_t ronly_size = 1;
+  int64_t sum_size = 1;
   auto left = left_operand;
   auto right = right_operand;
   auto rank = SizeToLong(l_shape->size());

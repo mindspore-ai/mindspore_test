@@ -137,7 +137,7 @@ const HashMap<std::string, std::vector<size_t>> kNeedKeepBF16Ops = {{ops::kNameA
                                                                     {ops::kNameSlice, {kIndex1}},
                                                                     {ops::kNameCast, {kIndex1}}};
 
-const HashSet<std::string> kCanKeepBF16Ops = {ops::kNameReshape, kTupleGetItemOpName};
+const HashSet<std::string> kCanKeepBF16Ops = {ops::kNameReshape, kTupleGetItemOpName, ops::kNameBroadcastTo};
 
 inline bool NeedKeepBF16(const CNodePtr &cnode) {
   const auto &prim = GetCNodePrimitive(cnode);

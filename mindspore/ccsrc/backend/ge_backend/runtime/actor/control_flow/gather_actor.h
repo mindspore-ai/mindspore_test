@@ -63,8 +63,8 @@ class GatherActor : public ControlActor {
   // There will be multiple output branches for gather actor according the funcgraph in partial.
   mindspore::HashMap<FuncGraph *, std::vector<AID>> output_data_with_branch_id_arrows_;
   // The real index of actor output, the bool value means if the output is a dynamic len.
-  // eg. argument: (A, (B1, B2), C)  parameter: (a, b, c) the vector would be {<{0}, false>, <{1, 2}, true>,
-  // <{3}, false>}
+  // eg. argument: (A, (B1, B2), C)  parameter: (a, b, c)
+  // the vector would be {<{0}, false>, <{1, 2}, true>, <{3}, false>}
   mindspore::HashMap<FuncGraph *, std::vector<std::pair<std::vector<size_t>, bool>>> dynamic_len_index_;
 };
 

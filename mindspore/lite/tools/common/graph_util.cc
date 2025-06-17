@@ -111,7 +111,7 @@ STATUS GetShapeVectorFromParameter(const mindspore::ParameterPtr &param_node, st
 
 STATUS GetShapeVectorAndIdxFromCNode(const CNodePtr &cnode, std::vector<int64_t> *shape_vector, size_t *idx) {
   MS_CHECK_TRUE_MSG(shape_vector != nullptr, lite::RET_ERROR, "shape is nullptr");
-
+  MS_CHECK_TRUE_MSG(cnode != nullptr, lite::RET_ERROR, "cnode is nullptr");
   AbstractBasePtr cnode_abstract = nullptr;
   if ((opt::CheckPrimitiveType(cnode, prim::kPrimTupleGetItem)) ||
       (opt::CheckPrimitiveType(cnode, prim::kPrimListGetItem))) {

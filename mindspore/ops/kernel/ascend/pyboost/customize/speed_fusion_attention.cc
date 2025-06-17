@@ -53,7 +53,7 @@ std::optional<TensorPtr> SpeedFusionAttentionDropoutGenMaskCall(
   }
 
   std::optional<TensorPtr> dropout_mask = std::nullopt;
-  if (0 < keep_prob_value && keep_prob_value < 1.) {
+  if (keep_prob_value > 0.0 && keep_prob_value < 1.0) {
     auto p = std::make_shared<FP32Imm>(static_cast<float>(1 - keep_prob_value));
     auto shape = std::make_shared<ValueTuple>(std::vector<ValuePtr>{MakeValue<int64_t>(*numels)});
     auto dtype = std::make_shared<Int64Imm>(static_cast<int64_t>(query->Dtype()->type_id()));
@@ -76,7 +76,7 @@ std::optional<TensorPtr> SpeedFusionAttentionDropoutGenMaskCall(
 
 tensor::TensorPtr RecordRandomStateBeforeGenMask(const TensorPtr &tensor, double keep_prob_value) {
   // seed & offset will be inplace update after dropout_gen_mask
-  if (0 < keep_prob_value && 1. > keep_prob_value) {
+  if (keep_prob_value > 0.0 && keep_prob_value < 1.0) {
     tensor->data_sync();
     int64_t value = *static_cast<int64_t *>(tensor->data_c());
     return std::make_shared<tensor::Tensor>(value);
@@ -132,14 +132,8 @@ void SpeedFusionAttentionAscendCustomize(
   auto sparse_mode_value = GetValue<int64_t>(sparse_mode);
   auto pse_type_value = GetValue<int64_t>(pse_type);
   auto prefix_array = ConvertValueTupleToVector<int64_t>(prefix);
-  std::optional<std::vector<int64_t>> q_start_idx_array = std::nullopt;
-  std::optional<std::vector<int64_t>> kv_start_idx_array = std::nullopt;
-  if (q_start_idx.has_value()) {
-    q_start_idx_array.emplace(ConvertValueTupleToVector<int64_t>(q_start_idx.value()));
-  }
-  if (kv_start_idx.has_value()) {
-    kv_start_idx_array.emplace(ConvertValueTupleToVector<int64_t>(kv_start_idx.value()));
-  }
+  auto q_start_idx_array = ConvertValueTupleToVector<int64_t>(q_start_idx);
+  auto kv_start_idx_array = ConvertValueTupleToVector<int64_t>(kv_start_idx);
 
   constexpr int64_t kHostOutputNum = 3;
   auto device_outputs = std::vector<tensor::TensorPtr>(op->outputs().begin(), op->outputs().end() - kHostOutputNum);

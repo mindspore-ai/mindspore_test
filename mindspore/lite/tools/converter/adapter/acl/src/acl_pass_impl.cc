@@ -331,9 +331,9 @@ STATUS AclPassImpl::CommonPass(const FuncGraphPtr &func_graph) {
   return lite::RET_OK;
 }
 
-// From:
+// Convert From
 //   MakeList(arg1, arg2, ...)
-// To:
+// Convert To
 //   MakeTuple(arg1, arg2, ...)
 static AnfNodePtr ConvertMakeListToMakeTuple(const CNodePtr &node) {
   MS_CHECK_TRUE_RET(node != nullptr, nullptr);
@@ -347,9 +347,9 @@ static AnfNodePtr ConvertMakeListToMakeTuple(const CNodePtr &node) {
   return node->func_graph()->NewCNode(std::move(inputs));
 }
 
-// From:
+// From
 //   list_getitem(list, key)
-// To:
+// To
 //   TupleGetItem(list, key)
 static AnfNodePtr ConvertListGetItemToTupleGetItem(const CNodePtr &node) {
   MS_CHECK_TRUE_RET(node != nullptr, nullptr);
@@ -370,9 +370,9 @@ static AnfNodePtr ConvertListGetItemToTupleGetItem(const CNodePtr &node) {
   return node->func_graph()->NewCNode({NewValueNode(prim::kPrimTupleGetItem), data, key});
 }
 
-// From:
+// From
 //   ListSetItem(list, index, item)
-// To:
+// To
 //   TupleSetItem(list, index, item)
 static AnfNodePtr ConvertListSetItemToTupleSetItem(const CNodePtr &node) {
   MS_CHECK_TRUE_RET(node != nullptr, nullptr);

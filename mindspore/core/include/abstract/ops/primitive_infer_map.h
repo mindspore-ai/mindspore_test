@@ -108,7 +108,7 @@ class RegisterStandardPrimitiveEvalHelper {
     name out;                                                                                                     \
     return std::dynamic_pointer_cast<ops::PrimitiveC>(out.impl());                                                \
   }                                                                                                               \
-  ops::OpPrimCRegisterHelper primc_gen_##name(#name, GetDefaultPrimC##name);
+  ops::OpPrimCRegisterHelper primc_gen_##name(#name, GetDefaultPrimC##name)
 
 #define REGISTER_PRIMITIVE_OP_INFER_IMPL(name, primitive, OP_INFER_ClASS, is_impl_infer_value)                \
   const auto helper_op_infer_##name = abstract::RegisterStandardPrimitiveEvalHelper(                          \

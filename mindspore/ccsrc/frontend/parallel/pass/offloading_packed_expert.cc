@@ -84,6 +84,7 @@ CNodePtr FindFrontAlltoall(const CNodePtr &marked_node, std::vector<CNodePtr> *v
   }
 
   if (alltoall_node == nullptr) {
+    MS_EXCEPTION_IF_NULL(GetCNodePrimitive(marked_node));
     MS_LOG(WARNING) << "Can't find alltoall node before " << GetCNodePrimitive(marked_node)->name();
   }
   return alltoall_node;
@@ -125,6 +126,7 @@ CNodePtr FindBackAlltoall(const FuncGraphManagerPtr &manager, const CNodePtr &ma
   }
 
   if (alltoall_node == nullptr) {
+    MS_EXCEPTION_IF_NULL(GetCNodePrimitive(marked_node));
     MS_LOG(WARNING) << "Can't find alltoall node after " << GetCNodePrimitive(marked_node)->name();
   }
   return alltoall_node;
@@ -159,6 +161,7 @@ void FindAlltoallNodePairs(const FuncGraphManagerPtr &manager, const std::vector
     if (!IsPrimitiveCNode(cnode)) {
       continue;
     }
+    MS_EXCEPTION_IF_NULL(GetCNodePrimitive(cnode));
     if (!GetCNodePrimitive(cnode)->HasAttr("expert_num") || !GetCNodePrimitive(cnode)->HasAttr("pe_num")) {
       continue;
     }
@@ -327,6 +330,7 @@ CNodePtr CloneFrontAlltoAllNode(const AnfNodePtr &input_node, const AnfNodePtr &
 
   std::vector<AnfNodePtr> new_inputs;
   auto input_cnode = input_node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(input_cnode);
   auto inputs = input_cnode->inputs();
   for (size_t i = 0; i < inputs.size(); i++) {
     auto input = inputs[i];
@@ -364,6 +368,7 @@ CNodePtr CloneBackAlltoAllNode(const AnfNodePtr &input_node, const AnfNodePtr &n
 
   std::vector<AnfNodePtr> new_inputs;
   auto input_cnode = input_node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(input_cnode);
   auto inputs = input_cnode->inputs();
   for (size_t i = 0; i < inputs.size(); i++) {
     auto input = inputs[i];
@@ -416,8 +421,15 @@ CNodePtr CloneReshapeNode(const AnfNodePtr &input_node, mindspore::HashMap<CNode
   }
 
   auto shape_value_node = new_inputs[kIndex2]->cast<ValueNodePtr>();
+  MS_EXCEPTION_IF_NULL(shape_value_node);
+
   auto value_ptr = shape_value_node->value();
-  std::vector<ValuePtr> value_ptr_vec = value_ptr->cast<ValueTuplePtr>()->value();
+  MS_EXCEPTION_IF_NULL(value_ptr);
+
+  auto value_tuple_ptr = value_ptr->cast<ValueTuplePtr>();
+  MS_EXCEPTION_IF_NULL(value_tuple_ptr);
+
+  std::vector<ValuePtr> value_ptr_vec = value_tuple_ptr->value();
 
   size_t scale_dim = 0;
   if (node_idx == kIndex0 || node_idx == kIndex3) {
@@ -460,6 +472,7 @@ CNodePtr CloneCompNode(const AnfNodePtr &input_node, mindspore::HashMap<CNodePtr
   }
   std::vector<AnfNodePtr> new_inputs;
   auto input_cnode = input_node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(input_cnode);
   auto inputs = input_cnode->inputs();
   for (size_t j = 0; j < inputs.size(); j++) {
     auto input = inputs[j];

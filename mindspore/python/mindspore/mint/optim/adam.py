@@ -15,17 +15,18 @@
 """Adam"""
 from __future__ import absolute_import
 
-from mindspore.ops import functional as F, composite as C, operations as P
 from mindspore.common.parameter import Parameter
 from mindspore.common.tensor import Tensor
 from mindspore.common import dtype as mstype
 from mindspore.experimental.optim.optimizer import Optimizer
 from mindspore import _checkparam as validator
 from mindspore import mint
+from mindspore import ops
 
-_optim_adamw_opt = C.MultitypeFuncGraph("optim_adamw_opt")
-hyper_map = C.HyperMap()
-assign_add = P.AssignAdd()
+
+_optim_adamw_opt = ops.MultitypeFuncGraph("optim_adamw_opt")
+hyper_map = ops.HyperMap()
+assign_add = ops.AssignAdd()
 
 
 @_optim_adamw_opt.register("Float", "Float", "Float", "Tensor", "Tensor", "Tensor", "Tensor",
@@ -38,12 +39,12 @@ def _run_optim_adamw_amsgrad_opt(beta1, beta2, eps, neg_step_size, sqrt_bias_cor
     exp_avg_sq_tmp = mint.mul(exp_avg_sq, beta2) + mint.mul(mint.mul(grads, grads), 1 - beta2)
 
     max_exp_avg_sq = mint.maximum(max_exp_avg_sq, exp_avg_sq_tmp)
-    denom = F.cast(mint.div(mint.sqrt(max_exp_avg_sq), sqrt_bias_correction2), max_exp_avg_sq.dtype)
+    denom = ops.cast(mint.div(mint.sqrt(max_exp_avg_sq), sqrt_bias_correction2), max_exp_avg_sq.dtype)
     denom = mint.add(denom, eps)
 
-    delta_param = mint.mul(F.cast(neg_step_size, max_exp_avg_sq.dtype), mint.div(exp_avg_tmp, denom))
-    F.assign(exp_avg, exp_avg_tmp)
-    F.assign(exp_avg_sq, exp_avg_sq_tmp)
+    delta_param = mint.mul(ops.cast(neg_step_size, max_exp_avg_sq.dtype), mint.div(exp_avg_tmp, denom))
+    ops.assign(exp_avg, exp_avg_tmp)
+    ops.assign(exp_avg_sq, exp_avg_sq_tmp)
     assign_add(parameters, delta_param)
     return success
 
@@ -56,12 +57,12 @@ def _run_optim_adamw_opt(beta1, beta2, eps, neg_step_size, sqrt_bias_correction2
     exp_avg_tmp = mint.add(mint.mul(exp_avg, beta1), grads, alpha=1 - beta1)
     exp_avg_sq_tmp = mint.mul(exp_avg_sq, beta2) + mint.mul(mint.mul(grads, grads), 1 - beta2)
 
-    denom = F.cast(mint.div(mint.sqrt(exp_avg_sq_tmp), sqrt_bias_correction2), exp_avg_sq_tmp.dtype)
+    denom = ops.cast(mint.div(mint.sqrt(exp_avg_sq_tmp), sqrt_bias_correction2), exp_avg_sq_tmp.dtype)
     denom = mint.add(denom, eps)
 
-    delta_param = mint.mul(F.cast(neg_step_size, exp_avg_sq_tmp.dtype), mint.div(exp_avg_tmp, denom))
-    F.assign(exp_avg, exp_avg_tmp)
-    F.assign(exp_avg_sq, exp_avg_sq_tmp)
+    delta_param = mint.mul(ops.cast(neg_step_size, exp_avg_sq_tmp.dtype), mint.div(exp_avg_tmp, denom))
+    ops.assign(exp_avg, exp_avg_tmp)
+    ops.assign(exp_avg_sq, exp_avg_sq_tmp)
     assign_add(parameters, delta_param)
     return success
 
@@ -190,8 +191,8 @@ class Adam(Optimizer):
         self.exp_avg_sq = self.parameters.clone(prefix="exp_avg_sq", init='zeros')
         self.state_step = Parameter(Tensor([0], mstype.float32), "state_step")
         self.increase_tensor = Tensor(1, mstype.float32)
-        self.assignadd = P.AssignAdd()
-        self.pow = P.Pow()
+        self.assignadd = ops.AssignAdd()
+        self.pow = ops.Pow()
 
 
     def construct(self, gradients):
@@ -211,13 +212,13 @@ class Adam(Optimizer):
             grads = self._decay_weight(group.get("weight_decay"), self.parameters[start_id: end_id], grads)
 
             if group.get("amsgrad"):
-                self.hyper_map(F.partial(_optim_adamw_opt, beta1, beta2, group.get("eps"), neg_step_size,
-                                         sqrt_bias_correction2),
+                self.hyper_map(ops.partial(_optim_adamw_opt, beta1, beta2, group.get("eps"), neg_step_size,
+                                           sqrt_bias_correction2),
                                self.parameters[start_id: end_id], grads, self.exp_avg[start_id: end_id],
                                self.exp_avg_sq[start_id: end_id], group.get("max_exp_avg_sq"))
             else:
-                self.hyper_map(F.partial(_optim_adamw_opt, beta1, beta2, group.get("eps"), neg_step_size,
-                                         sqrt_bias_correction2),
+                self.hyper_map(ops.partial(_optim_adamw_opt, beta1, beta2, group.get("eps"), neg_step_size,
+                                           sqrt_bias_correction2),
                                self.parameters[start_id: end_id], grads, self.exp_avg[start_id: end_id],
                                self.exp_avg_sq[start_id: end_id])
         return True

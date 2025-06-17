@@ -179,7 +179,7 @@ bool MultiConvSplit::SplitSingleConv(const AnfNodePtr &ori_node, const std::vect
                                      std::vector<AnfNodePtr> *outputs_node) {
   MS_ASSERT(ori_node != nullptr && outputs_node != nullptr);
   auto ori_conv_cnode = ori_node->cast<CNodePtr>();
-  MS_ASSERT(ori_conv_cnode != nullptr);
+  MS_CHECK_TRUE_MSG(ori_conv_cnode != nullptr, false, "ori_conv_cnode is nullptr!");
   auto ori_attr = ops::GetOperator<ops::Conv2DFusion>(ori_conv_cnode->input(kAnfPrimitiveIndex));
   MS_ASSERT(ori_attr != nullptr);
   for (int output_conv_index = 0; output_conv_index < static_cast<int>(split_info_.out_num); output_conv_index++) {
@@ -224,11 +224,11 @@ void MultiConvSplit::AdJustInputs(const AnfNodePtr &ori_conv_node, const std::ve
 
 bool MultiConvSplit::CreateNewConvNode(const AnfNodePtr &ori_conv_node, const std::vector<AnfNodePtr> &conv_inputs,
                                        int output_conv_index, std::vector<AnfNodePtr> *outputs_node) {
-  MS_ASSERT(ori_conv_node != nullptr && outputs_node != nullptr);
+  MS_CHECK_TRUE_RET(ori_conv_node != nullptr && outputs_node != nullptr, false);
   std::string ori_cnode_name = ori_conv_node->fullname_with_scope();
   // new conv_node
   auto conv_cnode = func_graph_->NewCNode(conv_inputs);
-  MS_ASSERT(conv_cnode != nullptr);
+  MS_CHECK_TRUE_RET(conv_cnode != nullptr, false);
   conv_cnode->set_fullname_with_scope(ori_cnode_name + "_" + PARALLEL_NAME_SUFFIX +
                                       std::to_string(output_conv_index + 1));
   conv_cnode->AddAttr(mindspore::ops::kDeviceType,

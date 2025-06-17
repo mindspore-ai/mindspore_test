@@ -118,7 +118,7 @@ def test_ascend_kernel_by_kernel_dynamic_shape():
     run_trans_flag("test_e2e_dump_dynamic_shape")
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @security_off_wrap
 def test_ascend_kernel_by_kernel_dynamic_shape_custom_statistic():
     """

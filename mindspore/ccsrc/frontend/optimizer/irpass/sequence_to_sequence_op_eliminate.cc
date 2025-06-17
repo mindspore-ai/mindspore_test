@@ -63,7 +63,6 @@ AnfNodePtr ListToTupleEliminator::operator()(const OptimizerPtr &, const AnfNode
 }
 
 // {prim::kPrimTupleToList, data} => {prim::kPrimMakeList, {prim::kPrimTupleGetItem, data, 0}, ...}
-
 AnfNodePtr TupleToListEliminator::operator()(const OptimizerPtr &, const AnfNodePtr &node) {
   if (!IsPrimitiveCNode(node, prim::kPrimTupleToList)) {
     return nullptr;

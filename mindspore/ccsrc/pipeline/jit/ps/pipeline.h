@@ -89,7 +89,6 @@ FRONTEND_EXPORT void FinalizeHccl();
 FRONTEND_EXPORT uint32_t GetHcclRankId();
 FRONTEND_EXPORT uint32_t GetHcclRankSize();
 FRONTEND_EXPORT void InitPipeline();
-void FinalizeBackend();
 
 void CloseTsd(bool force = false);
 FRONTEND_EXPORT void BindDeviceCtx();

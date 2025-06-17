@@ -1204,7 +1204,7 @@ class ParamInfoData : public ItemData {
     return ret;
   }
 
-  static void SubInfo(InfoPack *info, mindspore::ParamInfoPtr p) {
+  static void SubInfoInner(InfoPack *info, mindspore::ParamInfoPtr p) {
     if (p == nullptr) {
       return;
     }
@@ -1214,7 +1214,7 @@ class ParamInfoData : public ItemData {
   }
 
  protected:
-  void SubInfo(InfoPack *info) override { SubInfo(info, param_); }
+  void SubInfo(InfoPack *info) override { SubInfoInner(info, param_); }
   mindspore::ParamInfoPtr param_;
 };
 
@@ -1251,6 +1251,8 @@ class MetaTensorData : public ItemData {
       : ItemData(ItemType::MetaTensor, needSpecialize, recurseDepth) {
     StoreTensor(GetStubInfo(obj));
   }
+
+  ~MetaTensorData() override = default;
 
   const auto &shape() const { return shape_; }
   const auto &data_type() const { return data_type_; }
@@ -1340,7 +1342,7 @@ class MetaTensorData : public ItemData {
 
   void SubInfo(InfoPack *info) override {
     (*info) << uint8_t(tid_) << data_type_ << is_parameter_ << shape_;
-    ParamInfoData::SubInfo(info, param_);
+    ParamInfoData::SubInfoInner(info, param_);
   }
 
   mindspore::TypeId tid_ = TypeId::kTypeUnknown;
@@ -1363,6 +1365,7 @@ class TensorData : public MetaTensorData {
     tensor_type_ = Py_TYPE(obj);
     tp_ = ItemType::Tensor;
     tensor::TensorPtr tensor_ptr = GetStubInfo(obj);
+    MS_EXCEPTION_IF_NULL(tensor_ptr);
     if (OptStrategy::MakeCalcStrategyByShape(tensor_ptr->shape()) != OptStrategy::CalcKind::kCalcValue) {
       specialized_ = false;
     }
@@ -2380,12 +2383,15 @@ class EqGuard : public GuardItem {
   }
 
   py::object MakeDynamicShape(const tensor::TensorPtr &new_tensor) {
+    MS_EXCEPTION_IF_NULL(new_tensor);
     auto type = dp_->GetItemType();
     if (type != ItemType::MetaTensor && type != ItemType::Tensor) {
       return {};
     }
     auto item = (MetaTensorData &)(*dp_);
-    if (item.data_type()->type_id() != new_tensor->Dtype()->type_id()) {
+    auto tensor_dtype = new_tensor->Dtype();
+    MS_EXCEPTION_IF_NULL(tensor_dtype);
+    if (item.data_type()->type_id() != tensor_dtype->type_id()) {
       return {};  // can't symbolic tensor data type
     }
     ShapeVector new_shape;

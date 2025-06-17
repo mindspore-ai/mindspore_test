@@ -378,7 +378,9 @@ void GenerateReplNodeForDependMakeTuple(
   const std::function<AnfNodePtr(FuncGraphPtr graph, AnfNodePtr cond, AnfNodePtr data)> &generate_func) {
   MS_EXCEPTION_IF_NULL(graph->manager());
 
-  auto make_tuple_inputs = depended_node->cast<CNodePtr>()->inputs();
+  auto depend_cnode = depended_node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(depend_cnode);
+  auto make_tuple_inputs = depend_cnode->inputs();
   const size_t make_tuple_begin_idx = 1;
   std::vector<AnfNodePtr> new_make_tuple_nodes;
   bool replace_make_tuple = false;
@@ -545,6 +547,7 @@ AnfNodePtr GenerateMergeNodes(const std::vector<AnfNodePtr> &block_nodes,
   } else {
     auto true_branch_tuple = branch_output_abs[0]->cast<abstract::AbstractTuplePtr>();
     auto false_branch_tuple = branch_output_abs[1]->cast<abstract::AbstractTuplePtr>();
+    MS_EXCEPTION_IF_NULL(false_branch_tuple);
 
     std::vector<AnfNodePtr> make_tuple_nodes;
     make_tuple_nodes.push_back(NewValueNode(prim::kPrimMakeTuple));
@@ -626,8 +629,12 @@ void ConvertSwitchReplacement::TransformSwitchBranchReplace(const AnfNodePtr &no
   auto g2 = GetValueNode<FuncGraphPtr>(false_br);
   MS_EXCEPTION_IF_NULL(g1);
   MS_EXCEPTION_IF_NULL(g2);
-  auto true_output = g1->output()->abstract();
-  auto false_output = g2->output()->abstract();
+  auto g1_output = g1->output();
+  auto g2_output = g2->output();
+  MS_EXCEPTION_IF_NULL(g1_output);
+  MS_EXCEPTION_IF_NULL(g2_output);
+  auto true_output = g1_output->abstract();
+  auto false_output = g2_output->abstract();
   auto trans_g1 = internal::TransformGraphCondTrueBranchNodes(g1, cond);
   auto trans_g2 = internal::TransformGraphCondFalseBranchNodes(g2, cond);
 

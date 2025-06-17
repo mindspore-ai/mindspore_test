@@ -266,6 +266,7 @@ bool TensorInplace::Run(const FuncGraphPtr &func_graph) {
       }
       auto in_out_pairs = FindInputOutputPairs(sub_func_graph);
       auto cnode = node->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(cnode);
       for (size_t i = 1; i < cnode->size(); i++) {
         if (in_out_pairs.count(i - 1) == 0) {
           continue;

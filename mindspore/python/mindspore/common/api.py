@@ -17,6 +17,8 @@
 """Providing interface methods."""
 from __future__ import absolute_import
 
+__all__ = ['ms_memory_recycle', 'jit', 'jit_class', 'flops_collection']
+
 import gc
 import types
 import sys
@@ -583,7 +585,8 @@ class _JitExecutor:
         The result of pipeline running in graph mode.
     """
 
-    def __init__(self, fn, ms_create_time, input_signature=None, obj=None, jit_config=None, dynamic=0):
+    def __init__(self, fn, ms_create_time, input_signature=None, obj=None, jit_config=None, dynamic=0,
+                 cell_cache_key_extend=''):
         init_pipeline()
         if not isinstance(fn, (types.FunctionType, types.MethodType)):
             raise RuntimeError('fn {} is not function or method'.format(fn))
@@ -603,6 +606,7 @@ class _JitExecutor:
         self._compile_args = None
         self._enable_auto_dynamic = dynamic == 1
         self.jit_config_dict = jit_config.jit_config_dict if jit_config else None
+        self._cell_cache_key_extend = cell_cache_key_extend
 
     def _predict(self, *args, **kwargs):
         """Dedicated routine for predict."""
@@ -636,6 +640,11 @@ class _JitExecutor:
             self._compile_args = compile_args
 
         new_inputs = self._generate_run_args(args_list, kwargs)
+        if self.jit_config_dict:
+            jit_config_dict = self.jit_config_dict
+        else:
+            jit_config_dict = JitConfig().jit_config_dict
+        self._graph_executor.set_jit_config(jit_config_dict)
         output = self._graph_executor(
             tuple(new_inputs),
             self.obj.phase_cache[self.obj.phase]
@@ -666,6 +675,11 @@ class _JitExecutor:
             return None
 
         new_inputs = self._generate_run_args(args_list, kwargs)
+        if self.jit_config_dict:
+            jit_config_dict = self.jit_config_dict
+        else:
+            jit_config_dict = JitConfig().jit_config_dict
+        self._graph_executor.set_jit_config(jit_config_dict)
         output = _pynative_executor.grad_jit(*new_inputs)
         if jit_context():
             if is_stub_tensor(output):
@@ -737,6 +751,8 @@ class _JitExecutor:
 
         update_auto_dynamic_shape_phase_with_check_input_signature(compile_args, key_id, phase, self.input_signature)
 
+        phase = phase + self._cell_cache_key_extend
+
         if phase in ms_compile_cache and self._graph_executor.has_compiled(phase) and not parameter_hook_updated():
             # Release resource should be released when CompileInner won't be executed, such as cur_convert_input_
             # generated in generate_arguments_key.
@@ -748,10 +764,9 @@ class _JitExecutor:
         # If enable compile cache, get the dependency files list and set to graph executor.
         self._set_compile_cache_dep_files()
         if self.jit_config_dict:
-            self._graph_executor.set_jit_config(self.jit_config_dict)
+            jit_config_dict = self.jit_config_dict
         else:
             jit_config_dict = JitConfig().jit_config_dict
-            self._graph_executor.set_jit_config(jit_config_dict)
 
         if self.obj is None:
             # Set an attribute to fn as an identifier.
@@ -759,7 +774,8 @@ class _JitExecutor:
                 setattr(self.fn.__func__, "__jit_function__", True)
             else:
                 setattr(self.fn, "__jit_function__", True)
-            is_compile = self._graph_executor.compile(self.fn, compile_args, kwargs, phase)
+            is_compile = self._graph_executor.compile(
+                self.fn, compile_args, kwargs, phase, jit_config_dict)
             if isinstance(self.fn, types.MethodType):
                 delattr(self.fn.__func__, "__jit_function__")
             else:
@@ -767,7 +783,8 @@ class _JitExecutor:
         else:
             if isinstance(self.obj, ms.nn.Cell):
                 self._graph_executor.set_weights_values(self.obj.parameters_dict())
-            is_compile = self._graph_executor.compile(self.obj, compile_args, kwargs, phase)
+            is_compile = self._graph_executor.compile(
+                self.obj, compile_args, kwargs, phase, jit_config_dict)
 
         if not is_compile:
             raise RuntimeError("Executor compile failed.")
@@ -1027,20 +1044,22 @@ def _check_options(options, backend):
         _check_option_value(option, value)
 
 
-def _jit_ast(hash_obj, dynamic, jit_config):
+def _jit_ast(hash_obj, dynamic, jit_config, jit_graph_name):
     """Return the wrapped function for ast mode jit."""
     def wrap_func(func):
         nonlocal hash_obj
         if hasattr(func, "construct"):
             if isinstance(func, ms.nn.Cell):
                 # Bound the cell object to get the self arg.
-                return types.MethodType(_jit_ast(hash_obj, dynamic, jit_config)(func.construct.__func__), func)
+                return types.MethodType(_jit_ast(
+                    hash_obj, dynamic, jit_config, func._jit_graph_name)(func.construct.__func__), func)
             if isinstance(func, type) and issubclass(func, ms.nn.Cell):
-                func.construct = _jit_ast(hash_obj, dynamic, jit_config)(func.construct)
+                func.construct = _jit_ast(
+                    hash_obj, dynamic, jit_config, '')(func.construct)
             return func
 
         if isinstance(func, types.MethodType):
-            return types.MethodType(_jit_ast(hash_obj, dynamic, jit_config)(func.__func__), func.__self__)
+            return types.MethodType(_jit_ast(hash_obj, dynamic, jit_config, '')(func.__func__), func.__self__)
 
         if not isinstance(func, types.FunctionType):
             logger.warning(f"The func should be function, method or cell instance/class, but got {func}")
@@ -1068,7 +1087,11 @@ def _jit_ast(hash_obj, dynamic, jit_config):
                 else:
                     setattr(func, "amp_strategy", get_curr_amp_strategy())
 
-            jit_executor = _JitExecutor(func, hash_obj, None, process_obj, jit_config, dynamic)
+            jit_graph_name = ''
+            if hasattr(staging_specialize, "__jit_graph_name__"):
+                jit_graph_name = staging_specialize.__jit_graph_name__
+            jit_executor = _JitExecutor(
+                func, hash_obj, None, process_obj, jit_config, dynamic, jit_graph_name)
             out = jit_executor(*args, **kwargs)
             return out
 
@@ -1077,6 +1100,7 @@ def _jit_ast(hash_obj, dynamic, jit_config):
         # original `func`.
         staging_specialize.__signature__ = inspect.signature(func)
         setattr(staging_specialize, "__wrapped_by_jit__", True)
+        setattr(staging_specialize, "__jit_graph_name__", jit_graph_name)
         return staging_specialize
 
     return wrap_func
@@ -1119,7 +1143,7 @@ def jit(
               subject to change and/or deletion.
 
         jit_level (str, optional): Used to control the compilation optimization level. Currently is only effective
-            with default backend. The value of jit_level should be ``O0`` or ``O1`` . Default: ``O0`` .
+            with ms_backend. The value of jit_level should be ``O0`` or ``O1`` . Default: ``O0`` .
 
             - `O0`: Except for optimizations that may affect functionality, all other optimizations are turned off.
             - `O1`: Using commonly used optimizations and automatic operator fusion optimizations. This optimization
@@ -1255,6 +1279,32 @@ def jit(
            [ 2.00000000e+00,  2.00000000e+00,  2.00000000e+00],
            [ 2.00000000e+00,  2.00000000e+00,  2.00000000e+00]]]])
         ...
+        >>> # Create a callable MindSpore graph with ms_backend and jit_level="O1".
+        >>> @jit(backend="ms_backend", jit_level="O1")
+        ... def tensor_add_by_trace(x, y):
+        ...     z = x + y
+        ...     return z
+        ...
+        >>> out = tensor_add_by_trace(x, y)
+        >>> print(out)
+        Tensor(shape=[1, 1, 3, 3], dtype=Float32, value=
+        [[[[ 2.00000000e+00,  2.00000000e+00,  2.00000000e+00],
+           [ 2.00000000e+00,  2.00000000e+00,  2.00000000e+00],
+           [ 2.00000000e+00,  2.00000000e+00,  2.00000000e+00]]]])
+        ...
+        >>> # Create a callable MindSpore graph with GE backend and some ge options on Ascend.
+        >>> @jit(backend="GE", ge_options={"global": {"ge.opSelectImplmode": "high_precision"}})
+        ... def tensor_add_by_trace(x, y):
+        ...     z = x + y
+        ...     return z
+        ...
+        >>> out = tensor_add_by_trace(x, y)
+        >>> print(out)
+        Tensor(shape=[1, 1, 3, 3], dtype=Float32, value=
+        [[[[ 2.00000000e+00,  2.00000000e+00,  2.00000000e+00],
+           [ 2.00000000e+00,  2.00000000e+00,  2.00000000e+00],
+           [ 2.00000000e+00,  2.00000000e+00,  2.00000000e+00]]]])
+        ...
     """
 
     capture_mode = Validator.check_string(capture_mode, ["ast", "bytecode", "trace"], "capture_mode", "jit")
@@ -1274,7 +1324,7 @@ def jit(
                            infer_boost=infer_boost, backend=backend, options=options_str)
 
     if capture_mode == "ast":
-        wrap_func = _jit_ast(hash_obj, dynamic, jit_config)
+        wrap_func = _jit_ast(hash_obj, dynamic, jit_config, '')
     elif capture_mode == "bytecode":
         wrap_func = PIJitCaptureContext(fullgraph=fullgraph, jit_config=jit_config)
     else:
@@ -1998,13 +2048,11 @@ class _CellGraphExecutor:
         self._set_compile_cache_dep_files(phase)
 
         self._graph_executor.set_weights_values(obj.parameters_dict())
-        if jit_config_dict:
-            self._graph_executor.set_jit_config(jit_config_dict)
-        else:
+        if not jit_config_dict:
             jit_config_dict = JitConfig().jit_config_dict
-            self._graph_executor.set_jit_config(jit_config_dict)
         gc.collect()
-        result = self._graph_executor.compile(obj, args, kwargs, phase)
+        result = self._graph_executor.compile(
+            obj, args, kwargs, phase, jit_config_dict)
         obj.compile_cache.add(phase)
         if not result:
             raise RuntimeError("Executor compile failed.")
@@ -2205,5 +2253,3 @@ def flops_collection(phase='train'):
 
 _cell_graph_executor = _CellGraphExecutor()
 _pynative_executor = _PyNativeExecutor()
-
-__all__ = ['ms_memory_recycle', 'jit', 'jit_class', 'flops_collection']

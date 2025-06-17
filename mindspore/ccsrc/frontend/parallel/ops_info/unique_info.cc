@@ -150,6 +150,7 @@ ReplaceGraphPtr UniqueInfo::replace_graph(const CNodePtr &cnode) {
       MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Invalid inputs";
     }
     const auto &primitive = GetValueNode<PrimitivePtr>(inputs[0]);
+    MS_EXCEPTION_IF_NULL(primitive);
     const auto &attr = primitive->GetAttr("cache_enable");
     if (attr == nullptr) {
       return nullptr;

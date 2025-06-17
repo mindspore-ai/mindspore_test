@@ -435,12 +435,13 @@ AnfNodePtr FoldPipelineTransformer::Reuse(const AnfNodePtr &node, int64_t stage,
     auto input = zipp.first;
     auto send_segment = zipp.second;
     auto cnode = input->cast<CNodePtr>();
-    if (!cnode) {
+    if (cnode == nullptr) {
       continue;
     }
     if (IsPrimitiveCNode(cnode, prim::kPrimDepend)) {
       cnode = cnode->input(DEPEND_NODE_SOURCE_INDEX)->cast<CNodePtr>();
     }
+    MS_EXCEPTION_IF_NULL(cnode);
     if (cnode->input(1) == node) {
       auto prim = GetValueNode<PrimitivePtr>(cnode->input(0));
       MS_EXCEPTION_IF_NULL(prim);
@@ -509,6 +510,7 @@ void FoldPipelineTransformer::CutBorderForNode(const FuncGraphPtr &graph, const 
                                                std::vector<int64_t> *send_ops_segment,
                                                std::vector<AnfNodePtr> *receive_ops) {
   auto stage_info = node->user_data<NodeStageInfo>();
+  MS_EXCEPTION_IF_NULL(stage_info);
   auto segment_info = node->user_data<NodeSegmentInfo>();
   MS_EXCEPTION_IF_NULL(segment_info);
   auto node_users = manager_->node_users()[node];
@@ -537,59 +539,60 @@ void FoldPipelineTransformer::CutBorderForNode(const FuncGraphPtr &graph, const 
       continue;
     }
 
-    auto micro = user_node->cast<CNodePtr>()->GetPrimalAttr(MICRO);
-    if (!micro) {
+    auto user_cnode = user_node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(user_cnode);
+    auto micro = user_cnode->GetPrimalAttr(MICRO);
+    if (micro == nullptr) {
       MS_LOG(INFO) << "Can't find micro_batch information, use micro(0)";
       micro = MakeValue(int64_t(0));
     }
     auto stage_num = g_device_manager->stage_num();
     bool isEmbed = node_stage < user_node_stage && node_segment != user_node_segment;
 
-    if (IsStageConflict(node_stage, user_node_stage, node_segment, user_node_segment, stage_num, isEmbed)) {
-      if (node_stage == stage_) {
-        if (IsParameterGraph(node) && isEmbed) {
-          auto send_depend =
-            HandleParameterGraph(node, user_node, node_stage, user_node_stage, micro, IntToSize(user_idx), *send_ops);
-          if (send_depend) {
-            (void)send_ops->insert(send_ops->cbegin(), send_depend);
-            (void)send_ops_segment->insert(send_ops_segment->begin(), node_segment);
-          }
-          continue;
-        }
-        if (Reuse(node, user_node_stage, user_node_segment, *send_ops, *send_ops_segment, DEST_RANK)) {
-          continue;
-        }
-        auto send_out = InsertSend(node, user_node_stage, node_stage, micro, node_segment);
-        MS_EXCEPTION_IF_NULL(send_out.depend);
-        send_ops->push_back(send_out.depend);
-        send_ops_segment->push_back(node_segment);
-        send_out.depend->set_user_data<Type>(DTYPE, send_out.type);
-        send_out.depend->set_user_data<ValueList>(SHAPE, send_out.shape);
-        continue;
-      }
-
-      if (receive) {
-        manager_->SetEdge(user_node, user_idx, receive);
-        continue;
-      }
-
-      if (IsParameterGraph(node)) {
-        receive =
-          HandleParameterGraph(node, user_node, node_stage, user_node_stage, micro, IntToSize(user_idx), *receive_ops);
-        if (!receive) {
-          continue;
-        }
-        receive_ops->push_back(receive);
-      } else {
-        receive =
-          InsertReceive(graph, node, user_node, user_idx, user_node_stage, node_stage, micro, node, user_node_segment);
-        receive_ops->push_back(receive);
+    if (!IsStageConflict(node_stage, user_node_stage, node_segment, user_node_segment, stage_num, isEmbed)) {
+      if (node_stage > user_node_stage && node_segment == user_node_segment) {
+        MS_LOG_WITH_NODE(EXCEPTION, user_node) << "Within a segment, node_stage: " << node_stage
+                                               << " must be smaller than user_node_stage: " << user_node_stage;
       }
       continue;
     }
-    if (node_stage > user_node_stage && node_segment == user_node_segment) {
-      MS_LOG_WITH_NODE(EXCEPTION, user_node) << "Within a segment, node_stage: " << node_stage
-                                             << " must be smaller than user_node_stage: " << user_node_stage;
+    if (node_stage == stage_) {
+      if (IsParameterGraph(node) && isEmbed) {
+        auto send_depend =
+          HandleParameterGraph(node, user_node, node_stage, user_node_stage, micro, IntToSize(user_idx), *send_ops);
+        if (send_depend) {
+          (void)send_ops->insert(send_ops->cbegin(), send_depend);
+          (void)send_ops_segment->insert(send_ops_segment->begin(), node_segment);
+        }
+        continue;
+      }
+      if (Reuse(node, user_node_stage, user_node_segment, *send_ops, *send_ops_segment, DEST_RANK)) {
+        continue;
+      }
+      auto send_out = InsertSend(node, user_node_stage, node_stage, micro, node_segment);
+      MS_EXCEPTION_IF_NULL(send_out.depend);
+      send_ops->push_back(send_out.depend);
+      send_ops_segment->push_back(node_segment);
+      send_out.depend->set_user_data<Type>(DTYPE, send_out.type);
+      send_out.depend->set_user_data<ValueList>(SHAPE, send_out.shape);
+      continue;
+    }
+
+    if (receive) {
+      manager_->SetEdge(user_node, user_idx, receive);
+      continue;
+    }
+
+    if (IsParameterGraph(node)) {
+      receive =
+        HandleParameterGraph(node, user_node, node_stage, user_node_stage, micro, IntToSize(user_idx), *receive_ops);
+      if (receive) {
+        receive_ops->push_back(receive);
+      }
+    } else {
+      receive =
+        InsertReceive(graph, node, user_node, user_idx, user_node_stage, node_stage, micro, node, user_node_segment);
+      receive_ops->push_back(receive);
     }
   }
 }

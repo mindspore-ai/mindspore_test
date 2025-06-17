@@ -105,7 +105,7 @@ GraphJitConfig::GraphJitConfig() : int_conf{0}, bool_conf{false} {
   bool_conf[kEnableDynamicShape - kBoolConf] = false;
   bool_conf[kExpandGraphInput - kBoolConf] = true;
   bool_conf[kExpandGraphOutput - kBoolConf] = true;
-  bool_conf[kEliminateRedundantArgs - kBoolConf] = true;
+  bool_conf[kEliminateRedundantArgs - kBoolConf] = false;
   bool_conf[kSubgraphBreakOpt - kBoolConf] = true;
   bool_conf[kReCaptureLoopBody - kBoolConf] = false;
   bool_conf[kFullGraph - kBoolConf] = false;

@@ -25,45 +25,11 @@
 #include "include/backend/optimizer/helper.h"
 #include "include/common/pynative/common_utils.h"
 #include "pynative/grad/function/func_builder.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 namespace pynative {
 namespace bprop_pass {
 namespace {
-NodePtrList ChangeInputToAttr(const PrimitivePtr &prim, const NodePtrList &inputs, const ValuePtr &input_names,
-                              const mindspore::HashSet<size_t> &input_to_attr) {
-  MS_EXCEPTION_IF_NULL(prim);
-  MS_EXCEPTION_IF_NULL(input_names);
-  const auto &input_names_vec = GetValue<std::vector<std::string>>(input_names);
-  NodePtrList new_inputs{};
-  size_t convert_size = 0;
-  size_t input_size = inputs.size();
-  for (size_t i = 0; i < input_size; ++i) {
-    auto value = inputs[i]->Value();
-    if (value->isa<Scalar>() && input_to_attr.find(i) != input_to_attr.end()) {
-      MS_LOG(DEBUG) << "start erase input[" << i << "] of op[" + prim->name() + "]";
-      if (i >= input_names_vec.size()) {
-        MS_LOG(EXCEPTION) << "Index " << i << " is larger than input names size [" << input_names_vec.size() << "]";
-      }
-      if (value->isa<tensor::Tensor>()) {
-        auto tensor = value->cast<tensor::TensorPtr>();
-        if (tensor->data().const_data() == nullptr && !tensor->has_user_data(kTensorValueIsEmpty)) {
-          return inputs;
-        }
-      }
-      ++convert_size;
-      prim->set_attr(input_names_vec[i], value);
-    } else {
-      (void)new_inputs.emplace_back(inputs[i]);
-    }
-  }
-  if (convert_size > 0) {
-    (void)prim->AddAttr(kAttrConvertAttrNode, MakeValue(convert_size));
-  }
-  return new_inputs;
-}
-
 class SparseSoftmaxCrossEntropyWithLogitsUnifyMindIR {
  public:
   NodePtr Run(const NodePtrList &inputs, const NodePtr &dout) {
@@ -266,21 +232,6 @@ NodePtrList FuncPassForward::ConvertMakeTupleInputToDynamicInput(const Primitive
   return inputs;
 }
 
-NodePtrList FuncPassForward::ConvertConstInputToAttr(const PrimitivePtr &prim, const NodePtrList &inputs) {
-  MS_EXCEPTION_IF_NULL(prim);
-  mindspore::HashSet<size_t> input_to_attr = {};
-  PyNativeAlgo::Common::GetConstInputToAttr(prim, prim->name(), device_target_, false, &input_to_attr);
-  if (input_to_attr.empty()) {
-    return inputs;
-  }
-  const auto &input_names = prim->GetAttr(kAttrInputNames);
-  if (input_names == nullptr) {
-    MS_LOG(DEBUG) << "input_names are nullptr";
-    return inputs;
-  }
-  return ChangeInputToAttr(prim, inputs, input_names, input_to_attr);
-}
-
 NodePtr FuncPassForward::BatchNormGradToBNInferGrad(const NodePtrList &inputs, bool is_scale_or_bias_grad) {
   if (device_target_ != kAscendDevice || is_scale_or_bias_grad) {
     return func_builder_->Emit(kBatchNormGradOpName, inputs);
@@ -339,9 +290,8 @@ NodePtr FuncPassForward::GradSparseSoftmaxCrossEntropyWithLogitsUnifyMindIR(cons
 
 NodePtrList FuncPassForward::PassForOpInput(const PrimitivePtr &prim, const NodePtrList &inputs) {
   MS_EXCEPTION_IF_NULL(func_builder_);
-  if (prim == nullptr) {
-    NodePtrList new_inputs = ConvertConstInputToAttr(prim, inputs);
-    return ConvertMakeTupleInputToDynamicInput(prim, new_inputs);
+  if (prim != nullptr) {
+    return ConvertMakeTupleInputToDynamicInput(prim, inputs);
   }
   return inputs;
 }

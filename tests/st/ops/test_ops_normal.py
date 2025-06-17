@@ -66,7 +66,7 @@ def normal_backward_func(mean, std, seed, offset):
     return ms.grad(normal_tensor_tensor_forward_func, (0))(mean, std, seed, offset)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_ops_normal_backward():
     """
     Feature: pyboost function.
@@ -81,7 +81,7 @@ def test_ops_normal_backward():
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_normal_tensor_tensor_forward():
     """
     Feature: pyboost function.

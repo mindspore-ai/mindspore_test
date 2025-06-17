@@ -637,10 +637,7 @@ STATUS AdjustOneHot(const FuncGraphPtr &func_graph, const CNodePtr &cnode) {
 bool OnnxInputAdjust::Adjust(const FuncGraphPtr &func_graph, const converter::ConverterParameters &flag) {
   MS_CHECK_TRUE_RET(func_graph != nullptr, false);
   auto manager = Manage(func_graph, true);
-  if (manager == nullptr) {
-    MS_LOG(ERROR) << "manager is nullptr.";
-    return lite::RET_NULL_PTR;
-  }
+  MS_CHECK_TRUE_MSG(manager != nullptr, lite::RET_NULL_PTR, "manager is nullptr!");
   auto node_list = TopoSort(func_graph->get_return());
   int status = RET_OK;
   bool need_update_manager = false;
@@ -655,17 +652,11 @@ bool OnnxInputAdjust::Adjust(const FuncGraphPtr &func_graph, const converter::Co
       auto param_node = node->cast<ParameterPtr>();
       if (!keep_origin_dtype) {
         status = ReplaceTypeParameterNode(func_graph, param_node, kNumberTypeInt64, kNumberTypeInt32, false);
-        if (status != lite::RET_OK) {
-          MS_LOG(ERROR) << "replace fp64 param node failed!";
-          return status;
-        }
+        MS_CHECK_TRUE_MSG(status == lite::RET_OK, status, "replace fp64 param node failed!");
       }
       status =
         ReplaceTypeParameterNode(func_graph, param_node, kNumberTypeFloat64, kNumberTypeFloat32, keep_origin_dtype);
-      if (status != lite::RET_OK) {
-        MS_LOG(ERROR) << "replace fp64 param node failed!";
-        return status;
-      }
+      MS_CHECK_TRUE_MSG(status == lite::RET_OK, status, "replace fp64 param node failed!");
     }
     auto cnode = node->cast<CNodePtr>();
     if (cnode == nullptr) {

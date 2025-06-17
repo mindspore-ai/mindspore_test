@@ -198,7 +198,7 @@ def test_primitive_avgpool():
 
 
 @arg_mark(plat_marks=['platform_ascend'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_bn_with_special_format():
@@ -263,7 +263,7 @@ class CumProdTest():
 
 
 @arg_mark(plat_marks=['platform_ascend'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_cumprod_with_acl():
@@ -366,7 +366,7 @@ class Dropout(nn.Cell):
         return self.op(x)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_dropout():
     """
     Feature: PyNative forward RunOp Dropout need refresh output.

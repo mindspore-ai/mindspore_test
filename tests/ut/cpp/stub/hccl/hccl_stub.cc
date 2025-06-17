@@ -86,6 +86,9 @@ HcclResult HcomCreateGroup(const char *group, u32 rankNum, u32 *rankIds) { retur
 /* 销毁group */
 HcclResult HcomDestroyGroup(const char *group) { return HCCL_SUCCESS; }
 
+/* 销毁group */
+HcclResult HcclCommWorkingDevNicSet(HcclComm comm, uint32_t *ranks, bool * useBackup, uint32_t nRanks) { return HCCL_SUCCESS; }
+
 /* 发送消息 */
 HcclResult hcom_send(const char *tag, void *inputPtr, u64 count, HcclDataType dataType, u32 destRank, u32 srTag,
                      const char *group, rtStream_t stream) {

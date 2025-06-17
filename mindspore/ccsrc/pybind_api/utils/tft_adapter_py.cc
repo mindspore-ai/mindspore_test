@@ -226,17 +226,17 @@ void CleanUniqueId() {
 
 void RePreLaunchSendRecv(int32_t device_id) {
   MS_LOG(WARNING) << "Try to pre-launch send recv. device id: " << device_id;
-  const auto &launch_orders = runtime::PreLaunchComm::GetInstance().GetPreLaunchOrder(true);
   static auto disable_pre_build_comm = common::IsDisableRuntimeConfig(common::kRuntimePreBuildCommKernel);
+  if (disable_pre_build_comm) {
+    return;
+  }
+  const auto &launch_orders = runtime::PreLaunchComm::GetInstance().GetPreLaunchOrder(true);
   for (auto graph_id : launch_orders) {
     const auto &actor_set = runtime::GraphScheduler::GetInstance().Fetch(graph_id);
     MS_EXCEPTION_IF_NULL(actor_set);
-    if (!disable_pre_build_comm) {
-      PROF_START(PreLaunchCommKernel);
-      MS_LOG(WARNING) << "Pre launch comm kernel, graph_id: " << graph_id;
-      runtime::PreLaunchComm::GetInstance().PreLaunchCommKernel(actor_set);
-      PROF_END(PreLaunchCommKernel);
-    }
+    PROF_START(PreLaunchCommKernel);
+    runtime::PreLaunchComm::GetInstance().PreLaunchCommKernel(actor_set);
+    PROF_END(PreLaunchCommKernel);
   }
   MS_LOG(WARNING) << "Pre-launch send recv success";
 }

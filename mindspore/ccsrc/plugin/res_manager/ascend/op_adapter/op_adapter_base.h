@@ -140,11 +140,9 @@ static HashMap<GeDataType, std::string> ge_dtype_str_map = {
   {GeDataType::DT_UINT2, "uint2"},
   {GeDataType::DT_COMPLEX32, "complex32"},
   {GeDataType::DT_BF16, "bf16"},
-#ifdef EXPERIMENT_A5
   {GeDataType::DT_HIFLOAT8, "hifloat8"},
   {GeDataType::DT_FLOAT8_E5M2, "float8_e5m2"},
   {GeDataType::DT_FLOAT8_E4M3FN, "float8_e4m3fn"},
-#endif
 };
 
 struct AttrDesc {

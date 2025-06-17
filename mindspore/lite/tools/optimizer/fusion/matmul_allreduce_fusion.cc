@@ -343,7 +343,9 @@ CNodePtr MatMulAllReduceFusion::CreateQuantBatchMatmulAllReduceNode(const FuncGr
 
   // add attr
   auto allreduce_prim = GetCNodePrimitive(allreduce_cnode);
+  MS_CHECK_TRUE_MSG(allreduce_prim != nullptr, nullptr, "allreduce_prim is nullptr!");
   auto qbmm_prim = GetCNodePrimitive(qbmm_cnode);
+  MS_CHECK_TRUE_MSG(qbmm_prim != nullptr, nullptr, "qbmm_prim is nullptr!");
   matmul_allreduce_prim->AddAttr(kAttrNameCommRenuse, allreduce_prim->GetAttr(kAttrNameCommRenuse));
   matmul_allreduce_prim->AddAttr(kAttrNameGroup, allreduce_prim->GetAttr(kAttrNameGroup));
   matmul_allreduce_prim->AddAttr(kAttrNameFusion, allreduce_prim->GetAttr(kAttrNameFusion));

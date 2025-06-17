@@ -1003,7 +1003,9 @@ def test_splittensor_fwddump_and_bwddump():
 
         def construct(self, x):
             x = self.dg("grad_x.npy", x, 'in')
-            out = ops.depend(x, self.no_side_effect_td_in("concatnet_out.npy", x))
+            zero_pad = self.dg('zero_pad_grad.npy', self.zero_pad, "out")
+            out = self.concat((x, zero_pad))
+            out = ops.depend(out, self.no_side_effect_td_in("concatnet_out.npy", out))
             return out
 
     graph_path = gen_save_graph_path_by_testcase(sys._getframe(0).f_code.co_name)
@@ -1015,10 +1017,11 @@ def test_splittensor_fwddump_and_bwddump():
     x = Tensor(np.zeros((2, 4096, 8, 128)), dtype=ms.float16)
     phase = compile_net(net, x)
     validator = ParallelValidator(net, phase)
-    tensordump_num = get_tensordump_node_num(validator)
     tensordump_node_infos = get_tensordump_node_infos(validator)
     dump_gradient_node_infos = get_tensordump_node_infos(validator, 'DumpGradient')
     tensordump_num = check_tensordump_num_from_ir(graph_path)
+    # Tensor doesn't have grad, so dump gradient for tensor will not take effect.
     assert tensordump_num == 2
     assert check_dump_path_and_attr(tensordump_node_infos, "concatnet_out_in.npy", {})
     assert check_dump_path_and_attr(dump_gradient_node_infos, "grad_x_in.npy", {})
+    assert check_dump_path_and_attr(dump_gradient_node_infos, "zero_pad_grad.npy", {})

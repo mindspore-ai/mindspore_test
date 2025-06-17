@@ -47,7 +47,7 @@ bool ClipConvertActivationPass::Run(const FuncGraphPtr &graph) {
       continue;
     }
     auto clip_cnode = node->cast<CNodePtr>();
-    MS_ASSERT(clip_cnode != nullptr);
+    MS_CHECK_TRUE_MSG(clip_cnode != nullptr, false, "clip_cnode is nullptr");
     MS_ASSERT(clip_cnode->size() >= kClipMinIndex);
     auto clip_c = ops::GetOperator<ops::Clip>(clip_cnode->input(0));
     MS_ASSERT(clip_c != nullptr);

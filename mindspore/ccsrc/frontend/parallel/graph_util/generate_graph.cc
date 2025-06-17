@@ -274,6 +274,7 @@ AnfNodePtr CreateInt32Tensor(int64_t value, bool int64_type) {
 
   ValuePtr value_ptr = MakeValue(tensor_ptr);
   auto anf_node_ptr = ValuePtrToAnfNodePtr(value_ptr);
+  MS_EXCEPTION_IF_NULL(anf_node_ptr);
   anf_node_ptr->set_abstract(std::make_shared<abstract::AbstractTensor>(dtype, Shape{}));
   return anf_node_ptr;
 }

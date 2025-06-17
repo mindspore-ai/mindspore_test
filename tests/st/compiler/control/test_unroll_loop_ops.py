@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 import numpy as np
+import pytest
 import mindspore as ms
 from mindspore import Tensor, jit, context, ops, nn
 from mindspore.common import dtype as mstype
@@ -202,6 +203,43 @@ def test_foriloop_unroll():
     result = test_fori_loop_inner(result_init)
     print(result)
     assert result == 45
+
+
+@case_register.level1
+@case_register.target_cpu
+def test_high_order_with_unroll_as_false():
+    """
+    Feature: control flow
+    Description: test higher order grad with unroll as false
+    Expectation: Raise error with unsupported reason.
+    """
+    def for_in_foriloop_function(index, input_tensor):
+        add = ops.Add()
+        out = add(input_tensor, 1)
+        for _ in range(3):
+            out = add(out, index)
+        return out
+
+    class ForiLoopForNet(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.fori_loop = ops.ForiLoop()
+
+        def construct(self, inputs):
+            out = inputs
+            out = self.fori_loop(0, 7, for_in_foriloop_function, out, False)
+            return out
+
+    @jit
+    def get_grad(x):
+        net_2 = ForiLoopForNet()
+        grad_net_2_f = ops.grad(net_2) # pylint: disable=E1102
+        grad_net_2_s = ops.grad(grad_net_2_f) # pylint: disable=E1102
+        return grad_net_2_s(x)
+
+    with pytest.raises(RuntimeError, match="Loop op with unroll set as false is not allow do higher order grad"):
+        x = Tensor(np.random.randn(32, 1).astype(np.float32))
+        get_grad(x)
 
 
 @case_register.skip(reason="Cannot process ops.xx both in loop_func and whileloop declaration in construct")

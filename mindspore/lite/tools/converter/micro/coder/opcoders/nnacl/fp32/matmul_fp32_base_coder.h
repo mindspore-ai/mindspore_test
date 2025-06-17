@@ -18,9 +18,11 @@
 #define MINDSPORE_LITE_TOOLS_CONVERTER_MICRO_CODER_OPCODERS_NNACL_FP32_MATMUL_FP32_BASE_CODER_H_
 
 #include <vector>
+#include <string>
 #include "coder/opcoders/op_coder.h"
 #include "nnacl/matmul_parameter.h"
 #include "wrapper/base/micro_parameter.h"
+#include "coder/opcoders/serializers/nnacl_serializer/nnacl_fp32_serializer.h"
 
 namespace mindspore::lite::micro::nnacl {
 class MatMulFP32BaseCoder : public OperatorCoder {
@@ -50,6 +52,8 @@ class MatMulFP32BaseCoder : public OperatorCoder {
  private:
   int InitMatrixA(const float *src_ptr);
   int InitMatrixB(const float *src_ptr);
+  void GenerateMatrixCalculation(nnacl::NNaclFp32Serializer *const code, const std::string *c_str,
+                                 const std::string *a_pack_str, const std::string *b_pack_str, int cur_oc);
 
  protected:
   Tensor *filter_tensor_{nullptr};

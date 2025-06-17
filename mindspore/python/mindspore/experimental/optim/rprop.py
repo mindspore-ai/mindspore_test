@@ -15,23 +15,22 @@
 """rprop"""
 from __future__ import absolute_import
 
-from mindspore.ops import functional as F, composite as C, operations as P
+from mindspore import ops
 from mindspore.common import Tensor, Parameter
 import mindspore.common.dtype as mstype
 from mindspore import _checkparam as validator
 from mindspore.experimental.optim.optimizer import Optimizer, check_not_less_than_without_equal
-from mindspore import ops
 from mindspore import jit
 
-_rprop_opt = C.MultitypeFuncGraph("rprop_opt")
+_rprop_opt = ops.MultitypeFuncGraph("rprop_opt")
 
-op_sign = P.Sign()
-op_fill = P.FillV2()
-op_assign = P.Assign()
-op_assignadd = P.AssignAdd()
-op_cast = P.Cast()
-op_select = P.Select()
-op_oneslike = P.OnesLike()
+op_sign = ops.Sign()
+op_fill = ops.FillV2()
+op_assign = ops.Assign()
+op_assignadd = ops.AssignAdd()
+op_cast = ops.Cast()
+op_select = ops.Select()
+op_oneslike = ops.OnesLike()
 
 
 @_rprop_opt.register("Tensor", "Tensor", "Number", "Number", "Tensor", "Tensor", "Tensor", "Tensor", "Tensor", "Tensor")
@@ -131,7 +130,7 @@ class Rprop(Optimizer):
         self.step_size = self.parameters.clone(prefix="step_size", init='zeros')
         self.step_t = Parameter(Tensor(0, mstype.int32), "step_t")
         self.increase_tensor = Tensor(1, mstype.int32)
-        self.op_cast = P.Cast()
+        self.op_cast = ops.Cast()
 
     @jit(backend="ms_backend")
     def implementation(self, etaminus, etaplus, group_id, lr, gradients, maximize, step_size_min, step_size_max):
@@ -141,10 +140,10 @@ class Rprop(Optimizer):
         end_id = self.group_start_id[group_id + 1]
 
         params = self.parameters[start_id: end_id]
-        grads = tuple([grad if not maximize else F.neg(grad) for grad in gradients[start_id: end_id]])
+        grads = tuple([grad if not maximize else ops.neg(grad) for grad in gradients[start_id: end_id]])
         prev = self.prev[start_id: end_id]
         step_size = self.step_size[start_id: end_id]
-        self.hyper_map(F.partial(_rprop_opt, etaminus, etaplus, step_size_min, step_size_max, self.step_t, lr),
+        self.hyper_map(ops.partial(_rprop_opt, etaminus, etaplus, step_size_min, step_size_max, self.step_t, lr),
                        params, prev, step_size, grads)
         return True
 

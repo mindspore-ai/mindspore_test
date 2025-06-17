@@ -468,6 +468,23 @@ class OrderEnforcer {
     });
   }
 
+  bool IsSpecialLoad(const AnfNodePtr &load, const AnfNodePtr &user_cnode, const NodeUsersMap &node_users) const {
+    // Do not insert TensorMove for the load which user is MakeTuple, and the MakeTuple only used by UpdateState.
+    if (!IsPrimitiveCNode(user_cnode, prim::kPrimMakeTuple)) {
+      return false;
+    }
+    auto node_users_iter = node_users.find(user_cnode);
+    if (node_users_iter != node_users.end()) {
+      bool only_used_by_updatestate =
+        std::all_of(node_users_iter->second.begin(), node_users_iter->second.end(),
+                    [](const auto &pair) { return IsPrimitiveCNode(pair.first, prim::kPrimUpdateState); });
+      if (only_used_by_updatestate) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   // If two loads at different times are used as inputs to the same node, need to insert TensorMove
   // load1 = Load(param, u1)
   // load2 = Load(param, u2)
@@ -500,17 +517,8 @@ class OrderEnforcer {
       if (IsPrimitiveCNode(user_cnode, prim::kPrimUpdateState)) {
         continue;
       }
-      // Do not insert TensorMove for the load which user is MakeTuple, and the MakeTuple only used by UpdateState.
-      if (IsPrimitiveCNode(user_cnode, prim::kPrimMakeTuple)) {
-        auto node_users_iter = node_users.find(user_cnode);
-        if (node_users_iter != node_users.end()) {
-          bool only_used_by_updatestate =
-            std::all_of(node_users_iter->second.begin(), node_users_iter->second.end(),
-                        [](const auto &pair) { return IsPrimitiveCNode(pair.first, prim::kPrimUpdateState); });
-          if (only_used_by_updatestate) {
-            continue;
-          }
-        }
+      if (IsSpecialLoad(load, user_cnode, node_users)) {
+        continue;
       }
       const auto &weak_inputs = user_cnode->weak_inputs();
       size_t ref_key_times = 0;
@@ -623,6 +631,21 @@ class OrderEnforcer {
     }
   }
 
+  bool CheckLoadIsSpecial(const AnfNodePtr &load, const NodeUsersMap &node_users) const {
+    auto iter = node_users.find(load);
+    if (iter != node_users.end()) {
+      const auto &users = iter->second;
+      for (auto &user : users) {
+        const auto &user_node = user.first;
+        auto user_cnode = user_node->cast<CNodePtr>();
+        if (IsSpecialLoad(load, user_cnode, node_users)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   mindspore::HashSet<CNodePtr> GetNeedInsertLoads() {
     auto check_nodes = TopoSort(func_graph_->get_return());
     static const bool enable_all_load = common::GetEnv("MS_DEV_SIDE_EFFECT_LOAD_ELIM") == "0";
@@ -635,6 +658,7 @@ class OrderEnforcer {
     RefLoads refkey_loads_input_is_call_or_partial;
     RefLoads refkey_loads_return_is_load;
     std::set<CNodePtr> ref_call_nodes;
+    const auto &node_users = manager_->node_users();
     for (auto &node : check_nodes) {
       // Record load refkey
       if (IsPrimitiveCNode(node, prim::kPrimLoad)) {
@@ -648,7 +672,10 @@ class OrderEnforcer {
           MS_LOG(INFO) << "Load without ref key:" << load->DebugString();
           continue;
         }
-        (void)refkey_loads[refkey].emplace_back(load);
+        if (!CheckLoadIsSpecial(load, node_users)) {
+          (void)refkey_loads[refkey].emplace_back(load);
+        }
+
         while (IsPrimitiveCNode(input, prim::kPrimDepend)) {
           input = input->cast<CNodePtr>()->input(1);
         }

@@ -147,7 +147,7 @@ class MSELoss(nn.Cell):
 
 
 @arg_mark(plat_marks=['platform_ascend'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_loss_scale_fp16_lr_overflow():

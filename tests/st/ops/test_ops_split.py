@@ -42,7 +42,7 @@ def split_dyn_shape_func(x, axis=0, output_num=2):
     return ops.Split(axis, output_num)(x)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('context_mode', ['pynative', 'KBK'])
 def test_split_ext_int_SDV1(context_mode):
     """

@@ -51,6 +51,7 @@ class OPS_API UniqueGradInfer : public abstract::OpInferBase {
     auto dout = input_args[0];
     auto dout_shape = dout->GetShape();
     auto dout_tuple_shape = dout_shape->cast<abstract::TupleShapePtr>();
+    MS_EXCEPTION_IF_NULL(dout_tuple_shape);
     auto ids_shape = (*dout_tuple_shape)[0];
     auto ids_idx_shape = (*dout_tuple_shape)[1];
     MS_EXCEPTION_IF_NULL(ids_shape);

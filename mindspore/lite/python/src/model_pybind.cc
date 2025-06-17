@@ -22,7 +22,7 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 #include "pybind11/functional.h"
-#include "utils/crypto.h"
+#include "src/common/crypto.h"
 
 namespace mindspore::lite {
 namespace py = pybind11;

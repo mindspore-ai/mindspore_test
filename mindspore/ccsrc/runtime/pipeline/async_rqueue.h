@@ -66,7 +66,7 @@ class RUNTIME_PIPELINE_EXPORT AsyncRQueue {
   virtual void Wait();
 
   // Check if the queue is empty.
-  bool Empty();
+  virtual bool Empty();
 
   // clear tasks of queue, and wait last task.
   void Clear();
@@ -75,7 +75,7 @@ class RUNTIME_PIPELINE_EXPORT AsyncRQueue {
   void Reset();
 
   // Thread join before the process exit.
-  void WorkerJoin();
+  virtual void WorkerJoin();
 
   // Reinit resources after fork occurs.
   void ChildAfterFork();

@@ -146,7 +146,7 @@ void DeduplicateId(UniqueIds *unique_ids) {
   std::thread threads[kMaxParallelNum];
 
   std::vector<mindspore::HashSet<int>> unique_batch_ids_sets(parallel_num);
-  auto unique_task = [&](int *origin_batch_ids, size_t proc_len, mindspore::HashSet<int> *unique_set) {
+  auto unique_task = [](int *origin_batch_ids, size_t proc_len, mindspore::HashSet<int> *unique_set) {
     (void)std::for_each(origin_batch_ids, origin_batch_ids + proc_len,
                         [&unique_set](int id) { (void)unique_set->insert(id); });
   };

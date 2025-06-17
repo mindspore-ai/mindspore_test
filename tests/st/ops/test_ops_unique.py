@@ -87,7 +87,7 @@ def test_ops_unique_forward_dim_None(mode):
     np.testing.assert_allclose(counts4.asnumpy(), expect_counts4, rtol=1e-3)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("mode", ["pynative", "KBK"])
 def test_ops_unique_forward_with_dim(mode):
     """

@@ -30,6 +30,7 @@
 #include "frontend/parallel/step_parallel_utils.h"
 #include "include/common/utils/utils.h"
 #include "include/common/utils/anfalgo.h"
+#include "pipeline/jit/ps/graph_circle_handler.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
@@ -53,6 +54,7 @@ void ExtractForwardMatMul(const std::vector<CNodePtr> &origin_nodes_topological,
       continue;
     }
     auto matmul_cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(matmul_cnode);
     if (!matmul_cnode->HasPrimalAttr(kPrimalAttrUniqueId)) {
       continue;
     }
@@ -102,6 +104,7 @@ std::vector<CNodePtr> GetCommInputMatMulNode(const AnfNodePtr &node,
       continue;
     }
     auto cnode_queue_end = queue_end->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode_queue_end);
     if (cnode_queue_end->HasAttr(kAttrDuplicated)) {
       continue;
     }
@@ -259,6 +262,7 @@ void OverlapGradMatmulAndGradAllreduce(const FuncGraphPtr &graph) {
   }
   auto manager = graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
+  circle_handler::SetAttrToDepend(graph);
   const auto cell_reuse = ms_context->CellReuseLevel() != CellReuseLevel::kNoCellReuse;
   if (cell_reuse) {
     for (const auto &each_graph : manager->func_graphs()) {
@@ -275,6 +279,8 @@ void OverlapGradMatmulAndGradAllreduce(const FuncGraphPtr &graph) {
   } else {
     DoOverLapWay(manager, graph, graph);
   }
+  circle_handler::DetectAndRevertGraphCircle(graph, manager, "OverlapGradMatmulAndGradAllreduce",
+                                             "matmul_grad_comm_overlap");
 }
 }  // namespace parallel
 }  // namespace mindspore

@@ -84,7 +84,9 @@ CNodePtr FindFrontAlltoall(const CNodePtr &marked_node, std::vector<CNodePtr> *v
   }
 
   if (alltoall_node == nullptr) {
-    MS_LOG(WARNING) << "Can't find alltoall node before " << GetCNodePrimitive(marked_node)->name();
+    auto prim = GetCNodePrimitive(marked_node);
+    MS_EXCEPTION_IF_NULL(prim);
+    MS_LOG(WARNING) << "Can't find alltoall node before " << prim->name();
   }
   return alltoall_node;
 }
@@ -125,7 +127,9 @@ CNodePtr FindBackAlltoall(const FuncGraphManagerPtr &manager, const CNodePtr &ma
   }
 
   if (alltoall_node == nullptr) {
-    MS_LOG(WARNING) << "Can't find alltoall node after " << GetCNodePrimitive(marked_node)->name();
+    const auto &prim = GetCNodePrimitive(marked_node);
+    MS_EXCEPTION_IF_NULL(prim);
+    MS_LOG(WARNING) << "Can't find alltoall node after " << prim->name();
   }
   return alltoall_node;
 }
@@ -156,8 +160,8 @@ void FindAlltoallNodePairs(const FuncGraphManagerPtr &manager, const std::vector
     if (!IsPrimitiveCNode(cnode)) {
       continue;
     }
-
-    if (!GetCNodePrimitive(cnode)->HasAttr("gpea_label")) {
+    auto prim = GetCNodePrimitive(cnode);
+    if (!prim->HasAttr("gpea_label")) {
       continue;
     }
 
@@ -168,7 +172,7 @@ void FindAlltoallNodePairs(const FuncGraphManagerPtr &manager, const std::vector
     visited_marked_nodes.push_back(cnode);
     auto alltoall_pair = FindAlltoallPair(manager, cnode, &visited_marked_nodes);
     if (alltoall_pair.first == nullptr || alltoall_pair.second == nullptr) {
-      MS_LOG(WARNING) << "not find alltoall_pair around cnode: " << GetCNodePrimitive(cnode)->name();
+      MS_LOG(WARNING) << "not find alltoall_pair around cnode: " << prim->name();
       continue;
     }
     alltoall_pairs->push_back(alltoall_pair);
@@ -461,7 +465,9 @@ void CloneScaledGraph(const std::vector<CNodePtr> &old_cnodes, const AnfNodePtr 
   std::vector<uint32_t> reshape_scale_axis = gpea_info->GetReshapeScaleAxisVec();
   for (size_t i = 0; i < old_cnodes.size(); i++) {
     auto cnode = old_cnodes[i];
-    MS_LOG(DEBUG) << "node in " << i << " " << GetCNodePrimitive(cnode)->name();
+    auto prim = GetCNodePrimitive(cnode);
+    MS_EXCEPTION_IF_NULL(prim);
+    MS_LOG(DEBUG) << "node in " << i << " " << prim->name();
     if (IsPrimitiveCNode(cnode, prim::kPrimLoad)) {
       new_nodes->push_back(cnode);  // reuse old Load node to not increase device memory
       continue;

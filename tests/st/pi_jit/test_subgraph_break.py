@@ -20,6 +20,7 @@ import pytest
 
 import mindspore as ms
 from mindspore import Tensor, jit, context, ops, nn
+from mindspore.ops import operations as P
 from mindspore._c_expression import get_code_extra
 
 from tests.st.pi_jit.one_stage.test_utils import save_graph_ir, check_ir_num
@@ -582,7 +583,7 @@ def test_call_function_graph_break_in_loop_v7():
         return z
 
     def f1(a, b):
-        c = a**2
+        c = a ** 2
         d = b + 2
         return f2(c, d)
 
@@ -813,6 +814,40 @@ def test_call_function_graph_break_in_loop_v13():
     match_array(o1, o2, error=7)
     jcr = get_code_extra(f1)
     assert jcr['stat'] == 'NEVER_COMPILE'
+
+
+@save_graph_ir(ir_name='graph_before_compile')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_call_function_graph_break_in_loop_v14():
+    """
+    Feature: test graph break in call_function.
+    Description: f1 call f2; f2 call f3 in loop; f3 has graph break.
+    Expectation: The result of PIJit is same as pynative.
+    """
+
+    def f1(x):
+        x = f2(x)
+        return P.ReLU()(x)
+
+    def f2(x):
+        for _ in range(3):
+            x = x + f3(x)
+        return P.ReLU()(x)
+
+    def f3(x):
+        x = x + 1
+        x.asnumpy()  # graph break!
+        return P.ReLU()(x)
+
+    a = ops.randn(2, 3)
+    o1 = f1(a)
+
+    compiled_f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
+    o2 = compiled_f1(a)
+
+    match_array(o1, o2, error=7)
+    assert_has_graph_break(f1, break_count=1)
+    check_ir_num('graph_before_compile', 5)
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -1113,7 +1148,7 @@ def f2(input_tensor: Tensor, weights: Tensor, params: dict, sizes: tuple, count:
     outer_tensor = input_tensor * weights
 
     def f3(
-        tensor1: Tensor, tensor2: Tensor, scale: float, config: dict, dims: tuple, values: list, flag: bool
+            tensor1: Tensor, tensor2: Tensor, scale: float, config: dict, dims: tuple, values: list, flag: bool
     ) -> Tensor:
         scaled_tensor = tensor1 * GLOBAL_SCALE - count  # global var + free var
         print('GRAPH BREAK', end='')

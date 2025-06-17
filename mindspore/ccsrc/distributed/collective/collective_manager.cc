@@ -441,6 +441,12 @@ bool CollectiveManager::DestroyCommunicationGroup(const std::string &group_name)
   return true;
 }
 
+void CollectiveManager::RemoveGroupInfoForARF(const std::string &group_name) {
+  (void)group_infos_.erase(std::remove_if(group_infos_.begin(), group_infos_.end(),
+                                          [group_name](const auto &p) { return p.first == group_name; }),
+                           group_infos_.end());
+}
+
 std::string CollectiveManager::GetCommName(const std::string &group_name) {
   WaitCommInitDone(group_name);
   if (!common::GetEnv(kSimulationLevel).empty()) {
@@ -873,6 +879,7 @@ bool CollectiveManager::CreateSimulationGroup(const std::string &group_name, con
       "Failed to create dummy device communication group " + group_name);
 
     CommunicationGroupPtr group = device_comm_lib_instance_->GetGroup(group_name);
+    MS_EXCEPTION_IF_NULL(group);
     size_t root_info_size = 0;
     void *root_info = group->GenerateRootInfo(&root_info_size);
     MS_EXCEPTION_IF_NULL(device_ctx_);
@@ -1035,6 +1042,13 @@ void CollectiveManager::ClearUniqueID(const std::string &group_name) {
   MS_LOG(INFO) << "Delete unique id after build success.";
   host_comm_lib_instance_->ClearUniqueID(group_name);
   MS_LOG(INFO) << "Delete unique id end.";
+}
+
+bool CollectiveManager::CommSwitchNic(const std::vector<uint32_t> &global_ranks, const std::vector<bool> &use_backup) {
+  MS_EXCEPTION_IF_NULL(device_comm_lib_instance_);
+  MS_LOG(INFO) << "Switch communication network interface card, the global ranks: " << global_ranks
+               << ", the use backup: " << use_backup;
+  return device_comm_lib_instance_->CommSwitchNic(global_ranks, use_backup);
 }
 
 bool CollectiveManager::IsAsyncInitGlobalComm() {

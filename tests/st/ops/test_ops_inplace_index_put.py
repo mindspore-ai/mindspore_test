@@ -58,7 +58,7 @@ def inplace_index_put_forward_func(x, indices, values, accumulate=False):
     return net(x, indices, values, accumulate)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_inplace_index_put_forward(context_mode):
     """

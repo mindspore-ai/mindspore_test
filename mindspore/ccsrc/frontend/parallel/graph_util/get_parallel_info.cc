@@ -43,6 +43,7 @@ static std::unordered_map<CNodePtr, std::string> name_map = {};
 // Extract the op name and the topology number of the same node in the graph
 // e.g, Default/Mul-op32 -> Mul-op0, Default/Mul-op35 -> Mul-op1
 std::string GetNodeNameWithCount(const CNodePtr &cnode) {
+  MS_EXCEPTION_IF_NULL(cnode);
   if (name_map.find(cnode) != name_map.end()) {
     return name_map[cnode];
   }
@@ -191,6 +192,7 @@ py::dict GetCNodeAttrs(const CNodePtr &cnode) {
   }
 
   PrimitivePtr primitive = GetValueNode<PrimitivePtr>(op);
+  MS_EXCEPTION_IF_NULL(primitive);
   auto attrs = primitive->attrs();
   py::dict cnode_attrs_dict;
   for (const auto &attr : attrs) {
@@ -339,10 +341,12 @@ py::dict GetAllreduceFusion(const FuncGraphPtr &graph) {
     if (!name_ptr->isa<StringImm>()) {
       MS_LOG(EXCEPTION) << "name is not StringImm";
     }
+    MS_EXCEPTION_IF_NULL(name_ptr->cast<StringImmPtr>());
     auto name = name_ptr->cast<StringImmPtr>()->value();
     if (!fusion_ptr->isa<Int64Imm>()) {
       MS_LOG(EXCEPTION) << "fusion is not Int64Imm";
     }
+    MS_EXCEPTION_IF_NULL(fusion_ptr->cast<Int64ImmPtr>());
     int64_t fusion = fusion_ptr->cast<Int64ImmPtr>()->value();
     dict[py::str(name)] = fusion;
   }

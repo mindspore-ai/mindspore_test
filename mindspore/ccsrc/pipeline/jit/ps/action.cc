@@ -71,7 +71,6 @@
 #include "utils/compile_config.h"
 #include "backend/graph_compiler/transform.h"
 #include "load_mindir/infer_mindir.h"
-#include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
 #include "debug/profiler/profiling.h"
 #include "frontend/optimizer/fallback_rewriter.h"
@@ -243,7 +242,8 @@ void UpdateFuncGraphParameter(const FuncGraphPtr &func_graph, const std::vector<
 
     AbstractBasePtr param_abs = param_node->abstract();
     MS_EXCEPTION_IF_NULL(param_abs);
-    if ((param_abs->BuildValue() == kValueAny && !ContainsAbstractFunction(param_abs)) ||
+    if ((!param_abs->isa<abstract::AbstractNone>() && param_abs->BuildValue() == kValueAny &&
+         !ContainsAbstractFunction(param_abs)) ||
         EnableGradForScalar(param_abs) || EnableSequenceBroaden(param_abs)) {
       new_paras.push_back(param_node);
     } else {
@@ -404,6 +404,7 @@ abstract::AnalysisResult AbstractAnalyze(const abstract::AnalysisEnginePtr &engi
 
 abstract::AnalysisResult AbstractAnalyze(const ValuePtr &func, const abstract::AbstractBasePtrList &args_abs,
                                          bool clear) {
+  MS_EXCEPTION_IF_NULL(func);
   auto infer_graph = func->isa<FuncGraph>() ? func->cast<FuncGraphPtr>() : ConstructGraphForEval(func, args_abs);
 
   auto top_graph = parse::Parser::GetTopFuncGraph();
@@ -1969,9 +1970,6 @@ bool TaskEmitAction(const ResourcePtr &resource) {
   bool is_control_flow = !func_graph->func_graphs_used_total().empty();
   if (mode == kGraphMode || (mode == kPynativeMode && (func_graph->has_flag(kFlagJitCallGraph) || is_control_flow))) {
     func_graph->SetMultiTarget();
-    if (func_graph->exist_multi_target() && DumpJsonParser::GetInstance().IsDumpEnabled()) {
-      MS_LOG(WARNING) << "Multi device target is detected, CPU data is dumped in rank_0 directory";
-    }
   }
 
   if (backend != kMsConvert && backend != kGeVm) {

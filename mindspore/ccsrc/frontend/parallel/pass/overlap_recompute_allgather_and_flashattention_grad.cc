@@ -36,6 +36,7 @@
 #include "include/common/utils/parallel_context.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "include/common/utils/utils.h"
+#include "pipeline/jit/ps/graph_circle_handler.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
@@ -210,6 +211,7 @@ void OverlapRecomputeAllGatherAndFlashAttentionGrad(const FuncGraphPtr &graph) {
   }
   auto manager = graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
+  circle_handler::SetAttrToDepend(graph);
   for (const auto &each_graph : manager->func_graphs()) {
     if (IsCellReuseForwardGraph(each_graph)) {
       auto forward_graph = each_graph;
@@ -224,6 +226,8 @@ void OverlapRecomputeAllGatherAndFlashAttentionGrad(const FuncGraphPtr &graph) {
       AddDependForRecomputedAllGatherAndGradientReduceScatter(backward_graph);
     }
   }
+  circle_handler::DetectAndRevertGraphCircle(graph, manager, "OverlapRecomputeAllGatherAndFlashAttentionGrad",
+                                             "recompute_allgather_overlap_fagrad");
 }
 }  // namespace parallel
 }  // namespace mindspore

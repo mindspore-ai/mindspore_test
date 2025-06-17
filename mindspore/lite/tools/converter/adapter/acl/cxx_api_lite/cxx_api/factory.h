@@ -109,10 +109,10 @@ class ModelImplRegistrar {
 
 #define API_GRAPH_REG(DEVICE_NAME, DEVICE_CLASS)                           \
   static const GraphImplRegistrar graph_api_##DEVICE_NAME##_registrar_reg( \
-    DEVICE_NAME, []() { return std::make_shared<DEVICE_CLASS>(); });
+    DEVICE_NAME, []() { return std::make_shared<DEVICE_CLASS>(); })
 
 #define API_MODEL_REG(DEVICE_NAME, DEVICE_CLASS)                           \
   static const ModelImplRegistrar model_api_##DEVICE_NAME##_registrar_reg( \
-    DEVICE_NAME, []() { return std::make_shared<DEVICE_CLASS>(); });
+    DEVICE_NAME, []() { return std::make_shared<DEVICE_CLASS>(); })
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_CXX_API_FACTORY_H

@@ -18,7 +18,6 @@ import numpy as np
 import mindspore as ms
 from mindspore import ops, Tensor
 from mindspore import log as logger
-from mindspore.ops import operations as P
 import mindspore.common.dtype as mstype
 from mindspore._c_expression import _set_format
 from mindspore.common.parameter import Parameter
@@ -95,8 +94,8 @@ class AtbBoostBase:
             self.max_base_len, dtype=self.dtype, need_nz=self.need_nz
         )
 
-        self.cast = P.Cast()
-        self.reshape = P.Reshape()
+        self.cast = ops.Cast()
+        self.reshape = ops.Reshape()
         self.kv_quant = None
         self.rank_id = get_real_rank()
         self.device_num = get_real_group_size()

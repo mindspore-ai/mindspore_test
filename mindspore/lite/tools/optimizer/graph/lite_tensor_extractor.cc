@@ -364,6 +364,7 @@ int LiteTensorExtractor::GetCNodeInputAbstractLists(const CNodePtr &cnode, Abstr
   abs_list->reserve(cnode->size());
   for (size_t index = 1; index < cnode->size(); index++) {
     auto node = cnode->input(index);
+    MS_CHECK_TRUE_MSG(node != nullptr, RET_ERROR, "node is nullptr!");
     auto abs = node->abstract();
     if (abs == nullptr) {
       if (utils::isa<ValueNodePtr>(node)) {

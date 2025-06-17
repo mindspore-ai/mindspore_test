@@ -102,10 +102,8 @@ def test_parameter_5_1():
         def construct(self):
             return self.res1[0] + self.res1[1]
 
-    with pytest.raises(ValueError, match="its name 'Parameter' already exists."):
-        net = ParamNet()
-        res = net()
-        assert res == 6
+    net = ParamNet()
+    net()
 
 
 def test_parameter_same_name_between_tuple_or_list():
@@ -184,13 +182,12 @@ def test_parameter_out_of_cell_1():
     """
     @ms.jit
     def func(x, y):
-        return x, y
+        return x + y
 
     x = ms.Parameter(ms.Tensor(1))
     y = ms.Parameter(ms.Tensor(2))
 
-    with pytest.raises(ValueError, match="its name 'Parameter' already exists."):
-        func(x, y)
+    func(x, y)
 
 def test_parameter_out_of_cell_2():
     """

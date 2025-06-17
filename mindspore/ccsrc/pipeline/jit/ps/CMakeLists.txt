@@ -12,6 +12,7 @@ file(GLOB_RECURSE _PIPELINE_SRC_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     "compile_cache_manager.cc"
     "event_message_print.cc"
     "fallback.cc"
+    "graph_circle_handler.cc"
     "parse/*.cc"
     "static_analysis/*.cc"
     "debug/*.cc"

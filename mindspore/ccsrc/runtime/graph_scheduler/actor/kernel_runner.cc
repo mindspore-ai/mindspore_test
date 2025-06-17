@@ -220,8 +220,6 @@ void InsertEventForInput(uint32_t stream_id, const DeviceContext *device_context
 using distributed::collective::CollectiveManager;
 using distributed::recovery::RecoveryContext;
 
-bool KernelRunner::is_high_perf_mode_ = true;
-
 KernelRunner::KernelRunner(const std::string &name, const CNodePtr &kernel, const DeviceContext *device_context,
                            const AID &memory_manager_aid, const AID *debug_aid, const AID *recorder_aid,
                            GraphExecutionStrategy strategy, const std::set<size_t> &modifiable_ref_input_indexes,
@@ -270,7 +268,6 @@ KernelRunner::KernelRunner(const std::string &name, const CNodePtr &kernel, cons
 
   enable_uce_ = UCEException::IsEnableUCE();
   enable_arf_ = UCEException::GetInstance().enable_arf();
-  KernelRunner::is_high_perf_mode_ = IsRunHighPerfMode();
 }
 
 void KernelRunner::Init() {
@@ -933,7 +930,7 @@ void KernelRunner::SetMemInfoForRdr() {
 }
 
 void KernelRunner::CopyInputDeviceTensor(KernelTensorPtr kernel_tensor, size_t input_index,
-                                         OpContext<KernelTensor> *const context) {
+                                         OpContext<KernelTensor> *const context, bool parallel_dispatch_param) {
   // The ignored input address that is not used in the kernel launch and no need copy.
   MS_EXCEPTION_IF_NULL(kernel_tensor);
   auto device_tensor = kernel_tensor->device_address().get();
@@ -958,7 +955,12 @@ void KernelRunner::CopyInputDeviceTensor(KernelTensorPtr kernel_tensor, size_t i
       device_tensor->type_id() == real_input_info->type_id_) {
     return;
   }
-
+  if (parallel_dispatch_param) {
+    MS_LOG(EXCEPTION) << GetAID().Name()
+                      << " not support copy parameter input for parallel dispatch, input index: " << input_index;
+  }
+  uint64_t start_time = 0;
+  PROFILER_START(start_time);
   if (!WaitRuntimePipelineFinish(context, GetAID().Name())) {
     MS_LOG(INFO) << "Run failed and early stop for kernel: " << kernel_->fullname_with_scope();
     return;
@@ -1043,133 +1045,8 @@ void KernelRunner::CopyInputDeviceTensor(KernelTensorPtr kernel_tensor, size_t i
       << kernel_tensor->ToString() << " for copy actor:" << GetAID();
     KernelTensorCopyStore::GetInstance().Insert(new_kernel_tensor.get(), kernel_tensor.get());
   }
-}
-
-void KernelRunner::CopyParameterDeviceTensor(KernelTensorPtr kernel_tensor, size_t input_index,
-                                             OpContext<KernelTensor> *const context, size_t stream_id) {
-  // The ignored input address that is not used in the kernel launch and no need copy.
-  MS_EXCEPTION_IF_NULL(kernel_tensor);
-  auto device_tensor = kernel_tensor->device_address();
-  MS_EXCEPTION_IF_NULL(device_tensor);
-  if (!launch_ignored_inputs_.empty() && (std::find(launch_ignored_inputs_.begin(), launch_ignored_inputs_.end(),
-                                                    input_index) != launch_ignored_inputs_.end())) {
-    MS_LOG(DEBUG) << GetAID().Name() << " ignore the input address for input index: " << input_index;
-    return;
-  }
-  if (skip_launch_shape_related_op_) {
-    return;
-  }
-  if (input_index >= real_input_data_infos_.size()) {
-    std::stringstream ofs;
-    ofs << "Invalid input index:" << input_index << " size:" << real_input_data_infos_.size()
-        << " for actor:" << GetAID();
-    SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(strategy_, *context, ofs.str());
-  }
-  auto &real_input_info = real_input_data_infos_[input_index];
-  if ((device_tensor->GetDeviceType() == device_contexts_[0]->GetDeviceType()) &&
-      AnfAlgo::IsEquivalentFormat(kernel_tensor->format(), real_input_info->format_) &&
-      device_tensor->type_id() == real_input_info->type_id_) {
-    return;
-  }
-
-  uint64_t start_time = 0;
-  PROFILER_START(start_time);
-  if (!WaitRuntimePipelineFinish(context, GetAID().Name())) {
-    MS_LOG(INFO) << "Run failed and early stop for kernel: " << kernel_->fullname_with_scope();
-    return;
-  }
-  if (inputs_continuous_memory_) {
-    std::string error_info = GetAID().Name() + " inputs must be continuous memory and can't be copied for index " +
-                             std::to_string(input_index);
-    SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(strategy_, *context, error_info);
-  }
-  if (input_index >= copy_input_kernel_tensors_.size()) {
-    std::stringstream ofs;
-    ofs << "Invalid input index:" << input_index
-        << " copy input device tensor size:" << copy_input_kernel_tensors_.size() << " for actor:" << GetAID();
-    SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(strategy_, *context, ofs.str());
-  }
-  if (copy_input_kernel_tensors_[input_index] == nullptr) {
-    const auto &pre_kernel_tensor = kernel_tensor;
-    MS_EXCEPTION_IF_NULL(pre_kernel_tensor);
-    auto new_kernel_tensor = AnfAlgo::CreateKernelTensor(
-      pre_kernel_tensor->GetShape(), pre_kernel_tensor->GetType(), pre_kernel_tensor->GetValueTrack(), nullptr,
-      real_input_info->size_, kernel::GetFormatFromEnumToStr(real_input_info->format_), real_input_info->type_id_,
-      real_input_info->shape_, device_contexts_[0]->device_context_key().device_name_,
-      device_contexts_[0]->device_context_key().device_id_, device_tensor->user_data());
-    MS_EXCEPTION_IF_NULL(new_kernel_tensor);
-    auto pre_stream_id = pre_kernel_tensor->stream_id();
-    if (pre_stream_id == UINT32_MAX) {
-      auto stream_id = kernel_info_->stream_id();
-      MS_LOG(DEBUG) << "Rewrite kernel tensor : " << new_kernel_tensor
-                    << " stream id with kernel info stream id : " << stream_id << ".";
-      new_kernel_tensor->set_stream_id(stream_id);
-    } else {
-      MS_LOG(DEBUG) << "Rewrite kernel tensor : " << new_kernel_tensor
-                    << " stream id with pre kernel tensor stream id : " << pre_stream_id << ".";
-      new_kernel_tensor->set_stream_id(pre_stream_id);
-    }
-
-    copy_input_kernel_tensors_[input_index] = new_kernel_tensor;
-    MS_LOG(DEBUG) << "Create copy kernel tensor:" << copy_input_kernel_tensors_[input_index]->ToString()
-                  << " index:" << input_index << " for actor:" << GetAID();
-  }
-  auto &new_kernel_tensor = copy_input_kernel_tensors_[input_index];
-  MS_EXCEPTION_IF_NULL(new_kernel_tensor);
-  auto &new_device_tensor = new_kernel_tensor->device_address();
-  MS_EXCEPTION_IF_NULL(new_device_tensor);
-  new_device_tensor->set_need_sync_user_data(device_tensor->need_sync_user_data());
-  MS_LOG(DEBUG) << "Prev stream id : " << input_kernel_tensors_[input_index]->device_address()->stream_id()
-                << " new stream id : " << new_device_tensor->stream_id() << ".";
-  // Update the input kernel tensor.
-  input_launch_tensors_[input_index] = new_kernel_tensor.get();
-  pre_input_kernel_tensors_[input_index] = kernel_tensor;
-  input_kernel_tensors_[input_index] = new_kernel_tensor;
-  if (is_dynamic_shape_) {
-    // Need update shape and size for dynamic shape case.
-    input_kernel_tensors_for_infer_[input_index] = input_kernel_tensors_[input_index];
-    MS_EXCEPTION_IF_NULL(input_kernel_tensors_[input_index]);
-    MS_EXCEPTION_IF_NULL(kernel_tensor);
-    MS_EXCEPTION_IF_NULL(kernel_tensor->GetShape());
-    input_kernel_tensors_[input_index]->SetShape(kernel_tensor->GetShape()->Clone());
-    input_kernel_tensors_[input_index]->set_size(device_tensor->GetSize());
-  }
-
-  if (new_device_tensor->GetSize() == 0 || device_tensor->GetSize() == 0) {
-    MS_LOG(DEBUG) << "Input size is 0, new_device_tensor size: " << new_device_tensor->GetSize()
-                  << ", device_tensor size: " << device_tensor->GetSize() << ".";
-    return;
-  }
-
-  if (new_device_tensor->GetPtr() == nullptr) {
-    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, GetAID().Name(), memory::mem_pool::MemType::kOther,
-                                                   new_device_tensor->GetSize(), new_device_tensor.get());
-    if (!device_contexts_[0]->device_res_manager_->AllocateMemory(new_device_tensor.get(), kDefaultStreamIndex)) {
-      SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(strategy_, *context, *(device_contexts_[0]), GetAID().Name(),
-                                                  new_device_tensor->GetSize());
-    }
-    MS_LOG(DEBUG) << "Increase new ref count for device address:" << new_device_tensor << " in actor:" << GetAID();
-  }
-
-  MS_LOG(INFO) << GetAID().Name() << " the input position:" << input_index
-               << " copy from kernel tensor:" << kernel_tensor->ToString()
-               << " to kernel tensor:" << new_kernel_tensor->ToString();
-  // Copy from the real parameter to formal parameter and insert the device tensor copy store.
-  auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
-  if (!AsyncCopy(new_device_tensor.get(), device_tensor.get(), stream_id)) {
-    MS_LOG(EXCEPTION) << "Async copy failed, src kernel tensor: " << kernel_tensor->ToString()
-                      << ", dst kernel tensor: " << new_kernel_tensor->ToString();
-  }
-  graph_parameter_store->InsertDeviceTensorIntoCallback(device_tensor);
-
-  if (modifiable_ref_input_indexes_.count(input_index) > 0) {
-    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-      << "Add device tensor copy store for kernel tensor:" << new_kernel_tensor->ToString() << " and "
-      << kernel_tensor->ToString() << " for copy actor:" << GetAID();
-    KernelTensorCopyStore::GetInstance().Insert(new_kernel_tensor.get(), kernel_tensor.get());
-  }
   PROFILER_END(start_time, runtime::ProfilerModule::kKernel, runtime::ProfilerEvent::kPreLaunch,
-               "CopyParameterDeviceTensor", false);
+               "CopyInputDeviceTensor", false);
 }
 
 void KernelRunner::UpdateGraphOutputRefCount(OpContext<KernelTensor> *const context) {
@@ -1264,7 +1141,7 @@ void KernelRunner::FetchOutputDeviceTensor(OpContext<KernelTensor> *const contex
   }
 }
 
-void KernelRunner::ExecuteInferShapeTask(OpContext<KernelTensor> *const context) {
+void KernelRunner::ExecuteInferShapeTask(OpContext<KernelTensor> *const context, bool high_perf) {
   ProfilerRecorder profiler(ProfilerModule::kKernel, ProfilerEvent::kKernelInfer, GetAID().Name());
   if (IsRunningFailed(context)) {
     MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Run failed and early stop infer shape for kernel: "
@@ -1279,10 +1156,10 @@ void KernelRunner::ExecuteInferShapeTask(OpContext<KernelTensor> *const context)
     InferShape();
   }
 
-  Async(kernel_async_resize_aid_, &KernelAsyncResizeActor::ResizeKernelModV2, context, this);
+  Async(kernel_async_resize_aid_, &KernelAsyncResizeActor::ResizeKernelModV2, context, this, high_perf);
 }
 
-void KernelRunner::ExecuteResizeKernelModTask(OpContext<KernelTensor> *const context) {
+void KernelRunner::ExecuteResizeKernelModTask(OpContext<KernelTensor> *const context, bool high_perf) {
   ProfilerRecorder profiler(ProfilerModule::kKernel, ProfilerEvent::kKernelResize, GetAID().Name());
   if (IsRunningFailed(context)) {
     MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Run failed and early stop resize for kernel: "
@@ -1308,39 +1185,14 @@ void KernelRunner::ExecuteResizeKernelModTask(OpContext<KernelTensor> *const con
     FetchOutputDeviceTensor(context);
   }
 
-  Async(kernel_async_launch_aid_, &KernelAsyncLaunchActor::LaunchKernelV2, context, this);
-}
-
-bool KernelRunner::IsRunHighPerfMode() {
-  // These high performance checking flag should be confirmed in compilation phase.
-  // They should not be changed in runtime phase so that we could reach optimal performance by avoiding condition
-  // judgement.
-  std::vector<bool> conditions = {
-    common::IsDisableRuntimeConfig(common::kRuntimeHPMode),
-    debug_aid_ != nullptr,
-    recorder_aid_ != nullptr,
-    EnableExecuteOrderDump(),
-    device::tracker::MemTrackerManager::GetInstance().IsEnabled(),
-    device::tracker::MemTrackerManager::GetInstance().enable_memory_debug_info(),
-    UCEException::IsEnableUCE(),
-    mindspore::runtime::RuntimeConf::GetInstance()->launch_blocking(),
-    common::GetEnv("MS_ENABLE_CKPT_D2H_ASYNC") == "1",
-    IsNeedProfilieMemoryLog(),
-  };
-  // When this function returns false, it means performance is not cirtical in this context.
-  // Otherwise runtime will launch kernels with high performance.
-  return std::all_of(conditions.begin(), conditions.end(), [](bool c) { return !c; });
-}
-
-void KernelRunner::ExecuteLaunchKernelTask(OpContext<KernelTensor> *const context) {
-  if (KernelRunner::is_high_perf_mode_) {
-    ExecuteLaunchKernelTaskHP(context);
+  if (high_perf) {
+    Async(kernel_async_launch_aid_, &KernelAsyncLaunchActor::LaunchKernelV2HP, context, this);
   } else {
-    ExecuteLaunchKernelTaskDebug(context);
+    Async(kernel_async_launch_aid_, &KernelAsyncLaunchActor::LaunchKernelV2, context, this);
   }
 }
 
-void KernelRunner::ExecuteLaunchKernelTaskDebug(OpContext<KernelTensor> *const context) {
+void KernelRunner::ExecuteLaunchKernelTask(OpContext<KernelTensor> *const context) {
   if (MS_UNLIKELY(IsRunningFailed(context))) {
     MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Run failed and early stop launch kernel: "
                                          << kernel_->fullname_with_scope();
@@ -1710,8 +1562,7 @@ bool KernelRunner::LaunchKernelHP(OpContext<KernelTensor> *const context, bool i
   bool ret = true;
   if (!ActorDispatcher::enable_multi_stream() || is_multi_stream_process_skipped_) {
     if (!is_skip_launch) {
-      ret = device_contexts_[0]->GetKernelExecutor(false)->LaunchKernelHP(
-        kernel_, input_launch_tensors_, workspace_launch_tensors_, output_launch_tensors_, kernel_mod_, stream_);
+      ret = kernel_mod_->Launch(input_launch_tensors_, workspace_launch_tensors_, output_launch_tensors_, stream_);
     }
   } else {
     auto &multi_stream_controller =
@@ -1719,16 +1570,19 @@ bool KernelRunner::LaunchKernelHP(OpContext<KernelTensor> *const context, bool i
     if (!ActorDispatcher::enable_async_launch_kernel()) {
       std::lock_guard<std::mutex> lock(multi_stream_controller->GetStreamMutex(kernel_info_->stream_id()));
       ProcessMultiStreamBeforeKernelLaunch(context);
-      ret = device_contexts_[0]->GetKernelExecutor(false)->LaunchKernelHP(
-        kernel_, input_launch_tensors_, workspace_launch_tensors_, output_launch_tensors_, kernel_mod_, stream_);
+      if (!is_skip_launch) {
+        ret = kernel_mod_->Launch(input_launch_tensors_, workspace_launch_tensors_, output_launch_tensors_, stream_);
+      }
       ProcessMultiStreamAfterKernelLaunch(context);
     } else {
       ProcessMultiStreamBeforeKernelLaunch(context);
-      ret = device_contexts_[0]->GetKernelExecutor(false)->LaunchKernelHP(
-        kernel_, input_launch_tensors_, workspace_launch_tensors_, output_launch_tensors_, kernel_mod_, stream_);
+      if (!is_skip_launch) {
+        ret = kernel_mod_->Launch(input_launch_tensors_, workspace_launch_tensors_, output_launch_tensors_, stream_);
+      }
       ProcessMultiStreamAfterKernelLaunch(context);
     }
   }
+
   MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "End launch kernel: " << kernel_->fullname_with_scope();
   RecoverInputs();
   return ret;

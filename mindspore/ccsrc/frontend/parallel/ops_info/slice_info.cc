@@ -42,6 +42,7 @@ Status SliceInfo::GetInput(const ValuePtr &input_value, std::vector<int64_t> *in
   for (auto &element : value_tuple->value()) {
     MS_EXCEPTION_IF_NULL(element);
     if (element->isa<Int64Imm>()) {
+      MS_EXCEPTION_IF_NULL(element->cast<Int64ImmPtr>());
       int64_t value = element->cast<Int64ImmPtr>()->value();
       input->push_back(value);
     } else {
@@ -232,6 +233,7 @@ Status SliceInfo::ComputeReplaceGraph(const CNodePtr &cnode) {
 Status SliceExtInfo::GetInput(const ValuePtr &input_value, int64_t *input) {
   MS_EXCEPTION_IF_NULL(input_value);
   if (input_value->isa<Int64Imm>()) {
+    MS_EXCEPTION_IF_NULL(input_value->cast<Int64ImmPtr>());
     int64_t value = input_value->cast<Int64ImmPtr>()->value();
     *input = value;
   } else {

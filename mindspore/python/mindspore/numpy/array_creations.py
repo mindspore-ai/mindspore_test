@@ -2512,8 +2512,8 @@ def _pad_symmetric(arr, pad_width, reflect_type):
     for i in range(arr.ndim):
         array_length = arr.shape[i]
 
-        has_pad_before = (pad_width[i][0] > 0)
-        has_pad_after = (pad_width[i][1] > 0)
+        has_pad_before = pad_width[i][0] > 0
+        has_pad_after = pad_width[i][1] > 0
 
         times_to_pad_before = pad_width[i][0] // array_length + 1
         additional_pad_before = pad_width[i][0] % array_length
@@ -2541,8 +2541,8 @@ def _pad_reflect(arr, pad_width, reflect_type):
             total_repeats = pad_width[i][0] + pad_width[i][1] + 1
             arr = ops.tile(arr, _tuple_setitem((1,) * arr.ndim, i, total_repeats))
         else:
-            has_pad_before = (pad_width[i][0] > 0)
-            has_pad_after = (pad_width[i][1] > 0)
+            has_pad_before = pad_width[i][0] > 0
+            has_pad_after = pad_width[i][1] > 0
 
             pad_size = array_length - 1
             times_to_pad_before = pad_width[i][0] // pad_size + 1

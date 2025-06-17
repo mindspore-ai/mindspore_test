@@ -89,7 +89,9 @@ class _ExperimentalConfig:
             - HostSystem.MEM: Collect the memory utilization at the process level.
             - HostSystem.DISK: Collect the disk I/O utilization at the process level.
             - HostSystem.NETWORK: Collect the network I/O utilization at the system level.
-            - HostSystem.OSRT: Collect system-level syscall and pthreadcall.
+            - HostSystem.OSRT: Collect system call stack data at the system level, note that when configuring user
+              permissions, replace the content of msporof_data_compling.sh with `msporof_data_compling.sh
+              <https://gitee.com/mindspore/mindspore/blob/master/docs/api/api_python/mindspore/script/msprof_data_collection.sh>`_.
 
     Raises:
         RuntimeError: When the version of CANN does not match the version of MindSpore,

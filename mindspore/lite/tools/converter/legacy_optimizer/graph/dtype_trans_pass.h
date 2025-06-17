@@ -55,7 +55,7 @@ class DTypeTransPass : public GraphPass {
   TypeId output_data_dtype = TypeId::kNumberTypeFloat;
 
   OpDefCopyer castOpCopyer = [](const schema::CNodeT &inCNode) -> std::unique_ptr<schema::CNodeT> {
-    std::unique_ptr<schema::CNodeT> newCNode(new (std::nothrow) schema::CNodeT);
+    auto newCNode = std::make_unique<schema::CNodeT>();
     if (newCNode == nullptr) {
       MS_LOG(ERROR) << "new CNodeT failed";
       return nullptr;

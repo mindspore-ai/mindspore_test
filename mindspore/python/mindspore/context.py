@@ -838,7 +838,8 @@ class _Context:
             raise TypeError(f"For step num, the value type should be int, but got {type(step)}, {step}")
         self.set_param(ms_ctx_param.last_triggered_step, step)
 
-    def _check_speedup_config_str_value(self, key, value):
+    @staticmethod
+    def _check_speedup_config_str_value(key, value):
         """check speedup config str value"""
         if key == "pp_1f1b_overlap" or key == "recompute_comm_overlap" \
                 or key == "recomputation_communication_overlap":
@@ -1571,7 +1572,8 @@ def set_context(**kwargs):
         check_bprop (bool): This parameter will be deprecated and removed in future versions.
         enable_reduce_precision (bool): This parameter will be deprecated and removed in a future versions.
         grad_for_scalar (bool): This parameter will be deprecated and removed in future versions.
-        support_binary (bool): Whether to support run .pyc or .so in graph mode.
+        support_binary (bool): Whether to support run .pyc or .so in graph mode. This parameter will be deprecated and
+            removed in a future version. Please use the environment variable `MS_SUPPORT_BINARY` instead.
 
     Examples:
         >>> import mindspore as ms

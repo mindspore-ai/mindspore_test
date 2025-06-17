@@ -21,7 +21,6 @@ import numbers
 import hashlib
 import numpy as np
 import mindspore.ops as ops
-from mindspore.ops import operations as P
 from mindspore.ops.operations import _inner_ops as inner
 from mindspore.common.parameter import Parameter
 from mindspore.common.initializer import initializer, Initializer
@@ -98,34 +97,34 @@ class _BatchNorm(Cell):
 
         self.parallel_mode = context.get_auto_parallel_context("parallel_mode")
 
-        self.shape = P.Shape()
-        self.reduce_mean = P.ReduceMean(keep_dims=True)
-        self.square = P.Square()
-        self.sqrt = P.Sqrt()
-        self.cast = P.Cast()
-        self.dtype = P.DType()
-        self.reshape = P.Reshape()
+        self.shape = ops.Shape()
+        self.reduce_mean = ops.ReduceMean(keep_dims=True)
+        self.square = ops.Square()
+        self.sqrt = ops.Sqrt()
+        self.cast = ops.Cast()
+        self.dtype = ops.DType()
+        self.reshape = ops.Reshape()
         self._target = context.get_context("device_target")
         self.momentum = 1.0 - momentum
 
-        self.bn_train = P.BatchNorm(is_training=True,
-                                    epsilon=self.eps,
-                                    momentum=self.momentum,
-                                    data_format=self.format)
+        self.bn_train = ops.BatchNorm(is_training=True,
+                                      epsilon=self.eps,
+                                      momentum=self.momentum,
+                                      data_format=self.format)
 
-        self.bn_infer = P.BatchNorm(is_training=False, epsilon=self.eps, data_format=self.format)
+        self.bn_infer = ops.BatchNorm(is_training=False, epsilon=self.eps, data_format=self.format)
         if _is_in_auto_parallel_mode():
             data_parallel_strategy = ((1,), (1,))
             data_parallel_strategy_one = ((1,), ())
         else:
             data_parallel_strategy = None
             data_parallel_strategy_one = None
-        self.sub_mean = P.Sub().shard(data_parallel_strategy)
-        self.sub_var = P.Sub().shard(data_parallel_strategy)
-        self.mul_mean = P.Mul().shard(data_parallel_strategy_one)
-        self.mul_var = P.Mul().shard(data_parallel_strategy_one)
-        self.assign_sub_mean = P.AssignSub().shard(data_parallel_strategy)
-        self.assign_sub_var = P.AssignSub().shard(data_parallel_strategy)
+        self.sub_mean = ops.Sub().shard(data_parallel_strategy)
+        self.sub_var = ops.Sub().shard(data_parallel_strategy)
+        self.mul_mean = ops.Mul().shard(data_parallel_strategy_one)
+        self.mul_var = ops.Mul().shard(data_parallel_strategy_one)
+        self.assign_sub_mean = ops.AssignSub().shard(data_parallel_strategy)
+        self.assign_sub_var = ops.AssignSub().shard(data_parallel_strategy)
 
     @staticmethod
     @_primexpr
@@ -463,8 +462,8 @@ class BatchNorm3d(Cell):
                                 use_batch_statistics=use_batch_statistics,
                                 data_format="NCHW",
                                 dtype=dtype)
-        self.shape = P.Shape()
-        self.reshape = P.Reshape()
+        self.shape = ops.Shape()
+        self.reshape = ops.Reshape()
 
     @staticmethod
     @_primexpr
@@ -518,16 +517,20 @@ class SyncBatchNorm(_BatchNorm):
             parameters. When set to ``False`` , :math:`\gamma` and :math:`\beta` are unlearnable parameters.
             Default: ``True`` .
         gamma_init (Union[Tensor, str, Initializer, numbers.Number], optional): Initializer for the :math:`\gamma`
-            weight. The values of str refer to the function `initializer` including ``'zeros'`` , ``'ones'`` ,
+            weight. The values of str refer to the function :func:`mindspore.common.initializer`
+            including ``'zeros'`` , ``'ones'`` ,
             ``'xavier_uniform'`` , ``'he_uniform'`` , etc. Default: ``'ones'`` .
         beta_init (Union[Tensor, str, Initializer, numbers.Number], optional): Initializer for the :math:`\beta` weight.
-            The values of str refer to the function `initializer` including ``'zeros'`` , ``'ones'`` ,
+            The values of str refer to the function :func:`mindspore.common.initializer`
+            including ``'zeros'`` , ``'ones'`` ,
             ``'xavier_uniform'`` , ``'he_uniform'`` , etc. Default: ``'zeros'`` .
         moving_mean_init (Union[Tensor, str, Initializer, numbers.Number], optional): Initializer for the moving mean.
-            The values of str refer to the function `initializer` including ``'zeros'`` , ``'ones'`` ,
+            The values of str refer to the function :func:`mindspore.common.initializer`
+            including ``'zeros'`` , ``'ones'`` ,
             ``'xavier_uniform'`` , ``'he_uniform'`` , etc. Default: ``'zeros'`` .
         moving_var_init (Union[Tensor, str, Initializer, numbers.Number], optional): Initializer for the moving
-            variance. The values of str refer to the function `initializer` including ``'zeros'`` , ``'ones'`` ,
+            variance. The values of str refer to the function :func:`mindspore.common.initializer`
+            including ``'zeros'`` , ``'ones'`` ,
             ``'xavier_uniform'`` , ``'he_uniform'`` , etc. Default: ``'ones'`` .
         use_batch_statistics (bool, optional): If ``true`` , use the mean value and variance value of current batch
             data. If ``false`` , use the mean value and variance value of specified value. If ``None`` , training
@@ -704,10 +707,12 @@ class LayerNorm(Cell):
         begin_params_axis (int): The begin axis of the parameter input :math:`(\gamma, \beta)` to
             apply LayerNorm, the value should be in [-1, R). Default: ``-1`` .
         gamma_init (Union[Tensor, str, Initializer, numbers.Number]): Initializer for the :math:`\gamma` weight.
-            The values of str refer to the function `initializer` including ``'zeros'`` , ``'ones'`` ,
+            The values of str refer to the function :func:`mindspore.common.initializer`
+            including ``'zeros'`` , ``'ones'`` ,
             ``'xavier_uniform'`` , ``'he_uniform'`` , etc. Default: ``'ones'`` .
         beta_init (Union[Tensor, str, Initializer, numbers.Number]): Initializer for the :math:`\beta` weight.
-            The values of str refer to the function `initializer` including ``'zeros'`` , ``'ones'`` ,
+            The values of str refer to the function :func:`mindspore.common.initializer`
+            including ``'zeros'`` , ``'ones'`` ,
             ``'xavier_uniform'`` , ``'he_uniform'`` , etc. Default: ``'zeros'`` .
         epsilon (float): A value added to the denominator for numerical stability(:math:`\epsilon`). Default: ``1e-7`` .
         dtype (:class:`mindspore.dtype`): Dtype of Parameters. Default: ``mstype.float32`` .
@@ -765,9 +770,9 @@ class LayerNorm(Cell):
             gamma_init, normalized_shape, dtype=dtype), name="gamma")
         self.beta = Parameter(initializer(
             beta_init, normalized_shape, dtype=dtype), name="beta")
-        self.layer_norm = P.LayerNorm(begin_norm_axis=self.begin_norm_axis,
-                                      begin_params_axis=self.begin_params_axis,
-                                      epsilon=self.epsilon)
+        self.layer_norm = ops.LayerNorm(begin_norm_axis=self.begin_norm_axis,
+                                        begin_params_axis=self.begin_params_axis,
+                                        epsilon=self.epsilon)
 
     def construct(self, input_x):
         y, _, _ = self.layer_norm(input_x, self.gamma.astype(input_x.dtype), self.beta.astype(input_x.dtype))
@@ -910,9 +915,9 @@ class _InstanceNorm(Cell):
         self.beta = Parameter(initializer(
             beta_init, num_features, dtype=dtype), name="beta", requires_grad=affine)
 
-        self.shape = P.Shape()
+        self.shape = ops.Shape()
         self.momentum = momentum
-        self.instance_bn = P.InstanceNorm(epsilon=self.eps, momentum=self.momentum)
+        self.instance_bn = ops.InstanceNorm(epsilon=self.eps, momentum=self.momentum)
 
     def construct(self, x):
         self._check_input_dim(self.shape(x), self.cls_name)
@@ -967,10 +972,12 @@ class InstanceNorm1d(_InstanceNorm):
             running_mean and running_var computation. Default: ``0.1`` .
         affine (bool): A bool value. When set to True, gamma and beta can be learned. Default: ``True`` .
         gamma_init (Union[Tensor, str, Initializer, numbers.Number]): Initializer for the gamma weight.
-            The values of str refer to the function `initializer` including ``'zeros'`` , ``'ones'`` , etc.
+            The values of str refer to the function :func:`mindspore.common.initializer`
+            including ``'zeros'`` , ``'ones'`` , etc.
             When initialized with Tensor, the shape should be :math:`(C)`. Default: ``'ones'`` .
         beta_init (Union[Tensor, str, Initializer, numbers.Number]): Initializer for the beta weight.
-            The values of str refer to the function `initializer` including ``'zeros'`` , ``'ones'`` , etc.
+            The values of str refer to the function :func:`mindspore.common.initializer`
+            including ``'zeros'`` , ``'ones'`` , etc.
             When initialized with Tensor, the shape should be :math:`(C)`. Default: ``'zeros'`` .
         dtype (:class:`mindspore.dtype`): Dtype of Parameters. Default: ``mstype.float32`` .
 
@@ -1045,10 +1052,12 @@ class InstanceNorm2d(_InstanceNorm):
             running_mean and running_var computation. Default: ``0.1`` .
         affine (bool): A bool value. When set to ``True`` , gamma and beta can be learned. Default: ``True`` .
         gamma_init (Union[Tensor, str, Initializer, numbers.Number]): Initializer for the gamma weight.
-            The values of str refer to the function `initializer` including ``'zeros'`` , ``'ones'`` , etc.
+            The values of str refer to the function :func:`mindspore.common.initializer`
+            including ``'zeros'`` , ``'ones'`` , etc.
             When initialized with Tensor, the shape should be :math:`(C)`. Default: ``'ones'`` .
         beta_init (Union[Tensor, str, Initializer, numbers.Number]): Initializer for the beta weight.
-            The values of str refer to the function `initializer` including ``'zeros'`` , ``'ones'`` , etc.
+            The values of str refer to the function :func:`mindspore.common.initializer`
+            including ``'zeros'`` , ``'ones'`` , etc.
             When initialized with Tensor, the shape should be :math:`(C)`. Default: ``'zeros'`` .
         dtype (:class:`mindspore.dtype`): Dtype of Parameters. Default: ``mstype.float32`` .
 
@@ -1122,10 +1131,12 @@ class InstanceNorm3d(_InstanceNorm):
             running_mean and running_var computation. Default: ``0.1`` .
         affine (bool): A bool value. When set to ``True`` , gamma and beta can be learned. Default: ``True`` .
         gamma_init (Union[Tensor, str, Initializer, numbers.Number]): Initializer for the gamma weight.
-            The values of str refer to the function `initializer` including ``'zeros'`` , ``'ones'`` , etc.
+            The values of str refer to the function :func:`mindspore.common.initializer`
+            including ``'zeros'`` , ``'ones'`` , etc.
             When initialized with Tensor, the shape should be :math:`(C)`. Default: ``'ones'`` .
         beta_init (Union[Tensor, str, Initializer, numbers.Number]): Initializer for the beta weight.
-            The values of str refer to the function `initializer` including ``'zeros'`` , ``'ones'`` , etc.
+            The values of str refer to the function :func:`mindspore.common.initializer`
+            including ``'zeros'`` , ``'ones'`` , etc.
             When initialized with Tensor, the shape should be :math:`(C)`. Default: ``'zeros'`` .
         dtype (:class:`mindspore.dtype`): Dtype of Parameters. Default: ``mstype.float32`` .
 
@@ -1192,11 +1203,13 @@ class GroupNorm(Cell):
         affine (bool): A bool value, this layer will have learnable affine parameters when set to ``true`` .
             Default: ``True`` .
         gamma_init (Union[Tensor, str, Initializer, numbers.Number]): Initializer for the gamma weight.
-            The values of str refer to the function `initializer` including ``'zeros'`` , ``'ones'`` ,
+            The values of str refer to the function :func:`mindspore.common.initializer`
+            including ``'zeros'`` , ``'ones'`` ,
             ``'xavier_uniform'`` , ``'he_uniform'`` , etc. Default: ``'ones'`` . If gamma_init is a Tensor, the shape
             must be :math:`(num\_channels)`.
         beta_init (Union[Tensor, str, Initializer, numbers.Number]): Initializer for the beta weight.
-            The values of str refer to the function `initializer` including ``'zeros'`` , ``'ones'`` ,
+            The values of str refer to the function :func:`mindspore.common.initializer`
+            including ``'zeros'`` , ``'ones'`` ,
             ``'xavier_uniform'`` , ``'he_uniform'`` , etc. Default: ``'zeros'`` . If beta_init is a Tensor, the shape
             must be :math:`(num\_channels)`.
         dtype (:class:`mindspore.dtype`): Dtype of Parameters. Default: ``mstype.float32`` .

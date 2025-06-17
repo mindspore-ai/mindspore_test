@@ -37,7 +37,6 @@ namespace mindspore::ascend_native {
 #define ENCODER_FFN_PROJ_BIAS_IDX 14
 #define ENCODER_INPUT_IDS_IDX 15
 #define ENCODER_BATCH_VALID_LENGTH_IDX 16
-// #define ENCODER_CURRENT_INDEX_IDX 17
 #define ENCODER_V_EMBEDDING_IDX 18
 #define ENCODER_P_EMBEDDING_IDX 19
 #define ENCODER_QUERY_EMBEDDING_IDX 20
@@ -58,7 +57,7 @@ namespace mindspore::ascend_native {
 // we don't get ENCODER_INDEX_OFFSET_IDX from the MS, we must prepare it
 // it's size is min(sizeof(int) * batch size, 32)
 // [                                                         | ENCODER_INDEX_OFFSET_IDX ]
-//
+
 typedef int (*allGatherFuncT)(const void *in, void *out, size_t size, int data_type, void *stream);
 typedef int (*allReduceSumFuncT)(const void *in, void *out, size_t size, int data_type, void *stream);
 

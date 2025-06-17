@@ -64,12 +64,20 @@ class AbstractObjectBase {
 
   template <typename T>
   static AObject *ConstructAbstract(const py::object &obj) {
-    return Resource::Current()->pool()->New<T>(obj);
+    auto resource = Resource::Current();
+    MS_EXCEPTION_IF_NULL(resource);
+    auto pool = resource->pool();
+    MS_EXCEPTION_IF_NULL(pool);
+    return pool->New<T>(obj);
   }
 
   template <typename T>
   static AObject *ConstructAbstract(const std::vector<AObject *> &elements) {
-    return Resource::Current()->pool()->New<T>(elements);
+    auto resource = Resource::Current();
+    MS_EXCEPTION_IF_NULL(resource);
+    auto pool = resource->pool();
+    MS_EXCEPTION_IF_NULL(pool);
+    return pool->New<T>(elements);
   }
 
   template <typename T>

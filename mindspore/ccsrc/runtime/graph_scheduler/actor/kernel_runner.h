@@ -81,17 +81,15 @@ class KernelRunner {
   bool IsRunHighPerfMode();
 
   // Really do infer shape and update kernel tensor shape.
-  virtual void ExecuteInferShapeTask(OpContext<KernelTensor> *const context);
+  virtual void ExecuteInferShapeTask(OpContext<KernelTensor> *const context, bool high_perf);
   // Really do resize kernel mod and update new size into output and workspace kernel tensors.
-  virtual void ExecuteResizeKernelModTask(OpContext<KernelTensor> *const context);
-  // Really do launch kernel with memory allocate and free.
-  virtual void ExecuteLaunchKernelTask(OpContext<KernelTensor> *const context);
+  virtual void ExecuteResizeKernelModTask(OpContext<KernelTensor> *const context, bool high_perf);
 
   // Two methods implement 'ExecuteLaunchKernelTask' in different scenarios:
-  // 'ExecuteLaunchKernelTaskDebug' is called when debug info should be collected like dump or profiler.
+  // 'ExecuteLaunchKernelTask' is called when debug info should be collected like dump or profiler.
   // 'ExecuteLaunchKernelTaskHP' is called in high performance mode, when is_high_perf_mode_ flag is set to true.
-  void ExecuteLaunchKernelTaskDebug(OpContext<KernelTensor> *const context);
-  void ExecuteLaunchKernelTaskHP(OpContext<KernelTensor> *const context);
+  virtual void ExecuteLaunchKernelTask(OpContext<KernelTensor> *const context);
+  virtual void ExecuteLaunchKernelTaskHP(OpContext<KernelTensor> *const context);
 
   void set_stream_send_actor(KernelRunner *stream_send_actor) { stream_send_actor_ = stream_send_actor; }
 
@@ -219,8 +217,6 @@ class KernelRunner {
   // Index is the input position, ParameterInfo is used to fetch args and device tensor.
   std::vector<std::pair<size_t, ParameterInfo>> parameter_indexs_;
 
-  static bool is_high_perf_mode_;
-
   // The info of kernel.
   CNodePtr kernel_;
   bool is_dynamic_shape_;
@@ -322,10 +318,8 @@ class KernelRunner {
   void FetchOutputDeviceTensor(OpContext<KernelTensor> *const context);
   void FetchWorkspaceDeviceTensor();
   // Need copy when the data type or format between real parameters and formal parameters are inconsistent.
-  void CopyInputDeviceTensor(KernelTensorPtr device_tensor, size_t input_index, OpContext<KernelTensor> *const context);
-  // Use for graph parameter.
-  void CopyParameterDeviceTensor(KernelTensorPtr kernel_tensor, size_t input_index,
-                                 OpContext<KernelTensor> *const context, size_t stream_id);
+  void CopyInputDeviceTensor(KernelTensorPtr device_tensor, size_t input_index, OpContext<KernelTensor> *const context,
+                             bool parallel_dispatch_param);
   // The processing before kernel launch: update the info of kernel launch.
   void PreLaunchKernel(OpContext<KernelTensor> *const context);
   // Back refresh the dynamic device tensor stores that have been triggered copy.

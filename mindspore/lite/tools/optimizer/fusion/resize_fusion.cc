@@ -159,13 +159,22 @@ const BaseRef ResizeFusion2::DefinePattern() const {
 }
 
 int ResizeFusion1::DoFuison(const FuncGraphPtr &func_graph, const AnfNodePtr &node) const {
-  MS_ASSERT(node != nullptr);
+  MS_CHECK_TRUE_RET(node != nullptr, lite::RET_ERROR);
   auto resize_cnode = node->cast<CNodePtr>();
-  MS_ASSERT(resize_cnode != nullptr);
+  MS_CHECK_TRUE_RET(resize_cnode != nullptr, lite::RET_ERROR);
+  MS_CHECK_TRUE_RET(resize_cnode->size() >= kInputSizeThree, lite::RET_ERROR);
   auto stack_cnode = resize_cnode->input(kInputIndexTwo)->cast<CNodePtr>();
+  MS_CHECK_TRUE_RET(stack_cnode != nullptr, lite::RET_ERROR);
+  MS_CHECK_TRUE_RET(stack_cnode->size() >= kInputSizeThree, lite::RET_ERROR);
 
-  auto cast1_cnode = stack_cnode->input(1)->cast<CNodePtr>();
-  auto mul1_cnode = cast1_cnode->input(1)->cast<CNodePtr>();
+  auto cast1_cnode = stack_cnode->input(kInputIndexOne)->cast<CNodePtr>();
+  MS_CHECK_TRUE_RET(cast1_cnode != nullptr, lite::RET_ERROR);
+  MS_CHECK_TRUE_RET(cast1_cnode->size() >= kInputSizeTwo, lite::RET_ERROR);
+
+  auto mul1_cnode = cast1_cnode->input(kInputIndexOne)->cast<CNodePtr>();
+  MS_CHECK_TRUE_RET(mul1_cnode != nullptr, lite::RET_ERROR);
+  MS_CHECK_TRUE_RET(mul1_cnode->size() >= kInputSizeThree, lite::RET_ERROR);
+  MS_CHECK_TRUE_RET(mul1_cnode->input(kInputIndexTwo)->isa<Parameter>(), lite::RET_ERROR);
   auto mul_factor = mul1_cnode->input(kInputIndexTwo)->cast<ParameterPtr>()->default_param();
   MS_CHECK_TRUE_RET(mul_factor != nullptr, lite::RET_ERROR);
   auto mul_factor_tensor = std::dynamic_pointer_cast<tensor::Tensor>(mul_factor);
@@ -178,7 +187,13 @@ int ResizeFusion1::DoFuison(const FuncGraphPtr &func_graph, const AnfNodePtr &no
   float mul_factor_data = (reinterpret_cast<float *>(mul_factor_tensor->data_c()))[0];
 
   auto cast2_cnode = stack_cnode->input(kInputIndexTwo)->cast<CNodePtr>();
-  auto mul2_cnode = cast2_cnode->input(1)->cast<CNodePtr>();
+  MS_CHECK_TRUE_RET(cast2_cnode != nullptr, lite::RET_ERROR);
+  MS_CHECK_TRUE_RET(cast2_cnode->size() >= kInputSizeTwo, lite::RET_ERROR);
+
+  auto mul2_cnode = cast2_cnode->input(kInputIndexOne)->cast<CNodePtr>();
+  MS_CHECK_TRUE_RET(mul2_cnode != nullptr, lite::RET_ERROR);
+  MS_CHECK_TRUE_RET(mul2_cnode->size() >= kInputSizeThree, lite::RET_ERROR);
+  MS_CHECK_TRUE_RET(mul2_cnode->input(kInputIndexTwo)->isa<Parameter>(), lite::RET_ERROR);
   mul_factor = mul2_cnode->input(kInputIndexTwo)->cast<ParameterPtr>()->default_param();
   MS_CHECK_TRUE_RET(mul_factor != nullptr, lite::RET_ERROR);
   mul_factor_tensor = std::dynamic_pointer_cast<tensor::Tensor>(mul_factor);

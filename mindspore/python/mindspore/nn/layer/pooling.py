@@ -15,8 +15,6 @@
 """pooling"""
 from __future__ import absolute_import
 
-from mindspore.ops import operations as P
-from mindspore.ops import functional as F
 import mindspore.ops as ops
 from mindspore._checkparam import _check_3d_int_or_tuple
 from mindspore import _checkparam as validator
@@ -414,13 +412,13 @@ class MaxPool3d(_PoolNd):
             if pad_mode.upper() != "PAD":
                 raise ValueError(f"For {self.cls_name}, the pad_mode must be 'pad' when dilation is not 1 "
                                  f"or return_indices is True, but got pad_mode:{pad_mode}.")
-            self.max_pool = P.MaxPool3DWithArgmax(ksize=kernel_size, strides=stride, pads=padding,
-                                                  dilation=dilation, ceil_mode=ceil_mode)
+            self.max_pool = ops.MaxPool3DWithArgmax(ksize=kernel_size, strides=stride, pads=padding,
+                                                    dilation=dilation, ceil_mode=ceil_mode)
         else:
             self.only_pad = False
             ceil_mode = None if not ceil_mode else True
-            self.max_pool = P.MaxPool3D(kernel_size=kernel_size, strides=stride, pad_mode=pad_mode, pad_list=padding,
-                                        ceil_mode=ceil_mode)
+            self.max_pool = ops.MaxPool3D(kernel_size=kernel_size, strides=stride, pad_mode=pad_mode, pad_list=padding,
+                                          ceil_mode=ceil_mode)
 
     def construct(self, x):
         expand_batch = False
@@ -568,18 +566,18 @@ class MaxPool2d(_PoolNd):
                 stride = (1, self.stride, self.stride)
             self.padding = _check_maxpool_padding(padding, 2, self.cls_name)
             dilation = _cal_dilation(dilation, 2, self.cls_name)
-            self.max_pool = P.MaxPool3DWithArgmax(ksize=kernel_size, strides=stride, pads=self.padding,
-                                                  dilation=dilation, ceil_mode=ceil_mode)
+            self.max_pool = ops.MaxPool3DWithArgmax(ksize=kernel_size, strides=stride, pads=self.padding,
+                                                    dilation=dilation, ceil_mode=ceil_mode)
         else:
             self.use_pad = False
             if padding != 0 or dilation != 1 or return_indices or ceil_mode:
                 raise ValueError(f"For MaxPool2d, the parameter 'padding', 'dilation', 'return_indices', 'ceil_mode' "
                                  f"can not be set to non-default value when pad_mode is not 'pad', "
                                  f"but got pad_mode:{pad_mode}.")
-            self.max_pool = P.MaxPool(kernel_size=self.kernel_size,
-                                      strides=self.stride,
-                                      pad_mode=self.pad_mode,
-                                      data_format=self.format)
+            self.max_pool = ops.MaxPool(kernel_size=self.kernel_size,
+                                        strides=self.stride,
+                                        pad_mode=self.pad_mode,
+                                        data_format=self.format)
 
     def construct(self, x):
         expand_batch = False
@@ -812,8 +810,8 @@ class MaxPool1d(_PoolNd):
             self.stride = (1, 1, stride)
             self.padding = _check_maxpool_padding(padding, 1, self.cls_name)
             dilation = _cal_dilation(dilation, 1, self.cls_name)
-            self.max_pool = P.MaxPool3DWithArgmax(ksize=self.kernel_size, strides=self.stride, pads=self.padding,
-                                                  dilation=dilation, ceil_mode=ceil_mode)
+            self.max_pool = ops.MaxPool3DWithArgmax(ksize=self.kernel_size, strides=self.stride, pads=self.padding,
+                                                    dilation=dilation, ceil_mode=ceil_mode)
 
         else:
             self.use_pad = False
@@ -821,13 +819,13 @@ class MaxPool1d(_PoolNd):
                 raise ValueError(f"For MaxPool1d, the parameter 'padding', 'dilation', 'return_indices', 'ceil_mode' "
                                  f"can not be set to non-default value when pad_mode is not 'pad', "
                                  f"but got pad_mode:{pad_mode}.")
-            self.max_pool = P.MaxPool(kernel_size=self.kernel_size,
-                                      strides=self.stride,
-                                      pad_mode=self.pad_mode)
-            self.shape = F.shape
-            self.reduce_mean = P.ReduceMean(keep_dims=True)
-            self.expand = P.ExpandDims()
-            self.squeeze = P.Squeeze(2)
+            self.max_pool = ops.MaxPool(kernel_size=self.kernel_size,
+                                        strides=self.stride,
+                                        pad_mode=self.pad_mode)
+            self.shape = ops.shape
+            self.reduce_mean = ops.ReduceMean(keep_dims=True)
+            self.expand = ops.ExpandDims()
+            self.squeeze = ops.Squeeze(2)
 
     def construct(self, x):
         expand_batch = False
@@ -1007,8 +1005,8 @@ class AvgPool3d(_PoolNd):
         if divisor_override is not None and divisor_override <= 0:
             raise ValueError(f"For '{self.cls_name}', the 'divisor_override' must be > 0, but got {divisor_override}.")
         divisor_override = 0 if divisor_override is None else divisor_override
-        self.avg_pool = P.AvgPool3D(self.kernel_size, self.stride, pad_mode, padding, ceil_mode, count_include_pad,
-                                    divisor_override)
+        self.avg_pool = ops.AvgPool3D(self.kernel_size, self.stride, pad_mode, padding, ceil_mode, count_include_pad,
+                                      divisor_override)
 
     def construct(self, x):
         expand_batch = False
@@ -1269,15 +1267,15 @@ class AvgPool2d(_PoolNd):
                 stride = (1,) + self.stride
             elif isinstance(self.stride, int):
                 stride = (1, self.stride, self.stride)
-            self.avg_pool = P.AvgPool3D(kernel_size=kernel_size, strides=stride, pad_mode=pad_mode, pad=padding,
-                                        ceil_mode=ceil_mode,
-                                        count_include_pad=count_include_pad, divisor_override=divisor_override)
+            self.avg_pool = ops.AvgPool3D(kernel_size=kernel_size, strides=stride, pad_mode=pad_mode, pad=padding,
+                                          ceil_mode=ceil_mode,
+                                          count_include_pad=count_include_pad, divisor_override=divisor_override)
         else:
             self.is_expand = False
-            self.avg_pool = P.AvgPool(kernel_size=self.kernel_size,
-                                      strides=self.stride,
-                                      pad_mode=self.pad_mode,
-                                      data_format=self.format)
+            self.avg_pool = ops.AvgPool(kernel_size=self.kernel_size,
+                                        strides=self.stride,
+                                        pad_mode=self.pad_mode,
+                                        data_format=self.format)
 
     def construct(self, x):
         expand_batch = False
@@ -1393,21 +1391,21 @@ class AvgPool1d(_PoolNd):
             self.is_expand_3d = True
             kernel_size = (1, 1, self.kernel_size)
             stride = (1, 1, self.stride)
-            self.avg_pool = P.AvgPool3D(kernel_size=kernel_size, strides=stride, pad_mode=pad_mode, pad=padding,
-                                        ceil_mode=ceil_mode,
-                                        count_include_pad=count_include_pad)
+            self.avg_pool = ops.AvgPool3D(kernel_size=kernel_size, strides=stride, pad_mode=pad_mode, pad=padding,
+                                          ceil_mode=ceil_mode,
+                                          count_include_pad=count_include_pad)
         else:
             self.is_expand_3d = False
             self.kernel_size = (1, self.kernel_size)
             self.stride = (1, self.stride)
-            self.avg_pool = P.AvgPool(kernel_size=self.kernel_size,
-                                      strides=self.stride,
-                                      pad_mode=self.pad_mode)
-            self.shape = F.shape
-            self.reduce_mean = P.ReduceMean(keep_dims=True)
-            self.slice = P.Slice()
-            self.expand = P.ExpandDims()
-            self.squeeze = P.Squeeze(2)
+            self.avg_pool = ops.AvgPool(kernel_size=self.kernel_size,
+                                        strides=self.stride,
+                                        pad_mode=self.pad_mode)
+            self.shape = ops.shape
+            self.reduce_mean = ops.ReduceMean(keep_dims=True)
+            self.slice = ops.Slice()
+            self.expand = ops.ExpandDims()
+            self.squeeze = ops.Squeeze(2)
 
     def construct(self, x):
         expand_batch = False
@@ -1507,11 +1505,11 @@ class AdaptiveAvgPool1d(Cell):
         super(AdaptiveAvgPool1d, self).__init__()
         validator.check_value_type('output_size', output_size, [int], self.cls_name)
         validator.check_int(output_size, 1, validator.GE, "output_size", self.cls_name)
-        self.shape = F.shape
-        self.expand = P.ExpandDims()
-        self.squeeze = P.Squeeze(2)
+        self.shape = ops.shape
+        self.expand = ops.ExpandDims()
+        self.squeeze = ops.Squeeze(2)
         self.output_size = output_size
-        self.dtype = P.DType()
+        self.dtype = ops.DType()
 
     def construct(self, input):
         _adaptive_shape_check(self.shape(input), self.output_size, self.cls_name)
@@ -1525,7 +1523,7 @@ class AdaptiveAvgPool1d(Cell):
         kernel_size = (1, kernel_size)
 
         input = self.expand(input, 2)
-        avg_pool = P.AvgPool(kernel_size=kernel_size, strides=stride)
+        avg_pool = ops.AvgPool(kernel_size=kernel_size, strides=stride)
         input = avg_pool(input)
         input = self.squeeze(input)
 
@@ -1588,7 +1586,7 @@ class AdaptiveAvgPool2d(Cell):
     def __init__(self, output_size):
         """Initialize AdaptiveAvgPool2d."""
         super(AdaptiveAvgPool2d, self).__init__()
-        self.adaptive_avgpool2d = P.AdaptiveAvgPool2D(output_size)
+        self.adaptive_avgpool2d = ops.AdaptiveAvgPool2D(output_size)
 
     def construct(self, input):
         return self.adaptive_avgpool2d(input)
@@ -1725,11 +1723,11 @@ class AdaptiveMaxPool1d(Cell):
         super(AdaptiveMaxPool1d, self).__init__()
         validator.check_int(output_size, 1, validator.GE, "output_size", self.cls_name)
         validator.check_value_type('output_size', output_size, [int], self.cls_name)
-        self.expand = P.ExpandDims()
-        self.squeeze = P.Squeeze(2)
+        self.expand = ops.ExpandDims()
+        self.squeeze = ops.Squeeze(2)
         self.output_size = output_size
-        self.shape = F.shape
-        self.dtype = P.DType()
+        self.shape = ops.shape
+        self.dtype = ops.DType()
 
     def construct(self, x):
         _adaptive_shape_check(self.shape(x), self.output_size, self.cls_name)
@@ -1742,7 +1740,7 @@ class AdaptiveMaxPool1d(Cell):
         stride = (1, width // self.output_size)
         kernel_size = (1, kernel_size)
 
-        max_pool = P.MaxPool(kernel_size=kernel_size, strides=stride)
+        max_pool = ops.MaxPool(kernel_size=kernel_size, strides=stride)
         x = self.expand(x, 2)
         x = max_pool(x)
         x = self.squeeze(x)

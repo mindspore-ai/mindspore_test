@@ -576,7 +576,7 @@ def test_print_in_lambda_func_graph_with_isolate_node():
     check_output(cap.output, patterns)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_dict_all_print():
     """
     Feature: graph print dict.
