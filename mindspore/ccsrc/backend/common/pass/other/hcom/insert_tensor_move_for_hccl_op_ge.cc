@@ -117,6 +117,7 @@ void AdjustDepend(const AnfNodePtr &input, const AnfNodePtr &tensor_move) {
       continue;
     }
     auto depend_cnode = input_user.first->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(depend_cnode);
     if (!depend_cnode->HasAttr(kAttrCommInputDepend)) {
       continue;
     }
@@ -197,18 +198,24 @@ void InsertTensorMoveForHcclOpGe::InsertTensorMove(const FuncGraphPtr &graph, co
         MS_LOG(DEBUG) << "The tenser move op has dynamic shape attr.";
       }
       AdjustDepend(input, tensor_move);
-      if (IsPrimitiveCNode(input, prim::kPrimDepend) && input->cast<CNodePtr>()->HasAttr(kAttrRecomputeCommDepend)) {
+      auto input_cnode = input->cast<CNodePtr>();
+      if (IsPrimitiveCNode(input, prim::kPrimDepend) && input_cnode != nullptr &&
+          input_cnode->HasAttr(kAttrRecomputeCommDepend)) {
         auto tensor_move_cnode = tensor_move->cast<CNodePtr>();
-        auto depend_cnode = input->cast<CNodePtr>();
+        MS_EXCEPTION_IF_NULL(tensor_move_cnode);
+        auto depend_cnode = input_cnode;
         tensor_move_cnode->set_input(kIndex1, depend_cnode->input(kIndex1));
         manager->SetEdge(depend_cnode, kIndex1, tensor_move_cnode);
         new_inputs.push_back(depend_cnode);
         need_tensor_move_async = true;
         auto depend_rely_node = depend_cnode->input(kIndex2);
+        MS_EXCEPTION_IF_NULL(depend_rely_node);
         if (IsPrimitiveCNode(depend_rely_node)) {
           std::vector<AnfNodePtr> depend_inputs1{NewValueNode(prim::kPrimDepend), depend_rely_node, tensor_move_cnode};
           auto depend_node1 = graph->NewCNode(depend_inputs1);
-          depend_node1->set_abstract(depend_rely_node->cast<CNodePtr>()->abstract()->Clone());
+          auto depend_rely_cnode = depend_rely_node->cast<CNodePtr>();
+          MS_EXCEPTION_IF_NULL(depend_rely_cnode);
+          depend_node1->set_abstract(depend_rely_cnode->abstract()->Clone());
           manager->Replace(depend_rely_node, depend_node1);
         }
         continue;

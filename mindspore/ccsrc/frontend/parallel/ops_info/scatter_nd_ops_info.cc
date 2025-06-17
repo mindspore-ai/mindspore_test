@@ -211,7 +211,6 @@ Status ScatterNdOpsInfo::ComputeReplaceGraph(const CNodePtr &cnode) {
     return FAILED;
   }
   auto anf_node_list = PrepareReplaceGraph();
-  // {indices_sub, mul, div, dtype};
   auto indices_sub = anf_node_list[0];
   auto mul = anf_node_list[1];
   auto div = anf_node_list[2];
@@ -246,7 +245,6 @@ Status ScatterNdMulDivBaseInfo::ComputeReplaceGraph(const CNodePtr &cnode) {
     return FAILED;
   }
   auto anf_node_list = PrepareReplaceGraph();
-  // {indices_sub, mul, div, dtype};
   auto indices_sub = anf_node_list[0];
   auto mul = anf_node_list[1];
   auto div = anf_node_list[2];
