@@ -5,36 +5,35 @@ export HCCL_CONNECT_TIMEOUT=3600
 
 MindSpeed_LLM_PATH=../scripts/LLM/MindSpeed-LLM
 
-export HCCL_DETERMINISTIC=true  # HCCL确定性
-export ASCEND_LAUNCH_BLOCKING=1  # 硬件确定性
-export NCCL_DETERMINISTIC=1
+GPUS_PER_NODE=8
+MASTER_PORT=8187
+NNODES=1
+WORLD_SIZE=$(($GPUS_PER_NODE*$NNODES))
 
-NPUS_PER_NODE=8
-MASTER_ADDR=localhost
-MASTER_PORT=6010
-NODE_RANK=0
-
-DATA_PATH="/home/workspace/mindspore_dataset/msadapter/test_input/net/test_ds3_pretrain/dataset/dataset/enwiki_text_document"
-TOKENIZER_MODEL="/home/workspace/mindspore_dataset/msadapter/test_input/net/test_ds3_pretrain/tokenizer"
+# please fill these path configurations
+DATA_PATH="/home/jenkins/mindspore/testcases/testcases/tests/st/networks/test_ds3_sft/finetune_dataset/alpaca"
+TOKENIZER_PATH="/home/workspace/mindspore_dataset/msadapter/test_input/net/test_ds3_sft/tokenizer"
+DATA_CACHE_PATH="./alpaca/"
 
 TP=1
 PP=2
 EP=4
 CP=1
 CP_TYPE='ulysses_cp_algo'
+
 NUM_LAYERS=4
 SEQ_LEN=4096
 MBS=1
 GBS=8
 
 DISTRIBUTED_ARGS="
-    --local_worker_num $NPUS_PER_NODE \
+    --worker_num $WORLD_SIZE \
+    --local_worker_num $GPUS_PER_NODE \
     --master_port $MASTER_PORT \
-    --node_rank $NODE_RANK \
-    --master_addr $MASTER_ADDR \
-    --master_port $MASTER_PORT \
+    --log_dir=msrun_log_sft_deepseek \
     --join=True \
-    --log_dir=msrun_log_dsv3_pretrain
+    --cluster_time_out=300 \
+    --bind_core=True \
 "
 
 MLA_ARGS="
@@ -48,6 +47,8 @@ MLA_ARGS="
 "
 
 MOE_ARGS="
+    --moe-grouped-gemm \
+    --moe-permutation-async-comm \
     --moe-token-dispatcher-type alltoall \
     --first-k-dense-replace 1 \
     --moe-layer-freq 1 \
@@ -58,8 +59,11 @@ MOE_ARGS="
     --moe-router-load-balancing-type noaux_tc \
     --topk-group 4 \
     --routed-scaling-factor 2.5 \
+    --seq-aux \
     --norm-topk-prob \
     --moe-router-score-function sigmoid \
+    --moe-router-enable-expert-bias \
+    --use-fused-moe-token-permute-and-unpermute \
 "
 
 ROPE_ARGS="
@@ -74,9 +78,12 @@ ROPE_ARGS="
 
 GPT_ARGS="
     --spec mindspeed_llm.tasks.models.spec.deepseek_spec layer_spec \
-    --mtp-num-layers 1 \
-    --no-shared-storage \
+    --num-layer-list 2,2 \
+    --recompute-granularity full \
+    --recompute-method block \
+    --recompute-num-layers 8 \
     --use-distributed-optimizer \
+    --reuse-fp32-param \
     --use-flash-attn \
     --shape-order BNSD \
     --use-mcore-models \
@@ -84,7 +91,6 @@ GPT_ARGS="
     --pipeline-model-parallel-size ${PP} \
     --expert-model-parallel-size ${EP} \
     --sequence-parallel \
-    --output-layer-slice-num 10 \
     --context-parallel-size ${CP} \
     --context-parallel-algo  ${CP_TYPE} \
     --num-layers ${NUM_LAYERS} \
@@ -92,7 +98,7 @@ GPT_ARGS="
     --ffn-hidden-size 18432 \
     --num-attention-heads 128 \
     --tokenizer-type PretrainedFromHF  \
-    --tokenizer-name-or-path ${TOKENIZER_MODEL} \
+    --tokenizer-name-or-path ${TOKENIZER_PATH} \
     --seq-length ${SEQ_LEN} \
     --max-position-embeddings 163840 \
     --micro-batch-size ${MBS} \
@@ -117,7 +123,7 @@ GPT_ARGS="
     --attention-softmax-in-fp32 \
     --min-lr 1.0e-7 \
     --weight-decay 1e-2 \
-    --lr-warmup-iters 0 \
+    --lr-warmup-iters 1 \
     --clip-grad 1.0 \
     --adam-beta1 0.9 \
     --adam-beta2 0.999 \
@@ -125,35 +131,47 @@ GPT_ARGS="
     --vocab-size 129280 \
     --padded-vocab-size 129280 \
     --rotary-base 10000 \
-    --no-gradient-accumulation-fusion \
     --norm-epsilon 1e-6 \
     --no-load-optim \
     --no-load-rng \
-    --finetune \
-    --bf16
+    --bf16 \
+    --distributed-timeout-minutes 120 \
+    --no-gradient-accumulation-fusion \
+    --no-check-for-nan-in-loss-and-grad \
+    --fix-router \
 "
 
 DATA_ARGS="
     --data-path $DATA_PATH \
+    --data-cache-path $DATA_CACHE_PATH \
     --split 100,0,0
 "
 
 OUTPUT_ARGS="
     --log-interval 1 \
-    --save-interval 10 \
+    --save-interval 2000 \
     --eval-interval 2000 \
     --eval-iters 0 \
     --no-save-optim \
     --no-save-rng \
 "
 
-msrun $DISTRIBUTED_ARGS ${MindSpeed_LLM_PATH}/pretrain_gpt.py \
+FINETUNE_ARGS="
+    --finetune \
+    --stage sft \
+    --is-instruction-dataset \
+    --variable-seq-lengths \
+    --prompt-type deepseek3 \
+"
+
+msrun $DISTRIBUTED_ARGS ${MindSpeed_LLM_PATH}/posttrain_gpt.py \
     $GPT_ARGS \
     $DATA_ARGS \
+    $OUTPUT_ARGS \
     $MLA_ARGS \
     $ROPE_ARGS \
     $MOE_ARGS \
-    $OUTPUT_ARGS \
+    $FINETUNE_ARGS \
     --distributed-backend nccl \
     --ai-framework mindspore \
-    | tee ds3_pretrain.txt
+    | tee tune_deepseek3.txt
