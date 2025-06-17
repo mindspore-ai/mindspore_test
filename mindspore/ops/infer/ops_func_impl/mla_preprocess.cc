@@ -36,7 +36,6 @@ BaseShapePtr MlaPreprocessFuncImpl::InferShape(const PrimitivePtr &primitive,
   auto input1_shape_ptr = input_args[kMlaPreprocessInput1Index]->GetShape();
   auto key_cache_shape_ptr = input_args[kMlaPreprocessKeyCacheIndex]->GetShape();
   auto wuk_ptr = input_args[kMlaPreprocessWukIndex]->GetShape();
-
   // isDynamicShape
   if (MS_UNLIKELY(IsDynamicRank(input1_shape_ptr->GetShapeVector())) ||
       MS_UNLIKELY(IsDynamicRank(key_cache_shape_ptr->GetShapeVector())) ||
@@ -46,21 +45,19 @@ BaseShapePtr MlaPreprocessFuncImpl::InferShape(const PrimitivePtr &primitive,
     return std::make_shared<abstract::Shape>(std::move(dyn_output));
   }
   auto cache_mode = GetScalarValue<int64_t>(input_args[kMlaPreprocessParamCacheModeIndex]->GetValue()).value();
-  auto block_num = key_cache_shape_ptr->GetShapeVector()[0];
-  auto block_size = key_cache_shape_ptr->GetShapeVector()[1];
   auto head_dim = key_cache_shape_ptr->GetShapeVector()[3];
   auto n = input1_shape_ptr->GetShapeVector()[0];
   auto head_num = wuk_ptr->GetShapeVector()[0];
 
   ShapeVector output0_shape{n, head_num, head_dim};
-  ShapeVector output1_shape{block_num, block_size, 1, head_dim};
+  ShapeVector output1_shape{0};
   ShapeVector output2_shape{};
   ShapeVector output3_shape{};
-  if (cache_mode != 0) {
+  if (cache_mode != cache_mode_qk_) {
     output0_shape = {n, head_num, 512};
-    output1_shape = {block_num, block_size, 1, 512};
+    output1_shape = {0};
     output2_shape = {n, head_num, 64};
-    output3_shape = {block_num, block_size, 1, 64};
+    output3_shape = {0};
   }
 
   auto output0_shape_t = std::make_shared<abstract::TensorShape>(output0_shape);
@@ -78,7 +75,7 @@ TypePtr MlaPreprocessFuncImpl::InferType(const PrimitivePtr &primitive,
   TypePtr offset1_type = input_args[kMlaPreprocessQuantOffset1Index]->GetType();
 
   cache_mode_ = GetScalarValue<int64_t>(input_args[kMlaPreprocessParamCacheModeIndex]->GetValue()).value();
-  if (cache_mode_ == 2) {
+  if (cache_mode_ == cache_mode_qk_split_quant_) {
     return std::make_shared<Tuple>(std::vector<TypePtr>{offset1_type, offset1_type, input1_type, input1_type});
   } else {
     return std::make_shared<Tuple>(std::vector<TypePtr>{input1_type, input1_type, input1_type, input1_type});
