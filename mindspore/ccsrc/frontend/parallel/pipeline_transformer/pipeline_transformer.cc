@@ -291,6 +291,7 @@ ValuePtr PipelineTransformer::SetMicroBatch(const AnfNodePtr &node, int64_t micr
     MS_LOG_WITH_NODE(EXCEPTION, node) << "Can't find MicroBatch information.";
   }
   auto cnode = node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
 
   int64_t micro = 0;
   auto value = GetValueNode(cnode->input(2));
@@ -583,6 +584,7 @@ void PipelineTransformer::Coloring() {
           continue;
         }
         auto graph = GetValueNode<FuncGraphPtr>(node);
+        MS_EXCEPTION_IF_NULL(graph);
         if (graph->stage() == -1) {
           continue;
         }
@@ -708,6 +710,7 @@ OperatorInfoPtr PipelineTransformer::CreateOpInfo(const CNodePtr &cnode, int tup
   MS_EXCEPTION_IF_NULL(cnode);
   auto temp_node = cnode;
   if (IsValueNode<FuncGraph>(cnode->input(0))) {
+    MS_EXCEPTION_IF_NULL(GetValueNode<FuncGraphPtr>(cnode->input(0)));
     auto output = GetValueNode<FuncGraphPtr>(cnode->input(0))->output();
     MS_EXCEPTION_IF_NULL(output);
     temp_node = GraphOutNode(output, tuple_index);
@@ -1045,6 +1048,7 @@ void PipelineTransformer::ParameterColoring() {
         FillParameterStage(user_cnode, &parameter_stage);
       }
     }
+    MS_EXCEPTION_IF_NULL(parameter->cast<ParameterPtr>());
     auto param_info = parameter->cast<ParameterPtr>()->param_info();
     if (!param_info) {
       parameter_color_map_[parameter] = parameter_stage;
@@ -1100,7 +1104,9 @@ std::pair<ValueListPtr, TypePtr> GetShapeType(const AnfNodePtr &node, const Shap
   auto cnode = node->cast<CNodePtr>();
   if (cnode != nullptr && IsValueNode<FuncGraph>(cnode->input(0))) {
     auto graph = GetValueNode<FuncGraphPtr>(cnode->input(0));
+    MS_EXCEPTION_IF_NULL(graph);
     auto graph_output = graph->output();
+    MS_EXCEPTION_IF_NULL(graph_output);
     type = graph_output->Type();
   } else {
     if (node->isa<CNode>() && IsPrimitiveCNode(node->cast<CNodePtr>(), prim::kPrimDepend)) {
@@ -1348,6 +1354,7 @@ AnfNodePtr PipelineTransformer::HandleParameterGraph(const AnfNodePtr &node, con
       << "Parameter must be used by a graph, but got: " << use_cnode->DebugString();
   }
   auto use_graph = GetValueNode<FuncGraphPtr>(use_cnode->input(0));
+  MS_EXCEPTION_IF_NULL(use_graph);
   auto use_parameter_list = use_graph->parameters();
   auto parameter = use_parameter_list.at(pos - 1);
   // insert receive
@@ -1394,6 +1401,7 @@ void PipelineTransformer::CutBorderForNode(const FuncGraphPtr &graph, const AnfN
     if (node_stage != stage_ && user_node_stage != stage_) {
       continue;
     }
+    MS_EXCEPTION_IF_NULL(user_node->cast<CNodePtr>());
     auto micro = user_node->cast<CNodePtr>()->GetPrimalAttr(MICRO);
     if (!micro) {
       MS_LOG(INFO) << "Can't find micro_batch information, use micro(0)";
@@ -2063,6 +2071,7 @@ bool PipelineTransformer::IsRedundancyParameter(const AnfNodePtr &parameter,
     auto non_clone_name = param_name.substr(param_name.find_first_of('.') + 1);
     for (auto &param : non_cloned_parameters) {
       auto non_cloned_param = param->cast<ParameterPtr>();
+      MS_EXCEPTION_IF_NULL(non_cloned_param);
       if (non_clone_name != non_cloned_param->name()) {
         continue;
       }
@@ -2082,6 +2091,7 @@ bool PipelineTransformer::HasNoUpdateParameter() {
     if (ParameterIsCloned(parameter)) {
       continue;
     }
+    MS_EXCEPTION_IF_NULL(parameter->cast<ParameterPtr>());
     auto param_info = parameter->cast<ParameterPtr>()->param_info();
     if (!param_info) {
       continue;
@@ -2117,6 +2127,7 @@ void PipelineTransformer::FreezeGradient() {
         }
         auto temp = node_users_map.at(user_node).front().first;
         auto out = root_->output();
+        MS_EXCEPTION_IF_NULL(out);
         std::vector<AnfNodePtr> depend_input = {NewValueNode(prim::kPrimDepend), out, temp};
         auto new_node = root_->NewCNode(depend_input);
         manager_->Replace(out, new_node);
@@ -2136,7 +2147,9 @@ void PipelineTransformer::FreezeGradient() {
         continue;
       }
       auto cnode = node->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(cnode);
       auto out_cnode = root_->output()->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(out_cnode);
       auto grads = out_cnode->input(INDEX_TWO);
       std::vector<AnfNodePtr> depend_input = {NewValueNode(prim::kPrimDepend), cnode->input(1), grads};
       auto new_node = root_->NewCNode(depend_input);
