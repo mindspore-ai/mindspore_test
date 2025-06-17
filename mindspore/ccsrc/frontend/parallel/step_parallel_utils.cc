@@ -539,6 +539,7 @@ std::vector<std::pair<AnfNodePtr, int>> FuncGraphNodeUsers(const std::pair<AnfNo
     auto param_node_users = manager->node_users()[param];
     for (const auto &node_user : param_node_users) {
       auto cnode = node_user.first->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(cnode);
       if (IsValueNode<FuncGraph>(cnode->input(0))) {
         auto sub_graph_users = FuncGraphNodeUsers(node_user);
         (void)std::copy(sub_graph_users.begin(), sub_graph_users.end(), std::back_inserter(func_users_vector));
@@ -713,6 +714,7 @@ void RedistributionPreNode(const CNodePtr &cnode, const FuncGraphManagerPtr &man
     // extract true branch, false branch is usually also a control flow graph
     auto fg = GetValueNode<FuncGraphPtr>(switch_cnode->input(2));
     MS_EXCEPTION_IF_NULL(fg);
+    MS_EXCEPTION_IF_NULL(fg->output());
     auto fg_out = fg->output()->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(fg_out);
     // control flow node, need enter graph to find redistribution pre node.
@@ -1821,6 +1823,17 @@ void UpdateUpdateStateForMergeConcatSlice(const FuncGraphManagerPtr &manager,
   }
 }
 
+std::pair<AnfNodePtrList, AnfNodePtrList> GetParamsAndInputs(const std::pair<AnfNodePtr, int> &fg_users,
+                                                             const FuncGraphPtr &user_func_graph) {
+  //   call -> tuplegetitem -> call
+  auto user_graph_parameters = user_func_graph->parameters();
+  auto new_user_graph_parameters(user_graph_parameters);
+  new_user_graph_parameters.erase(new_user_graph_parameters.begin() + fg_users.second - 1);
+  auto fg_users_inputs_all(fg_users.first->cast<CNodePtr>()->inputs());
+  fg_users_inputs_all.erase(fg_users_inputs_all.begin() + fg_users.second);
+  return std::make_pair(new_user_graph_parameters, fg_users_inputs_all);
+}
+
 bool HandleFuncConcatSlice(const FuncGraphManagerPtr &manager, const std::pair<std::shared_ptr<AnfNode>, int> &pair,
                            const CNodePtr &concat_cnode, const ShapeVector &concat_output_shape_element,
                            int64_t concat_axis) {
@@ -1868,15 +1881,14 @@ bool HandleFuncConcatSlice(const FuncGraphManagerPtr &manager, const std::pair<s
     }
     // maketuple->Return
     auto concat_input_node = concat_cnode->input(1)->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(concat_input_node);
     (void)manager->SetEdge(pair.first, pair.second, concat_input_node);
-    // call -> tuplegetitem -> call
+    AnfNodePtrList new_user_graph_parameters;
+    AnfNodePtrList fg_users_inputs_all;
+    MS_EXCEPTION_IF_NULL(fg_users.first->cast<CNodePtr>());
     auto user_func_graph = GetValueNode<FuncGraphPtr>(fg_users.first->cast<CNodePtr>()->input(0));
-    auto user_graph_parameters = user_func_graph->parameters();
-    auto origin_parameter = user_graph_parameters[fg_users.second - 1];
-    auto new_user_graph_parameters(user_graph_parameters);
-    new_user_graph_parameters.erase(new_user_graph_parameters.begin() + fg_users.second - 1);
-    auto fg_users_inputs_all(fg_users.first->cast<CNodePtr>()->inputs());
-    fg_users_inputs_all.erase(fg_users_inputs_all.begin() + fg_users.second);
+    MS_EXCEPTION_IF_NULL(user_func_graph);
+    std::tie(new_user_graph_parameters, fg_users_inputs_all) = GetParamsAndInputs(fg_users, user_func_graph);
     // New concat CNode in user_func_graph
     std::vector<AnfNodePtr> new_concat_maketuple_inputs{NewValueNode(prim::kPrimMakeTuple)};
     std::vector<AbstractBasePtr> new_maketuple_abstracts;
@@ -1954,6 +1966,7 @@ bool MergeConcatSlice(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphM
         continue;
       }
       auto concat_input_node = concat_cnode->input(1)->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(concat_input_node);
       auto concat_real_input_node = concat_input_node->input(can_merge.second);
       (void)manager->Replace(pair.first->cast<CNodePtr>(), concat_real_input_node);
       merged = true;
@@ -2744,6 +2757,7 @@ Status GetLayoutFromAttrValue(const ValuePtr &layout_item, std::vector<std::stri
   }
   *device_matrix_vector = GetValue<std::vector<int64_t>>(device_matrix_value);
   auto tensor_map_value_tuple = tensor_map_value->cast<ValueTuplePtr>();
+  MS_EXCEPTION_IF_NULL(tensor_map_value_tuple);
   *interleaved_parallel = GetValue<bool>(interleaved_parallel_value);
   std::vector<ValuePtr> tensor_map_value_tuple_vector = tensor_map_value_tuple->value();
   for (const auto &tensor_map_item : tensor_map_value_tuple_vector) {
@@ -3582,6 +3596,7 @@ LossNodeInfo FindLossCNode(const FuncGraphPtr &func_graph) {
   }
   auto current_prim = GetValueNode<PrimitivePtr>(pre_cnode->input(0));
   // notice: the GetNext op has not input
+  MS_EXCEPTION_IF_NULL(current_prim);
   if (INVALID_LOSS_OPS.find(current_prim->name()) != INVALID_LOSS_OPS.end()) {
     MS_LOG(INFO) << "The loss is: " << current_prim->name();
     loss_node_info.loss_node = pre_cnode;
