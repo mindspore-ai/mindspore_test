@@ -73,9 +73,9 @@ class BiDense(Cell):
         in2_channels (int): The number of channels in the input2 space.
         out_channels (int): The number of channels in the output space.
         weight_init (Union[Tensor, str, Initializer, numbers.Number]): The trainable weight_init parameter.
-            The values of str refer to the function `initializer`. Default: ``None`` .
+            The values of str refer to the function :func:`mindspore.common.initializer`. Default: ``None`` .
         bias_init (Union[Tensor, str, Initializer, numbers.Number]): The trainable bias_init parameter.
-            The values of str refer to the function `initializer`. Default: ``None`` .
+            The values of str refer to the function :func:`mindspore.common.initializer`. Default: ``None`` .
         has_bias (bool): Specifies whether the layer uses :math:`\text{bias}` vector. Default: ``True`` .
         dtype (:class:`mindspore.dtype`): Dtype of Parameters. Default: ``mstype.float32`` .
 
