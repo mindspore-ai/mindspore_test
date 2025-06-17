@@ -29,7 +29,6 @@ from mindspore.common.jit_context import jit_context
 from mindspore.ops.primitive import prim_attr_register, Primitive, PrimitiveWithInfer
 from mindspore._checkparam import check_hook_fn
 from mindspore.ops import operations as P
-from ..auto_generate import DumpGradient # pylint: disable=unused-import
 
 SUMMARY_TENSOR_CACHE = []
 
@@ -461,6 +460,55 @@ class InsertGradientOf(Primitive):
         """Initialize InsertGradientOf."""
         self.add_prim_attr('side_effect_backprop', True)
         self.f = f
+
+
+class DumpGradient(Primitive):
+    """
+        The `DumpGradient` Primitive is a hook, used to dump dout which pass to `x`.
+
+        Inputs:
+            - **path** (str) - The path of the file to be saved.
+            - **x** (Tensor) - Input Tensor of any dimension.
+            - **input_output** (str) - support value should be one of ['in', 'out'].
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import numpy as np
+            >>> import mindspore as ms
+            >>> from mindspore import ops
+            >>> from mindspore import Tensor
+            >>> ms.set_context(mode=ms.PYNATIVE_MODE)
+            >>> ms.set_device(device_target="Ascend")
+            >>> dg = ops.DumpGradient()
+            >>> def dout_dump_test(x, y):
+            ...     x = dg("x_dout.npy", x, 'out')
+            ...     print(f"x value is {x}")
+            ...     z = x * y
+            ...     return z
+            >>> ms_grad = ms.grad(dout_dump_test, grad_position=(0,1))
+            >>> x_grad, y_grad = ms_grad(Tensor(1, ms.float32), Tensor(2, ms.float32))
+            >>> print(f"x grad is {x_grad}, y_grad is {y_grad}")
+            >>> x_grad_npy = np.load("x_dout.npy")
+            >>> print(f"load x_grad from npy, x_grad is {x_grad_npy}")
+            x value is 1.0
+            x grad is 2.0, y grad is 1.0
+            load x_grad from npy, x_grad is array(2., dtype=float32)
+    """
+
+    @prim_attr_register
+    def __init__(self):
+        pass
+
+    def _dump_hook(self, dout):
+        P.TensorDump()(self.bwd_dump_path, dout)
+        return dout
+
+    def __call__(self, path, x, input_output):
+        self.bwd_dump_path = path
+        x = P.InsertGradientOf(self._dump_hook)(x)
+        return x
 
 
 class Morph(PrimitiveWithInfer):
