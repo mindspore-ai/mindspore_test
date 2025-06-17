@@ -53,7 +53,6 @@ void DistCommAllGatherAscendCustomize(const std::shared_ptr<OpRunner> &op, const
                         input_num_elements, gather_tensors, op_name](const HcclComm &hccl_comm, void *comm_stream_ptr) {
       bool same_shape = std::all_of(gather_tensors.begin(), gather_tensors.end(),
                                     [&](const TensorPtr &t) { return t->Size() == gather_tensors[0]->Size(); });
-
       if (same_shape) {
         auto hccl_result = hccl::HcclAdapter::GetInstance().HcclAllGather(input_data_ptr, output_data_ptr, hccl_count,
                                                                           hccl_data_type, comm_stream_ptr, hccl_comm);

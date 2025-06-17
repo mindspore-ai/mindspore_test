@@ -63,7 +63,6 @@ void DistCommReduceScatterAscendCustomize(const std::shared_ptr<OpRunner> &op, c
                         other_tensor_num_elements](const HcclComm &hccl_comm, void *comm_stream_ptr) {
       bool same_shape = std::all_of(scatter_tensors.begin(), scatter_tensors.end(),
                                     [&](const TensorPtr &t) { return t->shape() == scatter_tensors[0]->shape(); });
-
       if (same_shape) {
         for (int r = 0; r < rank_size_imm; r++) {
           uint64_t offset = static_cast<uint64_t>(r * size);
