@@ -2156,48 +2156,7 @@ AnfNodePtr AnfAlgo::GetTupleIndexes(const AnfNodePtr &node, std::vector<size_t> 
   MS_LOG(DEBUG) << "Get real node:" << node->DebugString();
   return node;
 }
-bool AnfAlgo::CheckStridedSliceForwardOrBackWardIsNopNode(const CNodePtr &cnode) {
-  if (IsDynamicShape(cnode)) {
-    return false;
-  }
-  ShapeVector inp_shape = GetPrevNodeOutputInferShape(cnode, 0);
-  ShapeVector out_shape = GetOutputInferShape(cnode, 0);
-  constexpr size_t NO_ATTR_INP_NUM_AT_LEAST = 10;
-  constexpr size_t ATTR_NUM = 5;
-  ShapeVector attrs_val;
-  auto inp_num = cnode->size();
-  // If the following masks are all inputs, the forward input number is 10 and the backward input number is 11.
-  if (inp_num >= NO_ATTR_INP_NUM_AT_LEAST) {
-    for (size_t mask_idx = inp_num - kIndex5; mask_idx < inp_num; ++mask_idx) {
-      if (cnode->input(mask_idx)->isa<ValueNode>()) {
-        auto value_node = cnode->input(mask_idx)->cast<ValueNodePtr>();
-        MS_EXCEPTION_IF_NULL(value_node);
-        attrs_val.emplace_back(GetValue<int64_t>(value_node->value()));
-      }
-    }
-  } else if (HasNodeAttr(kAttrBeginMask, cnode) && HasNodeAttr(kAttrEndMask, cnode) &&
-             HasNodeAttr(kAttrEllipsisMask, cnode) && HasNodeAttr(kAttrNewAxisMask, cnode) &&
-             HasNodeAttr(kAttrShrinkAxisMask, cnode)) {
-    auto begin_mask = GetNodeAttr<int64_t>(cnode, kAttrBeginMask);
-    auto end_mask = GetNodeAttr<int64_t>(cnode, kAttrEndMask);
-    auto ellipsis_mask = GetNodeAttr<int64_t>(cnode, kAttrEllipsisMask);
-    auto new_axis_mask = GetNodeAttr<int64_t>(cnode, kAttrNewAxisMask);
-    auto shrink_axis_mask = GetNodeAttr<int64_t>(cnode, kAttrShrinkAxisMask);
-    attrs_val = {begin_mask, end_mask, ellipsis_mask, new_axis_mask, shrink_axis_mask};
-  }
-  if (inp_shape.size() != out_shape.size()) {
-    return false;
-  }
-  for (size_t idx = 0; idx < inp_shape.size(); ++idx) {
-    if (inp_shape[idx] != out_shape[idx]) {
-      return false;
-    }
-  }
-  if (attrs_val.size() != ATTR_NUM) {
-    return false;
-  }
-  return std::all_of(attrs_val.begin(), attrs_val.end(), [](int element) { return element == 0; });
-}
+bool AnfAlgo::CheckStridedSliceForwardOrBackWardIsNopNode(const CNodePtr &cnode) { return false; }
 
 namespace {
 // Read view tag from op yamls.
