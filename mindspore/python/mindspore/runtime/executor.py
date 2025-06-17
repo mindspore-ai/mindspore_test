@@ -16,7 +16,7 @@
 """Executor manager interfaces."""
 from mindspore._c_expression import RuntimeConf
 from mindspore.runtime.thread_bind_core import _get_cpu_affinity_strategy, _validate_affinity_cpu_list, \
-    _validate_module_cpu_index
+    _validate_module_cpu_index, _adapt_to_dict
 from mindspore._checkparam import args_type_check
 from mindspore import _checkparam as Validator
 from mindspore import log as logger
@@ -138,13 +138,12 @@ def set_cpu_affinity(enable_affinity, affinity_cpu_list=None, module_to_cpu_dict
         >>> ms.set_device("Ascend", 1)
         >>> ms.runtime.set_cpu_affinity(True, ["10-19", "23-40"], {"main": [0,1,2,3], "runtime": [4,5,6]})
     """
-    pass_flag = _validate_affinity_cpu_list(affinity_cpu_list)
-    _validate_module_cpu_index(module_to_cpu_dict)
-
-    if pass_flag is False and affinity_cpu_list:
-        logger.warning("input affinity_cpu_list is a dict, which means Mindformers may not adapt to new API. "
-                       "set_cpu_affinity is not enabled.")
+    affinity_cpu_list = _adapt_to_dict(affinity_cpu_list)
+    if affinity_cpu_list is False:
         return
+
+    _validate_affinity_cpu_list(affinity_cpu_list)
+    _validate_module_cpu_index(module_to_cpu_dict)
 
     if RuntimeConf.get_instance().is_thread_bind_core_configured():
         raise RuntimeError("The 'mindspore.runtime.set_cpu_affinity' cannot be set repeatedly.")
