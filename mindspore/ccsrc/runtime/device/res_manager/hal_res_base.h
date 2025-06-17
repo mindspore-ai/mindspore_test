@@ -146,11 +146,14 @@ class RES_EXPORT HalResBase {
                         size_t stream_id) const {
     MS_LOG(EXCEPTION) << "Unimplemented interface.";
   }
-  virtual bool AsyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
-                         size_t stream_id) const {
+  virtual bool AsyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id,
+                         bool keep_src) const {
     MS_LOG(EXCEPTION) << "Unimplemented interface.";
   }
 
+  virtual bool CopyDirectly(void *dst, size_t src_size, const void *src, uint64_t dst_size, CopyType kind) const {
+    MS_LOG(EXCEPTION) << "Unimplemented interface.";
+  }
   virtual bool Copy(void *dst, const void *src, uint64_t size, CopyType kind, size_t stream_id) const {
     MS_LOG(EXCEPTION) << "Unimplemented interface.";
   }
