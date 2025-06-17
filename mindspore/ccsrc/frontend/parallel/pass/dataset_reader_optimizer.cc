@@ -136,7 +136,9 @@ RankList DatasetReaderOptimizer::InferReapteDataRankThroughDataStrategy(const St
     return rank_list;
   }
   auto cnode = virtual_dataset_->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
   auto prim = GetValueNode<PrimitivePtr>(cnode->input(0));
+  MS_EXCEPTION_IF_NULL(prim);
   uint64_t repeat_dim = 0;
   DeviceMatrix device_matrix;
   if (prim->HasAttr(REPEAT_DIM_DIRECT) && GetValue<std::string>(prim->GetAttr(REPEAT_DIM_DIRECT)) == RIGHT) {
@@ -234,8 +236,10 @@ AnfNodePtr DatasetReaderOptimizer::FindDatasetParameter(const AnfNodePtr &node, 
     auto cur_node_users = node_users_map.at(cur_node);
     for (const auto &node_pair : cur_node_users) {
       auto user_node = node_pair.first->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(user_node);
       if (IsValueNode<FuncGraph>(user_node->input(0))) {
         auto fg = GetValueNode<FuncGraphPtr>(user_node->input(0));
+        MS_EXCEPTION_IF_NULL(fg);
         if (fg->has_flag(FUNC_GRAPH_FLAG_CELL_REUSE)) {
           auto fg_params = fg->parameters();
           return fg_params.at(node_pair.second - 1);
@@ -265,8 +269,10 @@ void DatasetReaderOptimizer::FindAllStageIdUsedDataParameter(const AnfNodePtr &n
     auto cur_node_users = node_users_map.at(cur_node);
     for (const auto &node_pair : cur_node_users) {
       auto user_node = node_pair.first->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(user_node);
       if (IsValueNode<FuncGraph>(user_node->input(0))) {
         auto fg = GetValueNode<FuncGraphPtr>(user_node->input(0));
+        MS_EXCEPTION_IF_NULL(fg);
         auto stage = fg->stage();
         if (stage != -1) {
           data_used_stage->insert(stage);
@@ -329,6 +335,7 @@ void DatasetReaderOptimizer::InsertBroadcast(const RankList &rank_list) {
     return;
   }
   auto prim = GetCNodePrimitive(broadcast);
+  MS_EXCEPTION_IF_NULL(prim);
   prim->set_attr(ROOT_RANK, MakeValue(BROADCAST_ROOT_RANK));
   prim->set_attr(GROUP, MakeValue(data_repeat_group.name()));
   prim->set_attr(DATASET_BROADCAST, MakeValue(True));
@@ -549,7 +556,9 @@ void ControlOptShardCommAndDataBroadcastOrder(const FuncGraphPtr &graph) {
       continue;
     }
     auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     auto prim = GetCNodePrimitive(cnode);
+    MS_EXCEPTION_IF_NULL(prim);
     if (!prim->HasAttr(DATASET_BROADCAST)) {
       continue;
     }
@@ -635,7 +644,9 @@ void ControlPipelineCommAndDataBroadcastOrder(const FuncGraphPtr &graph) {
       continue;
     }
     auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     auto prim = GetCNodePrimitive(cnode);
+    MS_EXCEPTION_IF_NULL(prim);
     if (!prim->HasAttr(DATASET_BROADCAST)) {
       continue;
     }

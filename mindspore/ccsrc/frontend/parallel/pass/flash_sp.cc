@@ -132,8 +132,12 @@ std::vector<CNodePtr> FindFWFlashAttentionScore(const FuncGraphManagerPtr &manag
     if (IsPrimitiveCNode(node, prim::kPrimFlashAttentionScore)) {
       result.push_back(node->cast<CNodePtr>());
     }
-    if (IsPrimitiveCNode(node, prim::kPrimConcat) &&
-        GetCNodePrimitive(node)->HasAttr(kAttrFineGrainedInterleavedBlockIndex)) {
+    if (!IsPrimitiveCNode(node, prim::kPrimConcat)) {
+      continue;
+    }
+    auto cnode_prim = GetCNodePrimitive(node);
+    MS_EXCEPTION_IF_NULL(cnode_prim);
+    if (cnode_prim->HasAttr(kAttrFineGrainedInterleavedBlockIndex)) {
       *fine_grained_interleave = true;
     }
   }
@@ -906,10 +910,11 @@ size_t GetRankIndex(int64_t rank_id, size_t step, size_t sp_size) {
 
 void GetBSHFromShape(int64_t input_layout, Shape q_shape, Shape kv_shape, int64_t *fa_b, int64_t *fa_s1, int64_t *fa_h1,
                      int64_t *fa_s2, int64_t *fa_h2, int64_t *fa_n1, const CNodePtr &fa_score_node) {
-  *fa_n1 = GetValue<int64_t>(
-    fa_score_node->input(ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputHeadNumIndex + 1)
-      ->cast<ValueNodePtr>()
-      ->value());
+  auto fa_input = fa_score_node->input(ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputHeadNumIndex + 1);
+  MS_EXCEPTION_IF_NULL(fa_input);
+  auto fa_input_cnode = fa_input->cast<ValueNodePtr>();
+  MS_EXCEPTION_IF_NULL(fa_input_cnode);
+  *fa_n1 = GetValue<int64_t>(fa_input_cnode->value());
   if (input_layout == FASInputLayoutMode::BSH) {
     *fa_b = q_shape[kIndex0];
     *fa_s1 = q_shape[kIndex1];
@@ -928,10 +933,11 @@ void GetBSHFromShape(int64_t input_layout, Shape q_shape, Shape kv_shape, int64_
 void GetBSHFromDynShape(int64_t input_layout, CNodePtr *fa_b_dyn, CNodePtr *fa_s1_dyn, CNodePtr *fa_h1_dyn,
                         CNodePtr *fa_s2_dyn, CNodePtr *fa_h2_dyn, int64_t *fa_n1, const CNodePtr &q_dynshape_node,
                         const CNodePtr &kv_dynshape_node, const CNodePtr &fa_score_node) {
-  *fa_n1 = GetValue<int64_t>(
-    fa_score_node->input(ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputHeadNumIndex + 1)
-      ->cast<ValueNodePtr>()
-      ->value());
+  auto fa_input = fa_score_node->input(ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputHeadNumIndex + 1);
+  MS_EXCEPTION_IF_NULL(fa_input);
+  auto fa_input_cnode = fa_input->cast<ValueNodePtr>();
+  MS_EXCEPTION_IF_NULL(fa_input_cnode);
+  *fa_n1 = GetValue<int64_t>(fa_input_cnode->value());
   if (input_layout == FASInputLayoutMode::BSH) {
     *fa_b_dyn = NewTupleGetItemNode(q_dynshape_node, kIndex0);
     *fa_s1_dyn = NewTupleGetItemNode(q_dynshape_node, kIndex1);
@@ -975,15 +981,17 @@ CNodePtr CreateDepend(const AnfNodePtr &latter_node, const AnfNodePtr &former_no
 CNodePtr CreateDepends(const AnfNodePtr &latter_node, const std::vector<AnfNodePtr> &former_nodes) {
   MS_EXCEPTION_IF_NULL(latter_node);
   auto latter_cnode = latter_node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(latter_cnode);
   for (size_t i = 0; i < former_nodes.size(); ++i) {
     auto former_node = former_nodes[i];
     if (former_node == nullptr) {
       continue;
     }
-    MS_EXCEPTION_IF_NULL(latter_cnode->func_graph());
+    auto func_graph = latter_cnode->func_graph();
+    MS_EXCEPTION_IF_NULL(func_graph);
     std::vector<AnfNodePtr> depend_inputs{NewValueNode(std::make_shared<Primitive>(prim::kPrimDepend->name())),
                                           latter_cnode, former_node};
-    auto depend = latter_cnode->func_graph()->NewCNode(depend_inputs);
+    auto depend = func_graph->NewCNode(depend_inputs);
 
     MS_EXCEPTION_IF_NULL(depend);
 
@@ -1294,7 +1302,7 @@ int64_t GetSendOMLDstRank(size_t rank, size_t step, size_t sp_size) { return (ra
 
 int64_t GetRecvOMLSrcRank(size_t rank, size_t step, size_t sp_size) { return (rank + step) % sp_size; }
 
-enum TagType {
+enum class TagType {
   query = 0,
   kv_a = 1,
   kv_b = 2,
@@ -1304,8 +1312,7 @@ enum TagType {
 int64_t GetSendRecvTag(int64_t src, int64_t dest, TagType data_type) {
   auto src_string = std::to_string(src + 1);
   auto dest_string = std::to_string(dest + 1);
-  auto data_type_string = std::to_string(data_type);
-
+  auto data_type_string = std::to_string(static_cast<int>(data_type));
   auto res_string = src_string + dest_string + data_type_string;
   return std::stoi(res_string);
 }
@@ -2126,6 +2133,7 @@ CNodePtr CreateReplaceRingAttentionGraphByAllToAllv(const FuncGraphManagerPtr &m
   int64_t send_rank_id = fsp_info->GetSendRankId(), recv_rank_id = fsp_info->GetRecvRankId();
 
   std::shared_ptr<OperatorInfo> operator_info = fa_score_node->user_data<parallel::OperatorInfo>();
+  MS_EXCEPTION_IF_NULL(operator_info);
   auto flash_score_info_ptr = std::dynamic_pointer_cast<FlashAttentionScoreInfo>(operator_info);
   auto input_layout = flash_score_info_ptr->input_layout();
   auto q_shape = operator_info->inputs_tensor_info()[kIndex0].tensor_layout().base_slice_shape().array();
@@ -2343,6 +2351,7 @@ CNodePtr CreateReplaceRingAttentionGraphBySendRecv(const FuncGraphManagerPtr &ma
   int64_t send_rank_id = fsp_info->GetSendRankId(), recv_rank_id = fsp_info->GetRecvRankId();
 
   std::shared_ptr<OperatorInfo> operator_info = fa_score_node->user_data<parallel::OperatorInfo>();
+  MS_EXCEPTION_IF_NULL(operator_info);
   auto flash_score_info_ptr = std::dynamic_pointer_cast<FlashAttentionScoreInfo>(operator_info);
   auto q_shape = operator_info->inputs_tensor_info()[kIndex0].tensor_layout().base_slice_shape().array();
   auto kv_shape = operator_info->inputs_tensor_info()[kIndex1].tensor_layout().base_slice_shape().array();
@@ -2509,12 +2518,14 @@ CNodePtr DynCreateReplaceRingAttentionGraphBySendRecv(const FuncGraphManagerPtr 
 
 void GetLayoutInfo(LayoutInfo *li, const CNodePtr &fa_score_node) {
   std::shared_ptr<OperatorInfo> operator_info = fa_score_node->user_data<parallel::OperatorInfo>();
+  MS_EXCEPTION_IF_NULL(operator_info);
   li->q_shape = operator_info->inputs_tensor_info()[kIndex0].tensor_layout().base_slice_shape().array();
   li->kv_shape = operator_info->inputs_tensor_info()[kIndex1].tensor_layout().base_slice_shape().array();
-  li->fa_n1 = GetValue<int64_t>(
-    fa_score_node->input(ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputHeadNumIndex + 1)
-      ->cast<ValueNodePtr>()
-      ->value());
+  auto fa_input = fa_score_node->input(ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputHeadNumIndex + 1);
+  MS_EXCEPTION_IF_NULL(fa_input);
+  auto fa_inpute_cnode = fa_input->cast<ValueNodePtr>();
+  MS_EXCEPTION_IF_NULL(fa_inpute_cnode);
+  li->fa_n1 = GetValue<int64_t>(fa_inpute_cnode->value());
   auto flash_score_info_ptr = std::dynamic_pointer_cast<FlashAttentionScoreInfo>(operator_info);
   li->input_layout = flash_score_info_ptr->input_layout();
   if (li->input_layout == FASInputLayoutMode::BSH) {
@@ -3068,6 +3079,7 @@ static CNodePtr GetFuncGraphCNodeByForwardGetItem(const CNodePtr &cnode) {
   auto index = GetTupleGetItemIndex(cnode);
   if (index == 0) {
     cnode_input_graph_node = cnode->input(kIndex1)->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode_input_graph_node);
     if (!IsValueNode<FuncGraph>(cnode_input_graph_node->input(kIndex0))) {
       return nullptr;
     }
@@ -3076,6 +3088,7 @@ static CNodePtr GetFuncGraphCNodeByForwardGetItem(const CNodePtr &cnode) {
 }
 
 static CNodePtr GetForwardCnodeByFuncGraphCNode(const CNodePtr &cnode) {
+  MS_EXCEPTION_IF_NULL(cnode);
   if (!IsValueNode<FuncGraph>(cnode->input(kIndex0))) {
     return nullptr;
   }
@@ -3086,7 +3099,10 @@ static CNodePtr GetForwardCnodeByFuncGraphCNode(const CNodePtr &cnode) {
     return nullptr;
   }
   auto output_tuple_cnode = sub_graph_output->cast<CNodePtr>();
-  return output_tuple_cnode->input(kIndex1)->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(output_tuple_cnode);
+  auto output_tuple_cnode_input = output_tuple_cnode->input(kIndex1);
+  MS_EXCEPTION_IF_NULL(output_tuple_cnode_input);
+  return output_tuple_cnode_input->cast<CNodePtr>();
 }
 
 static CNodePtr GetLastInputFuncGraphCNode(const CNodePtr &cnode, const int input_index) {

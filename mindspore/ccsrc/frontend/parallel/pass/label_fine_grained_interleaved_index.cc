@@ -56,6 +56,7 @@ bool IsBpropNode(const AnfNodePtr &node) {
 void SpreadFineGrainedInterleavedIndexForForwardCommNodes(const CNodePtr &cnode, size_t fine_grained_block_index,
                                                           size_t fine_grained_interleaved_index, size_t forward_order) {
   std::queue<CNodePtr> bfs_cnode_queue;
+  MS_EXCEPTION_IF_NULL(cnode);
   bfs_cnode_queue.push(cnode);
   auto func_graph = cnode->func_graph();
   MS_EXCEPTION_IF_NULL(func_graph);
@@ -76,13 +77,16 @@ void SpreadFineGrainedInterleavedIndexForForwardCommNodes(const CNodePtr &cnode,
         continue;
       }
       // BFS end search condition
-      if (IsPrimitiveCNode(pre_cnode, prim::kPrimStridedSlice) &&
-          GetCNodePrimitive(pre_cnode)->HasAttr(kAttrFineGrainedInterleavedBlockIndex)) {
-        pre_cnode->AddAttr("fine_grained_interleaved_border", MakeValue<size_t>(0));
-        pre_cnode->AddAttr(parallel::MICRO_INTERLEAVED_INDEX, MakeValue<size_t>(fine_grained_interleaved_index));
-        pre_cnode->AddPrimalAttr(parallel::FINE_GRAINED_INTERLEAVED_BLOCK,
-                                 MakeValue<int64_t>(fine_grained_block_index));
-        continue;
+      if (IsPrimitiveCNode(pre_cnode, prim::kPrimStridedSlice)) {
+        auto pre_cnode_prim = GetCNodePrimitive(pre_cnode);
+        MS_EXCEPTION_IF_NULL(pre_cnode_prim);
+        if (pre_cnode_prim->HasAttr(kAttrFineGrainedInterleavedBlockIndex)) {
+          pre_cnode->AddAttr("fine_grained_interleaved_border", MakeValue<size_t>(0));
+          pre_cnode->AddAttr(parallel::MICRO_INTERLEAVED_INDEX, MakeValue<size_t>(fine_grained_interleaved_index));
+          pre_cnode->AddPrimalAttr(parallel::FINE_GRAINED_INTERLEAVED_BLOCK,
+                                   MakeValue<int64_t>(fine_grained_block_index));
+          continue;
+        }
       }
 
       if (!IsForwardNode(pre_cnode) || IsPrimitiveCNode(pre_cnode, prim::kPrimUpdateState)) {
@@ -248,8 +252,12 @@ void LabelFineGrainedInterleavedIndex(const FuncGraphPtr &graph) {
     auto forward_order_cnodes = cur_forward_graph->GetOrderedCnodes();
     CNodePtrList forward_order_cnode_list(forward_order_cnodes.cbegin(), forward_order_cnodes.cend());
     for (const auto &forward_cnode : forward_order_cnode_list) {
-      if (IsPrimitiveCNode(forward_cnode, prim::kPrimConcat) &&
-          GetCNodePrimitive(forward_cnode)->HasAttr(kAttrFineGrainedInterleavedBlockIndex)) {
+      if (!IsPrimitiveCNode(forward_cnode, prim::kPrimConcat)) {
+        continue;
+      }
+      auto forward_cnode_prim = GetCNodePrimitive(forward_cnode);
+      MS_EXCEPTION_IF_NULL(forward_cnode_prim);
+      if (forward_cnode_prim->HasAttr(kAttrFineGrainedInterleavedBlockIndex)) {
         if (forward_cnode->HasAttr(kAttrDuplicated)) {
           continue;
         }
@@ -263,15 +271,18 @@ void LabelFineGrainedInterleavedIndex(const FuncGraphPtr &graph) {
         continue;
       }
       auto concat_input_cnode = concat_input->cast<CNodePtr>();
-      size_t interleaved_num = concat_input->cast<CNodePtr>()->inputs().size() - 1;
+      MS_EXCEPTION_IF_NULL(concat_input_cnode);
+      size_t interleaved_num = concat_input_cnode->inputs().size() - 1;
       if (interleaved_num != kExpectInterleavedNum) {
         MS_LOG(WARNING) << "For interleaved end node '" << forward_interleaved_end_cnode->ToString()
                         << "', its interleaved num: " << interleaved_num << " is not equal to " << kExpectInterleavedNum
                         << ", skip it.";
         continue;
       }
-      auto block_index = GetValue<int64_t>(
-        GetCNodePrimitive(forward_interleaved_end_cnode)->GetAttr(kAttrFineGrainedInterleavedBlockIndex));
+      auto forward_interleaved_end_prim = GetCNodePrimitive(forward_interleaved_end_cnode);
+      MS_EXCEPTION_IF_NULL(forward_interleaved_end_prim);
+      auto block_index =
+        GetValue<int64_t>(forward_interleaved_end_prim->GetAttr(kAttrFineGrainedInterleavedBlockIndex));
       forward_interleaved_end_cnode->AddAttr("fine_grained_interleaved_border", MakeValue<size_t>(1));
       forward_interleaved_end_cnode->AddPrimalAttr(parallel::FINE_GRAINED_INTERLEAVED_BLOCK,
                                                    MakeValue<int64_t>(block_index));
