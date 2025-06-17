@@ -948,7 +948,10 @@ int32_t AddCommOpFusionType(const CNodePtr &comm_node, const AnfNodePtr &param_n
   MS_EXCEPTION_IF_NULL(param_node);
   ParameterPtr param;
   if (IsPrimitiveCNode(param_node, prim::kPrimReceive)) {
-    param = param_node->user_data<AnfNode>(PIPELINE_PARAM)->cast<ParameterPtr>();
+    const auto param_node_ptr = param_node->user_data<AnfNode>(PIPELINE_PARAM);
+    MS_EXCEPTION_IF_NULL(param_node_ptr);
+    param = param_node_ptr->cast<ParameterPtr>();
+    MS_EXCEPTION_IF_NULL(param);
   } else {
     param = param_node->cast<ParameterPtr>();
   }
@@ -992,6 +995,7 @@ int32_t AddCommOpFusionType(const CNodePtr &comm_node, const AnfNodePtr &param_n
 void AddCommOpMeanFlag(const CNodePtr &comm_node) {
   MS_EXCEPTION_IF_NULL(comm_node);
   auto prim = GetValueNode<PrimitivePtr>(comm_node->input(0));
+  MS_EXCEPTION_IF_NULL(prim);
   auto attrs = prim->attrs();
   MS_EXCEPTION_IF_NULL(ParallelContext::GetInstance());
   bool mean_flag = ParallelContext::GetInstance()->gradients_mean();
@@ -1002,6 +1006,7 @@ void AddCommOpMeanFlag(const CNodePtr &comm_node) {
 void AddCNodePrimAttr(const CNodePtr &comm_node, const std::string &attr_name, const ValuePtr &attr_val) {
   MS_EXCEPTION_IF_NULL(comm_node);
   auto prim = GetValueNode<PrimitivePtr>(comm_node->input(0));
+  MS_EXCEPTION_IF_NULL(prim);
   auto attrs = prim->attrs();
   attrs[attr_name] = attr_val;
   (void)prim->SetAttrs(attrs);
@@ -1287,6 +1292,7 @@ void OperatorInfo::ChangeMakeTupleConstant(const CNodePtr &cnode, size_t make_tu
 
   auto make_tuple = cnode->input(make_tuple_index);
   auto make_tuple_cnode = make_tuple->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(make_tuple_cnode);
   size_t diff_len = outputs_shape_[0].size() - input_dim;  // right align for BroadcastTo
   for (size_t i = 0; i < input_dim; ++i) {
     if (shard_size[i] <= 1) {
@@ -1306,7 +1312,7 @@ void OperatorInfo::ChangeMakeTupleConstant(const CNodePtr &cnode, size_t make_tu
         MS_LOG_WITH_NODE(EXCEPTION, make_tuple_cnode)
           << name_ << ": the origin value is " << origin_value << ", can not be div by shard size " << shard_size[i]
           << ", the make tuple index of this op is " << make_tuple_index << ", the input index of make_tuple is "
-          << i + diff_len + 1;
+          << (i + diff_len + 1);
       }
       int64_t replace_value = GetValue<int64_t>(value_node) / shard_size[i];
       auto replace_value_ptr = MakeValue(replace_value);
@@ -3286,6 +3292,7 @@ std::vector<ValuePtr> GetValueSequence(const ValuePtr &sequence) {
     return val_tuple->value();
   }
   auto val = sequence->cast<ValueListPtr>();
+  MS_EXCEPTION_IF_NULL(val);
   return val->value();
 }
 
