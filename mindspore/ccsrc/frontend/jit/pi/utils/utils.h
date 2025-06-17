@@ -84,7 +84,7 @@ class Utils {
   static std::vector<Py_ssize_t> FormatSubscript(const py::object &subscr, Py_ssize_t size);
 };
 
-enum class LogConfig : uint8_t {
+enum class LogCfg : uint8_t {
   kAll = 0,
   kTraceSource,
   kTraceBytecode,
@@ -93,26 +93,27 @@ enum class LogConfig : uint8_t {
   kBytecode,
   kRecompiles,
   kRecompilesVerbose,
+  kDynamic,
   kOthers,  // only for developer
   kLogMax
 };
 
-extern bool g_pijit_log_conf[static_cast<int>(LogConfig::kLogMax)];
-extern const std::unordered_map<std::string, LogConfig> g_pijit_log_map;
+extern bool g_pijit_log_conf[static_cast<int>(LogCfg::kLogMax)];
+extern const std::unordered_map<std::string, LogCfg> g_pijit_log_map;
 
-inline std::string GetPiJitLogName(LogConfig cfg) {
+inline std::string GetPiJitLogName(LogCfg cfg) {
   auto it =
     std::find_if(g_pijit_log_map.begin(), g_pijit_log_map.end(), [cfg](const auto &kv) { return kv.second == cfg; });
   return it == g_pijit_log_map.end() ? "" : it->first;
 }
 
-inline bool IsPiJitDebugLogOn(LogConfig cfg) {
-  constexpr int kAllIndex = static_cast<int>(LogConfig::kAll);
+inline bool IsPiJitLogOn(LogCfg cfg) {
+  constexpr int kAllIndex = static_cast<int>(LogCfg::kAll);
   return g_pijit_log_conf[kAllIndex] ? true : g_pijit_log_conf[static_cast<int>(cfg)];
 }
 
-#define PIJIT_DEBUG_LOG(module)                                                               \
-  MSLOG_IF(mindspore::kDebug, IsPiJitDebugLogOn(module), mindspore::NoExceptionType, nullptr) \
+#define PIJIT_DEBUG_LOG(module)                                                          \
+  MSLOG_IF(mindspore::kDebug, IsPiJitLogOn(module), mindspore::NoExceptionType, nullptr) \
     << "[" << GetPiJitLogName(module) << "] "
 
 /* use python format pattern */

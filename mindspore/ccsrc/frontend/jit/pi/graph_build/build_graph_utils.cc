@@ -35,6 +35,7 @@
 #include "frontend/jit/ps/parse/data_converter.h"
 #include "frontend/jit/ps/static_analysis/static_analysis.h"
 #include "frontend/operator/primitive_py.h"
+#include "frontend/jit/pi/utils/utils.h"
 #include "include/common/pynative/variable.h"
 #include "frontend/operator/composite/auto_generate/functional_map.h"
 #include "mindspore/ops/op_def/framework_ops.h"
@@ -74,6 +75,15 @@ bool IsMsClassObject(const py::object &obj) {
 
 bool IsMetaFuncGraphObject(const py::object &obj) { return py::isinstance<MetaFuncGraph>(obj); }
 
+static std::string ExtractFirstPart(const std::string &error_message) {
+  const std::string separator = "----------------------------------------------------";
+  size_t pos = error_message.find(separator);
+  if (pos != std::string::npos) {
+    return error_message.substr(0, pos);
+  }
+  return error_message;
+}
+
 std::pair<AbstractBasePtr, bool> EvalValue(const ValuePtr &value, const AbstractBasePtrList &inputs_abs_list) {
   if (value == nullptr) {
     return std::make_pair(nullptr, false);
@@ -97,6 +107,7 @@ std::pair<AbstractBasePtr, bool> EvalValue(const ValuePtr &value, const Abstract
     return std::make_pair(nullptr, false);
   } catch (const std::exception &e) {
     MS_LOG(INFO) << "Failed to EvalValue for value: " << value->ToString() << ". The exception:\n" << e.what();
+    PIJIT_DEBUG_LOG(LogCfg::kGraphBreak) << std::endl << "Eval failed reason: " << ExtractFirstPart(e.what());
     return std::make_pair(nullptr, false);
   }
 }
