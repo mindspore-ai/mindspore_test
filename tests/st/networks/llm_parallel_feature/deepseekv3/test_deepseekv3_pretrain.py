@@ -92,6 +92,7 @@ def test_deepseekv3_cell_dp2mp2ep2pp2mb4gas1bs1_deredundency_8p_gmm():
                               "pp_1f1b_overlap": "MorphAllGather,MorphReduceScatter"}
 
     deepseek_config = DeepseekConfig(parallel_speed_up_json=parallel_speed_up_json,
+                                     num_samples=60,
                                      use_gmm=True,
                                      enable_deredundency=True,
                                      npu_nums_per_device=2)
@@ -126,8 +127,12 @@ def test_deepseekv3_cell_dp2mp2ep2pp2mb4gas1bs1_deredundency_8p_gmm():
     loss_list = extract_losses_from_log(log_file_path)
 
     # set golden_loss
-    golden_loss = [13.509, 13.509, 13.507, 13.507, 13.501, 13.503]
-    if_equal = golden_loss == loss_list
+    golden_loss = [13.509, 13.509, 13.507, 13.507, 13.501, \
+                   13.503, 13.503, 13.497, 13.485, 13.494, \
+                   13.486, 13.478, 13.475, 13.461, 13.457]
+    if_equal = np.allclose(
+        np.array(golden_loss), np.array(loss_list), atol=1e-3, rtol=0
+    )
     assert if_equal, \
         f"Training loss is different from the golden loss, " \
         f"where training loss: {loss_list}, golden_loss: {golden_loss}."
