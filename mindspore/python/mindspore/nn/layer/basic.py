@@ -641,10 +641,12 @@ class Dense(Cell):
         in_channels (int): The number of channels in the input space.
         out_channels (int): The number of channels in the output space.
         weight_init (Union[Tensor, str, Initializer, numbers.Number], optional): The trainable weight_init parameter.
-            The dtype is same as `x`. The values of str refer to the function `initializer`. Default: ``None`` ,
+            The dtype is same as `x`. The values of str refer to the function
+            :func:`mindspore.common.initializer`. Default: ``None`` ,
             weight will be initialized using HeUniform.
         bias_init (Union[Tensor, str, Initializer, numbers.Number], optional): The trainable bias_init parameter.
-            The dtype is same as `x`. The values of str refer to the function `initializer`. Default: ``None`` ,
+            The dtype is same as `x`. The values of str refer to the function
+            :func:`mindspore.common.initializer`. Default: ``None`` ,
             bias will be initialized using Uniform.
         has_bias (bool, optional): Specifies whether the layer uses a bias vector :math:`\text{bias}`.
             Default: ``True``.
@@ -789,11 +791,13 @@ class Linear(Cell):
         bias (bool, optional): Specifies whether the layer uses a bias vector :math:`\text{bias}`. Default: ``True``.
         weight_init (Union[Tensor, str, Initializer, numbers.Number], optional):
             The trainable weight_init parameter. The dtype
-            is same as `x`. The values of str refer to the function `initializer`. Default: ``None`` ,
+            is same as `x`. The values of str refer to the function :func:`mindspore.common.initializer`.
+            Default: ``None`` ,
             weight will be initialized using HeUniform.
         bias_init (Union[Tensor, str, Initializer, numbers.Number], optional):
             The trainable bias_init parameter. The dtype is
-            same as `x`. The values of str refer to the function `initializer`. Default: ``None`` ,
+            same as `x`. The values of str refer to the function :func:`mindspore.common.initializer`.
+            Default: ``None`` ,
             bias will be initialized using Uniform.
         dtype (:class:`mindspore.dtype`, optional): Data type of Parameter. Default: ``None`` .
             If `dtype` is ``None`` , `dtype` is set to ``mstype.float32`` when initializing the method.
