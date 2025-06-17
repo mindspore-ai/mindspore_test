@@ -290,6 +290,7 @@ void StrategyLoader::SaveStrategyToFile(const std::vector<AnfNodePtr> &all_nodes
     // save layout_value_vector as value for key
     ValueNodePtr prim_anf_node = cnode->input(0)->cast<ValueNodePtr>();
     PrimitivePtr prim = GetValueNode<PrimitivePtr>(prim_anf_node);
+    MS_EXCEPTION_IF_NULL(prim);
     auto prim_attrs = prim->attrs();
     auto is_new_shape_base_node = IsSupportNewShapeBaseNode(cnode);
     // in layout

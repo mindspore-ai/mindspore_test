@@ -48,7 +48,7 @@ OperatorVector ConstructOperator::SkipRedisReshapeOP(const Shape &shape) const {
   return opvector;
 }
 
-Status ConstructOperator::ReshapeOP(const Shape &shape, bool use_origin_shape, enum ReshapeMode reshape_mode) {
+Status ConstructOperator::ReshapeOP(const Shape &shape, bool use_origin_shape, ReshapeMode reshape_mode) {
   int64_t prod = std::accumulate(shape.begin(), shape.end(), 1, std::multiplies<int64_t>());
   int64_t prod_expect = std::accumulate(tensor_shape_.begin(), tensor_shape_.end(), 1, std::multiplies<int64_t>());
   if (!IsDynamicShape(shape) && !IsDynamicShape(tensor_shape_) && prod != prod_expect) {

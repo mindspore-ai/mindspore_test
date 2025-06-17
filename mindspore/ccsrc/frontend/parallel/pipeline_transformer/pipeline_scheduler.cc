@@ -50,6 +50,7 @@ CNodePtr GetCellByReceive(const AnfNodePtr &node, const FuncGraphManagerPtr &man
     user = users.front().first;
   }
   auto fg_cnode = users.front().first->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(fg_cnode);
   auto cnode = node->cast<CNodePtr>();
   if (cnode->HasPrimalAttr(ORDER)) {
     auto order = cnode->GetPrimalAttr(ORDER);
@@ -69,6 +70,7 @@ CNodePtr GetCellBySend(const AnfNodePtr &node) {
     fg_node = fg_node->cast<CNodePtr>()->input(1);
   }
   auto fg_cnode = fg_node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(fg_cnode);
   if (cnode->HasPrimalAttr(ORDER)) {
     auto order = cnode->GetPrimalAttr(ORDER);
     fg_cnode->AddPrimalAttr(ORDER, order);

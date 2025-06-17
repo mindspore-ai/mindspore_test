@@ -499,7 +499,7 @@ bool IsVirtualDatasetNextInput(const CNodePtr &cnode, const CNodePtr &dst_cnode,
   }
   for (size_t j = 1; j < cnode->inputs().size(); ++j) {
     auto cur_cnode = cnode->input(j)->cast<CNodePtr>();
-    if (cur_cnode == nullptr) {
+    if (cur_cnode == nullptr || dst_cnode == nullptr) {
       continue;
     }
     if (cur_cnode->UniqueId() == dst_cnode->UniqueId()) {

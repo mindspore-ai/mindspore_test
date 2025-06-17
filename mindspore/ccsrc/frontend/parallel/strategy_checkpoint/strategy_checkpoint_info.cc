@@ -144,50 +144,43 @@ nlohmann::json StrategyCheckpointInfo::to_json() const {
   for (const auto &stra_pair : strategy_map_) {
     auto node_name = stra_pair.first;
     auto node_stra = stra_pair.second;
-    nlohmann::json stra_j;
-    stra_j = to_json_strategy_item(node_stra);
+    nlohmann::json stra_j = to_json_strategy_item(node_stra);
     stra_ckpt_info_j["parallel_strategy_item"][node_name] = stra_j;
   }
   for (const auto &stra_pair : out_strategy_map_) {
     auto node_name = stra_pair.first;
     auto node_stra = stra_pair.second;
-    nlohmann::json stra_j;
-    stra_j = to_json_strategy_item(node_stra);
+    nlohmann::json stra_j = to_json_strategy_item(node_stra);
     stra_ckpt_info_j["parallel_out_strategy_item"][node_name] = stra_j;
   }
   for (const auto &layout_pair : tensor_info_map_) {
     auto parameter_name = layout_pair.first;
     auto layout = layout_pair.second;
-    nlohmann::json layout_j;
-    layout_j = to_json_tensorinfo_item(parameter_name, layout);
+    nlohmann::json layout_j = to_json_tensorinfo_item(parameter_name, layout);
     stra_ckpt_info_j["parallel_layout_item"][parameter_name] = layout_j;
   }
   for (const auto &layout_pair : tensor_layout_map_) {
     auto node_name = layout_pair.first;
     auto layout_value_tuple = layout_pair.second;
-    nlohmann::json layout_j;
-    layout_j = to_json_layout_value_tuple_item(node_name, layout_value_tuple);
+    nlohmann::json layout_j = to_json_layout_value_tuple_item(node_name, layout_value_tuple);
     stra_ckpt_info_j["parallel_layout_value_item"][node_name] = layout_j;
   }
   for (const auto &layout_pair : out_tensor_layout_map_) {
     auto node_name = layout_pair.first;
     auto layout_value_tuple = layout_pair.second;
-    nlohmann::json layout_j;
-    layout_j = to_json_layout_value_tuple_item(node_name, layout_value_tuple);
+    nlohmann::json layout_j = to_json_layout_value_tuple_item(node_name, layout_value_tuple);
     stra_ckpt_info_j["parallel_out_layout_value_item"][node_name] = layout_j;
   }
   for (const auto &layout_pair : tensor_layout_newshape_map_) {
     auto node_name = layout_pair.first;
     auto layout_value_tuple = layout_pair.second;
-    nlohmann::json layout_j;
-    layout_j = to_json_layout_value_tuple_item(node_name, layout_value_tuple);
+    nlohmann::json layout_j = to_json_layout_value_tuple_item(node_name, layout_value_tuple);
     stra_ckpt_info_j["parallel_newshape_layout_value_item"][node_name] = layout_j;
   }
   for (const auto &layout_pair : out_tensor_layout_newshape_map_) {
     auto node_name = layout_pair.first;
     auto layout_value_tuple = layout_pair.second;
-    nlohmann::json layout_j;
-    layout_j = to_json_layout_value_tuple_item(node_name, layout_value_tuple);
+    nlohmann::json layout_j = to_json_layout_value_tuple_item(node_name, layout_value_tuple);
     stra_ckpt_info_j["parallel_out_newshape_layout_value_item"][node_name] = layout_j;
   }
   return stra_ckpt_info_j;
