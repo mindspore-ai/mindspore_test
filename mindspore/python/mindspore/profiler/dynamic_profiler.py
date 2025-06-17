@@ -292,9 +292,9 @@ class DynamicProfilerMonitorBase(Callback):
 
             # Setup profiler configuration
             active_steps = stop_step - start_step + 1
-            self._output_path = args.prof_path if args.prof_path else self._output_path
+            output_path = args.prof_path if args.prof_path != "./" else self._output_path
             prof_path = os.path.join(
-                self._output_path,
+                output_path,
                 f"rank{self._rank_id}_start{start_step}_stop{stop_step}"
             )
             print_msg(f"Rank {self._rank_id} create output path {prof_path}")
@@ -607,7 +607,7 @@ if sys.version_info >= (3, 8):
                   parameter is not used to control the domain.
                 - prof_path (str, optional) - Output data path of the dynamic profiler. It is the same as the interface
                   parameter `output_path`. When both are set, `prof_path` takes effect. Default value:
-                  ``"./dyn_profile_data"`` .
+                  ``"./"`` .
                 - sys_io (bool, optional) - Set whether to collect NIC and RoCE data. Default value: ``False`` ,
                   indicating that these data are not collected.
                 - sys_interconnection (bool, optional) - Set whether to collect system interconnection data,
