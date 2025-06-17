@@ -213,7 +213,7 @@ class Mstx:
         # pylint: disable=no-else-return
         if not isinstance(domain, str) or domain == "":
             logging.warning(
-                "Invalid domain name for mstx.mark func. Please input str and can not be empty."
+                "Invalid domain name for mstx.range_start func. Please input str and can not be empty."
             )
             return 0
         if stream:
@@ -250,9 +250,9 @@ class Mstx:
         if not Mstx.NPU_PROFILER:
             logging.warning("Invalid npu profiler for mstx, please check.")
             return
-        if not isinstance(range_id, int):
+        if not isinstance(range_id, int) or range_id < 0:
             logging.warning(
-                "Invalid message for mstx.range_start func. Please input return value from mstx.range_start."
+                "Invalid range_id for mstx.range_end func. Please input return value from mstx.range_start."
             )
             return
         if not isinstance(domain, str) or domain == "":
