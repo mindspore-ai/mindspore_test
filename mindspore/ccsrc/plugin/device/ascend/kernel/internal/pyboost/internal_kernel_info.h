@@ -54,10 +54,9 @@ class InternalKernelInfo {
   explicit InternalKernelInfo(std::string &&op_name) : kernel_name_(std::move(op_name)) {}
   virtual ~InternalKernelInfo() = default;
 
-  bool Init(const TensorPtrList &input_tensors, TensorPtrList *inputs, TensorPtrList *outputs,
-            const TensorPtrList &op_outputs);
-  void GetOrCreateKernel(const std::shared_ptr<pyboost::OpRunner> &op, const TensorPtrList &inputs,
-                         const TensorPtrList &outputs, uint64_t key);
+  void GetOrCreateKernel(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &op_key,
+                         const uint64_t &tiling_key, const TensorPtrList &inputs, const TensorPtrList &outputs);
+
   static void UpdateAddr(std::vector<internal::RawDeviceAddr> *addrlist, const TensorPtrList &tensorlist) {
     addrlist->resize(tensorlist.size());
     for (size_t i = 0; i < tensorlist.size(); i++) {
@@ -87,19 +86,19 @@ class InternalKernelInfo {
   }
 
  protected:
-  void GetInputAndOutputIndex(const std::shared_ptr<pyboost::OpRunner> &op, const TensorPtrList &input_tensors);
   bool IsInternalDtypeSupport(const TensorPtrList *ms_inputs, const TensorPtrList *ms_outputs);
-  TilingCacheItemPtr GetOrGenerateTiling(const std::shared_ptr<pyboost::OpRunner> &op, const TensorPtrList &inputs);
-  virtual uint64_t GenerateTilingKey(const std::string &kernel_name, const TensorPtrList &inputs);
+  virtual uint64_t GetOrGenerateOpKey(const uint64_t &op_key) const { return op_key; }
+  virtual uint64_t GetOrGenerateOpTilingKey(const uint64_t &tiling_key) const { return tiling_key; }
+  virtual bool UpdateParam() { return true; }
+  TilingCacheItemPtr GetOrGenerateTiling(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &tiling_key);
   virtual internal::InternalOpPtr CreateKernel(const internal::InputsImmutableInfoList &inputs,
                                                const internal::OutputsImmutableInfoList &outputs) = 0;
-  void TransInternalShapes(internal::ShapeInfoList *shapelist, const TensorPtrList &tensorlist);
+  void TransInternalShapes(internal::ShapeInfoList *shapelist, const TensorPtrList &tensorlist, bool is_input = false);
+  void TransInternalShapes(const TensorPtrList &inputs, const TensorPtrList &outputs);
 
   std::string kernel_name_;
   internal::InternalOpPtr internal_op_{nullptr};
   inline static std::unordered_map<uint64_t, internal::InternalOpPtr> hash_map_;
-  inline static std::unordered_map<std::string, std::vector<size_t>> ms_inputs_idx_map_;
-  inline static std::unordered_map<std::string, std::vector<size_t>> ms_outputs_idx_map_;
   internal::DtypeInfoList internal_inputs_dtype_;
   internal::DtypeInfoList internal_outputs_dtype_;
   internal::ShapeInfoList internal_inputs_shape_;
@@ -117,7 +116,7 @@ class InternalKernelInfo {
 using InternalKernelInfoPtr = std::shared_ptr<InternalKernelInfo>;
 
 #define MS_INTERNAL_KERNEL_INFO_FACTORY_REG(PRIM_NAME_STR, DERIVE) \
-  MS_KERNEL_FACTORY_REG(InternalKernelInfo, PRIM_NAME_STR, DERIVE);
+  MS_KERNEL_FACTORY_REG_WITH_NAME_PARAM(InternalKernelInfo, PRIM_NAME_STR, DERIVE);
 
 #define LAUNCH_INTERNAL_KERNEL(op, internal_op, device_context, tiling_ptr, inputs_addr, outputs_addr,             \
                                internal_wss_addr, kernel_name)                                                     \

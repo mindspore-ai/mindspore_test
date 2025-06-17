@@ -23,30 +23,32 @@ namespace mindspore {
 namespace kernel {
 internal::InternalOpPtr PagedAttention::CreateKernel(const internal::InputsImmutableInfoList &inputs,
                                                      const internal::OutputsImmutableInfoList &outputs) {
-  internal::PagedAttentionParam param;
-  param.head_num = head_num_;
-  param.kv_head_num = kv_head_num_;
-  param.tor = tor_;
-  param.kv_cache_quant_mode = kv_cache_quant_mode_;
-  param.mask_mode = mask_mode_;
-  param.mla_v_dim = mla_v_dim_;
-
-  CheckMask();
-  param.mask_type = mask_type_;
-  param.q_seq_len = q_seq_len_;
-  param.kv_seq_len = kv_seq_len_;
-
-  return internal::CreatePagedAttentionOp(inputs, outputs, param, internal::kInternalPagedAttentionOpName);
+  created_flag_ = true;
+  return internal::CreatePagedAttentionOp(inputs, outputs, param_, internal::kInternalPagedAttentionOpName);
 }
 
-uint64_t PagedAttention::GenerateTilingKey(const std::string &kernel_name, const TensorPtrList &inputs) {
-  return CalcInternalOpTilingHash(kernel_name, inputs, q_seq_len_, kv_seq_len_);
+bool PagedAttention::UpdateParam() {
+  if (created_flag_) {
+    created_flag_ = false;
+    return true;
+  }
+
+  auto ret = internal_op_->UpdateParam(&param_);
+  if (ret != internal::kInternalOk) {
+    MS_LOG(ERROR) << "InternalPagedAttention UpdateParam failed, kernel_name: " << kernel_name_;
+    return false;
+  }
+  return true;
 }
 
-void PagedAttention::Call(const std::shared_ptr<pyboost::OpRunner> &op, const TensorPtr &query,
-                          const TensorPtr &key_cache, const std::optional<TensorPtr> &value_cache,
-                          const std::optional<TensorPtr> &block_tabels, const std::optional<TensorPtr> &context_lens,
-                          const std::optional<TensorPtr> &antiquant_scale,
+uint64_t PagedAttention::GetOrGenerateOpTilingKey(const uint64_t &tiling_key) const {
+  return CalcInternalOpTilingHash(kernel_name_, tiling_key, param_.q_seq_len, param_.kv_seq_len);
+}
+
+void PagedAttention::Call(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &op_key,
+                          const uint64_t &tiling_key, const TensorPtr &query, const TensorPtr &key_cache,
+                          const std::optional<TensorPtr> &value_cache, const std::optional<TensorPtr> &block_tabels,
+                          const std::optional<TensorPtr> &context_lens, const std::optional<TensorPtr> &antiquant_scale,
                           const std::optional<TensorPtr> &antiquant_offset, const std::optional<TensorPtr> &attn_mask,
                           const std::optional<TensorPtr> &q_seq_lens, const std::optional<TensorPtr> &alibi_mask,
                           const int64_t &head_num, const float &scale_value, const int64_t &kv_head_num,
@@ -61,29 +63,25 @@ void PagedAttention::Call(const std::shared_ptr<pyboost::OpRunner> &op, const Te
                           attn_mask.has_value() ? attn_mask.value() : nullptr,
                           alibi_mask.has_value() ? alibi_mask.value() : nullptr};
   TensorPtrList outputs = op->outputs();
-  internal_inputs_shape_.resize(inputs.size());
-  internal_outputs_shape_.resize(outputs.size());
-  TransInternalShapes(&internal_inputs_shape_, inputs);
-  TransInternalShapes(&internal_outputs_shape_, outputs);
+  TransInternalShapes(inputs, outputs);
 
-  head_num_ = static_cast<int32_t>(head_num);
-  tor_ = scale_value;
-  kv_head_num_ = static_cast<int32_t>(kv_head_num);
-  kv_cache_quant_mode_ = static_cast<int32_t>(kv_cache_quant_mode);
-  mask_mode_ = static_cast<internal::PagedAttentionParam::MaskMode>(mask_mode);
-  mla_v_dim_ = static_cast<int32_t>(mla_v_dim);
+  param_.head_num = static_cast<int32_t>(head_num);
+  param_.tor = scale_value;
+  param_.kv_head_num = static_cast<int32_t>(kv_head_num);
+  param_.kv_cache_quant_mode = static_cast<int32_t>(kv_cache_quant_mode);
+  param_.mask_mode = static_cast<internal::PagedAttentionParam::MaskMode>(mask_mode);
+  param_.mla_v_dim = static_cast<int32_t>(mla_v_dim);
 
-  (void)GetSeqLenFromInputTensor(inputs[kIndex4], &kv_seq_len_);
+  (void)GetSeqLenFromInputTensor(inputs[kIndex4], &param_.kv_seq_len);
   if (q_seq_lens.has_value()) {
-    (void)GetSeqLenFromInputTensor(q_seq_lens.value(), &q_seq_len_);
+    (void)GetSeqLenFromInputTensor(q_seq_lens.value(), &param_.q_seq_len);
   }
 
   has_attn_mask_ = attn_mask.has_value();
   has_alibi_mask_ = alibi_mask.has_value();
+  CheckMask();
 
-  auto op_key = CalcInternalOpApiHash(kernel_name_, inputs, head_num_, tor_, kv_head_num_, kv_cache_quant_mode_,
-                                      mask_mode_, mla_v_dim_, q_seq_len_, kv_seq_len_, outputs);
-  GetOrCreateKernel(op, inputs, outputs, op_key);
+  GetOrCreateKernel(op, op_key, tiling_key, inputs, outputs);
   LAUNCH_INTERNAL(kernel_name_, op, internal_op_, inputs, outputs, tiling_info_);
 }
 MS_INTERNAL_KERNEL_INFO_FACTORY_REG(PagedAttention, PagedAttention);

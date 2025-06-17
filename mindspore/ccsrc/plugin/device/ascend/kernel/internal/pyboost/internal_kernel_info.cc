@@ -22,51 +22,37 @@
 
 namespace mindspore {
 namespace kernel {
-void InternalKernelInfo::GetInputAndOutputIndex(const std::shared_ptr<pyboost::OpRunner> &op,
-                                                const TensorPtrList &input_tensors) {
-  if (ms_inputs_idx_map_.find(kernel_name_) != ms_inputs_idx_map_.end()) {
-    return;
-  }
-  std::vector<size_t> ms_inputs_idx_list;
-  std::vector<size_t> ms_outputs_idx_list;
-  bool is_mutable = false;
-  auto input_idx_list = InternalKernelModInOutMap::GetInstance()->GetKernelInMap(kernel_name_, &is_mutable);
-  if (is_mutable) {
-    for (size_t i = 0; i < input_tensors.size(); i++) {
-      (void)ms_inputs_idx_list.emplace_back(i);
-    }
-  } else {
-    for (size_t i = 0; i < input_idx_list.size(); i++) {
-      auto ms_index = input_idx_list[i];
-      (void)ms_inputs_idx_list.emplace_back(static_cast<size_t>(ms_index));
-    }
-  }
-  is_mutable = false;
-  auto output_idx_list = InternalKernelModInOutMap::GetInstance()->GetKernelOutMap(kernel_name_, &is_mutable);
-  if (is_mutable) {
-    for (size_t i = 0; i < op->outputs().size(); i++) {
-      (void)ms_outputs_idx_list.emplace_back(i);
-    }
-  } else {
-    for (size_t i = 0; i < output_idx_list.size(); i++) {
-      auto ms_index = output_idx_list[i];
-      (void)ms_outputs_idx_list.emplace_back(static_cast<size_t>(ms_index));
-    }
-  }
-  ms_inputs_idx_map_[kernel_name_] = ms_inputs_idx_list;
-  ms_outputs_idx_map_[kernel_name_] = ms_outputs_idx_list;
-}
-
-void InternalKernelInfo::TransInternalShapes(internal::ShapeInfoList *shapelist, const TensorPtrList &tensorlist) {
+void InternalKernelInfo::TransInternalShapes(internal::ShapeInfoList *shapelist, const TensorPtrList &tensorlist,
+                                             bool is_input) {
   for (size_t i = 0; i < tensorlist.size(); i++) {
     if (tensorlist[i] == nullptr) {
       shapelist->at(i) = internal::ShapeInfo{0};
       continue;
     }
+
+    if (!tensorlist[i]->is_contiguous()) {
+      if (is_input) {
+        MS_LOG(EXCEPTION) << "For internal op [" << kernel_name_ << "], the input tensorlist[" << i
+                          << "] is not contiguous: " << tensorlist[i]->ToString()
+                          << ", please convert it to contiguous tensor using tensor.contiguous().";
+      } else {
+        MS_LOG(EXCEPTION) << "For internal op [" << kernel_name_ << "], the output tensorlist[" << i
+                          << "] is not contiguous: " << tensorlist[i]->ToString()
+                          << ", please convert it to contiguous tensor using tensor.contiguous().";
+      }
+    }
+
     auto shape =
       tensorlist[i]->data_type() != kMetaTypeNone ? TransInternalShape(tensorlist[i]->shape()) : internal::ShapeInfo{0};
     shapelist->at(i) = std::move(shape);
   }
+}
+
+void InternalKernelInfo::TransInternalShapes(const TensorPtrList &inputs, const TensorPtrList &outputs) {
+  internal_inputs_shape_.resize(inputs.size());
+  internal_outputs_shape_.resize(outputs.size());
+  TransInternalShapes(&internal_inputs_shape_, inputs, true);
+  TransInternalShapes(&internal_outputs_shape_, outputs);
 }
 
 void InternalKernelInfo::UpdateArgImmutableInfo(internal::ArgImmutableInfo *arginfo, const TensorPtr &tensor,
@@ -78,6 +64,7 @@ void InternalKernelInfo::UpdateArgImmutableInfo(internal::ArgImmutableInfo *argi
   }
   auto device_sync = tensor->device_address();
   auto device_address = std::dynamic_pointer_cast<device::DeviceAddress>(device_sync);
+  MS_EXCEPTION_IF_NULL(device_address);
   arginfo->SetFormat(TransInternalFormat(GetFormatFromStrToEnum(device_address->format())));
 }
 
@@ -102,6 +89,7 @@ bool InternalKernelInfo::IsInternalDtypeSupport(const TensorPtrList *ms_inputs, 
       internal_inputs_dtype_[i] = internal::DataType::kTypeNone;
       continue;
     }
+
     internal_inputs_dtype_[i] = TransInternalDataType(ms_inputs->at(i)->data_type());
   }
 
@@ -113,39 +101,22 @@ bool InternalKernelInfo::IsInternalDtypeSupport(const TensorPtrList *ms_inputs, 
     internal_outputs_dtype_[i] = TransInternalDataType(ms_outputs->at(i)->data_type());
   }
 
-  auto internal_op_name = TransInternalOpName(kernel_name_);
-  return internal::IsInternalKernelDtypesSupported(internal_op_name, internal_inputs_dtype_, internal_outputs_dtype_);
+  return internal::IsInternalKernelDtypesSupported(TransInternalOpName(kernel_name_), internal_inputs_dtype_,
+                                                   internal_outputs_dtype_);
 }
 
-bool InternalKernelInfo::Init(const TensorPtrList &input_tensors, TensorPtrList *inputs, TensorPtrList *outputs,
-                              const TensorPtrList &op_outputs) {
-  auto ms_inputs_idx_list = ms_inputs_idx_map_[kernel_name_];
-  auto ms_outputs_idx_list = ms_outputs_idx_map_[kernel_name_];
-  for (size_t i = 0; i < ms_inputs_idx_list.size(); i++) {
-    auto ms_index = ms_inputs_idx_list[i];
-    auto input_tensor = input_tensors[ms_index];
-    (void)inputs->emplace_back(input_tensor);
-  }
-  for (size_t i = 0; i < ms_outputs_idx_list.size(); i++) {
-    auto ms_index = ms_outputs_idx_list[i];
-    (void)outputs->emplace_back(op_outputs[ms_index]);
-  }
-
-  internal_inputs_shape_.resize(inputs->size());
-  internal_outputs_shape_.resize(outputs->size());
-  TransInternalShapes(&internal_inputs_shape_, *inputs);
-  TransInternalShapes(&internal_outputs_shape_, *outputs);
-  return true;
-}
-
-void InternalKernelInfo::GetOrCreateKernel(const std::shared_ptr<pyboost::OpRunner> &op, const TensorPtrList &inputs,
-                                           const TensorPtrList &outputs, uint64_t key) {
+void InternalKernelInfo::GetOrCreateKernel(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &op_key,
+                                           const uint64_t &tiling_key, const TensorPtrList &inputs,
+                                           const TensorPtrList &outputs) {
+  auto key = GetOrGenerateOpKey(op_key);
   auto it = hash_map_.find(key);
   if (it != hash_map_.end()) {
     internal_op_ = it->second;
+    MS_LOG(DEBUG) << "Internal Op [" << kernel_name_ << "] hit cache";
   } else {
+    MS_LOG(DEBUG) << "Internal Op [" << kernel_name_ << "] miss cache";
     if (!IsInternalDtypeSupport(&inputs, &outputs)) {
-      MS_EXCEPTION(TypeError) << "Input dtype is not supported for internal op [" << kernel_name_ << "]";
+      MS_LOG(EXCEPTION) << "Input dtype is not supported for internal op [" << kernel_name_ << "]";
     }
     UpdateArgImmutableInfo(&inputs_ii_, inputs, true);
     UpdateArgImmutableInfo(&outputs_ii_, outputs);
@@ -154,31 +125,30 @@ void InternalKernelInfo::GetOrCreateKernel(const std::shared_ptr<pyboost::OpRunn
     auto status = internal_op_->Init();
     if (status != internal::kInternalOk) {
       internal_op_ = nullptr;
-      MS_LOG(ERROR) << "Init internal kernel failed, kenrel_name: " << kernel_name_;
+      MS_LOG(EXCEPTION) << "Init internal kernel failed, kenrel_name: " << kernel_name_;
       return;
     }
     hash_map_[key] = internal_op_;
   }
-  tiling_info_ = GetOrGenerateTiling(op, inputs);
-  if (tiling_info_ == nullptr) {
-    MS_LOG(ERROR) << "Create tiling info failed for internal kernel, kernel_name: " << kernel_name_;
-  }
-}
 
-uint64_t InternalKernelInfo::GenerateTilingKey(const std::string &kernel_name, const TensorPtrList &inputs) {
-  return CalcInternalOpTilingHash(kernel_name, inputs);
+  if (!UpdateParam()) {
+    MS_LOG(EXCEPTION) << "UpdateParam failed, kenrel_name: " << kernel_name_;
+  }
+  auto internal_ret = internal_op_->UpdateShape(internal_inputs_shape_, internal_outputs_shape_);
+  if (internal_ret != internal::kInternalOk) {
+    MS_LOG(EXCEPTION) << "InternalKernel UpdateShape failed, kernel_name: " << kernel_name_;
+  }
+
+  tiling_info_ = GetOrGenerateTiling(op, tiling_key);
+  if (tiling_info_ == nullptr) {
+    MS_LOG(EXCEPTION) << "Create tiling info failed for internal kernel, kernel_name: " << kernel_name_;
+  }
 }
 
 TilingCacheItemPtr InternalKernelInfo::GetOrGenerateTiling(const std::shared_ptr<pyboost::OpRunner> &op,
-                                                           const TensorPtrList &inputs) {
-  auto internal_ret = internal_op_->UpdateShape(internal_inputs_shape_, internal_outputs_shape_);
-  if (internal_ret != internal::kInternalOk) {
-    MS_LOG(ERROR) << "InternalKernel UpdateShape failed, kernel_name: " << kernel_name_;
-    return nullptr;
-  }
-
+                                                           const uint64_t &tiling_key) {
   std::lock_guard<SimpleSpinLock> lock(lock_);
-  auto key = GenerateTilingKey(kernel_name_, inputs);
+  auto key = GetOrGenerateOpTilingKey(tiling_key);
   auto tiling_info_ptr = InternalTilingCache::GetInstance().Bind(key);
   if (tiling_info_ptr == nullptr) {
     auto device_ctx = op->device_context();
