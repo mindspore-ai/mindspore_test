@@ -647,6 +647,7 @@ mindspore.mint.distributed
 
     mindspore.mint.distributed.all_gather
     mindspore.mint.distributed.all_gather_into_tensor
+    mindspore.mint.distributed.all_gather_into_tensor_uneven
     mindspore.mint.distributed.all_gather_object
     mindspore.mint.distributed.all_reduce
     mindspore.mint.distributed.all_to_all
@@ -675,6 +676,7 @@ mindspore.mint.distributed
     mindspore.mint.distributed.reduce
     mindspore.mint.distributed.reduce_scatter
     mindspore.mint.distributed.reduce_scatter_tensor
+    mindspore.mint.distributed.reduce_scatter_tensor_uneven
     mindspore.mint.distributed.scatter
     mindspore.mint.distributed.scatter_object_list
     mindspore.mint.distributed.send
