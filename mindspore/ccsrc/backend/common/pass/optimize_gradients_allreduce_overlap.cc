@@ -65,6 +65,7 @@ void SpreadDependLabel(const std::string &fusion_key, const CNodePtr &cnode) {
   for (size_t i = 1; i < cnode->size(); ++i) {
     if (IsPrimitiveCNode(cnode->input(i))) {
       auto input_cnode = cnode->input(i)->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(input_cnode);
       if (input_cnode->HasPrimalAttr(fusion_key)) {
         std::vector<std::string> dependent_node_fusion_key_list;
         bool is_spread = false;
@@ -100,6 +101,7 @@ void SpreadOutputLabel(const std::string &fusion_key, const CNodePtr &cnode) {
       continue;
     }
     auto output_cnode = node_pair.first->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(output_cnode);
     std::vector<std::string> output_node_fusion_key_list;
     bool is_spread = false;
     if (!output_cnode->HasPrimalAttr(downstream_key)) {
@@ -150,10 +152,11 @@ void ExtractFusionCommNodes(const std::vector<AnfNodePtr> &node_list,
     if (!common::AnfAlgo::IsFusion(cnode)) {
       continue;
     }
-    if ((IsPrimitiveCNode(cnode, prim::kPrimAllReduce) &&
-         GetCNodePrimitive(cnode)->instance_name().find("grad_mirror") != std::string::npos) ||
-        (IsPrimitiveCNode(cnode, prim::kPrimReduceScatter) &&
-         GetCNodePrimitive(cnode)->instance_name().find("grad_parallel_optimizer") != std::string::npos)) {
+    auto prim = GetCNodePrimitive(cnode);
+    if ((IsPrimitiveCNode(cnode, prim::kPrimAllReduce) && prim != nullptr &&
+         prim->instance_name().find("grad_mirror") != std::string::npos) ||
+        (IsPrimitiveCNode(cnode, prim::kPrimReduceScatter) && prim != nullptr &&
+         prim->instance_name().find("grad_parallel_optimizer") != std::string::npos)) {
       auto fusion_id = common::AnfAlgo::GetNodeAttr<int64_t>(cnode, kAttrFusion);
       auto group_name = common::AnfAlgo::GetNodeAttr<std::string>(cnode, kAttrGroup);
       auto comm_name = IsPrimitiveCNode(cnode, prim::kPrimAllReduce) ? "all_reduce" : "reduce_scatter";
@@ -314,6 +317,7 @@ void RemoveFirstDependNode(const std::vector<AnfNodePtr> &node_list) {
       continue;
     }
     auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     if (!cnode->HasPrimalAttr("first_depend")) {
       continue;
     }

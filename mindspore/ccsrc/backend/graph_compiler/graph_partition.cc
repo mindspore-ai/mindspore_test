@@ -511,6 +511,7 @@ bool IsSubGraph(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
   if (node->isa<CNode>()) {
     auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     auto &inputs = cnode->inputs();
     if (inputs.empty()) {
       MS_LOG(EXCEPTION) << "Inputs of apply node is empty";
@@ -521,6 +522,7 @@ bool IsSubGraph(const AnfNodePtr &node) {
       return false;
     }
     auto node_prim = GetValueNode<PrimitivePtr>(fn);
+    MS_EXCEPTION_IF_NULL(node_prim);
     if (node_prim->name() == prim::kPrimPartial->name()) {
       return true;
     }
@@ -782,6 +784,7 @@ bool GraphPartition::IsCut(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
   if (node->isa<CNode>()) {
     auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     auto &inputs = cnode->inputs();
     if (inputs.empty()) {
       MS_LOG(EXCEPTION) << "Inputs of apply node is empty";
@@ -805,6 +808,7 @@ bool GraphPartition::IsCut(const AnfNodePtr &node) {
       return false;
     }
     auto node_prim = GetValueNode<PrimitivePtr>(fn);
+    MS_EXCEPTION_IF_NULL(node_prim);
     for (auto &prim : cut_list_) {
       MS_EXCEPTION_IF_NULL(prim);
       if (prim->name() == node_prim->name()) {
