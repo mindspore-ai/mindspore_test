@@ -2966,8 +2966,9 @@ py::object SymbolicFromGuard(const GuardItemPtr &item, const py::object &new_obj
     }
   }
   py::object res = py::module::import("mindspore.common").attr("mutable")(h);
-  MS_LOG(DEBUG) << "symbolic object: " << Py_TYPE(new_object.ptr())->tp_name << "(" << py::repr(new_object) << ") ->"
-                << Py_TYPE(h.ptr())->tp_name << "(" << py::repr(h) << ")";
+  PIJIT_DEBUG_LOG(LogCfg::kDynamic) << "Symbolic object value: " << Py_TYPE(new_object.ptr())->tp_name << "("
+                                    << py::repr(new_object) << ") ->" << Py_TYPE(h.ptr())->tp_name << "(" << py::repr(h)
+                                    << ")";
   return res;
 }
 

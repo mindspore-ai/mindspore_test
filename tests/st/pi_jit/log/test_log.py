@@ -36,7 +36,7 @@ def test_pijit_log_guard():
     log_config = "guard"
     data = run_test_case(test_case_name, log_config)
 
-    assert "generated guard at" in data
+    assert "[guard]" in data
 
     os.remove(f"{test_case_name}_log.txt")
 
@@ -66,7 +66,7 @@ def test_pijit_log_graph_break():
     log_config = "graph_break"
     data = run_test_case(test_case_name, log_config)
 
-    assert "UD analyze: enter GetAliveNodes" in data
+    assert "[graph_break]" in data
 
     os.remove(f"{test_case_name}_log.txt")
 
@@ -81,9 +81,9 @@ def test_pijit_log_all():
     log_config = "all"
     data = run_test_case(test_case_name, log_config)
 
-    assert "generated guard at" in data
+    assert "[guard]" in data
     assert "ORIGINAL BYTECODE of" in data
-    assert "UD analyze: enter GetAliveNodes" in data
+    assert "[graph_break]" in data
 
     os.remove(f"{test_case_name}_log.txt")
 
@@ -98,9 +98,9 @@ def test_pijit_log_mix_guard_bytecode():
     log_config = "guard,bytecode"
     data = run_test_case(test_case_name, log_config)
 
-    assert "generated guard at" in data
+    assert "[guard]" in data
     assert "ORIGINAL BYTECODE of" in data
-    assert "UD analyze: enter GetAliveNodes" not in data
+    assert "[graph_break]" not in data
 
     os.remove(f"{test_case_name}_log.txt")
 
@@ -115,9 +115,9 @@ def test_pijit_log_mix_guard_bytecode_2():
     log_config = "\" guard , bytecode \""
     data = run_test_case(test_case_name, log_config)
 
-    assert "generated guard at" in data
+    assert "[guard]" in data
     assert "ORIGINAL BYTECODE of" in data
-    assert "UD analyze: enter GetAliveNodes" not in data
+    assert "[graph_break]" not in data
 
     os.remove(f"{test_case_name}_log.txt")
 
@@ -132,8 +132,8 @@ def test_pijit_log_mix_guard_all():
     log_config = "guard,all"
     data = run_test_case(test_case_name, log_config)
 
-    assert "generated guard at" in data
+    assert "[guard]" in data
     assert "ORIGINAL BYTECODE of" in data
-    assert "UD analyze: enter GetAliveNodes" in data
+    assert "[graph_break]" in data
 
     os.remove(f"{test_case_name}_log.txt")

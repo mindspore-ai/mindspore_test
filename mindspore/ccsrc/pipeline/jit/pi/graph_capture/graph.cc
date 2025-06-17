@@ -70,7 +70,7 @@ Graph::Graph(PyCodeObject *co, PyObject *globals, const GraphJitConfig &conf)
   guard_builder_ = std::make_unique<GuardBuilder>(
     // save config
     Config().GetBoolConfig(GraphJitConfig::kStrictTrace), Config().getIntConfig(GraphJitConfig::kMaxTraceDepth),
-    IsPiJitDebugLogOn(LogConfig::kGuard));
+    IsPiJitLogOn(LogCfg::kGuard));
 
   break_info_.bci_ = -1;
   break_info_.reason_ = StopTraceReason::kNonStopTrace;
@@ -150,6 +150,8 @@ bool Graph::NeedSymbolic(ValueNode *node) {
                  << "the node is: " << node->ToString();
     return false;
   }
+  PIJIT_DEBUG_LOG(LogCfg::kDynamic) << "Symbolic object: " << trace->ToString() << " at " << GetFileName(this) << ":"
+                                    << node->GetLineNo();
   node->SetVobj(AObject::Convert(symbol_object));
   node->GetTrace()->SetObject(symbol_object);
   // clear compile cache for this fail item ...
@@ -264,7 +266,8 @@ void Graph::StopTraceAt(int bci, StopTraceReason reason, const std::vector<std::
   break_info_.bci_ = bci;
   break_info_.reason_ = reason;
 
-  if (bci != -1 && conf_.GetBoolConfig(GraphJitConfig::kFullGraph)) {
+  if (bci != -1 && ((IsPiJitLogOn(LogCfg::kGraphBreak) && !IsBreakAtCall(this)) ||
+                    conf_.GetBoolConfig(GraphJitConfig::kFullGraph))) {
     std::ostringstream oss;
     oss << GetStopTraceReasonDesc(reason);
     if (!hints.empty()) {
@@ -277,7 +280,18 @@ void Graph::StopTraceAt(int bci, StopTraceReason reason, const std::vector<std::
         oss << ctx.location()->ToString();
       }
     }
-    throw GraphBreakException(oss.str());
+
+    if (!conf_.GetBoolConfig(GraphJitConfig::kFullGraph)) {
+      if (trace_ctx_stack.empty() || trace_ctx_stack.back().location() == nullptr) {
+        return;
+      }
+      PIJIT_DEBUG_LOG(LogCfg::kGraphBreak)
+        << std::endl
+        << "Graph break at: " << trace_ctx_stack.back().location()->ToString() << std::endl
+        << oss.str();
+    } else {
+      throw GraphBreakException(oss.str());
+    }
   }
 }
 
@@ -988,6 +1002,20 @@ std::string GetNameAndLocation(const Graph *graph) {
   PyCodeWrapper co(graph->GetCodeObj());
   ss << "'" << graph->GetCodeName() << "' " << graph << " at \"" << co.FileName() << ":" << co.FirstLine() << "\"";
   return ss.str();
+}
+
+// If the graph is break at calling subgraph, then return the CallNode at break bci, or else return nullptr.
+CallNode *FindBreakAtCall(const Graph *graph) {
+  int break_bci = graph->GetStopTraceBci();
+  if (break_bci == -1) {
+    return nullptr;
+  }
+  const std::vector<ValueNode *> &traced_nodes = graph->GetTracedNodes();
+  auto it = std::find_if(traced_nodes.rbegin(), traced_nodes.rend(), [break_bci](ValueNode *node) {
+    return node->bci() == break_bci && node->GetType() == AbstractNode::Call &&
+           (static_cast<CallNode *>(node))->GetSubGraph() != nullptr;
+  });
+  return it != traced_nodes.rend() ? static_cast<CallNode *>(*it) : nullptr;
 }
 
 }  // namespace pijit

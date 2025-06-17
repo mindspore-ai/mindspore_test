@@ -337,6 +337,7 @@ class GraphBuilder {
   std::vector<ValueNode *> side_effect_outputs_;
   std::vector<TryBlock> tryBlockStacks_{};
   FrameStates excFrame_;
+  int last_traced_line_ = -1;
 
   static const std::unordered_map<int, bool (GraphBuilder::*)(const Instr &)> bytecode_meth_map_;
 

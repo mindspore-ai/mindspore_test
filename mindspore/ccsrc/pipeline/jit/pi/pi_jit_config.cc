@@ -73,11 +73,11 @@ static const std::unordered_map<std::string, bool (GraphJitConfig::*)(PyObject *
   {"recapture_loop_body", &GraphJitConfig::SetBool<GraphJitConfig::kReCaptureLoopBody>},
 };
 
-static const std::unordered_map<std::string, LogConfig> key_to_log_map = {
-  {"print_after_all", LogConfig::kAll},
-  {"print_bytecode", LogConfig::kBytecode},
-  {"print_guard", LogConfig::kGuard},
-  {"LOG_GRAPH_BREAK", LogConfig::kGraphBreak},
+static const std::unordered_map<std::string, LogCfg> key_to_log_map = {
+  {"print_after_all", LogCfg::kAll},
+  {"print_bytecode", LogCfg::kBytecode},
+  {"print_guard", LogCfg::kGuard},
+  {"LOG_GRAPH_BREAK", LogCfg::kGraphBreak},
 };
 
 GraphJitConfig::GraphJitConfig() : int_conf{0}, bool_conf{false} {

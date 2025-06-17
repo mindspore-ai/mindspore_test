@@ -297,6 +297,10 @@ std::string GetFileName(const Graph *graph);
 // Return a string in format: 'func_name' at "file_path:line_number"
 std::string GetNameAndLocation(const Graph *graph);
 
+CallNode *FindBreakAtCall(const Graph *graph);
+
+// Check if the graph is break at calling subgraph.
+inline bool IsBreakAtCall(Graph *graph) { return FindBreakAtCall(graph) != nullptr; }
 }  // namespace pijit
 }  // namespace mindspore
 

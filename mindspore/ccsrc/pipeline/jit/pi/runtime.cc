@@ -327,7 +327,7 @@ static bool TryLoopBodyReCapture(JitCompileResults *jcr, const GraphBuilderPtr &
 static auto HandleBreakAtLoop(JitCompileResults *jcr, const GraphBuilderPtr &g) {
   // one stage need adapter
   if (jcr->conf()->GetBoolConfig(GraphJitConfig::kLoopUnrolling) && g->GetGraph()->IsBreakAtLoop()) {
-    if (IsPiJitDebugLogOn(LogConfig::kGraphBreak)) {
+    if (IsPiJitLogOn(LogCfg::kGraphBreak)) {
       GRAPH_JIT_LOG_F("===> graph break after loop unrolling\n%s\n", g->GetGraph()->ToString(1).c_str());
     }
     MS_LOG(INFO) << "Top graph is graph break at loop after unrolling. Disable loop unrolling and re-capture graph";
@@ -396,7 +396,7 @@ static void GraphCapture(JitCompileResults *jcr) {
     return;
   }
   if (g->GetGraph()->ShouldNeverCompile()) {
-    if (IsPiJitDebugLogOn(LogConfig::kGraphBreak)) {
+    if (IsPiJitLogOn(LogCfg::kGraphBreak)) {
       GRAPH_JIT_LOG_F("===> graph break after loop unrolling\n%s\n", g->GetGraph()->ToString(1).c_str());
     }
     MS_LOG(INFO) << "Cannot capture graph, mark it as NEVER_COMPILE: " << ToString(jcr->origin_frame().GetCode());
@@ -410,7 +410,7 @@ static void GraphCapture(JitCompileResults *jcr) {
   MarkBreak(g->GetGraph());
 
   // dump DFG
-  if (IsPiJitDebugLogOn(LogConfig::kOthers)) {
+  if (IsPiJitLogOn(LogCfg::kOthers)) {
     g->DumpDFG();
     const auto &debug_str = analyzer->GetCaptureInfo().ToString();
     PY_PRINTF_WITH_FLUSH("*** Dump One Stage ByteCode Collection After CodeGen *** \n%s", debug_str.c_str());
@@ -422,7 +422,7 @@ static void GraphCapture(JitCompileResults *jcr) {
     jcr->set_stat(JitCompileResults::GRAPH_CALLABLE);
   }
 
-  if (IsPiJitDebugLogOn(LogConfig::kBytecode)) {
+  if (IsPiJitLogOn(LogCfg::kBytecode)) {
     PY_PRINTF_WITH_FLUSH("MODIFIED BYTECODE of %A", new_code.ptr());
     Utils::DisFuncObject(new_code.ptr());
   }
@@ -510,12 +510,11 @@ static bool JitCompile(PyThreadState *tstate, JitCompileResults *c) {
 
   CollectTraceBack(c, c->code()->GetPythonCode(), c->code()->GetNativeFunc() != nullptr);
 
-  if (IsPiJitDebugLogOn(LogConfig::kGuard)) {
-    GRAPH_JIT_LOG_F("%s\n", c->tbs()->Dump().c_str());
-
-    GRAPH_JIT_LOG_F("generated guard at %s\n", std::string(py::str(reinterpret_cast<PyObject *>(code))).c_str());
-    GRAPH_JIT_LOG_F("%s\n", c->code()->GetGuard()->ToString().c_str());
-  }
+  PIJIT_DEBUG_LOG(LogCfg::kOthers) << std::endl << c->tbs()->Dump().c_str();
+  PIJIT_DEBUG_LOG(LogCfg::kGuard) << std::endl
+                                  << "generated guard at "
+                                  << std::string(py::str(reinterpret_cast<PyObject *>(code))).c_str() << std::endl
+                                  << c->code()->GetGuard()->ToString().c_str();
   if (c->stat() != JitCompileResults::GRAPH_CALLABLE) {
     c->set_stat(JitCompileResults::NEVER_COMPILE);
     return false;
@@ -639,8 +638,7 @@ static bool CheckGuard(JitCompileResults *c, const PyFrameWrapper &f) {
   GuardContext context;
 
   bool log_perf = c->conf()->GetBoolConfig(GraphJitConfig::kLogGuardPerf);
-  bool print_guard = IsPiJitDebugLogOn(LogConfig::kGuard);
-  if (c->code()->GetGuard()->Check(f, print_guard, log_perf)) {
+  if (c->code()->GetGuard()->Check(f, true, log_perf)) {
     return true;
   }
 
@@ -654,7 +652,7 @@ static bool CheckGuard(JitCompileResults *c, const PyFrameWrapper &f) {
     if (oc == skip) {
       continue;
     }
-    if (oc->GetGuard()->Check(f, print_guard, log_perf)) {
+    if (oc->GetGuard()->Check(f, false, log_perf)) {
       c->set_code(oc);
       MS_LOG(DEBUG) << "select the compiled code due to guard is match: "
                     << (oc->GetPythonCode() != nullptr
@@ -733,6 +731,8 @@ static py::object CodeHook(PyThreadState *tstate, JitCompileResults *c, PyFrameW
       just_compiled = true;
     /* fallthrough */
     case JitCompileResults::GRAPH_CALLABLE: {
+      PIJIT_DEBUG_LOG(LogCfg::kRecompiles)
+        << "Check guard of func: " << std::string(py::str(reinterpret_cast<PyObject *>(co)));
       if (CheckGuard(c, PyFrameWrapper(frame))) {
         c->set_origin_frame(PyFrameWrapper());
         return CallCompiledResults(tstate, PyFrameWrapper(frame), c);
@@ -742,6 +742,8 @@ static py::object CodeHook(PyThreadState *tstate, JitCompileResults *c, PyFrameW
       }
       if (!just_compiled) {
         c->set_stat(JitCompileResults::GRAPH_CANDIDATE);
+        PIJIT_DEBUG_LOG(LogCfg::kRecompiles)
+          << "Recompile func: " << std::string(py::str(reinterpret_cast<PyObject *>(co)));
         return CodeHook(tstate, c, frame);
       }
       MS_LOG(EXCEPTION) << "shouldn't reach here";
