@@ -35,6 +35,7 @@
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/graph_util/pipeline_split_utils.h"
 #include "frontend/parallel/parameter_manager.h"
+#include "frontend/parallel/strategy_checkpoint/parallel_strategy_checkpoint.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/backend/distributed/ps/util.h"
 #include "include/backend/distributed/ps/ps_context.h"
@@ -226,6 +227,25 @@ int64_t GetAndCheckDeviceNum() {
   return device_num;
 }
 
+void SaveParamStageRanksNotPP(const ResourcePtr &res) {
+  const auto &root = res->func_graph();
+  const auto &parameters = root->parameters();
+  int64_t stage_id = 0;
+  std::vector<int64_t> rank_list;
+  int64_t device_num = GetAndCheckDeviceNum();
+  for (int64_t i = 0; i < device_num; ++i) {
+    rank_list.push_back(i);
+  }
+  for (auto &parameter : parameters) {
+    auto param = parameter->cast<ParameterPtr>();
+    if (param == nullptr) {
+      continue;
+    }
+    const auto param_name = param->name();
+    parallel::StrategyLayout::GetInstance()->SetParamStageIdRanks(param_name, stage_id, rank_list);
+  }
+}
+
 bool ValidateParallelContext(const ResourcePtr &res) {
   MS_EXCEPTION_IF_NULL(res);
   const auto parallel_context = parallel::ParallelContext::GetInstance();
@@ -261,6 +281,7 @@ bool HandleStageNumLessEqualOne(const ResourcePtr &res) {
     return false;
   }
   MS_LOG(INFO) << "The parameter 'stage_num' is: " << stage_num << ". No need Pipeline split.";
+  SaveParamStageRanksNotPP(res);
   const auto manager = res->manager();
   const auto root = res->func_graph();
   const auto global_rank = parallel::GetRank();

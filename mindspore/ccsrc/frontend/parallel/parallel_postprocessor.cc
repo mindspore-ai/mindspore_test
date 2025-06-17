@@ -529,9 +529,24 @@ void AssignManualShapeMapForGather(const OperatorInfoPtr &operator_info, const s
   }
 }
 
-static void CheckpointStrategy(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphPtr &root) {
-  if (!StrategyCheckpoint::GetInstance().SaveCheckPointOn()) {
+static void MicroBatchPostProcess(const FuncGraphPtr &root, const std::vector<AnfNodePtr> &all_nodes) {
+  const auto &pipeline_stages = ParallelContext::GetInstance()->pipeline_stage_split_num();
+  if (pipeline_stages > 1) {
+    AddVirtualAssignAdd(root);
+    HandleReceiveParam(root);
+    LabelGenMaskMicro(root);
     return;
+  }
+  if (ParallelContext::GetInstance()->grad_accumulation_step() > 1) {
+    AddVirtualAssignAdd(root);
+    LabelGenMaskMicro(root);
+  }
+}
+}  // namespace
+
+void CheckpointStrategy(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphPtr &root) {
+  if (!StrategyCheckpoint::GetInstance().SaveCheckPointOn()) {
+    MS_LOG(INFO) << "The param of save_checkpoint_on_ is False";
   }
 
   StrategyMap stra_map;
@@ -604,21 +619,6 @@ static void CheckpointStrategy(const std::vector<AnfNodePtr> &all_nodes, const F
   }
 }
 
-static void MicroBatchPostProcess(const FuncGraphPtr &root, const std::vector<AnfNodePtr> &all_nodes) {
-  auto pipeline_stages = ParallelContext::GetInstance()->pipeline_stage_split_num();
-  if (pipeline_stages > 1) {
-    AddVirtualAssignAdd(root);
-    HandleReceiveParam(root);
-    LabelGenMaskMicro(root);
-    return;
-  }
-  if (ParallelContext::GetInstance()->grad_accumulation_step() > 1) {
-    AddVirtualAssignAdd(root);
-    LabelGenMaskMicro(root);
-  }
-}
-}  // namespace
-
 static void SetSharedAttrForOptimizerParameter(const FuncGraphPtr &root) {
   MS_EXCEPTION_IF_NULL(root);
   auto root_params = root->parameters();
@@ -663,6 +663,12 @@ static void SetSharedAttrForOptimizerParameter(const FuncGraphPtr &root) {
 
 void ParallelPostprocessor::PipelinePostProcessStep1() {
   auto pipeline_processor = processor_context_->pipeline_processor;
+  if (pipeline_processor == nullptr) {
+    const auto &root = processor_context_->root;
+    MS_EXCEPTION_IF_NULL(root);
+    const auto &all_nodes_pp = processor_context_->all_nodes;
+    CheckpointStrategy(all_nodes_pp, root);
+  }
   if (pipeline_processor != nullptr) {
     MS_EXCEPTION_IF_NULL(pipeline_processor);
     if (parallel::ParallelContext::GetInstance()->fine_grained_micro_interleaved_size() > 0) {
@@ -670,8 +676,13 @@ void ParallelPostprocessor::PipelinePostProcessStep1() {
       MS_EXCEPTION_IF_NULL(root);
       auto all_nodes_pp = TopoSort(root->get_return(), SuccDeeperSimple);
       pipeline_processor->Init(all_nodes_pp);
+      CheckpointStrategy(all_nodes_pp, root);
       pipeline_processor->GraphPartition(all_nodes_pp);
     } else {
+      const auto &root = processor_context_->root;
+      MS_EXCEPTION_IF_NULL(root);
+      const auto &all_nodes_pp = processor_context_->all_nodes;
+      CheckpointStrategy(all_nodes_pp, root);
       pipeline_processor->GraphPartition(processor_context_->all_nodes);
     }
     AddVirtualAssignKvCache(processor_context_->root);

@@ -192,6 +192,7 @@ class Cell(Cell_):
         super().__setattr__("_auto_prefix", auto_prefix)
         super().__setattr__("_scope", None)
         super().__setattr__("_phase", 'train')
+        super().__setattr__("_compile_phase", None)
         super().__setattr__("_parameter_layout_dict", None)
         super().__setattr__("_parallel_parameter_name_list", None)
         super().__setattr__("_parallel_parameter_merge_net_dict", None)
@@ -492,6 +493,18 @@ class Cell(Cell_):
         if not isinstance(value, str):
             raise TypeError(f"For 'Cell', the property 'phase' must be string type, but got type {type(value)}.")
         self._phase = value
+
+    @property
+    def compile_phase(self):
+        return self._compile_phase
+
+    @compile_phase.setter
+    def compile_phase(self, value):
+        if not isinstance(value, str):
+            raise TypeError(f"For 'Cell', 'compile_phase' must be string type, but got type {type(value)}.")
+        self._compile_phase = value
+        for cell in self._cells.values():
+            cell.compile_phase = value
 
     @property
     def parameter_layout_dict(self):
