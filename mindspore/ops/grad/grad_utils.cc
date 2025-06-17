@@ -650,12 +650,12 @@ NodePtr Scatter_(BpropBuilder *ib, const NodePtr &input, const NodePtr &dim, con
     auto scatter_zero_dim_impl = [&input, &dim, &index, &src, &reduce](Emitter *e) -> NodePtrList {
       return {ScatterZeroDim(e, input, dim, index, src, reduce)};
     };
-    auto scatter_impl = [&input, &dim, &index, &src](Emitter *e) -> NodePtrList {
-      return {e->Emit("InplaceScatterSrc", {input, dim, index, src})};
+    auto scatter_impl = [&input, &dim, &index, &src, &reduce](Emitter *e) -> NodePtrList {
+      return {e->Emit("Scatter", {input, dim, index, src, reduce})};
     };
     return ib->Conditional(is_zero_dim_cond, scatter_zero_dim_impl, scatter_impl);
   }
-  return ib->Emit("InplaceScatterSrc", {input, dim, index, src});
+  return ib->Emit("Scatter", {input, dim, index, src, reduce});
 }
 
 NodePtr ScatterOrTensorScatterElements(BpropBuilder *ib, const NodePtr &input, const NodePtr &dim, const NodePtr &index,

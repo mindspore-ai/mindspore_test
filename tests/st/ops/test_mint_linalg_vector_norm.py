@@ -27,7 +27,6 @@ from tests.mark_utils import arg_mark
 def vector_norm_forward_func(x, p=2, dim=None, keepdim=False):
     return ops.vector_norm(x, ord=p, axis=dim, keepdims=keepdim)
 
-@test_utils.run_with_cell
 def vector_norm_backward_func(x, p, dim, keepdim):
     return ms.grad(vector_norm_forward_func, (0))(x, p, dim, keepdim)
 
