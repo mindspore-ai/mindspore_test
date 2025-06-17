@@ -132,14 +132,8 @@ void SpeedFusionAttentionAscendCustomize(
   auto sparse_mode_value = GetValue<int64_t>(sparse_mode);
   auto pse_type_value = GetValue<int64_t>(pse_type);
   auto prefix_array = ConvertValueTupleToVector<int64_t>(prefix);
-  std::optional<std::vector<int64_t>> q_start_idx_array = std::nullopt;
-  std::optional<std::vector<int64_t>> kv_start_idx_array = std::nullopt;
-  if (q_start_idx.has_value()) {
-    q_start_idx_array.emplace(ConvertValueTupleToVector<int64_t>(q_start_idx.value()));
-  }
-  if (kv_start_idx.has_value()) {
-    kv_start_idx_array.emplace(ConvertValueTupleToVector<int64_t>(kv_start_idx.value()));
-  }
+  auto q_start_idx_array = ConvertValueTupleToVector<int64_t>(q_start_idx);
+  auto kv_start_idx_array = ConvertValueTupleToVector<int64_t>(kv_start_idx);
 
   constexpr int64_t kHostOutputNum = 3;
   auto device_outputs = std::vector<tensor::TensorPtr>(op->outputs().begin(), op->outputs().end() - kHostOutputNum);
