@@ -4,7 +4,6 @@ from mindspore.ops.auto_generate.gen_ops_prim import BatchNormReduceGrad
 from mindspore.ops.auto_generate.gen_ops_prim import BatchNormElemtGrad
 from mindspore.communication.comm_func import all_gather_into_tensor
 from mindspore.communication.comm_func import all_reduce
-from mindspore.ops import operations as P
 from mindspore import ops, mint
 from mindspore.ops.primitive import Primitive, prim_arg_register, PrimitiveWithInfer, prim_attr_register
 from mindspore import _checkparam as validator
@@ -14,7 +13,7 @@ from mindspore.ops.operations.comm_ops import ReduceOp, check_hcom_group_valid
 
 batch_norm_reduce_grad = BatchNormReduceGrad()
 batch_norm_elemt_grad = BatchNormElemtGrad()
-shape = P.Shape()
+shape = ops.Shape()
 
 
 class AllGather(PrimitiveWithInfer):
