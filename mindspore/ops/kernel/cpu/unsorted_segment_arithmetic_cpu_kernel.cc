@@ -178,6 +178,11 @@ int UnsortedSegmentArithmeticCpuKernelMod::Resize(const std::vector<KernelTensor
   loop_size_ = 1;
   for (size_t i = batch_rank_; i < in_shape.size(); i++) {
     loop_size_ *= in_shape[i];
+    if (loop_size_ <= 0) {
+      MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', loop_size_ should be greater than 0,"
+                        << "please check all dims in input shape are greater than 0.";
+      return KRET_RESIZE_FAILED;
+    }
   }
   loop_size_ /= comp_size_;
   return KRET_OK;
