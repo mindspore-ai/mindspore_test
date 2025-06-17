@@ -56,9 +56,12 @@ bool GradientsAllReduceDependLastSend::Run(const FuncGraphPtr &graph) {
       auto last_input = cnode->inputs().back();
       if (IsPrimitiveCNode(last_input, prim::kPrimTensorMove)) {
         auto last_input_cnode = last_input->cast<CNodePtr>();
+        MS_EXCEPTION_IF_NULL(last_input_cnode);
         auto real_input_node = last_input_cnode->input(1);
         if (IsPrimitiveCNode(real_input_node, prim::kPrimDepend)) {
-          auto addn_node = real_input_node->cast<CNodePtr>()->input(2);
+          auto real_input_cnode = real_input_node->cast<CNodePtr>();
+          MS_EXCEPTION_IF_NULL(real_input_cnode);
+          auto addn_node = real_input_cnode->input(2);
           if (IsPrimitiveCNode(addn_node, prim::kPrimAddN)) {
             MS_LOG(INFO) << "Find the pipeline addn " << addn_node->fullname_with_scope();
             addn_list.push_back(addn_node->cast<CNodePtr>());
