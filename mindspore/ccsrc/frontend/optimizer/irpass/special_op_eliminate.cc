@@ -299,9 +299,13 @@ AnfNodePtr ZeroLikeFillZero::operator()(const OptimizerPtr &, const AnfNodePtr &
     auto shape = fg->NewCNode({NewValueNode(PrimShape_), y_});
     return fg->NewCNode({NewValueNode(PrimFill_), dtype, shape, NewValueNode(MakeValue(static_cast<int64_t>(0)))});
   }
+  const auto &node_abs = node->abstract();
+  if (node_abs != nullptr &&
+      (node_abs->isa<abstract::AbstractRefTensor>() || node_abs->inplace_abstract() != nullptr)) {
+    return nullptr;
+  }
 
   abstract::AbstractTensorPtr tensor_abstract = y_->abstract()->cast<abstract::AbstractTensorPtr>();
-
   TypePtr tensor_type_ptr = tensor_abstract->element()->BuildType();
   std::vector<int64_t> tensor_shape = tensor_abstract->shape()->shape();
 

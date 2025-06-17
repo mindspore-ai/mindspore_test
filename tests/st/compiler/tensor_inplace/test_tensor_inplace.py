@@ -19,6 +19,7 @@ import mindspore.nn as nn
 from mindspore import context, Tensor, Parameter
 from mindspore import dtype as mstype
 from mindspore.ops import operations as P
+from mindspore.ops.auto_generate.gen_ops_prim import InplaceAddExt
 from tests.mark_utils import arg_mark
 
 context.set_context(mode=ms.GRAPH_MODE)
@@ -497,3 +498,28 @@ def test_tensor_augassign():
     expected_res = np.array([2, 9, 64, 625], dtype=np.float32)
     allclose_nparray(expected_res, out_me.asnumpy(), 0.001, 0.001)
     os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '0'
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_zerolike_fill_zero():
+    """
+    Feature: Support tensor inplace in ZeroLikeFillZero.
+    Description: Support tensor inplace.
+    Expectation: Run success.
+    """
+    class ZerosLikeNet(nn.Cell):
+        def __init__(self):
+            super(ZerosLikeNet, self).__init__()
+            self.zeros_like = P.ZerosLike()
+            self.inplace_add = InplaceAddExt()
+
+        def construct(self, x):
+            y = self.zeros_like(x)
+            self.inplace_add(y, y + 2)
+            return y + 1
+
+    context.set_context(jit_config={"jit_level": "O0"})
+    x = Tensor(1)
+    net = ZerosLikeNet()
+    output = net(x)
+    assert output == 3
