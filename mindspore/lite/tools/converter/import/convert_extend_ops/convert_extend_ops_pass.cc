@@ -36,6 +36,7 @@ constexpr auto kNameMinPatternName = "MinPatternName";
 constexpr auto kNameDensePatternName = "DensePatternName";
 constexpr auto kNameOnesPatternName = "OnesPatternName";
 constexpr auto kNameZerosPatternName = "ZerosPatternName";
+constexpr auto kNameMulsPatternName = "MulsPatternName";
 }  // namespace
 
 VectorRef ConvertExtendOpsPass::DefineSumExtPattern() const {
@@ -117,6 +118,17 @@ VectorRef ConvertExtendOpsPass::DefineZerosPattern() const {
   return zeros_ref;
 }
 
+VectorRef ConvertExtendOpsPass::DefineMulsPattern() const {
+  auto is_muls = std::make_shared<CondVar>(IsSpecifiedNode<&prim::kPrimMuls>);
+  MS_CHECK_TRUE_RET(is_muls != nullptr, {});
+  auto input = std::make_shared<Var>();
+  MS_CHECK_TRUE_RET(input != nullptr, {});
+  auto other = std::make_shared<Var>();
+  MS_CHECK_TRUE_RET(other != nullptr, {});
+  VectorRef muls_ref = VectorRef({is_muls, input, other});
+  return muls_ref;
+}
+
 std::unordered_map<std::string, VectorRef> ConvertExtendOpsPass::DefinePatterns() const {
   std::unordered_map<std::string, VectorRef> patterns;
   patterns[kNameSumExtPatternName] = DefineSumExtPattern();
@@ -126,6 +138,7 @@ std::unordered_map<std::string, VectorRef> ConvertExtendOpsPass::DefinePatterns(
   patterns[kNameDensePatternName] = DefineDensePattern();
   patterns[kNameOnesPatternName] = DefineOnesPattern();
   patterns[kNameZerosPatternName] = DefineZerosPattern();
+  patterns[kNameMulsPatternName] = DefineMulsPattern();
   return patterns;
 }
 
@@ -142,7 +155,7 @@ AnfNodePtr ConvertExtendOpsPass::Process(const std::string &pattern_name, const 
     {kNameSumExtPatternName, ConvertSumExtPass}, {kNameMatMulExtPatternName, ConvertMatMulExtPass},
     {kNameMaxPatternName, ConvertMaxMinPass},    {kNameMinPatternName, ConvertMaxMinPass},
     {kNameDensePatternName, ConvertDensePass},   {kNameOnesPatternName, ConvertOnesPass},
-    {kNameZerosPatternName, ConvertZerosPass}};
+    {kNameZerosPatternName, ConvertZerosPass},   {kNameMulsPatternName, ConvertMulsPass}};
 
   if (sub_pass_map.find(pattern_name) != sub_pass_map.end()) {
     MS_LOG(INFO) << "The node " << node->fullname_with_scope() << " is matched pattern[" << pattern_name
