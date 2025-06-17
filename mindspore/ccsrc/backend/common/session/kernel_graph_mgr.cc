@@ -626,7 +626,9 @@ nlohmann::json SaveBackendParamToFrontendParamIndex(const KernelGraphPtr &kernel
   nlohmann::json ret;
   const auto &params = kernel_graph->parameters();
   auto &context = CompileCacheContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(front_graph);
+  if (front_graph == nullptr) {
+    return ret;
+  }
   const auto &front_params = front_graph->parameters();
   for (const auto &param : params) {
     if (!context.IsBackendParamGenFromFrontendParam(param)) {
