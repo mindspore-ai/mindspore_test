@@ -87,13 +87,8 @@ def test_remove_redundancy_save_True_load_True_dp():
     cbpoint_cb = ModelCheckpoint(prefix="redundancy", directory=f"./device{rank_id}_redundancy11dp", config=config)
     print("distribute network train.", flush=True)
     model = Model(net, loss_fn=loss, optimizer=optim)
-<<<<<<< HEAD
-    model.train(1, dataset, callbacks=cbpoint_cb)
-    ckpt_path = f"./device{rank_id}_redundancy11dp/redundancy-1_1875.ckpt"
-=======
     model.train(1, dataset, callbacks=[cbpoint_cb])
     ckpt_path = f"./device{rank_id}_redundancy11dp/redundancy-1_1875.safetensors"
->>>>>>> 99844b30832 (bugfix_load_checkpoint)
 
     print("distribute network loadcheckpoint.", flush=True)
     param_dict = load_checkpoint(ckpt_path)
