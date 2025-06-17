@@ -90,9 +90,9 @@ void Debugger::Init(const uint32_t device_id, const std::string device_target) {
   // access lock for public method
   std::lock_guard<std::mutex> a_lock(access_lock_);
   // save device_id
-  MS_LOG(INFO) << "Debugger got device_id: " << device_id;
+  MS_VLOG(VL_DUMP) << "Debugger got device_id: " << device_id;
   device_id_ = device_id;
-  MS_LOG(INFO) << "Debugger got device_target: " << device_target;
+  MS_VLOG(VL_DUMP) << "Debugger got device_target: " << device_target;
   device_target_ = device_target;
   version_ = MSVERSION;
 }
@@ -101,7 +101,7 @@ bool IsTypeDebuggerSupported(TypeId type) {
   if (type < TypeId::kNumberTypeEnd && type > TypeId::kNumberTypeBegin && type != kNumberTypeComplex64) {
     return true;
   }
-  MS_LOG(INFO) << "Debugger does not support type: " << TypeIdLabel(type);
+  MS_VLOG(VL_DUMP) << "Debugger does not support type: " << TypeIdLabel(type);
   return false;
 }
 
@@ -147,7 +147,7 @@ void Debugger::Reset() {
   executed_graph_ptr_set_.clear();
   parameters_mindRT_.clear();
   visited_root_graph_ids_.clear();
-  MS_LOG(INFO) << "Release Debugger resource.";
+  MS_VLOG(VL_DUMP) << "Release Debugger resource.";
 }
 
 /*
@@ -175,7 +175,7 @@ void Debugger::PreExecuteGraphDebugger(const std::vector<KernelGraphPtr> &graphs
   for (size_t graph_index = 0; graph_index < graphs.size(); ++graph_index) {
     const auto &graph = graphs[graph_index];
     // set root graph id for GPU mindrt runtime.
-    MS_LOG(INFO) << "Set root graph for graph: " << graph->graph_id() << " to: " << cur_root_graph_id_ << ".";
+    MS_VLOG(VL_DUMP) << "Set root graph for graph: " << graph->graph_id() << " to: " << cur_root_graph_id_ << ".";
     graph->set_root_graph_id(cur_root_graph_id_);
     if (debugger_) {
       debugger_->PreExecute(graph);
@@ -287,7 +287,7 @@ void Debugger::DumpParamsAndConstAndHistory() {
     MS_EXCEPTION_IF_NULL(debugger);
     // Dump graph run hisotry for each graph.
     if (debugger->GetAscendKernelByKernelFlag() && (*kernel_graph)->graph_id() != (*kernel_graph)->root_graph_id()) {
-      MS_LOG(INFO) << "current graph graph_id = " << (*kernel_graph)->graph_id() << " is not root graph.";
+      MS_VLOG(VL_DUMP) << "current graph graph_id = " << (*kernel_graph)->graph_id() << " is not root graph.";
     } else {
       E2eDump::DumpRunIter(*kernel_graph, datadump::GetRankID());
     }
@@ -412,7 +412,7 @@ void Debugger::PostExecute() {
 void Debugger::LoadGraphs(const KernelGraphPtr &graph_ptr) {
   MS_EXCEPTION_IF_NULL(graph_ptr);
   if (graph_ptr_ != graph_ptr) {
-    MS_LOG(INFO) << "LoadGraphs Debugger got new graph: " << graph_ptr->graph_id();
+    MS_VLOG(VL_DUMP) << "LoadGraphs Debugger got new graph: " << graph_ptr->graph_id();
     // save new graph_ptr
     graph_ptr_ = graph_ptr;
     CheckDatasetGraph();
@@ -434,16 +434,16 @@ void Debugger::CheckDatasetGraph() {
   MS_EXCEPTION_IF_NULL(graph_ptr_);
   const auto &params = graph_ptr_->inputs();
   for (const auto &param : params) {
-    MS_LOG(INFO) << "param: " << GetKernelNodeName(param);
+    MS_VLOG(VL_DUMP) << "param: " << GetKernelNodeName(param);
   }
   // check if there is GetNext or InitDataSetQueue node
   const auto &nodes = graph_ptr_->execution_order();
   for (const auto &node : nodes) {
     auto node_name = common::AnfAlgo::GetCNodeName(node);
-    MS_LOG(INFO) << "node: " << GetKernelNodeName(node);
+    MS_VLOG(VL_DUMP) << "node: " << GetKernelNodeName(node);
     if (node_name == "GetNext" || node_name == "InitDataSetQueue") {
-      MS_LOG(INFO) << "Not enabling debugger for graph " << graph_ptr_->graph_id() << ": found dataset graph node "
-                   << node_name;
+      MS_VLOG(VL_DUMP) << "Not enabling debugger for graph " << graph_ptr_->graph_id() << ": found dataset graph node "
+                       << node_name;
       is_dataset_graph_ = true;
       return;
     }
@@ -473,7 +473,7 @@ std::shared_ptr<TensorData> Debugger::GetTensor(const std::string &tensor_name) 
 
 bool Debugger::DumpTensorToFile(const std::string &filepath, const std::string &tensor_name, size_t slot) const {
   if (debug_services_ == nullptr) {
-    MS_LOG(INFO) << "The debug_services_ is nullptr.";
+    MS_VLOG(VL_DUMP) << "The debug_services_ is nullptr.";
     return false;
   }
   return debug_services_.get()->DumpTensorToFile(filepath, tensor_name, slot);
@@ -569,7 +569,7 @@ void Debugger::LoadParametersAndConst() {
   }
   MS_EXCEPTION_IF_NULL(graph_ptr_);
   // load parameters
-  MS_LOG(INFO) << "Start to load Parameters for graph " << graph_ptr_->graph_id() << ".";
+  MS_VLOG(VL_DUMP) << "Start to load Parameters for graph " << graph_ptr_->graph_id() << ".";
   auto root_graph_id = graph_ptr_->root_graph_id();
   const auto &parameters = graph_ptr_->inputs();
   for (auto &item : parameters) {
@@ -577,7 +577,7 @@ void Debugger::LoadParametersAndConst() {
   }
   // load value nodes
   // get all constant values from the graph
-  MS_LOG(INFO) << "Start to load value nodes for graph " << graph_ptr_->graph_id() << ".";
+  MS_VLOG(VL_DUMP) << "Start to load value nodes for graph " << graph_ptr_->graph_id() << ".";
   const auto value_nodes = graph_ptr_->graph_value_nodes();
   for (auto &item : value_nodes) {
     LoadSingleAnfnode(item, kValueNodeOutputIndex, root_graph_id);
@@ -596,7 +596,7 @@ void Debugger::LoadParametersAndConst(const KernelGraphPtr &graph) {
   }
   MS_EXCEPTION_IF_NULL(graph);
   // load parameters
-  MS_LOG(INFO) << "Start to load Parameters for graph " << graph->graph_id() << ".";
+  MS_VLOG(VL_DUMP) << "Start to load Parameters for graph " << graph->graph_id() << ".";
   auto root_graph_id = graph->root_graph_id();
   const auto &parameters = graph->inputs();
   for (auto &item : parameters) {
@@ -604,7 +604,7 @@ void Debugger::LoadParametersAndConst(const KernelGraphPtr &graph) {
   }
   // load value nodes
   // get all constant values from the graph
-  MS_LOG(INFO) << "Start to load value nodes for graph " << graph->graph_id() << ".";
+  MS_VLOG(VL_DUMP) << "Start to load value nodes for graph " << graph->graph_id() << ".";
   const auto value_nodes = graph->graph_value_nodes();
   for (auto &item : value_nodes) {
     LoadSingleAnfnode(item, kValueNodeOutputIndex, root_graph_id);
@@ -640,7 +640,7 @@ void Debugger::LoadConstsForGraph(const KernelGraphPtr &graph) {
   }
   // load value nodes
   // get all constant values from the graph
-  MS_LOG(INFO) << "Start to load value nodes for graph " << graph->graph_id() << ".";
+  MS_VLOG(VL_DUMP) << "Start to load value nodes for graph " << graph->graph_id() << ".";
   auto root_graph_id = graph->root_graph_id();
   const auto value_nodes = graph->graph_value_nodes();
   for (auto &item : value_nodes) {

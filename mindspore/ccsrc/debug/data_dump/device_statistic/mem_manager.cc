@@ -33,7 +33,7 @@ void DumpMemManager::Initialize(const DeviceContext *device_context) {
   std::call_once(init_flag_, [this, device_context]() {
     MS_EXCEPTION_IF_NULL(device_context);
     size_t stream_size = device_context->device_res_manager_->QueryStreamSize();
-    MS_LOG(INFO) << "Dump start init memory cache, stream size is " << stream_size;
+    MS_VLOG(VL_DUMP) << "Dump start init memory cache, stream size is " << stream_size;
     workspace_cache_.reserve(stream_size);
     for (size_t stream_id = 0; stream_id < stream_size; ++stream_id) {
       workspace_cache_[stream_id] = CreateWorkspaceKernelTensor(device_context, max_workspace_size_);
@@ -51,7 +51,7 @@ void DumpMemManager::ClearCache() {
   output_cache_.clear();
   output_index_.clear();
   workspace_cache_.clear();
-  MS_LOG(INFO) << "Clear dump memory cache";
+  MS_VLOG(VL_DUMP) << "Clear dump memory cache";
 }
 
 void DumpMemManager::Reset() {
@@ -59,15 +59,15 @@ void DumpMemManager::Reset() {
   for (auto &item : output_index_) {
     item.second = 0;
   }
-  MS_LOG(INFO) << "Reset dump memory cache index";
+  MS_VLOG(VL_DUMP) << "Reset dump memory cache index";
 }
 
 KernelTensorPtr DumpMemManager::GetWorkSpaceTensor(const DeviceContext *device_context, size_t stream_id, size_t size) {
   MS_EXCEPTION_IF_NULL(device_context);
   Initialize(device_context);
   if (size > max_workspace_size_) {
-    MS_LOG(INFO) << "Workspace was not obtained from the cache, size exceeds cache maximum. Size is " << size
-                 << ", maximum is " << max_workspace_size_;
+    MS_VLOG(VL_DUMP) << "Workspace was not obtained from the cache, size exceeds cache maximum. Size is " << size
+                     << ", maximum is " << max_workspace_size_;
     return CreateWorkspaceKernelTensor(device_context, size);
   }
 
@@ -86,8 +86,8 @@ KernelTensorPtr DumpMemManager::GetOutputTensor(const DeviceContext *device_cont
   std::lock_guard<std::mutex> lock(output_cache_mutex_);
   size_t idx = output_index_[stream_id]++;
   if (idx >= max_output_num_) {
-    MS_LOG(INFO) << "Get output without cache, idx exceeds cache length. Idx is " << idx << ", max length is "
-                 << max_output_num_;
+    MS_VLOG(VL_DUMP) << "Get output without cache, idx exceeds cache length. Idx is " << idx << ", max length is "
+                     << max_output_num_;
     return CreateOutPutKernelTensor(device_context, dtype_id);
   }
 

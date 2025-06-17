@@ -21,7 +21,7 @@
 namespace mindspore {
 
 void DumpControl::DynamicDumpStart() {
-  MS_LOG(INFO) << "Dynamic Dump Start.";
+  MS_VLOG(VL_DUMP) << "Dynamic Dump Start.";
   if (!dynamic_switch_) {
     MS_LOG(WARNING) << "dump_start before dump_set_dynamic-Warning: dump_set_dynamic has not been set!";
   }
@@ -29,7 +29,7 @@ void DumpControl::DynamicDumpStart() {
 }
 
 void DumpControl::DynamicDumpStop() {
-  MS_LOG(INFO) << "Dynamic Dump Stop.";
+  MS_VLOG(VL_DUMP) << "Dynamic Dump Stop.";
   if (!dynamic_switch_) {
     MS_LOG(WARNING) << "dump_stop before dump_set_dynamic-Warning: dump_set_dynamic has not been set!";
   }
