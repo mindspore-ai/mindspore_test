@@ -32,18 +32,21 @@ mindspore.mint.nn.Conv2d
 
     想更深入了解卷积层，请参考论文 `Gradient Based Learning Applied to Document Recognition <http://vision.stanford.edu/cs598_spring07/papers/Lecun98.pdf>`_ 。
 
+    .. note::
+        暂不支持空Tensor输入。
+
     参数：
         - **in_channels** (int) - Conv2d层输入Tensor的空间维度。
         - **out_channels** (int) - Conv2d层输出Tensor的空间维度。
-        - **kernel_size** (Union[int, tuple[int], list[int]]) - 指定二维卷积核的高度和宽度。数据类型为int或两个int的tuple。一个int表示卷积核的高度和宽度均为该值。两个int的tuple分别表示卷积核的高度和宽度。
-        - **stride** (Union[int, tuple[int], list[int]]，可选) - 二维卷积核的移动步长。数据类型为int或者长度为2的int的tuple。一个int表示在高度和宽度方向的移动步长均为该值。两个int的tuple分别表示在高度和宽度方向的移动步长。默认值： ``1`` 。
-        - **padding** (Union[int, tuple[int], list[int], str]，可选) - 输入的高度和宽度方向上填充的数量。数据类型为int或包含2个int的tuple或string { ``"valid"`` ，  ``"same"`` } 。如果 `padding` 是一个int，那么 `padding_{H}` 和 `padding_{W}` 的填充都等于 `padding` 。如果 `padding` 是一个有2个int的tuple，那么 `padding_{H}` 和 `padding_{W}` 的填充分别等于 `padding[0]` 和 `padding[1]` 。值应该要大于等于0。默认值： ``0`` 。
+        - **kernel_size** (Union[int, tuple[int], list[int]]) - 指定二维卷积核的高度和宽度。数据类型为int或两个int的tuple/list。一个int表示卷积核的高度和宽度均为该值。两个int的tuple/list分别表示卷积核的高度和宽度。
+        - **stride** (Union[int, tuple[int], list[int]]，可选) - 二维卷积核的移动步长。数据类型为int或者长度为2的int的tuple/list。一个int表示在高度和宽度方向的移动步长均为该值。两个int的tuple/list分别表示在高度和宽度方向的移动步长。默认值： ``1`` 。
+        - **padding** (Union[int, tuple[int], list[int], str]，可选) - 输入的高度和宽度方向上填充的数量。数据类型为int或包含2个int的tuple/list或string { ``"valid"`` ，  ``"same"`` } 。如果 `padding` 是一个int，那么 `padding_{H}` 和 `padding_{W}` 的填充都等于 `padding` 。如果 `padding` 是一个有2个int的tuple/list，那么 `padding_{H}` 和 `padding_{W}` 的填充分别等于 `padding[0]` 和 `padding[1]` 。值应该要大于等于0。默认值： ``0`` 。
         
           - ``"same"``：在输入的四周填充，使得当 `stride` 为 ``1`` 时，输入和输出的shape一致。待填充的量由算子内部计算，若为偶数，则均匀地填充在四周，若为奇数，多余的填充量将补充在底部/右侧。若设置该模式，`stride` 的值必须为1。
           - ``"valid"``：不对输入进行填充，返回输出可能的最大高度和宽度，不能构成一个完整stride的额外的像素将被丢弃。
 
         - **padding_mode** (str，可选) - 指定填充模式，填充值为0。可选值为 ``"zeros"`` 、 ``"reflect"`` 或 ``"replicate"`` 。默认值： ``"zeros"`` 。
-        - **dilation** (Union[int, tuple[int], list[int]]，可选) - 卷积核膨胀尺寸。可以为单个int，或者由两个int组成的tuple。单个int表示在高度和宽度方向的膨胀尺寸均为该值。两个int组成的tuple分别表示在高度和宽度方向的膨胀尺寸。
+        - **dilation** (Union[int, tuple[int], list[int]]，可选) - 卷积核膨胀尺寸。可以为单个int，或者由两个int组成的tuple/list。单个int表示在高度和宽度方向的膨胀尺寸均为该值。两个int组成的tuple/list分别表示在高度和宽度方向的膨胀尺寸。
           假设 :math:`dilation=(d0, d1)`, 则卷积核在高度方向间隔 :math:`d0-1` 个元素进行采样，在宽度方向间隔 :math:`d1-1` 个元素进行采样。高度和宽度上取值范围分别为[1, H]和[1, W]。默认值： ``1`` 。
         - **groups** (int，可选) - 将过滤器拆分为组， `in_channels` 和 `out_channels` 必须可被 `groups` 整除。如果组数等于 `in_channels` 和 `out_channels` ，这个二维卷积层也被称为二维深度卷积层。默认值： ``1`` 。
           需要满足以下约束：
@@ -51,11 +54,15 @@ mindspore.mint.nn.Conv2d
           - :math:`(C_{in} \text{ % } \text{groups} == 0)`
           - :math:`(C_{out} \text{ % } \text{groups} == 0)`
           - :math:`(C_{out} >= \text{groups})`
-          - :math:`(\text{kernel_size[1]} = C_{in} / \text{groups})`
+          - :math:`(\text{weight[1]} = C_{in} / \text{groups})`
 
         - **bias** (bool，可选) - Conv2d层是否添加偏置参数。默认值： ``True`` 。
         
         - **dtype** (:class:`mindspore.dtype`，可选) - Parameters的dtype。默认值： ``None``， 使用 ``mstype.float32`` 。
+
+    可变参数：
+        - **weight** (Tensor) - 卷积层的权重，shape :math:`(C_{out}, C_{in} / \text{groups}, \text{kernel_size[0]}, \text{kernel_size[1]})` 。
+        - **bias** (Tensor) - 卷积层的偏置，shape :math:`(C_{out})` 。如果 `bias` 为False，则为None。
 
     输入：
         - **Input** (Tensor) - Shape为 :math:`(N, C_{in}, H_{in}, W_{in})` 或者 :math:`(C_{in}, H_{in}, W_{in})` 的Tensor。
@@ -81,7 +88,7 @@ mindspore.mint.nn.Conv2d
                 {\text{stride[1]}}} \right \rfloor + 1 \\
             \end{array}
 
-        padding为int或tuple时：
+        padding为int或tuple/list时：
 
         .. math::
             \begin{array}{ll} \\
@@ -90,10 +97,6 @@ mindspore.mint.nn.Conv2d
                 W_{out} = \left \lfloor{\frac{W_{in} + 2 \times padding[1] - \text{dilation[1]} \times
                 (\text{kernel_size[1]} - 1) - 1}{\text{stride[1]}}} \right \rfloor + 1 \\
             \end{array}
-
-    可变参数：
-        - **weight** (Tensor) - 卷积层的权重，shape :math:`(C_{out}, C_{in} / \text{groups}, \text{kernel_size[0]}, \text{kernel_size[1]})` 。
-        - **bias** (Tensor) - 卷积层的偏置，shape :math:`(C_{out})` 。如果 `bias` 为False，则为None。
 
     异常：
         - **ValueError** - 输入特征图的大小与参数应满足输出公式，以确保输出特征图大小为正，否则会报错。

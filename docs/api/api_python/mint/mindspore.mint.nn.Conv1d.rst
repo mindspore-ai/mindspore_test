@@ -31,6 +31,9 @@ mindspore.mint.nn.Conv1d
 
     想更深入了解卷积层，请参考论文 `Gradient Based Learning Applied to Document Recognition <http://vision.stanford.edu/cs598_spring07/papers/Lecun98.pdf>`_ 。
 
+    .. note::
+        暂不支持空Tensor输入。
+
     参数：
         - **in_channels** (int) - Conv1d层输入Tensor的空间维度。
         - **out_channels** (int) - Conv1d层输出Tensor的空间维度。
@@ -50,11 +53,15 @@ mindspore.mint.nn.Conv1d
           - :math:`(C_{in} \text{ % } \text{groups} == 0)`
           - :math:`(C_{out} \text{ % } \text{groups} == 0)`
           - :math:`(C_{out} >= \text{groups})`
-          - :math:`(\text{kernel_size[1]} = C_{in} / \text{groups})`
+          - :math:`(\text{weight[1]} = C_{in} / \text{groups})`
 
         - **bias** (bool，可选) - Conv1d层是否添加偏置参数。默认值： ``True`` 。
         
         - **dtype** (:class:`mindspore.dtype`，可选) - Parameters的dtype。默认值： ``None``， 使用 ``mstype.float32`` 。
+
+    可变参数：
+        - **weight** (Tensor) - 卷积层的权重，shape :math:`(C_{out}, C_{in} / \text{groups}, \text{kernel_size[0]})` 。
+        - **bias** (Tensor) - 卷积层的偏置，shape :math:`(C_{out})` 。如果 `bias` 为False，则为None。
 
     输入：
         - **x** (Tensor) - Shape为 :math:`(N, C_{in}, L_{in})` 或者 :math:`(C_{in}, L_{in})` 的Tensor。
@@ -77,7 +84,7 @@ mindspore.mint.nn.Conv1d
                 {\text{stride}}} \right \rfloor + 1 \\
             \end{array}
 
-        padding为int或tuple时：
+        padding为int或tuple/list时：
 
         .. math::
             \begin{array}{ll} \\
@@ -89,7 +96,7 @@ mindspore.mint.nn.Conv1d
         - **ValueError** - 输入特征图的大小与参数应满足输出公式，以确保输出特征图大小为正，否则会报错。
         - **RuntimeError** - Ascend上受不同型号NPU芯片上L1缓存大小限制，用例尺寸或Kernel Size过大。
         - **TypeError** - 如果 `in_channels` ， `out_channels` 或者 `groups` 不是整数。
-        - **TypeError** - 如果 `kernel_size` ， `stride`， 或者 `dilation` 既不是int也不是tuple。
+        - **TypeError** - 如果 `kernel_size` ， `stride`， 或者 `dilation` 既不是int也不是tuple/list。
         - **ValueError** - 如果 `in_channels` ， `out_channels`， `kernel_size` ， `stride` 或者 `dilation` 小于1。
         - **ValueError** - 如果 `padding` 小于0。
         - **ValueError** - 如果 `padding` 是 ``"same"`` ， `stride` 不等于1。
