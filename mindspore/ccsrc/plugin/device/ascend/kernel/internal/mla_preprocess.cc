@@ -22,35 +22,16 @@
 
 namespace mindspore {
 namespace kernel {
-#define INPUT_NUM_26 26
-#define INDEX_11 11
-#define INDEX_12 12
-#define INDEX_13 13
-#define INDEX_14 14
-#define INDEX_15 15
-#define INDEX_16 16
-#define INDEX_17 17
-#define INDEX_18 18
-#define INDEX_19 19
-#define INDEX_20 20
-#define INDEX_21 21
-#define INDEX_22 22
-#define INDEX_23 23
-#define INDEX_24 24
-#define INDEX_25 25
 
 internal::InternalOpPtr InternalMlaPreprocess::CreateKernel(const internal::InputsImmutableInfoList &inputs_ii,
                                                             const internal::OutputsImmutableInfoList &outputs_ii,
                                                             const std::vector<KernelTensor *> &ms_inputs,
                                                             const std::vector<KernelTensor *> &ms_outputs) {
   internal::MlaPreprocessParam param;
-  auto n = ms_inputs.at(kMlaPreprocessParamNIndex);
-  auto head_num = ms_inputs.at(kMlaPreprocessParamHeadNumIndex);
   auto cache_mode = ms_inputs.at(kMlaPreprocessParamCacheModeIndex);
-  if (n->dtype_id() == TypeId::kNumberTypeInt64 && head_num->dtype_id() == TypeId::kNumberTypeInt64 &&
-      cache_mode->dtype_id() == TypeId::kNumberTypeInt64) {
-    param.n = static_cast<int32_t>(n->GetValue<int64_t>().value());
-    param.head_num = static_cast<int32_t>(head_num->GetValue<int64_t>().value());
+  if (cache_mode->dtype_id() == TypeId::kNumberTypeInt64) {
+    param.n = 0;
+    param.head_num = 0;
     param.cache_mode = static_cast<int32_t>(cache_mode->GetValue<int64_t>().value());
   } else {
     MS_LOG(EXCEPTION) << "MlaPreprocess [n, head_num, cache_mode]'s dtype wrong";

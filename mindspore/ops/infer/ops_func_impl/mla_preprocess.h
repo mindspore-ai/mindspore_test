@@ -56,10 +56,8 @@ enum MlaPreprocessInputIndex : size_t {
   kMlaPreprocessCtkvScaleIndex = 23,
   kMlaPreprocessQnopeScaleIndex = 24,
   kMlaPreprocessKropeCacheIndex = 25,
-  kMlaPreprocessParamNIndex = 26,
-  kMlaPreprocessParamHeadNumIndex = 27,
-  kMlaPreprocessParamCacheModeIndex = 28,
-  kMlaPreProcessInputsNum = 29
+  kMlaPreprocessParamCacheModeIndex = 26,
+  kMlaPreProcessInputsNum = 27
 };
 
 class OPS_API MlaPreprocessFuncImpl : public OpFuncImpl {
@@ -69,6 +67,8 @@ class OPS_API MlaPreprocessFuncImpl : public OpFuncImpl {
 
  private:
   mutable int64_t cache_mode_ = 0;
+  int64_t cache_mode_qk_ = 0;
+  int64_t cache_mode_qk_split_quant_ = 2;
 };
 }  // namespace ops
 }  // namespace mindspore
