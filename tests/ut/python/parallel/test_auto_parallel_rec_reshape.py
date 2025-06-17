@@ -143,9 +143,19 @@ def test_auto_parallel_reshape_basic():
     Description: using recursive algorithm
     Expectation: compile success
     """
+    from mindspore.parallel.strategy import get_current_strategy_metadata, get_strategy_metadata, \
+        enable_save_strategy_online
     context.set_auto_parallel_context(parallel_mode="auto_parallel", device_num=8, global_rank=0,
                                       search_mode="recursive_programming")
     net = Net(input_shape=(120, 1), input_size=(120, 1))
     optimizer = Momentum(net.trainable_params(), learning_rate=0.1, momentum=0.9)
     model = Model(network=net, optimizer=optimizer)
+    enable_save_strategy_online()
     model.train(epoch=1, train_dataset=_x)
+
+    # empty strategy
+    local_info = get_current_strategy_metadata(network=net)
+    assert local_info is None
+
+    global_layout = get_strategy_metadata(network=net)
+    assert global_layout is None

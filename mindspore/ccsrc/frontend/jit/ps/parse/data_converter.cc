@@ -26,6 +26,7 @@
 #include "include/common/utils/tensor_py.h"
 #include "frontend/jit/ps/parse/resolve.h"
 #include "frontend/jit/ps/pipeline.h"
+#include "frontend/jit/ps/parse/parse_base.h"
 #include "frontend/operator/ops.h"
 #include "frontend/operator/composite/composite.h"
 #include "frontend/operator/composite/multitype_funcgraph.h"
@@ -544,6 +545,16 @@ FuncGraphPtr CreateShardFuncGraph(const py::object &obj, const FuncGraphPtr &fun
   return shard_graph;
 }
 
+void SetAttrForCell(const py::object &obj, const std::string &attr_name, FuncGraphPtr func_graph) {
+  auto cell = py::cast<CellPtr>(obj);
+  if (cell != nullptr && cell->HasAttr(attr_name)) {
+    const auto &value = cell->GetAttr(attr_name);
+    MS_EXCEPTION_IF_NULL(value);
+    func_graph->set_attr(attr_name, value);
+    MS_LOG(DEBUG) << "AddAttr " << attr_name << " to Cell, the value is " << value;
+  }
+}
+
 ValuePtr ConvertCellObjToFuncGraph(const py::object &obj, const ValuePtrList &args_value_list) {
   if (py::hasattr(obj, "construct")) {
     const auto &construct_obj = py::getattr(obj, "construct");
@@ -577,11 +588,11 @@ ValuePtr ConvertCellObjToFuncGraph(const py::object &obj, const ValuePtrList &ar
     auto segment = py::cast<int>(py::getattr(obj, SEGMENT_NAME));
     func_graph->set_segment(segment);
   }
-  auto cell = py::cast<CellPtr>(obj);
-  if (cell != nullptr && cell->HasAttr(kAttrRandomOpSnapShot)) {
-    auto value = cell->GetAttr(kAttrRandomOpSnapShot);
-    MS_EXCEPTION_IF_NULL(value);
-    func_graph->set_attr(kAttrRandomOpSnapShot, value);
+
+  SetAttrForCell(obj, kAttrRandomOpSnapShot, func_graph);
+
+  if (py::hasattr(obj, CELL_COMPILE_PHASE) && !py::getattr(obj, CELL_COMPILE_PHASE).is_none()) {
+    SetAttrForCell(obj, CELL_COMPILE_PHASE, func_graph);
   }
 
   if (py::hasattr(obj, CELL_IN_STRATEGY)) {

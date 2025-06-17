@@ -213,6 +213,7 @@ const char CELL_JIT_BACKWARD_PRE_HOOK[] = "_jit_backward_pre_hook";
 
 const char CELL_BACKWARD_HOOK[] = "_backward_hook";
 const char CELL_JIT_BACKWARD_HOOK[] = "_jit_backward_hook";
+const char CELL_COMPILE_PHASE[] = "compile_phase";
 
 // Define ref tensor user data keys.
 const char REF_TENSOR_BACKWARD_HOOK[] = "backward_hook";

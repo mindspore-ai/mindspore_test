@@ -13,16 +13,15 @@
 # limitations under the License.
 # ============================================================================
 
-import os
-
 import mindspore.nn as nn
 from mindspore import context
 from mindspore.common import set_seed, lazy_inline
 from mindspore.nn.utils import no_init_parameters
 from mindspore.train import Model, CheckpointConfig, ModelCheckpoint, LossMonitor
 from mindspore.communication.management import init, get_rank
+from mindspore.parallel.strategy import get_strategy_metadata, enable_save_strategy_online
 from tests.st.auto_parallel.utils.dataset_utils import FakeData
-from tests.st.auto_parallel.utils._utils import set_parallel_mode, clean_all_ckpt_files, clear_files_in_directory
+from tests.st.auto_parallel.utils._utils import set_parallel_mode, clean_all_ckpt_files, save_ir_graphs
 
 context.set_context(mode=context.GRAPH_MODE)
 init()
@@ -84,12 +83,10 @@ def model_train(model, epoch, dataset, ckpt_path, ckpt_prefix, integral_save, re
     model.train(epoch=epoch, train_dataset=dataset, callbacks=[ckpt_callback, loss_cb], dataset_sink_mode=False)
 
 
-def semi_auto_dp2_mp2_pp2(cur_root_dir, remove_redundancy=False):
+def semi_auto_dp2_mp2_pp2(cur_root_dir, remove_redundancy=False, opt_config=None):
     # save ir graph
     ir_graph_path = f"{cur_root_dir}/graphs"
-    clear_files_in_directory(f"{ir_graph_path}/rank_{get_rank()}")
-    os.environ['MS_DEV_SAVE_GRAPHS'] = "2"
-    os.environ['MS_DEV_SAVE_GRAPHS_PATH'] = ir_graph_path
+    save_ir_graphs(ir_graph_path)
 
     # dataset
     set_seed(1)
@@ -105,7 +102,7 @@ def semi_auto_dp2_mp2_pp2(cur_root_dir, remove_redundancy=False):
     stra_ckpt_file = f"{cur_root_dir}/train_strategy.ckpt"
     pp_config = {"stages": 2}
     parallel_config = {"parallel_mode": "semi_auto", "data_strategy": "data_parallel", "pipeline_config": pp_config,
-                       "save_strategy_file": stra_ckpt_file}
+                       "save_strategy_file": stra_ckpt_file, "parallel_optimizer_config": opt_config}
     stage_config = {"_backbone.flatten": 0, "_backbone.layer1": 0, "_backbone.relu1": 0, "_backbone.layer2": 0,
                     "_backbone.relu2": 1, "_backbone.layer3": 1}
     parallel_model = create_pp_train_model(parallel_net, 4, stage_config, parallel_config, net_optim)
@@ -114,12 +111,29 @@ def semi_auto_dp2_mp2_pp2(cur_root_dir, remove_redundancy=False):
     ckpt_path = f"{cur_root_dir}/rank_{get_rank()}_ckpt"
     model_train(model=parallel_model, epoch=2, dataset=parallel_dataset, ckpt_path=ckpt_path,
                 ckpt_prefix="ckpt_parallel_wd", integral_save=False, remove_redundancy=remove_redundancy)
+    return parallel_model
 
 
 def test_hccl_config():
     """
-    Feature: hccl buffle size.
+    Feature: hccl buffle size, get strategy.
     Description: customized value of specific groups.
     Expectation: run success.
     """
-    semi_auto_dp2_mp2_pp2(cur_root_dir="./test_hccl_config")
+    enable_save_strategy_online()
+
+    # Zero1
+    opt_config = {"optimizer_level": "level1", "optimizer_weight_shard_size": 2, "parallel_optimizer_threshold": 0}
+    opt_parallel_model = semi_auto_dp2_mp2_pp2(cur_root_dir="./test_hccl_config/zero1", opt_config=opt_config)
+    opt_train_info = get_strategy_metadata(opt_parallel_model.train_network)
+    opt_param_list = opt_train_info[1]["layer2.weight"]
+    opt_param_layout = opt_param_list[0].to_dict()
+    assert opt_param_layout['tensor_map'] == (0, -1)
+
+    # do not enable optimizer parallel
+    opt_config = None
+    parallel_model = semi_auto_dp2_mp2_pp2(cur_root_dir="./test_hccl_config/no_opt", opt_config=opt_config)
+    train_info = get_strategy_metadata(parallel_model.train_network)
+    param_list = train_info[1]["layer2.weight"]
+    param_layout = param_list[0].to_dict()
+    assert param_layout['tensor_map'] == (-1, -1)

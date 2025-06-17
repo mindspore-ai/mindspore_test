@@ -15,6 +15,7 @@
 
 import os
 import locale
+import shutil
 import subprocess
 from tests.mark_utils import arg_mark
 
@@ -26,10 +27,31 @@ def test_msrun_pipeline_remove_redundancy():
     Description: test pipeline net train and predict using msrun.
     Expectation: run success.
     '''
+    dir_to_remove = "./test_cpkt_pp2"
+    if os.path.exists(dir_to_remove):
+        shutil.rmtree(dir_to_remove)
     return_code = os.system(
         "msrun --worker_num=8 --local_worker_num=8 --master_addr=127.0.0.1 "
-        "--master_port=10901 --join=True --log_dir=./test_cpkt_pp2/auto_parallel/remove_redundancy_log "
-        "pytest -s cpkt_rm_redundancy_auto_parallel.py"
+        "--master_port=10901 --join=True --log_dir=./test_cpkt_pp2/msrun_log "
+        "pytest -s cpkt_rm_redundancy_auto_parallel.py::test_cpkt_remove_redundancy_precision"
+    )
+    assert return_code == 0
+
+
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level1", card_mark="allcards", essential_mark="essential")
+def test_msrun_stand_alone_remove_redundancy():
+    '''
+    Feature: test remove redundancy with auto_parallel interface.
+    Description: test stand alone.
+    Expectation: run success.
+    '''
+    dir_to_remove = "./test_cpkt_stand_alone"
+    if os.path.exists(dir_to_remove):
+        shutil.rmtree(dir_to_remove)
+    return_code = os.system(
+        "msrun --worker_num=1 --local_worker_num=1 --master_addr=127.0.0.1 "
+        "--master_port=10901 --join=True --log_dir=./test_cpkt_stand_alone/msrun_log "
+        "pytest -s cpkt_rm_redundancy_auto_parallel.py::test_stand_alone_remove_redundancy"
     )
     assert return_code == 0
 
@@ -41,9 +63,12 @@ def test_msrun_cpkt_transfer_functional():
     Description: test checkpoints file and strategy transfer with model or functional programming using msrun.
     Expectation: run success.
     '''
+    dir_to_remove = "./test_cpkt_transfer"
+    if os.path.exists(dir_to_remove):
+        shutil.rmtree(dir_to_remove)
     return_code = os.system(
         "msrun --worker_num=8 --local_worker_num=8 --master_addr=127.0.0.1 "
-        "--master_port=10902 --join=True --log_dir=./test_cpkt_transfer/cpkt_transfer_log "
+        "--master_port=10902 --join=True --log_dir=./test_cpkt_transfer/msrun_log "
         "pytest -s cpkt_transfer_functional_model_auto_parallel.py"
     )
     assert return_code == 0
