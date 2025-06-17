@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-"""Test DS3PRETRAIN"""
+"""Test DS3SFT"""
 import os
 import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), os.path.pardir))
@@ -20,12 +20,12 @@ from utils import parse_log, init_env
 from tests.mark_utils import arg_mark
 
 
-class TestDS3PRETRAIN:
+class TestDS3SFT:
     @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='allcards', essential_mark='essential')
-    def test_mindspore_ds3_pretrain_determinstic(self):
+    def test_mindspore_ds3_sft_determinstic(self):
         """
-        Feature: test mindspore pretrain_ds3
-        Description: run mindspore pretrain_ds3 to generate pynative loss
+        Feature: test mindspore pretrain_glm
+        Description: run mindspore ds3_sft to generate pynative loss
         Expectation: test success
         """
         init_env()
@@ -46,8 +46,8 @@ class TestDS3PRETRAIN:
         """
         loss_pt = parse_log('pta_det.txt')
         loss_ms = parse_log('ms_det.txt')
-        os.system('cat ms_det.txt')
 
+        os.system('cat ms_det.txt')
         for i in loss_pt:
             print("loss:", loss_pt[i][2], loss_ms[i][2])
             assert abs(len(loss_pt[i][2]) - len(loss_ms[i][2])) < 100
