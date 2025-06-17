@@ -27,19 +27,19 @@ namespace mindspore {
 namespace kernel {
 class ApplyRotaryPosEmb : public InternalKernelInfo {
  public:
-  ApplyRotaryPosEmb() : InternalKernelInfo(std::move("ApplyRotaryPosEmb")) {}
+  explicit ApplyRotaryPosEmb(std::string &&kernel_name) : InternalKernelInfo(std::move(kernel_name)) {}
   ~ApplyRotaryPosEmb() = default;
 
-  void Call(const std::shared_ptr<pyboost::OpRunner> &op, const TensorPtr &query_tensor, const TensorPtr &key_tensor,
-            const TensorPtr &cos_tensor, const TensorPtr &sin_tensor, const TensorPtr &position_ids_tensor,
-            const int64_t &cos_format);
+  void Call(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &op_key, const uint64_t &tiling_key,
+            const TensorPtr &query_tensor, const TensorPtr &key_tensor, const TensorPtr &cos_tensor,
+            const TensorPtr &sin_tensor, const TensorPtr &position_ids_tensor, const int64_t &cos_format);
 
  protected:
   internal::InternalOpPtr CreateKernel(const internal::InputsImmutableInfoList &inputs,
                                        const internal::OutputsImmutableInfoList &outputs) override;
 
  private:
-  int32_t cos_format_ = 0;
+  internal::ApplyRotaryPosEmbParam param_;
 };
 }  // namespace kernel
 }  // namespace mindspore
