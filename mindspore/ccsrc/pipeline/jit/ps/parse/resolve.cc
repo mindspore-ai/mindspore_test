@@ -295,6 +295,44 @@ AnfNodePtr TransformFuncValueNode(const FuncGraphManagerPtr &manager, const Func
   return nullptr;
 }
 
+AnfNodePtr HandleConstValueNodeInner(const AnfNodePtr &node, const FuncGraphPtr &func_graph,
+                                     const FuncGraphManagerPtr &manager) {
+  if (IsValueNode<ValueSequence>(node) || IsValueNode<ValueDictionary>(node)) {
+    auto value = node->cast<ValueNodePtr>()->value();
+    auto new_node = TransformFuncValueNode(manager, func_graph, value);
+    return new_node;
+  }
+  return nullptr;
+}
+
+AnfNodePtr HandleConstValueNode(const AnfNodePtr &resolved_node, const FuncGraphPtr &func_graph,
+                                const FuncGraphManagerPtr &manager) {
+  // Handle const value node CellList/CellDict
+  auto convert_node = HandleConstValueNodeInner(resolved_node, func_graph, manager);
+  if (convert_node != nullptr) {
+    return convert_node;
+  }
+  // Handle CNode such as {prim::kPrimMakeList/prim::kPrimMakeTuple, CellList/CellDict, elem2, ...}
+  if (IsPrimitiveCNode(resolved_node, prim::kPrimMakeTuple) || IsPrimitiveCNode(resolved_node, prim::kPrimMakeList)) {
+    auto cnode = resolved_node->cast<CNodePtr>();
+    const auto &inputs = cnode->inputs();
+    for (size_t index = kIndex1; index < inputs.size(); ++index) {
+      auto new_node = HandleConstValueNodeInner(inputs[index], func_graph, manager);
+      if (new_node != nullptr) {
+        cnode->set_input(index, new_node);
+      }
+    }
+    // Handle CNode such as {prim::kPrimMakeDict, (key1, key2, ...), (value1, CellList/CellDict, ...)}
+  } else if (IsPrimitiveCNode(resolved_node, prim::kPrimMakeDict)) {
+    auto cnode = resolved_node->cast<CNodePtr>();
+    const auto &inputs = cnode->inputs();
+    auto new_node = HandleConstValueNode(inputs[kIndex2], func_graph, manager);
+    if (new_node != nullptr) {
+      cnode->set_input(kIndex2, new_node);
+    }
+  }
+  return nullptr;
+}
 }  // namespace
 
 void Resolver::ConvertLoadedGraph(const FuncGraphPtr &func_graph, const ValuePtr &value) {
@@ -428,12 +466,9 @@ AnfNodePtr Resolver::ResolveObjectAndAddToManager(const FuncGraphManagerPtr &man
   }
 
   // If the constant node is constant of vector of graph, add graph to manager.
-  if (IsValueNode<ValueSequence>(resolved_node) || IsValueNode<ValueDictionary>(resolved_node)) {
-    auto value = resolved_node->cast<ValueNodePtr>()->value();
-    auto new_node = TransformFuncValueNode(manager, node->func_graph(), value);
-    if (new_node != nullptr) {
-      resolved_node = new_node;
-    }
+  auto new_node = HandleConstValueNode(resolved_node, node->func_graph(), manager);
+  if (new_node != nullptr) {
+    resolved_node = new_node;
   }
   fallback::SetPyObjectToNode(resolved_node, obj);
   return resolved_node;

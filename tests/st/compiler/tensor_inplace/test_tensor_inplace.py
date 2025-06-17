@@ -523,3 +523,27 @@ def test_zerolike_fill_zero():
     net = ZerosLikeNet()
     output = net(x)
     assert output == 3
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_inplace_isolated_node():
+    """
+    Feature: Support tensor inplace isolated node.
+    Description: Support tensor inplace isolated node.
+    Expectation: Run success.
+    """
+    def get_input(x, value):
+        return (P.AssignAdd()(x, value), x)
+
+    class Net(nn.Cell):
+        def construct(self, x, value):
+            t = P.AssignAdd()(x, value)
+            _, z = get_input(t, value)
+            return z
+
+    context.set_context(mode=ms.PYNATIVE_MODE)
+    net = Net()
+    output_expect = net(Tensor([1]), Tensor([2]))
+    net.construct = ms.jit(net.construct)
+    output_jit = net(Tensor([1]), Tensor([2]))
+    assert output_expect == output_jit

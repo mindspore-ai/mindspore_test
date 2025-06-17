@@ -61,11 +61,8 @@ static bool CanBeIsolatedNode(const std::string &var_name, const AnfNodePtr &nod
   auto prim = GetValueNode<PrimitivePtr>(cnode->inputs().at(0));
   if (prim == nullptr) {
     // Not a primitive cnode, it may have side effects or not,
-    // We add it as an isolate node if its name is not '_' or empty.
-    // this means that code like:
-    //    _ = func_call()
-    // will be ignored even if func_call() has side effects.
-    return !var_name.empty() && var_name != "_";
+    // We add it as an isolate node if its name is not empty.
+    return !var_name.empty();
   }
   // Primitive cnode with side effects can be isolate nodes.
   auto effect_info = GetPrimEffectInfo(prim);
