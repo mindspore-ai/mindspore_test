@@ -20,13 +20,13 @@
 #endif
 
 #include <csignal>
-#include <set>
 #include <unordered_map>
+#include <vector>
 
 #include "minddata/dataset/util/task_manager.h"
 
 namespace mindspore::dataset {
-static std::unordered_map<int64_t, std::set<int>> worker_groups = {};
+static std::unordered_map<int64_t, std::vector<int>> worker_groups = {};
 #if !defined(_WIN32) && !defined(_WIN64)
 /// \brief Set handler for the specified signal.
 /// \param[in] signal The signal to set handler.
@@ -130,7 +130,12 @@ void SIGCHLDHandler(int signal, siginfo_t *info, void *context) {
 
   for (auto &worker_group : worker_groups) {
     auto &pids = worker_group.second;
-    for (const auto &pid : pids) {
+    int ppid = pids[0];
+    if (getpid() != ppid) {
+      continue;  // this worker group is not the children of current process
+    }
+    for (auto i = 1; i < pids.size(); ++i) {
+      int pid = pids[i];
       siginfo_t sig_info{};
       sig_info.si_pid = 0;
       auto error = waitid(P_PID, pid, &sig_info, WEXITED | WNOHANG | WNOWAIT);
@@ -200,7 +205,7 @@ void RegisterWorkerHandlers() {
 #endif
 }
 
-std::string GetPIDsString(const std::set<int> &pids) {
+std::string GetPIDsString(const std::vector<int> &pids) {
   std::string pids_string = "[";
   for (auto itr = pids.begin(); itr != pids.end(); ++itr) {
     if (itr != pids.begin()) {
@@ -212,7 +217,7 @@ std::string GetPIDsString(const std::set<int> &pids) {
   return pids_string;
 }
 
-void RegisterWorkerPIDs(int64_t id, const std::set<int> &pids) {
+void RegisterWorkerPIDs(int64_t id, const std::vector<int> &pids) {
   MS_LOG(INFO) << "Watch dog starts monitoring process(es): " << GetPIDsString(pids);
   worker_groups[id] = pids;
 }

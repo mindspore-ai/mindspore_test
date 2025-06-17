@@ -27,7 +27,7 @@ std::unordered_map<std::string, std::string> format_dtypes = {
   {"s16p", "i2"}, {"s32", "i4"},  {"s32p", "i4"}, {"u8", "u1"},   {"u8p", "u1"},
 };
 
-Frame::Frame() : frame_(av_frame_alloc()) {}
+Frame::Frame() : frame_(av_frame_alloc()), time_base_(nullptr) {}
 
 Frame::~Frame() { av_frame_free(&frame_); }
 

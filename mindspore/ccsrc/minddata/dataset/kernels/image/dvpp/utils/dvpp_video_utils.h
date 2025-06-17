@@ -40,8 +40,6 @@ int64_t dvpp_vdec_send_stream(int64_t chnId, const std::shared_ptr<Tensor> &inpu
                               std::shared_ptr<DeviceBuffer> *out);
 std::shared_ptr<DeviceBuffer> dvpp_vdec_stop_get_frame(int64_t chnId, int64_t totalFrame);
 int64_t dvpp_vdec_destroy_chnl(int64_t chnId);
-int64_t dvpp_malloc(uint32_t dev_id, void **dev_ptr, uint64_t size);
-int64_t dvpp_free(void *dev_ptr);
 int64_t dvpp_memcpy(const std::shared_ptr<DeviceBuffer> &src, void *dest);
 
 class VideoDecoder {
@@ -49,11 +47,12 @@ class VideoDecoder {
   static VideoDecoder &GetInstance();
 
   VideoDecoder();
+
   ~VideoDecoder();
 
   int32_t GetUnusedChn(uint32_t &chnl);
+
   void PutChn(uint32_t chnl);
-  bool ChannelCreated(uint32_t chnl);
 
   hi_s32 sys_init(hi_void);
   hi_s32 sys_exit(hi_void);
@@ -70,8 +69,6 @@ class VideoDecoder {
   hi_s32 get_frame(hi_vdec_chn chn, hi_video_frame_info *frame_info, hi_vdec_supplement_info *supplement,
                    hi_vdec_stream *stream, hi_s32 milli_sec);
   hi_s32 release_frame(hi_vdec_chn chn, const hi_video_frame_info *frame_info);
-  hi_s32 dvpp_malloc(hi_u32 dev_id, hi_void **dev_ptr, hi_u64 size);
-  hi_s32 dvpp_free(hi_void *dev_ptr);
 
   device::DeviceContext *device_context_;
 

@@ -136,23 +136,29 @@ PYBIND_REGISTER(Tensor, 0, ([](const py::module *m) {
                 }));
 
 #if defined(ENABLE_D)
-PYBIND_REGISTER(
-  DeviceBuffer, 0, ([](const py::module *m) {
-    (void)py::class_<DeviceBuffer, std::shared_ptr<DeviceBuffer>>(*m, "DeviceBuffer", py::buffer_protocol())
-      .def(py::init([](const std::vector<size_t> &shape) { return std::make_shared<DeviceBuffer>(shape); }))
-      .def("size", &DeviceBuffer::GetBufferSize)
-      .def_property_readonly("shape", ([](DeviceBuffer &device_buffer) {
-                               auto shape = device_buffer.GetShape();
-                               return py::tuple(py::cast(shape));
-                             }))
-      .def("__getitem__", [](const std::shared_ptr<DeviceBuffer> &device_buffer,
-                             ptrdiff_t offset) { return std::make_shared<DeviceBuffer>(device_buffer, offset); })
-      .def("numpy", [](const std::shared_ptr<DeviceBuffer> &device_buffer) {
-        auto array = py::array_t<uint8_t>(device_buffer->GetShape(), device_buffer->GetStrides());
-        THROW_IF_ERROR(AclAdapter::GetInstance().DvppMemcpy(device_buffer, array.mutable_data(0)));
-        return array;
-      });
-  }));
+PYBIND_REGISTER(DeviceBuffer, 0, ([](const py::module *m) {
+                  (void)py::class_<DeviceBuffer, std::shared_ptr<DeviceBuffer>>(*m, "DeviceBuffer",
+                                                                                py::buffer_protocol())
+                    .def(
+                      py::init([](const std::vector<size_t> &shape) { return std::make_shared<DeviceBuffer>(shape); }),
+                      py::call_guard<py::gil_scoped_release>())
+                    .def("size", &DeviceBuffer::GetBufferSize)
+                    .def_property_readonly("shape", ([](DeviceBuffer &device_buffer) {
+                                             auto shape = device_buffer.GetShape();
+                                             return py::tuple(py::cast(shape));
+                                           }))
+                    .def(
+                      "__getitem__",
+                      [](const std::shared_ptr<DeviceBuffer> &device_buffer, ptrdiff_t offset) {
+                        return std::make_shared<DeviceBuffer>(device_buffer, offset);
+                      },
+                      py::call_guard<py::gil_scoped_release>())
+                    .def("numpy", [](const std::shared_ptr<DeviceBuffer> &device_buffer) {
+                      auto array = py::array_t<uint8_t>(device_buffer->GetShape(), device_buffer->GetStrides());
+                      THROW_IF_ERROR(AclAdapter::GetInstance().DvppMemcpy(device_buffer, array.mutable_data(0)));
+                      return array;
+                    });
+                }));
 #endif
 
 PYBIND_REGISTER(TensorShape, 0, ([](const py::module *m) {

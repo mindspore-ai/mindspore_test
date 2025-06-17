@@ -64,7 +64,7 @@ Container::Container(const std::string &file)
 
 Status Container::Init() {
   format_context_ = avformat_alloc_context();
-  format_context_->flags = format_context_->flags | AVFMT_FLAG_GENPTS;
+  format_context_->flags = static_cast<int>(static_cast<uint32_t>(format_context_->flags) | AVFMT_FLAG_GENPTS);
   format_context_->opaque = reinterpret_cast<void *>(this);
 
   CHECK_FAIL_RETURN_UNEXPECTED(avformat_open_input(&format_context_, name_.c_str(), nullptr, nullptr) == 0,
@@ -163,7 +163,7 @@ Status Container::Decode(const std::shared_ptr<Stream> &stream, std::vector<std:
 Status Container::Seek(int64_t offset, bool backward, bool any_frame, const std::shared_ptr<Stream> &stream) {
   RETURN_IF_NOT_OK(AssertOpen());
 
-  int flags = 0;
+  uint32_t flags = 0;
 
   if (backward) {
     flags = flags | AVSEEK_FLAG_BACKWARD;
@@ -176,7 +176,7 @@ Status Container::Seek(int64_t offset, bool backward, bool any_frame, const std:
   if (stream != nullptr) {
     stream_index = stream->GetIndex();
   }
-  CHECK_FAIL_RETURN_UNEXPECTED(av_seek_frame(format_context_, stream_index, offset, flags) >= 0,
+  CHECK_FAIL_RETURN_UNEXPECTED(av_seek_frame(format_context_, stream_index, offset, static_cast<int>(flags)) >= 0,
                                "av_seek_frame failed.");
 
   RETURN_IF_NOT_OK(FlushBuffers());

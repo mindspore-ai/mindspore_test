@@ -1013,52 +1013,72 @@ PYBIND_REGISTER(WritePNGOperation, 1, ([](py::module *m) {
 
 #if defined(ENABLE_D)
 PYBIND_REGISTER(DvppCodec, 1, ([](py::module *m) {
-                  (void)m->def("dvpp_sys_init", ([]() { THROW_IF_ERROR(AclAdapter::GetInstance().DvppSysInit()); }));
-
-                  (void)m->def("dvpp_sys_exit", ([]() { THROW_IF_ERROR(AclAdapter::GetInstance().DvppSysExit()); }));
-
-                  (void)m->def("decode_video_create_chn", ([](int ptype) {
-                                 int64_t chnl;
-                                 THROW_IF_ERROR(AclAdapter::GetInstance().DvppVdecCreateChnl(ptype, &chnl));
-                                 return chnl;
-                               }));
-
-                  (void)m->def("decode_video_start_get_frame", ([](int chnId, int totalFrame) {
-                                 THROW_IF_ERROR(AclAdapter::GetInstance().DvppVdecStartGetFrame(chnId, totalFrame));
-                               }));
-
-                  (void)m->def("decode_video_send_stream",
-                               ([](int chnId, const std::shared_ptr<Tensor> &input, int64_t outFormat, bool display,
-                                   std::shared_ptr<DeviceBuffer> *out) {
-                                 Status status =
-                                   AclAdapter::GetInstance().DvppVdecSendStream(chnId, input, outFormat, display, out);
-                                 if (status.IsError()) {
-                                   MS_LOG(WARNING) << status.ToString();
-                                 }
-                               }));
+                  (void)m->def(
+                    "dvpp_sys_init", []() { THROW_IF_ERROR(AclAdapter::GetInstance().DvppSysInit()); },
+                    py::call_guard<py::gil_scoped_release>());
 
                   (void)m->def(
-                    "decode_video_stop_get_frame", ([](int chnId, int totalFrame) {
+                    "dvpp_sys_exit", []() { THROW_IF_ERROR(AclAdapter::GetInstance().DvppSysExit()); },
+                    py::call_guard<py::gil_scoped_release>());
+
+                  (void)m->def(
+                    "decode_video_create_chn",
+                    [](int ptype) {
+                      int64_t chnl;
+                      THROW_IF_ERROR(AclAdapter::GetInstance().DvppVdecCreateChnl(ptype, &chnl));
+                      return chnl;
+                    },
+                    py::call_guard<py::gil_scoped_release>());
+
+                  (void)m->def(
+                    "decode_video_start_get_frame",
+                    [](int chnId, int totalFrame) {
+                      THROW_IF_ERROR(AclAdapter::GetInstance().DvppVdecStartGetFrame(chnId, totalFrame));
+                    },
+                    py::call_guard<py::gil_scoped_release>());
+
+                  (void)m->def(
+                    "decode_video_send_stream",
+                    [](int chnId, const std::shared_ptr<Tensor> &input, int64_t outFormat, bool display,
+                       std::shared_ptr<DeviceBuffer> *out) {
+                      Status status =
+                        AclAdapter::GetInstance().DvppVdecSendStream(chnId, input, outFormat, display, out);
+                      if (status.IsError()) {
+                        MS_LOG(WARNING) << status.ToString();
+                      }
+                    },
+                    py::call_guard<py::gil_scoped_release>());
+
+                  (void)m->def(
+                    "decode_video_stop_get_frame",
+                    [](int chnId, int totalFrame) {
                       std::shared_ptr<DeviceBuffer> output;
                       THROW_IF_ERROR(AclAdapter::GetInstance().DvppVdecStopGetFrame(chnId, totalFrame, &output));
                       return output;
-                    }));
+                    },
+                    py::call_guard<py::gil_scoped_release>());
 
-                  (void)m->def("decode_video_destroy_chnl", ([](int chnId) {
-                                 Status status = AclAdapter::GetInstance().DvppVdecDestroyChnl(chnId);
-                                 if (status.IsError()) {
-                                   MS_LOG(WARNING) << status.ToString();
-                                 }
-                               }));
+                  (void)m->def(
+                    "decode_video_destroy_chnl",
+                    [](int chnId) {
+                      Status status = AclAdapter::GetInstance().DvppVdecDestroyChnl(chnId);
+                      if (status.IsError()) {
+                        MS_LOG(WARNING) << status.ToString();
+                      }
+                    },
+                    py::call_guard<py::gil_scoped_release>());
                 }));
 #endif
 
 PYBIND_REGISTER(PyAV, 0, ([](py::module *m) {
-                  (void)m->def("pyav_open", ([](const std::string &file) {
-                                 auto container = std::make_shared<Container>(file);
-                                 THROW_IF_ERROR(container->Init());
-                                 return container;
-                               }));
+                  (void)m->def(
+                    "pyav_open",
+                    [](const std::string &file) {
+                      auto container = std::make_shared<Container>(file);
+                      THROW_IF_ERROR(container->Init());
+                      return container;
+                    },
+                    py::call_guard<py::gil_scoped_release>());
                 }));
 
 PYBIND_REGISTER(CodecContext, 0, ([](const py::module *m) {
@@ -1166,14 +1186,18 @@ PYBIND_REGISTER(Container, 3, ([](const py::module *m) {
                     .def(
                       "__enter__", [](Container &container) -> Container & { return container; },
                       py::return_value_policy::reference_internal)
-                    .def("__exit__",
-                         ([](Container &container, py::object, py::object, py::object) { container.Close(); }))
+                    .def(
+                      "__exit__", [](Container &container, py::object, py::object, py::object) { container.Close(); },
+                      py::call_guard<py::gil_scoped_release>())
                     .def_property_readonly("streams", &Container::GetStreams)
-                    .def("demux", ([](Container &container, const std::shared_ptr<Stream> &stream) {
-                           std::vector<std::shared_ptr<Packet>> packets;
-                           THROW_IF_ERROR(container.Demux(stream, &packets));
-                           return packets;
-                         }))
+                    .def(
+                      "demux",
+                      [](Container &container, const std::shared_ptr<Stream> &stream) {
+                        std::vector<std::shared_ptr<Packet>> packets;
+                        THROW_IF_ERROR(container.Demux(stream, &packets));
+                        return packets;
+                      },
+                      py::call_guard<py::gil_scoped_release>())
                     .def(
                       "decode",
                       [](Container &container, int streams, int video, int audio) {
@@ -1182,14 +1206,16 @@ PYBIND_REGISTER(Container, 3, ([](const py::module *m) {
                         THROW_IF_ERROR(container.Decode(stream, &frames));
                         return frames;
                       },
-                      py::arg("streams") = -1, py::arg("video") = -1, py::arg("audio") = -1)
+                      py::arg("streams") = -1, py::arg("video") = -1, py::arg("audio") = -1,
+                      py::call_guard<py::gil_scoped_release>())
                     .def(
                       "seek",
                       [](Container &container, int64_t offset, bool backward, bool any_frame,
                          const std::shared_ptr<Stream> &stream) {
                         THROW_IF_ERROR(container.Seek(offset, backward, any_frame, stream));
                       },
-                      py::arg("offset"), py::kw_only(), py::arg("backward"), py::arg("any_frame"), py::arg("stream"));
+                      py::arg("offset"), py::kw_only(), py::arg("backward"), py::arg("any_frame"), py::arg("stream"),
+                      py::call_guard<py::gil_scoped_release>());
                 }));
 }  // namespace dataset
 }  // namespace mindspore

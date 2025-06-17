@@ -73,7 +73,7 @@ from .validators import check_batch, check_shuffle, check_map, check_filter, che
     check_total_batch, check_sync_update
 from ..core.config import get_callback_timeout, _init_device_info, get_enable_shared_mem, get_num_parallel_workers, \
     get_enable_watchdog, get_seed, set_seed, get_debug_mode, get_multiprocessing_timeout_interval, \
-    _get_debug_hook_list, get_multiprocessing_start_method
+    _get_debug_hook_list, get_multiprocessing_start_method, get_video_backend, set_video_backend
 from ..core.datatypes import mstype_to_detype
 from ..core.validator_helpers import replace_none
 from ..core.py_util_helpers import ExceptionHandler
@@ -3146,12 +3146,15 @@ def _main_process_already_exit():
     return False
 
 
-def _worker_loop(operations, pipe, worker_id):
+def _worker_loop(operations, pipe, worker_id, video_backend=None):
     """
     Multiprocess worker process loop.
     """
     # Initialize C++ side signal handlers
     cde.register_worker_handlers()
+
+    if video_backend is not None:
+        set_video_backend(video_backend)
 
     # Ensure that the process does not hang when exiting
     pipe.res_queue.cancel_join_thread()
@@ -3200,10 +3203,12 @@ class WorkerTarget:
         self.operations = operations
         self.pipe = pipe
         self.worker_id = worker_id
-        logger.info("Multiprocessing start method: {}".format(multiprocessing.get_start_method()))
+        start_method = multiprocessing.get_start_method()
+        logger.info("Multiprocessing start method: {}".format(start_method))
+        self.video_backend = get_video_backend() if start_method == 'spawn' else None
 
     def __call__(self):
-        return _worker_loop(self.operations, self.pipe, self.worker_id)
+        return _worker_loop(self.operations, self.pipe, self.worker_id, self.video_backend)
 
 
 class _MPWorker(multiprocessing.Process):
@@ -3632,9 +3637,10 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
                         "process(es): {}".format(self.cleaning_process.pid, self.get_pids()))
 
             if get_enable_watchdog():
-                worker_ids = [worker.pid for worker in self.workers]
+                worker_ids = [os.getpid()]
+                worker_ids.extend([worker.pid for worker in self.workers])
                 worker_ids.append(self.cleaning_process.pid)
-                cde.register_worker_pids(id(self), set(worker_ids))
+                cde.register_worker_pids(id(self), worker_ids)
 
     def _abort_monitor(self):
         """Deregister workers monitored by the watch dog and join clean process."""
