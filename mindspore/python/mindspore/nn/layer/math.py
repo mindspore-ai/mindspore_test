@@ -18,11 +18,10 @@ from __future__ import absolute_import
 import numpy as np
 
 from mindspore import log as logger
-from mindspore.ops import operations as P
+from mindspore import ops
 from mindspore.common.tensor import Tensor
 from mindspore.common._decorator import deprecated
 from mindspore.ops.primitive import constexpr, _primexpr
-from mindspore.ops import functional as F
 from mindspore.nn.cell import Cell
 from mindspore.common import dtype as mstype
 from mindspore import _checkparam as validator
@@ -109,10 +108,10 @@ class ReduceLogSumExp(Cell):
         validator.check_value_type('axis', axis, [int, list, tuple], self.cls_name)
         validator.check_value_type('keep_dims', keep_dims, [bool], self.cls_name)
         self.axis = axis
-        self.exp = P.Exp()
-        self.sum = P.ReduceSum(keep_dims)
-        self.log = P.Log()
-        self.max = P.ReduceMax()
+        self.exp = ops.Exp()
+        self.sum = ops.ReduceSum(keep_dims)
+        self.log = ops.Log()
+        self.max = ops.ReduceMax()
 
     def construct(self, x):
         x_max = self.max(x)
@@ -218,28 +217,28 @@ class LGamma(Cell):
         self.log_lanczos_gamma_plus_one_half = np.log(self.lanczos_gamma_plus_one_half)
 
         # operations
-        self.log = P.Log()
-        self.log1p = P.Log1p()
-        self.abs = P.Abs()
-        self.shape = P.Shape()
-        self.dtype = P.DType()
-        self.floor = P.Floor()
-        self.equal = P.Equal()
-        self.greater = P.Greater()
-        self.less = P.Less()
-        self.lessequal = P.LessEqual()
-        self.select = P.Select()
-        self.sin = P.Sin()
-        self.isfinite = P.IsFinite()
-        self.ones_like = P.OnesLike()
+        self.log = ops.Log()
+        self.log1p = ops.Log1p()
+        self.abs = ops.Abs()
+        self.shape = ops.Shape()
+        self.dtype = ops.DType()
+        self.floor = ops.Floor()
+        self.equal = ops.Equal()
+        self.greater = ops.Greater()
+        self.less = ops.Less()
+        self.lessequal = ops.LessEqual()
+        self.select = ops.Select()
+        self.sin = ops.Sin()
+        self.isfinite = ops.IsFinite()
+        self.ones_like = ops.OnesLike()
 
     def construct(self, x):
         input_dtype = self.dtype(x)
         _check_input_dtype("x", input_dtype, [mstype.float16, mstype.float32], self.cls_name)
-        if F.is_sequence_value_unknown(self.shape(x)):
-            infinity = self.ones_like(x) * F.cast(self.inf, input_dtype)
+        if ops.is_sequence_value_unknown(self.shape(x)):
+            infinity = self.ones_like(x) * ops.cast(self.inf, input_dtype)
         else:
-            infinity = F.fill(input_dtype, self.shape(x), self.inf)
+            infinity = ops.fill(input_dtype, self.shape(x), self.inf)
 
         need_to_reflect = self.less(x, 0.5)
         neg_input = -x
@@ -330,17 +329,17 @@ class DiGamma(Cell):
         self.log_lanczos_gamma_plus_one_half = np.log(self.lanczos_gamma_plus_one_half)
 
         # operations
-        self.log1p = P.Log1p()
-        self.abs = P.Abs()
-        self.shape = P.Shape()
-        self.dtype = P.DType()
-        self.floor = P.Floor()
-        self.equal = P.Equal()
-        self.less = P.Less()
-        self.select = P.Select()
-        self.sin = P.Sin()
-        self.cos = P.Cos()
-        self.logicaland = P.LogicalAnd()
+        self.log1p = ops.Log1p()
+        self.abs = ops.Abs()
+        self.shape = ops.Shape()
+        self.dtype = ops.DType()
+        self.floor = ops.Floor()
+        self.equal = ops.Equal()
+        self.less = ops.Less()
+        self.select = ops.Select()
+        self.sin = ops.Sin()
+        self.cos = ops.Cos()
+        self.logicaland = ops.LogicalAnd()
 
     def construct(self, x):
         input_dtype = self.dtype(x)
@@ -369,7 +368,7 @@ class DiGamma(Cell):
         reduced_input = x + self.abs(self.floor(x + 0.5))
         reflection = y - self.pi * self.cos(self.pi * reduced_input) / self.sin(self.pi * reduced_input)
         real_result = self.select(need_to_reflect, reflection, y)
-        nan = F.fill(self.dtype(x), self.shape(x), np.nan)
+        nan = ops.fill(self.dtype(x), self.shape(x), np.nan)
 
         return self.select(self.logicaland(self.less(x, 0), self.equal(x, self.floor(x))),
                            nan, real_result)
@@ -384,11 +383,11 @@ def _while_helper_func(cond, body, vals):
 def _igamma_series(ax, x, a, enabled):
     """Helper function for computing Igamma using a power series."""
 
-    logicaland = P.LogicalAnd()
-    greater = P.Greater()
-    shape = P.Shape()
-    dtype = P.DType()
-    select = P.Select()
+    logicaland = ops.LogicalAnd()
+    greater = ops.Greater()
+    shape = ops.Shape()
+    dtype = ops.DType()
+    select = ops.Select()
 
     # If more data types are supported, this epsilon need to be selected.
     epsilon = Tensor(np.finfo(np.float32).eps, mstype.float32)
@@ -418,8 +417,8 @@ def _igamma_series(ax, x, a, enabled):
                 select(enabled, x, vals[4]), select(enabled, dc_da, vals[5]),
                 select(enabled, dans_da, vals[6]))
 
-    ones = F.fill(dtype(a), shape(a), 1)
-    zeros = F.fill(dtype(a), shape(a), 0)
+    ones = ops.fill(dtype(a), shape(a), 1)
+    zeros = ops.fill(dtype(a), shape(a), 0)
     vals = (enabled, a, ones, ones, x, zeros, zeros)
 
     vals = _while_helper_func(cond, body, vals)
@@ -430,14 +429,14 @@ def _igamma_series(ax, x, a, enabled):
 def _igammac_continued_fraction(ax, x, a, enabled):
     """Helper function for computing Igammac using a continued fraction."""
 
-    abs_x = P.Abs()
-    logicaland = P.LogicalAnd()
-    greater = P.Greater()
-    less = P.Less()
-    notequal = P.NotEqual()
-    shape = P.Shape()
-    dtype = P.DType()
-    select = P.Select()
+    abs_x = ops.Abs()
+    logicaland = ops.LogicalAnd()
+    greater = ops.Greater()
+    less = ops.Less()
+    notequal = ops.NotEqual()
+    shape = ops.Shape()
+    dtype = ops.DType()
+    select = ops.Select()
 
     # If more data types are supported, this epsilon need to be selected.
     epsilon = Tensor(np.finfo(np.float32).eps, mstype.float32)
@@ -475,7 +474,7 @@ def _igammac_continued_fraction(ax, x, a, enabled):
         qk_is_nonzero = notequal(qk, 0)
         r = pk / qk
 
-        t = select(qk_is_nonzero, abs_x((ans - r) / r), F.fill(dtype(t), shape(t), 1))
+        t = select(qk_is_nonzero, abs_x((ans - r) / r), ops.fill(dtype(t), shape(t), 1))
         ans = select(qk_is_nonzero, r, ans)
 
         dpk_da = dpkm1_da * z - pkm1 - dpkm2_da * yc + pkm2 * c
@@ -483,7 +482,7 @@ def _igammac_continued_fraction(ax, x, a, enabled):
         dans_da_new = select(qk_is_nonzero, (dpk_da - ans * dqk_da) / qk, dans_da)
         grad_conditional = select(qk_is_nonzero,
                                   abs_x(dans_da_new - dans_da),
-                                  F.fill(dtype(dans_da), shape(dans_da), 1))
+                                  ops.fill(dtype(dans_da), shape(dans_da), 1))
 
         pkm2 = pkm1
         pkm1 = pk
@@ -518,16 +517,16 @@ def _igammac_continued_fraction(ax, x, a, enabled):
 
     y = 1 - a
     z = x + y + 1
-    c = F.fill(dtype(x), shape(x), 0)
-    pkm2 = F.fill(dtype(x), shape(x), 1)
+    c = ops.fill(dtype(x), shape(x), 0)
+    pkm2 = ops.fill(dtype(x), shape(x), 1)
     qkm2 = x
     pkm1 = x + 1
     qkm1 = z * x
     ans = pkm1 / qkm1
-    t = F.fill(dtype(x), shape(x), 1)
-    dpkm2_da = F.fill(dtype(x), shape(x), 0)
-    dqkm2_da = F.fill(dtype(x), shape(x), 0)
-    dpkm1_da = F.fill(dtype(x), shape(x), 0)
+    t = ops.fill(dtype(x), shape(x), 1)
+    dpkm2_da = ops.fill(dtype(x), shape(x), 0)
+    dqkm2_da = ops.fill(dtype(x), shape(x), 0)
+    dpkm1_da = ops.fill(dtype(x), shape(x), 0)
     dqkm1_da = -x
     dans_da = (dpkm1_da - ans * dqkm1_da) / qkm1
     vals = (enabled, ans, t, y, z, c, pkm1, qkm1, pkm2, qkm2, dpkm2_da, dqkm2_da, dpkm1_da, dqkm1_da, dans_da)
@@ -588,21 +587,21 @@ class IGamma(Cell):
         self.log_maxfloat32 = Tensor(np.log(np.finfo(np.float32).max), mstype.float32)
 
         # operations
-        self.logicaland = P.LogicalAnd()
-        self.logicalor = P.LogicalOr()
-        self.logicalnot = P.LogicalNot()
-        self.equal = P.Equal()
-        self.greater = P.Greater()
-        self.less = P.Less()
-        self.neg = P.Neg()
-        self.log = P.Log()
-        self.exp = P.Exp()
-        self.select = P.Select()
-        self.zeroslike = P.ZerosLike()
-        self.shape = P.Shape()
-        self.dtype = P.DType()
+        self.logicaland = ops.LogicalAnd()
+        self.logicalor = ops.LogicalOr()
+        self.logicalnot = ops.LogicalNot()
+        self.equal = ops.Equal()
+        self.greater = ops.Greater()
+        self.less = ops.Less()
+        self.neg = ops.Neg()
+        self.log = ops.Log()
+        self.exp = ops.Exp()
+        self.select = ops.Select()
+        self.zeroslike = ops.ZerosLike()
+        self.shape = ops.Shape()
+        self.dtype = ops.DType()
         self.lgamma = LGamma()
-        self.cast = P.Cast()
+        self.cast = ops.Cast()
 
     def construct(self, a, x):
         a_dtype = self.dtype(a)
@@ -614,8 +613,8 @@ class IGamma(Cell):
         ax = a * self.log(x) - x - self.lgamma(a)
         para_shape = self.shape(ax)
         if para_shape != ():
-            x = F.broadcast_to(x, para_shape)
-            a = F.broadcast_to(a, para_shape)
+            x = ops.broadcast_to(x, para_shape)
+            a = ops.broadcast_to(a, para_shape)
         x_is_zero = self.equal(x, 0)
         underflow = self.less(ax, self.neg(self.log_maxfloat32))
         ax = self.exp(ax)
@@ -624,7 +623,7 @@ class IGamma(Cell):
                              1 - _igammac_continued_fraction(ax, x, a, self.logicaland(enabled, use_igammac)),
                              _igamma_series(ax, x, a, self.logicaland(enabled, self.logicalnot(use_igammac))))
         output = self.select(x_is_zero, self.zeroslike(output), output)
-        output = self.select(domain_error, F.fill(self.dtype(a), self.shape(a), np.nan), output)
+        output = self.select(domain_error, ops.fill(self.dtype(a), self.shape(a), np.nan), output)
         return output
 
 
@@ -682,14 +681,14 @@ class LBeta(Cell):
                               0.833333333333333e-01]
 
         # operations
-        self.log = P.Log()
-        self.log1p = P.Log1p()
-        self.less = P.Less()
-        self.select = P.Select()
-        self.shape = P.Shape()
-        self.dtype = P.DType()
+        self.log = ops.Log()
+        self.log1p = ops.Log1p()
+        self.less = ops.Less()
+        self.select = ops.Select()
+        self.shape = ops.Shape()
+        self.dtype = ops.DType()
         self.lgamma = LGamma()
-        self.const = P.ScalarToTensor()
+        self.const = ops.ScalarToTensor()
 
     def construct(self, x, y):
         x_dtype = self.dtype(x)
@@ -699,8 +698,8 @@ class LBeta(Cell):
         x_plus_y = x + y
         para_shape = self.shape(x_plus_y)
         if para_shape != ():
-            x = F.broadcast_to(x, para_shape)
-            y = F.broadcast_to(y, para_shape)
+            x = ops.broadcast_to(x, para_shape)
+            y = ops.broadcast_to(y, para_shape)
         comp_less = self.less(x, y)
         x_min = self.select(comp_less, x, y)
         y_max = self.select(comp_less, y, x)
@@ -805,17 +804,17 @@ def matmul_op_select(x1_shape, x2_shape, transpose_x1, transpose_x2):
     """select matmul op"""
     x1_dim, x2_dim = len(x1_shape), len(x2_shape)
     if x1_dim == 1 and x2_dim == 1:
-        matmul_op = P.Mul()
+        matmul_op = ops.Mul()
     elif x1_dim <= 2 and x2_dim <= 2:
         transpose_x1 = False if x1_dim == 1 else transpose_x1
         transpose_x2 = False if x2_dim == 1 else transpose_x2
-        matmul_op = P.MatMul(transpose_x1, transpose_x2)
+        matmul_op = ops.MatMul(transpose_x1, transpose_x2)
     elif x1_dim == 1 and x2_dim > 2:
-        matmul_op = P.BatchMatMul(False, transpose_x2)
+        matmul_op = ops.BatchMatMul(False, transpose_x2)
     elif x1_dim > 2 and x2_dim == 1:
-        matmul_op = P.BatchMatMul(transpose_x1, False)
+        matmul_op = ops.BatchMatMul(transpose_x1, False)
     else:
-        matmul_op = P.BatchMatMul(transpose_x1, transpose_x2)
+        matmul_op = ops.BatchMatMul(transpose_x1, transpose_x2)
     return matmul_op
 
 
@@ -836,11 +835,11 @@ class MatMul(Cell):
         validator.check_value_type('transpose_x2', transpose_x2, [bool], self.cls_name)
         self.transpose_x1 = transpose_x1
         self.transpose_x2 = transpose_x2
-        self.shape_op = P.Shape()
-        self.expand_op = P.ExpandDims()
-        self.squeeze_left_op = P.Squeeze(-2)
-        self.squeeze_right_op = P.Squeeze(-1)
-        self.reduce_sum_op = P.ReduceSum(keep_dims=False)
+        self.shape_op = ops.Shape()
+        self.expand_op = ops.ExpandDims()
+        self.squeeze_left_op = ops.Squeeze(-2)
+        self.squeeze_right_op = ops.Squeeze(-1)
+        self.reduce_sum_op = ops.ReduceSum(keep_dims=False)
 
     def construct(self, x1, x2):
         x1_shape = self.shape_op(x1)
@@ -860,9 +859,9 @@ class MatMul(Cell):
 
         x1_broadcast_shape, x2_broadcast_shape = get_broadcast_matmul_shape(x1_shape, x2_shape)
         if x1_broadcast_shape != x1_shape:
-            x1 = F.broadcast_to(x1, x1_broadcast_shape)
+            x1 = ops.broadcast_to(x1, x1_broadcast_shape)
         if x2_broadcast_shape != x2_shape:
-            x2 = F.broadcast_to(x2, x2_broadcast_shape)
+            x2 = ops.broadcast_to(x2, x2_broadcast_shape)
 
         matmul_broadcast = matmul_op(x1, x2)
 
@@ -921,10 +920,10 @@ class CosineSimilarity(Cell):
         super().__init__()
         self.dim = dim
         self.eps = eps
-        self.mul = P.Mul()
-        self.div = P.DivNoNan()
-        self.maximum = P.Maximum()
-        self.cast = P.Cast()
+        self.mul = ops.Mul()
+        self.div = ops.DivNoNan()
+        self.maximum = ops.Maximum()
+        self.cast = ops.Cast()
 
     def construct(self, x1, x2):
         if not isinstance(x1, Tensor):
@@ -959,18 +958,18 @@ class Moments(Cell):
         if keep_dims is None:
             keep_dims = False
         self.keep_dims = validator.check_value_type('keep_dims', keep_dims, [bool], self.cls_name)
-        self.cast = P.Cast()
-        self.reduce_mean = P.ReduceMean(keep_dims=True)
-        self.square_diff = P.SquaredDifference()
-        self.squeeze = P.Squeeze(self.axis)
+        self.cast = ops.Cast()
+        self.reduce_mean = ops.ReduceMean(keep_dims=True)
+        self.square_diff = ops.SquaredDifference()
+        self.squeeze = ops.Squeeze(self.axis)
 
     def construct(self, x):
-        tensor_dtype = F.dtype(x)
+        tensor_dtype = ops.dtype(x)
         _check_input_dtype("input x", tensor_dtype, [mstype.float16, mstype.float32], self.cls_name)
         if tensor_dtype == mstype.float16:
             x = self.cast(x, mstype.float32)
         mean = self.reduce_mean(x, self.axis)
-        variance = self.reduce_mean(self.square_diff(x, F.stop_gradient(mean)), self.axis)
+        variance = self.reduce_mean(self.square_diff(x, ops.stop_gradient(mean)), self.axis)
         if not self.keep_dims:
             mean = self.squeeze(mean)
             variance = self.squeeze(variance)
@@ -1013,8 +1012,8 @@ class MatInverse(Cell):
     def __init__(self):
         """Initialize MatInverse."""
         super(MatInverse, self).__init__()
-        self.dtype = P.DType()
-        self.choleskytrsm = P.CholeskyTrsm()
+        self.dtype = ops.DType()
+        self.choleskytrsm = ops.operations.CholeskyTrsm()
         self.matmul = MatMul(transpose_x1=True)
 
     def construct(self, a):
@@ -1055,10 +1054,10 @@ class MatDet(Cell):
     def __init__(self):
         """Initialize MatDet."""
         super(MatDet, self).__init__()
-        self.dtype = P.DType()
-        self.cholesky = P.Cholesky()
-        self.det_triangle = P.DetTriangle()
-        self.square = P.Square()
+        self.dtype = ops.DType()
+        self.cholesky = ops.Cholesky()
+        self.det_triangle = ops.operations.DetTriangle()
+        self.square = ops.Square()
 
     def construct(self, a):
         input_dtype = self.dtype(a)

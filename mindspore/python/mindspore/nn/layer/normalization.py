@@ -21,7 +21,6 @@ import numbers
 import hashlib
 import numpy as np
 import mindspore.ops as ops
-from mindspore.ops import operations as P
 from mindspore.ops.operations import _inner_ops as inner
 from mindspore.common.parameter import Parameter
 from mindspore.common.initializer import initializer, Initializer
@@ -98,34 +97,34 @@ class _BatchNorm(Cell):
 
         self.parallel_mode = context.get_auto_parallel_context("parallel_mode")
 
-        self.shape = P.Shape()
-        self.reduce_mean = P.ReduceMean(keep_dims=True)
-        self.square = P.Square()
-        self.sqrt = P.Sqrt()
-        self.cast = P.Cast()
-        self.dtype = P.DType()
-        self.reshape = P.Reshape()
+        self.shape = ops.Shape()
+        self.reduce_mean = ops.ReduceMean(keep_dims=True)
+        self.square = ops.Square()
+        self.sqrt = ops.Sqrt()
+        self.cast = ops.Cast()
+        self.dtype = ops.DType()
+        self.reshape = ops.Reshape()
         self._target = context.get_context("device_target")
         self.momentum = 1.0 - momentum
 
-        self.bn_train = P.BatchNorm(is_training=True,
-                                    epsilon=self.eps,
-                                    momentum=self.momentum,
-                                    data_format=self.format)
+        self.bn_train = ops.BatchNorm(is_training=True,
+                                      epsilon=self.eps,
+                                      momentum=self.momentum,
+                                      data_format=self.format)
 
-        self.bn_infer = P.BatchNorm(is_training=False, epsilon=self.eps, data_format=self.format)
+        self.bn_infer = ops.BatchNorm(is_training=False, epsilon=self.eps, data_format=self.format)
         if _is_in_auto_parallel_mode():
             data_parallel_strategy = ((1,), (1,))
             data_parallel_strategy_one = ((1,), ())
         else:
             data_parallel_strategy = None
             data_parallel_strategy_one = None
-        self.sub_mean = P.Sub().shard(data_parallel_strategy)
-        self.sub_var = P.Sub().shard(data_parallel_strategy)
-        self.mul_mean = P.Mul().shard(data_parallel_strategy_one)
-        self.mul_var = P.Mul().shard(data_parallel_strategy_one)
-        self.assign_sub_mean = P.AssignSub().shard(data_parallel_strategy)
-        self.assign_sub_var = P.AssignSub().shard(data_parallel_strategy)
+        self.sub_mean = ops.Sub().shard(data_parallel_strategy)
+        self.sub_var = ops.Sub().shard(data_parallel_strategy)
+        self.mul_mean = ops.Mul().shard(data_parallel_strategy_one)
+        self.mul_var = ops.Mul().shard(data_parallel_strategy_one)
+        self.assign_sub_mean = ops.AssignSub().shard(data_parallel_strategy)
+        self.assign_sub_var = ops.AssignSub().shard(data_parallel_strategy)
 
     @staticmethod
     @_primexpr
@@ -463,8 +462,8 @@ class BatchNorm3d(Cell):
                                 use_batch_statistics=use_batch_statistics,
                                 data_format="NCHW",
                                 dtype=dtype)
-        self.shape = P.Shape()
-        self.reshape = P.Reshape()
+        self.shape = ops.Shape()
+        self.reshape = ops.Reshape()
 
     @staticmethod
     @_primexpr
@@ -765,9 +764,9 @@ class LayerNorm(Cell):
             gamma_init, normalized_shape, dtype=dtype), name="gamma")
         self.beta = Parameter(initializer(
             beta_init, normalized_shape, dtype=dtype), name="beta")
-        self.layer_norm = P.LayerNorm(begin_norm_axis=self.begin_norm_axis,
-                                      begin_params_axis=self.begin_params_axis,
-                                      epsilon=self.epsilon)
+        self.layer_norm = ops.LayerNorm(begin_norm_axis=self.begin_norm_axis,
+                                        begin_params_axis=self.begin_params_axis,
+                                        epsilon=self.epsilon)
 
     def construct(self, input_x):
         y, _, _ = self.layer_norm(input_x, self.gamma.astype(input_x.dtype), self.beta.astype(input_x.dtype))
@@ -910,9 +909,9 @@ class _InstanceNorm(Cell):
         self.beta = Parameter(initializer(
             beta_init, num_features, dtype=dtype), name="beta", requires_grad=affine)
 
-        self.shape = P.Shape()
+        self.shape = ops.Shape()
         self.momentum = momentum
-        self.instance_bn = P.InstanceNorm(epsilon=self.eps, momentum=self.momentum)
+        self.instance_bn = ops.InstanceNorm(epsilon=self.eps, momentum=self.momentum)
 
     def construct(self, x):
         self._check_input_dim(self.shape(x), self.cls_name)

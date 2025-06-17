@@ -19,7 +19,7 @@ import math
 import numpy as np
 
 from mindspore import context
-from mindspore.ops import operations as P
+from mindspore import ops
 import mindspore.common.dtype as mstype
 from mindspore.common.parameter import Parameter
 from mindspore.common.initializer import initializer, HeUniform, Uniform, _calculate_fan_in_and_fan_out
@@ -351,16 +351,16 @@ class Conv2d(_Conv):
             bias_init,
             data_format,
             dtype=dtype)
-        self.conv2d = P.Conv2D(out_channel=self.out_channels,
-                               kernel_size=self.kernel_size,
-                               mode=1,
-                               pad_mode=self.pad_mode,
-                               pad=self.padding,
-                               stride=self.stride,
-                               dilation=self.dilation,
-                               group=self.group,
-                               data_format=self.data_format)
-        self.bias_add = P.BiasAdd(data_format=self.data_format)
+        self.conv2d = ops.Conv2D(out_channel=self.out_channels,
+                                 kernel_size=self.kernel_size,
+                                 mode=1,
+                                 pad_mode=self.pad_mode,
+                                 pad=self.padding,
+                                 stride=self.stride,
+                                 dilation=self.dilation,
+                                 group=self.group,
+                                 data_format=self.data_format)
+        self.bias_add = ops.BiasAdd(data_format=self.data_format)
 
     def construct(self, x):
         output = self.conv2d(x, self.weight)
@@ -547,8 +547,8 @@ class Conv1d(_Conv):
         kernel_size = (1, kernel_size)
         stride = (1, stride)
         dilation = (1, dilation)
-        get_shape = P.Shape()
-        get_dtype = P.DType()
+        get_shape = ops.Shape()
+        get_dtype = ops.DType()
         if isinstance(weight_init, Tensor):
             weight_init_shape = get_shape(weight_init)
             Validator.check_equal_int(len(weight_init_shape), 3, 'weight_init_shape', self.cls_name)
@@ -572,18 +572,18 @@ class Conv1d(_Conv):
             dtype=dtype)
         self.padding = (0, 0, padding, padding)
         Validator.check_string(pad_mode, ['valid', 'same', 'pad'], 'pad_mode', self.cls_name)
-        self.conv2d = P.Conv2D(out_channel=self.out_channels,
-                               kernel_size=self.kernel_size,
-                               mode=1,
-                               pad_mode=self.pad_mode,
-                               pad=self.padding,
-                               stride=self.stride,
-                               dilation=self.dilation,
-                               group=self.group)
-        self.bias_add = P.BiasAdd()
-        self.expand_dims = P.ExpandDims()
-        self.squeeze = P.Squeeze(2)
-        self.shape = P.Shape()
+        self.conv2d = ops.Conv2D(out_channel=self.out_channels,
+                                 kernel_size=self.kernel_size,
+                                 mode=1,
+                                 pad_mode=self.pad_mode,
+                                 pad=self.padding,
+                                 stride=self.stride,
+                                 dilation=self.dilation,
+                                 group=self.group)
+        self.bias_add = ops.BiasAdd()
+        self.expand_dims = ops.ExpandDims()
+        self.squeeze = ops.Squeeze(2)
+        self.shape = ops.Shape()
 
     def construct(self, x):
         x = self.expand_dims(x, 2)
@@ -818,20 +818,20 @@ class Conv3d(_Conv):
             data_format,
             dtype=dtype)
         out_channels = self.out_channels // group
-        self.conv3d = P.Conv3D(out_channel=out_channels,
-                               kernel_size=self.kernel_size,
-                               mode=1,
-                               pad_mode=self.pad_mode,
-                               pad=self.padding,
-                               stride=self.stride,
-                               dilation=self.dilation,
-                               group=1,
-                               data_format=self.data_format)
-        self.bias_add = P.BiasAdd(data_format=self.data_format)
-        self.shape = P.Shape()
-        self.concat = P.Concat(1)
-        self.split_0 = P.Split(0, self.group)
-        self.split_1 = P.Split(1, self.group)
+        self.conv3d = ops.Conv3D(out_channel=out_channels,
+                                 kernel_size=self.kernel_size,
+                                 mode=1,
+                                 pad_mode=self.pad_mode,
+                                 pad=self.padding,
+                                 stride=self.stride,
+                                 dilation=self.dilation,
+                                 group=1,
+                                 data_format=self.data_format)
+        self.bias_add = ops.BiasAdd(data_format=self.data_format)
+        self.shape = ops.Shape()
+        self.concat = ops.Concat(1)
+        self.split_0 = ops.Split(0, self.group)
+        self.split_1 = ops.Split(1, self.group)
 
     def construct(self, x):
         if self.group == 1:
@@ -1054,19 +1054,19 @@ class Conv3dTranspose(_Conv):
             data_format,
             transposed=True,
             dtype=dtype)
-        self.conv3d_transpose = P.Conv3DTranspose(in_channel=self.in_channels,
-                                                  out_channel=self.out_channels,
-                                                  kernel_size=self.kernel_size,
-                                                  mode=1,
-                                                  pad_mode=self.pad_mode,
-                                                  pad=self.padding,
-                                                  stride=self.stride,
-                                                  dilation=self.dilation,
-                                                  group=self.group,
-                                                  output_padding=self.output_padding,
-                                                  data_format=self.data_format)
-        self.bias_add = P.BiasAdd(data_format=self.data_format)
-        self.shape = P.Shape()
+        self.conv3d_transpose = ops.Conv3DTranspose(in_channel=self.in_channels,
+                                                    out_channel=self.out_channels,
+                                                    kernel_size=self.kernel_size,
+                                                    mode=1,
+                                                    pad_mode=self.pad_mode,
+                                                    pad=self.padding,
+                                                    stride=self.stride,
+                                                    dilation=self.dilation,
+                                                    group=self.group,
+                                                    output_padding=self.output_padding,
+                                                    data_format=self.data_format)
+        self.bias_add = ops.BiasAdd(data_format=self.data_format)
+        self.shape = ops.Shape()
 
     def construct(self, x):
         output = self.conv3d_transpose(x, self.weight)
@@ -1271,7 +1271,7 @@ class Conv2dTranspose(_Conv):
 
         self.in_channels = in_channels
         self.out_channels = out_channels
-        self.shape = P.Shape()
+        self.shape = ops.Shape()
         Validator.check_string(pad_mode, ['valid', 'same', 'pad'], 'pad_mode', self.cls_name)
         self.is_valid = self.pad_mode == 'valid'
         self.is_same = self.pad_mode == 'same'
@@ -1279,15 +1279,15 @@ class Conv2dTranspose(_Conv):
         self.output_padding = output_padding
 
         # cause Conv2DTranspose's out_channel refers to Conv2D's out_channel.
-        self.conv2d_transpose = P.Conv2DTranspose(out_channel=in_channels,
-                                                  kernel_size=kernel_size,
-                                                  mode=1,
-                                                  pad_mode=pad_mode,
-                                                  pad=padding,
-                                                  stride=stride,
-                                                  dilation=dilation,
-                                                  group=group)
-        self.bias_add = P.BiasAdd()
+        self.conv2d_transpose = ops.Conv2DTranspose(out_channel=in_channels,
+                                                    kernel_size=kernel_size,
+                                                    mode=1,
+                                                    pad_mode=pad_mode,
+                                                    pad=padding,
+                                                    stride=stride,
+                                                    dilation=dilation,
+                                                    group=group)
+        self.bias_add = ops.BiasAdd()
         if isinstance(self.padding, int):
             self.padding_top, self.padding_bottom, self.padding_left, self.padding_right = (self.padding,) * 4
         else:
@@ -1314,7 +1314,7 @@ class Conv2dTranspose(_Conv):
             if not self.is_pad and (self.output_padding[0] > 0 or self.output_padding[1] > 0):
                 raise ValueError("when output_padding is not zero, pad_mode must be 'pad'")
 
-            pad = P.Pad(paddings=((0, 0), (0, 0), (0, self.output_padding[0]), (0, self.output_padding[1])))
+            pad = ops.Pad(paddings=((0, 0), (0, 0), (0, self.output_padding[0]), (0, self.output_padding[1])))
             return pad(conv2d_trans_ret)
 
         if self.output_padding == 0:
@@ -1326,7 +1326,7 @@ class Conv2dTranspose(_Conv):
             raise ValueError("output_padding must be in range of [0, max(stride_w, dilation_w)).")
         if not self.is_pad and self.output_padding > 0:
             raise ValueError("when output_padding is not zero, pad_mode must be 'pad'")
-        pad = P.Pad(paddings=((0, 0), (0, 0), (0, self.output_padding), (0, self.output_padding)))
+        pad = ops.Pad(paddings=((0, 0), (0, 0), (0, self.output_padding), (0, self.output_padding)))
         return pad(conv2d_trans_ret)
 
 
@@ -1450,8 +1450,8 @@ class Conv1dTranspose(_Conv):
         kernel_size = (1, kernel_size)
         stride = (1, stride)
         dilation = (1, dilation)
-        get_shape = P.Shape()
-        get_dtype = P.DType()
+        get_shape = ops.Shape()
+        get_dtype = ops.DType()
         if isinstance(weight_init, Tensor):
             weight_init_shape = get_shape(weight_init)
             Validator.check_equal_int(len(weight_init_shape), 3, 'weight_init_shape', self.cls_name)
@@ -1479,24 +1479,24 @@ class Conv1dTranspose(_Conv):
         self.padding = (0, 0, padding, padding)
         self.in_channels = in_channels
         self.out_channels = out_channels
-        self.shape = P.Shape()
+        self.shape = ops.Shape()
         Validator.check_string(pad_mode, ['valid', 'same', 'pad'], 'pad_mode', self.cls_name)
         self.is_valid = self.pad_mode == 'valid'
         self.is_same = self.pad_mode == 'same'
         self.is_pad = self.pad_mode == 'pad'
 
         # cause Conv2DBackpropInput's out_channel refers to Conv2D's out_channel.
-        self.conv2d_transpose = P.Conv2DBackpropInput(out_channel=in_channels,
-                                                      kernel_size=kernel_size,
-                                                      mode=1,
-                                                      pad_mode=pad_mode,
-                                                      pad=self.padding,
-                                                      stride=stride,
-                                                      dilation=dilation,
-                                                      group=group)
-        self.bias_add = P.BiasAdd()
-        self.expand_dims = P.ExpandDims()
-        self.squeeze = P.Squeeze(2)
+        self.conv2d_transpose = ops.Conv2DBackpropInput(out_channel=in_channels,
+                                                        kernel_size=kernel_size,
+                                                        mode=1,
+                                                        pad_mode=pad_mode,
+                                                        pad=self.padding,
+                                                        stride=stride,
+                                                        dilation=dilation,
+                                                        group=group)
+        self.bias_add = ops.BiasAdd()
+        self.expand_dims = ops.ExpandDims()
+        self.squeeze = ops.Squeeze(2)
 
     def shard(self, strategy):
         self.conv2d_transpose.shard(strategy)
