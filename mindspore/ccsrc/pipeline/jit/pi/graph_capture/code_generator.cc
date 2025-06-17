@@ -2314,7 +2314,7 @@ py::object LoopBodyReCaptureCodeGenerator::MakeLoopBodyCode(int loopBodyStartBci
   }
   (void)returnInstrs.emplace_back(std::make_unique<Instr>(RETURN_VALUE));
   std::move(returnInstrs.begin(), returnInstrs.end(), std::back_inserter(resultInstrs));
-  if (IsPiJitDebugLogOn(LogConfig::kOthers)) {
+  if (IsPiJitLogOn(LogCfg::kOthers)) {
     std::stringstream ss;
     for (auto &instr : resultInstrs) {
       ss << instr->ToString() << std::endl;
@@ -2374,7 +2374,7 @@ bool LoopBodyReCaptureCodeGenerator::Prepare() {
   }
   std::sort(loopBodySortedBBs.begin(), loopBodySortedBBs.end(),
             [](Block *left, Block *right) { return left->id() < right->id(); });
-  if (IsPiJitDebugLogOn(LogConfig::kOthers)) {
+  if (IsPiJitLogOn(LogCfg::kOthers)) {
     std::stringstream ss;
     ss << "====>DUMP LOOP BB START<====" << std::endl;
     for (auto b : loopBodySortedBBs) {
@@ -2416,7 +2416,7 @@ bool LoopBodyReCaptureCodeGenerator::Prepare() {
 }
 
 py::object LoopBodyReCaptureCodeGenerator::Build() {
-  if (IsPiJitDebugLogOn(LogConfig::kOthers)) {
+  if (IsPiJitLogOn(LogCfg::kOthers)) {
     std::stringstream ss;
     ss << "Instrs Before ReCapture:" << std::endl;
     for (auto &instr : graph_->GetCFG()->instr_pool()) {
@@ -2460,7 +2460,7 @@ py::object LoopBodyReCaptureCodeGenerator::Build() {
   }
   std::vector<std::unique_ptr<Instr>> resultInstrs = CodeGenerator::CopyAndReplaceInstr(
     graph_->GetCFG()->instr_pool(), loopBodyStartBci_, loopBodyEndBci_, newLoopBodyInstrs);
-  if (IsPiJitDebugLogOn(LogConfig::kOthers)) {
+  if (IsPiJitLogOn(LogCfg::kOthers)) {
     std::stringstream ss;
     ss << "Instrs After ReCapture:" << std::endl;
     for (auto &instr : resultInstrs) {

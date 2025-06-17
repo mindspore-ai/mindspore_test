@@ -28,6 +28,7 @@
 #include "mindspore/ops/ops_utils/op_constants.h"
 #include "include/common/utils/tensor_py.h"
 #include "include/common/pynative/common_utils.h"
+#include "pipeline/jit/pi/utils/utils.h"
 #include "pipeline/jit/pi/external.h"
 #include "pipeline/jit/ps/action.h"
 #include "pipeline/jit/ps/parse/resolve.h"
@@ -73,6 +74,15 @@ bool IsMsClassObject(const py::object &obj) {
 
 bool IsMetaFuncGraphObject(const py::object &obj) { return py::isinstance<MetaFuncGraph>(obj); }
 
+static std::string ExtractFirstPart(const std::string &error_message) {
+  const std::string separator = "----------------------------------------------------";
+  size_t pos = error_message.find(separator);
+  if (pos != std::string::npos) {
+    return error_message.substr(0, pos);
+  }
+  return error_message;
+}
+
 std::pair<AbstractBasePtr, bool> EvalValue(const ValuePtr &value, const AbstractBasePtrList &inputs_abs_list) {
   if (value == nullptr) {
     return std::make_pair(nullptr, false);
@@ -96,6 +106,7 @@ std::pair<AbstractBasePtr, bool> EvalValue(const ValuePtr &value, const Abstract
     return std::make_pair(nullptr, false);
   } catch (const std::exception &e) {
     MS_LOG(INFO) << "Failed to EvalValue for value: " << value->ToString() << ". The exception:\n" << e.what();
+    PIJIT_DEBUG_LOG(LogCfg::kGraphBreak) << std::endl << "Eval failed reason: " << ExtractFirstPart(e.what());
     return std::make_pair(nullptr, false);
   }
 }

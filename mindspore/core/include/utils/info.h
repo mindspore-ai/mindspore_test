@@ -57,6 +57,7 @@ class Location {
         comments_(std::move(comments)) {}
   ~Location() = default;
   MS_CORE_API std::string ToString(SourceLineTip tip = kSourceLineTipNextLine, int start_line = 0);
+  MS_CORE_API std::string GetStartLineSourceCode(SourceLineTip tip = kSourceLineTipNextLine);
   MS_CORE_API std::string DebugString() const;
   std::string file_name() const { return file_name_; }
   void set_file_name(const std::string &file_name) { file_name_ = file_name; }

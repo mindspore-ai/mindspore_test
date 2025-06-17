@@ -614,18 +614,19 @@ std::string TimeRecorder::TimeData::ToString() {
   return s.str();
 }
 
-bool g_pijit_log_conf[static_cast<int>(LogConfig::kLogMax)] = {false};
+bool g_pijit_log_conf[static_cast<int>(LogCfg::kLogMax)] = {false};
 
-const std::unordered_map<std::string, LogConfig> g_pijit_log_map = {
-  {"all", LogConfig::kAll},
-  {"trace_source", LogConfig::kTraceSource},
-  {"trace_bytecode", LogConfig::kTraceBytecode},
-  {"guard", LogConfig::kGuard},
-  {"graph_break", LogConfig::kGraphBreak},
-  {"bytecode", LogConfig::kBytecode},
-  {"recompiles", LogConfig::kRecompiles},
-  {"recompiles_verbose", LogConfig::kRecompilesVerbose},
-  {"others", LogConfig::kOthers},
+const std::unordered_map<std::string, LogCfg> g_pijit_log_map = {
+  {"all", LogCfg::kAll},
+  {"trace_source", LogCfg::kTraceSource},
+  {"trace_bytecode", LogCfg::kTraceBytecode},
+  {"guard", LogCfg::kGuard},
+  {"graph_break", LogCfg::kGraphBreak},
+  {"bytecode", LogCfg::kBytecode},
+  {"recompiles", LogCfg::kRecompiles},
+  {"recompiles_verbose", LogCfg::kRecompilesVerbose},
+  {"dynamic", LogCfg::kDynamic},
+  {"others", LogCfg::kOthers},
 };
 
 }  // namespace pijit

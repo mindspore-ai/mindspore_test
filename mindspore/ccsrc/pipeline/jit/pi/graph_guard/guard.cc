@@ -318,7 +318,12 @@ bool OptGuard::Check(PyFrameWrapper frame, bool print, bool perf) {
     if (result) {
       continue;
     }
-    MS_LOG(DEBUG) << "Guard check fail:" << GuardCheckFailInfo(item, GetObjectFromTrace(frame, item->GetTrace()));
+    if (print) {
+      PIJIT_DEBUG_LOG(LogCfg::kRecompiles) << GuardCheckFailInfo(item, GetObjectFromTrace(frame, item->GetTrace()));
+    } else {
+      PIJIT_DEBUG_LOG(LogCfg::kRecompilesVerbose)
+        << GuardCheckFailInfo(item, GetObjectFromTrace(frame, item->GetTrace()));
+    }
     UpdateGuardList(item);
     return false;
   }
