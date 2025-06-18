@@ -910,9 +910,12 @@ static CNodePtr CreateSliceForTensorList(const AnfNodePtr &node, const CNodePtr 
   MS_EXCEPTION_IF_NULL(op_info);
 
   std::vector<ValuePtr> inputs_values;
+  MS_EXCEPTION_IF_NULL(node->cast<ValueNodePtr>());
   if (IsValueNode<ValueList>(node)) {
+    MS_EXCEPTION_IF_NULL(node->cast<ValueNodePtr>()->value()->cast<ValueListPtr>());
     inputs_values = node->cast<ValueNodePtr>()->value()->cast<ValueListPtr>()->value();
   } else {
+    MS_EXCEPTION_IF_NULL(node->cast<ValueNodePtr>()->value()->cast<ValueTuplePtr>());
     inputs_values = node->cast<ValueNodePtr>()->value()->cast<ValueTuplePtr>()->value();
   }
   std::vector<AnfNodePtr> make_tuple_inputs = {NewValueNode(prim::kPrimMakeTuple)};
@@ -964,6 +967,7 @@ static CNodePtr CreateSliceForTensorList(const AnfNodePtr &node, const CNodePtr 
     auto new_node_value = node_input[0]->cast<ValueNodePtr>();
     MS_EXCEPTION_IF_NULL(new_node_value);
     PrimitivePtr new_node_prim = new_node_value->value()->cast<PrimitivePtr>();
+    MS_EXCEPTION_IF_NULL(new_node_prim);
     new_node_prim->set_instance_name(SPLIT_TENSOR);
     new_node_prim->set_attr("keep_value_node_input", MakeValue(true));
     new_node->set_scope(scope);
