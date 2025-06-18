@@ -14,10 +14,10 @@
 # ============================================================================
 
 import numpy as np
+import pytest
+import mindspore as ms
 from mindspore import context, Tensor, ops, nn
 from tests.mark_utils import arg_mark
-
-context.set_context(mode=context.GRAPH_MODE)
 
 
 class SingleInputSingleOutputWithDumpGradientNet(nn.Cell):
@@ -50,12 +50,14 @@ class MultipleInputsSingleOutputWithDumpGradientNet(nn.Cell):
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-def test_single_input_single_output():
+@pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+def test_single_input_single_output(mode):
     """
     Features: Grad With DumpGradient operator.
     Description: Test DumpGradient in net
     Expectation: No exception.
     """
+    context.set_context(mode=mode)
     x = Tensor(np.array([[1, 2], [3, 4]]).astype(np.float32))
     net = SingleInputSingleOutputWithDumpGradientNet()
     grad_fn = ops.value_and_grad(net, grad_position=0, weights=None)
@@ -67,12 +69,14 @@ def test_single_input_single_output():
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-def test_single_input_multiple_outputs():
+@pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+def test_single_input_multiple_outputs(mode):
     """
     Features: Grad With DumpGradient operator.
     Description: Test DumpGradient in net
     Expectation: No exception.
     """
+    context.set_context(mode=mode)
     x = Tensor(np.array([[1, 2], [3, 4]]).astype(np.float32))
     net = SingleInputMultipleOutputsWithDumpGradientNet()
     grad_fn = ops.value_and_grad(net, grad_position=0, weights=None)
@@ -86,12 +90,14 @@ def test_single_input_multiple_outputs():
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-def test_multiple_input_single_output():
+@pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+def test_multiple_input_single_output(mode):
     """
     Features: Grad With DumpGradient operator.
     Description: Test DumpGradient in net
     Expectation: No exception.
     """
+    context.set_context(mode=mode)
     x = Tensor(np.array([[1, 2], [3, 4]]).astype(np.float32))
     y = Tensor(np.array([[-2, 3], [-1, 2]]).astype(np.float32))
     z = Tensor(np.array([[0, 3], [5, -1]]).astype(np.float32))
