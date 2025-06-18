@@ -249,7 +249,7 @@ bool JitExecutorPy::CompileInner(const py::object &source, const py::tuple &args
 
 bool JitExecutorPy::CompileInner(const FuncGraphPtr &graph, const py::tuple &args, const py::dict &kwargs,
                                  const std::string &phase, bool) {
-  JitRunningScope jit_running_scope;
+  JitCompilingScope jit_running_scope;
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   ms_context->SetCellReuseLevel(CellReuseLevel::kNoCellReuse);

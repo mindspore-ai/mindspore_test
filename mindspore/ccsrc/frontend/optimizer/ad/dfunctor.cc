@@ -503,46 +503,8 @@ CNodePtr DFunctor::CalculateDoutTuple(const CNodePtr &cnode_morph, const CNodePt
   return din_tuple;
 }
 
-void DFunctor::BackPropagate(const CNodePtr &cnode_morph, const AdjointPtr &node_adjoint) {
-  // Do BackPropagate When node_adjoint has not BackPropagated.
-  if (cnode_morph->stop_gradient() || node_adjoint->back_bproped()) {
-    return;
-  }
-  auto bprop = k_graph_->NewCNode(
-    {NewValueNode(prim::kPrimTupleGetItem), node_adjoint->k_app(), NewValueNode(static_cast<int64_t>(1))});
-  // Call with delimited continuation dout.
-  CNodePtr bprop_app;
-  if (HasSideEffectBackProp(cnode_morph)) {
-    if (is_view_inplace_) {
-      bprop_app = tape_->NewCNodeInOrder({bprop, node_adjoint->dout()});
-    } else {
-      bprop_app = tape_->NewCNodeInFront({bprop, node_adjoint->dout()});
-    }
-    tape_->set_flag(mindspore::kFuncGraphFlagReAutoMonad, true);
-  } else {
-    if (common::GetCompileConfig("PUT_ALL_CNODE_INTO_ORDER_LIST") == "0") {
-      bprop_app = tape_->NewCNode({bprop, node_adjoint->dout()});
-    } else {
-      bprop_app = tape_->NewCNodeInOrder({bprop, node_adjoint->dout()});
-    }
-  }
-
-  if (HasSideEffectBackPropMem(cnode_morph)) {
-    bprop_app->AddAttr(kAttrSideEffectBpropApp, MakeValue(true));
-    k_graph_->set_flag(kAttrSideEffectBpropAppPropagate, true);
-  }
-  if (node_adjoint->side_effect_bprop_app_propagate()) {
-    bprop_app->AddAttr(kAttrSideEffectBpropAppPropagate, MakeValue(true));
-    k_graph_->set_flag(kAttrSideEffectBpropAppPropagate, true);
-  }
-  node_adjoint->RegisterDoutUser(bprop_app, 1);
-  // Special case for switch_layer
-  if (IsPrimitiveCNode(cnode_morph, prim::kPrimSwitchLayer)) {
-    auto din =
-      tape_->NewCNode({NewValueNode(prim::kPrimTupleGetItem), bprop_app, NewValueNode(static_cast<int64_t>(0))});
-    BackPropagateSwitchLayer(cnode_morph, din);
-    return;
-  }
+void DFunctor::AccumulateInputGradients(const CNodePtr &cnode_morph, const AdjointPtr &node_adjoint,
+                                        const CNodePtr bprop_app) {
   for (size_t i = 0; i < cnode_morph->size(); i++) {
     auto din = tape_->NewCNode({NewValueNode(prim::kPrimTupleGetItem), bprop_app, NewValueNode(SizeToLong(i))});
     auto input = SkipHookNodeInBackProp(cnode_morph->input(i));
@@ -596,6 +558,50 @@ void DFunctor::BackPropagate(const CNodePtr &cnode_morph, const AdjointPtr &node
     din = CalculateDoutTuple(cnode_morph, din, node_adjoint, i);
     input_adjoint->second->AccumulateDout(din);
   }
+}
+
+void DFunctor::BackPropagate(const CNodePtr &cnode_morph, const AdjointPtr &node_adjoint) {
+  // Do BackPropagate When node_adjoint has not BackPropagated.
+  if (cnode_morph->stop_gradient() || node_adjoint->back_bproped()) {
+    return;
+  }
+  auto bprop = k_graph_->NewCNode(
+    {NewValueNode(prim::kPrimTupleGetItem), node_adjoint->k_app(), NewValueNode(static_cast<int64_t>(1))});
+  // Call with delimited continuation dout.
+  CNodePtr bprop_app;
+  if (HasSideEffectBackProp(cnode_morph)) {
+    if (is_view_inplace_) {
+      bprop_app = tape_->NewCNodeInOrder({bprop, node_adjoint->dout()});
+    } else {
+      bprop_app = tape_->NewCNodeInFront({bprop, node_adjoint->dout()});
+    }
+    tape_->set_flag(mindspore::kFuncGraphFlagReAutoMonad, true);
+  } else {
+    if (common::GetCompileConfig("PUT_ALL_CNODE_INTO_ORDER_LIST") == "0") {
+      bprop_app = tape_->NewCNode({bprop, node_adjoint->dout()});
+    } else {
+      bprop_app = tape_->NewCNodeInOrder({bprop, node_adjoint->dout()});
+    }
+  }
+
+  if (HasSideEffectBackPropMem(cnode_morph)) {
+    bprop_app->AddAttr(kAttrSideEffectBpropApp, MakeValue(true));
+    k_graph_->set_flag(kAttrSideEffectBpropAppPropagate, true);
+  }
+  if (node_adjoint->side_effect_bprop_app_propagate()) {
+    bprop_app->AddAttr(kAttrSideEffectBpropAppPropagate, MakeValue(true));
+    k_graph_->set_flag(kAttrSideEffectBpropAppPropagate, true);
+  }
+  node_adjoint->RegisterDoutUser(bprop_app, 1);
+  // Special case for switch_layer
+  if (IsPrimitiveCNode(cnode_morph, prim::kPrimSwitchLayer)) {
+    auto din =
+      tape_->NewCNode({NewValueNode(prim::kPrimTupleGetItem), bprop_app, NewValueNode(static_cast<int64_t>(0))});
+    BackPropagateSwitchLayer(cnode_morph, din);
+    return;
+  }
+
+  AccumulateInputGradients(cnode_morph, node_adjoint, bprop_app);
 }
 
 // Map a morphism.

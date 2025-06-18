@@ -244,7 +244,7 @@ std::pair<std::vector<int64_t>, int64_t> StarredUnpackMerge::GetStarredUnpackMer
  *   StarredUnpackMerge(assign_node1, assign_node2, starred_flags_node, is_tuple)
  *   StarredUnpackMerge(StarredUnpack(*[1, 2]), (3, 4), (1, 0), 1) --> (1, 2, (3, 4))
  *   a: (1, 2, (3, 4))
- *l
+ *
  * \param[in] args_abs_list List of input abstract.
  *
  * \return The generated func graph.

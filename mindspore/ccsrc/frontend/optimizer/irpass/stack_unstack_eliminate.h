@@ -76,6 +76,7 @@ class StackUnstackEliminator : public AnfVisitor {
 
   bool FetchUnstackAttrs(const AnfNodePtr &node) {
     auto prim = GetCNodePrimitive(node);
+    MS_EXCEPTION_IF_NULL(prim);
     auto num_val = prim->GetAttr(kAttrNum);
     // UnStack may not be inferred and do not have attribute axis.
     if (num_val == nullptr || num_val->isa<None>()) {

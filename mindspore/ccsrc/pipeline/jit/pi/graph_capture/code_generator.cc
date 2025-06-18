@@ -1368,7 +1368,9 @@ py::object CodeBreakGenerator::MakeUntrackedCode(int untracked_bci, int untracke
   py::object code = cg.NewCode();
   auto parent = GetJitCompileResults(co_);
   JitCompileResults *child = CreateJitCompileResults(code.ptr());
+  MS_EXCEPTION_IF_NULL(child);
   child->set_stat(JitCompileResults::GRAPH_CANDIDATE);
+  MS_EXCEPTION_IF_NULL(parent);
   child->set_conf(parent->conf());
   child->set_tbs(parent->tbs());
   return code;
@@ -1811,6 +1813,7 @@ void CodeBreakGenerator::MakeReturn(CodeGenerator *code_gen) const {
 
 py::object CodeBreakGenerator::MakeInterpretCapturedCode() const {
   auto jcr = GetJitCompileResults(co_);
+  MS_EXCEPTION_IF_NULL(jcr);
 
   CodeGenerator code_gen(&interpret_, true);
   code_gen.SetGlobals(globals_);
@@ -2223,6 +2226,7 @@ void CodeBreakGenerator::Compile(const std::string &co_name, int co_argcount, in
     parent->set_stat(JitCompileResults::GRAPH_CALLABLE);
   } else {
     JitCompileResults *child = CreateJitCompileResults(stub.ptr());
+    MS_EXCEPTION_IF_NULL(child);
     MS_EXCEPTION_IF_CHECK_FAIL(child->code() == nullptr, "must be a new stub code");
     child->set_code(child->codehub()->AddOptTarget(OptOption::CreateOptionByPoint(child)));
     child->code()->SetNativeFunc(compile_result.first, compile_result.second, nullptr);
@@ -2332,6 +2336,7 @@ py::object LoopBodyReCaptureCodeGenerator::MakeLoopBodyCode(int loopBodyStartBci
   auto parent = GetJitCompileResults(co_);
   MS_EXCEPTION_IF_NULL(parent);
   JitCompileResults *child = CreateJitCompileResults(code.ptr());
+  MS_EXCEPTION_IF_NULL(child);
   child->set_stat(JitCompileResults::GRAPH_CANDIDATE);
   child->set_conf(parent->conf());
   child->set_tbs(parent->tbs());

@@ -808,7 +808,9 @@ bool CombineLikeGraphs(const ResourcePtr &resource) {
     }
     auto &cloned_nodes = cloner.cloned_nodes();
     for (auto &fv : fg->parameter_obj_nodes()) {
-      TraceGuard guard(MakeTraceInfo<TraceCombileLikeGraphs>(fg->output()->debug_info()));
+      auto output = fg->output();
+      MS_EXCEPTION_IF_NULL(output);
+      TraceGuard guard(MakeTraceInfo<TraceCombileLikeGraphs>(output->debug_info()));
       auto param = base_graph->add_parameter();
       MS_EXCEPTION_IF_NULL(resource->manager());
       auto &node_users = resource->manager()->node_users()[fv];

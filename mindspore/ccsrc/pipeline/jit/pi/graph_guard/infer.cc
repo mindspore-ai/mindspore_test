@@ -124,6 +124,7 @@ static py::object CreateMetaTensor(const ShapeVector &shape, const mindspore::Ty
 }
 
 static py::object CreateMetaTensor(const mindspore::abstract::ShapePtr &shape, const mindspore::TypePtr &type) {
+  MS_EXCEPTION_IF_NULL(shape);
   return CreateMetaTensor(shape->shape(), type);
 }
 
@@ -192,6 +193,7 @@ static py::object CreateList(const mindspore::abstract::BaseShapePtr &base_shape
   mindspore::abstract::SequenceShapePtr shape_list;
   size_t elem_count = 0;
   auto type_list = type->cast_ptr<mindspore::List>();
+  MS_EXCEPTION_IF_NULL(type_list);
   if (base_shape->isa<mindspore::abstract::DynamicSequenceShape>()) {
     dynamic = true;
     elem_count = type_list->elements().size();

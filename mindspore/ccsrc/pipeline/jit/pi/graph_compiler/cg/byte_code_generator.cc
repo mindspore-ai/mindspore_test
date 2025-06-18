@@ -36,7 +36,9 @@ py::object ByteCodeGenerator::GenFunction(const ir::FunctionNodePtr &func) {
   ByteCodeGeneratorPtr generator = std::make_shared<ByteCodeGenerator>();
   auto use_global = func->GetUseGlobal();
   if (use_global != nullptr) {
-    generator->globals_ = use_global->cast<ir::ValuePtr>()->GetValue().cast<py::dict>();
+    auto value_ptr = use_global->cast<ir::ValuePtr>();
+    MS_EXCEPTION_IF_NULL(value_ptr);
+    generator->globals_ = value_ptr->GetValue().cast<py::dict>();
   }
   return generator->Generate(func);
 }
@@ -260,6 +262,7 @@ void ByteCodeGenerator::Visit_(const ir::NaryWithFlagNodePtr &node) {
 }
 
 int ByteCodeGenerator::GetValueIndex(const ir::ValuePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
   auto scope = node->GetScope();
   MS_EXCEPTION_IF_CHECK_FAIL(scope_inquire_map_.find(scope) != scope_inquire_map_.end(),
                              "Invalid scope in " + node->ToString());

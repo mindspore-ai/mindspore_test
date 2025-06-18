@@ -805,8 +805,14 @@ class PConstant : public PBase<PConstant<T> > {
     auto value_2 = GetValueNode(vnode_2);
     auto tensor_ptr_1 = dyn_cast<tensor::Tensor>(value_1);
     auto tensor_ptr_2 = dyn_cast<tensor::Tensor>(value_2);
-    auto tensor_1_abstract = vnode_1->abstract()->cast<abstract::AbstractTensorPtr>();
-    auto tensor_2_abstract = vnode_2->abstract()->cast<abstract::AbstractTensorPtr>();
+    auto vnode_1_abs = vnode_1->abstract();
+    auto vnode_2_abs = vnode_2->abstract();
+    MS_EXCEPTION_IF_NULL(vnode_1_abs);
+    MS_EXCEPTION_IF_NULL(vnode_2_abs);
+    auto tensor_1_abstract = vnode_1_abs->cast<abstract::AbstractTensorPtr>();
+    auto tensor_2_abstract = vnode_2_abs->cast<abstract::AbstractTensorPtr>();
+    MS_EXCEPTION_IF_NULL(tensor_1_abstract);
+    MS_EXCEPTION_IF_NULL(tensor_2_abstract);
 
     TypePtr tensor_1_type_ptr = tensor_1_abstract->element()->BuildType();
     TypePtr tensor_2_type_ptr = tensor_2_abstract->element()->BuildType();

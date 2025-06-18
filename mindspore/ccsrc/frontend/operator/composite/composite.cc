@@ -2719,7 +2719,6 @@ FuncGraphPtr GenerateBpropOutTuple::GenerateFuncGraph(const AbstractBasePtrList 
   }
   auto input_abs = args_abs_list[0];
   MS_EXCEPTION_IF_NULL(input_abs);
-  auto input_tuple_abs = input_abs->cast<abstract::AbstractTuplePtr>();
   auto fg = std::make_shared<FuncGraph>();
   auto input = fg->add_parameter();
   if (!input_abs->isa<abstract::AbstractTuple>()) {
@@ -2731,6 +2730,7 @@ FuncGraphPtr GenerateBpropOutTuple::GenerateFuncGraph(const AbstractBasePtrList 
     fg->set_output(bprop_with_mask);
     return fg;
   }
+  auto input_tuple_abs = input_abs->cast<abstract::AbstractTuplePtr>();
   AnfNodePtrList ret_inputs = {NewValueNode(prim::kPrimMakeTuple)};
   for (int64_t i = 0; i < SizeToLong(input_tuple_abs->size()); ++i) {
     auto bprop_output_i = fg->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), input, NewValueNode(i)});

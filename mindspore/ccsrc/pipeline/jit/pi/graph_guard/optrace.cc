@@ -177,7 +177,9 @@ FuncMapEnum GetFuncMapEnum(const OpTracePtr &tr) {
   } else if (opcode.IsBinaryMath() && opcode == BINARY_ADD) {
     func = FuncMapEnum::kPyNumberAdd;
   } else if (opcode.IsCall()) {
-    func = MapPythonCall(tr->GetParam(0)->GetObject());
+    auto param0 = tr->GetParam(0);
+    MS_EXCEPTION_IF_NULL(param0);
+    func = MapPythonCall(param0->GetObject());
   }
   return func;
 }
@@ -222,12 +224,16 @@ TracePtr OptimizePyObjectLength(const OpTracePtr &tr) {
     {GenSignature({&PyDict_Type}), FoldTupleLengthTrace},
   };
   TracePtr new_tr = tr;
-  bool fold = tr->GetParam(0)->GetTraceType() == TraceType::Const;
+  auto param0 = tr->GetParam(0);
+  MS_EXCEPTION_IF_NULL(param0);
+  bool fold = param0->GetTraceType() == TraceType::Const;
   if (!fold) {
     MS_LOG(INFO) << "got a length trace without constant len func, skip guard global len is builtin function len";
   }
   if (fold) {
-    auto sig = GenSignature({Py_TYPE(tr->GetParam(1)->GetObject())});
+    auto param1 = tr->GetParam(1);
+    MS_EXCEPTION_IF_NULL(param1);
+    auto sig = GenSignature({Py_TYPE(param1->GetObject())});
     auto iter = fold_map.find(sig);
     new_tr = iter == fold_map.end() ? tr : iter->second(tr);
   }
@@ -240,10 +246,12 @@ TracePtr OptimizePyObjectLength(const OpTracePtr &tr) {
 TracePtr OptimizePyType(const OpTracePtr &tr) {
   // only internal generated trace is constant
   // pattern `type(input)`
-  if (tr->GetParam(1)->GetTraceType() != TraceType::Operation) {
+  auto param1 = tr->GetParam(1);
+  MS_EXCEPTION_IF_NULL(param1);
+  if (param1->GetTraceType() != TraceType::Operation) {
     return tr;
   }
-  OpTracePtr input = std::static_pointer_cast<OpTrace>(tr->GetParam(1));
+  OpTracePtr input = std::static_pointer_cast<OpTrace>(param1);
   if (!Opcode(input->GetOpCode()).IsCall()) {
     return tr;
   }
@@ -259,6 +267,7 @@ TracePtr OptimizePyObjectGetAttr(const OpTracePtr &tr) { return FastTraceBase::C
 TracePtr FoldTupleGetItem(const OpTracePtr &trace) {
   TracePtr fast_trace = trace;
   TracePtr index = trace->GetParam(1);
+  MS_EXCEPTION_IF_NULL(index);
   if (index->GetTraceType() != TraceType::Const) {
     return fast_trace;
   }
@@ -512,6 +521,7 @@ py::object FastTraceBase::Attr4MsCell(FastTraceBase *this_p, PTraceContext conte
 
 TracePtr FastTraceBase::CreateFastLen(const OpTracePtr &tr) {
   TracePtr obj_trace = tr->GetParam(1);
+  MS_EXCEPTION_IF_NULL(obj_trace);
   PyObject *obj_object = obj_trace->GetObject();
   bool check_func;
   // skip check global object `len` is builtin function `len`
@@ -537,10 +547,14 @@ TracePtr FastTraceBase::CreateFastLen(const OpTracePtr &tr) {
 TracePtr FastTraceBase::CreateFastItem(const OpTracePtr &tr) {
   bool is_call = Opcode(tr->GetOpCode()).IsCall();
   TracePtr src_trace = tr->GetParam(is_call);
+  MS_EXCEPTION_IF_NULL(src_trace);
   TracePtr index_trace = tr->GetParam(1 + is_call);
+  MS_EXCEPTION_IF_NULL(index_trace);
   PyObject *src_object = src_trace->GetObject();
   PyObject *index_object = index_trace->GetObject();
-  bool check_func = is_call ? tr->GetParam(0)->GetTraceType() != TraceType::Const : false;
+  auto param0 = tr->GetParam(0);
+  MS_EXCEPTION_IF_NULL(param0);
+  bool check_func = is_call ? param0->GetTraceType() != TraceType::Const : false;
   bool const_index = index_trace->GetTraceType() == TraceType::Const;
   if (check_func) {
     MS_LOG(DEBUG) << "got a getitem trace without constant len func";

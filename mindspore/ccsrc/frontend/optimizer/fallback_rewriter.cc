@@ -2525,6 +2525,7 @@ class AfterOptARewriter : public BaseRewriter {
     const auto &keys_values = dict->value();
     MS_EXCEPTION_IF_NULL(value_node->abstract());
     auto abs_dict = dyn_cast<abstract::AbstractDictionary>(value_node->abstract());
+    MS_EXCEPTION_IF_NULL(abs_dict);
     const auto &abs_keys_values = abs_dict->elements();
     if (keys_values.size() != abs_keys_values.size()) {
       MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, value_node)

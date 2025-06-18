@@ -177,12 +177,22 @@ AbstractBasePtr MindIREngine::InferPrimitiveShape(const PrimitivePtr &prim,
   }
   try {
     MS_LOG_TRY_CATCH_SCOPE;
-    // For Lite, the op is with old format, it will fail in new infer function, so skip it.
-    if (!is_lite_) {
+    auto infer_abs_by_func_impl = [&prim, &args_abs_list](bool is_lite) -> AbstractBasePtr {
+      if (is_lite) {
+        return nullptr;
+      }
+
       auto abstract_optional = abstract::InferAbstractByFuncImpl(prim, args_abs_list);
       if (abstract_optional.has_value()) {
         return abstract_optional.value();
       }
+
+      return nullptr;
+    };
+    // For Lite, the op is with old format, it will fail in new infer function, so skip it.
+    auto ret = infer_abs_by_func_impl(is_lite_);
+    if (ret != nullptr) {
+      return ret;
     }
     auto found = abstract::GetPrimitiveInferImpl(prim);
     if (found.has_value()) {
@@ -191,11 +201,9 @@ AbstractBasePtr MindIREngine::InferPrimitiveShape(const PrimitivePtr &prim,
         return infer.InferShapeAndType(nullptr, prim, args_abs_list);
       }
     } else {
-      if (!is_lite_) {
-        auto infer_res = abstract::InferAbstractByFuncImpl(prim, args_abs_list);
-        if (infer_res.has_value()) {
-          return infer_res.value();
-        }
+      ret = infer_abs_by_func_impl(is_lite_);
+      if (ret != nullptr) {
+        return ret;
       }
     }
 
