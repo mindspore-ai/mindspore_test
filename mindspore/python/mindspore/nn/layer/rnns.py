@@ -19,7 +19,7 @@ import math
 import numpy as np
 
 import mindspore.nn as nn
-from mindspore import ops
+import mindspore.ops as ops
 import mindspore.context as context
 import mindspore.common.dtype as mstype
 from mindspore.ops.primitive import constexpr, _primexpr
