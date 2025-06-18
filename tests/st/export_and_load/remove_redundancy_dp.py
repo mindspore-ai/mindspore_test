@@ -14,17 +14,14 @@
 # ============================================================================
 import mindspore as ms
 import mindspore.dataset as ds
-import mindspore.runtime as rt
-from mindspore import nn, ops, Callback
+from mindspore import nn, ops
 from mindspore.communication import init, get_rank
 from mindspore.common.initializer import initializer
 from mindspore.train.serialization import load_checkpoint, load_param_into_net
 from mindspore.train import Model, CheckpointConfig, ModelCheckpoint
 
 ms.set_context(mode=ms.GRAPH_MODE)
-rt.set_memory(max_size="28GB")
 ms.set_auto_parallel_context(parallel_mode=ms.ParallelMode.DATA_PARALLEL)
-init()
 ms.set_seed(1)
 print("distribute network.", flush=True)
 
@@ -70,25 +67,13 @@ def create_dataset(batch_size):
     return data_set
 
 
-class StopCallBack(Callback):
-    """End of step callback."""
-
-    def __init__(self, stop_step):
-        super().__init__()
-        self.stop_step = stop_step
-
-    def on_train_step_end(self, run_context):
-        cb_params = run_context.original_args()
-        if cb_params.cur_step_num >= self.stop_step:
-            run_context.request_stop()
-
-
 def test_remove_redundancy_save_True_load_True_dp():
     '''
     Feature: remove_redundancy save ckpt and load ckpt in data parallel.
     Description: Saving and loading checkpoints with redundancy elimination.
     Expectation: success.
     '''
+    init()
     print("distribute network shard.", flush=True)
     net = Network()
     print("distribute network create dataset.", flush=True)
@@ -101,13 +86,11 @@ def test_remove_redundancy_save_True_load_True_dp():
     cbpoint_cb = ModelCheckpoint(prefix="redundancy", directory=f"./device{rank_id}_redundancy11dp", config=config)
     print("distribute network train.", flush=True)
     model = Model(net, loss_fn=loss, optimizer=optim)
-    stop_cb = StopCallBack(6)
-    model.train(1, dataset, callbacks=[cbpoint_cb, stop_cb])
-    ckpt_path = f"./device{rank_id}_redundancy11dp/redundancy-1_5.safetensors"
+    model.train(1, dataset, callbacks=[cbpoint_cb])
+    ckpt_path = f"./device{rank_id}_redundancy11dp/redundancy-1_1875.safetensors"
 
     print("distribute network loadcheckpoint.", flush=True)
     param_dict = load_checkpoint(ckpt_path, format="safetensors")
     load_param_into_net(model.train_network, param_dict, remove_redundancy=True)
     print("distribute network parameter broadcast.", flush=True)
-    stop_cb = StopCallBack(6)
-    model.train(1, dataset, callbacks=stop_cb)
+    model.train(1, dataset)
