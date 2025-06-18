@@ -28,7 +28,6 @@ namespace kernel {
 namespace pyboost {
 tensor::TensorPtr InplaceZeroAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor) {
   MS_LOG(DEBUG) << "Call InplaceZero start";
-  OpRunner::InferOpOutput(op, input_tensor);
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor);
   op->set_outputs({input_tensor});
   // Async
