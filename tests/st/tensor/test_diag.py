@@ -33,7 +33,7 @@ def diag_backward_func(input_x, diagonal=0):
     return ops.grad(diag_forward_func, (0, 1))(input_x, diagonal)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 def test_diag_forward(mode):
     """
