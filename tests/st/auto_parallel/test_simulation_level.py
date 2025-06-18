@@ -268,7 +268,7 @@ def test_build_model_with_dataset():
     os.environ["MS_SIMULATION_LEVEL"] = ""
 
 
-@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="onecard", essential_mark="essential")
 def test_simu_execute_graph():
     """
     Feature: simulation level.

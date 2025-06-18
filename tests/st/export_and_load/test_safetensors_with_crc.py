@@ -43,7 +43,7 @@ def test_save_and_load_sft_with_crc():
     remove_ckpt(ckpt_path)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_save_and_load_sft_with_async():
     """
     Feature: save and load checkpoint

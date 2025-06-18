@@ -80,7 +80,7 @@ def inplace_mul_backward_func_tensor(input_x, value):
 
 @arg_mark(
     plat_marks=["platform_ascend"],
-    level_mark="level0",
+    level_mark="level1",
     card_mark="onecard",
     essential_mark="essential",
 )
