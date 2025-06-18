@@ -24,6 +24,7 @@
 #include "include/backend/visible.h"
 #include "backend/backend_manager/backend_base.h"
 #include "backend/backend_manager/backend_jit_config.h"
+#include "runtime/graph_scheduler/graph_compiler.h"
 #include "ir/tensor.h"
 
 #include "backend/ms_infer_backend/graph_adapter.h"
@@ -34,7 +35,7 @@ namespace ms_infer_backend {
 
 class BACKEND_EXPORT MSInferBackend : public BackendBase {
  public:
-  MSInferBackend() = default;
+  MSInferBackend() : graph_compiler_(std::make_shared<runtime::GraphCompiler>()) {}
   ~MSInferBackend() = default;
 
   // The backend graph Build interface, the return value is the built graph id.
@@ -53,10 +54,13 @@ class BACKEND_EXPORT MSInferBackend : public BackendBase {
   void Clear() override;
 
  private:
+  KernelGraphPtr CompileGraph(const FuncGraphPtr &func_graph, const BackendJitConfig &backend_jit_config);
+
   std::unordered_map<BackendGraphId, GraphAdapterPtr> graph_adapter_map_;
   static BackendGraphId backend_graph_id_;
 
   BackendJitConfig backend_jit_config_;
+  std::shared_ptr<runtime::GraphCompiler> graph_compiler_;
 };
 
 using MSInferBackendPtr = std::shared_ptr<MSInferBackend>;
