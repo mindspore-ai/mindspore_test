@@ -34,6 +34,8 @@ from ..core.config import get_video_backend
 
 _CALLED_TIMES = 0
 _GC_COLLECTION_INTERVAL = 10
+_INITIALIZED = False
+_INITIALIZED_PID = False
 
 # The following constants have been deprecated by Pillow since version 9.1.0
 if int(Image.__version__.split(".")[0]) > 9 or Image.__version__ >= "9.1.0":
@@ -876,7 +878,16 @@ def _read_from_stream_ffmpeg(container, start_offset, end_offset, pts_unit, stre
 def _read_video_dvpp(filename, start_pts=0, end_pts=None, pts_unit="pts", output_format="THWC"):
     """ Read video with DVPP. """
 
-    cde.dvpp_sys_init()
+    global _INITIALIZED, _INITIALIZED_PID
+    if _INITIALIZED and _INITIALIZED_PID != os.getpid():
+        raise RuntimeError("Cannot re-initialize Ascend in forked process. To use Ascend with multiprocessing, "
+                           "you must use the 'spawn' start method "
+                           "via 'mindspore.dataset.config.set_multiprocessing_start_method('spawn')'.")
+
+    if not _INITIALIZED:
+        cde.dvpp_sys_init()
+        _INITIALIZED = True
+        _INITIALIZED_PID = os.getpid()
 
     output_format = output_format.upper()
     if output_format not in ("THWC", "TCHW"):

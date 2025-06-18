@@ -17,8 +17,8 @@
 #define MINDSPORE_CCSRC_MINDDATA_DATASET_UTIL_SIG_HANDLER_H_
 
 #include <cstdint>
-#include <set>
 #include <string>
+#include <vector>
 
 namespace mindspore::dataset {
 /// \brief Register the custom signal handlers.
@@ -31,7 +31,7 @@ extern void RegisterMainHandlers();
 extern void RegisterWorkerHandlers();
 
 /// \brief Register workers to be monitored by the watch dog.
-extern void RegisterWorkerPIDs(int64_t id, const std::set<int> &pids);
+extern void RegisterWorkerPIDs(int64_t id, const std::vector<int> &pids);
 
 /// \brief Deregister workers to be monitored by the watch dog.
 extern void DeregisterWorkerPIDs(int64_t id);
