@@ -80,7 +80,7 @@ AID Spawn(const ActorReference actor, bool sharedThread) {
     MS_LOG(ERROR) << "Actor is nullptr.";
     MINDRT_EXIT("Actor is nullptr.");
   }
-  if (local::g_finalizeMindrtStatus.load() == true) {
+  if (local::g_finalizeMindrtStatus.load()) {
     return actor->GetAID();
   } else {
     auto actor_mgr = actor->get_actor_mgr();
@@ -110,7 +110,7 @@ void TerminateAll() { mindspore::ActorMgr::GetActorMgrRef()->TerminateAll(); }
 
 void Finalize() {
   bool inite = false;
-  if (local::g_finalizeMindrtStatus.compare_exchange_strong(inite, true) == false) {
+  if (!local::g_finalizeMindrtStatus.compare_exchange_strong(inite, true)) {
     MS_LOG(DEBUG) << "mindrt has been Finalized.";
     return;
   }

@@ -67,7 +67,7 @@ class LlamaBoostAscendNative(LLMBoost):
     def _prepare_single_layer(self, ckpt, config, id):
         """ prepares the dictionary of weights of a single layer """
         prefix = 'model.layers.' + str(id)
-        is_last = (id == config.num_layers-1)
+        is_last = id == config.num_layers-1
         layer = 'layers.' + str(id) + '.'
         l_dict = {key: value for key, value in ckpt.items() if layer in key}
         if config.n_kv_heads is None:
@@ -95,8 +95,8 @@ class LlamaBoostAscendNative(LLMBoost):
         else:
             raise RuntimeError("hidden size and ffn hidden size must be divided by rank size without remainder.  \
                                 hidden_size: ", hid_size, " ffn_hidden_size: ", ffn_hid, " rank_size: ", rank_size)
-        quant = (self._get_from_dict(l_dict, "_weight_quantizer") is not None)
-        unite_qkv = (config.num_heads == config.n_kv_heads)
+        quant = self._get_from_dict(l_dict, "_weight_quantizer") is not None
+        unite_qkv = config.num_heads == config.n_kv_heads
         self.dictionary[prefix + ".attention_norm.weight"] = \
             Tensor(self._get_from_dict(l_dict, "attention_norm"), dtype=dtype.float16)
         self.dictionary[prefix + ".ffn_norm.weight"] = \

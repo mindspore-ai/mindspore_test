@@ -86,7 +86,6 @@ GVAR_DEF(PrimitivePtr, kPrimTileD, std::make_shared<Primitive>("TileD"));
 GVAR_DEF(PrimitivePtr, kPrimAccumulateNV2, std::make_shared<Primitive>("AccumulateNV2"));
 GVAR_DEF(PrimitivePtr, kPrimTransDataRNN, std::make_shared<Primitive>("TransDataRNN"));
 GVAR_DEF(PrimitivePtr, kPrimPad, std::make_shared<Primitive>("Pad"));
-// GVAR_DEF(PrimitivePtr, kPrimPadV3, std::make_shared<Primitive>("PadV3"));
 GVAR_DEF(PrimitivePtr, kPrimPadD, std::make_shared<Primitive>("PadD"));
 GVAR_DEF(PrimitivePtr, kPrimPadding, std::make_shared<Primitive>(kPaddingOpName));
 GVAR_DEF(PrimitivePtr, kPrimMirrorPad, std::make_shared<Primitive>(kMirrorPadOpName));
