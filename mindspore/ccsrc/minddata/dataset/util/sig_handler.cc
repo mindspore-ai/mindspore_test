@@ -169,7 +169,7 @@ void SIGCHLDHandler(int signal, siginfo_t *info, void *context) {
       auto pids_to_kill = pids;
       pids.clear();  // Clear the monitoring status of the process group before performing a termination.
       for (const auto &pid_to_kill : pids_to_kill) {
-        if (pid_to_kill != pid) {
+        if (pid_to_kill != ppid && pid_to_kill != pid) {
           MS_LOG(INFO) << "Terminating child process: " << pid_to_kill;
           kill(pid_to_kill, SIGTERM);
         }

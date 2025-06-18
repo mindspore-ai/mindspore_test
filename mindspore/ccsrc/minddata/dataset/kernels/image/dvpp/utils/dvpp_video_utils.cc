@@ -31,7 +31,7 @@ namespace mindspore {
 namespace dataset {
 constexpr uint32_t MAX_CHN_HEIGHT = 4096;
 constexpr uint32_t MAX_CHN_WIDTH = 4096;
-constexpr uint32_t MAX_CHN = 3;
+constexpr float BUF_SIZE_FACTOR = 1.5;
 constexpr int32_t SEND_TIMEOUT = 30;
 constexpr uint32_t WAIT_TIMEOUT = 5000000;  // 5000000us
 constexpr uint32_t REF_FRAME_NUM = 16;
@@ -303,7 +303,7 @@ int64_t dvpp_vdec_create_chnl(int64_t pType) {
   chnAttr.mode = HI_VDEC_SEND_MODE_FRAME;  // Only support frame mode
   chnAttr.pic_width = MAX_CHN_WIDTH;
   chnAttr.pic_height = MAX_CHN_HEIGHT;
-  chnAttr.stream_buf_size = MAX_CHN_WIDTH * MAX_CHN_HEIGHT * MAX_CHN / 2;
+  chnAttr.stream_buf_size = static_cast<hi_u32>(MAX_CHN_WIDTH * MAX_CHN_HEIGHT * BUF_SIZE_FACTOR);
   chnAttr.frame_buf_cnt = FRAME_BUF_CNT;
   hi_pic_buf_attr buf_attr{
     MAX_CHN_WIDTH, MAX_CHN_HEIGHT, 0, HI_DATA_BIT_WIDTH_10, HI_PIXEL_FORMAT_YUV_SEMIPLANAR_420, HI_COMPRESS_MODE_NONE};

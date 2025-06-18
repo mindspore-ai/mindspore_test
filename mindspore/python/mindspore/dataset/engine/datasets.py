@@ -3199,6 +3199,8 @@ def worker_target(operations, worker_id):
 
 
 class WorkerTarget:
+    """ Wrapper for worker_target method. """
+
     def __init__(self, operations, pipe, worker_id):
         self.operations = operations
         self.pipe = pipe

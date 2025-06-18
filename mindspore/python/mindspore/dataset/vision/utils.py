@@ -15,6 +15,7 @@
 Interpolation Mode, Resampling Filters
 """
 import gc
+import importlib
 import math
 import numbers
 import os
@@ -22,7 +23,6 @@ import re
 from enum import Enum, IntEnum
 from fractions import Fraction
 
-import cv2
 import numpy as np
 from PIL import Image
 
@@ -666,6 +666,11 @@ class VideoFrameDvpp:
 def _get_frame_by_cv(filename, container, stream):
     """ Grab video frames with OpenCV. """
 
+    try:
+        cv2 = importlib.import_module("cv2")
+    except ModuleNotFoundError:
+        raise ImportError("Importing cv2 failed, try to install it by running `pip install opencv-python`.")
+
     cap = cv2.VideoCapture(filename)
     cap.set(cv2.CAP_PROP_FORMAT, -1)
     frames = {}
@@ -875,8 +880,8 @@ def _read_from_stream_ffmpeg(container, start_offset, end_offset, pts_unit, stre
     return result
 
 
-def _read_video_dvpp(filename, start_pts=0, end_pts=None, pts_unit="pts", output_format="THWC"):
-    """ Read video with DVPP. """
+def _dvpp_init():
+    """ Init dvpp resources. """
 
     global _INITIALIZED, _INITIALIZED_PID
     if _INITIALIZED and _INITIALIZED_PID != os.getpid():
@@ -888,6 +893,12 @@ def _read_video_dvpp(filename, start_pts=0, end_pts=None, pts_unit="pts", output
         cde.dvpp_sys_init()
         _INITIALIZED = True
         _INITIALIZED_PID = os.getpid()
+
+
+def _read_video_dvpp(filename, start_pts=0, end_pts=None, pts_unit="pts", output_format="THWC"):
+    """ Read video with DVPP. """
+
+    _dvpp_init()
 
     output_format = output_format.upper()
     if output_format not in ("THWC", "TCHW"):
@@ -1111,6 +1122,8 @@ class VideoDecoder:
             raise RuntimeError("Method get_frames_at is only supported on Ascend platform.")
         type_check(indices, (list,), "indices")
         type_check_list(indices, (int,), "indices")
+
+        _dvpp_init()
 
         if indices == []:
             return np.empty(0, dtype=np.uint8)
