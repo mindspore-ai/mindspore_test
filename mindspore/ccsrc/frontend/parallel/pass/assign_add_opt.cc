@@ -308,8 +308,10 @@ bool SkipAssignAddEliminate(const FuncGraphManagerPtr &manager,
       (void)matmul_dw_nodes->emplace_back(matmul_node);
     } else if (IsPrimitiveCNode(assign_add_ptr->input(kIndex2), prim::kPrimCast)) {
       auto cast_node = assign_add_ptr->input(kIndex2)->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(cast_node);
       if (IsPrimitiveCNode(cast_node->input(kIndex1), prim::kPrimMatMul)) {
         auto matmul_node = cast_node->input(kIndex1)->cast<CNodePtr>();
+        MS_EXCEPTION_IF_NULL(matmul_node);
         (void)matmul_dw_nodes->emplace_back(matmul_node);
         matmul_node->AddAttr(kAttrCastDw, MakeValue(true));
         cast_node->AddAttr(kAttrCastDw, MakeValue(true));
