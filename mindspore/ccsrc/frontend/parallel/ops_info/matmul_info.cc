@@ -99,6 +99,7 @@ Status MatMulBase::GetAttrs() {
   if (enable_nd_tp_iter != attrs_.end()) {
     MS_EXCEPTION_IF_NULL(enable_nd_tp_iter->second);
     if (enable_nd_tp_iter->second->isa<BoolImm>()) {
+      MS_EXCEPTION_IF_NULL(enable_nd_tp_iter->second->cast<BoolImmPtr>());
       enable_nd_tp_ = enable_nd_tp_iter->second->cast<BoolImmPtr>()->value();
       MS_LOG(INFO) << "enable_nd_tp_: " << enable_nd_tp_;
     } else {
@@ -122,6 +123,7 @@ Status MatMulBase::GetAttrs() {
   if (field_size_iter != attrs_.end()) {
     MS_EXCEPTION_IF_NULL(field_size_iter->second);
     if (field_size_iter->second->isa<Int64Imm>()) {
+      MS_EXCEPTION_IF_NULL(field_size_iter->second->cast<Int64ImmPtr>());
       field_size_ = field_size_iter->second->cast<Int64ImmPtr>()->value();
     } else {
       MS_LOG(ERROR) << name_ << ": The value of field_size is not int64_t.";
@@ -145,9 +147,10 @@ Status MatMulBase::GetAttrs() {
   if (ndtp_reduce_scatter_axis_iter != attrs_.end()) {
     MS_EXCEPTION_IF_NULL(ndtp_reduce_scatter_axis_iter->second);
     if (ndtp_reduce_scatter_axis_iter->second->isa<Int64Imm>()) {
+      MS_EXCEPTION_IF_NULL(ndtp_reduce_scatter_axis_iter->second->cast<Int64ImmPtr>());
       ndtp_reduce_scatter_axis_ = ndtp_reduce_scatter_axis_iter->second->cast<Int64ImmPtr>()->value();
       if (ndtp_reduce_scatter_axis_ >= SizeToLong(mat_a_dimension_) || ndtp_reduce_scatter_axis_ < 0) {
-        MS_LOG(ERROR) << name_ << ": The value of ndtp_reduce_scatter_axis is not in [0, " << mat_a_dimension_ - 1
+        MS_LOG(ERROR) << name_ << ": The value of ndtp_reduce_scatter_axis is not in [0, " << (mat_a_dimension_ - 1)
                       << "].";
         return FAILED;
       }
@@ -1277,6 +1280,7 @@ void SetCommOpAttrs(AnfNodePtr *comm_op, const AnfNodePtr &matmul) {
   MS_EXCEPTION_IF_NULL(comm_cnode);
   comm_cnode->AddPrimalAttr(kPrimalAttrForwardCommNodeUniqueId, MakeValue<std::string>(matmul->UniqueId()));
   auto comm_prim = GetCNodePrimitive(comm_cnode);
+  MS_EXCEPTION_IF_NULL(comm_prim);
   auto instance_name = comm_prim->instance_name();
   comm_prim->set_instance_name(FORWARD_OP + instance_name);
 }
@@ -1285,6 +1289,7 @@ void SetReplaceOpCommRecompute(AnfNodePtr *replace_op, const CNodePtr &cnode) {
   // add recompute_comm_op attrs
   auto prim_origin = GetCNodePrimitive(cnode);
   auto replace_op_prim = GetCNodePrimitive(*replace_op);
+  MS_EXCEPTION_IF_NULL(replace_op_prim);
   if (prim_origin != nullptr && prim_origin->HasAttr(RECOMPUTE_COMM_OP)) {
     auto origin_recompute_op_attr = prim_origin->GetAttr(RECOMPUTE_COMM_OP);
     replace_op_prim->AddAttr(RECOMPUTE_COMM_OP, origin_recompute_op_attr);

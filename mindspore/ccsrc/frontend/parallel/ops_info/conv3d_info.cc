@@ -164,8 +164,7 @@ OperatorAttrs Conv3DInfo::CreateConv3DAttrs() {
   Attr group = {GROUP, MakeValue(group_)};
   Attr data_format = {DATA_FORMAT, MakeValue(format_)};
 
-  OperatorAttrs attrs;
-  attrs = {out_channel, kernel_size, mode, pad_mode, pad, stride, dilation, group, data_format};
+  OperatorAttrs attrs = {out_channel, kernel_size, mode, pad_mode, pad, stride, dilation, group, data_format};
   return attrs;
 }
 
