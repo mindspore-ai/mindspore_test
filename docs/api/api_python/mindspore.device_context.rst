@@ -50,5 +50,6 @@ Ascend设备后端管理
     mindspore.device_context.ascend.op_debug.debug_option
     mindspore.device_context.ascend.op_debug.aclinit_config
     mindspore.device_context.ascend.op_tuning.op_compile
+    mindspore.device_context.ascend.op_tuning.aclnn_cache
     mindspore.device_context.ascend.op_tuning.aoe_tune_mode
     mindspore.device_context.ascend.op_tuning.aoe_job_type

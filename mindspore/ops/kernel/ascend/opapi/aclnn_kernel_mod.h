@@ -51,12 +51,6 @@ using AclUtil = device::ascend::AclUtil;
 using ProcessCache = device::ascend::ProcessCache;
 using CacheTuple = std::tuple<uint64_t, aclOpExecutor *, ProcessCache, size_t>;
 
-extern mindspore::HashMap<uint64_t, std::list<CacheTuple>::iterator> hash_map;
-extern std::list<CacheTuple> hash_cache;
-extern size_t capacity;
-extern bool is_set_capacity;
-extern std::shared_mutex cache_mutex;
-
 #define DEFINE_GET_WORKSPACE_FOR_OPS(OP_TYPE, FUNC_NAME)                                                             \
   std::string op_type_##FUNC_NAME##_ = #OP_TYPE;                                                                     \
   uint64_t hash_id_##FUNC_NAME##_{0};                                                                                \
@@ -80,17 +74,13 @@ extern std::shared_mutex cache_mutex;
     }                                                                                                                \
     std::optional<std::list<CacheTuple>::iterator> found_iter;                                                       \
     hash_id_##FUNC_NAME##_ = device::ascend::AclnnHash(op_type_##FUNC_NAME##_, args...);                             \
-    {                                                                                                                \
-      std::shared_lock read_lock(cache_mutex);                                                                       \
-      if (auto iter = hash_map.find(hash_id_##FUNC_NAME##_); iter != hash_map.end()) {                               \
-        found_iter = iter->second;                                                                                   \
-      }                                                                                                              \
+    if (auto iter = hash_map.find(hash_id_##FUNC_NAME##_); iter != hash_map.end()) {                                 \
+      found_iter = iter->second;                                                                                     \
     }                                                                                                                \
     if (found_iter) {                                                                                                \
       MS_LOG(INFO) << "op " << op_type_##FUNC_NAME##_ << " hit cache with hash id: " << hash_id_##FUNC_NAME##_;      \
       MS_VLOG(VL_ACLNN_OP) << "op " << op_type_##FUNC_NAME##_                                                        \
                            << " hit cache with hash id: " << hash_id_##FUNC_NAME##_;                                 \
-      std::unique_lock write_lock(cache_mutex);                                                                      \
       hash_cache.splice(hash_cache.begin(), hash_cache, *found_iter);                                                \
       cur_workspace = std::get<3>(hash_cache.front());                                                               \
     } else {                                                                                                         \
@@ -100,14 +90,12 @@ extern std::shared_mutex cache_mutex;
       auto [workspace, executor, cache, fail_cache] = GEN_EXECUTOR_FOR_RESIZE(op_type_##FUNC_NAME##_, args...);      \
       cur_workspace = workspace;                                                                                     \
       if (!fail_cache) {                                                                                             \
-        std::unique_lock write_lock(cache_mutex);                                                                    \
         hash_cache.emplace_front(hash_id_##FUNC_NAME##_, executor, cache, workspace);                                \
         hash_map[hash_id_##FUNC_NAME##_] = hash_cache.begin();                                                       \
         if (hash_cache.size() > capacity) {                                                                          \
           auto release_data = std::move(hash_cache.back());                                                          \
           hash_map.erase(std::get<0>(release_data));                                                                 \
           hash_cache.pop_back();                                                                                     \
-          write_lock.unlock();                                                                                       \
           auto release_func = std::get<2>(release_data);                                                             \
           release_func(device::ascend::ProcessCacheType::kReleaseParamsAndExecutor, {});                             \
         }                                                                                                            \
@@ -126,10 +114,8 @@ extern std::shared_mutex cache_mutex;
                                                                                                                      \
   template <typename... Args>                                                                                        \
   std::pair<aclOpExecutor *, std::function<void()>> GetExecutor##FUNC_NAME(const Args &... args) {                   \
-    std::shared_lock read_lock(cache_mutex);                                                                         \
     auto iter = hash_map.find(hash_id_##FUNC_NAME##_);                                                               \
     if (hash_id_##FUNC_NAME##_ == 0 || iter == hash_map.end()) {                                                     \
-      read_lock.unlock();                                                                                            \
       aclOpExecutor *executor;                                                                                       \
       std::function<void()> release_func;                                                                            \
       std::tie(std::ignore, executor, release_func, hash_id_##FUNC_NAME##_, std::ignore) =                           \
@@ -137,7 +123,6 @@ extern std::shared_mutex cache_mutex;
       return std::make_pair(executor, release_func);                                                                 \
     }                                                                                                                \
     const auto cur_run = *(iter->second);                                                                            \
-    read_lock.unlock();                                                                                              \
     UPDATE_TENSOR_FOR_LAUNCH(std::get<2>(cur_run), args...);                                                         \
     const auto &executor = std::get<1>(cur_run);                                                                     \
     return std::make_pair(executor, nullptr);                                                                        \
@@ -214,16 +199,12 @@ extern std::shared_mutex cache_mutex;
     }                                                                                                            \
     std::optional<std::list<CacheTuple>::iterator> found_iter;                                                   \
     hash_id_ = device::ascend::AclnnHash(op_type_, args...);                                                     \
-    {                                                                                                            \
-      std::shared_lock read_lock(cache_mutex);                                                                   \
-      if (auto iter = hash_map.find(hash_id_); iter != hash_map.end()) {                                         \
-        found_iter = iter->second;                                                                               \
-      }                                                                                                          \
+    if (auto iter = hash_map.find(hash_id_); iter != hash_map.end()) {                                           \
+      found_iter = iter->second;                                                                                 \
     }                                                                                                            \
     if (found_iter) {                                                                                            \
       MS_LOG(INFO) << "op " << op_type_ << " hit cache with hash id: " << hash_id_;                              \
       MS_VLOG(VL_ACLNN_OP) << "op " << op_type_ << " hit cache with hash id: " << hash_id_;                      \
-      std::unique_lock write_lock(cache_mutex);                                                                  \
       hash_cache.splice(hash_cache.begin(), hash_cache, *found_iter);                                            \
       cur_workspace = std::get<3>(hash_cache.front());                                                           \
     } else {                                                                                                     \
@@ -232,14 +213,12 @@ extern std::shared_mutex cache_mutex;
       auto [workspace, executor, cache, fail_cache] = GEN_EXECUTOR_FOR_RESIZE(op_type_, args...);                \
       cur_workspace = workspace;                                                                                 \
       if (!fail_cache) {                                                                                         \
-        std::unique_lock write_lock(cache_mutex);                                                                \
         hash_cache.emplace_front(hash_id_, executor, cache, workspace);                                          \
         hash_map[hash_id_] = hash_cache.begin();                                                                 \
         if (hash_cache.size() > capacity) {                                                                      \
           auto release_data = std::move(hash_cache.back());                                                      \
           hash_map.erase(std::get<0>(release_data));                                                             \
           hash_cache.pop_back();                                                                                 \
-          write_lock.unlock();                                                                                   \
           auto release_func = std::get<2>(release_data);                                                         \
           release_func(device::ascend::ProcessCacheType::kReleaseParamsAndExecutor, {});                         \
         }                                                                                                        \
@@ -257,10 +236,8 @@ extern std::shared_mutex cache_mutex;
                                                                                                                  \
   template <typename... Args>                                                                                    \
   std::pair<aclOpExecutor *, std::function<void()>> GetExecutor(const Args &... args) {                          \
-    std::shared_lock read_lock(cache_mutex);                                                                     \
     auto iter = hash_map.find(hash_id_);                                                                         \
     if (hash_id_ == 0 || iter == hash_map.end()) {                                                               \
-      read_lock.unlock();                                                                                        \
       aclOpExecutor *executor;                                                                                   \
       std::function<void()> release_func;                                                                        \
       std::tie(std::ignore, executor, release_func, hash_id_, std::ignore) =                                     \
@@ -268,7 +245,6 @@ extern std::shared_mutex cache_mutex;
       return std::make_pair(executor, release_func);                                                             \
     }                                                                                                            \
     const auto cur_run = *(iter->second);                                                                        \
-    read_lock.unlock();                                                                                          \
     UPDATE_TENSOR_FOR_LAUNCH(std::get<2>(cur_run), args...);                                                     \
     const auto &executor = std::get<1>(cur_run);                                                                 \
     return std::make_pair(executor, nullptr);                                                                    \
@@ -369,9 +345,8 @@ class OPS_ASCEND_API AclnnKernelMod : public KernelMod {
  public:
   explicit AclnnKernelMod(std::string &&op_type) : op_type_(std::move(op_type)) {
     if (!is_set_capacity) {
-      std::unique_lock write_lock(cache_mutex);
       is_set_capacity = true;
-      auto capaticy_from_user = ops::GetCacheCapaticy();
+      auto capaticy_from_user = device::ascend::GetCacheCapaticy();
       if (capaticy_from_user >= 0) {
         capacity = LongToSize(capaticy_from_user);
         MS_LOG(INFO) << "Set aclnn cache queue length of kbyk to " << capacity;
@@ -385,7 +360,6 @@ class OPS_ASCEND_API AclnnKernelMod : public KernelMod {
       return;
     }
 
-    std::unique_lock write_lock(cache_mutex);
     (void)std::for_each(hash_cache.begin(), hash_cache.end(), [&](CacheTuple &item) {
       auto cache = std::get<kIndex2>(item);
       cache(device::ascend::ProcessCacheType::kReleaseParamsAndExecutor, {});
@@ -444,6 +418,11 @@ class OPS_ASCEND_API AclnnKernelMod : public KernelMod {
   std::unordered_map<std::string, std::pair<size_t, size_t>> ops_workspace_size_map_;
   size_t ops_workspace_size_idx_{0};
   static bool is_dynamic_;
+
+  mindspore::HashMap<uint64_t, std::list<CacheTuple>::iterator> hash_map;
+  std::list<CacheTuple> hash_cache;
+  size_t capacity{64};
+  bool is_set_capacity{false};
 
   static constexpr size_t kHashIdIndex = 3;
 };
