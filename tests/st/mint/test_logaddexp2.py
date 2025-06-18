@@ -45,7 +45,7 @@ def generate_expect_backward_output(input_x, other):
     result.backward(grad_output)
     return x.grad, y.grad
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 def test_logaddexp2_forward_backward(mode):
     """
