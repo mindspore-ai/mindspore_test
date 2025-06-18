@@ -66,7 +66,7 @@ def is_available():
 
 def _is_supported():
     device_target = ms.context.get_context("device_target")
-    if device_target == 'CPU' or device_target == 'GPU':
+    if device_target in ['CPU', 'GPU']:
         logger.error(f"{device_target} device is not supported. Please use correct device")
         return False
     return True

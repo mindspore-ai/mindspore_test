@@ -15,15 +15,13 @@
 
 """Device manager interfaces."""
 
+__all__ = ['set_device', 'set_deterministic', 'get_current_device']
+
 import os
 from mindspore import log as logger
 from mindspore._c_expression import DeviceManagerConf, DeviceContextManager, MSContext, CollectiveManager
 from mindspore._checkparam import args_type_check
 from mindspore.parallel._ps_context import _need_reset_device_target_for_ps
-
-
-__all__ = ['set_device', 'set_deterministic', 'get_current_device']
-
 
 class DeviceInfo(tuple):
     """

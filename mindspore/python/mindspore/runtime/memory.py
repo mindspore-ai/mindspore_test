@@ -97,7 +97,7 @@ def _check_memory_conf_valid(memory_size):
                          "It must be a string ending with 'GB', in addition to that, it must contain "
                          "only numbers or decimal points, such as \"5GB\" or \"3.5GB\", but got {}."
                          .format(memory_size))
-    if memory_size == "0GB" or memory_size == "0.0GB":
+    if memory_size in ["0GB", "0.0GB"]:
         raise ValueError("The memory value should not be \"0GB\".")
 
 def memory_stats():
