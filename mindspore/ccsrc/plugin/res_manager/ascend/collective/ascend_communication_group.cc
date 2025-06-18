@@ -169,6 +169,9 @@ bool AscendCommunicationGroup::InitByRootInfoConfig(void *root_info, uint32_t gr
   MS_LOG(WARNING) << "Start to initialize communicator by HcclCommInitRootInfoConfig for " << name_
                   << ", hcclBufferSize is " << config.hcclBufferSize << " MB, hcclDeterministic is "
                   << config.hcclDeterministic;
+  if (root_info == nullptr) {
+    return false;
+  }
   unique_id_ = *(static_cast<HcclRootInfo *>(root_info));
   // MindSpore 2.5 uses HcclCommInitRootInfo to avoid using hcclconfig feature.
   if (hccl::HcclAdapter::GetInstance().HcclCommInitRootInfoConfig(static_cast<uint32_t>(group_size), &unique_id_,
