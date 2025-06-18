@@ -110,6 +110,7 @@ CNodePtr GetForkNode(const CNodePtr &merge_node, size_t scope_id) {
       }
 
       auto input_cnode = input->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(input_cnode);
       if (!input_cnode->HasAttr(kAttrTempScopeId)) {
         input_cnode->AddAttr(kAttrTempScopeId, scope_id_value);
       } else if (input_cnode->GetAttr(kAttrTempScopeId) != scope_id_value) {

@@ -48,7 +48,9 @@ bool IsBpropNode(const AnfNodePtr &node) {
 
 bool CheckCommNodeEqual(const CNodePtr comm_node1, const CNodePtr comm_node2) {
   auto prim1 = GetCNodePrimitive(comm_node1);
+  MS_EXCEPTION_IF_NULL(prim1);
   auto prim2 = GetCNodePrimitive(comm_node2);
+  MS_EXCEPTION_IF_NULL(prim2);
   if (prim1->type_name() != prim2->type_name()) {
     MS_LOG(INFO) << "Type of two comm node is not euqal";
     return false;
@@ -133,6 +135,7 @@ bool ExtractInterLeavedCommNode(const std::vector<CNodePtr> &origin_nodes_topolo
 
 void CreateGroupForMicroInterleaved(const CNodePtr &comm_cnode, size_t micro_interleaved_index) {
   auto comm_prim = GetCNodePrimitive(comm_cnode);
+  MS_EXCEPTION_IF_NULL(comm_prim);
   auto group_name = GetValue<std::string>(comm_prim->GetAttr(parallel::GROUP));
   if (group_name.find("micro_interleaved") != std::string::npos) {
     return;

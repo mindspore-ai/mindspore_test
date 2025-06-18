@@ -53,6 +53,7 @@ bool IsAddNodeValid(const CNodePtr &add_node, const AnfNodePtr &comm_node) {
   auto node_add_rank_list = node_add_tensor_layout.InferRepeatedGroup();
 
   auto comm_prim = GetCNodePrimitive(comm_node);
+  MS_EXCEPTION_IF_NULL(comm_prim);
   if (!comm_prim->HasAttr(GROUP)) {
     return false;
   }
@@ -221,11 +222,13 @@ void HandleNodePullDown(const AnfNodePtr &comm_node, const CNodePtr &add_node) {
   MS_EXCEPTION_IF_NULL(graph);
   auto manager = graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
-
-  AnfNodePtrList new_comm_node_inputs = {comm_node->cast<CNodePtr>()->input(kIndex0), add_node};
+  auto comm_cnode = comm_node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(comm_cnode);
+  AnfNodePtrList new_comm_node_inputs = {comm_cnode->input(kIndex0), add_node};
   auto new_comm_node = graph->NewCNode(new_comm_node_inputs);
   new_comm_node->set_abstract(comm_node->abstract());
   auto prim = GetCNodePrimitive(new_comm_node);
+  MS_EXCEPTION_IF_NULL(prim);
   (void)prim->AddAttr(BIAS_ADD_COMM_SWAP, MakeValue(true));
   (void)manager->Replace(add_node, new_comm_node);
 }
