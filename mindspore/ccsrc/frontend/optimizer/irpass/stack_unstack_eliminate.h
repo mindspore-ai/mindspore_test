@@ -65,9 +65,11 @@ class StackUnstackEliminator : public AnfVisitor {
       }
       auto axis_val = prim->GetAttr(kAttrAxis);
       MS_EXCEPTION_IF_NULL(axis_val);
-      auto num = dyn_cast<Int64Imm>(num_val)->value();
-      auto axis = dyn_cast<Int64Imm>(axis_val)->value();
-      if (num == num_ && axis == axis_) {
+      auto num = dyn_cast<Int64Imm>(num_val);
+      auto axis = dyn_cast<Int64Imm>(axis_val);
+      MS_EXCEPTION_IF_NULL(num);
+      MS_EXCEPTION_IF_NULL(axis);
+      if (num->value() == num_ && axis->value() == axis_) {
         is_match_ = true;
         stack_ = cnode;
       }
@@ -83,8 +85,12 @@ class StackUnstackEliminator : public AnfVisitor {
     }
     auto axis_val = prim->GetAttr(kAttrAxis);
     MS_EXCEPTION_IF_NULL(axis_val);
-    num_ = dyn_cast<Int64Imm>(num_val)->value();
-    axis_ = dyn_cast<Int64Imm>(axis_val)->value();
+    auto num = dyn_cast<Int64Imm>(num_val);
+    auto axis = dyn_cast<Int64Imm>(axis_val);
+    MS_EXCEPTION_IF_NULL(num);
+    MS_EXCEPTION_IF_NULL(axis);
+    num_ = num->value();
+    axis_ = axis->value();
     return true;
   }
 

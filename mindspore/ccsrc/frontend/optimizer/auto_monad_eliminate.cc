@@ -84,6 +84,7 @@ bool HasSideEffect(const CNodePtr &cnode) {
 }
 
 bool IsSpecialNode(const CNodePtr &cnode) {
+  MS_EXCEPTION_IF_NULL(cnode);
   const auto &first_input = cnode->input(0);
   return IsPrimitiveCNode(first_input, prim::kPrimJ) || IsPrimitiveCNode(first_input, prim::kPrimVmap) ||
          IsPrimitiveCNode(first_input, prim::kPrimTaylor) || IsPrimitiveCNode(first_input, prim::kPrimShard) ||

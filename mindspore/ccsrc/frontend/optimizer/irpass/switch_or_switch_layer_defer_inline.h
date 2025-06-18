@@ -39,8 +39,11 @@ class PartialDeferInline : public AnfVisitor {
       return nullptr;
     }
     auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     constexpr auto func_index = 1;
-    auto func_abs = cnode->input(func_index)->abstract();
+    auto inp1 = cnode->input(func_index);
+    MS_EXCEPTION_IF_NULL(inp1);
+    auto func_abs = inp1->abstract();
     MS_EXCEPTION_IF_NULL(func_abs);
     auto real_func = dyn_cast<abstract::FuncGraphAbstractClosure>(func_abs);
     if (real_func != nullptr) {
@@ -55,6 +58,7 @@ class SwitchDeferInline : public AnfVisitor {
  public:
   AnfNodePtr operator()(const OptimizerPtr &, const AnfNodePtr &node) override {
     auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     auto true_abstract = dyn_cast<abstract::FuncGraphAbstractClosure>(cnode->input(2)->abstract());
     if (true_abstract != nullptr) {
       *(true_abstract->func_graph()->indirect()) = true;
@@ -72,6 +76,7 @@ class SwitchLayerDeferInline : public AnfVisitor {
  public:
   AnfNodePtr operator()(const OptimizerPtr &, const AnfNodePtr &node) override {
     auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     auto tuple = dyn_cast<abstract::AbstractTuple>(cnode->input(2)->abstract());
     if (tuple == nullptr) {
       return nullptr;

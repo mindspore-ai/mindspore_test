@@ -133,7 +133,6 @@ AnfNodePtr Adjoint::ApplyTensorHookForDout(const pipeline::ResourceBasePtr &reso
 
 void Adjoint::CallDoutHole(const pipeline::ResourceBasePtr &resources) {
   auto dout = ApplyTensorHookForDout(resources);
-
   if (dout != nullptr) {
     for (auto &user : dout_user_) {
       MS_LOG(DEBUG) << "Update dout user " << user.first->ToString() << " " << user.second << " input with dout "

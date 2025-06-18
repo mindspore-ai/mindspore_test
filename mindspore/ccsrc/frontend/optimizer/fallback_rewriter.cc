@@ -428,6 +428,7 @@ class BeforeOptARewriter : public BaseRewriter {
 
   bool HasDictOutput() const {
     const AnfNodePtr &output = root_graph_->output();
+    MS_EXCEPTION_IF_NULL(output);
     return CheckContainsDict(output->abstract());
   }
 
@@ -1203,6 +1204,7 @@ class AfterOptARewriter : public BaseRewriter {
       return nullptr;
     }
 
+    MS_EXCEPTION_IF_NULL(node);
     const auto &fg = node->func_graph();
     MS_EXCEPTION_IF_NULL(fg);
 
@@ -1851,6 +1853,7 @@ class AfterOptARewriter : public BaseRewriter {
       abstract->isa<abstract::AbstractTuple>() ? prim::kPrimTupleGetItem : prim::kPrimListGetItem;
     (void)new_inputs.emplace_back(NewValueNode(left));
     auto abstract_sequence = abstract->cast<abstract::AbstractSequencePtr>();
+    MS_EXCEPTION_IF_NULL(abstract_sequence);
     const auto &elements_abstract = abstract_sequence->elements();
     for (size_t i = 0; i < elements_abstract.size(); ++i) {
       auto cur_node = fg->NewCNode({NewValueNode(getitem_prim), node, NewValueNode(int64_t(i))});
@@ -2166,6 +2169,7 @@ class AfterOptARewriter : public BaseRewriter {
 
   AnfNodePtr ConvertIs_(const CNodePtr &cnode) const {
     auto res = ConvertIsAndIsNot(cnode, true);
+    MS_EXCEPTION_IF_NULL(res);
     MS_LOG(DEBUG) << "Convert primitive Is_ to PyExecute node: " << res->DebugString();
     return res;
   }
@@ -2642,6 +2646,7 @@ class AfterOptARewriter : public BaseRewriter {
   AnfNodePtr PackDictValue(const FuncGraphPtr &fg, const ValueNodePtr &value_node, const ValueDictionaryPtr &dict) {
     const auto &keys_values = dict->value();
     auto abs_dict = dyn_cast<abstract::AbstractDictionary>(value_node->abstract());
+    MS_EXCEPTION_IF_NULL(abs_dict);
     const auto &abs_keys_values = abs_dict->elements();
     if (keys_values.size() != abs_keys_values.size()) {
       MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, value_node)
@@ -2765,6 +2770,7 @@ class AfterOptARewriter : public BaseRewriter {
   AnfNodePtr ConvertInterpretedObjectValue(const ValueNodePtr &node, const parse::InterpretedObjectPtr &value) const {
     // Convert InterpretedObject value node to PyExecute CNode.
     const auto interpreted_value = dyn_cast<parse::InterpretedObject>(value);
+    MS_EXCEPTION_IF_NULL(interpreted_value);
     const std::string &key = interpreted_value->name();
     return fallback::ConvertPyObjectToPyExecute(root_graph_, key, interpreted_value->obj(), node, true);
   }

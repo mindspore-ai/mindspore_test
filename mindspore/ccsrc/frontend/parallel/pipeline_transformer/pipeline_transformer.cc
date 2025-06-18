@@ -619,6 +619,7 @@ void PipelineTransformer::BroadCastColoring() {
       auto stage = stage_info->stage();
       for (auto &user_pair : node_users[*node]) {
         auto user_node = user_pair.first->cast<CNodePtr>();
+        MS_EXCEPTION_IF_NULL(user_node);
         auto user_stage_info = user_node->user_data<NodeStageInfo>();
         if (user_stage_info == nullptr) {
           user_node->set_user_data<NodeStageInfo>(std::make_shared<NodeStageInfo>(stage));
@@ -1383,6 +1384,7 @@ void PipelineTransformer::CutBorderForNode(const FuncGraphPtr &graph, const AnfN
   for (auto &user_pair : node_users) {
     auto user_node = user_pair.first;
     auto node_stage = stage_info->stage();
+    MS_EXCEPTION_IF_NULL(user_node);
     auto user_stage_info = user_node->user_data<NodeStageInfo>();
     if (user_stage_info == nullptr) {
       continue;

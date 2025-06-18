@@ -102,6 +102,7 @@ void TransformNodeAbstractIfEnvType(const AnfNodePtr &node, const abstract::Abst
 
 TypeId GetValueType(const CNodePtr &cnode) {
   // (EnvironSet/EnvironGet, environ, key, value/default)
+  MS_EXCEPTION_IF_NULL(cnode);
   constexpr size_t environ_input_size = 4;
   if (cnode->size() != environ_input_size) {
     MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, cnode)

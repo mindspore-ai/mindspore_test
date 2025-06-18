@@ -661,6 +661,7 @@ AnfNodePtr ApplyForwardPreHook(const FuncGraphPtr &func_graph, const py::object 
     func_graph->AddNode(getitem_cnode);
     for (const auto &user_sub : users_sub) {
       auto user_subc = user_sub.first->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(user_subc);
       user_subc->set_input(user_sub.second, getitem_cnode);
     }
   }

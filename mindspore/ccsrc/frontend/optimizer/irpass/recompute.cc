@@ -105,6 +105,7 @@ bool IsGradNode(const AnfNodePtr &node) {
 
 bool IsFpropReturn(const AnfNodePtr &make_tuple) {
   auto cnode = make_tuple->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
   constexpr size_t fprop_output_size = 2;
   if (cnode->size() != fprop_output_size + 1) {
     return false;
@@ -192,6 +193,7 @@ bool AddNewPrimalNode(const FuncGraphManagerPtr &manager, const FuncGraphPtr &fg
 }
 
 bool IsRecomputeCell(const FuncGraphPtr &k_fg) {
+  MS_EXCEPTION_IF_NULL(k_fg);
   auto primal_iter = k_fg->transforms().find("primal");
   if (primal_iter == k_fg->transforms().end()) {
     MS_LOG_WITH_NODE(EXCEPTION, k_fg->return_node()) << "The k_fg: " << k_fg << " should have primal part.";

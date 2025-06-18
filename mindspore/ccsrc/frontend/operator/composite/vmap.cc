@@ -95,6 +95,7 @@ CNodePtr VmapMatchOutAxis::GenerateFuncGraphInnerBroadcastAxis(
   std::vector<AnfNodePtr> sub_inputs_cnode_inputs;
   (void)sub_inputs_cnode_inputs.emplace_back(NewValueNode(prim::kPrimMakeTuple));
   auto inputs_abstract_elements_begin_tuple = dyn_cast<abstract::AbstractTuple>(inputs_abstract_elements_begin);
+  MS_EXCEPTION_IF_NULL(inputs_abstract_elements_begin_tuple);
   auto inputs_abstract_elements_begin_tuple_elements = inputs_abstract_elements_begin_tuple->elements();
   // inputs: ((x, y), None) -> ((x, None), (y, None)).
   int64_t begin_tuple_size = static_cast<int64_t>(inputs_abstract_elements_begin_tuple_elements.size());
@@ -162,6 +163,7 @@ AbstractBasePtrList GetOutAxesAbstractElements(const AbstractBasePtr &out_axes_a
     return out_axes_abstract_elements;
   }
   abstract::AbstractTuplePtr out_axes_abstract_tuple = dyn_cast<abstract::AbstractTuple>(out_axes_abstract);
+  MS_EXCEPTION_IF_NULL(out_axes_abstract_tuple);
   out_axes_abstract_elements = out_axes_abstract_tuple->elements();
   if (out_axes_abstract_elements.size() != inputs_abstract_elements_size) {
     MS_LOG(EXCEPTION) << "The length of out_axes and inputs do not match. ";

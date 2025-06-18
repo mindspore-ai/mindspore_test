@@ -59,8 +59,9 @@ void FuncInlineDetector::Visit_(const ir::FunctionNodePtr &node) {
 const ir::NodePtrList &UnpackArgShell(const ir::NodePtr &arg) {
   MS_EXCEPTION_IF_CHECK_FAIL(arg->isa<ir::Operation>(), "Arg should be a operation.");
   const auto op = arg->cast<ir::OperationPtr>();
-  bool is_expected = op->GetOpCode() == BUILD_LIST || op->GetOpCode() == BUILD_TUPLE ||
-                     op->GetOpCode() == LIST_TO_TUPLE || op->GetOpCode() == LIST_EXTEND;
+  MS_EXCEPTION_IF_NULL(op);
+  auto opcode = op->GetOpCode();
+  bool is_expected = opcode == BUILD_LIST || opcode == BUILD_TUPLE || opcode == LIST_TO_TUPLE || opcode == LIST_EXTEND;
   MS_EXCEPTION_IF_CHECK_FAIL(is_expected, "Not expected operation.");
   if (arg->isa<ir::CastNode>()) {
     return UnpackArgShell(op->GetArg());

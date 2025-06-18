@@ -254,6 +254,7 @@ py::object ConvertToPyObj(const AbstractBasePtr &abs) {
 }
 
 py::object ConvertToPyNamedtuple(const abstract::AbstractNamedTuplePtr &abstract) {
+  MS_EXCEPTION_IF_NULL(abstract);
   auto sz = abstract->key().size();
   MS_EXCEPTION_IF_CHECK_FAIL(abstract->elements().size() == sz, "keys.size and elements.size not equal!");
   // Collect namedtuple's elements into a tuple.
