@@ -132,7 +132,7 @@ ops_group_cases_registry_level0 = [
      (("pynative", "KBK", "graph"), ("mean", "sum", "none"))],
     [test_ops_squeeze.test_ops_squeeze_normal, ("ascend910b",), 4, ((ms.GRAPH_MODE, ms.PYNATIVE_MODE),)],
     [test_ops_svd.test_ops_svd_normal, ("ascend910b",), 4,
-     (('pynative', 'ge'), (np.float32, np.float64, np.complex64, np.complex128))],
+     (('pynative', 'kbk', 'ge'), (np.float32, np.float64, np.complex64, np.complex128))],
     [test_ops_svd.test_ops_svd_selfcases, ("ascend910b",), 4, (('pynative', 'kbk', 'ge'), (np.float32,))],
     [test_ops_swiglu.test_ops_swiglu_normal, ("ascend910b",), 4, ((ms.GRAPH_MODE, ms.PYNATIVE_MODE), (0, 2, -1))],
     [test_ops_transpose.test_ops_transpose_normal, ("ascend910b",), 4, ((ms.GRAPH_MODE, ms.PYNATIVE_MODE),)],
