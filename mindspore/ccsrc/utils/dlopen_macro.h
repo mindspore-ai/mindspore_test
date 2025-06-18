@@ -118,7 +118,7 @@ struct SimuCreateTypeGetter<T **> {
     static uintptr_t currentPointer = 0;                                                 \
     currentPointer += sizeof(void *);                                                    \
     *in_ret = reinterpret_cast<void *>(currentPointer);                                  \
-    return ACL_ERROR_NONE;                                                               \
+    return ACL_SUCCESS;                                                                  \
   }                                                                                      \
                                                                                          \
   template <>                                                                            \

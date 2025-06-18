@@ -124,7 +124,7 @@ Status AscendGraphImpl::ExecuteModel(const std::vector<MSTensor> &request, std::
     return kMCDeviceError;
   }
   auto rt_ret = CALL_ASCEND_API(aclrtSetCurrentContext, context_);
-  if (rt_ret != ACL_ERROR_NONE) {
+  if (rt_ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Set Ascend rtCtx failed";
     return kMCDeviceError;
   }
@@ -258,7 +258,7 @@ Status AscendGraphImpl::Load(uint32_t device_id) {
 
     // save d context
     auto rt_ret = CALL_ASCEND_API(aclrtGetCurrentContext, &context_);
-    if (rt_ret != ACL_ERROR_NONE || context_ == nullptr) {
+    if (rt_ret != ACL_SUCCESS || context_ == nullptr) {
       MS_LOG(ERROR) << "the ascend device context is null";
       return kMCDeviceError;
     }
@@ -268,7 +268,7 @@ Status AscendGraphImpl::Load(uint32_t device_id) {
   }
 
   auto rt_ret = CALL_ASCEND_API(aclrtSetCurrentContext, context_);
-  if (rt_ret != ACL_ERROR_NONE) {
+  if (rt_ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Set the ascend device context failed";
     return kMCDeviceError;
   }
@@ -350,7 +350,7 @@ AscendGraphImpl::MsEnvGuard::MsEnvGuard(uint32_t device_id) : device_id_(device_
     }
   } else {
     auto ret = CALL_ASCEND_API(aclrtSetDevice, static_cast<int32_t>(device_id_));
-    if (ret != ACL_ERROR_NONE) {
+    if (ret != ACL_SUCCESS) {
       MS_LOG(EXCEPTION) << "Device " << device_id_ << " call aclrtSetDevice failed, ret[" << static_cast<int>(ret)
                         << "]";
     }
@@ -384,7 +384,7 @@ AscendGraphImpl::MsEnvGuard::~MsEnvGuard() {
       }
     } else {
       auto ret = CALL_ASCEND_API(aclrtResetDevice, static_cast<int32_t>(device_id_));
-      if (ret != ACL_ERROR_NONE) {
+      if (ret != ACL_SUCCESS) {
         MS_LOG(ERROR) << "Device " << device_id_ << " call aclrtResetDevice failed, ret[" << static_cast<int>(ret)
                       << "]";
         return;

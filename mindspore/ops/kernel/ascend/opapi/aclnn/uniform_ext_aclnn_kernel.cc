@@ -64,7 +64,7 @@ bool UniformExtAscend::Launch(const std::vector<KernelTensor *> &inputs, const s
   MS_EXCEPTION_IF_NULL(stream_ptr);
   auto status = CALL_ASCEND_API(aclrtMemcpyAsync, outputs[0]->device_ptr(), outputs[0]->size(), inputs[0]->device_ptr(),
                                 inputs[0]->size(), ACL_MEMCPY_DEVICE_TO_DEVICE, stream_ptr);
-  if (status != ACL_ERROR_NONE) {
+  if (status != ACL_SUCCESS) {
     MS_LOG(EXCEPTION) << "UniformExtAscend Launch and call rtMemcpyAsync failed, ret = 0x" << status;
   }
   RunOp(stream_ptr, workspace, outputs[kIndex0], a_, b_, seed_, offset_);

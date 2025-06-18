@@ -33,7 +33,7 @@ std::string voidPtrToString(void *ptr) {
 }  // namespace
 AscendEvent::AscendEvent() {
   auto ret = CALL_ASCEND_API(aclrtCreateEvent, &event_);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "aclrtCreateEvent failed, ret:" << ret;
     event_ = nullptr;
   }
@@ -46,7 +46,7 @@ AscendEvent::AscendEvent(uint32_t flag, bool use_extensional_api) {
   } else {
     ret = CALL_ASCEND_API(aclrtCreateEventWithFlag, &event_, flag);
   }
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "aclrtCreateEventExWithFlag failed, ret:" << ret;
     event_ = nullptr;
   }
@@ -56,7 +56,7 @@ AscendEvent::AscendEvent(uint32_t flag, bool use_extensional_api) {
 
 AscendTimeEvent::AscendTimeEvent() {
   auto ret = CALL_ASCEND_API(aclrtCreateEventWithFlag, &event_, ACL_EVENT_TIME_LINE);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "aclrtCreateEvent failed, ret:" << ret;
     event_ = nullptr;
   }
@@ -65,7 +65,7 @@ AscendTimeEvent::AscendTimeEvent() {
 AscendEvent::~AscendEvent() {
   if (!event_destroyed_) {
     auto ret = CALL_ASCEND_API(aclrtDestroyEvent, event_);
-    if (ret != ACL_ERROR_NONE) {
+    if (ret != ACL_SUCCESS) {
       MS_LOG(ERROR) << "aclrtDestroyEvent failed, ret:" << ret;
     }
   }
@@ -88,7 +88,7 @@ void AscendEvent::RecordEvent() {
        {tracker::kEvent, voidPtrToString(event_)}});
   }
   auto ret = CALL_ASCEND_API(aclrtRecordEvent, event_, record_stream_);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(EXCEPTION) << "aclrtRecordEvent failed, ret:" << ret;
   }
   need_wait_ = true;
@@ -106,7 +106,7 @@ void AscendEvent::RecordEvent(uint32_t stream_id) {
       {{tracker::kStreamId, std::to_string(stream_id)}, {tracker::kEvent, voidPtrToString(event_)}});
   }
   auto ret = CALL_ASCEND_API(aclrtRecordEvent, event_, record_stream_);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(EXCEPTION) << "aclrtRecordEvent failed, ret:" << ret;
   }
   need_wait_ = true;
@@ -123,7 +123,7 @@ void AscendEvent::WaitEvent() {
        {tracker::kEvent, voidPtrToString(event_)}});
   }
   auto ret = CALL_ASCEND_API(aclrtStreamWaitEvent, wait_stream_, event_);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(EXCEPTION) << "aclrtStreamWaitEvent failed, ret:" << ret;
   }
   if (!has_flag_) {
@@ -131,7 +131,7 @@ void AscendEvent::WaitEvent() {
     // aclrtResetEvent/aclrtQueryEvent/aclrtQueryEventWaitStatus.
     MS_LOG(DEBUG) << "Reset Event";
     ret = CALL_ASCEND_API(aclrtResetEvent, event_, wait_stream_);
-    if (ret != ACL_ERROR_NONE) {
+    if (ret != ACL_SUCCESS) {
       MS_LOG(EXCEPTION) << "aclrtResetEvent failed, ret:" << ret;
     }
   }
@@ -148,13 +148,13 @@ bool AscendEvent::WaitEvent(uint32_t stream_id) {
       {{tracker::kStreamId, std::to_string(stream_id)}, {tracker::kEvent, voidPtrToString(event_)}});
   }
   auto ret = CALL_ASCEND_API(aclrtStreamWaitEvent, wait_stream_, event_);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(EXCEPTION) << "aclrtStreamWaitEvent failed, ret:" << ret;
   }
   if (!has_flag_) {
     // Reset event after wait so that event can be reused.
     ret = CALL_ASCEND_API(aclrtResetEvent, event_, wait_stream_);
-    if (ret != ACL_ERROR_NONE) {
+    if (ret != ACL_SUCCESS) {
       MS_LOG(EXCEPTION) << "aclrtResetEvent failed, ret:" << ret;
     }
   }
@@ -174,7 +174,7 @@ void AscendEvent::WaitEventWithoutReset() {
   }
   // Query result will be reset after aclrtResetEvent is called.
   auto ret = CALL_ASCEND_API(aclrtStreamWaitEvent, wait_stream_, event_);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(EXCEPTION) << "aclrtStreamWaitEvent failed, ret:" << ret;
   }
   need_wait_ = false;
@@ -198,7 +198,7 @@ void AscendEvent::ResetEvent() {
 
   MS_LOG(DEBUG) << "Reset Event";
   auto ret = CALL_ASCEND_API(aclrtResetEvent, event_, wait_stream_);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(EXCEPTION) << "aclrtResetEvent failed, ret:" << ret;
   }
 }
@@ -211,7 +211,7 @@ void AscendEvent::ResetEvent(uint32_t stream_id) {
 void AscendEvent::SyncEvent() {
   MS_EXCEPTION_IF_NULL(event_);
   auto ret = CALL_ASCEND_API(aclrtSynchronizeEvent, event_);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(EXCEPTION) << "aclrtSynchronizeEvent failed, ret:" << ret;
   }
 }
@@ -220,7 +220,7 @@ bool AscendEvent::QueryEvent() {
   MS_EXCEPTION_IF_NULL(event_);
   aclrtEventRecordedStatus status;
   auto ret = CALL_ASCEND_API(aclrtQueryEventStatus, event_, &status);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(EXCEPTION) << "aclQueryEventStatus failed, ret:" << ret;
   }
   return status == ACL_EVENT_RECORDED_STATUS_COMPLETE;
@@ -232,7 +232,7 @@ void AscendEvent::ElapsedTime(float *cost_time, const DeviceEvent *other) {
   MS_EXCEPTION_IF_NULL(ascend_other);
   MS_EXCEPTION_IF_NULL(ascend_other->event_);
   auto ret = CALL_ASCEND_API(aclrtEventElapsedTime, cost_time, event_, ascend_other->event_);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(EXCEPTION) << "aclrtEventElapsedTime failed, ret:" << ret;
   }
 }
@@ -242,7 +242,7 @@ bool AscendEvent::NeedWait() { return need_wait_; }
 bool AscendEvent::DestroyEvent() {
   MS_EXCEPTION_IF_NULL(event_);
   auto ret = CALL_ASCEND_API(aclrtDestroyEvent, event_);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "aclrtDestroyEvent failed, ret:" << ret;
   }
   event_destroyed_ = true;

@@ -58,11 +58,11 @@ void AscendVmmAdapter::ClearAllMemory() {
       continue;
     }
     auto ret = CALL_ASCEND_API(aclrtUnmapMem, kv.first);
-    if (ret != ACL_ERROR_NONE) {
+    if (ret != ACL_SUCCESS) {
       MS_LOG(ERROR) << "Unmap memory failed.";
     }
     ret = CALL_ASCEND_API(aclrtFreePhysical, kv.second);
-    if (ret != ACL_ERROR_NONE) {
+    if (ret != ACL_SUCCESS) {
       MS_LOG(ERROR) << "Free physical memory failed.";
     }
   }
@@ -70,7 +70,7 @@ void AscendVmmAdapter::ClearAllMemory() {
     auto handle = *cached_handle_sets_.begin();
     cached_handle_sets_.erase(cached_handle_sets_.begin());
     auto ret = CALL_ASCEND_API(aclrtFreePhysical, handle);
-    if (ret != ACL_ERROR_NONE) {
+    if (ret != ACL_SUCCESS) {
       MS_LOG(ERROR) << "Free physical memory failed.";
     }
   }
@@ -89,7 +89,7 @@ void MoveBackMappedHandle(std::map<DeviceMemPtr, aclrtDrvMemHandle> *mapped_vmm_
                           std::set<aclrtDrvMemHandle> *cached_handle_sets_) {
   for (const auto [address, handle] : *mapped_vmm_handle) {
     auto ret = CALL_ASCEND_API(aclrtUnmapMem, address);
-    if (ret != ACL_ERROR_NONE) {
+    if (ret != ACL_SUCCESS) {
       MS_LOG(ERROR) << "Unmap memory failed, address : " << address << ".";
     } else {
       auto iter = vmm_map->find(address);
@@ -156,7 +156,7 @@ size_t AscendVmmAdapter::MmapDeviceMem(const size_t size, const DeviceMemPtr add
       }
 
       auto ret = CALL_ASCEND_API(aclrtMallocPhysical, &handle, kVmmAlignSize, &prop, 0);
-      if (ret != ACL_ERROR_NONE) {
+      if (ret != ACL_SUCCESS) {
         size_t used_handle_size = 0;
         for (const auto &[k, v] : vmm_map_) {
           if (v != nullptr) {
@@ -180,7 +180,7 @@ size_t AscendVmmAdapter::MmapDeviceMem(const size_t size, const DeviceMemPtr add
     }
 
     auto ret = CALL_ASCEND_API(aclrtMapMem, new_addr, kVmmAlignSize, 0, handle, 0);
-    if (ret != ACL_ERROR_NONE) {
+    if (ret != ACL_SUCCESS) {
       MS_LOG(ERROR) << "Map memory failed.";
       cached_handle_sets_.insert(handle);
       MoveBackMappedHandle(&mapped_vmm_handle, &vmm_map_, &cached_handle_sets_);
@@ -204,7 +204,7 @@ size_t AscendVmmAdapter::AllocDeviceMem(size_t size, DeviceMemPtr *addr) {
   size_t align_size = GetRoundUpAlignSize(size);
   MS_LOG(INFO) << "VMM AllocDeviceMem size:" << size << ", align_size:" << align_size;
   auto ret = CALL_ASCEND_API(aclrtReserveMemAddress, addr, align_size, 0, nullptr, 1);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Reserve memory address failed.";
     return 0;
   }
@@ -250,7 +250,7 @@ size_t AscendVmmAdapter::EagerFreeDeviceMem(const DeviceMemPtr addr, const size_
       continue;
     }
     auto ret = CALL_ASCEND_API(aclrtUnmapMem, vmm_start_addr);
-    if (ret != ACL_ERROR_NONE) {
+    if (ret != ACL_SUCCESS) {
       MS_LOG(ERROR) << "Unmap memory failed.";
       return 0;
     }
@@ -269,7 +269,7 @@ size_t AscendVmmAdapter::EmptyCache() {
   size_t empty_size = 0L;
   for (auto iter = cached_handle_sets_.begin(); iter != cached_handle_sets_.end(); iter++) {
     auto ret = CALL_ASCEND_API(aclrtFreePhysical, *iter);
-    if (ret != ACL_ERROR_NONE) {
+    if (ret != ACL_SUCCESS) {
       MS_LOG(EXCEPTION) << "Free physical memory failed.";
     }
   }

@@ -148,7 +148,7 @@ bool MemcpyAsync(void *dst, const void *src, uint64_t size, int32_t kind, void *
   // cppcheck-suppress unreadVariable
   auto lock = LockRuntime(stream);
   if (!common::IsCompileSimulation()) {
-    if (ACL_ERROR_NONE !=
+    if (ACL_SUCCESS !=
         CALL_ASCEND_API(aclrtMemcpyAsync, dst, size, src, size, static_cast<aclrtMemcpyKind>(kind), stream)) {
       MS_LOG(ERROR) << "Call runtime rtMemcpyAsync error.";
       return false;
@@ -249,7 +249,7 @@ void AscendDeviceAddress::SyncHostMemoryToDeviceForTensorFromNumpy(void *dst, co
 
   auto ret_rt_memcpy = CALL_ASCEND_API(aclrtMemcpy, dst, size, src, size, kind);
   MS_LOG(DEBUG) << "tensor is_from_numpy, sync it first";
-  if (ret_rt_memcpy != ACL_ERROR_NONE) {
+  if (ret_rt_memcpy != ACL_SUCCESS) {
     MS_EXCEPTION(DeviceProcessError) << "aclrtMemcpy failed";
   }
 }
@@ -308,7 +308,7 @@ void AscendDeviceAddress::SyncMemory(void *dst, const void *src, uint64_t size, 
     }
     if (!common::IsCompileSimulation()) {
       auto ret_rt_memcpy = CALL_ASCEND_API(aclrtMemcpy, dst, size, src, size, kind);
-      if (ret_rt_memcpy != ACL_ERROR_NONE) {
+      if (ret_rt_memcpy != ACL_SUCCESS) {
         MS_EXCEPTION(DeviceProcessError) << "aclrtMemcpy failed";
       }
     }
@@ -491,7 +491,7 @@ void AscendDeviceAddress::DeviceToDevice(void *dst, void *src, size_t size, size
   MS_EXCEPTION_IF_NULL(stream);
   BindDevice();
   auto ret = CALL_ASCEND_API(aclrtMemcpyAsync, dst, size, src, size, ACL_MEMCPY_DEVICE_TO_DEVICE, stream);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(EXCEPTION) << "Call aclrtMemcpyAsync device to device failed, the error num[" << ret << "].";
   }
   if (!AscendStreamMng::GetInstance().SyncStream(stream_id)) {
@@ -846,7 +846,7 @@ bool AscendDeviceAddress::AsyncHostToDevice(size_t size, TypeId /* type */, cons
                                                : AscendStreamMng::GetInstance().GetStream(stream_id);
   MS_EXCEPTION_IF_NULL(stream);
   auto ret = CALL_ASCEND_API(aclrtMemcpyAsync, GetDevicePtr(), size, host_ptr, size, ACL_MEMCPY_HOST_TO_DEVICE, stream);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Call aclrtMemcpyAsync host to device failed, the error num[" << ret << "]";
     return false;
   }
@@ -868,7 +868,7 @@ bool AscendDeviceAddress::AsyncHostToDevice(const ShapeVector & /* shape */, siz
   MS_ERROR_IF_NULL(stream);
 
   auto ret = CALL_ASCEND_API(aclrtMemcpyAsync, GetDevicePtr(), size, host_ptr, size, ACL_MEMCPY_HOST_TO_DEVICE, stream);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Call aclrtMemcpyAsync host to device failed, the error num[" << ret << "]";
     return false;
   }
@@ -887,7 +887,7 @@ bool AscendDeviceAddress::AsyncDeviceToHost(const ShapeVector & /* shape */, siz
   const auto stream = AscendStreamMng::GetInstance().GetStream(stream_id);
   MS_ERROR_IF_NULL(stream);
   auto ret = CALL_ASCEND_API(aclrtMemcpyAsync, host_ptr, size, GetDevicePtr(), size, ACL_MEMCPY_DEVICE_TO_HOST, stream);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Call aclrtMemcpyAsync device to host failed, the error num[" << ret << "]";
     return false;
   }
@@ -1032,7 +1032,7 @@ bool AscendDeviceAddress::CopyBetweenHostDevice(void *dst, const void *src, size
   MS_EXCEPTION_IF_NULL(stream);
   BindDevice();
   auto ret = CALL_ASCEND_API(aclrtMemcpyAsync, dst, size, src, size, copy_kind, stream);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Call aclrtMemcpyAsync device to host failed, the error num[" << ret << "]";
     return false;
   }
@@ -1083,7 +1083,7 @@ bool AscendDeviceAddress::AsyncDeviceToHost(size_t size, void *host_ptr, size_t 
   }
   MS_ERROR_IF_NULL(stream);
   auto ret = CALL_ASCEND_API(aclrtMemcpyAsync, host_ptr, size, GetDevicePtr(), size, ACL_MEMCPY_DEVICE_TO_HOST, stream);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Call aclrtMemcpyAsync host to device failed, the error num[" << ret << "]";
     return false;
   }
@@ -1138,10 +1138,10 @@ bool AscendDeviceAddress::CopyDeviceToHostWithoutSyncStream(void *dst, size_t ds
   AscendHalManager::GetInstance().SetContext(device_id);
 
   auto ret = CALL_ASCEND_API(aclrtMemcpy, dst, dst_size, src, dst_size, ACL_MEMCPY_DEVICE_TO_HOST);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(WARNING) << "AclrtMemcpy failed, error code: " << ret;
   }
-  return (ret != ACL_ERROR_NONE);
+  return (ret != ACL_SUCCESS);
 }
 
 DeviceAddressPtr AscendDeviceAddress::CloneDeviceAddress() {
@@ -1187,7 +1187,7 @@ mindspore::tensor::TensorPtr AscendDeviceAddress::LoadMemToHost(const std::strin
     // copy device to host using sync mode
     auto ret_rt_memcpy = CALL_ASCEND_API(aclrtMemcpy, out_tensor->data_c(), host_size, GetDevicePtr(), GetSize(),
                                          ACL_MEMCPY_DEVICE_TO_HOST);
-    if (ret_rt_memcpy != ACL_ERROR_NONE) {
+    if (ret_rt_memcpy != ACL_SUCCESS) {
       MS_LOG(ERROR) << "SyncDeviceToHost: aclrtMemcpy mem size[" << GetSize() << "] fail, ret[" << ret_rt_memcpy << "]";
       return nullptr;
     } else {
@@ -1233,7 +1233,7 @@ bool AscendDeviceAddress::SyncDeviceToHost(void *host_ptr, const void *device_pt
   }
 
   auto ret = CALL_ASCEND_API(aclrtMemcpyAsync, host_ptr, size, device_ptr, size, ACL_MEMCPY_DEVICE_TO_HOST, stream);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Call aclrtMemcpyAsync device to host failed, the error num[" << ret << "]";
     return false;
   }
@@ -1262,7 +1262,7 @@ bool AscendDeviceAddress::SyncHostToDevice(void *device_ptr, const void *host_pt
   }
 
   auto ret = CALL_ASCEND_API(aclrtMemcpyAsync, device_ptr, size, host_ptr, size, ACL_MEMCPY_HOST_TO_DEVICE, stream);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Call aclrtMemcpyAsync device to host failed, the error num[" << ret << "]";
     return false;
   }

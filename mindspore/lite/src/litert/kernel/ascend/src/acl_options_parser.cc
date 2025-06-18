@@ -65,7 +65,7 @@ STATUS AclOptionsParser::ParseOptions(const std::shared_ptr<DeviceInfoContext> &
 STATUS AclOptionsParser::CheckDeviceId(int32_t *device_id) {
   CHECK_NULL_RETURN(device_id);
   uint32_t device_count;
-  if (CALL_ASCEND_API(aclrtGetDeviceCount, &device_count) != ACL_ERROR_NONE) {
+  if (CALL_ASCEND_API(aclrtGetDeviceCount, &device_count) != ACL_SUCCESS) {
     MS_LOG(WARNING) << "Get device count failed.";
     return lite::RET_OK;
   }

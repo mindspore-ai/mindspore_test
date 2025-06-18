@@ -22,7 +22,7 @@ namespace mindspore {
 namespace kernel {
 bool KernelPacketAscendKernelMod::CopyHostToDevice(void *dst, const void *src, size_t size, void *stream) {
   aclError status = CALL_ASCEND_API(aclrtMemcpyAsync, dst, size, src, size, ACL_MEMCPY_HOST_TO_DEVICE, stream);
-  if (status != ACL_ERROR_NONE) {
+  if (status != ACL_SUCCESS) {
     MS_LOG(ERROR) << "MemCpyAsync op aclrtMemcpyAsync failed, ret:" << status;
     return false;
   }

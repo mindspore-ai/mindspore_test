@@ -674,7 +674,7 @@ bool AscendResManager::BindDeviceToCurrentThread(bool force_bind) const {
   static thread_local std::once_flag is_set;
   std::call_once(is_set, [this]() {
     auto ret = CALL_ASCEND_API(aclrtSetDevice, static_cast<int32_t>(device_id_));
-    if (ret != ACL_ERROR_NONE) {
+    if (ret != ACL_SUCCESS) {
       MS_LOG(EXCEPTION) << "Device " << device_id_ << " call aclrtSetDevice failed, ret:" << static_cast<int>(ret);
     }
     SetDeterministic();
@@ -1029,7 +1029,7 @@ bool AscendResManager::GetMemUceInfo(int32_t device_id) {
   aclrtMemUceInfo info[MAX_MEM_UCE_INFO_ARRAY_SIZE];
   size_t retSize = 0;
   auto ret = CALL_ASCEND_API(aclrtGetMemUceInfo, device_id, info, sizeof(info) / sizeof(aclrtMemUceInfo), &retSize);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(WARNING) << "Call aclrtGetMemUceInfo failed, ret code: " << ret;
     return false;
   }
@@ -1067,7 +1067,7 @@ void AscendResManager::UceMemRepair(int32_t device_id) {
   }
   aclrtMemUceInfo *info = mem_uce_info_.info.data();
   auto ret = CALL_ASCEND_API(aclrtMemUceRepair, mem_uce_info_.device_id, info, mem_uce_info_.retSize);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_EXCEPTION(DeviceProcessError) << "Call aclrtMemUceRepair failed, ret code: " << ret;
   }
   // Clear mem_uce_info.
@@ -1084,7 +1084,7 @@ void AscendResManager::StopDevice(int32_t device_id) {
   MS_LOG(INFO) << "Device id [" << device_id << "] stop device.";
   uint32_t timeout = 0;
   auto ret = CALL_ASCEND_API(aclrtDeviceTaskAbort, device_id, timeout);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_EXCEPTION(DeviceProcessError) << "Call aclrtDeviceTaskAbort failed, ret code: " << ret;
   }
 }

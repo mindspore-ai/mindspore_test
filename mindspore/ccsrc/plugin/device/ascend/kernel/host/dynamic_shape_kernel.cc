@@ -51,7 +51,7 @@ void TensorShapeKernelMod::Execute(const std::vector<KernelTensor *> &inputs,
 
     auto ret_rt_memcpy = CALL_ASCEND_API(aclrtMemcpy, outputs[0]->device_ptr(), outputs[0]->size(), shape.data(),
                                          LongToSize(size), ACL_MEMCPY_DEVICE_TO_HOST);
-    if (ret_rt_memcpy != ACL_ERROR_NONE) {
+    if (ret_rt_memcpy != ACL_SUCCESS) {
       MS_EXCEPTION(DeviceProcessError) << "aclrtMemcpy failed";
     }
   }

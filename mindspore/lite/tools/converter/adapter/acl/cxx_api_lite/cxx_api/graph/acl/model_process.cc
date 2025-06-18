@@ -116,7 +116,7 @@ Status ModelProcess::ConstructTensors(const std::vector<AclTensorInfo> &acl_tens
     }
     auto ret = CALL_ASCEND_API(aclrtMemcpy, (*tensor_list)[i].MutableData(), (*tensor_list)[i].DataSize(),
                                acl_tensor_list[i].cur_device_data, acl_tensor_list[i].buffer_size, kind);
-    if (ret != ACL_ERROR_NONE) {
+    if (ret != ACL_SUCCESS) {
       MS_LOG(ERROR) << "Memcpy input " << i << " from " << (is_run_on_device_ ? "host" : "device")
                     << " to host failed, memory size " << acl_tensor_list[i].buffer_size;
       return kMCFailed;
@@ -129,7 +129,7 @@ Status ModelProcess::ConstructTensors(const std::vector<AclTensorInfo> &acl_tens
 Status ModelProcess::PreInitModelResource() {
   model_desc_ = CALL_ASCEND_API(aclmdlCreateDesc);
   aclError acl_ret = CALL_ASCEND_API(aclmdlGetDesc, model_desc_, model_id_);
-  if (acl_ret != ACL_ERROR_NONE) {
+  if (acl_ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Read model desc failed";
     return kMCDeviceError;
   }
@@ -155,7 +155,7 @@ Status ModelProcess::InitInputsBuffer() {
     void *data_mem_buffer = nullptr;
     if (!is_run_on_device_) {  // need to copy input/output to/from device
       ret = CALL_ASCEND_API(aclrtMalloc, &data_mem_buffer, buffer_size, ACL_MEM_MALLOC_NORMAL_ONLY);
-      if (ret != ACL_ERROR_NONE) {
+      if (ret != ACL_SUCCESS) {
         MS_LOG(ERROR) << "Malloc device input buffer failed , input size " << buffer_size;
         return kMCDeviceError;
       }
@@ -163,7 +163,7 @@ Status ModelProcess::InitInputsBuffer() {
 
     aclmdlIODims dims;
     ret = CALL_ASCEND_API(aclmdlGetInputDims, model_desc_, i, &dims);
-    if (ret != ACL_ERROR_NONE) {
+    if (ret != ACL_SUCCESS) {
       MS_LOG(ERROR) << "Get input shape failed";
       if (!is_run_on_device_) {
         (void)CALL_ASCEND_API(aclrtFree, data_mem_buffer);
@@ -198,13 +198,13 @@ Status ModelProcess::CreateDataBuffer(void **data_mem_buffer, size_t buffer_size
 
   if (!is_run_on_device_) {
     ret = CALL_ASCEND_API(aclrtMalloc, data_mem_buffer, buffer_size, ACL_MEM_MALLOC_NORMAL_ONLY);
-    if (ret != ACL_ERROR_NONE) {
+    if (ret != ACL_SUCCESS) {
       MS_LOG(ERROR) << "Malloc device buffer failed , buffer size " << buffer_size;
       return kMCDeviceError;
     }
   } else {
     ret = CALL_ASCEND_API(aclrtMallocHost, data_mem_buffer, buffer_size);
-    if (ret != ACL_ERROR_NONE) {
+    if (ret != ACL_SUCCESS) {
       MS_LOG(ERROR) << "Malloc device buffer failed , buffer size " << buffer_size;
       return kMCDeviceError;
     }
@@ -217,7 +217,7 @@ Status ModelProcess::CreateDataBuffer(void **data_mem_buffer, size_t buffer_size
     return kMCDeviceError;
   }
   ret = CALL_ASCEND_API(aclmdlAddDatasetBuffer, dataset, data_buffer);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "add data buffer failed";
     free_data_buffer(*data_mem_buffer);
     (void)CALL_ASCEND_API(aclDestroyDataBuffer, data_buffer);
@@ -245,7 +245,7 @@ Status ModelProcess::InitOutputsBuffer() {
     }
     aclmdlIODims dims;
     ret = CALL_ASCEND_API(aclmdlGetOutputDims, model_desc_, i, &dims);
-    if (ret != ACL_ERROR_NONE) {
+    if (ret != ACL_SUCCESS) {
       MS_LOG(ERROR) << "Get input shape failed";
       if (!is_run_on_device_) {
         (void)CALL_ASCEND_API(aclrtFree, data_mem_buffer);
@@ -318,13 +318,13 @@ void ModelProcess::DestroyOutputsBuffer() {
 
 Status ModelProcess::UnLoad() {
   auto ret = CALL_ASCEND_API(aclmdlUnload, model_id_);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Unload model failed";
     return kMCDeviceError;
   }
   if (model_desc_ != nullptr) {
     ret = CALL_ASCEND_API(aclmdlDestroyDesc, model_desc_);
-    if (ret != ACL_ERROR_NONE) {
+    if (ret != ACL_SUCCESS) {
       MS_LOG(ERROR) << "Unload model failed";
       return kMCDeviceError;
     }
@@ -357,12 +357,12 @@ Status ModelProcess::SetBatchSize(const std::vector<MSTensor> &inputs) {
   MS_EXCEPTION_IF_NULL(p);
   size_t dynamicBatchSize = FloatToSize(p[0]);
   ret = CALL_ASCEND_API(aclmdlGetInputIndexByName, model_desc_, ACL_DYNAMIC_TENSOR_NAME, &index);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "get index failed";
     return kMCDeviceError;
   }
   ret = CALL_ASCEND_API(aclmdlSetDynamicBatchSize, model_id_, inputs_, index, dynamicBatchSize);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "dynamic batch set failed, modelId is " << model_id_;
     return kMCDeviceError;
   }
@@ -412,7 +412,7 @@ Status ModelProcess::CheckAndInitInput(const std::vector<MSTensor> &inputs) {
         info.cur_device_data = info.device_data;
         ret = CALL_ASCEND_API(aclrtMemcpy, info.cur_device_data, info.buffer_size, data, input.DataSize(),
                               ACL_MEMCPY_HOST_TO_DEVICE);
-        if (ret != ACL_ERROR_NONE) {
+        if (ret != ACL_SUCCESS) {
           MS_LOG(ERROR) << "Acl memcpy input " << i << " data to device failed, buffer size " << input.DataSize();
           return kMCDeviceError;
         }
@@ -427,7 +427,7 @@ Status ModelProcess::CheckAndInitInput(const std::vector<MSTensor> &inputs) {
       return kMCDeviceError;
     }
     ret = CALL_ASCEND_API(aclmdlAddDatasetBuffer, inputs_, data_buffer);
-    if (ret != ACL_ERROR_NONE) {
+    if (ret != ACL_SUCCESS) {
       MS_LOG(ERROR) << "add data buffer failed";
       (void)CALL_ASCEND_API(aclDestroyDataBuffer, data_buffer);
       return kMCDeviceError;
@@ -457,7 +457,7 @@ Status ModelProcess::ResetOutputSize() {
     int64_t dims = 1;
     struct aclmdlIODims output_dims;
     ret = CALL_ASCEND_API(aclmdlGetCurOutputDims, model_desc_, index, &output_dims);
-    if (ret != ACL_ERROR_NONE) {
+    if (ret != ACL_SUCCESS) {
       MS_LOG(ERROR) << "get output dim error.";
       return kMCDeviceError;
     }
@@ -492,7 +492,7 @@ Status ModelProcess::PredictFromHost(const std::vector<MSTensor> &inputs, std::v
   MS_LOG(INFO) << "Model execute in " << cost << " us";
 
   DestroyInputsDataset();
-  if (acl_ret != ACL_ERROR_NONE) {
+  if (acl_ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Execute Model Failed";
     return kMCDeviceError;
   }

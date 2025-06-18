@@ -48,7 +48,7 @@ bool RecvKernel::Launch(const std::vector<KernelTensor *> &, const std::vector<K
   MS_EXCEPTION_IF_NULL(event_);
   MS_EXCEPTION_IF_NULL(stream_ptr);
   auto status = CALL_ASCEND_API(aclrtStreamWaitEvent, stream_ptr, event_);
-  if (status != ACL_ERROR_NONE) {
+  if (status != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Recv aclrtStreamWaitEvent failed!";
     return false;
   }

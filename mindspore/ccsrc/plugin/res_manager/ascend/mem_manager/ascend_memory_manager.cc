@@ -156,16 +156,16 @@ void AscendMemoryManager::SwapIn(const void *host_ptr, void *device_ptr, size_t 
   if (stream == nullptr) {
     auto ret_rt_memcpy =
       CALL_ASCEND_API(aclrtMemcpy, device_ptr, mem_size, host_ptr, mem_size, ACL_MEMCPY_HOST_TO_DEVICE);
-    if (ret_rt_memcpy != ACL_ERROR_NONE) {
+    if (ret_rt_memcpy != ACL_SUCCESS) {
       MS_EXCEPTION(DeviceProcessError) << "SwapIn aclrtMemcpy failed.";
     }
   } else {
     auto ret_rt_memcpy =
       CALL_ASCEND_API(aclrtMemcpyAsync, device_ptr, mem_size, host_ptr, mem_size, ACL_MEMCPY_HOST_TO_DEVICE, stream);
-    if (ret_rt_memcpy != ACL_ERROR_NONE) {
+    if (ret_rt_memcpy != ACL_SUCCESS) {
       MS_EXCEPTION(DeviceProcessError) << "SwapIn aclrtMemcpyAsync failed.";
     }
-    if (CALL_ASCEND_API(aclrtSynchronizeStreamWithTimeout, stream, -1) != ACL_ERROR_NONE) {
+    if (CALL_ASCEND_API(aclrtSynchronizeStreamWithTimeout, stream, -1) != ACL_SUCCESS) {
       MS_EXCEPTION(DeviceProcessError) << "Call runtime aclrtSynchronizeStreamWithTimeout error.";
     }
   }
@@ -175,16 +175,16 @@ void AscendMemoryManager::SwapOut(const void *device_ptr, void *host_ptr, size_t
   if (stream == nullptr) {
     auto ret_rt_memcpy =
       CALL_ASCEND_API(aclrtMemcpy, host_ptr, mem_size, device_ptr, mem_size, ACL_MEMCPY_DEVICE_TO_HOST);
-    if (ret_rt_memcpy != ACL_ERROR_NONE) {
+    if (ret_rt_memcpy != ACL_SUCCESS) {
       MS_EXCEPTION(DeviceProcessError) << "SwapOut aclrtMemcpy failed.";
     }
   } else {
     auto ret_rt_memcpy =
       CALL_ASCEND_API(aclrtMemcpyAsync, host_ptr, mem_size, device_ptr, mem_size, ACL_MEMCPY_DEVICE_TO_HOST, stream);
-    if (ret_rt_memcpy != ACL_ERROR_NONE) {
+    if (ret_rt_memcpy != ACL_SUCCESS) {
       MS_EXCEPTION(DeviceProcessError) << "SwapOut aclrtMemcpyAsync failed.";
     }
-    if (CALL_ASCEND_API(aclrtSynchronizeStreamWithTimeout, stream, -1) != ACL_ERROR_NONE) {
+    if (CALL_ASCEND_API(aclrtSynchronizeStreamWithTimeout, stream, -1) != ACL_SUCCESS) {
       MS_EXCEPTION(DeviceProcessError) << "Call runtime aclrtSynchronizeStreamWithTimeout error.";
     }
   }

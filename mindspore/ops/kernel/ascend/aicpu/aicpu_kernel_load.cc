@@ -166,7 +166,7 @@ bool AicpuOpKernelLoad::LoadAicpuKernelSo(const AnfNodePtr &node,
   kernel_mod_ptr->SetCustSo(so_name);
   rtContext_t rt_cur_ctx = nullptr;
   auto rt_error = CALL_ASCEND_API(aclrtGetCurrentContext, &rt_cur_ctx);
-  if (rt_error != ACL_ERROR_NONE) {
+  if (rt_error != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Call aclrtGetCurrentContext failed, ret = 0x" << rt_error;
     return false;
   }
@@ -222,14 +222,14 @@ bool AicpuOpKernelLoad::CacheBinaryFileToDevice(const uintptr_t &resource_id, st
     void *d_so_name = nullptr;
 
     status = CALL_ASCEND_API(aclrtMalloc, &d_aicpu_data, aicpu_data_length, ACL_MEM_TYPE_HIGH_BAND_WIDTH);
-    if (status != ACL_ERROR_NONE) {
+    if (status != ACL_SUCCESS) {
       MS_LOG(ERROR) << "Call aclrtMalloc failed, size:" << aicpu_data_length << ", ret = 0x" << status;
       return false;
     }
     allocated_mem->emplace_back(d_aicpu_data);
 
     status = CALL_ASCEND_API(aclrtMalloc, &d_so_name, so_name.size(), ACL_MEM_TYPE_HIGH_BAND_WIDTH);
-    if (status != ACL_ERROR_NONE) {
+    if (status != ACL_SUCCESS) {
       MS_LOG(ERROR) << "Call aclrtMalloc failed, size:" << so_name.size() << ", ret = 0x" << status;
       return false;
     }
@@ -237,14 +237,14 @@ bool AicpuOpKernelLoad::CacheBinaryFileToDevice(const uintptr_t &resource_id, st
 
     status = CALL_ASCEND_API(aclrtMemcpy, d_aicpu_data, aicpu_data_length, aicpu_data, aicpu_data_length,
                              ACL_MEMCPY_HOST_TO_DEVICE);
-    if (status != ACL_ERROR_NONE) {
+    if (status != ACL_SUCCESS) {
       MS_LOG(ERROR) << "Call aclrtMemcpy failed, ret = 0x" << status;
       return false;
     }
 
     status = CALL_ASCEND_API(aclrtMemcpy, d_so_name, so_name.size(), reinterpret_cast<const void *>(so_name.c_str()),
                              so_name.size(), ACL_MEMCPY_HOST_TO_DEVICE);
-    if (status != ACL_ERROR_NONE) {
+    if (status != ACL_SUCCESS) {
       MS_LOG(ERROR) << "Call aclrtMemcpy failed, ret = 0x" << status;
       return false;
     }
@@ -266,13 +266,13 @@ bool AicpuOpKernelLoad::CacheBinaryFileToDevice(const uintptr_t &resource_id, st
   void *args = nullptr;
   uint32_t args_size = sizeof(CustAicpuSoBuf) * v_cust_so.size();
   status = CALL_ASCEND_API(aclrtMalloc, &args, args_size, ACL_MEM_TYPE_HIGH_BAND_WIDTH);
-  if (status != ACL_ERROR_NONE) {
+  if (status != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Call aclrtMalloc failed, size:" << args_size << ", ret = 0x" << status;
     return false;
   }
   allocated_mem->emplace_back(args);
   status = CALL_ASCEND_API(aclrtMemcpy, args, args_size, v_cust_so.data(), args_size, ACL_MEMCPY_HOST_TO_DEVICE);
-  if (status != ACL_ERROR_NONE) {
+  if (status != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Call aclrtMemcpy failed, ret = 0x" << status;
     return false;
   }
@@ -290,7 +290,7 @@ bool AicpuOpKernelLoad::LaunchAicpuKernelSo() {
 
   rtContext_t rt_cur_ctx = nullptr;
   auto status = CALL_ASCEND_API(aclrtGetCurrentContext, &rt_cur_ctx);
-  if (status != ACL_ERROR_NONE) {
+  if (status != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Call aclrtGetCurrentContext failed, ret = 0x" << status;
     return false;
   }
@@ -318,7 +318,7 @@ bool AicpuOpKernelLoad::LaunchAicpuKernelSo() {
 
   aclrtStream stream = nullptr;
   status = aclrtCreateStream(&stream);
-  if (status != ACL_ERROR_NONE) {
+  if (status != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Call rtStreamCreate failed, ret = 0x" << status;
     return false;
   }
@@ -327,12 +327,12 @@ bool AicpuOpKernelLoad::LaunchAicpuKernelSo() {
   std::string load_event(kBatchLoadBuf);
   status = rtCpuKernelLaunch(nullptr, load_event.c_str(), 1, reinterpret_cast<void *>(&batch_args),
                              sizeof(BatchLoadOpFromBufArgs), nullptr, stream);
-  if (status != ACL_ERROR_NONE) {
+  if (status != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Call rtCpuKernelLaunch failed, ret = 0x" << status;
     return false;
   }
   status = CALL_ASCEND_API(aclrtSynchronizeStreamWithTimeout, stream, -1);
-  if (status != ACL_ERROR_NONE) {
+  if (status != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Call aclrtSynchronizeStream failed, ret = 0x" << status;
     return false;
   }
@@ -348,7 +348,7 @@ void AicpuOpKernelLoad::FreeDeviceMemory() {
         continue;
       }
       auto rt_error = CALL_ASCEND_API(aclrtFree, mem);
-      if (rt_error != ACL_ERROR_NONE) {
+      if (rt_error != ACL_SUCCESS) {
         MS_LOG(EXCEPTION) << "Call aclrtFree failed, ret = 0x" << rt_error;
       }
     }
@@ -358,7 +358,7 @@ void AicpuOpKernelLoad::FreeDeviceMemory() {
   for (auto stream : stream_list_) {
     if (stream != nullptr) {
       auto rt_error = CALL_ASCEND_API(aclrtDestroyStream, stream);
-      if (rt_error != ACL_ERROR_NONE) {
+      if (rt_error != ACL_SUCCESS) {
         MS_LOG(EXCEPTION) << "Call aclrtDestroyStream failed, ret = 0x" << rt_error;
       }
     }

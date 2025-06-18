@@ -1300,7 +1300,7 @@ bool GeKernelExecutor::MemoryCopyAsync(const CNodePtr &node, const std::vector<K
   MS_EXCEPTION_IF_NULL(stream);
   aclError status = CALL_ASCEND_API(aclrtMemcpyAsync, outputs[0]->device_ptr(), outputs[0]->size(),
                                     inputs[0]->device_ptr(), inputs[0]->size(), ACL_MEMCPY_DEVICE_TO_DEVICE, stream);
-  if (status != ACL_ERROR_NONE) {
+  if (status != ACL_SUCCESS) {
     MS_LOG(ERROR) << "MemCpyAsync op aclrtMemcpyAsync failed, ret:" << status << " destMax:" << outputs[0]->size()
                   << " count:" << inputs[0]->size();
     return false;

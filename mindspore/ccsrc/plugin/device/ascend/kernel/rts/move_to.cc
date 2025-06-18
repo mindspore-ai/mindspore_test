@@ -414,7 +414,7 @@ bool MoveTo::Launch(const std::vector<KernelTensor *> &inputs, const std::vector
   }
   if (blocking_) {
     const auto status = CALL_ASCEND_API(aclrtSynchronizeStreamWithTimeout, stream_ptr, -1);
-    if (status != ACL_ERROR_NONE) {
+    if (status != ACL_SUCCESS) {
       MS_LOG(ERROR) << "Failed to synchronize stream, ret = " << status << ".";
       return false;
     }

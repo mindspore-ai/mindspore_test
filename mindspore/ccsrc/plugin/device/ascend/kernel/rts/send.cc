@@ -46,7 +46,7 @@ bool SendKernel::Launch(const std::vector<KernelTensor *> &, const std::vector<K
   MS_EXCEPTION_IF_NULL(event_);
   MS_EXCEPTION_IF_NULL(stream_ptr);
   auto status = CALL_ASCEND_API(aclrtRecordEvent, event_, stream_ptr);
-  if (status != ACL_ERROR_NONE) {
+  if (status != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Send op aclrtRecordEvent failed!";
     return false;
   }

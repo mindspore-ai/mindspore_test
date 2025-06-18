@@ -113,7 +113,7 @@ bool ErrorManagerAdapter::Init() {
   LogWriter::SetMessageHandler(&MessageHandler);
 
   auto rt_ret = CALL_ASCEND_API(aclrtSetExceptionInfoCallback, TaskExceptionCallback);
-  if (rt_ret != ACL_ERROR_NONE) {
+  if (rt_ret != ACL_SUCCESS) {
     MS_LOG(EXCEPTION) << "Reg SetTaskFailCallback failed, error: " << rt_ret;
   }
   initialized_ = true;
