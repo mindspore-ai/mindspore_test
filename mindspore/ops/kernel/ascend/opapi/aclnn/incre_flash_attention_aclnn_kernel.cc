@@ -23,6 +23,7 @@
 #include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
+#include "utils/llm_manager.h"
 
 namespace mindspore {
 namespace kernel {
@@ -45,6 +46,13 @@ std::vector<int64_t> ConvertActualSeqLengthsToVector(KernelTensor *const actual_
     }
   }
   return actual_seq_lengths_vector;
+}
+
+bool IncreFlashAttentionAscend::Init(const std::vector<KernelTensor *> &inputs,
+                                     const std::vector<KernelTensor *> &outputs) {
+  auto &llm_manager = LLMManager::GetInstance();
+  llm_manager.add_force_resize_kernel(kernel_name_);
+  return true;
 }
 
 void IncreFlashAttentionAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
