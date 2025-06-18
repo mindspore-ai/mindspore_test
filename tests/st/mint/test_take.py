@@ -59,7 +59,7 @@ def mint_take_backward_func_tensor(input_x, index):
     return grad(net)(input_x, index)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 def test_take_std(mode):
     """
