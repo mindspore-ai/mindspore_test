@@ -116,7 +116,7 @@ bool StrategyUtils::CheckExtractInformation(const CNodePtr &cnode) {
 
   ValueNodePtr prim_anf_node = cnode->input(0)->cast<ValueNodePtr>();
   PrimitivePtr prim = GetValueNode<PrimitivePtr>(prim_anf_node);
-  if ((prim->name() == MAKE_TUPLE) || (prim->name() == MAKE_LIST) || (prim->name() == RECEIVE)) {
+  if (!prim || (prim->name() == MAKE_TUPLE) || (prim->name() == MAKE_LIST) || (prim->name() == RECEIVE)) {
     return false;
   }
 
