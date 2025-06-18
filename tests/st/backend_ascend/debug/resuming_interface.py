@@ -16,7 +16,7 @@ import mindspore as ms
 from mindspore import ops, nn, context, Tensor
 from mindspore.communication.management import init
 from mindspore.communication._comm_helper import _get_group_map
-from mindspore._c_expression import _rebuild_world_group, _rebuild_sub_group, _finalize_comm, _clean_unique_id
+from mindspore._c_expression import _rebuild_world_group, _rebuild_sub_group, _finalize_comm, _clean_rootinfo
 
 
 class AllReduceNet(nn.Cell):
@@ -50,7 +50,7 @@ def rebuild_hccl_interface():
     assert output1.asnumpy() == base_value.asnumpy()
 
     # destroy hcom
-    _clean_unique_id()
+    _clean_rootinfo()
     _finalize_comm()
     # rebuild group
     _rebuild_world_group()
