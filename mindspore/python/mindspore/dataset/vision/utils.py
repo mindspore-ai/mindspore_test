@@ -1098,6 +1098,7 @@ class VideoDecoder:
         """
         if get_video_backend() != "Ascend":
             raise RuntimeError("Method get_frames_at is only supported on Ascend platform.")
+        cde.dvpp_sys_init()
         type_check(indices, (list,), "indices")
         type_check_list(indices, (int,), "indices")
 
