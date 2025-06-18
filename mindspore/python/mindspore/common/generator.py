@@ -77,10 +77,9 @@ class Generator:
     """
 
     def __init__(self):
-        self._seed = Parameter(Tensor(0, mstype.int64),
-                               name="seed", requires_grad=False)
+        self._seed = Parameter(Tensor(0, mstype.int64), requires_grad=False)
         self._offset = Parameter(
-            Tensor(0, mstype.int64), name="offset", requires_grad=False)
+            Tensor(0, mstype.int64), requires_grad=False)
 
         self._generator = GeneratorOp().set_device("CPU")
         self._generator.add_prim_attr("manual_seed", False)
