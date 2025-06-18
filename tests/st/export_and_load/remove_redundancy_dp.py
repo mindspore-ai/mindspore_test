@@ -22,9 +22,7 @@ from mindspore.train.serialization import load_checkpoint, load_param_into_net
 from mindspore.train import Model, CheckpointConfig, ModelCheckpoint
 
 ms.set_context(mode=ms.GRAPH_MODE)
-rt.set_memory(max_size="28GB")
 ms.set_auto_parallel_context(parallel_mode=ms.ParallelMode.DATA_PARALLEL)
-init()
 ms.set_seed(1)
 print("distribute network.", flush=True)
 
@@ -76,6 +74,7 @@ def test_remove_redundancy_save_True_load_True_dp():
     Description: Saving and loading checkpoints with redundancy elimination.
     Expectation: success.
     '''
+    init()
     print("distribute network shard.", flush=True)
     net = Network()
     print("distribute network create dataset.", flush=True)
@@ -88,8 +87,13 @@ def test_remove_redundancy_save_True_load_True_dp():
     cbpoint_cb = ModelCheckpoint(prefix="redundancy", directory=f"./device{rank_id}_redundancy11dp", config=config)
     print("distribute network train.", flush=True)
     model = Model(net, loss_fn=loss, optimizer=optim)
+<<<<<<< HEAD
     model.train(1, dataset, callbacks=cbpoint_cb)
     ckpt_path = f"./device{rank_id}_redundancy11dp/redundancy-1_1875.ckpt"
+=======
+    model.train(1, dataset, callbacks=[cbpoint_cb])
+    ckpt_path = f"./device{rank_id}_redundancy11dp/redundancy-1_1875.safetensors"
+>>>>>>> 99844b30832 (bugfix_load_checkpoint)
 
     print("distribute network loadcheckpoint.", flush=True)
     param_dict = load_checkpoint(ckpt_path)

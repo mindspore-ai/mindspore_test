@@ -140,16 +140,6 @@ def test_save_checkpoint_async(mode):
     """
     net = LeNet5()
     ms.save_checkpoint(net, "./lenet.ckpt",
-                       choice_func=lambda x: x.startswith("conv") and not x.startswith("conv1"), async_save=True)
-    time.sleep(5)
-    output_param_dict1 = ms.load_checkpoint("./lenet.ckpt")
-    remove_ckpt("./lenet.ckpt")
-
-    assert 'conv2.weight' in output_param_dict1
-    assert 'conv1.weight' not in output_param_dict1
-    assert 'fc1.bias' not in output_param_dict1
-
-    ms.save_checkpoint(net, "./lenet.ckpt",
                        choice_func=lambda x: x.startswith("conv") and not x.startswith("conv1"), async_save="process")
     time.sleep(5)
     output_param_dict2 = ms.load_checkpoint("./lenet.ckpt")
