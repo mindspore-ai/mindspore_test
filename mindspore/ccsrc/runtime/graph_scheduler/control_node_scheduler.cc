@@ -2387,6 +2387,8 @@ void ControlNodeScheduler::LinkArrowForRootGraphEntranceActor(const ActorSet *ac
       MS_EXCEPTION_IF_NULL(cur_device_tensor);
       cur_device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
       cur_graph_parameter_store->SetUserCnt(real_outer_idx, real_inner_idx, SIZE_MAX);
+      MS_LOG(DEBUG) << "Set parameter store ref count to max for outer index:" << real_outer_idx
+                    << " inner index:" << real_inner_idx;
       const auto parser = graph_compiler_info.control_node_parser_;
       MS_EXCEPTION_IF_NULL(parser);
       const auto &node_with_index_with_context =
