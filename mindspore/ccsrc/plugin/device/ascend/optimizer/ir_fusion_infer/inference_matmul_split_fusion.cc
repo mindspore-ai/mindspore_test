@@ -164,6 +164,28 @@ std::string InferenceMatmulSplitFusion::GetSiluMulPattern(const CNodePtr &mul_in
   return pattern_name;
 }
 
+std::string InferenceMatmulSplitFusion::GetSiluFastGeluAddMulSubPattern(const CNodePtr &tuple_input_node,
+                                                                        const CNodePtr &tuple2_input_node,
+                                                                        const CNodePtr &tuple3_input_node) const {
+  std::string pattern_name = "";
+  auto tuple2_input_name = common::AnfAlgo::GetCNodeName(tuple2_input_node);
+  if ((tuple2_input_name == prim::kPrimSplitWithSize->name()) && (tuple2_input_node == tuple3_input_node) &&
+      (tuple2_input_node == tuple_input_node)) {
+    auto split_input_node = common::AnfAlgo::GetInputNode(tuple_input_node->cast<CNodePtr>(), kIndex0);
+    auto split_input_name = common::AnfAlgo::GetCNodeName(split_input_node);
+    if (split_input_name == prim::kPrimReshape->name()) {
+      auto reshape_input_node = common::AnfAlgo::GetInputNode(split_input_node->cast<CNodePtr>(), kIndex0);
+      auto reshape_input_name = common::AnfAlgo::GetCNodeName(reshape_input_node);
+      if (reshape_input_name == prim::kPrimMatMul->name()) {
+        pattern_name = kPatternNameMatMulSplitSiluFastgeluAddMul;
+      } else if (reshape_input_name == prim::kPrimQuantBatchMatmul->name()) {
+        pattern_name = kPatternNameQMatMulSplitSiluFastgeluAddMul;
+      }
+    }
+  }
+  return pattern_name;
+}
+
 std::string InferenceMatmulSplitFusion::GetSiluFastGeluAddMulPattern(const CNodePtr &mul_input0_node,
                                                                      const CNodePtr &mul_input1_node) const {
   // in this branch we aim to find the second pattern -- kPatternNameMatMulSplitSiluFastgeluAddMul
@@ -183,22 +205,9 @@ std::string InferenceMatmulSplitFusion::GetSiluFastGeluAddMulPattern(const CNode
     if ((silu_input_name == prim::kPrimTupleGetItem->name()) &&
         (fastgelu_input_name == prim::kPrimTupleGetItem->name())) {
       auto tuple2_input_node = common::AnfAlgo::GetInputNode(silu_input_node->cast<CNodePtr>(), kIndex0);
-      auto tuple2_input_name = common::AnfAlgo::GetCNodeName(tuple2_input_node);
       auto tuple3_input_node = common::AnfAlgo::GetInputNode(fastgelu_input_node->cast<CNodePtr>(), kIndex0);
-      if ((tuple2_input_name == prim::kPrimSplitWithSize->name()) && (tuple2_input_node == tuple3_input_node) &&
-          (tuple2_input_node == tuple_input_node)) {
-        auto split_input_node = common::AnfAlgo::GetInputNode(tuple_input_node->cast<CNodePtr>(), kIndex0);
-        auto split_input_name = common::AnfAlgo::GetCNodeName(split_input_node);
-        if (split_input_name == prim::kPrimReshape->name()) {
-          auto reshape_input_node = common::AnfAlgo::GetInputNode(split_input_node->cast<CNodePtr>(), kIndex0);
-          auto reshape_input_name = common::AnfAlgo::GetCNodeName(reshape_input_node);
-          if (reshape_input_name == prim::kPrimMatMul->name()) {
-            pattern_name = kPatternNameMatMulSplitSiluFastgeluAddMul;
-          } else if (reshape_input_name == prim::kPrimQuantBatchMatmul->name()) {
-            pattern_name = kPatternNameQMatMulSplitSiluFastgeluAddMul;
-          }
-        }
-      }
+      pattern_name = GetSiluFastGeluAddMulSubPattern(
+        tuple_input_node->cast<CNodePtr>(), tuple2_input_node->cast<CNodePtr>(), tuple3_input_node->cast<CNodePtr>());
     }
   }
   return pattern_name;

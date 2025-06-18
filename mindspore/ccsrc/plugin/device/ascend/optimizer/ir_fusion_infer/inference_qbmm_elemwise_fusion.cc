@@ -30,8 +30,8 @@
 namespace mindspore {
 namespace opt {
 
-CNodePtr QMatmulElemFusion::CreateQbmmElemNode(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
-                                               const EquivPtr &equiv) const {
+CNodePtr InferenceQbmmElemwiseFusion::CreateQbmmElemNode(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
+                                                         const EquivPtr &equiv) const {
   MS_LOG(DEBUG) << "start CreateQbmmElemNode";
   MS_ASSERT(func_graph != nullptr && node != nullptr && equiv != nullptr);
   auto qbmm_prim = std::make_shared<Primitive>("QuantBatchMatmul");
@@ -50,12 +50,12 @@ CNodePtr QMatmulElemFusion::CreateQbmmElemNode(const FuncGraphPtr &func_graph, c
   return new_qbmm_node;
 }
 
-std::vector<std::string> QMatmulElemFusion::MustExistPrimitiveName() const {
+std::vector<std::string> InferenceQbmmElemwiseFusion::MustExistPrimitiveName() const {
   std::vector<std::string> ret{prim::kPrimQuantBatchMatmul->name(), prim::kPrimFastGeLU->name()};
   return ret;
 }
 
-void QMatmulElemFusion::SetInternalNodes(const EquivPtr &equiv) const {
+void InferenceQbmmElemwiseFusion::SetInternalNodes(const EquivPtr &equiv) const {
   x_node_ = utils::cast<AnfNodePtr>((*equiv)[x_]);
   MS_ASSERT(x_node_ != nullptr);
   w_node_ = utils::cast<AnfNodePtr>((*equiv)[w_]);
@@ -76,7 +76,7 @@ void QMatmulElemFusion::SetInternalNodes(const EquivPtr &equiv) const {
   MS_ASSERT(out_dtype_node_ != nullptr);
 }
 
-const BaseRef QMatmulElemFusion::DefinePattern() const {
+const BaseRef InferenceQbmmElemwiseFusion::DefinePattern() const {
   if (!Init()) {
     MS_LOG(DEBUG) << "initial member failed.";
     return {};
@@ -89,8 +89,8 @@ const BaseRef QMatmulElemFusion::DefinePattern() const {
   return fast_ref;
 }
 
-const AnfNodePtr QMatmulElemFusion::Process(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
-                                            const EquivPtr &equiv) const {
+const AnfNodePtr InferenceQbmmElemwiseFusion::Process(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
+                                                      const EquivPtr &equiv) const {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   auto const &soc_version = ms_context->ascend_soc_version();
@@ -115,7 +115,7 @@ const AnfNodePtr QMatmulElemFusion::Process(const FuncGraphPtr &func_graph, cons
   return cnode;
 }
 
-bool QMatmulElemFusion::CheckIOValid() const {
+bool InferenceQbmmElemwiseFusion::CheckIOValid() const {
   if (!CheckSupportDataType(scale_node_, {kNumberTypeInt64}) || !CheckSupportDataType(bias_node_, {kNumberTypeInt32})) {
     return false;
   }

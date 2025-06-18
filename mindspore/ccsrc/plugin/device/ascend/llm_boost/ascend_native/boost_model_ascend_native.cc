@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "plugin/device/ascend/llm_boost/ascend_native/boost_model_ascend_native.h"
 #include <algorithm>
 #include <map>
 #include <memory>
 #include <string>
 #include <utility>
-#include "plugin/device/ascend/llm_boost/ascend_native/boost_model_ascend_native.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_utils.h"
 #include "common/kernel.h"
 #include "common/device_address.h"

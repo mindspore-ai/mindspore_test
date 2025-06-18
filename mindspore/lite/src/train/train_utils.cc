@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace lite {
+static const int SHAPE_SIZE_2 = 2;
 size_t TSFindTensor(const std::vector<lite::Tensor *> &where, const lite::Tensor *searchParameter) {
   for (size_t i = 0; i < where.size(); i++) {
     if (where[i] == searchParameter) {
@@ -72,7 +73,8 @@ float CalcSparseClassificationAccuracy(T *predictions, int *labels, int batch_si
 }
 
 float CalculateSparseClassification(lite::Tensor *input, lite::Tensor *output) {
-  if ((input->shape().size() != 1) || (input->data_type() != kNumberTypeInt32) || (output->shape().size() != 2)) {
+  if ((input->shape().size() != 1) || (input->data_type() != kNumberTypeInt32) ||
+      (output->shape().size() != SHAPE_SIZE_2)) {
     MS_LOG(WARNING) << "SparseClassification got a " << input->shape() << "-D input tensor, " << output->shape()
                     << "-D output tensor";
     return 0.0;
@@ -118,7 +120,7 @@ float CalcOneHotClassificationAccuracy(T *predictions, float *labels, int batch_
 }
 
 float CalculateOneHotClassification(lite::Tensor *input, lite::Tensor *output) {
-  if ((input->shape().size() != 2) || (output->shape().size() != 2)) {
+  if ((input->shape().size() != SHAPE_SIZE_2) || (output->shape().size() != SHAPE_SIZE_2)) {
     MS_LOG(WARNING) << "OneHotClassification got a " << input->shape() << "-D input tensor, " << output->shape()
                     << "-D output tensor";
     return 0.0;
