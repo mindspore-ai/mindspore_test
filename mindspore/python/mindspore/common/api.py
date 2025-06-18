@@ -1557,6 +1557,20 @@ def _parameter_broadcast(obj):
     _build_broadcast_graph(broadcast_params_dict, broadcast_phase)
 
 
+def _run_in_jit():
+    """In jit, this function always returns true. Otherwise, returns false."""
+    def _temp_func():
+        return 0
+
+    from mindspore.ops.primitive import constexpr
+
+    @constexpr(check=False)
+    def _check_func(func):
+        return func is None
+
+    return _check_func(_temp_func)
+
+
 class _no_grad(contextlib.ContextDecorator):
     """
     Context Manager to disable gradient calculation. When enter this context, we will disable calculate

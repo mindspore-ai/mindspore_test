@@ -525,6 +525,15 @@ class GetDependDoutTuple : public MetaFuncGraph {
     return lhs.name_ == rhs.name_;
   }
 };
+
+class RecomputeBlock : public MetaFuncGraph {
+ public:
+  explicit RecomputeBlock(const std::string &name) : MetaFuncGraph(name) {}
+  ~RecomputeBlock() override = default;
+  MS_DECLARE_PARENT(RecomputeBlock, MetaFuncGraph)
+  FuncGraphPtr GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) override;
+  friend bool operator==(const RecomputeBlock &lhs, const RecomputeBlock &rhs) { return lhs.name_ == rhs.name_; }
+};
 }  // namespace prim
 }  // namespace mindspore
 
