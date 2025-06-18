@@ -304,9 +304,8 @@ def test_msrun_with_correct_hostname():
     hostname = socket.gethostname()
     ipaddr = socket.gethostbyname(hostname)
     print(f"The hostname of this node is {hostname}, ip address is {ipaddr}.")
-    cmd = (f"msrun --worker_num=4 --local_worker_num=4 --master_addr={hostname} "\
-            "--master_port=10969 --join=True test_msrun_only_init.py --device_target=Ascend "\
-            "--dataset_path=/home/workspace/mindspore_dataset/mnist > ./hostname_normal_msrun.log 2>&1")
+    cmd = (f"msrun --worker_num=4 --local_worker_num=4 --master_addr={hostname} --master_port=10969 --join=True "\
+            "test_msrun_only_init.py --device_target=Ascend --dataset_path=/home/workspace/mindspore_dataset/mnist")
     result = subprocess.getoutput(cmd)
     assert result.find(f"Convert input host name:{hostname} to ip address:{ipaddr}.") != -1
 
