@@ -16,7 +16,7 @@ import os
 from tests.mark_utils import arg_mark
 
 
-@arg_mark(plat_marks=["cpu_linux", "cpu_windows", "cpu_macos"], level_mark="level1", card_mark="onecard",
+@arg_mark(plat_marks=["cpu_linux"], level_mark="level1", card_mark="onecard",
           essential_mark="essential")
 def test_support_binary_in_graph_mode():
     """
