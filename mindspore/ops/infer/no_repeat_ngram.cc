@@ -110,7 +110,6 @@ TypePtr NoRepeatNGramInferType(const PrimitivePtr &prim, const std::vector<Abstr
 
 void NoRepeatNGram::set_ngram(const int64_t ngram) { (void)this->AddAttr(kNgramSize, api::MakeValue(ngram)); }
 /// \brief Get ngram.
-///
 /// \return ngram.
 int64_t NoRepeatNGram::get_ngram() const { return GetValue<int64_t>(GetAttr(kNgramSize)); }
 

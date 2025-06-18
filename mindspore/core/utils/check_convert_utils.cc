@@ -378,6 +378,7 @@ size_t CheckAndConvertUtils::CheckAbstractTypeSame(const std::vector<AbstractBas
 int64_t CheckAndConvertUtils::CheckAttrInt64Positive(const std::string &op, const ValuePtr &attr,
                                                      const std::string &attr_name) {
   MS_EXCEPTION_IF_NULL(attr);
+  MS_EXCEPTION_IF_NULL(attr->cast<Int64ImmPtr>());
   int64_t attr_val = attr->cast<Int64ImmPtr>()->value();
   if (attr_val <= 0) {
     MS_EXCEPTION(ValueError) << "For '" << op << "', the '" << attr_name
