@@ -285,10 +285,10 @@ AnfNodePtr GetShapeInputNode(const FuncGraphPtr &graph, const AnfNodePtr &rms_no
   return common::AnfAlgo::GetInputNode(utils::cast<CNodePtr>(rms_norm_out_getitem_0_shape_user), 0);
 }
 
-void ReplaceAddResult(const FuncGraphPtr &graph, const FuncGraphManagerPtr &mng,
-                      const AnfNodePtr &add_rms_norm_dynamic_quant, const AnfNodePtr &ori_add_node,
-                      const AnfNodePtr &shape_input_node, const std::vector<BaseShapePtr> &add_result_shapes,
-                      const std::vector<TypeId> &add_result_types) {
+static void ReplaceAddResult(const FuncGraphPtr &graph, const FuncGraphManagerPtr &mng,
+                             const AnfNodePtr &add_rms_norm_dynamic_quant, const AnfNodePtr &ori_add_node,
+                             const AnfNodePtr &shape_input_node, const std::vector<BaseShapePtr> &add_result_shapes,
+                             const std::vector<TypeId> &add_result_types) {
   auto constexpr kNewAddOutIdx = 2;
   auto getitem_for_add = std::make_shared<Primitive>("TupleGetItem");
   std::vector<AnfNodePtr> add_result_inputs = {NewValueNode(getitem_for_add), add_rms_norm_dynamic_quant,
@@ -302,9 +302,10 @@ void ReplaceAddResult(const FuncGraphPtr &graph, const FuncGraphManagerPtr &mng,
   (void)mng->Replace(shape_input_node, add_result);
 }
 
-AnfNodePtr NewReshapedQuantOut(const FuncGraphPtr &graph, const AnfNodePtr &add_rms_norm_dynamic_quant,
-                               const AnfNodePtr &node, const BaseShapePtr &raw_quant_shape, const TypeId &quant_type,
-                               const BaseShapePtr &reshaped_shape, const AnfNodePtr &ori_shape_node) {
+static AnfNodePtr NewReshapedQuantOut(const FuncGraphPtr &graph, const AnfNodePtr &add_rms_norm_dynamic_quant,
+                                      const AnfNodePtr &node, const BaseShapePtr &raw_quant_shape,
+                                      const TypeId &quant_type, const BaseShapePtr &reshaped_shape,
+                                      const AnfNodePtr &ori_shape_node) {
   auto constexpr kNewQuantOutIdx = 0;
   std::vector<TypeId> getitem_for_quant_types{quant_type};
   std::vector<BaseShapePtr> getitem_for_quant_shapes{raw_quant_shape};
@@ -330,9 +331,9 @@ AnfNodePtr NewReshapedQuantOut(const FuncGraphPtr &graph, const AnfNodePtr &add_
   return reshape_quant;
 }
 
-AnfNodePtr NewReshapedScale1Out(const FuncGraphPtr &graph, const AnfNodePtr &add_rms_norm_dynamic_quant,
-                                const AnfNodePtr &node, const BaseShapePtr &raw_scale_shape,
-                                const TypeId &out_scale_type, const BaseShapePtr &ori_out_scale_shape) {
+static AnfNodePtr NewReshapedScale1Out(const FuncGraphPtr &graph, const AnfNodePtr &add_rms_norm_dynamic_quant,
+                                       const AnfNodePtr &node, const BaseShapePtr &raw_scale_shape,
+                                       const TypeId &out_scale_type, const BaseShapePtr &ori_out_scale_shape) {
   auto constexpr kNewScale1OutIdx = 3;
   std::vector<TypeId> getitem_for_scale1_types{out_scale_type};
   std::vector<BaseShapePtr> getitem_for_scale1_shapes{raw_scale_shape};
@@ -361,8 +362,8 @@ AnfNodePtr NewReshapedScale1Out(const FuncGraphPtr &graph, const AnfNodePtr &add
   return reshape_scale;
 }
 
-void ReplaceDynamicQuantOut(const FuncGraphPtr &graph, const FuncGraphManagerPtr &mng, const AnfNodePtr &node,
-                            const AnfNodePtr &reshape_quant, const AnfNodePtr &reshape_scale) {
+static void ReplaceDynamicQuantOut(const FuncGraphPtr &graph, const FuncGraphManagerPtr &mng, const AnfNodePtr &node,
+                                   const AnfNodePtr &reshape_quant, const AnfNodePtr &reshape_scale) {
   auto dynamic_quant_outlist = GetRealNodeUsedList(graph, node);
   auto constexpr kOriQuantOutIdx = 0;
   for (const auto &out : *dynamic_quant_outlist) {
