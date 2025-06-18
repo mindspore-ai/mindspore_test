@@ -34,7 +34,6 @@ namespace tensor {
 class COMMON_EXPORT TensorPyWrapper : public TensorPyWrapperBase {
  public:
   /// \brief Create tensorpy from another tensorpy, data is shared.
-  ///
   /// \param[in] input [TensorPy] The input tensorpy.
   explicit TensorPyWrapper(const py::object &input);
   bool operator==(const Value &other) const override {
@@ -47,7 +46,6 @@ class COMMON_EXPORT TensorPyWrapper : public TensorPyWrapperBase {
   MS_DECLARE_PARENT(TensorPyWrapper, TensorPyWrapperBase);
   ~TensorPyWrapper() = default;
   /// \brief Create Abstract for Tensor.
-  ///
   /// \return Abstract of Tensor.
   abstract::AbstractBasePtr ToAbstract() override;
 
@@ -63,15 +61,12 @@ COMMON_EXPORT TensorPyWrapperPtr ConvertToTensorPyWrapper(const py::handle &obj)
 
 /// \brief Make default_parameter of Parameter to TensorPy, and return to Pybind.
 /// \param[in] value [ValuePtr] The given input parameter.
-///
 /// \return A TensorPy.
 COMMON_EXPORT py::object GetTensorPyFromValue(const ValuePtr &value);
 
 COMMON_EXPORT py::object GetTensorFromTensorPyWrapper(const TensorPyWrapperPtr &self);
 /// \brief Make default_parameter of Parameter to MetaTensor.
-///
 /// \param[in] value [ValuePtr] The given input parameter.
-///
 /// \return A MetaTensor.
 COMMON_EXPORT const MetaTensorPtr GetMetaTensorFromValue(const ValuePtr &value);
 }  // namespace tensor
