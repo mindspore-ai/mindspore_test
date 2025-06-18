@@ -90,10 +90,10 @@ class AutoGradImplGenerator(BaseGenerator):
         inner_grad_args_with_type =\
             self.do_grad_op_args_with_type.replace(input_args_with_type=inner_grad_args_with_type)
         op_def_name_str = "g" + op_proto.op_class.name
-        kTrue = "true"
-        kFalse = "false"
-        bprop_expander = kTrue if op_proto.bprop_expander else kFalse
-        non_differentiable = kTrue if op_proto.non_differentiable else kFalse
+        TRUE = "true"
+        FALSE = "false"
+        bprop_expander = TRUE if op_proto.bprop_expander else FALSE
+        non_differentiable = TRUE if op_proto.non_differentiable else FALSE
         if not op_proto.op_view:
             convert_basic_to_value = ''
         else:
