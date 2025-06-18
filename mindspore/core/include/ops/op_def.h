@@ -64,7 +64,6 @@ class OpDefRegHelper {
   ~OpDefRegHelper() = default;
 };
 
-#define REGISTER_PRIMITIVE_OP_DEF(op_name, op_def) \
-  static const OpDefRegHelper op_def_helper_##op_name(#op_name, op_def);
+#define REGISTER_PRIMITIVE_OP_DEF(op_name, op_def) static const OpDefRegHelper op_def_helper_##op_name(#op_name, op_def)
 }  // namespace mindspore::ops
 #endif

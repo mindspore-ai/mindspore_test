@@ -47,6 +47,6 @@ def main():
 if __name__ == "__main__":
     try:
         main()
-    except Exception as e: # pylint: disable=broad-except
+    except Exception as e:
         logging.critical("Auto generate failed, err info: %s", e)
         raise e

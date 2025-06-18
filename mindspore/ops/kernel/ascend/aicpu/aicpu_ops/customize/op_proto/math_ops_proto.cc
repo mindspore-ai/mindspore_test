@@ -447,8 +447,8 @@ CUST_IMPLEMT_INFERFUNC(Correlate, CorrelateInfer) {
       return GRAPH_FAILED;
     }
     int64_t out_size;
-    int64_t long_size = max(a_size, v_size);
-    int64_t short_size = min(a_size, v_size);
+    int64_t long_size = std::max(a_size, v_size);
+    int64_t short_size = std::min(a_size, v_size);
     std::string mode;
     if (op.GetAttr("mode", mode) != GRAPH_SUCCESS) {
       AICPU_INFER_SHAPE_INNER_ERR_REPORT(TbeGetName(op).c_str(), std::string("get attr[mode] failed"));

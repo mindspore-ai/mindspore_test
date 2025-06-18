@@ -298,7 +298,6 @@ uint32_t TridiagonalSolveCpuKernel::DoCompute1(CpuKernelContext &ctx, size_t nth
     }
   }
 
-  // CUST_KERNEL_LOG_INFO(ctx, "TridiagonalSolveCpuKernel::DoCompute end! ");
   return KERNEL_STATUS_OK;
 }
 

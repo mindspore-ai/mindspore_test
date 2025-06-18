@@ -36,7 +36,7 @@ bool InferShapeAndTypeMedian(Operator &op, const string &input_name, const strin
     return GRAPH_FAILED;
   }
 
-  if (attr_global_median == false) {
+  if (!attr_global_median) {
     if (ge::GRAPH_SUCCESS != op.GetAttr(attr2_name.c_str(), attr_dim)) {
       attr_dim = 0;
     }

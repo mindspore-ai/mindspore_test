@@ -360,8 +360,7 @@ uint32_t ScaleAndTranslateCpuKernel::ScaleAndTranslateCompute(CpuKernelContext &
   auto input_scale = reinterpret_cast<float *>(ctx.Input(2)->GetData());
   auto input_translation = reinterpret_cast<float *>(ctx.Input(3)->GetData());
   std::string kernel_type_str = ctx.GetAttr("kernel_type")->GetString();
-  bool antialias_;
-  antialias_ = ctx.GetAttr("antialias")->GetBool();
+  bool antialias_ = ctx.GetAttr("antialias")->GetBool();
   SamplingKernelType kernel_type_ = SamplingKernelTypeFromString(kernel_type_str);
 
   Tensor *input = ctx.Input(0);
@@ -433,8 +432,7 @@ uint32_t ScaleAndTranslateGradCpuKernel::ScaleAndTranslateGradCompute(CpuKernelC
   auto input_scale = reinterpret_cast<float *>(ctx.Input(2)->GetData());
   auto input_translation = reinterpret_cast<float *>(ctx.Input(3)->GetData());
   std::string kernel_type_str = ctx.GetAttr("kernel_type")->GetString();
-  bool antialias_;
-  antialias_ = ctx.GetAttr("antialias")->GetBool();
+  bool antialias_ = ctx.GetAttr("antialias")->GetBool();
   SamplingKernelType kernel_type_ = SamplingKernelTypeFromString(kernel_type_str);
 
   Tensor *input = ctx.Input(0);
