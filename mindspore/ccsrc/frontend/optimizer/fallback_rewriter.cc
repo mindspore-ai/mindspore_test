@@ -1859,6 +1859,7 @@ class AfterOptARewriter : public BaseRewriter {
       abstract->isa<abstract::AbstractTuple>() ? prim::kPrimTupleGetItem : prim::kPrimListGetItem;
     (void)new_inputs.emplace_back(NewValueNode(left));
     auto abstract_sequence = abstract->cast<abstract::AbstractSequencePtr>();
+    MS_EXCEPTION_IF_NULL(abstract_sequence);
     const auto &elements_abstract = abstract_sequence->elements();
     for (size_t i = 0; i < elements_abstract.size(); ++i) {
       auto cur_node = fg->NewCNode({NewValueNode(getitem_prim), node, NewValueNode(int64_t(i))});
