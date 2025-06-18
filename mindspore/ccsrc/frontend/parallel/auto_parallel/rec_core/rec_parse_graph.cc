@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "ir/value.h"
+#include "ops_utils/op_constants.h"
 #include "frontend/parallel/auto_parallel/rec_core/rec_graph.h"
 #include "frontend/parallel/auto_parallel/rec_core/rec_tensor.h"
 #include "frontend/parallel/ops_info/operator_info.h"
@@ -184,9 +185,9 @@ void HandleMatMulTranspose(const std::vector<std::shared_ptr<OperatorInfo>> &ops
 
   if (new_op.apply.op_type == OperatorType::kRecMatMul) {
     auto input_value = ops[iter_ops]->input_value();
-    MS_EXCEPTION_IF_NULL(input_value[2]->cast<BoolImmPtr>());
+    MS_EXCEPTION_IF_NULL(input_value[kIndex2]->cast<BoolImmPtr>());
     bool transpose_a = input_value[2]->cast<BoolImmPtr>()->value();
-    MS_EXCEPTION_IF_NULL(input_value[3]->cast<BoolImmPtr>());
+    MS_EXCEPTION_IF_NULL(input_value[kIndex3]->cast<BoolImmPtr>());
     bool transpose_b = input_value[3]->cast<BoolImmPtr>()->value();
     if (nchw->size() != SIZE_FOUR) {
       MS_LOG(ERROR) << "The length of nchw must be 4";

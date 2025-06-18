@@ -1026,6 +1026,7 @@ Strategies MakeRecSearchStrategy(Graph::NodeType *node, const std::vector<std::s
 
   if (node->interfered_sapp) {
     auto prim_anf_node = GetValueNode<PrimitivePtr>(ops[iter_ops]->cnode()->input(0));
+    MS_EXCEPTION_IF_NULL(prim_anf_node);
     auto in_stra = prim_anf_node->GetAttr(IN_STRATEGY);
     auto in_stra_var = GetValue<std::vector<Shape>>(in_stra);
     if (in_stra_var != strategies) {
