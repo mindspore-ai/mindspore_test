@@ -72,6 +72,7 @@ for((i=0; i<${MS_SERVER_NUM}; i++)); do
     fi
 done
 
+sched_pid=`echo $!`
 wait ${sched_pid}
 status=`echo $?`
 if [ "${status}" != "0" ]; then

@@ -180,7 +180,7 @@ def run(args):
 
     """
     process_manager = _ProcessManager(args)
-    process_manager.run()
+    process_manager.run_agent()
 
 
 def main():

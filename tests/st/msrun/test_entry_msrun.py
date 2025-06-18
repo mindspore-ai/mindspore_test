@@ -29,9 +29,9 @@ def test_msrun():
     """
     ms.set_context(jit_level='O0')
     return_code = os.system(
-        "msrun --worker_num=4 --local_worker_num=4 --master_addr=127.0.0.1 "\
+        "export MSRUN_MODE=AGENT && msrun --worker_num=4 --local_worker_num=4 --master_addr=127.0.0.1 "\
         "--master_port=10969 --join=True "\
-        "test_msrun.py --device_target=Ascend --dataset_path=/home/workspace/mindspore_dataset/mnist"
+        "test_msrun.py --device_target=CPU --dataset_path=/home/workspace/mindspore_dataset/mnist"
     )
     assert return_code == 0
 
@@ -304,9 +304,8 @@ def test_msrun_with_correct_hostname():
     hostname = socket.gethostname()
     ipaddr = socket.gethostbyname(hostname)
     print(f"The hostname of this node is {hostname}, ip address is {ipaddr}.")
-    cmd = (f"msrun --worker_num=4 --local_worker_num=4 --master_addr={hostname} "\
-            "--master_port=10969 --join=True test_msrun_only_init.py --device_target=Ascend "\
-            "--dataset_path=/home/workspace/mindspore_dataset/mnist > ./hostname_normal_msrun.log 2>&1")
+    cmd = (f"msrun --worker_num=4 --local_worker_num=4 --master_addr={hostname} --master_port=10969 --join=True "\
+            "test_msrun_only_init.py --device_target=Ascend --dataset_path=/home/workspace/mindspore_dataset/mnist")
     result = subprocess.getoutput(cmd)
     assert result.find(f"Convert input host name:{hostname} to ip address:{ipaddr}.") != -1
 
