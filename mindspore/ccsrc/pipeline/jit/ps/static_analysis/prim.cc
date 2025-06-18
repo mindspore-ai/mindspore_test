@@ -183,8 +183,8 @@ AbstractBasePtr AddRefKeyForArgs(const AbstractBasePtr &output_abs, const Abstra
       auto ref_tensor = ConvertTensorToRef(input_args[index]);
       if (ref_tensor->isa<abstract::AbstractRefTensor>()) {
         ref_tensor->cast<abstract::AbstractRefPtr>()->set_is_inplace(true);
+        ref_tensor = ref_tensor->Broaden();
       }
-      ref_tensor = ref_tensor->Broaden();
       input_args[index]->set_inplace_abstract(ref_tensor);
     }
   }
