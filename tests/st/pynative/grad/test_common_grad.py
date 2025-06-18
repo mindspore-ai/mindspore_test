@@ -947,7 +947,7 @@ def test_auto_grad_stop_gradient_inplace():
 
 
 @arg_mark(plat_marks=['platform_ascend'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_no_grad_stop_gradient_inplace_view():
@@ -963,7 +963,7 @@ def test_no_grad_stop_gradient_inplace_view():
 
 
 @arg_mark(plat_marks=['platform_ascend'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_auto_grad_stop_gradient_inplace_view_error():

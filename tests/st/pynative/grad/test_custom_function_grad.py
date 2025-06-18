@@ -394,7 +394,7 @@ class CustomFunctionDirtyTensorError1Net(_Function):
 
 
 @arg_mark(plat_marks=['platform_ascend'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_custom_function_dirty_tensor_must_all_be_output():
@@ -426,7 +426,7 @@ class CustomFunctionDirtyTensorError2Net(_Function):
 
 
 @arg_mark(plat_marks=['platform_ascend'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_custom_function_dirty_tensor_is_need_grad_leaf():
@@ -464,7 +464,7 @@ class CustomFunctionLeafNet(nn.Cell):
 
 
 @arg_mark(plat_marks=['platform_ascend'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_custom_function_dirty_tensor_not_leaf_no_grad():
@@ -487,7 +487,7 @@ class CustomFunctionLeafNet1(nn.Cell):
 
 
 @arg_mark(plat_marks=['platform_ascend'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_custom_function_dirty_tensor_not_leaf_need_grad():
@@ -513,7 +513,7 @@ class CustomFunctionNotLeafNet(nn.Cell):
 
 
 @arg_mark(plat_marks=['platform_ascend'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_custom_function_dirty_view_multi_output_error():
@@ -648,7 +648,7 @@ class CustomFunctionViewNotInAndDirtyWrapNet(nn.Cell):
 
 
 @arg_mark(plat_marks=['platform_ascend'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_custom_function_view_not_in_and_dirty():
@@ -689,7 +689,7 @@ class CustomFunctionMultiDiffOutputWrapNet(nn.Cell):
 
 
 @arg_mark(plat_marks=['platform_ascend'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_custom_function_multi_diff_output():

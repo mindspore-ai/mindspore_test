@@ -45,7 +45,7 @@ def fill_diagonal_forward_func_withx1(input_x, fill_value, wrap=False):
     return input_x.fill_diagonal_(fill_value, wrap)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 @pytest.mark.parametrize('wrap', [True, False])
 def test_tensor_fill_diagonal(mode, wrap):
