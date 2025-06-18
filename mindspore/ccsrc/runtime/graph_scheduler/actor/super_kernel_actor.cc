@@ -1597,7 +1597,8 @@ void SuperKernelActor::PartitionParallelDispatchKernels() {
     const auto &kernel_name = kernel_actor->kernel_mod_->kernel_name();
     bool need_force_resize = llm_manager.need_force_resize(kernel_name);
     if (need_force_resize || (kernel_name == kMatMulAllReduceOpName) || (kernel_name == "QbmmAllReduceAdd") ||
-        (kernel_name == "MatmulAllReduceAddRmsNorm")) {
+        (kernel_name == "MatmulAllReduceAddRmsNorm") || (kernel_name == "MoeDistributeCombine") ||
+        (kernel_name == "MoeDistributeDispatch")) {
       serial_launch_kernels_.push_back(kernel_actor);
       continue;
     }
@@ -1639,6 +1640,7 @@ void SuperKernelActor::RecreateCommunicationGroup() {
         // MC2 kernels do not support multi communication group now.
         bool is_naive_comm_op = common::AnfAlgo::IsCommunicationOp(kernel_actor->kernel_) &&
                                 (kernel_name != kMatMulAllReduceOpName) && (kernel_name != "QbmmAllReduceAdd") &&
+                                (kernel_name != "MoeDistributeCombine") && (kernel_name != "MoeDistributeDispatch") &&
                                 (kernel_name != "MatmulAllReduceAddRmsNorm");
         if (!is_naive_comm_op) {
           continue;
