@@ -475,7 +475,8 @@ bool GPUResManager::Copy(void *dst, const void *src, uint64_t size, CopyType kin
 bool GPUResManager::CopyDirectly(void *dst, size_t src_size, const void *src, uint64_t dst_size, CopyType kind) const {
   MS_EXCEPTION_IF_NULL(dst);
   MS_EXCEPTION_IF_NULL(src);
-  return GPUDeviceManager::GetInstance().CopyDeviceMemToHost(dst, src, src_size > dst_size ? dst_size : src_size);
+  return GPUDeviceManager::GetInstance().CopyDeviceMemToHost(dst, const_cast<void *>(src),
+                                                             src_size > dst_size ? dst_size : src_size);
 }
 
 bool GPUResManager::SyncDeviceToHost(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
@@ -763,7 +764,7 @@ MS_REGISTER_HAL_COPY_FUNC(
     MS_EXCEPTION_IF_NULL(res_manager);
     return res_manager->SyncCopy(dst_device_sync, src_device_sync, stream_id);
   }),
-  ([](const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id, bool) {
+  ([](const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id, bool keep_src) {
     auto context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(context);
     auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
