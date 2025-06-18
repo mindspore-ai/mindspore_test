@@ -364,6 +364,9 @@ void Cloner::SetFuncGraphInfo(const FuncGraphPtr &func_graph, const FuncGraphPtr
   MS_EXCEPTION_IF_NULL(func_graph);
   MS_EXCEPTION_IF_NULL(target_func_graph);
   target_func_graph->set_attrs(func_graph->attrs());
+  if (func_graph->has_attr(FUNC_GRAPH_FLAG_CELL_LAZY_INLINE_ORDER) && clone_for_recompute()) {
+    target_func_graph->set_flag(FUNC_GRAPH_FLAG_CELL_LAZY_INLINE_ORDER_CLONE, true);
+  }
   target_func_graph->set_transforms(func_graph->transforms());
   target_func_graph->set_has_vararg(func_graph->has_vararg());
   target_func_graph->set_has_kwarg(func_graph->has_kwarg());

@@ -65,6 +65,26 @@ def test_recompute_cell_recompute():
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_recompute_cell_recompute_func_api():
+    """
+    Feature: Recompute with lazy inline.
+    Description: Each block is set recompute by the recomputed func api.
+    Expectation: Run successfully and the memory usage is reduced.
+    """
+    run_testcase("test_recompute_block_recompute_func_api", 43)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_recompute_cell_recompute_func_api_with_kwargs():
+    """
+    Feature: Recompute with lazy inline.
+    Description: Each block is set recompute by the recomputed func api with kwargs.
+    Expectation: Run successfully and the memory usage is reduced.
+    """
+    run_testcase("test_recompute_block_recompute_func_api_with_kwargs", 42)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @test_utils.run_test_with_On
 def test_recompute_op_recompute1():
     """
@@ -103,6 +123,16 @@ def test_recompute_cell_and_op_recompute1():
     Expectation: Run successfully and the memory usage is reduced.
     """
     run_testcase("test_recompute_cell_and_op_recompute1", 63)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_recompute_cell_and_op_recompute_with_func_api():
+    """
+    Feature: Recompute with lazy inline.
+    Description: Each block is set recompute by both the primitive api and the recomputed func api.
+    Expectation: Run successfully and the memory usage is reduced.
+    """
+    run_testcase("test_recompute_cell_and_op_recompute_with_func_api", 63)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')

@@ -196,6 +196,10 @@ void RegCompositeOpsGroup(const py::module *m) {
   // Reg PreSetitemByTuple_
   (void)py::class_<PreSetitemByTuple, MetaFuncGraph, std::shared_ptr<PreSetitemByTuple>>(*m, "PreSetitemByTuple_")
     .def(py::init<std::string &>());
+
+  // Reg RecomputeBlock
+  (void)py::class_<RecomputeBlock, MetaFuncGraph, std::shared_ptr<RecomputeBlock>>(*m, "RecomputeBlock_")
+    .def(py::init<std::string &>());
 }
 }  // namespace prim
 }  // namespace mindspore

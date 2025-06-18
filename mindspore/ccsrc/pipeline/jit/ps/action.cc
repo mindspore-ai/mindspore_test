@@ -913,6 +913,35 @@ void SetCalledSubGraphMixedPrecisionFlag(const FuncGraphPtr &func_graph) {
     }
   }
 }
+
+void MergeClonedLazyInlineOrderGraph(const FuncGraphPtr &top_graph) {
+  auto manager = top_graph->manager();
+  MS_EXCEPTION_IF_NULL(manager);
+  HashMap<int, FuncGraphPtr> order_fgs;
+  auto all_func_graphs = top_graph->func_graphs_used_total();
+  for (auto &fg : all_func_graphs) {
+    MS_EXCEPTION_IF_NULL(fg);
+    auto order_value = fg->get_attr(FUNC_GRAPH_FLAG_CELL_LAZY_INLINE_ORDER);
+    if (order_value == nullptr) {
+      continue;
+    }
+    if (!fg->has_flag(FUNC_GRAPH_FLAG_CELL_LAZY_INLINE_ORDER_CLONE)) {
+      continue;
+    }
+    auto order = GetValue<int>(order_value);
+    auto iter = order_fgs.find(order);
+    if (iter == order_fgs.end()) {
+      order_fgs.emplace(order, fg);
+      continue;
+    }
+    auto cnodes_index = fg->func_graph_cnodes_index();
+    for (auto &cnode_index : cnodes_index) {
+      MS_EXCEPTION_IF_NULL(cnode_index.first);
+      auto call_node = cnode_index.first->first;
+      manager->SetEdge(call_node, cnode_index.first->second, NewValueNode(iter->second));
+    }
+  }
+}
 }  // namespace
 
 // Make the reusable cell to be the reusable function graph.
@@ -921,6 +950,7 @@ bool GraphReusingAction(const ResourcePtr &resource) {
   bool cell_reused = false;
   auto func_graph = resource->func_graph();
   MS_EXCEPTION_IF_NULL(func_graph);
+  MergeClonedLazyInlineOrderGraph(func_graph);
   std::multimap<int, FuncGraphPtr> order_fgs;
   for (auto &fg : func_graph->func_graphs_used_total()) {
     auto order_value = fg->get_attr(FUNC_GRAPH_FLAG_CELL_LAZY_INLINE_ORDER);
