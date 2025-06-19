@@ -68,7 +68,6 @@ class AscendKernelRuntime : public KernelRuntime {
                                        TypeId type_id) const override;
   DeviceAddressPtr CreateDeviceAddress(void *device_ptr, size_t device_size, const string &format, TypeId type_id,
                                        const KernelWithIndex &node_index) const override;
-  bool KernelMemNotReuse(const AnfNodePtr &node) override;
   inline static const session::KernelGraph *current_graph_ = nullptr;
   void SetContext();
   void SetContextForce();

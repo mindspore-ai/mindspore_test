@@ -139,7 +139,6 @@ class BACKEND_EXPORT KernelRuntime {
   virtual DeviceAddressPtr CreateDeviceAddress(void *device_ptr, size_t device_size, const string &format,
                                                TypeId type_id, const KernelWithIndex &node_index) const = 0;
   virtual bool NodeOutputDeviceAddressExist(const AnfNodePtr &node, size_t index);
-  virtual bool KernelMemNotReuse(const AnfNodePtr &node);
 
   void AssignStaticMemory(const session::KernelGraph &graph);
   void AssignNodeOutputMem(MemType type, const AnfNodePtr &node, int index);

@@ -25,11 +25,11 @@ def set_dump(target, enabled=True):
     Enable or disable dump for the `target` and its contents.
 
     `target` should be an instance of :class:`mindspore.nn.Cell` or :class:`mindspore.ops.Primitive` .
-    Please note that this API takes effect only when used with the `ms_backend` compilation backend
-    (refer to the backend parameter in
-    `jit <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.jit.html>`_),
-    and when Dump is enabled with the dump_mode field in the dump configuration file set to "2". See the
-    `dump document <https://www.mindspore.cn/tutorials/en/master/debug/dump.html>`_ for details.
+    Please note that this API takes effect only when the Dump function is enabled, and the `dump_mode`
+    field in the Dump configuration file is set to `"2"` with the `ms_backend` compilation backend
+    (please refer to the backend parameter in
+    `jit <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.jit.html>`_).
+    See the `dump document <https://www.mindspore.cn/tutorials/en/master/debug/dump.html>`_ for details.
     The default enabled status for
     a :class:`mindspore.nn.Cell` or :class:`mindspore.ops.Primitive` is False.
 
