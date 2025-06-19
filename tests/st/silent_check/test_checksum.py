@@ -63,7 +63,7 @@ def test_checksum():
     Description: CheckSum for MatMul in normal device
     Expectation: CheckSum result is False
     """
-    os.environ['NPU_CHECKSUM_ENABLE'] = '1'
+    os.environ['MS_SDC_DETECT_ENABLE'] = '1'
 
     sdc_detect_start()
     a = np.random.randn(3, 2)
@@ -78,4 +78,4 @@ def test_checksum():
     sdc_detect_stop()
     assert get_sdc_detect_result() == checksum(a1, b1, c1)
 
-    del os.environ['NPU_CHECKSUM_ENABLE']
+    del os.environ['MS_SDC_DETECT_ENABLE']
