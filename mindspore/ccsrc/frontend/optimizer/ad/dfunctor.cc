@@ -723,8 +723,7 @@ AnfNodePtr DFunctor::ApplyBackwardPreHook(const AnfNodePtr &dout) {
 }
 
 AnfNodePtr DFunctor::ApplyBackwardHook(const AdjointPtr &node_adjoint) {
-  FuncGraphPtr hook_func;
-  hook_func =
+  FuncGraphPtr hook_func =
     ResolveCellBackwardHook(primal_graph_->python_obj(), parse::CELL_BACKWARD_HOOK, parse::CELL_JIT_BACKWARD_HOOK);
   if (hook_func == nullptr) {
     hook_func = MakeDummyBackwardHook();

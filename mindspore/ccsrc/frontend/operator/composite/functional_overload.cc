@@ -201,6 +201,7 @@ std::pair<size_t, bool> GetVarargsIndex(const std::string &prim_name, bool is_me
 bool CheckKwargs(const std::string &prim_name, const std::map<std::string, ops::OP_DTYPE> &keyword_args_dtype,
                  const std::vector<ops::OP_DTYPE> &position_args_dtype, bool has_varargs) {
   const auto &op_def = ops::GetOpDef(prim_name);
+  MS_EXCEPTION_IF_NULL(op_def);
   for (const auto &[key, value] : keyword_args_dtype) {
     auto op_indexes = op_def->indexes_;
     const auto &op_args = op_def->args_;

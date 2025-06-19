@@ -53,6 +53,7 @@ class GraphSequenceParamTransform {
   AnfNodePtr GenerateSequenceParams(const abstract::AbstractSequencePtr &seq_abs, const FuncGraphPtr &fg,
                                     std::vector<AnfNodePtr> *params) {
     std::vector<AnfNodePtr> inputs;
+    MS_EXCEPTION_IF_NULL(seq_abs);
     auto prim_sequence = seq_abs->isa<abstract::AbstractTuple>() ? prim::kPrimMakeTuple : prim::kPrimMakeList;
     inputs.push_back(NewValueNode(prim_sequence));
     auto &elements = seq_abs->elements();

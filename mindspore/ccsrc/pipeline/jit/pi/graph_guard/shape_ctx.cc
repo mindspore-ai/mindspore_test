@@ -70,6 +70,7 @@ static constexpr int64_t kDynamicDim = -2;
 static constexpr int64_t kDynamicShape = -1;
 
 static bool IsShapeUnknown(mindspore::tensor::TensorPtr tensor) {
+  MS_EXCEPTION_IF_NULL(tensor);
   auto &shape = tensor->shape();
   if (std::any_of(shape.begin(), shape.end(), [](const auto &element) { return element == kDynamicShape; })) {
     return true;
@@ -81,6 +82,8 @@ static bool IsShapeUnknown(mindspore::tensor::TensorPtr tensor) {
 }
 
 static bool CheckDynamicShape(mindspore::tensor::TensorPtr sig, mindspore::tensor::TensorPtr org) {
+  MS_EXCEPTION_IF_NULL(sig);
+  MS_EXCEPTION_IF_NULL(org);
   if (sig->data_type() != org->data_type()) {
     return false;
   }

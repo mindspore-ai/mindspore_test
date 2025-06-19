@@ -43,6 +43,7 @@ AnfNodePtr GetBpropCaller(const FuncGraphManagerPtr &manager, const AnfNodePtr &
   if (iter == node_users.end()) {
     return nullptr;
   }
+  MS_EXCEPTION_IF_NULL(bprop_getter);
   if (iter->second.size() != 1) {
     MS_LOG_WITH_NODE(EXCEPTION, bprop_getter)
       << "The number of bprop caller should be 1, but got " << iter->second.size()
