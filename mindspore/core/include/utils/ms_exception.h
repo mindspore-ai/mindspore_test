@@ -135,19 +135,28 @@ struct FuncInfo {
   std::string api_msg;
 };
 
-enum class UCEError : int { kNoneError = 0, kDeviceMemError, kHbmMultBitEccError, kForceStopError, kUnknownError };
+enum class UCEError : int {
+  kNoneError = 0,
+  kDeviceMemError,
+  kHbmMultBitEccError,
+  kCommOpRetryFailError,
+  kForceStopError,
+  kUnknownError
+};
 
 class MS_CORE_API UCEException {
  public:
   static UCEException &GetInstance();
   static uint64_t ExtractUceTime(const char *error_msg);
   static bool IsEnableUCE();
+  static bool IsEnableHCCE();
   bool get_has_throw_error() const { return force_stop_flag_ || get_uce_flag() || is_reboot_node_; }
 
   void set_force_stop_flag(bool flag) { force_stop_flag_ = flag; }
   bool get_force_stop_flag() const { return force_stop_flag_; }
 
   bool get_uce_flag() const { return uce_error_type_ != UCEError::kNoneError; }
+  bool get_hcce_flag() const { return uce_error_type_ == UCEError::kCommOpRetryFailError; }
   void clear_uce_error() { uce_error_type_ = UCEError::kNoneError; }
 
   void set_reboot_node(bool flag) { is_reboot_node_ = flag; }
@@ -197,6 +206,8 @@ class MS_CORE_API UCEException {
       return "UCEError error occurs when execute, error_code=507053";
     } else if (uce_error_type_ == UCEError::kHbmMultBitEccError) {
       return "UCEError error occurs when execute, error_code=507054";
+    } else if (uce_error_type_ == UCEError::kCommOpRetryFailError) {
+      return "HCCEError error occurs when execute";
     } else if (uce_error_type_ == UCEError::kNoneError) {
       return "No uce error occurs.";
     } else {

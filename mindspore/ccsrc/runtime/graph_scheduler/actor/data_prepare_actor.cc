@@ -554,7 +554,7 @@ void DataPrepareActor::PrepareDataBeforeInputOptimize(const std::vector<std::vec
   graph_parameter_store->ResetPrepareState();
   // Only prepare weight for first step, because the weight memory is not released.
   // Allocate memory for weights in actor would have memory fragmentation.
-  if (first_step_) {
+  if (first_step_ || UCEException::GetInstance().get_uce_flag()) {
     PrepareDataForDeviceTensorStore(input_tensors, args, context);
   }
   first_step_ = false;

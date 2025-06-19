@@ -16,6 +16,7 @@
 #include "plugin/res_manager/ascend/mbuf_manager/tensorreport_utils.h"
 #include <dlfcn.h>
 #include <libgen.h>
+#include <algorithm>
 #include <memory>
 #include <string>
 #include <vector>
@@ -155,15 +156,11 @@ TensorReportUtils &TensorReportUtils::GetInstance() {
 }
 
 bool TensorReportUtils::IsEnable() {
-  auto tftEnv = common::GetEnv("MS_ENABLE_TFT");
-  constexpr std::string_view optUCE = "UCE:1";
-  constexpr std::string_view optTTP = "TTP:1";
-  constexpr std::string_view optARF = "ARF:1";
-  if (!tftEnv.empty() && (tftEnv.find(optUCE) != std::string::npos || tftEnv.find(optTTP) != std::string::npos ||
-                          tftEnv.find(optARF) != std::string::npos)) {
-    return true;
-  }
-  return false;
+  static std::vector<std::string_view> options = {"UCE:1", "TTP:1", "ARF:1", "HCCE:1"};
+  return std::any_of(options.begin(), options.end(), [](const std::string_view &opt) {
+    static std::string tftEnv = common::GetEnv("MS_ENABLE_TFT");
+    return tftEnv.find(opt) != std::string::npos;
+  });
 }
 
 TensorReportUtils::TensorReportUtils() {}
