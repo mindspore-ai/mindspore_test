@@ -11,7 +11,8 @@ apply_rotary_pos_emb_ext:
             dtype: tensor
         layout:
             dtype: int
-            default: 1
+            default: "'BSND'"
+            arg_handler: str_to_enum
     args_signature:
         rw_write: query, key
     labels:
