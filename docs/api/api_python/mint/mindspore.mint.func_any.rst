@@ -3,7 +3,7 @@ mindspore.mint.any
 
 .. py:function:: mindspore.mint.any(input) -> Tensor
 
-    检查 `input` 中是否含有 `True`。
+    检查 `input` 中是否含有 ``True``。
 
     参数：
         - **input** (Tensor) - 输入tensor。
@@ -14,7 +14,7 @@ mindspore.mint.any
     .. py:function:: mindspore.mint.any(input, dim, keepdim=False) -> Tensor
         :noindex:
 
-    检查 `input` 指定维度上是否含有 `True`。
+    检查 `input` 指定维度上是否含有 ``True``。
 
     参数：
         - **input** (Tensor) - 输入tensor。
