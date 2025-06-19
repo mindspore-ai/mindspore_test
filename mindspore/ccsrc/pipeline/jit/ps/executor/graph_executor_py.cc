@@ -660,7 +660,8 @@ py::object GraphExecutorPy::RunInner(const py::tuple &args, const py::object &ph
 }
 
 void GraphExecutorPy::BuildGraph(const py::dict &init_params, const std::string &phase) const {
-  MS_LOG(INFO) << "Start build df graph, phase = " << phase;
+  GraphCompilingScope jit_compiling_scope;
+  MS_LOG(INFO) << "Start building df graph, phase = " << phase;
   if (info_.count(phase) == 0) {
     MS_LOG(INTERNAL_EXCEPTION) << "No phase in executor: " << GetPhasePrefix(phase);
   }
@@ -680,6 +681,7 @@ void GraphExecutorPy::BuildGraph(const py::dict &init_params, const std::string 
   std::map<std::string, std::shared_ptr<Tensor>> init_tensors{};
   ConvertObjectToTensors(init_params, &init_tensors, info_.at(phase)->func_graph);
   backend::BackendManager::GetInstance().ConvertIR(info_.at(phase)->func_graph, init_tensors, backend::IRFormat::kAir);
+  MS_LOG(INFO) << "End building df graph, phase = " << phase;
 }
 
 void GraphExecutorPy::ConvertObjectToTensors(const py::dict &dict,
@@ -770,6 +772,8 @@ py::list GraphExecutorPy::GetRunningPasses() { return opt::PassConfigure::Instan
 
 void GraphExecutorPy::ExportGraph(const std::string &file_name, const std::string &phase, const py::object encrypt,
                                   char *key) {
+  GraphCompilingScope jit_compiling_scope;
+  MS_LOG(INFO) << "Start exporting df graph, phase = " << phase;
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
   auto target = context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET);
@@ -797,6 +801,7 @@ void GraphExecutorPy::ExportGraph(const std::string &file_name, const std::strin
     backend::BackendManager::GetInstance().ExportIR(func_graph, file_name, is_save_to_file, backend::IRFormat::kAir);
 
   if (is_save_to_file) {
+    MS_LOG(INFO) << "End exporting df graph, phase = " << phase;
     return;
   }
   // save_to_mem in GE & save to file use encrypt
@@ -817,6 +822,7 @@ void GraphExecutorPy::ExportGraph(const std::string &file_name, const std::strin
   }
   ofs << std::string(encrypted_model_stream);
   ofs.close();
+  MS_LOG(INFO) << "End exporting df graph, phase = " << phase;
 }
 
 }  // namespace pipeline
