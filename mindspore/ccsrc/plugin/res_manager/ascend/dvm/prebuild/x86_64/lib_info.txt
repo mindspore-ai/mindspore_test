@@ -1,3 +1,3 @@
 [lib information]
 git branch: r2.7
-commit  id: b5033dc6b1d7c06b5dced264d022f579d6961296
+commit  id: 96c2b517e259154cff89e754680460859d84a144
