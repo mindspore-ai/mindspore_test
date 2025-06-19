@@ -662,10 +662,13 @@ void DynOverlapGradRingAttention(const FuncGraphPtr &graph) {
     CNodePtr pre_grad_send_node;
     auto new_str = GetPreviousStr(it->first);
     GetPreNode(grad_recv_map, grad_send_map, new_str, &pre_grad_recv_node, &pre_grad_send_node);
-
-    auto grad_recv_pos = GetValue<int64_t>(grad_recv_node->GetPrimalAttr(RING_ATTENTION_POS));
+    MS_EXCEPTION_IF_NULL(grad_recv_node);
+    auto primal_attr = grad_recv_node->GetPrimalAttr(RING_ATTENTION_POS);
+    MS_EXCEPTION_IF_NULL(primal_attr);
+    auto grad_recv_pos = GetValue<int64_t>(primal_attr);
     if (grad_recv_pos % kIndex2 == 0) {
       MS_EXCEPTION_IF_NULL(grad_fa_node);
+      MS_EXCEPTION_IF_NULL(grad_send_node);
       auto grad_send_input = grad_send_node->input(1);
       MS_EXCEPTION_IF_NULL(grad_send_input);
       for (size_t i = 0; i < grad_fa_node->size(); i++) {
@@ -702,6 +705,8 @@ void DynOverlapGradRingAttention(const FuncGraphPtr &graph) {
       depend_node3->set_abstract(grad_fa_node->abstract()->Clone());
       manager->Replace(grad_fa_node, CreateDepend(grad_fa_node, grad_recv_node, grad_fa_node));
     } else {
+      MS_EXCEPTION_IF_NULL(grad_fa_node);
+      MS_EXCEPTION_IF_NULL(grad_recv_node);
       auto grad_recv_input = grad_recv_node->input(1);
       for (size_t i = 0; i < grad_fa_node->size(); i++) {
         auto grad_fa_input_node = grad_fa_node->input(i);
@@ -801,6 +806,7 @@ void ChangeFAGradInput(std::map<std::string, AnfNodePtr, FaGradCompareMethod> *g
     MS_EXCEPTION_IF_NULL(softmax_max_node);
     MS_EXCEPTION_IF_NULL(softmax_sum_node);
     MS_EXCEPTION_IF_NULL(attention_out_node);
+    MS_EXCEPTION_IF_NULL(cur_grad_fa_node);
 
     auto fwd_graph = softmax_max_node->func_graph();
     auto bck_graph = cur_grad_fa_node->func_graph();
@@ -818,8 +824,10 @@ void ChangeFAGradInput(std::map<std::string, AnfNodePtr, FaGradCompareMethod> *g
       attention_out_node = outputs[kIndex2];
     }
     MS_EXCEPTION_IF_NULL(dout_node);
+    auto dout_cnode = dout_node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(dout_cnode);
     manager->SetEdge(cur_grad_fa_node, ops::FASGradInputIndex::kFASGradInputDyIndex + kIndex1,
-                     dout_node->cast<CNodePtr>()->input(kIndex2));
+                     dout_cnode->input(kIndex2));
     manager->SetEdge(cur_grad_fa_node, ops::FASGradInputIndex::kFASGradInputSoftmaxMaxIndex + kIndex1,
                      softmax_max_node);
     manager->SetEdge(cur_grad_fa_node, ops::FASGradInputIndex::kFASGradInputSoftmaxSumIndex + kIndex1,
@@ -851,9 +859,11 @@ void PrepareFAGradInput(const FuncGraphPtr &graph,
     std::string str_fa_index = it->first.substr(0, underscore_pos);
     int fa_index = std::stoi(str_fa_index);
     if (fa_index != last_fa_index) {
-      auto dout_node = dout_map.find(fa_index)->second;
-      MS_EXCEPTION_IF_NULL(dout_node);
-      dout_node = dout_node->cast<CNodePtr>()->input(kIndex2);
+      auto dout_element = dout_map.find(fa_index)->second;
+      MS_EXCEPTION_IF_NULL(dout_element);
+      auto dout_cnode = dout_element->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(dout_cnode);
+      auto dout_node = dout_cnode->input(kIndex2);
       MS_EXCEPTION_IF_NULL(dout_node);
       auto filter_func = [&](const CNodePtr &cnode) {
         bool filter = IsPrimitiveCNode(cnode, prim::kPrimSplit) || IsPrimitiveCNode(cnode, prim::kPrimTupleGetItem) ||
@@ -1030,6 +1040,7 @@ void CreateCommForCPGrad(const FuncGraphPtr &graph, const std::map<std::string, 
                          CNodePtr *dkv_recv_node, CNodePtr *dkv_send_node) {
   auto manager = graph->manager();
   auto first_fwd_fa = fa_map.begin()->second->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(first_fwd_fa);
   auto operator_info = first_fwd_fa->user_data<parallel::OperatorInfo>();
   MS_EXCEPTION_IF_NULL(operator_info);
   auto fa_info = std::dynamic_pointer_cast<FlashAttentionScoreInfo>(operator_info);

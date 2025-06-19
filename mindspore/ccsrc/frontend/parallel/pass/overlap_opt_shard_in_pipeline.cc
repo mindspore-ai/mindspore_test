@@ -195,6 +195,7 @@ void OverlapOptShardGradInPipeline(const FuncGraphPtr &graph) {
       continue;
     }
     auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     if (!cnode->HasPrimalAttr(kPrimalAttrForwardNodeName)) {
       continue;
     }
