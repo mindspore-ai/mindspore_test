@@ -1,6 +1,6 @@
 #!/bin/bash
 
-MindSpeed_LLM_PATH=../MindSpeed-Core-MS/MindSpeed-LLM
+MindSpeed_LLM_PATH=../scripts/LLM/MindSpeed-LLM
 backup() {
     fname=$1
     cp $fname $fname'_back'
@@ -38,12 +38,28 @@ addSeedAll() {
     sed -i $((lineNumMain - 1))'iimport os' $fname
 }
 
+# 打印16位日志
+modifyTrainingLogs() {
+    fname=$1
+    echo "Modifying training log precision..."
+    # 替换 log_string += ' {}: {:.6E} |'.format(key, avg)
+    sed -i 's/log_string += '\'' {}: {:.6E} |'\''.format(key, avg)/log_string += '\'' {}: {:.16f} |'\''.format(key, avg)/g' "$fname"
+    # 替换 log_string += ' grad norm: {:.3f} |'.format(grad_norm)
+    sed -i 's/log_string += '\'' grad norm: {:.3f} |'\''.format(grad_norm)/log_string += '\'' grad norm: {:.16f} |'\''.format(grad_norm)/g' "$fname"
+    # 替换 log_string += ' params norm: {:.3f} |'.format(params_norm)
+    sed -i 's/log_string += '\'' params norm: {:.3f} |'\''.format(params_norm)/log_string += '\'' params norm: {:.16f} |'\''.format(params_norm)/g' "$fname"
+    echo "Log precision has been updated to 16 decimal places in $fname"
+}
+
 
 backup ${MindSpeed_LLM_PATH}/pretrain_gpt.py
+backup ${MindSpeed_LLM_PATH}/mindspeed_llm/training/training.py
 addSeedAll ${MindSpeed_LLM_PATH}/pretrain_gpt.py
+modifyTrainingLogs ${MindSpeed_LLM_PATH}/mindspeed_llm/training/training.py
 export HCCL_DETERMINISTIC=true
 export ASCEND_LAUNCH_BLOCKING=1
 export NCCL_DETERMINISTIC=1
 bash test_ds3_pretrain.sh > ms_det.txt
 cat ms_det.txt
 recover ${MindSpeed_LLM_PATH}/pretrain_gpt.py
+recover ${MindSpeed_LLM_PATH}/mindspeed_llm/training/training.py
