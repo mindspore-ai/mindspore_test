@@ -44,13 +44,20 @@ class DenseAclnnKernelMod : public AclnnKernelMod {
   void SetFlatternNdLinearTensorStorageInfo(const KernelTensorPtr &new_tensor, const int &new_shape_first,
                                             const ShapeVector &shape);
 
-  std::vector<int64_t> t_perm_{};
-  KernelTensor w_t_tensor_;
-  KernelTensor matmul_tensor_;
-  ScalarPtr one_ = nullptr;
+  std::vector<int64_t> TransposeWeight(const KernelTensor *w_tensor, const std::vector<int64_t> &w_shape,
+                                       const KernelTensorPtr &w_t_tensor);
+
+ private:
+  bool is_bias_none_{false};
+  size_t bias_rank_{0};
+  size_t x_rank_{0};
   int8_t cube_math_type_{0};
-  std::shared_ptr<KernelTensor> input_kernel_tensor_;
-  std::shared_ptr<KernelTensor> output_kernel_tensor_;
+  ScalarPtr one_ = std::make_shared<Int64Imm>(1);
+
+  KernelTensor matmul_tensor_;
+  std::shared_ptr<KernelTensor> w_t_tensor_{nullptr};
+  std::shared_ptr<KernelTensor> input_kernel_tensor_{nullptr};
+  std::shared_ptr<KernelTensor> output_kernel_tensor_{nullptr};
 };
 }  // namespace dense
 }  // namespace kernel
