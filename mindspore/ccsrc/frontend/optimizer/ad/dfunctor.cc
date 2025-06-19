@@ -1027,6 +1027,13 @@ AnfNodePtr DFunctor::MapPrimitiveToK(const CNodePtr &primitive_user, size_t inde
       << "Primal graph \"" << primal->ToString() << "\" is not a ValueNode of Primitive.";
   }
   ScopeGuard scope_guard(primal->scope());
+  // Process VirtualViewGrad's ori_view input op
+  if (index != 0 && IsPrimitiveCNode(primitive_user, prim::kPrimVirtualViewGrad)) {
+    MS_LOG(INFO)
+      << "Map VirtualViewGrad input ori_view's k_graph to itself, not generate actual funcgraph node, cnode: "
+      << primitive_user->DebugString();
+    return primal;
+  }
   // Map Primitive to K
   auto value_node = primal->cast<ValueNodePtr>();
   auto prim = GetValueNode<PrimitivePtr>(value_node);
