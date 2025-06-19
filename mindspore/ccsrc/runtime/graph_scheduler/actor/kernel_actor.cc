@@ -159,7 +159,12 @@ void AddNodeToGraphTracker(const CNodePtr cnode, const std::string &actor_name) 
     if (src_rank != std::numeric_limits<uint32_t>::max()) {
       attrs[device::tracker::kSrcRank] = std::to_string(src_rank);
     }
-    auto dst_rank = get_rank(device::tracker::kDstRank);
+    uint32_t dst_rank;
+    if (common::AnfAlgo::GetCNodeName(cnode) != device::tracker::kSend) {
+      dst_rank = get_rank(device::tracker::kDstRank);
+    } else {
+      dst_rank = get_rank(device::tracker::kSendDstRank);
+    }
     if (dst_rank != std::numeric_limits<uint32_t>::max()) {
       attrs[device::tracker::kDstRank] = std::to_string(dst_rank);
     }
