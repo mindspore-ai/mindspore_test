@@ -96,6 +96,11 @@ std::vector<std::pair<KernelAttr, SequenceAddCpuKernelMod::SequenceAddFunc>> Seq
      .AddOutputAttr(kObjectTypeTuple, kNumberTypeFloat64),
    &SequenceAddCpuKernelMod::LaunchKernel<double>},
   {KernelAttr()
+     .AddInputAttr(kObjectTypeTuple, kNumberTypeBFloat16)
+     .AddInputAttr(kObjectTypeTuple, kNumberTypeBFloat16)
+     .AddOutputAttr(kObjectTypeTuple, kNumberTypeBFloat16),
+   &SequenceAddCpuKernelMod::LaunchKernel<bfloat16>},
+  {KernelAttr()
      .AddInputAttr(kObjectTypeTuple, kNumberTypeInt32)
      .AddInputAttr(kObjectTypeTuple, kNumberTypeInt32)
      .AddOutputAttr(kObjectTypeTuple, kNumberTypeInt32),
