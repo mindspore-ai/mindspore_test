@@ -60,10 +60,10 @@ class DenseThor(Cell):
         in_channels (int): The number of the input channels.
         out_channels (int): The number of the output channels.
         weight_init (Union[Tensor, str, Initializer, numbers.Number]): The trainable weight_init parameter. The dtype
-            is same as `x`. The values of str refer to the function :func:`mindspore.common.initializer`.
+            is same as `x`. The values of str refer to the function :func:`mindspore.common.initializer.initializer`.
             Default: ``'normal'`` .
         bias_init (Union[Tensor, str, Initializer, numbers.Number]): The trainable bias_init parameter. The dtype is
-            same as `x`. The values of str refer to the function :func:`mindspore.common.initializer`.
+            same as `x`. The values of str refer to the function :func:`mindspore.common.initializer.initializer`.
             Default: ``'zeros'`` .
         has_bias (bool): Specifies whether the layer uses a bias vector. Default: ``True`` .
         activation (str): activate function applied to the output of the fully connected layer, eg. 'ReLU'.
