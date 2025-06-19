@@ -54,6 +54,7 @@ Status ActivationInfo::GetAttrs() {
   if (iter != attrs_.end()) {
     MS_EXCEPTION_IF_NULL(iter->second);
     if (iter->second->isa<StringImm>()) {
+      MS_EXCEPTION_IF_NULL(iter->second->cast<StringImmPtr>());
       std::string val = iter->second->cast<StringImmPtr>()->value();
       if ((val != RELU_TYPE) && (val != RELU6_TYPE) && (val != SIGMOID_TYPE)) {
         MS_LOG(ERROR) << name_ << " : Activation type is wrong.";

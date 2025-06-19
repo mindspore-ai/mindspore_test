@@ -38,6 +38,7 @@ bool IsFromParallelOptimizerRs(const AnfNodePtr &node) {
     return false;
   }
   auto prim = GetCNodePrimitive(node->cast<CNodePtr>());
+  MS_EXCEPTION_IF_NULL(prim);
   if (prim->instance_name().find("grad_parallel_optimizer") == std::string::npos) {
     return false;
   }
@@ -49,6 +50,7 @@ bool IsFromGradMirrorAR(const AnfNodePtr &node) {
     return false;
   }
   auto prim = GetCNodePrimitive(node->cast<CNodePtr>());
+  MS_EXCEPTION_IF_NULL(prim);
   if (prim->instance_name().find("grad_mirror") == std::string::npos) {
     return false;
   }
@@ -69,6 +71,7 @@ bool IsTFTAllReduce(const AnfNodePtr &node) {
   if (IsPrimitiveCNode(node, prim::kPrimAllReduce)) {
     auto tftAttr = "tft_report_before";
     auto nodePrim = GetCNodePrimitive(node);
+    MS_EXCEPTION_IF_NULL(nodePrim);
     isTFTAllReduce = nodePrim->HasAttr(tftAttr) && GetValue<bool>(nodePrim->GetAttr(tftAttr));
     MS_LOG(INFO) << "Found TFT allreduce, is enable:" << isTFTAllReduce;
   }

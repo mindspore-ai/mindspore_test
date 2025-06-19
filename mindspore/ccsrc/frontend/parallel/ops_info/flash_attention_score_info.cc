@@ -765,6 +765,7 @@ Status FlashAttentionScoreInfo::GetAttrsForRA() {
   if (enable_ring_attention_iter != attrs_.end()) {
     MS_EXCEPTION_IF_NULL(enable_ring_attention_iter->second);
     if (enable_ring_attention_iter->second->isa<BoolImm>()) {
+      MS_EXCEPTION_IF_NULL(enable_ring_attention_iter->second->cast<BoolImmPtr>());
       enable_ring_attention_ = enable_ring_attention_iter->second->cast<BoolImmPtr>()->value();
       enable_load_balance_ = false;
     } else {
@@ -776,12 +777,14 @@ Status FlashAttentionScoreInfo::GetAttrsForRA() {
   if (enable_ra_send_recv_iter != attrs_.end()) {
     MS_EXCEPTION_IF_NULL(enable_ra_send_recv_iter->second);
     if (enable_ra_send_recv_iter->second->isa<BoolImm>()) {
+      MS_EXCEPTION_IF_NULL(enable_ra_send_recv_iter->second->cast<BoolImmPtr>());
       enable_ra_send_recv_ = enable_ra_send_recv_iter->second->cast<BoolImmPtr>()->value();
     }
   }
   auto enable_ra_cp_iter = attrs_.find(ENABLE_RA_CONTEXT_PARALLEL);
   if (enable_ra_cp_iter != attrs_.end()) {
     MS_EXCEPTION_IF_NULL(enable_ra_cp_iter->second);
+    MS_EXCEPTION_IF_NULL(enable_ring_attention_iter->second->cast<BoolImmPtr>());
     if (enable_ra_cp_iter->second->isa<BoolImm>()) {
       enable_ra_cp_ = enable_ra_cp_iter->second->cast<BoolImmPtr>()->value();
     }
@@ -794,6 +797,7 @@ Status FlashAttentionScoreInfo::GetAttrsForRA() {
   if (enable_flash_sp_iter != attrs_.end()) {
     MS_EXCEPTION_IF_NULL(enable_flash_sp_iter->second);
     if (enable_flash_sp_iter->second->isa<BoolImm>()) {
+      MS_EXCEPTION_IF_NULL(enable_flash_sp_iter->second->cast<BoolImmPtr>());
       enable_flash_sp_ = enable_flash_sp_iter->second->cast<BoolImmPtr>()->value();
       enable_load_balance_ = false;
     } else {

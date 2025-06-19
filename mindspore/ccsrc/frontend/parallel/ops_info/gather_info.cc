@@ -98,6 +98,7 @@ Status GatherInfo::GetManualSplitAttr() {
         MS_LOG(ERROR) << name_ << ": Manual split with offset strategy's format is wrong! Need ValueSequence";
         return FAILED;
       }
+      MS_EXCEPTION_IF_NULL(ele->cast<ValueTuplePtr>());
       std::vector<ValuePtr> value_vector = ele->cast<ValueTuplePtr>()->value();
       if (value_vector.size() != 2) {
         MS_LOG(ERROR) << name_ << ": Size of manual split with offset's element must be 2";
