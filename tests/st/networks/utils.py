@@ -177,11 +177,12 @@ def init_env():
     env_path = os.path.join(os.path.dirname(__file__))
     print("env_path:", env_path)
     mindtorch_path = os.path.abspath(os.path.join(env_path, "msadapter/mindtorch:"))
-    core_ms_path = os.path.abspath(os.path.join(env_path, "MindSpeed-Core-MS"))
-    megatron_path = os.path.abspath(os.path.join(core_ms_path, "Megatron-LM:"))
-    mindspeed_path = os.path.abspath(os.path.join(core_ms_path, "MindSpeed:"))
-    mindspeed_llm_path = os.path.abspath(os.path.join(core_ms_path, "MindSpeed-LLM:"))
-    transformers_path = os.path.abspath(os.path.join(core_ms_path, "transformers/src:"))
-    os.environ['PYTHONPATH'] = (mindtorch_path + megatron_path + mindspeed_path + transformers_path +
+    llm_root_path = os.path.abspath(os.path.join(env_path, "scripts/LLM"))
+    megatron_path = os.path.abspath(os.path.join(llm_root_path, "Megatron-LM:"))
+    mindspeed_path = os.path.abspath(os.path.join(llm_root_path, "MindSpeed:"))
+    mindspeed_llm_path = os.path.abspath(os.path.join(llm_root_path, "MindSpeed-LLM:"))
+    transformers_path = os.path.abspath(os.path.join(llm_root_path, "transformers/src:"))
+    accelerate_path = os.path.abspath(os.path.join(llm_root_path, "accelerate/src:"))
+    os.environ['PYTHONPATH'] = (mindtorch_path + megatron_path + mindspeed_path + transformers_path + accelerate_path +
                                 mindspeed_llm_path + os.environ.get('PYTHONPATH', ''))
     print("os.environ['PYTHONPATH']:", os.environ['PYTHONPATH'])

@@ -37,6 +37,7 @@ namespace kernel {
 #define INPUT_NUM_9 9
 #define INPUT_NUM_10 10
 #define INPUT_NUM_11 11
+#define INPUT_NUM_26 26
 #define OUTPUT_NUM_1 1
 #define OUTPUT_NUM_2 2
 #define OUTPUT_NUM_3 3
@@ -54,6 +55,21 @@ namespace kernel {
 #define INDEX_8 8
 #define INDEX_9 9
 #define INDEX_10 10
+#define INDEX_11 11
+#define INDEX_12 12
+#define INDEX_13 13
+#define INDEX_14 14
+#define INDEX_15 15
+#define INDEX_16 16
+#define INDEX_17 17
+#define INDEX_18 18
+#define INDEX_19 19
+#define INDEX_20 20
+#define INDEX_21 21
+#define INDEX_22 22
+#define INDEX_23 23
+#define INDEX_24 24
+#define INDEX_25 25
 enum InternalKernelMapDtype : int { INTERNEL_KERNEL_MAP_INPUT = 0, INTERNEL_KERNEL_MAP_OUTPUT = 1 };
 class InternalKernelModInOutMap {
  public:

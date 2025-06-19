@@ -53,11 +53,6 @@ mla_preprocess:
       dtype: tensor
     krope_cache:
       dtype: tensor
-    param_n:
-      dtype: int
-    param_head_num:
-      dtype: int
-      default: 8
     param_cache_mode:
       dtype: int
       default: 0
