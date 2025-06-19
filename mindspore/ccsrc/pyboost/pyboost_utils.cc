@@ -174,12 +174,12 @@ kernel::KernelModPtr PyBoostUtils::CreateKernelMod(const PrimitivePtr &prim, con
                                    : cache_helper.GetKernelModKey(op_name, device_name, inputs);
   auto kernel_mod = cache_helper.GetKernelMod(key);
   if (kernel_mod == nullptr) {
-    kernel_mod = device_context->GetKernelExecutor(false)->CreateKernelMod(op_name);
+    kernel_mod = device_context->GetKernelExecutor()->CreateKernelMod(op_name);
     if (kernel_mod == nullptr) {
       if (common::EnvHelper::GetInstance()->GetEnv("MS_OP_PLUGIN_PATH") != nullptr) {
         // if env var MS_OP_PLUGIN_PATH is set, then use custom op plugin to load op
         const std::string custom_op_name = "CustomOpPlugin";
-        kernel_mod = device_context->GetKernelExecutor(false)->CreateKernelMod(custom_op_name);
+        kernel_mod = device_context->GetKernelExecutor()->CreateKernelMod(custom_op_name);
         MS_EXCEPTION_IF_NULL(kernel_mod);
       } else {
         MS_LOG(EXCEPTION) << "Create kernelmod for op " << op_name << " failed";
@@ -219,8 +219,8 @@ DeviceSyncPtr PyBoostUtils::ContiguousByDeviceAddress(const DeviceSyncPtr &devic
   new_device_address->set_device_shape(storage_info->shape);
   new_device_address->set_new_ref_count(SIZE_MAX);
 
-  if (!device_context->GetKernelExecutor(false)->ExecuteKernelTask(
-        runtime::KernelTaskType::kCONTIGUOUS_TASK, {old_device_address}, {new_device_address}, stream_id)) {
+  if (!device_context->GetKernelExecutor()->ExecuteKernelTask(runtime::KernelTaskType::kCONTIGUOUS_TASK,
+                                                              {old_device_address}, {new_device_address}, stream_id)) {
     MS_LOG(EXCEPTION) << "ExecuteKernelTask failed, task_type:" << runtime::KernelTaskType::kCONTIGUOUS_TASK;
   }
   runtime::Pipeline::Get().WaitForward();
@@ -622,7 +622,7 @@ std::pair<bool, KernelAttr> PyBoostUtils::SelectKernel(const std::vector<Abstrac
                                                        const DeviceContext *device_context,
                                                        const std::string &op_name) {
   // only support CPU
-  const auto &kernel_mod = device_context->GetKernelExecutor(false)->CreateKernelMod(op_name);
+  const auto &kernel_mod = device_context->GetKernelExecutor()->CreateKernelMod(op_name);
   if (kernel_mod == nullptr) {
     if (common::EnvHelper::GetInstance()->GetEnv("MS_OP_PLUGIN_PATH") != nullptr) {
       // if env var MS_OP_PLUGIN_PATH is set, then use custom op plugin to load op

@@ -462,8 +462,8 @@ bool LiteRTGraphExecutor::IsNeedExtractTensorData(mindspore::schema::MetaGraphT 
   return false;
 }
 
-static std::shared_ptr<device::GraphExecutor> LiteRTGraphExecutorCreator(const std::shared_ptr<Context> &ctx,
-                                                                         const ConfigInfos &config_infos) {
+static std::shared_ptr<LiteGraphExecutor> LiteRTGraphExecutorCreator(const std::shared_ptr<Context> &ctx,
+                                                                     const ConfigInfos &config_infos) {
   return std::make_shared<LiteRTGraphExecutor>(ctx, config_infos);
 }
 

@@ -204,7 +204,7 @@ void UseCacheToCompileGraphImpl(const KernelGraphPtr &graph, const DeviceContext
   auto &compile_cache_context = CompileCacheContext::GetInstance();
   uint64_t start_time = profiler::GetClockSyscnt();
   compile_cache_context.SetFusionOpBuildInfoFlag(true);
-  device_context->GetKernelExecutor(false)->CreateKernel(graph->execution_order());
+  device_context->GetKernelExecutor()->CreateKernel(graph->execution_order());
   compile_cache_context.SetFusionOpBuildInfoFlag(false);
   (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageCreateKernel, start_time,
                                   profiler::GetClockSyscnt(), 1);
@@ -214,7 +214,7 @@ void UseCacheToCompileGraphImpl(const KernelGraphPtr &graph, const DeviceContext
     auto cpu_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
       {kCPUDevice, device_context->device_context_key().device_id_});
     MS_EXCEPTION_IF_NULL(cpu_context);
-    auto cpu_executor = dynamic_cast<device::cpu::CPUKernelExecutor *>(cpu_context->GetKernelExecutor(false).get());
+    auto cpu_executor = dynamic_cast<device::cpu::CPUKernelExecutor *>(cpu_context->GetKernelExecutor().get());
     MS_EXCEPTION_IF_NULL(cpu_executor);
     cpu_executor->RebuildKernelSelectBackoffOp(graph->execution_order());
   }
@@ -403,8 +403,7 @@ void ResetNodeId(const std::vector<KernelGraphPtr> &graphs) {
 GraphId GraphCompiler::CompileGraph(const GraphSegmentPtr &segment,
                                     const std::pair<AnfNodePtrList, AnfNodePtrList> &io_nodes,
                                     const DeviceContext *device_context,
-                                    const backend::BackendJitConfig &backend_jit_config, device::RunMode run_mode,
-                                    bool run_in_pynative) {
+                                    const backend::BackendJitConfig &backend_jit_config, bool run_in_pynative) {
   MS_EXCEPTION_IF_NULL(segment);
   MS_EXCEPTION_IF_NULL(device_context);
   MS_LOG(INFO) << "Status record: start compile graph.";
@@ -416,21 +415,16 @@ GraphId GraphCompiler::CompileGraph(const GraphSegmentPtr &segment,
   auto kernel_graph =
     session_->ConstructKernelGraph(nodes, io_nodes.second, device_target, backend_jit_config, true, true);
   PROF_END(ConstructKernelGraph);
-  auto actual_run_mode = run_mode;
-  if (actual_run_mode == device::RunMode::kUnknown) {
-    actual_run_mode = device_context->GetRunMode(kernel_graph);
-  }
 
   (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageConstructKernelGraph, start_time,
                                   profiler::GetClockSyscnt(), 1);
   SetGraphDependency(kernel_graph, segment);
-  return CompileGraph(kernel_graph, io_nodes, device_context, actual_run_mode, run_in_pynative);
+  return CompileGraph(kernel_graph, io_nodes, device_context, run_in_pynative);
 }
 
 GraphId GraphCompiler::CompileGraph(const KernelGraphPtr &kernel_graph,
                                     const std::pair<AnfNodePtrList, AnfNodePtrList> &io_nodes,
-                                    const DeviceContext *device_context, device::RunMode run_mode,
-                                    bool run_in_pynative) {
+                                    const DeviceContext *device_context, bool run_in_pynative) {
   MS_EXCEPTION_IF_NULL(session_);
   MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(kernel_graph);
@@ -442,11 +436,7 @@ GraphId GraphCompiler::CompileGraph(const KernelGraphPtr &kernel_graph,
   kernel_graph->erase_flag(kFlagPyNativeRunInGraph);
   kernel_graph->UpdateGraphAquireGilAttr();
 
-  if (run_mode == device::RunMode::kUnknown) {
-    kernel_graph->set_run_mode(device_context->GetRunMode(kernel_graph));
-  } else {
-    kernel_graph->set_run_mode(run_mode);
-  }
+  kernel_graph->set_run_mode(device::RunMode::kKernelMode);
   std::set<KernelGraphPtr> memo;
   RecursiveSetRunMode(kernel_graph, &memo);
   auto manager = MakeManager({kernel_graph});
@@ -457,7 +447,7 @@ GraphId GraphCompiler::CompileGraph(const KernelGraphPtr &kernel_graph,
 
   opt::OptimizationWithoutBackend(kernel_graph);
   // Unify the MindIR, must be before of the kernel_graph optimization.
-  auto kernel_executor = device_context->GetKernelExecutor(false);
+  auto kernel_executor = device_context->GetKernelExecutor();
   if (kernel_executor != nullptr) {
     kernel_executor->AddMindIRPass(kernel_graph);
   }
@@ -541,17 +531,16 @@ bool GraphCompiler::CompileGraphForKernelRunModeUseCache(const FuncGraphPtr &fun
     use_cache_to_compile_graph_ = true;
     BuildStreamForCompileCache(graph, device_context);
     // Create event before create kernelmod
-    device_context->GetKernelExecutor(false)->CreateEventForCache(graph);
+    device_context->GetKernelExecutor()->CreateEventForCache(graph);
     PROF_START(CreateKernel);
-    device_context->GetKernelExecutor(false)->CreateKernel(graph->execution_order());
+    device_context->GetKernelExecutor()->CreateKernel(graph->execution_order());
     PROF_END(CreateKernel);
 #ifdef WITH_BACKEND
     if (!graph->is_from_single_op()) {
       auto cpu_device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
         {kCPUDevice, device_context->device_context_key().device_id_});
       MS_EXCEPTION_IF_NULL(cpu_device_context);
-      auto cpu_executor =
-        dynamic_cast<device::cpu::CPUKernelExecutor *>(cpu_device_context->GetKernelExecutor(false).get());
+      auto cpu_executor = dynamic_cast<device::cpu::CPUKernelExecutor *>(cpu_device_context->GetKernelExecutor().get());
       MS_EXCEPTION_IF_NULL(cpu_executor);
       cpu_executor->RebuildKernelSelectBackoffOp(graph->execution_order());
     }
@@ -625,11 +614,11 @@ GraphId GraphCompiler::CompileGraphImpl(const KernelGraphPtr &graph, const Devic
       DumpIRProto(graph, "before_opt_" + std::to_string(graph->graph_id()));
     }
 #endif
-    MS_EXCEPTION_IF_NULL(device_context->GetKernelExecutor(false));
+    MS_EXCEPTION_IF_NULL(device_context->GetKernelExecutor());
     // Execute optimization pass.
     uint64_t start_time = profiler::GetClockSyscnt();
     PROF_START(OptimizeGraph);
-    device_context->GetKernelExecutor(false)->OptimizeGraph(graph);
+    device_context->GetKernelExecutor()->OptimizeGraph(graph);
     PROF_END(OptimizeGraph);
     (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageOptimizeGraph, start_time,
                                     profiler::GetClockSyscnt(), 1);
@@ -638,7 +627,7 @@ GraphId GraphCompiler::CompileGraphImpl(const KernelGraphPtr &graph, const Devic
     start_time = profiler::GetClockSyscnt();
     PROF_START(CreateKernel);
     graph->SetExecOrderByDefault();
-    device_context->GetKernelExecutor(false)->CreateKernel(graph->execution_order());
+    device_context->GetKernelExecutor()->CreateKernel(graph->execution_order());
     PROF_END(CreateKernel);
     (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageCreateKernel, start_time,
                                     profiler::GetClockSyscnt(), 1);
@@ -649,8 +638,7 @@ GraphId GraphCompiler::CompileGraphImpl(const KernelGraphPtr &graph, const Devic
       auto cpu_device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
         {kCPUDevice, device_context->device_context_key().device_id_});
       MS_EXCEPTION_IF_NULL(cpu_device_context);
-      auto cpu_executor =
-        dynamic_cast<device::cpu::CPUKernelExecutor *>(cpu_device_context->GetKernelExecutor(false).get());
+      auto cpu_executor = dynamic_cast<device::cpu::CPUKernelExecutor *>(cpu_device_context->GetKernelExecutor().get());
       MS_EXCEPTION_IF_NULL(cpu_executor);
       cpu_executor->RebuildKernelSelectBackoffOp(graph->execution_order());
     }
@@ -684,7 +672,7 @@ GraphId GraphCompiler::CompileGraphImpl(const KernelGraphPtr &graph, const Devic
   }
   // Adjust kernel graph before run graph.
   PROF_START(PreprocessBeforeRun);
-  device_context->GetKernelExecutor(false)->PreprocessBeforeRun(graph);
+  device_context->GetKernelExecutor()->PreprocessBeforeRun(graph);
   PROF_END(PreprocessBeforeRun);
   graph->UpdateInternalParameter();
   // Set device target for parameter affinity.

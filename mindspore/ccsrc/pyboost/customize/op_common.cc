@@ -70,8 +70,8 @@ tensor::TensorPtr CopyCustomizeCall(const std::shared_ptr<OpRunner> &op, const T
   } else {
     const auto &input_address = std::dynamic_pointer_cast<device::DeviceAddress>(input_tensor->device_address());
     const auto &output_address = std::dynamic_pointer_cast<device::DeviceAddress>(op->output(0)->device_address());
-    if (!device_context->GetKernelExecutor(false)->ExecuteKernelTask(
-          runtime::KernelTaskType::kCONTIGUOUS_TASK, {input_address}, {output_address}, op->stream_id())) {
+    if (!device_context->GetKernelExecutor()->ExecuteKernelTask(runtime::KernelTaskType::kCONTIGUOUS_TASK,
+                                                                {input_address}, {output_address}, op->stream_id())) {
       MS_LOG(EXCEPTION) << "ExecuteKernelTask failed, task_type:" << runtime::KernelTaskType::kCONTIGUOUS_TASK;
     }
   }

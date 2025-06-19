@@ -23,6 +23,19 @@
 #include "runtime/hardware/device_context_manager.h"
 
 namespace mindspore {
+namespace {
+bool CheckIsAscend910Soc() {
+  const char *soc_name_c = CALL_ASCEND_API(aclrtGetSocName);
+  if (soc_name_c == nullptr) {
+    return false;
+  }
+  std::string soc_name(soc_name_c);
+  if (soc_name.find("910") == std::string::npos) {
+    return false;
+  }
+  return true;
+}
+}  // namespace
 // mindspore-serving check current package for version check with ModelImpl factory.
 API_MODEL_REG(kMS, MsModel);
 
@@ -176,12 +189,7 @@ bool MsModel::CheckDeviceSupport(enum DeviceType device_type) {
     if (device_type != kAscend && device_type != kAscend910) {
       return false;
     }
-    const auto &device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-      {device_target, ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
-    MS_EXCEPTION_IF_NULL(device_context);
-    auto deprecated_ptr = device_context->GetDeprecatedInterface();
-    MS_EXCEPTION_IF_NULL(deprecated_ptr);
-    return deprecated_ptr->CheckIsAscend910Soc();
+    return CheckIsAscend910Soc();
   }
   if (device_type != kGPU) {
     return false;

@@ -147,18 +147,6 @@ bool AscendDeprecatedInterface::IsTsdOpened(const std::shared_ptr<MsContext> &ms
   }
   return ms_context_ptr->get_param<uint32_t>(MS_CTX_TSD_REF) > 0;
 }
-
-bool AscendDeprecatedInterface::CheckIsAscend910Soc() {
-  const char *soc_name_c = CALL_ASCEND_API(aclrtGetSocName);
-  if (soc_name_c == nullptr) {
-    return false;
-  }
-  std::string soc_name(soc_name_c);
-  if (soc_name.find("910") == std::string::npos) {
-    return false;
-  }
-  return true;
-}
 }  // namespace ascend
 }  // namespace device
 }  // namespace mindspore

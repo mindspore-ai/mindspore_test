@@ -26,10 +26,14 @@
 
 namespace mindspore {
 /// \brief Adaptive Graph Executor for cloud Graph Executor to solve interface conflicts.
-class LiteGraphExecutor : public device::GraphExecutor {
+class LiteGraphExecutor {
  public:
   LiteGraphExecutor() = default;
   virtual ~LiteGraphExecutor() = default;
+
+  virtual bool CompileGraph(const FuncGraphPtr &graph, const std::map<string, string> &compile_options) {
+    return false;
+  }
 
   virtual bool CompileGraph(const FuncGraphPtr &graph, const std::map<string, string> &compile_options,
                             uint32_t *graph_id) {
@@ -52,6 +56,11 @@ class LiteGraphExecutor : public device::GraphExecutor {
     (void)inputs;
     (void)outputs;
     (void)compile_options;
+    return false;
+  }
+
+  virtual bool RunGraph(const FuncGraphPtr &graph, const std::vector<tensor::Tensor> &inputs,
+                        std::vector<tensor::Tensor> *outputs, const std::map<string, string> &compile_options) {
     return false;
   }
 

@@ -29,6 +29,7 @@
 #include "src/litert/lite_session.h"
 #include "src/common/helper/infer_helpers.h"
 #include "src/common/config_infos.h"
+#include "src/extendrt/session/lite_graph_executor.h"
 
 namespace mindspore {
 class LiteRTGraphExecutor : public LiteGraphExecutor {

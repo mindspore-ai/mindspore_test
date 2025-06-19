@@ -662,14 +662,14 @@ void LaunchKernels(const KernelGraphPtr &graph, const device::DeviceContext *dev
     }
 
     MS_EXCEPTION_IF_NULL(device_context);
-    MS_EXCEPTION_IF_NULL(device_context->GetKernelExecutor(true));
+    MS_EXCEPTION_IF_NULL(device_context->GetKernelExecutor());
     auto kernel_mod = AnfAlgo::GetKernelMod(node);
     const size_t stream_id = op_run_info->base_op_run_info.stream_id;
     auto stream = device_context->device_res_manager_->GetStream(stream_id);
     static auto no_simu = !common::IsCompileSimulation();
     TrackerACLMemory(inputs, outputs);
-    if (no_simu && !device_context->GetKernelExecutor(false)->LaunchKernel(node, inputs, workspaces, outputs,
-                                                                           kernel_mod, stream)) {
+    if (no_simu &&
+        !device_context->GetKernelExecutor()->LaunchKernel(node, inputs, workspaces, outputs, kernel_mod, stream)) {
       MS_LOG(EXCEPTION) << "Launch kernel failed, name:" << node->fullname_with_scope();
     }
     runtime::DeviceAddressUtils::ProcessCrossStreamAddress(op_run_info->base_op_run_info.op_name, device_context,
@@ -865,8 +865,8 @@ void OpRunner::LaunchKernelTask(const runtime::KernelTaskType &task_type, Device
   MS_EXCEPTION_IF_NULL(device_context);
   MS_LOG(DEBUG) << "Start, task_type:" << task_type;
   static auto no_simu = !common::IsCompileSimulation();
-  if (no_simu && !device_context->GetKernelExecutor(false)->ExecuteKernelTask(task_type, input_addr_list,
-                                                                              output_addr_list, stream_id)) {
+  if (no_simu && !device_context->GetKernelExecutor()->ExecuteKernelTask(task_type, input_addr_list, output_addr_list,
+                                                                         stream_id)) {
     MS_LOG(EXCEPTION) << "ExecuteKernelTask failed, task_type:" << task_type;
   }
   MS_LOG(DEBUG) << "End";
@@ -985,7 +985,7 @@ void DynamicOpRunner::RunSingleOpGraph(const session::BackendOpRunInfoPtr &op_ru
 
     // Launch kernel
     MS_EXCEPTION_IF_NULL(device_context);
-    MS_EXCEPTION_IF_NULL(device_context->GetKernelExecutor(true));
+    MS_EXCEPTION_IF_NULL(device_context->GetKernelExecutor());
     auto kernel_mod = AnfAlgo::GetKernelMod(kernel);
     MS_EXCEPTION_IF_NULL(kernel_mod);
     const size_t stream_id = op_run_info->base_op_run_info.stream_id;
@@ -993,8 +993,8 @@ void DynamicOpRunner::RunSingleOpGraph(const session::BackendOpRunInfoPtr &op_ru
     TrackerACLMemory(input_kernel_tensors, output_kernel_tensors);
 
     if (no_simu &&
-        !device_context->GetKernelExecutor(true)->LaunchKernel(kernel, input_kernel_tensors, workspace_kernel_tensors,
-                                                               output_kernel_tensors, kernel_mod, stream)) {
+        !device_context->GetKernelExecutor()->LaunchKernel(kernel, input_kernel_tensors, workspace_kernel_tensors,
+                                                           output_kernel_tensors, kernel_mod, stream)) {
       MS_LOG(EXCEPTION) << "Launch kernel failed, name:" << kernel->fullname_with_scope();
     }
 

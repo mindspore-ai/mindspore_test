@@ -173,7 +173,8 @@ class BACKEND_EXPORT DeviceAddressUtils {
       return;
     }
 
-    auto &controller = device::HalResManager::GetInstance().GetMultiStreamController(device_context->DeviceName());
+    auto &controller =
+      device::HalResManager::GetInstance().GetMultiStreamController(device_context->device_context_key().device_name_);
     controller->Refresh();
     auto task_id_on_stream = controller->LaunchTaskIdOnStream(op_stream_id);
     MS_LOG(DEBUG) << "Launch stream_id:" << op_stream_id << ", task id:" << task_id_on_stream << ", op_name:" << op_name
@@ -191,7 +192,8 @@ class BACKEND_EXPORT DeviceAddressUtils {
       return;
     }
 
-    auto &controller = device::HalResManager::GetInstance().GetMultiStreamController(device_context->DeviceName());
+    auto &controller =
+      device::HalResManager::GetInstance().GetMultiStreamController(device_context->device_context_key().device_name_);
     controller->Refresh();
     auto task_id_on_stream = controller->LaunchTaskIdOnStream(op_stream_id);
     MS_LOG(DEBUG) << "Launch stream_id:" << op_stream_id << ", task id:" << task_id_on_stream << ", op_name:" << op_name

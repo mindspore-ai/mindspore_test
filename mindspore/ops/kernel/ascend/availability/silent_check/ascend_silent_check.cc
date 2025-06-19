@@ -538,7 +538,7 @@ void SilentChecker::InitOpExecState(OpExecState *op_exec_state, const std::strin
                                     const std::vector<KernelTensor *> &inputs,
                                     const std::vector<KernelTensor *> &outputs, DeviceAddrInfo *output) {
   MS_EXCEPTION_IF_NULL(op_exec_state);
-  auto kernel_mod = device_context_->GetKernelExecutor(false)->CreateKernelMod(op_name);
+  auto kernel_mod = device_context_->GetKernelExecutor()->CreateKernelMod(op_name);
   MS_EXCEPTION_IF_NULL(kernel_mod);
   op_exec_state->kernel = kernel_mod;
   op_exec_state->op_name = op_name;

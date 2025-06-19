@@ -35,7 +35,8 @@ StreamPy::StreamPy(int priority) {
   device_ctx_->device_res_manager_->CreateStreamWithPriority(&stream_id_, priority);
   MS_LOG(DEBUG) << "stream_id:" << stream_id_ << ", priority:" << priority;
   device_ctx_->device_res_manager_->set_single_op_multi_stream_enable(true);
-  auto &controller = device::HalResManager::GetInstance().GetMultiStreamController(device_ctx_->DeviceName());
+  auto &controller =
+    device::HalResManager::GetInstance().GetMultiStreamController(device_ctx_->device_context_key().device_name_);
   controller->Refresh();
 }
 
@@ -71,7 +72,8 @@ bool StreamPy::Query() {
 void StreamPy::Synchronize() {
   MS_LOG(DEBUG) << "stream_id:" << stream_id_;
   runtime::Pipeline::Get().WaitForward();
-  auto &controller = device::HalResManager::GetInstance().GetMultiStreamController(device_ctx_->DeviceName());
+  auto &controller =
+    device::HalResManager::GetInstance().GetMultiStreamController(device_ctx_->device_context_key().device_name_);
   controller->Refresh();
   (void)controller->SyncStream(stream_id_);
 }
@@ -110,7 +112,8 @@ void SetCurStream(const StreamPyPtr &cur_stream) {
 void Synchronize() {
   auto device_ctx = GetDeviceCtx();
   runtime::Pipeline::Get().WaitForward();
-  auto &controller = device::HalResManager::GetInstance().GetMultiStreamController(device_ctx->DeviceName());
+  auto &controller =
+    device::HalResManager::GetInstance().GetMultiStreamController(device_ctx->device_context_key().device_name_);
   controller->Refresh();
   (void)controller->SyncAllStreams();
 }

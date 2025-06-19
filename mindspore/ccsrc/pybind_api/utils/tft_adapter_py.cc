@@ -38,6 +38,11 @@ DeviceContextPtr GetDeviceCtx() {
   }
   return device_ctx;
 }
+
+constexpr auto RS_NORMAL = "RS_NORMAL";
+constexpr auto RS_UCE_HIGHLEVEL = "RS_UCE_HIGHLEVEL";
+constexpr auto RS_UCE_LOWLEVEL = "RS_UCE_LOWLEVEL";
+constexpr auto RS_UNKNOWN = "RS_UNKNOWN";
 }  // namespace
 
 bool GetMemUceInfo(int32_t device_id) {
@@ -114,7 +119,7 @@ std::string GetUceProcessStrategyForKbk(const DeviceMemInfo &persistent_mem_bloc
           if ((device_tensor_end_addr >= mem_uce_start_addr && device_tensor_start_addr <= mem_uce_start_addr) ||
               (mem_uce_end_addr >= device_tensor_start_addr && mem_uce_start_addr <= device_tensor_start_addr)) {
             MS_LOG(INFO) << "UCE process strategy is RS_UCE_HIGHLEVEL.";
-            return device::RS_UCE_HIGHLEVEL;
+            return RS_UCE_HIGHLEVEL;
           }
         }
       }
@@ -122,7 +127,7 @@ std::string GetUceProcessStrategyForKbk(const DeviceMemInfo &persistent_mem_bloc
 
     // Return RS_UCE_LOWLEVEL if overlap of memory pool addr and mem uce addr.
     if (GetUceLevelWithMemPoolForKbk(persistent_mem_blocks_info, common_mem_blocks_info, mem_uce_addr)) {
-      return device::RS_UCE_LOWLEVEL;
+      return RS_UCE_LOWLEVEL;
     }
   } catch (const std::exception &e) {
     MS_LOG(ERROR) << "There is an error: " << e.what();
@@ -130,7 +135,7 @@ std::string GetUceProcessStrategyForKbk(const DeviceMemInfo &persistent_mem_bloc
 
   MS_LOG(INFO) << "UCE process strategy is RS_NORMAL.";
 
-  return device::RS_NORMAL;
+  return RS_NORMAL;
 }
 
 std::string GetUceProcessStrategy() {

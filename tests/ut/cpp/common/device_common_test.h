@@ -221,9 +221,9 @@ class TestKernelExecutor : public device::KernelExecutor {
   }
 };
 
-class TestGraphExecutor : public device::GraphExecutor {
+class TestGraphExecutor {
  public:
-  ~TestGraphExecutor() override = default;
+  ~TestGraphExecutor() = default;
   bool RunGraph(const FuncGraphPtr &graph, const std::vector<tensor::TensorPtr> &inputs,
                 std::vector<tensor::TensorPtr> *outputs, const std::map<string, string> &compile_options) {
     MS_LOG(INFO) << "Ut run test graph.";
@@ -245,7 +245,7 @@ class TestGraphExecutor : public device::GraphExecutor {
   }
 };
 
-class TestDeviceContext : public device::DeviceInterface<TestGraphExecutor, TestKernelExecutor, TestDeviceResManager> {
+class TestDeviceContext : public device::DeviceInterface<TestKernelExecutor, TestDeviceResManager> {
  public:
   explicit TestDeviceContext(const DeviceContextKey &device_context_key) : DeviceInterface(device_context_key) {
     graph_executor_ = std::make_shared<TestGraphExecutor>();
@@ -254,7 +254,8 @@ class TestDeviceContext : public device::DeviceInterface<TestGraphExecutor, Test
 
   virtual void Initialize() {}
   virtual DeviceType GetDeviceType() const { return DeviceType::kCPU; }
-  device::RunMode GetRunMode(const FuncGraphPtr &func_graph) const override { return device::RunMode::kKernelMode; }
+private:
+  std::shared_ptr<TestGraphExecutor> graph_executor_;
 };
 
 class TestResManager : public device::HalResBase {

@@ -64,7 +64,7 @@ void CheckSumViaCallback(const CNodePtr &cnode, const std::vector<KernelTensor *
   // multi stream protect
   auto stream_id = AnfAlgo::GetStreamId(cnode);
   auto &multi_stream_controller =
-    device::HalResManager::GetInstance().GetMultiStreamController(device_context->DeviceName());
+    device::HalResManager::GetInstance().GetMultiStreamController(device_context->device_context_key().device_name_);
   if (stream_id != kDefaultStreamIndex) {
     multi_stream_controller->DispatchRecordWaitEvent(stream_id, kDefaultStreamIndex);
   }

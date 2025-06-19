@@ -658,8 +658,8 @@ std::vector<tensor::Tensor> TensorRTExecutor::GetOutputInfos(uint32_t) {
   return tensors;
 }
 
-static std::shared_ptr<device::GraphExecutor> TensorRTGraphExecutorCreator(const std::shared_ptr<Context> &ctx,
-                                                                           const ConfigInfos &config_infos) {
+static std::shared_ptr<LiteGraphExecutor> TensorRTGraphExecutorCreator(const std::shared_ptr<Context> &ctx,
+                                                                       const ConfigInfos &config_infos) {
   auto executor = std::make_shared<TensorRTExecutor>(ctx, config_infos);
   if (!executor->Init()) {
     return nullptr;

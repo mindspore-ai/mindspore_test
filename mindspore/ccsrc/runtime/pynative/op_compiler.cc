@@ -88,7 +88,7 @@ void SetIgnoreSyncHostToDeviceList(const SimpleGraphPtr &simple_graph, const Dev
     const auto &edges = single_op->inputs_;
 
     MS_EXCEPTION_IF_NULL(device_context);
-    auto kernel_executor = device_context->GetKernelExecutor(false);
+    auto kernel_executor = device_context->GetKernelExecutor();
     MS_EXCEPTION_IF_NULL(kernel_executor);
     std::vector<size_t> ignore_input_index_list = kernel_executor->GetLaunchIgnoredInputAddressIdx(kernel);
 
@@ -192,8 +192,7 @@ OpCompilerInfoPtr OpCompiler::Compile(const session::BackendOpRunInfoPtr &op_run
   MS_EXCEPTION_IF_NULL(graph);
 
   graph->set_run_mode(device::RunMode::kKernelMode);
-  bool use_dynamic_shape_process = op_run_info->base_op_run_info.use_dynamic_shape_process;
-  auto kernel_executor = device_context->GetKernelExecutor(use_dynamic_shape_process);
+  auto kernel_executor = device_context->GetKernelExecutor();
   MS_EXCEPTION_IF_NULL(kernel_executor);
 
   opt::OptimizationWithoutBackend(graph);
@@ -261,7 +260,7 @@ void OpCompiler::KernelBuild(const OpCompilerInfoPtr &op_compiler_info, const De
   const auto &nodes = graph->execution_order();
   (void)std::copy(nodes.begin(), nodes.end(), std::back_inserter(node_to_build));
   // Kernel build
-  auto kernel_executor = device_context->GetKernelExecutor(is_dynamic);
+  auto kernel_executor = device_context->GetKernelExecutor();
   MS_EXCEPTION_IF_NULL(kernel_executor);
   kernel_executor->CreateKernel(node_to_build);
   kernel_executor->PreprocessBeforeRun(graph);

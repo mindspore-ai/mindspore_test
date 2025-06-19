@@ -51,7 +51,7 @@ using mindspore::device::KernelInfo;
 using KernelTensor = kernel::KernelTensor;
 using KernelTensorPtr = kernel::KernelTensorPtr;
 using CompileFunc = std::function<KernelGraphPtr(
-  const GraphSegmentPtr &, const std::pair<AnfNodePtrList, AnfNodePtrList> &, const DeviceContext *, device::RunMode)>;
+  const GraphSegmentPtr &, const std::pair<AnfNodePtrList, AnfNodePtrList> &, const DeviceContext *)>;
 
 template <typename T>
 using OpContext = OpRTContext<T>;

@@ -210,8 +210,6 @@ class GPUDeviceContext : public DeviceInterface<GPUKernelExecutor, GPUDeviceResM
   // Release device memory, stream, cudnn and cublas handle, etc.
   void Destroy() override;
 
-  RunMode GetRunMode(const FuncGraphPtr &func_graph) const override { return RunMode::kKernelMode; }
-
   DeprecatedInterface *GetDeprecatedInterface() override;
 
   static uint32_t GetDeviceCount();

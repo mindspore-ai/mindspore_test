@@ -58,16 +58,7 @@ GraphId MultiGraphAclSession::CompileGraphImpl(const AnfNodePtrList &lst, const 
   auto kernel_graph =
     SessionBasic::ConstructKernelGraph(lst, outputs, device::DeviceType::kUnknown, backend::BackendJitConfig(), false);
   MS_EXCEPTION_IF_NULL(kernel_graph);
-#ifdef ENABLE_D
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  const auto &device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-    {kAscendDevice, ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
-  MS_EXCEPTION_IF_NULL(device_context);
-  auto deprecated_ptr = device_context->GetDeprecatedInterface();
-  MS_EXCEPTION_IF_NULL(deprecated_ptr);
-  deprecated_ptr->AclOptimizer(kernel_graph);
-#else
+#ifndef ENABLE_D
   auto optimizer = std::make_shared<opt::GraphOptimizer>();
   auto pm = std::make_shared<opt::PassManager>("310_multi_graph_pm");
   optimizer->AddPassManager(pm);

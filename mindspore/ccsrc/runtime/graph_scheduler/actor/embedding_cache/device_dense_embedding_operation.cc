@@ -240,8 +240,8 @@ void DeviceDenseEmbeddingOperation::BuildEmbeddingCacheLookupKernel() {
 
   // 3. Kernel build process.
   MS_EXCEPTION_IF_NULL(device_context_);
-  MS_EXCEPTION_IF_NULL(device_context_->GetKernelExecutor(false));
-  device_context_->GetKernelExecutor(false)->CreateKernel({embedding_cache_lookup_node_});
+  MS_EXCEPTION_IF_NULL(device_context_->GetKernelExecutor());
+  device_context_->GetKernelExecutor()->CreateKernel({embedding_cache_lookup_node_});
   AnfAlgo::SetStreamId(stream_id_, embedding_cache_lookup_node_.get());
 
   DeviceAddressUtils::CreateParameterDeviceAddress(device_context_, graph);
@@ -273,8 +273,8 @@ void DeviceDenseEmbeddingOperation::BuildEmbeddingCacheUpdateKernel() {
 
   // 3. Kernel build process.
   MS_EXCEPTION_IF_NULL(device_context_);
-  MS_EXCEPTION_IF_NULL(device_context_->GetKernelExecutor(false));
-  device_context_->GetKernelExecutor(false)->CreateKernel({embedding_cache_update_node_});
+  MS_EXCEPTION_IF_NULL(device_context_->GetKernelExecutor());
+  device_context_->GetKernelExecutor()->CreateKernel({embedding_cache_update_node_});
   AnfAlgo::SetStreamId(stream_id_, embedding_cache_update_node_.get());
 
   DeviceAddressUtils::CreateParameterDeviceAddress(device_context_, graph);
@@ -331,11 +331,11 @@ bool DeviceDenseEmbeddingOperation::LookupDeviceCache(void *indices, void *embed
   output_kernel_tensors[kIndex1]->set_device_ptr(outputs);
 
   MS_ERROR_IF_NULL(device_context_);
-  MS_ERROR_IF_NULL(device_context_->GetKernelExecutor(false));
+  MS_ERROR_IF_NULL(device_context_->GetKernelExecutor());
   auto kernel_mod = AnfAlgo::GetKernelMod(embedding_cache_lookup_node_);
   auto stream = device_context_->device_res_manager_->GetStream(stream_id_);
-  auto ret = device_context_->GetKernelExecutor(false)->LaunchKernel(embedding_cache_lookup_node_, input_kernel_tensors,
-                                                                     {}, output_kernel_tensors, kernel_mod, stream);
+  auto ret = device_context_->GetKernelExecutor()->LaunchKernel(embedding_cache_lookup_node_, input_kernel_tensors, {},
+                                                                output_kernel_tensors, kernel_mod, stream);
   if (!ret) {
     MS_LOG(ERROR) << "Launch kernel: " << embedding_cache_lookup_node_->fullname_with_scope() << " failed.";
     return false;
@@ -395,11 +395,11 @@ bool DeviceDenseEmbeddingOperation::UpdateDeviceCache(void *indices, void *updat
   output_kernel_tensors[kIndex0]->set_device_ptr(embedding_cache);
 
   MS_ERROR_IF_NULL(device_context_);
-  MS_ERROR_IF_NULL(device_context_->GetKernelExecutor(false));
+  MS_ERROR_IF_NULL(device_context_->GetKernelExecutor());
   auto kernel_mod = AnfAlgo::GetKernelMod(embedding_cache_update_node_);
   auto stream = device_context_->device_res_manager_->GetStream(stream_id_);
-  auto ret = device_context_->GetKernelExecutor(false)->LaunchKernel(embedding_cache_update_node_, input_kernel_tensors,
-                                                                     {}, output_kernel_tensors, kernel_mod, stream);
+  auto ret = device_context_->GetKernelExecutor()->LaunchKernel(embedding_cache_update_node_, input_kernel_tensors, {},
+                                                                output_kernel_tensors, kernel_mod, stream);
   if (!ret) {
     MS_LOG(ERROR) << "Launch kernel: " << embedding_cache_update_node_->fullname_with_scope() << " failed.";
     return false;
