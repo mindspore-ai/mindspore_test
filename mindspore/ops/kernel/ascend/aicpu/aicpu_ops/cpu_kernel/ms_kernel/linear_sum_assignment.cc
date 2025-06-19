@@ -111,13 +111,13 @@ uint32_t LinearSumAssignmentCpuKernel::Compute(CpuKernelContext &ctx) {
 
 template <typename T>
 uint32_t LinearSumAssignmentCpuKernel::SolveProblem(CpuKernelContext &ctx, T *cost, int64_t *a, int64_t *b) {
-  std::shared_ptr<float> cost_matrix_buf(new float[nr * raw_nc]);
+  std::vector<float> cost_matrix_buf(nr * raw_nc, 0);
   for (uint64_t i = 0; i < nr; i++) {
     for (uint64_t j = 0; j < raw_nc; j++) {
-      *(cost_matrix_buf.get() + i * raw_nc + j) = static_cast<float>(*(cost + i * raw_nc + j));
+      cost_matrix_buf[i * raw_nc + j] = static_cast<float>(*(cost + i * raw_nc + j));
     }
   }
-  return Solve<float>(ctx, cost_matrix_buf.get(), a, b);
+  return Solve<float>(ctx, cost_matrix_buf.data(), a, b);
 }
 
 #define SOLVE_PROBLEM_FLOAT(TYPE)                                                                                  \

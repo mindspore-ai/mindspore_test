@@ -128,8 +128,8 @@ class CachedInterpolationCalculator {
 
 inline int64_t Bound(int64_t val, int64_t limit) { return std::min(limit - 1, std::max(int64_t{0}, val)); }
 
-std::shared_ptr<const float[]> InitCoeffsTable(const double a) {
-  auto coeffs_table = std::shared_ptr<float[]>(new float[(kTableSize + 1) * 2]);
+std::vector<float> InitCoeffsTable(const double a) {
+  std::vector<float> coeffs_table((kTableSize + 1) * 2, 0);
   for (int i = 0; i <= kTableSize; ++i) {
     float x = i * 1.0 / kTableSize;
     coeffs_table[i * calnum2] = ((a + calnum2) * x - (a + calnum3)) * x * x + 1;
@@ -139,7 +139,7 @@ std::shared_ptr<const float[]> InitCoeffsTable(const double a) {
   return coeffs_table;
 }
 
-std::shared_ptr<const float[]> GetCoeffsTable(const bool use_keys_cubic) {
+std::vector<float> GetCoeffsTable(const bool use_keys_cubic) {
   return use_keys_cubic ? InitCoeffsTable(-0.5f) : InitCoeffsTable(-0.75f);
 }
 

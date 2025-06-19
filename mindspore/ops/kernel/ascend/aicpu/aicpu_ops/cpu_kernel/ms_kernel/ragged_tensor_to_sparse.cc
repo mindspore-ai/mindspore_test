@@ -120,7 +120,7 @@ bool RaggedTensorToSparseCpuKernel::IsCompleted(const std::vector<int64_t> &pos,
 
 void RaggedTensorToSparseCpuKernel::input_list(CpuKernelContext *ctx, OpInputList *list) {
   if (ctx->Input(0)->NumElements() > 0) {
-    static uint32_t stop;
+    static uint32_t stop{0};
     stop = static_cast<uint32_t>(ctx->Input(0)->NumElements());
     *list = OpInputList(ctx, 0, stop);
   }

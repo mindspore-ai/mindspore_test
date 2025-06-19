@@ -286,7 +286,7 @@ uint32_t DivCpuKernel::BcastComputeInt(CpuKernelContext &ctx, Bcast &bcast) {
         CUST_KERNEL_LOG_ERROR(ctx, "Invalid argumengt: Division by zero.");
         return KERNEL_STATUS_INNER_ERROR;
       } else {
-        T mod;
+        T mod{0};
         mod = *(in0 + bcast.GetBroadcastXIndex(i)) % *(in1 + bcast.GetBroadcastYIndex(i));
         if (((*(in0 + bcast.GetBroadcastXIndex(i))) * (*(in1 + bcast.GetBroadcastYIndex(i))) < static_cast<T>(0)) &&
             (mod != 0))
