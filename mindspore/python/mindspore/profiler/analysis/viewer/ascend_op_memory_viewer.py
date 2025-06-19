@@ -285,24 +285,24 @@ class AscendOpMemoryViewer:
                 else (free_event.create_at - alloc_event.create_at) / self.NS_TO_US
             ),  # "Duration(us)"
             self.EMPTY_VALUE,  # "Active Duration(us)"
-            alloc_event.alloc_size
+            alloc_event.used_size
             / self.BYTES_TO_MB,  # "Allocation Total Allocated(MB)"
-            alloc_event.used_size / self.BYTES_TO_MB,  # "Allocation Total Reserved(MB)"
-            alloc_event.alloc_size / self.BYTES_TO_MB,  # "Allocation Total Active(MB)"
-            (
-                self.EMPTY_VALUE
-                if free_event is None
-                else free_event.alloc_size / self.BYTES_TO_MB
-            ),  # "Release Total Allocated(MB)"
+            alloc_event.alloc_size / self.BYTES_TO_MB,  # "Allocation Total Reserved(MB)"
+            alloc_event.used_size / self.BYTES_TO_MB,  # "Allocation Total Active(MB)"
             (
                 self.EMPTY_VALUE
                 if free_event is None
                 else free_event.used_size / self.BYTES_TO_MB
-            ),  # "Release Total Reserved(MB)"
+            ),  # "Release Total Allocated(MB)"
             (
                 self.EMPTY_VALUE
                 if free_event is None
                 else free_event.alloc_size / self.BYTES_TO_MB
+            ),  # "Release Total Reserved(MB)"
+            (
+                self.EMPTY_VALUE
+                if free_event is None
+                else free_event.used_size / self.BYTES_TO_MB
             ),  # "Release Total Active(MB)"
             alloc_event.stream_ptr,  # "Stream Ptr"
             self.DEVICE_TYPE_FMT.format(alloc_event.device_id),  # "Device Type"
