@@ -261,7 +261,7 @@ def copy_h2d_d2h_h2h_empty(non_blocking):
     assert np.all(a.asnumpy() == b.asnumpy())
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('non_blocking', [False, True])
 def test_copy_h2d_d2h_h2h(non_blocking):
     """
