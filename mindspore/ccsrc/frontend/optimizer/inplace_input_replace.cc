@@ -144,7 +144,7 @@ void DoInplaceInputReplace(const FuncGraphPtr &func_graph, const OptimizerPtr &o
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
   if (context->CanDump(kIntroductory)) {
-    DumpIR("opt_before_do_inplace_input_replace_" + func_graph->ToString() + ".ir", func_graph);
+    DumpIR("opt_do_inplace_input_replace_before.ir", func_graph);
   }
 #endif
 
@@ -157,7 +157,7 @@ void DoInplaceInputReplace(const FuncGraphPtr &func_graph, const OptimizerPtr &o
 
 #ifdef ENABLE_DUMP_IR
   if (context->CanDump(kIntroductory)) {
-    DumpIR("opt_after_do_inplace_input_replace_" + func_graph->ToString() + ".ir", func_graph);
+    DumpIR("opt_do_inplace_input_replace_after.ir", func_graph);
   }
 #endif
 }

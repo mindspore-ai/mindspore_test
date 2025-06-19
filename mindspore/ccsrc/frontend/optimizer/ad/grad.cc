@@ -417,11 +417,10 @@ void InsertVirtualViewGradInner(const FuncGraphPtr &func_graph, const CNodePtr &
   AnfNodePtr first_virtual_view_grad_node = nullptr;
   AnfNodePtr first_new_umonad = nullptr;
   while (true) {
-    auto view_output_node_inputs = view_output->inputs();
+    const auto &view_output_node_inputs = view_output->inputs();
     auto view_input = view_output_node_inputs[1];
     const auto &ori_view_op = GetCNodePrimitive(view_output)->Clone();
     auto view_op_node = NewValueNode(ori_view_op);
-    view_op_node->set_abstract(std::make_shared<abstract::PrimitiveAbstractClosure>(ori_view_op));
     // To calculate dout for view_input and view_output, insert origin view cnode inputs:
     // ==> view_output = {kPrimViewOp, view_input, other_view_arg1, other_view_arg2, ..., U_for_view}
     // ==> From: VirtualViewGrad(view_input, view_output, U_for_virtual_view_grad)
@@ -690,11 +689,8 @@ bool MergeForward(const FuncGraphPtr &root, const opt::OptimizerPtr &opt) {
   return change;
 }
 
-void VirtualViewGradInsert(const FuncGraphPtr &root, const opt::OptimizerPtr &opt) {
-  MS_EXCEPTION_IF_NULL(root);
-  auto manager = opt->manager();
-  MS_EXCEPTION_IF_NULL(manager);
-  for (const auto &node : TopoSort(root->get_return())) {
+void VirtualViewGradInsertInner(const FuncGraphPtr &func_graph, const FuncGraphManagerPtr &manager) {
+  for (const auto &node : TopoSort(func_graph->get_return())) {
     auto cnode = node->cast<CNodePtr>();
     if (cnode == nullptr) {
       continue;
@@ -719,14 +715,28 @@ void VirtualViewGradInsert(const FuncGraphPtr &root, const opt::OptimizerPtr &op
         }
         continue;
       }
-      (void)InsertVirtualViewGradAfterInplaceCNode(cnode, view_node, root, manager);
+      (void)InsertVirtualViewGradAfterInplaceCNode(cnode, view_node, func_graph, manager);
     }
   }
+}
+
+void VirtualViewGradInsert(const FuncGraphPtr &root, const opt::OptimizerPtr &opt) {
+  MS_EXCEPTION_IF_NULL(root);
+  auto manager = opt->manager();
+  MS_EXCEPTION_IF_NULL(manager);
+
+  // Insert VirtualViewGrad op for func_graph and sub_graphs
+  VirtualViewGradInsertInner(root, manager);
+  const auto &sub_graphs = root->func_graphs_used_total();
+  for (auto sub_graph : sub_graphs) {
+    VirtualViewGradInsertInner(sub_graph, manager);
+  }
+
 #ifdef ENABLE_DUMP_IR
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
   if (context->CanDump(kIntroductory)) {
-    DumpIR("opt_after_insert_VirtualViewGrad.ir", root);
+    DumpIR("opt_insert_VirtualViewGrad_after.ir", root);
   }
 #endif
 }
