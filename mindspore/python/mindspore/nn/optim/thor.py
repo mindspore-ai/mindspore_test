@@ -445,7 +445,7 @@ class ThorGpu(Optimizer):
     def _define_gpu_reducer(self, split_indices):
         """define gpu reducer"""
         self.parallel_mode = context.get_auto_parallel_context("parallel_mode")
-        self.is_distributed = (self.parallel_mode != ParallelMode.STAND_ALONE)
+        self.is_distributed = self.parallel_mode != ParallelMode.STAND_ALONE
         if self.is_distributed:
             mean = _get_gradients_mean()
             degree = _get_device_num()
@@ -764,7 +764,7 @@ class ThorAscend(Optimizer):
     def _define_ascend_reducer(self, split_indices):
         """define ascend reducer"""
         self.parallel_mode = context.get_auto_parallel_context("parallel_mode")
-        self.is_distributed = (self.parallel_mode != ParallelMode.STAND_ALONE)
+        self.is_distributed = self.parallel_mode != ParallelMode.STAND_ALONE
         if self.is_distributed:
             mean = _get_gradients_mean()
             degree = _get_device_num()

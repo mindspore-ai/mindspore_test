@@ -149,7 +149,7 @@ class DenseThor(Cell):
         self.matmul = ops.MatMul(transpose_b=True)
         self.cube_matmul = ops.CusMatMulCube(transpose_a=True)
         self.cast = ops.Cast()
-        self.is_nsp_layer = (out_channels == 2)
+        self.is_nsp_layer = out_channels == 2
 
     def save_gradient(self, dout):
         """
