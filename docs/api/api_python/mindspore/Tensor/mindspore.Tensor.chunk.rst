@@ -1,7 +1,7 @@
 mindspore.Tensor.chunk
 ======================
 
-.. py:method:: mindspore.Tensor.chunk(chunks, dim=0) -> Tensor
+.. py:method:: mindspore.Tensor.chunk(chunks, dim=0) -> tuple[Tensor]
 
     沿着指定轴 `dim` 将输入Tensor切分成 `chunks` 个sub-tensor。
 
@@ -24,7 +24,7 @@ mindspore.Tensor.chunk
         - **ValueError** - 参数 `dim` 超出 :math:`[-self.ndim, self.ndim)` 范围。
         - **ValueError** - 参数 `chunks` 不是正数。
 
-    .. py:method:: mindspore.Tensor.chunk(chunks, axis=0) -> Tensor
+    .. py:method:: mindspore.Tensor.chunk(chunks, axis=0) -> tuple[Tensor]
         :noindex:
 
     沿着指定轴 `axis` 将输入Tensor切分成 `chunks` 个sub-tensor。

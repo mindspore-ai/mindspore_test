@@ -5621,7 +5621,7 @@ def dstack(tensors):
           1-D or 2-D tensors must have the same shape.
 
     Args:
-        tensors (Union(List[Tensor], Tuple[Tensor])): The list of tensors or tuple of tensors.
+        tensors (Union(List[Tensor], tuple[Tensor])): The list of tensors or tuple of tensors.
 
     Returns:
         Tensor

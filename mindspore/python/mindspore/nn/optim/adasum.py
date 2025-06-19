@@ -430,7 +430,7 @@ class AdaSumByGradWrapCell(Cell):
             requires only one input.
 
     Inputs:
-        - **grads** (Tuple[Tensor]) - Tuple of gradients, same with the input of passed optimizer.
+        - **grads** (tuple[Tensor]) - Tuple of gradients, same with the input of passed optimizer.
 
     Raises:
         RuntimeError: If `parallel_mode` uses `stand_alone` mode, AdaSum only supports use in distributed scenarios.
