@@ -65,6 +65,7 @@
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/add_rms_norm_quant_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/add_cast_rms_norm_cast_quant_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/add_cast_rms_norm_cast_fusion.h"
+#include "plugin/device/ascend/optimizer/ir_fusion_infer/gather_pre_rms_norm_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/transpose_batch_matmul_transpose_fusion.h"
 #include "backend/common/pass/other/avg_pool_grad_for_ge.h"
 #include "backend/common/pass/ir_fusion/mc2_fusion.h"
@@ -191,6 +192,7 @@ PassManagerPtr GetBackendFusionGroupPassManager() {
   pm->AddFusionPass(std::make_shared<opt::RmsNormAddQuantFusion>(), infer_boost);
   pm->AddFusionPass(std::make_shared<opt::RmsNormQuantFusion>(), infer_boost);
   pm->AddFusionPass(std::make_shared<opt::AddCastRmsNormCastFusion>(), infer_boost);
+  pm->AddFusionPass(std::make_shared<opt::GatherPreRmsNormFusion>(), infer_boost);
   pm->AddFusionPass(std::make_shared<opt::ShapeReshapeFusion>(), infer_boost);
   pm->AddFusionPass(std::make_shared<opt::SplitConcatFusion>());
   pm->AddFusionPass(std::make_shared<opt::InferenceQbmmElemwiseFusion>(), infer_boost);
