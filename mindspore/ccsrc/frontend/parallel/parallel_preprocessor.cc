@@ -507,6 +507,9 @@ static OperatorInfoPtr SetMakeListForIFA(CNodePtr make_list, const CNodePtr &nex
     (void)make_list_prim->DelAttr(STAND_ALONE);
   }
   OperatorInfoPtr next_operator = next_node->user_data<OperatorInfo>();
+  if (next_operator == nullptr) {
+    return nullptr;
+  }
   StrategyPtr next_node_strategy = next_operator->strategy();
   Strategies key_value_strategies;
   Dimensions key_value_dim = next_node_strategy->GetInputDim().at(kv_index);
@@ -1253,7 +1256,7 @@ void ParallelPreprocessor::HandleRootReshapeAndSaveStrategy(const std::vector<An
     }
 
     auto prim = GetValueNode<PrimitivePtr>(cnode->input(0));
-    if (prim->name() != RESHAPE) {
+    if (prim == nullptr || prim->name() != RESHAPE) {
       continue;
     }
 
