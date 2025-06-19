@@ -466,7 +466,7 @@ void CPUKernelRuntime::RunKernel(const CNodePtr &kernel, bool iter_dump_flag, ui
   bool ret = true;
   auto profiler_inst = profiler::cpu::CPUProfiler::GetInstance();
   MS_EXCEPTION_IF_NULL(profiler_inst);
-  uint32_t pid = getpid();
+  uint32_t pid = IntToUint(getpid());
   profiler_inst->OpDataProducerBegin(kernel->fullname_with_scope(), pid);
 #ifdef ENABLE_DUMP_IR
   kernel::KernelLaunchInfo launch_info = {kernel_inputs, kernel_outputs, kernel_workspaces};

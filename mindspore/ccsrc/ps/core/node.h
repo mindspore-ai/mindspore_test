@@ -115,7 +115,7 @@ class BACKEND_COMMON_EXPORT Node {
   ClusterState current_cluster_state_;
 
   // Configuration file,The format is as follows
-  //{
+  // {
   // "recovery": {
   //      "storage_type": 1,
   //      "storge_file_path": "/home/cds/config.json"
