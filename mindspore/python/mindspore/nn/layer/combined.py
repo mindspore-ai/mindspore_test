@@ -164,10 +164,10 @@ class DenseBnAct(Cell):
         in_channels (int): The number of channels in the input space.
         out_channels (int): The number of channels in the output space.
         weight_init (Union[Tensor, str, Initializer, numbers.Number]): The trainable weight_init parameter. The dtype
-            is same as `x`. The values of str refer to the function :func:`mindspore.common.initializer`.
+            is same as `x`. The values of str refer to the function :func:`mindspore.common.initializer.initializer`.
             Default: ``'normal'`` .
         bias_init (Union[Tensor, str, Initializer, numbers.Number]): The trainable bias_init parameter. The dtype is
-            same as `x`. The values of str refer to the function :func:`mindspore.common.initializer`.
+            same as `x`. The values of str refer to the function :func:`mindspore.common.initializer.initializer`.
             Default: ``'zeros'`` .
         has_bias (bool): Specifies whether the layer uses a bias vector. Default: ``True`` .
         has_bn (bool): Specifies to use batchnorm or not. Default: ``False`` .

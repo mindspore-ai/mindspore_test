@@ -18,8 +18,8 @@ mindspore.nn.Dense
     参数：
         - **in_channels** (int) - Dense层输入Tensor的空间维度。
         - **out_channels** (int) - Dense层输出Tensor的空间维度。
-        - **weight_init** (Union[Tensor, str, Initializer, numbers.Number]，可选) - 权重参数的初始化方法。数据类型与 `x` 相同。str的值引用自函数 :func:`mindspore.common.initializer`。默认值： ``None`` ，权重使用HeUniform初始化。
-        - **bias_init** (Union[Tensor, str, Initializer, numbers.Number]，可选) - 偏置参数的初始化方法。数据类型与 `x` 相同。str的值引用自函数 :func:`mindspore.common.initializer`。默认值： ``None`` ，偏差使用Uniform初始化。
+        - **weight_init** (Union[Tensor, str, Initializer, numbers.Number]，可选) - 权重参数的初始化方法。数据类型与 `x` 相同。str的值引用自函数 :func:`mindspore.common.initializer.initializer`。默认值： ``None`` ，权重使用HeUniform初始化。
+        - **bias_init** (Union[Tensor, str, Initializer, numbers.Number]，可选) - 偏置参数的初始化方法。数据类型与 `x` 相同。str的值引用自函数 :func:`mindspore.common.initializer.initializer`。默认值： ``None`` ，偏差使用Uniform初始化。
         - **has_bias** (bool，可选) - 是否使用偏置向量 :math:`\text{bias}` 。默认值： ``True`` 。
         - **activation** (Union[str, Cell, Primitive, None]，可选) - 应用于全连接层输出的激活函数。可指定激活函数名，如'relu'，或具体激活函数，如 :class:`mindspore.nn.ReLU` 。默认值： ``None`` 。
         - **dtype** (:class:`mindspore.dtype`，可选) - Parameter的数据类型。默认值： ``mstype.float32`` 。

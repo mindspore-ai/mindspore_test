@@ -16,8 +16,8 @@ mindspore.nn.BiDense
         - **in1_channels** (int) - BiDense层第一个输入Tensor的空间维度。
         - **in2_channels** (int) - BiDense层第二个输入Tensor的空间维度。
         - **out_channels** (int) - BiDense层输出Tensor的空间维度。
-        - **weight_init** (Union[Tensor, str, Initializer, numbers.Number]) - 权重参数的初始化方法。str的值引用自函数 :func:`mindspore.common.initializer`。默认值： ``None`` 。
-        - **bias_init** (Union[Tensor, str, Initializer, numbers.Number]) - 偏置参数的初始化方法。str的值引用自函数 :func:`mindspore.common.initializer`。默认值： ``None`` 。
+        - **weight_init** (Union[Tensor, str, Initializer, numbers.Number]) - 权重参数的初始化方法。str的值引用自函数 :func:`mindspore.common.initializer.initializer`。默认值： ``None`` 。
+        - **bias_init** (Union[Tensor, str, Initializer, numbers.Number]) - 偏置参数的初始化方法。str的值引用自函数 :func:`mindspore.common.initializer.initializer`。默认值： ``None`` 。
         - **has_bias** (bool) - 是否使用偏置向量 :math:`\text{bias}` 。默认值： ``True`` 。
         - **dtype** (:class:`mindspore.dtype`) - Parameters的dtype。默认值： ``mstype.float32`` 。
 
