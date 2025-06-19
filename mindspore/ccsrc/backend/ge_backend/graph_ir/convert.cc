@@ -2013,14 +2013,20 @@ void DfGraphConvertor::GetCallNodeInputs(const CNodePtr &node) {
 
   while_const_input_index_.clear();
   std::set<size_t> while_input_node_index;
+  auto is_after_graph_param = [this](const AnfNodePtr &n) -> bool {
+    return this->IsAfterGraph() && n->isa<Parameter>();
+  };
+  auto found_in_cache = [this](size_t idx_cond) -> bool {
+    return this->bypass_node_prev_handle_cache_.find(idx_cond) != this->bypass_node_prev_handle_cache_.end();
+  };
   for (auto iter = while_used_input_index_.begin(); iter != while_used_input_index_.end(); ++iter) {
     auto n = inputs[*iter];
     MS_EXCEPTION_IF_NULL(n);
     OutHandler out_handler;
-    if (IsAfterGraph() && n->isa<Parameter>()) {
+    if (is_after_graph_param(n)) {
       auto idx = std::find(params.begin(), params.end(), n) - params.begin();
       auto idx_cond = prev_after_cond_map_[idx];
-      if (bypass_node_prev_handle_cache_.find(idx_cond) != bypass_node_prev_handle_cache_.end()) {
+      if (found_in_cache(idx_cond)) {
         out_handler = bypass_node_prev_handle_cache_[idx_cond];
       } else {
         auto idx_out = prev_cond_to_while_out_index_[idx_cond];
@@ -2042,24 +2048,25 @@ void DfGraphConvertor::GetCallNodeInputs(const CNodePtr &node) {
   bypass_node_handle_cache_.clear();
 
   for (size_t i = 0; i < inputs.size(); i++) {
-    if (while_input_node_index.find(i) == while_input_node_index.end()) {
-      auto n = inputs[i];
-      MS_EXCEPTION_IF_NULL(n);
-      if (HasAbstractMonad(n)) {
-        continue;
-      }
-      if (IsAfterGraph() && n->isa<Parameter>()) {
-        auto idx = std::find(params.begin(), params.end(), n) - params.begin();
-        auto idx_cond = prev_after_cond_map_[idx];
-        if (bypass_node_prev_handle_cache_.find(idx_cond) != bypass_node_prev_handle_cache_.end()) {
-          bypass_node_handle_cache_[i] = bypass_node_prev_handle_cache_[idx_cond];
-        } else {
-          auto idx_out = prev_cond_to_while_out_index_[idx_cond];
-          bypass_node_handle_cache_[i] = while_output_handle_cache_[prev_while_node_]->at(idx_out);
-        }
+    if (while_input_node_index.find(i) != while_input_node_index.end()) {
+      continue;
+    }
+    auto n = inputs[i];
+    MS_EXCEPTION_IF_NULL(n);
+    if (HasAbstractMonad(n)) {
+      continue;
+    }
+    if (is_after_graph_param(n)) {
+      auto idx = std::find(params.begin(), params.end(), n) - params.begin();
+      auto idx_cond = prev_after_cond_map_[idx];
+      if (found_in_cache(idx_cond)) {
+        bypass_node_handle_cache_[i] = bypass_node_prev_handle_cache_[idx_cond];
       } else {
-        bypass_node_handle_cache_[i] = GetHandler(n);
+        auto idx_out = prev_cond_to_while_out_index_[idx_cond];
+        bypass_node_handle_cache_[i] = while_output_handle_cache_[prev_while_node_]->at(idx_out);
       }
+    } else {
+      bypass_node_handle_cache_[i] = GetHandler(n);
     }
   }
 

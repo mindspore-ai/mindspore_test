@@ -209,8 +209,6 @@ AnfNodeIndex FindNodeLastInput(const CNodePtr &node, const FuncGraphPtr &graph, 
 }
 
 std::vector<BlockBorder> DivideIntoCommAndCalBlock(const std::vector<CNodePtr> &block) {
-  // the divided comm and call block like this.
-  // {cal_blk1_first, cal_blk1_last}, {comm_node1, comm_node1}, {cal_blk2_first, cal_blk2_last}
   std::vector<BlockBorder> borders;
   for (const auto &node : block) {
     if (node->HasAttr(kRecomputeInsert)) {
