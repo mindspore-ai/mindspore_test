@@ -111,17 +111,20 @@ constexpr auto kThreshold1DBool = kThreshold * 2;
 template <typename T>
 inline constexpr bool IsNonTrivialCastType = false;
 
-#define DEFINE_NON_TRIVIAL_CAST_TYPE(TYPE) \
-  template <>                              \
-  inline constexpr bool IsNonTrivialCastType<TYPE> = true;
-
-DEFINE_NON_TRIVIAL_CAST_TYPE(float16)
-DEFINE_NON_TRIVIAL_CAST_TYPE(float8_e4m3fn)
-DEFINE_NON_TRIVIAL_CAST_TYPE(float8_e5m2)
-DEFINE_NON_TRIVIAL_CAST_TYPE(hifloat8)
-DEFINE_NON_TRIVIAL_CAST_TYPE(bfloat16)
-DEFINE_NON_TRIVIAL_CAST_TYPE(ComplexStorage<float>)
-DEFINE_NON_TRIVIAL_CAST_TYPE(ComplexStorage<double>)
+template <>
+inline constexpr bool IsNonTrivialCastType<float16> = true;
+template <>
+inline constexpr bool IsNonTrivialCastType<float8_e4m3fn> = true;
+template <>
+inline constexpr bool IsNonTrivialCastType<float8_e5m2> = true;
+template <>
+inline constexpr bool IsNonTrivialCastType<hifloat8> = true;
+template <>
+inline constexpr bool IsNonTrivialCastType<bfloat16> = true;
+template <>
+inline constexpr bool IsNonTrivialCastType<ComplexStorage<float>> = true;
+template <>
+inline constexpr bool IsNonTrivialCastType<ComplexStorage<double>> = true;
 
 template <typename T, typename U>
 std::unique_ptr<T[]> NewData(const U *input, size_t size) {
