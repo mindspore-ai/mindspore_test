@@ -501,7 +501,7 @@ def run_test_with_numpy_golden(test_param: MlaTestParam):
 
 
 # block_num = 8 batch = 128 failed
-@pytest.mark.level0
+@pytest.mark.level1
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.env_onecard
 @pytest.mark.parametrize('dtype', [ms.float16, ms.bfloat16])
@@ -522,7 +522,7 @@ def test_mla_base(dtype, batch, mode):
 
 # int8 need set MS_INTERNAL_ENABLE_NZ_OPS="Mla"
 @pytest.mark.skip
-@pytest.mark.level0
+@pytest.mark.level1
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.env_onecard
 @pytest.mark.parametrize('mask_mode', ["MASK_NONE"])
