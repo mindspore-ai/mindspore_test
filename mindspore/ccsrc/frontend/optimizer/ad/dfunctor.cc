@@ -926,6 +926,13 @@ AnfNodePtr DFunctor::MapPrimitiveToK(const CNodePtr &primitive_user, size_t inde
       << "Primal graph \"" << primal->ToString() << "\" is not a ValueNode of Primitive.";
   }
   ScopeGuard scope_guard(primal->scope());
+  // Process VirtualViewGrad's ori_view input op
+  if (index != 0 && IsPrimitiveCNode(primitive_user, prim::kPrimVirtualViewGrad)) {
+    MS_LOG(INFO)
+      << "Map VirtualViewGrad input ori_view's k_graph to itself, not generate actual funcgraph node, cnode: "
+      << primitive_user->DebugString();
+    return primal;
+  }
   // Map Primitive to K
   auto value_node = primal->cast<ValueNodePtr>();
   auto prim = GetValueNode<PrimitivePtr>(value_node);
@@ -1103,15 +1110,7 @@ void DFunctor::MapValueObject() {
       }
       auto cnode = users.begin()->first->cast<CNodePtr>();  // We just use the first user.
       auto index = users.begin()->second;
-      if (index != 0 && IsPrimitiveCNode(cnode, prim::kPrimVirtualViewGrad)) {
-        if (users.size() != 1) {
-          MS_LOG(EXCEPTION) << "Invalid virtualviewgrad input, cnode: " << cnode->DebugString();
-        }
-        MS_LOG(INFO) << "Map virtual view grad's input origin view op node, cnode: " << cnode->DebugString();
-        adjoint = std::make_shared<Adjoint>(node, node, tape_, is_view_inplace_);
-      } else {
-        adjoint = std::make_shared<Adjoint>(node, MapPrimitiveToK(cnode, index), tape_, is_view_inplace_);
-      }
+      adjoint = std::make_shared<Adjoint>(node, MapPrimitiveToK(cnode, index), tape_, is_view_inplace_);
     } else if (IsValueNode<FuncGraph>(node)) {  // FuncGraph
       MS_LOG(DEBUG) << "Map FuncGraph node " << node->DebugString() << ".";
       adjoint = std::make_shared<Adjoint>(node, MapFuncGraphToK(node), tape_, is_view_inplace_);

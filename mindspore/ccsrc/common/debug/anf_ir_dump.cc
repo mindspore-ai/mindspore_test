@@ -685,8 +685,13 @@ void DumpOperands(const AnfNodePtr &node, const OrderedMap<AnfNodePtr, int32_t> 
           gsub->buffer << "$(@" << fg->ToString() << ":" << input->ToString() << ")";
         }
       } else if (in->isa<ValueNode>() && !IsValueNode<FuncGraph>(in)) {
-        // ValueNode except FuncGraph.
-        GetValueText(GetValueNode(in), gsub);
+        auto value = GetValueNode(in);
+        if (IsPrimitiveCNode(node, prim::kPrimVirtualViewGrad) && value->isa<Primitive>()) {
+          gsub->buffer << value->ToString();
+        } else {
+          // ValueNode except FuncGraph.
+          GetValueText(value, gsub);
+        }
       } else if (IsValueNode<FuncGraph>(in)) {
         FuncGraphPtr fg = GetValueNode<FuncGraphPtr>(in);
         if (fg == nullptr) {
