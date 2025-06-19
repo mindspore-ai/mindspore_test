@@ -19,6 +19,7 @@ from functools import wraps
 import math
 import numpy as np
 
+import mindspore.ops as ops
 import mindspore.common.dtype as mstype
 from mindspore import log as logger
 from mindspore.common.tensor import Tensor
