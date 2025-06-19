@@ -518,7 +518,14 @@ bool AutoGradUtil::NeedGrad(const tensor::TensorPtr &input_tensor) {
   if (input_tensor->is_parameter()) {
     return IsParamRequiresGrad(input_tensor);
   }
-  return autograd::impl::GetUnsafeGradNodeImpl(input_tensor) != nullptr;
+  if (autograd::impl::GetUnsafeGradNodeImpl(input_tensor) != nullptr) {
+    return true;
+  }
+  const auto &view_auto_grad_data = autograd::impl::GetViewAutogradMetaImpl(input_tensor);
+  if (!view_auto_grad_data) {
+    return false;
+  }
+  return NeedGrad(view_auto_grad_data->view_info().base());
 }
 
 bool AutoGradUtil::NeedGrad(const std::vector<ValuePtr> &input_values) {
