@@ -2,7 +2,7 @@ any:
   description: |
     any(input) -> Tensor
 
-    Tests if any element in `input` evaluates to `True`.
+    Check if ``True`` is present in `input` .
 
     Args:
         input (Tensor): The input tensor.
@@ -21,7 +21,7 @@ any:
 
     .. function:: any(input, dim, keepdim=False) -> Tensor
 
-    Tests if any element in `input` evaluates to `True` along the given axes.
+    Check if ``True`` is present in the specified dimension of `input` .
 
     Args:
         input (Tensor): The input tensor.
