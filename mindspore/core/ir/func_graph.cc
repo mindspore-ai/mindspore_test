@@ -937,26 +937,33 @@ bool FuncGraph::CheckSideEffect(const AnfNodePtr &input) {
     MS_LOG(DEBUG) << "Multiple side-effect node: " << input->DebugString();
     return true;
   }
-  // Process {Depend -> StopGradient -> MakeTuple(call function, ...)}.
-  if (input->isa<CNode>()) {
-    auto cnode = input->cast<CNodePtr>();
-    auto fn_input = cnode->input(0);
-    if (IsValueNode<prim::UnpackCall>(fn_input) || IsPrimitive(fn_input, prim::kPrimDoUnpackCall)) {
-      fn_input = cnode->input(1);
-    }
-    if (IsValueNode<FuncGraph>(fn_input)) {
-      auto func = GetValueNode<FuncGraphPtr>(fn_input);
-      auto func_output = func->output();
-      if (IsSideEffectCNode(func_output) || func->HasIsolatedSideEffectNode()) {
-        MS_LOG(DEBUG) << "Single nested side-effect node: " << input->DebugString();
-        cnode->set_has_side_effect_node(true);
-        if (func_output->isa<CNode>()) {
-          func_output->cast<CNodePtr>()->set_has_side_effect_node(true);
-        }
-        return true;
-      }
-    }
+
+  if (!input->isa<CNode>()) {
+    return false;
   }
+
+  // Process {Depend -> StopGradient -> MakeTuple(call function, ...)}.
+  auto cnode = input->cast<CNodePtr>();
+  auto fn_input = cnode->input(0);
+  if (IsValueNode<prim::UnpackCall>(fn_input) || IsPrimitive(fn_input, prim::kPrimDoUnpackCall)) {
+    fn_input = cnode->input(1);
+  }
+
+  if (IsValueNode<FuncGraph>(fn_input)) {
+    auto func = GetValueNode<FuncGraphPtr>(fn_input);
+    auto func_output = func->output();
+    MS_EXCEPTION_IF_NULL(func_output);
+    if (!(IsSideEffectCNode(func_output) || func->HasIsolatedSideEffectNode())) {
+      return false;
+    }
+    MS_LOG(DEBUG) << "Single nested side-effect node: " << input->DebugString();
+    cnode->set_has_side_effect_node(true);
+    if (func_output->isa<CNode>()) {
+      func_output->cast<CNodePtr>()->set_has_side_effect_node(true);
+    }
+    return true;
+  }
+
   return false;
 }
 

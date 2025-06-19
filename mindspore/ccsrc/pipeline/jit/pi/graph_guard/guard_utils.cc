@@ -1271,6 +1271,7 @@ class MetaTensorData : public ItemData {
   }
 
   bool EqualInternal(const tensor::TensorPtr &tensor_ptr) const {
+    MS_EXCEPTION_IF_NULL(tensor_ptr);
     if (tid_ == tensor_ptr->data_type() && is_parameter_ == tensor_ptr->is_parameter() &&
         CheckTypeAndShape(tensor_ptr->Dtype(), tensor_ptr->shape())) {
       return !is_parameter_ || ParamInfoData::Equal(param_, tensor_ptr->param_info());
@@ -1331,6 +1332,7 @@ class MetaTensorData : public ItemData {
   }
 
   void StoreTensor(mindspore::tensor::MetaTensorPtr tensor_ptr) {
+    MS_EXCEPTION_IF_NULL(tensor_ptr);
     tid_ = tensor_ptr->data_type();
     shape_ = tensor_ptr->shape();
     data_type_ = tensor_ptr->Dtype();
@@ -2258,8 +2260,7 @@ static ItemDataPtr CreateItem(PyObject *obj, bool need_specialize, int recurse_d
   }
   if (recurse_depth < -1) {
     if (obj != NULL && obj != Py_None) {
-      PyObject *py_type;
-      py_type = reinterpret_cast<PyObject *>(Py_TYPE(obj));
+      PyObject *py_type = reinterpret_cast<PyObject *>(Py_TYPE(obj));
       return std::make_shared<TypeData>(py_type, false, 0);
     } else {
       return std::make_shared<ItemData>(ItemType::PyNull, false, 0);
@@ -2325,6 +2326,8 @@ class EqGuard : public GuardItem {
       last_ = {};  // reference release
     }
   }
+
+  virtual ~EqGuard() {}
 
   bool Check(PyFrameWrapper frame) override {
     if (var_->IsConst()) {

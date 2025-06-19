@@ -286,6 +286,7 @@ def __get_compile_cache_dep_files(file_path, compile_cache_dep_files, pkg):
             else:
                 continue
 
+
 def _get_compile_cache_dep_files():
     """Get the dependency files of the network"""
     if entry_script_path is None:

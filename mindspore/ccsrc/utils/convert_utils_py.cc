@@ -766,6 +766,7 @@ py::object VectorRefToPyData(const VectorRef &value_list, const AbstractBasePtr 
 
 bool IsGraphOutputValueNodeOrParameter(const AnfNodePtr &output, const py::tuple &args,
                                        const std::shared_ptr<py::object> &ret_val) {
+  MS_EXCEPTION_IF_NULL(output);
   if (output->isa<ValueNode>()) {
     MS_LOG(INFO) << "Graph's output is a constant. No need to execute.";
     ValuePtr value = GetValueNode(output);

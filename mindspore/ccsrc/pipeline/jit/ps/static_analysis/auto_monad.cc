@@ -346,7 +346,11 @@ class SccFinder {
           visit_stack.push(std::move(used_info));
         } else if (used_graph->extra_seen_ == seen) {
           // Visited before AND in stack, update low.
-          auto min_low = std::min(*current_info.graph->user_data<size_t>("low"), *used_graph->user_data<size_t>("low"));
+          auto current_low = current_info.graph->user_data<size_t>("low");
+          auto used_graph_low = used_graph->user_data<size_t>("low");
+          MS_EXCEPTION_IF_NULL(current_low);
+          MS_EXCEPTION_IF_NULL(used_graph_low);
+          auto min_low = std::min(*current_low, *used_graph_low);
           current_info.graph->set_user_data<size_t>("low", std::make_shared<size_t>(min_low));
           MS_LOG(DEBUG) << "Update low [" << min_low << "] for " << current_info.graph->ToString() << " by "
                         << used_graph->ToString();

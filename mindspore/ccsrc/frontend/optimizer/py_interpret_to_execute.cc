@@ -262,7 +262,7 @@ CNodePtr Transform(const CNodePtr &cnode, const FuncGraphManagerPtr &manager,
 }  // namespace
 
 /**
- * \brief Convert PyInterpret into PyExecute:
+ * \brief Convert PyInterpret into PyExecute.
  *
  * \example
  * origin:

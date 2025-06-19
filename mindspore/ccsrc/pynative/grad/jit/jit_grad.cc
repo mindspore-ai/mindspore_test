@@ -456,6 +456,7 @@ void Jit::GetWeightsNode(const FrontendOpRunInfoPtr &op_run_info, const GradExec
     if (it != graph_info->weight_params.end()) {
       param = it->second;
     } else {
+      MS_EXCEPTION_IF_NULL(param);
       top_cell->fg()->add_parameter(param);
       if (param->debug_info() != nullptr) {
         param->debug_info()->set_name(param->name());
