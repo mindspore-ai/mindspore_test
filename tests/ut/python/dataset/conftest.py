@@ -17,6 +17,7 @@
 @Desc   : common fixtures for pytest dataset
 """
 import glob
+import shutil
 import os
 
 import pytest
@@ -47,3 +48,17 @@ def cleanup_tmp_file(request):
                     os.remove(file)
 
     request.addfinalizer(search_and_remove_file)
+
+@pytest.fixture
+def isolate_dir(request):
+    # start test case
+    base_dir = request.param
+    new_dir = base_dir + "_" + request.node.originalname
+    if os.path.exists(new_dir):
+        shutil.rmtree(new_dir)
+    shutil.copytree(base_dir, new_dir)
+    # return new dir to test case
+    yield new_dir
+    # after test case finish
+    if os.path.exists(new_dir):
+        shutil.rmtree(new_dir)
