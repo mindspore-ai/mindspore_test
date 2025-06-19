@@ -162,11 +162,6 @@ class BACKEND_COMMON_EXPORT SessionBasic : public KernelGraphMgr, public std::en
   void GetRefCount(const KernelGraph *graph, std::map<KernelWithIndex, size_t> *ref_count) const;
   // Cut op not flatten, so we need calculate maketuple input ref count.
   void CalculateRefCount(const AnfNodePtr &node, std::map<KernelWithIndex, size_t> *ref_count) const;
-  void GetForwardOpOutputRefCount(const KernelGraph *graph, const std::vector<tensor::TensorPtr> &inputs,
-                                  std::map<std::string, size_t> *forward_op_output_tensor_id,
-                                  const std::map<AnfNodePtr, size_t> &parameter_index) const;
-  void ReleaseForwardOpOutput(const std::vector<ValuePtr> &input_tensors,
-                              std::map<std::string, size_t> *forward_op_output_tensor_id) const;
   void HandleOpInputs(const std::set<KernelWithIndex> &input_kernel, std::map<KernelWithIndex, size_t> *ref_count,
                       std::map<KernelWithIndex, tensor::TensorPtr> *op_output_map) const;
 

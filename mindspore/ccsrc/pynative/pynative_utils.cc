@@ -272,7 +272,7 @@ AnfNodePtr Common::ConvertValueSequenceToMakeTuple(const ValueNodePtr &node, con
 std::string Common::GetIdByValue(const ValuePtr &v) {
   MS_EXCEPTION_IF_NULL(v);
   if (v->isa<tensor::Tensor>()) {
-    return v->cast<tensor::TensorPtr>()->id();
+    return "T" + std::to_string(v->cast<tensor::TensorPtr>()->id());
   }
   if (v->isa<stub::StubNode>()) {
     return GetIdByValue(v->cast<stub::StubNodePtr>()->WaitValue());
@@ -927,7 +927,7 @@ void Common::ClearRes() { kGradAbstractConverter.clear(); }
 
 std::string PyParser::GetIdByPyObj(const py::object &obj) {
   if (tensor::IsTensorPy(obj)) {
-    return tensor::ConvertToTensor(obj)->id();
+    return "T" + std::to_string(tensor::ConvertToTensor(obj)->id());
   }
   if (py::isinstance<Cell>(obj)) {
     return obj.cast<CellPtr>()->id();
@@ -1549,20 +1549,6 @@ void DataConvert::ConvertCSRTensorToTensorList(const FrontendOpRunInfoPtr &op_ru
         op_run_info->op_grad_info->input_value_grad_type[index] = InputType::kParameter;
       }
     }
-  }
-}
-
-void DataConvert::GetTensorIdFromOutputValue(const ValuePtr &value, std::vector<std::string> *converted_tensor_id) {
-  if (value->isa<tensor::Tensor>()) {
-    (void)converted_tensor_id->emplace_back(value->cast<tensor::TensorPtr>()->id());
-    MS_LOG(DEBUG) << "Get top cell output tensor id " << converted_tensor_id->back();
-  } else if (value->isa<ValueSequence>()) {
-    const auto &seq = value->cast<ValueSequencePtr>();
-    for (const auto &val : seq->value()) {
-      GetTensorIdFromOutputValue(val, converted_tensor_id);
-    }
-  } else if (value->isa<ValueDictionary>()) {
-    GetTensorIdFromOutputValue(ConvertValueDictToValueTuple(value), converted_tensor_id);
   }
 }
 

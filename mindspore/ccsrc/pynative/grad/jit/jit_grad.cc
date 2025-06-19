@@ -180,7 +180,8 @@ void Jit::GetWeightsNode(const FrontendOpRunInfoPtr &op_run_info, const GradExec
     auto param = original_params[i]->cast<ParameterPtr>();
     const auto tensor_value = PyNativeAlgo::Common::GetTensorFromParam(original_params[i]);
     MS_EXCEPTION_IF_NULL(tensor_value);
-    const auto it = graph_info->weight_params.find(tensor_value->id());
+    auto tensor_id = std::to_string(tensor_value->id());
+    const auto it = graph_info->weight_params.find(tensor_id);
     if (it != graph_info->weight_params.end()) {
       param = it->second;
     } else {
@@ -189,7 +190,7 @@ void Jit::GetWeightsNode(const FrontendOpRunInfoPtr &op_run_info, const GradExec
       if (param->debug_info() != nullptr) {
         param->debug_info()->set_name(param->name());
       }
-      top_cell->SetParamNodeMapInGraphInfoMap(tensor_value->id(), param, true);
+      top_cell->SetParamNodeMapInGraphInfoMap(tensor_id, param, true);
     }
     (void)input_nodes->emplace_back(param);
     MS_LOG(DEBUG) << "Top graph set free parameter " << param->DebugString() << ". Its default value is "

@@ -129,9 +129,6 @@ void OpBackend::RunOpImpl(bool single_op_cache_hit, const OpCompilerInfoPtr &op_
 
   runtime::OpRunner::RunSingleOpGraph(op_run_info, op_compiler_info, tensors_without_value_mask);
 
-  if (!op_run_info->is_infer) {
-    post_run_.ReleaseForwardOpOutput(op_run_info->base_op_run_info.expanded_input_values);
-  }
   post_run_.UpdateOutput(output_nodes, outputs);
 
   post_run_.ClearGraphDeviceAddress(graph, device_context, op_run_info->is_gradient_out);
@@ -179,10 +176,6 @@ void OpBackend::RunOpImplDynamic(bool single_op_cache_hit, const OpCompilerInfoP
   auto input_tensors = runtime::OpRunner::GetTensorWithoutValueMask(op_run_info);
   runtime::DynamicOpRunner::UpdateInputDeviceAddress(op_compiler_info, input_tensors, true);
   runtime::DynamicOpRunner::RunSingleOpGraph(op_run_info, op_compiler_info, input_tensors);
-
-  if (!op_run_info->is_infer) {
-    post_run_.ReleaseForwardOpOutput(op_run_info->base_op_run_info.expanded_input_values);
-  }
 
   const auto &kernel_tensor_list = GetOutputKernelTensor(op_compiler_info);
   // Create output tensor
@@ -233,10 +226,6 @@ void OpBackend::OpRunCallback(const std::shared_ptr<runtime::OpTaskContext> &con
                                       runtime::OpRunner::GetTensorWithoutValueMask(context->op_run_info()));
 
   MS_EXCEPTION_IF_NULL(context->op_run_info());
-  if (!context->op_run_info()->is_infer) {
-    post_run_.ReleaseForwardOpOutput(context->op_run_info()->base_op_run_info.expanded_input_values);
-  }
-
   post_run_.ClearGraphDeviceAddress(context->graph(), context->device_context(),
                                     context->op_run_info()->is_gradient_out);
   post_run_.ClearInputDeviceAddress(context->graph(), context->device_context());
@@ -277,11 +266,6 @@ void OpBackend::OpRunCallbackDynamic(const std::shared_ptr<runtime::OpTaskContex
 
   runtime::DynamicOpRunner::RunSingleOpGraph(context->op_run_info(), context->op_compiler_info(),
                                              runtime::OpRunner::GetTensorWithoutValueMask(context->op_run_info()));
-  MS_EXCEPTION_IF_NULL(context->op_run_info());
-  if (!context->op_run_info()->is_infer) {
-    post_run_.ReleaseForwardOpOutput(context->op_run_info()->base_op_run_info.expanded_input_values);
-  }
-
   post_run_.ClearOpInputOutput(context->op_compiler_info());
   // Reset PyNative infer flag.
   ms_context->set_param<bool>(MS_CTX_ENABLE_PYNATIVE_INFER, infer_flag);
@@ -361,28 +345,6 @@ tensor::TensorPtr PostRunOp::CreateOutputTensor(const AnfNodePtr &output_node, s
   }
 
   return tensor;
-}
-
-void PostRunOp::ReleaseForwardOpOutput(const std::vector<ValuePtr> &input_values) {
-  for (const auto &value : input_values) {
-    auto tensor = value->cast<tensor::TensorPtr>();
-    if (tensor == nullptr) {
-      continue;
-    }
-
-    if (!tensor->is_forward_output()) {
-      continue;
-    }
-    auto it = forward_tensor_ref_count_.find(tensor->id());
-    if (it != forward_tensor_ref_count_.end()) {
-      if (--(it->second) == 0) {
-        MS_LOG(DEBUG) << "Release DeviceAddress on tensor " << tensor->ToString() << " id " << tensor->id()
-                      << " forward_output " << tensor->is_forward_output();
-        tensor->set_device_address(nullptr);
-        forward_tensor_ref_count_.erase(it);
-      }
-    }
-  }
 }
 
 void PostRunOp::ClearGraphDeviceAddress(const KernelGraphPtr &graph, const DeviceContext *device_context,

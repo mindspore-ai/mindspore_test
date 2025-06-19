@@ -1040,7 +1040,7 @@ class MS_CORE_API Tensor : public MetaTensor {
   /// \brief Get the id of this Tensor.
   ///
   /// \return The id of this Tensor.
-  std::string id() const { return id_; }
+  uint64_t id() const { return id_; }
 
   /// \brief Set lazy callback function to this Tensor
   ///
@@ -1393,7 +1393,7 @@ class MS_CORE_API Tensor : public MetaTensor {
   std::function<void(const Tensor *)> update_value_callback_{nullptr};
 
   // string size 32
-  std::string id_{""};
+  uint64_t id_;
   std::string tensor_name_;
 
   // shared_ptr size 16

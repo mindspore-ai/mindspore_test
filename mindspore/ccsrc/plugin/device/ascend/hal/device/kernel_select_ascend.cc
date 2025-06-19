@@ -107,7 +107,7 @@ void SetWeightFormat(const AnfNodePtr &real_input_node, std::vector<string> outp
   auto selected_kernel_info = AnfAlgo::GetSelectKernelBuildInfo(kernel_node);
   MS_EXCEPTION_IF_NULL(selected_kernel_info);
   // tensor id -> type id
-  static std::unordered_map<std::string, TypeId> format_type;
+  static std::unordered_map<uint64_t, TypeId> format_type;
   if (AnfAlgo::GetOutputDeviceDataType(real_input_node, 0) == kTypeUnknown || force_fresh) {
     if (IsValueNode<tensor::Tensor>(real_input_node)) {
       auto host_tensor_ptr = GetValueNode<tensor::TensorPtr>(real_input_node);
