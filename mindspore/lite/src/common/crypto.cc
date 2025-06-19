@@ -29,6 +29,7 @@
 #endif
 #include "src/common/log_adapter.h"
 #include "src/common/log_util.h"
+#include "securec/include/securec.h"
 
 #ifndef SECUREC_MEM_MAX_LEN
 #define SECUREC_MEM_MAX_LEN 0x7fffffffUL
@@ -72,7 +73,7 @@ void IntToByte(std::vector<Byte> *byteArray, int32_t n) {
   auto ptr = reinterpret_cast<const Byte *>(&n);
   (*byteArray).assign(ptr, ptr + sizeof(int32_t));
 }
-}  // namespace
+
 bool ParseEncryptData(const Byte *encrypt_data, size_t encrypt_len, std::vector<Byte> *iv,
                       std::vector<Byte> *cipher_data) {
   // encrypt_data is organized in order to iv_len, iv, cipher_len, cipher_data
@@ -111,6 +112,7 @@ bool ParseMode(const std::string &mode, std::string *alg_mode, std::string *work
   *work_mode = results[2];
   return true;
 }
+}  // namespace
 
 int InitCipherCtxAES(EVP_CIPHER_CTX *ctx, const EVP_CIPHER *(*funcPtr)(), const std::string &work_mode, const Byte *key,
                      const Byte *iv, int iv_len, bool is_encrypt) {
@@ -364,6 +366,7 @@ bool BlockEncrypt(Byte *encrypt_data, size_t *encrypt_data_len, const std::vecto
   return true;
 }
 
+namespace {
 bool BlockDecrypt(Byte *plain_data, int32_t *plain_len, const Byte *encrypt_data, size_t encrypt_len, const Byte *key,
                   int32_t key_len, const std::string &dec_mode, unsigned char *tag) {
   std::string alg_mode;
@@ -409,6 +412,7 @@ bool BlockDecrypt(Byte *plain_data, int32_t *plain_len, const Byte *encrypt_data
   EVP_CIPHER_CTX_free(ctx);
   return true;
 }
+}  // namespace
 
 std::unique_ptr<Byte[]> Encrypt(size_t *encrypt_len, const Byte *plain_data, size_t plain_len, const Byte *key,
                                 size_t key_len, const std::string &enc_mode) {
