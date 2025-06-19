@@ -46,16 +46,16 @@ static void CheckParam(const PrimitivePtr &primitive, const InferInfoPtrList &in
   auto kv_heads = input_infos[kMlaInputNumKVHeadIndex]->GetScalarValue<int64_t>();
   if (kv_heads.has_value()) {
     MS_CHECK_VALUE(kv_heads.value() == 1, CheckAndConvertUtils::FormatCommMsg(
-                                            "For MLA The kv_heads must be 1 , but got : ", kv_heads.value()));
+                                            "For MLA The kv_head_num must be 1 , but got : ", kv_heads.value()));
   }
 
   auto q_heads = input_infos[kMlaInputNumHeadIndex]->GetScalarValue<int64_t>();
   if (q_heads.has_value()) {
     MS_CHECK_VALUE(q_heads.value() <= kMLAQheadMax,
-                   CheckAndConvertUtils::FormatCommMsg("For MLA The q_heads must be <= ", kMLAQheadMax,
+                   CheckAndConvertUtils::FormatCommMsg("For MLA The head_num must be <= ", kMLAQheadMax,
                                                        ", but got : ", q_heads.value()));
     MS_CHECK_VALUE(ALIGN_16(q_heads.value()),
-                   CheckAndConvertUtils::FormatCommMsg("For MLA The q_heads must be the multiple of 16, but got : ",
+                   CheckAndConvertUtils::FormatCommMsg("For MLA The head_num must be the multiple of 16, but got : ",
                                                        q_heads.value()));
   }
 }
@@ -102,7 +102,7 @@ static void CheckShape(const PrimitivePtr &primitive, const InferInfoPtrList &in
     if (q_heads.has_value()) {
       if (q_heads.value() == kMLAQheadMax) {
         if (ctkv_shape[kMLABlockSizeDim] != kMLAQheadMax) {
-          MS_LOG(EXCEPTION) << "For MLA the block_size must be 128 when q_heads is 128, but got block_size: "
+          MS_LOG(EXCEPTION) << "For MLA the block_size must be 128 when head_num is 128, but got block_size: "
                             << ctkv_shape[kMLABlockSizeDim];
         }
       }
