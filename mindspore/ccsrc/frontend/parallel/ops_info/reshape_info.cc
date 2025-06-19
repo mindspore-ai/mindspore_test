@@ -394,25 +394,29 @@ void ReportRedistributionError(const std::string &name, const bool &is_generatin
   }
 }
 
+void ReshapeInfo::SkipReshapeRedistribution() {
+  MS_LOG(DEBUG) << "Skip reshape redistribution for " << cnode_->fullname_with_scope() << std::endl;
+  if (DstShapeIsConstant(cnode_->input(2))) {
+    ConstructOperator constructor;
+    replace_op_ = constructor.SkipRedisReshapeOP(output_layout_.slice_shape().array());
+    replace_op_info_.clear();
+    MS_LOG(INFO) << "skip reshape redistribution and reshape slice_shape is "
+                 << ShapeToString(output_layout_.slice_shape().array());
+  } else {
+    replace_op_.clear();
+    replace_op_info_.clear();
+    MS_LOG(WARNING) << name_ << ": dst shape is dynamic, and skip redistribution";
+    // need to modify the dst shape
+    ChangeDynamicDstShapeForSkipRedistribution(cnode_->input(2));
+  }
+}
+
 Status ReshapeInfo::ComputeReplaceOp() {
   MS_LOG(INFO) << "Infer reshape redistribution for " << this->cnode_->fullname_with_scope() << "." << std::endl
                << "input_layout_: " << this->input_layout_.ToString() << std::endl
                << "output_layout_: " << this->output_layout_.ToString();
   if (is_skip_) {
-    MS_LOG(DEBUG) << "Skip reshape redistribution for " << cnode_->fullname_with_scope() << std::endl;
-    if (DstShapeIsConstant(cnode_->input(2))) {
-      ConstructOperator constructor;
-      replace_op_ = constructor.SkipRedisReshapeOP(output_layout_.slice_shape().array());
-      replace_op_info_.clear();
-      MS_LOG(INFO) << "skip reshape redistribution and reshape slice_shape is "
-                   << ShapeToString(output_layout_.slice_shape().array());
-    } else {
-      replace_op_.clear();
-      replace_op_info_.clear();
-      MS_LOG(WARNING) << name_ << ": dst shape is dynamic, and skip redistribution";
-      // need to modify the dst shape
-      ChangeDynamicDstShapeForSkipRedistribution(cnode_->input(2));
-    }
+    SkipReshapeRedistribution();
   } else {
     if (AccumulateShape(input_layout_.shard_strategy()) == 1 && AccumulateShape(output_layout_.shard_strategy()) == 1) {
       // input and output have not shard

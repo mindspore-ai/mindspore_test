@@ -109,6 +109,7 @@ class ReshapeInfo : public OperatorInfo {
   Status GetAttrs() override { return SUCCESS; }
 
  private:
+  void SkipReshapeRedistribution();
   Status ComputeReplaceOp();
   Status ComputeReplaceOpForDynamicShape();
   void InferTensorInfoByLayout();
