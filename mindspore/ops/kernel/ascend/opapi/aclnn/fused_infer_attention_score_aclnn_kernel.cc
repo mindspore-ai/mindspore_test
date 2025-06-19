@@ -24,6 +24,7 @@
 #include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "infer/ops_func_impl/fused_infer_attention_score.h"
+#include "utils/llm_manager.h"
 
 namespace mindspore {
 using mindspore::ops::FusedInferAttentionScoreInputIndex;
@@ -73,6 +74,13 @@ std::vector<int64_t> FusedInferAttentionScoreAscend::ConvertTensorToVector(const
     res.assign(vector_int32.begin(), vector_int32.end());
   }
   return res;
+}
+
+bool FusedInferAttentionScoreAscend::Init(const std::vector<KernelTensor *> &inputs,
+                                          const std::vector<KernelTensor *> &outputs) {
+  auto &llm_manager = LLMManager::GetInstance();
+  llm_manager.add_force_resize_kernel(kernel_name_);
+  return true;
 }
 
 void FusedInferAttentionScoreAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,

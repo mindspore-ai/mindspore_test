@@ -29,6 +29,7 @@ class FusedInferAttentionScoreAscend : public AclnnKernelMod {
  public:
   FusedInferAttentionScoreAscend() : AclnnKernelMod(std::move("aclnnFusedInferAttentionScoreV2")) {}
   ~FusedInferAttentionScoreAscend() = default;
+  bool Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
               const std::vector<KernelTensor *> &outputs, void *stream_ptr) override;
   void GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
