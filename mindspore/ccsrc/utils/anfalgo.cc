@@ -1282,9 +1282,9 @@ bool AnfAlgo::IsCommunicationOp(const std::string &prim_name) {
   static const std::set<std::string> kCommunicationOpNames = {
     kAllReduceOpName,       kAllGatherOpName,       kBroadcastOpName, kReduceScatterOpName,     kSendOpName,
     kReceiveOpName,         kAlltoAllOpName,        kAllToAllOpName,  kAllToAllvOpName,         kMuxReceiveOpName,
-    kMuxSendOpName,         kReduceOpName,          kBarrierOpName,   kCollectiveScatterOpName, kCollectiveGatherOpName,
+    kMuxSendOpName,         kMoeDistributeDispatch, kBarrierOpName,   kCollectiveScatterOpName, kCollectiveGatherOpName,
     kMatMulAllReduceOpName, kBatchISendIRecvOpName, kAlltoAllVOpName, kAlltoAllVGEOpName,       kAllGatherVOpName,
-    kReduceScatterVOpName};
+    kReduceScatterVOpName,  kMoeDistributeCombine,  kReduceOpName};
   return (kCommunicationOpNames.find(prim_name) != kCommunicationOpNames.end());
 }
 
