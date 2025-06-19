@@ -193,7 +193,6 @@ class BACKEND_EXPORT GraphParameterStore {
 
   // Insert host tensor data and src device tensor into callback to avoid release before async copy finished.
   void InsertTensorDataIntoCallback(const TensorDataPtr &tensor_data);
-  void InsertDeviceTensorIntoCallback(const DeviceTensorPtr &device_tensor);
 
   void SetPositionTensor(size_t outer_index, bool is_tensor);
   bool GetPositionTensor(size_t outer_index);
@@ -244,7 +243,6 @@ class BACKEND_EXPORT GraphParameterStore {
   size_t buffer_size_{0};
   // Protect async copy finished before release.
   std::vector<TensorDataPtr> tensor_data_in_callback_;
-  std::set<DeviceTensorPtr> device_tensor_in_callback_;
   // Record the dynamic shape for each position.
   std::vector<std::vector<bool>> is_dynamic_;
   // Record the tensor shape for inference.

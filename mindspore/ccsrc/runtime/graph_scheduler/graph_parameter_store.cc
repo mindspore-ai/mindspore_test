@@ -91,11 +91,6 @@ void GraphParameterStore::InsertTensorDataIntoCallback(const TensorDataPtr &tens
   tensor_data_in_callback_.push_back(tensor_data);
 }
 
-void GraphParameterStore::InsertDeviceTensorIntoCallback(const DeviceTensorPtr &device_tensor) {
-  std::unique_lock<std::shared_mutex> lock(param_mutex_);
-  device_tensor_in_callback_.emplace(device_tensor);
-}
-
 void GraphParameterStore::InsertNonWeightRefMaxInputs(size_t outer_index, size_t inner_index) {
   std::unique_lock<std::shared_mutex> lock(param_mutex_);
   non_weight_ref_max_inputs_.emplace(outer_index, inner_index);
@@ -234,9 +229,8 @@ bool GraphParameterStore::RecordGraphInputsAndIsDyn(const std::vector<size_t> &i
   return isDyn;
 }
 
-void AddCopyDataCallBack(const std::vector<TensorDataPtr> &tensor_data_in_callback,
-                         const std::set<DeviceTensorPtr> &device_tensor_in_callback) {
-  device::CallbackFunc callback_func = [tensor_data_in_callback, device_tensor_in_callback]() {
+void AddCopyDataCallBack(const std::vector<TensorDataPtr> &tensor_data_in_callback) {
+  device::CallbackFunc callback_func = [tensor_data_in_callback]() {
     // Clear buffer automatically.
   };
 
@@ -258,9 +252,8 @@ void GraphParameterStore::ReleaseData() {
   ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kReleaseResource, "GraphParameterStore");
   // Add copy data callback to avoid release data before async copy finished.
   std::unique_lock<std::shared_mutex> lock(param_mutex_);
-  AddCopyDataCallBack(tensor_data_in_callback_, device_tensor_in_callback_);
+  AddCopyDataCallBack(tensor_data_in_callback_);
   tensor_data_in_callback_.clear();
-  device_tensor_in_callback_.clear();
 
   for (auto index : non_weight_ref_max_inputs_) {
     std::pair<size_t, size_t> position{index.first, index.second};
@@ -348,7 +341,6 @@ void GraphParameterStore::Clear() {
   node_to_real_front_node_.clear();
   index_to_front_node_.clear();
   tensor_data_in_callback_.clear();
-  device_tensor_in_callback_.clear();
   for (auto &buffer : buffers_) {
     buffer.clear();
   }

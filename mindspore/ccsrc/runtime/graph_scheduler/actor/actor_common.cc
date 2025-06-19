@@ -1086,8 +1086,8 @@ void SyncDataForTensorAddress(tensor::Tensor *tensor, const AID &from_aid, const
   }
 }
 
-KernelTensorPtr PrepareForNonTensorAddress(const std::pair<KernelWithIndex, size_t> &parameter_index, Tensor *tensor,
-                                           const AID &from_aid, bool is_first_user, size_t stream_id) {
+void PrepareForNonTensorAddress(const std::pair<KernelWithIndex, size_t> &parameter_index, Tensor *tensor,
+                                const AID &from_aid, bool is_first_user, size_t stream_id) {
   auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
   auto outer_index = parameter_index.second;
   auto inner_index = parameter_index.first.second;
@@ -1135,7 +1135,6 @@ KernelTensorPtr PrepareForNonTensorAddress(const std::pair<KernelWithIndex, size
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "Set new ref count to max for device address:" << device_tensor;
   }
   graph_parameter_store->SetDeviceTensorPrepared(outer_index, inner_index, true);
-  return kernel_tensor;
 }
 
 void SetNodeIndexForTensorAddress(const DeviceTensorPtr &device_tensor, const DeviceTensorPtr &tensor_address,
@@ -1154,8 +1153,8 @@ void SetNodeIndexForTensorAddress(const DeviceTensorPtr &device_tensor, const De
   }
 }
 
-KernelTensorPtr PrepareParameter(const std::pair<KernelWithIndex, size_t> &parameter_index, const AID &from_aid,
-                                 bool is_first_user, size_t stream_id, bool enable_parallel_dispatch) {
+void PrepareParameter(const std::pair<KernelWithIndex, size_t> &parameter_index, const AID &from_aid,
+                      bool is_first_user, size_t stream_id, bool enable_parallel_dispatch) {
   // Check parameter prepared for concurrent
   auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
   auto outer_index = parameter_index.second;
@@ -1169,7 +1168,7 @@ KernelTensorPtr PrepareParameter(const std::pair<KernelWithIndex, size_t> &param
         graph_parameter_store->SetAsyncMemcpyFun(outer_index, inner_index, nullptr);
       }
     }
-    return kernel_tensor;
+    return;
   }
   auto front_node = parameter_index.first;
   MS_LOG(DEBUG) << "Prepare parameter input, actor: " << from_aid.Name() << ", outer index: " << outer_index
@@ -1189,13 +1188,13 @@ KernelTensorPtr PrepareParameter(const std::pair<KernelWithIndex, size_t> &param
       kernel_tensor->set_device_address(tensor_address);
       UpdateDynamicShapeAndSize(tensor, kernel_tensor, outer_index, inner_index);
       SyncDataForTensorAddress(tensor, from_aid, front_node.first);
-      return kernel_tensor;
+      return;
     }
 
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "Set new ref count to max for device address:" << tensor_address;
     auto device_tensor = kernel_tensor->device_address();
     if (tensor_address == device_tensor) {
-      return kernel_tensor;
+      return;
     }
 
     // Set tensor address to kernel tensor.
@@ -1206,13 +1205,11 @@ KernelTensorPtr PrepareParameter(const std::pair<KernelWithIndex, size_t> &param
     SetNodeIndexForTensorAddress(device_tensor, tensor_address, outer_index, inner_index);
     kernel_tensor->set_device_address(tensor_address);
     UpdateDynamicShapeAndSize(tensor, kernel_tensor, outer_index, inner_index);
-    return kernel_tensor;
+    return;
   }
 
   // Prepare data for kernel tensor not from tensor.
-  kernel_tensor = PrepareForNonTensorAddress(parameter_index, tensor, from_aid, is_first_user, stream_id);
-
-  return kernel_tensor;
+  PrepareForNonTensorAddress(parameter_index, tensor, from_aid, is_first_user, stream_id);
 }
 
 KernelTensorPtr FetchParameter(const std::pair<KernelWithIndex, size_t> &parameter_index, const AID &from_aid,
@@ -1229,8 +1226,8 @@ KernelTensorPtr FetchParameter(const std::pair<KernelWithIndex, size_t> &paramet
   if (!graph_parameter_store->IsConcurrentlyUse(outer_index, inner_index)) {
     // Return device tensor from graph parameter store if data prepared.
     auto kernel_tensor = graph_parameter_store->Fetch(outer_index, inner_index);
+    MS_EXCEPTION_IF_NULL(kernel_tensor);
     if (graph_parameter_store->GetDeviceTensorPrepared(outer_index, inner_index)) {
-      MS_EXCEPTION_IF_NULL(kernel_tensor);
       // parallel dispatch kernel can not support multi graph parallel execute, no need lock.
       if (is_first_user && enable_parallel_dispatch) {
         const auto &copy_func = graph_parameter_store->GetAsyncMemcpyFun(outer_index, inner_index);
@@ -1242,23 +1239,21 @@ KernelTensorPtr FetchParameter(const std::pair<KernelWithIndex, size_t> &paramet
       return kernel_tensor;
     }
 
-    auto prepared_kernel_tensor =
-      PrepareParameter(parameter_index, from_aid, is_first_user, stream_id, enable_parallel_dispatch);
-    MS_EXCEPTION_IF_NULL(prepared_kernel_tensor);
+    PrepareParameter(parameter_index, from_aid, is_first_user, stream_id, enable_parallel_dispatch);
     auto is_weight = graph_parameter_store->GetPositionWeight(outer_index);
-    if (!is_weight && prepared_kernel_tensor->device_address() != nullptr &&
-        prepared_kernel_tensor->device_address()->new_ref_count() == SIZE_MAX) {
+    if (!is_weight && kernel_tensor->device_address() != nullptr &&
+        kernel_tensor->device_address()->new_ref_count() == SIZE_MAX) {
       graph_parameter_store->InsertNonWeightRefMaxInputs(outer_index, inner_index);
     }
-    return prepared_kernel_tensor;
+    return kernel_tensor;
   }
 
   // Return device tensor from graph parameter store if data prepared.
   static std::shared_mutex mtx;
   std::shared_lock<std::shared_mutex> read_lock(mtx);
   auto kernel_tensor = graph_parameter_store->Fetch(outer_index, inner_index);
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
   if (graph_parameter_store->GetDeviceTensorPrepared(outer_index, inner_index)) {
-    MS_EXCEPTION_IF_NULL(kernel_tensor);
     // parallel dispatch kernel can not support multi graph parallel execute, no need lock.
     if (is_first_user && enable_parallel_dispatch) {
       const auto &copy_func = graph_parameter_store->GetAsyncMemcpyFun(outer_index, inner_index);
@@ -1272,15 +1267,13 @@ KernelTensorPtr FetchParameter(const std::pair<KernelWithIndex, size_t> &paramet
 
   read_lock.unlock();
   std::unique_lock<std::shared_mutex> write_lock(mtx);
-  auto prepared_kernel_tensor =
-    PrepareParameter(parameter_index, from_aid, is_first_user, stream_id, enable_parallel_dispatch);
-  MS_EXCEPTION_IF_NULL(prepared_kernel_tensor);
+  PrepareParameter(parameter_index, from_aid, is_first_user, stream_id, enable_parallel_dispatch);
   auto is_weight = graph_parameter_store->GetPositionWeight(outer_index);
-  if (!is_weight && prepared_kernel_tensor->device_address() != nullptr &&
-      prepared_kernel_tensor->device_address()->new_ref_count() == SIZE_MAX) {
+  if (!is_weight && kernel_tensor->device_address() != nullptr &&
+      kernel_tensor->device_address()->new_ref_count() == SIZE_MAX) {
     graph_parameter_store->InsertNonWeightRefMaxInputs(outer_index, inner_index);
   }
-  return prepared_kernel_tensor;
+  return kernel_tensor;
 }
 }  // namespace runtime
 }  // namespace mindspore
