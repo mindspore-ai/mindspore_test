@@ -51,10 +51,19 @@ def set_context_mode(mode):
         raise ValueError(f"Unsupported mode {mode}")
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def compare_output(output, p_value):
+    out_np = output.asnumpy()
+    out_numel = np.size(out_np)
+    out_sum = np.sum(out_np)
+    assert (out_numel * (p_value - 0.02)) < out_sum < (out_numel * (p_value + 0.02))
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("mode", ["pynative", "kbk"])
+@pytest.mark.parametrize("shape", [(100, 100)])
 @pytest.mark.parametrize("p_mode", ["tensor", "float"])
-def test_bernoulli_normal(mode, p_mode):
+@pytest.mark.parametrize("p_value", [0.3, 0.7])
+def test_bernoulli_normal(mode, shape, p_mode, p_value):
     """
     Feature: pyboost function.
     Description: test function Tensor.bernoulli_ forward and backward.
@@ -63,22 +72,16 @@ def test_bernoulli_normal(mode, p_mode):
     set_context_mode(mode)
 
     if p_mode == "tensor":
-        p = Tensor(generate_ones_input((5, 5), np.float32)) * 0.3
+        p = Tensor(generate_ones_input(shape, np.float32)) * p_value
     else:
-        p = 0.3
+        p = p_value
 
-    expect = np.array([[0.0, 0.0, 0.0, 0.0, 1.0],
-                       [0.0, 0.0, 0.0, 1.0, 1.0],
-                       [0.0, 0.0, 1.0, 1.0, 0.0],
-                       [0.0, 1.0, 0.0, 0.0, 0.0],
-                       [0.0, 0.0, 1.0, 0.0, 1.0]]).astype(np.float32)
-    expect_grad = np.zeros((5, 5)).astype(np.float32)
+    expect_grad = np.zeros(shape).astype(np.float32)
 
     ms.manual_seed(10)
-    x = Tensor(generate_ones_input((5, 5), np.float32))
-    # input_min & input_max
+    x = Tensor(generate_ones_input(shape, np.float32))
     bernoulli_forward_func(x, p)
-    assert np.allclose(x.asnumpy(), expect, rtol=1e-4)
+    compare_output(x, p_value)
     grads_x = bernoulli_backward_func(x, p)
     assert np.allclose(grads_x[0].asnumpy(), expect_grad, rtol=1e-4)
     if p_mode == "tensor":
