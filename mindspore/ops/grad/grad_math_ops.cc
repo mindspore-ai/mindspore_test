@@ -709,8 +709,8 @@ inline NodePtr ReduceExtOpGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr
   auto mask_sum = ib->SumExt(mask, ib->EmitValue(kNone), ib->Value(false), ib->EmitValue(kNone));
   auto grad_div_mask_sum = ib->Div(dout, ib->Cast(mask_sum, ib->GetDtype(dout)));
   grad_div_mask_sum = ib->Reshape(ib->Cast(grad_div_mask_sum, ib->GetDtype(x)), ShapeVector{});
-  (void)ib->Emit("InplaceMaskedFillTensor", {out_grad, mask, grad_div_mask_sum});
-  return {out_grad};
+  auto dx = ib->Emit("InplaceMaskedFillTensor", {out_grad, mask, grad_div_mask_sum});
+  return {dx};
 }
 
 class DiagonalShapeCalc : public ShapeCalcFunctor {
