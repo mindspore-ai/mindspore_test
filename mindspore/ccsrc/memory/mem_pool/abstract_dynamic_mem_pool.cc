@@ -1258,7 +1258,7 @@ MemoryTimeEventPtr AbstractEnhancedDynamicMemPool::GenAllocateMemoryTimeEvent(co
   time_event->run_mode_ = DynamicMemAllocatorDebugInfo::GetDebugInfo().run_mode_;
   time_event->used_size_ = mem_stat_.used_size_;
   time_event->peak_size_ = mem_stat_.peak_size_;
-  time_event->alloc_size_ = mem_stat_.alloc_size_;
+  time_event->alloc_size_ = TotalMemStatistics();
   time_event->used_by_event_size_ = mem_stat_.used_by_event_size_;
   time_event->eager_free_size_ = mem_stat_.eager_free_size_;
   time_event->owner_ = DynamicMemAllocatorDebugInfo::GetDebugInfo().name_;
@@ -1276,7 +1276,7 @@ MemoryTimeEventPtr AbstractEnhancedDynamicMemPool::GenFreeMemoryTimeEvent(const 
   time_event->size_ = time_event_free_size;
   time_event->used_size_ = mem_stat_.used_size_;
   time_event->peak_size_ = mem_stat_.peak_size_;
-  time_event->alloc_size_ = mem_stat_.alloc_size_;
+  time_event->alloc_size_ = TotalMemStatistics();
   time_event->used_by_event_size_ = mem_stat_.used_by_event_size_;
   time_event->eager_free_size_ = mem_stat_.eager_free_size_;
   return time_event;
