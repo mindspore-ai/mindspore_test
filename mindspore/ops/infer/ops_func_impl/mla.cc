@@ -166,6 +166,12 @@ static void CheckShape(const PrimitivePtr &primitive, const InferInfoPtrList &in
   MS_CHECK_VALUE(context_len_shape.size() == kMLADeqScaleRank,
                  CheckAndConvertUtils::FormatCommMsg("For MLA The rank of context_lengths must be ", kMLADeqScaleRank,
                                                      ", but got shape: ", context_len_shape));
+  if (!input_infos[kMlaInputQueryLensIndex]->IsDynamic() && !input_infos[kMlaInputContextLensIndex]->IsDynamic()) {
+    MS_CHECK_VALUE(context_len_shape[0] == q_len_shape[0],
+                   CheckAndConvertUtils::FormatCommMsg(
+                     "For MLA The shape of context_lengths and q_seq_lens must be same but got context_len_shape: ",
+                     context_len_shape, ", q_len_shape: ", q_len_shape));
+  }
 }
 
 ShapeArray MlaFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
