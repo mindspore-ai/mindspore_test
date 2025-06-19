@@ -15,6 +15,7 @@
 Interpolation Mode, Resampling Filters
 """
 import gc
+import importlib
 import math
 import numbers
 import os
@@ -22,7 +23,6 @@ import re
 from enum import Enum, IntEnum
 from fractions import Fraction
 
-import cv2
 import numpy as np
 from PIL import Image
 
@@ -665,6 +665,11 @@ class VideoFrameDvpp:
 
 def _get_frame_by_cv(filename, container, stream):
     """ Grab video frames with OpenCV. """
+
+    try:
+        cv2 = importlib.import_module("cv2")
+    except ModuleNotFoundError:
+        raise ImportError("Importing cv2 failed, try to install it by running `pip install opencv-python`.")
 
     cap = cv2.VideoCapture(filename)
     cap.set(cv2.CAP_PROP_FORMAT, -1)
