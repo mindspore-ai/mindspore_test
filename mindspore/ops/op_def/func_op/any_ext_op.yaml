@@ -1,13 +1,11 @@
-#deprecated reduce_any
-reduce_any:
+#operator AnyExt
+any_ext:
   args:
-    x:
+    input:
       dtype: tensor
-    axis:
-      dtype: tuple[int]
-      type_cast: int, list[int], tensor
-      default: None
-    keep_dims:
+    dim:
+      dtype: int
+    keepdim:
       dtype: bool
       default: False
   returns:
@@ -15,5 +13,10 @@ reduce_any:
       dtype: tensor
   function:
     disable: True
+  bprop_expander: False
   dispatch:
     enable: True
+    Ascend: AnyExtAscend
+    CPU: AnyExtCPU
+    GPU: AnyExtGPU
+  

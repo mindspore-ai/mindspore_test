@@ -1,13 +1,24 @@
 mindspore.mint.any
 =====================
 
-.. py:function:: mindspore.mint.any(input, dim=None, keepdim=False)
+.. py:function:: mindspore.mint.any(input) -> Tensor
 
-    检查指定维度上是否含有 `True`。
+    检查 `input` 中是否含有 `True`。
 
     参数：
         - **input** (Tensor) - 输入tensor。
-        - **dim** (Union[int, tuple(int), list(int), Tensor], 可选) - 要减少的维度。如果为 ``None``，减少所有维度。默认 ``None`` 。
+
+    返回：
+        Tensor
+
+    .. py:function:: mindspore.mint.any(input, dim, keepdim=False) -> Tensor
+        :noindex:
+
+    检查 `input` 指定维度上是否含有 `True`。
+
+    参数：
+        - **input** (Tensor) - 输入tensor。
+        - **dim** (int) - 要规约的维度。
         - **keepdim** (bool, 可选) - 输出tensor是否保留维度。默认 ``False`` 。
 
     返回：
