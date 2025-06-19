@@ -22,25 +22,20 @@ namespace mindspore {
 namespace kernel {
 internal::InternalOpPtr ApplyRotaryPosEmb::CreateKernel(const internal::InputsImmutableInfoList &inputs,
                                                         const internal::OutputsImmutableInfoList &outputs) {
-  internal::ApplyRotaryPosEmbParam param;
-  param.cos_format = cos_format_;
-  return internal::CreateApplyRotaryPosEmbOp(inputs, outputs, param, internal::kInternalApplyRotaryPosEmbOpName);
+  return internal::CreateApplyRotaryPosEmbOp(inputs, outputs, param_, internal::kInternalApplyRotaryPosEmbOpName);
 }
 
-void ApplyRotaryPosEmb::Call(const std::shared_ptr<pyboost::OpRunner> &op, const TensorPtr &query_tensor,
-                             const TensorPtr &key_tensor, const TensorPtr &cos_tensor, const TensorPtr &sin_tensor,
+void ApplyRotaryPosEmb::Call(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &op_key,
+                             const uint64_t &tiling_key, const TensorPtr &query_tensor, const TensorPtr &key_tensor,
+                             const TensorPtr &cos_tensor, const TensorPtr &sin_tensor,
                              const TensorPtr &position_ids_tensor, const int64_t &cos_format) {
   TensorPtrList inputs = {query_tensor, key_tensor, cos_tensor, sin_tensor, position_ids_tensor};
   TensorPtrList outputs = op->outputs();
-  internal_inputs_shape_.resize(inputs.size());
-  internal_outputs_shape_.resize(outputs.size());
-  TransInternalShapes(&internal_inputs_shape_, inputs);
-  TransInternalShapes(&internal_outputs_shape_, outputs);
-  cos_format_ = cos_format;
-  auto op_key = CalcInternalOpApiHash(kernel_name_, inputs, cos_format_, outputs);
-  GetOrCreateKernel(op, inputs, outputs, op_key);
+  TransInternalShapes(inputs, outputs);
+  param_.cos_format = cos_format;
+  GetOrCreateKernel(op, op_key, tiling_key, inputs, outputs);
   LAUNCH_INTERNAL(kernel_name_, op, internal_op_, inputs, outputs, tiling_info_);
 }
-MS_INTERNAL_KERNEL_INFO_FACTORY_REG(ApplyRotaryPosEmb, internal::kInternalApplyRotaryPosEmbOpName, ApplyRotaryPosEmb);
+MS_INTERNAL_KERNEL_INFO_FACTORY_REG(ApplyRotaryPosEmb, ApplyRotaryPosEmb);
 }  // namespace kernel
 }  // namespace mindspore

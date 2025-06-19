@@ -22,27 +22,31 @@ namespace mindspore {
 namespace kernel {
 internal::InternalOpPtr FlashAttentionScore::CreateKernel(const internal::InputsImmutableInfoList &inputs,
                                                           const internal::OutputsImmutableInfoList &outputs) {
-  internal::FlashAttentionScoreParam param;
-  param.head_num = head_num_;
-  param.inner_precise = inner_precise_;
-  param.pre_tokens = pre_tokens_;
-  param.next_tokens = next_tokens_;
-  param.sparse_mode = sparse_mode_;
-  param.mask_dtype = mask_dtype_;
-  param.input_layout = input_layout_;
-  param.mask_dims = mask_dims_;
-  param.kv_seq_len = kv_seq_len_;
-  param.q_seq_len = q_seq_len_;
-  param.tor = tor_;
-  return internal::CreateFlashAttentionScoreOp(inputs, outputs, param, internal::kInternalFlashAttentionScoreOpName);
+  created_flag_ = true;
+  return internal::CreateFlashAttentionScoreOp(inputs, outputs, param_, internal::kInternalFlashAttentionScoreOpName);
 }
 
-uint64_t FlashAttentionScore::GenerateTilingKey(const std::string &kernel_name, const TensorPtrList &inputs) {
-  return CalcInternalOpTilingHash(kernel_name, inputs, q_seq_len_, kv_seq_len_);
+bool FlashAttentionScore::UpdateParam() {
+  if (created_flag_) {
+    created_flag_ = false;
+    return true;
+  }
+
+  auto ret = internal_op_->UpdateParam(&param_);
+  if (ret != internal::kInternalOk) {
+    MS_LOG(ERROR) << "InternalFlashAttentionScore UpdateParam failed, kernel_name: " << kernel_name_;
+    return false;
+  }
+  return true;
 }
 
-void FlashAttentionScore::Call(const std::shared_ptr<pyboost::OpRunner> &op, const TensorPtr &query,
-                               const TensorPtr &key, const TensorPtr &value, const std::optional<TensorPtr> &real_shift,
+uint64_t FlashAttentionScore::GetOrGenerateOpTilingKey(const uint64_t &tiling_key) const {
+  return CalcInternalOpTilingHash(kernel_name_, tiling_key, param_.q_seq_len, param_.kv_seq_len);
+}
+
+void FlashAttentionScore::Call(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &op_key,
+                               const uint64_t &tiling_key, const TensorPtr &query, const TensorPtr &key,
+                               const TensorPtr &value, const std::optional<TensorPtr> &real_shift,
                                const std::optional<TensorPtr> &drop_mask, const std::optional<TensorPtr> &padding_mask,
                                const std::optional<TensorPtr> &attn_mask, const std::vector<int64_t> &prefix,
                                const std::vector<int64_t> &actual_seq_len, const std::vector<int64_t> &actual_seq_kvlen,
@@ -52,32 +56,26 @@ void FlashAttentionScore::Call(const std::shared_ptr<pyboost::OpRunner> &op, con
   TensorPtrList inputs = {query, key, value, real_shift.has_value() ? real_shift.value() : nullptr,
                           attn_mask.has_value() ? attn_mask.value() : nullptr};
   TensorPtrList outputs = {op->outputs()[kIndex3]};
-  internal_inputs_shape_.resize(inputs.size());
-  internal_outputs_shape_.resize(outputs.size());
-  TransInternalShapes(&internal_inputs_shape_, inputs);
-  TransInternalShapes(&internal_outputs_shape_, outputs);
+  TransInternalShapes(inputs, outputs);
   auto attn_mask_tensor = inputs.back();
   if (attn_mask_tensor != nullptr) {
-    mask_dims_ = attn_mask_tensor->shape();
-    mask_dtype_ = TransInternalDataType(attn_mask_tensor->data_type());
+    param_.mask_dims = attn_mask_tensor->shape();
+    param_.mask_dtype = TransInternalDataType(attn_mask_tensor->data_type());
   }
-  ConvertVectorDtype<int32_t, int64_t>(&q_seq_len_, actual_seq_len);
-  ConvertVectorDtype<int32_t, int64_t>(&kv_seq_len_, actual_seq_kvlen);
+  ConvertVectorDtype<int32_t, int64_t>(&param_.q_seq_len, actual_seq_len);
+  ConvertVectorDtype<int32_t, int64_t>(&param_.kv_seq_len, actual_seq_kvlen);
 
-  head_num_ = static_cast<int32_t>(head_num);
-  tor_ = scale_value;
-  pre_tokens_ = static_cast<int32_t>(pre_tokens);
-  next_tokens_ = static_cast<int32_t>(next_tokens);
-  inner_precise_ = static_cast<int32_t>(inner_precise);
-  input_layout_ = static_cast<int32_t>(input_layout);
-  sparse_mode_ = static_cast<int32_t>(sparse_mode);
+  param_.head_num = static_cast<int32_t>(head_num);
+  param_.tor = scale_value;
+  param_.pre_tokens = static_cast<int32_t>(pre_tokens);
+  param_.next_tokens = static_cast<int32_t>(next_tokens);
+  param_.inner_precise = static_cast<int32_t>(inner_precise);
+  param_.input_layout = static_cast<int32_t>(input_layout);
+  param_.sparse_mode = static_cast<int32_t>(sparse_mode);
 
-  auto op_key = CalcInternalOpApiHash(kernel_name_, inputs, head_num_, tor_, pre_tokens_, next_tokens_, inner_precise_,
-                                      input_layout_, sparse_mode_, mask_dims_, q_seq_len_, kv_seq_len_, outputs);
-  GetOrCreateKernel(op, inputs, outputs, op_key);
+  GetOrCreateKernel(op, op_key, tiling_key, inputs, outputs);
   LAUNCH_INTERNAL(kernel_name_, op, internal_op_, inputs, outputs, tiling_info_);
 }
-MS_INTERNAL_KERNEL_INFO_FACTORY_REG(FlashAttentionScore, internal::kInternalFlashAttentionScoreOpName,
-                                    FlashAttentionScore);
+MS_INTERNAL_KERNEL_INFO_FACTORY_REG(FlashAttentionScore, FlashAttentionScore);
 }  // namespace kernel
 }  // namespace mindspore
