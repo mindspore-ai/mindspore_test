@@ -27,23 +27,22 @@ namespace mindspore {
 namespace kernel {
 class QuantBatchMatmul : public InternalKernelInfo {
  public:
-  QuantBatchMatmul() : InternalKernelInfo(std::move(internal::kInternalMatMulOpName)) {}
+  explicit QuantBatchMatmul(std::string &&kernel_name) : InternalKernelInfo(std::move(kernel_name)) {}
   ~QuantBatchMatmul() = default;
 
-  void Call(const std::shared_ptr<pyboost::OpRunner> &op, const BaseTensorPtr &x, const BaseTensorPtr &y,
-            const BaseTensorPtr &scale, const std::optional<BaseTensorPtr> &offset,
-            const std::optional<BaseTensorPtr> &bias, const std::optional<BaseTensorPtr> &pertoken_scale,
-            const bool transpose_a, const bool transpose_b, const int64_t dtype);
+  void Call(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &op_key, const uint64_t &tiling_key,
+            const BaseTensorPtr &x, const BaseTensorPtr &y, const BaseTensorPtr &scale,
+            const std::optional<BaseTensorPtr> &offset, const std::optional<BaseTensorPtr> &bias,
+            const std::optional<BaseTensorPtr> &pertoken_scale, const bool transpose_a, const bool transpose_b,
+            const int64_t dtype);
 
  protected:
+  uint64_t GetOrGenerateOpTilingKey(const uint64_t &tiling_key) const override;
   internal::InternalOpPtr CreateKernel(const internal::InputsImmutableInfoList &inputs,
                                        const internal::OutputsImmutableInfoList &outputs) override;
-  uint64_t GenerateTilingKey(const std::string &kernel_name, const std::vector<BaseTensorPtr> &inputs) override;
 
  private:
-  bool transpose_a_;
-  bool transpose_b_;
-  bool with_bias_;
+  internal::MatmulParam param_;
   internal::TensorFormat output_format_;
 };
 }  // namespace kernel

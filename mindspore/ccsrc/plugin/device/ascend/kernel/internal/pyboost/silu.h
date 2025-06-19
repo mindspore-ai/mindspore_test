@@ -27,10 +27,11 @@ namespace mindspore {
 namespace kernel {
 class SiLU : public InternalKernelInfo {
  public:
-  SiLU() : InternalKernelInfo(std::move(internal::kInternalSwishOpName)) {}
+  explicit SiLU(std::string &&kernel_name) : InternalKernelInfo(std::move(kernel_name)) {}
   ~SiLU() = default;
 
-  void Call(const std::shared_ptr<pyboost::OpRunner> &op, const BaseTensorPtr &x);
+  void Call(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &op_key, const uint64_t &tiling_key,
+            const BaseTensorPtr &x);
 
  protected:
   internal::InternalOpPtr CreateKernel(const internal::InputsImmutableInfoList &inputs,
