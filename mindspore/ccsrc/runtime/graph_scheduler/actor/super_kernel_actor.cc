@@ -747,12 +747,9 @@ void SuperKernelActor::FetchParameterInput(const KernelRunnerPtr &kernel_actor, 
     bool is_first_user = kernel_actor->is_first_used_params_[kernel_input_index];
     auto kernel_tensor = FetchParameter(parameter_index.second, kernel_actor->GetAID(), is_first_user, stream_id,
                                         enable_parallel_dispatch_);
-    const auto &device_tensor = kernel_tensor->device_address();
-    MS_EXCEPTION_IF_NULL(device_tensor);
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
       << "Actor: " << kernel_actor->GetAID().Name() << ", input index: " << parameter_index.first
-      << ", device tensor: " << device_tensor << ", ptr: " << device_tensor->GetPtr()
-      << " new ref count:" << device_tensor->new_ref_count()
+      << ", kernel tensor info: " << kernel_tensor->ToString()
       << " super kernel actor context:" << device_contexts_[0]->device_context_key().ToString()
       << " kernel actor context:" << kernel_actor->device_contexts()[0]->device_context_key().ToString();
     kernel_actor->SetInputDeviceTensor(kernel_tensor, parameter_index.first);
