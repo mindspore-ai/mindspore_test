@@ -109,13 +109,13 @@ tensor::TensorPtr InplaceCopyH2D(const std::shared_ptr<OpRunner> &op, const Tens
     auto stream_id = op->stream_id();
 
     PyBoostUtils::MallocOpInputs(device_context, dst);
+    void *dst_ptr = GetDevicePtrFromTensor(dst);
 
     if (src->Size() > 0 && !common::IsCompileSimulation()) {
-      runtime::OpExecutor::DispatchLaunchTask([device_context, stream_id, dst, src, non_blocking]() {
+      runtime::OpExecutor::DispatchLaunchTask([device_context, stream_id, dst, src, dst_ptr, non_blocking]() {
         runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative,
                                            runtime::ProfilerEvent::kPyNativeLaunchTask, "InplaceCopyH2D", false);
         device_context->device_res_manager_->BindDeviceToCurrentThread(false);
-        void *dst_ptr = GetDevicePtrFromTensor(dst);
         void *src_ptr = src->data_c();
 
         if (MS_UNLIKELY(dst_ptr == nullptr)) {
@@ -188,14 +188,14 @@ tensor::TensorPtr InplaceCopyD2H(const std::shared_ptr<OpRunner> &op, const Tens
     auto stream_id = op->stream_id();
 
     PyBoostUtils::MallocOpInputs(device_context, src);
+    void *src_ptr = GetDevicePtrFromTensor(src);
 
     if (src->Size() > 0 && !common::IsCompileSimulation()) {
-      runtime::OpExecutor::DispatchLaunchTask([device_context, stream_id, dst, src, non_blocking]() {
+      runtime::OpExecutor::DispatchLaunchTask([device_context, stream_id, dst, src, src_ptr, non_blocking]() {
         runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative,
                                            runtime::ProfilerEvent::kPyNativeLaunchTask, "InplaceCopyD2H", false);
         device_context->device_res_manager_->BindDeviceToCurrentThread(false);
         void *dst_ptr = dst->data_c();
-        void *src_ptr = GetDevicePtrFromTensor(src);
 
         if (MS_UNLIKELY(src_ptr == nullptr)) {
           MS_LOG(ERROR) << "src device_ptr: " << src_ptr << ", Maybe you free the device memory before InplaceCopyD2H"

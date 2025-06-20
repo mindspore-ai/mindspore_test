@@ -157,7 +157,7 @@ def copy_h2d_d2h_h2h(non_blocking):
     ori_alloc_mem = ms.runtime.memory_allocated()
     dst1 = ms.mint.randn((1024, 1024))
     alloc_mem = ms.runtime.memory_allocated()
-    src1 = ms.mint.empty_like(dst1, device="CPU")
+    src1 = ms.Tensor(np.random.randn(1024, 1024).astype(np.float32))
     dst1.copy_(src1, non_blocking=non_blocking)
     assert alloc_mem == ms.runtime.memory_allocated()
     assert np.all(dst1.asnumpy() == src1.asnumpy())
@@ -194,7 +194,7 @@ def copy_h2d_d2h_view(non_blocking):
     dst1 = ms.mint.randn((1024, 1024))
     alloc_mem = ms.runtime.memory_allocated()
     view1 = dst1[1]
-    src1 = ms.mint.empty_like(view1, device="CPU")
+    src1 = ms.Tensor(np.random.randn(1024,).astype(np.float32))
     view1.copy_(src1, non_blocking=non_blocking)
     assert alloc_mem == ms.runtime.memory_allocated()
     assert np.all(view1.asnumpy() == src1.asnumpy())
@@ -219,7 +219,7 @@ def copy_h2d_d2h_discontiguous(non_blocking):
     alloc_mem1 = ms.runtime.memory_allocated()
     dst1 = ms.mint.randn((512, 1024), dtype=ms.float32)
     discontig1 = dst1.t()
-    src1 = ms.mint.empty_like(discontig1, device="CPU")
+    src1 = ms.Tensor(np.random.randn(1024, 512).astype(np.float32))
     discontig1.copy_(src1, non_blocking=non_blocking)
     assert (ms.runtime.memory_allocated() - alloc_mem1) == 4195328
     assert np.all(discontig1.asnumpy() == src1.asnumpy())
