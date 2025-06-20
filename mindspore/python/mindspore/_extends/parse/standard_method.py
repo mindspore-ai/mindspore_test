@@ -2133,14 +2133,14 @@ def _check_sum_to_size(size, input_dim, shape_input):
 
 
 @_primexpr
-def _count_axes(size, input_shape, shape_input):
+def _count_axes(size, input_shape, shape_input, pre_len, pre_axis):
     """Count the sum axes for sum_to_size."""
-    axes = []
+    axes = pre_axis
     for i in range(len(size)):
         element = size[i]
-        if element != input_shape[i] and element == 1:
-            axes.append(i)
-        elif element != input_shape[i]:
+        if element != input_shape[i + pre_len] and element == 1:
+            axes.append(i + pre_len)
+        elif element != input_shape[i + pre_len]:
             raise ValueError(f"For sum_to_size, size {size} is not expandable to the tensor size {shape_input}.")
     return axes
 
@@ -2153,13 +2153,15 @@ def sum_to_size(input, *size):
         size = size[0]
     shape_input = input.shape
     _check_sum_to_size(size, input.ndim, shape_input)
+    pre_len = 0
+    pre_axis = []
     if len(size) < input.ndim:
-        pre_axis = tuple(axis for axis in range(input.ndim - len(size)))
-        input = input.sum(pre_axis)
+        pre_len = input.ndim - len(size)
+        pre_axis = [axis for axis in range(pre_len)]
 
-    axes = _count_axes(size, input.shape, shape_input)
+    axes = _count_axes(size, input.shape, shape_input, pre_len, pre_axis)
     if axes:
-        return input.sum(tuple(axes), keepdims=True)
+        return input.sum(tuple(axes), keepdims=True).reshape(size)
     return input
 
 
@@ -4006,6 +4008,7 @@ def to_double(input_x):
     """
     return F.cast(input_x, mstype.float64)
 
+
 def to_bfloat16(input_x):
     r"""
     Converts input tensor dtype to bfloat16.
@@ -4488,7 +4491,7 @@ def uniform_(input, from_=0, to=1, *, generator=None):
     """
     if generator is None:
         generator = default_generator
-    seed, offset = generator._step(generator_step_) # pylint: disable=protected-access
+    seed, offset = generator._step(generator_step_)  # pylint: disable=protected-access
     return inplace_uniform_op(input, from_, to, seed, offset)
 
 
@@ -4498,7 +4501,7 @@ def exponential_(input, lambd=1, *, generator=None):
     """
     if generator is None:
         generator = default_generator
-    seed, offset = generator._step(generator_step_) # pylint: disable=protected-access
+    seed, offset = generator._step(generator_step_)  # pylint: disable=protected-access
     return inplace_exponential_op(input, lambd, seed, offset)
 
 
