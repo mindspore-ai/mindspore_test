@@ -54,8 +54,8 @@ void KernelAsyncResizeActor::ResizeKernelModV2(OpContext<KernelTensor> *const co
     if (context->error_info_.empty()) {
       MsException::Instance().SetException();
       auto error_line = trace::DumpSourceLines(kernel_runner->kernel());
-      MS_LOG(INFO) << "Failed to resize kernelmod for kernel: " << kernel_runner->kernel()->fullname_with_scope()
-                   << " and catch exception: " << e.what() << error_line;
+      MS_LOG(ERROR) << "Failed to resize kernelmod for kernel: " << kernel_runner->kernel()->fullname_with_scope()
+                    << " and catch exception: " << e.what() << error_line;
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(GraphExecutionStrategy::kPipeline, (*context), e.what());
     }
   }
