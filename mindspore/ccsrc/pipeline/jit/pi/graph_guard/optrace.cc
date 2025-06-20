@@ -256,10 +256,12 @@ TracePtr OptimizePyType(const OpTracePtr &tr) {
     return tr;
   }
   // pattern `type(class(...))`
-  if (!Py_IS_TYPE(input->GetParam(1)->GetObject(), &PyType_Type)) {
+  auto input_param1 = input->GetParam(1);
+  MS_EXCEPTION_IF_NULL(input_param1);
+  if (!Py_IS_TYPE(input_param1->GetObject(), &PyType_Type)) {
     return tr;
   }
-  return input->GetParam(1);
+  return input_param1;
 }
 
 TracePtr OptimizePyObjectGetAttr(const OpTracePtr &tr) { return FastTraceBase::CreateFastAttr(tr); }
