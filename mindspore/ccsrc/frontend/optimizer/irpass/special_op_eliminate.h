@@ -197,12 +197,6 @@ class PynativeGradjitPrimitivePyEliminater : public OptimizerCaller {
  public:
   AnfNodePtr operator()(const OptimizerPtr &, const AnfNodePtr &node) override;
 };
-
-// {prim::kPrimVirtualViewGrad, X, Y, ..., U} -> X
-class VirtualViewGradEliminater : public OptimizerCaller {
- public:
-  AnfNodePtr operator()(const OptimizerPtr &, const AnfNodePtr &node) override;
-};
 }  // namespace irpass
 }  // namespace opt
 }  // namespace mindspore
