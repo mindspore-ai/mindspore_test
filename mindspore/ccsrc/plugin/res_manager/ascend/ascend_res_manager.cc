@@ -1001,7 +1001,7 @@ bool AscendResManager::DestroyEvent(const DeviceEventPtr &event) {
   std::lock_guard<std::mutex> lock(device_events_mutex_);
   const auto &iter = std::find(device_events_.begin(), device_events_.end(), event);
   if (iter == device_events_.end()) {
-    MS_LOG(ERROR) << "Can't find specified device event.";
+    MS_LOG(WARNING) << "Can't find specified device event.";
     return false;
   }
   (void)device_events_.erase(iter);
