@@ -13,16 +13,19 @@
 # limitations under the License.
 # ==============================================================================
 import os
+import re
+import shutil
+import glob
 import numpy as np
 import mindspore as ms
 import mindspore.nn as nn
-from mindspore import context, Tensor, Parameter
+from mindspore import Tensor, Parameter, ops
 from mindspore import dtype as mstype
 from mindspore.ops import operations as P
 from mindspore.ops.auto_generate.gen_ops_prim import InplaceAddExt
+from mindspore.ops.auto_generate.gen_ops_prim import select_ext_view_op
 from tests.mark_utils import arg_mark
 
-context.set_context(mode=ms.GRAPH_MODE)
 
 @arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
           essential_mark='essential')
@@ -40,7 +43,7 @@ def test_tensor_inplace_add():
     input_x = ms.Tensor(2, dtype=ms.int32)
     input_y = ms.Tensor(3, dtype=ms.int32)
     net = Net()
-    out = net(input_x, input_y)
+    out = (ms.jit(net, backend="ms_backend", jit_level="O0"))(input_x, input_y)
     print("out:", out)
     assert out == 5
 
@@ -61,7 +64,7 @@ def test_tensor_inplace_add_input_parameter():
     input_x = Parameter(ms.Tensor(2, dtype=ms.int32), name='input_x')
     input_y = ms.Tensor(3, dtype=ms.int32)
     net = Net()
-    out = net(input_x, input_y)
+    out = (ms.jit(net, backend="ms_backend", jit_level="O0"))(input_x, input_y)
     print("out:", out)
     assert input_x == 5
     assert out == 5
@@ -85,7 +88,7 @@ def test_tensor_inplace_sub_inplace_add():
     input_x = ms.Tensor(2, dtype=ms.int32)
     input_y = ms.Tensor(3, dtype=ms.int32)
     net = Net()
-    out = net(input_x, input_y)
+    out = (ms.jit(net, backend="ms_backend", jit_level="O0"))(input_x, input_y)
     print("out:", out)
     assert out[0] == 5
     assert out[1] == -1
@@ -110,7 +113,7 @@ def test_tensor_inplace_sub_inplace_add_add():
     input_x = ms.Tensor(2, dtype=ms.int32)
     input_y = ms.Tensor(3, dtype=ms.int32)
     net = Net()
-    out = net(input_x, input_y)
+    out = (ms.jit(net, backend="ms_backend", jit_level="O0"))(input_x, input_y)
     print("out:", out)
     assert out == 5
 
@@ -135,7 +138,7 @@ def test_tensor_inplace_sub_inplace_add_add_twice():
     input_x = ms.Tensor(2, dtype=ms.int32)
     input_y = ms.Tensor(3, dtype=ms.int32)
     net = Net()
-    out = net(input_x, input_y)
+    out = (ms.jit(net, backend="ms_backend", jit_level="O0"))(input_x, input_y)
     print("out:", out)
     assert out[0] == 5
     assert out[1] == -1
@@ -161,7 +164,7 @@ def test_tensor_sub_inplace_add_inplace_sub():
     input_x = ms.Tensor(2, dtype=ms.int32)
     input_y = ms.Tensor(3, dtype=ms.int32)
     net = Net()
-    out = net(input_x, input_y)
+    out = (ms.jit(net, backend="ms_backend", jit_level="O0"))(input_x, input_y)
     print("out:", out)
     assert out[0] == 5
     assert out[1] == 0
@@ -189,7 +192,7 @@ def test_tensor_inplace_add_func_sub():
     input_x = ms.Tensor(2, dtype=ms.int32)
     input_y = ms.Tensor(3, dtype=ms.int32)
     net = Net()
-    out = net(input_x, input_y)
+    out = (ms.jit(net, backend="ms_backend", jit_level="O0"))(input_x, input_y)
     print("out[0]:", out[0])
     print("out[1]:", out[1])
     assert out[0] == 5
@@ -221,7 +224,7 @@ def test_tensor_inplace_add_func_sub_control_flow():
     input_x = ms.Tensor(2, dtype=ms.int32)
     input_y = ms.Tensor(3, dtype=ms.int32)
     net = Net()
-    out = net(input_x, input_y)
+    out = (ms.jit(net, backend="ms_backend", jit_level="O0"))(input_x, input_y)
     print("out[0]:", out[0])
     print("out[1]:", out[1])
     assert out[0] == 5
@@ -256,7 +259,7 @@ def test_tensor_inplace_add_func_sub_control_flow_2():
     input_x = ms.Tensor(2, dtype=ms.int32)
     input_y = ms.Tensor(3, dtype=ms.int32)
     net = Net()
-    out = net(input_x, input_y)
+    out = (ms.jit(net, backend="ms_backend", jit_level="O0"))(input_x, input_y)
     print("out:", out)
     assert out == 1
 
@@ -283,7 +286,7 @@ def test_tensor_inplace_add_sub_func_3():
     input_x = ms.Tensor(2, dtype=ms.int32)
     input_y = ms.Tensor(3, dtype=ms.int32)
     net = Net()
-    out = net(input_x, input_y)
+    out = (ms.jit(net, backend="ms_backend", jit_level="O0"))(input_x, input_y)
     print("out:", out)
     assert out == -2
 
@@ -307,7 +310,7 @@ def test_tensor_inplace_multi_inplace_ops():
     input_x = ms.Tensor(2, dtype=ms.int32)
     input_y = ms.Tensor(3, dtype=ms.int32)
     net = Net()
-    out = net(input_x, input_y)
+    out = (ms.jit(net, backend="ms_backend", jit_level="O0"))(input_x, input_y)
     print("out[0]:", out[0])
     print("out[1]:", out[1])
     assert out[0] == 2
@@ -336,7 +339,7 @@ def test_tensor_inplace_add_parameter():
     input_x = ms.Tensor(2, dtype=ms.int32)
     input_y = ms.Tensor(3, dtype=ms.int32)
     net = Net()
-    out = net(input_x, input_y)
+    out = (ms.jit(net, backend="ms_backend", jit_level="O0"))(input_x, input_y)
     print("out:", out)
     assert out[0] == 13
     assert out[1] == 2
@@ -365,7 +368,7 @@ def test_tensor_inplace_add_control_flow_multi():
     input_x = ms.Tensor(2, dtype=ms.int32)
     input_y = ms.Tensor(3, dtype=ms.int32)
     net = Net()
-    out = net(input_x, input_y)
+    out = (ms.jit(net, backend="ms_backend", jit_level="O0"))(input_x, input_y)
     print("out:", out)
     assert out == -4
 
@@ -395,7 +398,7 @@ def test_tensor_inplace_add_control_flow_multi_2():
     input_x = ms.Tensor(2, dtype=ms.int32)
     input_y = ms.Tensor(3, dtype=ms.int32)
     net = Net()
-    out = net(input_x, input_y)
+    out = (ms.jit(net, backend="ms_backend", jit_level="O0"))(input_x, input_y)
     print("out:", out)
     assert out == 6
 
@@ -421,7 +424,7 @@ def test_tensor_inplace_index_add():
     indices = ms.Tensor([0, 1], dtype=ms.int32)
     updates = ms.Tensor([[1, 2], [7, 8]], dtype=ms.int32)
     net = Net()
-    out = net(input_x, indices, updates)
+    out = (ms.jit(net, backend="ms_backend", jit_level="O0"))(input_x, indices, updates)
     print("out:", out)
     assert (out.asnumpy() == [[2, 4], [10, 12], [5, 6]]).all()
 
@@ -443,7 +446,7 @@ def test_tensor_inplace_order_list():
     input_x = ms.Tensor(2, dtype=ms.float32)
     input_y = ms.Tensor(3, dtype=ms.int32)
     net = Net()
-    out = net(input_x, input_y)
+    out = (ms.jit(net, backend="ms_backend", jit_level="O0"))(input_x, input_y)
     print(out)
     assert out[0] == 4 and out[1] == 2
 
@@ -547,3 +550,84 @@ def test_inplace_isolated_node():
     net.construct = ms.jit(net.construct)
     output_jit = net(Tensor([1]), Tensor([2]))
     assert output_expect == output_jit
+
+def check_inplace_ref_key_unchanged(save_graphs_path):
+    try:
+        ir_files = glob.glob(os.path.join(save_graphs_path, "*_type_inference_*.ir"))
+        if not ir_files:
+            raise FileNotFoundError(f"No type inference ir files found in save_graphs_path")
+
+        ir_file = ir_files[0]
+        with open(ir_file, 'r') as f:
+            content = f.read()
+
+        pattern = r'PrimFunc_InplaceMuls.*?:\s*(.*?)\s*->\s*(.*?)\n'
+        match = re.search(pattern, content, re.DOTALL)
+
+        if not match:
+            raise AssertionError(f"No PrimFunc_InplaceMuls found in file")
+
+        input_part = match.group(1)
+        output_part = match.group(2)
+
+        ref_key_pattern = re.compile(r'ref_key=([0-9a-fx]+)')
+        input_ref_keys = ref_key_pattern.findall(input_part)
+        output_ref_keys = ref_key_pattern.findall(output_part)
+
+        if not input_ref_keys or not output_ref_keys:
+            raise AssertionError(f"No ref_key found in type signature")
+
+        input_ref_key = input_ref_keys[0]
+        output_ref_key = output_ref_keys[0]
+        assert input_ref_key == output_ref_key
+    finally:
+        if os.path.exists(save_graphs_path):
+            shutil.rmtree(save_graphs_path)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_inplace_ref_key_unchanged_1():
+    """
+    Feature: Inplace tensor ref key unchanged.
+    Description: Inplace tensor ref key unchanged.
+    Expectation: Run success.
+    """
+
+    class Net(nn.Cell):
+        def construct(self, x, value):
+            y = ops.abs(x)
+            y_viewed0 = select_ext_view_op(y, 0, 0)
+            y.mul_(2)
+            y_viewed1 = select_ext_view_op(y, 0, 0)
+            y_viewed1.add_(value)
+            y_viewed0.add_(value)
+            return y
+
+    save_graphs_path = "inplace_ref_key_unchanged_1"
+    ms.context.set_context(save_graphs=True, save_graphs_path=save_graphs_path)
+    net = Net()
+    (ms.jit(net, backend="ms_backend", jit_level="O0"))(Tensor([2, 3], dtype=ms.float32), Tensor(1, dtype=ms.float32))
+    check_inplace_ref_key_unchanged(save_graphs_path)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_inplace_ref_key_unchanged_2():
+    """
+    Feature: Inplace tensor ref key unchanged.
+    Description: Inplace tensor ref key unchanged.
+    Expectation: Run success.
+    """
+
+    class Net(nn.Cell):
+        def construct(self, x, value):
+            y = ops.abs(x)
+            y.mul_(2)
+            y_viewed = select_ext_view_op(y, 0, 0)
+            y_viewed.add_(value)
+            return y
+
+    save_graphs_path = "inplace_ref_key_unchanged_2"
+    ms.context.set_context(save_graphs=True, save_graphs_path=save_graphs_path)
+    net = Net()
+    (ms.jit(net, backend="ms_backend", jit_level="O0"))(Tensor([2, 3], dtype=ms.float32), Tensor(1, dtype=ms.float32))
+    check_inplace_ref_key_unchanged(save_graphs_path)
