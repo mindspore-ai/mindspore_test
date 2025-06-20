@@ -167,6 +167,13 @@ void FetchRealParameterByNode(const KernelWithIndex &node, std::set<KernelWithIn
     const auto &func_graphs = iter->second;
     for (const auto &func_graph : func_graphs) {
       MS_EXCEPTION_IF_NULL(func_graph);
+      MS_EXCEPTION_IF_NULL(func_graph->output());
+      if (common::AnfAlgo::GetOutputNumByAbstract(func_graph->output()->abstract()) !=
+          common::AnfAlgo::GetOutputNumByAbstract(node_with_index.first->abstract())) {
+        MS_LOG(DEBUG) << "Invalid output size for graph output:" << func_graph->output()->DebugString()
+                      << " and formal node:" << node_with_index.first->DebugString() << " index:" << node.second;
+        continue;
+      }
       FetchRealParameterByNode({func_graph->output(), node_with_index.second}, real_parameters, invalid_call_nodes,
                                call_node_to_func_graphs);
     }
@@ -644,7 +651,8 @@ void AddFormalToRealParameter(const AnfNodePtr &formal_parameter, const AnfNodeP
     MS_LOG_WITH_NODE(EXCEPTION, formal_parameter) << "Empty abstract for parameter:" << formal_parameter->DebugString();
   }
   size_t output_num = common::AnfAlgo::GetOutputNumByAbstract(abstract);
-
+  MS_LOG(DEBUG) << "Add formal parameter:" << formal_parameter->DebugString()
+                << " by real parameter:" << real_parameter->DebugString() << " output num:" << output_num;
   for (size_t i = 0; i < output_num; ++i) {
     std::set<KernelWithIndex> real_parameters;
     std::set<KernelWithIndex> invalid_call_nodes;
