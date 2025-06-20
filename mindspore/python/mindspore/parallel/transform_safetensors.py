@@ -22,6 +22,7 @@ import math
 import json
 import re
 import mmap
+import stat
 from collections import defaultdict, OrderedDict
 
 import time
@@ -106,6 +107,31 @@ def getSize(fileobject):
     size = fileobject.tell()
     fileobject.seek(0)  # move the cursor to the start of the file
     return size
+
+
+def _save_file_atomically(transform_param_dict, save_file_name, metadata=None):
+    """Atomically save file using temporary name and rename."""
+    if metadata is None:
+        metadata = {"format": "ms"}
+    file_name_list = list(os.path.splitext(save_file_name))
+    file_name_list[1] = file_name_list[1].replace('.safetensors', '.tmp')
+    tmp_name = ''.join(file_name_list)
+    try:
+        if os.path.exists(save_file_name):
+            os.chmod(save_file_name, stat.S_IWUSR)
+            os.remove(save_file_name)
+        if os.path.exists(tmp_name):
+            os.chmod(tmp_name, stat.S_IWUSR)
+            os.remove(tmp_name)
+        save_file(transform_param_dict, tmp_name, metadata=metadata)
+        os.rename(tmp_name, save_file_name)
+        os.chmod(save_file_name, stat.S_IRUSR)
+    except Exception as e:
+        if not os.path.exists(save_file_name):
+            logger.warning(f"Save failed, {save_file_name} not found. "
+                           f"This may indicate multiple processes modifying the same file "
+                           f"or insufficient disk space.")
+        raise e
 
 
 def metadata_validate(metadata):
@@ -664,7 +690,7 @@ def _transform_safetensors_single(needed_rank_list_map, all_safetensor_files_map
             else:
                 if transform_param_dict:
                     if output_format == "safetensors":
-                        save_file(transform_param_dict, save_file_name, metadata=meta_data)
+                        _save_file_atomically(transform_param_dict, save_file_name, metadata=meta_data)
                     else:
                         transform_param_dict = _load_and_transform(transform_param_dict, None, None,
                                                                    transform_func=lambda v, name: Parameter(v,
@@ -686,7 +712,7 @@ def _save_final_safetensors(_transform_param_list, output_format):
                 new_transform_dict[save_file_name].update(transform_param_dict)
     for save_file_name, transform_param_dict in new_transform_dict.items():
         if output_format == "safetensors":
-            save_file(transform_param_dict, save_file_name, metadata={"format": "ms"})
+            _save_file_atomically(transform_param_dict, save_file_name, metadata={"format": "ms"})
         else:
             transform_param_dict = _load_and_transform(transform_param_dict, None, None,
                                                        transform_func=lambda v, name: Parameter(v, name=name))
@@ -742,7 +768,7 @@ def transform_safetensors_by_stage(src_safetensors_dir, dst_safetensors_dir, ckp
         if not os.path.exists(save_safetensor_file_dir):
             _make_dir(save_safetensor_file_dir, "path")
         save_safetensor_file_name = os.path.join(save_safetensor_file_dir, save_safetensor_file)
-        save_file(transform_param_dict, save_safetensor_file_name, metadata={"format": "ms"})
+        _save_file_atomically(transform_param_dict, save_safetensor_file_name, metadata={"format": "ms"})
 
 
 def transform_safetensors_by_rank(rank_id, safetensor_files_map, save_safetensor_file_name,
@@ -794,7 +820,7 @@ def transform_safetensors_by_rank(rank_id, safetensor_files_map, save_safetensor
     transform_param_dict = _transform_parallel_safetensor(local_rank_id, param_total_dict,
                                                           param_attr_dict, src_strategy_list, dst_strategy_list,
                                                           param_type_dict)
-    save_file(transform_param_dict, save_safetensor_file_name, metadata={"format": "ms"})
+    _save_file_atomically(transform_param_dict, save_safetensor_file_name, metadata={"format": "ms"})
 
 
 def _extrace_number(file_name):
@@ -974,7 +1000,8 @@ def _save_hyper_param(split_dst_file, all_safetensor_files_map, name_list, dst_d
                 hyper_dict = {}
                 for key in hyper_parameter:
                     hyper_dict[key] = f.get_tensor(key)
-                save_file(hyper_dict, os.path.join(dst_dir, "hyper_param.safetensors"), metadata={"format": "ms"})
+                _save_file_atomically(hyper_dict, os.path.join(dst_dir, "hyper_param.safetensors"),
+                                      metadata={"format": "ms"})
 
 
 def _save_parameter_map_json(split_list, choice_func, split_dst_file, dst_dir, param_total_size):
@@ -1044,6 +1071,22 @@ def set_affinity_pid():
     total_cores = os.cpu_count()
     all_cores = set(range(total_cores))
     os.sched_setaffinity(pid, all_cores)
+
+
+def _validate_safetensors_files(target_directory, expected_file_ids):
+    """Validate whether safetensors files are completely generated in the target directory."""
+    missing_file_ids = []
+    for file_id in expected_file_ids:
+        safetensors_file = os.path.join(target_directory, f"part{file_id}.safetensors")
+        if os.path.exists(safetensors_file):
+            continue
+        missing_file_ids.append(file_id)
+
+    if missing_file_ids:
+        logger.warning(
+            f"For unified_safetensors, target file part {missing_file_ids} does not exist. "
+            f"Possible causes: file rename failed, insufficient permissions, or disk space shortage."
+        )
 
 
 def unified_safetensors(src_dir, src_strategy_file, dst_dir, merge_with_redundancy=True, file_suffix=None,
@@ -1171,6 +1214,7 @@ def unified_safetensors(src_dir, src_strategy_file, dst_dir, merge_with_redundan
     _save_parameter_map_json(split_list, choice_func, split_dst_file, dst_dir, param_total_size)
 
     max_process = min(split_num, max_process_num)
+    file_ids = res[:]
     res = _split_list(res, max_process)
     processes = []
     src_strategy_name = None
@@ -1192,6 +1236,7 @@ def unified_safetensors(src_dir, src_strategy_file, dst_dir, merge_with_redundan
                                                 origin_src_strategy_list, origin_dst_strategy_list, "",
                                                 dst_dir, "safetensors", None, sub_list,
                                                 res[0], True, src_strategy_name, choice_func)
+    _validate_safetensors_files(dst_dir, file_ids)
 
 
 def _transform_safetensors_single_semaphore(needed_rank_list_map, all_safetensor_files_map,
@@ -1372,7 +1417,7 @@ def check_param_dtype(file, param_name):
 def _load_parallel_checkpoint(file_info):
     """load parallel safetensors by merged file."""
     total_safetensors_dir, dst_strategy_file, net, dst_safetensors_dir, \
-    rank_id, output_format, name_map, return_param_dict = file_info
+        rank_id, output_format, name_map, return_param_dict = file_info
     set_affinity_pid()
     file_list = os.listdir(total_safetensors_dir)
     json_files = [file for file in file_list if file == "param_name_map.json"]
