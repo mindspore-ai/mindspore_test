@@ -225,8 +225,8 @@ bool CPUResManager::AsyncCopy(const DeviceSync *dst_device_sync, const DeviceSyn
   MS_EXCEPTION_IF_NULL(dst_device_address);
   MS_EXCEPTION_IF_NULL(src_device_address);
   if (dst_device_address->GetSize() == 0 || src_device_address->GetSize() == 0) {
-    MS_LOG(INFO) << "No need sync for dst device address: " << dst_device_address->PrintInfo()
-                 << " and src device address: " << src_device_address->PrintInfo();
+    MS_LOG(INFO) << "No need sync for dst device address: " << dst_device_address
+                 << " and src device address: " << src_device_address;
     return true;
   }
 
@@ -258,8 +258,8 @@ bool CPUResManager::AsyncCopy(const DeviceSync *dst_device_sync, const DeviceSyn
       ConvertSameType(dst_device_address->GetMutablePtr(), src_device_address->GetMutablePtr(),
                       dst_device_address->GetSize(), src_type_id);
     } else if (ret_code != EOK) {
-      MS_LOG(ERROR) << "Failed to copy tensor from device address:" << src_device_address->PrintInfo()
-                    << " to :" << dst_device_address->PrintInfo();
+      MS_LOG(ERROR) << "Failed to copy tensor from device address:" << src_device_address
+                    << " to :" << dst_device_address;
       return false;
     } else {
       return true;
