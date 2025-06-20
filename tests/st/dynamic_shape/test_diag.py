@@ -16,10 +16,9 @@
 import numpy as np
 import pytest
 from tests.st.utils import test_utils
-
+from tests.mark_utils import arg_mark
 from mindspore import ops, context
 import mindspore as ms
-from tests.mark_utils import arg_mark
 
 
 @test_utils.run_with_cell
@@ -37,7 +36,7 @@ def diag_vmap_func(x):
     return ops.vmap(diag_forward_func, in_axes=0, out_axes=0)(x)
 
 
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_diag_forward(mode):

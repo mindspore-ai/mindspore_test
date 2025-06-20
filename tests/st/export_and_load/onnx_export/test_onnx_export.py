@@ -22,7 +22,7 @@ class InputNetTopK(nn.Cell):
         return output
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_convert_model_with_topk():
     """
     Feature: Convert mindir to onnx and infer by onnx
@@ -58,7 +58,7 @@ class InputNetAtan(nn.Cell):
         return output
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_convert_model_with_atan():
     """
     Feature: Convert mindir to onnx and infer by onnx
@@ -89,7 +89,7 @@ class InputNetArgMax(nn.Cell):
         return output
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_convert_model_with_argmax():
     """
     Feature: Convert mindir to onnx and infer by onnx
@@ -120,7 +120,7 @@ class InputNetClipScalar(nn.Cell):
         return output
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_convert_model_with_clip_scalar():
     """
     Feature: Convert mindir to onnx and infer by onnx
@@ -153,7 +153,7 @@ class InputNetClipTensor(nn.Cell):
         return output
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_convert_model_with_clip_tensor():
     """
     Feature: Convert mindir to onnx and infer by onnx
@@ -187,7 +187,7 @@ class InputNetPad(nn.Cell):
         return output
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_convert_model_with_pad():
     """
     Feature: Convert mindir to onnx and infer by onnx
@@ -220,7 +220,7 @@ class InputNetSub(nn.Cell):
         return output
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_convert_model_with_sub():
     """
     Feature: Convert mindir to onnx and infer by onnx
@@ -254,7 +254,7 @@ class InputNetMatMul(nn.Cell):
         return output
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_convert_model_with_matmul():
     """
     Feature: Convert mindir to onnx and infer by onnx
@@ -293,7 +293,7 @@ class InputNetTranspose(nn.Cell):
         return output
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_convert_model_with_transpose():
     """
     Feature: Convert mindir to onnx and infer by onnx
@@ -326,7 +326,7 @@ class InputNetSplitTensor(nn.Cell):
         return output
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_convert_model_with_split_tensor():
     """
     Feature: Convert mindir to onnx and infer by onnx
@@ -358,7 +358,7 @@ class InputNetAddExt(nn.Cell):
         return output
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_convert_model_with_add_ext():
     """
     Feature: Convert mindir to onnx and infer by onnx
@@ -395,7 +395,7 @@ class InputNetSliceExt(nn.Cell):
         return output
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_convert_model_with_slice_ext():
     """
     Feature: Convert mindir to onnx and infer by onnx
@@ -430,7 +430,7 @@ class InputNetBatchNormExt(nn.Cell):
         return output
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_convert_model_with_batch_norm_ext():
     """
     Feature: Convert mindir to onnx and infer by onnx
@@ -469,7 +469,7 @@ class InputNetBatchNorm(nn.Cell):
         return output
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_convert_model_with_batch_norm():
     """
     Feature: Convert mindir to onnx and infer by onnx

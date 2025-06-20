@@ -38,7 +38,7 @@ def lin_space_ext_backward_func(start, end, steps, dtype=None):
     return ops.grad(lin_space_ext_forward_func, (0, 1))(start, end, steps, dtype)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 @pytest.mark.parametrize('dtype', [ms.float32])
 def test_lin_space_ext_normal(mode, dtype):

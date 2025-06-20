@@ -40,7 +40,7 @@ def mint_muls_backward_func(x, y):
     return grad(net)(x, y)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_muls_std():
     """
     Feature: standard forward, backward features.
@@ -57,7 +57,7 @@ def test_muls_std():
 
     np.allclose(output_z.asnumpy(), expect_z, rtol=1e-5, equal_nan=True)
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_muls_grad_std():
     """
     Feature: standard forward, backward features.

@@ -37,7 +37,7 @@ def test_return_constant_list_2():
 
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_return_constant_list_3():
     """
     Feature: Return list in graph
@@ -67,7 +67,7 @@ def test_return_list_with_nest():
     utils.run_testcase('ge_fallback_list', 'test_return_list_with_nest')
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_return_make_list_with_nest():
     """
     Feature: Return list in graph

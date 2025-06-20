@@ -87,7 +87,7 @@ def _test_glu_backward_main(ms_type, f, tol):
     assert np.allclose(grad_x.asnumpy().astype(np.float32), expected, **tol)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize(
     'mode, level',
     [

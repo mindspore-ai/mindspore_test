@@ -444,7 +444,7 @@ def test_getattr_cust_class_const():
     assert out == 198
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_custom_class_jit():
     """
     Feature: Syntax resolve.

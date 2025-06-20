@@ -87,7 +87,7 @@ def ops_sub_binary_case4(input_binary_data=None, output_binary_data=None):
     assert np.allclose(output[0].asnumpy(), output_binary_data, 1e-04, 1e-04)
 
 @arg_mark(plat_marks=['platform_ascend910b'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE])

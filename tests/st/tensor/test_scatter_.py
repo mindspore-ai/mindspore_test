@@ -69,7 +69,7 @@ class ScatterGrad(nn.Cell):
         return self.grad_op(self.net)(x, dim, index, src_or_val, reduce, self.grad_wrt_output)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_inplace_scatter_src(mode):
     """
@@ -139,7 +139,7 @@ def _test_inplace_scatter_src_backward2(input_type):
     assert np.allclose(grads[0].asnumpy().astype(np.float32), grad_np)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_inplace_scatter_value(mode):
     """
