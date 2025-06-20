@@ -91,6 +91,9 @@ class MatMul : public MatMulBase {
                               AnfNodePtr *x_all_gather, AnfNodePtr *matmul_left_input);
   AnfNodePtr GetInputOutputNodeForNDTP(const CNodePtr &cnode, const AnfNodePtr &square_actual_input_node,
                                        GenerateGraph *gen_g, std::vector<std::pair<AnfNodePtr, int64_t>> *input_nodes);
+  void CreateXZCommGroup(const TensorLayout &input_layout0, const int64_t &all_gather_dim0,
+                         const int64_t &all_gather_dim1, std::vector<Group> *x_group_list,
+                         std::vector<Group> *z_group_list);
   Status ComputeNDTPReplaceGraph(const CNodePtr &cnode);
   int64_t GetAllGatherDim(size_t all_gather_tensor_axis, const TensorLayout &input_layout, size_t tensor_index);
   AnfNodePtr ComputePreAllGatherGraph(const CNodePtr &cnode, GenerateGraph *gen_g,
@@ -99,7 +102,13 @@ class MatMul : public MatMulBase {
   AnfNodePtr ComputePostMatMulGraph(const CNodePtr &cnode, GenerateGraph *gen_g, const AnfNodePtr &matmul,
                                     const TensorLayout &input_layout, int64_t scatter_tensor_axis);
   TensorLayout InferNDTPOutputLayout();
+  void Infer2DTPOutputLayout(const TensorLayout &input_layout0, const TensorLayout &input_layout1,
+                             std::vector<Shape> *output_extended_tensor_map);
+  void Infer3DTPOutputLayout(const TensorLayout &input_layout0, const TensorLayout &input_layout1,
+                             std::vector<Shape> *output_extended_tensor_map);
   Status CheckNDTPInputLayout(const TensorLayout &a_in_layout, const TensorLayout &b_in_layout);
+  Status Check2DTPInputLayout(const TensorLayout &a_in_layout, const TensorLayout &b_in_layout, size_t axis0_1,
+                              size_t axis1_0, size_t axis1_1);
   Status Check3DTPInputLayout(const TensorLayout &a_in_layout, const TensorLayout &b_in_layout, size_t axis0_0,
                               size_t axis0_1, size_t axis1_0, size_t axis1_1);
   void CheckPCLMatMul(const Shape &mat_a_strategy, const Shape &mat_b_strategy);

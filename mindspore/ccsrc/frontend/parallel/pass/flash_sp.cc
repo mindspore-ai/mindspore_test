@@ -3093,6 +3093,7 @@ static CNodePtr GetForwardCnodeByFuncGraphCNode(const CNodePtr &cnode) {
     return nullptr;
   }
   auto graph = GetValueNode<FuncGraphPtr>(cnode->input(kIndex0));
+  MS_EXCEPTION_IF_NULL(graph);
   auto sub_graph_output = graph->output();
   // Find the subgraph output node that matches 'Tuple(forward_op, grad_bprop_subgraph)'
   if (!IsPrimitiveCNode(sub_graph_output, prim::kPrimMakeTuple)) {
