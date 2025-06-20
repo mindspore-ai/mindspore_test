@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "frontend/optimizer/inplace_input_replace.h"
+#include "frontend/optimizer/irpass/inplace_input_replace.h"
 
 #include <map>
 #include <string>
@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace opt {
+namespace irpass {
 namespace {
 bool IsInplaceCNode(const AnfNodePtr &node) {
   if (IsPrimitiveCNode(node, prim::kPrimVirtualViewGrad)) {
@@ -140,26 +141,21 @@ void DoInplaceInputReplace(const FuncGraphPtr &func_graph, const OptimizerPtr &o
     return;
   }
 
-#ifdef ENABLE_DUMP_IR
-  auto context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context);
-  if (context->CanDump(kIntroductory)) {
-    DumpIR("opt_do_inplace_input_replace_before.ir", func_graph);
-  }
-#endif
-
   // Do inplace input replace for func_graph and sub_graphs
   ChangeInplaceInputInner(func_graph);
-  const auto &sub_graphs = func_graph->func_graphs_used_total();
-  for (auto sub_graph : sub_graphs) {
+  auto sub_graphs = func_graph->func_graphs_used_total();
+  for (const auto &sub_graph : sub_graphs) {
     ChangeInplaceInputInner(sub_graph);
   }
 
 #ifdef ENABLE_DUMP_IR
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
   if (context->CanDump(kIntroductory)) {
-    DumpIR("opt_do_inplace_input_replace_after.ir", func_graph);
+    DumpIR("opt_do_inplace_input_replace.ir", func_graph);
   }
 #endif
 }
+}  // namespace irpass
 }  // namespace opt
 }  // namespace mindspore

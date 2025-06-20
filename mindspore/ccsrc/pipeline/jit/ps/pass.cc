@@ -116,6 +116,7 @@
 #include "frontend/optimizer/irpass/symbol_engine_optimizer.h"
 #include "frontend/optimizer/irpass/add_forward_monad_depend.h"
 #include "frontend/optimizer/irpass/check_invalid_view_inplace_dout.h"
+#include "frontend/optimizer/irpass/virtualviewgrad_op.h"
 #include "pipeline/jit/ps/pass_config.h"
 #include "pipeline/jit/ps/graph_circle_handler.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"

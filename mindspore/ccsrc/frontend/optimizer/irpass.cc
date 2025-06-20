@@ -72,6 +72,7 @@
 #include "frontend/optimizer/irpass/loop_unroll.h"
 #include "frontend/optimizer/irpass/morph.h"
 #include "frontend/optimizer/irpass/make_tuple_from_fprop_eliminate.h"
+#include "frontend/optimizer/irpass/virtualviewgrad_op.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
