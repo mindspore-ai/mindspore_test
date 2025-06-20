@@ -1376,9 +1376,12 @@ void ParallelPreprocessor::MarkAndModifyGraph() {
   MS_EXCEPTION_IF_NULL(ret);
   std::vector<AnfNodePtr> all_nodes = DeepScopedGraphSearch(ret);
   std::reverse(all_nodes.begin(), all_nodes.end());
-  bool merged = MergeConcatSlice(all_nodes, manager);
-  if (merged) {
-    all_nodes = TopoSort(ret, SuccDeeperSimple);
+
+  if (processor_context_->pipeline_stages > 1 && processor_context_->is_pp_interleave) {
+    bool merged = MergeConcatSlice(all_nodes, manager);
+    if (merged) {
+      all_nodes = TopoSort(ret, SuccDeeperSimple);
+    }
   }
 
   // Different pass may have different cnodes handle, need clear the old first and then reset cnodes

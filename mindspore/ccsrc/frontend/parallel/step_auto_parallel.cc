@@ -130,13 +130,9 @@ bool IsSkipAutoParallel(const FuncGraphPtr &root, const std::string &strategy_se
   return false;
 }
 
-bool StepAutoParallel(const FuncGraphPtr &root, const opt::OptimizerPtr &) {
-  MSLogTime msTime;
-  msTime.Start();
-  // Mode 'dynamic programming' will run after pipeline_split, others don't.
-  MS_EXCEPTION_IF_NULL(root);
+bool PreprocessRootGraph(const FuncGraphPtr &root) {
+  bool changes = false;
   bool is_pre_action = !root->has_flag(AUTO_PARALLEL_FINISH_PRE_ACTION);
-  bool changes;
   if (is_pre_action) {
     root->set_flag(AUTO_PARALLEL_FINISH_PRE_ACTION, true);
     auto manager = root->manager();
@@ -147,58 +143,46 @@ bool StepAutoParallel(const FuncGraphPtr &root, const opt::OptimizerPtr &) {
       root->set_flag(kTraining, true);
     }
     changes = true;
-  } else {
-    changes = false;
   }
+  return changes;
+}
 
-#if defined(__linux__) && defined(WITH_BACKEND)
-  if (ps::Util::IsRoleOfPServer() || ps::Util::IsRoleOfScheduler()) {
-    return changes;
-  }
-#endif
-  MS_EXCEPTION_IF_NULL(ParallelContext::GetInstance());
+bool SkipAutoParallel(const FuncGraphPtr &root, const std::string &strategy_search_mode, bool is_pre_action,
+                      MSLogTime msTime) {
   // control whether use model_parallel mode
-  std::string strategy_search_mode = ParallelContext::GetInstance()->strategy_search_mode();
   bool is_skip = IsSkipAutoParallel(root, strategy_search_mode, is_pre_action);
   if (is_skip && !ParallelContext::GetInstance()->direct_split()) {
     msTime.End();
     uint64_t time = msTime.GetRunTimeUS();
     MS_LOG(INFO) << "Now leaving step auto parallel, used time: " << time << " us";
-    return changes;
+    return true;
   }
-  MS_LOG(INFO) << "search_mode: " << strategy_search_mode;
+  return false;
+}
 
-#ifdef ENABLE_DUMP_IR
-  auto context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context);
-  if (context->CanDump(kIntroductory)) {
-    DumpGraph(root, std::string(STEP_AUTO_PARALLEL_BEGIN));
-  }
-#endif
-  MS_LOG(INFO) << "Now entering step auto parallel";
-  TOTAL_OPS = 0;
-  AnfNodePtr ret = root->get_return();
+std::vector<AnfNodePtr> GetAllNodesForParallel(const FuncGraphPtr &root, const AnfNodePtr &ret) {
   std::vector<AnfNodePtr> all_nodes;
   if (CheckShardingPropagation()) {
     all_nodes = TopoSort(ret, SuccDeeperSimple);
-  } else {
-    all_nodes = DeepScopedGraphSearch(ret);
   }
 
-  // insert Virtual Dataset if not exist
-  if (ParallelInit() != SUCCESS) {
-    MS_LOG(EXCEPTION) << "Parallel init failed";
-  }
-  if (!mindspore::pipeline::HasVirtualDataset(all_nodes)) {
-    mindspore::pipeline::InsertVirtualDataset(root, all_nodes);
-  }
-  // redo deepscoped search again to connected the Virtual Dataset into the graph
-  if (CheckShardingPropagation()) {
-    all_nodes = TopoSort(ret, SuccDeeperSimple);
-  } else {
+  // merge concat slice for recursive propagation
+  if (!CheckShardingPropagation()) {
+    MS_EXCEPTION_IF_NULL(root);
+    auto manager = root->manager();
+    MS_EXCEPTION_IF_NULL(manager);
+    MS_EXCEPTION_IF_NULL(ret);
     all_nodes = DeepScopedGraphSearch(ret);
+    bool merged = MergeConcatSlice(all_nodes, manager);
+    if (merged) {
+      all_nodes = TopoSort(ret, SuccDeeperSimple);
+    }
   }
+  return all_nodes;
+}
 
+void InferParallelStrategy(const FuncGraphPtr &root, const std::vector<AnfNodePtr> &all_nodes,
+                           const std::string &strategy_search_mode) {
   if (strategy_search_mode == kRecursiveProgramming &&
       ((g_device_manager->DeviceNum() & (g_device_manager->DeviceNum() - 1)) != 0)) {
     MS_LOG(EXCEPTION)
@@ -211,22 +195,68 @@ bool StepAutoParallel(const FuncGraphPtr &root, const opt::OptimizerPtr &) {
 
   // set grad accumulation step
   SetGradAccumulationStep(all_nodes);
+
   // mark the forward cnodes, parallel only care these nodes
   MarkForwardCNode(root);
 
   ExceptionIfHasCommunicationOp(all_nodes);
 
+  std::vector<AnfNodePtr> final_all_nodes = all_nodes;
   if (IsInsertVirtualOutput(root)) {
     InsertVirtualOutput(root, all_nodes);
-    AnfNodePtr ret_after = root->get_return();
+    const AnfNodePtr &ret_after = root->get_return();
     MS_EXCEPTION_IF_NULL(ret_after);
-    all_nodes = DeepScopedGraphSearch(ret_after);
+    final_all_nodes = DeepScopedGraphSearch(ret_after);
   }
 
   // search parallelization strategy
-  SearchParallelStrategy(strategy_search_mode, root, all_nodes);
+  SearchParallelStrategy(strategy_search_mode, root, final_all_nodes);
   root->set_flag(AUTO_PARALLEL_RUN_ONCE_ONLY, true);
+}
 
+bool StepAutoParallel(const FuncGraphPtr &root, const opt::OptimizerPtr &) {
+  MSLogTime msTime;
+  msTime.Start();
+
+  // Mode 'dynamic programming' will run after pipeline_split, others don't.
+  MS_EXCEPTION_IF_NULL(root);
+  bool is_pre_action = !root->has_flag(AUTO_PARALLEL_FINISH_PRE_ACTION);
+  bool changes = PreprocessRootGraph(root);
+#if defined(__linux__) && defined(WITH_BACKEND)
+  if (ps::Util::IsRoleOfPServer() || ps::Util::IsRoleOfScheduler()) {
+    return changes;
+  }
+#endif
+  MS_EXCEPTION_IF_NULL(ParallelContext::GetInstance());
+  std::string strategy_search_mode = ParallelContext::GetInstance()->strategy_search_mode();
+  if (SkipAutoParallel(root, strategy_search_mode, is_pre_action, msTime)) {
+    return changes;
+  }
+  MS_LOG(INFO) << "search_mode: " << strategy_search_mode;
+#ifdef ENABLE_DUMP_IR
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  if (context->CanDump(kIntroductory)) {
+    DumpGraph(root, std::string(STEP_AUTO_PARALLEL_BEGIN));
+  }
+#endif
+  MS_LOG(INFO) << "Now entering step auto parallel";
+  TOTAL_OPS = 0;
+  AnfNodePtr ret = root->get_return();
+  std::vector<AnfNodePtr> all_nodes = GetAllNodesForParallel(root, ret);
+
+  // insert Virtual Dataset if not exist
+  if (ParallelInit() != SUCCESS) {
+    MS_LOG(EXCEPTION) << "Parallel init failed";
+  }
+  if (!mindspore::pipeline::HasVirtualDataset(all_nodes)) {
+    mindspore::pipeline::InsertVirtualDataset(root, all_nodes);
+  }
+
+  // redo deepscoped search again to connected the Virtual Dataset into the graph
+  all_nodes = CheckShardingPropagation() ? TopoSort(ret, SuccDeeperSimple) : DeepScopedGraphSearch(ret);
+
+  InferParallelStrategy(root, all_nodes, strategy_search_mode);
   msTime.End();
   uint64_t time = msTime.GetRunTimeUS();
   MS_LOG(INFO) << "Now leaving step auto parallel, used time: " << time << " us";
