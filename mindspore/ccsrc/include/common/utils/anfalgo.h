@@ -172,6 +172,8 @@ class COMMON_EXPORT AnfAlgo {
   static bool IsCommunicationOp(const std::string &prim_name);
   static bool IsCommunicationOp(const AnfNodePtr &node);
   static bool IsLcclCommunicationOp(const AnfNodePtr &node);
+  static bool IsCommFusionOp(const std::string &kernel_name);
+  static bool IsNaiveCommOp(const AnfNodePtr &node, const std::string &kernel_name);
   static bool IsDtypeFormatSensitiveOp(const AnfNodePtr &node);
   static bool IsFusedCommunicationOp(const AnfNodePtr &node);
   static bool IsInplaceNode(const mindspore::AnfNodePtr &kernel, const string &type);
