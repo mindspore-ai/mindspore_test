@@ -20,7 +20,7 @@ from mindspore.common.tensor import Tensor
 import mindspore.nn as nn
 
 import numpy as np
-from tests.st.compiler.control.cases_register import case_register
+from tests.mark_utils import arg_mark
 
 
 class MAPPOCriticNet(nn.Cell):
@@ -78,8 +78,7 @@ class TestClass(nn.Cell):
         return num_agent
 
 
-@case_register.level0
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_net():
     """
     Feature: Tuple arg transform.

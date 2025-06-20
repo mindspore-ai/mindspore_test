@@ -13,7 +13,7 @@
 # limitations under the License.
 # ============================================================================
 """ test_ascend_control_sink """
-from tests.st.compiler.control.cases_register import case_register
+from tests.mark_utils import arg_mark
 import numpy as np
 import mindspore.nn as nn
 import mindspore as ms
@@ -229,8 +229,7 @@ def cell_list_in_while_by_while():
     return out
 
 
-@case_register.level1
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_simple_if():
     """
     Feature: Control flow
@@ -249,8 +248,7 @@ def test_simple_if():
     assert np.allclose(expect, output.asnumpy(), 0.0001, 0.0001)
 
 
-@case_register.level1
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_simple_if_with_assign():
     """
     Feature: Control flow
@@ -267,8 +265,7 @@ def test_simple_if_with_assign():
     assert np.allclose(expect, output.asnumpy(), 0.0001, 0.0001)
 
 
-@case_register.level1
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_if_in_if():
     """
     Feature: Control flow
@@ -283,8 +280,7 @@ def test_if_in_if():
     assert np.allclose(expect, output.asnumpy(), 0.0001, 0.0001)
 
 
-@case_register.level1
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_if_by_if_by_if():
     """
     Feature: Control flow
@@ -303,8 +299,7 @@ def test_if_by_if_by_if():
     assert np.allclose(expect, output.asnumpy(), 0.0001, 0.0001)
 
 
-@case_register.level1
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_simple_while():
     """
     Feature: Control flow
@@ -321,8 +316,7 @@ def test_simple_while():
     assert np.allclose(expect, output.asnumpy(), 0.0001, 0.0001)
 
 
-@case_register.level1
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_mixed_while_if():
     """
     Feature: Control flow
@@ -340,8 +334,7 @@ def test_mixed_while_if():
     assert np.allclose(expect, output.asnumpy(), 0.0001, 0.0001)
 
 
-@case_register.level1
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_and_or_operation():
     """
     Feature: Control flow
@@ -366,8 +359,7 @@ def test_and_or_operation():
     assert np.allclose(expect, output.asnumpy(), 0.0001, 0.0001)
 
 
-@case_register.level0
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_control_flow_ref():
     """
     Feature: Control flow graph sinking scenarios.

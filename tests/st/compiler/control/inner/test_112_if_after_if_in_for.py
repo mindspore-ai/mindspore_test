@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.st.compiler.control.cases_register import case_register
+from tests.mark_utils import arg_mark
 from mindspore import context
 from mindspore import Tensor, nn
 from mindspore.ops import composite as C
@@ -133,9 +133,8 @@ def control_flow_if_after_if_in_for(input_net, x, expect1, expect2):
     assert graph_backward_res == expect2
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_if_after_if_in_for():
     """
     Feature: Control flow
@@ -148,9 +147,8 @@ def test_if_after_if_in_for():
     control_flow_if_after_if_in_for(IfAfterIfInForNet, x, expect1, expect2)
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_if_after_if_in_for_01():
     """
     Feature: Control flow
@@ -163,9 +161,8 @@ def test_if_after_if_in_for_01():
     control_flow_if_after_if_in_for(IfAfterIfInForNet1, x, expect1, expect2)
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_if_after_if_in_for_02():
     """
     Feature: Control flow
@@ -178,9 +175,8 @@ def test_if_after_if_in_for_02():
     control_flow_if_after_if_in_for(IfAfterIfInForNet2, x, expect1, expect2)
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_if_after_if_in_for_03():
     """
     Feature: Control flow

@@ -15,14 +15,13 @@
 """ test graph fallback control flow."""
 import numpy as np
 from mindspore import Tensor, jit, context
-from tests.st.compiler.fallback.cases_register import case_register
+from tests.mark_utils import arg_mark
 
 context.set_context(mode=context.GRAPH_MODE)
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_while_after_while_in_if_tensor():
     """
     Feature: JIT Fallback
@@ -47,9 +46,8 @@ def test_while_after_while_in_if_tensor():
     assert res == (1, 1, 16)
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_while_after_while_in_if_tensor_2():
     """
     Feature: JIT Fallback
@@ -80,9 +78,8 @@ def test_while_after_while_in_if_tensor_2():
     assert res == (2, 1, 15)
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_while_after_while_in_if_numpy_2():
     """
     Feature: JIT Fallback
@@ -107,9 +104,8 @@ def test_while_after_while_in_if_numpy_2():
     assert res == (1, 3, 3)
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_while_after_while_in_if_numpy():
     """
     Feature: JIT Fallback

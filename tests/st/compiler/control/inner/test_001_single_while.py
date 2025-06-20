@@ -13,7 +13,7 @@
 # limitations under the License.
 # ============================================================================
 import pytest
-from tests.st.compiler.control.cases_register import case_register
+from tests.mark_utils import arg_mark
 from mindspore.common import dtype as mstype
 from mindspore import nn
 from mindspore import Tensor, jit
@@ -44,9 +44,8 @@ class BackwardNet(nn.Cell):
         return grads
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_forward():
     """
     Feature: Control flow
@@ -61,9 +60,8 @@ def test_forward():
     assert expect == output
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_backward():
     """
     Feature: Control flow
@@ -79,9 +77,8 @@ def test_backward():
     assert expect == output
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_single_while():
     """
     Feature: The else branches of while loops aren't supported.
@@ -104,9 +101,8 @@ def test_single_while():
         print("res:", res)
 
 
-@case_register.level0
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='essential')
 def test_single_while_tensor():
     """
     Feature: The else branches of while loops aren't supported.

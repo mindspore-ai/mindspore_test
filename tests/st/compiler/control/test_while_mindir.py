@@ -13,7 +13,7 @@
 # limitations under the License.
 import os
 import numpy as np
-from tests.st.compiler.control.cases_register import case_register
+from tests.mark_utils import arg_mark
 
 import mindspore.nn as nn
 from mindspore import context, jit
@@ -30,9 +30,8 @@ class SingleWhileNet(nn.Cell):
         return y
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_single_while():
     """
     Feature: Control flow
@@ -57,9 +56,8 @@ def test_single_while():
     assert origin_out == outputs_after_load
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_jit_function_while():
     """
     Features: Control flow.
@@ -100,9 +98,8 @@ class SingleWhileInlineNet(nn.Cell):
         return y
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_single_while_inline_export():
     """
     Feature: Control flow
@@ -121,9 +118,8 @@ def test_single_while_inline_export():
     assert os.path.exists(mindir_name)
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_single_while_inline_load():
     """
     Feature: Control flow
@@ -143,9 +139,8 @@ def test_single_while_inline_load():
     load(mindir_name)
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_single_while_inline():
     """
     Feature: Control flow

@@ -13,7 +13,7 @@
 # limitations under the License.
 import os
 import numpy as np
-from tests.st.compiler.control.cases_register import case_register
+from tests.mark_utils import arg_mark
 
 import mindspore.nn as nn
 import mindspore
@@ -111,9 +111,8 @@ class SingleIfNet(nn.Cell):
         return y
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_export_lenet_grad_mindir():
     """
     Feature: Control flow
@@ -131,9 +130,8 @@ def test_export_lenet_grad_mindir():
     assert os.path.exists(verify_name)
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_load_mindir_and_run():
     """
     Feature: Control flow
@@ -158,9 +156,8 @@ def test_load_mindir_and_run():
     assert np.allclose(outputs0.asnumpy(), outputs_after_load.asnumpy())
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_single_if():
     """
     Feature: Control flow
@@ -185,8 +182,7 @@ def test_single_if():
     assert origin_out == outputs_after_load
 
 
-@case_register.level1
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_jit_net():
     """
     Feature: export jit function.

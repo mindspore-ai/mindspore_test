@@ -18,14 +18,13 @@ import itertools
 import numpy as np
 from mindspore import Tensor, jit, context
 from mindspore import dtype as mstype
-from tests.st.compiler.fallback.cases_register import case_register
+from tests.mark_utils import arg_mark
 
 context.set_context(mode=context.GRAPH_MODE)
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_single_for_1():
     """
     Feature: JIT Fallback
@@ -43,9 +42,8 @@ def test_single_for_1():
     assert res == 21
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_single_for_2():
     """
     Feature: JIT Fallback
@@ -64,9 +62,8 @@ def test_single_for_2():
         control_flow_for()
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_single_for_zip():
     """
     Feature: JIT Fallback
@@ -85,9 +82,8 @@ def test_single_for_zip():
     assert res == 9
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_single_for_builtin_function_int():
     """
     Feature: JIT Fallback
@@ -104,8 +100,7 @@ def test_single_for_builtin_function_int():
     assert res == 8.1
 
 
-@case_register.level1
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_single_for_iter_object():
     """
     Feature: JIT Fallback

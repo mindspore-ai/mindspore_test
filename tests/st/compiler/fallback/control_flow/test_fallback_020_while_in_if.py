@@ -16,14 +16,13 @@
 import mindspore as ms
 from mindspore import Tensor, jit, context, nn, Parameter
 import numpy as np
-from tests.st.compiler.fallback.cases_register import case_register
+from tests.mark_utils import arg_mark
 
 context.set_context(mode=context.GRAPH_MODE)
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_while_in_if_1():
     """
     Feature: JIT Fallback
@@ -44,9 +43,8 @@ def test_while_in_if_1():
     assert res == 8
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_while_in_if_2():
     """
     Feature: JIT Fallback
@@ -68,9 +66,8 @@ def test_while_in_if_2():
     assert res == 12
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_while_in_if_3():
     """
     Feature: JIT Fallback
@@ -93,9 +90,8 @@ def test_while_in_if_3():
     assert res == 7
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_while_two_cond_in_if_1():
     """
     Feature: JIT Fallback
@@ -118,9 +114,8 @@ def test_while_two_cond_in_if_1():
     assert res == 21
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_while_two_cond_in_if_2():
     """
     Feature: JIT Fallback
@@ -142,9 +137,8 @@ def test_while_two_cond_in_if_2():
     assert res == 8
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_while_param_in_if():
     """
     Feature: JIT Fallback

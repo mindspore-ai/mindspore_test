@@ -14,11 +14,10 @@
 # ============================================================================
 
 import os
-from tests.st.compiler.control.cases_register import case_register
+from tests.mark_utils import arg_mark
 
 
-@case_register.level1
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_catch_exception_stack_trace_log():
     """
     Feature: Resolve.

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.st.compiler.control.cases_register import case_register
+from tests.mark_utils import arg_mark
 import mindspore.context as context
 from mindspore import Tensor, jit
 from mindspore.common import dtype as mstype
@@ -107,8 +107,7 @@ def grad_for_loop(x):
     return x
 
 
-@case_register.level1
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_grad_for_loop():
     """
     Feature: control flow function.
@@ -121,8 +120,7 @@ def test_grad_for_loop():
     print(x)
 
 
-@case_register.level1
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_fori_loop():
     """
     Feature: control flow function.
@@ -135,8 +133,7 @@ def test_fori_loop():
     print(x)
 
 
-@case_register.level1
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_scan():
     """
     Feature: control flow function.
@@ -149,8 +146,7 @@ def test_scan():
     print(x)
 
 
-@case_register.level1
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_while_loop():
     """
     Feature: control flow function.
@@ -163,8 +159,7 @@ def test_while_loop():
     print(x)
 
 
-@case_register.level1
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_grad_while_loop():
     """
     Feature: control flow function.
@@ -191,8 +186,7 @@ def call_no_inline_fun(val):
     return val
 
 
-@case_register.level1
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_no_inline_fun():
     """
     Feature: control flow function.

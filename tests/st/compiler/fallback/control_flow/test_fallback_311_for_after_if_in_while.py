@@ -14,14 +14,13 @@
 # ============================================================================
 """ test graph fallback control flow for after if in while scenario"""
 from mindspore import Tensor, jit, context
-from tests.st.compiler.fallback.cases_register import case_register
+from tests.mark_utils import arg_mark
 
 context.set_context(mode=context.GRAPH_MODE)
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_for_after_if_in_while_tensor():
     """
     Feature: JIT Fallback
@@ -47,9 +46,8 @@ def test_for_after_if_in_while_tensor():
     assert res == 13
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_for_after_if_in_while_tensor_2():
     """
     Feature: JIT Fallback

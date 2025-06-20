@@ -13,7 +13,7 @@
 # limitations under the License.
 # ============================================================================
 import numpy as np
-from tests.st.compiler.control.cases_register import case_register
+from tests.mark_utils import arg_mark
 from mindspore import context
 from mindspore import Tensor, nn
 from mindspore.common.parameter import Parameter
@@ -24,9 +24,8 @@ from mindspore.common import dtype as mstype
 grad_all = C.GradOperation(get_all=True)
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_for_in_if_01():
     """
     Feature: Control flow
@@ -74,9 +73,8 @@ def test_for_in_if_01():
     assert graph_backward_res == (Tensor([64], mstype.int32),)
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_for_in_if_02():
     """
     Feature: Control flow
@@ -128,9 +126,8 @@ def test_for_in_if_02():
     assert graph_backward_res == (Tensor([1], mstype.float32),)
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_for_in_if_03():
     """
     Feature: Control flow
@@ -183,9 +180,8 @@ def test_for_in_if_03():
     assert graph_backward_res == (Tensor([3], mstype.float32),)
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_for_in_if_04():
     """
     Feature: Control flow
@@ -233,9 +229,8 @@ def test_for_in_if_04():
     assert graph_backward_res == (Tensor([9], mstype.int32),)
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_for_in_if_05():
     """
     Feature: Control flow
