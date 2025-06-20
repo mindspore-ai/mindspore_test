@@ -42,7 +42,6 @@ class NMSWithMaskCpuKernel : public CpuKernel {
   float iou_value_{0.0};
   size_t ceil_power_2{0};
   int box_size_ = 5;  //  pre_defined box width
-  enum output_list_ { OUTPUT, SEL_IDX, SEL_BOXES };
 };
 }  // namespace aicpu
 #endif

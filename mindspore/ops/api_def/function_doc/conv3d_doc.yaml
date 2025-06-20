@@ -79,8 +79,7 @@ conv3d:
         - If `padding` is ``'same'``, `stride` must be 1.
 
         .. warning::
-            This API does not support Atlas series products.
-            This is an experimental API that is subject to change or deletion.
+            It is only supported on Atlas A2 Training Series Products.
 
         Args:
             input (Tensor): Tensor of shape :math:`(N, C_{in}, D_{in}, H_{in}, W_{in})`.

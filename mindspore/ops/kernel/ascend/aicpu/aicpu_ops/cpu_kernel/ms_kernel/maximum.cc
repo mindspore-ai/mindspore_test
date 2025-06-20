@@ -94,7 +94,7 @@ void MaximumCpuKernel::SpecialComputeSameShape(int64_t start, int64_t end, CpuKe
   auto ignore_nan_attr = ctx.GetAttr("ignore_nan");
   ignore_nan = (ignore_nan_attr == nullptr) ? false : ignore_nan_attr->GetBool();
   for (int64_t i = start; i < end; ++i) {
-    if (ignore_nan == true && is_float16 == true) {
+    if (ignore_nan && is_float16) {
       if (Eigen::numext::isnan(*(input1 + i))) {
         *(output + i) = *(input2 + i);
       } else if (Eigen::numext::isnan(*(input2 + i))) {
@@ -103,7 +103,7 @@ void MaximumCpuKernel::SpecialComputeSameShape(int64_t start, int64_t end, CpuKe
         *(output + i) = *(input1 + i) > *(input2 + i) ? *(input1 + i) : *(input2 + i);
       }
     }
-    if (ignore_nan == true && is_float16 == false) {
+    if (ignore_nan && !is_float16) {
       if (isnan(*(input1 + i))) {
         *(output + i) = *(input2 + i);
       } else if (isnan(*(input2 + i))) {
@@ -112,7 +112,7 @@ void MaximumCpuKernel::SpecialComputeSameShape(int64_t start, int64_t end, CpuKe
         *(output + i) = *(input1 + i) > *(input2 + i) ? *(input1 + i) : *(input2 + i);
       }
     }
-    if (ignore_nan == false && is_float16 == true) {
+    if (!ignore_nan && is_float16) {
       if (Eigen::numext::isnan(*(input1 + i))) {
         *(output + i) = *(input1 + i);
       } else if (Eigen::numext::isnan(*(input2 + i))) {
@@ -121,7 +121,7 @@ void MaximumCpuKernel::SpecialComputeSameShape(int64_t start, int64_t end, CpuKe
         *(output + i) = *(input1 + i) > *(input2 + i) ? *(input1 + i) : *(input2 + i);
       }
     }
-    if (ignore_nan == false && is_float16 == false) {
+    if (!ignore_nan && !is_float16) {
       if (isnan(*(input1 + i))) {
         *(output + i) = *(input1 + i);
       } else if (isnan(*(input2 + i))) {
@@ -142,7 +142,7 @@ void MaximumCpuKernel::SpecialComputeXOneElement(int64_t start, int64_t end, Cpu
   auto ignore_nan_attr = ctx.GetAttr("ignore_nan");
   ignore_nan = (ignore_nan_attr == nullptr) ? false : ignore_nan_attr->GetBool();
   for (int64_t i = start; i < end; ++i) {
-    if (ignore_nan == true && is_float16 == true) {
+    if (ignore_nan && is_float16) {
       if (Eigen::numext::isnan(*(input1))) {
         *(output + i) = *(input2 + i);
       } else if (Eigen::numext::isnan(*(input2 + i))) {
@@ -151,7 +151,7 @@ void MaximumCpuKernel::SpecialComputeXOneElement(int64_t start, int64_t end, Cpu
         *(output + i) = *input1 > *(input2 + i) ? *input1 : *(input2 + i);
       }
     }
-    if (ignore_nan == true && is_float16 == false) {
+    if (ignore_nan && !is_float16) {
       if (isnan(*(input1))) {
         *(output + i) = *(input2 + i);
       } else if (isnan(*(input2 + i))) {
@@ -160,7 +160,7 @@ void MaximumCpuKernel::SpecialComputeXOneElement(int64_t start, int64_t end, Cpu
         *(output + i) = *input1 > *(input2 + i) ? *input1 : *(input2 + i);
       }
     }
-    if (ignore_nan == false && is_float16 == true) {
+    if (!ignore_nan && is_float16) {
       if (Eigen::numext::isnan(*(input1))) {
         *(output + i) = *(input1);
       } else if (Eigen::numext::isnan(*(input2 + i))) {
@@ -169,7 +169,7 @@ void MaximumCpuKernel::SpecialComputeXOneElement(int64_t start, int64_t end, Cpu
         *(output + i) = *input1 > *(input2 + i) ? *input1 : *(input2 + i);
       }
     }
-    if (ignore_nan == false && is_float16 == false) {
+    if (!ignore_nan && !is_float16) {
       if (isnan(*(input1))) {
         *(output + i) = *(input1);
       } else if (isnan(*(input2 + i))) {
@@ -190,7 +190,7 @@ void MaximumCpuKernel::SpecialComputeYOneElement(int64_t start, int64_t end, Cpu
   auto ignore_nan_attr = ctx.GetAttr("ignore_nan");
   ignore_nan = (ignore_nan_attr == nullptr) ? false : ignore_nan_attr->GetBool();
   for (int64_t i = start; i < end; ++i) {
-    if (ignore_nan == true && is_float16 == true) {
+    if (ignore_nan && is_float16) {
       if (Eigen::numext::isnan(*(input1 + i))) {
         *(output + i) = *(input2);
       } else if (Eigen::numext::isnan(*(input2))) {
@@ -199,7 +199,7 @@ void MaximumCpuKernel::SpecialComputeYOneElement(int64_t start, int64_t end, Cpu
         *(output + i) = *(input1 + i) > *input2 ? *(input1 + i) : *input2;
       }
     }
-    if (ignore_nan == true && is_float16 == false) {
+    if (ignore_nan && !is_float16) {
       if (isnan(*(input1 + i))) {
         *(output + i) = *(input2);
       } else if (isnan(*(input2))) {
@@ -208,7 +208,7 @@ void MaximumCpuKernel::SpecialComputeYOneElement(int64_t start, int64_t end, Cpu
         *(output + i) = *(input1 + i) > *input2 ? *(input1 + i) : *input2;
       }
     }
-    if (ignore_nan == false && is_float16 == true) {
+    if (!ignore_nan && is_float16) {
       if (Eigen::numext::isnan(*(input1 + i))) {
         *(output + i) = *(input1 + i);
       } else if (Eigen::numext::isnan(*(input2))) {
@@ -217,7 +217,7 @@ void MaximumCpuKernel::SpecialComputeYOneElement(int64_t start, int64_t end, Cpu
         *(output + i) = *(input1 + i) > *input2 ? *(input1 + i) : *input2;
       }
     }
-    if (ignore_nan == false && is_float16 == false) {
+    if (!ignore_nan && !is_float16) {
       if (isnan(*(input1 + i))) {
         *(output + i) = *(input1 + i);
       } else if (isnan(*(input2))) {
@@ -295,7 +295,7 @@ void MaximumCpuKernel::BcastComputeMultiKernel(int64_t start, int64_t end, CpuKe
   auto ignore_nan_attr = ctx.GetAttr("ignore_nan");
   ignore_nan = (ignore_nan_attr == nullptr) ? false : ignore_nan_attr->GetBool();
   for (int64_t i = start; i < end; ++i) {
-    if (ignore_nan == true && is_float16 == true) {
+    if (ignore_nan && is_float16) {
       if (Eigen::numext::isnan(*(in0 + bcast.GetBroadcastXIndex(i)))) {
         *(out + i) = *(in1 + bcast.GetBroadcastYIndex(i));
       } else if (Eigen::numext::isnan(*(in1 + bcast.GetBroadcastYIndex(i)))) {
@@ -306,7 +306,7 @@ void MaximumCpuKernel::BcastComputeMultiKernel(int64_t start, int64_t end, CpuKe
                        : *(in1 + bcast.GetBroadcastYIndex(i));
       }
     }
-    if (ignore_nan == true && is_float16 == false) {
+    if (ignore_nan && !is_float16) {
       if (isnan(*(in0 + bcast.GetBroadcastXIndex(i)))) {
         *(out + i) = *(in1 + bcast.GetBroadcastYIndex(i));
       } else if (isnan(*(in1 + bcast.GetBroadcastYIndex(i)))) {
@@ -317,7 +317,7 @@ void MaximumCpuKernel::BcastComputeMultiKernel(int64_t start, int64_t end, CpuKe
                        : *(in1 + bcast.GetBroadcastYIndex(i));
       }
     }
-    if (ignore_nan == false && is_float16 == true) {
+    if (!ignore_nan && is_float16) {
       if (Eigen::numext::isnan(*(in0 + bcast.GetBroadcastXIndex(i)))) {
         *(out + i) = *(in0 + bcast.GetBroadcastXIndex(i));
       } else if (Eigen::numext::isnan(*(in1 + bcast.GetBroadcastYIndex(i)))) {
@@ -328,7 +328,7 @@ void MaximumCpuKernel::BcastComputeMultiKernel(int64_t start, int64_t end, CpuKe
                        : *(in1 + bcast.GetBroadcastYIndex(i));
       }
     }
-    if (ignore_nan == false && is_float16 == false) {
+    if (!ignore_nan && !is_float16) {
       if (isnan(*(in0 + bcast.GetBroadcastXIndex(i)))) {
         *(out + i) = *(in0 + bcast.GetBroadcastXIndex(i));
       } else if (isnan(*(in1 + bcast.GetBroadcastYIndex(i)))) {
@@ -352,7 +352,7 @@ void MaximumCpuKernel::BcastComputeOneKernel(CpuKernelContext &ctx, const Bcast 
   ignore_nan = (ignore_nan_attr == nullptr) ? false : ignore_nan_attr->GetBool();
   int64_t data_num = ctx.Output(0)->NumElements();
   for (int64_t i = 0; i < data_num; ++i) {
-    if (ignore_nan == true && is_float16 == true) {
+    if (ignore_nan && is_float16) {
       if (Eigen::numext::isnan(*(in0 + bcast.GetBroadcastXIndex(i)))) {
         *(out + i) = *(in1 + bcast.GetBroadcastYIndex(i));
       } else if (Eigen::numext::isnan(*(in1 + bcast.GetBroadcastYIndex(i)))) {
@@ -363,7 +363,7 @@ void MaximumCpuKernel::BcastComputeOneKernel(CpuKernelContext &ctx, const Bcast 
                        : *(in1 + bcast.GetBroadcastYIndex(i));
       }
     }
-    if (ignore_nan == true && is_float16 == false) {
+    if (ignore_nan && !is_float16) {
       if (isnan(*(in0 + bcast.GetBroadcastXIndex(i)))) {
         *(out + i) = *(in1 + bcast.GetBroadcastYIndex(i));
       } else if (isnan(*(in1 + bcast.GetBroadcastYIndex(i)))) {
@@ -374,7 +374,7 @@ void MaximumCpuKernel::BcastComputeOneKernel(CpuKernelContext &ctx, const Bcast 
                        : *(in1 + bcast.GetBroadcastYIndex(i));
       }
     }
-    if (ignore_nan == false && is_float16 == true) {
+    if (!ignore_nan && is_float16) {
       if (Eigen::numext::isnan(*(in0 + bcast.GetBroadcastXIndex(i)))) {
         *(out + i) = *(in0 + bcast.GetBroadcastXIndex(i));
       } else if (Eigen::numext::isnan(*(in1 + bcast.GetBroadcastYIndex(i)))) {
@@ -385,7 +385,7 @@ void MaximumCpuKernel::BcastComputeOneKernel(CpuKernelContext &ctx, const Bcast 
                        : *(in1 + bcast.GetBroadcastYIndex(i));
       }
     }
-    if (ignore_nan == false && is_float16 == false) {
+    if (!ignore_nan && !is_float16) {
       if (isnan(*(in0 + bcast.GetBroadcastXIndex(i)))) {
         *(out + i) = *(in0 + bcast.GetBroadcastXIndex(i));
       } else if (isnan(*(in1 + bcast.GetBroadcastYIndex(i)))) {

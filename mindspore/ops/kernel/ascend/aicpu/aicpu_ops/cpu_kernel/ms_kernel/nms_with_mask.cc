@@ -23,6 +23,9 @@ const int32_t kInputNum = 1;
 const int32_t kOutputNum = 3;
 const int kColNum5 = 5;
 const int kColNum8 = 8;
+const uint32_t kIndex0 = 0;
+const uint32_t kIndex1 = 1;
+const uint32_t kIndex2 = 2;
 const char *kNMSWithMask = "NMSWithMask";
 }  // namespace
 
@@ -67,9 +70,9 @@ uint32_t NMSWithMaskCpuKernel::Compute(CpuKernelContext &ctx) {
 template <typename T>
 uint32_t NMSWithMaskCpuKernel::DoCompute(CpuKernelContext &ctx) {
   auto input = reinterpret_cast<T *>(ctx.Input(0)->GetData());
-  auto output = reinterpret_cast<T *>(ctx.Output(OUTPUT)->GetData());
-  auto sel_idx = reinterpret_cast<int *>(ctx.Output(SEL_IDX)->GetData());
-  auto sel_boxes = reinterpret_cast<bool *>(ctx.Output(SEL_BOXES)->GetData());
+  auto output = reinterpret_cast<T *>(ctx.Output(kIndex0)->GetData());
+  auto sel_idx = reinterpret_cast<int *>(ctx.Output(kIndex1)->GetData());
+  auto sel_boxes = reinterpret_cast<bool *>(ctx.Output(kIndex2)->GetData());
   std::fill(&sel_idx[0], &sel_idx[num_input_], 0);
   std::fill(&sel_boxes[0], &sel_boxes[num_input_], false);
 
