@@ -76,7 +76,7 @@ def exec_model_and_check_result(cur_model_path, dataset_path, config_path, cache
     return loss
 
 
-def run_twice_with_same_network(file_name, cache_path, log_file_name_first, log_file_name_second):
+def run_twice_with_same_network(file_name, cache_path, log_file_name_first, log_file_name_second, is_debug=False):
     # Clear compile cache folder and log files
     if os.path.exists(cache_path):
         shutil.rmtree(cache_path)
@@ -89,14 +89,22 @@ def run_twice_with_same_network(file_name, cache_path, log_file_name_first, log_
     assert not os.path.exists(log_file_name_second)
 
     # First run without compile cache
-    cmd_first = f"export GLOG_v=2; export MS_COMPILER_CACHE_ENABLE=1; " \
-                + "export MS_COMPILER_CACHE_PATH={}; python {} > {} 2>&1".format(cache_path, file_name,
-                                                                                 log_file_name_first)
+    if not is_debug:
+        cmd_first = f"export GLOG_v=2; export MS_COMPILER_CACHE_ENABLE=1; " \
+                    + "export MS_COMPILER_CACHE_PATH={}; python {} > {} 2>&1".format(cache_path, file_name,
+                                                                                     log_file_name_first)
+    else:
+        cmd_first = f"export GLOG_v=0; export MS_COMPILER_CACHE_ENABLE=1; " \
+                    + "export MS_COMPILER_CACHE_PATH={}; python {} > {} 2>&1".format(cache_path, file_name,
+                                                                                     log_file_name_first)
     subprocess.check_output(cmd_first, shell=True)
     assert os.path.exists(log_file_name_first)
     assert os.path.exists(cache_path)
     with open(log_file_name_first, "r") as f_first:
         data_first = f_first.read()
+    if is_debug:
+        print("\nmatch_output:\n", match_output, flush=True)
+        print("\ndata_first:\n", data_first, flush=True)
     assert "Check the consistency of dependency files hash failed. Execute all the compilation actions." in data_first
 
     # Take out the result of the first run
@@ -108,13 +116,20 @@ def run_twice_with_same_network(file_name, cache_path, log_file_name_first, log_
     array_shape_first = np.array([int(x) for x in shape_first])
 
     # Second run with compile cache
-    cmd_second = f"export GLOG_v=2; export MS_COMPILER_CACHE_ENABLE=1; " \
-                 + "export MS_COMPILER_CACHE_PATH={}; python {} > {} 2>&1".format(cache_path, file_name,
-                                                                                  log_file_name_second)
+    if not is_debug:
+        cmd_second = f"export GLOG_v=2; export MS_COMPILER_CACHE_ENABLE=1; " \
+                    + "export MS_COMPILER_CACHE_PATH={}; python {} > {} 2>&1".format(cache_path, file_name,
+                                                                                     log_file_name_second)
+    else:
+        cmd_second = f"export GLOG_v=0; export MS_COMPILER_CACHE_ENABLE=1; " \
+                    + "export MS_COMPILER_CACHE_PATH={}; python {} > {} 2>&1".format(cache_path, file_name,
+                                                                                     log_file_name_second)
     subprocess.check_output(cmd_second, shell=True)
     assert os.path.exists(log_file_name_second)
     with open(log_file_name_second, "r") as f_second:
         data_second = f_second.read()
+    if is_debug:
+        print("\ndata_second:\n", data_second, flush=True)
 
     has_log = "Use the compilation cache and execute the backend actions only. Be aware of correctness risks." in \
               data_second
@@ -352,7 +367,7 @@ def test_compile_cache_lenet():
     Description: Test whether the regular compile cache function can run successfully.
     Expectation: success.
     """
-    run_twice_with_same_network("run_lenet.py", "./lenet", "lenet_first.txt", "lenet_second.txt")
+    run_twice_with_same_network("run_lenet.py", "./lenet", "lenet_first.txt", "lenet_second.txt", True)
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
