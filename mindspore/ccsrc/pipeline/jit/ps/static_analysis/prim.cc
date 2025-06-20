@@ -159,6 +159,9 @@ CNodePtr GetInputsAfterUnpackCall(const CNodePtr &source_node, const AnalysisEng
 
 AbstractBasePtr ConvertTensorToRef(const AbstractBasePtr &abs) {
   MS_EXCEPTION_IF_NULL(abs);
+  if (abs->inplace_abstract() != nullptr) {
+    return abs->inplace_abstract();
+  }
   if (abs->isa<abstract::AbstractRefTensor>() || abs->isa<abstract::AbstractNone>()) {
     return abs;
   }
@@ -186,6 +189,9 @@ AbstractBasePtr AddRefKeyForArgs(const AbstractBasePtr &output_abs, const Abstra
         ref_tensor = ref_tensor->Broaden();
       }
       input_args[index]->set_inplace_abstract(ref_tensor);
+    } else {
+      auto ref_tensor = input_args[index]->cast<abstract::AbstractRefPtr>();
+      ref_tensor->set_is_inplace(true);
     }
   }
   if (inplace_indexes.size() == 0 || output_abs == nullptr) {
