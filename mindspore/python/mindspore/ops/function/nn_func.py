@@ -4482,7 +4482,7 @@ def _nllloss_nd(input, target, weight=None, ignore_index=-100, reduction='mean')
         weight = ones(n_classes, input.dtype)
     if input_dim < 1:
         raise ValueError(f"input dim should be less than 1, but got {input_dim}")
-    if input_dim != 1 and input.shape[0] != target.shape[0]:
+    if F.isconstant(input_dim) and F.isconstant(target.ndim) and input_dim != 1 and input.shape[0] != target.shape[0]:
         raise ValueError(f"input bacth_size should be equal to target batch_size, but got {input.shape[0]} and "
                          f"{target.shape[0]}")
     if input_dim in [1, 2]:
