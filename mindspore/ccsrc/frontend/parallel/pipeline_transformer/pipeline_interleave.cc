@@ -134,6 +134,15 @@ void PipelineInterleave::CreateSendReceiveGroup() {
   }
   group_.emplace_back(forward_send_group_name);
 
+  const auto parallel_context = parallel::ParallelContext::GetInstance();
+  const auto pp_interleave_origin = parallel_context->pipeline_interleave_temp();
+  if (!pp_interleave_origin) {
+    group_.emplace_back(forward_send_group_name);
+    group_.emplace_back(forward_send_group_name);
+    group_.emplace_back(forward_send_group_name);
+    return;
+  }
+
   Group backward_send_group;
   auto backward_send_group_name = forward_send_group.name() + BACKWARD;
   if (g_device_manager->CreateGroup(backward_send_group_name, dev_list, &backward_send_group) != SUCCESS) {
