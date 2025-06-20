@@ -14,17 +14,19 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_FRONTEND_OPTIMIZER_INPLACE_INPUT_REPLACE_H_
-#define MINDSPORE_CCSRC_FRONTEND_OPTIMIZER_INPLACE_INPUT_REPLACE_H_
+#ifndef MINDSPORE_CCSRC_FRONTEND_OPTIMIZER_IRPASS_INPLACE_INPUT_REPLACE_H_
+#define MINDSPORE_CCSRC_FRONTEND_OPTIMIZER_IRPASS_INPLACE_INPUT_REPLACE_H_
 
 #include "frontend/optimizer/optimizer.h"
 #include "frontend/optimizer/irpass.h"
 
 namespace mindspore {
 namespace opt {
+namespace irpass {
 
 void DoInplaceInputReplace(const FuncGraphPtr &func_graph, const OptimizerPtr &optimizer);
 
+}  // namespace irpass
 }  // namespace opt
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_FRONTEND_OPTIMIZER_INPLACE_INPUT_REPLACE_H_
+#endif  // MINDSPORE_CCSRC_FRONTEND_OPTIMIZER_IRPASS_INPLACE_INPUT_REPLACE_H_
