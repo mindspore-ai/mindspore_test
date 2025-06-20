@@ -39,7 +39,6 @@ from mindspore._check_jit_forbidden_api import jit_forbidden_register
 from mindspore.common.symbol import Symbol
 from mindspore._c_expression import is_reboot_node
 
-
 np_types = (np.int8, np.int16, np.int32, np.int64,
             np.uint8, np.uint16, np.uint32, np.uint64, np.float16,
             np.float32, np.float64, np.bool_, np.complex64, np.complex128)
@@ -318,7 +317,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
                 return True
         return NotImplemented
 
-
     def __deepcopy__(self, memodict):
         new_obj = Tensor(self)
         new_obj.init = self.init
@@ -374,7 +372,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
             return int(data)
         except ValueError as e:
             raise ValueError("Only one element tensors can be converted to Python scalars") from e
-
 
     def __float__(self):
         try:
@@ -2142,7 +2139,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
                     self.init.seed, _ = self.seed
 
         with seed_context(self.init):
-            if (not isinstance(self.init, ZeroInitializer) and slice_num_of_persistent_data == 1)\
+            if (not isinstance(self.init, ZeroInitializer) and slice_num_of_persistent_data == 1) \
                     and not is_reboot_node():
                 self.init(data)
         self.init = None
@@ -2492,7 +2489,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('uniform_')(self, from_=from_, to=to, generator=generator)
 
-
     def exponential_(self, lambd=1, *, generator=None):
         r"""
         Fills `self` tensor with elements drawn from the exponential distribution:
@@ -2526,7 +2522,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('exponential_')(self, lambd=lambd, generator=generator)
 
-
     def sum_to_size(self, *size):
         r"""
         Sum self Tensor to the `size`. `size` must be expandable to the Tensor size.
@@ -2558,17 +2553,19 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         shape_x = x.shape
         if len(size) > x.ndim:
             raise ValueError(f"For sum_to_size, size {size} is not expandable to the tensor size {shape_x}.")
+        pre_len = 0
+        pre_axis = []
         if len(size) < x.ndim:
-            pre_axis = tuple([axis for axis in range(x.ndim - len(size))])
-            x = x.sum(pre_axis)
-        axes = []
+            pre_len = x.ndim - len(size)
+            pre_axis = [axis for axis in range(pre_len)]
+        axes = pre_axis
         for i, element in enumerate(size):
-            if element != x.shape[i] and element == 1:
-                axes.append(i)
-            elif element != x.shape[i]:
+            if element != x.shape[i + pre_len] and element == 1:
+                axes.append(i + pre_len)
+            elif element != x.shape[i + pre_len]:
                 raise ValueError(f"For sum_to_size, size {size} is not expandable to the tensor size {shape_x}.")
         if axes:
-            return x.sum(tuple(axes), keepdims=True)
+            return x.sum(tuple(axes), keepdims=True).reshape(size)
         return x
 
     def nanmean(self, axis=None, keepdims=False, *, dtype=None):
@@ -2833,7 +2830,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
             return []
         return self._tolist()
 
-
     def unsorted_segment_min(self, segment_ids, num_segments):
         r"""
         For details, please refer to :func:`mindspore.ops.unsorted_segment_min`.
@@ -2856,7 +2852,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         """
         For details, please refer to :func:`mindspore.ops.unique_consecutive`.
         """
-        output, idx, counts =\
+        output, idx, counts = \
             tensor_operator_registry.get("unique_consecutive")(return_inverse, return_counts, dim)(self)
         if return_inverse and return_counts:
             return output, idx, counts
@@ -2995,7 +2991,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
             return str(self.dtype)
         return self.astype(dtype)
 
-
     def type_as(self, other):
         r"""
         Returns self tensor cast to the type of the with the input other tensor.
@@ -3037,7 +3032,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         if self.dtype == other.dtype:
             return self
         return TensorPy_.type_as(self, other)
-
 
     def bool(self):
         r"""
@@ -3822,7 +3816,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         """
         return TensorPy_._data_ptr(self)
 
-
     def data_ptr(self):
         r"""
         Get the data ptr address of tensor, for CPU is host address, GPU/NPU is device address.
@@ -3879,12 +3872,12 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('normal_')(self, mean=mean, std=std, generator=generator)
 
-
     def triangular_solve(self, A, upper=True, transpose=False, unitriangular=False):
         r"""
         For details, please refer to :func:`mindspore.mint.triangular_solve`.
         """
         return tensor_operator_registry.get('triangular_solve')(self, A, upper, transpose, unitriangular)
+
 
 def _vm_compare(*args):
     """Implement `vm_compare` for tensor."""
