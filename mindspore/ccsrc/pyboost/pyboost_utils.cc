@@ -173,24 +173,34 @@ kernel::KernelModPtr PyBoostUtils::CreateKernelMod(const PrimitivePtr &prim, con
   const auto &key = with_prim_attr ? cache_helper.GetPrimAttrKernelModKey(prim, device_name, inputs)
                                    : cache_helper.GetKernelModKey(op_name, device_name, inputs);
   auto kernel_mod = cache_helper.GetKernelMod(key);
-  if (kernel_mod == nullptr) {
-    kernel_mod = device_context->GetKernelExecutor()->CreateKernelMod(op_name);
-    if (kernel_mod == nullptr) {
-      if (common::EnvHelper::GetInstance()->GetEnv("MS_OP_PLUGIN_PATH") != nullptr) {
-        // if env var MS_OP_PLUGIN_PATH is set, then use custom op plugin to load op
-        const std::string custom_op_name = "CustomOpPlugin";
-        kernel_mod = device_context->GetKernelExecutor()->CreateKernelMod(custom_op_name);
-        MS_EXCEPTION_IF_NULL(kernel_mod);
-      } else {
-        MS_LOG(EXCEPTION) << "Create kernelmod for op " << op_name << " failed";
-      }
-    }
-    if (!kernel_mod->Init(prim, inputs, outputs)) {
-      MS_LOG(EXCEPTION) << "KernelMod Init Failed: " << op_name;
-    }
-    cache_helper.SetCache(key, kernel_mod);
-    PyboostKernelExtraFuncFactory::GetInstance().SetThreadPool(device_name, kernel_mod);
+  if (kernel_mod != nullptr) {
+    return kernel_mod;
   }
+
+  if (common::EnvHelper::GetInstance()->GetEnv("MS_OP_PLUGIN_PATH") != nullptr) {
+    // if env var MS_OP_PLUGIN_PATH is set, then use custom op plugin to load op
+    const std::string custom_op_name = "CustomOpPlugin";
+    kernel_mod = device_context->GetKernelExecutor()->CreateKernelMod(custom_op_name);
+    MS_EXCEPTION_IF_NULL(kernel_mod);
+
+    if (kernel_mod->Init(prim, inputs, outputs)) {
+      // use op plugin when init success
+      cache_helper.SetCache(key, kernel_mod);
+      PyboostKernelExtraFuncFactory::GetInstance().SetThreadPool(device_name, kernel_mod);
+      return kernel_mod;
+    }
+  }
+
+  kernel_mod = device_context->GetKernelExecutor()->CreateKernelMod(op_name);
+  if (kernel_mod == nullptr) {
+    MS_LOG(EXCEPTION) << "Create kernelmod for op " << op_name << " failed";
+  }
+
+  if (!kernel_mod->Init(prim, inputs, outputs)) {
+    MS_LOG(EXCEPTION) << "KernelMod Init Failed: " << op_name;
+  }
+  cache_helper.SetCache(key, kernel_mod);
+  PyboostKernelExtraFuncFactory::GetInstance().SetThreadPool(device_name, kernel_mod);
 
   return kernel_mod;
 }

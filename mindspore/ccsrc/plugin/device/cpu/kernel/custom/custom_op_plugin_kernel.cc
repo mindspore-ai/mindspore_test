@@ -57,6 +57,37 @@ bool CustomOpPluginCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
   kernel_name_ = primitive_->name();
   SetKernelPath();
 
+  if (!handle_) {
+    handle_ = dlopen(file_path_.c_str(), RTLD_LAZY | RTLD_LOCAL);
+    if (!handle_) {
+      MS_LOG(ERROR) << "For '" << kernel_name_ << "' on CPU, dlopen file '" << file_path_
+                    << "' should be successful, but error occurs! Error message is: " << dlerror();
+      return false;
+    }
+  }
+
+  if (!reg_func_) {
+    const std::string reg_func_name = "IsKernelRegistered";
+    reg_func_ = reinterpret_cast<std::add_pointer<bool(const char *)>::type>(dlsym(handle_, reg_func_name.c_str()));
+    if (auto error_info = dlerror(); error_info != nullptr) {
+      MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "' on CPU, error occurs when fetching function '" << reg_func_name
+                        << "'. Error info: " << error_info;
+    }
+  }
+
+  try {
+    bool ret = reg_func_(primitive_->name().c_str());
+    if (!ret) {
+      MS_LOG(INFO) << "Can't find '" << kernel_name_ << " on CPU in op plugin";
+      return false;
+    }
+  } catch (const std::exception &e) {
+    MS_LOG(WARNING) << "For '" << kernel_name_ << "' on CPU, operator failed when executing user defined file "
+                    << file_path_ << "! "
+                    << "Error message is " << e.what();
+    return false;
+  }
+
   for (size_t i = 0; i < inputs.size(); i++) {
     auto in_shape = inputs[i]->GetShapeVector();
     auto dtype = inputs[i]->dtype_id();

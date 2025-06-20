@@ -32,6 +32,7 @@ class KernelInputInfo {
  public:
   KernelInputInfo() = default;
   virtual ~KernelInputInfo() = default;
+  virtual bool IsScalarKernelInput(size_t idx) = 0;
 
   template <typename T>
   inline T GetKernelInput(size_t) const {
@@ -60,6 +61,7 @@ class KernelInputInfo {
   virtual std::vector<float> GetFloatVecInput(size_t idx) = 0;
   virtual std::vector<std::vector<int64_t>> GetInt2DVecInput(size_t idx) = 0;
   virtual std::vector<std::vector<float>> GetFloat2DVecInput(size_t idx) = 0;
+  virtual int GetInputTypeId(size_t idx) = 0;
   std::vector<size_t> workspace_;
 
   CustomKernelData *kernel_data_{nullptr};
@@ -71,6 +73,7 @@ class KernelInputInfoImpl : public KernelInputInfo {
   virtual ~KernelInputInfoImpl() = default;
   void SetKernelInput(const std::vector<kernel::KernelTensor *> &inputs) { inputs_ = inputs; }
   size_t GetInputSize() { return inputs_.size(); }
+  bool IsScalarKernelInput(size_t idx) final { return inputs_[idx]->type_id() != TypeId::kObjectTypeTensorType; }
 
  private:
   bool GetBoolInput(size_t idx) { return inputs_[idx]->GetValueWithCheck<bool>(); }
@@ -92,6 +95,8 @@ class KernelInputInfoImpl : public KernelInputInfo {
   std::vector<std::vector<float>> GetFloat2DVecInput(size_t idx) {
     return inputs_[idx]->GetValueWithCheck<std::vector<std::vector<float>>>();
   }
+
+  int GetInputTypeId(size_t idx) { return static_cast<int>(inputs_[idx]->dtype_id()); }
 
   std::vector<kernel::KernelTensor *> inputs_;
 };
