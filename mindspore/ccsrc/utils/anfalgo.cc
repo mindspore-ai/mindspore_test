@@ -1315,6 +1315,17 @@ bool AnfAlgo::IsLcclCommunicationOp(const AnfNodePtr &node) {
   return (collective_comm_lib == "LCCL") ? true : false;
 }
 
+bool AnfAlgo::IsCommFusionOp(const std::string &kernel_name) {
+  bool is_comm_fusion_op = (kernel_name == kMatMulAllReduceOpName) || (kernel_name == kMoeDistributeCombine) ||
+                           (kernel_name == kMoeDistributeDispatch) || (kernel_name == kQbmmAllReduceAdd) ||
+                           (kernel_name == kMatmulAllReduceAddRmsNorm);
+  return is_comm_fusion_op;
+}
+
+bool AnfAlgo::IsNaiveCommOp(const AnfNodePtr &node, const std::string &kernel_name) {
+  return IsCommunicationOp(node) && !IsCommFusionOp(kernel_name);
+}
+
 bool AnfAlgo::IsDtypeFormatSensitiveOp(const AnfNodePtr &node) {
   static const std::set<std::string> kDtypeFormatSensitiveOpNames = {kCastOpName};
   MS_EXCEPTION_IF_NULL(node);

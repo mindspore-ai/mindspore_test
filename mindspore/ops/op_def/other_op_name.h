@@ -61,6 +61,8 @@ constexpr auto kBarrierOpName = "Barrier";
 constexpr auto kMatMulAllReduceOpName = "MatMulAllReduce";
 constexpr auto kBatchISendIRecvOpName = "BatchISendIRecv";
 constexpr auto kCustomExtOpName = "CustomExt";
+constexpr auto kQbmmAllReduceAdd = "QbmmAllReduceAdd";
+constexpr auto kMatmulAllReduceAddRmsNorm = "MatmulAllReduceAddRmsNorm";
 constexpr auto kMoeDistributeCombine = "MoeDistributeCombine";
 constexpr auto kMoeDistributeDispatch = "MoeDistributeDispatch";
 // View op
