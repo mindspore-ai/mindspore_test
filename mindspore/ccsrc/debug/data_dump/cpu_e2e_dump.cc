@@ -100,7 +100,8 @@ void CPUE2eDump::DumpInputImpl(const CNodePtr &node, const std::string &dump_pat
   for (size_t j = 0; j < input_size; ++j) {
     // Ignore the input address that is not used in the kernel launch.
     if (std::find(ignored_address.begin(), ignored_address.end(), j) != ignored_address.end()) {
-      MS_LOG(INFO) << "Ignore dump input data for kernel:" << node->fullname_with_scope() << " with input index:" << j;
+      MS_VLOG(VL_DUMP) << "Ignore dump input data for kernel:" << node->fullname_with_scope()
+                       << " with input index:" << j;
       continue;
     }
 
@@ -168,7 +169,7 @@ void CPUE2eDump::DumpSingleAnfNode(const AnfNodePtr &anf_node, const size_t outp
   const std::string cst_prefix = "Default--";
   if (anf_node->isa<ValueNode>()) {
     if (dump_name.find(cst_prefix) == std::string::npos) {
-      MS_LOG(INFO) << "Incorrect constant format: " << dump_name;
+      MS_VLOG(VL_DUMP) << "Incorrect constant format: " << dump_name;
       return;
     }
     dump_name = node_name.substr(cst_prefix.length());
@@ -201,7 +202,7 @@ void CPUE2eDump::DumpParameters(const session::KernelGraph *graph, uint32_t grap
   if (!dump_json_parser.OutputNeedDump()) {
     return;
   }
-  MS_LOG(INFO) << "Start e2e dump parameters.";
+  MS_VLOG(VL_DUMP) << "Start e2e dump parameters.";
   auto rank_id = datadump::GetRankID();
   const std::string &dump_path = GenerateDumpPath(graph_id, rank_id);
 
@@ -225,7 +226,7 @@ void CPUE2eDump::DumpConstants(const session::KernelGraph *graph, uint32_t graph
   if (!dump_json_parser.OutputNeedDump()) {
     return;
   }
-  MS_LOG(INFO) << "Start e2e dump constant.";
+  MS_VLOG(VL_DUMP) << "Start e2e dump constant.";
   uint32_t cur_iteration = DumpJsonParser::GetInstance().cur_dump_iter();
   if (cur_iteration != 0) {
     return;

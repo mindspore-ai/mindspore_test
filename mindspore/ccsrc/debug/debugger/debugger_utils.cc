@@ -86,8 +86,8 @@ std::vector<size_t> GetIgnoredIndexesForOutput(const CNodePtr &cnode, const Devi
   static bool enable_useless_output = ignore_useless_output_env == "0";
   static bool log_once = true;
   if (log_once) {
-    MS_LOG(INFO) << "MINDSPORE_DUMP_IGNORE_USELESS_OUTPUT=" << ignore_useless_output_env << ". "
-                 << "Invalid outputs will " << (enable_useless_output ? "" : "not ") << "be dumped.";
+    MS_VLOG(VL_DUMP) << "MINDSPORE_DUMP_IGNORE_USELESS_OUTPUT=" << ignore_useless_output_env << ". "
+                     << "Invalid outputs will " << (enable_useless_output ? "" : "not ") << "be dumped.";
     log_once = false;
   }
   if (!enable_useless_output && kernel_mod != nullptr) {
@@ -123,8 +123,8 @@ std::vector<size_t> GetValidDumpIndex(const CNodePtr &cnode, size_t index_size, 
     auto tensor = tensors[index];
     MS_EXCEPTION_IF_NULL(tensor);
     if (tensor->device_ptr() == nullptr) {
-      MS_LOG(INFO) << cnode->fullname_with_scope() << (is_input ? " input" : " output") << ", index " << index
-                   << " deviceaddress is nullptr.";
+      MS_VLOG(VL_DUMP) << cnode->fullname_with_scope() << (is_input ? " input" : " output") << ", index " << index
+                       << " deviceaddress is nullptr.";
       continue;
     }
     if (tensor->tensor_storage_info()) {
@@ -517,7 +517,7 @@ void LaunchDumpCallback(const std::vector<TensorInfoForDump> &tensor_info_list, 
       auto host_type = tensor_info.host_type;
       if (host_type > TypeId::kNumberTypeEnd || host_type < TypeId::kNumberTypeBegin ||
           host_type == kNumberTypeComplex64) {
-        MS_LOG(INFO) << "Cannot create tensor with type: " << TypeIdLabel(host_type);
+        MS_VLOG(VL_DUMP) << "Cannot create tensor with type: " << TypeIdLabel(host_type);
         continue;
       }
 

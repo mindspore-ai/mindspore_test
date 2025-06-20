@@ -191,11 +191,11 @@ bool CPUDumpMemToFile(const device::DeviceAddress &addr, const std::string &file
   std::string path = filepath + '.' + addr.format() + "." + TypeIdToString(host_type);
   MS_LOG(DEBUG) << "E2E Dump path is " << path;
   if (addr.GetSize() == 0) {
-    MS_LOG(INFO) << "Data size is 0 for file: " << path << ", no need to dump.";
+    MS_VLOG(VL_DUMP) << "Data size is 0 for file: " << path << ", no need to dump.";
     return true;
   }
   if (addr.GetPtr() == nullptr) {
-    MS_LOG(INFO) << "Data is nullptr for file: " << path << ", skip it.";
+    MS_VLOG(VL_DUMP) << "Data is nullptr for file: " << path << ", skip it.";
     return true;
   }
   ret = DumpJsonParser::DumpToFile(path, addr.GetPtr(), addr.GetSize(), host_shape, host_type);
@@ -213,19 +213,19 @@ bool AscendDumpMemToFile(const device::DeviceAddress &addr, const std::string &f
     return ret;
   }
   if (addr.GetSize() == 0) {
-    MS_LOG(INFO) << "the operator in filepath: " << filepath << ", size == 0";
+    MS_VLOG(VL_DUMP) << "the operator in filepath: " << filepath << ", size == 0";
     return true;
   }
   if (addr.GetPtr() == nullptr) {
-    MS_LOG(INFO) << "Data is nullptr for file: " << filepath << ", skip it.";
+    MS_VLOG(VL_DUMP) << "Data is nullptr for file: " << filepath << ", skip it.";
     return true;
   }
   if (trans_flag) {
     std::string path = filepath + '.' + host_fmt;
-    MS_LOG(INFO) << "E2E Dump path is " << path;
+    MS_VLOG(VL_DUMP) << "E2E Dump path is " << path;
     if (host_type > TypeId::kNumberTypeEnd || host_type < TypeId::kNumberTypeBegin ||
         host_type == kNumberTypeComplex64) {
-      MS_LOG(INFO) << "Cannot create tensor with type: " << TypeIdLabel(host_type);
+      MS_VLOG(VL_DUMP) << "Cannot create tensor with type: " << TypeIdLabel(host_type);
       return false;
     }
     mindspore::tensor::TensorPtr out_tensor = std::make_shared<tensor::Tensor>(host_type, host_shape);
@@ -241,7 +241,7 @@ bool AscendDumpMemToFile(const device::DeviceAddress &addr, const std::string &f
     auto host_tmp = std::vector<uint8_t>(addr.GetSize());
     addr.SyncDeviceToHost(addr.GetSize(), host_tmp.data());
     std::string path = filepath + '.' + addr.format();
-    MS_LOG(INFO) << "E2E Dump path is " << path;
+    MS_VLOG(VL_DUMP) << "E2E Dump path is " << path;
     ret = DumpJsonParser::DumpToFile(path, host_tmp.data(), addr.GetSize(), host_shape, addr.type_id());
   }
   return ret;
@@ -293,21 +293,21 @@ bool LoadMemToHost(const device::DeviceAddress &addr, const std::string &tensor_
                    bool keep_prev, uint32_t root_graph_id, bool force_update, bool trans_flag, bool async_copy) {
   bool ret = false;
   if (addr.GetSize() == 0) {
-    MS_LOG(INFO) << tensor_name << " size is 0, skip it.";
+    MS_VLOG(VL_DUMP) << tensor_name << " size is 0, skip it.";
     return true;
   }
   if (addr.GetPtr() == nullptr) {
-    MS_LOG(INFO) << tensor_name << " device address ptr is null, skip it.";
+    MS_VLOG(VL_DUMP) << tensor_name << " device address ptr is null, skip it.";
     return true;
   }
   auto debugger = Debugger::GetInstance();
   MS_EXCEPTION_IF_NULL(debugger);
   if (debugger->TensorExistsInCurrent(tensor_name) && !force_update) {
-    MS_LOG(INFO) << tensor_name << " already loaded for this step so not loading it again.";
+    MS_VLOG(VL_DUMP) << tensor_name << " already loaded for this step so not loading it again.";
     return true;
   }
   if (host_type > TypeId::kNumberTypeEnd || host_type < TypeId::kNumberTypeBegin || host_type == kNumberTypeComplex64) {
-    MS_LOG(INFO) << "Cannot create tensor with type: " << TypeIdLabel(host_type);
+    MS_VLOG(VL_DUMP) << "Cannot create tensor with type: " << TypeIdLabel(host_type);
     return false;
   }
   auto out_tensor = addr.LoadMemToHost(tensor_name, host_shape, host_type, trans_flag, async_copy);
@@ -316,7 +316,7 @@ bool LoadMemToHost(const device::DeviceAddress &addr, const std::string &tensor_
     return false;
   }
   if (!out_tensor->DataSize()) {
-    MS_LOG(INFO) << tensor_name << " datasize is 0, skip it.";
+    MS_VLOG(VL_DUMP) << tensor_name << " datasize is 0, skip it.";
     return true;
   }
   std::string tensor_format = trans_flag ? host_fmt : addr.format();
@@ -338,8 +338,8 @@ bool LoadMemToHost(const device::DeviceAddress &addr, const std::string &tensor_
   tensor_data->SetRootGraphId(root_graph_id);
   tensor_data->SetFormat(tensor_format);
   ret = debugger->LoadNewTensor(tensor_data, keep_prev);
-  MS_LOG(INFO) << "Load tensor '" << tensor_name << "' into debugger tensor loader successfully: format("
-               << tensor_format << ").";
+  MS_VLOG(VL_DUMP) << "Load tensor '" << tensor_name << "' into debugger tensor loader successfully: format("
+                   << tensor_format << ").";
   return ret;
 }
 #endif
