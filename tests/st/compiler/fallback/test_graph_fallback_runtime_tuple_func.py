@@ -823,7 +823,7 @@ def test_sequence_getitem_with_slice():
     assert np.all(ret[1].asnumpy() == np.array([5, 4, 3, 2]))
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_sequence_getitem_with_slice_2():
     """

@@ -39,7 +39,7 @@ def scatter_add_ext_vmap_func(x, dim, index, src):
     return ops.vmap(scatter_add_ext_forward_func, in_axes=(0, None, None, None), out_axes=(0,))(x, dim, index, src)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_scatter_add_ext_normal(mode):
     """

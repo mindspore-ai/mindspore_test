@@ -70,7 +70,7 @@ def test_ops_where_overload(mode):
     assert np.allclose(indices2.asnumpy(), expected_indices2)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0',
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 def test_where_normal(mode):

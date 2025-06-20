@@ -893,7 +893,7 @@ def test_setitem_with_mul(mode):
     assert np.allclose(np_expect, ms_y.asnumpy()), f"np_expect:{np_expect}, ms_y:{ms_y}"
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_setitem_graph_mode(mode):
     """

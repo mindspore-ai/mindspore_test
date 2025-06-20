@@ -45,7 +45,7 @@ def cumsum_backward_func(x, dim):
     return cumsum_bwd_func(x, dim)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 def test_cumsum_normal(mode):
     """

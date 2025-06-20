@@ -30,7 +30,13 @@ def histc_forward_func(x, bins, min_val, max_val):
     return mint.histc(x, bins, min_val, max_val)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@test_utils.run_with_cell
+def histc_backward_func(x):
+    # pylint: disable=E1102
+    return ops.grad(histc_forward_func, (0))(x, 4, 0, 3)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 @test_utils.run_test_with_On
 def test_ops_histc_ext_normal(context_mode):

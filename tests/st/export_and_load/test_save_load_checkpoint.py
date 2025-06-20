@@ -127,7 +127,7 @@ def test_ops_save_checkpoint(mode):
     assert "lr" in output_empty_list
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE])
 def test_load_checkpoint_async(mode):
     """
@@ -188,7 +188,7 @@ def test_save_checkpoint_async(mode):
     assert 'fc1.bias' not in output_param_dict3
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE])
 def test_load_checkpoint_async_support_sf(mode):
     """

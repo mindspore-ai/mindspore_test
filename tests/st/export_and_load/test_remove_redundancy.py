@@ -78,7 +78,7 @@ parameter_layout_dict = {
 }
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='allcards', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='allcards', essential_mark='essential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE])
 def test_remove_redundancy_1_1(mode):
     '''
@@ -132,7 +132,7 @@ def test_remove_redundancy_0_0(mode):
         shutil.rmtree(f"device{i}_redundancy00")
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE])
 def test_save_remove_redundancy_error(mode):
     '''
@@ -144,7 +144,7 @@ def test_save_remove_redundancy_error(mode):
         CheckpointConfig(remove_redundancy="string")
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='allcards', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='allcards', essential_mark='essential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE])
 def test_load_remove_redundancy_error(mode):
     '''
@@ -198,7 +198,7 @@ def test_get_strategy_redundancy(mode):
         shutil.rmtree(f"device{i}_get_redundancy")
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE])
 def test_remove_redundancy_algorithm(mode):
     """
