@@ -16,7 +16,7 @@
 from __future__ import absolute_import
 
 from mindspore.experimental.llm_boost.atb import LlamaBoost, QwenBoost
-from mindspore.experimental.llm_boost.ascend_native import *
+from mindspore.experimental.llm_boost.ascend_native import LLMBoost, LlamaBoostAscendNative
 from mindspore.experimental.llm_boost.register import LlmBoostRegister
 
 __all__ = ["LlmBoostRegister"]

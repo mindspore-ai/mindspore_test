@@ -16,6 +16,7 @@
 
 from mindspore.common import Tensor
 
+
 class LLMBoost():
     r"""
     Implements an LLM in a single kernel.
@@ -31,22 +32,17 @@ class LLMBoost():
         self.binder = LlmBoostBinder("AscendNative", config.model_type)
         self.binder.init_model(config.to_dict())
 
-    def init(self):
-        """
-        Initialize the object
-        returns True if object needs input manipulation by mindformers
-        """
-        return False
-
-    def set_kvcache(self, k_caches=None, v_caches=None):
-        return
-
     def forward(self, input_ids, batch_valid_length, position_ids=None):
+        """ Implements the actual forward functionality of the op """
         ret = self.binder.forward([input_ids, batch_valid_length], "nothing really")
         return Tensor(ret[0])
 
     def set_weights(self, ckpt_dict):
+        """
+        Initialize the weights of the LLM from a checkpoint dictionary
+        """
         self.binder.set_weights_map(ckpt_dict)
 
     def add_flags(self, is_first_iteration=False):
+        """ a placeholder function that allows settings flags as being use in mindformers """
         self.binder.add_flags(is_first_iteration=is_first_iteration)

@@ -26,11 +26,11 @@
 
 namespace mindspore {
 namespace opt {
-class QMatmulElemFusion : public QbmmFusionBase {
+class InferenceQbmmElemwiseFusion : public QbmmFusionBase {
  public:
-  explicit QMatmulElemFusion(bool multigraph = true, const string &pass_name = "quant_matmul_elemwise_fusion")
+  explicit InferenceQbmmElemwiseFusion(bool multigraph = true, const string &pass_name = "quant_matmul_elemwise_fusion")
       : QbmmFusionBase(pass_name, multigraph) {}
-  ~QMatmulElemFusion() override = default;
+  ~InferenceQbmmElemwiseFusion() override = default;
   const BaseRef DefinePattern() const override;
   const AnfNodePtr Process(const FuncGraphPtr &graph, const AnfNodePtr &node, const EquivPtr &equiv) const override;
 

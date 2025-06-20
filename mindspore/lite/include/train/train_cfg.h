@@ -25,10 +25,11 @@ namespace lite {
 class MixPrecisionCfg {
  public:
   MixPrecisionCfg() {
+    const uint32_t ITER_1000 = 1000;
     this->dynamic_loss_scale_ = false;
     this->loss_scale_ = 128.0f;
     this->keep_batchnorm_fp32_ = true;
-    this->num_of_not_nan_iter_th_ = 1000;
+    this->num_of_not_nan_iter_th_ = ITER_1000;
   }
   MixPrecisionCfg(const MixPrecisionCfg &rhs) {
     this->dynamic_loss_scale_ = rhs.dynamic_loss_scale_;

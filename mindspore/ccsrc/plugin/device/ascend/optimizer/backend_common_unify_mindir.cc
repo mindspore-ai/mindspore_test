@@ -193,7 +193,7 @@ PassManagerPtr GetBackendFusionGroupPassManager() {
   pm->AddFusionPass(std::make_shared<opt::AddCastRmsNormCastFusion>(), infer_boost);
   pm->AddFusionPass(std::make_shared<opt::ShapeReshapeFusion>(), infer_boost);
   pm->AddFusionPass(std::make_shared<opt::SplitConcatFusion>());
-  pm->AddFusionPass(std::make_shared<opt::QMatmulElemFusion>(), infer_boost);
+  pm->AddFusionPass(std::make_shared<opt::InferenceQbmmElemwiseFusion>(), infer_boost);
   pm->AddFusionPass(std::make_shared<opt::MatMulSigmoidAddFusion>(), infer_boost);
   pm->AddFusionPass(std::make_shared<opt::MatMulSigmoidCastAddFusion>(), infer_boost);
   pm->AddFusionPass(std::make_shared<opt::MatmulElemFusion>(), infer_boost);
