@@ -83,9 +83,10 @@ class PyExecuteInitializer {
     const auto &kernel_tensor = dynamic_cast<const kernel::KernelTensor *>(abstract);
     MS_EXCEPTION_IF_NULL(kernel_tensor);
     if (kernel_tensor->user_data() != nullptr) {
-      return std::make_shared<parse::PyObjectWrapper>(
-        kernel_tensor->user_data()->get<kernel::PyExecuteOutputUserData>(kernel::PyExecuteOutputUserData::key)->obj,
-        "graph python obj");
+      const auto &user_data =
+        kernel_tensor->user_data()->get<kernel::PyExecuteOutputUserData>(kernel::PyExecuteOutputUserData::key);
+      MS_EXCEPTION_IF_NULL(user_data);
+      return std::make_shared<parse::PyObjectWrapper>(user_data->obj, "graph python obj");
     }
 
     if (kernel_tensor->GetValueTrack() != nullptr && !kernel_tensor->GetValueTrack()->isa<ValueAny>()) {

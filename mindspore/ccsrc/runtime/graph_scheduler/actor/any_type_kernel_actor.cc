@@ -389,16 +389,20 @@ KernelGraphPtr AnyTypeKernelActor::CompileRealKernelGraph(OpContext<KernelTensor
     model_graph_->InferType();
     const auto &return_node = model_graph_->get_return();
     MS_EXCEPTION_IF_NULL(return_node);
-    if (!return_node->isa<CNode>() || return_node->cast<CNodePtr>()->size() <= 1) {
+    if (!return_node->isa<CNode>()) {
       MS_LOG_WITH_NODE(EXCEPTION, return_node)
         << "Invalid return node:" << return_node->DebugString() << " for graph:" << model_graph_->ToString();
+    }
+    const auto &return_cnode = return_node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(return_cnode);
+    if (return_cnode->size() <= 1) {
+      MS_LOG_WITH_NODE(EXCEPTION, return_cnode)
+        << "Invalid return cnode:" << return_cnode->DebugString() << " for graph:" << model_graph_->ToString();
     }
     if (device_contexts().empty() || device_contexts()[0] == nullptr) {
       MS_LOG(EXCEPTION) << "Invalid device context for actor:" << GetAID();
     }
     AnfNodePtrList inputs{};
-    const auto &return_cnode = return_node->cast<CNodePtr>();
-    MS_EXCEPTION_IF_NULL(return_cnode);
     AnfNodePtrList outputs{return_cnode->input(1)};
     auto io_nodes = std::make_pair(inputs, outputs);
     device_contexts()[0]->device_res_manager_->BindDeviceToCurrentThread(false);
