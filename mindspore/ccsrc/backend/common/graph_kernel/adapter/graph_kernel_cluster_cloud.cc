@@ -50,6 +50,15 @@
 
 namespace mindspore::graphkernel {
 namespace {
+// The value of max dimension size is due to two constraints:
+// 1. current implementation does not support stride between two rows greater than UINT16_MAX
+// 2. even if the row stride in the original input shape does not exceed UINT16_MAX, after address
+// alignment, it can potentially exceed UINT16_MAX.
+// The current value of kMaxDimSize guarantees that after address alignment, row stride is within
+// a reasonable range.
+constexpr int64_t kMaxDimSize = UINT16_MAX - UINT8_MAX;
+constexpr int64_t kMinDimSize = 512;
+
 std::set<TypeId> dvm_float_types{kNumberTypeFloat16, kNumberTypeFloat32, kNumberTypeBFloat16};
 class DvmSupportChecker {
  public:
@@ -276,8 +285,6 @@ class DvmSupportChecker {
 
   static bool DvmMatMulSupported(const AnfNodePtr &node) {
     auto node_output_type = GetNodeOutputType(node);
-    constexpr int64_t MAX_GM_STRIDE = UINT16_MAX;
-    constexpr int64_t MIN_DIM = 512;
     if (common::AnfAlgo::IsDynamicShape(node)) {
       return false;
     }
@@ -289,11 +296,11 @@ class DvmSupportChecker {
     auto a_shape = GetShape(cnode->input(kIndex1));
     auto b_shape = GetShape(cnode->input(kIndex2));
     auto c_shape = GetShape(node);
-    if (a_shape.back() > MAX_GM_STRIDE || b_shape.back() > MAX_GM_STRIDE) {
+    if (a_shape.back() > kMaxDimSize || b_shape.back() > kMaxDimSize) {
       return false;
     }
-    if (IsPrimitiveCNode(node, prim::kPrimMatMul) && c_shape.back() <= MIN_DIM &&
-        c_shape[c_shape.size() - kSizeTwo] <= MIN_DIM) {
+    if (IsPrimitiveCNode(node, prim::kPrimMatMul) && c_shape.back() <= kMinDimSize &&
+        c_shape[c_shape.size() - kSizeTwo] <= kMinDimSize) {
       return false;
     }
     if (IsPrimitiveCNode(node, prim::kPrimBatchMatMul) && c_shape.size() > kSizeFour) {
@@ -303,7 +310,6 @@ class DvmSupportChecker {
   }
 
   static bool DvmGroupedMatmulSupported(const AnfNodePtr &node) {
-    constexpr int64_t MAX_GM_STRIDE = UINT16_MAX;
     constexpr int64_t kGroupTypeK = 2;
     constexpr int64_t kGroupTypeM = 0;
     constexpr int64_t KSplitNumType3 = 3;
@@ -333,7 +339,7 @@ class DvmSupportChecker {
     }
     auto a_shape = GetShape(cnode->input(kIndex1));
     auto b_shape = GetShape(cnode->input(kIndex2));
-    if (a_shape.back() > MAX_GM_STRIDE || b_shape.back() > MAX_GM_STRIDE) {
+    if (a_shape.back() > kMaxDimSize || b_shape.back() > kMaxDimSize) {
       return false;
     }
     return true;
