@@ -414,6 +414,7 @@ Status MapOp::WorkerEntry(int32_t worker_id) {
   // Map op does not use child iterator, and it needs to manually handle eoe and eof's itself
   // rather than use the base-class defaults.
   while (true) {
+    Status status;
     // Handle special logic where row carries a ctrl flag.
     if (in_row.Flags() != TensorRow::kFlagNone) {
       RETURN_IF_NOT_OK(
@@ -421,7 +422,8 @@ Status MapOp::WorkerEntry(int32_t worker_id) {
       if (in_row.quit()) {
         break;
       }
-      RETURN_IF_NOT_OK(worker_out_queues_[worker_id]->EmplaceBack(std::move(in_row)));
+      status = worker_out_queues_[worker_id]->EmplaceBack(std::move(in_row));
+      RETURN_IF_NOT_OK(CheckRetAndReleaseResource(status, worker_id));
       if (in_row.wait()) {
         RETURN_IF_NOT_OK(TaskManager::FindMe()->Wait());  // wait for auto tune update workers successful
         TaskManager::FindMe()->Clear();
@@ -431,24 +433,24 @@ Status MapOp::WorkerEntry(int32_t worker_id) {
       TensorRow out_row;
       // Perform the compute function of TensorOp(s) and store the result in new_tensor_table.
 #if defined(ENABLE_D)
-      RETURN_IF_NOT_OK(WorkerCompute(in_row, &out_row, job_list, device_context, stream_id));
+      status = WorkerCompute(in_row, &out_row, job_list, device_context, stream_id);
+      RETURN_IF_NOT_OK(CheckRetAndReleaseResource(status, worker_id));
 #else
-      RETURN_IF_NOT_OK(WorkerCompute(in_row, &out_row, job_list));
+      status = WorkerCompute(in_row, &out_row, job_list);
+      RETURN_IF_NOT_OK(CheckRetAndReleaseResource(status, worker_id));
 #endif
       RETURN_IF_NOT_OK(
         CollectOpInfo(this->NameWithID(), "WorkerProcess", start_time, {{"TensorRowFlags", in_row.FlagName()}}));
       out_row.TimerRecord(NameWithID(), RowTimer::kWorkerTime, {GetMilliTimeStamp() - row_timer_start}, &in_row);
       // Push the row onto the connector for next operator to consume.
-      RETURN_IF_NOT_OK(worker_out_queues_[worker_id]->EmplaceBack(std::move(out_row)));
+      status = worker_out_queues_[worker_id]->EmplaceBack(std::move(out_row));
+      RETURN_IF_NOT_OK(CheckRetAndReleaseResource(status, worker_id));
     }
     start_time = GetSyscnt();
     // Fetch next data row and map job list
     // Occasionally, due to interrupt, the ReleaseResource is not triggered
-    auto stats = FetchNextWork(worker_id, &in_row, &job_list);
-    if (stats == kMDInterrupted) {
-      RETURN_IF_NOT_OK(ReleaseResource(worker_id));
-      return stats;
-    }
+    status = FetchNextWork(worker_id, &in_row, &job_list);
+    RETURN_IF_NOT_OK(CheckRetAndReleaseResource(status, worker_id));
     RETURN_IF_NOT_OK(
       CollectOpInfo(this->NameWithID(), "WorkerGet", start_time, {{"TensorRowFlags", in_row.FlagName()}}));
     row_timer_start = GetMilliTimeStamp();
@@ -460,6 +462,13 @@ Status MapOp::WorkerEntry(int32_t worker_id) {
   RETURN_IF_NOT_OK(ReleaseResource(worker_id));
 
   return Status::OK();
+}
+
+Status MapOp::CheckRetAndReleaseResource(const Status &status, int32_t worker_id) {
+  if (status == kMDInterrupted) {
+    RETURN_IF_NOT_OK(ReleaseResource(worker_id));
+  }
+  return status;
 }
 
 #if defined(ENABLE_D)

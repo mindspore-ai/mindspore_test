@@ -192,6 +192,9 @@ class MapOp : public ParallelOp<std::unique_ptr<MapWorkerJob>, TensorRow> {
   // @return Status The status code returned
   Status WorkerEntry(int32_t worker_id) override;  //  In: workerId assigned by tree_
 
+  // Occasionally, due to interrupt, the ReleaseResource is not triggered.
+  Status CheckRetAndReleaseResource(const Status &status, int32_t worker_id);
+
 #if defined(ENABLE_D)
   // Private function for worker thread to perform TensorOp's compute function and get the result.
   // @param in_row Input TensorRow
