@@ -32,6 +32,8 @@ namespace opt {
 
 CNodePtr InferenceQbmmElemwiseFusion::CreateQbmmElemNode(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
                                                          const EquivPtr &equiv) const {
+  const int trans_a_index = kIndex7;
+  const int trans_b_index = kIndex8;
   MS_LOG(DEBUG) << "start CreateQbmmElemNode";
   MS_ASSERT(func_graph != nullptr && node != nullptr && equiv != nullptr);
   auto qbmm_prim = std::make_shared<Primitive>("QuantBatchMatmul");
@@ -39,6 +41,25 @@ CNodePtr InferenceQbmmElemwiseFusion::CreateQbmmElemNode(const FuncGraphPtr &fun
   std::vector<AnfNodePtr> inputs = {x_node_,       w_node_,       scale_node_,
                                     offset_node_,  bias_node_,    pertoken_scale_node_,
                                     trans_a_node_, trans_b_node_, out_dtype_node_};
+
+  auto qbmm_node = common::AnfAlgo::GetInputNode(node->cast<CNodePtr>(), kIndex0);
+  MS_CHECK_TRUE_RET(qbmm_node != nullptr, nullptr);
+
+  auto qbmm_cnode = qbmm_node->cast<CNodePtr>();
+  MS_CHECK_TRUE_RET(qbmm_cnode != nullptr, nullptr);
+  auto cnode_name = common::AnfAlgo::GetCNodeName(qbmm_cnode);
+  MS_CHECK_TRUE_RET(cnode_name == prim::kPrimQuantBatchMatmul->name(), nullptr);
+  auto trans_a = qbmm_cnode->input(trans_a_index)->cast<ValueNodePtr>();
+  MS_CHECK_TRUE_RET(trans_a != nullptr, nullptr);
+  auto trans_b = qbmm_cnode->input(trans_b_index)->cast<ValueNodePtr>();
+  MS_CHECK_TRUE_RET(trans_b != nullptr, nullptr);
+  bool is_trans_a = GetValue<bool>(trans_a->value());
+  bool is_trans_b = GetValue<bool>(trans_b->value());
+  MS_LOG(DEBUG) << "the transpose format of matmul node is: trans_a=" << is_trans_a << " trans_b=" << is_trans_b;
+  if (is_trans_a || !is_trans_b) {
+    return nullptr;
+  }
+
   auto new_qbmm_node = func_graph->NewCNode(qbmm_prim, inputs);
   MS_CHECK_TRUE_RET(new_qbmm_node != nullptr, nullptr);
   new_qbmm_node->set_scope(node->scope());
