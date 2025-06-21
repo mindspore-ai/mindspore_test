@@ -30,8 +30,8 @@ bool IsAllowConvHF32() { return device::ascend::OpApiUtil::IsAllowConvHF32(); }
 std::pair<int64_t, int64_t> UpdateGeneratorState(const tensor::TensorPtr &seed, const tensor::TensorPtr &offset,
                                                  int64_t step) {
   runtime::Pipeline::Get().WaitAll();
-  auto seed_value = *static_cast<int64_t *>(seed->data_c());
-  auto offset_ptr = static_cast<int64_t *>(offset->data_c());
+  auto seed_value = *static_cast<int64_t *>(seed->cpu()->data_c());
+  auto offset_ptr = static_cast<int64_t *>(offset->cpu()->data_c());
   auto offset_value = *offset_ptr;
   *offset_ptr += step;
   return {seed_value, offset_value};

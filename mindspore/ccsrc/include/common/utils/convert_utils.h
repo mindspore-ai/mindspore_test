@@ -75,7 +75,7 @@ std::vector<T> TensorValueToVector(const tensor::TensorPtr &tensor) {
   MS_EXCEPTION_IF_NULL(tensor);
   std::vector<T> value;
   size_t element_size = tensor->DataSize();
-  auto *data = static_cast<T *>(tensor->data_c());
+  auto *data = static_cast<T *>(tensor->cpu()->data_c());
   for (size_t i = 0; i < element_size; i++) {
     value.push_back(data[i]);
   }
