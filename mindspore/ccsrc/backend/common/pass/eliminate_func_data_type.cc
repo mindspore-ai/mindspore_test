@@ -67,6 +67,7 @@ abstract::AbstractBasePtrList EliminateFuncDataTypeForAbstractTuple(const abstra
     MS_EXCEPTION_IF_NULL(abs);
     if (abs->isa<abstract::AbstractTuple>()) {
       const auto &tuple_abs = abs->cast<abstract::AbstractTuplePtr>();
+      MS_EXCEPTION_IF_NULL(tuple_abs);
       if (tuple_abs->dynamic_len()) {
         new_abs.emplace_back(abs);
         continue;
