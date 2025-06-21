@@ -730,7 +730,7 @@ void DynOverlapGradRingAttention(const FuncGraphPtr &graph) {
         auto grad_recv_input_new = grad_recv_node->input(1);
         manager->SetEdge(grad_recv_node, 1, CreateDepend(grad_recv_input_new, pre_grad_send_node, grad_recv_node));
       }
-
+      MS_EXCEPTION_IF_NULL(grad_send_node);
       auto grad_send_input = grad_send_node->input(1);
       manager->SetEdge(grad_send_node, 1, CreateDepend(grad_send_input, grad_recv_node, grad_send_node));
       manager->Replace(grad_send_node, CreateDepend(grad_send_node, grad_fa_node, grad_send_node));
