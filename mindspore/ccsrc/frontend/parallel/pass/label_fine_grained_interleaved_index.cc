@@ -77,16 +77,14 @@ void SpreadFineGrainedInterleavedIndexForForwardCommNodes(const CNodePtr &cnode,
         continue;
       }
       // BFS end search condition
-      if (IsPrimitiveCNode(pre_cnode, prim::kPrimStridedSlice)) {
-        auto pre_cnode_prim = GetCNodePrimitive(pre_cnode);
-        MS_EXCEPTION_IF_NULL(pre_cnode_prim);
-        if (pre_cnode_prim->HasAttr(kAttrFineGrainedInterleavedBlockIndex)) {
-          pre_cnode->AddAttr("fine_grained_interleaved_border", MakeValue<size_t>(0));
-          pre_cnode->AddAttr(parallel::MICRO_INTERLEAVED_INDEX, MakeValue<size_t>(fine_grained_interleaved_index));
-          pre_cnode->AddPrimalAttr(parallel::FINE_GRAINED_INTERLEAVED_BLOCK,
-                                   MakeValue<int64_t>(fine_grained_block_index));
-          continue;
-        }
+      auto pre_cnode_prim = GetCNodePrimitive(pre_cnode);
+      if (IsPrimitiveCNode(pre_cnode, prim::kPrimStridedSlice) && pre_cnode_prim != nullptr &&
+          pre_cnode_prim->HasAttr(kAttrFineGrainedInterleavedBlockIndex)) {
+        pre_cnode->AddAttr("fine_grained_interleaved_border", MakeValue<size_t>(0));
+        pre_cnode->AddAttr(parallel::MICRO_INTERLEAVED_INDEX, MakeValue<size_t>(fine_grained_interleaved_index));
+        pre_cnode->AddPrimalAttr(parallel::FINE_GRAINED_INTERLEAVED_BLOCK,
+                                 MakeValue<int64_t>(fine_grained_block_index));
+        continue;
       }
 
       if (!IsForwardNode(pre_cnode) || IsPrimitiveCNode(pre_cnode, prim::kPrimUpdateState)) {
