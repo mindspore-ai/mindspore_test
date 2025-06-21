@@ -49,7 +49,6 @@ from tests.st.compiler.control.inner.test_331_for_after_for_in_while import *
 from tests.st.compiler.control.inner.test_332_for_after_for_in_for import *
 from tests.st.compiler.control.inner.test_break_continue import *
 from tests.st.compiler.control.test_abstract_funcgraph import *
-from tests.st.compiler.control.test_all_control_cases import *
 from tests.st.compiler.control.test_ascend_control_sink import *
 from tests.st.compiler.control.test_call_tuple_transform import *
 from tests.st.compiler.control.test_check_for_body_get_outer_class_attr_log import *

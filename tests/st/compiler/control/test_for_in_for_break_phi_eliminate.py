@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.st.compiler.control.cases_register import case_register
+from tests.mark_utils import arg_mark
 
 from mindspore.nn import Cell
 from mindspore.common import Tensor, dtype
@@ -41,9 +41,8 @@ class IfInFor(Cell):
         return x
 
 
-@case_register.level1
-@case_register.target_ascend
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_for_in_for_break_phi_node_eliminate():
     """
     Feature: Phi node eliminate.

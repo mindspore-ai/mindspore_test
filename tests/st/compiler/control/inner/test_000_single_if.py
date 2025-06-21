@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.st.compiler.control.cases_register import case_register
+from tests.mark_utils import arg_mark
 from mindspore import context
 from mindspore import Tensor, nn
 from mindspore.ops import composite as C
@@ -71,9 +71,8 @@ def control_flow_single_if(input_net, x, y, expect1, expect2):
     assert graph_backward_res == expect2
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_single_if():
     """
     Feature: Control flow
@@ -87,9 +86,8 @@ def test_single_if():
     control_flow_single_if(SingleIfNet, x, y, expect1, expect2)
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_single_if_01():
     """
     Feature: Control flow
@@ -103,8 +101,7 @@ def test_single_if_01():
     control_flow_single_if(SingleIfNet1, x, y, expect1, expect2)
 
 
-@case_register.level1
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_single_if_any():
     """
     Feature: compile and run control flow with if statement

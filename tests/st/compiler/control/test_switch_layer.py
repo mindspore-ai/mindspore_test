@@ -13,7 +13,7 @@
 # limitations under the License.
 # ============================================================================
 import numpy as np
-from tests.st.compiler.control.cases_register import case_register
+from tests.mark_utils import arg_mark
 
 import mindspore.context as context
 from mindspore import Tensor, nn
@@ -77,9 +77,8 @@ class CellInList(nn.Cell):
         return out
 
 
-@case_register.level1
-@case_register.target_ascend
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_switch_layer():
     """
     Feature: Control flow
@@ -98,8 +97,7 @@ def test_switch_layer():
     assert ret
 
 
-@case_register.level0
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_cell_in_list():
     """
     Feature: Switch layer in while.
@@ -154,8 +152,7 @@ class AddFuncNet(nn.Cell):
         return x
 
 
-@case_register.level0
-@case_register.target_cpu
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_switch_layer_add_func_in_construct():
     """
     Feature: Switch layer.
@@ -174,8 +171,7 @@ def test_switch_layer_add_func_in_construct():
     assert ret.shape == (2, 3, 4, 5)
 
 
-@case_register.level0
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_parser_switch_layer_func_primitive_pi():
     """
     Feature: Switch layer.

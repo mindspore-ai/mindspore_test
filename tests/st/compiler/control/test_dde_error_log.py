@@ -14,7 +14,7 @@
 # ============================================================================
 import os
 import subprocess
-from tests.st.compiler.control.cases_register import case_register
+from tests.mark_utils import arg_mark
 
 
 def run_watch_dde_network(file_name, log_file_name):
@@ -37,8 +37,7 @@ def run_watch_dde_network(file_name, log_file_name):
     os.remove(log_file_name)
 
 
-@case_register.level1
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_watch_dde_error_log():
     """
     Feature: DDE.

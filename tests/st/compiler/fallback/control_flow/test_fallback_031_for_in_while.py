@@ -18,14 +18,13 @@ from mindspore import Tensor, jit, context, nn
 from mindspore.common import dtype as mstype
 from mindspore.common.parameter import Parameter
 from mindspore.ops import operations as P
-from tests.st.compiler.fallback.cases_register import case_register
+from tests.mark_utils import arg_mark
 
 context.set_context(mode=context.GRAPH_MODE)
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_for_in_while_tensor():
     """
     Feature: JIT Fallback
@@ -46,9 +45,8 @@ def test_for_in_while_tensor():
     assert res == 37
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_for_in_while_numpy_append():
     """
     Feature: JIT Fallback
@@ -69,9 +67,8 @@ def test_for_in_while_numpy_append():
     assert res == 54
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_for_in_while_sum():
     """
     Feature: JIT Fallback
@@ -102,9 +99,8 @@ def test_for_in_while_sum():
     assert res == 26
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_for_in_while_print():
     """
     Feature: JIT Fallback
@@ -126,9 +122,8 @@ def test_for_in_while_print():
     assert res2 == 8
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_for_in_while_round():
     """
     Feature: JIT Fallback

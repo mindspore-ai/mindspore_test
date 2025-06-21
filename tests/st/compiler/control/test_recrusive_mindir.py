@@ -14,7 +14,7 @@
 # ============================================================================
 import os
 import numpy as np
-from tests.st.compiler.control.cases_register import case_register
+from tests.mark_utils import arg_mark
 
 import mindspore.nn as nn
 from mindspore import context
@@ -44,9 +44,8 @@ class RecrusiveNet(nn.Cell):
         return f(x, z)
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_recrusive():
     """
     Feature: Control flow

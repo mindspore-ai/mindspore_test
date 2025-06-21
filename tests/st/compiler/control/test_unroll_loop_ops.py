@@ -17,15 +17,14 @@ import pytest
 import mindspore as ms
 from mindspore import Tensor, jit, context, ops, nn
 from mindspore.common import dtype as mstype
-from tests.st.compiler.control.cases_register import case_register
+from tests.mark_utils import arg_mark
 
 
 context.set_context(mode=context.GRAPH_MODE)
 
 
-@case_register.level0
-@case_register.target_ascend
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='essential')
 def test_while_loop():
     """
     Feature: control flow
@@ -55,9 +54,8 @@ def test_while_loop():
     assert result == 100
 
 
-@case_register.level1
-@case_register.target_ascend
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_while_loop2():
     """
     Feature: control flow
@@ -93,9 +91,8 @@ def test_while_loop2():
     assert result[-1] == 100
 
 
-@case_register.level0
-@case_register.target_ascend
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='essential')
 def test_scan_unroll():
     """
     Feature: control flow
@@ -124,9 +121,8 @@ def test_scan_unroll():
     assert len(result[-1]) == 10
 
 
-@case_register.level1
-@case_register.target_ascend
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_scan_not_unroll():
     """
     Feature: control flow
@@ -155,9 +151,8 @@ def test_scan_not_unroll():
     assert len(result[-1]) == 10
 
 
-@case_register.level0
-@case_register.target_ascend
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='essential')
 def test_scan_simple_loop():
     """
     Feature: control flow
@@ -180,9 +175,8 @@ def test_scan_simple_loop():
     assert result == (10, [1, 3, 6, 10])
 
 
-@case_register.level0
-@case_register.target_ascend
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='essential')
 def test_foriloop_unroll():
     """
     Feature: control flow
@@ -205,8 +199,7 @@ def test_foriloop_unroll():
     assert result == 45
 
 
-@case_register.level1
-@case_register.target_cpu
+@arg_mark(plat_marks=["cpu_linux"], level_mark="level1", card_mark="onecard", essential_mark="unessential")
 def test_high_order_with_unroll_as_false():
     """
     Feature: control flow
@@ -242,10 +235,9 @@ def test_high_order_with_unroll_as_false():
         get_grad(x)
 
 
-@case_register.skip(reason="Cannot process ops.xx both in loop_func and whileloop declaration in construct")
-@case_register.level1
-@case_register.target_ascend
-@case_register.target_gpu
+@pytest.mark.skip(reason="Cannot process ops.xx both in loop_func and whileloop declaration in construct")
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_while_loop_unsupport1():
     """
     Feature: control flow
@@ -279,10 +271,9 @@ def test_while_loop_unsupport1():
     assert result[-1] == 100
 
 
-@case_register.skip(reason="Unsupported loop func with side effect")
-@case_register.level1
-@case_register.target_ascend
-@case_register.target_gpu
+@pytest.mark.skip(reason="Unsupported loop func with side effect")
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_scan_unsupport1():
     """
     Feature: control flow

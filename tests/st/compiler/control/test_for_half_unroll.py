@@ -14,7 +14,7 @@
 # ============================================================================
 
 import numpy as np
-from tests.st.compiler.control.cases_register import case_register
+from tests.mark_utils import arg_mark
 import mindspore.context as context
 from mindspore import Tensor
 from mindspore.nn import Cell
@@ -23,9 +23,8 @@ from mindspore._extends.parse import compile_config
 context.set_context(mode=context.GRAPH_MODE)
 
 
-@case_register.level0
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='essential')
 def test_for_half_unroll_basic():
     """
     Feature: Half unroll compile optimization for for statement.
@@ -52,9 +51,8 @@ def test_for_half_unroll_basic():
     assert res == 25
 
 
-@case_register.level0
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='essential')
 def test_for_half_unroll_if():
     """
     Feature: Half unroll compile optimization for for statement.

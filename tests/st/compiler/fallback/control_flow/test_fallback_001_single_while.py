@@ -13,18 +13,18 @@
 # limitations under the License.
 # ============================================================================
 """ test graph fallback control flow."""
+import pytest
 import numpy as np
 import mindspore as ms
 from mindspore import Tensor, jit, context, Parameter
 from mindspore.nn import Cell
-from tests.st.compiler.fallback.cases_register import case_register
+from tests.mark_utils import arg_mark
 
 context.set_context(mode=context.GRAPH_MODE)
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_single_while_1():
     """
     Feature: JIT Fallback
@@ -41,9 +41,8 @@ def test_single_while_1():
     assert res == 8
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_single_while_2():
     """
     Feature: JIT Fallback
@@ -61,9 +60,8 @@ def test_single_while_2():
     assert res == 14
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_single_while_3():
     """
     Feature: JIT Fallback
@@ -82,9 +80,8 @@ def test_single_while_3():
     assert res == 7
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_single_while_two_cond_1():
     """
     Feature: JIT Fallback
@@ -104,9 +101,8 @@ def test_single_while_two_cond_1():
     assert res == 25
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_single_while_two_cond_2():
     """
     Feature: JIT Fallback
@@ -125,9 +121,8 @@ def test_single_while_two_cond_2():
     assert res == 8
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_single_while_param():
     """
     Feature: JIT Fallback
@@ -153,7 +148,7 @@ def test_single_while_param():
     assert res == 24
 
 
-@case_register.skip(reason='Not support graph fallback feature yet')
+@pytest.mark.skip(reason='Not support graph fallback feature yet')
 def test_single_while_numpy():
     """
     Feature: JIT Fallback
@@ -171,8 +166,7 @@ def test_single_while_numpy():
     assert (res.asnumpy() == [1, 1, 3, 4, 5]).all()
 
 
-@case_register.level1
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_single_while_two_cond_3():
     """
     Feature: JIT Fallback

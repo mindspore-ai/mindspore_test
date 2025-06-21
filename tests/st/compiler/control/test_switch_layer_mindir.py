@@ -13,8 +13,9 @@
 # limitations under the License.
 # ============================================================================
 import os
+import pytest
 import numpy as np
-from tests.st.compiler.control.cases_register import case_register
+from tests.mark_utils import arg_mark
 
 import mindspore.context as context
 from mindspore import Tensor, nn
@@ -38,9 +39,8 @@ class CaseNet(nn.Cell):
         return x
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_mindir_switch_layer():
     """
     Feature: Control flow
@@ -67,10 +67,9 @@ def test_mindir_switch_layer():
     assert ret
 
 
-@case_register.skip(reason="depend on export")
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@pytest.mark.skip(reason="depend on export")
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_mindir_export():
     """
     Feature: Control flow
@@ -89,9 +88,8 @@ def test_mindir_export():
     assert os.path.exists(mindir_name)
 
 
-@case_register.skip(reason="depend on export")
-@case_register.level1
-@case_register.target_ascend
+@pytest.mark.skip(reason="depend on export")
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_mindir_load():
     """
     Feature: Control flow

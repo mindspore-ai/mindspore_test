@@ -17,14 +17,13 @@ import numpy as np
 from mindspore import Tensor, jit, context, nn
 from mindspore.common.parameter import Parameter
 from mindspore.common import dtype as mstype
-from tests.st.compiler.fallback.cases_register import case_register
+from tests.mark_utils import arg_mark
 
 context.set_context(mode=context.GRAPH_MODE)
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_for_in_if_tensor():
     """
     Feature: JIT Fallback
@@ -44,9 +43,8 @@ def test_for_in_if_tensor():
     assert res == 10
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_for_in_if_tensor_2():
     """
     Feature: JIT Fallback
@@ -66,9 +64,8 @@ def test_for_in_if_tensor_2():
     assert res == -5
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_for_in_if_param():
     """
     Feature: JIT Fallback
@@ -98,9 +95,8 @@ def test_for_in_if_param():
     assert res2 == 12
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_for_in_if_isinstance_raise():
     """
     Feature: JIT Fallback
@@ -122,9 +118,8 @@ def test_for_in_if_isinstance_raise():
     assert out == 4
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_for_in_if_dict_isinstance():
     """
     Feature: JIT Fallback
