@@ -343,9 +343,6 @@ python3 -m pip install ./mindspore-lite-${version}-linux-${arch}/tools/akg/*.whl
 # install ascend custom op
 if [[ ${backend} =~ "ascend" ]]; then
     InstallAscendCustomOps
-    echo "------------------ Aacend env ------------------"
-    env | grep "ASCEND"
-    echo "------------------------------------------------"
 fi
 
 # Write converter result to temp file
