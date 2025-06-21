@@ -1835,6 +1835,7 @@ py::object CodeBreakGenerator::MakeInterpretCapturedCode() const {
   py::object result = code_gen.NewCode();
 
   JitCompileResults *child = CreateJitCompileResults(result.ptr());
+  MS_EXCEPTION_IF_NULL(child);
   child->set_stat(JitCompileResults::GRAPH_CAPTURED);
   child->set_conf(jcr->conf());
   child->set_tbs(jcr->tbs());
@@ -2221,6 +2222,7 @@ void CodeBreakGenerator::Compile(const std::string &co_name, int co_argcount, in
   }
   // Set NativeFunc.
   auto parent = GetJitCompileResults(co_);
+  MS_EXCEPTION_IF_NULL(parent);
   if (stub.ptr() == nullptr) {
     parent->code()->SetNativeFunc(compile_result.first, compile_result.second, nullptr);
     parent->set_stat(JitCompileResults::GRAPH_CALLABLE);
@@ -2312,6 +2314,7 @@ py::object LoopBodyReCaptureCodeGenerator::MakeLoopBodyCode(int loopBodyStartBci
   (void)returnInstrs.emplace_back(std::make_unique<Instr>(RETURN_VALUE));
   std::move(returnInstrs.begin(), returnInstrs.end(), std::back_inserter(resultInstrs));
   auto jcr = GetJitCompileResults(co_);
+  MS_EXCEPTION_IF_NULL(jcr);
   if (jcr->conf()->GetLogConfig(GraphJitConfig::kAll)) {
     std::stringstream ss;
     for (auto &instr : resultInstrs) {
