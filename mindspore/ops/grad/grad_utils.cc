@@ -945,10 +945,10 @@ NodePtr VectorNormGrad(BpropBuilder *ib, const NodePtr &input_node, const NodePt
     return ib->Mul(dout, ib->Sign(input));
   }
   if (p_value == 2.0) {
-    auto scale_v = ib->Div(dout, out);
+    auto scale_v = ib->Div(input, out);
     auto equal_zero = ib->Equal(out, ib->Tensor(0, ib->GetDtype(out)));
-    scale_v = ib->MaskedFill(scale_v, equal_zero, ib->Tensor(0.0, ib->GetDtype(scale_v)));
-    return ib->Mul(input, scale_v);
+    scale_v = ib->Emit("InplaceMaskedFillTensor", {scale_v, equal_zero, ib->Tensor(0.0, ib->GetDtype(scale_v))});
+    return ib->Mul(dout, scale_v);
   }
   if (std::isinf(p_value)) {
     auto input_abs = ib->Abs(input);
@@ -966,28 +966,39 @@ NodePtr VectorNormGrad(BpropBuilder *ib, const NodePtr &input_node, const NodePt
     auto input_scaled = ib->Mul(input_sgn, equal_max);
     auto max_cnt = ib->SumExt(ib->NotEqual(equal_max, tensor_zero), dim, ib->Value(true), ib->EmitValue(kNone));
     auto scale_v = ib->Div(dout, max_cnt);
-    auto equal_zero = ib->Equal(input_scaled, tensor_zero);
-    scale_v = ib->MaskedFill(scale_v, equal_zero, tensor_zero);
+    auto equal_zero = ib->Equal(out, ib->Tensor(0, ib->GetDtype(out)));
+    scale_v = ib->Emit("InplaceMaskedFillTensor", {scale_v, equal_zero, ib->Tensor(0.0, ib->GetDtype(scale_v))});
     auto grad_input = ib->Mul(input_scaled, scale_v);
     if (input_typeid == kNumberTypeBFloat16) {
       grad_input = ib->Cast(grad_input, kBFloat16);
     }
     return grad_input;
   }
+  if (p_value < 1.0) {
+    auto input_abs = ib->Abs(input);
+    auto input_sgn = ib->Sign(input);
+    auto input_pow = ib->PowTensorScalar(input_abs, ib->Value(p_value - 1));
+    auto equal_zero = ib->Equal(input, ib->Tensor(0, ib->GetDtype(input)));
+    auto input_fill =
+      ib->Emit("InplaceMaskedFillTensor", {input_pow, equal_zero, ib->Tensor(0.0, ib->GetDtype(input_pow))});
+    auto input_scaled = ib->Mul(input_sgn, input_fill);
+    auto out_pow = ib->PowTensorScalar(out, ib->Value(1 - p_value));
+    return ib->Mul(ib->Mul(input_scaled, dout), out_pow);
+  }
   if (p_value < 2.0) {
     auto input_abs = ib->Abs(input);
     auto input_sgn = ib->Sign(input);
     auto input_scaled = ib->Mul(ib->PowTensorScalar(input_abs, ib->Value(p_value - 1)), input_sgn);
     auto scale_v = ib->Div(dout, ib->PowTensorScalar(out, ib->Value(p_value - 1)));
-    auto equal_zero = ib->Equal(input_scaled, tensor_zero);
-    scale_v = ib->MaskedFill(scale_v, equal_zero, tensor_zero);
+    auto equal_zero = ib->Equal(out, ib->Tensor(0, ib->GetDtype(out)));
+    scale_v = ib->Emit("InplaceMaskedFillTensor", {scale_v, equal_zero, ib->Tensor(0.0, ib->GetDtype(scale_v))});
     return ib->Mul(input_scaled, scale_v);
   }
   auto input_abs = ib->Abs(input);
   auto input_scaled = ib->Mul(ib->PowTensorScalar(input_abs, ib->Value(p_value - 2)), input);
   auto scale_v = ib->Div(dout, ib->PowTensorScalar(out, ib->Value(p_value - 1)));
-  auto equal_zero = ib->Equal(input_scaled, tensor_zero);
-  scale_v = ib->MaskedFill(scale_v, equal_zero, tensor_zero);
+  auto equal_zero = ib->Equal(out, ib->Tensor(0, ib->GetDtype(out)));
+  scale_v = ib->Emit("InplaceMaskedFillTensor", {scale_v, equal_zero, ib->Tensor(0.0, ib->GetDtype(scale_v))});
   return ib->Mul(input_scaled, scale_v);
 }
 }  // namespace mindspore::expander::bprop
