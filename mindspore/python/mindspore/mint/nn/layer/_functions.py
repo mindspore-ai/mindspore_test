@@ -1,15 +1,29 @@
+# Copyright 2025 Huawei Technologies Co., Ltd
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ============================================================================
+"""functions for mint"""
 import mindspore
+from mindspore import ops, mint
+from mindspore import _checkparam as validator
 from mindspore.nn.cell import Cell
-from mindspore.ops.auto_generate.gen_ops_prim import BatchNormReduceGrad
-from mindspore.ops.auto_generate.gen_ops_prim import BatchNormElemtGrad
 from mindspore.communication.comm_func import all_gather_into_tensor
 from mindspore.communication.comm_func import all_reduce
-from mindspore import ops, mint
-from mindspore.ops.primitive import Primitive, prim_arg_register, PrimitiveWithInfer, prim_attr_register
-from mindspore import _checkparam as validator
 from mindspore.communication.management import get_rank, get_group_size, GlobalComm, _get_group
-from mindspore.ops.operations.comm_ops import ReduceOp, check_hcom_group_valid
-
+from mindspore.ops.auto_generate.gen_ops_prim import BatchNormReduceGrad
+from mindspore.ops.auto_generate.gen_ops_prim import BatchNormElemtGrad
+from mindspore.ops.primitive import Primitive, prim_arg_register, PrimitiveWithInfer, prim_attr_register
+from mindspore.ops.operations.comm_ops import ReduceOp, check_hcom_group_valid, check_collective_target_dtype
 
 batch_norm_reduce_grad = BatchNormReduceGrad()
 batch_norm_elemt_grad = BatchNormElemtGrad()
@@ -123,7 +137,6 @@ class SyncBatchNormInner(Cell):
         dout, _, _, _ = doutput
 
         # 不支持 KBK模式
-        # if not dout.is_contiguous():
         dout = dout.contiguous()
 
         grad_input = grad_weight = grad_bias = None

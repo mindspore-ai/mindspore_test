@@ -573,9 +573,9 @@ class Conv3d(_Conv):
     Args:
         in_channels (int): The channel number of the input tensor of the Conv3d layer.
         out_channels (int): The channel number of the output tensor of the Conv3d layer.
-        kernel_size (Union[int, tuple[int], list[int]]): Specifies the depth, height and width of the 3D convolution kernel.
-            The data type is an integer or a tuple/list of three integers. An integer represents the depth, height
-            and width of the convolution kernel. A tuple/list of three integers represents the depth, height
+        kernel_size (Union[int, tuple[int], list[int]]): Specifies the depth, height and width of the 3D convolution
+            kernel. The data type is an integer or a tuple/list of three integers. An integer represents the depth,
+            height and width of the convolution kernel. A tuple/list of three integers represents the depth, height
             and width of the convolution kernel respectively.
         stride (Union[int, tuple[int], list[int]], optional): The movement stride of the 3D convolution kernel.
             The data type is an integer or a tuple/list of three integers. An integer represents the movement step size
