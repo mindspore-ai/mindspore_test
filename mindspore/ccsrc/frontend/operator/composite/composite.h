@@ -525,6 +525,34 @@ class GetDependDoutTuple : public MetaFuncGraph {
     return lhs.name_ == rhs.name_;
   }
 };
+
+class BpropOutToRemote : public MetaFuncGraph {
+ public:
+  explicit BpropOutToRemote(const std::string &name) : MetaFuncGraph(name) {}
+  ~BpropOutToRemote() override = default;
+  MS_DECLARE_PARENT(BpropOutToRemote, MetaFuncGraph)
+  FuncGraphPtr GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) override;
+  friend bool operator==(const BpropOutToRemote &lhs, const BpropOutToRemote &rhs) { return lhs.name_ == rhs.name_; }
+
+ private:
+  AnfNodePtr InsertToRemoteAndDetachRecursively(const FuncGraphPtr &fg, const AnfNodePtr &node,
+                                                const AbstractBasePtr &node_abstract) const;
+};
+
+class BpropInputPrefetch : public MetaFuncGraph {
+ public:
+  explicit BpropInputPrefetch(const std::string &name) : MetaFuncGraph(name) {}
+  ~BpropInputPrefetch() override = default;
+  MS_DECLARE_PARENT(BpropInputPrefetch, MetaFuncGraph)
+  FuncGraphPtr GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) override;
+  friend bool operator==(const BpropInputPrefetch &lhs, const BpropInputPrefetch &rhs) {
+    return lhs.name_ == rhs.name_;
+  }
+
+ private:
+  AnfNodePtr InsertPrefetchRecursively(const FuncGraphPtr &fg, const AnfNodePtr &node,
+                                       const AbstractBasePtr &node_abstract) const;
+};
 }  // namespace prim
 }  // namespace mindspore
 

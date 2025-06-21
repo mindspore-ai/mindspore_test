@@ -17,6 +17,7 @@ file(GLOB_RECURSE _PIPELINE_SRC_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     "static_analysis/*.cc"
     "debug/*.cc"
     "load_mindir.cc"
+    "remote_memory.cc"
 )
 
 file(GLOB PIPELINE_SRC_FILES "*.cc" "executor/*.cc")

@@ -16,6 +16,7 @@
 
 #include "pipeline/jit/ps/pass.h"
 
+#include <set>
 #include <memory>
 #include <vector>
 #include <string>
@@ -29,6 +30,7 @@
 #include "pipeline/jit/ps/resource.h"
 #include "pipeline/jit/ps/validator.h"
 #include "pipeline/jit/ps/remove_value_node_dup.h"
+#include "pipeline/jit/ps/remote_memory.h"
 #include "frontend/optimizer/opt.h"
 #include "frontend/optimizer/optimizer.h"
 #include "frontend/optimizer/cse_pass.h"
@@ -1755,6 +1757,18 @@ bool EliminateUnusedParamsPass(const ResourcePtr &resource) {
     }
   }
   func_graph->set_parameters(parameters);
+  return true;
+}
+
+bool RemoteAdjustPass(const ResourcePtr &resource) {
+  MS_EXCEPTION_IF_NULL(resource);
+  auto func_graph = resource->func_graph();
+  MS_EXCEPTION_IF_NULL(func_graph);
+  auto mng = resource->manager();
+  MS_EXCEPTION_IF_NULL(mng);
+
+  // Add Detach for activation value.
+  remote_memory::AddDetachToGraph(mng, func_graph);
   return true;
 }
 

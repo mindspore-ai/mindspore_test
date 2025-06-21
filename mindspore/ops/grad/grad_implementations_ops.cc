@@ -41,5 +41,20 @@ REG_BPROP_BUILDER("TensorMove").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
   auto dout = ib->GetInput(i2);
   return {dout};
 });
+
+REG_BPROP_BUILDER("Prefetch").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
+  auto dout = ib->GetInput(i2);
+  return {dout};
+});
+
+REG_BPROP_BUILDER("ToRemote").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
+  auto dout = ib->GetInput(i2);
+  return {dout};
+});
+
+REG_BPROP_BUILDER("Detach").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
+  auto dout = ib->GetInput(i2);
+  return {dout};
+});
 REG_BPROP_BUILDERS_END
 }  // namespace mindspore::expander::bprop

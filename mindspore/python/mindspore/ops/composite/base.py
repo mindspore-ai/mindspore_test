@@ -32,7 +32,7 @@ from mindspore._c_expression import GradOperation_, HyperMap_, Map_, MultitypeFu
     ListClear_, ListReverse_, ListExtend_, DictClear_, DictHasKey_, DictUpdate_, DictFromKeys_, \
     ZerosLike_, TensorIndexGetitem_, TensorIndexSetitem_, ListAdd_, DictSetItem_, \
     HandleBoolTensor_, PreSetitemByTuple_, StarredGetItem_, \
-    StarredUnpack_, StarredUnpackMerge_, IterConverter_, HasNext_, Next_, MSContext
+    StarredUnpack_, StarredUnpackMerge_, IterConverter_, HasNext_, Next_, MSContext, BpropInputPrefetch_
 from mindspore.common import dtype as mstype
 from mindspore.common.api import jit, _pynative_executor, _wrap_func
 from mindspore.common.api import _add_flags, _core
@@ -1285,6 +1285,19 @@ class _IterConverter(IterConverter_):
 
 iter_converter = _IterConverter('iter_converter')
 """`iter_converter` will convert input to ietrable object"""
+
+class _BpropInputPrefetch(BpropInputPrefetch_):
+    """Attach bprop to bprop values"""
+
+    def __init__(self, name):
+        """Initialize _IterConverter."""
+        BpropInputPrefetch_.__init__(self, name)
+
+    def __call__(self, *args):
+        pass
+
+
+bprop_input_prefetch = _BpropInputPrefetch('bprop_input_prefetch')
 
 
 class _HasNext(HasNext_):

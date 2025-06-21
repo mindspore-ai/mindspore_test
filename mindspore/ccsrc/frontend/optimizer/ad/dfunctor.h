@@ -34,8 +34,14 @@
 #include "pipeline/jit/ps/resource.h"
 #include "frontend/optimizer/ad/adjoint.h"
 #include "frontend/operator/ops.h"
+#include "pipeline/jit/ps/remote_memory.h"
 #include "pipeline/jit/ps/debug/trace.h"
 #include "include/common/utils/utils.h"
+#include "mindspore/ops/op_def/structure_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
 
 namespace mindspore {
 namespace ad {
@@ -285,7 +291,12 @@ FuncGraphPtr KPrim::BpropToK(const T &primal, const FuncGraphPtr &bprop_fg, cons
   } else {
     out_value = outer->NewCNode(transf_args);
   }
-  (void)mng->Replace(out_param, out_value);
+
+  if (remote_memory::NeedActivationToRemote(primal)) {
+    out_value = remote_memory::ActivationToRemote(mng, outer, cloned_bprop_fg, out_value, dout, out_param);
+  } else {
+    (void)mng->Replace(out_param, out_value);
+  }
 
   TraceGuard guard(MakeTraceInfo<TraceGradSens>(out_param->debug_info()));
   auto new_dout = cloned_bprop_fg->add_parameter();

@@ -59,6 +59,7 @@
 #include "pipeline/jit/ps/static_analysis/static_analysis.h"
 #include "pipeline/jit/ps/static_analysis/async_eval_result.h"
 #include "pipeline/jit/ps/static_analysis/program_specialize.h"
+#include "pipeline/jit/ps/remote_memory.h"
 #include "pipeline/jit/ps/resource.h"
 #include "pipeline/jit/ps/remove_value_node_dup.h"
 #include "pipeline/jit/ps/event_message_print.h"
@@ -1067,6 +1068,20 @@ bool AutoMonadAction(const ResourcePtr &resource) {
   return true;
 }
 
+bool InsertPrefetchAction(const ResourcePtr &resource) {
+  MS_EXCEPTION_IF_NULL(resource);
+  auto mng = resource->manager();
+  if (mng == nullptr) {
+    MS_LOG(INTERNAL_EXCEPTION) << "InsertPrefetchAction failed, manager is null";
+  }
+  auto func_graph = resource->func_graph();
+  if (func_graph == nullptr) {
+    MS_LOG(INTERNAL_EXCEPTION) << "InsertPrefetchAction failed, graph is null";
+  }
+  remote_memory::InsertPrefetchForLoad(mng, func_graph);
+  return true;
+}
+
 bool OrderEnforceAction(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
   if (resource->manager() == nullptr) {
@@ -1975,6 +1990,8 @@ bool AutoParallelAction(const ResourcePtr &resource) { return AutoParallelPass(r
 
 bool SilentCheckAction(const ResourcePtr &resource) { return SilentCheckPass(resource); }
 
+bool RemoteAdjustAction(const ResourcePtr &resource) { return RemoteAdjustPass(resource); }
+
 bool ValidateAction(const ResourcePtr &resource) {
   auto res = ValidatePass(resource);
 #ifdef DEBUG
@@ -2092,6 +2109,11 @@ static std::vector<ActionItem> CommonPipeline(bool trace_flag) {
   // Auto-monad for side-effects handling.
   (void)actions.emplace_back(std::make_pair(kAutoMonad, AutoMonadAction));
 
+  static const auto enable_remote = (common::GetCompileConfig("ENABLE_REMOTE") == "1");
+  if (enable_remote) {
+    (void)actions.emplace_back(std::make_pair("insert_prefetch", InsertPrefetchAction));
+  }
+
   (void)actions.emplace_back(std::make_pair(kGraphReusing, GraphReusingAction));
 
   // Do data structure simplifications and inline.
@@ -2162,6 +2184,11 @@ std::vector<ActionItem> VmPipeline(const ResourcePtr &resource, bool trace_flag,
       (void)actions.emplace_back(std::make_pair(kSilentCheck, SilentCheckAction));
     }
 #endif
+
+    static const auto enable_remote = (common::GetCompileConfig("ENABLE_REMOTE") == "1");
+    if (enable_remote) {
+      (void)actions.emplace_back(std::make_pair(kRemoteAdjust, RemoteAdjustAction));
+    }
 
     // Mind Compiler finish.
     (void)actions.emplace_back(std::make_pair(kValidate, ValidateAction));

@@ -1120,6 +1120,15 @@ FuncGraphPtr GradOperation::GetGrad(const AnfNodePtr &j, const AnfNodePtr &weigh
   auto bprop = k_child->NewCNodeInOrder({tuple_get_item, k_app, NewValueNode(static_cast<int64_t>(1))});
 
   GradByParameter(k_child, f_app, bprop, weights, position_node, forward_graph, is_weights_none);
+  static const auto enable_remote = (common::GetCompileConfig("ENABLE_REMOTE") == "1");
+  if (enable_remote) {
+    // Save gradient result back to remote memory.
+    auto origin_output = k_child->output();
+    auto bprop_to_remote_node = NewValueNode(std::make_shared<prim::BpropOutToRemote>("bprop_out_to_remote"));
+    AnfNodePtrList to_remote_node_inputs{bprop_to_remote_node, origin_output};
+    auto to_remote_node = k_child->NewCNode(to_remote_node_inputs);
+    k_child->set_output(to_remote_node);
+  }
   return k_child;
 }
 
@@ -2810,6 +2819,86 @@ FuncGraphPtr GetDependDoutTuple::GenerateFuncGraph(const AbstractBasePtrList &ar
   }
   fg->set_output(fg_dout_tuple);
   return fg;
+}
+
+FuncGraphPtr BpropOutToRemote::GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) {
+  FuncGraphPtr fg = std::make_shared<FuncGraph>();
+  constexpr size_t required_size = 1;
+  if (args_abs_list.size() != required_size) {
+    MS_LOG(INTERNAL_EXCEPTION) << "For " << name_ << ", the input length should be " << required_size << " but got "
+                               << args_abs_list.size();
+  }
+  auto input_abstract = args_abs_list[0];
+  MS_EXCEPTION_IF_NULL(input_abstract);
+  auto input_parameter = fg->add_parameter();
+  auto output = InsertToRemoteAndDetachRecursively(fg, input_parameter, input_abstract);
+  fg->set_output(output);
+  return fg;
+}
+
+AnfNodePtr BpropOutToRemote::InsertToRemoteAndDetachRecursively(const FuncGraphPtr &fg, const AnfNodePtr &node,
+                                                                const AbstractBasePtr &node_abstract) const {
+  MS_EXCEPTION_IF_NULL(node_abstract);
+  if (node_abstract->isa<abstract::AbstractSequence>()) {
+    auto getitem_prim =
+      node_abstract->isa<abstract::AbstractTuple>() ? prim::kPrimTupleGetItem : prim::kPrimListGetItem;
+    auto make_sequence_prim =
+      node_abstract->isa<abstract::AbstractTuple>() ? prim::kPrimMakeTuple : prim::kPrimMakeList;
+    auto node_seq_abstract = node_abstract->cast<abstract::AbstractSequencePtr>();
+    const auto &elements_abs = node_seq_abstract->elements();
+    size_t len = node_seq_abstract->size();
+    AnfNodePtrList make_sequence_inputs{NewValueNode(make_sequence_prim)};
+    for (size_t i = 0; i < len; ++i) {
+      auto cur_node = fg->NewCNode({NewValueNode(getitem_prim), node, NewValueNode(MakeValue<int64_t>(i))});
+      auto new_node = InsertToRemoteAndDetachRecursively(fg, cur_node, elements_abs[i]);
+      (void)make_sequence_inputs.emplace_back(new_node);
+    }
+    return fg->NewCNode(make_sequence_inputs);
+  }
+  auto to_remote_node = fg->NewCNode({NewValueNode(prim::kPrimToRemote), node});
+  auto detach_node = fg->NewCNode({NewValueNode(prim::kPrimDetach), node});
+  auto detach_depend_node = fg->NewCNode({NewValueNode(prim::kPrimDepend), detach_node, to_remote_node});
+  auto depend_node = fg->NewCNode({NewValueNode(prim::kPrimDepend), node, detach_depend_node});
+  return depend_node;
+}
+
+FuncGraphPtr BpropInputPrefetch::GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) {
+  FuncGraphPtr fg = std::make_shared<FuncGraph>();
+  constexpr size_t required_size = 1;
+  if (args_abs_list.size() != required_size) {
+    MS_LOG(INTERNAL_EXCEPTION) << "For " << name_ << ", the input length should be " << required_size << " but got "
+                               << args_abs_list.size();
+  }
+  auto input_abstract = args_abs_list[0];
+  MS_EXCEPTION_IF_NULL(input_abstract);
+  auto input_parameter = fg->add_parameter();
+  auto output = InsertPrefetchRecursively(fg, input_parameter, input_abstract);
+  fg->set_output(output);
+  return fg;
+}
+
+AnfNodePtr BpropInputPrefetch::InsertPrefetchRecursively(const FuncGraphPtr &fg, const AnfNodePtr &node,
+                                                         const AbstractBasePtr &node_abstract) const {
+  MS_EXCEPTION_IF_NULL(node_abstract);
+  if (node_abstract->isa<abstract::AbstractSequence>()) {
+    auto getitem_prim =
+      node_abstract->isa<abstract::AbstractTuple>() ? prim::kPrimTupleGetItem : prim::kPrimListGetItem;
+    auto make_sequence_prim =
+      node_abstract->isa<abstract::AbstractTuple>() ? prim::kPrimMakeTuple : prim::kPrimMakeList;
+    auto node_seq_abstract = node_abstract->cast<abstract::AbstractSequencePtr>();
+    const auto &elements_abs = node_seq_abstract->elements();
+    size_t len = node_seq_abstract->size();
+    AnfNodePtrList make_sequence_inputs{NewValueNode(make_sequence_prim)};
+    for (size_t i = 0; i < len; ++i) {
+      auto cur_node = fg->NewCNode({NewValueNode(getitem_prim), node, NewValueNode(MakeValue<int64_t>(i))});
+      auto new_node = InsertPrefetchRecursively(fg, cur_node, elements_abs[i]);
+      (void)make_sequence_inputs.emplace_back(new_node);
+    }
+    return fg->NewCNode(make_sequence_inputs);
+  }
+  auto prefetch_node = fg->NewCNode({NewValueNode(prim::kPrimPrefetch), node});
+  auto depend_node = fg->NewCNode({NewValueNode(prim::kPrimDepend), node, prefetch_node});
+  return depend_node;
 }
 }  // namespace prim
 }  // namespace mindspore
