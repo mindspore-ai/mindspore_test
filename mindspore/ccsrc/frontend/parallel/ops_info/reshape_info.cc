@@ -396,7 +396,7 @@ void ReportRedistributionError(const std::string &name, const bool &is_generatin
 
 void ReshapeInfo::SkipReshapeRedistribution() {
   MS_LOG(DEBUG) << "Skip reshape redistribution for " << cnode_->fullname_with_scope() << std::endl;
-  if (DstShapeIsConstant(cnode_->input(2))) {
+  if (DstShapeIsConstant(cnode_->input(kIndex2))) {
     ConstructOperator constructor;
     replace_op_ = constructor.SkipRedisReshapeOP(output_layout_.slice_shape().array());
     replace_op_info_.clear();
@@ -407,7 +407,7 @@ void ReshapeInfo::SkipReshapeRedistribution() {
     replace_op_info_.clear();
     MS_LOG(WARNING) << name_ << ": dst shape is dynamic, and skip redistribution";
     // need to modify the dst shape
-    ChangeDynamicDstShapeForSkipRedistribution(cnode_->input(2));
+    ChangeDynamicDstShapeForSkipRedistribution(cnode_->input(kIndex2));
   }
 }
 
