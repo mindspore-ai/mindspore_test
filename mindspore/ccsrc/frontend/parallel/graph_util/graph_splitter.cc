@@ -958,6 +958,8 @@ CNodePtr ParameterServerMode::CreateNodeWithInterProcessEdgeOnPServer(const std:
     MS_EXCEPTION_IF_NULL(origin_abs);
 
     auto new_abs = origin_abs->Clone()->cast<abstract::AbstractTensorPtr>();
+    MS_EXCEPTION_IF_NULL(new_abs);
+    MS_EXCEPTION_IF_NULL(new_abs->shape());
     ShapeVector new_shape = new_abs->shape()->shape();
     new_shape[0] = new_shape[0] * static_cast<int64_t>(total_inputs_number);
     new_abs->shape()->set_shape(new_shape);
