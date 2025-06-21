@@ -194,7 +194,8 @@ std::optional<ArrayValue<T>> GetArrayValue(const ValuePtr &value) {
     auto tensor = value->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(tensor);
     size_t element_size = tensor->DataSize();
-    T *data = reinterpret_cast<T *>(tensor->data_c());
+    auto cpu_tensor = tensor->cpu();
+    T *data = reinterpret_cast<T *>(cpu_tensor->data_c());
     array_data.assign(data, data + element_size);
   } else {
     MS_LOG(EXCEPTION) << "Failed to get array value, expect sequence or tensor type, but got: " << value->type_name();

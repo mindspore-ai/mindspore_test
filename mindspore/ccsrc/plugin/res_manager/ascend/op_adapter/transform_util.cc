@@ -321,15 +321,16 @@ GeTensorPtr TransformUtil::ConvertTensor(const MeTensorPtr &tensor, const std::s
     MS_LOG(ERROR) << "Failed to convert Me Tensor to Ge Tensor!";
     return nullptr;
   }
+  auto cpu_tensor = tensor->cpu();
   if (copy) {
-    auto ret = tensor_ptr->SetData(static_cast<uint8_t *>(tensor->data_c()), data_buff_size);
+    auto ret = tensor_ptr->SetData(static_cast<uint8_t *>(cpu_tensor->data_c()), data_buff_size);
     if (ret != ge::GRAPH_SUCCESS) {
       MS_LOG(ERROR) << "Failed to call ge::Tensor SetData(const uint8_t*, size), data size " << data_buff_size;
       return nullptr;
     }
   } else {
     MsTensorRel rel(tensor);
-    auto ret = tensor_ptr->SetData(static_cast<uint8_t *>(tensor->data_c()), data_buff_size,
+    auto ret = tensor_ptr->SetData(static_cast<uint8_t *>(cpu_tensor->data_c()), data_buff_size,
                                    [rel](uint8_t *) -> void { rel.Rel(); });
     if (ret != ge::GRAPH_SUCCESS) {
       MS_LOG(ERROR) << "Failed to call ge::Tensor SetData(uint8_t*, size, DeleteFunc), data size " << data_buff_size;
@@ -507,11 +508,11 @@ MeTensorPtr TransformUtil::GenerateMeTensor(const GeTensorPtr &ge_tensor, const 
     void *data = reinterpret_cast<void *>(const_cast<uint8_t *>(ge_tensor->GetData()));
     return make_shared<MeTensor>(me_type, me_dims, true, data);
   } else {
-    MeTensor me_tensor(me_type, me_dims);
+    MeTensorPtr me_tensor = tensor::empty(me_type, me_dims, DeviceType::kCPU);
 
     // Get the writable data pointer of the tensor and cast it to its data type.
-    auto me_data_ptr = me_tensor.data_c();
-    size_t me_data_size = static_cast<size_t>(me_tensor.DataNBytes());
+    auto me_data_ptr = me_tensor->data_c();
+    size_t me_data_size = static_cast<size_t>(me_tensor->DataNBytes());
     MS_EXCEPTION_IF_NULL(me_data_ptr);
     size_t length = ge_tensor->GetSize();
     if (me_data_size < length) {
@@ -530,7 +531,7 @@ MeTensorPtr TransformUtil::GenerateMeTensor(const GeTensorPtr &ge_tensor, const 
       (void)memcpy(me_data_ptr, ge_tensor->GetData(), length);
     }
 
-    return make_shared<MeTensor>(me_tensor);
+    return make_shared<MeTensor>(*me_tensor);
   }
 }
 
