@@ -170,7 +170,7 @@ def test_loss_scale_fp16_lr_overflow():
     assert output_1[1].asnumpy() == output_2[1].asnumpy() == True
 
 @arg_mark(plat_marks=['platform_ascend910b'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_loss_scale_fp16_lr_overflow_set_sense_scale():

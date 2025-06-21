@@ -32,7 +32,7 @@ class Net1d(nn.Cell):
         return self.mint_conv1d(input_x, weight, bias, stride, padding, dilation, groups)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0',
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE, ms.GRAPH_MODE])
 def test_ops_conv1d_default(mode):

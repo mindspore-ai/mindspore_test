@@ -24,7 +24,7 @@ from mindspore.common import mutable
 from tests.mark_utils import arg_mark
 import pytest
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize("mode", ["kbk", "pyboost"])
 def test_silent_check_grad_of_all(mode):
     """

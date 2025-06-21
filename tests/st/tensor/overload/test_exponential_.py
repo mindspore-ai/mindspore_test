@@ -15,7 +15,7 @@ def exponential__forward_func(input_x, lambd, generator=None):
     return net(input_x, lambd, generator=generator)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_exponential__randomness(mode):
     """

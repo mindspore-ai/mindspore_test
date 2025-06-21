@@ -38,7 +38,7 @@ data_dir = "/home/workspace/mindspore_dataset/910B_dvpp/testImageNetData2/train"
 result_data_dir = "/home/workspace/mindspore_dataset/910B_dvpp/testAscend910BDvpp"
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_map_with_pyfunc_with_multi_op_process_mode():
     """
     Feature: Map op with pyfunc contains dvpp ops & cpu ops
@@ -1722,7 +1722,7 @@ def map_with_dvpp_shape_and_type():
         assert item["image"].shape == (100, 75, 4)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_basic_transforms_pipeline():
     """
     Feature: Mix DVPP & CPU basic transforms in pipeline mode
