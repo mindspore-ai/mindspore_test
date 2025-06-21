@@ -243,33 +243,6 @@ bool Copy(const DeviceTensor *dst_device_tensor, const DeviceTensor *src_device_
   }
 }
 
-bool AsyncCopy(const DeviceTensor *dst_device_tensor, const DeviceTensor *src_device_tensor) {
-  MS_EXCEPTION_IF_NULL(dst_device_tensor);
-  MS_EXCEPTION_IF_NULL(src_device_tensor);
-  if (src_device_tensor->GetSize() != dst_device_tensor->GetSize()) {
-    MS_LOG(INFO) << "Copy size is not equal, input size:" << src_device_tensor->GetSize()
-                 << ", output size:" << dst_device_tensor->GetSize();
-  }
-
-  // Exist the size alignment in some device, so get the min device size.
-  size_t copy_size = std::min(src_device_tensor->GetSize(), dst_device_tensor->GetSize());
-
-  if (dst_device_tensor->GetDeviceType() == src_device_tensor->GetDeviceType()) {
-    return dst_device_tensor->AsyncDeviceToDevice(src_device_tensor);
-  } else if (src_device_tensor->GetDeviceType() == device::DeviceType::kCPU) {
-    // CPU device tensor copy to other device tensor.
-    return dst_device_tensor->AsyncHostToDevice(copy_size, src_device_tensor->GetPtr());
-  } else if (dst_device_tensor->GetDeviceType() == device::DeviceType::kCPU) {
-    // Other device tensor copy to CPU device tensor.
-    // Use Sync instead of Async because cpu ops may use host ptr immediately.
-    return src_device_tensor->SyncDeviceToHost(copy_size, dst_device_tensor->GetMutablePtr());
-  } else {
-    MS_LOG(ERROR) << "Invalid device type, src device type: " << src_device_tensor->GetDeviceType()
-                  << ", dst device type: " << dst_device_tensor->GetDeviceType();
-    return false;
-  }
-}
-
 void UpdateRefCount(DeviceTensor *const device_tensor, bool is_max_ref_count) {
   MS_EXCEPTION_IF_NULL(device_tensor);
   if (is_max_ref_count) {
