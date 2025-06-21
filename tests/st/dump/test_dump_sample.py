@@ -22,6 +22,7 @@ import mindspore
 import mindspore.context as context
 import mindspore.ops as ops
 import mindspore.nn as nn
+import glob
 from mindspore import Tensor
 from tests.mark_utils import arg_mark
 from tests.security_utils import security_off_wrap
@@ -54,6 +55,11 @@ def run_trans_flag(test_name):
             check_dump_structure(dump_path, dump_config_path, 1, 0, 1)
         dump_data_path = os.path.join(dump_path, 'rank_0', 'Net', '0', '0')
         assert os.path.exists(dump_data_path)
+        # assert是否切片成功
+        files = glob.glob(os.path.join(dump_data_path, "*.npy"))
+        dump_data_file_path = os.path.join(dump_path, str(files[0]))
+        t = np.load(dump_data_file_path)
+        assert t.shape == (20,)
         del os.environ['MINDSPORE_DUMP_CONFIG']
 
 

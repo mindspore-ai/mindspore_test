@@ -93,7 +93,6 @@ class BACKEND_COMMON_EXPORT DumpJsonParser {
   bool IsDumpEnabled();
   bool IsDeviceCalcStats() const;
   void CheckE2eSetting();
-  bool IsHCCLKernelInput(const std::string &kernel_name) const;
   bool IsCallbackRegistered() { return dumpdatacallback_registered_; }
   void SetCallbackRegistered() { dumpdatacallback_registered_ = true; }
   void SetInitialIteration(uint32_t initial_iteration);

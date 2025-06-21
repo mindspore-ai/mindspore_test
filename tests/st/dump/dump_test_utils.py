@@ -120,8 +120,8 @@ e2e_dump_dict_3 = {
     "e2e_dump_settings": {
         "enable": True,
         "trans_flag": False,
-        "slice_flag": 1,
-        "slice_num": 20
+        "sample_mode": 1,
+        "sample_num": 20
     }
 }
 
