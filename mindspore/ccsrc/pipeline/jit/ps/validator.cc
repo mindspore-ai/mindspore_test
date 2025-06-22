@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,7 +62,30 @@ using mindspore::abstract::AbstractTensor;
 using mindspore::abstract::AbstractTuple;
 using mindspore::abstract::AbstractType;
 
+void ValidateInplaceOperation(const AnfNodePtr &node) {
+  if (!node->isa<CNode>()) {
+    return;
+  }
+  auto cnode = node->cast<CNodePtr>();
+  auto prim = GetValueNode<PrimitivePtr>(cnode->input(0));
+  if (prim == nullptr || !prim->inplace_prim()) {
+    return;
+  }
+  for (const auto &index : prim->rw_write_input_indexes()) {
+    const auto &rw_write_input = cnode->input(index + 1);
+    const auto abs = rw_write_input->abstract();
+    // The abstract which rw_write input of inplace operators should be RefTensor.
+    // If it gets converted to Tensor which is constant by frontend optimizations
+    // (such as constant folding or other optimization passes), execution order issues may arise.
+    if (abs != nullptr && abs->isa<abstract::AbstractTensor>() && !abs->BuildValue()->ContainsValueAny()) {
+      MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, node) << "Illegal inplace node:" << node->DebugString()
+                                                 << ", location:" << trace::GetDebugInfoStr(node->debug_info());
+    }
+  }
+}
+
 void ValidateOperation(const AnfNodePtr &node) {
+  ValidateInplaceOperation(node);
   if (!IsValueNode<Primitive>(node)) {
     return;
   }
