@@ -97,7 +97,9 @@ static ParameterUsersInfo FindRefKeyNodeUsers(const RefKeyPair &ref_key_pair, bo
     MS_LOG(EXCEPTION) << "Find parameter by ref key node failed";
   }
   MS_EXCEPTION_IF_NULL(parameters[0]);
-  parameter_user_info.first = parameters[0]->cast<ParameterPtr>()->name();
+  auto para_ptr = parameters[0]->cast<ParameterPtr>();
+  MS_EXCEPTION_IF_NULL(para_ptr);
+  parameter_user_info.first = para_ptr->name();
   parameter_user_info.second.first = parameters[0];
   MS_EXCEPTION_IF_NULL(cnode_func_graph);
   auto candidate_set_by_para = cnode_func_graph->manager()->node_users()[parameters[0]];
@@ -159,7 +161,9 @@ static ParameterUsersInfo FindParameterNodeUsers(const AnfNodePtr &node, const s
     }
   }
   MS_EXCEPTION_IF_NULL(node);
-  parameter_user_info.first = node->cast<ParameterPtr>()->name();
+  auto node_pra_ptr = node->cast<ParameterPtr>();
+  MS_EXCEPTION_IF_NULL(node_pra_ptr);
+  parameter_user_info.first = node_pra_ptr->name();
   parameter_user_info.second.first = node;
   return parameter_user_info;
 }
@@ -522,6 +526,7 @@ void SliceTensorObj(const ParameterPtr &parameter, const TensorLayoutPtr &tensor
     python_adapter::CallPyFn(SLICE_PARAMETER_FN_PATH, SLICE_TENSOR_FN_NAME, tensor_py, layout, rank_id);
   MS_LOG(INFO) << "Success Call Python _slice_parameter Fn to slice python parameter obj";
   auto new_tensor = tensor::ConvertToTensor(new_tensor_py);
+  MS_EXCEPTION_IF_NULL(new_tensor);
   MS_LOG(INFO) << "new p_tensor:" << new_tensor->name() << new_tensor->Size() << new_tensor->shape();
   parameter->set_default_param(tensor::ConvertToTensorPyWrapper(new_tensor_py));
 }
@@ -727,6 +732,7 @@ void SetClonedTensorShapeForOptimizer(const FuncGraphPtr &root) {
     for (auto &be_cloned_parameter_node : sub_root_params) {
       MS_EXCEPTION_IF_NULL(be_cloned_parameter_node);
       auto be_cloned_parameter = be_cloned_parameter_node->cast<ParameterPtr>();
+      MS_EXCEPTION_IF_NULL(be_cloned_parameter);
       auto param_value_in = be_cloned_parameter->param_info();
       // get the be cloned index
       MS_EXCEPTION_IF_NULL(param_value_in);
@@ -908,6 +914,7 @@ static std::pair<AnfNodePtr, bool> FindParameterByParameter(const AnfNodePtr &no
     MS_LOG_WITH_NODE(EXCEPTION, node) << "The node is not a parameter, node:" << node->DebugString();
   }
   auto node_param_ptr = node->cast<ParameterPtr>();
+  MS_EXCEPTION_IF_NULL(node_param_ptr);
   if (node_param_ptr->has_default()) {
     auto param_ptr = node->user_data<parallel::TensorLayout>();
     if (param_ptr) {
@@ -1084,6 +1091,7 @@ void ReplaceAdaSumStridedSliceValue(const CNodePtr &stridedslice_cnode1,
   auto target_param_info = std::make_shared<TensorInfo>(target_param_layout->SqueezeShape());
   MS_EXCEPTION_IF_NULL(target_param_info);
   Dimensions param_strategy = target_param_info->InferStrategy();
+  MS_EXCEPTION_IF_NULL(stridedslice_cnode1);
   auto new_begin1_value =
     ValueSequeueScale(GetValueNode(stridedslice_cnode1->input(2)), param_strategy, slice_expand_ratio);
   auto new_end1_value =
@@ -1299,12 +1307,16 @@ void HandleAdaSumPureModelParallel(const AnfNodePtr &node) {
   int64_t rank_dis = abs(origin_dest_rank - rank);
   if (rank_dis == ADASUM_MIN_DIS && IsPrimitiveCNode(pre_cnode, prim::kPrimStridedSlice)) {
     MS_EXCEPTION_IF_NULL(pre_cnode);
-    auto squeeze_node = pre_cnode->cast<CNodePtr>()->input(1);
+    auto pre_cnnode_ptr = pre_cnode->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(pre_cnnode_ptr);
+    auto squeeze_node = pre_cnnode_ptr->input(1);
     if (!IsPrimitiveCNode(squeeze_node, prim::kPrimSqueeze)) {
       return;
     }
     MS_EXCEPTION_IF_NULL(squeeze_node);
-    auto squeeze_input = squeeze_node->cast<CNodePtr>()->input(1);
+    auto squeeze_node_ptr = squeeze_node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(squeeze_node_ptr);
+    auto squeeze_input = squeeze_node_ptr->input(1);
     auto manager = squeeze_node->func_graph()->manager();
     AnfNodeIndexSet squeeze_input_node_user_set = manager->node_users()[squeeze_input];
     for (auto &squeeze_input_user : squeeze_input_node_user_set) {
@@ -1336,6 +1348,7 @@ bool HandleAdaSum(const FuncGraphPtr &root, const std::vector<AnfNodePtr> &all_n
     std::string target_param;
     MS_EXCEPTION_IF_NULL(node);
     CNodePtr cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     PrimitivePtr prim = GetValueNode<PrimitivePtr>(cnode->input(0)->cast<ValueNodePtr>());
     MS_EXCEPTION_IF_NULL(prim);
     if (!prim->HasAttr(TARGET_PARAM)) {
@@ -1396,6 +1409,7 @@ bool HandleAdaSum(const FuncGraphPtr &root, const std::vector<AnfNodePtr> &all_n
 }
 
 void ResetMirrorAttr(const PrimitivePtr &prim, const RankList &new_group) {
+  MS_EXCEPTION_IF_NULL(prim);
   if (new_group.size() == 1) {
     MS_EXCEPTION_IF_NULL(prim);
     prim->set_attr(DEV_NUM, MakeValue<int64_t>(SizeToLong(new_group.size())));
