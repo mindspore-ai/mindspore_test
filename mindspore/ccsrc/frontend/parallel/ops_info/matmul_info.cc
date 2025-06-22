@@ -1302,6 +1302,7 @@ void SetMatMulReplaceCommInputRecompute(AnfNodePtr *replace_comm_input_op, const
   // add recompute attrs
   auto prim_origin = GetCNodePrimitive(cnode);
   auto replace_op_prim = GetCNodePrimitive(*replace_comm_input_op);
+  MS_EXCEPTION_IF_NULL(replace_op_prim);
   if (prim_origin != nullptr && prim_origin->HasAttr(RECOMPUTE_COMM_OP)) {
     replace_op_prim->AddAttr(RECOMPUTE, prim_origin->GetAttr(RECOMPUTE_COMM_OP));
   }
