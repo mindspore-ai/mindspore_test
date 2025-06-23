@@ -155,6 +155,7 @@ static void MoveMicroMirrorOutCallFunc(const FuncGraphPtr &root) {
     }
 
     // Remove MicroMirror in call_func
+    MS_EXCEPTION_IF_NULL(micro_mirror);
     (void)manager->Replace(micro_mirror, micro_mirror->input(kIndex1));
   }
 }
@@ -450,7 +451,9 @@ static void PostProcessActualSeqLenInputForFlashAttentionScore(const FuncGraphPt
 
         if (IsPrimitiveCNode(input, prim::kPrimTupleToTensor)) {
           // Eliminate TupleToTensor
-          manager->SetEdge(fa_cnode, index + 1, input->cast<CNodePtr>()->input(kIndex1));
+          auto input_ptr = input->cast<CNodePtr>();
+          MS_EXCEPTION_IF_NULL(input_ptr);
+          manager->SetEdge(fa_cnode, index + 1, input_ptr->input(kIndex1));
           MS_LOG(DEBUG) << "Eliminate TensorToTuple for " << fa_cnode->fullname_with_scope() << ", index is "
                         << index + 1;
         } else {
@@ -468,6 +471,7 @@ static void PostProcessActualSeqLenInputForFlashAttentionScore(const FuncGraphPt
 static void BroadcastMultiOutputs(const FuncGraphPtr &root, const FuncGraphManagerPtr &manager, const Group &group) {
   MS_EXCEPTION_IF_NULL(root);
   auto output = root->get_return()->input(1)->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(output);
   auto output_abstract = output->abstract();
   MS_EXCEPTION_IF_NULL(output_abstract);
   auto abstract_tuple = output_abstract->cast<abstract::AbstractTuplePtr>();
@@ -688,6 +692,7 @@ static void SetSharedAttrForOptimizerParameter(const FuncGraphPtr &root) {
     for (auto &be_cloned_parameter_node : sub_root_params) {
       MS_EXCEPTION_IF_NULL(be_cloned_parameter_node);
       auto be_cloned_parameter = be_cloned_parameter_node->cast<ParameterPtr>();
+      MS_EXCEPTION_IF_NULL(be_cloned_parameter);
       auto param_value_in = be_cloned_parameter->param_info();
       // get the be cloned index
       MS_EXCEPTION_IF_NULL(param_value_in);
