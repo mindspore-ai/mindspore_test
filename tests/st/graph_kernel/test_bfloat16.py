@@ -29,6 +29,8 @@ class Net(Cell):
         self.param = Parameter(Tensor(np.ones(shape), dtype=mindspore.bfloat16), "param")
 
     def construct(self, x0, x1):
+        x0 = ops.broadcast_to(x0, (4, 4, 100))
+        x1 = ops.broadcast_to(x1, (4, 4, 100))
         y0 = ops.Abs()(x0)
         y1 = ops.Add()(x0, y0)
         y2 = ops.Cast()(x1, mindspore.bfloat16)
@@ -51,11 +53,12 @@ def get_output(x0, x1, shape, enable_graph_kernel):
 
 def case1():
     np.random.seed(1)
-    shape = (4, 4)
+    shape = (4, 4, 1)
     x0 = np.random.normal(0, 1, shape).astype(np.float32)
     x1 = np.abs(np.random.normal(0, 1, shape).astype(np.float32))
     x0_ms = Tensor(x0, mindspore.bfloat16)
     x1_ms = Tensor(x1)
+    shape = (4, 4, 100)
     expects = get_output(x0_ms, x1_ms, shape, False)
     outputs = get_output(x0_ms, x1_ms, shape, True)
     compare_result = [np.allclose(e, o, 1.5e-3, 1.5e-3) for e, o in zip(expects, outputs)]
