@@ -311,10 +311,12 @@ void GetLayoutInfo(const CNodePtr &fa_score_node, Shape *q_shape, Shape *kv_shap
                 .tensor_layout()
                 .base_slice_shape()
                 .array();
-  *fa_n1 = GetValue<int64_t>(
-    fa_score_node->input(ops::FusedInferAttentionScoreInputIndex::kFusedInferAttentionScoreInputNumHeadsIndex + 1)
-      ->cast<ValueNodePtr>()
-      ->value());
+  auto fa_input =
+    fa_score_node->input(ops::FusedInferAttentionScoreInputIndex::kFusedInferAttentionScoreInputNumHeadsIndex + 1);
+  MS_EXCEPTION_IF_NULL(fa_input);
+  auto fa_input_node = fa_input->cast<ValueNodePtr>();
+  MS_EXCEPTION_IF_NULL(fa_input_node);
+  *fa_n1 = GetValue<int64_t>(fa_input_node->value());
   if (*input_layout == FASInputLayoutMode::BSH) {
     *fa_b = (*q_shape)[kIndex0];
     *fa_s1 = (*q_shape)[kIndex1];
