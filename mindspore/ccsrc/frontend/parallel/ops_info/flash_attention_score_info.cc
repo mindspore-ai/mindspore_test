@@ -784,7 +784,7 @@ Status FlashAttentionScoreInfo::GetAttrsForRA() {
   auto enable_ra_cp_iter = attrs_.find(ENABLE_RA_CONTEXT_PARALLEL);
   if (enable_ra_cp_iter != attrs_.end()) {
     MS_EXCEPTION_IF_NULL(enable_ra_cp_iter->second);
-    MS_EXCEPTION_IF_NULL(enable_ring_attention_iter->second->cast<BoolImmPtr>());
+    MS_EXCEPTION_IF_NULL(enable_ra_cp_iter->second->cast<BoolImmPtr>());
     if (enable_ra_cp_iter->second->isa<BoolImm>()) {
       enable_ra_cp_ = enable_ra_cp_iter->second->cast<BoolImmPtr>()->value();
     }
