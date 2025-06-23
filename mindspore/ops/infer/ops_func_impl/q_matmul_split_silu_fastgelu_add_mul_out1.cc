@@ -1,5 +1,5 @@
 /**
- * Copyright 2025 Huawei Technologies Co., Ltd
+ * Copyright 2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "infer/ops_func_impl/matmul_split_silu_out2.h"
+#include "infer/ops_func_impl/q_matmul_split_silu_fastgelu_add_mul_out1.h"
 #include "infer/ops_func_impl/matmul_fusion_utils.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"
@@ -24,13 +24,13 @@
 namespace mindspore {
 namespace ops {
 
-BaseShapePtr MatmulSplitSiluOut2FuncImpl::InferShape(const PrimitivePtr &primitive,
-                                                     const std::vector<AbstractBasePtr> &input_args) const {
-  return MatmulFusionUtils::InferenceMultiMatmulInferShape(primitive, input_args);
+BaseShapePtr QMatmulSplitSiluFastgeluAddMulOut1FuncImpl::InferShape(
+  const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
+  return MatmulFusionUtils::InferenceMultiMatmulInferShapeFused(primitive, input_args);
 }
 
-TypePtr MatmulSplitSiluOut2FuncImpl::InferType(const PrimitivePtr &primitive,
-                                               const std::vector<AbstractBasePtr> &input_args) const {
+TypePtr QMatmulSplitSiluFastgeluAddMulOut1FuncImpl::InferType(const PrimitivePtr &primitive,
+                                                              const std::vector<AbstractBasePtr> &input_args) const {
   return MatmulFusionUtils::InferenceMultiMatmulInferType(primitive, input_args);
 }
 

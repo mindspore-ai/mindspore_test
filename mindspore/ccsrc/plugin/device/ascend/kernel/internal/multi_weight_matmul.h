@@ -38,6 +38,8 @@ class InternalMultiWeightMatmulBase : public InternalKernelMod {
                                        const std::vector<KernelTensor *> &ms_inputs,
                                        const std::vector<KernelTensor *> &ms_outputs) override;
   const std::string op_name_{"UnknownOp"};
+  bool split_two_{false};
+  bool fused_{false};
 };
 }  // namespace kernel
 }  // namespace mindspore
