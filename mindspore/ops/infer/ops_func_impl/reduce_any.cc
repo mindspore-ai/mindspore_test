@@ -26,7 +26,13 @@ BaseShapePtr ReduceAnyFuncImpl::InferShape(const PrimitivePtr &primitive,
 
 TypePtr ReduceAnyFuncImpl::InferType(const PrimitivePtr &primitive,
                                      const std::vector<AbstractBasePtr> &input_args) const {
-  return std::make_shared<TensorType>(kBool);
+  auto input_type = input_args[0]->GetType();
+  MS_EXCEPTION_IF_NULL(input_type);
+  auto input_tensor_type = input_type->cast<TensorTypePtr>();
+  MS_EXCEPTION_IF_NULL(input_tensor_type);
+  auto input_type_id = input_tensor_type->element()->type_id();
+  auto out_type_id = input_type_id != kNumberTypeUInt8 ? kNumberTypeBool : kNumberTypeUInt8;
+  return std::make_shared<TensorType>(TypeIdToType(out_type_id));
 }
 }  // namespace ops
 }  // namespace mindspore
