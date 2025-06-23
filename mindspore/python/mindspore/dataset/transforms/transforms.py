@@ -650,7 +650,7 @@ class Mask(TensorOperation):
     """
 
     @check_mask_op_new
-    def __init__(self, operator, constant, dtype=mstype.bool_):
+    def __init__(self, operator, constant, dtype=mstype.bool):
         super().__init__()
         self.operator = operator
         self.dtype = mstype_to_detype(dtype)

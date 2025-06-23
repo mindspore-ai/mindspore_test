@@ -315,7 +315,7 @@ class Mask(TensorOperation):
 
     @deprecated_c_transforms()
     @check_mask_op
-    def __init__(self, operator, constant, dtype=mstype.bool_):
+    def __init__(self, operator, constant, dtype=mstype.bool):
         self.operator = operator
         self.dtype = mstype_to_detype(dtype)
         self.constant = cde.Tensor(np.array(constant))
