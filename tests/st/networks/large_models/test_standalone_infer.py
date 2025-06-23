@@ -31,7 +31,7 @@ from research.qwen2.qwen2_tokenizer import Qwen2Tokenizer
 from similarity import compare_distance
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_qwen2_0_5b_predict_standalone():
     """
     Feature: Infer standalone st

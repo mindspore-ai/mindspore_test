@@ -13,7 +13,6 @@
 # limitations under the License.
 # ============================================================================
 import numpy as np
-import pytest
 import mindspore as ms
 import mindspore.ops.operations as op
 from mindspore import Tensor, nn, ops
@@ -54,7 +53,7 @@ class GradNetWrtX(nn.Cell):
         return grad_fn(x)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_split_grad_dynamic():
     """
     Feature: Test operator Split grad (i.e. Concat) with dynamic input in PyNative mode

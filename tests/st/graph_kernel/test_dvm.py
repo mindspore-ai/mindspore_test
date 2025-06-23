@@ -89,7 +89,7 @@ def fuse(shape1, shape2, dtype):
     np.testing.assert_allclose(expects[2], outputs[2], 0, 0)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("shape1, shape2", [((32, 1024), (32, 1024)), ((1, 32, 1), (256, 1, 64))])
 @pytest.mark.parametrize("dtype", [np.float16, np.float32])
 def test_easy_fuse_dvm(shape1, shape2, dtype):
@@ -114,7 +114,7 @@ class Net(nn.Cell):
         return y1
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_dvm_dynamic_shape():
     """
     Feature: dynamic shape test case
@@ -264,7 +264,7 @@ class NetPow(nn.Cell):
         return y3
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_fuse_pow():
     """
     Feature: Pow fuse net

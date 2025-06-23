@@ -91,7 +91,7 @@ def sum_backward_func(x, axis=None, keep_dims=False, dtype=None):
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows',
                       'cpu_macos'],
-          level_mark='level0', card_mark='onecard', essential_mark='essential')
+          level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('keep_dims', [False, True])
 @pytest.mark.parametrize('in_dtype', [mstype.float16])
 @pytest.mark.parametrize('out_dtype', [mstype.float32])
@@ -453,3 +453,36 @@ def test_prod_default_dtype(axis, in_dtype, context_mode):
     x1 = generate_random_input((3, 4, 5), mstype._dtype_to_nptype(in_dtype))  # pylint:disable=protected-access
     grads = ProdGradNet(ProdNet(axis, None))(Tensor(x1), False)
     np.testing.assert_equal(grads.dtype, in_dtype)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize("mode", ["pynative", "kbk"])
+def test_mean_scalar_view_tensor(mode):
+    """
+    Feature: pyboost function.
+    Description: test function mean backward with scalar view tensor.
+    Expectation: expect correct result.
+    """
+    def mean_stack_func(x1, x2, x3):
+        y1 = mint.mean(x1)
+        y2 = mint.mean(x2)
+        y3 = mint.mean(x3)
+        z = mint.stack([y1, y2, y3], dim=0)
+        return z
+
+    if mode == 'pynative':
+        ms.context.set_context(mode=ms.PYNATIVE_MODE)
+    elif mode == 'kbk':
+        ms.context.set_context(mode=ms.GRAPH_MODE, jit_level='O0')
+    else:
+        ms.context.set_context(mode=ms.GRAPH_MODE, jit_level='O2')
+
+    x1 = Tensor(0.01, ms.float32)
+    x2 = Tensor(0.01, ms.float32)
+    x3 = Tensor(0.01, ms.float32)
+    _, grads = value_and_grad(mean_stack_func, grad_position=(0, 1, 2))(x1, x2, x3)
+
+    for grad in grads:
+        np.testing.assert_equal(grad.shape, ())
+        np.testing.assert_equal(grad.dtype, ms.float32)
+        np.testing.assert_allclose(grad.asnumpy(), np.array(1).astype(np.float32), rtol=0)

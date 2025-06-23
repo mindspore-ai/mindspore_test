@@ -28,7 +28,7 @@ def setup_module():
 
 # GPU: does not supported op "FloorMod"
 @arg_mark(plat_marks=['platform_ascend'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_tesnsor_augassign_by_slice():

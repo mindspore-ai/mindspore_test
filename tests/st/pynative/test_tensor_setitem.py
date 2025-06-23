@@ -404,7 +404,7 @@ def test_itemset_by_tuple_with_number():
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_itemset_all():

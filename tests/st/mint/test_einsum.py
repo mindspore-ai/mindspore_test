@@ -205,7 +205,7 @@ def mint_einsum_sublist_binary_case4(input_binary_data=None, output_binary_data=
     mint_einsum_binary_case_compare_sublist(in_sublist, out_sublist, input_binary_data, output_binary_data, 4e-3)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 def test_mint_einsum_sublist_binary_cases(mode):
     """
@@ -223,7 +223,7 @@ def test_mint_einsum_sublist_binary_cases(mode):
     mint_einsum_sublist_binary_case3()
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 def test_mint_einsum_bmm_binary_cases(mode):
     """

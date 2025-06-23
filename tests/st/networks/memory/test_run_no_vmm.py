@@ -56,7 +56,7 @@ def run_command(cmd, log_path, is_oom, is_two_pointer):
         os.remove(log_path)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_no_vmm_kbk():
     """
     Feature: Test dynamic allocator
@@ -102,7 +102,7 @@ def test_no_vmm_kbk_mempool_block():
                 f"{sh_path}/no_vmm_kbk_mempool_block.log", False, False)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_no_vmm_kbk_oom():
     """
     Feature: Test dynamic allocator

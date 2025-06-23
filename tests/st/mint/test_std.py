@@ -47,7 +47,7 @@ def std_backward_tensor(x, dim=None, correction=1, keepdim=False):
     return ops.grad(std_forward_tensor, (0, 1, 2, 3))(x, dim, correction, keepdim)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_mint_std_tensor(mode):
     """
@@ -78,7 +78,7 @@ def test_mint_std_tensor(mode):
     assert np.allclose(output.asnumpy(), expect_output)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_mint_std_norlmal(mode):
     """

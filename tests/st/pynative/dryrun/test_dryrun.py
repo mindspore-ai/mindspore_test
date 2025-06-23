@@ -52,7 +52,7 @@ def test_use_dryrunmock_in_simulation():
     warning_logs = ["dryrun"]
     assert not check_strings_in_file("dryrun3.log", warning_logs)
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
 def test_use_dryrunmock_not_in_simulation():
     """
     Feature: dryrun

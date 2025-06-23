@@ -47,7 +47,7 @@ def tril_vmap_func(x, k):
     return ms.ops.vmap(tril_forward_func, in_axes=(0, None), out_axes=(0,))(x, k)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0',
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 @pytest.mark.parametrize("k", [0, 1, -1])

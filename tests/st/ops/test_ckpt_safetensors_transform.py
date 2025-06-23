@@ -58,7 +58,7 @@ def cleanup_directory(directory):
         os.rmdir(directory)
 
 
-@pytest.mark.level0
+@pytest.mark.level1
 @pytest.mark.platform_x86_cpu
 @pytest.mark.platform_arm_cpu
 @pytest.mark.platform_x86_gpu_training
@@ -87,7 +87,7 @@ def test_ckpt_to_safetensors():
     cleanup_directory(save_path)
 
 
-@pytest.mark.level0
+@pytest.mark.level1
 @pytest.mark.platform_x86_cpu
 @pytest.mark.platform_arm_cpu
 @pytest.mark.platform_x86_gpu_training
