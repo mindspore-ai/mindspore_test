@@ -68,7 +68,7 @@ def test_histc_ext_dynamic_shape():
             'histc_ext', disable_yaml_check=True, disable_grad=True, disable_mode=["GRAPH_MODE"])
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1',
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1',
           card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE])
 def test_ops_histc_backward(mode):
