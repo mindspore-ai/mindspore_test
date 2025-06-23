@@ -72,6 +72,7 @@ const AnfNodePtr AscendConvertTupleInputToDynamicInput::Process(const FuncGraphP
                                                           prim::kPrimInnerIndex,
                                                           prim::kPrimInnerInplaceIndexPut,
                                                           prim::kPrimGroupedMatmulV4,
+                                                          prim::kPrimGroupedMatmulV4Transpose,
                                                           prim::kPrimGroupedMatmulV2,
                                                           prim::kPrimCustom};
 

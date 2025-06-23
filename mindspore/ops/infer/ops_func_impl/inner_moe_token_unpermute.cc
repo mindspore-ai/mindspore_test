@@ -19,6 +19,7 @@
 #include <set>
 #include "utils/check_convert_utils.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
+#include "mindspore/core/include/utils/ms_context.h"
 
 namespace mindspore {
 namespace ops {
@@ -87,6 +88,37 @@ std::vector<TypeId> InnerMoeTokenUnpermuteFuncImpl::InferType(const PrimitivePtr
                                                               const InferInfoPtrList &input_infos) const {
   TypeId unpermute_token_type = input_infos[kIndex0]->GetType();
   TypeId sorted_indices_type = input_infos[kIndex1]->GetType();
+
+  bool is_310p = false;
+  auto ms_context = MsContext::GetInstance();
+  if (ms_context != nullptr && ms_context->IsEnableInferBoost() &&
+      ms_context->ascend_soc_version() == kAscendVersion310p) {
+    is_310p = true;
+  }
+
+  if (is_310p) {
+    if (unpermute_token_type != kNumberTypeFloat16) {
+      MS_EXCEPTION(TypeError) << "For primitive[MoeTokenUnpermute] on Ascend 310P with inferboost, unpermuted_tokens "
+                                 "dtype is invalid, should be float16.";
+    }
+    if (sorted_indices_type != kNumberTypeInt32) {
+      MS_EXCEPTION(TypeError) << "For primitive[MoeTokenUnpermute], sorted_indices dtype is invalid , should be int32.";
+    }
+    auto &probs = input_infos[kIndex2];
+    if (!probs->IsNone()) {
+      TypeId probs_type = probs->GetType();
+      if (probs_type != kNumberTypeFloat16) {
+        MS_EXCEPTION(TypeError) << "For primitive[MoeTokenUnpermute] on Ascend 310P with inferboost, probs dtype is "
+                                   "invalid, should be float16.";
+      }
+    }
+    return {unpermute_token_type};
+  }
+
+  if (unpermute_token_type != kNumberTypeBFloat16) {
+    MS_EXCEPTION(TypeError) << "For primitive[MoeTokenUnpermute], unpermuted_tokens dtype is invalid"
+                            << " , should be bfloat16.";
+  }
   if (sorted_indices_type != kNumberTypeInt32) {
     MS_EXCEPTION(TypeError) << "For primitive[MoeTokenUnpermute], sorted_indices dtype is invalid"
                             << " , should be int32.";
