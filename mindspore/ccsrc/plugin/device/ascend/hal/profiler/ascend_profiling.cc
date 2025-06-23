@@ -142,14 +142,6 @@ void AscendProfiler::InitAclConfig() {
     }
   }
 
-  if (!config_.hostSys.empty()) {
-    aclError hostSysRet = aclprofSetConfig(ACL_PROF_HOST_SYS, config_.hostSys.c_str(), strlen(config_.hostSys.c_str()));
-    if (hostSysRet != ACL_SUCCESS) {
-      MS_LOG(ERROR) << "Failed call aclprofSetConfig to ACL_PROF_HOST_SYS. error_code : "
-                    << static_cast<int>(hostSysRet);
-    }
-  }
-
   if (config_.sysInterconnection || config_.pcie) {
     const char *sysInterconnectionFreq = "50";
     aclError sysInterconnectionRet =
@@ -266,6 +258,14 @@ void AscendProfiler::StopFwkMemProfiling() {
 
 void AscendProfiler::Start() {
   MS_LOG(INFO) << "Start AscendProfiler begin";
+
+  if (!config_.hostSys.empty()) {
+    aclError hostSysRet = aclprofSetConfig(ACL_PROF_HOST_SYS, config_.hostSys.c_str(), strlen(config_.hostSys.c_str()));
+    if (hostSysRet != ACL_SUCCESS) {
+      MS_LOG(ERROR) << "Failed call aclprofSetConfig to ACL_PROF_HOST_SYS. error_code : "
+                    << static_cast<int>(hostSysRet);
+    }
+  }
 
   if (config_.npuTrace) {
     aclError aclRet = CALL_ASCEND_API(aclprofStart, aclConfig_);
