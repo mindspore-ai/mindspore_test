@@ -174,6 +174,53 @@ std::string Location::ToString(SourceLineTip tip, int start_line) {
   return debug_info_ss.str();
 }
 
+std::string Location::GetStartLineSourceCode(SourceLineTip tip) {
+  std::stringstream debug_info_ss;
+  char *file_out;
+  constexpr int kLineStrSize = 4096;
+  char line[kLineStrSize];
+
+  // Use line_str_ as cache.
+  if (!line_str_.empty()) {
+    debug_info_ss << HighlightLine(line_str_, column_, column_end_, line_end_ == line_, tip);
+    return debug_info_ss.str();
+  }
+
+  // Start read the specific line. Optimize here by seekg().
+  auto path = FileUtils::GetRealPath(file_name_.c_str());
+  if (!path.has_value()) {
+    MS_LOG(WARNING) << "The file '" << file_name_ << "' may not exists.";
+    return debug_info_ss.str();
+  }
+  FILE *file = fopen(path.value().c_str(), "r");
+  if (file == NULL) {
+    MS_LOG(WARNING) << "Failed to open file '" << file_name_ << "'.";
+    return debug_info_ss.str();
+  }
+
+  // Read the lines one by one.
+  int line_num = 0;
+  file_out = fgets(line, kLineStrSize, file);
+  if (strlen(line) != kLineStrSize - 1 || line[strlen(line) - 1] == '\n') {
+    line[strcspn(line, "\n")] = '\0';
+  } else {
+    MS_LOG(ERROR) << "Line " << line_num << " of file " << file_name_.c_str() << " exceed the buffuer size.";
+  }
+  while (line_num != line_ - 1 && file_out != NULL) {
+    file_out = fgets(line, kLineStrSize, file);
+    if (strlen(line) != kLineStrSize - 1 || line[strlen(line) - 1] == '\n') {
+      ++line_num;
+    } else {
+      MS_LOG(ERROR) << "Line " << line_num << " of file " << file_name_.c_str() << " exceed the buffuer size.";
+    }
+  }
+  fclose(file);
+
+  line[strcspn(line, "\n")] = '\0';
+  debug_info_ss << HighlightLine(line, column_, column_end_, line_end_ == line_, tip);
+  return debug_info_ss.str();
+}
+
 bool Location::operator<(const Location &other) const {
   auto ret = file_name_.compare(other.file_name());
   if (ret != 0) {
