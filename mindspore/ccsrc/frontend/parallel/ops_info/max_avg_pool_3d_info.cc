@@ -842,8 +842,7 @@ OperatorAttrs MaxPool3DInfo::CreateNewOpAttrs() {
   Attr ceil_mode = {CEIL_MODE, MakeValue(ceil_mode_v)};
   Attr data_format = {DATA_FORMAT, MakeValue(format_)};
 
-  OperatorAttrs attrs;
-  attrs = {kernel_size, strides, pad_mode, pad_list, ceil_mode, data_format};
+  OperatorAttrs attrs = {kernel_size, strides, pad_mode, pad_list, ceil_mode, data_format};
   return attrs;
 }
 

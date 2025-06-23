@@ -985,6 +985,7 @@ int32_t AddCommOpFusionType(const CNodePtr &comm_node, const AnfNodePtr &param_n
     if (IsPrimitiveCNode(comm_node->input(kIndex1), prim::kPrimCast)) {
       auto cast_cnode = comm_node->input(kIndex1)->cast<CNodePtr>();
       auto cast_prim = GetCNodePrimitive(cast_cnode);
+      MS_EXCEPTION_IF_NULL(cast_prim);
       cast_prim->set_attr(RECOMPUTE, MakeValue(true));
     }
   }
