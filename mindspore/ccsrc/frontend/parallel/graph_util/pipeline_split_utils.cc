@@ -623,6 +623,7 @@ void HandleReceiveParam(const FuncGraphPtr &root) {
     MS_EXCEPTION_IF_NULL(node->func_graph()->manager());
     auto base_shape = accu_parameter->Shape();
     auto shape_ptr = dyn_cast<abstract::Shape>(base_shape);
+    MS_EXCEPTION_IF_NULL(shape_ptr);
     auto slice_shape = shape_ptr->shape();
     auto prim = GetCNodePrimitive(cnode);
     MS_EXCEPTION_IF_NULL(prim);
