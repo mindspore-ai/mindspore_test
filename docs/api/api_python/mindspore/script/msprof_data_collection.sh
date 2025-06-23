@@ -73,7 +73,11 @@ function run_ltrace_cmd(){
 
 function run_iotop_cmd(){
     check_pid
-    iotop -b -d 0.02 -P -t -p "${command_param}"
+    iotop -b -d 0.02 -P -t -p "${command_param}" &
+    while ps -p "${command_param}" > /dev/null 2>&1; do
+        sleep 1
+    done
+    pkill -9 iotop
 }
 
 function check_username(){
