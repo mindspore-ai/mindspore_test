@@ -61,6 +61,13 @@ void ExecuteCMD(const std::string &input_cmd) {
     }
   }
 
+  // check the output file
+  char canonical_path[PATH_MAX] = {0x00};
+  if (realpath(output_filename.c_str(), canonical_path) == nullptr) {
+    MS_LOG(WARNING) << "ExecuteCMD check the output file failed.";
+    return;
+  }
+
   // read the output file
   std::ifstream ifs(output_filename, std::ios::in);
   if (!ifs.is_open()) {
@@ -69,11 +76,12 @@ void ExecuteCMD(const std::string &input_cmd) {
   }
 
   int32_t offset = 0;
+  int32_t reserved = 2;
   char output_stack[output_stack_len] = {0};
   char c = ifs.get();
   while (ifs.good()) {
     output_stack[offset] = c;
-    if (offset >= output_stack_len - 2) {
+    if (offset >= output_stack_len - reserved) {
       break;
     }
     offset += 1;

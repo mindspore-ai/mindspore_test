@@ -396,6 +396,15 @@ Status MapOp::WorkerEntry(int32_t worker_id) {
   // let Python layer know the worker id of this thread
   if (python_multiprocessing_runtime_ != nullptr) {
     python_multiprocessing_runtime_->set_thread_to_worker(worker_id);
+
+#if !defined(_WIN32) && !defined(_WIN64)
+    // Create message queue id if not exist for two stage pipeline scenario
+    for (auto &op : tfuncs_[worker_id]) {
+      if (op->Name() == kPyFuncOp && dynamic_cast<PyFuncOp *>(op.get()) != nullptr) {
+        RETURN_IF_NOT_OK(dynamic_cast<PyFuncOp *>(op.get())->GetOrCreateMessageQueueID());
+      }
+    }
+#endif
   }
 
 #if defined(ENABLE_D)
