@@ -18,6 +18,7 @@ from mindspore import Tensor, nn
 from mindspore.ops import composite as C
 from mindspore.common import dtype as mstype
 
+context.set_context(jit_config={"jit_level": "O0"})
 grad_all = C.GradOperation(get_all=True)
 
 

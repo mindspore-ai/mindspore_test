@@ -22,6 +22,7 @@ from mindspore import Tensor, nn
 from mindspore.common import dtype as mstype
 from mindspore.train.serialization import export, load
 
+context.set_context(jit_config={"jit_level": "O0"})
 
 class CaseNet(nn.Cell):
     def __init__(self):

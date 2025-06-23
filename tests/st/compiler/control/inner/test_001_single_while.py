@@ -21,6 +21,7 @@ from mindspore.ops import composite as C
 from mindspore import context
 
 context.set_context(mode=context.GRAPH_MODE)
+context.set_context(jit_config={"jit_level": "O0"})
 
 
 class ForwardNet(nn.Cell):

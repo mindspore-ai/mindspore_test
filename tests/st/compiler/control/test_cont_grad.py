@@ -25,6 +25,7 @@ from mindspore.ops import composite as C
 from mindspore.ops import operations as P
 
 
+context.set_context(jit_config={"jit_level": "O0"})
 grad_by_list = C.GradOperation(get_by_list=True)
 grad_all = C.GradOperation(get_all=True)
 

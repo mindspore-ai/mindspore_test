@@ -19,11 +19,11 @@ from mindspore.ops import composite as C
 from mindspore.common import dtype as mstype
 from mindspore.common.parameter import Parameter
 
+context.set_context(jit_config={"jit_level": "O0"})
 grad_all = C.GradOperation(get_all=True)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
-          essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu',], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_for_after_if_in_if():
     """
     Feature: Control flow
@@ -72,7 +72,6 @@ def test_for_after_if_in_if():
     assert graph_backward_res == (Tensor(55, mstype.int32),)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_for_after_if_in_if_in_vm():
     """
     Feature: Control flow

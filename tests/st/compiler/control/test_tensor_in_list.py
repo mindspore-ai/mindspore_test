@@ -14,9 +14,10 @@
 # ============================================================================
 """ test_tensor_in_list """
 from tests.mark_utils import arg_mark
-from mindspore import nn, Tensor
+from mindspore import nn, Tensor, context
 from mindspore import dtype as mstype
 
+context.set_context(jit_config={"jit_level": "O0"})
 
 class Net(nn.Cell):
     def __init__(self):

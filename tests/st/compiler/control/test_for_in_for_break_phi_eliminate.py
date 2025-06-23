@@ -17,9 +17,10 @@ from tests.mark_utils import arg_mark
 from mindspore.nn import Cell
 from mindspore.common import Tensor, dtype
 import mindspore.ops.operations as P
-from mindspore import Parameter
+from mindspore import Parameter, context
 import numpy as np
 
+context.set_context(jit_config={"jit_level": "O0"})
 
 class IfInFor(Cell):
     def __init__(self):

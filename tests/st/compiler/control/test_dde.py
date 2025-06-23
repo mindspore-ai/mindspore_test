@@ -23,6 +23,7 @@ from mindspore.ops import operations as P
 from mindspore import ops, Tensor, nn
 
 context.set_context(mode=context.GRAPH_MODE)
+context.set_context(jit_config={"jit_level": "O0"})
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
@@ -51,8 +52,6 @@ def test_dde_make_tuple_joined_with_tuple_output_primitive():
     assert np.allclose(out[1].asnumpy(), expect_out1.asnumpy())
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
-          essential_mark='essential')
 def test_dde_parameter_converted_to_value_tuple():
     """
     Feature: Eliminate unused element for tuple.

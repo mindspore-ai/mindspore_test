@@ -23,6 +23,7 @@ from mindspore.common.parameter import Parameter
 from mindspore.ops import functional as F
 
 context.set_context(mode=context.GRAPH_MODE)
+context.set_context(jit_config={"jit_level": "O0"})
 
 
 class ForwardNet(nn.Cell):

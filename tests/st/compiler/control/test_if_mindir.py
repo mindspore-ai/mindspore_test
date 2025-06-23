@@ -25,6 +25,8 @@ from mindspore.ops import operations as P
 from mindspore.ops import composite as C
 from mindspore.train.serialization import export, load
 
+context.set_context(jit_config={"jit_level": "O0"})
+
 
 def weight_variable():
     return TruncatedNormal(0.02)
