@@ -46,16 +46,16 @@ static void CheckParam(const PrimitivePtr &primitive, const InferInfoPtrList &in
   auto kv_heads = input_infos[kMlaInputNumKVHeadIndex]->GetScalarValue<int64_t>();
   if (kv_heads.has_value()) {
     MS_CHECK_VALUE(kv_heads.value() == 1, CheckAndConvertUtils::FormatCommMsg(
-                                            "For MLA The kv_heads must be 1 , but got : ", kv_heads.value()));
+                                            "For MLA The kv_head_num must be 1 , but got : ", kv_heads.value()));
   }
 
   auto q_heads = input_infos[kMlaInputNumHeadIndex]->GetScalarValue<int64_t>();
   if (q_heads.has_value()) {
     MS_CHECK_VALUE(q_heads.value() <= kMLAQheadMax,
-                   CheckAndConvertUtils::FormatCommMsg("For MLA The q_heads must be <= ", kMLAQheadMax,
+                   CheckAndConvertUtils::FormatCommMsg("For MLA The head_num must be <= ", kMLAQheadMax,
                                                        ", but got : ", q_heads.value()));
     MS_CHECK_VALUE(ALIGN_16(q_heads.value()),
-                   CheckAndConvertUtils::FormatCommMsg("For MLA The q_heads must be the multiple of 16, but got : ",
+                   CheckAndConvertUtils::FormatCommMsg("For MLA The head_num must be the multiple of 16, but got : ",
                                                        q_heads.value()));
   }
 }
@@ -102,7 +102,7 @@ static void CheckShape(const PrimitivePtr &primitive, const InferInfoPtrList &in
     if (q_heads.has_value()) {
       if (q_heads.value() == kMLAQheadMax) {
         if (ctkv_shape[kMLABlockSizeDim] != kMLAQheadMax) {
-          MS_LOG(EXCEPTION) << "For MLA the block_size must be 128 when q_heads is 128, but got block_size: "
+          MS_LOG(EXCEPTION) << "For MLA the block_size must be 128 when head_num is 128, but got block_size: "
                             << ctkv_shape[kMLABlockSizeDim];
         }
       }
@@ -166,6 +166,12 @@ static void CheckShape(const PrimitivePtr &primitive, const InferInfoPtrList &in
   MS_CHECK_VALUE(context_len_shape.size() == kMLADeqScaleRank,
                  CheckAndConvertUtils::FormatCommMsg("For MLA The rank of context_lengths must be ", kMLADeqScaleRank,
                                                      ", but got shape: ", context_len_shape));
+  if (!input_infos[kMlaInputQueryLensIndex]->IsDynamic() && !input_infos[kMlaInputContextLensIndex]->IsDynamic()) {
+    MS_CHECK_VALUE(context_len_shape[0] == q_len_shape[0],
+                   CheckAndConvertUtils::FormatCommMsg(
+                     "For MLA The shape of context_lengths and q_seq_lens must be same but got context_len_shape: ",
+                     context_len_shape, ", q_len_shape: ", q_len_shape));
+  }
 }
 
 ShapeArray MlaFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
