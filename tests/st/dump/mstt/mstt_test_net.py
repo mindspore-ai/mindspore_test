@@ -14,12 +14,10 @@
 # ============================================================================
 
 import os
-import sys
 
 import mindspore as ms
 from mindspore import nn, ops, jit, Tensor, Parameter, value_and_grad
 from mindspore._c_expression import PyNativeExecutor_
-from mindspore.communication import init
 from mindspore.common._pijit_context import PIJitCaptureContext
 from mindspore.common.api import _JitExecutor, _PyNativeExecutor
 import numpy as np
@@ -37,12 +35,9 @@ def empty(self, *args, **kwargs):
 
 def save_npy(data_type, data):
     if iteration == 0:
-        if ms.communication.GlobalComm.INITED:
-            rank_id = ms.communication.get_rank()
-        else:
-            rank_id = None
+        rank_id = ms.communication.get_rank() if ms.communication.GlobalComm.INITED else None
     else:
-        rank_id = os.environ["RANK_ID"]
+        rank_id = os.environ["RANK_ID"] if ms.communication.GlobalComm.INITED else None
     file_name = f'{data_path}/rank_{rank_id}_step_{iteration}_{data_type}.npy'
     np.save(file_name, data)
 
@@ -141,14 +136,13 @@ class MulAddNet(nn.Cell):
         return z
 
 
-if __name__ == "__main__":
-    assert len(sys.argv) > 1
-    assert os.path.isdir(sys.argv[1])
-    data_path = sys.argv[1]
+def run_net(dump_path):
+    global iteration, data_path
+    assert os.path.isdir(dump_path)
+    data_path = dump_path
 
     ms.set_device('Ascend')
     ms.set_context(mode=ms.PYNATIVE_MODE)
-    init()
 
     PIJitCaptureContext.__enter__ = empty
     PIJitCaptureContext.__exit__ = empty
