@@ -635,6 +635,10 @@ class OrderEnforcer {
     auto iter = node_users.find(load);
     if (iter != node_users.end()) {
       const auto &users = iter->second;
+      if (users.size() != 1) {
+        // load not only used by maketuple
+        return false;
+      }
       for (auto &user : users) {
         const auto &user_node = user.first;
         auto user_cnode = user_node->cast<CNodePtr>();
