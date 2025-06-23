@@ -249,7 +249,6 @@ def _handle_tft(func):
                 if isinstance(item, TrainFaultTolerance):
                     obj = item
         if obj:
-            tft = obj.tft
             tft_env = os.getenv("MS_ENABLE_TFT", "")
             uce_env = "UCE:1" in tft_env or "ARF:1" in tft_env or "HCCE:1" in tft_env
             tre_env = "TRE:1" in tft_env
@@ -263,9 +262,9 @@ def _handle_tft(func):
                         _update_ckpt_callback_info(repair_step, **kwargs)
                         logger.warning(f'Resume training after TREError from step {repair_step}.')
                     else:
-                        _handle_exception_info(obj, uce_env, tft, e)
-                        ret = tft.tft_wait_next_action()
-                        if ret == tft.Action.EXIT.value:
+                        _handle_exception_info(obj, uce_env, obj.tft, e)
+                        ret = obj.tft.tft_wait_next_action()
+                        if ret == obj.tft.Action.EXIT.value:
                             raise e
                         repair_step = tft.tft_get_repair_step()
                         logger.warning(
@@ -285,9 +284,9 @@ def _handle_tft(func):
                                                                                                      cb_initial_step))
                     continue
                 except BaseException as e:
-                    if tft:
+                    if obj.tft:
                         logger.error("uce wrapper caught BaseException error, enter MindIO TTP process.", exc_info=True)
-                        tft.tft_report_error(tft.ReportState.RS_UNKNOWN.value)
+                        obj.tft.tft_report_error(obj.tft.ReportState.RS_UNKNOWN.value)
                     raise e
         else:
             return func(self, *args, **kwargs)
