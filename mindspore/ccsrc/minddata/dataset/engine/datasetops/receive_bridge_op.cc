@@ -157,14 +157,18 @@ Status ReceiveBridgeOp::operator()() {
   receive_info_.normal_row_.sample_ = 0;
   receive_info_.normal_row_.row_step_ = ReceiveBridgeOp::RowStep::kBeginReceiveMsg;
   auto status = msg_queue_.MsgRcv(kWorkerSendDataMsg);
-  if (status != Status::OK()) {
-    if (err_status_ != Status::OK()) {
-      MS_LOG(INFO) << "The independent dataset process exit, please check the error message.";
-      return err_status_;
-    } else {
-      return status;
-    }
+
+  // First: check the err_status_
+  if (err_status_ != Status::OK()) {
+    MS_LOG(INFO) << "The independent dataset process exit, please check the error message.";
+    return err_status_;
   }
+
+  // Second: check the return status by MsgRcv
+  if (status != Status::OK()) {
+    return status;
+  }
+
   receive_info_.normal_row_.row_step_ = ReceiveBridgeOp::RowStep::kAfterReceiveMsg;
 
   TensorRow new_row;
@@ -192,18 +196,21 @@ Status ReceiveBridgeOp::operator()() {
       receive_info_.normal_row_.row_step_ = ReceiveBridgeOp::RowStep::kBeginReceiveMsg;
       // Get msg from the independent dataset process by msg_queue_
       status = msg_queue_.MsgRcv(kWorkerSendDataMsg);
+
+      // First: check the err_status_
+      if (err_status_ != Status::OK()) {
+        MS_LOG(INFO) << "The independent dataset process exit, please check the error message.";
+        return err_status_;
+      }
+
+      // Second: check the return status by MsgRcv
       if (status != Status::OK()) {
-        if (err_status_ != Status::OK()) {
-          MS_LOG(INFO) << "The independent dataset process exit, please check the error message.";
-          return err_status_;
-        } else {
-          // if the pipeline had been interrupted, ignore the MsgRcv error
-          RETURN_IF_INTERRUPTED();
-          if (tree_->isFinished()) {
-            return Task::OverrideInterruptRc(this_thread::GetInterruptStatus());
-          }
-          return status;
+        // if the pipeline had been interrupted, ignore the MsgRcv error
+        RETURN_IF_INTERRUPTED();
+        if (tree_->isFinished()) {
+          return Task::OverrideInterruptRc(this_thread::GetInterruptStatus());
         }
+        return status;
       }
       receive_info_.normal_row_.row_step_ = ReceiveBridgeOp::RowStep::kAfterReceiveMsg;
 
@@ -232,18 +239,21 @@ Status ReceiveBridgeOp::operator()() {
     // Get msg from the independent dataset process by msg_queue_
     receive_info_.eoe_row_.row_step_ = ReceiveBridgeOp::RowStep::kBeginReceiveMsg;
     status = msg_queue_.MsgRcv(kWorkerSendDataMsg);
+
+    // First: check the err_status_
+    if (err_status_ != Status::OK()) {
+      MS_LOG(INFO) << "The independent dataset process exit, please check the error message.";
+      return err_status_;
+    }
+
+    // Second: check the return status by MsgRcv
     if (status != Status::OK()) {
-      if (err_status_ != Status::OK()) {
-        MS_LOG(INFO) << "The independent dataset process exit, please check the error message.";
-        return err_status_;
-      } else {
-        // if the pipeline had been interrupted, ignore the MsgRcv error
-        RETURN_IF_INTERRUPTED();
-        if (tree_->isFinished()) {
-          return Task::OverrideInterruptRc(this_thread::GetInterruptStatus());
-        }
-        return status;
+      // if the pipeline had been interrupted, ignore the MsgRcv error
+      RETURN_IF_INTERRUPTED();
+      if (tree_->isFinished()) {
+        return Task::OverrideInterruptRc(this_thread::GetInterruptStatus());
       }
+      return status;
     }
     receive_info_.eoe_row_.row_step_ = ReceiveBridgeOp::RowStep::kAfterReceiveMsg;
 

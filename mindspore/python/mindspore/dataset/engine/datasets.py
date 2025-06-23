@@ -3100,8 +3100,11 @@ def _worker_loop(quit_signal, operations, worker_id, op_type, key, video_backend
         # >> receive procedure >>
         ## 1. get message queue which contains shared memory info from map C++ thread in main process
         try:
+            cde.register_shm_id_and_msg_id(str(os.getpid()), shm_queue.get_shm_id(), msg_queue.msg_queue_id)
             msg_queue.msg_rcv(cde.MASTER_SEND_DATA_MSG)
+            cde.register_shm_id_and_msg_id(str(os.getpid()), shm_queue.get_shm_id(), msg_queue.msg_queue_id)
         except RuntimeError as err:
+            cde.register_shm_id_and_msg_id(str(os.getpid()), shm_queue.get_shm_id(), msg_queue.msg_queue_id)
             # the msg_queue had been released by main process, ignore it in worker process
             if "errno: 2" in str(err):
                 # Because the worker process does not release msg and shm, continue
@@ -3117,9 +3120,6 @@ def _worker_loop(quit_signal, operations, worker_id, op_type, key, video_backend
 
         logger.info("Python process {} worker({}) receives {} samples from map thread.".format(op_type, worker_id,
                                                                                                num_receive))
-
-        # the shm id & msg id maybe update
-        cde.register_shm_id_and_msg_id(str(os.getpid()), msg_queue.shm_id, msg_queue.msg_queue_id)
 
         # convert the data from shm to python data
         if op_type == cde.MAP_OP:
@@ -3182,11 +3182,11 @@ def _worker_loop(quit_signal, operations, worker_id, op_type, key, video_backend
             else:
                 raise RuntimeError("The op_type: {} is invalid.".format(op_type))
 
-            # the shm id & msg id maybe update
+            ## 3. send message queue which contains shared memory to map C++ thread in main process
+            cde.register_shm_id_and_msg_id(str(os.getpid()), shm_queue.get_shm_id(), msg_queue.msg_queue_id)
+            msg_queue.msg_snd(cde.WORKER_SEND_DATA_MSG, shm_queue.get_shm_id(), shm_queue.get_shm_size())
             cde.register_shm_id_and_msg_id(str(os.getpid()), shm_queue.get_shm_id(), msg_queue.msg_queue_id)
 
-            ## 3. send message queue which contains shared memory to map C++ thread in main process
-            msg_queue.msg_snd(cde.WORKER_SEND_DATA_MSG, shm_queue.get_shm_id(), shm_queue.get_shm_size())
             num_send += 1
             logger.info("Python process {} worker({}) sends {} samples to map thread.".format(op_type, worker_id,
                                                                                               num_send))
@@ -3212,7 +3212,10 @@ def _worker_loop(quit_signal, operations, worker_id, op_type, key, video_backend
 
                 # err_code, lineno, filename, err_desc
                 msg_queue.serialize_status(cde.StatusCode.MD_PY_FUNC_EXCEPTION, exc_tb.tb_lineno, fname, str(err))
+
+                cde.register_shm_id_and_msg_id(str(os.getpid()), shm_queue.get_shm_id(), msg_queue.msg_queue_id)
                 msg_queue.msg_snd(cde.WORKER_SEND_DATA_MSG, shm_queue.get_shm_id(), shm_queue.get_shm_size())
+                cde.register_shm_id_and_msg_id(str(os.getpid()), shm_queue.get_shm_id(), msg_queue.msg_queue_id)
 
                 # worker error
                 if get_error_samples_mode() == ErrorSamplesMode.RETURN:

@@ -86,6 +86,8 @@ class PyFuncOp : public TensorOp {
   // called in MapOp::SetPythonMp()
   void CreateMsgQueueAndShmQueue(const int32_t &thread_idx, const key_t &key);
 
+  Status GetOrCreateMessageQueueID();
+
   /// \brief Set the process id when multiprocess mode
   // called in MapOp::Launch()
   void SetProcessID(int32_t process_id);

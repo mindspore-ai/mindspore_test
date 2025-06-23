@@ -428,6 +428,11 @@ Status BatchOp::WorkerEntry(int32_t workerId) {
   // let Python layer know the worker id of this thread
   if (python_multiprocessing_runtime_ != nullptr) {
     python_multiprocessing_runtime_->set_thread_to_worker(workerId);
+
+#if !defined(_WIN32) && !defined(_WIN64)
+    // Create message queue id if not exist for two stage pipeline scenario
+    RETURN_IF_NOT_OK(msg_queues_[workerId]->GetOrCreateMessageQueueID());
+#endif
   }
   std::pair<std::unique_ptr<TensorQTable>, CBatchInfo> table_pair;
 
@@ -629,12 +634,22 @@ Status BatchOp::ComputeWithWorker(TensorTable *input, TensorTable *output, CBatc
   // 1. convert TensorRow to shared memory
   RETURN_IF_NOT_OK(shm_queues_[worker_id]->FromTensorTable(*input, &info, concat_batch));
 
-  RegisterShmIDAndMsgID(std::to_string(worker_pids_[worker_id]), shm_queues_[worker_id]->GetShmID(),
+  std::string current_pid = std::to_string(getpid());
+  // register the shm_id & msg_id by MainProcessPID_WorkerPID
+  RegisterShmIDAndMsgID(current_pid + "_" + std::to_string(worker_pids_[worker_id]), shm_queues_[worker_id]->GetShmID(),
                         msg_queues_[worker_id]->msg_queue_id_);
 
   // 2. send message queue which contains shared memory to Python Process Worker
-  RETURN_IF_NOT_OK(msg_queues_[worker_id]->MsgSnd(kMasterSendDataMsg, shm_queues_[worker_id]->GetShmID(),
-                                                  shm_queues_[worker_id]->GetShmSize()));
+  auto ret = msg_queues_[worker_id]->MsgSnd(kMasterSendDataMsg, shm_queues_[worker_id]->GetShmID(),
+                                            shm_queues_[worker_id]->GetShmSize());
+
+  RegisterShmIDAndMsgID(current_pid + "_" + std::to_string(worker_pids_[worker_id]), shm_queues_[worker_id]->GetShmID(),
+                        msg_queues_[worker_id]->msg_queue_id_);
+
+  if (ret != Status::OK()) {
+    return ret;
+  }
+
   MS_LOG(INFO) << "Batch thread " << std::to_string(worker_id)
                << " sends sample to python process worker: " << worker_pids_[worker_id]
                << " through shm_id: " << std::to_string(shm_queues_[worker_id]->GetShmID())
@@ -644,6 +659,9 @@ Status BatchOp::ComputeWithWorker(TensorTable *input, TensorTable *output, CBatc
   // 1. get message queue which contains shared memory from Python Process Worker
   RETURN_IF_NOT_OK(msg_queues_[worker_id]->MsgRcv(kWorkerSendDataMsg));
 
+  RegisterShmIDAndMsgID(current_pid + "_" + std::to_string(worker_pids_[worker_id]), msg_queues_[worker_id]->shm_id_,
+                        msg_queues_[worker_id]->msg_queue_id_);
+
   if (msg_queues_[worker_id]->GetErrorStatus()) {
     // got err from Python Process Worker
     return msg_queues_[worker_id]->DeserializeStatus();
@@ -652,9 +670,6 @@ Status BatchOp::ComputeWithWorker(TensorTable *input, TensorTable *output, CBatc
                << " receives sample from python process worker: " << worker_pids_[worker_id]
                << " through shm_id: " << std::to_string(msg_queues_[worker_id]->shm_id_)
                << " with shm_size: " << std::to_string(msg_queues_[worker_id]->shm_size_);
-
-  RegisterShmIDAndMsgID(std::to_string(worker_pids_[worker_id]), msg_queues_[worker_id]->shm_id_,
-                        msg_queues_[worker_id]->msg_queue_id_);
 
   // 2. construct shared memory to TensorRow
   CBatchInfo response_batch_info;  // not used

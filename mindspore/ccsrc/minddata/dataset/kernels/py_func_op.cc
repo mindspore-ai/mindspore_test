@@ -112,10 +112,21 @@ Status PyFuncOp::ComputeWithWorker(const TensorRow &input, TensorRow *output) {
   // 1. convert TensorRow to shared memory
   RETURN_IF_NOT_OK(shm_queue_->FromTensorRow(input));
 
-  RegisterShmIDAndMsgID(std::to_string(worker_pid_), shm_queue_->GetShmID(), msg_queue_->msg_queue_id_);
+  std::string current_pid = std::to_string(getpid());
+  // register the shm_id & msg_id by MainProcessPID_WorkerPID
+  RegisterShmIDAndMsgID(current_pid + "_" + std::to_string(worker_pid_), shm_queue_->GetShmID(),
+                        msg_queue_->msg_queue_id_);
 
   // 2. send message queue which contains shared memory to Python Process Worker
-  RETURN_IF_NOT_OK(msg_queue_->MsgSnd(kMasterSendDataMsg, shm_queue_->GetShmID(), shm_queue_->GetShmSize()));
+  auto ret_status = msg_queue_->MsgSnd(kMasterSendDataMsg, shm_queue_->GetShmID(), shm_queue_->GetShmSize());
+
+  RegisterShmIDAndMsgID(current_pid + "_" + std::to_string(worker_pid_), shm_queue_->GetShmID(),
+                        msg_queue_->msg_queue_id_);
+
+  if (ret_status != Status::OK()) {
+    return ret_status;
+  }
+
   MS_LOG(INFO) << "Map thread " << std::to_string(thread_idx_)
                << " sends sample to python process worker: " << worker_pid_
                << " through shm_id: " << std::to_string(shm_queue_->GetShmID())
@@ -124,6 +135,9 @@ Status PyFuncOp::ComputeWithWorker(const TensorRow &input, TensorRow *output) {
   // >> receive procedure >>
   // 1. get message queue which contains shared memory from Python Process Worker
   RETURN_IF_NOT_OK(msg_queue_->MsgRcv(kWorkerSendDataMsg));
+
+  RegisterShmIDAndMsgID(current_pid + "_" + std::to_string(worker_pid_), msg_queue_->shm_id_,
+                        msg_queue_->msg_queue_id_);
 
   if (msg_queue_->MessageQueueState() == MessageState::kReleased) {
     RETURN_STATUS_UNEXPECTED("The msg queue had been released by worker process, map thread: " +
@@ -143,8 +157,6 @@ Status PyFuncOp::ComputeWithWorker(const TensorRow &input, TensorRow *output) {
                << " receives sample from python process worker: " << worker_pid_
                << " through shm_id: " << std::to_string(msg_queue_->shm_id_)
                << " with shm_size: " << std::to_string(msg_queue_->shm_size_);
-
-  RegisterShmIDAndMsgID(std::to_string(worker_pid_), msg_queue_->shm_id_, msg_queue_->msg_queue_id_);
 
   // 2. construct shared memory to TensorRow
   RETURN_IF_NOT_OK(shm_queue_->ToTensorRow(output, msg_queue_->shm_id_, msg_queue_->shm_size_));
@@ -313,11 +325,19 @@ void PyFuncOp::CreateMsgQueueAndShmQueue(const int32_t &thread_idx, const key_t 
   shm_queue_->SetReleaseFlag(false);
 }
 
+Status PyFuncOp::GetOrCreateMessageQueueID() {
+  RETURN_IF_NOT_OK(msg_queue_->GetOrCreateMessageQueueID());
+  return Status::OK();
+}
+
 void PyFuncOp::SetProcessID(int32_t process_id) {
   MS_LOG(INFO) << "Set the process id: " << process_id << " to pyfunc map thread: " << thread_idx_;
   worker_pid_ = process_id;
 
-  RegisterShmIDAndMsgID(std::to_string(worker_pid_), shm_queue_->GetShmID(), msg_queue_->msg_queue_id_);
+  std::string current_pid = std::to_string(getpid());
+  // register the shm_id & msg_id by MainProcessPID_WorkerPID
+  RegisterShmIDAndMsgID(current_pid + "_" + std::to_string(worker_pid_), shm_queue_->GetShmID(),
+                        msg_queue_->msg_queue_id_);
 }
 #endif
 }  // namespace dataset
