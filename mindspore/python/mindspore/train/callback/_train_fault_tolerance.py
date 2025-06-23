@@ -461,7 +461,8 @@ class TrainFaultTolerance(Callback):
         self.tft.tft_register_clean_handler(_tft_clean_callback, self)
         self.tft.tft_register_repair_handler(_tft_repair_callback, self)
         self.tft.tft_register_rebuild_group_handler(_tft_rebuild_sub_groups, self)
-        self.tft.tft_register_stream_sync_handler(runtime.synchronize, self)
+        if "TSP:1" in os.getenv("MS_ENABLE_TFT", ""):
+            self.tft.tft_register_stream_sync_handler(runtime.synchronize, self)
 
     def _reset_acc_grads(self):
         accu_grad_params = map(lambda e: e[1],
