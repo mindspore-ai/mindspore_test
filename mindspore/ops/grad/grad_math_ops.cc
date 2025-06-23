@@ -477,7 +477,7 @@ NodePtr MeanExtGrad(BpropBuilder *ib, const NodePtr &input, NodePtr axis, const 
   NodePtr div_shape_node;
   if (IsDynamic(ib->GetShape(input)) || IsDynamic(ib->GetShape(out))) {
     auto shape_out_sz = ib->DynSize(out, kFloat32);
-    auto true_branch = [&](Emitter *e) -> NodePtrList { return {ib->Tensor(1, ib->GetDtype(grad))}; };
+    auto true_branch = [&](Emitter *e) -> NodePtrList { return {ib->Tensor(1, kFloat32)}; };
     auto false_branch = [&](Emitter *e) -> NodePtrList { return {ib->DynSize(input, kFloat32) / shape_out_sz}; };
     auto is_zero_out_sz = ib->Equal(shape_out_sz, ib->Tensor(0, kFloat32));
     auto div_shape = ib->Conditional(is_zero_out_sz, true_branch, false_branch);
