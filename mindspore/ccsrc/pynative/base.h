@@ -117,7 +117,6 @@ struct GradParam {
   size_t input_size{0};
 
   // For jit domain
-  bool has_added_v{false};
   bool is_jit_graph{false};
   bool jit_out_has_dict{false};
   bool is_jit_self_dynamic_shape{false};
