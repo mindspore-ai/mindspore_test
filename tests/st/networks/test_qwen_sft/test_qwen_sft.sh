@@ -6,14 +6,13 @@ export HCCL_CONNECT_TIMEOUT=3600
 MindSpeed_LLM_PATH=../scripts/LLM/MindSpeed-LLM
 
 NPUS_PER_NODE=8
-MASTER_PORT=6015
+MASTER_PORT=6377
 NNODES=1
 WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
 
 # please fill these path configurations
 DATA_PATH="/home/jenkins/mindspore/testcases/testcases/tests/st/networks/test_qwen_sft/dataset/finetune_dataset/alpaca"
 TOKENIZER_PATH="/home/workspace/mindspore_dataset/msadapter/test_input/net/test_qwen_sft/R1"
-DATA_CACHE_PATH="./alpaca/"
 
 TP=2
 PP=4
@@ -94,7 +93,6 @@ GPT_ARGS="
 
 DATA_ARGS="
     --data-path $DATA_PATH \
-    --data-cache-path $DATA_CACHE_PATH \
     --split 100,0,0
 "
 
