@@ -57,6 +57,13 @@ static void CheckParam(const PrimitivePtr &primitive, const InferInfoPtrList &in
     MS_CHECK_VALUE(ALIGN_16(q_heads.value()),
                    CheckAndConvertUtils::FormatCommMsg("For MLA The head_num must be the multiple of 16, but got : ",
                                                        q_heads.value()));
+
+    if (q_heads.value() == kMLAQheadMax) {
+      auto q_nope_type = input_infos[kMlaInputQnopeIndex]->GetType();
+      if (q_nope_type == kNumberTypeInt8) {
+        MS_LOG(EXCEPTION) << "For MLA int8 is not support when head_num=128.";
+      }
+    }
   }
 }
 
