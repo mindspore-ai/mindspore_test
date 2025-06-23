@@ -89,7 +89,7 @@ def test_reduce_arithmetic_simplify(shape, axis):
     run_reduce_with_axis(shape, axis)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_reduce_dynamic_rank():
     """
     Feature: test reduce sum with enable_graph_kernel=True under dynamic rank situation

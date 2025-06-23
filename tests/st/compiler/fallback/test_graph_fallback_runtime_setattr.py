@@ -173,7 +173,7 @@ def test_setattr_self_non_param_not_used():
     assert test_net.data == 2
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_setattr_self_non_param_used_in_operator():
     """

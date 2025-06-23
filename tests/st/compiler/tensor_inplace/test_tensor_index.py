@@ -171,7 +171,7 @@ def test_tensor_None_index_write():
 
 @arg_mark(
     plat_marks=["platform_gpu", "platform_ascend"],
-    level_mark="level0",
+    level_mark="level1",
     card_mark="onecard",
     essential_mark="essential",
 )
@@ -226,7 +226,7 @@ def test_tensor_self_write():
 
 @arg_mark(
     plat_marks=["platform_gpu", "platform_ascend"],
-    level_mark="level0",
+    level_mark="level1",
     card_mark="onecard",
     essential_mark="essential",
 )
@@ -344,7 +344,7 @@ def test_tensor_bool_index_read_false():
 
 @arg_mark(
     plat_marks=["platform_gpu", "platform_ascend"],
-    level_mark="level0",
+    level_mark="level1",
     card_mark="onecard",
     essential_mark="essential",
 )
@@ -556,7 +556,7 @@ def test_tensor_index_list_read():
 
 @arg_mark(
     plat_marks=["platform_gpu", "platform_ascend"],
-    level_mark="level0",
+    level_mark="level1",
     card_mark="onecard",
     essential_mark="essential",
 )

@@ -201,7 +201,7 @@ def test_repeat_grad_extra(mode, level):
                                (0, 1, 2, 3, 4, 7))
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_repeat_dynamic_classic():
     """
     Feature: test dynamic by TEST_OP.

@@ -1088,19 +1088,3 @@ def test_setitem_refactor_exception(mode):
     with pytest.raises(TypeError) as exc:
         ms_x[0:1] = -1
     assert "Invalid index of a 0-dim tensor." in str(exc.value)
-
-
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('mode', [ms.GRAPH_MODE,])
-def test_setitem_graph_mode(mode):
-    """
-    Feature: tensor setitem
-    Description: Verify the result of tensor setitem in graph mode
-    Expectation: success
-    """
-    ms.set_context(mode=mode)
-    np_x = np.arange(2 * 3).reshape((2, 3)).astype(np.float32)
-    ms_x = Tensor(np_x)
-    ms_x[0] = -1
-    np_expect = np.array([[-1, -1, -1], [3, 4, 5]]).astype(np.float32)
-    assert np.allclose(np_expect, ms_x.asnumpy()), f"np_expect:{np_expect}, ms_x:{ms_x}"

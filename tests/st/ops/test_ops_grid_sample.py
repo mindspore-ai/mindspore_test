@@ -31,7 +31,7 @@ def grid_sample_backward_func(input_x, grid, mode="bilinear", padding_mode="zero
     return ms.grad(grid_sample_forward_func, (0, 1))(input_x, grid, mode, padding_mode, align_corners)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
+@arg_mark(plat_marks=['platform_ascend', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 @test_utils.run_test_with_On

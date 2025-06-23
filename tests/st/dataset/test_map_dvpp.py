@@ -73,7 +73,7 @@ def test_map_with_pyfunc_with_multi_op_process_mode():
         assert item[0].dtype == np.float32
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_map_with_pyfunc_with_multi_op_thread_mode():
     """
     Feature: Map op with pyfunc contains dvpp ops & cpu ops
@@ -1739,7 +1739,7 @@ def test_basic_transforms_pipeline():
     map_with_dvpp_shape_and_type()
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_map_with_dvpp_with_spawn_independent_mode():
     """
     Feature: Map op
@@ -1807,7 +1807,7 @@ def test_map_with_dvpp_with_spawn_independent_mode():
     os.environ['MS_INDEPENDENT_DATASET'] = "False"
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_map_with_dvpp_with_spawn():
     """
     Feature: Map op

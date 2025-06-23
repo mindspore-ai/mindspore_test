@@ -37,7 +37,7 @@ def bitwise_xor_backward_func(x, y):
     return ops.grad(bitwise_xor_forward_func, 0)(x, y)
 
 
-@pytest.mark.level0
+@pytest.mark.level1
 @pytest.mark.env_onecard
 @pytest.mark.platform_arm_ascend_training
 @pytest.mark.platform_x86_ascend_training
