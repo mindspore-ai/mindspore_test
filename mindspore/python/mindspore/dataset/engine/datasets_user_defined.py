@@ -501,6 +501,8 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
                     except Exception:  # pylint: disable=W0703
                         # Block all errors when join
                         continue
+                elif not self.multi_process:
+                    w.join(timeout=5)
 
             if self.multi_process is True:
                 self._release_fd()
