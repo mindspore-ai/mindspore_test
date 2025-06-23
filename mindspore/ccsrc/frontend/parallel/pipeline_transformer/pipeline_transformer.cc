@@ -114,6 +114,7 @@ void PipelineTransformer::BroadCastGraphStage(const FuncGraphPtr &fg) {
     auto node = value_pair.first;
     if (IsValueNode<FuncGraph>(node)) {
       auto sub_graph = GetValueNode<FuncGraphPtr>(node);
+      MS_EXCEPTION_IF_NULL(sub_graph);
       sub_graph->set_stage(stage);
       BroadCastGraphStage(sub_graph);
     }
@@ -316,14 +317,16 @@ ValuePtr PipelineTransformer::SetMicroBatch(const AnfNodePtr &node, int64_t micr
       MS_LOG_WITH_NODE(EXCEPTION, cnode) << "the begin of stridedslice is not constant value, and not make tuple";
     }
     auto make_tuple_cnode = cnode->input(2)->cast<CNodePtr>();
-
+    MS_EXCEPTION_IF_NULL(make_tuple_cnode);
     if (IsPrimitiveCNode(make_tuple_cnode->input(1), prim::kPrimScalarMul)) {
       auto scalar_mul_cnode = make_tuple_cnode->input(1)->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(scalar_mul_cnode);
       auto mul_value = GetValueNode(scalar_mul_cnode->input(2));
       micro = GetValue<int64_t>(mul_value);
     } else if (IsPrimitiveCNode(make_tuple_cnode->input(1), prim::kPrimScalarFloorDiv)) {
       micro = 1;
     } else {
+      MS_EXCEPTION_IF_NULL(make_tuple_cnode->input(1));
       MS_LOG_WITH_NODE(EXCEPTION, make_tuple_cnode) << "can not find the micro info, the input op of make tuple is "
                                                     << GetCNodePrimitive(make_tuple_cnode->input(1))->name();
     }
@@ -832,6 +835,7 @@ AnfNodeIndexSet GetActualOpUsers(const AnfNodePtr &node, NodeUsersMap *node_user
           << "parameter: " << temp_node->DebugString() << " out of graph: " << graph->ToString() << "'s range.";
       }
       temp_node = temp_params[IntToSize(index - 1)];
+      MS_EXCEPTION_IF_NULL(temp_node);
     } else if (IsPrimitiveCNode(cuser, prim::kPrimLoad) || IsPrimitiveCNode(cuser, prim::kPrimCast)) {
       temp_node = cuser;
     }
@@ -921,8 +925,10 @@ static bool IsFreezedGradGraph(const AnfNodePtr &node) {
     return false;
   }
   auto cnode = node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
   if (IsValueNode<FuncGraph>(cnode->input(0))) {
     auto graph = GetValueNode<FuncGraphPtr>(cnode->input(0));
+    MS_EXCEPTION_IF_NULL(graph);
     if (graph->has_flag(FREEZE)) {
       return true;
     }
@@ -948,6 +954,7 @@ std::pair<std::vector<AnfNodePtr>, std::vector<AnfNodePtr>> PipelineTransformer:
       auto node = user.first;
       auto cnode = node->cast<CNodePtr>();
       auto graph = FindNodeGraph(cnode);
+      MS_EXCEPTION_IF_NULL(graph);
       if (graph == root_ || graph->stage() == -1 || parameter_stage.count(stage_) == 0) {
         continue;
       }
@@ -1108,6 +1115,7 @@ static ValueListPtr GetShapeValue(const Shape &shape) {
 std::pair<ValueListPtr, TypePtr> GetShapeType(const AnfNodePtr &node, const Shape &shape, size_t index) {
   TypePtr type;
   auto cnode = node->cast<CNodePtr>();
+
   if (cnode != nullptr && IsValueNode<FuncGraph>(cnode->input(0))) {
     auto graph = GetValueNode<FuncGraphPtr>(cnode->input(0));
     MS_EXCEPTION_IF_NULL(graph);
@@ -1394,6 +1402,7 @@ AnfNodePtr PipelineTransformer::HandleParameterGraph(const AnfNodePtr &node, con
 void PipelineTransformer::CutBorderForNode(const FuncGraphPtr &graph, const AnfNodePtr &node,
                                            std::vector<AnfNodePtr> *send_ops, std::vector<AnfNodePtr> *receive_ops) {
   auto stage_info = node->user_data<NodeStageInfo>();
+  MS_EXCEPTION_IF_NULL(stage_info);
   auto node_users = manager_->node_users()[node];
   AnfNodePtr receive = nullptr;
   for (auto &user_pair : node_users) {
@@ -2034,6 +2043,7 @@ void PipelineTransformer::RedundancyNode(const AnfNodePtr &node,
   auto node_users = manager_->node_users()[node];
   for (auto &node_user_pair : node_users) {
     auto cnode = node_user_pair.first->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     // node->UpdateState, replaced node wiht U.
     auto fg = cnode->func_graph();
     MS_EXCEPTION_IF_NULL(fg);
@@ -2156,6 +2166,7 @@ void PipelineTransformer::FreezeGradient() {
       }
       auto cnode = node->cast<CNodePtr>();
       MS_EXCEPTION_IF_NULL(cnode);
+      MS_EXCEPTION_IF_NULL(root_->output());
       auto out_cnode = root_->output()->cast<CNodePtr>();
       MS_EXCEPTION_IF_NULL(out_cnode);
       auto grads = out_cnode->input(INDEX_TWO);
