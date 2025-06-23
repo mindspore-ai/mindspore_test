@@ -138,10 +138,10 @@ TensorIndex::TensorIndex(const py::handle &py_object) {
   } else {
     py::handle obj_type = py_object.get_type();
     std::string type_name = py::cast<std::string>(py::str(obj_type));
-    MS_LOG(EXCEPTION) << "Unsupported Python object type received: " << type_name
-                      << ". Supported types for tensor indexing are: "
-                      << "list, int, float, tuple, slice, ellipsis, None, array, bool, or Tensor. "
-                      << "Received value: " << py::repr(py_object);
+    MS_EXCEPTION(IndexError) << "Unsupported Python object type received: " << type_name
+                             << ". Supported types for tensor indexing are: "
+                             << "list, int, float, tuple, slice, ellipsis, None, array, bool, or Tensor. "
+                             << "Received value: " << py::repr(py_object);
   }
 }
 
