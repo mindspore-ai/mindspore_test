@@ -28,7 +28,7 @@ def remove_ckpt(file_name):
         os.remove(file_name)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_save_and_load_sft_with_crc():
     """
     Feature: save and load checkpoint
