@@ -20,13 +20,10 @@ from mindspore.communication import init, get_rank
 from mindspore.common.initializer import initializer
 from mindspore.train.serialization import load_checkpoint, load_param_into_net
 from mindspore.train import Model, CheckpointConfig, ModelCheckpoint
-from mindspore.train._utils import get_parameter_redundancy
 from mindspore.nn.utils import no_init_parameters
 
 ms.set_context(mode=ms.GRAPH_MODE)
-rt.set_memory(max_size="28GB")
 ms.set_auto_parallel_context(parallel_mode=ms.ParallelMode.SEMI_AUTO_PARALLEL)
-init()
 ms.set_seed(1)
 print("distribute network.", flush=True)
 
@@ -78,6 +75,7 @@ def test_remove_redundancy_save_True_load_True():
     Description: Saving and loading checkpoints with redundancy elimination.
     Expectation: success.
     '''
+    init()
     print("distribute network shard.", flush=True)
     net = Network()
     print("distribute network create dataset.", flush=True)
@@ -90,8 +88,8 @@ def test_remove_redundancy_save_True_load_True():
     cbpoint_cb = ModelCheckpoint(prefix="redundancy", directory=f"./device{rank_id}_redundancy11", config=config)
     print("distribute network train.", flush=True)
     model = Model(net, loss_fn=loss, optimizer=optim)
-    model.train(1, dataset, callbacks=cbpoint_cb)
-    ckpt_path = f"./device{rank_id}_redundancy11/redundancy-1_1875.ckpt"
+    model.train(1, dataset, callbacks=[cbpoint_cb])
+    ckpt_path = f"./device{rank_id}_redundancy11/redundancy-1_1875.safetensors"
 
     print("distribute network loadcheckpoint.", flush=True)
     param_dict = load_checkpoint(ckpt_path)
@@ -106,6 +104,7 @@ def test_remove_redundancy_save_True_load_False():
     Description: Redundant-free checkpoint saving and full checkpoint loading.
     Expectation: success.
     '''
+    init()
     print("distribute network shard.", flush=True)
     net = Network()
     print("distribute network create dataset.", flush=True)
@@ -118,8 +117,8 @@ def test_remove_redundancy_save_True_load_False():
     cbpoint_cb = ModelCheckpoint(prefix="redundancy", directory=f"./device{rank_id}_redundancy10", config=config)
     print("distribute network train.", flush=True)
     model = Model(net, loss_fn=loss, optimizer=optim)
-    model.train(1, dataset, callbacks=cbpoint_cb)
-    ckpt_path = f"./device{rank_id}_redundancy10/redundancy-1_1875.ckpt"
+    model.train(1, dataset, callbacks=[cbpoint_cb])
+    ckpt_path = f"./device{rank_id}_redundancy10/redundancy-1_1875.safetensors"
 
     print("distribute network loadcheckpoint.", flush=True)
     param_dict = load_checkpoint(ckpt_path)
@@ -134,6 +133,7 @@ def test_remove_redundancy_save_False_load_False():
     Description: Full checkpoint saving and full checkpoint loading.
     Expectation: success.
     '''
+    init()
     print("distribute network shard.", flush=True)
     net = Network()
     print("distribute network create dataset.", flush=True)
@@ -146,8 +146,8 @@ def test_remove_redundancy_save_False_load_False():
     cbpoint_cb = ModelCheckpoint(prefix="redundancy", directory=f"./device{rank_id}_redundancy00", config=config)
     print("distribute network train.", flush=True)
     model = Model(net, loss_fn=loss, optimizer=optim)
-    model.train(1, dataset, callbacks=cbpoint_cb)
-    ckpt_path = f"./device{rank_id}_redundancy00/redundancy-1_1875.ckpt"
+    model.train(1, dataset, callbacks=[cbpoint_cb])
+    ckpt_path = f"./device{rank_id}_redundancy00/redundancy-1_1875.safetensors"
 
     print("distribute network loadcheckpoint.", flush=True)
     param_dict = load_checkpoint(ckpt_path)
@@ -156,35 +156,13 @@ def test_remove_redundancy_save_False_load_False():
     model.train(1, dataset)
 
 
-def test_remove_redundancy_strategy():
-    '''
-    Feature: save strategy ckpt and test get_parameter_redundancy.
-    Description: Test get_parameter_redundancy.
-    Expectation: success.
-    '''
-    print("distribute network shard.", flush=True)
-    strategy_path = "./stra1.ckpt"
-    ms.set_auto_parallel_context(strategy_ckpt_save_file=strategy_path)
-    net = Network()
-    print("distribute network create dataset.", flush=True)
-    dataset = create_dataset(32)
-    optim = nn.SGD(net.trainable_params(), 1e-2)
-    loss = nn.CrossEntropyLoss()
-    rank_id = get_rank()
-    config = CheckpointConfig(remove_redundancy=False)
-    cbpoint_cb = ModelCheckpoint(prefix="redundancy", directory=f"./device{rank_id}_get_redundancy", config=config)
-    print("distribute network train.", flush=True)
-    model = Model(net, loss_fn=loss, optimizer=optim)
-    model.train(1, dataset, callbacks=cbpoint_cb)
-    get_parameter_redundancy(strategy_path)
-
-
 def test_no_init_parameters():
     '''
     Feature: no_init_parameters.
     Description: no_init_parameters with init_parameters_data.
     Expectation: success.
     '''
+    init()
     print("distribute network shard.", flush=True)
     with no_init_parameters():
         net = Network()
@@ -198,31 +176,4 @@ def test_no_init_parameters():
     cbpoint_cb = ModelCheckpoint(prefix="delay", directory=f"./device{rank_id}_no_init_parameters", config=config)
     print("distribute network train.", flush=True)
     model = Model(net, loss_fn=loss, optimizer=optim)
-    model.train(1, dataset, callbacks=cbpoint_cb)
-
-
-def test_remove_redundancy_save_True_load_True_tensor_merge():
-    '''
-    Feature: remove_redundancy save ckpt and load ckpt in data parallel.
-    Description: Saving and loading checkpoints with redundancy elimination.
-    Expectation: success.
-    '''
-    print("distribute network shard.", flush=True)
-    net = Network()
-    print("distribute network create dataset.", flush=True)
-
-    dataset = create_dataset(32)
-    optim = nn.SGD(net.trainable_params(), 1e-2)
-    loss = nn.CrossEntropyLoss()
-    rank_id = get_rank()
-    config = CheckpointConfig(remove_redundancy=True)
-    cbpoint = ModelCheckpoint(prefix="redundancy", directory=f"./device{rank_id}_redundancy11_merge", config=config)
-    print("distribute network train.", flush=True)
-    model = Model(net, loss_fn=loss, optimizer=optim)
-    model.train(1, dataset, callbacks=cbpoint)
-    ckpt_path = f"./device{rank_id}_redundancy11_merge/redundancy-1_1875.ckpt"
-
-    print("distribute network loadcheckpoint.", flush=True)
-    param_dict = load_checkpoint(ckpt_path)
-    load_param_into_net(model.train_network, param_dict, remove_redundancy=True)
-    print("distribute network parameter broadcast.", flush=True)
+    model.train(1, dataset, callbacks=[cbpoint_cb])

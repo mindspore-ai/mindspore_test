@@ -34,7 +34,7 @@ def _check_env_valid_cpu_resource():
         return False
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 def test_bind_core_auto():
     """

@@ -73,12 +73,12 @@ def masked_fill__backward_func_tensor(input_x, mask, value):
 
 @arg_mark(
     plat_marks=["platform_ascend"],
-    level_mark="level0",
+    level_mark="level1",
     card_mark="onecard",
     essential_mark="essential",
 )
 @pytest.mark.parametrize("mode", ["pynative", "KBK"])
-def test_ops_masked_fill__normal(mode):
+def test_ops_masked_fill_normal(mode):
     """
     Feature: Tensor.masked_fill_
     Description: Verify the result of Tensor.masked_fill_

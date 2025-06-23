@@ -20,7 +20,7 @@ from mindspore.mint import clamp
 from tests.mark_utils import arg_mark
 
 
-@arg_mark(plat_marks=['platform_ascend', 'cpu_linux'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'cpu_linux'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_mint_clamp():
     """
