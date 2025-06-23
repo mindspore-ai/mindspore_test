@@ -46,6 +46,7 @@ void GroupNormGradAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &in
   auto dgamma_is_require = static_cast<uint8_t>(device::ascend::ConvertKernelTensor<bool>(inputs[kIndex7]));
   auto dbeta_is_require = static_cast<uint8_t>(device::ascend::ConvertKernelTensor<bool>(inputs[kIndex8]));
 
+  output_mask_.clear();
   (void)output_mask_.emplace_back(dx_is_require);
   (void)output_mask_.emplace_back(dgamma_is_require);
   (void)output_mask_.emplace_back(dbeta_is_require);
