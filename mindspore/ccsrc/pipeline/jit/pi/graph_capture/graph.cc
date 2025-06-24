@@ -269,7 +269,7 @@ void Graph::StopTraceAt(int bci, StopTraceReason reason, const std::vector<std::
   if (bci != -1 && ((IsPiJitLogOn(LogCfg::kGraphBreak) && !IsBreakAtCall(this)) ||
                     conf_.GetBoolConfig(GraphJitConfig::kFullGraph))) {
     std::ostringstream oss;
-    oss << GetStopTraceReasonDesc(reason);
+    oss << "Reason: " << GetStopTraceReasonDesc(reason);
     if (!hints.empty()) {
       std::for_each(hints.begin(), hints.end(), [&oss](const auto &hint) { oss << "\n  Hint: " << hint; });
     }
