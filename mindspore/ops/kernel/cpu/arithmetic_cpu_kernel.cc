@@ -202,7 +202,7 @@ class ArithmeticCpuTypeFunc : public CpuKernelFunc {
       return;
     }
     string dtype_desc;
-    static std::unordered_map<std::string, TypeComputeFunc> arithmeticMathFuncMap;
+    std::unordered_map<std::string, TypeComputeFunc> arithmeticMathFuncMap;
     if constexpr (!((std::is_same_v<T, complex64>) || (std::is_same_v<T, complex128>))) {
       dtype_desc = "real data";
       arithmeticMathFuncMap = {{kAdd, &ArithmeticCpuTypeFunc<T>::Add},
