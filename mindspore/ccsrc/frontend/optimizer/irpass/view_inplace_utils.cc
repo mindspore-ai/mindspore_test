@@ -20,7 +20,6 @@
 namespace mindspore {
 namespace opt {
 namespace irpass {
-namespace {
 bool IsViewOutput(const AnfNodePtr &node) {
   auto abs = node->abstract();
   if (abs != nullptr && abs->isa<abstract::AbstractRefTensor>()) {
@@ -31,14 +30,37 @@ bool IsViewOutput(const AnfNodePtr &node) {
   }
   return false;
 }
-}  // namespace
+
+bool IsViewNode(const AnfNodePtr &node) {
+  if (!node->isa<CNode>()) {
+    return false;
+  }
+  auto prim = GetValueNode<PrimitivePtr>(node->cast<CNodePtr>()->input(0));
+  return prim != nullptr && prim->graph_view_prim();
+}
+
+bool IsInplaceNode(const AnfNodePtr &node) {
+  if (!node->isa<CNode>()) {
+    return false;
+  }
+  auto prim = GetValueNode<PrimitivePtr>(node->cast<CNodePtr>()->input(0));
+  return prim != nullptr && prim->inplace_prim();
+}
 
 std::pair<CNodePtr, bool> IsCreatedByViewOp(const AnfNodePtr &node) {
-  if (node->isa<CNode>()) {
+  if (IsViewNode(node)) {
     auto cnode = node->cast<CNodePtr>();
-    auto prim = GetValueNode<PrimitivePtr>(cnode->input(0));
-    if (prim != nullptr && prim->graph_view_prim()) {
-      return {cnode, true};
+    return {cnode, true};
+  }
+  const auto &abs = node->abstract();
+  if (abs != nullptr && abs->isa<abstract::AbstractRefTensor>()) {
+    auto ref = abs->cast<abstract::AbstractRefPtr>();
+    if (ref->is_view_output()) {
+      constexpr auto kOriginalViewOp = "view_op";
+      auto view_op = abs->user_data<CNode>(kOriginalViewOp);
+      if (view_op != nullptr) {
+        return {view_op, true};
+      }
     }
   }
   return {nullptr, IsViewOutput(node)};

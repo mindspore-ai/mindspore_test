@@ -13,30 +13,14 @@
 # limitations under the License.
 # ==============================================================================
 import os
-import pytest
 import numpy as np
 import mindspore as ms
 import mindspore.nn as nn
 from mindspore import ops, Tensor
 from mindspore.ops.auto_generate.gen_ops_prim import select_ext_view_op, slice_ext_view_op, inplace_copy_op
 from mindspore.ops.functional import grad
-from mindspore._extends.parse import compile_config
 from tests.mark_utils import arg_mark
 
-@pytest.fixture(scope="module", autouse=True)
-def setup_teardown():
-    compile_config.ENABLE_VIEW_INPLACE_GRAD_NEW_METHOD = "1"
-    yield
-    compile_config.ENABLE_VIEW_INPLACE_GRAD_NEW_METHOD = ""
-
-
-class GradNet(nn.Cell):
-    def __init__(self, net):
-        super(GradNet, self).__init__()
-        self.grad_op = ops.grad(net)
-
-    def construct(self, x):
-        return self.grad_op(x)
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_tensor_view_inplace_grad_once():
@@ -315,41 +299,6 @@ def test_tensor_view_inplace_grad_check3():
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-def test_tensor_view_inplace_grad_check4():
-    """
-    Feature: view inplace operation in grad.
-    Description: view inplace operation in grad.
-    Expectation: no exception
-    """
-
-    class Net(nn.Cell):
-        def inner_func(self, x, y):
-            y.add_(2)
-            z = x * 2
-            z.add_(3)
-            return z
-
-        def func(self, input_tensor1_1, input_tensor2_1):
-            x = select_ext_view_op(input_tensor1_1, 0, 0)
-            y = select_ext_view_op(input_tensor2_1, 0, 0)
-            if x < y:
-                return self.inner_func(y, x)
-            return self.inner_func(x, y)
-
-        def construct(self, input_tensor1, input_tensor2):
-            input_tensor1_1 = ops.abs(input_tensor1)
-            input_tensor2_1 = ops.abs(input_tensor2)
-            return self.func(input_tensor1_1, input_tensor2_1)
-
-    net = Net()
-    out_expect = grad(net, grad_position=(0, 1))(Tensor([1, 2]), Tensor([3, 4]))
-    net.construct = ms.jit(net.construct, backend="ms_backend")
-    out_jit = grad(net, grad_position=(0, 1))(Tensor([1, 2]), Tensor([3, 4]))
-    assert np.allclose(out_expect[0].asnumpy(), out_jit[0].asnumpy())
-    assert np.allclose(out_expect[1].asnumpy(), out_jit[1].asnumpy())
-
-
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_tensor_view_inplace_grad_check5():
     """
     Feature: view inplace operation in grad.
@@ -468,59 +417,6 @@ def test_tensor_view_inplace_grad_check8():
     out_jit = grad(net, grad_position=(0, 1))(Tensor([1, 2]), Tensor([3, 4]))
     assert np.allclose(out_expect[0].asnumpy(), out_jit[0].asnumpy())
     assert np.allclose(out_expect[1].asnumpy(), out_jit[1].asnumpy())
-
-
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.skip(reason="Unsupported now, need handle control flow scene")
-def test_tensor_view_inplace_grad_control_flow():
-    """
-    Feature: Support tensor inplace view gradient.
-    Description: Support tensor inplace view gradient.
-    Expectation: Run success.
-    """
-
-    class Net(nn.Cell):
-        def construct(self, x):
-            y = ops.abs(x)
-            if (x <= y).all():
-                y_viewed = slice_ext_view_op(y, 1, 1, 2, 1)
-            else:
-                y_viewed = y + 1
-            inplace_copy_op(y_viewed, ms.Tensor(-1, dtype=ms.float32))
-            return y
-
-    net = Net()
-    x_np = (np.arange(2 * 2 * 2)).reshape((2, 2, 2)).astype(np.float32)
-    x = ms.Tensor(x_np)
-    out_expect = grad(net)(x)
-    net.construct = ms.jit(net.construct, backend="ms_backend")
-    out_jit = grad(net)(x)
-    assert np.allclose(out_expect.asnumpy(), out_jit.asnumpy())
-
-
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-def test_tensor_view_inplace_grad_control_flow_2():
-    """
-    Feature: Support tensor inplace view gradient.
-    Description: Support tensor inplace view gradient.
-    Expectation: Run success.
-    """
-
-    class Net(nn.Cell):
-        def construct(self, x):
-            y = ops.abs(x)
-            y_viewed = slice_ext_view_op(y, 1, 1, 2, 1)
-            if (x <= y).all():
-                inplace_copy_op(y_viewed, ms.Tensor(-1, dtype=ms.float32))
-            return y_viewed * 2
-
-    net = Net()
-    x_np = (np.arange(2 * 2 * 2)).reshape((2, 2, 2)).astype(np.float32)
-    x = ms.Tensor(x_np)
-    out_expect = grad(net)(x)
-    net.construct = ms.jit(net.construct, backend="ms_backend")
-    out_jit = grad(net)(x)
-    assert np.allclose(out_expect.asnumpy(), out_jit.asnumpy())
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')

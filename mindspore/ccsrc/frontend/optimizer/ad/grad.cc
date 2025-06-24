@@ -27,6 +27,7 @@
 #include "frontend/optimizer/irpass/check_invalid_view_inplace_dout.h"
 #include "frontend/optimizer/irpass/inplace_input_replace.h"
 #include "frontend/optimizer/irpass/virtualviewgrad_op.h"
+#include "frontend/optimizer/irpass/view_inplace_utils.h"
 #include "ir/func_graph_cloner.h"
 #include "utils/ms_context.h"
 #include "utils/symbolic.h"
@@ -257,14 +258,6 @@ void CheckViewInplaceOutput(const FuncGraphPtr &func_graph) {
   CheckOutputInner(output);
 }
 
-bool IsInplaceNode(const AnfNodePtr &node) {
-  if (!node->isa<CNode>()) {
-    return false;
-  }
-  auto prim = GetValueNode<PrimitivePtr>(node->cast<CNodePtr>()->input(0));
-  return prim != nullptr && prim->inplace_prim();
-}
-
 bool UpdateStateUseOnly(const AnfNodePtr &node, const NodeUsersMap &node_user_map) {
   auto node_users_iter = node_user_map.find(node);
   if (node_users_iter == node_user_map.end()) {
@@ -272,17 +265,6 @@ bool UpdateStateUseOnly(const AnfNodePtr &node, const NodeUsersMap &node_user_ma
   }
   return std::all_of(node_users_iter->second.begin(), node_users_iter->second.end(),
                      [](const auto &pair) { return IsPrimitiveCNode(pair.first, prim::kPrimUpdateState); });
-}
-
-bool IsViewOutput(const AnfNodePtr &node) {
-  auto abs = node->abstract();
-  if (abs != nullptr && abs->isa<abstract::AbstractRefTensor>()) {
-    const auto ref = abs->cast<abstract::AbstractRefPtr>();
-    if (ref->is_view_output()) {
-      return true;
-    }
-  }
-  return false;
 }
 
 void GetNeedGradMapForUpdateStateUseOnlyNodes(const FuncGraphPtr &func_graph,
@@ -304,7 +286,7 @@ void GetNeedGradMapForUpdateStateUseOnlyNodes(const FuncGraphPtr &func_graph,
     }
 
     // is inplace node
-    if (IsInplaceNode(node) && UpdateStateUseOnly(node, node_users_map)) {
+    if (mindspore::opt::irpass::IsInplaceNode(node) && UpdateStateUseOnly(node, node_users_map)) {
       auto inplace_node = node->cast<CNodePtr>();
       MS_EXCEPTION_IF_NULL(inplace_node);
       auto prim_value = inplace_node->input(0)->cast<ValueNodePtr>()->value();
@@ -313,7 +295,7 @@ void GetNeedGradMapForUpdateStateUseOnlyNodes(const FuncGraphPtr &func_graph,
       std::vector<size_t> rw_write_input_indexes = prim->rw_write_input_indexes();
       for (auto index : rw_write_input_indexes) {
         auto inplace_input = inplace_node->input(index + 1);
-        if (IsViewOutput(inplace_input)) {
+        if (mindspore::opt::irpass::IsViewOutput(inplace_input)) {
           (*need_grad_map)[inplace_input] = node;
         } else {
           (*need_grad_map)[inplace_node] = node;
@@ -389,13 +371,36 @@ bool NeedCheckInvalidViewInplaceDout(const std::string &scene) {
   }
   return check_invalid_dout_level == scene;
 }
+
+bool ChooseNewViewInplaceScheme(const FuncGraphPtr &func_graph, const opt::OptimizerPtr &optimizer) {
+  std::string view_inplace_grad_config = common::GetCompileConfig("ENABLE_VIEW_INPLACE_GRAD_NEW_METHOD");
+  MS_LOG(INFO) << "This view_inplace_grad_config is: " << view_inplace_grad_config;
+  if (view_inplace_grad_config == "2") {
+    // Choose new view inplace grad scheme.
+    (void)mindspore::opt::irpass::PreprocessForVirtualViewGradInsert(func_graph, optimizer);
+    return true;
+  }
+  if (view_inplace_grad_config == "1") {
+    // Choose old view inplace grad scheme.
+    return false;
+  }
+  if (view_inplace_grad_config == "0") {
+    // If view and inplace operators appear in a control flow scenario, need to select the old solution.
+    bool is_control_flow_scene = mindspore::opt::irpass::PreprocessForVirtualViewGradInsert(func_graph, optimizer);
+    MS_LOG(INFO) << "Exist control_flow scene: " << is_control_flow_scene;
+    return !is_control_flow_scene;
+  }
+  MS_LOG(EXCEPTION) << "The internal switch ENABLE_VIEW_INPLACE_GRAD_NEW_METHOD only supports "
+                       "input 0, 1, 2, but the value obtained is: "
+                    << view_inplace_grad_config;
+}
 }  // namespace
 
 FuncGraphPtr GradOneFuncGraph(const FuncGraphPtr &func_graph, const opt::OptimizerPtr &optimizer, bool is_top,
                               BpropAutoMonadLevel level, bool is_view_inplace) {
   MS_EXCEPTION_IF_NULL(func_graph);
-
-  if (is_view_inplace && common::GetCompileConfig("ENABLE_VIEW_INPLACE_GRAD_NEW_METHOD") == "1") {
+  if (is_view_inplace && ChooseNewViewInplaceScheme(func_graph, optimizer)) {
+    MS_LOG(INFO) << "Choose new view inplace grad scheme for func_graph:" << func_graph->ToString();
     // Insert VirtualViewGrad op for view+inplace scene
     mindspore::opt::irpass::VirtualViewGradInsert(func_graph, optimizer);
     // Do inplace input replacement
@@ -408,6 +413,7 @@ FuncGraphPtr GradOneFuncGraph(const FuncGraphPtr &func_graph, const opt::Optimiz
   }
 
   if (is_view_inplace) {
+    MS_LOG(INFO) << "Choose old view inplace grad scheme for func_graph:" << func_graph->ToString();
     if (NeedCheckInvalidViewInplaceDout(opt::irpass::kCheckDoutLevelSceneTwo)) {
       CheckViewInplaceOutput(func_graph);
     }

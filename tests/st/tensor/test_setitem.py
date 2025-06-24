@@ -1,4 +1,4 @@
-# Copyright 2024 Huawei Technologies Co., Ltd
+# Copyright 2024-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,6 +22,13 @@ from tests.st.pi_jit.share.utils import get_code_extra, has_graph
 import mindspore as ms
 import mindspore.nn as nn
 from mindspore import Tensor, ops
+from mindspore._extends.parse import compile_config
+
+@pytest.fixture(scope="module", autouse=True)
+def setup_teardown():
+    compile_config.ENABLE_VIEW_INPLACE_GRAD_NEW_METHOD = "1"
+    yield
+    compile_config.ENABLE_VIEW_INPLACE_GRAD_NEW_METHOD = "0"
 
 
 def assert_executed_by_graph_mode(func, x, index, value):
@@ -83,7 +90,6 @@ def test_setitem(capture_mode):
     Description: Verify the result of tensor setitem
     Expectation: success
     """
-    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
     if capture_mode is not None:
         os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
 
@@ -224,7 +230,6 @@ def test_setitem_with_iadd(capture_mode):
     Expectation: success
     """
 
-    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
     if capture_mode is not None:
         os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
 
@@ -337,7 +342,7 @@ def test_setitem_grad(capture_mode):
     Description: Verify the result of tensor setitem grad1
     Expectation: success
     """
-    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
+
     if capture_mode is not None:
         os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
 
@@ -516,7 +521,7 @@ def test_setitem_grad_with_iadd(capture_mode, index):
     Description: Verify the result of tensor setitem grad with iadd
     Expectation: success
     """
-    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
+
     if capture_mode is not None:
         os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
 
@@ -563,7 +568,7 @@ def test_setitem_grad_with_iadd_jit_invalid(capture_mode, index):
     Description: Verify the result of tensor setitem grad with iadd
     Expectation: Raise exception
     """
-    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
+
     if capture_mode is not None:
         os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
 
@@ -626,7 +631,6 @@ def test_setitem_grad_with_imul(capture_mode):
     if capture_mode in ['ast', 'bytecode']:
         pytest.skip(f"Tests with capture_mode={capture_mode} are skipped!!!")
 
-    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
     if capture_mode is not None:
         os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
     iadd_indices = [True, None]
@@ -655,7 +659,6 @@ def test_setitem_exception(mode, capture_mode):
     Expectation: success
     """
     os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
-    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
 
     np_x = np.arange(2 * 3 * 4).reshape((2, 3, 4)).astype(np.float32)
     ms_x = Tensor(np_x)
@@ -761,7 +764,6 @@ def test_setitem_index_dynamic_shape_test(capture_mode, x_shape, index_shape, va
         return ms.grad(net)(x, index, value)
 
     os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
-    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
 
     pt_result = np.array([[[-1., -1., -1.], [-1., -1., -1.], [6., 7., 8.]],
                           [[-1., -1., -1.], [-1., -1., -1.], [15., 16., 17.]],
@@ -816,7 +818,6 @@ def test_setitem_index_dynamic_rank_test(capture_mode):
         return ms.grad(net)(x, index1, index2, cond, value)
 
     os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
-    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
 
     pt_result = np.array([[[0., 1., 2.], [-1., -1., -1.], [6., 7., 8.]],
                           [[9., 10., 11.], [-1., -1., -1.], [15., 16., 17.]],
@@ -868,7 +869,6 @@ def test_setitem_index_dynamic_rank_test2(capture_mode):
         return ms.grad(net)(x, index1, index2, value)
 
     os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
-    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
 
     pt_result = np.array([[[0., 1., 2.], [3., 4., 5.], [-3., -3., -3.]],
                           [[9., 10., 11.], [12., 13., 14.], [15., 16., 17.]],
@@ -909,7 +909,6 @@ def test_setitem_with_mul(mode):
     """
     ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
-    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
 
     ms_x = Tensor([[0, 0], [2, 0]])
     net = NetWithIndexAndMul()
@@ -927,7 +926,6 @@ def test_setitem_graph_mode(mode):
     Expectation: success
     """
     ms.set_context(mode=mode)
-    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
     np_x = np.arange(2 * 3).reshape((2, 3)).astype(np.float32)
     ms_x = Tensor(np_x)
     ms_x[0] = -1

@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2022 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,6 @@ FuncGraphPtr Kprim(const ValueNodePtr &value_node, const pipeline::ResourceBaseP
 MetaFuncGraphPtr Kmeta(const PrimitivePtr &prim, const pipeline::ResourceBasePtr &, const AnfNodePtr &node);
 FRONTEND_EXPORT void CleanRes();
 bool MergeForward(const FuncGraphPtr &root, const opt::OptimizerPtr &opt);
-void VirtualViewGradInsert(const FuncGraphPtr &root, const opt::OptimizerPtr &opt);
 }  // namespace ad
 }  // namespace mindspore
 

@@ -27,6 +27,7 @@ namespace mindspore {
 namespace opt {
 namespace irpass {
 namespace {
+constexpr auto kOriginalViewOp = "view_op";
 void InsertVirtualViewGradInner(const FuncGraphPtr &func_graph, const CNodePtr &view_cnode, const AnfNodePtr &umonad,
                                 const FuncGraphManagerPtr &manager) {
   // Insert VirtualViewGrad op recursively
@@ -166,6 +167,80 @@ void RemoveRedundantVirtualViewGradInner(const FuncGraphPtr &func_graph, const F
     }
   }
 }
+
+bool CheckControlFlow(const PrimitivePtr &prim, const CNodePtr &cnode) {
+  for (auto index : prim->rw_write_input_indexes()) {
+    const auto &input = cnode->input(prim->rw_write_input_indexes()[index] + 1);
+    const auto &input_abs = input->abstract();
+    if (!input_abs->isa<abstract::AbstractRefTensor>()) {
+      MS_LOG(EXCEPTION) << "The rw_write input of inplace op abstract is not ref:" << input_abs->ToString()
+                        << ", inplace operation is: " << cnode->DebugString();
+    }
+    auto input_ref = input_abs->cast<abstract::AbstractRefPtr>();
+    if (input_ref->is_view_output()) {
+      auto view_op = input_ref->user_data<CNode>(kOriginalViewOp);
+      if (view_op == nullptr || view_op->func_graph() != cnode->func_graph()) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+void MarkViewOp(const AnfNodePtr &node, bool *cotrol_flow_scene) {
+  if (IsViewNode(node)) {
+    const auto &abs = node->abstract();
+    MS_EXCEPTION_IF_NULL(abs);
+    auto ref = abs->cast<abstract::AbstractRefPtr>();
+    if (ref == nullptr) {
+      MS_LOG(EXCEPTION) << "The view op abstract is not ref:" << ref->ToString()
+                        << ", view operation is: " << node->DebugString();
+    }
+    auto cnode = node->cast<CNodePtr>();
+    ref->set_user_data<CNode>(kOriginalViewOp, cnode);
+    return;
+  }
+  if (!IsInplaceNode(node)) {
+    return;
+  }
+  auto cnode = node->cast<CNodePtr>();
+  auto prim = GetValueNode<PrimitivePtr>(cnode->input(0));
+  // Check if is control flow scene with view inplace.
+  if (CheckControlFlow(prim, cnode)) {
+    *cotrol_flow_scene = true;
+    return;
+  }
+
+  const auto &inplace_node_abs = node->abstract();
+  // Currently, only consider the case where the inplace operator has only
+  // one output and one inplace input.
+  if (!inplace_node_abs->isa<abstract::AbstractRefTensor>() || prim->rw_write_input_indexes().size() != 1) {
+    MS_LOG(DEBUG) << "The inplace node is: " << node->DebugString();
+    return;
+  }
+  const auto &rw_write_input = cnode->input(prim->rw_write_input_indexes()[0] + 1);
+  const auto &rw_write_input_abs = rw_write_input->abstract();
+  auto input_ref = rw_write_input_abs->cast<abstract::AbstractRefPtr>();
+  MS_EXCEPTION_IF_NULL(input_ref);
+  if (input_ref->is_view_output()) {
+    auto view_op = input_ref->user_data<CNode>(kOriginalViewOp);
+    if (view_op != nullptr) {
+      inplace_node_abs->set_user_data<CNode>(kOriginalViewOp, view_op);
+      MS_LOG(DEBUG) << "Mark view operator to inplace abstract, view_op: " << view_op->DebugString()
+                    << " abstract: " << inplace_node_abs->ToString();
+    }
+  }
+}
+
+void MarkViewOpToAbstract(const FuncGraphPtr &func_graph, bool *cotrol_flow_scene) {
+  const auto &nodes = TopoSort(func_graph->get_return());
+  for (size_t i = 0; i < nodes.size(); ++i) {
+    MarkViewOp(nodes[i], cotrol_flow_scene);
+    if (*cotrol_flow_scene) {
+      return;
+    }
+  }
+}
 }  // namespace
 
 void VirtualViewGradInsert(const FuncGraphPtr &root, const opt::OptimizerPtr &opt) {
@@ -218,6 +293,20 @@ AnfNodePtr VirtualViewGradEliminater::operator()(const OptimizerPtr &, const Anf
   auto cnode = node->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(cnode);
   return cnode->input(kIndex1);
+}
+
+bool PreprocessForVirtualViewGradInsert(const FuncGraphPtr &root, const opt::OptimizerPtr &opt) {
+  // mark view operator to abstract.
+  bool cotrol_flow_scene = false;
+  MarkViewOpToAbstract(root, &cotrol_flow_scene);
+  const auto &fg_used_total = root->func_graphs_used_total();
+  for (const auto &fg : fg_used_total) {
+    MarkViewOpToAbstract(fg, &cotrol_flow_scene);
+    if (cotrol_flow_scene) {
+      return cotrol_flow_scene;
+    }
+  }
+  return cotrol_flow_scene;
 }
 }  // namespace irpass
 }  // namespace opt
