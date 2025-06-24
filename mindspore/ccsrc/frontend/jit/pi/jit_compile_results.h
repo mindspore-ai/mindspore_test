@@ -69,7 +69,8 @@ class Traceback {
 
 class JitCompileResults {
  public:
-  static JitCompileResults *Create(PyCodeObject *code);
+  static JitCompileResults *Create(PyCodeObject *co);
+  static bool Clear(PyCodeObject *co);
   static Py_ssize_t InitIndex();
   static JitCompileResults *get_skip_jcr();
 

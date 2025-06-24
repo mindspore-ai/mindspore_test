@@ -38,6 +38,8 @@ void RegPIJitInterface(py::module *m) {
   (void)m->def(
     "function_id", [](py::args, py::kwargs) { return py::int_(0); },
     "Get cpp function pointer, or python function pointer, or object pointer");
+  (void)m->def(
+    "clear_jit_compile_results", [](const py::object &) { return py::bool_(false); }, "clear jit compile results");
 #else
   // PIJit interface
   (void)m->def("jit_mode_pi_enable", &mindspore::pi_jit_enable, "enable jit from python byte code");
@@ -49,6 +51,7 @@ void RegPIJitInterface(py::module *m) {
 
   (void)m->def("function_id", &mindspore::FunctionId,
                "Get cpp function pointer, or python function pointer, or object pointer");
+  (void)m->def("clear_jit_compile_results", &mindspore::ClearJitCompileResults, "clear jit compile results");
 #endif
 }
 }  // namespace pijit

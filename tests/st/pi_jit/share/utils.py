@@ -3,7 +3,7 @@ import types
 from mindspore import Tensor
 from mindspore import dtype as mstype
 from mindspore import ops
-from mindspore._c_expression import get_code_extra
+from mindspore._c_expression import get_code_extra, clear_jit_compile_results
 from mindspore.common._pijit_context import PIJitCaptureContext
 
 
@@ -189,6 +189,11 @@ def assert_graph_compile_status(func, break_count=None, call_count=None, compile
     assert compile_count is None or jcr['compile_count_'] == compile_count, \
         f'compile_count expect: {compile_count}, actual: {jcr["compile_count_"]}'
     assert has_graph(jcr)
+
+
+def reset_func(func):
+    inner_func = getattr(func, "__wrapped__", func)
+    assert clear_jit_compile_results(inner_func)
 
 
 def pi_jit_with_config(function=None, jit_config=None, *, fullgraph=False):

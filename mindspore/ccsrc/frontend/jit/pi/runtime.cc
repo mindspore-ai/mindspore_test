@@ -1020,4 +1020,10 @@ void PIJitSetContext(py::args va, py::kwargs kw) {
   ctx->SetContext(va, kw);
 }
 
+bool ClearJitCompileResults(const py::handle &func) {
+  PyObject *code = func.ptr();
+  code = PyMethod_Check(code) ? PyMethod_GET_FUNCTION(code) : code;
+  code = PyFunction_Check(code) ? PyFunction_GET_CODE(code) : code;
+  return pijit::JitCompileResults::Clear(reinterpret_cast<PyCodeObject *>(code));
+}
 }  // namespace mindspore
