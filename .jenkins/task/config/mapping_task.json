@@ -313,6 +313,7 @@
     "DIR_ARRAY": [
       "version.txt",
       "build.sh",
+      "akg",
       "graphengine",
       "mstt",
       "CMakeLists.txt",
@@ -685,6 +686,8 @@
   "Compile_UT": {
     "DIR_ARRAY": [
       "build.sh",
+      "mindspore/core/CMakeLists.txt",
+      "akg",
       "graphengine",
       "mstt",
       "CMakeLists.txt",
@@ -815,6 +818,7 @@
     "DIR_ARRAY": [
       "build.sh",
       "mindspore/lite/build_lite.sh",
+      "akg",
       "graphengine",
       ".gitignore",
       "cmake",
@@ -915,6 +919,7 @@
     "DIR_ARRAY": [
       "build.sh",
       "mindspore/lite/build_lite.sh",
+      "akg",
       "graphengine",
       ".gitignore",
       "cmake",
