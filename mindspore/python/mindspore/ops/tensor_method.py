@@ -1916,3 +1916,6 @@ def raise_func(*args, **kwargs):
 
 def tensor_broadcast_to(input, shape):
     return F.broadcast_to(input, shape)
+
+def tensor_masked_scatter(input, mask, source):
+    return masked_scatter(input, mask, source)

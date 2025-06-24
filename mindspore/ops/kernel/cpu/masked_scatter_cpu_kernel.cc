@@ -18,7 +18,7 @@
 #include <algorithm>
 #include <utility>
 #include <functional>
-#include "mindspore/ops/infer/masked_scatter.h"
+#include "mindspore/ops/infer/ops_func_impl/masked_scatter.h"
 
 namespace mindspore {
 namespace kernel {

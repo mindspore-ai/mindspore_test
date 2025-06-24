@@ -14,19 +14,26 @@
 # ============================================================================
 
 import numpy as np
-import pytest
-from tests.mark_utils import arg_mark
-
 import mindspore as ms
 import mindspore.nn as nn
 from mindspore import Tensor
+import pytest
+from tests.mark_utils import arg_mark
+from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+
+
 
 
 class Net(nn.Cell):
-    def construct(self, x, y, z):
-        output = x.masked_scatter(y, z)
+    def construct(self, x, mask, updates):
+        output = x.masked_scatter(mask, updates)
         return output
 
+def masked_scatter_forward_func(x, mask, updates):
+    return Net()(x, mask, updates)
+
+def generate_random_input(shape, dtype):
+    return np.random.uniform(-1, 1, shape).astype(dtype)
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'],
           level_mark='level2',
@@ -47,3 +54,22 @@ def test_tensor_masked_scatter(mode):
     output = net(x, mask, tensor)
     expect_output = Tensor(np.asarray([5., 6., 3., 7.]), ms.float32)
     assert np.allclose(output.asnumpy(), expect_output.asnumpy())
+
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_ascend'],
+          level_mark='level2', card_mark='onecard', essential_mark='unessential')
+def test_tensor_masked_scatter_dynamic_shape():
+    """
+    Feature: dynamic shape forward, backward features.
+    Description: test sub_ forward with dynamic shape.
+    Expectation: expect correct result.
+    """
+    x = Tensor(np.array([1., 2., 3., 4.]), ms.float32)
+    mask = Tensor(np.array([True, True, False, True]), ms.bool_)
+    tensor = Tensor(np.array([5., 6., 7.]), ms.float32)
+
+    x2 = ms.Tensor(generate_random_input((3, 4, 5), np.float32))
+    mask2 = Tensor(generate_random_input((3, 4, 5), np.float32) > 0, ms.bool_)
+    tensor2 = ms.Tensor(generate_random_input((3, 4, 5), np.float32))
+
+    TEST_OP(masked_scatter_forward_func, [[x, mask, tensor], [x2, mask2, tensor2]],
+            'masked_scatter', disable_mode=[])
