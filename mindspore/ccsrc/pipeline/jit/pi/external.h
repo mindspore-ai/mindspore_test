@@ -28,6 +28,7 @@ py::object get_code_extra(const py::object &);
 void update_pijit_default_config(const py::kwargs &conf);
 void PIJitSetContext(py::args, py::kwargs);
 size_t FunctionId(const py::object &callable);
+bool ClearJitCompileResults(const py::handle &func);
 }  // namespace mindspore
 
 #endif  // MINDSPORE_PI_JIT_EXTERNAL_H
