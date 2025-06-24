@@ -26,7 +26,7 @@ namespace irpass {
 
 void VirtualViewGradInsert(const FuncGraphPtr &root, const opt::OptimizerPtr &opt);
 void RemoveRedundantVirtualViewGrad(const FuncGraphPtr &root, const opt::OptimizerPtr &opt);
-
+bool PreprocessForVirtualViewGradInsert(const FuncGraphPtr &root, const opt::OptimizerPtr &opt);
 // {prim::kPrimVirtualViewGrad, X, Y, ..., U} -> X
 class VirtualViewGradEliminater : public OptimizerCaller {
  public:

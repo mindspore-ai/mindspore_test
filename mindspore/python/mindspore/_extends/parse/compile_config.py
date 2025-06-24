@@ -366,10 +366,12 @@ JIT_ENABLE_AUGASSIGN_INPLACE = '0'
 Name: ENABLE_VIEW_INPLACE_GRAD_NEW_METHOD
 Function: Whether enable new method for view inplace grad
 Value Range:
-    1: Enable
-    Default: Disable
+    0: Choose old or new scheme based on specific control flow scenarios.
+    1: Choose old scheme.
+    2: Choose new scheme.
+    Default: 0
 """
-ENABLE_VIEW_INPLACE_GRAD_NEW_METHOD = ''
+ENABLE_VIEW_INPLACE_GRAD_NEW_METHOD = '0'
 
 __all__ = [
     "COMPILE_PROFILE",

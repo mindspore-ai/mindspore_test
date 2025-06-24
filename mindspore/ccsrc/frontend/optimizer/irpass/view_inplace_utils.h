@@ -24,9 +24,10 @@
 namespace mindspore {
 namespace opt {
 namespace irpass {
-
+bool IsViewOutput(const AnfNodePtr &node);
 std::pair<CNodePtr, bool> IsCreatedByViewOp(const AnfNodePtr &node);
-
+bool IsInplaceNode(const AnfNodePtr &node);
+bool IsViewNode(const AnfNodePtr &node);
 }  // namespace irpass
 }  // namespace opt
 }  // namespace mindspore

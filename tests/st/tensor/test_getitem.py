@@ -1,4 +1,4 @@
-# Copyright 2024 Huawei Technologies Co., Ltd
+# Copyright 2024-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -122,7 +122,7 @@ def test_getitem(capture_mode):
     Description: Verify the result of tensor getitem
     Expectation: success
     """
-    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
+
     if capture_mode is not None:
         os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
 
@@ -208,7 +208,7 @@ def test_getitem2(capture_mode):
     Description: Verify the result of tensor getitem
     Expectation: success
     """
-    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
+
     if capture_mode is not None:
         os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
 
@@ -233,7 +233,7 @@ def test_getitem_with_ellipsis(capture_mode):
     Description: Verify the result of tensor getitem with ellipsis
     Expectation: success
     """
-    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
+
     if capture_mode is not None:
         os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
 
@@ -301,7 +301,7 @@ def test_getitem_grad_index_negative(capture_mode):
     Description: Verify the result of tensor getitem grad with negative index
     Expectation: success
     """
-    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
+
     if capture_mode is not None:
         os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
 
@@ -320,7 +320,7 @@ def test_getitem_grad(capture_mode):
     Description: Verify the result of tensor getitem grad
     Expectation: success
     """
-    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
+
     if capture_mode is not None:
         os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
 
@@ -426,7 +426,6 @@ def test_getitem_exception(mode, capture_mode):
     """
     ms.set_context(jit_config={"jit_level": "O0"})
     os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
-    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
     np_x = np.arange(2 * 3 * 4).reshape((2, 3, 4)).astype(np.float32)
     ms_x = Tensor(np_x)
 
@@ -486,7 +485,6 @@ def test_getitem_mutable_sequence_index():
     Expectation: success
     """
     os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
-    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
     np_x = np.arange(3 * 3 * 2).reshape((3, 3, 2))
     ms_x = Tensor(np_x)
     index = mutable([2, 1, 0])
@@ -519,7 +517,6 @@ def test_getitem_tensor_in_list_index():
     Expectation: success
     """
     os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
-    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
     np_x = np.arange(3 * 3 * 2).reshape((3, 3, 2))
     ms_x = Tensor(np_x)
     index = Tensor(2)

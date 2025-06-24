@@ -19,15 +19,7 @@ from mindspore import ops, Tensor
 from mindspore.ops.auto_generate.gen_ops_prim import select_ext_view_op, InplaceMul
 from mindspore.ops.auto_generate.gen_ops_def import inplace_add_ext_op
 from mindspore.ops.functional import grad
-from mindspore._extends.parse import compile_config
 from tests.mark_utils import arg_mark
-
-
-@pytest.fixture(scope="module", autouse=True)
-def setup_teardown():
-    compile_config.ENABLE_VIEW_INPLACE_GRAD_NEW_METHOD = "1"
-    yield
-    compile_config.ENABLE_VIEW_INPLACE_GRAD_NEW_METHOD = ""
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -210,7 +202,6 @@ def test_scene3_case2():
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.skip(reason="Unsupported now, need find actual view op")
 def test_scene3_case3():
     """
     Feature: Support tensor inplace view gradient.
