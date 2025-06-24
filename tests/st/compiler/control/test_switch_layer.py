@@ -21,6 +21,7 @@ from mindspore.common import dtype as mstype
 from mindspore.ops.composite import GradOperation
 from mindspore.ops import operations as P
 
+context.set_context(jit_config={"jit_level": "O0"})
 
 class Grad(nn.Cell):
     def __init__(self, net):

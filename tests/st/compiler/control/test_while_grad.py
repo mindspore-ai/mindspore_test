@@ -17,10 +17,11 @@ import numpy as np
 from mindspore.ops import composite as C
 from mindspore.ops import functional as F
 from mindspore import Parameter
-from mindspore import Tensor
+from mindspore import Tensor, context
 import mindspore.common.dtype as mstype
 import mindspore.nn as nn
 
+context.set_context(jit_config={"jit_level": "O0"})
 
 class Net(nn.Cell):
     def construct(self, x, y):

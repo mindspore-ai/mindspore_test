@@ -24,6 +24,7 @@ from mindspore.common.tensor import Tensor
 from mindspore.common.parameter import Parameter
 from mindspore.common.initializer import initializer
 
+ms.set_context(jit_config={"jit_level": "O0"})
 
 class ControlSimpleIf(nn.Cell):
     def __init__(self):
@@ -334,7 +335,7 @@ def test_mixed_while_if():
     assert np.allclose(expect, output.asnumpy(), 0.0001, 0.0001)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_and_or_operation():
     """
     Feature: Control flow
@@ -356,7 +357,7 @@ def test_and_or_operation():
     net = NotOperation()
     output = net(Tensor(x))
     expect = not np.sum(x)
-    assert np.allclose(expect, output.asnumpy(), 0.0001, 0.0001)
+    assert output == expect
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')

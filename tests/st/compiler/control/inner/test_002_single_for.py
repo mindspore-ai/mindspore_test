@@ -23,6 +23,7 @@ from mindspore.ops import operations as P
 from mindspore.ops import functional as F
 from mindspore.common import dtype as mstype
 
+context.set_context(jit_config={"jit_level": "O0"})
 grad_all = C.GradOperation(get_all=True)
 
 

@@ -22,6 +22,9 @@ from mindspore.common.tensor import Tensor
 from mindspore.common import dtype as mstype
 from mindspore.train.serialization import export, load
 
+context.set_context(jit_config={"jit_level": "O0"})
+
+
 ZERO = Tensor([0], mstype.float32)
 ONE = Tensor([1], mstype.float32)
 

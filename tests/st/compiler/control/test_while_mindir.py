@@ -20,6 +20,7 @@ from mindspore import context, jit
 from mindspore.common.tensor import Tensor
 from mindspore.train.serialization import export, load
 
+context.set_context(jit_config={"jit_level": "O0"})
 
 class SingleWhileNet(nn.Cell):
     def construct(self, x, y):
