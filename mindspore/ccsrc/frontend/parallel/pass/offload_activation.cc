@@ -100,8 +100,8 @@ void OffloadActivationOptimizer::AddOffloadForCommUser(const FuncGraphPtr &fw_gr
         continue;
       }
       user_prim->AddAttr(kAttrOffload, MakeValue(true));
-      if (fw_cnode->HasAttr(kAttrBackwardPrefetch)) {
-        user_prim->AddAttr(kAttrBackwardPrefetch, fw_cnode->GetAttr(kAttrBackwardPrefetch));
+      if (fw_primitive->HasAttr(kAttrBackwardPrefetch)) {
+        user_prim->AddAttr(kAttrBackwardPrefetch, fw_primitive->GetAttr(kAttrBackwardPrefetch));
       }
     }
   }

@@ -734,19 +734,21 @@ void TensorPybind::Offload(const TensorPtr &tensor, bool release) {
   if (release) {
     const auto &device_sync = tensor->device_address();
     if (device_sync == nullptr) {
+      MS_LOG(WARNING) << "Tensor without DeviceSync can not be offloaded.";
       return;
     }
     const auto &device_address = std::dynamic_pointer_cast<device::DeviceAddress>(device_sync);
     if (device_address == nullptr) {
+      MS_LOG(WARNING) << "Tensor without DeviceAddress can not be loaded.";
       return;
     }
     if (device_address->GetDeviceType() == device::DeviceType::kCPU) {
-      MS_LOG(INFO) << "Tensor with CPUDeviceAddress can not be offloaded.";
+      MS_LOG(WARNING) << "Tensor with CPUDeviceAddress can not be offloaded.";
       return;
     }
     if (device_address->GetPtr() == nullptr) {
-      MS_LOG(INFO) << "For Offload, this tensor's device_ptr is nullptr, it may have been offloaded or released by"
-                   << " the framework.";
+      MS_LOG(WARNING) << "For Offload, this tensor's device_ptr is nullptr, it may have been offloaded or released by"
+                      << " the framework.";
       return;
     }
     MS_LOG(INFO) << "Tensor Offload start, the tensor's device_address is : " << device_address.get()
@@ -764,16 +766,24 @@ void TensorPybind::Load(const Tensor &tensor) {
   py::gil_scoped_release gil_release;
   const auto &device_sync = tensor.device_address();
   if (device_sync == nullptr) {
-    MS_LOG(WARNING) << "Tensor has no DeviceSync, can not be loaded.";
+    MS_LOG(WARNING) << "Tensor without DeviceSync can not be loaded.";
     return;
   }
   const auto &device_address = std::dynamic_pointer_cast<device::DeviceAddress>(device_sync);
   if (device_address == nullptr) {
-    MS_LOG(WARNING) << "Tensor has no DeviceAddress, can not be loaded.";
+    MS_LOG(WARNING) << "Tensor without DeviceAddress can not be loaded.";
     return;
   }
-  if (tensor.data_c() == nullptr) {
-    MS_LOG(WARNING) << "Tensor has no cpu data, can not be loaded.";
+  if (device_address->GetDeviceType() == device::DeviceType::kCPU) {
+    MS_LOG(WARNING) << "Tensor with CPUDeviceAddress can not be offloaded.";
+    return;
+  }
+  if (tensor.data().const_data() == nullptr) {
+    MS_LOG(WARNING) << "Tensor without cpu data can not be loaded.";
+    return;
+  }
+  if (device_address->GetPtr() != nullptr) {
+    MS_LOG(WARNING) << "Tensor with device ptr can not be loaded.";
     return;
   }
   const auto device = device_address->device_name();
