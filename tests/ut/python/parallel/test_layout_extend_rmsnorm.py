@@ -67,7 +67,7 @@ class Net(nn.Cell):
         self.gamma = Parameter(x_gamma, "gamma")
 
     def construct(self, y):
-        out1, _, _ = self.rms_norm(y, self.gamma)
+        out1, _ = self.rms_norm(y, self.gamma)
         out2 = self.relu(out1)
         out = out1 + out2
         return out
