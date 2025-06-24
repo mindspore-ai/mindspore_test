@@ -1,4 +1,4 @@
-# Copyright 2020-2022 Huawei Technologies Co., Ltd
+# Copyright 2020-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,6 +13,8 @@
 # limitations under the License.
 # ==============================================================================
 import numpy as np
+import pytest
+
 import mindspore.dataset as ds
 import mindspore.dataset.vision as vision
 
@@ -598,6 +600,21 @@ def test_coco_case_exception():
         assert "map operation: [PyFunc] failed. The corresponding data file is" in str(e)
 
 
+def test_coco_with_generator():
+    """
+    Feature: CocoDataset
+    Description: Test iterating CocoDataset with GeneratorDataset
+    Expectation: No segmentation fault when an error occurs
+    """
+    coco_dataset = ds.CocoDataset("../data/dataset/testCOCO", annotation_file=ANNOTATION_FILE, task="Detection")
+    dataset = ds.GeneratorDataset(source=coco_dataset, column_names=["image", "bbox", "category_id", "iscrowd"])
+
+    with pytest.raises(RuntimeError) as error:
+        for _ in dataset.create_dict_iterator(output_numpy=True, num_epochs=1):
+            pass
+    assert "Failed to open file" in str(error.value)
+
+
 if __name__ == '__main__':
     test_coco_captioning()
     test_coco_detection()
@@ -611,3 +628,4 @@ if __name__ == '__main__':
     test_coco_case_2()
     test_coco_case_3()
     test_coco_case_exception()
+    test_coco_with_generator()
