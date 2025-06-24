@@ -72,33 +72,6 @@ void SetAclOpDebugOption() {
 }
 }  // namespace
 
-RunMode AscendDeviceContext::GetRunMode(const FuncGraphPtr &func_graph) const {
-  auto context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context);
-  if (common::AnfAlgo::IsDynamicShapeFuncGraph(func_graph)) {
-    if (AnfAlgo::GetBackend(func_graph) == kBackendGE) {
-      MS_LOG(INFO) << "set dynamic shape RunMode::kGraphMode";
-      return RunMode::kGraphMode;
-    }
-    MS_LOG(INFO) << "set dynamic shape RunMode::kKernelMode";
-    auto set_ctx = [&context](bool task_sink, bool is_multi_graph_sink, bool enable_loop_sink) {
-      context->set_param<bool>(MS_CTX_ENABLE_TASK_SINK, task_sink);
-      context->set_param<bool>(MS_CTX_IS_MULTI_GRAPH_SINK, is_multi_graph_sink);
-      context->set_param<bool>(MS_CTX_ENABLE_LOOP_SINK, enable_loop_sink);
-    };
-    set_ctx(false, false, false);
-    return RunMode::kKernelMode;
-  }
-
-  if (context->IsKByKExecutorMode()) {
-    MS_LOG(INFO) << "RunMode::kKernelMode, graph: " << func_graph->ToString();
-    return RunMode::kKernelMode;
-  } else {
-    MS_LOG(INFO) << "RunMode::kGraphMode, graph: " << func_graph->ToString();
-    return RunMode::kGraphMode;
-  }
-}
-
 void AscendDeviceContext::InitializeForAclop() const {
   if (initialized_aclop_) {
     return;
@@ -109,7 +82,9 @@ void AscendDeviceContext::InitializeForAclop() const {
     auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
     device::ResKey res_key{device::DeviceType::kAscend, device_id};
     auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-    res_manager->InitializeForGe();
+    auto ascend_res_manager = static_cast<AscendResManager *>(res_manager);
+    MS_EXCEPTION_IF_NULL(ascend_res_manager);
+    ascend_res_manager->InitializeForGe();
   }
   // should be called after ge initialize.
   SetAclOpDebugOption();
@@ -155,12 +130,8 @@ void AscendDeviceContext::Initialize() {
     InitializeForAclop();
   }
 
-  MS_EXCEPTION_IF_NULL(GetKernelExecutor(false));
-  MS_EXCEPTION_IF_NULL(GetKernelExecutor(true));
-  // DynamicKernelExecutor and KernenlExecutor should be equal for GE
-  MS_EXCEPTION_IF_CHECK_FAIL(GetKernelExecutor(true) == GetKernelExecutor(false),
-                             "GE dynamic KernelExecutor and KernenlExecutor is not Equal.");
-  GetKernelExecutor(false)->Initialize();
+  MS_EXCEPTION_IF_NULL(GetKernelExecutor());
+  GetKernelExecutor()->Initialize();
 
   InitDump();
   // open tsd
@@ -173,7 +144,10 @@ void AscendDeviceContext::Initialize() {
 }
 
 void AscendDeviceContext::Destroy() {
-  if (!IsNeedDestroy()) {
+  if (pid_ != GetCurrentPID()) {
+    // Check whether the device context needs to be released.
+    // The device context is copied by the dataset independent process, but does not need to be released
+    // in the dataset independent process.
     // The device context is copied from main process by fork
     MS_LOG(INFO) << "The device context is not initialized by current process, it doesn't need to be destroyed.";
     return;
@@ -219,24 +193,6 @@ std::string AscendDeviceContext::GetDeviceName(uint32_t) {
   const char *name = CALL_ASCEND_API(aclrtGetSocName);
   std::string device_name = (name == nullptr) ? "" : name;
   return device_name;
-}
-
-uint32_t AscendDeviceContext::GetExecuteTimeout() {
-  auto op_debug_conf = OpDebugConf::GetInstance();
-  MS_EXCEPTION_IF_NULL(op_debug_conf);
-  return op_debug_conf->execute_timeout();
-}
-
-std::string AscendDeviceContext::GetAoeJobType() {
-  auto op_tuning_conf = OpTuningConf::GetInstance();
-  MS_EXCEPTION_IF_NULL(op_tuning_conf);
-  return op_tuning_conf->aoe_job_type();
-}
-
-std::string AscendDeviceContext::GetPrecisionMode() {
-  auto op_precision_conf = OpPrecisionConf::GetInstance();
-  MS_EXCEPTION_IF_NULL(op_precision_conf);
-  return op_precision_conf->precision_mode();
 }
 
 AscendDeviceProperties AscendDeviceContext::GetDeviceProperties(uint32_t) {

@@ -18,6 +18,7 @@
 #include "runtime/device/device_address_utils.h"
 
 #include <algorithm>
+#include <functional>
 #include <string>
 #include <map>
 #include <vector>
@@ -1383,14 +1384,14 @@ device::DeviceAddressPtr DeviceAddressUtils::ConvertContiguousDeviceAddress(
   if (is_sync) {
     // ExecuteKernelTask sync, need to wait until all tasks in queue are complete.
     runtime::Pipeline::Get().WaitForward();
-    if (!device_context->GetKernelExecutor(false)->ExecuteKernelTask(
+    if (!device_context->GetKernelExecutor()->ExecuteKernelTask(
           runtime::KernelTaskType::kCONTIGUOUS_TASK, {old_device_address}, {new_device_address}, stream_id)) {
       MS_LOG(EXCEPTION) << "ExecuteKernelTask failed, task_type:" << runtime::KernelTaskType::kCONTIGUOUS_TASK;
     }
     runtime::Pipeline::Get().WaitForward();
   } else {
     auto async_task = [device_context, old_device_address, new_device_address, stream_id]() {
-      if (!device_context->GetKernelExecutor(false)->ExecuteKernelTask(
+      if (!device_context->GetKernelExecutor()->ExecuteKernelTask(
             runtime::KernelTaskType::kCONTIGUOUS_TASK, {old_device_address}, {new_device_address}, stream_id)) {
         MS_LOG(EXCEPTION) << "ExecuteKernelTask failed, task_type:" << runtime::KernelTaskType::kCONTIGUOUS_TASK;
       }

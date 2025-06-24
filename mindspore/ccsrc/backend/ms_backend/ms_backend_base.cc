@@ -872,9 +872,8 @@ void MSBackendBase::CompileGraphFromSegment(const GraphSegmentPtr &segment,
     auto ms_context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(ms_context);
     auto ms_execution_mode = ms_context->get_param<int>(MS_CTX_EXECUTION_MODE);
-    GraphId graph_id =
-      graph_compiler_->CompileGraph(segment, std::make_pair(inputs, outputs), device_context, backend_jit_config,
-                                    device::RunMode::kKernelMode, ms_execution_mode == kPynativeMode);
+    GraphId graph_id = graph_compiler_->CompileGraph(segment, std::make_pair(inputs, outputs), device_context,
+                                                     backend_jit_config, ms_execution_mode == kPynativeMode);
     auto new_fg = graph_compiler_->Fetch(graph_id);
     MS_EXCEPTION_IF_NULL(new_fg);
     CacheFuncGraphWithKernelGraphId(segment->nodes_[0]->func_graph(), graph_id, device_context);
@@ -1220,9 +1219,8 @@ std::shared_ptr<GraphCompilerInfo> MSBackendBase::ConstructGraphCompilerInfo(
   }
   auto compile_func = [graph_compiler = this->graph_compiler_, backend_jit_config](
                         const GraphSegmentPtr &segment, const std::pair<AnfNodePtrList, AnfNodePtrList> &io_nodes,
-                        const DeviceContext *device_context, device::RunMode run_mode) -> KernelGraphPtr {
-    auto graph_id =
-      graph_compiler->CompileGraph(segment, io_nodes, device_context, backend_jit_config, run_mode, false);
+                        const DeviceContext *device_context) -> KernelGraphPtr {
+    auto graph_id = graph_compiler->CompileGraph(segment, io_nodes, device_context, backend_jit_config, false);
     return graph_compiler->Fetch(graph_id);
   };
 
@@ -1317,7 +1315,7 @@ void MSBackendBase::WaitMultiStream(const GraphCompilerInfo &graph_compiler_info
     MS_EXCEPTION_IF_NULL(device_context);
     if (device_context->device_res_manager_->single_op_multi_stream_enable()) {
       device::HalResManager::GetInstance()
-        .GetMultiStreamController(device_context->DeviceName())
+        .GetMultiStreamController(device_context->device_context_key().device_name_)
         ->WaitMultiStream(kDefaultStreamIndex);
     }
   }
@@ -1833,7 +1831,9 @@ BackendGraphId MSBackendBase::Build(const FuncGraphPtr &func_graph, const Backen
 
   for (const auto &graph_id_to_context : graph_id_to_device_context_) {
     auto context = graph_id_to_context.second;
-    device::HalResManager::GetInstance().GetMultiStreamController(context->DeviceName())->Refresh();
+    device::HalResManager::GetInstance()
+      .GetMultiStreamController(context->device_context_key().device_name_)
+      ->Refresh();
   }
 
   PROF_END(compile_backend_graph);

@@ -36,6 +36,7 @@
 #include "backend/ge_backend/executor/ge_memory_allocator.h"
 #include "backend/ge_backend/executor/ge_utils.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
+#include "plugin/res_manager/ascend/ascend_res_manager.h"
 #include "plugin/res_manager/ascend/mem_manager/ascend_memory_adapter.h"
 #include "plugin/res_manager/ascend/ascend_device_address/ascend_device_address.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
@@ -1381,7 +1382,9 @@ void GeGraphExecutor::Initialize() {
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   device::ResKey res_key{device::DeviceType::kAscend, device_id};
   auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-  res_manager->InitializeForGe();
+  auto ascend_res_manager = static_cast<device::ascend::AscendResManager *>(res_manager);
+  MS_EXCEPTION_IF_NULL(ascend_res_manager);
+  ascend_res_manager->InitializeForGe();
 
   CreateSessionAndGraphRunner();
   auto graph_runner = backend::ge_backend::GetGraphRunner();

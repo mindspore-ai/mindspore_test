@@ -406,8 +406,7 @@ KernelGraphPtr AnyTypeKernelActor::CompileRealKernelGraph(OpContext<KernelTensor
     AnfNodePtrList outputs{return_cnode->input(1)};
     auto io_nodes = std::make_pair(inputs, outputs);
     device_contexts()[0]->device_res_manager_->BindDeviceToCurrentThread(false);
-    auto new_graph =
-      compile_func_(BuildSegmentByGraph(model_graph_), io_nodes, device_contexts()[0], device::RunMode::kKernelMode);
+    auto new_graph = compile_func_(BuildSegmentByGraph(model_graph_), io_nodes, device_contexts()[0]);
     MS_EXCEPTION_IF_NULL(new_graph);
     MS_LOG(DEBUG) << "Compile graph:" << new_graph->ToString() << " for:" << model_graph_->ToString();
     for (const auto &node_pair : new_graph->front_backend_anf_map()) {

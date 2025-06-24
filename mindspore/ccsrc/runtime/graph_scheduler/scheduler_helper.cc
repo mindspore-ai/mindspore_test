@@ -466,7 +466,7 @@ bool SchedulerHelper::IsIgnoredInputAddress(AbstractActor *const to_actor, size_
   }
 
   MS_EXCEPTION_IF_NULL(to_actor->device_contexts_[0]);
-  auto kernel_executor = to_actor->device_contexts_[0]->GetKernelExecutor(false);
+  auto kernel_executor = to_actor->device_contexts_[0]->GetKernelExecutor();
   MS_EXCEPTION_IF_NULL(kernel_executor);
   if (kernel_executor->IsLaunchIgnoredInputAddressIdx(to_kernel, to_input_index)) {
     MS_LOG(INFO) << "Ignore the input address for kernel: " << to_kernel->fullname_with_scope()
@@ -493,7 +493,7 @@ bool SchedulerHelper::IsIgnoredInputAddressV2(KernelRunner *const to_actor, size
   }
 
   MS_EXCEPTION_IF_NULL(to_actor->device_contexts_[0]);
-  auto kernel_executor = to_actor->device_contexts_[0]->GetKernelExecutor(false);
+  auto kernel_executor = to_actor->device_contexts_[0]->GetKernelExecutor();
   MS_EXCEPTION_IF_NULL(kernel_executor);
   if (kernel_executor->IsLaunchIgnoredInputAddressIdx(to_kernel, to_input_index)) {
     MS_LOG(INFO) << "Ignore the input address for kernel: " << to_kernel->fullname_with_scope()
@@ -509,7 +509,7 @@ size_t SchedulerHelper::GetIgnoredInputAddressCount(const AnfNodePtr &node, cons
   MS_EXCEPTION_IF_NULL(device_context);
   size_t input_num = common::AnfAlgo::GetInputTensorNum(node);
 
-  auto kernel_executor = device_context->GetKernelExecutor(false);
+  auto kernel_executor = device_context->GetKernelExecutor();
   MS_EXCEPTION_IF_NULL(kernel_executor);
   std::vector<size_t> ignored_input_addresses = kernel_executor->GetLaunchIgnoredInputAddressIdx(node);
   if (ignored_input_addresses.empty()) {

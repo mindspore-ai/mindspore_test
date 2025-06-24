@@ -46,7 +46,7 @@ class StatisticKernel {
     MS_EXCEPTION_IF_NULL(device_context);
     MS_EXCEPTION_IF_NULL(device_context_->device_res_manager_);
     MS_VLOG(VL_DUMP) << "Statistic kernel mod " << kernel_name_ << " construct.";
-    kernel_mod_ = device_context_->GetKernelExecutor(false)->CreateKernelMod(kernel_name);
+    kernel_mod_ = device_context_->GetKernelExecutor()->CreateKernelMod(kernel_name);
     MS_EXCEPTION_IF_NULL(kernel_mod_);
   }
   std::vector<KernelTensorPtr> LaunchKernelAsync(KernelTensor *input, const uint32_t stream_id);

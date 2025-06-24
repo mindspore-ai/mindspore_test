@@ -39,7 +39,8 @@ int StressDetect() {
   auto device_ctx = GetDeviceCtx();
   MS_EXCEPTION_IF_NULL(device_ctx);
   runtime::Pipeline::Get().WaitAll();
-  auto &controller = device::HalResManager::GetInstance().GetMultiStreamController(device_ctx->DeviceName());
+  auto &controller =
+    device::HalResManager::GetInstance().GetMultiStreamController(device_ctx->device_context_key().device_name_);
   controller->Refresh();
   (void)controller->SyncAllStreams();
   MS_EXCEPTION_IF_NULL(device_ctx->device_res_manager_);

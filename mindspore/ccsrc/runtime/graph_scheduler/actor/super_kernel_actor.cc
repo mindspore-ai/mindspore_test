@@ -1234,29 +1234,11 @@ void SuperKernelActor::OnMemoryAllocFinish(OpContext<KernelTensor> *const contex
   }
 
   try {
-    const std::vector<tensor::TensorPtr> inputs;
-    std::vector<tensor::TensorPtr> outputs;
-    const std::map<string, string> compile_options;
     if (device_contexts_.empty() || device_contexts_[0] == nullptr) {
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(GraphExecutionStrategy::kPipeline, (*context),
                                                     "Invalid device context for super kernel actor:" + GetAID().Name());
     }
-    MS_EXCEPTION_IF_NULL(device_contexts_[0]->graph_executor_);
-    if (!IsSkippedLaunch(nullptr, graph_)) {
-      ProfilerRecorder profiler(ProfilerModule::kKernel, ProfilerEvent::kGraphLaunch, GetAID().Name());
-      MS_VLOG(VL_RUNTIME_FRAMEWORK) << "Start run graph:" << graph_->ToString();
-      auto ret = device_contexts_[0]->graph_executor_->RunGraph(graph_, inputs, &outputs, compile_options);
-      if (!ret) {
-        std::string error_info = "Launch graph failed, graph id: " + std::to_string(graph_->graph_id());
-        SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
-      }
-      MS_VLOG(VL_RUNTIME_FRAMEWORK) << "End run graph:" << graph_->ToString();
-    } else if (IsNeedProfilieMemoryLog()) {
-      auto memory_size = device_contexts_[0]->graph_executor_->GetGraphFeatureMemory(graph_);
-      MS_LOG(WARNING) << "Need Profile Memory, graph: " << graph_->ToString() << ", feature memory: " << memory_size;
-      MS_LOG(WARNING) << "Need Profile Memory, max used static memory: "
-                      << device_contexts_[0]->device_res_manager_->GetMaxUsedMemorySize();
-    }
+    MS_LOG(EXCEPTION) << "Launch graph error.";
   } catch (const std::exception &e) {
     MsException::Instance().SetException();
     std::string error_info = "Launch graph exception, graph id: " + std::to_string(graph_->graph_id());

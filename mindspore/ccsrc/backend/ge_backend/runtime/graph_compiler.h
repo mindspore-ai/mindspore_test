@@ -134,11 +134,10 @@ class GraphCompiler {
   // Construct kernel graph from anf nodes list and compile kernel graph in Graph mode,
   // the detailed implementation of compiling graph is in 'CompileGraphImpl'.
   GraphId CompileGraph(const GraphSegmentPtr &segment, const std::pair<AnfNodePtrList, AnfNodePtrList> &io_nodes,
-                       const backend::BackendJitConfig &backend_jit_config, device::RunMode run_mode,
-                       bool run_in_pynative = false);
+                       const backend::BackendJitConfig &backend_jit_config, bool run_in_pynative = false);
 
   GraphId CompileGraph(const KernelGraphPtr &kernel_graph, const std::pair<AnfNodePtrList, AnfNodePtrList> &io_nodes,
-                       device::RunMode run_mode, bool run_in_pynative);
+                       bool run_in_pynative);
 
   // Get graph by graph id, if not exist return nullptr, used in Graph mode.
   KernelGraphPtr Fetch(GraphId graph_id) const;

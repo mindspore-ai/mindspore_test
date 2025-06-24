@@ -103,12 +103,13 @@ void StorageBase::InplaceCopy(const StorageBasePtr &src, bool non_blocking) {
       dst_address = CreateTempDeviceAddress(dst_address, device_context);
       src_address = CreateTempDeviceAddress(src_address, device_context);
     }
-    if (!device_context->GetKernelExecutor(false)->ExecuteKernelTask(
+    if (!device_context->GetKernelExecutor()->ExecuteKernelTask(
           runtime::KernelTaskType::kCOPY_TASK, {dst_address, src_address}, {}, device_data_->stream_id())) {
       MS_LOG(EXCEPTION) << "ExecuteKernelTask failed, task_type: " << runtime::KernelTaskType::kCOPY_TASK;
     }
     runtime::Pipeline::Get().WaitForward();
-    auto &controller = device::HalResManager::GetInstance().GetMultiStreamController(device_context->DeviceName());
+    auto &controller =
+      device::HalResManager::GetInstance().GetMultiStreamController(device_context->device_context_key().device_name_);
     controller->Refresh();
     (void)controller->SyncStream(device_data_->stream_id());
     return;

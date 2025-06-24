@@ -129,8 +129,8 @@ void GPUDeviceContext::Initialize() {
   }
 
   device_res_manager_->Initialize();
-  MS_EXCEPTION_IF_NULL(GetKernelExecutor(false));
-  GetKernelExecutor(false)->Initialize();
+  MS_EXCEPTION_IF_NULL(GetKernelExecutor());
+  GetKernelExecutor()->Initialize();
   // Dump json config file if dump is enabled.
   uint32_t rank_id = 0;
   if (distributed::collective::CollectiveManager::instance()->need_init()) {
@@ -152,8 +152,8 @@ bool GPUDeviceResManager::InitDevice() { return gpu_res_manager_->InitDevice(); 
 void GPUDeviceResManager::Destroy() { gpu_res_manager_->Destroy(); }
 
 void GPUDeviceContext::Destroy() {
-  MS_EXCEPTION_IF_NULL(GetKernelExecutor(false));
-  GetKernelExecutor(false)->Destroy();
+  MS_EXCEPTION_IF_NULL(GetKernelExecutor());
+  GetKernelExecutor()->Destroy();
   device_res_manager_->Destroy();
   initialized_ = false;
 }

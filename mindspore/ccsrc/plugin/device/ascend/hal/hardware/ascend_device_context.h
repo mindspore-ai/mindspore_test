@@ -51,17 +51,11 @@ class AscendDeviceContext : public DeviceInterface<GeKernelExecutor, AscendDevic
 
   void Destroy() override;
 
-  RunMode GetRunMode(const FuncGraphPtr &func_graph) const override;
-
   DeprecatedInterface *GetDeprecatedInterface() override;
 
   static uint32_t GetDeviceCount();
   static std::string GetDeviceName(uint32_t);
   static AscendDeviceProperties GetDeviceProperties(uint32_t);
-
-  uint32_t GetExecuteTimeout() override;
-  std::string GetAoeJobType() override;
-  std::string GetPrecisionMode() override;
 
  private:
   DISABLE_COPY_AND_ASSIGN(AscendDeviceContext);

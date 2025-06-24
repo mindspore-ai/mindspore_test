@@ -65,7 +65,7 @@ std::vector<size_t> GetIgnoredIndexesForInput(const CNodePtr &cnode, const Devic
   auto kernel_mod = AnfAlgo::GetKernelMod(cnode);
   if (kernel_mod != nullptr) {
     MS_EXCEPTION_IF_NULL(device_context);
-    auto kernel_executor = device_context->GetKernelExecutor(false);
+    auto kernel_executor = device_context->GetKernelExecutor();
     MS_EXCEPTION_IF_NULL(kernel_executor);
     ignored_indexes = kernel_executor->GetLaunchIgnoredInputAddressIdx(cnode);
   }
@@ -237,7 +237,7 @@ void LoadInputs(const CNodePtr &cnode, std::vector<KernelTensor *> kernel_tensor
   std::vector<size_t> ignored_address;
   if (kernel_mod != nullptr) {
     MS_EXCEPTION_IF_NULL(device_context);
-    auto kernel_executor = device_context->GetKernelExecutor(false);
+    auto kernel_executor = device_context->GetKernelExecutor();
     MS_EXCEPTION_IF_NULL(kernel_executor);
     ignored_address = kernel_executor->GetLaunchIgnoredInputAddressIdx(cnode);
   }
@@ -759,7 +759,7 @@ void LaunchDeviceStatCallback(std::vector<TensorInfoForDump> *tensor_info_vec_pt
   std::vector<TensorInfoForDump> &tensor_info_vec = *tensor_info_vec_ptr;
   auto enable_stream_control = DumpJsonParser::GetInstance().IsDeviceStatHighPrecisionMode();
   auto &multi_stream_controller =
-    device::HalResManager::GetInstance().GetMultiStreamController(device_context->DeviceName());
+    device::HalResManager::GetInstance().GetMultiStreamController(device_context->device_context_key().device_name_);
   if (enable_stream_control && stream_id != kDefaultStreamIndex) {
     multi_stream_controller->DispatchRecordWaitEvent(stream_id, kDefaultStreamIndex);
   }

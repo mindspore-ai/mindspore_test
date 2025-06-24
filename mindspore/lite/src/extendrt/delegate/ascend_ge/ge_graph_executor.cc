@@ -42,6 +42,7 @@
 #include "src/extendrt/utils/tensor_utils.h"
 #include "external/ge_common/ge_api_error_codes.h"
 #include "src/extendrt/delegate/ascend_ge/aoe_api_tune_process.h"
+#include "extendrt/session/lite_graph_executor.h"
 #include "extendrt/delegate/ascend_ge/ge_utils.h"
 #include "extendrt/delegate/ascend_ge/ge_dynamic_utils.h"
 #include "mindspore/ops/op_def/lite_ops.h"
@@ -2071,8 +2072,8 @@ std::shared_ptr<GeSessionContext> GeSessionManager::GetGeSessionContext(int64_t 
   return nullptr;
 }
 
-static std::shared_ptr<device::GraphExecutor> GeGraphExecutorCreator(const std::shared_ptr<Context> &ctx,
-                                                                     const ConfigInfos &config_infos) {
+static std::shared_ptr<LiteGraphExecutor> GeGraphExecutorCreator(const std::shared_ptr<Context> &ctx,
+                                                                 const ConfigInfos &config_infos) {
   auto ge_executor = std::make_shared<GeGraphExecutor>(ctx, config_infos);
   if (ge_executor == nullptr || !ge_executor->Init()) {
     MS_LOG(ERROR) << "Failed to init GeGraphExecutor";

@@ -170,8 +170,8 @@ void DeviceSparseEmbeddingOperation::BuildEmbeddingCacheLookupKernel() {
 
   // 3. Kernel build process.
   MS_EXCEPTION_IF_NULL(device_context_);
-  MS_EXCEPTION_IF_NULL(device_context_->GetKernelExecutor(false));
-  device_context_->GetKernelExecutor(false)->CreateKernel({embedding_cache_lookup_node_});
+  MS_EXCEPTION_IF_NULL(device_context_->GetKernelExecutor());
+  device_context_->GetKernelExecutor()->CreateKernel({embedding_cache_lookup_node_});
   AnfAlgo::SetStreamId(stream_id_, embedding_cache_lookup_node_.get());
 }
 
@@ -198,8 +198,8 @@ void DeviceSparseEmbeddingOperation::BuildEmbeddingCacheUpdateKernel() {
 
   // 3. Kernel build process.
   MS_EXCEPTION_IF_NULL(device_context_);
-  MS_EXCEPTION_IF_NULL(device_context_->GetKernelExecutor(false));
-  device_context_->GetKernelExecutor(false)->CreateKernel({embedding_cache_update_node_});
+  MS_EXCEPTION_IF_NULL(device_context_->GetKernelExecutor());
+  device_context_->GetKernelExecutor()->CreateKernel({embedding_cache_update_node_});
   AnfAlgo::SetStreamId(stream_id_, embedding_cache_update_node_.get());
 }
 
@@ -226,8 +226,8 @@ void DeviceSparseEmbeddingOperation::BuildEmbeddingCacheEraseKernel() {
 
   // 3. Kernel build process.
   MS_EXCEPTION_IF_NULL(device_context_);
-  MS_EXCEPTION_IF_NULL(device_context_->GetKernelExecutor(false));
-  device_context_->GetKernelExecutor(false)->CreateKernel({embedding_cache_erase_node_});
+  MS_EXCEPTION_IF_NULL(device_context_->GetKernelExecutor());
+  device_context_->GetKernelExecutor()->CreateKernel({embedding_cache_erase_node_});
   AnfAlgo::SetStreamId(stream_id_, embedding_cache_erase_node_.get());
 }
 

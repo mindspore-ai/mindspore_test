@@ -138,8 +138,6 @@ class CPUDeviceContext : public DeviceInterface<CPUKernelExecutor, CPUDeviceResM
 
   void Destroy() override;
 
-  RunMode GetRunMode(const FuncGraphPtr &func_graph) const override { return RunMode::kKernelMode; }
-
  private:
   DISABLE_COPY_AND_ASSIGN(CPUDeviceContext);
 };

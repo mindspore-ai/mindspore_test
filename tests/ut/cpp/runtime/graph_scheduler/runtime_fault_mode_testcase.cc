@@ -607,7 +607,6 @@ TEST_F(RuntimeFaultModeTest, OutofMemoryByMemoryLeak) {
   MS_REGISTER_DEVICE(device_name, TestDeviceContext);
   auto device_context = std::make_shared<TestDeviceContext>(device_context_key);
   MS_EXCEPTION_IF_NULL(device_context);
-  MS_EXCEPTION_IF_NULL(device_context->graph_executor_);
   auto device_tensor = device_context->device_res_manager_->CreateDeviceAddress(
     nullptr, 1024, shp, Format::DEFAULT_FORMAT, TypeId::kNumberTypeUInt16, "CPU", 0, 0);
   auto kernel_tensor = std::make_shared<KernelTensor>(device_tensor);
@@ -615,7 +614,9 @@ TEST_F(RuntimeFaultModeTest, OutofMemoryByMemoryLeak) {
 
   std::vector<tensor::TensorPtr> tensors;
   std::map<string, string> compile_options;
-  device_context->graph_executor_->RunGraph(kernel_graph, tensors, &tensors, compile_options);
+  auto graph_executor = std::make_shared<TestGraphExecutor>();
+  MS_EXCEPTION_IF_NULL(graph_executor);
+  graph_executor->RunGraph(kernel_graph, tensors, &tensors, compile_options);
 
   AID aid;
   auto &memory_manager_actor = MemoryManagerActor::GetInstance();

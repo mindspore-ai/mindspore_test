@@ -115,8 +115,7 @@ void ResetNodeId(const std::vector<KernelGraphPtr> &graphs) {
 
 GraphId GraphCompiler::CompileGraph(const GraphSegmentPtr &segment,
                                     const std::pair<AnfNodePtrList, AnfNodePtrList> &io_nodes,
-                                    const backend::BackendJitConfig &backend_jit_config, device::RunMode run_mode,
-                                    bool run_in_pynative) {
+                                    const backend::BackendJitConfig &backend_jit_config, bool run_in_pynative) {
   MS_EXCEPTION_IF_NULL(segment);
   MS_LOG(INFO) << "Status record: start compile graph.";
   auto nodes = segment->nodes_;
@@ -131,12 +130,11 @@ GraphId GraphCompiler::CompileGraph(const GraphSegmentPtr &segment,
   (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageConstructKernelGraph, start_time,
                                   profiler::GetClockSyscnt(), 1);
   SetGraphDependency(kernel_graph, segment);
-  return CompileGraph(kernel_graph, io_nodes, run_mode, run_in_pynative);
+  return CompileGraph(kernel_graph, io_nodes, run_in_pynative);
 }
 
 GraphId GraphCompiler::CompileGraph(const KernelGraphPtr &kernel_graph,
-                                    const std::pair<AnfNodePtrList, AnfNodePtrList> &io_nodes, device::RunMode run_mode,
-                                    bool run_in_pynative) {
+                                    const std::pair<AnfNodePtrList, AnfNodePtrList> &io_nodes, bool run_in_pynative) {
   MS_EXCEPTION_IF_NULL(session_);
   MS_EXCEPTION_IF_NULL(kernel_graph);
 

@@ -215,7 +215,7 @@ void InsertEventForInput(uint32_t stream_id, const DeviceContext *device_context
     MS_EXCEPTION_IF_NULL(device_context);
     MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
     auto &multi_stream_controller =
-      device::HalResManager::GetInstance().GetMultiStreamController(device_context->DeviceName());
+      device::HalResManager::GetInstance().GetMultiStreamController(device_context->device_context_key().device_name_);
     MS_EXCEPTION_IF_NULL(multi_stream_controller);
     multi_stream_controller->DispatchRecordWaitEvent(stream_id, kDefaultStreamIndex);
   }
@@ -304,7 +304,7 @@ void KernelRunner::Init() {
 
   // Check whether the kernel has input node which is a computed depend kernel.
   MS_EXCEPTION_IF_NULL(device_contexts_[0]);
-  auto kernel_executor = device_contexts_[0]->GetKernelExecutor(false);
+  auto kernel_executor = device_contexts_[0]->GetKernelExecutor();
   MS_EXCEPTION_IF_NULL(kernel_executor);
   launch_ignored_inputs_ = kernel_executor->GetLaunchIgnoredInputAddressIdx(kernel_);
 
@@ -646,9 +646,9 @@ void KernelRunner::ConvertInputContiguous(OpContext<KernelTensor> *const context
       new_device_address->set_tensor_storage_info(nullptr);
       // Launch CopyInplace to make tensor contiguous.
       if (i >= depend_shape_input_list_.size() || !depend_shape_input_list_[i]) {
-        if (!device_contexts_[0]->GetKernelExecutor(false)->ExecuteKernelTask(runtime::KernelTaskType::kCONTIGUOUS_TASK,
-                                                                              {input_device_tensor},
-                                                                              {new_device_address.get()}, stream_id)) {
+        if (!device_contexts_[0]->GetKernelExecutor()->ExecuteKernelTask(runtime::KernelTaskType::kCONTIGUOUS_TASK,
+                                                                         {input_device_tensor},
+                                                                         {new_device_address.get()}, stream_id)) {
           MS_LOG(EXCEPTION) << "Graph mode executeKernelTask Contiguous failed.";
         }
         // Store the old tensor storage info , input device tensor and input kernel tensor.
@@ -1439,7 +1439,7 @@ bool KernelRunner::LaunchKernelWithDebug(OpContext<KernelTensor> *const context,
   }
   bool ret = true;
   if (!skip_launch) {
-    ret = device_contexts_[0]->GetKernelExecutor(false)->LaunchKernel(
+    ret = device_contexts_[0]->GetKernelExecutor()->LaunchKernel(
       kernel_, input_launch_tensors_, workspace_launch_tensors_, output_launch_tensors_, kernel_mod_, stream_);
   }
   MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "End launch kernel: " << kernel_->fullname_with_scope();
@@ -1512,8 +1512,8 @@ bool KernelRunner::LaunchKernel(OpContext<KernelTensor> *const context, bool is_
     return ret;
   }
 
-  auto &multi_stream_controller =
-    device::HalResManager::GetInstance().GetMultiStreamController(device_contexts_[0]->DeviceName());
+  auto &multi_stream_controller = device::HalResManager::GetInstance().GetMultiStreamController(
+    device_contexts_[0]->device_context_key().device_name_);
   bool ret = false;
   if (!ActorDispatcher::enable_async_launch_kernel()) {
     std::lock_guard<std::mutex> lock(multi_stream_controller->GetStreamMutex(kernel_info_->stream_id()));
@@ -1570,8 +1570,8 @@ bool KernelRunner::LaunchKernelHP(OpContext<KernelTensor> *const context, bool i
       ret = kernel_mod_->Launch(input_launch_tensors_, workspace_launch_tensors_, output_launch_tensors_, stream_);
     }
   } else {
-    auto &multi_stream_controller =
-      device::HalResManager::GetInstance().GetMultiStreamController(device_contexts_[0]->DeviceName());
+    auto &multi_stream_controller = device::HalResManager::GetInstance().GetMultiStreamController(
+      device_contexts_[0]->device_context_key().device_name_);
     if (!ActorDispatcher::enable_async_launch_kernel()) {
       std::lock_guard<std::mutex> lock(multi_stream_controller->GetStreamMutex(kernel_info_->stream_id()));
       ProcessMultiStreamBeforeKernelLaunch(context);
@@ -1599,7 +1599,7 @@ void KernelRunner::ProcessMultiStreamBeforeKernelLaunch(OpContext<KernelTensor> 
   auto stream_id = kernel_info_->stream_id();
   // Update output_kernel_tensors_ with task id on stream.
   auto &multi_stream_controller =
-    device::HalResManager::GetInstance().GetMultiStreamController(device_context->DeviceName());
+    device::HalResManager::GetInstance().GetMultiStreamController(device_context->device_context_key().device_name_);
   auto task_id_on_stream = multi_stream_controller->LaunchTaskIdOnStream(stream_id);
   // Adapter for mc2 kernel, need more process later.
   if (is_mc2_kernel_) {
@@ -1730,8 +1730,8 @@ void KernelRunner::ProcessMultiStreamAfterKernelLaunch(OpContext<KernelTensor> *
                     << ", addresses size : " << cross_stream_addresses_.size() << ".";
       // Record event on stream.
       auto device_context = device_contexts_[0];
-      auto &multi_stream_controller =
-        device::HalResManager::GetInstance().GetMultiStreamController(device_context->DeviceName());
+      auto &multi_stream_controller = device::HalResManager::GetInstance().GetMultiStreamController(
+        device_context->device_context_key().device_name_);
       multi_stream_controller->RecordEvent(*task_id_on_stream_, stream_id, cross_stream_addresses_);
     }
   }

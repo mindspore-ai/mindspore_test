@@ -85,22 +85,22 @@ class GeMessageManager {
   HashMap<std::string, GraphSummary> summarys;
 };
 
-class BACKEND_EXPORT GeGraphExecutor : public device::GraphExecutor {
+class BACKEND_EXPORT GeGraphExecutor {
  public:
-  ~GeGraphExecutor() override = default;
-  void Initialize() override;
-  void Finalize() override;
+  ~GeGraphExecutor() = default;
+  void Initialize();
+  void Finalize();
   void OptimizeBeforeCompileGraph(const KernelGraphPtr &graph);
-  bool CompileGraph(const FuncGraphPtr &graph, const std::map<string, string> &compile_options) override;
+  bool CompileGraph(const FuncGraphPtr &graph, const std::map<string, string> &compile_options);
   bool RunGraph(const FuncGraphPtr &graph, const std::vector<tensor::TensorPtr> &inputs,
-                std::vector<tensor::TensorPtr> *outputs, const std::map<string, string> &compile_options) override;
+                std::vector<tensor::TensorPtr> *outputs, const std::map<string, string> &compile_options);
 
   FuncGraphPtr BuildDFGraph(const FuncGraphPtr &anf_graph,
                             const std::map<std::string, std::shared_ptr<tensor::Tensor>> &init_inputs_map,
-                            bool export_air) override;
-  string ExportDFGraph(const std::string &file_name, const FuncGraphPtr &anf_graph, bool is_save_to_file) override;
-  size_t GetGraphFeatureMemory(const FuncGraphPtr &graph) const override;
-  void InitGraphInfo(const FuncGraphPtr &graph) override;
+                            bool export_air);
+  string ExportDFGraph(const std::string &file_name, const FuncGraphPtr &anf_graph, bool is_save_to_file);
+  size_t GetGraphFeatureMemory(const FuncGraphPtr &graph) const;
+  void InitGraphInfo(const FuncGraphPtr &graph);
 
   // For run as kernelmod.
   std::vector<std::pair<uint32_t, uint32_t>> GetGraphRefIndexes(const KernelGraphPtr &graph) const;
@@ -126,7 +126,7 @@ class BACKEND_EXPORT GeGraphExecutor : public device::GraphExecutor {
                                                bool is_need_alloc_mem) const;
   void AllocInputMemory(const device::DeviceAddressPtr &input_address) const;
 
-  std::unordered_set<std::string> GetInferParameterNames() override;
+  std::unordered_set<std::string> GetInferParameterNames();
 
  private:
   // for ge_init

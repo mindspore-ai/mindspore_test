@@ -55,12 +55,6 @@ using mindspore::kernel::KernelTensor;
 
 const size_t kDeviceContextsNumOne = 1;
 const size_t kDeviceContextsNumTwo = 2;
-static const uint32_t kOpTimeout = 900;
-
-constexpr auto RS_NORMAL = "RS_NORMAL";
-constexpr auto RS_UCE_HIGHLEVEL = "RS_UCE_HIGHLEVEL";
-constexpr auto RS_UCE_LOWLEVEL = "RS_UCE_LOWLEVEL";
-constexpr auto RS_UNKNOWN = "RS_UNKNOWN";
 
 struct DeviceContextKey {
   // device type name, such as 'GPU' 'Ascend' 'CPU'.
@@ -73,7 +67,6 @@ struct DeviceContextKey {
 };
 
 class DeviceResManager;
-class GraphExecutor;
 class KernelExecutor;
 
 inline pid_t GetCurrentPID() {
@@ -97,41 +90,19 @@ class BACKEND_COMMON_EXPORT DeviceContext {
   // Destroy device context and release device resource.
   virtual void Destroy() {}
 
-  // Check whether the device context needs to be released.
-  // The device context is copied by the dataset independent process, but does not need to be released
-  // in the dataset independent process.
-  virtual bool IsNeedDestroy() { return pid_ == GetCurrentPID(); }
-
-  // Analysis the function graph and select the appropriate run mode for the graph
-  virtual RunMode GetRunMode(const FuncGraphPtr &func_graph) const = 0;
-
   // Get device_context_key_ to obtain device name and device id.
   const DeviceContextKey &device_context_key() const { return device_context_key_; }
 
   // Get device address type according different device type, such GPU, Ascend.
   DeviceType GetDeviceType() const { return GetDeviceTypeByName(device_context_key_.device_name_); }
 
-  // Get kernel executor by is dynamic shape
-  std::shared_ptr<KernelExecutor> GetKernelExecutor(bool is_dynamic_shape) const {
-    if (is_dynamic_shape) {
-      return dyn_kernel_executor_;
-    } else {
-      return kernel_executor_;
-    }
-  }
+  // Get kernel executor.
+  std::shared_ptr<KernelExecutor> GetKernelExecutor() const { return kernel_executor_; }
 
   void SetKernelExecutor(const std::shared_ptr<KernelExecutor> &kernel_executor) { kernel_executor_ = kernel_executor; }
 
-  void SetDynKernelExecutor(const std::shared_ptr<KernelExecutor> &kernel_executor) {
-    dyn_kernel_executor_ = kernel_executor;
-  }
-
   // todo: delete
   virtual DeprecatedInterface *GetDeprecatedInterface() { return nullptr; }
-
-  virtual uint32_t GetExecuteTimeout() { return kOpTimeout; }
-  virtual std::string GetAoeJobType() { return ""; }
-  virtual std::string GetPrecisionMode() { return ""; }
 
   // Return whether this device context is initialized.
   bool initialized() const {
@@ -143,11 +114,8 @@ class BACKEND_COMMON_EXPORT DeviceContext {
     return initialized_;
   }
 
-  const std::string &DeviceName() const { return device_context_key_.device_name_; }
-
   DeviceContextKey device_context_key_;
   std::unique_ptr<DeviceResManager> device_res_manager_;
-  std::shared_ptr<GraphExecutor> graph_executor_;
 
  protected:
 #ifdef __APPLE__
@@ -161,7 +129,6 @@ class BACKEND_COMMON_EXPORT DeviceContext {
 
  private:
   std::shared_ptr<KernelExecutor> kernel_executor_;
-  std::shared_ptr<KernelExecutor> dyn_kernel_executor_;
 };
 using DeviceContextPtr = std::shared_ptr<DeviceContext>;
 
@@ -409,56 +376,6 @@ class BACKEND_COMMON_EXPORT DeviceResManager {
   std::shared_ptr<device::OffloadedMemPool> offloaded_mem_pool_;
 };
 
-class GraphExecutor {
- public:
-  virtual ~GraphExecutor() = default;
-  virtual void Initialize() { return; }
-  virtual void Finalize() { return; }
-  virtual void OptimizeBeforeCompileGraph(const KernelGraphPtr &graph) { return; }
-  virtual bool CompileGraph(const FuncGraphPtr &graph, const std::map<string, string> &compile_options) { return true; }
-  // lite used
-  virtual bool RunGraph(const FuncGraphPtr &graph, const std::vector<tensor::Tensor> &inputs,
-                        std::vector<tensor::Tensor> *outputs, const std::map<string, string> &compile_options) {
-    MS_LOG(EXCEPTION) << "Unimplemented interface.";
-  }
-  virtual bool RunGraph(const FuncGraphPtr &graph, const std::vector<tensor::TensorPtr> &inputs,
-                        std::vector<tensor::TensorPtr> *outputs, const std::map<string, string> &compile_options) {
-    MS_LOG(EXCEPTION) << "Unimplemented interface.";
-  }
-  virtual std::string GetRandomStatus(const std::vector<FuncGraphPtr> &graphs) { return ""; }
-  virtual size_t GetGraphFeatureMemory(const FuncGraphPtr &graph) const { return 0; }
-  virtual void InitGraphInfo(const FuncGraphPtr &graph) { return; }
-  virtual void InitGEFixMemory(const KernelGraphPtr &graph, size_t stream_id) const { return; }
-  virtual void AllocGEInputOutputMemory(const KernelGraphPtr &graph) const { return; }
-  virtual void AllocInputMemory(const DeviceAddressPtr &input_address) const { return; }
-  virtual void AllocGEFixMemory() const { return; }
-  virtual void AllocGERefreshableFeatureMemory(const KernelGraphPtr &graph) { return; }
-  virtual void FreeGERefreshableFeatureMemory(const KernelGraphPtr &graph) { return; }
-  virtual FuncGraphPtr BuildDFGraph(const FuncGraphPtr &anf_graph,
-                                    const std::map<std::string, std::shared_ptr<tensor::Tensor>> &init_inputs_map,
-                                    bool export_air) {
-    return nullptr;
-  }
-  virtual string ExportDFGraph(const std::string &file_name, const FuncGraphPtr &anf_graph, bool is_save_to_file) {
-    return "";
-  }
-
-  virtual std::unordered_set<std::string> GetInferParameterNames() { return {}; }
-  virtual DeviceAddressPtr CreateDeviceAddress(const KernelTensorPtr &kernel_tensor, bool is_need_alloc_mem) const {
-    return nullptr;
-  }
-  virtual void FreeInputOutputMemory(const KernelGraphPtr &graph) const { return; }
-
- protected:
-  DeviceContext *device_context_{nullptr};
-
- private:
-  template <class... Args>
-  friend class DeviceInterface;
-
-  void SetDeviceContext(DeviceContext *device_context) { device_context_ = device_context; }
-};
-
 using CallbackFunc = std::function<void(void)>;
 
 class BACKEND_COMMON_EXPORT KernelExecutor {
@@ -563,27 +480,13 @@ class DeviceInterface<T, Args...> : public DeviceInterface<Args...> {
                                   "DeviceResManager has been registered!");
       DeviceContext::device_res_manager_ = std::make_unique<T>();
       DeviceContext::device_res_manager_->SetDeviceContext(this);
-    } else if constexpr (std::is_base_of_v<GraphExecutor, T>) {
-      DeviceInterface::CheckUnset(reinterpret_cast<void *>(DeviceContext::graph_executor_.get()),
-                                  "GraphExecutor has been registered!");
-      DeviceContext::graph_executor_ = std::make_shared<T>();
-      DeviceContext::graph_executor_->SetDeviceContext(this);
     } else if constexpr (std::is_base_of_v<KernelExecutor, T>) {
-      DeviceInterface::CheckUnset(reinterpret_cast<void *>(DeviceContext::GetKernelExecutor(false).get()),
+      DeviceInterface::CheckUnset(reinterpret_cast<void *>(DeviceContext::GetKernelExecutor().get()),
                                   "KernelExecutor has been registered!");
-      DeviceInterface::CheckUnset(reinterpret_cast<void *>(DeviceContext::GetKernelExecutor(true).get()),
-                                  "Dyn KernelExecutor has been registered!");
       DeviceContext::SetKernelExecutor(std::make_shared<T>());
-      DeviceContext::GetKernelExecutor(false)->SetDeviceContext(this);
-      // for GPU/CPU dynamic shape kernel executor
-      DeviceContext::SetDynKernelExecutor(DeviceContext::GetKernelExecutor(false));
+      DeviceContext::GetKernelExecutor()->SetDeviceContext(this);
     }
   }
-
- private:
-  template <typename = std::enable_if_t<std::is_base_of_v<DeviceResManager, T> || std::is_base_of_v<GraphExecutor, T> ||
-                                        std::is_base_of_v<KernelExecutor, T>>>
-  void Assert() const {}
 };
 }  // namespace device
 }  // namespace mindspore
