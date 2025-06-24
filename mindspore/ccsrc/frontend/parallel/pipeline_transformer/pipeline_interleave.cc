@@ -1576,6 +1576,10 @@ bool PipelineInterleave::HasNoUpdateParameter() {
 void PipelineInterleave::FreezeGradient() {
   auto node_users_map = manager_->node_users();
   if (HasNoUpdateParameter() && is_train_) {
+    if (stage_ == 0) {
+      MS_LOG(EXCEPTION) << "Stage 0 should has at least 1 trainable parameter. but got none. "
+                        << "One possible cause is that the @lazy_inline decorator is misplaced.";
+    }
     root_->set_flag(NO_UPDATE, true);
     auto nodes = root_->nodes();
     for (auto &node : nodes) {
