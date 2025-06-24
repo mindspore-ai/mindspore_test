@@ -215,7 +215,7 @@ void CopyHostTensorToKernelTensor(const tensor::TensorPtr &host_tensor, const ke
   MS_EXCEPTION_IF_NULL(host_tensor);
   MS_EXCEPTION_IF_NULL(kernel_tensor);
   MS_EXCEPTION_IF_NULL(context);
-  auto device_tensor = kernel_tensor->device_address().get();
+  auto device_tensor = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_tensor);
   // No used device address need skip.
   if (TEST_FLAG(device_tensor->flag(), device::kDeviceAddressFlagNotUsed)) {
@@ -230,7 +230,9 @@ void CopyHostTensorToKernelTensor(const tensor::TensorPtr &host_tensor, const ke
     if (tensor_device_address->GetPtr() == device_tensor->GetPtr()) {
       return;
     }
-    if (!SyncCopy(device_tensor, tensor_device_address.get(), kDefaultStreamIndex)) {
+    if (!SyncAllStreamForDeviceAddress(
+          device_tensor->GetDeviceType() == device::DeviceType::kCPU ? tensor_device_address : device_tensor) ||
+        !SyncCopy(device_tensor, tensor_device_address, kDefaultStreamIndex)) {
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "Copy data failed.");
     }
     return;
@@ -248,11 +250,12 @@ void CopyHostTensorToKernelTensor(const tensor::TensorPtr &host_tensor, const ke
   }
   if (enable_async_copy) {
     MS_LOG(INFO) << "Node : " << node_index.first->DebugString();
-    if (!AsyncCopy(device_tensor, host_tensor->device_address().get(), kDefaultStreamIndex)) {
+    if (!AsyncCopy(device_tensor, host_tensor->device_address(), kDefaultStreamIndex)) {
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "SyncHostToDevice failed.");
     }
   } else {
-    if (!SyncCopy(device_tensor, host_tensor->device_address().get(), kDefaultStreamIndex)) {
+    if (!SyncAllStreamForDeviceAddress(device_tensor) ||
+        !SyncCopy(device_tensor, host_tensor->device_address(), kDefaultStreamIndex)) {
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "SyncHostToDevice failed.");
     }
   }

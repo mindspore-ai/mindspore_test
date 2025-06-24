@@ -693,7 +693,12 @@ void TensorPybind::Offload(const TensorPtr &tensor, bool release) {
     }
     MS_LOG(INFO) << "Tensor Offload start, the tensor's device_address is : " << device_address.get()
                  << ", the tensor's size is : " << device_address->GetSize();
-    device_address->SyncDeviceToHost(device_address->GetSize(), tensor->data_c());
+
+    auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
+      {device_address->device_name(), device_address->device_id()});
+    MS_EXCEPTION_IF_NULL(device_context);
+    device_context->device_res_manager_->SyncAllStreams();
+    SyncCopy(tensor->device_address(), device_address, device_address->stream_id());
     device_address->ClearDeviceMemory();
   } else {
     auto cpu_tensor = tensor->cpu();
@@ -726,7 +731,8 @@ void TensorPybind::Load(const Tensor &tensor) {
   device_ctx->device_res_manager_->AllocateMemory(device_address.get());
   MS_LOG(INFO) << "Tensor Load start, the tensor's device_address is : " << device_address.get()
                << ", the tensor's size is : " << device_address->GetSize();
-  device_address->SyncHostToDevice(device_address->GetSize(), tensor.data_c());
+  device_ctx->device_res_manager_->SyncAllStreams();
+  SyncCopy(device_address, tensor.device_address(), device_address->stream_id());
 }
 
 void TensorPybind::SetDeviceAddress(const TensorPtr &tensor, uintptr_t addr, const ShapeVector &shape,

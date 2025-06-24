@@ -38,6 +38,7 @@
 #include "runtime/device/res_manager/hal_res_manager.h"
 #include "plugin/res_manager/ascend/ascend_res_manager.h"
 #include "plugin/res_manager/ascend/mem_manager/ascend_memory_adapter.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "plugin/res_manager/ascend/ascend_device_address/ascend_device_address.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "ge/ge_graph_compile_summary.h"
@@ -48,6 +49,7 @@
 #include "utils/singleton.h"
 #include "plugin/res_manager/ascend/op_adapter/op_adapter_map.h"
 #include "backend/ge_backend/pass/ge_backend_optimization.h"
+#include "mindspore/core/include/ir/tensor_api.h"
 
 namespace mindspore {
 namespace backend {
@@ -256,7 +258,20 @@ void SetOutput(GeDeviceResManagerPtr res_manager, GeTensor *ge_output, const Anf
     output_addr->set_ptr(mem);
     auto *ascend_addr = dynamic_cast<device::ascend::AscendDeviceAddress *>(output_addr.get());
     MS_EXCEPTION_IF_NULL(ascend_addr);
-    ascend_addr->SyncHostToDevice(size, ge_data);
+    auto tensor = tensor::empty(ascend_addr->type_id(), ascend_addr->GetShapeVector(), device::DeviceType::kCPU);
+    MS_EXCEPTION_IF_NULL(tensor);
+    MS_EXCEPTION_IF_NULL(tensor->device_address());
+    auto tmp_ptr = tensor->device_address()->GetMutablePtr();
+    auto tmp_device_address = dynamic_cast<device::DeviceAddress *>(tensor->device_address().get());
+    MS_EXCEPTION_IF_NULL(tmp_device_address);
+    tmp_device_address->set_ptr(ge_data);
+    tmp_device_address->SetSize(size);
+    tmp_device_address->set_format(ascend_addr->format());
+    if (!device::ascend::AscendStreamMng::GetInstance().SyncAllStreams()) {
+      MS_LOG(ERROR) << "Failed to sync all stream.";
+    }
+    SyncCopy(output_addr, tensor->device_address(), ascend_addr->stream_id());
+    tmp_device_address->set_ptr(tmp_ptr);
   }
   // Update shape in kernel tensor.
   const auto &kernel_tensor = AnfAlgo::GetOutputKernelTensor(output_node, idx, false);

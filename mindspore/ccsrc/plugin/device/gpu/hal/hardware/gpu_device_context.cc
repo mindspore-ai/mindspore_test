@@ -78,6 +78,7 @@
 #include "runtime/device/res_manager/tensor_array.h"
 #include "include/common/runtime_conf/runtime_conf.h"
 #include "mindspore/ops/kernel/gpu/arrays/contiguous_gpu_kernel.h"
+#include "mindspore/core/include/ir/tensor_api.h"
 
 namespace mindspore {
 namespace device {
@@ -231,6 +232,11 @@ DeviceAddressPtr GPUDeviceResManager::CreateDeviceAddress(void *ptr, size_t size
                                                           uint32_t stream_id, const UserDataPtr &user_data) const {
   return gpu_res_manager_->CreateDeviceAddress(ptr, size, shape_vector, format, type_id, device_name, device_id,
                                                stream_id, user_data);
+}
+
+bool GPUDeviceResManager::Copy(void *dst, const void *src, uint64_t size, CopyType kind, size_t stream_id) const {
+  MS_EXCEPTION_IF_NULL(gpu_res_manager_);
+  return gpu_res_manager_->Copy(dst, src, size, kind, stream_id);
 }
 
 void GPUKernelExecutor::PreprocessBeforeRun(const FuncGraphPtr &graph) const {
@@ -891,8 +897,20 @@ void MallocMemoryAndCopyValue(const device::DeviceAddressPtr &device_address,
 
   std::reverse(vec.begin(), vec.end());
   vec.resize(kMaxDim, 0);
-  if (!device_address->SyncHostToDevice(ShapeVector(), device_address->GetSize(), kNumberTypeInt64, vec.data(),
-                                        kOpFormat_DEFAULT)) {
+  ShapeVector shape{SizeToLong(device_address->GetSize() / sizeof(int64_t))};
+  auto tensor = tensor::empty(kNumberTypeInt64, shape, device::DeviceType::kCPU);
+  MS_EXCEPTION_IF_NULL(tensor);
+  MS_EXCEPTION_IF_NULL(tensor->device_address());
+  auto tensor_device_address = dynamic_cast<DeviceAddress *>(tensor->device_address().get());
+  MS_EXCEPTION_IF_NULL(tensor_device_address);
+  tensor_device_address->set_ptr(vec.data());
+  tensor_device_address->SetSize(device_address->GetSize());
+  tensor_device_address->set_format(kOpFormat_DEFAULT);
+  device::ResKey res_key{device_address->GetDeviceType(), device_address->device_id()};
+  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+  MS_EXCEPTION_IF_NULL(res_manager);
+  if (!res_manager->SyncAllStreams() ||
+      !SyncCopy(device_address, tensor->device_address(), device_address->stream_id())) {
     MS_LOG(EXCEPTION) << "SyncHostToDevice failed, vec:" << vec;
   }
 }

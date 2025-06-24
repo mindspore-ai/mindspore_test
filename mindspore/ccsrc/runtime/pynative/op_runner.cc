@@ -84,9 +84,8 @@ void UpdateInputTensorFromDevice(const std::vector<AnfNodePtr> &input_nodes,
         tensor->set_sync_status(kNeedSyncHostToDeviceImmediately);
         tensor->set_need_pipeline_sync(true);
         tensor->set_device_address(node_address);
-        tensor->set_to_device([node_address, tensor_address, stream_id]() {
-          return AsyncCopy(node_address.get(), tensor_address.get(), stream_id);
-        });
+        tensor->set_to_device(
+          [node_address, tensor_address, stream_id]() { return AsyncCopy(node_address, tensor_address, stream_id); });
         MS_LOG(DEBUG) << "Set to_device callback for tensor " << tensor->ToString() << " id " << tensor->id();
       }
     }
@@ -741,7 +740,7 @@ void UpdateInputTensorForHeterogeneous(const DeviceContext *device_context, cons
     cached_device_address->set_from_persistent_mem(input_tensor->is_parameter());
     input_tensor->set_device_address(cached_device_address);
     input_tensor->set_to_device([device_address, cached_device_address, stream_id]() {
-      return AsyncCopy(cached_device_address.get(), device_address.get(), stream_id);
+      return AsyncCopy(cached_device_address, device_address, stream_id);
     });
   }
 }

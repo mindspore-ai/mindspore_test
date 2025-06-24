@@ -436,9 +436,9 @@ void ControlActor::CreateHeterDeviceTensor(KernelTensor *const node_kernel_tenso
                                            OpContext<KernelTensor> *const context, const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(input_kernel_tensor);
   MS_EXCEPTION_IF_NULL(node_kernel_tensor);
-  DeviceTensor *const input_device_tensor = input_kernel_tensor->device_address().get();
+  const auto &input_device_tensor = input_kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(input_device_tensor);
-  DeviceTensor *const node_device_tensor = node_kernel_tensor->device_address().get();
+  const auto &node_device_tensor = node_kernel_tensor->device_address().get();
   MS_EXCEPTION_IF_NULL(node_device_tensor);
   MS_EXCEPTION_IF_NULL(node);
   auto new_kernel_tensor = node_kernel_tensor->CloneKernelTensor();
@@ -476,12 +476,7 @@ void ControlActor::CreateHeterDeviceTensor(KernelTensor *const node_kernel_tenso
     SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(GraphExecutionStrategy::kPipeline, *context, node->DebugString(),
                                                 new_device_tensor->GetSize());
   }
-  MS_LOG(DEBUG) << "Add device tensor copy store for device address:" << new_device_tensor
-                << " type:" << new_device_tensor->GetDeviceType() << " and " << input_device_tensor
-                << " type:" << input_device_tensor->GetDeviceType() << " for copy actor:" << GetAID();
-  DeviceTensorCopyStore::GetInstance().Insert(new_device_tensor.get(), input_device_tensor);
-
-  if (!SyncCopy(new_device_tensor.get(), input_device_tensor, kDefaultStreamIndex)) {
+  if (!SyncCopy(new_device_tensor, input_device_tensor, kDefaultStreamIndex)) {
     std::string error_info =
       "The formal parameter: " + node->DebugString() + " position:" + std::to_string(index) + " copy failed.";
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
@@ -766,11 +761,11 @@ void ControlActor::MergeDeviceAddress(OpContext<KernelTensor> *const context,
     }
     bool ret = false;
     if (addr_list[i]->device_address()->device_name() == addr_list[0]->device_address()->device_name()) {
-      ret = SyncCopy(tmp_device_tensor.get(), addr_list[i]->device_address().get(), kDefaultStreamIndex);
+      ret = SyncCopy(tmp_device_tensor, addr_list[i]->device_address(), kDefaultStreamIndex);
     } else if (addr_list[0]->device_address()->device_name() == kCPUDevice) {
-      ret = SyncCopy(tmp_device_tensor.get(), addr_list[i]->device_address().get(), kDefaultStreamIndex);
+      ret = SyncCopy(tmp_device_tensor, addr_list[i]->device_address(), kDefaultStreamIndex);
     } else if (addr_list[i]->device_address()->device_name() == kCPUDevice) {
-      ret = SyncCopy(tmp_device_tensor.get(), addr_list[i]->device_address().get(), kDefaultStreamIndex);
+      ret = SyncCopy(tmp_device_tensor, addr_list[i]->device_address(), kDefaultStreamIndex);
     } else {
       MS_LOG(ERROR) << "Invalid device name for addr1:" << addr_list[0]->device_address()
                     << " name:" << addr_list[0]->device_address()->device_name()

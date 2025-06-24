@@ -1506,9 +1506,10 @@ void MSBackendBase::ConstructOutputByTupleTensor(tensor::TensorPtr output_tensor
                                  << split_tensor_size << ", copy offset size:" << copy_offset_size
                                  << ", total size:" << tensor_device_size;
     }
-    if (!split_device_tensor->SyncDeviceToDevice(split_tensor_shape, split_tensor_size, device_tensor->type_id(),
-                                                 AddressOffset(tensor_device_ptr, copy_offset_size),
-                                                 device_tensor->format())) {
+    if (!device_context->device_res_manager_->SyncAllStreams() ||
+        !device_context->device_res_manager_->Copy(
+          split_device_tensor->GetMutablePtr(), AddressOffset(tensor_device_ptr, copy_offset_size), split_tensor_size,
+          device::CopyType::kD2D, split_device_tensor->stream_id())) {
       MS_LOG(INTERNAL_EXCEPTION) << "#dmsg#Runtime error info:#dmsg#Sync device to device failed, device type:"
                                  << split_device_tensor->GetDeviceType() << ", copy size:" << split_tensor_size
                                  << ", output node: Split tuple outputs.";

@@ -188,7 +188,7 @@ bool DeviceEmbeddingOperation::MemcpyHostToDeviceAsync(void *dst, const void *sr
   auto device_address = kernel_tensor->device_address();
   MS_ERROR_IF_NULL(device_address);
   auto tensor = std::make_shared<tensor::Tensor>(kTypeUnknown, ShapeVector{}, const_cast<void *>(host_ptr), size);
-  RETURN_IF_FALSE_WITH_LOG(AsyncCopy(device_address.get(), tensor->device_address().get(), stream_id),
+  RETURN_IF_FALSE_WITH_LOG(AsyncCopy(device_address, tensor->device_address(), stream_id),
                            "Async memcpy host to device failed.");
 
   return true;
@@ -211,7 +211,7 @@ bool DeviceEmbeddingOperation::MemcpyDeviceToHostAsync(void *dst, const void *sr
   auto device_address = kernel_tensor->device_address();
   MS_ERROR_IF_NULL(device_address);
   auto tensor = std::make_shared<tensor::Tensor>(kTypeUnknown, ShapeVector{}, const_cast<void *>(host_ptr), size);
-  RETURN_IF_FALSE_WITH_LOG(AsyncCopy(device_address.get(), tensor->device_address().get(), stream_id),
+  RETURN_IF_FALSE_WITH_LOG(AsyncCopy(device_address, tensor->device_address(), stream_id),
                            "Async memcpy device to host failed.");
 
   return true;
@@ -281,7 +281,7 @@ ValueNodePtr DeviceEmbeddingOperation::NewValueNode(int64_t value, const DeviceC
 
   // Sync tensor value.
   auto new_tensor = std::make_shared<tensor::Tensor>(output_type_id, ShapeVector{}, tensor->data_c(), tensor_size);
-  MS_EXCEPTION_IF_CHECK_FAIL(AsyncCopy(address.get(), new_tensor->device_address().get(), stream_id),
+  MS_EXCEPTION_IF_CHECK_FAIL(AsyncCopy(address, new_tensor->device_address(), stream_id),
                              "Async memcpy host to device failed.");
   MS_EXCEPTION_IF_CHECK_FAIL(device_context->device_res_manager_->SyncStream(stream_id), "Synchronize stream failed.");
 

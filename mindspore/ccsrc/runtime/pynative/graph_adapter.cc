@@ -130,7 +130,7 @@ bool CopyTensorData(const tensor::TensorPtr &tensor, const device::DeviceAddress
   // Copy data from host tensor to device.
   auto host_tensor_size = tensor->DataNBytes();
   auto host_tensor_type = tensor->data_type();
-  if (!AsyncCopy(device_address.get(), tensor->device_address().get(), device_address->stream_id())) {
+  if (!AsyncCopy(device_address, tensor->device_address(), device_address->stream_id())) {
     std::string error_info = "SyncHostToDevice failed, node name: " + node->fullname_with_scope() +
                              ", tensor size: " + std::to_string(host_tensor_size) +
                              ", tensor type: " + std::to_string(static_cast<int>(host_tensor_type)) +

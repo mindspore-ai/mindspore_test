@@ -24,6 +24,7 @@
 #include <vector>
 #include <algorithm>
 #include <numeric>
+#include <set>
 
 #include "hccl/hccl.h"
 #include "plugin/res_manager/ascend/mem_manager/ascend_memory_manager.h"
@@ -51,6 +52,7 @@
 #include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
+#include "runtime/device/res_manager/utils/convert_tensor_utils.h"
 #include "common/kernel_callback.h"
 #include "runtime/device/res_manager/tensor_array.h"
 #include "plugin/res_manager/ascend/hal_manager/ascend_err_manager.h"
@@ -591,7 +593,7 @@ DeviceAddressPtr AscendResManager::CreateDeviceAddress(void *ptr, size_t size, c
   return device_address;
 }
 
-bool AscendResManager::SyncCopy(const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync,
+bool AscendResManager::SyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
                                 size_t stream_id) const {
   MS_EXCEPTION_IF_NULL(dst_device_sync);
   MS_EXCEPTION_IF_NULL(src_device_sync);
@@ -604,7 +606,7 @@ bool AscendResManager::SyncCopy(const DeviceSync *dst_device_sync, const DeviceS
   return SyncDeviceToDevice(dst_device_sync, src_device_sync, stream_id);
 }
 
-bool AscendResManager::AsyncCopy(const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync,
+bool AscendResManager::AsyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
                                  size_t stream_id) const {
   MS_EXCEPTION_IF_NULL(dst_device_sync);
   MS_EXCEPTION_IF_NULL(src_device_sync);
@@ -617,65 +619,587 @@ bool AscendResManager::AsyncCopy(const DeviceSync *dst_device_sync, const Device
   return AsyncDeviceToDevice(dst_device_sync, src_device_sync, stream_id);
 }
 
-bool AscendResManager::SyncDeviceToHost(const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync,
+bool AscendResManager::SyncDeviceToHost(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
                                         size_t stream_id) const {
-  const auto &dst_device_address = dynamic_cast<const DeviceAddress *>(dst_device_sync);
-  const auto &src_device_address = dynamic_cast<const DeviceAddress *>(src_device_sync);
-  MS_EXCEPTION_IF_NULL(dst_device_address);
-  MS_EXCEPTION_IF_NULL(src_device_address);
-  return src_device_address->SyncDeviceToHost(dst_device_address->device_shape(), dst_device_address->GetSize(),
-                                              dst_device_address->type_id(), dst_device_address->GetMutablePtr(), true);
+  if (!AsyncDeviceToHost(dst_device_sync, src_device_sync, stream_id)) {
+    return false;
+  }
+  return SyncStream(stream_id);
 }
 
-bool AscendResManager::SyncHostToDevice(const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync,
+bool AscendResManager::SyncHostToDevice(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
                                         size_t stream_id) const {
-  const auto &dst_device_address = dynamic_cast<const AscendDeviceAddress *>(dst_device_sync);
-  const auto &src_device_address = dynamic_cast<const DeviceAddress *>(src_device_sync);
-  MS_EXCEPTION_IF_NULL(dst_device_address);
-  MS_EXCEPTION_IF_NULL(src_device_address);
-  return dst_device_address->SyncHostToDevice(src_device_address->host_shape(), src_device_address->GetSize(),
-                                              src_device_address->type_id(), src_device_address->GetMutablePtr(),
-                                              src_device_address->format());
+  if (!AsyncHostToDevice(dst_device_sync, src_device_sync, stream_id)) {
+    return false;
+  }
+  return SyncStream(stream_id);
 }
 
-bool AscendResManager::SyncDeviceToDevice(const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync,
+bool AscendResManager::SyncDeviceToDevice(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
                                           size_t stream_id) const {
-  const auto &dst_device_address = dynamic_cast<const DeviceAddress *>(dst_device_sync);
-  const auto &src_device_address = dynamic_cast<const DeviceAddress *>(src_device_sync);
-  MS_EXCEPTION_IF_NULL(dst_device_address);
-  MS_EXCEPTION_IF_NULL(src_device_address);
-  return dst_device_address->AsyncDeviceToDevice(src_device_address);
+  if (!AsyncDeviceToDevice(dst_device_sync, src_device_sync, stream_id)) {
+    return false;
+  }
+  return SyncStream(stream_id);
 }
 
-bool AscendResManager::AsyncDeviceToHost(const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync,
+namespace {
+// Create a mutex for stream.
+std::mutex *CreateStreamMutex(const void *stream, std::shared_mutex *shd_mtx,
+                              mindspore::HashMap<const void *, std::shared_ptr<std::mutex>> *mtxs_for_streams) {
+  MS_EXCEPTION_IF_NULL(stream);
+  MS_EXCEPTION_IF_NULL(shd_mtx);
+  MS_EXCEPTION_IF_NULL(mtxs_for_streams);
+
+  std::unique_lock<std::shared_mutex> unq_lock(*shd_mtx);
+  auto ret_pair = mtxs_for_streams->emplace(stream, std::make_shared<std::mutex>());
+
+  MS_EXCEPTION_IF_NULL(ret_pair.first->second);
+  return ret_pair.first->second.get();
+}
+
+// Check whether mutex exists for a stream.
+std::pair<bool, std::mutex *> CheckStreamMutexExist(
+  const void *stream, const mindspore::HashMap<const void *, std::shared_ptr<std::mutex>> &mtxs_for_streams,
+  std::shared_mutex *shd_mtx) {
+  MS_EXCEPTION_IF_NULL(stream);
+  MS_EXCEPTION_IF_NULL(shd_mtx);
+  std::shared_lock<std::shared_mutex> shd_lock(*shd_mtx);
+  auto iter = mtxs_for_streams.find(stream);
+  if (iter != mtxs_for_streams.end()) {
+    MS_EXCEPTION_IF_NULL(iter->second);
+    return std::make_pair(true, iter->second.get());
+  }
+  return std::make_pair(false, nullptr);
+}
+
+std::lock_guard<std::mutex> LockRuntime(const void *stream) {
+  MS_EXCEPTION_IF_NULL(stream);
+  // Read-write lock for accessing mtxs_for_streams map.
+  // When the lock of each stream is created, mtxs_for_streams can be accessed concurrently to improve performance.
+  static std::shared_mutex shd_mtx;
+  static mindspore::HashMap<const void *, std::shared_ptr<std::mutex>> mtxs_for_streams;
+
+  std::mutex *stream_mtx = nullptr;
+  // Check whether mutex exists for a stream.
+  std::pair<bool, std::mutex *> ret_pair = CheckStreamMutexExist(stream, mtxs_for_streams, &shd_mtx);
+  if (ret_pair.first) {
+    stream_mtx = ret_pair.second;
+  } else {
+    // Create a mutex for stream.
+    stream_mtx = CreateStreamMutex(stream, &shd_mtx, &mtxs_for_streams);
+  }
+
+  MS_EXCEPTION_IF_NULL(stream_mtx);
+  return std::lock_guard<std::mutex>(*stream_mtx);
+}
+
+const std::set<std::string> op_need_trans_format = {
+  kOpFormat_NHWC,    kOpFormat_HWCN,        kOpFormat_NC1HWC0,       kOpFormat_FRAC_Z,   kOpFormat_C1HWNCoC0,
+  kOpFormat_FRAC_NZ, kOpFormat_NC1HWC0_C04, kOpFormat_FRACTAL_Z_C04, kOpFormat_NDC1HWC0, kOpFormat_FRACTAL_Z_3D};
+
+ShapeVector GetDeviceShape(ShapeVector *host_shape, const DeviceAddress *src_device_address) {
+  MS_EXCEPTION_IF_NULL(host_shape);
+  ShapeVector device_shape;
+  auto node_index = src_device_address->GetNodeIndex();
+  if (src_device_address->format() == kOpFormat_FRAC_NZ || src_device_address->format() == kOpFormat_NCDHW) {
+    device_shape = trans::TransShapeToDevice(*host_shape, src_device_address->format(), node_index.first,
+                                             node_index.second, src_device_address->type_id());
+  } else {
+    if (!src_device_address->host_shape().empty()) {
+      host_shape->clear();
+      *host_shape = src_device_address->host_shape();
+    }
+    *host_shape = trans::PaddingShape(*host_shape, src_device_address->format());
+    device_shape = trans::TransShapeToDevice(*host_shape, src_device_address->format(), node_index.first,
+                                             node_index.second, src_device_address->type_id());
+  }
+  return device_shape;
+}
+aclrtMemcpyKind CopyTypeToAclType(CopyType copy_type) {
+  switch (copy_type) {
+    case CopyType::kH2D:
+      return aclrtMemcpyKind::ACL_MEMCPY_HOST_TO_DEVICE;
+    case CopyType::kD2H:
+      return aclrtMemcpyKind::ACL_MEMCPY_DEVICE_TO_HOST;
+    case CopyType::kD2D:
+      return aclrtMemcpyKind::ACL_MEMCPY_DEVICE_TO_DEVICE;
+    default:
+      MS_LOG(EXCEPTION) << "Invalid copy type:" << copy_type;
+  }
+}
+}  // namespace
+
+bool AscendResManager::Copy(void *dst, const void *src, uint64_t size, CopyType kind, size_t stream_id) const {
+  if (BaseCopy(dst, src, size, CopyTypeToAclType(kind), stream_id)) {
+    MS_LOG(ERROR) << "Failed to copy from:" << dst << " to:" << src << " size:" << size << " kind:" << kind;
+    return false;
+  }
+  return SyncStream(stream_id);
+}
+
+bool AscendResManager::BaseCopy(void *dst, const void *src, uint64_t size, aclrtMemcpyKind kind, size_t stream_id,
+                                const DeviceSyncPtr src_device_sync) const {
+  if (size == 0 || common::IsCompileSimulation()) {
+    return true;
+  }
+  if (dst == nullptr || src == nullptr) {
+    MS_LOG(ERROR) << "Src ptr:" << src << " or dst ptr:" << dst
+                  << " is null, please check the address is set correctly.";
+    return false;
+  }
+  const auto stream = AscendStreamMng::GetInstance().GetStream(stream_id);
+  if (stream == nullptr) {
+    MS_LOG(EXCEPTION) << "Failed to get stream by id:" << stream_id;
+  }
+  LockRuntime(stream);
+  auto ret_rt_memcpy = CALL_ASCEND_API(aclrtMemcpyAsync, dst, size, src, size, kind, stream);
+  if (ret_rt_memcpy != ACL_ERROR_NONE) {
+    MS_LOG(ERROR) << "Call runtime rtMemcpyAsync error, src ptr:" << src << " dst ptr:" << dst << " size:" << size
+                  << " stream id:" << stream_id;
+    return false;
+  }
+
+  // Check keep host address for host to device copy.
+  if (src_device_sync == nullptr) {
+    return true;
+  }
+  std::function<void(void)> callback_func = [src_device_sync, stream_id]() {
+    // Clear tensor_data automatically.
+    MS_LOG(DEBUG) << "Callback_func exec, device sync:" << src_device_sync
+                  << " use count:" << src_device_sync.use_count() << " stream id:" << stream_id;
+  };
+
+  if (!LaunchCallback(callback_func, stream_id)) {
+    MS_LOG(EXCEPTION) << "LaunchCallback failed, stream id:" << stream_id;
+  }
+  return true;
+}
+
+bool AscendResManager::CopyDeviceToHostForHeteInfo(const DeviceAddress *dst_device_address,
+                                                   const DeviceAddress *src_device_address, size_t stream_id) const {
+  MS_LOG(DEBUG) << "Copy device to host for hete info, src device address:" << src_device_address->ToString()
+                << " dst device address:" << dst_device_address->ToString() << " stream id:" << stream_id;
+  if (src_device_address->hete_info_->host_ptr_ == nullptr) {
+    if (!src_device_address->hete_info_->file_name_.empty()) {
+      MS_LOG(EXCEPTION) << "Copy from file to host is not supported yet., file name:"
+                        << src_device_address->hete_info_->file_name_
+                        << " src device address:" << src_device_address->ToString()
+                        << " dst device address:" << dst_device_address->ToString();
+    } else {
+      MS_LOG(EXCEPTION) << "Illegal heterogeneous info: empty file name and host ptr, src device address:"
+                        << src_device_address->ToString() << " dst device address:" << dst_device_address->ToString();
+    }
+  }
+  return BaseCopy(dst_device_address->GetDevicePtr(), src_device_address->hete_info_->host_ptr_,
+                  dst_device_address->GetSize(), ACL_MEMCPY_HOST_TO_HOST, stream_id);
+}
+
+bool AscendResManager::CopyDeviceToHostForDiffFormat(const DeviceAddress *dst_device_address,
+                                                     const DeviceAddress *src_device_address, size_t stream_id) const {
+  MS_LOG(DEBUG) << "Copy device to host for different format, src device address:" << src_device_address->ToString()
+                << " dst device address:" << dst_device_address->ToString() << " stream id:" << stream_id;
+  const auto &src_format = src_device_address->format();
+  if (op_need_trans_format.find(src_format) == op_need_trans_format.end()) {
+    MS_LOG(ERROR) << "Can not find format transfer function for format:" << src_format
+                  << " in device address:" << src_device_address->ToString();
+    return false;
+  }
+
+  // Sync device to host.
+  auto host_tmp = std::vector<uint8_t>(src_device_address->GetSize());
+  if (!BaseCopy(host_tmp.data(), src_device_address->GetDevicePtr(), src_device_address->GetSize(),
+                ACL_MEMCPY_DEVICE_TO_HOST, stream_id)) {
+    MS_LOG(ERROR) << "Failed async copy for format transform, src device address:" << src_device_address->ToString();
+    return false;
+  }
+  if (!SyncStream(stream_id)) {
+    MS_LOG(ERROR) << "Failed sync stream : " << stream_id;
+    return false;
+  }
+  // Trans shape.
+  ShapeVector host_shape = dst_device_address->GetShapeVector();
+  if (host_shape.empty()) {
+    (void)host_shape.emplace_back(1);
+  }
+  auto device_shape = GetDeviceShape(&host_shape, src_device_address);
+  MS_LOG(DEBUG) << "Host shape:" << host_shape << " device shape:" << device_shape
+                << " format:" << src_device_address->format();
+  auto node_index = src_device_address->GetNodeIndex();
+  if (src_device_address->type_id() == dst_device_address->type_id()) {
+    const trans::FormatArgs format_args{
+      host_tmp.data(), src_device_address->GetSize(), kOpFormat_NCHW, src_device_address->format(), host_shape,
+      device_shape,    src_device_address->type_id()};
+    if (!trans::TransFormatFromDeviceToHost(format_args, dst_device_address->GetDevicePtr(), node_index.first,
+                                            node_index.second)) {
+      MS_LOG(ERROR) << "Trans format failed for dst device tensor:" << dst_device_address->ToString();
+      return false;
+    }
+    return true;
+  }
+  const trans::FormatArgs format_args{
+    host_tmp.data(), src_device_address->GetSize(), kOpFormat_NCHW, src_device_address->format(), host_shape,
+    device_shape,    src_device_address->type_id()};
+  auto trans_format_host = std::vector<uint8_t>(src_device_address->GetSize());
+  if (!trans::TransFormatFromDeviceToHost(format_args, trans_format_host.data(), node_index.first, node_index.second)) {
+    MS_LOG(ERROR) << "Trans format failed for dst device tensor:" << dst_device_address->ToString();
+    return false;
+  }
+  auto shape_size = abstract::ShapeSize(host_shape);
+  const trans::TypeIdArgs type_args{trans_format_host.data(), shape_size, src_device_address->type_id(),
+                                    dst_device_address->type_id(), dst_device_address->GetSize()};
+  if (!trans::TransDataType(type_args, dst_device_address->GetDevicePtr())) {
+    MS_LOG(ERROR) << "Trans data type failed for dst device tensor:" << dst_device_address->ToString();
+    return false;
+  }
+  return true;
+}
+
+bool AscendResManager::CopyDeviceToHostForDiffType(const DeviceAddress *dst_device_address,
+                                                   const DeviceAddress *src_device_address, size_t stream_id) const {
+  MS_LOG(DEBUG) << "Copy device to host for different type, src device address:" << src_device_address->ToString()
+                << " dst device address:" << dst_device_address->ToString() << " stream id:" << stream_id;
+  // Sync device to host.
+  auto host_tmp = std::vector<uint8_t>(src_device_address->GetSize());
+  if (!BaseCopy(host_tmp.data(), src_device_address->GetDevicePtr(), src_device_address->GetSize(),
+                ACL_MEMCPY_DEVICE_TO_HOST, stream_id)) {
+    MS_LOG(ERROR) << "Failed async copy for type transform, src device address:" << src_device_address->ToString();
+    return false;
+  }
+  if (!SyncStream(stream_id)) {
+    MS_LOG(ERROR) << "Failed sync stream : " << stream_id;
+    return false;
+  }
+  if (src_device_address->type_id() == kNumberTypeFloat32 && dst_device_address->type_id() == kNumberTypeFloat64) {
+    if (src_device_address->GetSize() / sizeof(float) != dst_device_address->GetSize() / sizeof(double)) {
+      MS_LOG(ERROR) << "Invalid src_size for device address" << src_device_address->ToString()
+                    << ", dst_size for device address" << dst_device_address->ToString();
+      return false;
+    }
+    FloatToDouble(dst_device_address->GetDevicePtr(), host_tmp.data(), src_device_address->GetSize() / sizeof(float));
+    return true;
+  }
+  auto host_shape = dst_device_address->GetShapeVector();
+  auto shape_size = abstract::ShapeSize(host_shape);
+  const trans::TypeIdArgs type_args{host_tmp.data(), shape_size, src_device_address->type_id(),
+                                    dst_device_address->type_id(), src_device_address->GetSize()};
+
+  if (!trans::TransDataType(type_args, dst_device_address->GetDevicePtr())) {
+    MS_LOG(ERROR) << "Trans data type failed for dst device address:" << dst_device_address->ToString();
+    return false;
+  }
+  return true;
+}
+
+bool AscendResManager::AsyncDeviceToHost(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
                                          size_t stream_id) const {
-  const auto &dst_device_address = dynamic_cast<const DeviceAddress *>(dst_device_sync);
-  const auto &src_device_address = dynamic_cast<const DeviceAddress *>(src_device_sync);
+  const auto &dst_device_address = dynamic_cast<const DeviceAddress *>(dst_device_sync.get());
+  const auto &src_device_address = dynamic_cast<const DeviceAddress *>(src_device_sync.get());
   MS_EXCEPTION_IF_NULL(dst_device_address);
   MS_EXCEPTION_IF_NULL(src_device_address);
-  return src_device_address->AsyncDeviceToHost(dst_device_address->device_shape(), dst_device_address->GetSize(),
-                                               dst_device_address->type_id(), dst_device_address->GetMutablePtr(),
-                                               stream_id);
+  BindDeviceToCurrentThread(false);
+  // Check hete info.
+  if (src_device_address->hete_info_ != nullptr) {
+    return CopyDeviceToHostForHeteInfo(dst_device_address, src_device_address, stream_id);
+  }
+
+  // Check format.
+  static const std::set<std::string> basic_format = {kOpFormat_NCHW, kOpFormat_DEFAULT, kOpFormat_NCDHW, kOpFormat_ND};
+  if (basic_format.find(src_device_address->format()) == basic_format.end()) {
+    return CopyDeviceToHostForDiffFormat(dst_device_address, src_device_address, stream_id);
+  }
+
+  // Check type.
+  if (src_device_address->type_id() != dst_device_address->type_id()) {
+    return CopyDeviceToHostForDiffType(dst_device_address, src_device_address, stream_id);
+  }
+
+  MS_LOG(DEBUG) << "Copy device to host, src device address:" << src_device_address->ToString()
+                << " dst device address:" << dst_device_address->ToString() << " stream id:" << stream_id;
+  return BaseCopy(dst_device_address->GetDevicePtr(), src_device_address->GetDevicePtr(), dst_device_address->GetSize(),
+                  ACL_MEMCPY_DEVICE_TO_HOST, stream_id);
 }
 
-bool AscendResManager::AsyncHostToDevice(const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync,
+bool AscendResManager::CopyHostToDeviceForHeteInfo(const DeviceAddress *dst_device_address,
+                                                   const DeviceAddress *src_device_address, size_t stream_id) const {
+  MS_LOG(DEBUG) << "Copy host to device for hete info, src device address:" << src_device_address->ToString()
+                << " dst device address:" << dst_device_address->ToString() << " stream id:" << stream_id;
+  if (dst_device_address->hete_info_->host_ptr_ == nullptr) {
+    if (!dst_device_address->hete_info_->file_name_.empty()) {
+      MS_LOG(EXCEPTION) << "Copy from file to host is not supported yet., file name:"
+                        << dst_device_address->hete_info_->file_name_
+                        << " src device address:" << src_device_address->ToString()
+                        << " dst device address:" << dst_device_address->ToString();
+      return false;
+    } else {
+      MS_LOG(EXCEPTION) << "Illegal heterogeneous info: empty file name and host ptr, src device address:"
+                        << src_device_address->ToString() << " dst device address:" << dst_device_address->ToString();
+      return false;
+    }
+  }
+  return BaseCopy(dst_device_address->hete_info_->host_ptr_, src_device_address->GetDevicePtr(),
+                  src_device_address->GetSize(), ACL_MEMCPY_HOST_TO_HOST, stream_id);
+}
+
+bool AscendResManager::CopyHostToDevice(const DeviceAddress *dst_device_address,
+                                        const DeviceAddress *src_device_address, const void *src, uint64_t size,
+                                        aclrtMemcpyKind kind, size_t stream_id,
+                                        const DeviceSyncPtr src_device_sync) const {
+  if (dst_device_address->type_id() != kObjectTypeString) {
+    return BaseCopy(dst_device_address->GetDevicePtr(), src, size, kind, stream_id, src_device_sync);
+  }
+  // NOTE: For string type, ge::StringHead.len does not include '\0', since kernel_tensor allocated size including
+  // '\0', see method `CreateDeviceAddressForScalarAndString` defined in `device_address_utils.cc`, and method
+  // `PrepareDataForStringValue` defined in `data_prepare_actor.cc`, so here pass `size - 1` to `head.len`.
+  // NOTE: method `CopyHostToDevice` can be triggered from the two scenarios as below:
+  // 1. method `CopyNoneTensorDataToDevice` in `device_address_utils.cc` passes a kernel tensor, the parameter
+  // `size` include `ge::StringHead`
+  // 2. method `PrepareDataForStringValue` in `data_prepare_actor.cc` passes a raw string, the parameter `size` does
+  // not include `ge::StringHead`
+  if (src_device_address->GetSize() == dst_device_address->GetSize() && size >= sizeof(ge::StringHead)) {
+    size -= sizeof(ge::StringHead);
+    MS_LOG(DEBUG) << "Skip string head size:" << sizeof(ge::StringHead)
+                  << " for src device address:" << src_device_address->ToString();
+  }
+  ge::StringHead head{.addr = sizeof(ge::StringHead), .len = static_cast<int64_t>(size) - 1};
+  // sync string head info from device to host
+  if (!BaseCopy(dst_device_address->GetDevicePtr(), &head, sizeof(ge::StringHead), ACL_MEMCPY_HOST_TO_DEVICE,
+                stream_id)) {
+    MS_LOG(ERROR) << "Copy string head failed for device address:" << dst_device_address->ToString();
+    return false;
+  }
+  // sync string body (real contents) from device to host
+  if (!BaseCopy(static_cast<void *>(static_cast<char *>(dst_device_address->GetDevicePtr()) + sizeof(ge::StringHead)),
+                src, size, ACL_MEMCPY_HOST_TO_DEVICE, stream_id, src_device_sync)) {
+    MS_LOG(ERROR) << "Copy string failed from device address:" << src_device_address->ToString()
+                  << " to:" << dst_device_address->ToString();
+    return false;
+  }
+  MS_LOG(DEBUG) << "Copy string info to device, ge::StringHead.len=" << head.len
+                << ", text=" << std::string(static_cast<const char *>(src), head.len)
+                << ", device_addr=" << dst_device_address->GetDevicePtr();
+  return true;
+}
+
+bool AscendResManager::CopyHostToDeviceForDiffFormat(const DeviceAddress *dst_device_address,
+                                                     const DeviceAddress *src_device_address, size_t stream_id) const {
+  MS_LOG(DEBUG) << "Copy host to device for different format, src device address:" << src_device_address->ToString()
+                << " dst device address:" << dst_device_address->ToString() << " stream id:" << stream_id;
+  const auto &dst_format = dst_device_address->format();
+  if (op_need_trans_format.find(dst_format) == op_need_trans_format.end()) {
+    MS_LOG(ERROR) << "Can not find format transfer function for format:" << dst_format
+                  << " dst device address:" << dst_device_address->ToString();
+    return false;
+  }
+
+  ShapeVector host_shape = src_device_address->GetShapeVector();
+  if (host_shape.empty()) {
+    (void)host_shape.emplace_back(1);
+  }
+  auto node_index = dst_device_address->GetNodeIndex();
+  if (node_index.first != nullptr) {
+    const auto &dst_ascend_device_address = dynamic_cast<const AscendDeviceAddress *>(dst_device_address);
+    (void)dst_ascend_device_address->GetGroupsWithCache();
+  }
+  std::vector<int64_t> device_shape;
+  if (dst_format != kOpFormat_FRAC_NZ) {
+    host_shape = trans::PaddingShape(host_shape, dst_format);
+    MS_LOG(DEBUG) << "Padding shape from:" << src_device_address->GetShapeVector() << " to:" << host_shape
+                  << " for device address:" << src_device_address->ToString();
+  }
+  device_shape = trans::TransShapeToDevice(host_shape, dst_format, node_index.first, node_index.second,
+                                           dst_device_address->type_id());
+  MS_LOG(DEBUG) << "Host shape:" << host_shape << " device shape:" << device_shape
+                << " for device address:" << dst_device_address->ToString();
+  // Trans type.
+  std::vector<uint8_t> tmp_host_for_type_trans;
+  void *tmp_host_ptr = src_device_address->GetDevicePtr();
+  if (src_device_address->type_id() != dst_device_address->type_id()) {
+    auto shape_size = abstract::ShapeSize(host_shape);
+    const trans::TypeIdArgs type_args{src_device_address->GetMutablePtr(), shape_size, src_device_address->type_id(),
+                                      dst_device_address->type_id(), src_device_address->GetSize()};
+    tmp_host_for_type_trans = std::vector<uint8_t>(dst_device_address->GetSize());
+    tmp_host_ptr = tmp_host_for_type_trans.data();
+    auto ret = trans::TransDataType(type_args, tmp_host_ptr);
+    if (!ret) {
+      MS_LOG(ERROR) << "Trans data type failed for dst device address:" << dst_device_address->ToString();
+      return false;
+    }
+  }
+
+  // Trans format.
+  const trans::FormatArgs format_args{
+    tmp_host_ptr, dst_device_address->GetSize(), kOpFormat_NCHW, dst_format, host_shape,
+    device_shape, dst_device_address->type_id()};
+  auto host_tmp = std::vector<uint8_t>(dst_device_address->GetSize());
+  if (!trans::TransFormat(format_args, host_tmp.data(), node_index.first, node_index.second)) {
+    MS_LOG(ERROR) << "Trans format failed.";
+    return false;
+  }
+
+  bool ret = CopyHostToDevice(dst_device_address, src_device_address, host_tmp.data(), dst_device_address->GetSize(),
+                              ACL_MEMCPY_HOST_TO_DEVICE, stream_id);
+  if (!ret) {
+    MS_LOG(ERROR) << "Failed async copy";
+    return false;
+  }
+  ret = SyncStream(stream_id);
+  if (!ret) {
+    MS_LOG(ERROR) << "Failed sync stream";
+    return false;
+  }
+  return true;
+}
+
+bool AscendResManager::CopyHostToDeviceForDiffType(const DeviceAddress *dst_device_address,
+                                                   const DeviceAddress *src_device_address, size_t stream_id) const {
+  MS_LOG(DEBUG) << "Copy host to device for different type, src device address:" << src_device_address->ToString()
+                << " dst device address:" << dst_device_address->ToString() << " stream id:" << stream_id;
+  std::vector<uint8_t> host_tmp = std::vector<uint8_t>(dst_device_address->GetSize());
+  if (dst_device_address->type_id() == kNumberTypeFloat32 && src_device_address->type_id() == kNumberTypeFloat64) {
+    if (src_device_address->GetSize() / sizeof(double) != dst_device_address->GetSize() / sizeof(float)) {
+      MS_INTERNAL_EXCEPTION(ArgumentError) << "Invalid src_size for device address" << src_device_address->ToString()
+                                           << ", dst_size for device address" << dst_device_address->ToString();
+    }
+    DoubleToFloat(host_tmp.data(), src_device_address->GetDevicePtr(), dst_device_address->GetSize() / sizeof(float));
+  } else {
+    ShapeVector host_shape = src_device_address->GetShapeVector();
+    if (host_shape.empty()) {
+      (void)host_shape.emplace_back(1);
+    }
+    auto shape_size = abstract::ShapeSize(host_shape);
+    const trans::TypeIdArgs type_args{src_device_address->GetDevicePtr(), shape_size, src_device_address->type_id(),
+                                      dst_device_address->type_id(), src_device_address->GetSize()};
+    if (!trans::TransDataType(type_args, host_tmp.data())) {
+      MS_LOG(ERROR) << "Trans data type failed for device address:" << dst_device_address;
+      return false;
+    }
+  }
+  // Sync device to host.
+  if (!CopyHostToDevice(dst_device_address, src_device_address, host_tmp.data(), dst_device_address->GetSize(),
+                        ACL_MEMCPY_HOST_TO_DEVICE, stream_id)) {
+    MS_LOG(ERROR) << "Failed async copy for src device address:" << src_device_address->ToString()
+                  << " dst device address:" << dst_device_address->ToString();
+    return false;
+  }
+  if (!SyncStream(stream_id)) {
+    MS_LOG(ERROR) << "Failed sync stream : " << stream_id;
+    return false;
+  }
+  return true;
+}
+
+bool AscendResManager::AsyncHostToDevice(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
                                          size_t stream_id) const {
-  const auto &dst_device_address = dynamic_cast<const DeviceAddress *>(dst_device_sync);
-  const auto &src_device_address = dynamic_cast<const DeviceAddress *>(src_device_sync);
+  const auto &dst_device_address = dynamic_cast<const DeviceAddress *>(dst_device_sync.get());
+  const auto &src_device_address = dynamic_cast<const DeviceAddress *>(src_device_sync.get());
   MS_EXCEPTION_IF_NULL(dst_device_address);
   MS_EXCEPTION_IF_NULL(src_device_address);
-  return dst_device_address->AsyncHostToDevice(src_device_address->host_shape(), src_device_address->GetSize(),
-                                               src_device_address->type_id(), src_device_address->GetMutablePtr(),
-                                               stream_id);
+  BindDeviceToCurrentThread(false);
+  // Check hete info.
+  if (dst_device_address->hete_info_ != nullptr) {
+    return CopyHostToDeviceForHeteInfo(dst_device_address, src_device_address, stream_id);
+  }
+
+  // Check format.
+  static const std::set<std::string> basic_format = {kOpFormat_NCHW, kOpFormat_DEFAULT, kOpFormat_NCDHW, kOpFormat_ND};
+  if (basic_format.find(src_device_address->format()) == basic_format.end() &&
+      src_device_address->format() != dst_device_address->format()) {
+    return CopyHostToDeviceForDiffFormat(dst_device_address, src_device_address, stream_id);
+  }
+
+  // Check type.
+  if (src_device_address->type_id() != dst_device_address->type_id()) {
+    return CopyHostToDeviceForDiffType(dst_device_address, src_device_address, stream_id);
+  }
+  if (src_device_address->GetSize() != dst_device_address->GetSize()) {
+    MS_LOG(WARNING) << "Invalid size for host to device copy, host device address:" << src_device_address->ToString()
+                    << " device address:" << dst_device_address->ToString();
+  }
+  MS_LOG(DEBUG) << "Copy host to device, src device address:" << src_device_address->ToString()
+                << " dst device address:" << dst_device_address->ToString() << " stream id:" << stream_id;
+  return CopyHostToDevice(dst_device_address, src_device_address, src_device_address->GetDevicePtr(),
+                          src_device_address->GetSize(), ACL_MEMCPY_HOST_TO_DEVICE, stream_id, src_device_sync);
 }
 
-bool AscendResManager::AsyncDeviceToDevice(const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync,
+bool AscendResManager::SyncDeviceToDeviceWithDiffFormatType(const DeviceSyncPtr &dst_device_sync,
+                                                            const DeviceSyncPtr &src_device_sync,
+                                                            size_t stream_id) const {
+  const auto &dst_device_address = dynamic_cast<const DeviceAddress *>(dst_device_sync.get());
+  const auto &src_device_address = dynamic_cast<const DeviceAddress *>(src_device_sync.get());
+  MS_EXCEPTION_IF_NULL(dst_device_address);
+  MS_EXCEPTION_IF_NULL(src_device_address);
+  MS_LOG(DEBUG) << "Copy device to device for different format, src device address:" << src_device_address->ToString()
+                << " dst device address:" << dst_device_address->ToString() << " stream id:" << stream_id;
+  auto host_shape = src_device_address->host_shape();
+  if (host_shape.empty()) {
+    MS_LOG(WARNING) << "Host shape of source device address is empty, emplace back shape [1],  device address size: "
+                    << src_device_address->GetSize()
+                    << ", device address type: " << TypeIdLabel(src_device_address->type_id());
+    (void)host_shape.emplace_back(1);
+  }
+  auto host_tensor = std::make_shared<tensor::Tensor>(src_device_address->type_id(), host_shape);
+  MS_EXCEPTION_IF_NULL(host_tensor);
+  MS_EXCEPTION_IF_NULL(host_tensor->device_address());
+  const auto &host_device_address = dynamic_cast<const DeviceAddress *>(host_tensor->device_address().get());
+  MS_EXCEPTION_IF_NULL(host_device_address);
+  std::vector<uint8_t> host_tmp;
+  if (host_device_address->GetDevicePtr() == nullptr) {
+    host_tmp = std::vector<uint8_t>(src_device_address->GetSize());
+    host_device_address->SetDevicePtr(host_tmp.data());
+  }
+  if (!SyncDeviceToHost(host_tensor->device_address(), src_device_sync, stream_id)) {
+    MS_LOG(ERROR)
+      << "Sync device to device failed at the stage of sync device to intermediate Tensor, src device address:"
+      << src_device_address->ToString();
+    return false;
+  }
+  if (!SyncHostToDevice(dst_device_sync, host_tensor->device_address(), stream_id)) {
+    MS_LOG(ERROR)
+      << "Sync device to device failed at the stage of sync intermediate tensor to device, dst device address:"
+      << dst_device_address->ToString();
+    return false;
+  }
+  return true;
+}
+
+bool AscendResManager::AsyncDeviceToDevice(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
                                            size_t stream_id) const {
-  const auto &dst_device_address = dynamic_cast<const DeviceAddress *>(dst_device_sync);
-  const auto &src_device_address = dynamic_cast<const DeviceAddress *>(src_device_sync);
+  const auto &dst_device_address = dynamic_cast<const DeviceAddress *>(dst_device_sync.get());
+  const auto &src_device_address = dynamic_cast<const DeviceAddress *>(src_device_sync.get());
   MS_EXCEPTION_IF_NULL(dst_device_address);
   MS_EXCEPTION_IF_NULL(src_device_address);
-  return dst_device_address->AsyncDeviceToDevice(src_device_address);
+  BindDeviceToCurrentThread(true);
+  if (dst_device_address->format() != src_device_address->format() ||
+      dst_device_address->type_id() != src_device_address->type_id()) {
+    MS_LOG(INFO) << "Can not copy from device to device directly, format or type is different, src(format:"
+                 << src_device_address->format() << ", type_id:" << TypeIdLabel(src_device_address->type_id())
+                 << "), dst(format:" << dst_device_address->format()
+                 << ", type_id:" << TypeIdLabel(dst_device_address->type_id())
+                 << ", use the intermediate Tensor copy instead.";
+    return SyncDeviceToDeviceWithDiffFormatType(dst_device_sync, dst_device_sync, stream_id);
+  }
+  MS_LOG(DEBUG) << "Copy device to device, src device address:" << src_device_address->ToString()
+                << " dst device address:" << dst_device_address->ToString() << " stream id:" << stream_id;
+  if (dst_device_address->GetDevicePtr() == src_device_address->GetDevicePtr()) {
+    MS_LOG(DEBUG) << "Same addr, no need memcpy data.";
+    return true;
+  }
+  if (dst_device_address->type_id() > kMonadTypeBegin && dst_device_address->type_id() < kMonadTypeEnd) {
+    return true;
+  }
+  if (dst_device_address->GetSize() < src_device_address->GetSize()) {
+    MS_LOG(ERROR) << "Src size is greater than det size, src size is: " << src_device_address->GetSize()
+                  << ", dst size is: " << dst_device_address->GetSize();
+    return false;
+  }
+  bool ret = BaseCopy(dst_device_address->GetDevicePtr(), src_device_address->GetDevicePtr(),
+                      src_device_address->GetSize(), ACL_MEMCPY_DEVICE_TO_DEVICE, stream_id, nullptr);
+  if (!ret) {
+    MS_LOG(ERROR) << "Async device to device failed.";
+    return false;
+  }
+  return true;
 }
 
 bool AscendResManager::LoadCollectiveCommLib() {
@@ -909,11 +1433,12 @@ std::pair<std::vector<size_t>, std::vector<size_t>> AscendResManager::AllocDevic
                     << ", size:" << before_padding_sizes[i] << ", shape:" << tensor->shape()
                     << ", data_type:" << TypeIdToString(tensor->data_type());
       MS_EXCEPTION_IF_NULL(device_address);
-      if (tensor->device_address() == nullptr) {
-        device_address->SyncHostToDevice(before_padding_sizes[i], tensor->data_c());
-      } else {
-        device_address->SyncDeviceToDevice(tensor->device_address().get());
-      }
+      MS_EXCEPTION_IF_NULL(tensor->device_address());
+      device::ResKey res_key{device_address->GetDeviceType(), device_address->device_id()};
+      auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+      MS_EXCEPTION_IF_NULL(res_manager);
+      res_manager->SyncAllStreams();
+      SyncCopy(device_address, tensor->device_address(), device_address->stream_id());
       tensor->set_device_address(device_address);
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(MarkTensorAsOutput, "PyNative", device_address->device_name(),
                                                      device_ptr, tensor->data_type(), tensor->shape(),
@@ -957,11 +1482,12 @@ std::pair<std::vector<size_t>, std::vector<size_t>> AscendResManager::AllocDevic
     MS_LOG(DEBUG) << "Create DeviceAddress, ptr:" << ptr << ", size:" << before_padding_sizes[i]
                   << ", shape:" << tensor->shape() << ", data_type:" << TypeIdToString(tensor->data_type());
     MS_EXCEPTION_IF_NULL(device_address);
-    if (tensor->device_address() == nullptr) {
-      device_address->SyncHostToDevice(before_padding_sizes[i], tensor->data_c());
-    } else {
-      device_address->SyncDeviceToDevice(tensor->device_address().get());
-    }
+    MS_EXCEPTION_IF_NULL(tensor->device_address());
+    device::ResKey res_key{device_address->GetDeviceType(), device_address->device_id()};
+    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+    MS_EXCEPTION_IF_NULL(res_manager);
+    res_manager->SyncAllStreams();
+    SyncCopy(device_address, tensor->device_address(), device_address->stream_id());
     tensor->set_device_address(device_address);
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddCompileTimeMemInfo, "PyNative", before_padding_sizes[i], ptr,
                                                    memory::mem_pool::MemType::kContinuousMemory);
@@ -1260,25 +1786,26 @@ void AscendResManager::InitializeForGe() const {
   initialized_ge = true;
 }
 
-MS_REGISTER_HAL_COPY_FUNC(DeviceType::kAscend,
-                          ([](const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync, size_t stream_id) {
-                            auto context = MsContext::GetInstance();
-                            MS_EXCEPTION_IF_NULL(context);
-                            auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-                            device::ResKey res_key{DeviceType::kAscend, device_id};
-                            auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-                            MS_EXCEPTION_IF_NULL(res_manager);
-                            return res_manager->SyncCopy(dst_device_sync, src_device_sync, stream_id);
-                          }),
-                          ([](const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync, size_t stream_id) {
-                            auto context = MsContext::GetInstance();
-                            MS_EXCEPTION_IF_NULL(context);
-                            auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-                            device::ResKey res_key{DeviceType::kAscend, device_id};
-                            auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-                            MS_EXCEPTION_IF_NULL(res_manager);
-                            return res_manager->SyncCopy(dst_device_sync, src_device_sync, stream_id);
-                          }));
+MS_REGISTER_HAL_COPY_FUNC(
+  DeviceType::kAscend,
+  ([](const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id) {
+    auto context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(context);
+    auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+    device::ResKey res_key{DeviceType::kAscend, device_id};
+    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+    MS_EXCEPTION_IF_NULL(res_manager);
+    return res_manager->SyncCopy(dst_device_sync, src_device_sync, stream_id);
+  }),
+  ([](const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id) {
+    auto context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(context);
+    auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+    device::ResKey res_key{DeviceType::kAscend, device_id};
+    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+    MS_EXCEPTION_IF_NULL(res_manager);
+    return res_manager->SyncCopy(dst_device_sync, src_device_sync, stream_id);
+  }));
 
 MS_REGISTER_HAL_RES_MANAGER(kAscendDevice, DeviceType::kAscend, AscendResManager);
 }  // namespace ascend

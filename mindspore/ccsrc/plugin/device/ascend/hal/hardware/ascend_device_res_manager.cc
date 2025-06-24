@@ -234,6 +234,11 @@ DeviceAddressPtr AscendDeviceResManager::CreateDeviceAddress(void *ptr, size_t s
                                                   stream_id, user_data);
 }
 
+bool AscendDeviceResManager::Copy(void *dst, const void *src, uint64_t size, CopyType kind, size_t stream_id) const {
+  MS_EXCEPTION_IF_NULL(ascend_res_manager_);
+  return ascend_res_manager_->Copy(dst, src, size, kind, stream_id);
+}
+
 bool AscendDeviceResManager::LoadCollectiveCommLib() {
   MS_EXCEPTION_IF_NULL(ascend_res_manager_);
   return ascend_res_manager_->LoadCollectiveCommLib();

@@ -103,8 +103,8 @@ class KernelRunner {
     skip_launch_shape_related_op_ = skip_launch_shape_related_op;
   }
 
-  const std::map<size_t, std::pair<KernelTensorPtr, std::pair<const DeviceContext *, std::vector<KernelTensorPtr>>>>
-    &copy_output_kernel_tensors() const {
+  const std::map<size_t, std::pair<KernelTensorPtr, std::pair<const DeviceContext *, std::vector<KernelTensorPtr>>>> &
+  copy_output_kernel_tensors() const {
     return copy_output_kernel_tensors_;
   }
   std::vector<KernelTensor *> GetOutputDeviceTensors() { return output_launch_tensors_; }

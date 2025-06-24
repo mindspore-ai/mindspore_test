@@ -46,6 +46,7 @@ namespace ascend {
 class AscendKernelRuntime;
 class AscendRuntimeCore;
 class AscendMemoryManager;
+class AscendResManager;
 class DataDumper;
 namespace tasksink {
 class TaskGenerator;
@@ -55,6 +56,7 @@ namespace gpu {
 class GPUKernelRuntime;
 class GPUMemoryManager;
 class GPUDeviceContext;
+class GPUResManager;
 }  // namespace gpu
 }  // namespace device
 class SingleOpInferSession;
@@ -362,32 +364,14 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
 
   virtual DeviceAddressPtr CloneDeviceAddress() { MS_LOG(EXCEPTION) << "Not implemented."; }
 
+  virtual mindspore::tensor::TensorPtr LoadMemToHost(const std::string &tensor_name, const ShapeVector &host_shape,
+                                                     TypeId host_type, bool trans_flag, bool async_copy = true) const {
+    return nullptr;
+  }
+
   virtual bool CopyDeviceToHostWithoutSyncStream(void *dst, size_t dst_size, const void *src, size_t src_size) {
     return true;
   }
-  virtual bool AsyncHostToDevice(size_t size, TypeId /* type */, const void *host_ptr,
-                                 size_t stream_id = SIZE_MAX) const {
-    return true;
-  }
-  virtual bool AsyncHostToDevice(size_t size, TypeId type, const tensor::TensorDataPtr &tensor_data,
-                                 const std::string &format, size_t stream_id = SIZE_MAX) const {
-    return true;
-  }
-
-  virtual bool AsyncHostToDevice(size_t size, const void *host_ptr, size_t stream_id = SIZE_MAX) const { return true; }
-  virtual bool AsyncDeviceToHost(size_t size, void *host_ptr, size_t stream_id = SIZE_MAX) const { return true; }
-
-  // Asynchronously copy host memory to device side.
-  virtual bool AsyncHostToDevice(const ShapeVector &, size_t, TypeId, const void *, size_t) const { return true; }
-  // Asynchronously copy device memory to host side.
-  virtual bool AsyncDeviceToHost(const ShapeVector &, size_t, TypeId, void *, size_t) const { return true; }
-  // Synchronously copy device memory to device side.
-  virtual bool SyncDeviceToDevice(const DeviceSync *) const { return true; }
-  virtual bool SyncDeviceToDevice(const ShapeVector &, size_t, TypeId, const void *, const std::string &) const {
-    return true;
-  }
-  // Asynchronously copy device memory to device side.
-  virtual bool AsyncDeviceToDevice(const DeviceAddress *, size_t stream_id = SIZE_MAX) const { return true; }
   virtual bool CopyDeviceToHost(void *dst, const void *src, const size_t &size) const { return true; }
   virtual bool CopyHostToDevice(void *dst, const void *src, const size_t &size) const { return true; }
 
@@ -470,11 +454,6 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   void IncreaseDynamicRefCount(const std::string &op_object, int32_t increase_cnt);
   void IncreaseDynamicRefCount(const std::string &op_object);
   int32_t DecreaseDynamicRefCount(const std::string &op_object);
-
-  virtual mindspore::tensor::TensorPtr LoadMemToHost(const std::string &tensor_name, const ShapeVector &host_shape,
-                                                     TypeId host_type, bool trans_flag, bool async_copy = true) const {
-    return nullptr;
-  }
 
   // Return whether DeviceAddress has a valid ptr.
   virtual bool IsPtrValid() const;
@@ -565,6 +544,30 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   size_t size() const { return address_common_->size_; }
 
  protected:
+  virtual bool AsyncHostToDevice(size_t size, TypeId /* type */, const void *host_ptr,
+                                 size_t stream_id = SIZE_MAX) const {
+    return true;
+  }
+  virtual bool AsyncHostToDevice(size_t size, TypeId type, const tensor::TensorDataPtr &tensor_data,
+                                 const std::string &format, size_t stream_id = SIZE_MAX) const {
+    return true;
+  }
+
+  virtual bool AsyncHostToDevice(size_t size, const void *host_ptr, size_t stream_id = SIZE_MAX) const { return true; }
+  virtual bool AsyncDeviceToHost(size_t size, void *host_ptr, size_t stream_id = SIZE_MAX) const { return true; }
+
+  // Asynchronously copy host memory to device side.
+  virtual bool AsyncHostToDevice(const ShapeVector &, size_t, TypeId, const void *, size_t) const { return true; }
+  // Asynchronously copy device memory to host side.
+  virtual bool AsyncDeviceToHost(const ShapeVector &, size_t, TypeId, void *, size_t) const { return true; }
+  // Synchronously copy device memory to device side.
+  virtual bool SyncDeviceToDevice(const DeviceSync *) const { return true; }
+  virtual bool SyncDeviceToDevice(const ShapeVector &, size_t, TypeId, const void *, const std::string &) const {
+    return true;
+  }
+  // Asynchronously copy device memory to device side.
+  virtual bool AsyncDeviceToDevice(const DeviceAddress *, size_t stream_id = SIZE_MAX) const { return true; }
+
   // address basic info
   AddressCommonPtr address_common_{nullptr};
 
@@ -627,9 +630,11 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   friend class mindspore::device::gpu::GPUKernelRuntime;
   friend class mindspore::device::gpu::GPUMemoryManager;
   friend class mindspore::device::gpu::GPUDeviceContext;
+  friend class mindspore::device::gpu::GPUResManager;
   friend class mindspore::device::ascend::AscendKernelRuntime;
   friend class mindspore::device::ascend::AscendRuntimeCore;
   friend class mindspore::device::ascend::AscendMemoryManager;
+  friend class mindspore::device::ascend::AscendResManager;
   friend class mindspore::device::ascend::DataDumper;
   friend class mindspore::SingleOpInferSession;
   friend class mindspore::RuntimeUtils;

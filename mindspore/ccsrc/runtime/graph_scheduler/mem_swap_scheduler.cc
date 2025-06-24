@@ -85,7 +85,7 @@ std::map<size_t, size_t> GetActionTensors(const std::shared_ptr<device::SwapActi
                                           const std::shared_ptr<device::SwapStrategy> &swap_strategy,
                                           const HashMap<AnfNodePtr, size_t> &real_parameters,
                                           const KernelGraphPtr &graph,
-                                          std::vector<DeviceTensor *> *fixed_device_address,
+                                          std::vector<DeviceTensorPtr> *fixed_device_address,
                                           std::vector<size_t> *real_parameter_index,
                                           std::vector<AnfNodePtr> *store_key) {
   MS_EXCEPTION_IF_NULL(swap_action);
@@ -137,7 +137,7 @@ std::map<size_t, size_t> GetActionTensors(const std::shared_ptr<device::SwapActi
         } else {
           const auto &output_addr = AnfAlgo::GetMutableOutputAddr(node, real_tensor_info->index_, false);
           tensor_ids_group[kFormalParameterIdx].emplace_back(real_tensor_id);
-          (void)fixed_device_address->emplace_back(output_addr.get());
+          (void)fixed_device_address->emplace_back(output_addr);
         }
       } else {
         tensor_ids_group[kTensorIdx].emplace_back(real_tensor_id);
@@ -275,7 +275,7 @@ void MemSwapScheduler::BuildSwapActorForGraph(const KernelGraphPtr &graph, const
   const auto graph_id = graph->graph_id();
   for (const auto &iter : swap_strategy->actions_) {
     // Fixed DeviceAddress in MemorySwapActor.
-    std::vector<DeviceTensor *> fixed_device_address;
+    std::vector<DeviceTensorPtr> fixed_device_address;
     // Output index of EntranceActor or StackActor for real parameter whose DeviceAddress is not fixed.
     std::vector<size_t> real_parameter_index;
     std::vector<AnfNodePtr> store_key;

@@ -24,6 +24,7 @@
 #include <queue>
 #include <algorithm>
 
+#include "mindspore/core/include/ir/tensor_api.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "utils/ms_context.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
@@ -36,6 +37,7 @@
 #include "include/common/utils/utils.h"
 #include "include/common/debug/common.h"
 #include "runtime/graph_scheduler/device_tensor_store.h"
+#include "runtime/device/res_manager/hal_res_manager.h"
 #include "utils/file_utils.h"
 
 using mindspore::runtime::DeviceTensorStore;
@@ -220,6 +222,10 @@ bool AscendDumpMemToFile(const device::DeviceAddress &addr, const std::string &f
     MS_VLOG(VL_DUMP) << "Data is nullptr for file: " << filepath << ", skip it.";
     return true;
   }
+  device::ResKey res_key{addr.GetDeviceType(), addr.device_id()};
+  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+  MS_EXCEPTION_IF_NULL(res_manager);
+  res_manager->SyncAllStreams();
   if (trans_flag) {
     std::string path = filepath + '.' + host_fmt;
     MS_VLOG(VL_DUMP) << "E2E Dump path is " << path;
@@ -228,10 +234,13 @@ bool AscendDumpMemToFile(const device::DeviceAddress &addr, const std::string &f
       MS_VLOG(VL_DUMP) << "Cannot create tensor with type: " << TypeIdLabel(host_type);
       return false;
     }
-    mindspore::tensor::TensorPtr out_tensor = std::make_shared<tensor::Tensor>(host_type, host_shape);
+    mindspore::tensor::TensorPtr out_tensor = tensor::empty(host_type, host_shape, device::DeviceType::kCPU);
     MS_EXCEPTION_IF_NULL(out_tensor);
     size_t host_size = LongToSize(out_tensor->DataNBytes());
-    ret = addr.SyncDeviceToHost(host_shape, host_size, host_type, out_tensor->data_c());
+    auto clone_device_address = res_manager->CreateDeviceAddress(
+      addr.GetMutablePtr(), addr.GetSize(), addr.GetShapeVector(), kernel::GetFormatFromStrToEnum(addr.format()),
+      addr.type_id(), addr.device_name(), addr.device_id(), addr.stream_id());
+    ret = SyncCopy(out_tensor->device_address(), clone_device_address, addr.stream_id());
     if (!ret) {
       MS_LOG(ERROR) << "Copy device mem to host failed";
       return ret;
@@ -239,7 +248,7 @@ bool AscendDumpMemToFile(const device::DeviceAddress &addr, const std::string &f
     ret = DumpJsonParser::DumpToFile(path, out_tensor->data_c(), host_size, host_shape, host_type);
   } else {
     auto host_tmp = std::vector<uint8_t>(addr.GetSize());
-    addr.SyncDeviceToHost(addr.GetSize(), host_tmp.data());
+    res_manager->Copy(host_tmp.data(), addr.GetMutablePtr(), addr.GetSize(), device::CopyType::kD2H, addr.stream_id());
     std::string path = filepath + '.' + addr.format();
     MS_VLOG(VL_DUMP) << "E2E Dump path is " << path;
     ret = DumpJsonParser::DumpToFile(path, host_tmp.data(), addr.GetSize(), host_shape, addr.type_id());

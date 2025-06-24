@@ -71,7 +71,7 @@ size_t SwitchActor::GetIndex(const OpContext<KernelTensor> *const context) const
   MS_EXCEPTION_IF_NULL(context);
   MS_EXCEPTION_IF_NULL(input_kernel_tensors_[0]);
 
-  DeviceTensor *device_tensor = input_kernel_tensors_[0]->device_address().get();
+  auto device_tensor = input_kernel_tensors_[0]->device_address();
   TypeId type_id = device_tensor->type_id();
   size_t size = abstract::TypeIdSize(type_id);
   if (size > sizeof(int64_t)) {
@@ -95,7 +95,8 @@ size_t SwitchActor::GetIndex(const OpContext<KernelTensor> *const context) const
     }
   }
   auto tensor = std::make_shared<tensor::Tensor>(type_id, host_shape, buf, size);
-  if (!SyncCopy(device_tensor, tensor->device_address().get(), kDefaultStreamIndex)) {
+  if (!SyncAllStreamForDeviceAddress(device_tensor) ||
+      !SyncCopy(device_tensor, tensor->device_address(), kDefaultStreamIndex)) {
     MS_LOG(ERROR) << GetAID().Name() << " get index from device address failed, type id:" << type_id;
     return 0;
   }

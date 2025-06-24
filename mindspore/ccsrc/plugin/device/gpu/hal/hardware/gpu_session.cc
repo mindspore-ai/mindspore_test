@@ -279,23 +279,6 @@ bool UpdatedByAssign(const KernelGraphPtr &kernel_graph, const AnfNodePtr &node)
   });
 }
 
-size_t UpdateGraphInputAbstract(const AnfNodePtr input_node, const tensor::TensorPtr tensor) {
-  MS_EXCEPTION_IF_NULL(input_node);
-  MS_EXCEPTION_IF_NULL(tensor);
-  size_t size = LongToSize(tensor->DataNBytes());
-  if (!input_node->isa<Parameter>()) {
-    return size;
-  }
-  auto input_param = input_node->cast<ParameterPtr>();
-  if (input_param != nullptr && input_param->has_dynamic_shape()) {
-    auto tensor_shape = tensor->shape();
-    common::AnfAlgo::SetOutputInferTypeAndShape({common::AnfAlgo::GetOutputInferDataType(input_node, 0)},
-                                                {tensor_shape}, input_node.get());
-    size = abstract::ShapeSize(tensor_shape) * abstract::TypeIdSize(tensor->data_type());
-  }
-  return size;
-}
-
 bool CheckIfNeedSync(const tensor::TensorPtr &tensor, const DeviceAddressPtr &device_address,
                      const ParameterPtr &pk_node) {
   MS_EXCEPTION_IF_NULL(tensor);
@@ -355,9 +338,11 @@ void GPUSession::LoadInputData(const std::shared_ptr<KernelGraph> &kernel_graph,
         if (common::AnfAlgo::IsParameterWeight(pk_node) || UpdatedByAssign(kernel_graph, input_node)) {
           tensor->set_device_address(device_address);
         }
-        auto size = UpdateGraphInputAbstract(input_node, tensor);
-        if (!device_address->SyncHostToDevice(AnfAlgo::GetRuntimePaddingShape(pk_node, 0), size, tensor->data_type(),
-                                              tensor->data_c())) {
+        device::ResKey res_key{device_address->GetDeviceType(), device_address->device_id()};
+        auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+        MS_EXCEPTION_IF_NULL(res_manager);
+        if (!res_manager->SyncAllStreams() ||
+            !SyncCopy(device_address, tensor->device_address(), device_address->stream_id())) {
           MS_LOG(EXCEPTION) << "SyncHostToDevice failed.";
         }
         if (kernel_graph->IsUpdatedParameter(pk_node)) {

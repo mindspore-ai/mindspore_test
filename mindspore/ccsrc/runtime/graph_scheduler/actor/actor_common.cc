@@ -431,10 +431,33 @@ bool WaitRuntimePipelineFinish(const OpContext<KernelTensor> *context, const std
 #endif
 }
 
-bool CopyDataForParameter(const DeviceSync *dst_device_tensor, const DeviceSync *src_device_tensor, size_t stream_id) {
+bool SyncAllStreamForDeviceAddress(const DeviceTensorPtr &device_tensor) {
+  MS_EXCEPTION_IF_NULL(device_tensor);
+  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(
+    device::ResKey{device_tensor->GetDeviceType(), device_tensor->device_id()});
+  MS_EXCEPTION_IF_NULL(res_manager);
+  return res_manager->SyncAllStreams();
+}
+
+bool CopyDataForParameter(const DeviceTensorPtr &dst_device_tensor, const DeviceSyncPtr &src_device_tensor,
+                          size_t stream_id) {
   if (dst_device_tensor->GetDeviceType() == device::DeviceType::kCPU) {
+    if (stream_id == SIZE_MAX && src_device_tensor->GetDeviceType() != device::DeviceType::kCPU) {
+      stream_id = src_device_tensor->stream_id();
+    }
+    MS_LOG(WARNING) << "Sync copy from device tensor:" << src_device_tensor << " to:" << dst_device_tensor
+                    << " by stream id:" << stream_id;
+    if (!SyncAllStreamForDeviceAddress(dst_device_tensor)) {
+      MS_LOG(ERROR) << "Failed to sync all stream.";
+      return false;
+    }
     return SyncCopy(dst_device_tensor, src_device_tensor, stream_id);
   }
+  if (stream_id == SIZE_MAX) {
+    stream_id = dst_device_tensor->stream_id();
+  }
+  MS_LOG(WARNING) << "Async copy from device tensor:" << src_device_tensor << " to:" << dst_device_tensor
+                  << " by stream id:" << stream_id;
   return AsyncCopy(dst_device_tensor, src_device_tensor, stream_id);
 }
 
@@ -907,7 +930,7 @@ bool CopyDataFromTensor(const DeviceTensorPtr &device_tensor, tensor::Tensor *te
   static const std::string kSyncCopyInput = "sync_copy_input";
   static bool sync_copy_input = common::IsEnableRuntimeConfig(kSyncCopyInput);
   auto tensor_address = tensor->device_address();
-  auto ret = AsyncCopy(device_tensor.get(), tensor_address.get(), stream_id);
+  auto ret = AsyncCopy(device_tensor, tensor_address, stream_id);
 
   if (sync_copy_input) {
     auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
@@ -970,13 +993,13 @@ void SyncHostToDeviceFromTensor(size_t outer_index, size_t inner_index, tensor::
 
   auto tensor_size = tensor->DataNBytes();
   if (is_first_user) {
-    if (tensor_size > 0 && !CopyDataForParameter(device_tensor.get(), tensor->device_address().get(), stream_id)) {
+    if (tensor_size > 0 && !CopyDataForParameter(device_tensor, tensor->device_address(), stream_id)) {
       MS_LOG(EXCEPTION) << "Fetch parameter async host to device failed.";
     }
   } else if (graph_parameter_store->GetAsyncMemcpyFun(outer_index, inner_index) == nullptr) {
     graph_parameter_store->SetAsyncMemcpyFun(
       outer_index, inner_index, [tensor_size, device_tensor, tensor](size_t stream_id) {
-        if (tensor_size > 0 && !CopyDataForParameter(device_tensor.get(), tensor->device_address().get(), stream_id)) {
+        if (tensor_size > 0 && !CopyDataForParameter(device_tensor, tensor->device_address(), stream_id)) {
           MS_LOG(EXCEPTION) << "Fetch parameter async host to device failed.";
         }
       });

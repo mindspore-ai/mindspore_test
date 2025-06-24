@@ -20,6 +20,7 @@
 #include "include/common/utils/stub_tensor.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "runtime/hardware/device_context_manager.h"
+#include "runtime/device/res_manager/hal_res_manager.h"
 #include "plugin/device/cpu/kernel/pyexecute/py_execute_cpu_kernel.h"
 #include "include/common/utils/convert_utils.h"
 #include "include/common/utils/convert_utils_py.h"
@@ -55,7 +56,13 @@ void TensorToRawMemory(const tensor::TensorPtr &tensor, DeviceAddress *const dev
   } else {
     MS_LOG(DEBUG) << "Tensor:" << tensor->ToString() << " shape:" << tensor->shape() << " type:" << tensor->data_type()
                   << " size:" << tensor->Size();
-    device_address->SyncHostToDevice(tensor->Size(), tensor->data_c());
+    device::ResKey res_key{device_address->GetDeviceType(), device_address->device_id()};
+    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+    MS_EXCEPTION_IF_NULL(res_manager);
+    res_manager->SyncAllStreams();
+    MS_EXCEPTION_IF_NULL(tensor->device_address());
+    res_manager->Copy(device_address->GetMutablePtr(), tensor->device_address()->GetMutablePtr(),
+                      device_address->GetSize(), device::CopyType::kH2D, device_address->stream_id());
   }
 }
 

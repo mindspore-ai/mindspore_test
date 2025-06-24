@@ -17,6 +17,7 @@
 #include <memory>
 #include <algorithm>
 #include "runtime/device/move_to.h"
+#include "runtime/device/res_manager/hal_res_manager.h"
 #include "common/device_type.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "runtime/hardware/device_context_manager.h"
@@ -34,16 +35,18 @@ bool MoveToD2H(const tensor::TensorPtr &src_tensor, const DeviceAddressPtr &src_
     auto ret = memcpy_s(dst_tensor->data_c(), size, src_tensor->data_c(), size);
     return ret == EOK;
   }
-  auto shape = src_tensor->shape();
-  auto type_id = src_tensor->data_type();
   auto ret = true;
   std::string status;
   if (blocking) {
     status = "SyncDeviceToHost";
-    ret = src_device_ptr->SyncDeviceToHost(shape, dst_tensor->Size(), type_id, dst_tensor->data_c());
+    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(
+      device::ResKey{src_device_ptr->GetDeviceType(), src_device_ptr->device_id()});
+    MS_EXCEPTION_IF_NULL(res_manager);
+    (void)res_manager->SyncAllStreams();
+    ret = SyncCopy(dst_tensor->device_address(), src_device_ptr, src_device_ptr->stream_id());
   } else {
     status = "AsyncDeviceToHost";
-    ret = src_device_ptr->AsyncDeviceToHost(dst_tensor->Size(), dst_tensor->data_c());
+    ret = AsyncCopy(dst_tensor->device_address(), src_device_ptr, src_device_ptr->stream_id());
   }
   if (!ret) {
     MS_LOG(EXCEPTION) << status << " failed.";
@@ -55,21 +58,18 @@ void MoveToH2D(const tensor::TensorPtr &src_tensor, const DeviceAddressPtr &src_
                const DeviceAddressPtr &dst_device_ptr, bool blocking) {
   MS_EXCEPTION_IF_NULL(src_tensor);
   MS_EXCEPTION_IF_NULL(dst_device_ptr);
-  auto shape = src_tensor->shape();
-  auto type_id = src_tensor->data_type();
-  auto src_size = src_tensor->Size();
-  if (src_device_ptr != nullptr) {
-    src_size = src_device_ptr->GetSize();
-  }
-  size_t size = std::min(src_size, dst_device_ptr->GetSize());
-  auto src_data = src_device_ptr == nullptr ? src_tensor->data_c() : src_device_ptr->GetPtr();
+  DeviceSyncPtr src_data = src_device_ptr == nullptr ? src_tensor->device_address() : src_device_ptr;
   auto ret = true;
   std::string status;
   if (blocking) {
-    ret = dst_device_ptr->SyncHostToDevice(shape, size, type_id, src_data);
+    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(
+      device::ResKey{dst_device_ptr->GetDeviceType(), dst_device_ptr->device_id()});
+    MS_EXCEPTION_IF_NULL(res_manager);
+    (void)res_manager->SyncAllStreams();
+    ret = AsyncCopy(dst_device_ptr, src_data, dst_device_ptr->stream_id());
     status = "SyncHostToDevice";
   } else {
-    ret = dst_device_ptr->AsyncHostToDevice(size, src_data);
+    ret = AsyncCopy(dst_device_ptr, src_data, dst_device_ptr->stream_id());
     status = "AsyncHostToDevice";
   }
   if (!ret) {

@@ -637,20 +637,10 @@ void ControlActor::MergeDeviceAddress(OpContext<KernelTensor> *const context,
         }
       }
     }
-    bool ret = false;
-    if (addr_list[i]->device_address()->device_name() == addr_list[0]->device_address()->device_name()) {
-      ret = SyncCopy(tmp_device_tensor.get(), addr_list[i]->device_address().get(), kDefaultStreamIndex);
-    } else if (addr_list[0]->device_address()->device_name() == kCPUDevice) {
-      ret = SyncCopy(tmp_device_tensor.get(), addr_list[i]->device_address().get(), kDefaultStreamIndex);
-    } else if (addr_list[i]->device_address()->device_name() == kCPUDevice) {
-      ret = SyncCopy(tmp_device_tensor.get(), addr_list[i]->device_address().get(), kDefaultStreamIndex);
-    } else {
-      MS_LOG(ERROR) << "Invalid device name for addr1:" << addr_list[0]->device_address()
-                    << " name:" << addr_list[0]->device_address()->device_name()
-                    << " and addr2:" << addr_list[i]->device_address()
-                    << " name:" << addr_list[i]->device_address()->device_name();
-    }
-    if (!ret) {
+    if (!SyncAllStreamForDeviceAddress(tmp_device_tensor->GetDeviceType() == device::DeviceType::kCPU
+                                         ? addr_list[i]->device_address()
+                                         : tmp_device_tensor) ||
+        !SyncCopy(tmp_device_tensor, addr_list[i]->device_address(), kDefaultStreamIndex)) {
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR(*context, "Sync device to device failed.");
     }
     tmp_device_tensor->set_ptr((reinterpret_cast<char *>(tmp_device_tensor->GetMutablePtr())) +

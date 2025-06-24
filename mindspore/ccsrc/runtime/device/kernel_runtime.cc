@@ -30,6 +30,7 @@
 #include "include/backend/kernel_graph.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "runtime/device/kernel_runtime_manager.h"
+#include "runtime/device/res_manager/hal_res_manager.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "ir/value.h"
@@ -39,6 +40,7 @@
 #include "kernel/framework_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/core/include/ir/tensor_api.h"
 
 using mindspore::kernel::Address;
 using mindspore::kernel::AddressPtr;
@@ -1094,7 +1096,18 @@ DeviceAddressPtr KernelRuntime::CreateDeviceAddressForStringValue(const ValuePtr
     }
   }
   ShapeVector shape = {1, SizeToLong(tensor_size)};
-  if (!address->SyncHostToDevice(shape, tensor_size, kNumberTypeUInt8, value_string.data(), "DefaultFormat")) {
+  auto tmp_tensor = tensor::empty(kNumberTypeUInt8, shape, device::DeviceType::kCPU);
+  MS_EXCEPTION_IF_NULL(tmp_tensor);
+  MS_EXCEPTION_IF_NULL(tmp_tensor->device_address());
+  auto tmp_device_address = dynamic_cast<device::DeviceAddress *>(tmp_tensor->device_address().get());
+  MS_EXCEPTION_IF_NULL(tmp_device_address);
+  tmp_device_address->set_ptr(value_string.data());
+  tmp_device_address->SetSize(tensor_size);
+  tmp_device_address->set_format(kOpFormat_DEFAULT);
+  device::ResKey res_key{address->GetDeviceType(), address->device_id()};
+  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+  MS_EXCEPTION_IF_NULL(res_manager);
+  if (!res_manager->SyncAllStreams() || !SyncCopy(address, tmp_tensor->device_address(), address->stream_id())) {
     MS_LOG(EXCEPTION) << "kValueNode SyncHostToDevice fail!";
   }
   return address;

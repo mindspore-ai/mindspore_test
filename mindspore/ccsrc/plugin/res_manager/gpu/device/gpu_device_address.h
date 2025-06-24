@@ -53,6 +53,27 @@ class GPUDeviceAddress : public LoadableDeviceAddress {
   }
   ~GPUDeviceAddress() override;
 
+  bool CopyDeviceToHost(void *dst, const void *src, const size_t &size) const override;
+  bool CopyHostToDevice(void *dst, const void *src, const size_t &size) const override;
+
+  void ClearDeviceMemory() override;
+  DeviceType GetDeviceType() const override { return DeviceType::kGPU; }
+  mindspore::tensor::TensorPtr LoadMemToHost(const std::string &tensor_name, const ShapeVector &host_shape,
+                                             TypeId host_type, bool trans_flag, bool async_copy = true) const override;
+
+  void ClearUserData() override;
+
+  DeviceAddressPtr CloneDeviceAddress() override;
+
+  bool SyncDeviceToHost(void *host_ptr, const void *device_ptr, size_t size, const std::string &device_name,
+                        uint32_t device_id, mindspore::Format format, const ShapeVector &shape, size_t stream_id,
+                        const UserDataPtr &user_data = nullptr) const override;
+
+  bool SyncHostToDevice(void *device_ptr, const void *host_ptr, size_t size, const std::string &device_name,
+                        uint32_t device_id, mindspore::Format format, const ShapeVector &shape, size_t stream_id,
+                        const UserDataPtr &user_data = nullptr) const override;
+
+ protected:
   bool SyncDeviceToHost(size_t size, void *host_ptr) const override;
   bool SyncHostToDevice(size_t size, const void *host_ptr) const override;
   bool SyncDeviceToHost(const ShapeVector &shape, size_t size, TypeId type, void *host_ptr,
@@ -63,14 +84,6 @@ class GPUDeviceAddress : public LoadableDeviceAddress {
   bool AsyncDeviceToDevice(const DeviceAddress *src_device_addr, size_t stream_id) const override;
   bool SyncDeviceToDevice(const ShapeVector &shape, size_t size, TypeId type, const void *src_ptr,
                           const std::string &format) const override;
-  bool CopyDeviceToHost(void *dst, const void *src, const size_t &size) const override;
-  bool CopyHostToDevice(void *dst, const void *src, const size_t &size) const override;
-
-  void ClearDeviceMemory() override;
-  DeviceType GetDeviceType() const override { return DeviceType::kGPU; }
-  mindspore::tensor::TensorPtr LoadMemToHost(const std::string &tensor_name, const ShapeVector &host_shape,
-                                             TypeId host_type, bool trans_flag, bool async_copy = true) const override;
-
   // Asynchronously copy host memory to device side.
   bool AsyncHostToDevice(const ShapeVector &, size_t size, TypeId, const void *host_ptr,
                          size_t stream_id) const override;
@@ -84,25 +97,13 @@ class GPUDeviceAddress : public LoadableDeviceAddress {
 
   bool AsyncDeviceToHost(size_t size, void *host_ptr, size_t stream_id) const override;
 
-  bool SyncDeviceToHost(void *host_ptr, const void *device_ptr, size_t size, const std::string &device_name,
-                        uint32_t device_id, mindspore::Format format, const ShapeVector &shape, size_t stream_id,
-                        const UserDataPtr &user_data = nullptr) const override;
-
-  bool SyncHostToDevice(void *device_ptr, const void *host_ptr, size_t size, const std::string &device_name,
-                        uint32_t device_id, mindspore::Format format, const ShapeVector &shape, size_t stream_id,
-                        const UserDataPtr &user_data = nullptr) const override;
-
-  void ClearUserData() override;
-
-  DeviceAddressPtr CloneDeviceAddress() override;
-
- protected:
   bool CopyDeviceToHost(void *dst, const void *src, size_t size, bool async, size_t stream_id) const override;
   bool CopyHostToDevice(void *dst, const void *src, size_t size, bool async, size_t stream_id) const override;
   bool AsyncDeviceToDevice(const ShapeVector &shape, size_t size, TypeId type, const void *src_ptr,
                            const std::string &format, size_t stream_id = SIZE_MAX) const override;
 
  private:
+  friend class GPUResManager;
   HalResBase *GetHalRes() const {
     device::ResKey res_key{device::GetDeviceTypeByName(device_name()), device_id()};
     auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);

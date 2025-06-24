@@ -53,15 +53,14 @@ void SyncTensorData(const TensorPtr &host_tensor, const DeviceTensorPtr &device_
   auto graph_str = (node->func_graph() == nullptr) ? "" : node->func_graph()->ToString();
   auto mem_type =
     node->isa<ValueNode>() ? memory::mem_pool::MemType::kConstantValue : memory::mem_pool::MemType::kWeight;
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
+  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+  MS_EXCEPTION_IF_NULL(res_manager);
   if (need_alloc_memory) {
-    auto ms_context = MsContext::GetInstance();
-    MS_EXCEPTION_IF_NULL(ms_context);
-    auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-    device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
-    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-    MS_EXCEPTION_IF_NULL(res_manager);
-
     UpdateTracker("SyncTensorData", node, graph_str, mem_type, device_tensor);
     if (!res_manager->AllocateMemory(device_tensor.get(), kDefaultStreamIndex)) {
       SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(strategy, *context, node->fullname_with_scope(),
@@ -81,7 +80,7 @@ void SyncTensorData(const TensorPtr &host_tensor, const DeviceTensorPtr &device_
   // Copy data from host tensor to device.
   auto host_tensor_size = LongToSize(host_tensor->DataNBytes());
   auto host_tensor_type = host_tensor->data_type();
-  if (!SyncCopy(device_tensor.get(), host_tensor->device_address().get(), kDefaultStreamIndex)) {
+  if (!res_manager->SyncAllStreams() || !SyncCopy(device_tensor, host_tensor->device_address(), kDefaultStreamIndex)) {
     std::string error_info = "SyncHostToDevice failed, node name: " + node->fullname_with_scope() +
                              ", host tensor size: " + std::to_string(host_tensor_size) +
                              ", host tensor type: " + std::to_string(static_cast<int>(host_tensor_type)) +
@@ -701,8 +700,7 @@ void DataPrepareActor::PrepareDataForControlValueNode(const KernelWithIndex &nod
     MS_LOG(INFO) << "Empty tuple sync";
     return;
   }
-
-  if (!SyncCopy(device_tensor.get(), tensor->device_address().get(), kDefaultStreamIndex)) {
+  if (!res_manager->SyncAllStreams() || !SyncCopy(device_tensor, tensor->device_address(), kDefaultStreamIndex)) {
     std::string error_info = "Sync host to device failed for node:" + node->DebugString();
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
   }
@@ -731,7 +729,12 @@ void DataPrepareActor::PrepareDataForStringValue(const ValueNodePtr &node, size_
     MS_EXCEPTION_IF_NULL(kernel_tensor);
     auto string_tensor = std::make_shared<tensor::Tensor>(
       kObjectTypeString, shape, const_cast<void *>(kernel_tensor->GetValuePtr()), string_tensor_size);
-    if (!SyncCopy(device_tensor.get(), string_tensor->device_address().get(), kDefaultStreamIndex)) {
+
+    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(
+      device::ResKey{device_tensor->GetDeviceType(), device_tensor->device_id()});
+    MS_EXCEPTION_IF_NULL(res_manager);
+    if (!res_manager->SyncAllStreams() ||
+        !SyncCopy(device_tensor, string_tensor->device_address(), kDefaultStreamIndex)) {
       std::string error_info = "SyncHostToDevice failed, node name: " + node->fullname_with_scope();
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(real_strategy_, (*context), error_info);
     }
@@ -797,7 +800,11 @@ void DataPrepareActor::PrepareDataForSequenceAndScalarValue(const ValueNodePtr &
     auto tensor =
       std::make_shared<tensor::Tensor>(kernel_tensor->dtype_id(), kernel_tensor->GetShapeVector(),
                                        const_cast<void *>(kernel_tensor->GetValuePtr()), kernel_tensor->size());
-    if (!SyncCopy(device_tensor.get(), tensor->device_address().get(), kDefaultStreamIndex)) {
+
+    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(
+      device::ResKey{device_tensor->GetDeviceType(), device_tensor->device_id()});
+    MS_EXCEPTION_IF_NULL(res_manager);
+    if (!res_manager->SyncAllStreams() || !SyncCopy(device_tensor, tensor->device_address(), kDefaultStreamIndex)) {
       std::string error_info = "SyncHostToDevice failed, node name: " + node->fullname_with_scope();
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(real_strategy_, (*context), error_info);
     }
@@ -938,7 +945,7 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
           SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(real_strategy_, *context, backend_node->fullname_with_scope(),
                                                       device_tensor->GetSize());
         }
-        if (!SyncCopy(device_tensor.get(), host_tensor_address.get(), kDefaultStreamIndex)) {
+        if (!res_manager->SyncAllStreams() || !SyncCopy(device_tensor, host_tensor_address, kDefaultStreamIndex)) {
           std::string error_info = "Sync data error.";
           SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(real_strategy_, (*context), error_info);
         }

@@ -2879,7 +2879,6 @@ std::string AnfRuntimeAlgorithm::GetValueByDeviceAddress(DeviceAddress *const de
     delete[] buf;
     buf = reinterpret_cast<char *>(device_address->GetMutablePtr());
   }
-  device_address->SyncDeviceToHost(size, buf);
   auto is_vaild_index = [element_num](size_t index, size_t total) { return index < total && index < element_num; };
   std::string result;
   if (device_address->type_id() == TypeId::kNumberTypeInt32) {

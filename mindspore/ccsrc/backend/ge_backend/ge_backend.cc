@@ -1168,93 +1168,7 @@ void GEBackend::ConstructOutputByTupleTensor(tensor::TensorPtr output_tensor,
                                              const abstract::SequenceShapePtr &tensor_shape, VectorRef *outputs,
                                              std::vector<tensor::TensorPtr> *tuple_tensors,
                                              const TypePtr &output_type) const {
-  MS_EXCEPTION_IF_NULL(output_tensor);
-  MS_EXCEPTION_IF_NULL(tensor_shape);
-  MS_EXCEPTION_IF_NULL(outputs);
-  MS_EXCEPTION_IF_NULL(tuple_tensors);
-  MS_LOG(DEBUG) << "Tensor shape:" << tensor_shape->ToString();
-  // If outputs an empty sequence return an empty sequence value.
-  if (tensor_shape->size() == 0) {
-    if (tensor_shape->isa<abstract::TupleShape>()) {
-      outputs->emplace_back(std::make_shared<ValueTuple>(std::vector<ValuePtr>()));
-    } else {
-      outputs->emplace_back(std::make_shared<ValueList>(std::vector<ValuePtr>()));
-    }
-    return;
-  }
-  // No need split multi tensors when the tuple size is not greater than 1.
-  if (tensor_shape->size() <= 1) {
-    outputs->emplace_back(output_tensor);
-    return;
-  }
-
-  auto tensor_type_id = output_tensor->data_type();
-  auto device_tensor = std::dynamic_pointer_cast<device::DeviceAddress>(output_tensor->device_address());
-  MS_EXCEPTION_IF_NULL(device_tensor);
-  auto tensor_device_ptr = device_tensor->GetMutablePtr();
-  auto tensor_device_size = device_tensor->GetSize();
-  MS_EXCEPTION_IF_NULL(tensor_device_ptr);
-
-  device::ResKey res_key{device::GetDeviceTypeByName(device_tensor->device_name()), device_tensor->device_id()};
-  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-  MS_EXCEPTION_IF_NULL(res_manager);
-
-  MS_EXCEPTION_IF_NULL(output_type);
-  TuplePtr output_tuple_type = output_type->cast<TuplePtr>();
-  MS_EXCEPTION_IF_NULL(output_tuple_type);
-  const auto &element_types = output_tuple_type->elements();
-  if (tensor_shape->size() != element_types.size()) {
-    MS_LOG(EXCEPTION) << "The tensor shape size[" << tensor_shape->size() << "] is not equal to output element size["
-                      << element_types.size() << "].";
-  }
-
-  // Split the tensor of tuple to tensors.
-  (void)tuple_tensors->emplace_back(output_tensor);
-  size_t copy_offset_size = 0;
-  for (size_t i = 0; i < tensor_shape->size(); ++i) {
-    // Create split tensor.
-    auto split_tensor_shape = BaseShapeToShape((*tensor_shape)[i]);
-    auto split_tensor_size = SizeOf(split_tensor_shape) * GetTypeByte(TypeIdToType(tensor_type_id));
-    auto split_tensor = std::make_shared<tensor::Tensor>(tensor_type_id, split_tensor_shape);
-
-    auto kernel_tensor = AnfAlgo::CreateKernelTensor(
-      nullptr, split_tensor_size, kernel::GetFormatFromStrToEnum(device_tensor->format()), device_tensor->type_id(),
-      split_tensor_shape, device_tensor->device_name(), device_tensor->device_id());
-    kernel_tensor->SetType(element_types[i]);
-    kernel_tensor->SetShape((*tensor_shape)[i]);
-    kernel_tensor->set_stream_id(device_tensor->stream_id());
-    auto split_device_tensor = kernel_tensor->device_address();
-    MS_EXCEPTION_IF_NULL(split_device_tensor);
-    MS_LOG(DEBUG) << "Create device tensor:" << split_device_tensor << " type:" << device_tensor->type_id();
-    // Copy data from origin tensor to the split tensor.
-    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "ConstructOutputByTupleTensor",
-                                                   "ConstructOutputByTupleTensor", "");
-    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "ConstructOutputByTupleTensor",
-                                                   memory::mem_pool::MemType::kOther, split_device_tensor->GetSize(),
-                                                   split_device_tensor.get());
-    if (!res_manager->AllocateMemory(split_device_tensor.get())) {
-      MS_LOG(EXCEPTION) << "#umsg#Memory not enough:#umsg#Device(id:" << device_tensor->device_id()
-                        << ") memory isn't enough and alloc failed, kernel name: Split tuple outputs, alloc size: "
-                        << split_device_tensor->GetSize() << "B.";
-    }
-    if (copy_offset_size + split_tensor_size > tensor_device_size) {
-      MS_LOG(INTERNAL_EXCEPTION) << "#dmsg#Runtime error info:#dmsg#The copy size is out of range, copy size:"
-                                 << split_tensor_size << ", copy offset size:" << copy_offset_size
-                                 << ", total size:" << tensor_device_size;
-    }
-    if (!split_device_tensor->SyncDeviceToDevice(split_tensor_shape, split_tensor_size, device_tensor->type_id(),
-                                                 AddressOffset(tensor_device_ptr, copy_offset_size),
-                                                 device_tensor->format())) {
-      MS_LOG(INTERNAL_EXCEPTION) << "#dmsg#Runtime error info:#dmsg#Sync device to device failed, device type:"
-                                 << split_device_tensor->GetDeviceType() << ", copy size:" << split_tensor_size
-                                 << ", output node: Split tuple outputs.";
-    }
-    copy_offset_size += split_tensor_size;
-
-    // Fill the outputs.
-    split_tensor->set_device_address(split_device_tensor);
-    outputs->emplace_back(split_tensor);
-  }
+  MS_LOG(EXCEPTION) << "Not support real sequence output in ge backend, output shape:" << tensor_shape->ToString();
 }
 
 BaseRef GEBackend::ConstructOutputByAbstract(const abstract::AbstractBasePtr &abstract,
@@ -1539,7 +1453,7 @@ void GEBackend::ConstructInputsRefMode(const KernelGraphPtr &func_graph, const V
           is_need_sync = true;
         } else {
           // other not same condition -> device_copy
-          if (!Copy(device_tensor.get(), host_tensor_address.get())) {
+          if (!Copy(device_tensor, host_tensor_address)) {
             MS_LOG(EXCEPTION) << "Sync data error.";
           }
           host_tensor_address = device_tensor;
@@ -1566,7 +1480,7 @@ void GEBackend::ConstructInputsRefMode(const KernelGraphPtr &func_graph, const V
             host_tensor_address =
               std::dynamic_pointer_cast<mindspore::device::DeviceAddress>(flatten_tensors[j]->device_address());
             // other not same: device copy
-            if (!Copy(device_tensor.get(), host_tensor_address.get())) {
+            if (!Copy(device_tensor, host_tensor_address)) {
               MS_LOG(EXCEPTION) << "Sync data error.";
             }
             is_need_sync = false;
@@ -1591,8 +1505,8 @@ void GEBackend::ConstructInputs(const KernelGraphPtr &func_graph, const VectorRe
   ConstructInputsRefMode(func_graph, args, inputs_tensor);
 }
 
-bool GEBackend::Copy(const mindspore::device::DeviceAddress *dst_device_tensor,
-                     mindspore::device::DeviceAddress *src_device_tensor) {
+bool GEBackend::Copy(const mindspore::device::DeviceAddressPtr &dst_device_tensor,
+                     const mindspore::device::DeviceAddressPtr &src_device_tensor) const {
   MS_EXCEPTION_IF_NULL(dst_device_tensor);
   MS_EXCEPTION_IF_NULL(src_device_tensor);
   if (src_device_tensor->GetSize() != dst_device_tensor->GetSize()) {
@@ -1605,21 +1519,12 @@ bool GEBackend::Copy(const mindspore::device::DeviceAddress *dst_device_tensor,
     }
   }
   // Exist the size alignment in some device, so get the min device size.
-  size_t copy_size = std::min(src_device_tensor->GetSize(), dst_device_tensor->GetSize());
-
-  if (dst_device_tensor->GetDeviceType() == src_device_tensor->GetDeviceType()) {
-    return dst_device_tensor->SyncDeviceToDevice(src_device_tensor);
-  } else if (src_device_tensor->GetDeviceType() == device::DeviceType::kCPU) {
-    // CPU device tensor copy to other device tensor.
-    return dst_device_tensor->SyncHostToDevice(copy_size, src_device_tensor->GetPtr());
-  } else if (dst_device_tensor->GetDeviceType() == device::DeviceType::kCPU) {
-    // Other device tensor copy to CPU device tensor.
-    return src_device_tensor->SyncDeviceToHost(copy_size, dst_device_tensor->GetMutablePtr());
-  } else {
-    MS_LOG(ERROR) << "Invalid device type, src device type: " << src_device_tensor->GetDeviceType()
-                  << ", dst device type: " << dst_device_tensor->GetDeviceType();
+  auto target_device_address =
+    (dst_device_tensor->GetDeviceType() == device::DeviceType::kCPU ? src_device_tensor : dst_device_tensor);
+  if (!device::ascend::AscendStreamMng::GetInstance().SyncAllStreams()) {
     return false;
   }
+  return SyncCopy(dst_device_tensor, src_device_tensor, target_device_address->stream_id());
 }
 
 void GEBackend::SyncTensorData(const tensor::TensorPtr &host_tensor,
@@ -1655,7 +1560,8 @@ void GEBackend::SyncTensorData(const tensor::TensorPtr &host_tensor,
     // Copy data from host tensor to device.
     auto host_tensor_size = LongToSize(real_host_tensor->DataNBytes());
     auto host_tensor_type = real_host_tensor->data_type();
-    if (!SyncCopy(device_tensor.get(), real_host_tensor->device_address().get(), kDefaultStreamIndex)) {
+    if (!device::ascend::AscendStreamMng::GetInstance().SyncAllStreams() ||
+        !SyncCopy(device_tensor, real_host_tensor->device_address(), kDefaultStreamIndex)) {
       MS_LOG(EXCEPTION) << "SyncHostToDevice failed, node name: " + node->fullname_with_scope() +
                              ", host tensor size: " + std::to_string(host_tensor_size) +
                              ", host tensor type: " + std::to_string(static_cast<int>(host_tensor_type)) +
@@ -1703,7 +1609,7 @@ void GEBackend::ConstructOutputs(const KernelGraphPtr &func_graph, std::vector<t
 
     if (output_addr->is_ptr_persisted()) {
       // device_tensor persisted or format not same -> device_copy
-      if (!Copy(tensor_device_address.get(), output_addr.get())) {
+      if (!Copy(tensor_device_address, output_addr)) {
         MS_LOG(EXCEPTION) << "Sync data error.";
       }
     } else if (output_node_tensor_map[output_addr->pointer_ref_count()] != nullptr) {

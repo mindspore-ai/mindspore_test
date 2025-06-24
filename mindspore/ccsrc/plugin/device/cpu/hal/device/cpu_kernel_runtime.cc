@@ -27,6 +27,7 @@
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "plugin/res_manager/cpu/cpu_mem_manager/cpu_memory_manager.h"
+#include "runtime/device/res_manager/hal_res_manager.h"
 #include "utils/ms_context.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
@@ -62,51 +63,6 @@ bool CPUKernelRuntime::Init() {
 }
 
 const size_t INIT_NODE_REF = 1;
-
-void CPUKernelRuntime::AssignValueNodeAddress(const session::KernelGraph *kernel_graph) {
-  MS_EXCEPTION_IF_NULL(kernel_graph);
-  for (auto &item_node : kernel_graph->graph_value_nodes()) {
-    MS_EXCEPTION_IF_NULL(item_node);
-    if (item_node->isa<ValueNode>()) {
-      auto value_node = item_node->cast<ValueNodePtr>();
-      MS_EXCEPTION_IF_NULL(value_node);
-      auto node_value = value_node->value();
-      MS_EXCEPTION_IF_NULL(node_value);
-      if (!node_value->isa<tensor::Tensor>()) {
-        continue;
-      }
-      auto tensor = node_value->cast<TensorPtr>();
-      MS_EXCEPTION_IF_NULL(tensor);
-      if (tensor->device_address() != nullptr) {
-        AnfAlgo::SetOutputAddr(std::dynamic_pointer_cast<device::DeviceAddress>(tensor->device_address()), 0,
-                               item_node);
-        continue;
-      }
-      TypeId output_type_id = AnfAlgo::GetOutputDeviceDataType(item_node, 0);
-      if (output_type_id == kTypeUnknown) {
-        output_type_id = common::AnfAlgo::GetOutputInferDataType(item_node, 0);
-      }
-      size_t type_size = GetTypeByte(TypeIdToType(output_type_id));
-      ShapeVector data_shape = tensor->shape();
-      size_t tensor_size = std::accumulate(data_shape.begin(), data_shape.end(), type_size, std::multiplies<size_t>());
-      DeviceAddressPtr address = nullptr;
-      address = CreateDeviceAddress(nullptr, tensor_size, kOpFormat_DEFAULT, output_type_id);
-      MS_EXCEPTION_IF_NULL(address);
-      address->set_from_persistent_mem(tensor->is_parameter());
-      if (tensor->data_type() == output_type_id) {
-        address->SetDevicePtr(tensor->data_c());
-      } else {
-        address->SetDevicePtr(static_cast<CPUMemoryManager *>(mem_manager_.get())->StaticMemMalloc(tensor_size));
-        if (!address->SyncHostToDevice(data_shape, LongToSize(tensor->DataNBytes()), tensor->data_type(),
-                                       tensor->data_c())) {
-          MS_LOG(EXCEPTION) << "Value node sync host to device failed!";
-        }
-      }
-      address->set_ref_count(INIT_NODE_REF);
-      AnfAlgo::SetOutputAddr(address, 0, item_node);
-    }
-  }
-}
 
 void CPUKernelRuntime::AssignInputNodeAddress(const session::KernelGraph *kernel_graph) const {
   MS_EXCEPTION_IF_NULL(kernel_graph);
@@ -314,8 +270,10 @@ void CPUKernelRuntime::BindInputTensorAddressPtr(const session::KernelGraph &ker
         address->SetDevicePtr(static_cast<CPUMemoryManager *>(mem_manager_.get())->StaticMemMalloc(tensor_size));
         address->SetSize(tensor_size);
       }
-      if (!address->SyncHostToDevice(data_shape, LongToSize(tensor->DataNBytes()), tensor->data_type(),
-                                     tensor->data_c())) {
+      device::ResKey res_key{address->GetDeviceType(), address->device_id()};
+      auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+      MS_EXCEPTION_IF_NULL(res_manager);
+      if (!res_manager->SyncAllStreams() || !SyncCopy(address, tensor->device_address(), address->stream_id())) {
         MS_LOG(EXCEPTION) << "Parameter node sync host to device failed!";
       }
     }
