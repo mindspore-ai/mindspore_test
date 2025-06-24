@@ -81,6 +81,25 @@ DEF_PURE_SHAPE_CALC(g_flatten_ext_fallback_shapecalc)
     return {res};
   });
 
+REG_FALLBACK_BUILDER("InplaceScatterSrc").SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto dim = ib->GetInput(kIndex1);
+  auto index = ib->GetInput(kIndex2);
+  auto src = ib->GetInput(kIndex3);
+  auto reduce = ib->Value(static_cast<int64_t>(Reduce::REDUCE_NONE));
+  auto dim_val = dim->BuildValue();
+  auto reduce_val = reduce->BuildValue();
+  if (!IsValueKnown(dim_val) || !IsValueKnown(reduce_val)) {
+    MS_EXCEPTION(ValueError) << "For `InplaceScatterSrc` op, the `dim` and `reduce` must be a constant!";
+  }
+  auto idx_shape = ib->GetShape(index);
+  if (IsShapeNone(idx_shape)) {
+    return {input};
+  }
+  auto out = ib->Emit("TensorScatterElements", {input, index, src, dim, reduce});
+  return {out};
+});
+
 REG_FALLBACK_BUILDER("FlattenExt").SetBody(BODYFUNC(ib) {
   NodePtr input = ib->GetInput(kIndex0);
   NodePtr start_dim = ib->GetInput(kIndex1);
@@ -94,7 +113,8 @@ REG_FALLBACK_BUILDER("InplaceMaskedFillTensor").SetBody(BODYFUNC(ib) {
   auto input = ib->GetInput(kIndex0);
   auto mask = ib->GetInput(kIndex1);
   auto value = ib->GetInput(kIndex2);
-  return {ib->MaskedFill(input, mask, value)};
+  auto out = ib->MaskedFill(input, mask, value);
+  return {out};
 });
 
 REG_FALLBACK_BUILDER("ViewAs").SetBody(BODYFUNC(ib) {
