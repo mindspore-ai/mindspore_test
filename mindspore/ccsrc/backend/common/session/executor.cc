@@ -332,15 +332,5 @@ bool Executor::DestroyCommGroup(const std::string &group_name) {
   return task->result_;
 }
 
-void Executor::OnWorkerExit() {
-  if (device_name_ == kAscendDevice) {
-    constexpr char kReleaseKernelRuntimeFunc[] = "ReleaseKernelRuntime";
-    static const auto release_kernel_runtime =
-      backend_common::BackendCommonCallback::GetInstance().GetCallback<void, const std::string &, uint32_t>(
-        kReleaseKernelRuntimeFunc);
-    if (release_kernel_runtime) {
-      return release_kernel_runtime(kAscendDevice, device_id_);
-    }
-  }
-}
+void Executor::OnWorkerExit() {}
 }  // namespace mindspore::session

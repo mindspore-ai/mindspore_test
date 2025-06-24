@@ -125,8 +125,6 @@ void ClearResPart1() {
   pynative::PyNativeExecutor::GetInstance()->WorkerJoin();
   runtime::OpExecutor::GetInstance().WorkerJoin();
   runtime::RuntimePipeline::GetInstance().WorkerJoin();
-  // When the python process exits, the kernels on the device may not have finished executing.
-  device::KernelRuntimeManager::Instance().WaitTaskFinishOnDevice();
   device::DeviceContextManager::GetInstance().WaitTaskFinishOnDevice();
   RecordExitStatus();
 #ifdef ENABLE_DUMP_IR
@@ -173,10 +171,6 @@ void ClearResPart2() {
   MS_LOG(INFO) << "Start clear device context...";
   device::DeviceContextManager::GetInstance().ClearDeviceContexts();
   MS_LOG(INFO) << "End clear device context.";
-
-  MS_LOG(INFO) << "Start clear kernel runtime...";
-  device::KernelRuntimeManager::Instance().ClearRuntimeResource();
-  MS_LOG(INFO) << "End clear kernel runtime.";
 
   MS_LOG(INFO) << "Start clear CollectiveManager...";
   // for GE, HcclCommDestroy should after RemoveGraph in ClearGraphWrapper in ClearDeviceContexts
@@ -249,7 +243,6 @@ void ClearSingleton() {
   GraphKernelInfoManager::Instance().Clear();
   device::DataQueueMgr::GetInstance().Clear();
   session::SessionFactory::Get().Clear();
-  device::KernelRuntimeManager::Instance().Clear();
   ExecuteOrderTracker::GetInstance().Clear();
   OpPrimPyRegister::GetInstance().Clear();
   DumpJsonParser::Finalize();

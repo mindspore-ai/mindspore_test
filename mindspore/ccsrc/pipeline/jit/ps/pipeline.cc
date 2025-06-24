@@ -871,7 +871,6 @@ void FinalizeHccl() {
   }
 #endif
   session::ExecutorManager::Instance().Clear();
-  device::KernelRuntimeManager::Instance().ClearRuntimeResource();
   device::DeviceContextManager::GetInstance().ClearDeviceContexts();
   device::DeviceContextManager::GetInstance().UnloadPlugin();
 }

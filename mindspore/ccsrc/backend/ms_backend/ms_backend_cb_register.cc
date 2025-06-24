@@ -100,11 +100,6 @@ void StopRuntimeSchedulerOnException() {
 }
 REGISTER_DISTRIBUTED_CALLBACK(StopRuntimeSchedulerOnException);
 
-void ReleaseKernelRuntime(const std::string &device_name, uint32_t device_id) {
-  return device::KernelRuntimeManager::Instance().ReleaseKernelRuntime(device_name, device_id);
-}
-REGISTER_BACKEND_COMMON_CALLBACK(ReleaseKernelRuntime);
-
 KernelTensorPtr CreateWorkspaceKernelTensor(const device::DeviceContext *device_context, size_t stream_id,
                                             const size_t &workspace_size) {
   return runtime::DeviceAddressUtils::CreateWorkspaceKernelTensor(device_context, stream_id, workspace_size);

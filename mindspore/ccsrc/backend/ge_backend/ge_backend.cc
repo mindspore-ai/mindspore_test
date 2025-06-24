@@ -93,7 +93,6 @@ using TypedPrimitiveAbstractClosurePtr = std::shared_ptr<abstract::TypedPrimitiv
 const char kModelNameRuntime[] = "Runtime";
 const char kEventCompileGraph[] = "CompileGraph";
 const char kStageCompileGraphs[] = "CompileGraphs";
-constexpr uint32_t kDefaultHcclExecTimeout = 1800;
 std::mutex g_tsd_mutex;
 
 void CheckContiguousTensor(const tensor::TensorPtr &tensor) {
@@ -460,36 +459,6 @@ void GEBackend::Init() {
   MS_EXCEPTION_IF_NULL(res_manager);
   res_manager->Initialize();
 
-  // set timeout
-  auto op_debug_conf = device::ascend::OpDebugConf::GetInstance();
-  MS_EXCEPTION_IF_NULL(op_debug_conf);
-  uint32_t op_execute_timeout = op_debug_conf->execute_timeout();
-  std::string hccl_exec_timeout = common::GetEnv("HCCL_EXEC_TIMEOUT");
-  uint32_t notify_wait_timeout;
-  if (hccl_exec_timeout.empty()) {
-    notify_wait_timeout = kDefaultHcclExecTimeout;
-  } else {
-    try {
-      notify_wait_timeout = std::stoi(hccl_exec_timeout);
-    } catch (const std::exception &e) {
-      MS_LOG(EXCEPTION) << "Parse environment variable HCCL_EXEC_TIMEOUT failed, value" << hccl_exec_timeout
-                        << ", msg: " << e.what();
-    }
-  }
-  if (op_execute_timeout >= notify_wait_timeout) {
-    MS_LOG(INFO) << "OpExecuteTimeout should be less than NotifyWaitTimeout, but got OpExecuteTimeout "
-                 << op_execute_timeout << ", notify_wait_timeout " << notify_wait_timeout << "."
-                 << "1. You can set OpExecuteTimeout via mindspore.set_context(op_timeout=int)."
-                 << "2. You can set NotifyWaitTimeout via environment variable HCCL_EXEC_TIMEOUT. ";
-  }
-  // 310P does not contain the following interfaces
-  if (ms_context->ascend_soc_version() != "ascend310p" && ms_context->ascend_soc_version() != "ascend310b") {
-    const uint32_t reserve_time = 180;
-    uint32_t op_wait_timeout = notify_wait_timeout + reserve_time;
-    device::ascend::AscendHalManager::GetInstance().SetOpWaitTimeout(op_wait_timeout);
-    device::ascend::AscendHalManager::GetInstance().SetOpExecuteTimeOut(op_execute_timeout);
-  }
-
   // set MS_CTX_ENABLE_GE_HETEROGENOUS true according to heterogeneous mode
   ms_context->set_param<bool>(MS_CTX_ENABLE_GE_HETEROGENOUS, false);
   if (!UseSimulationApi()) {
@@ -516,23 +485,6 @@ void GEBackend::Init() {
   MS_LOG(INFO) << "End initializing GE backend.";
 }
 
-void GEBackend::DestroyHccl() {
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
-  if (!context_ptr->get_param<bool>(MS_CTX_ENABLE_HCCL)) {
-    MS_LOG(INFO) << "Hccl is not enabled, no need to close.";
-    return;
-  }
-
-  if (common::GetEnv(kSimulationLevel).empty() &&
-      !device::ascend::AscendCollectiveCommLib::GetInstance().DestroyHcclComm()) {
-    MS_LOG(WARNING) << "Hccl destroy failed.";
-    return;
-  }
-  MS_LOG(INFO) << "Hccl destroy successful.";
-  context_ptr->set_param<bool>(MS_CTX_ENABLE_HCCL, false);
-}
-
 void GEBackend::Clear() {
   if (!is_initialized_) {
     return;
@@ -548,20 +500,6 @@ void GEBackend::Clear() {
   }
 
   graph_executor_->Finalize();
-
-  // destroy hccl things
-  if (ms_context->get_param<bool>(MS_CTX_ENABLE_HCCL_WATCHDOG)) {
-    device::ascend::HcclWatchDogManager::GetInstance().DestoryHandler();
-    ms_context->set_param<bool>(MS_CTX_ENABLE_HCCL_WATCHDOG, false);
-  }
-
-  // DestroyHccl must be called before FreeDeviceMemory, watch_hccl_dog and hccl_adapter are in this function
-  (void)DestroyHccl();
-
-  device::ascend::AscendStreamMng::GetInstance().DestroyAllRtEvents();
-  if (!device::ascend::AscendStreamMng::GetInstance().DestroyAllStreams()) {
-    MS_LOG(ERROR) << "Fail to destroy all streams.";
-  }
 
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);

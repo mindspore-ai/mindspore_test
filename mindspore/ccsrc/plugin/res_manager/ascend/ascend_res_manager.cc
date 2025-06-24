@@ -46,6 +46,7 @@
 #include "plugin/res_manager/ascend/collective/multi_ascend_collective_comm_lib.h"
 #include "plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
 #include "plugin/res_manager/ascend/collective/dummy_ascend_collective_comm_lib.h"
+#include "plugin/res_manager/ascend/collective/hccl_watch_dog_thread.h"
 #ifdef ENABLE_INTERNAL_KERNELS
 #include "plugin/res_manager/ascend/collective/lowlatency_collective_comm_lib.h"
 #endif
@@ -60,6 +61,8 @@ namespace mindspore {
 namespace device {
 namespace ascend {
 namespace {
+constexpr uint32_t kDefaultHcclExecTimeout = 1800;
+
 // Register callbacks for collective methods.
 // These code should be deleted after collective so is extracted.
 std::string GetCommName(const std::string &group) {
@@ -314,9 +317,55 @@ void AscendResManager::Initialize() {
   mem_manager_->Initialize();
   swap_manager_ = std::make_shared<SwapManager>(kDefaultStreamIndex, &AscendMemoryPool::GetInstance(),
                                                 &AscendPinMemPool::GetInstance());
+  // set timeout
+  auto op_debug_conf = device::ascend::OpDebugConf::GetInstance();
+  MS_EXCEPTION_IF_NULL(op_debug_conf);
+  uint32_t op_execute_timeout = op_debug_conf->execute_timeout();
+  std::string hccl_exec_timeout = common::GetEnv("HCCL_EXEC_TIMEOUT");
+  uint32_t notify_wait_timeout;
+  if (hccl_exec_timeout.empty()) {
+    notify_wait_timeout = kDefaultHcclExecTimeout;
+  } else {
+    try {
+      notify_wait_timeout = std::stoi(hccl_exec_timeout);
+    } catch (const std::exception &e) {
+      MS_LOG(EXCEPTION) << "Parse environment variable HCCL_EXEC_TIMEOUT failed, value" << hccl_exec_timeout
+                        << ", msg: " << e.what();
+    }
+  }
+  if (op_execute_timeout >= notify_wait_timeout) {
+    MS_LOG(INFO) << "OpExecuteTimeout should be less than NotifyWaitTimeout, but got OpExecuteTimeout "
+                 << op_execute_timeout << ", notify_wait_timeout " << notify_wait_timeout << "."
+                 << "1. You can set OpExecuteTimeout via mindspore.set_context(op_timeout=int)."
+                 << "2. You can set NotifyWaitTimeout via environment variable HCCL_EXEC_TIMEOUT. ";
+  }
+  // 310P does not contain the following interfaces
+  if (ms_context->ascend_soc_version() != "ascend310p" && ms_context->ascend_soc_version() != "ascend310b") {
+    const uint32_t reserve_time = 180;
+    uint32_t op_wait_timeout = notify_wait_timeout + reserve_time;
+    device::ascend::AscendHalManager::GetInstance().SetOpWaitTimeout(op_wait_timeout);
+    device::ascend::AscendHalManager::GetInstance().SetOpExecuteTimeOut(op_execute_timeout);
+  }
 
   enable_memory_tracker_ = device::tracker::MemTrackerManager::GetInstance().IsEnabled();
   initialized_ = true;
+}
+
+void AscendResManager::DestroyHccl() {
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  if (!context_ptr->get_param<bool>(MS_CTX_ENABLE_HCCL)) {
+    MS_LOG(INFO) << "Hccl is not enabled, no need to close.";
+    return;
+  }
+
+  if (common::GetEnv(kSimulationLevel).empty() &&
+      !device::ascend::AscendCollectiveCommLib::GetInstance().DestroyHcclComm()) {
+    MS_LOG(WARNING) << "Hccl destroy failed.";
+    return;
+  }
+  MS_LOG(INFO) << "Hccl destroy successful.";
+  context_ptr->set_param<bool>(MS_CTX_ENABLE_HCCL, false);
 }
 
 void AscendResManager::Destroy() {
@@ -327,15 +376,27 @@ void AscendResManager::Destroy() {
 
   (void)DestroyAllEvents();
 
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  // destroy hccl things
+  if (ms_context->get_param<bool>(MS_CTX_ENABLE_HCCL_WATCHDOG)) {
+    device::ascend::HcclWatchDogManager::GetInstance().DestoryHandler();
+    ms_context->set_param<bool>(MS_CTX_ENABLE_HCCL_WATCHDOG, false);
+  }
+
+  // DestroyHccl must be called before FreeDeviceMemory, watch_hccl_dog and hccl_adapter are in this function
+  (void)DestroyHccl();
+
+  AscendStreamMng::GetInstance().DestroyAllRtEvents();
+  if (!AscendStreamMng::GetInstance().DestroyAllStreams()) {
+    MS_LOG(EXCEPTION) << "Fail to destroy all streams when reset device.";
+  }
   // Release memory.
   if (mem_manager_ != nullptr) {
     mem_manager_->Finalize();
     mem_manager_ = nullptr;
   }
-  AscendStreamMng::GetInstance().DestroyAllRtEvents();
-  if (!AscendStreamMng::GetInstance().DestroyAllStreams()) {
-    MS_LOG(EXCEPTION) << "Fail to destroy all streams when reset device.";
-  }
+
   (void)ErrorManagerAdapter::Finalize();
 
   AscendHalManager::GetInstance().ResetDevice(device_id_);
@@ -1139,10 +1200,7 @@ bool AscendResManager::LaunchCallback(std::function<void(void)> callback_func, s
       return true;
     }
 
-    // ResetStreamAndCtx
-    AscendStreamMng::GetInstance().DestroyAllStreams();
-    AscendHalManager::GetInstance().ResetContext(device_id_);
-    AscendStreamMng::GetInstance().CreateDefaultStream();
+    ResetStreamAndCtx();
     return false;
   }
   return true;
@@ -1176,6 +1234,33 @@ void AscendResManager::InitializeForGe() const {
   }
   initialized_ge = true;
   MS_LOG(INFO) << "End initializing for ge.";
+}
+
+void AscendResManager::ResetStreamAndCtx() const {
+  AscendStreamMng::GetInstance().DestroyAllStreams();
+  AscendHalManager::GetInstance().ResetContext(device_id_);
+  AscendStreamMng::GetInstance().CreateDefaultStream();
+}
+
+size_t AscendResManager::GetCommunicationStreamID() const {
+  return AscendStreamMng::GetInstance().communication_stream_id();
+}
+
+size_t AscendResManager::GetCommunicationStreamIDByGroup(const std::string &group) const {
+  if (!BindDeviceToCurrentThread(false)) {
+    MS_LOG(EXCEPTION) << "Bind context to current thread failed";
+    return 0;
+  }
+  static std::map<std::string, size_t> group_comm_stream;
+  auto res = group_comm_stream.find(group);
+  if (res != group_comm_stream.end()) {
+    return res->second;
+  }
+  size_t group_stream_id;
+  AscendStreamMng::GetInstance().CreateStream(&group_stream_id);
+  group_comm_stream.insert(std::pair(group, group_stream_id));
+  MS_LOG(DEBUG) << "Create new stream " << group_stream_id << " for hccl group " << group;
+  return group_stream_id;
 }
 
 MS_REGISTER_HAL_RES_MANAGER(kAscendDevice, DeviceType::kAscend, AscendResManager);
