@@ -302,6 +302,14 @@ void GraphJitConfig::Update(const py::object &c) {
       g_pijit_log_conf[static_cast<int>(it->second)] = true;
       MS_LOG(DEBUG) << it->first << "=true";
     }
+
+    if (t == "recompiles_verbose") {
+      auto iter = g_pijit_log_map.find("recompiles");
+      if (iter != g_pijit_log_map.end()) {
+        g_pijit_log_conf[static_cast<int>(iter->second)] = true;
+        MS_LOG(DEBUG) << iter->first << "=true";
+      }
+    }
   }
 }
 
