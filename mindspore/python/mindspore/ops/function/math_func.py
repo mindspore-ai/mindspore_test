@@ -5779,7 +5779,7 @@ def _diff_helper(input, n, dim):
     is_bool = (input.dtype == mstype.bool_)
     result = input
 
-    for i in range(n):  # pylint: disable=unused-variable
+    for _ in range(n):  # pylint: disable=unused-variable
         if is_bool:
             result = logical_xor(narrow(result, dim, 1, out_len), narrow(result, dim, 0, out_len))
         else:
