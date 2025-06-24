@@ -67,6 +67,7 @@ void SpreadMicroInterleavedIndexForForwardCommNodes(const CNodePtr &input_node, 
         continue;
       }
       auto input_cnode = input->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(input_cnode);
       if (input_cnode->HasAttr(MICRO_INTERLEAVED_TAG) || input_cnode->HasAttr(INTERLEAVED_NUM)) {
         continue;
       }
@@ -152,6 +153,7 @@ void LabelMicroInterleavedIndexLastStage(const std::vector<CNodePtr> &all_nodes)
     if (!IsPrimitiveCNode(cnode)) {
       continue;
     }
+    MS_EXCEPTION_IF_NULL(GetCNodePrimitive(cnode));
     if (GetCNodePrimitive(cnode)->HasAttr("micro_interleaved_add_flag")) {
       micro_interleaved_add_list.push_back(cnode);
     }
@@ -199,6 +201,8 @@ void LabelMicroInterleavedIndexPipelineStage(const std::vector<CNodePtr> &all_no
     if (pipeline_end_list.size() != interleaved_size) {
       continue;
     }
+    MS_EXCEPTION_IF_NULL(GetCNodePrimitive(pipeline_end_list[0]));
+    MS_EXCEPTION_IF_NULL(GetCNodePrimitive(pipeline_end_list[1]));
     if (GetCNodePrimitive(pipeline_end_list[0])->HasAttr(parallel::SR_TAG) &&
         GetCNodePrimitive(pipeline_end_list[1])->HasAttr(parallel::SR_TAG)) {
       std::sort(pipeline_end_list.begin(), pipeline_end_list.end(), [](auto cnode1, auto cnode2) {

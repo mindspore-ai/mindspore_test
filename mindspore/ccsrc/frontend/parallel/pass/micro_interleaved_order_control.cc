@@ -58,6 +58,7 @@ bool IsBpropNode(const AnfNodePtr &node) {
 bool CheckCommNodeEqual(const CNodePtr comm_node1, const CNodePtr comm_node2) {
   auto prim1 = GetCNodePrimitive(comm_node1);
   auto prim2 = GetCNodePrimitive(comm_node2);
+  MS_EXCEPTION_IF_NULL(prim2);
   if (!IsCommunicationOp(prim1) && !IsCommunicationOp(prim2)) {
     return true;
   }
@@ -223,6 +224,7 @@ void InsertDepend(const FuncGraphManagerPtr &manager, const CNodePtr &comm_node_
   if (IsPrimitiveCNode(comm_node_a->input(kIndex1), prim::kPrimMatMul)) {
     auto comm_id = comm_node_a->UniqueId();
     comm_node_a->AddAttr(INTERLEAVED_OVERLAP_MATMUL, MakeValue(comm_id));
+    MS_EXCEPTION_IF_NULL(comm_node_a->input(kIndex1)->cast<CNodePtr>());
     comm_node_a->input(kIndex1)->cast<CNodePtr>()->AddAttr(INTERLEAVED_OVERLAP_MATMUL, MakeValue(comm_id));
   }
   std::vector<AnfNodePtr> depend1_inputs{NewValueNode(prim::kPrimDepend), comm_node_a, comm_node_b_input_node};
@@ -298,6 +300,7 @@ void InsertDependBetweenInterleavedNodes(const FuncGraphManagerPtr &manager,
       auto next_comm_node_a = next_comm_node_list[0];
       // comm_node_b -> next_comm_node_a
       auto next_comm_node_a_input_node = next_comm_node_a->input(kIndex1)->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(next_comm_node_a_input_node);
       std::vector<AnfNodePtr> depend1_inputs{NewValueNode(prim::kPrimDepend), next_comm_node_a_input_node, comm_node_b};
       auto depend_node1 = comm_node_b->func_graph()->NewCNode(depend1_inputs);
       MS_EXCEPTION_IF_NULL(depend_node1);
@@ -311,6 +314,7 @@ void InsertDependBetweenInterleavedNodes(const FuncGraphManagerPtr &manager,
     // comm_node_a -> comm_node_b
     auto comm_node_a = comm_node_list[0];
     auto comm_node_b_input_node = comm_node_b->input(kIndex1)->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(comm_node_b_input_node);
     std::vector<AnfNodePtr> depend2_inputs{NewValueNode(prim::kPrimDepend), comm_node_b_input_node, comm_node_a};
     auto depend_node2 = comm_node_a->func_graph()->NewCNode(depend2_inputs);
     depend_node2->set_abstract(comm_node_b_input_node->abstract()->Clone());
@@ -329,6 +333,7 @@ CNodePtr GetInputBorderNode(const CNodePtr &node) {
     for (size_t i = 1; i < queue_end->size(); ++i) {
       if (IsPrimitiveCNode(queue_end->input(i))) {
         auto queue_end_input_cnode = queue_end->input(i)->cast<CNodePtr>();
+        MS_EXCEPTION_IF_NULL(queue_end_input_cnode);
         if (queue_end_input_cnode->HasAttr("fine_grained_interleaved_border")) {
           if (IsPrimitiveCNode(queue_end_input_cnode, prim::kPrimStridedSliceGrad)) {
             return queue_end_input_cnode;
@@ -354,6 +359,7 @@ CNodePtr GetOutputBorderNode(const FuncGraphManagerPtr &manager, const CNodePtr 
     for (const auto &node_pair : node_users) {
       if (IsPrimitiveCNode(node_pair.first)) {
         auto queue_end_output_cnode = node_pair.first->cast<CNodePtr>();
+        MS_EXCEPTION_IF_NULL(queue_end_output_cnode);
         if (queue_end_output_cnode->HasAttr("fine_grained_interleaved_border")) {
           return queue_end;
         }
@@ -401,6 +407,7 @@ void InsertDependForBegin(const FuncGraphManagerPtr &manager,
     begin_input = begin;
   }
   auto comm_node_a_input_node = comm_node_a->input(kIndex1)->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(comm_node_a_input_node);
   std::vector<AnfNodePtr> depend2_inputs{NewValueNode(prim::kPrimDepend), begin_input, comm_node_a_input_node};
   auto depend_node2 = comm_node_a_input_node->func_graph()->NewCNode(depend2_inputs);
   MS_EXCEPTION_IF_NULL(depend_node2);

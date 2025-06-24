@@ -45,6 +45,7 @@ CNodePtr GetRecomputeCallNode(const AnfNodePtr &node) {
     return nullptr;
   }
   const auto &tuple_get_item_cnode = node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(node->cast<CNodePtr>());
   auto k_fg_caller = node->cast<CNodePtr>()->input(kIndex1);
   MS_EXCEPTION_IF_NULL(k_fg_caller);
   auto recompute_call_node = k_fg_caller->cast<CNodePtr>();
@@ -63,6 +64,7 @@ AnfNodePtr GetDependRelyNode(const CNodePtr &cnode) {
     auto depend_cnode = cnode->input(i)->cast<CNodePtr>();
     if (!rely_node) {
       rely_node = depend_cnode->input(kIndex2);
+      MS_EXCEPTION_IF_NULL(rely_node);
     } else if (rely_node != depend_cnode->input(kIndex2)) {
       MS_LOG(WARNING) << "For recompute call node:" << cnode->DebugString()
                       << " does not rely on the same control edge,"
@@ -106,6 +108,7 @@ bool MergeRecomputeCallNode(const std::vector<AnfNodePtr> &all_nodes, const Func
       if (!recompute_node->isa<CNode>()) {
         continue;
       }
+      MS_EXCEPTION_IF_NULL(recompute_node->cast_ptr<CNode>());
       recompute_node->cast_ptr<CNode>()->AddAttr(kRecomputeSubgraphIdAttr, MakeValue(recompute_subgraph_id));
     }
     recompute_calls_map[recompute_call_node->func_graph()][recompute_subgraph_id] = recompute_call_node;

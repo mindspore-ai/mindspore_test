@@ -44,6 +44,7 @@ bool InsertMakeTupleInput(const AnfNodePtr &node) {
     return true;
   }
   auto cnode = node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
   if (cnode->HasAttr(parallel::FINE_GRAINED_INTERLEAVED_TAG)) {
     auto tag = GetValue<size_t>(cnode->GetAttr(parallel::FINE_GRAINED_INTERLEAVED_TAG));
     if (tag != kIndex0) {
@@ -80,6 +81,7 @@ void MergeCastOpt(const FuncGraphPtr &graph) {
         continue;
       }
       auto depend_node = node->input(kIndex1)->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(depend_node);
       auto depend_node_first_input = GetInputNodeWithFilter(depend_node->input(kIndex1), [&](const CNodePtr &cnode) {
         bool filter = IsPrimitiveCNode(cnode, prim::kPrimLoad);
         return std::make_pair(filter, 1);
@@ -101,9 +103,11 @@ void MergeCastOpt(const FuncGraphPtr &graph) {
         MS_LOG(INFO) << "Merged cast node:" << cast_node->fullname_with_scope()
                      << ", unique_id:" << AnfNodeInfo(cast_node);
         auto depend_node = cast_node->input(kIndex1)->cast<CNodePtr>();
+        MS_EXCEPTION_IF_NULL(depend_node);
         auto depend_second_input = depend_node->input(kIndex2);
         if (IsPrimitiveCNode(depend_second_input, prim::kPrimMakeTuple)) {
           auto make_tuple_cnode = depend_second_input->cast<CNodePtr>();
+          MS_EXCEPTION_IF_NULL(make_tuple_cnode);
           for (size_t i = 1; i < make_tuple_cnode->size(); ++i) {
             if (!InsertMakeTupleInput(make_tuple_cnode->input(i))) {
               continue;
@@ -128,6 +132,7 @@ void MergeCastOpt(const FuncGraphPtr &graph) {
       new_make_tuple_node->set_abstract(std::make_shared<abstract::AbstractTuple>(maketuple_abs_inputs));
       std::vector<AnfNodePtr> depend_inputs{NewValueNode(prim::kPrimDepend), pair.first, new_make_tuple_node};
       auto new_depend_node = each_graph->NewCNode(depend_inputs);
+      MS_EXCEPTION_IF_NULL(pair.second.front()->input(kIndex1)->cast<CNodePtr>());
       new_depend_node->set_abstract(pair.second.front()->input(kIndex1)->cast<CNodePtr>()->abstract()->Clone());
       std::vector<AnfNodePtr> cast_inputs{pair.second.front()->input(kIndex0), new_depend_node,
                                           pair.second.front()->input(kIndex2)};
