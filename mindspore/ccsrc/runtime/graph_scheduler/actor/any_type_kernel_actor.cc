@@ -594,7 +594,7 @@ void AnyTypeKernelActor::Run(OpContext<KernelTensor> *const context) {
   }
   PrepareRunContext(context);
   try {
-    if (!LaunchAllKernels(context)) {
+    if (!LaunchAllKernels(context, false)) {
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(GraphExecutionStrategy::kPipeline, (*context),
                                                     "Launch kernels by execution order failed for graph: " +
                                                       graph_->ToString() + " error info:" + context->error_info_);

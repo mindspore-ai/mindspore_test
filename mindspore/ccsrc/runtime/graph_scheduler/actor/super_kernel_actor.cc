@@ -845,10 +845,10 @@ bool SuperKernelActor::FetchMsgInputAndConstValueForKernel(KernelRunner *kernel_
   return true;
 }
 
-void SuperKernelActor::AsyncLaunchKernelByCondition(OpContext<KernelTensor> *const context,
-                                                    KernelRunner *kernel_actor) {
+void SuperKernelActor::AsyncLaunchKernelByCondition(OpContext<KernelTensor> *const context, KernelRunner *kernel_actor,
+                                                    bool hp_mode) {
   // Check high performance condition in SuperKernelActor.
-  if (is_high_perf_mode_ && IsHighPerfModeAtExec()) {
+  if (hp_mode) {
     if (EnableRuntimeNewPipeline()) {
       auto launch_task = [context, kernel_actor]() {
         KernelAsyncLaunchActor::GetInstance()->LaunchKernelV2HP(context, kernel_actor);
@@ -869,7 +869,8 @@ void SuperKernelActor::AsyncLaunchKernelByCondition(OpContext<KernelTensor> *con
   }
 }
 
-void SuperKernelActor::SyncDispatchKernel(OpContext<KernelTensor> *const context, KernelRunner *kernel_actor) {
+void SuperKernelActor::SyncDispatchKernel(OpContext<KernelTensor> *const context, KernelRunner *kernel_actor,
+                                          bool hp_mode) {
   if (!ActorDispatcher::enable_static_shape()) {
     kernel_actor->device_contexts_[0]->device_res_manager_->BindDeviceToCurrentThread(false);
     // Infer shape and resize for dynamic shape or dynamice value case when disable runtime multi pipeline.
@@ -881,7 +882,7 @@ void SuperKernelActor::SyncDispatchKernel(OpContext<KernelTensor> *const context
   }
 
   // Check high performance condition in SuperKernelActor.
-  if (is_high_perf_mode_ && IsHighPerfModeAtExec()) {
+  if (hp_mode) {
     KernelAsyncLaunchActor::GetInstance()->LaunchKernelV2HP(context, kernel_actor);
   } else {
     KernelAsyncLaunchActor::GetInstance()->LaunchKernelV2(context, kernel_actor);
@@ -889,7 +890,7 @@ void SuperKernelActor::SyncDispatchKernel(OpContext<KernelTensor> *const context
 }
 
 bool SuperKernelActor::LaunchKernel(OpContext<KernelTensor> *const context, const KernelRunnerPtr &kernel_actor,
-                                    bool sync_run) {
+                                    bool hp_mode, bool sync_run) {
   if (!ActorDispatcher::enable_use_trace_memory()) {
     kernel_actor->UpdateRefDeviceAddress(context, true);
     kernel_actor->UpdateGraphOutputRefCount(context);
@@ -927,14 +928,12 @@ bool SuperKernelActor::LaunchKernel(OpContext<KernelTensor> *const context, cons
     // Note: dynamic value or static shape also need push task into infer actor to make sure correct kernel
     // execution order.
     if (EnableRuntimeNewPipeline()) {
-      auto infer_task = [context, kernel_actor_ptr = kernel_actor.get(),
-                         high_perf_mode = is_high_perf_mode_ && IsHighPerfModeAtExec()]() {
+      auto infer_task = [context, kernel_actor_ptr = kernel_actor.get(), high_perf_mode = hp_mode]() {
         KernelAsyncInferActor::GetInstance()->InferShapeV2(context, kernel_actor_ptr, high_perf_mode);
       };
       RuntimePipeline::GetInstance().infer_queue()->Push(std::move(infer_task));
     } else {
-      Async(kernel_async_infer_aid_, &KernelAsyncInferActor::InferShapeV2, context, kernel_actor.get(),
-            is_high_perf_mode_ && IsHighPerfModeAtExec());
+      Async(kernel_async_infer_aid_, &KernelAsyncInferActor::InferShapeV2, context, kernel_actor.get(), hp_mode);
     }
 
     // The computed depend kernel should wait output shape update after kernel launch.
@@ -959,7 +958,7 @@ bool SuperKernelActor::LaunchKernel(OpContext<KernelTensor> *const context, cons
       kernel_actor->InferAndUpdateDeviceTensorSize(context);
     }
 
-    AsyncLaunchKernelByCondition(context, kernel_actor.get());
+    AsyncLaunchKernelByCondition(context, kernel_actor.get(), hp_mode);
 
     // The computed depend kernel should wait output shape update after kernel launch.
     if (kernel_actor->kernel_mod_->IsNeedUpdateOutputShapeAndSize()) {
@@ -975,13 +974,13 @@ bool SuperKernelActor::LaunchKernel(OpContext<KernelTensor> *const context, cons
   } else {
     MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Sync launch kernel actor:" << kernel_actor->GetAID()
                                          << " in actor:" << GetAID();
-    SyncDispatchKernel(context, kernel_actor.get());
+    SyncDispatchKernel(context, kernel_actor.get(), hp_mode);
   }
 
   return true;
 }
 
-bool SuperKernelActor::LaunchAllKernels(OpContext<KernelTensor> *const context) {
+bool SuperKernelActor::LaunchAllKernels(OpContext<KernelTensor> *const context, bool hp_mode) {
   size_t kernel_num = kernel_actors_.size();
   for (size_t i = 0; i < kernel_num; i++) {
     const auto &kernel_actor = kernel_actors_[i];
@@ -1007,7 +1006,7 @@ bool SuperKernelActor::LaunchAllKernels(OpContext<KernelTensor> *const context) 
     }
 
     // 2. Async/Sync Run Infer or Launch
-    if (!LaunchKernel(context, kernel_actor)) {
+    if (!LaunchKernel(context, kernel_actor, hp_mode)) {
       return false;
     }
 
@@ -1254,14 +1253,15 @@ void SuperKernelActor::RunGraphKernelByKernel(OpContext<KernelTensor> *const con
     bool need_replay_graph = enable_capture_graph_ && GraphCaptureManager::GetInstance().HasCapturedGraph() &&
                              ActorDispatcher::enable_static_shape();
     if (!need_capture_graph && !need_replay_graph) {
-      if (!LaunchAllKernels(context)) {
+      if (!LaunchAllKernels(context, is_high_perf_mode_ && IsHighPerfModeAtExec())) {
         MS_INTERNAL_EXCEPTION(RuntimeError)
           << "Launch kernels by execution order failed for graph: " << graph_->ToString();
       }
     } else if (need_capture_graph) {
       GraphCaptureManager::GetInstance().FetchAllInputsBeforeCaptureGraph(context, 0, kernel_actors_,
                                                                           &memory_free_lists_);
-      if (!GraphCaptureManager::GetInstance().LaunchAllKernelsWithCapture(context, kernel_actors_, this)) {
+      if (!GraphCaptureManager::GetInstance().LaunchAllKernelsWithCapture(
+            context, kernel_actors_, this, is_high_perf_mode_ && IsHighPerfModeAtExec())) {
         MS_INTERNAL_EXCEPTION(RuntimeError)
           << "Launch kernels with capture graph failed for graph: " << graph_->ToString();
       }
@@ -1271,7 +1271,8 @@ void SuperKernelActor::RunGraphKernelByKernel(OpContext<KernelTensor> *const con
         return GraphCaptureManager::GetInstance().CheckParameterNotChange(static_cast<size_t>(0));
       });
       GraphCaptureManager::GetInstance().UpdateFixAddressBeforeReplayGraph(0, &memory_free_lists_);
-      if (!GraphCaptureManager::GetInstance().LaunchAllKernelsWithReplayGraph(context, kernel_actors_, this)) {
+      if (!GraphCaptureManager::GetInstance().LaunchAllKernelsWithReplayGraph(
+            context, kernel_actors_, this, is_high_perf_mode_ && IsHighPerfModeAtExec())) {
         MS_INTERNAL_EXCEPTION(RuntimeError) << "Replay graph failed for graph: " << graph_->ToString();
       }
 
@@ -2044,7 +2045,9 @@ bool SuperKernelActor::IsHighPerfModeAtComp() {
   };
   // When this function returns false, it means performance is not cirtical in this context.
   // Otherwise runtime will launch kernels with high performance.
-  return std::all_of(conditions.begin(), conditions.end(), [](bool c) { return !c; });
+  bool is_hp_at_comp = std::all_of(conditions.begin(), conditions.end(), [](bool c) { return !c; });
+  MS_LOG(INFO) << "Whether this is high performance mode at compilation phase: " << is_hp_at_comp;
+  return is_hp_at_comp;
 }
 
 bool SuperKernelActor::IsHighPerfModeAtExec() {
@@ -2056,7 +2059,10 @@ bool SuperKernelActor::IsHighPerfModeAtExec() {
     std::any_of(prof_instances_.begin(), prof_instances_.end(),
                 [](const auto &p) { return p->GetEnableFlag() || p->GetOpTimeFlag(); }),
   };
-  return std::all_of(conditions.begin(), conditions.end(), [](bool c) { return !c; });
+
+  bool is_hp_at_exec = std::all_of(conditions.begin(), conditions.end(), [](bool c) { return !c; });
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Whether this is high performance mode at execution phase: " << is_hp_at_exec;
+  return is_hp_at_exec;
 }
 
 void SuperKernelActor::ResetState(OpContext<KernelTensor> *const context) {

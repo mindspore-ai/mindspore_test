@@ -170,7 +170,7 @@ void GraphCaptureManager::Reset(const DeviceContext *device_context) {
 
 bool GraphCaptureManager::LaunchAllKernelsWithCapture(OpContext<KernelTensor> *const context,
                                                       const std::vector<KernelRunnerPtr> &kernel_runners,
-                                                      SuperKernelActor *super_kernel_actor) {
+                                                      SuperKernelActor *super_kernel_actor, bool hp_mode) {
   MS_LOG(INFO) << "Begin launch all kernels with capture graph.";
   size_t executor_num = executors_.size();
   for (size_t i = 0; i < executor_num; i++) {
@@ -189,7 +189,7 @@ bool GraphCaptureManager::LaunchAllKernelsWithCapture(OpContext<KernelTensor> *c
           continue;
         }
 
-        if (!super_kernel_actor->LaunchKernel(context, kernel_runner, true)) {
+        if (!super_kernel_actor->LaunchKernel(context, kernel_runner, hp_mode, true)) {
           MS_LOG(ERROR) << "Launch kernel in capture mode failed: " << kernel_runner->kernel()->fullname_with_scope();
           return false;
         }
@@ -202,7 +202,7 @@ bool GraphCaptureManager::LaunchAllKernelsWithCapture(OpContext<KernelTensor> *c
       auto &kernel_runner = kernel_runners[executor.second];
       MS_LOG(DEBUG) << "Begin launch kernel, executor order index: " << executor.second
                     << ", kernel: " << kernel_runner->kernel()->fullname_with_scope();
-      if (!super_kernel_actor->LaunchKernel(context, kernel_runner, true)) {
+      if (!super_kernel_actor->LaunchKernel(context, kernel_runner, hp_mode, true)) {
         MS_LOG(ERROR) << "Launch kernel failed: " << kernel_runner->kernel()->fullname_with_scope();
         return false;
       }
@@ -214,7 +214,7 @@ bool GraphCaptureManager::LaunchAllKernelsWithCapture(OpContext<KernelTensor> *c
 
 bool GraphCaptureManager::LaunchAllKernelsWithReplayGraph(OpContext<KernelTensor> *const context,
                                                           const std::vector<KernelRunnerPtr> &kernel_runners,
-                                                          SuperKernelActor *super_kernel_actor) {
+                                                          SuperKernelActor *super_kernel_actor, bool hp_mode) {
   MS_LOG(INFO) << "Begin launch all kernels with replay graph.";
   size_t executor_num = executors_.size();
   for (size_t i = 0; i < executor_num; i++) {
@@ -224,7 +224,7 @@ bool GraphCaptureManager::LaunchAllKernelsWithReplayGraph(OpContext<KernelTensor
       capture_graphs_[executor.second]->ExecuteCaptureGraph(0);
     } else {
       auto &kernel_runner = kernel_runners[executor.second];
-      if (!super_kernel_actor->LaunchKernel(context, kernel_runner, true)) {
+      if (!super_kernel_actor->LaunchKernel(context, kernel_runner, hp_mode, true)) {
         MS_LOG(ERROR) << "Launch kernel failed: " << kernel_runner->kernel()->fullname_with_scope();
         return false;
       }

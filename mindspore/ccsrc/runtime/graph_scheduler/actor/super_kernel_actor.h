@@ -96,7 +96,8 @@ class SuperKernelActor : public DebugAwareActor {
   const std::vector<size_t> &input_param_static_use_cnt() const { return input_params_use_cnt_; }
   const std::vector<bool> &is_input_used() const { return is_input_used_; }
 
-  bool LaunchKernel(OpContext<KernelTensor> *const context, const KernelRunnerPtr &kernel_actor, bool sync_run = false);
+  bool LaunchKernel(OpContext<KernelTensor> *const context, const KernelRunnerPtr &kernel_actor, bool hp_mode,
+                    bool sync_run = false);
 
   bool enable_kbk_sub_graph_execute() const { return enable_kbk_sub_graph_execute_; }
 
@@ -195,13 +196,13 @@ class SuperKernelActor : public DebugAwareActor {
                            const KernelRunnerPtr &kernel_actor);
 
   // Launch all kernels by execution order in kernel graph: graph_.
-  bool LaunchAllKernels(OpContext<KernelTensor> *const context);
+  bool LaunchAllKernels(OpContext<KernelTensor> *const context, bool hp_mode);
 
   // Async launch a kernel by debug mode or high performance mode.
-  void AsyncLaunchKernelByCondition(OpContext<KernelTensor> *const context, KernelRunner *kernel_actor);
+  void AsyncLaunchKernelByCondition(OpContext<KernelTensor> *const context, KernelRunner *kernel_actor, bool hp_mode);
 
   // Sync dispatch a kernel, including infer/resize/launch.
-  void SyncDispatchKernel(OpContext<KernelTensor> *const context, KernelRunner *kernel_actor);
+  void SyncDispatchKernel(OpContext<KernelTensor> *const context, KernelRunner *kernel_actor, bool hp_mode);
 
   void TrackInputMemory();
 

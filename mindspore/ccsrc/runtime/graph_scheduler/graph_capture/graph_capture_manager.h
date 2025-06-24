@@ -56,12 +56,12 @@ class BACKEND_EXPORT GraphCaptureManager {
   // immediately.
   bool LaunchAllKernelsWithCapture(OpContext<KernelTensor> *const context,
                                    const std::vector<KernelRunnerPtr> &kernel_runners,
-                                   SuperKernelActor *super_kernel_actor);
+                                   SuperKernelActor *super_kernel_actor, bool hp_mode);
   // Replay all captured sub graphs in series according to the execution order, or execute operators that cannot be
   // captured.
   bool LaunchAllKernelsWithReplayGraph(OpContext<KernelTensor> *const context,
                                        const std::vector<KernelRunnerPtr> &kernel_runners,
-                                       SuperKernelActor *super_kernel_actor);
+                                       SuperKernelActor *super_kernel_actor, bool hp_mode);
 
   bool HasCapturedGraph() const { return capture_graph_ && capture_graph_->HasCapturedGraph(); }
 
