@@ -326,9 +326,12 @@ ValuePtr PipelineTransformer::SetMicroBatch(const AnfNodePtr &node, int64_t micr
     } else if (IsPrimitiveCNode(make_tuple_cnode->input(1), prim::kPrimScalarFloorDiv)) {
       micro = 1;
     } else {
-      MS_EXCEPTION_IF_NULL(make_tuple_cnode->input(1));
-      MS_LOG_WITH_NODE(EXCEPTION, make_tuple_cnode) << "can not find the micro info, the input op of make tuple is "
-                                                    << GetCNodePrimitive(make_tuple_cnode->input(1))->name();
+      const auto &input = make_tuple_cnode->input(1);
+      MS_EXCEPTION_IF_NULL(input);
+      const auto &prim = GetCNodePrimitive(input);
+      MS_EXCEPTION_IF_NULL(prim);
+      MS_LOG_WITH_NODE(EXCEPTION, make_tuple_cnode)
+        << "can not find the micro info, the input op of make tuple is " << prim->name();
     }
   }
 
@@ -831,6 +834,7 @@ AnfNodeIndexSet GetActualOpUsers(const AnfNodePtr &node, NodeUsersMap *node_user
       auto temp_params = graph->parameters();
       auto index = user_pair.second;
       if (temp_params.size() < IntToSize(index)) {
+        MS_EXCEPTION_IF_NULL(temp_node);
         MS_LOG_WITH_NODE(EXCEPTION, temp_node)
           << "parameter: " << temp_node->DebugString() << " out of graph: " << graph->ToString() << "'s range.";
       }
@@ -1115,7 +1119,6 @@ static ValueListPtr GetShapeValue(const Shape &shape) {
 std::pair<ValueListPtr, TypePtr> GetShapeType(const AnfNodePtr &node, const Shape &shape, size_t index) {
   TypePtr type;
   auto cnode = node->cast<CNodePtr>();
-
   if (cnode != nullptr && IsValueNode<FuncGraph>(cnode->input(0))) {
     auto graph = GetValueNode<FuncGraphPtr>(cnode->input(0));
     MS_EXCEPTION_IF_NULL(graph);
