@@ -54,13 +54,13 @@ from mindspore.nn.layer.basic import UpsampleExt as Upsample
 
 # 11
 from mindspore.nn.layer import ReLU
-
 # 12
 
 # 13
 
 # 14
 from mindspore.nn.layer.basic import DropoutExt as Dropout
+from mindspore.nn.layer.basic import Dropout3d
 # 15
 from mindspore.mint.nn.layer.conv import Conv1d, Conv2d, Conv3d, ConvTranspose2d
 # 16
