@@ -68,10 +68,13 @@
 #include "kernel/ascend/pyboost/auto_generate/inplace_add_ext.h"
 #include "kernel/ascend/pyboost/auto_generate/inplace_sub_ext.h"
 #include "kernel/ascend/pyboost/auto_generate/inplace_relu.h"
+#include "kernel/ascend/pyboost/auto_generate/masked_fill.h"
 #include "kernel/ascend/pyboost/auto_generate/dense.h"
 #include "kernel/ascend/pyboost/auto_generate/matmul.h"
 #include "kernel/ascend/pyboost/auto_generate/batch_mat_mul.h"
 #include "kernel/ascend/pyboost/auto_generate/matmul_ext.h"
+#include "kernel/ascend/pyboost/auto_generate/bmm_ext.h"
+#include "kernel/ascend/pyboost/auto_generate/baddbmm.h"
 #include "kernel/ascend/pyboost/auto_generate/batch_norm_stats.h"
 #include "kernel/ascend/pyboost/auto_generate/batch_norm_gather_stats_with_counts.h"
 #include "kernel/ascend/pyboost/auto_generate/batch_norm_elemt.h"
@@ -472,6 +475,28 @@ class InplaceReLUAscendDvm : public InplaceReLUAscend {
   tensor::TensorPtr Call(const mindspore::tensor::TensorPtr &input_tensor) override;
 };
 
+class MaskedFillAscendDvm : public MaskedFillAscend {
+ public:
+  MaskedFillAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
+      : MaskedFillAscend(std::move(primitive), device_context) {}
+  ~MaskedFillAscendDvm() = default;
+  tensor::TensorPtr Call(const mindspore::tensor::TensorPtr &input_x_tensor,
+                         const mindspore::tensor::TensorPtr &mask_tensor,
+                         const mindspore::tensor::TensorPtr &value_tensor) override;
+};
+
+class BaddbmmAscendDvm : public BaddbmmAscend {
+ public:
+  BaddbmmAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
+      : BaddbmmAscend(std::move(primitive), device_context) {}
+  ~BaddbmmAscendDvm() = default;
+
+  tensor::TensorPtr Call(const mindspore::tensor::TensorPtr &input_tensor,
+                         const mindspore::tensor::TensorPtr &batch1_tensor,
+                         const mindspore::tensor::TensorPtr &batch2_tensor, const mindspore::ScalarPtr &beta,
+                         const mindspore::ScalarPtr &alpha) override;
+};
+
 class DenseAscendDvm : public DenseAscend {
  public:
   DenseAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
@@ -507,6 +532,16 @@ class MatMulExtAscendDvm : public MatMulExtAscend {
   MatMulExtAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : MatMulExtAscend(std::move(primitive), device_context) {}
   ~MatMulExtAscendDvm() = default;
+
+  tensor::TensorPtr Call(const mindspore::tensor::TensorPtr &input_tensor,
+                         const mindspore::tensor::TensorPtr &other_tensor) override;
+};
+
+class BatchMatMulExtAscendDvm : public BatchMatMulExtAscend {
+ public:
+  BatchMatMulExtAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
+      : BatchMatMulExtAscend(std::move(primitive), device_context) {}
+  ~BatchMatMulExtAscendDvm() = default;
 
   tensor::TensorPtr Call(const mindspore::tensor::TensorPtr &input_tensor,
                          const mindspore::tensor::TensorPtr &other_tensor) override;
