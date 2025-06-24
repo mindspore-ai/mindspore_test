@@ -472,7 +472,7 @@ bool GPUResManager::Copy(void *dst, const void *src, uint64_t size, CopyType kin
   return true;
 }
 
-bool GPUResManager::CopyDirectly(void *dst, size_t src_size, const void *src, uint64_t dst_size, CopyType kind) const {
+bool GPUResManager::CopyDirectly(void *dst, size_t dst_size, const void *src, size_t src_size, CopyType kind) const {
   MS_EXCEPTION_IF_NULL(dst);
   MS_EXCEPTION_IF_NULL(src);
   return GPUDeviceManager::GetInstance().CopyDeviceMemToHost(dst, const_cast<void *>(src),
@@ -578,8 +578,7 @@ bool GPUResManager::Copy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncP
     }
     case cudaMemcpyKind::cudaMemcpyDeviceToDevice: {
       if (!CudaDriver::CopyDeviceMemToDeviceAsync(dst_device_address->GetDevicePtr(),
-                                                  src_device_address->GetDevicePtr(), copy_size,
-                                                  stream)) {
+                                                  src_device_address->GetDevicePtr(), copy_size, stream)) {
         MS_LOG(ERROR) << "CopyDeviceMemToHostAsync failed from device address:" << src_device_address->ToString()
                       << " to:" << dst_device_address->ToString();
       }
