@@ -35,6 +35,9 @@ mindspore.mint.nn.Conv3d
 
     参数的约束细节，请参考 :func:`mindspore.mint.nn.functional.conv3d` 。
 
+    .. warning::
+        仅支持 Atlas A2 训练系列产品。
+
     参数：
         - **in_channels** (int) - Conv3d层输入Tensor的空间维度。
         - **out_channels** (int) - Conv3d层输出Tensor的空间维度。

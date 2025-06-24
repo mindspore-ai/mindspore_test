@@ -202,7 +202,7 @@ uint32_t TripletMarginLossCpuKernel::TripletMarginLossComputeRealType(
   std::vector<T> x_broadcast_tensor;
   std::vector<T> positive_broadcast_tensor;
   std::vector<T> negative_broadcast_tensor;
-  if (broadcast == true) {
+  if (broadcast) {
     auto shape_x1 = shape_x;
     auto shape_x2 = shape_x;
     auto shape_positive1 = shape_positive;
@@ -260,7 +260,7 @@ uint32_t TripletMarginLossCpuKernel::TripletMarginLossComputeRealType(
               *(x_data + i * data_num_each_batch_input + j + k * data_num_each_batch_output_reduction_none)) -
             static_cast<float>(
               *(negative_data + i * data_num_each_batch_input + j + k * data_num_each_batch_output_reduction_none));
-          if (swap_value == true) {
+          if (swap_value) {
             *(calculate_swap_distance_data + k) =
               eps_value +
               static_cast<float>(
@@ -283,7 +283,7 @@ uint32_t TripletMarginLossCpuKernel::TripletMarginLossComputeRealType(
           std::pow(static_cast<double>(calculate_positive_distance.sum()), (1 / static_cast<float>(p_value)));
         negative_distance =
           std::pow(static_cast<double>(calculate_negative_distance.sum()), (1 / static_cast<float>(p_value)));
-        if (broadcast == true) {
+        if (broadcast) {
           if (x_reshape_vector[1] == 1 && positive_reshape_vector[1] == 1 && broadcast_shape[1] != 1) {
             positive_distance /= std::pow(broadcast_shape[1], (1 / static_cast<float>(p_value)));
           }
@@ -291,7 +291,7 @@ uint32_t TripletMarginLossCpuKernel::TripletMarginLossComputeRealType(
             negative_distance /= std::pow(broadcast_shape[1], (1 / static_cast<float>(p_value)));
           }
         }
-        if (swap_value == true) {
+        if (swap_value) {
           calculate_swap_distance = ((calculate_swap_distance)).abs();
           for (int64_t n = 0; n < once_compute_size; n++) {
             temp3 = *(calculate_swap_distance_data + n);
@@ -301,7 +301,7 @@ uint32_t TripletMarginLossCpuKernel::TripletMarginLossComputeRealType(
           }
           swap_distance =
             std::pow(static_cast<double>(calculate_swap_distance.sum()), (1 / static_cast<float>(p_value)));
-          if (broadcast == true) {
+          if (broadcast) {
             if (positive_reshape_vector[1] == 1 && negative_reshape_vector[1] == 1 && broadcast_shape[1] != 1) {
               swap_distance /= std::pow(broadcast_shape[1], (1 / static_cast<float>(p_value)));
             }
@@ -356,7 +356,7 @@ uint32_t TripletMarginLossCpuKernel::TripletMarginLossComputeRealType(
               *(x_data + i * data_num_each_batch_input + j + k * data_num_each_batch_output_reduction_none)) -
             static_cast<float>(
               *(negative_data + i * data_num_each_batch_input + j + k * data_num_each_batch_output_reduction_none));
-          if (swap_value == true) {
+          if (swap_value) {
             *(calculate_swap_distance_data + k) =
               eps_value +
               static_cast<float>(
@@ -379,7 +379,7 @@ uint32_t TripletMarginLossCpuKernel::TripletMarginLossComputeRealType(
           std::pow(static_cast<double>(calculate_positive_distance.sum()), (1 / static_cast<float>(p_value)));
         negative_distance =
           std::pow(static_cast<double>(calculate_negative_distance.sum()), (1 / static_cast<float>(p_value)));
-        if (broadcast == true) {
+        if (broadcast) {
           if (x_reshape_vector[1] == 1 && positive_reshape_vector[1] == 1 && broadcast_shape[1] != 1) {
             positive_distance /= std::pow(broadcast_shape[1], (1 / static_cast<float>(p_value)));
           }
@@ -387,7 +387,7 @@ uint32_t TripletMarginLossCpuKernel::TripletMarginLossComputeRealType(
             negative_distance /= std::pow(broadcast_shape[1], (1 / static_cast<float>(p_value)));
           }
         }
-        if (swap_value == true) {
+        if (swap_value) {
           calculate_swap_distance = ((calculate_swap_distance)).abs();
           for (int64_t n = 0; n < once_compute_size; n++) {
             temp3 = *(calculate_swap_distance_data + n);
@@ -397,7 +397,7 @@ uint32_t TripletMarginLossCpuKernel::TripletMarginLossComputeRealType(
           }
           swap_distance =
             std::pow(static_cast<double>(calculate_swap_distance.sum()), (1 / static_cast<float>(p_value)));
-          if (broadcast == true) {
+          if (broadcast) {
             if (positive_reshape_vector[1] == 1 && negative_reshape_vector[1] == 1 && broadcast_shape[1] != 1) {
               swap_distance /= std::pow(broadcast_shape[1], (1 / static_cast<float>(p_value)));
             }
@@ -450,7 +450,7 @@ uint32_t TripletMarginLossCpuKernel::TripletMarginLossComputeComplexType(
   std::vector<T> x_broadcast_tensor;
   std::vector<T> positive_broadcast_tensor;
   std::vector<T> negative_broadcast_tensor;
-  if (broadcast == true) {
+  if (broadcast) {
     auto shape_x1 = shape_x;
     auto shape_x2 = shape_x;
     auto shape_positive1 = shape_positive;
@@ -501,7 +501,7 @@ uint32_t TripletMarginLossCpuKernel::TripletMarginLossComputeComplexType(
             static_cast<T>(eps_value) +
             (*(x_data + i * data_num_each_batch_input + j + k * data_num_each_batch_output_reduction_none)) -
             (*(negative_data + i * data_num_each_batch_input + j + k * data_num_each_batch_output_reduction_none));
-          if (swap_value == true) {
+          if (swap_value) {
             *(calculate_swap_distance_data + k) =
               static_cast<T>(eps_value) +
               (*(positive_data + i * data_num_each_batch_input + j + k * data_num_each_batch_output_reduction_none)) -
@@ -516,7 +516,7 @@ uint32_t TripletMarginLossCpuKernel::TripletMarginLossComputeComplexType(
           std::pow(calculate_positive_distance_float.pow(p_value).sum(), 1 / static_cast<float>(p_value));
         negative_distance =
           std::pow(calculate_negative_distance_float.pow(p_value).sum(), 1 / static_cast<float>(p_value));
-        if (broadcast == true) {
+        if (broadcast) {
           if (x_reshape_vector[1] == 1 && positive_reshape_vector[1] == 1 && broadcast_shape[1] != 1) {
             positive_distance /= std::pow(broadcast_shape[1], (1 / static_cast<float>(p_value)));
           }
@@ -524,11 +524,11 @@ uint32_t TripletMarginLossCpuKernel::TripletMarginLossComputeComplexType(
             negative_distance /= std::pow(broadcast_shape[1], (1 / static_cast<float>(p_value)));
           }
         }
-        if (swap_value == true) {
+        if (swap_value) {
           auto calculate_swap_distance_float =
             (calculate_swap_distance * (calculate_swap_distance.matrix().conjugate().array())).real().sqrt();
           swap_distance = std::pow(calculate_swap_distance_float.pow(p_value).sum(), 1 / static_cast<float>(p_value));
-          if (broadcast == true) {
+          if (broadcast) {
             if (positive_reshape_vector[1] == 1 && negative_reshape_vector[1] == 1 && broadcast_shape[1] != 1) {
               swap_distance /= std::pow(broadcast_shape[1], (1 / static_cast<float>(p_value)));
             }
@@ -573,7 +573,7 @@ uint32_t TripletMarginLossCpuKernel::TripletMarginLossComputeComplexType(
             static_cast<T>(eps_value) +
             (*(x_data + i * data_num_each_batch_input + j + k * data_num_each_batch_output_reduction_none)) -
             (*(negative_data + i * data_num_each_batch_input + j + k * data_num_each_batch_output_reduction_none));
-          if (swap_value == true) {
+          if (swap_value) {
             *(calculate_swap_distance_data + k) =
               static_cast<T>(eps_value) +
               (*(positive_data + i * data_num_each_batch_input + j + k * data_num_each_batch_output_reduction_none)) -
@@ -591,7 +591,7 @@ uint32_t TripletMarginLossCpuKernel::TripletMarginLossComputeComplexType(
           std::pow(calculate_positive_distance_float.pow(p_value).sum(), 1 / static_cast<float>(p_value));
         negative_distance =
           std::pow(calculate_negative_distance_float.pow(p_value).sum(), 1 / static_cast<float>(p_value));
-        if (broadcast == true) {
+        if (broadcast) {
           if (x_reshape_vector[1] == 1 && positive_reshape_vector[1] == 1 && broadcast_shape[1] != 1) {
             positive_distance /= std::pow(broadcast_shape[1], (1 / static_cast<float>(p_value)));
           }
@@ -599,11 +599,11 @@ uint32_t TripletMarginLossCpuKernel::TripletMarginLossComputeComplexType(
             negative_distance /= std::pow(broadcast_shape[1], (1 / static_cast<float>(p_value)));
           }
         }
-        if (swap_value == true) {
+        if (swap_value) {
           auto calculate_swap_distance_float =
             (calculate_swap_distance * (calculate_swap_distance.matrix().conjugate().array())).real().sqrt();
           swap_distance = std::pow(calculate_swap_distance_float.pow(p_value).sum(), 1 / static_cast<float>(p_value));
-          if (broadcast == true) {
+          if (broadcast) {
             if (positive_reshape_vector[1] == 1 && negative_reshape_vector[1] == 1 && broadcast_shape[1] != 1) {
               swap_distance /= std::pow(broadcast_shape[1], (1 / static_cast<float>(p_value)));
             }
@@ -656,7 +656,7 @@ uint32_t TripletMarginLossCpuKernel::TripletMarginLossComputeRealTypeFloat16(
   std::vector<T> x_broadcast_tensor;
   std::vector<T> positive_broadcast_tensor;
   std::vector<T> negative_broadcast_tensor;
-  if (broadcast == true) {
+  if (broadcast) {
     auto shape_x1 = shape_x;
     auto shape_x2 = shape_x;
     auto shape_positive1 = shape_positive;
@@ -712,7 +712,7 @@ uint32_t TripletMarginLossCpuKernel::TripletMarginLossComputeRealTypeFloat16(
                                               k * data_num_each_batch_output_reduction_none)) -
                          static_cast<float>(*(negative_data + i * data_num_each_batch_input + j +
                                               k * data_num_each_batch_output_reduction_none)));
-          if (swap_value == true) {
+          if (swap_value) {
             *(calculate_swap_distance_data + k) =
               eps_value + (static_cast<float>(*(positive_data + i * data_num_each_batch_input + j +
                                                 k * data_num_each_batch_output_reduction_none)) -
@@ -740,7 +740,7 @@ uint32_t TripletMarginLossCpuKernel::TripletMarginLossComputeRealTypeFloat16(
         if (x_reshape_vector[1] == 1 && negative_reshape_vector[1] == 1 && broadcast_shape[1] != 1) {
           negative_distance /= std::pow(broadcast_shape[1], (1 / static_cast<float>(p_value)));
         }
-        if (swap_value == true) {
+        if (swap_value) {
           calculate_swap_distance = ((calculate_swap_distance)).abs();
           for (int64_t n = 0; n < once_compute_size; n++) {
             temp3 = *(calculate_swap_distance_data + n);
@@ -798,7 +798,7 @@ uint32_t TripletMarginLossCpuKernel::TripletMarginLossComputeRealTypeFloat16(
                                               k * data_num_each_batch_output_reduction_none)) -
                          static_cast<float>(*(negative_data + i * data_num_each_batch_input + j +
                                               k * data_num_each_batch_output_reduction_none)));
-          if (swap_value == true) {
+          if (swap_value) {
             *(calculate_swap_distance_data + k) =
               eps_value + (static_cast<float>(*(positive_data + i * data_num_each_batch_input + j +
                                                 k * data_num_each_batch_output_reduction_none)) -
@@ -823,7 +823,7 @@ uint32_t TripletMarginLossCpuKernel::TripletMarginLossComputeRealTypeFloat16(
           std::pow(static_cast<double>(calculate_positive_distance.sum()), (1 / static_cast<float>(p_value))));
         negative_distance = static_cast<float>(
           std::pow(static_cast<double>(calculate_negative_distance.sum()), (1 / static_cast<float>(p_value))));
-        if (broadcast == true) {
+        if (broadcast) {
           if (x_reshape_vector[1] == 1 && positive_reshape_vector[1] == 1 && broadcast_shape[1] != 1) {
             positive_distance /= std::pow(broadcast_shape[1], (1 / static_cast<float>(p_value)));
           }
@@ -831,7 +831,7 @@ uint32_t TripletMarginLossCpuKernel::TripletMarginLossComputeRealTypeFloat16(
             negative_distance /= std::pow(broadcast_shape[1], (1 / static_cast<float>(p_value)));
           }
         }
-        if (swap_value == true) {
+        if (swap_value) {
           calculate_swap_distance = ((calculate_swap_distance)).abs();
           for (int64_t n = 0; n < once_compute_size; n++) {
             temp3 = *(calculate_swap_distance_data + n);
@@ -841,7 +841,7 @@ uint32_t TripletMarginLossCpuKernel::TripletMarginLossComputeRealTypeFloat16(
           }
           swap_distance = static_cast<float>(
             std::pow(static_cast<double>(calculate_swap_distance.sum()), (1 / static_cast<float>(p_value))));
-          if (broadcast == true) {
+          if (broadcast) {
             if (positive_reshape_vector[1] == 1 && negative_reshape_vector[1] == 1 && broadcast_shape[1] != 1) {
               swap_distance /= std::pow(broadcast_shape[1], (1 / static_cast<float>(p_value)));
             }

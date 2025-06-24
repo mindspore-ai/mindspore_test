@@ -106,7 +106,7 @@ uint32_t NonMaxSuppressionWithOverlapsCpuKernel::DoNonMaxSuppressionWithOverlaps
   std::copy_n(reinterpret_cast<T *>(scores_->GetData()), num_boxes_, scores_data.begin());
   auto overlap_threshold = static_cast<T>(*(static_cast<T_threshold *>(overlap_threshold_tensor_->GetData())));
   auto score_threshold = static_cast<T>(*(static_cast<T_threshold *>(score_threshold_tensor_->GetData())));
-  std::unique_ptr<int32_t[]> indices_data(new int32_t[max_output_size_]);
+  auto indices_data = std::make_unique<int32_t[]>(max_output_size_);
   if (indices_data == nullptr) {
     CUST_KERNEL_LOG_ERROR(ctx, "DoNonMaxSuppressionWithOverlapsOp: new indices_data failed");
     return KERNEL_STATUS_INNER_ERROR;

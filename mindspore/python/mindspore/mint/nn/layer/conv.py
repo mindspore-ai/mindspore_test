@@ -202,7 +202,8 @@ class Conv1d(_Conv):
 
         padding_mode (str, optional): Specifies the padding mode with a padding value of 0. It can be set to:
             ``"zeros"`` , ``"reflect"`` or ``"replicate"`` . Default: ``"zeros"`` .
-        dilation (Union[int, tuple[int], list[int]], optional): Specifies the dilation rate to use for dilated convolution.
+        dilation (Union[int, tuple[int], list[int]], optional): Specifies the dilation
+            rate to use for dilated convolution.
             It can be a single int or a tuple/list of 1 integer. 
             Assuming :math:`dilation=(d)`, the convolutional kernel samples the input with a
             spacing of :math:`d-1` elements in the length direction.
@@ -394,7 +395,8 @@ class Conv2d(_Conv):
 
         padding_mode (str, optional): Specifies the padding mode with a padding value of 0. It can be set to:
             ``"zeros"`` , ``"reflect"`` or ``"replicate"`` . Default: ``"zeros"`` .
-        dilation (Union[int, tuple[int], list[int]], optional): Specifies the dilation rate to use for dilated convolution.
+        dilation (Union[int, tuple[int], list[int]], optional): Specifies the dilation rate to use
+            for dilated convolution.
             It can be a single int or a tuple/list of 2 integers. A single int means the dilation size is the same
             in both the height and width directions. A tuple/list of two ints represents the dilation size in
             the height and width directions, respectively.
@@ -569,6 +571,9 @@ class Conv3d(_Conv):
     <http://vision.stanford.edu/cs598_spring07/papers/Lecun98.pdf>`_.
 
     For the detail of limitations of the parameters, please refer to :func:`mindspore.mint.nn.functional.conv3d`.
+
+    .. warning::
+        It is only supported on Atlas A2 Training Series Products.
 
     Args:
         in_channels (int): The channel number of the input tensor of the Conv3d layer.

@@ -117,7 +117,7 @@ class PhiloxRandomDist {
       }
     }
 
-    if (invalid_flag == false) {
+    if (!invalid_flag) {
       CUST_KERNEL_LOG_ERROR(ctx, "input prob is invalid, must be in [0, 1]");
       return KERNEL_STATUS_PARAM_INVALID;
     }

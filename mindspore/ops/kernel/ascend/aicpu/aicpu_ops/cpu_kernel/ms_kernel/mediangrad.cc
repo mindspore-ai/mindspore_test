@@ -58,7 +58,7 @@ uint32_t MedianGradCpuKernel::Compute(CpuKernelContext &ctx) {
   auto data_type_x = ctx.Input(1)->GetDataType();
   AttrValue *global_median_ptr = ctx.GetAttr("global_median");
   bool global_median = global_median_ptr->GetBool();
-  if (global_median == false) {
+  if (!global_median) {
     switch (data_type_x) {
       MEDIANGRAD_COMPUTE_CASE(DT_INT16, int16_t, float, ctx)
       MEDIANGRAD_COMPUTE_CASE(DT_INT32, int32_t, float, ctx)
@@ -91,7 +91,7 @@ uint32_t MedianGradCpuKernel::MedianGradParamCheck(CpuKernelContext &ctx) {
   CUST_KERNEL_CHECK_NULLPTR(ctx, global_median_ptr, KERNEL_STATUS_PARAM_INVALID, "Get attr global_median failed.");
   bool global_median = global_median_ptr->GetBool();
 
-  if (global_median == false) {
+  if (!global_median) {
     CUST_KERNEL_HANDLE_ERROR(ctx, NormalCheck(ctx, kInputNum, kOutputNum),
                              "MedianGrad check input and output number failed.");
   } else {
@@ -114,7 +114,7 @@ uint32_t MedianGradCpuKernel::MedianGradParamCheck(CpuKernelContext &ctx) {
                           "The data type of input y_grad [%s] is different from x [%s].",
                           DTypeStr(data_type_y_grad).c_str(), DTypeStr(data_type_x).c_str())
 
-  if (global_median == false) {
+  if (!global_median) {
     Tensor *input_indices = ctx.Input(3);
     CUST_KERNEL_LOG_DEBUG(ctx,
                           "MedianGradCpuKernel[%s], input_y_grad: size[%llu],"

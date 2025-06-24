@@ -62,8 +62,7 @@ mindspore.mint.nn.functional.conv3d
     - 如果 `padding` 为 ``'same'``， `stride` 必须为 1。
 
     .. warning::
-        该API不支持Atlas系列产品。
-        这是一个实验性API，后续可能修改或删除。
+        仅支持 Atlas A2 训练系列产品。
 
     参数：
         - **input** (Tensor) - shape为 :math:`(N, C_{in}, D_{in}, H_{in}, W_{in})` 的Tensor。
