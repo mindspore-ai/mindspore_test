@@ -2908,6 +2908,8 @@ void ControlNodeParser::ParseNodeLevel(const std::vector<AnfNodePtr> &control_no
     for (const auto &front_input_node : kernel_graph_group_info->front_input_nodes_) {
       const auto &input_node = front_input_node.first.first;
       MS_EXCEPTION_IF_NULL(input_node);
+      MS_LOG(DEBUG) << "Fetch node level for group:" << kernel_graph_group_info->group_name_
+                    << " input node:" << input_node->DebugString();
       auto iter = node_to_level_.find(input_node);
       if (iter == node_to_level_.end()) {
         PrintGraphGroupInfo(kernel_graph_group_infos_);
@@ -2945,8 +2947,30 @@ bool ControlNodeParser::IsInputInSameLevel(const AnfNodePtr &node) {
     }
     auto iter = node_to_level_.find(input_node);
     if (iter == node_to_level_.end()) {
-      MS_LOG_WITH_NODE(EXCEPTION, node) << "Failed to find input:" << input_node->DebugString()
-                                        << " for node:" << node->DebugString() << " in graph output map.";
+      MS_LOG(INFO) << "check for input node:" << input_node->DebugString();
+      for (const auto &pair : node_to_level_) {
+        MS_EXCEPTION_IF_NULL(pair.first);
+        MS_LOG(DEBUG) << "check node:" << pair.first->DebugString() << " level:" << pair.second;
+        const auto &real_node = common::AnfAlgo::VisitKernelWithReturnType(pair.first, 0).first;
+        if (real_node == input_node) {
+          MS_LOG(INFO) << "Match the real node for:" << pair.first->DebugString() << " level:" << pair.second
+                       << " input node:" << input_node->DebugString() << " for node:" << node->DebugString();
+          level = pair.second;
+        }
+        if (common::AnfAlgo::CheckPrimitiveType(real_node, prim::kPrimTupleGetItem)) {
+          const auto &cnode = real_node->cast<CNodePtr>();
+          MS_EXCEPTION_IF_NULL(cnode);
+          if (cnode->size() > 2 && cnode->input(1) == input_node) {
+            MS_LOG(INFO) << "Match the getitem node for:" << pair.first->DebugString() << " level:" << pair.second
+                         << " input node:" << input_node->DebugString() << " for node:" << node->DebugString();
+            level = pair.second;
+          }
+        }
+      }
+      if (level == SIZE_MAX) {
+        MS_LOG_WITH_NODE(EXCEPTION, node) << "Failed to find input:" << input_node->DebugString()
+                                          << " for node:" << node->DebugString() << " in graph output map.";
+      }
     }
     if (level == SIZE_MAX) {
       level = iter->second;
