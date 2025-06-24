@@ -151,7 +151,7 @@ class RES_EXPORT HalResBase {
     MS_LOG(EXCEPTION) << "Unimplemented interface.";
   }
 
-  virtual bool CopyDirectly(void *dst, size_t src_size, const void *src, uint64_t dst_size, CopyType kind) const {
+  virtual bool CopyDirectly(void *dst, size_t dst_size, const void *src, size_t src_size, CopyType kind) const {
     MS_LOG(EXCEPTION) << "Unimplemented interface.";
   }
   virtual bool Copy(void *dst, const void *src, uint64_t size, CopyType kind, size_t stream_id) const {

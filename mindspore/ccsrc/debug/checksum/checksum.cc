@@ -35,6 +35,7 @@ inline TensorPtr KernelTensor2Tensor(KernelTensorPtr kernel_tensor) {
   if (!kernel_tensor) {
     return nullptr;
   }
+  const void *src = kernel_tensor->device_ptr();
   auto host_type = kernel_tensor->dtype_id();
   auto host_shape = kernel_tensor->GetShapeVector();
   auto device_tensor = kernel_tensor->device_address();
@@ -47,7 +48,11 @@ inline TensorPtr KernelTensor2Tensor(KernelTensorPtr kernel_tensor) {
     MS_LOG(WARNING) << "kernel tensor size is 0, skip it.";
     return out_tensor;
   }
-  if (!SyncCopy(out_tensor->device_address(), device_tensor, device_tensor->stream_id())) {
+
+  device::ResKey res_key{device_tensor->GetDeviceType(), device_tensor->device_id()};
+  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+  MS_EXCEPTION_IF_NULL(res_manager);
+  if (!res_manager->CopyDirectly(out_tensor->data_c(), host_size, src, host_size, device::CopyType::kD2H)) {
     MS_LOG(EXCEPTION) << "Copy D2H failed";
   }
   return out_tensor;

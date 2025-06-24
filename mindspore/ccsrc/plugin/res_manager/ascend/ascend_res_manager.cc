@@ -740,8 +740,7 @@ bool AscendResManager::Copy(void *dst, const void *src, uint64_t size, CopyType 
   return SyncStream(stream_id);
 }
 
-bool AscendResManager::CopyDirectly(void *dst, size_t src_size, const void *src, uint64_t dst_size,
-                                    CopyType kind) const {
+bool AscendResManager::CopyDirectly(void *dst, size_t dst_size, const void *src, size_t src_size, CopyType kind) const {
   BindDeviceToCurrentThread(false);
   auto ret = CALL_ASCEND_API(aclrtMemcpy, dst, dst_size, src, dst_size, CopyTypeToAclType(kind));
   if (ret != ACL_ERROR_NONE) {
