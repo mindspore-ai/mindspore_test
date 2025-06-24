@@ -388,7 +388,13 @@ BaseShapePtr FlashAttentionScoreFuncImpl::InferShape(const PrimitivePtr &primiti
 
 TypePtr FlashAttentionScoreFuncImpl::InferType(const PrimitivePtr &prim,
                                                const std::vector<AbstractBasePtr> &input_args) const {
-  const std::set valid_types = {kFloat16, kBFloat16, kFloat32};
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  const bool enable_infer_boost = ms_context->IsEnableInferBoost();
+  std::set valid_types = {kFloat16, kBFloat16};
+  if (!enable_infer_boost) {
+    (void)valid_types.emplace(kFloat32);
+  }
   auto op_name = prim->name();
   std::map<std::string, TypePtr> types;
 
@@ -406,9 +412,7 @@ TypePtr FlashAttentionScoreFuncImpl::InferType(const PrimitivePtr &prim,
   if (!IsFlashAttentionScoreOptionalInputNotPass(input_args[kFlashAttentionScoreInputAttnMaskIndex])) {
     auto attn_mask_type = input_args[kFlashAttentionScoreInputAttnMaskIndex]->GetType();
     std::set attn_mask_valid_types = {kUInt8, kBool};
-    auto ms_context = MsContext::GetInstance();
-    MS_EXCEPTION_IF_NULL(ms_context);
-    if (ms_context->IsEnableInferBoost()) {
+    if (enable_infer_boost) {
       (void)attn_mask_valid_types.emplace(kFloat16);
       (void)attn_mask_valid_types.emplace(kBFloat16);
     }
