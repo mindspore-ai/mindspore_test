@@ -2322,8 +2322,8 @@ REG_BPROP_BUILDER("Expm1").FreeUselessValues_I({}).SetBody(BODYFUNC(ib) {
   return {dx};
 });
 
-REG_BPROP_BUILDER("Exp2").SetBody(BODYFUNC(ib) {
-  constexpr const float LOG_2 = 0.693147;
+REG_BPROP_BUILDER("Exp2").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
+  constexpr const double LOG_2 = 0.69314718055994530942;
   auto x = ib->GetInput(i0);
   auto out = ib->GetInput(i1);
   auto dout = ib->GetInput(i2);
