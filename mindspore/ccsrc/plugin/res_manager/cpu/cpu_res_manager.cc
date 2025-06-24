@@ -92,11 +92,12 @@ std::pair<std::vector<size_t>, std::vector<size_t>> CPUResManager::AllocDeviceMe
     MS_LOG(DEBUG) << "Create DeviceAddress, ptr:" << ptr << ", size:" << before_padding_sizes[i]
                   << ", shape:" << tensor->shape() << ", data_type:" << TypeIdToString(tensor->data_type());
     MS_EXCEPTION_IF_NULL(device_address);
-    if (tensor->device_address() == nullptr) {
-      device_address->SyncHostToDevice(before_padding_sizes[i], tensor->data_c());
-    } else {
-      device_address->SyncDeviceToDevice(tensor->device_address().get());
-    }
+    MS_EXCEPTION_IF_NULL(tensor->device_address());
+    device::ResKey res_key{device_address->GetDeviceType(), device_address->device_id()};
+    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+    MS_EXCEPTION_IF_NULL(res_manager);
+    res_manager->SyncAllStreams();
+    SyncCopy(device_address, tensor->device_address(), device_address->stream_id());
     tensor->set_device_address(device_address);
   }
   return std::make_pair(before_padding_sizes, after_padding_sizes);
@@ -214,14 +215,14 @@ DeviceAddressPtr CPUResManager::CreateDeviceAddress(void *ptr, size_t size, cons
   return device_address;
 }
 
-bool CPUResManager::SyncCopy(const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync,
+bool CPUResManager::SyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
                              size_t stream_id) const {
   return AsyncCopy(dst_device_sync, src_device_sync, stream_id);
 }
-bool CPUResManager::AsyncCopy(const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync,
+bool CPUResManager::AsyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
                               size_t stream_id) const {
-  const auto &dst_device_address = dynamic_cast<const CPUDeviceAddress *>(dst_device_sync);
-  const auto &src_device_address = dynamic_cast<const CPUDeviceAddress *>(src_device_sync);
+  const auto &dst_device_address = dynamic_cast<const CPUDeviceAddress *>(dst_device_sync.get());
+  const auto &src_device_address = dynamic_cast<const CPUDeviceAddress *>(src_device_sync.get());
   MS_EXCEPTION_IF_NULL(dst_device_address);
   MS_EXCEPTION_IF_NULL(src_device_address);
   if (dst_device_address->GetSize() == 0 || src_device_address->GetSize() == 0) {
@@ -284,25 +285,38 @@ bool CPUResManager::AsyncCopy(const DeviceSync *dst_device_sync, const DeviceSyn
   return true;
 }
 
-MS_REGISTER_HAL_COPY_FUNC(DeviceType::kCPU,
-                          ([](const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync, size_t stream_id) {
-                            auto context = MsContext::GetInstance();
-                            MS_EXCEPTION_IF_NULL(context);
-                            auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-                            device::ResKey res_key{DeviceType::kCPU, device_id};
-                            auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-                            MS_EXCEPTION_IF_NULL(res_manager);
-                            return res_manager->SyncCopy(dst_device_sync, src_device_sync, stream_id);
-                          }),
-                          ([](const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync, size_t stream_id) {
-                            auto context = MsContext::GetInstance();
-                            MS_EXCEPTION_IF_NULL(context);
-                            auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-                            device::ResKey res_key{DeviceType::kCPU, device_id};
-                            auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-                            MS_EXCEPTION_IF_NULL(res_manager);
-                            return res_manager->SyncCopy(dst_device_sync, src_device_sync, stream_id);
-                          }));
+bool CPUResManager::Copy(void *dst, const void *src, uint64_t size, CopyType kind, size_t stream_id) const {
+  MS_EXCEPTION_IF_NULL(dst);
+  MS_EXCEPTION_IF_NULL(src);
+  auto ret_code = memcpy_s(dst, size, src, size);
+  if (ret_code == ERANGE) {
+    ConvertSameType(dst, src, size, kNumberTypeUInt8);
+  } else if (ret_code != EOK) {
+    MS_LOG(ERROR) << "Failed to copy tensor from ptr:" << src << " to :" << dst << " size:" << size;
+    return false;
+  }
+  return true;
+}
+
+MS_REGISTER_HAL_COPY_FUNC(
+  DeviceType::kCPU, ([](const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id) {
+    auto context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(context);
+    auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+    device::ResKey res_key{DeviceType::kCPU, device_id};
+    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+    MS_EXCEPTION_IF_NULL(res_manager);
+    return res_manager->SyncCopy(dst_device_sync, src_device_sync, stream_id);
+  }),
+  ([](const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id) {
+    auto context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(context);
+    auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+    device::ResKey res_key{DeviceType::kCPU, device_id};
+    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+    MS_EXCEPTION_IF_NULL(res_manager);
+    return res_manager->SyncCopy(dst_device_sync, src_device_sync, stream_id);
+  }));
 
 MS_REGISTER_HAL_RES_MANAGER(kCPUDevice, DeviceType::kCPU, CPUResManager);
 }  // namespace cpu

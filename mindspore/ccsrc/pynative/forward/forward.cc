@@ -974,7 +974,7 @@ void ForwardExecutor::CreateInputAddressForViewOp(const tensor::TensorPtr &input
   input_tensor->set_need_pipeline_sync(true);
   input_tensor->set_to_device(
     [new_device_address, device_address, stream_id = op_run_info->base_op_run_info.stream_id]() {
-      return AsyncCopy(new_device_address.get(), device_address.get(), stream_id);
+      return AsyncCopy(new_device_address, device_address, stream_id);
     });
   op_backend_->RunAllocMemTask(device_context, input_tensor, EnablePipeline(""));
 }

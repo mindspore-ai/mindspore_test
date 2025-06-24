@@ -357,8 +357,8 @@ void ExitActor::CopyDeviceAddress(OpContext<KernelTensor> *const context) {
   std::vector<KernelTensorPtr> new_kernel_tensors;
   for (size_t i = 0; i < input_kernel_tensors_.size(); ++i) {
     auto input_device_tensor =
-      input_kernel_tensors_[i] == nullptr ? nullptr : input_kernel_tensors_[i]->device_address().get();
-    if (!IsNeedCopyDeviceAddress(input_device_tensor, i)) {
+      input_kernel_tensors_[i] == nullptr ? nullptr : input_kernel_tensors_[i]->device_address();
+    if (!IsNeedCopyDeviceAddress(input_device_tensor.get(), i)) {
       (void)new_kernel_tensors.emplace_back(input_kernel_tensors_[i]);
       continue;
     }
@@ -401,7 +401,7 @@ void ExitActor::CopyDeviceAddress(OpContext<KernelTensor> *const context) {
       }
       MS_LOG(DEBUG) << "Sync device address from:" << input_kernel_tensors_[i]->ToString()
                     << " to:" << new_kernel_tensor->ToString() << " in actor:" << GetAID();
-      if (!SyncCopy(new_device_tensor.get(), input_device_tensor, kDefaultStreamIndex)) {
+      if (!SyncCopy(new_device_tensor, input_device_tensor, kDefaultStreamIndex)) {
         SET_OPCONTEXT_FAIL_RET_WITH_ERROR(*context, "Sync device to device failed.");
       }
     } else {

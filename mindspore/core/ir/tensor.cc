@@ -363,7 +363,7 @@ TypeId Tensor::set_data_type(TypeId data_type) {
       device_sync_ = cpu_tensor->device_address();
     }
     auto new_dtype_address = MakeDeviceAddress(data_type, shape_, true);
-    if (!SyncCopy(new_dtype_address.get(), device_sync_.get(), device_sync_->stream_id())) {
+    if (!SyncCopy(new_dtype_address, device_sync_, device_sync_->stream_id())) {
       MS_LOG(EXCEPTION) << "Sync copy failed";
     }
     device_sync_ = new_dtype_address;
@@ -515,7 +515,7 @@ TensorPtr Tensor::cpu() const {
     return std::make_shared<Tensor>(data_type_, shape_, device_address);
   }
   auto dst = MakeDeviceAddress(data_type_, shape_, true);
-  SyncCopy(dst.get(), device_address.get(), device_address->stream_id());
+  SyncCopy(dst, device_address, device_address->stream_id());
   return std::make_shared<Tensor>(data_type_, shape_, dst);
 }
 
@@ -543,29 +543,6 @@ void Tensor::data_sync(bool need_wait, bool inpalce, bool sync_on_demand) const 
     MS_LOG(DEBUG) << "Already cpu device address. Skip data_sync.";
     return;
   }
-
-  std::vector<size_t> shape_tmp;
-  (void)std::transform(shape().begin(), shape().end(), std::back_inserter(shape_tmp), LongToSize);
-  auto size = abstract::ShapeSize(shape_tmp) * abstract::TypeIdSize(data_type());
-  auto contiguous_address = CallContiguousCallback();
-  auto address = device_sync_;
-  if (contiguous_address != nullptr) {
-    address = contiguous_address;
-    if (inpalce) {
-      device_sync_ = contiguous_address;
-    }
-  }
-
-  if (size != 0 && address->GetMutablePtr() != nullptr &&
-      !address->SyncDeviceToHost(shape(), size, data_type(), data_c(), sync_on_demand)) {
-    MS_LOG(INTERNAL_EXCEPTION) << "SyncDeviceToHost failed.";
-  }
-
-  // todo: support in device address
-  // if (!data_->file_path().empty()) {
-  //   device_sync_ = nullptr;
-  // }
-  sync_status_ = kNeedSyncHostToDevice;
 }
 
 std::string Tensor::DataToString(bool use_comma) const {
@@ -588,30 +565,7 @@ void Tensor::SetDeviceInfo(const std::string &format, const TypePtr &data_type, 
   set_device_info(info);
 }
 
-void Tensor::data_sync_directly(const DeviceSync *const device_sync, bool need_wait) const {
-  if (need_wait) {
-    ExecuteLazyTask();
-  }
-  if (device_sync == nullptr) {
-    return;
-  }
-
-  std::vector<size_t> shape_tmp;
-  (void)std::transform(shape().begin(), shape().end(), std::back_inserter(shape_tmp), IntToSize);
-  auto size = abstract::ShapeSize(shape_tmp) * abstract::TypeIdSize(data_type());
-  auto contiguous_address = CallContiguousCallback();
-  if (contiguous_address == nullptr) {
-    if (size != 0 && !device_sync->SyncDeviceToHost(shape(), size, data_type(), data_c())) {
-      MS_LOG(INTERNAL_EXCEPTION) << "SyncDeviceToHost failed.";
-    }
-  } else {
-    if (size != 0 && !contiguous_address->SyncDeviceToHost(shape(), size, data_type(), data_c())) {
-      MS_LOG(INTERNAL_EXCEPTION) << "SyncDeviceToHost failed.";
-    }
-  }
-
-  sync_status_ = kNeedSyncHostToDevice;
-}
+void Tensor::data_sync_directly(const DeviceSync *const device_sync, bool need_wait) const {}
 
 bool Tensor::Offload(const std::string &file_path) {
   if (file_path.empty()) {

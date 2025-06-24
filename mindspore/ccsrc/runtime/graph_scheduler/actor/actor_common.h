@@ -519,6 +519,7 @@ inline bool EnableRuntimeNewPipeline() {
 bool WaitRuntimePipelineFinish(const OpContext<KernelTensor> *context, const std::string &name,
                                bool wait_kernel_launch_finish = true);
 
+bool SyncAllStreamForDeviceAddress(const DeviceTensorPtr &device_tensor);
 size_t GetDefragMemoryStepFreq();
 
 // Use async copy should use callback to avoid src device tenor released.

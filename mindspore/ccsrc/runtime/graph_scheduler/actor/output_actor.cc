@@ -105,7 +105,8 @@ void SyncOutputFromTensor(const DeviceTensorPtr &tensor_device_address, const De
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
       << "Sync device data from device tensor: " << device_tensor << ", to device tensor: " << tensor_device_address
       << ", size: " << device_tensor->GetSize();
-    if (!SyncCopy(tensor_device_address.get(), device_tensor.get(), kDefaultStreamIndex)) {
+    if (!SyncCopy(tensor_device_address, device_tensor, kDefaultStreamIndex) ||
+        !SyncAllStreamForDeviceAddress(tensor_device_address)) {
       MS_LOG_WITH_NODE(EXCEPTION, output_node)
         << "Sync device to device failed, device type: " << tensor_device_address->GetDeviceType()
         << ", output node: " << output_node->fullname_with_scope();
@@ -114,7 +115,7 @@ void SyncOutputFromTensor(const DeviceTensorPtr &tensor_device_address, const De
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
       << "Async device data from device tensor: " << device_tensor << ", to device tensor: " << tensor_device_address
       << ", size: " << device_tensor->GetSize();
-    if (!AsyncCopy(tensor_device_address.get(), device_tensor.get(), kDefaultStreamIndex)) {
+    if (!AsyncCopy(tensor_device_address, device_tensor, kDefaultStreamIndex)) {
       MS_LOG_WITH_NODE(EXCEPTION, output_node)
         << "Async device to device failed, device type: " << tensor_device_address->GetDeviceType()
         << ", output node: " << output_node->fullname_with_scope();

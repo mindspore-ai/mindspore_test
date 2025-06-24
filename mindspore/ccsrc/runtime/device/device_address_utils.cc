@@ -47,6 +47,7 @@
 #endif
 #include "runtime/pipeline/pipeline.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/core/include/ir/tensor_api.h"
 
 namespace mindspore {
 using tensor::TensorPtr;
@@ -172,9 +173,9 @@ void DeviceAddressUtils::CopyNoneTensorDataToDevice(const device::DeviceContext 
   }
   const void *node_value = kernel_tensor->GetValuePtr();
   MS_EXCEPTION_IF_NULL(node_value);
-  auto data_type_id = kernel_tensor->dtype_id();
-  auto format = kernel_tensor->GetStringFormat();
-  if (!device_address->SyncHostToDevice(shape, data_size, data_type_id, node_value, format)) {
+  if (!device_context->device_res_manager_->SyncAllStreams() ||
+      !device_context->device_res_manager_->Copy(device_address->GetMutablePtr(), node_value, data_size,
+                                                 device::CopyType::kH2D, device_address->stream_id())) {
     MS_LOG(EXCEPTION) << "SyncHostToDevice failed";
   }
 }
@@ -980,9 +981,7 @@ void DeviceAddressUtils::CreateInputTensorAddress(const DeviceContext *device_co
   device_address->set_from_persistent_mem(tensor->is_parameter());
   device_address->set_new_ref_count(SIZE_MAX);
 
-  auto h2d = [addr, device_address]() {
-    return AsyncCopy(device_address.get(), addr.get(), device_address->stream_id());
-  };
+  auto h2d = [addr, device_address]() { return AsyncCopy(device_address, addr, device_address->stream_id()); };
   // keep origin device_address and execute in another thread.
   tensor->set_to_device(std::move(h2d));
 
@@ -1105,7 +1104,7 @@ KernelTensorPtr DeviceAddressUtils::CreateInputKernelTensor(const DeviceContext 
   if (!device_context->device_res_manager_->AllocateMemory(device_address.get())) {
     MS_LOG(EXCEPTION) << "Allocate memory failed";
   }
-  if (!AsyncCopy(device_address.get(), addr.get(), device_address->stream_id())) {
+  if (!AsyncCopy(device_address, addr, device_address->stream_id())) {
     MS_LOG(EXCEPTION) << "Copy host data to device failed";
   }
   MS_LOG(DEBUG) << "Create input tensor device address " << device_address << " for " << index
