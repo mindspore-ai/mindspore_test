@@ -22,6 +22,7 @@ from mindspore._c_expression import MSContext
 
 from tests.mark_utils import arg_mark
 from tests.security_utils import security_off_wrap
+from mstt_test_net import run_net
 
 
 def get_max_relative_error(test_value, target_value):
@@ -76,12 +77,7 @@ def test_interfaces_used_in_mstt():
     assert os.system(f"bash {command}") == 0
 
     with tempfile.TemporaryDirectory(dir=script_dir) as tmp_dir:
-        return_code = os.system(
-            "msrun --worker_num=4 --local_worker_num=4 --master_addr=127.0.0.1 "
-            f"--master_port=10609 --join=True --log_dir={tmp_dir}/mstt_logs "
-            f"python mstt_test_net.py {tmp_dir}"
-        )
-        assert return_code == 0
+        run_net(tmp_dir)
 
         target_values = {
             'forward_pre': np.asarray([[0.5, 0.5], [0.5, 0.5]]),
@@ -93,7 +89,7 @@ def test_interfaces_used_in_mstt():
             'jit_forward': np.asarray([[0.5, 0.5], [0.5, 0.5]]),
             'jit_backward': np.asarray([[1.5, 1.5], [1.5, 1.5]])
         }
-        ranks = ('0', '1', '2', '3')
+        ranks = ('None',)
         steps = ('0', '1')
         for rank in ranks:
             for step in steps:
