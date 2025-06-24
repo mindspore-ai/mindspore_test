@@ -38,9 +38,9 @@ mindspore.profiler._ExperimentalConfig
 
           - HostSystem.CPU：收集进程级别的CPU利用率。
           - HostSystem.MEM：收集进程级别的内存利用率。
-          - HostSystem.DISK：收集进程级别的磁盘I/O利用率。
+          - HostSystem.DISK：收集进程级别的磁盘I/O利用率。需要将 :class:`mindspore.profiler.profile` 中的 `start_profile` 参数设置为 ``False``。
           - HostSystem.NETWORK：收集系统级别的网络I/O利用率。
-          - HostSystem.OSRT：收集系统级别系统调用栈数据，注意在配置用户权限时，需要替换msprof_data_collection.sh内容为 `msprof_data_collection.sh <https://gitee.com/mindspore/mindspore/blob/master/docs/api/api_python/mindspore/script/msprof_data_collection.sh>`_。
+          - HostSystem.OSRT：收集系统级别系统调用栈数据，注意在配置用户权限时，需要替换msprof_data_collection.sh内容为 `msprof_data_collection.sh <https://gitee.com/mindspore/mindspore/blob/master/docs/api/api_python/mindspore/script/msprof_data_collection.sh>`_。需要将 :class:`mindspore.profiler.profile` 中的 `start_profile` 参数设置为 ``False``。
 
     异常：
         - **RuntimeError** - 当CANN的版本与MindSpore版本不匹配时，MindSpore无法解析生成的ascend_job_id目录结构。
