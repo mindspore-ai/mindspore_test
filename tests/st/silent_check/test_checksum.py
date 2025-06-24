@@ -42,8 +42,8 @@ def checksum(a, b, c):
     c1_trans = c1.squeeze(-1)
 
     n_b = b.shape[-1]
-    c_max, _ = torch.max(torch.abs(c), dim=-1)
-    c_mean = torch.mean(torch.abs(c), dim=-1)
+    c_max, _ = torch.max(torch.abs(c).to(torch.float32), dim=-1)
+    c_mean = torch.mean(torch.abs(c).to(torch.float32), dim=-1)
     if torch.min(c_max / c_mean) > 5:
         c_ele_round_error_accum = c_max * 2 ** (-8) * math.sqrt(n_b)
     else:
