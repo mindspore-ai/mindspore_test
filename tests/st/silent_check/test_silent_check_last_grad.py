@@ -67,7 +67,7 @@ def test_silent_check_prod_grad():
     os.system(f'rm -rf ms_graphs log_output ascend_log')
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_silent_check_rsqrt_grad():
     """
     Feature: Test silent check for last grad node for network with multiple instances in one process

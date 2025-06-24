@@ -196,7 +196,7 @@ def test_matmul_qkv_out_num_3_with_diff_k(ms_dtype, is_dynamic, dim_k):
     _test_matmul_qkv(32, dim_k, 1408, 128, 128, mstype=ms_dtype, is_dyn=is_dynamic)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('ms_dtype', [ms.float16, ms.bfloat16])
 @pytest.mark.parametrize('is_dynamic', [False, True])
 @pytest.mark.parametrize('dim_m', [32, 1024])

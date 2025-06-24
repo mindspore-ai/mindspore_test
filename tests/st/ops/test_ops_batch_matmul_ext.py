@@ -122,7 +122,7 @@ def ops_bmm_binary_case1(input_binary_data=None, output_binary_data=None):
     ops_bmm_binary_compare(input_binary_data, output_binary_data)
 
 
-@arg_mark(plat_marks=['platform_ascend910b', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend910b', 'platform_gpu'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize("mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_bmm_binary_cases_daily(mode):

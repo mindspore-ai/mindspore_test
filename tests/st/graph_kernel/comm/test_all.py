@@ -43,7 +43,7 @@ def test_dvm_allreduce():
         assert np.allclose(dvm_res, hccl_res, 5e-3, 5e-3)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='allcards', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='allcards', essential_mark='essential')
 def test_dvm_matmul_allreduce():
     """
     Feature: DVM operator test.

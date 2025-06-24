@@ -15,7 +15,6 @@
 
 import os
 import numpy as np
-import pytest
 
 import mindspore as ms
 from mindspore import nn, Tensor, context
@@ -24,6 +23,7 @@ import uuid
 from pathlib import Path
 import shutil
 
+from tests.mark_utils import arg_mark
 
 class Add_RmsNorm(nn.Cell):
     def __init__(self):
@@ -68,9 +68,7 @@ def _test_add_rmsnorm_fusion():
         Tensor(gamma, dtype=gamma_ms_dtype))
 
 
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_pass_switch_by_add_rms_norm():
     """
     Feature: test pass switch in graph mode
