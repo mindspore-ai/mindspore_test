@@ -11,8 +11,8 @@ mindspore.ops.hypot
         out_i = \sqrt{input_i^2 + other_i^2}
 
     参数：
-        - **input** (Tensor) - 第一个输入tesnor。
-        - **other** (Tensor) - 第二个输入tesnor。
+        - **input** (Tensor) - 第一个输入tensor。
+        - **other** (Tensor) - 第二个输入tensor。
 
     返回：
         Tensor
