@@ -798,6 +798,7 @@ Status ConstructCostGraphNodesByUniqueIdTC(const std::vector<AnfNodePtr> &all_no
       continue;
     }
     auto prim = GetValueNode<PrimitivePtr>(prim_anf_node);
+    MS_EXCEPTION_IF_NULL(prim);
     auto search_cnode = from_cnode_to_info.find(cnode->UniqueIdThroughCopy() + prim->name());
     bool op_in_map = search_cnode != from_cnode_to_info.cend();
 
@@ -897,6 +898,8 @@ void CreateEdgeBetweenTwoOps(const OperatorInfoPtr &prev_op_info, const Operator
                              size_t *edge_count) {
   MS_EXCEPTION_IF_NULL(prev_op_info);
   MS_EXCEPTION_IF_NULL(node_op_info);
+  MS_EXCEPTION_IF_NULL(prim);
+
   std::string edge_name = prev_op_info->name() + OPERATOR_TO_OPERATOR_CONNECTOR + node_op_info->name();
   // If the edge between these two operators already has been added, then the edge will not be added again.
   if (entire_costgraph->IsEdgeInCostGraph(edge_name, output_index, input_index - 1)) {
@@ -979,8 +982,10 @@ static void ConstructCNodeCostGraphEdges(const mindspore::CNodePtr &cnode, const
   auto &inputs = cnode->inputs();
   ValueNodePtr prim_anf_node = inputs[0]->cast<ValueNodePtr>();
   PrimitivePtr prim = GetValueNode<PrimitivePtr>(prim_anf_node);
+  MS_EXCEPTION_IF_NULL(prim);
   size_t edge_count = 0;
   auto node_op_info = cnode->user_data<OperatorInfo>();
+  MS_EXCEPTION_IF_NULL(node_op_info);
 
   for (size_t i = 1; i < inputs.size(); ++i) {
     AnfNodePtr prev_node = inputs[i];
@@ -1003,16 +1008,21 @@ static void ConstructCNodeCostGraphEdges(const mindspore::CNodePtr &cnode, const
     while (IsCarePrevCNode(prev_cnode, prev_prim)) {
       if (IsValueNode<FuncGraph>(prev_cnode->input(0))) {
         auto graph = GetValueNode<FuncGraphPtr>(prev_cnode->input(0));
+        MS_EXCEPTION_IF_NULL(graph);
         auto output = graph->output();
         MS_EXCEPTION_IF_NULL(output);
         prev_cnode = output->cast<CNodePtr>();
         (void)CrossInterNode(&prev_cnode, &prev_prim_anf_node, &prev_prim);
+        continue;
       } else if (IsAutoParallelCareNode(prev_cnode)) {
         auto prev_op_info = prev_cnode->user_data<OperatorInfo>();
         CreateEdgeBetweenTwoOps(prev_op_info, node_op_info, cnode, prev_cnode, prim, prev_prim, output_index, i,
                                 &edge_count);
         break;
-      } else if (prev_prim->name() == prim::kPrimTupleGetItem->name()) {
+      }
+
+      MS_EXCEPTION_IF_NULL(prev_prim);
+      if (prev_prim->name() == prim::kPrimTupleGetItem->name()) {
         // In this case, 'prev_anf_node' is 'tuple_getitem', the actual precursor node is node before
         // this 'tuple_getitem'
         output_index = LongToSize(GetValue<int64_t>(GetValueNode(prev_cnode->input(2))));
@@ -1412,8 +1422,10 @@ std::vector<std::vector<std::string>> RecInputTensorNames(const std::map<std::st
 }
 
 CNodePtr GetInternalOperatorInfo(const CNodePtr &cnode, const ValueNodePtr &prim_anf_node) {
-  auto prim = GetValueNode<PrimitivePtr>(prim_anf_node);
   MS_EXCEPTION_IF_NULL(cnode);
+  auto prim = GetValueNode<PrimitivePtr>(prim_anf_node);
+  MS_EXCEPTION_IF_NULL(prim);
+
   if (prim->name() == prim::kPrimTupleGetItem->name() || prim->name() == DEPEND) {
     auto prev_cnode = cnode->input(1)->cast<CNodePtr>();
     if (prev_cnode == nullptr || !IsValueNode<Primitive>(prev_cnode->input(0))) {
@@ -1423,6 +1435,7 @@ CNodePtr GetInternalOperatorInfo(const CNodePtr &cnode, const ValueNodePtr &prim
       size_t out_index = 0;
       out_index = LongToSize(GetValue<int64_t>(GetValueNode(prev_cnode->input(INDEX_TWO))));
       auto graph = GetValueNode<FuncGraphPtr>(prev_cnode->input(0));
+      MS_EXCEPTION_IF_NULL(graph);
       auto output = graph->output();
       MS_EXCEPTION_IF_NULL(output);
       while (IsPrimitiveCNode(output, prim::kPrimDepend)) {
@@ -1438,14 +1451,19 @@ CNodePtr GetInternalOperatorInfo(const CNodePtr &cnode, const ValueNodePtr &prim
       prev_cnode = output->cast<CNodePtr>();
     }
     MS_EXCEPTION_IF_NULL(prev_cnode);
-    auto prev_prim = prev_cnode->input(0)->cast<ValueNodePtr>()->value()->cast<PrimitivePtr>();
+    auto prev_prim_value = prev_cnode->input(0)->cast<ValueNodePtr>();
+    MS_EXCEPTION_IF_NULL(prev_prim_value);
+    auto prev_prim = prev_prim_value->value()->cast<PrimitivePtr>();
     MS_EXCEPTION_IF_NULL(prev_prim);
     while (prev_prim->name() == prim::kPrimTupleGetItem->name() || prev_prim->name() == DEPEND) {
       prev_cnode = prev_cnode->input(1)->cast<CNodePtr>();
       if (prev_cnode == nullptr || !IsValueNode<Primitive>(prev_cnode->input(0))) {
         return nullptr;
       }
-      prev_prim = prev_cnode->input(0)->cast<ValueNodePtr>()->value()->cast<PrimitivePtr>();
+      prev_prim_value = prev_cnode->input(0)->cast<ValueNodePtr>();
+      MS_EXCEPTION_IF_NULL(prev_prim_value);
+      prev_prim = prev_prim_value->value()->cast<PrimitivePtr>();
+      MS_EXCEPTION_IF_NULL(prev_prim);
     }
     return prev_cnode;
   }
@@ -1631,6 +1649,7 @@ void TmpInferForDynamicShapeInSAPP(const std::shared_ptr<Graph> &graph) {
 bool HasUserConfiguredStrategy(const std::vector<std::shared_ptr<OperatorInfo>> &ops) {
   for (auto op : ops) {
     auto prim_anf_node = GetValueNode<PrimitivePtr>(op->cnode()->input(0));
+    MS_EXCEPTION_IF_NULL(prim_anf_node);
     bool has_user_configured_strategy = prim_anf_node->HasAttr(parallel::IN_STRATEGY);
     if (has_user_configured_strategy) {
       return true;
