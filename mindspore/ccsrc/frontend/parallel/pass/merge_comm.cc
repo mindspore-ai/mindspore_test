@@ -44,6 +44,7 @@ static Shape GetMakeTupleValue(const CNodePtr &cnode) {
   MS_EXCEPTION_IF_CHECK_FAIL(cnode->inputs().size() == kSizeThree, "Input size of Reshape is not 3.");
   auto make_tuple = cnode->input(kIndex2);
   auto make_tuple_cnode = make_tuple->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(make_tuple_cnode);
   Shape ret;
   for (size_t i = 1; i < make_tuple_cnode->size(); ++i) {
     auto input_node = make_tuple_cnode->input(i);
@@ -93,6 +94,8 @@ bool IsSameTargetShape(const CNodePtr &reshape_node_a, const CNodePtr &reshape_n
   if (!reshape_node_a->input(kIndex2)->isa<ValueNode>() || !reshape_node_b->input(kIndex2)->isa<ValueNode>()) {
     return IsSameTargetDynamicShape(reshape_node_a, reshape_node_b);
   }
+  MS_EXCEPTION_IF_NULL(reshape_node_a->input(kIndex2)->cast<ValueNodePtr>());
+  MS_EXCEPTION_IF_NULL(reshape_node_b->input(kIndex2)->cast<ValueNodePtr>());
   auto value_ptr_a = reshape_node_a->input(kIndex2)->cast<ValueNodePtr>()->value()->cast<ValueTuplePtr>()->value();
   auto value_ptr_b = reshape_node_b->input(kIndex2)->cast<ValueNodePtr>()->value()->cast<ValueTuplePtr>()->value();
   if (value_ptr_a.size() != value_ptr_b.size()) {
@@ -120,6 +123,7 @@ std::unordered_map<CNodePtr, std::vector<CNodePtr>> AllGatherInputMap(const std:
       return std::make_pair(filter, 1);
     });
     if (IsPrimitiveCNode(pre_node, prim::kPrimCast)) {
+      MS_EXCEPTION_IF_NULL(pre_node->cast<CNodePtr>()->input(kIndex2));
       auto attr_v = pre_node->cast<CNodePtr>()->input(kIndex2)->cast<ValueNodePtr>();
       if (!IsValueNode<Int64Imm>(attr_v)) {
         continue;
@@ -127,8 +131,10 @@ std::unordered_map<CNodePtr, std::vector<CNodePtr>> AllGatherInputMap(const std:
       auto cast_value = attr_v->value();
       allgather_cnode->AddAttr(kCastType, cast_value);
       pre_node = pre_node->cast<CNodePtr>()->input(kIndex1);
+      MS_EXCEPTION_IF_NULL(pre_node);
     }
     if (IsPrimitiveCNode(pre_node, prim::kPrimTupleGetItem)) {
+      MS_EXCEPTION_IF_NULL(pre_node->cast<CNodePtr>()->input(kIndex2));
       auto index_value = pre_node->cast<CNodePtr>()->input(kIndex2)->cast<ValueNodePtr>()->value();
       allgather_cnode->AddAttr(kGetItemIndex, index_value);
       pre_node = pre_node->cast<CNodePtr>()->input(kIndex1);

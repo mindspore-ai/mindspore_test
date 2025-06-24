@@ -65,6 +65,7 @@ bool IsAddNodeValid(const AnfNodePtr &add_node, const AnfNodePtr &comm_node) {
   const auto node_add_rank_list = node_add_tensor_layout.InferRepeatedGroup();
 
   auto comm_prim = GetCNodePrimitive(comm_node);
+  MS_EXCEPTION_IF_NULL(comm_prim);
   if (!comm_prim->HasAttr(GROUP)) {
     return false;
   }
@@ -145,6 +146,7 @@ void FindAllValidAddNode(const FuncGraphPtr &graph, HashMap<AnfNodePtr, std::vec
       auto comm_cnode = comm_node->cast<CNodePtr>();
       MS_EXCEPTION_IF_NULL(comm_node);
       auto pre_prim = GetCNodePrimitive(comm_cnode->input(kIndex1));
+      MS_EXCEPTION_IF_NULL(pre_prim);
       if (pre_prim == nullptr || IsPrimitiveAttrValid(pre_prim, MATMUL_ADD_COMM_BEGIN)) {
         MS_LOG(INFO) << "For matmul comm reduction,  cannot find matmul/batch matmul node, "
                      << "skip cur node: " << input_node->DebugString();
@@ -253,7 +255,9 @@ void HandleNodePullUp(const AnfNodePtr &add_node, const std::vector<AnfNodePtr> 
     // Node After AllReduce pull up
     auto each_node = comm_node_list[index];
     auto each_cnode = each_node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(each_cnode);
     auto pre_node = each_cnode->input(kIndex1);
+    MS_EXCEPTION_IF_NULL(pre_node);
     auto pre_prim = GetCNodePrimitive(pre_node);
     if (pre_prim == nullptr || IsPrimitiveAttrValid(pre_prim, MATMUL_ADD_COMM_BEGIN)) {
       MS_LOG(INFO) << "For comm reduction, its pre node does not marked or marked false, skip it.";
@@ -280,6 +284,7 @@ void HandleNodePullDown(const AnfNodePtr &add_node, const AnfNodePtr &comm_node)
   auto graph = add_node->func_graph();
   MS_EXCEPTION_IF_NULL(graph);
   auto new_comm_node = graph->NewCNode(new_comm_node_inputs);
+  MS_EXCEPTION_IF_NULL(new_comm_node);
   new_comm_node->set_abstract(comm_node->abstract());
   auto prim = GetCNodePrimitive(new_comm_node);
   (void)prim->AddAttr(MATMUL_ADD_COMM_REDUCTION, MakeValue(true));
