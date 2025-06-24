@@ -46,8 +46,8 @@ void ReuseDataPtr(const py::object &dst_, const py::object &src_, size_t offset)
 
   // create src device address if null
   auto src = tensor::ConvertToTensor(src_);
-  MS_EXCEPTION_IF_NULL(src);
-  if (src->device_address() == nullptr) {
+  MS_EXCEPTION_IF_NULL(src->device_address());
+  if (src->device_address()->GetDeviceType() != device_ctx->GetDeviceType()) {
     auto device_ptr = device_ctx->device_res_manager_->AllocateMemory(src->Size(), stream_id);
     auto src_device_address = device_ctx->device_res_manager_->CreateDeviceAddress(
       reinterpret_cast<void *>(device_ptr), src->Size(), src->shape(), Format::DEFAULT_FORMAT, src->data_type(),
@@ -56,8 +56,13 @@ void ReuseDataPtr(const py::object &dst_, const py::object &src_, size_t offset)
     MS_LOG(DEBUG) << "Create DeviceAddress, ptr:" << reinterpret_cast<void *>(device_ptr) << ", size:" << src->Size()
                   << ", shape:" << src->shape() << ", data_type:" << TypeIdToString(src->data_type());
     MS_EXCEPTION_IF_NULL(src_device_address);
-
-    src_device_address->SyncHostToDevice(src->Size(), src->data_c());
+    device::ResKey res_key{src_device_address->GetDeviceType(), src_device_address->device_id()};
+    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+    MS_EXCEPTION_IF_NULL(res_manager);
+    if (!res_manager->SyncAllStreams()) {
+      MS_LOG(ERROR) << "Sync stream failed.";
+    }
+    SyncCopy(src_device_address, src->device_address(), src_device_address->stream_id());
     src->set_device_address(src_device_address);
   }
 

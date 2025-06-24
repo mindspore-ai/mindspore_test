@@ -42,18 +42,18 @@ void MemorySwapActor::UpdateDeviceTensors(OpContext<KernelTensor> *context) {
         SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "The input index is out of range.");
       }
       MS_EXCEPTION_IF_NULL(input_data->data_);
-      device_tensors_to_swap_[swap_device_tensor_index] = input_data->data_->device_address().get();
+      device_tensors_to_swap_[swap_device_tensor_index] = input_data->data_->device_address();
     }
   }
   for (const auto &key : device_tensor_store_keys_) {
     auto kernel_tensor = DeviceTensorStore::GetInstance().Fetch(key.second.get(), device_contexts_[0]->GetDeviceType());
     MS_EXCEPTION_IF_NULL(kernel_tensor);
-    device_tensors_to_swap_[key.first] = kernel_tensor->device_address().get();
+    device_tensors_to_swap_[key.first] = kernel_tensor->device_address();
   }
 }
 
-std::vector<DeviceTensor *> MemorySwapActor::GetDeviceTensors(const std::vector<size_t> &indexes) {
-  std::vector<DeviceTensor *> device_tensors;
+std::vector<DeviceTensorPtr> MemorySwapActor::GetDeviceTensors(const std::vector<size_t> &indexes) {
+  std::vector<DeviceTensorPtr> device_tensors;
   for (const auto index : indexes) {
     if (index >= device_tensors_to_swap_.size()) {
       MS_LOG(EXCEPTION) << "Device tensor index[" << index << "] out of range[" << device_tensors_to_swap_.size()
@@ -64,7 +64,7 @@ std::vector<DeviceTensor *> MemorySwapActor::GetDeviceTensors(const std::vector<
   return device_tensors;
 }
 
-void MemorySwapActor::AllocDeviceContinuousMem(const std::vector<DeviceTensor *> &device_tensors) {
+void MemorySwapActor::AllocDeviceContinuousMem(const std::vector<DeviceTensorPtr> &device_tensors) {
   std::vector<size_t> size_list;
   for (const auto device_tensor : device_tensors) {
     MS_EXCEPTION_IF_NULL(device_tensor);
@@ -84,7 +84,8 @@ void MemorySwapActor::AllocDeviceContinuousMem(const std::vector<DeviceTensor *>
       // SyncDeviceToDevice do not need shape vector.
       auto tensor = std::make_shared<tensor::Tensor>(device_tensors[i]->type_id(), ShapeVector{}, original_ptr,
                                                      device_tensors[i]->GetSize());
-      if (!SyncCopy(device_tensors[i], tensor->device_address().get(), kDefaultStreamIndex)) {
+      if (!SyncCopy(device_tensors[i], tensor->device_address(), kDefaultStreamIndex) ||
+          !device_contexts_[0]->device_res_manager_->SyncAllStreams()) {
         MS_LOG(EXCEPTION) << "Copy data for continuous memory failed, src addr: " << original_ptr << ", dst addr: "
                           << ", size: " << device_tensors[i]->GetSize();
       }
@@ -98,7 +99,7 @@ void MemorySwapActor::AllocDeviceContinuousMem(const std::vector<DeviceTensor *>
 }
 
 void MemorySwapActor::Swap(OpContext<KernelTensor> *const context, device::StorageType to,
-                           const std::vector<DeviceTensor *> &device_tensors) {
+                           const std::vector<DeviceTensorPtr> &device_tensors) {
   for (const auto &device_tensor : device_tensors) {
     MS_EXCEPTION_IF_NULL(device_tensor);
     if (!device_tensor->MoveTo(to, false, kDefaultStreamIndex)) {

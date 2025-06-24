@@ -52,8 +52,9 @@ void MallocMemoryAndCopyValue(const device::DeviceAddressPtr &device_address,
 
   std::reverse(vec.begin(), vec.end());
   vec.resize(kMaxDim, 0);
-  if (!device_address->SyncHostToDevice(ShapeVector(), device_address->GetSize(), kNumberTypeInt64, vec.data(),
-                                        kOpFormat_DEFAULT)) {
+  if (!device_context->device_res_manager_->SyncAllStreams() ||
+      !device_context->device_res_manager_->Copy(device_address->GetMutablePtr(), vec.data(), device_address->GetSize(),
+                                                 CopyType::kH2D, device_address->stream_id())) {
     MS_LOG(EXCEPTION) << "SyncHostToDevice failed, vec:" << vec;
   }
 }

@@ -26,7 +26,7 @@ MS_CORE_API void SetCopyFunc(device::DeviceType device_type, CopyFunc &&sync_fun
   g_async_copy_func[static_cast<int>(device_type)] = async_func;
 }
 
-bool SyncCopy(const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync, size_t stream_id) {
+bool SyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id) {
   MS_EXCEPTION_IF_NULL(dst_device_sync);
   MS_EXCEPTION_IF_NULL(src_device_sync);
   if (dst_device_sync->GetDeviceType() == device::DeviceType::kUnknown ||
@@ -49,7 +49,8 @@ bool SyncCopy(const DeviceSync *dst_device_sync, const DeviceSync *src_device_sy
   return g_sync_copy_func[static_cast<int>(device::DeviceType::kGPU)](dst_device_sync, src_device_sync, stream_id);
 }
 
-bool AsyncCopy(const DeviceSync *dst_device_sync, const DeviceSync *src_device_sync, size_t stream_id) {
+bool AsyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id,
+               bool keep_host) {
   MS_EXCEPTION_IF_NULL(dst_device_sync);
   MS_EXCEPTION_IF_NULL(src_device_sync);
   if (dst_device_sync->GetDeviceType() == device::DeviceType::kUnknown ||

@@ -247,7 +247,7 @@ void ClearAttrForGraph(const KernelGraphPtr &graph, const std::string &attr_name
 void PrepareValueNode(const AnfNodePtr &node, KernelTensor *kernel_tensor) {
   MS_EXCEPTION_IF_NULL(node);
   MS_EXCEPTION_IF_NULL(kernel_tensor);
-  auto device_tensor = kernel_tensor->device_address().get();
+  auto device_tensor = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_tensor);
   if (!node->isa<ValueNode>()) {
     return;
@@ -263,7 +263,7 @@ void PrepareValueNode(const AnfNodePtr &node, KernelTensor *kernel_tensor) {
     {device_tensor->device_name(), device_tensor->device_id()});
   MS_EXCEPTION_IF_NULL(device_context);
   if (device_tensor->GetPtr() == nullptr) {
-    if (!device_context->device_res_manager_->AllocateMemory(device_tensor)) {
+    if (!device_context->device_res_manager_->AllocateMemory(device_tensor.get())) {
       MS_LOG(EXCEPTION) << "Failed to allocate memory for device tensor store:" << device_tensor;
     }
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
@@ -277,7 +277,8 @@ void PrepareValueNode(const AnfNodePtr &node, KernelTensor *kernel_tensor) {
   auto tensor =
     std::make_shared<tensor::Tensor>(kernel_tensor->dtype_id(), kernel_tensor->GetShapeVector(),
                                      const_cast<void *>(kernel_tensor->GetValuePtr()), kernel_tensor->size());
-  if (!SyncCopy(device_tensor, tensor->device_address().get(), kDefaultStreamIndex)) {
+  if (!device_context->device_res_manager_->SyncAllStreams() ||
+      !SyncCopy(device_tensor, tensor->device_address(), kDefaultStreamIndex)) {
     MS_LOG_WITH_NODE(EXCEPTION, node) << "Failed to sync data for value node:" << node->DebugString();
   }
 

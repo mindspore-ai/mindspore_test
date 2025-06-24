@@ -209,7 +209,10 @@ void MemoryManagerActor::AllocateContinuousMemory(const std::vector<std::vector<
         kernel_tensor->set_stream_id(old_dev_addr->stream_id());
         auto new_dev_addr = kernel_tensor->device_address();
         MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "Create kernel tensor:" << kernel_tensor->ToString();
-        (void)SyncCopy(new_dev_addr.get(), old_dev_addr.get(), stream_id);
+        (void)SyncCopy(new_dev_addr, old_dev_addr, stream_id);
+        if (!device_context->device_res_manager_->SyncAllStreams()) {
+          MS_LOG(ERROR) << "Failed to sync stream.";
+        }
         device_context->device_res_manager_->FreeMemory(old_dev_addr.get());
       }
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, from_aid.Name(),

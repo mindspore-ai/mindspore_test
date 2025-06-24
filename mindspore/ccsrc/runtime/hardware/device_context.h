@@ -34,6 +34,7 @@
 #include "utils/anf_utils.h"
 #include "runtime/device/res_manager/memory_manager.h"
 #include "runtime/device/res_manager/auto_mem_offload.h"
+#include "runtime/device/res_manager/utils/utils.h"
 #include "runtime/pipeline/task/task.h"
 #include "ir/device_event.h"
 #include "utils/ms_context.h"
@@ -152,7 +153,9 @@ class BACKEND_COMMON_EXPORT DeviceResManager {
     MS_LOG(EXCEPTION) << "Unimplemented interface.";
     return;
   }
-
+  virtual bool Copy(void *dst, const void *src, uint64_t size, CopyType kind, size_t stream_id) const {
+    MS_LOG(EXCEPTION) << "Unimplemented interface.";
+  }
   // Relevant function to allocate and free device memory of DeviceAddress.
   virtual bool AllocateMemory(DeviceAddress *const &address, uint32_t stream_id = UINT32_MAX) const;
   virtual void FreeMemory(DeviceAddress *const &address) const;
