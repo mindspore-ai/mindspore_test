@@ -37,7 +37,7 @@ def set_dump(target, enabled=True):
         1. This API is only available for JIT compilation, requires 'Ascend' as the device_target and
            `ms_backend` as the compilation backend (please refer to the backend parameter in
            `jit <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.jit.html>`_),
-            and does not support fused operators.
+           and does not support fused operators.
         2. This API only supports being called before training starts.
            If you call this API during training, it may not be effective.
         3. After using `set_dump(Cell, True)` , operators in forward and backward

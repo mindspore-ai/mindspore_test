@@ -19,7 +19,7 @@ mindspore.communication.comm_func.all_reduce
         若 `async_op` 是True，CommHandle是一个异步工作句柄。若 `async_op` 是False，CommHandle将返回None。
 
     异常：
-        - **TypeError** - 首个输入的数据类型不为Tensor，`op` 或 `group` 不是str。
+        - **TypeError** - 首个输入的数据类型不为Tensor， `op` 或 `group` 不是str。
         - **RuntimeError** - 目标设备无效，或者后端无效，或者分布式初始化失败。
 
     样例：
