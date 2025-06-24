@@ -193,7 +193,7 @@ class BACKEND_EXPORT CpuKernelFunc {
                        const std::vector<KernelTensor *> &outputs) {
     return true;
   }
-  ///////////// old func ///////////////
+  // old func
   virtual void InitFunc(const BaseOperatorPtr &base_operator, const std::vector<KernelTensorPtr> &inputs,
                         const std::vector<KernelTensorPtr> &outputs) {}
   virtual int Resize(
@@ -206,7 +206,7 @@ class BACKEND_EXPORT CpuKernelFunc {
                        const std::vector<AddressPtr> &outputs) {
     return true;
   }
-  ////////////////////////////////////
+
   ParallelSearchInfo parallel_search_info_;
 };
 

@@ -237,8 +237,8 @@ void SetNCDHW(const ShapeVector &shape, int *n, int *c, int *d, int *h, int *w, 
     MS_LOG(ERROR) << "Unsupported data format " << format;
   }
 }
-////////////////////////////////////////
-////////// new: enum format ///////////
+
+// new: enum format
 void SetDimA(const ShapeVector &shape, int *dimA, size_t len, const mindspore::Format &format) {
   if (shape.size() != len) {
     MS_EXCEPTION(ValueError) << "Invalid size of input shape " << shape.size() << "-D with dimA " << len << "-D.";
@@ -308,7 +308,6 @@ void SetNCDHW(const ShapeVector &shape, int *n, int *c, int *d, int *h, int *w, 
     MS_LOG(ERROR) << "Unsupported data format " << mindspore::FormatEnumToString(format);
   }
 }
-///////////////////////////////////////
 
 bool CheckBroadcast4TensorOp(const std::vector<int> &A, const std::vector<int> &B, const std::vector<int> &Out) {
   if (A != Out && B != Out) {

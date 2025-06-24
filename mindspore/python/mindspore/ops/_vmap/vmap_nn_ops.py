@@ -2106,16 +2106,8 @@ def get_sparse_apply_ftrl_vmap_rule(prim, axis_size):
         grad, grad_dim = grad_bdim
         indices, indices_dim = indices_bdim
         if var_dim is None:
-            if any(dim is not None for dim in [accum_dim, linear_dim, grad_dim, indices_dim]):
-                ValueError("The source axis of `var` is None, but the source "
-                           "axis of `accum/linear/grad/indices` is not None. The execution order of "
-                           "operator `{}` cannot be guaranteed.".format(prim_name))
             var, accum, linear = prim(var, accum, linear, grad, indices, u_monad)
             return (var, None), (accum, None), (linear, None)
-        if var_dim != 0 or accum_dim != var_dim or linear_dim != var_dim:
-            ValueError("For `{}`, the source axis of `var`, `accum` and `linear` must be equal, and "
-                       "not equal to 0, but got the source axis of `var`: {}, `accum`: {}, "
-                       "`linear`:{}.".format(prim_name, var_dim, accum_dim, linear_dim))
 
         grad = _bdim_at_front(grad, grad_dim, axis_size)
         indices = _bdim_at_front(indices, indices_dim, axis_size)

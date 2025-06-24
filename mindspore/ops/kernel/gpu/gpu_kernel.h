@@ -178,7 +178,7 @@ void ShapeNCHW2NHWC(ShapeVector *shape);
 // transpose shape: NCDHW To NDHWC
 void ShapeNCDHW2NDHWC(ShapeVector *shape);
 
-//////////////// old: format string /////////////
+// old: format string
 void SetDimA(const ShapeVector &shape, int *dimA, size_t len, const std::string &format);
 
 void SetStrideA(const ShapeVector &shape, int *strideA, size_t len, const std::string &format);
@@ -186,8 +186,8 @@ void SetStrideA(const ShapeVector &shape, int *strideA, size_t len, const std::s
 void SetNCHW(const ShapeVector &shape, int *n, int *c, int *h, int *w, const std::string &format);
 
 void SetNCDHW(const ShapeVector &shape, int *n, int *c, int *d, int *h, int *w, const std::string &format);
-////////////////////////////////////////////////
-//////////////// new: format enum///////////////
+
+// new: format enum
 void SetDimA(const ShapeVector &shape, int *dimA, size_t len, const mindspore::Format &format);
 
 void SetStrideA(const ShapeVector &shape, int *strideA, size_t len, const mindspore::Format &format);
@@ -195,7 +195,6 @@ void SetStrideA(const ShapeVector &shape, int *strideA, size_t len, const mindsp
 void SetNCHW(const ShapeVector &shape, int *n, int *c, int *h, int *w, const mindspore::Format &format);
 
 void SetNCDHW(const ShapeVector &shape, int *n, int *c, int *d, int *h, int *w, const mindspore::Format &format);
-////////////////////////////////////////////////
 
 bool CheckBroadcast4TensorOp(const std::vector<int> &A, const std::vector<int> &B, const std::vector<int> &Out);
 
