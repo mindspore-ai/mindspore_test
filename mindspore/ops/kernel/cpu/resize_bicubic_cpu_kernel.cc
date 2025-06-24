@@ -129,7 +129,7 @@ class CachedInterpolationCalculator {
 inline int64_t Bound(int64_t val, int64_t limit) { return std::min(limit - 1, std::max(int64_t{0}, val)); }
 
 std::vector<float> InitCoeffsTable(const double a) {
-  std::vector<float> coeffs_table((kTableSize + 1) * 2, 0);
+  std::vector<float> coeffs_table((kTableSize + 1) * calnum2, 0);
   for (int i = 0; i <= kTableSize; ++i) {
     float x = i * 1.0 / kTableSize;
     coeffs_table[i * calnum2] = ((a + calnum2) * x - (a + calnum3)) * x * x + 1;
