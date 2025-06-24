@@ -34,7 +34,7 @@ mindspore.ops.tensordump
     - id：一个自增的ID。
 
     .. note::
-        - 在Ascend平台上的graph mode下，可以通过设置环境变量 `MS_DUMP_SLICE_SIZE` 和 `MS_DUMP_WAIT_TIME` 解决在输出大tesnor或输出tensor比较密集场景下算子执行失败的问题。
+        - 在Ascend平台上的graph mode下，可以通过设置环境变量 `MS_DUMP_SLICE_SIZE` 和 `MS_DUMP_WAIT_TIME` 解决在输出大tensor或输出tensor比较密集场景下算子执行失败的问题。
         - 当前该算子不支持在控制流中使用。
         - 如果当前的并行模式为STAND_ALONE，参数 `mode` 只能设置为'out'。
         - 此函数用于调试。
