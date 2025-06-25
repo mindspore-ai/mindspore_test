@@ -111,7 +111,7 @@ def _check_moe_config(moe_config=None, parallel_config=None):
     """
     if not isinstance(moe_config, MoEConfig):
         raise TypeError(f"'moe_config' must be an instance of MoEConfig, but got {type(moe_config).__name__}.")
-    use_moe = (moe_config.expert_num > 1)
+    use_moe = moe_config.expert_num > 1
     if use_moe is False:
         return
     if moe_config.expert_num % parallel_config.expert_parallel != 0:
