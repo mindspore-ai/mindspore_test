@@ -1578,10 +1578,10 @@ bool GeKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_typ
                 << ", input address size:" << input_addr->GetSize()
                 << ", output address size:" << output_addr->GetSize();
   auto stream_ptr = device_context_->device_res_manager_->GetStream(stream_id);
-  auto res = GEN_EXECUTOR_FOR_RESIZE(std::string("aclnnInplaceCopy"), output_addr, input_addr);
+  auto res = GEN_EXECUTOR(std::string("aclnnInplaceCopy"), output_addr, input_addr);
   auto workspace_size = std::get<0>(res);
   auto executor = std::get<1>(res);
-  std::function<void()> release_func{nullptr};
+  std::function<void()> release_func = std::get<3>(res);
   if (workspace_size == 0) {
     RUN_OP_API_ASYNC(std::string("aclnnInplaceCopy"), nullptr, 0, executor, stream_ptr, release_func);
   } else {
