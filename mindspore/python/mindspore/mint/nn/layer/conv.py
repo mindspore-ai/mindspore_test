@@ -619,7 +619,8 @@ class Conv3d(_Conv):
 
     Variables:
         - **weight** (Tensor) - The weight of the convolution layer, with shape
-          :math:`(C_{out}, C_{in} / \text{groups}, \text{kernel_size[0]}, \text{kernel_size[1]}, \text{kernel_size[2]})`.
+          :math:`(C_{out}, C_{in} / \text{groups}, \text{kernel_size[0]},
+          \text{kernel_size[1]}, \text{kernel_size[2]})`.
         - **bias** (Tensor) - The bias of the convolution layer, with shape
           :math:`(C_{out})`. If bias is False, this will be None.
 
