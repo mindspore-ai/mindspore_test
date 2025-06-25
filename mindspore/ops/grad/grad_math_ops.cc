@@ -4435,69 +4435,85 @@ REG_BPROP_BUILDER("TriangularSolve").FreeUselessValues_O({i1}).SetBody(BODYFUNC(
   NodePtr grad_A = nullptr;
   auto grad_x = ib->TupleGetItem(dout, i0);
   auto grad_m = ib->TupleGetItem(dout, i1);
+  auto grad_x_defined = !grad_x->BuildValue()->isa<None>();
+  auto grad_m_defined = !grad_m->BuildValue()->isa<None>();
   auto x = ib->TupleGetItem(out, i0);
 
-  auto transpose_opt = mindspore::GetScalarValue<bool>(transpose->BuildValue());
-  if (!transpose_opt.has_value()) {
-    auto true_branch = [&](Emitter *e) -> NodePtrList {
-      return {e->TupleGetItem(
-        e->Emit("TriangularSolve", {grad_x, e->Conj(A), upper, e->Value<bool>(false), unitriangular}), i0)};
-    };
-    auto false_branch = [&](Emitter *e) -> NodePtrList {
-      return {e->TupleGetItem(
-        e->Emit("TriangularSolve", {grad_x, e->Conj(A), upper, e->Value<bool>(true), unitriangular}), i0)};
-    };
-    auto transpose_opt_true = ib->Equal(transpose, ib->Value<bool>(true));
-    grad_b = ib->Conditional(transpose_opt_true, true_branch, false_branch);
-  } else {
-    grad_b = ib->TupleGetItem(
-      ib->Emit("TriangularSolve", {grad_x, ib->Conj(A), upper, ib->Value<bool>(!transpose_opt.value()), unitriangular}),
-      i0);
+  if (!grad_x_defined && !grad_m_defined) {
+    return {grad_b, grad_A, ib->OutZeros(upper), ib->OutZeros(transpose), ib->OutZeros(unitriangular)};
   }
-  if (A->need_compute_grad_out()) {
+
+  if (grad_x_defined) {
+    auto transpose_opt = mindspore::GetScalarValue<bool>(transpose->BuildValue());
     if (!transpose_opt.has_value()) {
       auto true_branch = [&](Emitter *e) -> NodePtrList {
-        return {e->MatMulExt(e->Conj(x),
-                             e->Emit("TransposeExtView", {grad_b, e->Value<int64_t>(-1), e->Value<int64_t>(-2)}))};
+        return {e->TupleGetItem(
+          e->Emit("TriangularSolve", {grad_x, e->Conj(A), upper, e->Value<bool>(false), unitriangular}), i0)};
       };
       auto false_branch = [&](Emitter *e) -> NodePtrList {
-        return {e->MatMulExt(grad_b, e->Emit("TransposeExtView", {x, e->Value<int64_t>(-1), e->Value<int64_t>(-2)}))};
+        return {e->TupleGetItem(
+          e->Emit("TriangularSolve", {grad_x, e->Conj(A), upper, e->Value<bool>(true), unitriangular}), i0)};
       };
       auto transpose_opt_true = ib->Equal(transpose, ib->Value<bool>(true));
-      grad_A = ib->Conditional(transpose_opt_true, true_branch, false_branch);
+      grad_b = ib->Conditional(transpose_opt_true, true_branch, false_branch);
     } else {
-      grad_A =
-        transpose_opt.value()
-          ? ib->MatMulExt(ib->Conj(x),
-                          ib->Emit("TransposeExtView", {grad_b, ib->Value<int64_t>(-1), ib->Value<int64_t>(-2)}))
-          : ib->MatMulExt(grad_b, ib->Emit("TransposeExtView", {x, ib->Value<int64_t>(-1), ib->Value<int64_t>(-2)}));
+      grad_b = ib->TupleGetItem(ib->Emit("TriangularSolve", {grad_x, ib->Conj(A), upper,
+                                                             ib->Value<bool>(!transpose_opt.value()), unitriangular}),
+                                i0);
     }
-    grad_A = ib->Neg(grad_A);
-    auto unitriangular_opt = mindspore::GetScalarValue<bool>(unitriangular->BuildValue());
-    NodePtr unitriangular_int, unitriangular_int_neg;
-    if (!unitriangular_opt.has_value()) {
-      auto true_branch = [&](Emitter *e) -> NodePtrList { return {e->Value<int64_t>(1)}; };
-      auto false_branch = [&](Emitter *e) -> NodePtrList { return {e->Value<int64_t>(0)}; };
-      auto unitriangular_opt_true = ib->Equal(unitriangular, ib->Value<bool>(true));
-      unitriangular_int = ib->Conditional(unitriangular_opt_true, true_branch, false_branch);
-      unitriangular_int_neg = ib->ScalarNeg(unitriangular_int);
-    } else {
-      unitriangular_int = unitriangular_opt.value() ? ib->Value<int64_t>(1) : ib->Value<int64_t>(0);
-      unitriangular_int_neg = unitriangular_opt.value() ? ib->Value<int64_t>(-1) : ib->Value<int64_t>(0);
-    }
+    if (A->need_compute_grad_out()) {
+      if (!transpose_opt.has_value()) {
+        auto true_branch = [&](Emitter *e) -> NodePtrList {
+          return {e->MatMulExt(e->Conj(x),
+                               e->Emit("TransposeExtView", {grad_b, e->Value<int64_t>(-1), e->Value<int64_t>(-2)}))};
+        };
+        auto false_branch = [&](Emitter *e) -> NodePtrList {
+          return {e->MatMulExt(grad_b, e->Emit("TransposeExtView", {x, e->Value<int64_t>(-1), e->Value<int64_t>(-2)}))};
+        };
+        auto transpose_opt_true = ib->Equal(transpose, ib->Value<bool>(true));
+        grad_A = ib->Conditional(transpose_opt_true, true_branch, false_branch);
+      } else {
+        grad_A =
+          transpose_opt.value()
+            ? ib->MatMulExt(ib->Conj(x),
+                            ib->Emit("TransposeExtView", {grad_b, ib->Value<int64_t>(-1), ib->Value<int64_t>(-2)}))
+            : ib->MatMulExt(grad_b, ib->Emit("TransposeExtView", {x, ib->Value<int64_t>(-1), ib->Value<int64_t>(-2)}));
+      }
+      grad_A = ib->Neg(grad_A);
+      auto unitriangular_opt = mindspore::GetScalarValue<bool>(unitriangular->BuildValue());
+      NodePtr unitriangular_int, unitriangular_int_neg;
+      if (!unitriangular_opt.has_value()) {
+        auto true_branch = [&](Emitter *e) -> NodePtrList { return {e->Value<int64_t>(1)}; };
+        auto false_branch = [&](Emitter *e) -> NodePtrList { return {e->Value<int64_t>(0)}; };
+        auto unitriangular_opt_true = ib->Equal(unitriangular, ib->Value<bool>(true));
+        unitriangular_int = ib->Conditional(unitriangular_opt_true, true_branch, false_branch);
+        unitriangular_int_neg = ib->ScalarNeg(unitriangular_int);
+      } else {
+        unitriangular_int = unitriangular_opt.value() ? ib->Value<int64_t>(1) : ib->Value<int64_t>(0);
+        unitriangular_int_neg = unitriangular_opt.value() ? ib->Value<int64_t>(-1) : ib->Value<int64_t>(0);
+      }
 
-    auto upper_opt = mindspore::GetScalarValue<bool>(upper->BuildValue());
-    if (!upper_opt.has_value()) {
-      auto true_branch = [&](Emitter *e) -> NodePtrList { return {e->Emit("Triu", {grad_A, unitriangular_int})}; };
-      auto false_branch = [&](Emitter *e) -> NodePtrList {
-        return {e->Emit("TrilExt", {grad_A, unitriangular_int_neg})};
-      };
-      auto upper_opt_true = ib->Equal(upper, ib->Value<bool>(true));
-      grad_A = ib->Conditional(upper_opt_true, true_branch, false_branch);
-    } else {
-      grad_A = upper_opt.value() ? ib->Emit("Triu", {grad_A, unitriangular_int})
-                                 : ib->Emit("TrilExt", {grad_A, unitriangular_int_neg});
+      auto upper_opt = mindspore::GetScalarValue<bool>(upper->BuildValue());
+      if (!upper_opt.has_value()) {
+        auto true_branch = [&](Emitter *e) -> NodePtrList { return {e->Emit("Triu", {grad_A, unitriangular_int})}; };
+        auto false_branch = [&](Emitter *e) -> NodePtrList {
+          return {e->Emit("TrilExt", {grad_A, unitriangular_int_neg})};
+        };
+        auto upper_opt_true = ib->Equal(upper, ib->Value<bool>(true));
+        grad_A = ib->Conditional(upper_opt_true, true_branch, false_branch);
+      } else {
+        grad_A = upper_opt.value() ? ib->Emit("Triu", {grad_A, unitriangular_int})
+                                   : ib->Emit("TrilExt", {grad_A, unitriangular_int_neg});
+      }
     }
+  }
+  if (grad_b == nullptr) {
+    grad_b = ib->OutZeros(b);
+  }
+  if (grad_A == nullptr) {
+    grad_A = ib->OutZeros(A);
+  }
+  if (A->need_compute_grad_out() && grad_m_defined) {
     grad_A = ib->Add(grad_A, grad_m);
   }
 
@@ -5588,37 +5604,48 @@ REG_BPROP_BUILDER("StdMean").SetUnusedInputs({}).SetBody(BODYFUNC(ib) {
   auto keepdim = ib->GetInput(i3);
   auto out = ib->GetInput(i4);
   auto dout = ib->GetInput(i5);
-
-  auto std_out = ib->TupleGetItem(out, i0);
   auto std_dout = ib->TupleGetItem(dout, i0);
-  auto std_grad = StdGrad(ib, input, dim, correction, keepdim, std_out, std_dout);
-
-  auto mean_out = ib->TupleGetItem(out, i1);
   auto mean_dout = ib->TupleGetItem(dout, i1);
-  auto mean_grad = MeanExtGrad(ib, input, dim, keepdim, mean_out, mean_dout);
+  auto std_dout_defined = !std_dout->BuildValue()->isa<None>();
+  auto mean_dout_defined = !mean_dout->BuildValue()->isa<None>();
 
-  auto std_mean_grad = ib->Add(std_grad, mean_grad);
-  return {std_mean_grad, ib->OutZeros(dim), ib->OutZeros(correction), ib->OutZeros(keepdim)};
+  NodePtr dx = nullptr;
+  if (std_dout_defined) {
+    auto std_out = ib->TupleGetItem(out, i0);
+    dx = StdGrad(ib, input, dim, correction, keepdim, std_out, std_dout);
+  }
+
+  if (mean_dout_defined) {
+    auto mean_out = ib->TupleGetItem(out, i1);
+    auto mean_grad = MeanExtGrad(ib, input, dim, keepdim, mean_out, mean_dout);
+    dx = dx == nullptr ? mean_grad : ib->Add(dx, mean_grad);
+  }
+  return {dx, ib->OutZeros(dim), ib->OutZeros(correction), ib->OutZeros(keepdim)};
 });
 
-REG_BPROP_BUILDER("VarMean").SetUnusedInputs({}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("VarMean").FreeUselessValues_IO({}, {}).SetBody(BODYFUNC(ib) {
   auto input = ib->GetInput(i0);
   auto dim = ib->GetInput(i1);
   auto correction = ib->GetInput(i2);
   auto keepdim = ib->GetInput(i3);
   auto out = ib->GetInput(i4);
   auto dout = ib->GetInput(i5);
-
-  auto var_out = ib->TupleGetItem(out, i0);
   auto var_dout = ib->TupleGetItem(dout, i0);
-  auto var_grad = VarGrad(ib, input, dim, var_dout, correction, keepdim);
-
-  auto mean_out = ib->TupleGetItem(out, i1);
   auto mean_dout = ib->TupleGetItem(dout, i1);
-  auto mean_grad = MeanExtGrad(ib, input, dim, keepdim, mean_out, mean_dout);
+  auto var_dout_defined = !var_dout->BuildValue()->isa<None>();
+  auto mean_dout_defined = !mean_dout->BuildValue()->isa<None>();
 
-  auto var_mean_grad = ib->Add(var_grad, mean_grad);
-  return {var_mean_grad, ib->OutZeros(dim), ib->OutZeros(correction), ib->OutZeros(keepdim)};
+  NodePtr dx = nullptr;
+  if (var_dout_defined) {
+    dx = VarGrad(ib, input, dim, var_dout, correction, keepdim);
+  }
+
+  if (mean_dout_defined) {
+    auto mean_out = ib->TupleGetItem(out, i1);
+    auto mean_grad = MeanExtGrad(ib, input, dim, keepdim, mean_out, mean_dout);
+    dx = dx == nullptr ? mean_grad : ib->Add(dx, mean_grad);
+  }
+  return {dx, ib->OutZeros(dim), ib->OutZeros(correction), ib->OutZeros(keepdim)};
 });
 
 REG_BPROP_BUILDER("Nansum").SetUnusedInputs({i4}).SetBody(BODYFUNC(ib) {
