@@ -825,10 +825,6 @@ void KernelRuntime::AssignCommunicationNodeOutputMem(MemType type, const AnfNode
     output_ptr += align_size_list[j];
   }
 }
-bool KernelRuntime::KernelMemNotReuse(const AnfNodePtr &node) {
-  MS_EXCEPTION_IF_NULL(node);
-  return false;
-}
 
 DeviceAddressPtr KernelRuntime::PreAssignCNodeMemory(const AnfNodePtr &anf_node, size_t index) const {
   MS_EXCEPTION_IF_NULL(anf_node);

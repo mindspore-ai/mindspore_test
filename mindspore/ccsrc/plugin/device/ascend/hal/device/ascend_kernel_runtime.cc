@@ -295,19 +295,6 @@ bool AscendKernelRuntime::Init() {
   return true;
 }
 
-bool AscendKernelRuntime::KernelMemNotReuse(const AnfNodePtr &node) {
-  MS_EXCEPTION_IF_NULL(node);
-  bool need_dump = false;
-  auto &dump_json_parser = DumpJsonParser::GetInstance();
-  if (dump_json_parser.e2e_dump_enabled() && dump_json_parser.dump_mode() == 1) {
-    auto op_name = node->fullname_with_scope();
-    if (dump_json_parser.NeedDump(op_name)) {
-      need_dump = true;
-    }
-  }
-  return need_dump;
-}
-
 DeviceAddressPtr AscendKernelRuntime::CreateDeviceAddress(void *device_ptr, size_t device_size, const string &format,
                                                           TypeId type_id) const {
   auto ms_context = MsContext::GetInstance();
