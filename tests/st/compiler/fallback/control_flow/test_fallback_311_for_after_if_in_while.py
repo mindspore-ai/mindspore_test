@@ -75,9 +75,8 @@ def test_for_after_if_in_while_tensor_2():
     assert res == 4
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_for_after_if_in_while_numpy():
     """
     Feature: JIT Fallback

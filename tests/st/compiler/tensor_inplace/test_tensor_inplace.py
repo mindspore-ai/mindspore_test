@@ -521,7 +521,7 @@ def test_zerolike_fill_zero():
             self.inplace_add(y, y + 2)
             return y + 1
 
-    context.set_context(jit_config={"jit_level": "O0"})
+    ms.context.set_context(jit_config={"jit_level": "O0"})
     x = Tensor(1)
     net = ZerosLikeNet()
     output = net(x)
@@ -544,7 +544,7 @@ def test_inplace_isolated_node():
             _, z = get_input(t, value)
             return z
 
-    context.set_context(mode=ms.PYNATIVE_MODE)
+    ms.context.set_context(mode=ms.PYNATIVE_MODE)
     net = Net()
     output_expect = net(Tensor([1]), Tensor([2]))
     net.construct = ms.jit(net.construct)
