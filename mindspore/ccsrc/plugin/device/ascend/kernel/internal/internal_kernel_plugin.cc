@@ -46,6 +46,7 @@ constexpr auto kPhaseNameIncrement = "increment";
 constexpr auto kQuantLinearSparseName = "QuantLinearSparse";
 constexpr auto kQuantBatchMatmulName = "QuantBatchMatmul";
 constexpr auto kGroupedMatmulName = "GroupedMatmul";
+constexpr auto kGroupedMatmulV4Name = "GroupedMatmulV4";
 constexpr auto kMlaPreprocessName = "MlaPreprocess";
 constexpr auto CONST_2 = 2;
 constexpr auto Align16 = 16;
@@ -116,6 +117,7 @@ static std::unordered_map<std::string, std::vector<std::vector<std::vector<size_
   {kPrimNameMatmulSplitSiluMulOut1, {{{1}, {}}, {{1}, {}}}},
   {kPrimNameQMatmulSplitSiluFastgeluAddMulOut1, {{{0, 1}, {}}, {{1}, {}}}},
   {kPrimNameQMatmulSplitSiluMulOut1, {{{0, 1}, {}}, {{1}, {}}}},
+  {kGroupedMatmulV4Name, {{{1}, {}}, {{1}, {}}}},
   {kGroupedMatmulName, {{{1}, {}}, {{1}, {}}}}};
 
 // unordered_map mean:

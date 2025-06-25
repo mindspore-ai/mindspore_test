@@ -456,7 +456,8 @@ inline bool NeedTransDataWhenInferBoost(const CNodePtr &kernel, const KernelType
   const auto soc_version = context_ptr->ascend_soc_version();
   if (soc_version == kAscendVersion310p) {
     return kernel_type == KernelType::INTERNAL_KERNEL ||
-           IsOneOfPrimitiveCNode(kernel, {prim::kPrimReshapeExt, prim::kPrimReshape, prim::kPrimGroupedMatmul});
+           IsOneOfPrimitiveCNode(
+             kernel, {prim::kPrimReshapeExt, prim::kPrimReshape, prim::kPrimGroupedMatmul, prim::kPrimGroupedMatmulV4});
   } else if (soc_version == kAscendVersion910b || soc_version == kAscendVersion910_93) {
     return true;
   }
