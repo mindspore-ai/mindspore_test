@@ -67,9 +67,8 @@ def test_if_after_while_tensor_2():
     assert res == 11
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_if_after_while_tensor_and_numpy():
     """
     Feature: JIT Fallback
@@ -91,9 +90,8 @@ def test_if_after_while_tensor_and_numpy():
     assert res == 8
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_if_after_while_tensor_and_numpy_2():
     """
     Feature: JIT Fallback
