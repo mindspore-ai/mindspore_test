@@ -86,10 +86,6 @@ class NpuProfiler(BaseProfiler):
 
         # record original profiler params
         self._prof_info.profiler_parameters = self._prof_ctx.original_params
-        self._prof_info.ms_profiler_info = {
-            "rank_id": self._prof_ctx.rank_id,
-            "device_id": self._prof_ctx.device_id,
-        }
 
         # initialize minddata profiler
         if self._prof_ctx.data_process:
@@ -134,6 +130,20 @@ class NpuProfiler(BaseProfiler):
         if self._prof_ctx.data_process:
             self._md_profiler.stop()
             self._md_profiler.save(self._prof_ctx.framework_path)
+
+        if ProfilerActivity.NPU in self._prof_ctx.activities:
+            prof_dir = glob.glob(os.path.join(self._prof_ctx.ascend_ms_dir, "PROF_*"))
+            if not prof_dir:
+                logger.error(f"No PROF_* directory found in {self._prof_ctx.ascend_ms_dir}")
+                return
+
+            self._prof_ctx.msprof_profile_path = prof_dir[0]
+            self._prof_ctx.device_id = self._prof_ctx.msprof_profile_device_path.split("_")[-1]
+
+        self._prof_info.ms_profiler_info = {
+            "rank_id": self._prof_ctx.rank_id,
+            "device_id": self._prof_ctx.device_id,
+        }
 
         self._prof_info.save(self._prof_ctx.ascend_ms_dir, self._prof_ctx.rank_id)
 
@@ -188,12 +198,6 @@ class NPUProfilerAnalysis:
         """
         prof_ctx = ProfilerContext()
         if ProfilerActivity.NPU in prof_ctx.activities:
-            prof_dir = glob.glob(os.path.join(prof_ctx.ascend_ms_dir, "PROF_*"))
-            if not prof_dir:
-                logger.error(f"No PROF_* directory found in {prof_ctx.ascend_ms_dir}")
-                return
-
-            prof_ctx.msprof_profile_path = prof_dir[0]
             ProfilerPathManager().clean_analysis_cache()
             ProfilerPathManager().create_output_path()
             ProfilerInfo().load_time_parameters(

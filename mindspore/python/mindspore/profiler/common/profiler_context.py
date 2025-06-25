@@ -83,9 +83,7 @@ class ProfilerContext:
             kwargs["output_path"] = final_path
 
         self._profiler_params_mgr: ProfilerParameters = ProfilerParameters(**kwargs)
-        self._profiler_path_mgr: ProfilerOutputPath = ProfilerOutputPath(
-            device_id=int(self._device_id), rank_id=int(self._rank_id)
-        )
+        self._profiler_path_mgr: ProfilerOutputPath = ProfilerOutputPath(rank_id=int(self._rank_id))
 
         self._profiler_path_mgr.output_path = self._profiler_params_mgr.output_path
 
