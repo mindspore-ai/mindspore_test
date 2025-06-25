@@ -2168,6 +2168,8 @@ std::vector<ActionItem> VmPipeline(const ResourcePtr &resource, bool trace_flag,
 
     // Mind Compiler finish.
     (void)actions.emplace_back(std::make_pair(kValidate, ValidateAction));
+
+    (void)actions.emplace_back(std::make_pair(kBackendPass, BackendPass));
   }
 
   if (erase_parse) {
@@ -2184,8 +2186,6 @@ std::vector<ActionItem> VmPipeline(const ResourcePtr &resource, bool trace_flag,
   if (common::GetEnv(kSimulationLevel) == kSimulationLevelCompileGraph) {
     return actions;
   }
-
-  (void)actions.emplace_back(std::make_pair(kBackendPass, BackendPass));
 
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
@@ -2219,7 +2219,8 @@ std::vector<ActionItem> MindIRPipeline() {
 
 std::vector<PassItem> JitPipeline(const ResourcePtr &resource, bool build_top_graph) {
   std::vector<PassItem> jit_passes;
-  if (!resource->EnableCompileCache() || resource->func_graph() == nullptr) {
+  bool init_null = resource->func_graph() == nullptr;
+  if (!resource->EnableCompileCache() || init_null) {
     // Compile the frontend graph.
     if (build_top_graph) {
       (void)jit_passes.emplace_back(kBootstrap, BootstrapAction);
@@ -2254,6 +2255,7 @@ std::vector<PassItem> JitPipeline(const ResourcePtr &resource, bool build_top_gr
     (void)jit_passes.emplace_back(kOptAfterJitGrad, OptAfterJitGrad);
     (void)jit_passes.emplace_back(kSymbolEngineOpt, SymbolEngineOptGroup);
     (void)jit_passes.emplace_back(kValidate, ValidatePass);
+    (void)jit_passes.emplace_back(std::make_pair(kBackendPass, BackendPass));
   }
 
   auto is_precompile_only = MsContext::GetInstance()->get_param<bool>(MS_CTX_PRECOMPILE_ONLY) ||
@@ -2263,11 +2265,16 @@ std::vector<PassItem> JitPipeline(const ResourcePtr &resource, bool build_top_gr
     return jit_passes;
   }
 
-  if (common::GetEnv(kSimulationLevel) == kSimulationLevelCompileGraph) {
+  bool is_jit_grad = pynative::GradState::Get().RequiresGrad();
+  if (resource->EnableCompileCache() && !init_null && is_jit_grad) {
+    // Store forward graph for jit grad when using compile cache.
+    (void)jit_passes.emplace_back(kGetJitBpropGraph, GetJitBpropGraph);
     return jit_passes;
   }
 
-  (void)jit_passes.emplace_back(std::make_pair(kBackendPass, BackendPass));
+  if (common::GetEnv(kSimulationLevel) == kSimulationLevelCompileGraph) {
+    return jit_passes;
+  }
 
 #ifndef WITH_BACKEND
   auto ms_context = MsContext::GetInstance();

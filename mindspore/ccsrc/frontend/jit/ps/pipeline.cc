@@ -569,9 +569,11 @@ void Pipeline::Run() {
   MS_EXCEPTION_IF_NULL(resource_);
   FuncGraphPtr user_graph = nullptr;
   const std::string last_compile_action = kValidate;
+  const std::string last_compile_action_for_compile_cache = kBackendPass;
   bool already_print_profile = false;
   static const auto compile_profile_finish_action = common::GetCompileConfig("COMPILE_PROFILE_FINISH_ACTION");
-  ProfileExecute(MsProfile::GetProfile(), [this, &user_graph, &last_compile_action, &already_print_profile]() {
+  ProfileExecute(MsProfile::GetProfile(), [this, &user_graph, &last_compile_action,
+                                           &last_compile_action_for_compile_cache, &already_print_profile]() {
     size_t i = 0;
     for (auto &action : actions_) {
       std::string action_name = action.first;
@@ -618,8 +620,9 @@ void Pipeline::Run() {
         SetLoopCount(resource_);
       } else if (action.first == last_compile_action) {
         CheckInterpretNodeLineInfos();
-        CacheFuncGraph(resource_);
         ResetId(resource_);
+      } else if (action.first == last_compile_action_for_compile_cache) {
+        CacheFuncGraph(resource_);
       }
       FuncGraphPtr graph = resource_->func_graph();
 #ifdef ENABLE_DUMP_IR

@@ -459,7 +459,7 @@ class MSANFModelParser {
   bool little_endian_ = common::IsLittleByteOrder();
   std::map<std::string, std::unique_ptr<Byte[]>> tenor_data_;
   bool is_kernel_graph_{false};
-  std::list<std::pair<const CNodePtr, const mind_ir::AttributeProto *>> node_abstract_protos_;
+  std::list<std::pair<const AnfNodePtr, const mind_ir::AttributeProto *>> node_abstract_protos_;
 };
 
 ValuePtr MSANFModelParser::GenerateTensorValue(const mind_ir::TensorProto &tensor_proto) {
@@ -1157,7 +1157,8 @@ bool MSANFModelParser::BuildInputForFuncGraph(const ParameterPtr &node, const mi
     } else {
       auto abs = GetNodeAbstractFromAttrProtoWithType(attr_proto);
       if (abs == nullptr) {
-        MS_LOG(ERROR) << "Failed to get abstract for input node " << node->name()
+        node_abstract_protos_.push_back(std::pair(node, &value_proto.attr_info()));
+        MS_LOG(DEBUG) << "Failed to get abstract for input node " << node->name()
                       << " from attr_proto:" << attr_proto.DebugString();
       }
       node->set_abstract(abs);
@@ -2168,6 +2169,7 @@ bool MSANFModelParser::BuildFuncGraph(const FuncGraphPtr &output_graph, const mi
     MS_EXCEPTION_IF_NULL(context);
     context->SetCellReuseLevel(cell_reuse_level);
   }
+  output_graph->set_reserved(true);
   return true;
 }
 
@@ -2203,16 +2205,30 @@ bool MSANFModelParser::SetValueForTopGraphParameter(const FuncGraphPtr &topGraph
 }
 
 void MSANFModelParser::TrytoBuildCNodeAbstract() {
-  std::map<CNodePtr, int> visited_times;
+  std::map<AnfNodePtr, int> visited_times;
   constexpr int kMaxCount = 3;
   while (!node_abstract_protos_.empty()) {
     auto &item = node_abstract_protos_.front();
-    auto &count = visited_times[item.first];
+    const auto &node = item.first;
+    auto &count = visited_times[node];
     if (count++ > kMaxCount) {
       abstract_valid_ = false;
-      MS_LOG(ERROR) << "Parse CNode: " << item.first->ToString() << " abstract error: " << item.second->DebugString();
+      MS_LOG(ERROR) << "Parse CNode: " << node->ToString() << " abstract error: " << item.second->DebugString();
     } else {
-      SetCNodeAbstract(*(item.second), item.first);
+      if (node->isa<CNode>()) {
+        const auto &cnode = node->cast<CNodePtr>();
+        SetCNodeAbstract(*(item.second), cnode);
+      } else if (node->isa<Parameter>()) {
+        auto abs = GetNodeAbstractFromAttrProtoWithType(*(item.second));
+        if (abs == nullptr) {
+          node_abstract_protos_.push_back(std::pair(node, item.second));
+          MS_LOG(ERROR) << "Failed to get abstract for input node " << node->DebugString()
+                        << " from attr_proto:" << item.second->DebugString();
+        }
+        node->set_abstract(abs);
+      } else {
+        MS_LOG(ERROR) << "Trying to rebuild unexpected node: " << node->DebugString();
+      }
     }
     node_abstract_protos_.pop_front();
   }

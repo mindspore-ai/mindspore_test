@@ -308,6 +308,7 @@
 "mindspore/tests/st/tensor/test_setitem.py"                                                             "multiple-statements"
 "mindspore/tests/st/ops/test_ops_lin_space_ext.py"                                                      "not-callable"
 "mindspore/tests/st/ops/test_ops_cosh.py"                                                               "not-callable"
+"mindspore/tests/st/compiler/compile_cache"                                                             "missing-module-docstring"
 "mindspore/tests/st/mint/test_unsqueeze.py"                                                             "missing-module-docstring"
 "mindspore/tests/st/amp/test_amp.py"                                                                    "missing-module-docstring"
 "mindspore/tests/st/common/test_dtype.py"                                                               "missing-module-docstring"

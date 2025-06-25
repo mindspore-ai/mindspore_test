@@ -327,7 +327,10 @@ bool GraphExecutorPy::CompileInner(const FuncGraphPtr &graph, const py::tuple &a
                            parallel::ParallelContext::GetInstance()->parallel_mode() == parallel::kAutoParallel);
   ConvertArgs(args, kwargs, resource, is_auto_parallel, &args_abs, &arguments);
   ConvertSymbolicShape(args, &args_abs);
-  AddManagerForFuncGraphArgs(resource, arguments);
+  bool init_null = resource->func_graph() == nullptr;
+  if (!resource->EnableCompileCache() || init_null) {
+    AddManagerForFuncGraphArgs(resource, arguments);
+  }
   resource->set_arguments(arguments);
   resource->set_args_abs(args_abs);
   resource->set_real_arguments(real_arguments());
