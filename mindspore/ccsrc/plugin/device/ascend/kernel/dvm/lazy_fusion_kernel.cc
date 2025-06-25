@@ -229,14 +229,6 @@ void LazyFusionKernelAscend::Launch() {
   if (LazyFusionFlags::GetInstance().synchronize && !device::ascend::AscendStreamMng::GetInstance().SyncAllStreams()) {
     MS_LOG(EXCEPTION) << "SyncStream failed for dvm kernel, kernel id is " << id() << " " << this;
   }
-  if (!cross_stream_addrs_.empty()) {
-    auto &ms =
-      device::HalResManager::GetInstance().GetMultiStreamController(device_context_->device_context_key().device_name_);
-    ms->Refresh();
-    auto task_id_on_stream = ms->LaunchTaskIdOnStream(stream_id_);
-    ms->RecordEvent(task_id_on_stream, stream_id_, cross_stream_addrs_);
-    cross_stream_addrs_.clear();
-  }
   ClearKernel();
   MS_LOG(INFO) << "Run launch task dvm kernel end, kernel id is " << id() << " " << this;
 }
@@ -322,6 +314,13 @@ void LazyFusionKernelAscend::Flush() {
       // Launch
       ClearGraph();
       runtime::OpExecutor::DispatchLaunchTask([this]() { Launch(); });
+      if (!cross_stream_addrs_.empty()) {
+        auto &ms = device::HalResManager::GetInstance().GetMultiStreamController(
+          device_context_->device_context_key().device_name_);
+        ms->Refresh();
+        auto task_id_on_stream = ms->LaunchTaskIdOnStream(stream_id_);
+        ms->RecordEvent(task_id_on_stream, stream_id_, cross_stream_addrs_);
+      }
     }
     MS_LOG(INFO) << "Run device task dvm kernel end, kernel id is " << id() << " " << this;
   });
