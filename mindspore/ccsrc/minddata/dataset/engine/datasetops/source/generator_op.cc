@@ -138,8 +138,6 @@ Status GeneratorOp::Launch() {
         traceback = e.what();
       }
 
-      // Restore exception to python
-      e.restore();
       RETURN_STATUS_ERROR(StatusCode::kMDPyFuncException, traceback);
     }
   }
@@ -382,14 +380,10 @@ Status GeneratorOp::operator()() {
             traceback = e.what();
           }
 
-          // Restore exception to python
-          e.restore();
           RETURN_STATUS_ERROR(StatusCode::kMDPyFuncException, traceback);
         }
         RETURN_IF_NOT_OK(
           CollectOpInfo(this->NameWithID(), "__next__", start_time, {{"TensorRowFlags", "StopIteration"}}));
-        // Restore exception to python
-        e.restore();
 
         // Check whether the number of samples is sufficient only when the first epoch
         if (op_current_repeats_ == 0) {
@@ -527,8 +521,6 @@ Status GeneratorOp::GetNextRowPullMode(TensorRow *const row) {
           traceback = e.what();
         }
 
-        // Restore exception to python
-        e.restore();
         RETURN_STATUS_ERROR(StatusCode::kMDPyFuncException, traceback);
       }
 
