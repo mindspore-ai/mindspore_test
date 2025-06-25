@@ -155,8 +155,7 @@ tensor::TensorPtr Conv1DPaddingAscendCustomize(const std::shared_ptr<OpRunner> &
 
   BoolImmPtr transposed_imm_ptr = std::make_shared<BoolImm>(false);
   ValueTuplePtr output_padding_vector_1d_imm_ptr =
-    std::make_shared<ValueTuple>(std::vector<ValuePtr>({std::make_shared<Int64Imm>(0), std::make_shared<Int64Imm>(0)}));
-
+    std::make_shared<ValueTuple>(std::vector<ValuePtr>({std::make_shared<Int64Imm>(0)}));
   std::vector<ValuePtr> pad_value_ptr;
   for (int64_t i = 0; i < SizeToLong(pad_vector.size()); i++) {
     pad_value_ptr.emplace_back(std::make_shared<Int64Imm>(pad_vector[i]));
