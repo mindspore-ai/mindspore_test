@@ -187,7 +187,7 @@ bool CheckControlFlow(const PrimitivePtr &prim, const CNodePtr &cnode) {
   return false;
 }
 
-void MarkViewOp(const AnfNodePtr &node, bool *cotrol_flow_scene) {
+void MarkViewOp(const AnfNodePtr &node, bool *control_flow_scene) {
   if (IsViewNode(node)) {
     const auto &abs = node->abstract();
     MS_EXCEPTION_IF_NULL(abs);
@@ -207,7 +207,7 @@ void MarkViewOp(const AnfNodePtr &node, bool *cotrol_flow_scene) {
   auto prim = GetValueNode<PrimitivePtr>(cnode->input(0));
   // Check if is control flow scene with view inplace.
   if (CheckControlFlow(prim, cnode)) {
-    *cotrol_flow_scene = true;
+    *control_flow_scene = true;
     return;
   }
 
@@ -232,11 +232,11 @@ void MarkViewOp(const AnfNodePtr &node, bool *cotrol_flow_scene) {
   }
 }
 
-void MarkViewOpToAbstract(const FuncGraphPtr &func_graph, bool *cotrol_flow_scene) {
+void MarkViewOpToAbstract(const FuncGraphPtr &func_graph, bool *control_flow_scene) {
   const auto &nodes = TopoSort(func_graph->get_return());
   for (size_t i = 0; i < nodes.size(); ++i) {
-    MarkViewOp(nodes[i], cotrol_flow_scene);
-    if (*cotrol_flow_scene) {
+    MarkViewOp(nodes[i], control_flow_scene);
+    if (*control_flow_scene) {
       return;
     }
   }
@@ -297,16 +297,19 @@ AnfNodePtr VirtualViewGradEliminater::operator()(const OptimizerPtr &, const Anf
 
 bool PreprocessForVirtualViewGradInsert(const FuncGraphPtr &root, const opt::OptimizerPtr &opt) {
   // mark view operator to abstract.
-  bool cotrol_flow_scene = false;
-  MarkViewOpToAbstract(root, &cotrol_flow_scene);
+  bool control_flow_scene = false;
+  MarkViewOpToAbstract(root, &control_flow_scene);
+  if (control_flow_scene) {
+    return true;
+  }
   const auto &fg_used_total = root->func_graphs_used_total();
   for (const auto &fg : fg_used_total) {
-    MarkViewOpToAbstract(fg, &cotrol_flow_scene);
-    if (cotrol_flow_scene) {
-      return cotrol_flow_scene;
+    MarkViewOpToAbstract(fg, &control_flow_scene);
+    if (control_flow_scene) {
+      return true;
     }
   }
-  return cotrol_flow_scene;
+  return false;
 }
 }  // namespace irpass
 }  // namespace opt

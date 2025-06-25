@@ -26,9 +26,9 @@ from mindspore._extends.parse import compile_config
 
 @pytest.fixture(scope="module", autouse=True)
 def setup_teardown():
-    compile_config.ENABLE_VIEW_INPLACE_GRAD_NEW_METHOD = "1"
+    compile_config.ENABLE_VIEW_INPLACE_GRAD_SCHEME_CHOOSE = "1"
     yield
-    compile_config.ENABLE_VIEW_INPLACE_GRAD_NEW_METHOD = "0"
+    compile_config.ENABLE_VIEW_INPLACE_GRAD_SCHEME_CHOOSE = "0"
 
 
 def assert_executed_by_graph_mode(func, x, index, value):
