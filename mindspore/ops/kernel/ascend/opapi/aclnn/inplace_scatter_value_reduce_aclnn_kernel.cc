@@ -17,7 +17,6 @@
 #include <vector>
 #include "ir/tensor.h"
 #include "mindapi/base/types.h"
-#include "runtime/device/kernel_runtime.h"
 #include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
 #include "abstract/ops/primitive_infer_map.h"

@@ -21,7 +21,7 @@
 #include "kernel/ascend/acl_ir/acl_helper.h"
 #include "mindspore/ops/op_def/structure_op_name.h"
 #include "pybind_api/gil_scoped_long_running.h"
-#include "runtime/device/kernel_runtime.h"
+#include "kernel/ascend/acl_ir/op_api_util.h"
 #include "common/ms_factory.h"
 
 namespace mindspore {
@@ -122,7 +122,7 @@ bool CustomOpAclKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
     converter_->runner().SetOutput(i, acl_desc, acl_data);
   }
 
-  auto lock = device::KernelRuntime::LockRuntime(stream_ptr);
+  auto lock = device::ascend::AclUtil::LockRuntime(stream_ptr);
   MS_LOG(DEBUG) << this->DebugString();
   MS_LOG(DEBUG) << converter_->DebugString();
   // release gil before run

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "runtime/device/kernel_runtime_manager.h"
+#include "plugin/device/gpu/hal/device/kernel_runtime_manager.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
 

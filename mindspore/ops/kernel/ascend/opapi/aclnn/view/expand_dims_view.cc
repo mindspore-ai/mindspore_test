@@ -17,7 +17,6 @@
 
 #include "kernel/ascend/opapi/aclnn/view/view_utils.h"
 #include "mindspore/ops/view/expand_dims_strides_calc.h"
-#include "runtime/device/kernel_runtime.h"
 
 namespace mindspore {
 namespace kernel {

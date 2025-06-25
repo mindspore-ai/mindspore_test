@@ -16,7 +16,6 @@
 #include "kernel/ascend/opapi/aclnn/inplace_silu_aclnn_kernel.h"
 #include <vector>
 #include "ir/tensor.h"
-#include "runtime/device/kernel_runtime.h"
 #include "kernel/ascend/acl_ir/acl_helper.h"
 #include "abstract/ops/primitive_infer_map.h"
 

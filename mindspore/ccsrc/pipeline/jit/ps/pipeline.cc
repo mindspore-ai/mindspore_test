@@ -56,7 +56,6 @@
 #include "include/common/debug/draw.h"
 #include "backend/common/session/executor_manager.h"
 #include "backend/backend_manager/backend_manager.h"
-#include "runtime/device/kernel_runtime_manager.h"
 #include "include/backend/distributed/init.h"
 #include "debug/profiler/profiling.h"
 #include "debug/profiler/profiler.h"

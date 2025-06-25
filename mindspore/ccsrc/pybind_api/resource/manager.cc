@@ -47,7 +47,6 @@
 #include "backend/common/session/session_factory.h"
 #include "backend/backend_manager/backend_manager.h"
 #include "runtime/hardware/device_context_manager.h"
-#include "runtime/device/kernel_runtime_manager.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
 #include "runtime/graph_scheduler/execution_order_check/kernel_cache.h"
 #include "runtime/pynative/op_executor.h"

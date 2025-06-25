@@ -16,7 +16,6 @@
 #include "kernel/ascend/opapi/aclnn/flash_attention_score_grad_aclnn_kernel.h"
 #include <algorithm>
 #include "ir/tensor.h"
-#include "runtime/device/kernel_runtime.h"
 
 namespace mindspore {
 namespace kernel {

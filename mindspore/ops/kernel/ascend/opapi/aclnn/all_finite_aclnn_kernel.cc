@@ -16,7 +16,6 @@
 #include "kernel/ascend/opapi/aclnn/all_finite_aclnn_kernel.h"
 #include "ir/tensor.h"
 #include "utils/log_adapter.h"
-#include "runtime/device/kernel_runtime.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 namespace mindspore {

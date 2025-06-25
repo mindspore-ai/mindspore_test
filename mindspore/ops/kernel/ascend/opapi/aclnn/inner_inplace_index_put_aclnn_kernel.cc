@@ -18,7 +18,6 @@
 #include <utility>
 #include <functional>
 #include "ir/tensor.h"
-#include "runtime/device/kernel_runtime.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "kernel/ascend/acl_ir/acl_convert.h"
 

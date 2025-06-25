@@ -18,8 +18,6 @@
 #include <algorithm>
 #include <exception>
 #include <set>
-#include <utility>
-#include "backend/common/backend_common_callback.h"
 #include "include/common/utils/comm_manager.h"
 #include "include/common/utils/scoped_long_running.h"
 #include "frontend/ir/tensor_py.h"

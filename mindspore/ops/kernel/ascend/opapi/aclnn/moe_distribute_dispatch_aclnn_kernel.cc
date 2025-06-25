@@ -20,7 +20,6 @@
 #include <string>
 
 #include "ir/tensor.h"
-#include "runtime/device/kernel_runtime.h"
 #include "plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
 
 namespace mindspore {

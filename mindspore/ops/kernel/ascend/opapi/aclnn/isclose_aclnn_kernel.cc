@@ -18,7 +18,6 @@
 #include <memory>
 #include <functional>
 #include "ir/tensor.h"
-#include "runtime/device/kernel_runtime.h"
 #include "kernel/ascend/acl_ir/op_api_convert.h"
 
 namespace mindspore {

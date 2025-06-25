@@ -16,7 +16,6 @@
 #include "kernel/ascend/opapi/aclnn/cross_aclnn_kernel.h"
 #include "ir/tensor.h"
 #include "infer/ops_func_impl/cross.h"
-#include "runtime/device/kernel_runtime.h"
 
 namespace mindspore {
 namespace kernel {

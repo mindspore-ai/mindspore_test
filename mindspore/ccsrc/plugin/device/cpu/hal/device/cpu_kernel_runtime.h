@@ -21,7 +21,6 @@
 #include <string>
 #include <map>
 #include <set>
-#include "runtime/device/kernel_runtime.h"
 #include "include/backend/kernel_graph.h"
 #include "backend/common/session/session_basic.h"
 #include "include/backend/anf_runtime_algorithm.h"
@@ -31,29 +30,29 @@
 namespace mindspore {
 namespace device {
 namespace cpu {
-class CPUKernelRuntime : public KernelRuntime {
+class CPUKernelRuntime {
  public:
   CPUKernelRuntime() = default;
-  ~CPUKernelRuntime() override = default;
+  ~CPUKernelRuntime() = default;
 
   bool Init();
-  bool Run(const session::KernelGraph &graph, bool is_task_sink) override;
+  bool Run(const session::KernelGraph &graph, bool is_task_sink);
   void CreateOutputTensors(session::KernelGraph *kernel_graph, const std::vector<tensor::TensorPtr> &inputs,
                            VectorRef *outputs, std::map<tensor::TensorPtr, session::KernelWithIndex> *tensor_to_node);
   void BindInputOutput(session::KernelGraph *kernel_graph, const std::vector<tensor::TensorPtr> &inputs,
                        VectorRef *outputs);
   void IncreaseSummaryRefCount(const session::NamedSummaryOutputs &summary_outputs);
   void DecreaseSummaryRefCount(const session::NamedSummaryOutputs &summary_outputs);
-  bool RunDynamicKernelAsync(const session::KernelGraph &graph) override { return true; }
-  DeviceType GetTargetDeviceType() const override { return DeviceType::kCPU; };
+  bool RunDynamicKernelAsync(const session::KernelGraph &graph) { return true; }
+  DeviceType GetTargetDeviceType() const { return DeviceType::kCPU; }
 
  protected:
-  bool SyncStream() override { return true; };
-  bool MemcpyAsync(void *dst, const void *src, uint64_t size, int32_t kind, void *stream) override { return true; };
+  bool SyncStream() { return true; }
+  bool MemcpyAsync(void *dst, const void *src, uint64_t size, int32_t kind, void *stream) { return true; }
   DeviceAddressPtr CreateDeviceAddress(void *device_ptr, size_t device_size, const string &format,
-                                       TypeId type_id) const override;
+                                       TypeId type_id) const;
   DeviceAddressPtr CreateDeviceAddress(void *device_ptr, size_t device_size, const string &format, TypeId type_id,
-                                       const KernelWithIndex &node_index) const override;
+                                       const KernelWithIndex &node_index) const;
 
  private:
   void RunKernel(const CNodePtr &kernel, bool iter_dump_flag, uint32_t graph_id);
@@ -75,6 +74,7 @@ class CPUKernelRuntime : public KernelRuntime {
                                  std::vector<kernel::KernelTensor *> *workspaces);
 
   bool initialized_{false};
+  std::shared_ptr<MemoryManager> mem_manager_{nullptr};
 };
 }  // namespace cpu
 }  // namespace device

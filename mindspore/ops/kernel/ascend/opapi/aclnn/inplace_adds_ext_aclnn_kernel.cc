@@ -16,7 +16,6 @@
 #include "kernel/ascend/opapi/aclnn/inplace_add_ext_common.h"
 #include <vector>
 #include "ir/tensor.h"
-#include "runtime/device/kernel_runtime.h"
 
 namespace mindspore {
 namespace kernel {

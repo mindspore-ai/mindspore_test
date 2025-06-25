@@ -16,10 +16,10 @@
 
 #include "plugin/device/ascend/kernel/host/dynamic_shape_kernel.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "runtime/device/kernel_runtime_manager.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
+#include "kernel/ascend/acl_ir/op_api_util.h"
 
 namespace mindspore {
 namespace kernel {
@@ -43,7 +43,7 @@ void TensorShapeKernelMod::Execute(const std::vector<KernelTensor *> &inputs,
     }
   } else {
     // cppcheck-suppress unreadVariable
-    auto lock = device::KernelRuntime::LockRuntime(stream_ptr);
+    auto lock = device::ascend::AclUtil::LockRuntime(stream_ptr);
     // Memcpy needs to be synchronized first, if tensor data is from numpy.
     if (!device::ascend::AscendStreamMng::GetInstance().SyncStream(stream_ptr)) {
       MS_EXCEPTION(DeviceProcessError) << "Sync stream error!";

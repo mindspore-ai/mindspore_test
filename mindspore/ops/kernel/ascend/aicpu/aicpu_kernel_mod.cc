@@ -28,9 +28,9 @@
 #include "op_def/lite_op_name.h"
 #include "kernel/ascend/aicpu/aicpu_util.h"
 #include "kernel/ascend/aicpu/aicpu_proto_util.h"
+#include "kernel/ascend/acl_ir/op_api_util.h"
 #include "plugin/device/ascend/hal/device/ascend_data_queue.h"
 #include "utils/ms_context.h"
-#include "runtime/device/kernel_runtime.h"
 #include "runtime/pynative/op_runtime_info.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "plugin/res_manager/ascend/mem_manager/ascend_memory_manager.h"
@@ -340,7 +340,7 @@ bool AicpuOpKernelMod::Launch(const std::vector<KernelTensor *> &inputs, const s
     // Skip reduce if axis is a empty Tensor (shape = 0)
     MS_LOG(INFO) << "For AICPU ,The node " << node_scope_name_ << " Need Skip.";
     // cppcheck-suppress unreadVariable
-    auto lock = device::KernelRuntime::LockRuntime(stream_ptr);
+    auto lock = device::ascend::AclUtil::LockRuntime(stream_ptr);
     aclError status =
       CALL_ASCEND_API(aclrtMemcpyAsync, outputs[0]->device_ptr(), inputs[0]->size(), inputs[0]->device_ptr(),
                       inputs[0]->size(), ACL_MEMCPY_DEVICE_TO_DEVICE, stream_ptr);
@@ -366,7 +366,7 @@ bool AicpuOpKernelMod::Launch(const std::vector<KernelTensor *> &inputs, const s
   // copy extinfo to device
   if (ext_info_handler_ != nullptr) {
     // cppcheck-suppress unreadVariable
-    auto lock = device::KernelRuntime::LockRuntime(stream_ptr);
+    auto lock = device::ascend::AclUtil::LockRuntime(stream_ptr);
     auto ret = CALL_ASCEND_API(aclrtMemcpyAsync, ext_info_addr_dev_, ext_info_size_, ext_info_handler_->GetExtInfo(),
                                ext_info_handler_->GetExtInfoLen(), ACL_MEMCPY_HOST_TO_DEVICE, stream_ptr);
     if (ret != ACL_SUCCESS) {
@@ -396,7 +396,7 @@ bool AicpuOpKernelMod::Launch(const std::vector<KernelTensor *> &inputs, const s
   MS_LOG(DEBUG) << "Aicpu launch, node_so_:" << node_so_ << ", node name:" << node_name_
                 << ", args_size:" << args_.length();
   // cppcheck-suppress unreadVariable
-  auto lock = device::KernelRuntime::LockRuntime(stream_ptr);
+  auto lock = device::ascend::AclUtil::LockRuntime(stream_ptr);
   rtArgsEx_t argsInfo = {};
   argsInfo.args = args_.data();
   argsInfo.argsSize = static_cast<uint32_t>(args_.length());
@@ -446,7 +446,7 @@ void AicpuOpKernelMod::UpdateOutputShapeAndSize(const std::vector<KernelTensor *
   }
 
   // cppcheck-suppress unreadVariable
-  auto lock = device::KernelRuntime::LockRuntime(stream_);
+  auto lock = evice::ascend::AclUtil::LockRuntime(stream_);
   auto ret = CALL_ASCEND_API(aclrtMemcpyAsync, ext_info_handler_->GetExtInfo(), ext_info_handler_->GetExtInfoLen(),
                              ext_info_addr_dev_, ext_info_size_, ACL_MEMCPY_DEVICE_TO_HOST, stream_);
   if (ret != ACL_SUCCESS) {

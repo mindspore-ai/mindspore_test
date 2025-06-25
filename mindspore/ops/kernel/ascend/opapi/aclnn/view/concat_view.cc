@@ -17,7 +17,6 @@
 #include <memory>
 #include <functional>
 #include "kernel/ascend/opapi/aclnn/view/view_utils.h"
-#include "runtime/device/kernel_runtime.h"
 
 namespace mindspore {
 namespace kernel {

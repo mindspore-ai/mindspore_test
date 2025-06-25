@@ -19,7 +19,6 @@
 
 #include <memory>
 #include <string>
-#include "runtime/device/kernel_runtime.h"
 
 namespace mindspore {
 namespace device {

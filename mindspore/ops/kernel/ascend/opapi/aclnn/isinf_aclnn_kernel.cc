@@ -20,7 +20,6 @@
 #include <limits>
 
 #include "ir/tensor.h"
-#include "runtime/device/kernel_runtime.h"
 #include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "mindspore/core/include/base/bfloat16.h"
 #include "mindspore/core/include/base/float16.h"

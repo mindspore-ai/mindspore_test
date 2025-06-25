@@ -19,7 +19,6 @@
 #include "include/common/utils/utils.h"
 #include "mindspore/ops/ops_utils/op_constants.h"
 #include "ir/tensor.h"
-#include "runtime/device/kernel_runtime.h"
 #include "kernel/ascend/acl_ir/op_api_util.h"
 namespace mindspore {
 namespace kernel {

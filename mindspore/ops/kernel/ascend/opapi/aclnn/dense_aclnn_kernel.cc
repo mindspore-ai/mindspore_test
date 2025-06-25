@@ -18,7 +18,6 @@
 #include <memory>
 #include <functional>
 #include "ir/tensor.h"
-#include "runtime/device/kernel_runtime.h"
 #include "mindspore/ops/view/transpose_ext_view_strides_calc.h"
 #include "kernel/ascend/opapi/aclnn/view/view_utils.h"
 

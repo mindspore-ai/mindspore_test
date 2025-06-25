@@ -18,7 +18,6 @@
 #include "common/kernel_callback.h"
 #include "include/backend/distributed/init.h"
 #include "runtime/device/device_address_utils.h"
-#include "runtime/device/kernel_runtime_manager.h"
 #include "runtime/hardware/device_context.h"
 #include "runtime/graph_scheduler/actor/kernel_async_infer_actor.h"
 #include "runtime/graph_scheduler/actor/kernel_async_resize_actor.h"

@@ -18,7 +18,6 @@
 #include "ir/tensor.h"
 #include "ir/anf.h"
 #include "ir/param_info.h"
-#include "runtime/device/kernel_runtime.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "utils/ms_utils.h"
