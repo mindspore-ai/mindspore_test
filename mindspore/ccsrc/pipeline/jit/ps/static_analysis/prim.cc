@@ -925,19 +925,13 @@ AbstractBasePtr UpdateViewOpsAbstract(const AbstractBasePtr &res, const Abstract
 AbstractBasePtr PrimitiveFunctionEvaluator::ProcessViewInplaceAbstract(const AbstractBasePtrList &args,
                                                                        const AbstractBasePtr &res) {
   if (graph_view_prim()) {
-    static const bool close_view_op = (common::GetEnv("MS_DEV_JIT_ENABLE_VIEW_OP") == "0");
-    if (close_view_op) {
-      prim_func_->set_attr(GRAPH_FLAG_SIDE_EFFECT_MEM, MakeValue(false));
+    auto ge_mode = common::AnfAlgo::IsBackendGe();
+    if (ge_mode) {
+      MS_LOG(WARNING) << "The view feature is not currently supported in GE mode. "
+                      << "The code utilizes the View operator: " << prim_func_->ToString();
     } else {
-      auto ge_mode = common::AnfAlgo::IsBackendGe();
-      if (ge_mode) {
-        prim_func_->set_attr(GRAPH_FLAG_SIDE_EFFECT_MEM, MakeValue(false));
-        MS_LOG(WARNING) << "The view feature is not currently supported in GE mode. "
-                        << "The code utilizes the View operator: " << prim_func_->ToString();
-      } else {
-        MS_LOG(DEBUG) << "View prim infer.";
-        return UpdateViewOpsAbstract(res, args);
-      }
+      MS_LOG(DEBUG) << "View prim infer.";
+      return UpdateViewOpsAbstract(res, args);
     }
   }
   const auto &rw_write_indexes = rw_write_input_indexes();

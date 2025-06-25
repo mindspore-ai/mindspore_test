@@ -137,10 +137,6 @@ void ProcessReplacedNodes(const FuncGraphPtr &graph, const mindspore::HashMap<An
 }
 
 bool GraphViewReplacePass::Run(const FuncGraphPtr &func_graph) {
-  if (common::GetEnv("MS_DEV_JIT_ENABLE_VIEW_OP") == "0") {
-    return true;
-  }
-
   MS_EXCEPTION_IF_NULL(func_graph);
   std::vector<AnfNodePtr> node_list = TopoSort(func_graph->get_return());
   auto manager = func_graph->manager();
@@ -164,7 +160,7 @@ bool GraphViewReplacePass::Run(const FuncGraphPtr &func_graph) {
     CreateViewNode(kernel_name, node, manager, func_graph, &replaced_nodes);
   }
   ProcessReplacedNodes(func_graph, replaced_nodes);
-  return True;
+  return true;
 }
 }  // namespace opt
 }  // namespace mindspore

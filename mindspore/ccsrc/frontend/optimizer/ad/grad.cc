@@ -373,7 +373,7 @@ bool NeedCheckInvalidViewInplaceDout(const std::string &scene) {
 }
 
 bool ChooseNewViewInplaceScheme(const FuncGraphPtr &func_graph, const opt::OptimizerPtr &optimizer) {
-  std::string view_inplace_grad_config = common::GetCompileConfig("ENABLE_VIEW_INPLACE_GRAD_NEW_METHOD");
+  std::string view_inplace_grad_config = common::GetCompileConfig("ENABLE_VIEW_INPLACE_GRAD_SCHEME_CHOOSE");
   MS_LOG(INFO) << "This view_inplace_grad_config is: " << view_inplace_grad_config;
   if (view_inplace_grad_config == "2") {
     // Choose new view inplace grad scheme.
@@ -390,7 +390,7 @@ bool ChooseNewViewInplaceScheme(const FuncGraphPtr &func_graph, const opt::Optim
     MS_LOG(INFO) << "Exist control_flow scene: " << is_control_flow_scene;
     return !is_control_flow_scene;
   }
-  MS_LOG(EXCEPTION) << "The internal switch ENABLE_VIEW_INPLACE_GRAD_NEW_METHOD only supports "
+  MS_LOG(EXCEPTION) << "The internal switch ENABLE_VIEW_INPLACE_GRAD_SCHEME_CHOOSE only supports "
                        "input 0, 1, 2, but the value obtained is: "
                     << view_inplace_grad_config;
 }

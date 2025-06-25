@@ -363,7 +363,7 @@ Value Range:
 JIT_ENABLE_AUGASSIGN_INPLACE = '0'
 
 """
-Name: ENABLE_VIEW_INPLACE_GRAD_NEW_METHOD
+Name: ENABLE_VIEW_INPLACE_GRAD_SCHEME_CHOOSE
 Function: Whether enable new method for view inplace grad
 Value Range:
     0: Choose old or new scheme based on specific control flow scenarios.
@@ -371,7 +371,7 @@ Value Range:
     2: Choose new scheme.
     Default: 0
 """
-ENABLE_VIEW_INPLACE_GRAD_NEW_METHOD = '0'
+ENABLE_VIEW_INPLACE_GRAD_SCHEME_CHOOSE = '0'
 
 __all__ = [
     "COMPILE_PROFILE",
@@ -412,5 +412,5 @@ __all__ = [
     "CHECK_PASS_NODE_SCOPE",
     "CHECK_INVALID_VIEW_INPLACE_DOUT_LEVEL",
     "JIT_ENABLE_AUGASSIGN_INPLACE",
-    "ENABLE_VIEW_INPLACE_GRAD_NEW_METHOD"
+    "ENABLE_VIEW_INPLACE_GRAD_SCHEME_CHOOSE"
 ]
