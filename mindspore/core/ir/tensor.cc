@@ -588,7 +588,6 @@ DeviceSyncPtr Tensor::CallContiguousCallback() const {
 
 void Tensor::data_sync(bool need_wait, bool inpalce, bool sync_on_demand) const {
   if (need_wait) {
-    device_sync_ = device_address();
     ExecuteLazyTask();
   }
 
