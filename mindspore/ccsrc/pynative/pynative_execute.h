@@ -93,6 +93,7 @@ class PYNATIVE_EXPORT PyNativeExecutor : public std::enable_shared_from_this<PyN
   void ChildAfterFork();
   py::object RunSliceOpStub(const std::vector<ValuePtr> &input_v,
                             const std::vector<SliceOpInfoPtr> &slice_op_infos) const;
+  void QueueBackwardFinalCallback(const py::object &callback) const;
 
  private:
   PyNativeExecutor() = default;
