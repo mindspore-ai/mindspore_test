@@ -114,10 +114,7 @@ void MsContext::SetDeviceId() {
   }
 }
 
-void MsContext::Refresh() {
-  RefreshExecutionMode();
-  RefreshMemoryOffload();
-}
+void MsContext::Refresh() { RefreshExecutionMode(); }
 
 void MsContext::RefreshExecutionMode() {
   const std::string &target = get_param<std::string>(MS_CTX_DEVICE_TARGET);
@@ -128,31 +125,6 @@ void MsContext::RefreshExecutionMode() {
       set_param<bool>(MS_CTX_ENABLE_TASK_SINK, false);
     }
   }
-}
-
-void MsContext::RefreshMemoryOffload() {
-  const bool enable_mem_offload = get_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD);
-  if (!enable_mem_offload) {
-    return;
-  }
-  const std::string &target = get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  if (target == kCPUDevice) {
-    MS_LOG(WARNING) << "Memory offload is not available on CPU device.";
-    set_param(MS_CTX_ENABLE_MEM_OFFLOAD, false);
-    return;
-  }
-  if (target == kAscendDevice && get_param<int>(MS_CTX_EXECUTION_MODE) != kPynativeMode && !IsKByKExecutorMode()) {
-    MS_LOG(WARNING) << "Run graph mode with kernel by kernel because memory offload is ON.";
-    set_param<bool>(MS_CTX_ENABLE_TASK_SINK, false);
-    return;
-  }
-  if (get_param<int>(MS_CTX_MEMORY_OPTIMIZE_LEVEL) == kOptimizeO1) {
-    MS_LOG(WARNING) << "Memory offload is not available when memory_optimize_level is set to O1.";
-    set_param(MS_CTX_ENABLE_MEM_OFFLOAD, false);
-    return;
-  }
-  MS_LOG(INFO) << "Set memory pool block size to max device memory size for memory offload.";
-  set_param_inner(MS_CTX_MEMPOOL_BLOCK_SIZE, get_param<float>(MS_CTX_MAX_DEVICE_MEMORY));
 }
 
 bool MsContext::set_backend_policy(const std::string &policy) {
@@ -576,11 +548,6 @@ bool MsContext::IsKByKExecutorMode() {
     return false;
   }
 
-  if (get_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD)) {
-    PrintJitLevelAndExecMode(is_jit_level_changed, jit_level, "enable kernelbykernel executor by mem offload.");
-    return true;
-  }
-
   if (mode == kPynativeMode) {
     if (jit_level == kAttrJitLevelO2) {
       PrintJitLevelAndExecMode(is_jit_level_changed, jit_level, "enable graph_sink executor in the PYNATIVE mode.");
@@ -633,7 +600,6 @@ void MsContext::InitBoolTypeDefaultValue() {
   set_param<bool>(MS_CTX_ENABLE_MINDRT, false);
   set_param<bool>(MS_CTX_ENABLE_PYNATIVE_SYNCHRONIZE, false);
   set_param<bool>(MS_CTX_ENABLE_PYNATIVE_OP_GRAPH_CACHE, true);
-  set_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD, false);
   set_param<bool>(MS_CTX_ENABLE_PROF_MEM, false);
   set_param<bool>(MS_CTX_ENABLE_RECOVERY, false);
   set_param<bool>(MS_CTX_ENABLE_GE_HETEROGENOUS, false);

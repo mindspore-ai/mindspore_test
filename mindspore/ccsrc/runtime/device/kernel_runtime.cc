@@ -1596,14 +1596,6 @@ bool KernelRuntime::LaunchKernelMod(const session::KernelGraph &graph, bool mock
   MS_EXCEPTION_IF_NULL(context_ptr);
   std::shared_ptr<MemScheduler> mem_scheduler = nullptr;
 
-  if (AnfUtils::UseMemScheduler()) {
-    mem_scheduler = mem_scheduler_manager_.GetOrCreateMemScheduler(graph.graph_id());
-    MS_EXCEPTION_IF_NULL(mem_scheduler);
-    mem_scheduler->Reset();
-    mem_scheduler->Update();
-    InitGraphInputTensors(mem_scheduler, graph);
-  }
-
   const auto &kernels = graph.execution_order();
   std::map<AnfNodePtr, std::vector<std::function<void()>>> kernel_pre_run_events;
   std::map<AnfNodePtr, std::vector<std::function<void()>>> kernel_post_run_events;
@@ -1668,9 +1660,6 @@ bool KernelRuntime::LaunchKernelMod(const session::KernelGraph &graph, bool mock
     }
     LaunchKernelEvent(kernel_post_run_events, kernels[i]);
   }
-  if (AnfUtils::UseMemScheduler() && !mock) {
-    SyncParameter(graph, mem_scheduler);
-  }
   return true;
 }
 
@@ -1712,9 +1701,6 @@ void KernelRuntime::SyncParameter(const session::KernelGraph &graph,
 void KernelRuntime::UseMemSchedulerIfNeeded(const session::KernelGraph &graph) {
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
-  if (!AnfUtils::UseMemScheduler()) {
-    return;
-  }
   auto mem_scheduler = mem_scheduler_manager_.GetOrCreateMemScheduler(graph.graph_id());
   MS_EXCEPTION_IF_NULL(mem_scheduler);
   if (mem_scheduler->optimized()) {

@@ -69,12 +69,8 @@ void GPUResManager::Initialize() {
   MS_EXCEPTION_IF_NULL(mem_manager_);
   mem_manager_->Initialize();
 
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  if (ms_context->get_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD)) {
-    swap_manager_ = std::make_shared<SwapManager>(GPUDeviceManager::GetInstance().default_stream_id(),
-                                                  &GPUMemoryAllocator::GetInstance(), &GPUPinMemPool::GetInstance());
-  }
+  swap_manager_ = std::make_shared<SwapManager>(GPUDeviceManager::GetInstance().default_stream_id(),
+                                                &GPUMemoryAllocator::GetInstance(), &GPUPinMemPool::GetInstance());
 
   // Initialize NCCL.
   if (distributed::collective::CollectiveManager::instance()->initialized()) {

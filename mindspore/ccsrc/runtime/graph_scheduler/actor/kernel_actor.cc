@@ -933,26 +933,6 @@ void KernelActor::TraceDynamicMemory() {
 }
 
 void KernelActor::SendMemoryAllocReq(OpContext<KernelTensor> *const context) {
-  if (device_contexts_[0]->device_res_manager_->swap_manager() != nullptr) {
-    MS_EXCEPTION_IF_NULL(kernel_info_);
-    for (const auto &out_in : kernel_info_->out_in_ref_map()) {
-      const auto &input_kernel_tensor = input_kernel_tensors_[out_in.second];
-      MS_EXCEPTION_IF_NULL(input_kernel_tensor);
-      const auto &input_device_tensor = input_kernel_tensor->device_address();
-      MS_EXCEPTION_IF_NULL(input_device_tensor);
-      const auto &ptr = input_device_tensor->GetValidPtr(kDefaultStreamIndex);
-      MS_EXCEPTION_IF_NULL(output_kernel_tensors_[out_in.first]);
-      const auto &output_device_tensor = output_kernel_tensors_[out_in.first]->device_address();
-      if (ptr == nullptr || output_device_tensor == nullptr || output_device_tensor->GetPtr() != nullptr) {
-        continue;
-      }
-      // Pointer in DeviceAddress which is reference output may not be updated to the same as the reference input
-      // which is swapped out.
-      MS_LOG(DEBUG) << "Set device ptr of " << out_in.first << "th ref output the same as input " << out_in.second
-                    << ": " << ptr;
-      output_device_tensor->set_ptr(ptr);
-    }
-  }
   MemoryManagerActor::GetInstance()->AllocateMemory(&memory_alloc_list_, device_contexts_[0], context, GetAID());
 
   if (ActorDispatcher::enable_trace_dynamic_memory()) {

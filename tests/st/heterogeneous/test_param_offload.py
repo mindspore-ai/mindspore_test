@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 import numpy as np
+import os
 
 import mindspore as ms
 import mindspore.context as context
@@ -64,9 +65,9 @@ def test_param_offload():
     Description: Test memory offload for specific parameter
     Expectation: Train TestNet success
     '''
+    os.environ['MS_ALLOC_CONF'] = "enable_vmm:true"
     ms.set_seed(1)
     context.set_context(jit_level='O0')
-    context.set_context(memory_offload='ON')
     context.set_context(max_device_memory='8.5GB')
 
     epoch = 8
@@ -88,6 +89,7 @@ def test_param_offload():
         loss = train_network(data, label)
         losses.append(loss)
     assert losses[-1].asnumpy() <= 2.28684
+    del os.environ['MS_ALLOC_CONF']
 
 
 @arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="onecard", essential_mark="essential")
@@ -103,7 +105,7 @@ def test_param_offload_between_nets():
     epoch = 4
     batch_size = 32
 
-    net = TestNet()
+    net = TestNet(offload=False)
     optimizer = nn.SGD(net.trainable_params(), 1e-2)
     loss_fn = nn.CrossEntropyLoss()
     net_with_loss = WithLossCell(net, loss_fn)

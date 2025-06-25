@@ -64,7 +64,6 @@ void IdentityCustomizeCallWithoutContigous(const std::shared_ptr<OpRunner> &op, 
     PyBoostUtils::LaunchKernel(op->primitive(), op->device_context(), input_address_info, output_address_info,
                                op->stream_id());
     auto output_address = std::dynamic_pointer_cast<device::DeviceAddress>(outputs[0]->device_address());
-    output_address->SetStorageInfo(input_x_address->GetStorageInfo());
     output_address->set_ptr(launch_device_address->GetMutablePtr());
     MS_LOG(DEBUG) << "Run device task Identity end";
   }));

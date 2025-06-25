@@ -1045,9 +1045,6 @@ void SessionBasic::UpdateOutputTensors(const VectorRef *outputs,
                                        std::map<DeviceAddressPtr, DeviceAddressPtr> *) {
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
-  if (AnfUtils::UseMemScheduler()) {
-    return;
-  }
   MS_EXCEPTION_IF_NULL(outputs);
   for (const auto &item : *outputs) {
     if (utils::isa<VectorRefPtr>(item)) {
