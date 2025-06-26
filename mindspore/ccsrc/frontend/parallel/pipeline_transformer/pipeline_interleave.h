@@ -47,7 +47,7 @@ class PipelineInterleave {
   void LabelMicroBatch();
   void ParameterColoring();
   void ElimParameter();
-  bool HasNoUpdateParameter();
+  bool IsNoUpdateParameterStage(const int64_t stage);
 
  private:
   void CreateSendReceiveGroup();
