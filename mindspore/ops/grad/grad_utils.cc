@@ -275,21 +275,6 @@ NodePtr StaticBinopGradCommon(BpropBuilder *ib, const NodePtr &dx, const ShapeAr
   return reduce_dx;
 }
 
-NodePtr MatMulExtBroadCastGradPart(BpropBuilder *ib, const NodePtr &dx, const ShapeArray &shape,
-                                   const ShapeArray &broadcast_shape, size_t ignore_offset, size_t index) {
-  NodePtr reduce_dx = dx;
-  std::vector<std::vector<int64_t>> bc_axis =
-    BroadcastGradientArgsInferValue(broadcast_shape[0], broadcast_shape[1], ignore_offset);
-  if (!bc_axis[index].empty()) {
-    reduce_dx = ib->SumExt(reduce_dx, ib->Value<ShapeVector>(bc_axis[index]),
-                           ib->Value<bool>(ib->GetRank(reduce_dx) == shape[index].size()));
-  }
-  if (ib->GetRank(reduce_dx) != shape[index].size()) {
-    reduce_dx = ib->Reshape(reduce_dx, shape[index]);
-  }
-  return reduce_dx;
-}
-
 NodePtrList BinopGradCommon(BpropBuilder *ib, const NodePtr &x, const NodePtr &y, const NodePtr &dx, const NodePtr &dy,
                             size_t shift) {
   // Common grad definition for binary operations with shift.
@@ -318,24 +303,6 @@ NodePtrList BinopGradCommon(BpropBuilder *ib, const NodePtr &x, const NodePtr &y
   }
   if (is_x_shape_dynamic || is_y_shape_dynamic) {
     return DynBinopGradCommon(ib, x, y, dx, dy, shift);
-  }
-  return reduce;
-}
-
-NodePtrList MatMulExtBroadCastGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr &y, const NodePtr &dx,
-                                   const NodePtr &dy, size_t ignore_offset) {
-  NodePtrList inputs{x, y};
-  ShapeArray shape{ib->GetShape(inputs[i0]), ib->GetShape(inputs[i1])};
-  NodePtrList reduce = {dx, dy};
-  ShapeArray broadcast_shape(i2);
-  broadcast_shape[0] = shape[0];
-  broadcast_shape[1] = shape[1];
-
-  if (dx != nullptr) {
-    reduce[i0] = MatMulExtBroadCastGradPart(ib, reduce[i0], shape, broadcast_shape, ignore_offset, i0);
-  }
-  if (dy != nullptr) {
-    reduce[i1] = MatMulExtBroadCastGradPart(ib, reduce[i1], shape, broadcast_shape, ignore_offset, i1);
   }
   return reduce;
 }
