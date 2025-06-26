@@ -150,6 +150,7 @@ class LazyFusionKernelAscend : public dvm::Kernel {
   }
 
   void ClearKernel() {
+    cross_stream_addrs_.clear();
     EagerClear();
     g_lazy_fusion_manager.FreeKernel(this);
   }
