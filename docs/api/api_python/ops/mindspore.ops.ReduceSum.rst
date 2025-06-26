@@ -25,11 +25,11 @@ mindspore.ops.ReduceSum
 
         - 如果 `axis` 为 ``()`` ，且 `skip_mode` 为 ``True`` ，则不进行ReduceSum运算，输出Tensor等于输入Tensor。
 
-        - 如果 `axis` 为int，取值为2，并且 `keep_dims` 为 ``False`` ，则输出的shape为 :math:`(x_1, x_3, ..., x_R)` 。
+        - 如果 `axis` 为int，取值为2，并且 `keep_dims` 为 ``False`` ，则输出的shape为 :math:`(x_0, x_1, x_3, ..., x_R)` 。
 
-        - 如果 `axis` 为tuple(int)或list(int)，取值为(2, 3)，并且 `keep_dims` 为 ``False`` ，则输出的shape为 :math:`(x_1, x_4, ..., x_R)` 。
+        - 如果 `axis` 为tuple(int)或list(int)，取值为(2, 3)，并且 `keep_dims` 为 ``False`` ，则输出的shape为 :math:`(x_0, x_1, x_4, ..., x_R)` 。
 
-        - 如果 `axis` 为一维Tensor，取值为[2, 3]，并且 `keep_dims` 为 ``False`` ，则输出Tensor的shape为 :math:`(x_1, x_4, ..., x_R)` 。
+        - 如果 `axis` 为一维Tensor，取值为[2, 3]，并且 `keep_dims` 为 ``False`` ，则输出Tensor的shape为 :math:`(x_0, x_1, x_4, ..., x_R)` 。
 
     异常：
         - **TypeError** - `keep_dims` 不是bool。
