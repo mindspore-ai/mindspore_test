@@ -13,7 +13,6 @@
 # limitations under the License.
 # ============================================================================
 from tests.mark_utils import arg_mark
-import pytest
 import torch
 import numpy as np
 
@@ -104,7 +103,7 @@ def _count_unequal_element(data_expected, data_me, rtol, atol):
             format(data_expected[greater], data_me[greater], error[greater])
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_pynative_precision():
     """
     Feature: Test bidense ops precision
