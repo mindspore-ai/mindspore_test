@@ -127,10 +127,6 @@ void ApplyAdamWithAmsgradV2CpuKernelMod::LaunchApplyAdamWithAmsgradV2(const std:
   T ONE = static_cast<T>(1.0);
   for (int64_t b = 0; b < batch_size_; b++) {
     // multithreading
-    if (std::equal_to<T>()(beta1_power[b], ONE)) {
-      MS_LOG(EXCEPTION) << "For '" << kernel_name_
-                        << "', 'beta1_power' must not be 1, but got 'beta1_power': " << beta1_power[b];
-    }
     T new_lr = lr[b] * static_cast<T>(std::sqrt(static_cast<double>(ONE - beta2_power[b]))) / (ONE - beta1_power[b]);
     auto task = [this, &var, &m, &v, &vhat, &gradient, new_lr, &beta1, &beta2, &epsilon](size_t start, size_t end) {
       T one = static_cast<T>(1.0);

@@ -40,7 +40,7 @@ std::tuple<tensor::TensorPtr, tensor::TensorPtr> MoeTokenPermuteAscendCustomize(
   // Async
   PyBoostUtils::DispatchRun(
     std::make_shared<runtime::PyBoostDeviceTask>([op, tokens, indices, num_out_tokens_imm, padded_mode_imm]() {
-      MS_LOG(DEBUG) << "Run device task MoeTokenPermute end";
+      MS_LOG(DEBUG) << "Run device task MoeTokenPermute start";
       auto device_context = op->device_context();
       const auto &outputs = op->outputs();
       // Malloc for input tensors

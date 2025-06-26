@@ -74,12 +74,12 @@ def test_moe_token_permute(mode):
                                        [0.000000, 0.000000, 0.000000],
                                        [0.000000, 0.000000, 0.000000]]).astype(np.float32)
     expect_sorted_indices = np.array([0, 6, 7, 5, 3, 1, 2, 4]).astype(np.float32)
-    np.allclose(permuted_tokens.float().asnumpy(), expect_permuted_tokens, 0.004, 0.004)
-    np.allclose(sorted_indices.float().asnumpy(), expect_sorted_indices, 0.004, 0.004)
+    assert np.allclose(permuted_tokens.float().asnumpy(), expect_permuted_tokens, 0.004, 0.004)
+    assert np.allclose(sorted_indices.float().asnumpy(), expect_sorted_indices, 0.004, 0.004)
 
     permuted_grad = permuted_backward_func(tokens, indices, num_out_tokens)
-    expect_permuted_grad = (np.ones((8, 3)) * 0.5).astype(np.float32)
-    np.allclose(permuted_grad[0].float().asnumpy(), expect_permuted_grad, 0.004, 0.004)
+    expect_permuted_grad = (np.ones((8, 3))).astype(np.float32)
+    assert np.allclose(permuted_grad[0].float().asnumpy(), expect_permuted_grad, 0.004, 0.004)
 
 
 @arg_mark(
