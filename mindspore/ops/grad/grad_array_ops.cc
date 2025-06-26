@@ -537,7 +537,10 @@ NodePtrList BinopGather(BpropBuilder *ib) {
   if (out_shp.empty()) {
     dout = ib->ExpandDims(dout, -1);
   }
-  int64_t axis_v = CheckRange(GetIntValue(axis), SizeToLong(x_shp.size()));
+  int64_t axis_v = GetIntValue(axis);
+  if (!IsDynamicRank(x_shp)) {
+    axis_v = CheckRange(axis_v, SizeToLong(x_shp.size()));
+  }
   auto batch_dims = GetIntValue(batch_dims_ptr);
   auto ind_shp_size = SizeToLong(ind_shp.size());
   while (batch_dims < 0) {
@@ -974,7 +977,10 @@ REG_BPROP_BUILDER("SparseGatherV2").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(i
   auto axis = ib->GetInput(i2);
   auto dout = ib->GetInput(i4);
   auto x_shp = ib->GetShape(x);
-  auto axis_int = CheckRange(GetIntList(axis->BuildValue())[0], SizeToLong(x_shp.size()));
+  auto axis_int = GetIntList(axis->BuildValue())[0];
+  if (!IsDynamicRank(x_shp)) {
+    axis_int = CheckRange(axis_int, SizeToLong(x_shp.size()));
+  }
   if (axis_int == 0) {
     ShapeVector values_shape{ib->GetSize(indices)};
     if (x_shp.size() > 1) {
@@ -2563,7 +2569,10 @@ REG_BPROP_BUILDER("SelectView").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
   MS_EXCEPTION_IF_NULL(axis->abstract());
   auto axis_tmp = axis->BuildValue();
   MS_EXCEPTION_IF_NULL(axis_tmp);
-  axis_v = CheckRange(GetIntValue(axis), SizeToLong(x_shp.size()));
+  axis_v = GetIntValue(axis);
+  if (!IsDynamicRank(x_shp)) {
+    axis_v = CheckRange(axis_v, SizeToLong(x_shp.size()));
+  }
   int64_t batch_dims = 0;
 
   if (out_shp.empty()) {
