@@ -558,7 +558,10 @@ def binary_cross_entropy(input, target, weight=None, reduction='mean'):
         \end{cases}
 
     .. warning::
-        - The value of `input` must range from `0` to `l`.
+        The value of `input` must range from `0` to `l`.
+
+    .. note::
+        Currently, when the platform is Ascend, all gradient calculations are performed on NPU.
 
     Args:
         input (Tensor): The predictive value whose data type must be float16 or float32.
