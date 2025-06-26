@@ -371,8 +371,10 @@ class MindDataPiplineSummaryViewer(BaseViewer):
         for op in cpu_op_info:
             if not op or op["op_id"] == -1:
                 continue
-            dict_opid_cpuutil[op["op_id"]] = [op_sys + op_usr for op_sys, op_usr in
-                                              zip(op["metrics"]["sys_utilization"], op["metrics"]["user_utilization"])]
+            cpu_utilization = []
+            for op_sys, op_usr in zip(op["metrics"]["sys_utilization"], op["metrics"]["user_utilization"]):
+                cpu_utilization.append(op_sys + op_usr)
+            dict_opid_cpuutil[op["op_id"]] = cpu_utilization
 
         # Initialize oplist_avg_cpu_pct with -1 for each pipeline op, since
         # CPU utilization data may not have information for each pipeline op
