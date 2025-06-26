@@ -1015,6 +1015,7 @@ class AdamWeightDecay(Optimizer):
     def construct(self, gradients):
         weight_decay = self.get_weight_decay()
         lr = self.get_lr()
+        self.assignadd(self.global_step, self.global_step_increase_tensor)
         if self.is_group:
             if self.is_group_lr:
                 optim_result = self.hyper_map(F.partial(_adam_opt, self.beta1, self.beta2, self.eps),

@@ -1088,7 +1088,7 @@ bool AscendResManager::CopyHostToDeviceForDiffType(const DeviceAddress *dst_devi
     const trans::TypeIdArgs type_args{src_device_address->GetDevicePtr(), shape_size, src_device_address->type_id(),
                                       dst_device_address->type_id(), src_device_address->GetSize()};
     if (!trans::TransDataType(type_args, host_tmp.data())) {
-      MS_LOG(ERROR) << "Trans data type failed for device address:" << dst_device_address;
+      MS_LOG(ERROR) << "Trans data type failed for device address:" << dst_device_address->ToString();
       return false;
     }
   }
@@ -1124,7 +1124,7 @@ bool AscendResManager::AsyncHostToDevice(const DeviceSyncPtr &dst_device_sync, c
 
   // Check format.
   static const std::set<std::string> basic_format = {kOpFormat_NCHW, kOpFormat_DEFAULT, kOpFormat_NCDHW, kOpFormat_ND};
-  if (basic_format.find(src_device_address->format()) == basic_format.end() &&
+  if (basic_format.find(dst_device_address->format()) == basic_format.end() &&
       src_device_address->format() != dst_device_address->format()) {
     return CopyHostToDeviceForDiffFormat(dst_device_address, src_device_address, stream_id);
   }

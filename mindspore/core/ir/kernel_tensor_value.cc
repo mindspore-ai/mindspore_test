@@ -154,7 +154,8 @@ void KernelTensorValue::SetDataPtr(const void *data_ptr) {
     return;
   }
 
-  MS_LOG(EXCEPTION) << "Can not set data pointer for KernelTensorValue which uses shared pointer to storage data.";
+  MS_LOG(EXCEPTION) << "Can not set data pointer for KernelTensorValue:" << this
+                    << " which uses shared pointer to storage data.";
 }
 
 void KernelTensorValue::Resize(size_t size) {

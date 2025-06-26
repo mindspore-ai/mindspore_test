@@ -2386,7 +2386,8 @@ void ControlNodeScheduler::LinkArrowForRootGraphEntranceActor(const ActorSet *ac
       auto cur_device_tensor = kernel_tensor->device_address().get();
       MS_EXCEPTION_IF_NULL(cur_device_tensor);
       cur_device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
-      cur_graph_parameter_store->SetUserCnt(real_outer_idx, real_inner_idx, SIZE_MAX);
+      cur_graph_parameter_store->SetUserCnt(real_outer_idx, real_inner_idx,
+                                            (common::AnfAlgo::HasAbstractRef(formal_parameter.first) ? SIZE_MAX : 1));
       MS_LOG(DEBUG) << "Set parameter store ref count to max for outer index:" << real_outer_idx
                     << " inner index:" << real_inner_idx;
       const auto parser = graph_compiler_info.control_node_parser_;

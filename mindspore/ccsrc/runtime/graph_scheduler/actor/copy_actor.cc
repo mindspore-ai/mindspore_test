@@ -105,6 +105,14 @@ void CopyActor::OnMemoryAllocFinish(OpContext<KernelTensor> *const context) {
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
       << "Copy device tensor from kernel tensor:" << input_kernel_tensors_[0]->ToString() << " to "
       << output_kernel_tensors_[0]->ToString() << " for copy actor:" << GetAID();
+    output_kernel_tensors_[0]->SetType(input_kernel_tensors_[0]->GetType());
+    output_kernel_tensors_[0]->SetShape(input_kernel_tensors_[0]->GetShape());
+    output_kernel_tensors_[0]->set_user_data(input_kernel_tensors_[0]->user_data());
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "Set user data:" << input_kernel_tensors_[0]->user_data()
+                                                 << " shape:" << input_kernel_tensors_[0]->GetShape()->ToString()
+                                                 << " from device tensor:" << input_kernel_tensors_[0]->device_address()
+                                                 << " to:" << output_kernel_tensors_[0]->device_address();
+    output_kernel_tensors_[0]->set_need_sync_user_data(input_kernel_tensors_[0]->need_sync_user_data());
     if (!SyncAllStreamForDeviceAddress(output_kernel_tensors_[0]->device_address()) ||
         !SyncCopy(output_kernel_tensors_[0]->device_address(), input_kernel_tensors_[0]->device_address(),
                   kDefaultStreamIndex)) {
@@ -116,14 +124,6 @@ void CopyActor::OnMemoryAllocFinish(OpContext<KernelTensor> *const context) {
       << "Add device tensor copy store for kernel tensor:" << output_kernel_tensors_[0]->ToString() << " and "
       << input_kernel_tensors_[0]->ToString() << " for copy actor:" << GetAID();
     KernelTensorCopyStore::GetInstance().Insert(output_kernel_tensors_[0].get(), input_kernel_tensors_[0].get());
-    output_kernel_tensors_[0]->SetType(input_kernel_tensors_[0]->GetType());
-    output_kernel_tensors_[0]->SetShape(input_kernel_tensors_[0]->GetShape());
-    output_kernel_tensors_[0]->set_user_data(input_kernel_tensors_[0]->user_data());
-    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "Set user data:" << input_kernel_tensors_[0]->user_data()
-                                                 << " shape:" << input_kernel_tensors_[0]->GetShape()->ToString()
-                                                 << " from device tensor:" << input_kernel_tensors_[0]->device_address()
-                                                 << " to:" << output_kernel_tensors_[0]->device_address();
-    output_kernel_tensors_[0]->set_need_sync_user_data(input_kernel_tensors_[0]->need_sync_user_data());
   }
 
   PostRun(context);

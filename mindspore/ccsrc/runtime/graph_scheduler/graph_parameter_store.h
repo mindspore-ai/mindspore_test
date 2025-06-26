@@ -104,6 +104,8 @@ class BACKEND_EXPORT GraphParameterStore {
     auto &kernel_tensor_with_info = parameter_kernel_tensors_[outer_idx][inner_idx];
     if (kernel_tensor_with_info.second.first != SIZE_MAX) {
       kernel_tensor_with_info.second.first++;
+      MS_LOG(DEBUG) << "Increase use count:" << kernel_tensor_with_info.second.first
+                    << " for parameter store outer index:" << outer_idx << " inner index:" << inner_idx;
     }
     parameter_used_times_[outer_idx][inner_idx]++;
   }

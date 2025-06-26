@@ -138,6 +138,7 @@ class ControlActor : public MemoryAwareActor {
   // Fetch data. After fetch input, all the input collected is saved here.
   std::vector<OpPartialPtr> input_partials_;
   std::vector<KernelTensorPtr> input_kernel_tensors_;
+  std::vector<KernelTensorPtr> input_parameter_store_kernel_tensors_;
 
   // The lists of device tensors which need free by dynamic ref count, will be cleared at the end of step.
   std::queue<std::vector<KernelTensorPtr>> memory_free_lists_;
