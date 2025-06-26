@@ -21,7 +21,10 @@ mindspore.mint.nn.functional.binary_cross_entropy
         \end{cases}
 
     .. warning::
-        - `input` 的值必须要在0-1范围内。
+        `input` 的值必须要在0-1范围内。
+
+    .. note::
+        目前，当平台为Ascend时，梯度计算全部在NPU上执行。
 
     参数：
         - **input** (Tensor) - 输入预测值，其数据类型为float16或float32。
