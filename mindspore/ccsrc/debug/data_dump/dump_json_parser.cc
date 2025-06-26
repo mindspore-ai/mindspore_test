@@ -1144,41 +1144,6 @@ void DumpJsonParser::GetCellDumpFlag(const session::KernelGraph &kernel_graph) {
 void DumpJsonParser::UpdateNeedDumpKernels(const session::KernelGraph &kernel_graph) {
   MS_VLOG(VL_DUMP) << "Get kernel dump flag";
   GetCellDumpFlag(kernel_graph);
-
-  if (!async_dump_enabled_) {
-    return;
-  }
-
-  MS_VLOG(VL_DUMP) << "Update async dump kernel list for hccl";
-  for (const auto &kernel : kernel_graph.execution_order()) {
-    MS_EXCEPTION_IF_NULL(kernel);
-    if (AnfAlgo::GetKernelType(kernel) == HCCL_KERNEL &&
-        DumpJsonParser::GetInstance().NeedDump(GetKernelNodeName(kernel)) &&
-        DumpJsonParser::GetInstance().InputNeedDump()) {
-      auto input_size = common::AnfAlgo::GetInputTensorNum(kernel);
-      for (size_t i = 0; i < input_size; ++i) {
-        auto input_with_index = common::AnfAlgo::GetPrevNodeOutput(kernel, i);
-        auto input = input_with_index.first;
-        MS_EXCEPTION_IF_NULL(input);
-        if (input->isa<CNode>()) {
-          MS_VLOG(VL_DUMP) << "[AsyncDump] Match Hccl Node:" << GetKernelNodeName(kernel)
-                           << " Input:" << GetKernelNodeName(input);
-          hccl_input_kernels_.insert(GetKernelNodeName(input));
-        }
-      }
-    }
-  }
-}
-
-bool DumpJsonParser::IsHCCLKernelInput(const std::string &kernel_name) const {
-  if (hccl_input_kernels_.empty()) {
-    return false;
-  }
-  auto iter = std::find(hccl_input_kernels_.begin(), hccl_input_kernels_.end(), kernel_name);
-  if (iter != hccl_input_kernels_.end()) {
-    return true;
-  }
-  return false;
 }
 
 bool DumpJsonParser::IsDeviceStatHighPrecisionMode() const { return device_stat_precision_mode_ == kHighPrecision; }

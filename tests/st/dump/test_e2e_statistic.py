@@ -20,6 +20,8 @@ import mindspore.context as context
 import tempfile
 import time
 import json
+import hashlib
+import mindspore
 
 from mindspore import Tensor, nn
 from pathlib import Path
@@ -31,12 +33,13 @@ class Net(nn.Cell):
         return x + y
 
 
-def generate_e2edump_json(dump_path, json_file_name, extra_settings_func=None):
+def generate_e2edump_json(dump_path, json_file_name, extra_settings_func=None, assign_dump_path=True):
     current_dir = Path(__file__).parent
     json_path = current_dir / "test_e2e_statistic_config.json"
     with open(json_path, 'r') as file:
         data = json.load(file)
-        data["common_dump_settings"]["path"] = dump_path
+        if assign_dump_path:
+            data["common_dump_settings"]["path"] = dump_path
         if extra_settings_func is not None:
             extra_settings_func(data)
     with open(json_file_name, 'w') as f:
@@ -91,24 +94,26 @@ def get_dumped_stat_list(dump_file_path):
         return stats_list
 
 
-def compare_single_data(x, y, net, dump_path, precision_mode="high"):
+def compare_single_data(x, y, data_len, net, dump_path, precision_mode="high"):
     t_x, t_y = x, y
     t_out = x + y
     if precision_mode == "high":
         t_x, t_y, t_out = t_x.astype(np.float32), t_y.astype(np.float32), t_out.astype(np.float32)
 
-    common_res = {'Op Type': 'Add', 'Data Size': str(x.nbytes), 'Data Type': str(x.dtype), 'Shape': "(3)"}
+    common_res = {'Op Type': 'Add', 'Data Size': str(x.nbytes), 'Data Type': str(x.dtype),
+                  'Shape': "(" + str(data_len) + ")"}
     target_list = []
     for idx, tensor in enumerate([t_x, t_y]):
         target = {**common_res, **{'IO': 'input', 'Slot': str(idx)}}
         target.update({
-            'Max Value': tensor.max(), 'Min Value': tensor.min(),
-            'Avg Value': tensor.mean(), 'L2Norm Value': np.linalg.norm(tensor)
+            'Max Value': format(tensor.max(), '.6g'), 'Min Value': format(tensor.min(), '.6g'),
+            'Avg Value': format(tensor.mean(), '.6g'), 'L2Norm Value': format(np.linalg.norm(tensor), '.6g')
         })
         target_list.append(target)
-    target_output = {**common_res, **{'IO': 'output', 'Slot': '0', 'Max Value': t_out.max(),
-                                      'Min Value': t_out.min(), 'Avg Value': t_out.mean(),
-                                      'L2Norm Value': np.linalg.norm(t_out)}}
+    target_output = {**common_res, **{'IO': 'output', 'Slot': '0', 'Max Value': format(t_out.max(), '.6g'),
+                                      'Min Value': format(t_out.min(), '.6g'),
+                                      'Avg Value': format(t_out.mean(), '.6g'),
+                                      'L2Norm Value': format(np.linalg.norm(t_out), '.6g')}}
     target_list.append(target_output)
     t = net(Tensor(x), Tensor(y))
     print(t)
@@ -117,22 +122,42 @@ def compare_single_data(x, y, net, dump_path, precision_mode="high"):
     assert len(stat_list) == 3
     check_statistic_result(stat_list, target_list)
 
-
-def compare_multi_data(net, dtype, dump_path, precision_mode="high"):
-    test_cases = [
-        (np.array([40000, 40000, 40000], dtype),
-         np.array([40000, 40000, 40000], dtype)),
-        (np.array([1., 2., float('inf')], dtype),
-         np.array([-float("inf"), 2., -10.], dtype)),
-        (np.array([1., 2., 3.], dtype), np.array([2., 2., -10.], dtype)),
-        (np.array([float('inf'), float('inf'), float('inf')], dtype),
-         np.array([float('inf'), float('inf'), float('inf')], dtype)),
-        (np.array([float('-inf'), float('-inf'), float('-inf')], dtype),
-         np.array([float('-inf'), float('-inf'), float('-inf')], dtype)),
+TEST_CASES = [
+        (np.array([40000, 40000, 40000], np.float16),
+         np.array([40000, 40000, 40000], np.float16)),
+        (np.array([1., 2., float('inf')], np.float16),
+         np.array([-float("inf"), 2., -10.], np.float16)),
+        (np.array([1., 2., 3.], np.float16),
+         np.array([2., 2., -10.], np.float16)),
+        (np.array([float('inf'), float('inf'), float('inf')], np.float16),
+         np.array([float('inf'), float('inf'), float('inf')], np.float16)),
+        (np.array([float('-inf'), float('-inf'), float('-inf')], np.float16),
+         np.array([float('-inf'), float('-inf'), float('-inf')], np.float16)),
     ]
-    for i, (x, y) in enumerate(test_cases):
-        compare_single_data(x, y, net, Path(dump_path) / "rank_0" / "Net" / "0" / str(i), precision_mode)
 
+def compare_multi_data(net, dump_path, precision_mode="high"):
+    for i, (x, y) in enumerate(TEST_CASES):
+        compare_single_data(x, y, len(x), net, Path(dump_path) / "rank_0" / "Net" / "0" / str(i), precision_mode)
+
+def cal_md5(value):
+    md5hash = hashlib.md5(value)
+    return md5hash.hexdigest()
+
+def compare_md5_data(net, dump_path):
+    for i, (x, y) in enumerate(TEST_CASES):
+        out = x + y
+        case = (cal_md5(x), cal_md5(y), cal_md5(out))
+        stat_list = get_dumped_stat_list(Path(dump_path) / "rank_0" / "Net" / "0" / str(i))
+        for (data, case_data) in zip(stat_list, case):
+            assert case_data == dict(to_comparable_pairs(data))['MD5']
+
+def compare_massive_data(net, dump_path):
+    data_len = 11000
+    case_data = mindspore.ops.rand((2, data_len), dtype=mindspore.float32)
+    case_data[0][0] = float('inf')
+    case_data[1][0] = float('inf')
+    compare_single_data(case_data[0].asnumpy(), case_data[1].asnumpy(), data_len, net,
+                        Path(dump_path) / "rank_0" / "Net" / "0" / "0")
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_e2e_statistic_async_device_high_precision():
@@ -156,7 +181,7 @@ def test_e2e_statistic_async_device_high_precision():
         try:
             os.environ['MINDSPORE_DUMP_CONFIG'] = dump_config_path
             net = Net()
-            compare_multi_data(net, np.float32, dump_path)
+            compare_multi_data(net, dump_path)
         finally:
             del os.environ['MINDSPORE_DUMP_CONFIG']
 
@@ -184,7 +209,7 @@ def test_e2e_statistic_async_device_low_precision():
         try:
             os.environ['MINDSPORE_DUMP_CONFIG'] = dump_config_path
             net = Net()
-            compare_multi_data(net, np.float16, dump_path, precision_mode="low")
+            compare_multi_data(net, dump_path, precision_mode="low")
         finally:
             del os.environ['MINDSPORE_DUMP_CONFIG']
 
@@ -192,8 +217,8 @@ def test_e2e_statistic_async_device_low_precision():
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_e2e_statistic_sync_device():
     """
-    Feature: kbyk statistic dump support device sync
-    Description: Test kbyk statistic dump on device.
+    Feature: kbyk statistic dump support device sync with assign MS_DIAGNOSTIC_DATA_PATH
+    Description: Test kbyk statistic dump on device with assign MS_DIAGNOSTIC_DATA_PATH.
     Expectation: The statistics result meet the requirement.
     """
     context.set_context(mode=context.GRAPH_MODE, device_target="Ascend", jit_config={"jit_level": "O0"})
@@ -204,6 +229,36 @@ def test_e2e_statistic_sync_device():
 
     with tempfile.TemporaryDirectory() as test_dir:
         path = Path(test_dir)
+        dump_path = str(path / "debug_dump")
+        dump_config_path = str(path / "config.json")
+        generate_e2edump_json(dump_path, dump_config_path, extra_json_settings, False)
+
+        try:
+            os.environ['MINDSPORE_DUMP_CONFIG'] = dump_config_path
+            os.environ['MS_DIAGNOSTIC_DATA_PATH'] = str(path)
+            net = Net()
+            compare_multi_data(net, dump_path)
+        finally:
+            del os.environ['MS_DIAGNOSTIC_DATA_PATH']
+            del os.environ['MINDSPORE_DUMP_CONFIG']
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_e2e_statistic_sync_host():
+    """
+    Feature: kbyk statistic dump support host sync, host also supports md5
+    Description: Test kbyk statistic dump on host.
+    Expectation: The statistics result meet the requirement.
+    """
+    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend", jit_config={"jit_level": "O0"})
+
+    def extra_json_settings(data):
+        data["e2e_dump_settings"]["stat_calc_mode"] = "host"
+        data["e2e_dump_settings"]["enable"] = True
+        data["common_dump_settings"]["statistic_category"].append("md5")
+
+    with tempfile.TemporaryDirectory() as test_dir:
+        path = Path(test_dir)
         dump_path = str(path / "dump_data")
         dump_config_path = str(path / "config.json")
         generate_e2edump_json(dump_path, dump_config_path, extra_json_settings)
@@ -211,16 +266,16 @@ def test_e2e_statistic_sync_device():
         try:
             os.environ['MINDSPORE_DUMP_CONFIG'] = dump_config_path
             net = Net()
-            compare_multi_data(net, np.float32, dump_path)
+            compare_multi_data(net, dump_path)
+            compare_md5_data(net, dump_path)
         finally:
             del os.environ['MINDSPORE_DUMP_CONFIG']
 
-
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
-def test_e2e_statistic_sync_host():
+def test_e2e_statistic_massive_data():
     """
-    Feature: kbyk statistic dump support host sync
-    Description: Test kbyk statistic dump on host.
+    Feature: kbyk statistic dump with massive data
+    Description: Test kbyk statistic dump with massive data.
     Expectation: The statistics result meet the requirement.
     """
     context.set_context(mode=context.GRAPH_MODE, device_target="Ascend", jit_config={"jit_level": "O0"})
@@ -238,6 +293,6 @@ def test_e2e_statistic_sync_host():
         try:
             os.environ['MINDSPORE_DUMP_CONFIG'] = dump_config_path
             net = Net()
-            compare_multi_data(net, np.float16, dump_path)
+            compare_massive_data(net, dump_path)
         finally:
             del os.environ['MINDSPORE_DUMP_CONFIG']
