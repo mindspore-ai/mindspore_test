@@ -455,6 +455,7 @@ bool CopyDataForParameter(const DeviceTensorPtr &dst_device_tensor, const Device
   if (has_h2d_copy != nullptr) {
     *has_h2d_copy = true;
   }
+  // D2H need use sync copy, make sure that cpu ops use ptr after copy finished.
   if (dst_device_tensor->GetDeviceType() == device::DeviceType::kCPU) {
     if (stream_id == SIZE_MAX && src_device_tensor->GetDeviceType() != device::DeviceType::kCPU) {
       stream_id = src_device_tensor->stream_id();
@@ -467,12 +468,22 @@ bool CopyDataForParameter(const DeviceTensorPtr &dst_device_tensor, const Device
     }
     return SyncCopy(dst_device_tensor, src_device_tensor, stream_id);
   }
+  // H2D use async copy.
   if (stream_id == SIZE_MAX) {
     stream_id = dst_device_tensor->stream_id();
   }
   MS_LOG(DEBUG) << "Async copy from device tensor:" << src_device_tensor << " to:" << dst_device_tensor
                 << " by stream id:" << stream_id;
-  return AsyncCopy(dst_device_tensor, src_device_tensor, stream_id);
+  auto ret = AsyncCopy(dst_device_tensor, src_device_tensor, stream_id, false);
+  static const std::string kSyncCopyInput = "sync_copy_input";
+  static bool sync_copy_input = common::IsEnableRuntimeConfig(kSyncCopyInput);
+  if (sync_copy_input) {
+    if (!SyncAllStreamForDeviceAddress(dst_device_tensor)) {
+      MS_LOG(ERROR) << "Failed to sync all stream.";
+      return false;
+    }
+  }
+  return ret;
 }
 
 bool AsyncCopy(const DeviceTensor *dst_device_tensor, const DeviceTensor *src_device_tensor, size_t stream_id) {
@@ -977,31 +988,6 @@ void UpdateDynamicShapeAndSize(tensor::Tensor *input_tensor, const KernelTensorP
   } else {
     MS_LOG(EXCEPTION) << "Can not Update size for 5D format device address";
   }
-}
-
-bool CopyDataFromTensor(const DeviceTensorPtr &device_tensor, tensor::Tensor *tensor, size_t stream_id,
-                        bool *has_h2d_copy) {
-  // judge copy operation only for capture graph.
-  if (has_h2d_copy != nullptr) {
-    *has_h2d_copy = true;
-  }
-  static const std::string kSyncCopyInput = "sync_copy_input";
-  static bool sync_copy_input =
-      common::IsEnableRuntimeConfig(kSyncCopyInput) || runtime::RuntimeConf::GetInstance()->launch_blocking();
-  auto tensor_address = tensor->device_address();
-  auto ret = AsyncCopy(device_tensor, tensor_address, stream_id);
-
-  if (sync_copy_input) {
-    auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-      {device_tensor->device_name(), device_tensor->device_id()});
-    if (!device_context->device_res_manager_->SyncAllStreams()) {
-      MS_LOG(EXCEPTION) << "Synchronize stream failed, device tensor: " << device_tensor->ToString()
-                        << ", tensor size: " << tensor_size << ", tensor type: " << TypeIdToString(tensor->data_type())
-                        << ", tensor format: " << tensor->device_info().host_format_
-                        << ", tensor data ptr: " << tensor->data_ptr() << ", stream id: " << stream_id;
-    }
-  }
-  return ret;
 }
 
 void SyncHostToDeviceFromTensor(size_t outer_index, size_t inner_index, tensor::Tensor *tensor, const AID &from_aid,
