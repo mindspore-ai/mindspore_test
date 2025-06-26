@@ -57,6 +57,7 @@ class BACKEND_EXPORT GraphParameterStore {
     is_tensors_.resize(front_parameter_size, false);
     parameter_used_times_.resize(front_parameter_size);
     parameter_device_names_.resize(front_parameter_size);
+    is_offload_parameter_.resize(front_parameter_size);
   }
 
   void ResizePosition(size_t outer_index, size_t tuple_unfold_length) {
@@ -68,6 +69,7 @@ class BACKEND_EXPORT GraphParameterStore {
     is_dynamic_[outer_index].resize(tuple_unfold_length, false);
     parameter_used_times_[outer_index].resize(tuple_unfold_length, 0);
     parameter_device_names_[outer_index].resize(tuple_unfold_length);
+    is_offload_parameter_[outer_index].resize(tuple_unfold_length, false);
     buffer_size_ += tuple_unfold_length;
   }
 
@@ -199,6 +201,9 @@ class BACKEND_EXPORT GraphParameterStore {
   void SetPositionTensor(size_t outer_index, bool is_tensor);
   bool GetPositionTensor(size_t outer_index);
 
+  void SetOffloaded(size_t outer_index, size_t inner_index, bool is_offload);
+  bool GetOffloaded(size_t outer_index, size_t inner_index);
+
   void Clear();
 
   const std::vector<std::vector<std::pair<KernelTensorPtr, UserCntWithPrepared>>> &GetAll() const {
@@ -225,6 +230,7 @@ class BACKEND_EXPORT GraphParameterStore {
   std::vector<std::vector<std::pair<KernelTensorPtr, UserCntWithPrepared>>> parameter_kernel_tensors_;
   std::vector<bool> is_tensors_;
   std::vector<std::vector<std::string>> parameter_device_names_;
+  std::vector<std::vector<bool>> is_offload_parameter_;
   // Record the parameter may be concurrently used, if equal to 1, fetch parameter can not use lock.
   std::vector<std::vector<size_t>> parameter_used_times_;
   std::vector<std::vector<std::function<void(size_t)>>> async_copy_funcs_;

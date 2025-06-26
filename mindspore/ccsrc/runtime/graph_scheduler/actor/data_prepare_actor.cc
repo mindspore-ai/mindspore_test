@@ -67,49 +67,6 @@ bool IsDataTakenOverByMemOffload(const DeviceContext *device_context, const Devi
   return false;
 }
 
-std::pair<void *, std::string> GetStorageInfo(const TensorPtr &host_tensor, const DeviceTensorPtr &device_tensor,
-                                              const DeviceContext *device_context) {
-  MS_EXCEPTION_IF_NULL(host_tensor);
-  MS_EXCEPTION_IF_NULL(device_tensor);
-  MS_EXCEPTION_IF_NULL(device_context);
-  MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
-  auto swap_manager = device_context->device_res_manager_->swap_manager();
-  MS_EXCEPTION_IF_NULL(swap_manager);
-  if (host_tensor->data_type() == device_tensor->type_id()) {
-    const auto &offload_file = host_tensor->GetOffloadFilePath();
-    if (!offload_file.empty()) {
-      return {nullptr, offload_file};
-    } else if (host_tensor->Size() > kPinMemThreshold) {
-      host_tensor->PinMemory(swap_manager->GetPinMemPool());
-    }
-    return {host_tensor->data_c(), ""};
-  }
-  const auto shape_size = abstract::ShapeSize(host_tensor->shape());
-  const auto data_size = host_tensor->Size();
-  const trans::TypeIdArgs type_args{host_tensor->data_c(), shape_size, host_tensor->data_type(),
-                                    device_tensor->type_id(), data_size};
-  auto offload_ptr = swap_manager->AllocHostMemory(device_tensor->GetSize());
-  MS_EXCEPTION_IF_NULL(offload_ptr);
-  bool trans_ret = trans::TransDataType(type_args, offload_ptr);
-  if (!trans_ret) {
-    MS_LOG(EXCEPTION) << "Trans data type for offload ptr failed, src type: "
-                      << TypeIdToString(host_tensor->data_type())
-                      << ", dst type: " << TypeIdToString(device_tensor->type_id());
-  }
-  return {offload_ptr, ""};
-}
-
-void SetStorageInfo(const TensorPtr &host_tensor, const KernelTensorPtr &kernel_tensor,
-                    const DeviceContext *device_context, const AnfNodePtr &node) {
-  const auto &device_tensor = kernel_tensor->device_address();
-  const auto &storage_info = GetStorageInfo(host_tensor, device_tensor, device_context);
-  const auto hete_info = kernel_tensor->heterogeneous_info();
-  MS_EXCEPTION_IF_NULL(hete_info);
-  MS_LOG(INFO) << "No need sync for heterogeneous device tensor, node name: " << node->fullname_with_scope();
-  hete_info->host_ptr_ = storage_info.first;
-  hete_info->file_name_ = storage_info.second;
-}
-
 void UpdateTracker(const std::string &task_name, const AnfNodePtr &node, const std::string &graph_str,
                    memory::mem_pool::MemType mem_type, const KernelTensorPtr &kernel_tensor) {
   auto device_tensor = kernel_tensor->device_address();
@@ -131,6 +88,9 @@ void SyncTensorData(const TensorPtr &host_tensor, const KernelTensorPtr &kernel_
   auto &device_tensor = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_tensor);
   const bool taken_over_by_swap_manager = IsDataTakenOverByMemOffload(device_context, device_tensor);
+  if (taken_over_by_swap_manager) {
+    MS_LOG(EXCEPTION) << "Offload parameter is not supported when optimize_input is false.";
+  }
   bool need_alloc_memory = !taken_over_by_swap_manager && (device_tensor->GetPtr() == nullptr);
   auto graph_str = (node->func_graph() == nullptr) ? "" : node->func_graph()->ToString();
   auto mem_type =
@@ -186,10 +146,8 @@ void SyncTensorData(const TensorPtr &host_tensor, const KernelTensorPtr &kernel_
     if (node->isa<ValueNode>()) {
       host_shape = real_host_tensor->shape();
     }
-    if (taken_over_by_swap_manager) {
-      SetStorageInfo(real_host_tensor, kernel_tensor, device_context, node);
-    } else if (!skip_h2d && (!device_context->device_res_manager_->SyncAllStreams() ||
-                             !SyncCopy(device_tensor, real_host_tensor->device_address(), kDefaultStreamIndex))) {
+    if (!skip_h2d && (!device_context->device_res_manager_->SyncAllStreams() ||
+        !SyncCopy(device_tensor, real_host_tensor->device_address(), kDefaultStreamIndex))) {
       std::string error_info = "SyncHostToDevice failed, node name: " + node->fullname_with_scope() +
                                ", host tensor size: " + std::to_string(host_tensor_size) +
                                ", host tensor type: " + std::to_string(static_cast<int>(host_tensor_type)) +

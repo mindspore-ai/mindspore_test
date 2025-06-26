@@ -103,10 +103,6 @@ void ConditionSwitchRunner::UpdateRefDeviceAddress(OpContext<KernelTensor> *cons
     auto output_device_tensor = output_kernel_tensors_[i]->device_address().get();
     MS_EXCEPTION_IF_NULL(output_device_tensor);
     output_device_tensor->set_pointer_ref_count(input_device_tensor->pointer_ref_count());
-    if (input_kernel_tensors_[i + 1]->heterogeneous_info() != nullptr) {
-      output_kernel_tensors_[i]->set_heterogeneous_info(std::make_shared<HeterogeneousInfo>());
-      *(output_kernel_tensors_[i]->heterogeneous_info()) = *(input_kernel_tensors_[i + 1]->heterogeneous_info());
-    }
     output_device_tensor->IncreaseNewRefCount(GetAID().Name());
     MS_LOG(DEBUG) << "Actor:" << GetAID() << " increase new ref count:" << output_device_tensor->new_ref_count()
                   << " and set ref kernel tensor:" << output_kernel_tensors_[i]->ToString()

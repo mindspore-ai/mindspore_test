@@ -397,7 +397,6 @@ bool SuperKernelActor::CopyInputDataPersistedHandle(const KernelTensorPtr &input
       address_common->pointer_ref_count_->ptr(), address_common->size_, address_common->shape_vector_,
       address_common->format_, address_common->dtype_id_, device_name, device_id, address_common->stream_id_,
       node_kernel_tensor->user_data());
-    new_device_address->set_heterogeneous_info(node_kernel_tensor->heterogeneous_info());
     new_device_address->set_host_shape(node_kernel_tensor->host_shape());
     auto new_kernel_tensor = node_kernel_tensor->CloneKernelTensor();
     MS_EXCEPTION_IF_NULL(new_kernel_tensor);

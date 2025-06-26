@@ -190,6 +190,7 @@ class COMMON_EXPORT AnfAlgo {
   static TypeId GetCNodeOutputPrecision(const AnfNodePtr &node);
   // get fix output precision from prev node, input_idx is the input index of current node related to prev node.
   static TypeId GetPrevNodeOutputPrecision(const AnfNodePtr &node, size_t input_idx);
+  static std::string GetParameterDeviceStr(const AnfNodePtr &node);
   static std::string GetMoveToDstStr(const AnfNodePtr &node);
   static bool IsNodeInputDynamicShape(const CNodePtr &anf_node_ptr);
   static bool IsNodeOutputDynamicShape(const AnfNodePtr &node);

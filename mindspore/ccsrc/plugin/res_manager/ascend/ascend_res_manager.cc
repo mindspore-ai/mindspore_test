@@ -355,21 +355,27 @@ bool AscendResManager::AllocateMemory(DeviceAddress *const &address, uint32_t st
     MS_LOG(ERROR) << "Memory leak detected!";
     return false;
   }
-
   AscendHalManager::GetInstance().SetContext(device_id_);
 
   void *device_ptr = nullptr;
+  if (address->GetDeviceType() == device::DeviceType::kCPU) {
+    auto host_ptr = swap_manager_->AllocHostMemory(address->GetSize());
+    address->set_ptr(host_ptr);
+    address->set_from_mem_pool(true);
+    address->IncreaseNewRefCount();
+    return true;
+  }
+
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  AscendHalManager::GetInstance().SetContext(device_id);
 
   if (stream_id == UINT32_MAX) {
     stream_id = address->stream_id();
   }
 
-  const auto &hete_info = address->heterogeneous_info();
 
-  if (hete_info != nullptr) {
-    address->IncreaseNewRefCount();
-    return AllocateForHete(address, hete_info);
-  }
   device_ptr = mem_manager_->MallocMemFromMemPool(address->GetSize(), address->from_persistent_mem(),
                                                   address->need_recycle(), stream_id);
   if (!device_ptr) {
@@ -441,11 +447,6 @@ void AscendResManager::FreeForHete(HeterogeneousInfoPtr hete_info) const {
 
 void AscendResManager::FreeMemory(DeviceAddress *const &address) const {
   MS_EXCEPTION_IF_NULL(address);
-  const auto &hete_info = address->heterogeneous_info();
-  if (hete_info != nullptr) {
-    FreeForHete(hete_info);
-  }
-
   void *device_ptr = address->GetMutablePtr();
   if (device_ptr != nullptr) {
     if (!address->from_mem_pool()) {
@@ -454,6 +455,11 @@ void AscendResManager::FreeMemory(DeviceAddress *const &address) const {
     }
 
     MS_LOG(DEBUG) << "Free memory from device address:" << address << " ptr:" << device_ptr;
+    if (address->GetDeviceType() == DeviceType::kCPU) {
+      swap_manager_->FreeHostMemory(device_ptr);
+      address->set_ptr(nullptr);
+      return;
+    }
     FreeMemory(device_ptr);
     address->set_ptr(nullptr);
   }

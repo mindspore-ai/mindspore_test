@@ -440,7 +440,6 @@ KernelTensorPtr DeviceAddressUtils::CloneEmptyKernelTensor(const KernelTensorPtr
     address_common->pointer_ref_count_->ptr(), address_common->size_, address_common->shape_vector_,
     address_common->format_, address_common->dtype_id_, device_name, device_id, address_common->stream_id_,
     old_kernel_tensor->user_data());
-  new_device_address->set_heterogeneous_info(old_kernel_tensor->heterogeneous_info());
   new_device_address->set_host_shape(old_kernel_tensor->host_shape());
   auto new_kernel_tensor = old_kernel_tensor->CloneKernelTensor();
   new_kernel_tensor->set_device_address(new_device_address);

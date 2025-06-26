@@ -119,7 +119,6 @@ void DeviceAddress::CloneDeviceAddress(const DeviceAddressPtr &device_address) {
   device_address->set_user_data(user_data_);
   device_address->set_need_sync_user_data(need_sync_user_data_);
   device_address->set_host_shape(host_shape_);
-  device_address->set_heterogeneous_info(hete_info_);
   auto node_with_index = GetNodeIndex();
   device_address->SetNodeIndex(node_with_index.first, node_with_index.second);
   for (const auto &held_by_node : held_by_nodes_) {
@@ -373,12 +372,6 @@ void DeviceAddress::Swap(DeviceAddress *other) {
   this->set_from_mem_pool(false);
   deleter_ = nullptr;
   set_managed_by_somas(other->managed_by_somas());
-  if (this->heterogeneous_info() != nullptr) {
-    other->set_heterogeneous_info(std::make_shared<HeterogeneousInfo>());
-    *(other->heterogeneous_info()) = *(this->heterogeneous_info());
-    this->heterogeneous_info()->host_ptr_ = nullptr;
-    this->heterogeneous_info()->file_name_ = "";
-  }
 }
 
 const UserDataPtr &DeviceAddress::user_data() const { return user_data_; }

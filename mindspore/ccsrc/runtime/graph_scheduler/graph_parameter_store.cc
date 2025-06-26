@@ -71,6 +71,14 @@ void GraphParameterStore::SetParameterUsedTimes(size_t outer_index, size_t inner
   parameter_used_times_[outer_index][inner_index] = times;
 }
 
+bool GraphParameterStore::GetOffloaded(size_t outer_index, size_t inner_index) {
+  return is_offload_parameter_[outer_index][inner_index];
+}
+
+void GraphParameterStore::SetOffloaded(size_t outer_index, size_t inner_index, bool is_offload) {
+  is_offload_parameter_[outer_index][inner_index] = is_offload;
+}
+
 bool GraphParameterStore::IsConcurrentlyUse(size_t outer_index, size_t inner_index) {
   return parameter_used_times_[outer_index][inner_index] > 1;
 }

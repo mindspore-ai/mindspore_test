@@ -969,20 +969,18 @@ void SyncHostToDeviceFromTensor(size_t outer_index, size_t inner_index, tensor::
     return;
   }
 
-  const auto &hete_info = device_tensor->heterogeneous_info();
-  if (hete_info != nullptr && hete_info->need_alloc_hete_res_ != NeedAllocateHeteRes::NoNeedHeteRes) {
-    if (tensor->data_type() != device_tensor->type_id()) {
-      MS_LOG(EXCEPTION) << "Data type of host tensor[" << tensor->data_type() << " is different from device["
-                        << device_tensor->type_id() << "], which can not be offloaded.";
+  if (graph_parameter_store->GetOffloaded(outer_index, inner_index)) {
+    MS_EXCEPTION_IF_NULL(tensor->device_address());
+    if (tensor->device_address()->GetDeviceType() != kernel_tensor->device_address()->GetDeviceType()) {
+      MS_LOG(EXCEPTION) << "Device type of tensor's DeviceAddress[" << tensor->device_address()->GetDeviceType()
+                        << "] is different from device type of KernelTensor's DeviceAddress["
+                        << kernel_tensor->device_address()->GetDeviceType() << "].";
     }
-    if (tensor->device_info().host_format_ != device_tensor->format()) {
-      MS_LOG(EXCEPTION) << "Data format of host tensor[" << tensor->device_info().host_format_
-                        << " is different from device[" << device_tensor->format() << "], which can not be offloaded.";
-    }
-    hete_info->host_ptr_ = tensor->data_c();
-    hete_info->file_name_ = tensor->GetOffloadFilePath();
-    MS_LOG(DEBUG) << "Set heterogeneous info for offloaded tensor, host ptr:" << hete_info->host_ptr_
-                  << ", file name: " << hete_info->file_name_;
+    const auto tensor_device_address = std::dynamic_pointer_cast<device::DeviceAddress>(tensor->device_address());
+    MS_EXCEPTION_IF_NULL(tensor_device_address);
+    MS_LOG(DEBUG) << "Set DeviceAddress[" << tensor_device_address.get()
+                  << "] to KernelTensor for offload parameter: " << node->fullname_with_scope();
+    kernel_tensor->set_device_address(tensor_device_address);
     return;
   }
 

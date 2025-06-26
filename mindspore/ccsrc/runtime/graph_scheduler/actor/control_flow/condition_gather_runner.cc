@@ -242,10 +242,6 @@ void ConditionGatherRunner::UpdateRefDeviceAddress(OpContext<KernelTensor> *cons
     output_kernel_tensors_[i]->device_address()->set_pointer_ref_count(
       input_kernel_tensors_[input_index]->device_address()->pointer_ref_count());
     output_kernel_tensors_[i]->device_address()->IncreaseNewRefCount(GetAID().Name());
-    if (input_kernel_tensors_[input_index]->heterogeneous_info() != nullptr) {
-      output_kernel_tensors_[i]->set_heterogeneous_info(std::make_shared<HeterogeneousInfo>());
-      *(output_kernel_tensors_[i]->heterogeneous_info()) = *(input_kernel_tensors_[input_index]->heterogeneous_info());
-    }
     MS_LOG(DEBUG) << "Actor:" << GetAID()
                   << " increase new ref count:" << output_kernel_tensors_[i]->device_address()->new_ref_count()
                   << " and set ref kernel tensor:" << output_kernel_tensors_[i]->ToString()

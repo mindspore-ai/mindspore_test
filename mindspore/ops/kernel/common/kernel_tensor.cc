@@ -176,7 +176,6 @@ KernelTensor::KernelTensor(const KernelTensor &other) {
     device_address_ = other.device_address_->CloneDeviceAddress();
     address_common_ = device_address_->address_common();
     device_address_->set_user_data(other.user_data());
-    device_address_->set_heterogeneous_info(other.heterogeneous_info());
     device_address_->set_host_shape(other.host_shape());
   } else {
     address_common_ = std::make_shared<AddressCommon>(*other.address_common_);
@@ -550,18 +549,6 @@ bool KernelTensor::SyncDataFromDeviceToHost() const {
     wait_resize_and_launch_finish();
   }
   host_info_->value_mutex_.lock();
-
-  if (device_address_ != nullptr && device_address_->heterogeneous_info() != nullptr &&
-      device_address_->heterogeneous_info()->host_ptr_ != nullptr) {
-    if (!host_info_->kernel_tensor_value_) {
-      host_info_->kernel_tensor_value_ = std::make_shared<KernelTensorValue>(
-        device_address_->heterogeneous_info()->host_ptr_, address_common_->size_, type_);
-    } else {
-      host_info_->kernel_tensor_value_->SetDataPtr(device_address_->heterogeneous_info()->host_ptr_);
-      host_info_->kernel_tensor_value_->Resize(address_common_->size_);
-    }
-    return true;
-  }
 
   void *device_ptr = this->device_ptr();
   if (device_ptr == nullptr) {
