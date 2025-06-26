@@ -239,8 +239,7 @@ bool GraphParameterStore::RecordGraphInputsAndIsDyn(const GraphCompilerInfo *gra
     host_tensors_shape_[i] = input_tensor->shape();
     input_tensor->set_name(origin_parameter->fullname_with_scope());
     MS_LOG(DEBUG) << "Add graph input: " << origin_parameter->fullname_with_scope();
-    llm_manager.add_graph_input(origin_parameter->fullname_with_scope(),
-                                std::static_pointer_cast<DeviceTensor>(input_tensor->device_address()));
+    llm_manager.add_graph_input(origin_parameter->fullname_with_scope(), input_tensor);
     MS_LOG(DEBUG) << "Add input tensor data for input parameter: " << origin_parameter->fullname_with_scope();
   }
   return isDyn;
