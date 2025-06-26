@@ -24,14 +24,13 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API ReduceAnyFuncImpl : public OpFuncImpl {
+class OPS_API ReduceAnyFuncImpl final : public OpFuncImpl {
  public:
-  ReduceAnyFuncImpl() = default;
-  virtual ~ReduceAnyFuncImpl() = default;
+  ShapeArray InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
 
-  BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
+  TypeIdList InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
 
-  TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
+  bool GeneralInferRegistered() const override { return true; }
 };
 }  // namespace ops
 }  // namespace mindspore

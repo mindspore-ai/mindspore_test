@@ -26,13 +26,14 @@ namespace mindspore {
 namespace ops {
 constexpr auto kReduceInputAtLeastLen = 3;
 BaseShapePtr ReduceInferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args);
+ShapeArray ReduceInferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values);
+ShapeArray ReduceInferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos);
 ShapeArray NormInferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos);
 BaseShapePtr ReduceExtandInferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args);
 ShapeArray ReduceExtandSimpleInferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values);
 ShapeArray ReduceGeneralInferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos);
 ShapeArray ReduceGeneralInferShapeV2(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos);
 int64_t CalRealAixs(const int64_t &axis, const size_t &x_shape_size, const PrimitivePtr &primitive);
-ShapeArray ReduceInferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values);
 }  // namespace ops
 }  // namespace mindspore
 #endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_REDUCE_REDUCE_ARITHMETIC_H_

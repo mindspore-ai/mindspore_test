@@ -17,7 +17,6 @@
 #include <memory>
 #include "common/common_test.h"
 #include "infer/ops_func_impl/reduce_all.h"
-#include "infer/ops_func_impl/reduce_any.h"
 #include "infer/ops_func_impl/reduce_max.h"
 #include "infer/ops_func_impl/reduce_min.h"
 #include "infer/ops_func_impl/reduce_mean.h"
@@ -43,7 +42,6 @@ struct ReduceParams {
 
 static std::map<std::string, std::pair<TypePtr, OpFuncImplPtr>> reduce_func_impl = {
   {kNameReduceAll, std::make_pair(kBool, std::make_shared<ReduceAllFuncImpl>())},
-  {kNameReduceAny, std::make_pair(kBool, std::make_shared<ReduceAnyFuncImpl>())},
   {kNameReduceMax, std::make_pair(kFloat32, std::make_shared<ReduceMaxFuncImpl>())},
   {kNameReduceMin, std::make_pair(kFloat32, std::make_shared<ReduceMinFuncImpl>())},
   {kNameReduceMean, std::make_pair(kFloat32, std::make_shared<ReduceMeanFuncImpl>())},
@@ -119,8 +117,6 @@ auto ReduceDynTestCase = testing::ValuesIn(
 
 INSTANTIATE_TEST_CASE_P(TestReduceAllGroup, TestReduce,
                         testing::Combine(testing::ValuesIn({kNameReduceAll}), ReduceDynTestCase));
-INSTANTIATE_TEST_CASE_P(TestReduceAnyGroup, TestReduce,
-                        testing::Combine(testing::ValuesIn({kNameReduceAny}), ReduceDynTestCase));
 INSTANTIATE_TEST_CASE_P(TestReduceMaxGroup, TestReduce,
                         testing::Combine(testing::ValuesIn({kNameReduceMax}), ReduceDynTestCase));
 INSTANTIATE_TEST_CASE_P(TestReduceMinGroup, TestReduce,
