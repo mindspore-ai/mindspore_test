@@ -94,7 +94,6 @@ Status MessageQueue::GetOrCreateMessageQueueID() {
 MessageState MessageQueue::MessageQueueState() { return state_; }
 
 Status MessageQueue::MsgSnd(int64_t mtype, int shm_id, uint64_t shm_size) {
-  RETURN_IF_NOT_OK(GetOrCreateMessageQueueID());
   mtype_ = mtype;
   if (shm_id != -1) {
     shm_id_ = shm_id;

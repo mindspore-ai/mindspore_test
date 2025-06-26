@@ -74,7 +74,9 @@ void ReleaseShmAndMsg() {
     // release the shm & msg used by the current process when the main process is killed
     for (auto &item : g_shm_id) {
       // so just release the shm used by the current process
-      if (item.first != current_pid) {
+      // scenario 1: for the thread in main process, the item.first is "MainProcessPID_WorkerPID"
+      // scenario 2: for the worker process, the item.first is "WorkerPID"
+      if (item.first.find(current_pid) == std::string::npos) {
         continue;
       }
       if (item.second != -1) {
@@ -90,7 +92,9 @@ void ReleaseShmAndMsg() {
 
     for (auto &item : g_msg_id) {
       // so just release the msg used by the current process
-      if (item.first != current_pid) {
+      // scenario 1: for the thread in main process, the item.first is "MainProcessPID_WorkerPID"
+      // scenario 2: for the worker process, the item.first is "WorkerPID"
+      if (item.first.find(current_pid) == std::string::npos) {
         continue;
       }
       if (item.second != -1) {
@@ -300,6 +304,7 @@ void RegisterShmIDAndMsgID(std::string pid, int32_t shm_id, int32_t msg_id) {
     g_shm_id[pid] = shm_id;
     g_msg_id[pid] = msg_id;
   }
-  MS_LOG(INFO) << "Update the shm_id to " << std::to_string(shm_id) << ", msg_id to " << std::to_string(msg_id);
+  MS_LOG(INFO) << "Update the shm_id to " << std::to_string(shm_id) << ", msg_id to " << std::to_string(msg_id)
+               << " for pid: " << pid;
 }
 }  // namespace mindspore::dataset
