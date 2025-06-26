@@ -115,10 +115,6 @@ std::vector<TypeId> InnerMoeTokenUnpermuteFuncImpl::InferType(const PrimitivePtr
     return {unpermute_token_type};
   }
 
-  if (unpermute_token_type != kNumberTypeBFloat16) {
-    MS_EXCEPTION(TypeError) << "For primitive[MoeTokenUnpermute], unpermuted_tokens dtype is invalid"
-                            << " , should be bfloat16.";
-  }
   if (sorted_indices_type != kNumberTypeInt32) {
     MS_EXCEPTION(TypeError) << "For primitive[MoeTokenUnpermute], sorted_indices dtype is invalid"
                             << " , should be int32.";
