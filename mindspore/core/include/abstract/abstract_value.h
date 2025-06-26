@@ -371,6 +371,8 @@ class MS_CORE_API AbstractType final : public AbstractBase {
   AbstractBasePtr Clone() const override;
 
   AbstractBasePtr Broaden() const override;
+
+  AbstractBasePtr Join(const AbstractBasePtr &other) override;
 };
 using AbstractTypePtr = std::shared_ptr<AbstractType>;
 

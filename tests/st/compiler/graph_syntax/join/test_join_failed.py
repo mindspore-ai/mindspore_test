@@ -1,4 +1,4 @@
-# Copyright 2023 Huawei Technologies Co., Ltd
+# Copyright 2023-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -179,6 +179,7 @@ def test_control_flow_with_fix_length_input_1():
         assert "if x == 1:" in str(TypeError.value)
         assert "return x, y, z" in str(TypeError.value)
 
+
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_control_flow_with_fix_length_input_2():
     """
@@ -202,6 +203,7 @@ def test_control_flow_with_fix_length_input_2():
         assert "Cannot join the return values of different branches" in str(TypeError.value)
         assert "if x == 1:" in str(TypeError.value)
         assert "return x, y" in str(TypeError.value)
+
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_type_join_error_msg():
@@ -229,3 +231,18 @@ def test_type_join_error_msg():
     error_info = str(exec_info.value)
     assert "Cannot join the return values of different branches" in error_info
     assert "if input_x > 1:" in error_info
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_type_join_mstype():
+    """
+    Feature: Control flow with different type in two branches.
+    Description: AbstractType(ms.int32) join with AbstractType(ms.int64).
+    Expectation: No exception.
+    """
+    @ms.jit(backend='ms_backend')
+    def func(x):
+        return ms.int32 if x else ms.int64
+
+    out = func(ms.mutable(False))
+    assert out == ms.int64

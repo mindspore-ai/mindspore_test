@@ -351,6 +351,15 @@ bool AbstractType::operator==(const AbstractBase &other) const {
          IsEqual(dyn_cast_ptr<Type>(GetValueTrack()), dyn_cast_ptr<Type>(other.GetValueTrack()));
 }
 
+AbstractBasePtr AbstractType::Join(const AbstractBasePtr &other) {
+  MS_EXCEPTION_IF_NULL(other);
+  bool success = (*this == *other);
+  if (!success) {
+    TypeJoinLogging(GetTypeTrack(), other->GetTypeTrack(), shared_from_base<AbstractBase>(), other);
+  }
+  return shared_from_base<AbstractBase>();
+}
+
 std::string AbstractType::ToString() const {
   std::ostringstream buffer;
   ValuePtr this_value = GetValueTrack();
