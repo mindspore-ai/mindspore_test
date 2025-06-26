@@ -23,7 +23,7 @@ from mindspore.common import dtype as mstype
 from mindspore.mint.distributed import get_world_size
 from mindspore.communication import GlobalComm
 from mindspore.common.api import _pynative_executor
-from mindspore.mint.distributed import broadcast
+from mindspore.mint.distributed import broadcast, get_global_rank
 from mindspore.parallel.distributed.flatten_grad_buffer import FlattenGradBuffer
 from mindspore._c_expression import Reducer, _find_unused_parameters
 
@@ -31,10 +31,12 @@ __all__ = ["DistributedDataParallel"]
 
 
 def get_data_parallel_group():
+    """get default global data parallel group"""
     return GlobalComm.WORLD_COMM_GROUP
 
 
 def get_data_parallel_world_size(group):
+    """get group world size"""
     return get_world_size(group)
 
 
@@ -207,6 +209,7 @@ class DistributedDataParallel(nn.Cell):
         return buffers
 
     def final_grad_reduce(self):
+        """trigger final grad reduction"""
         logger.debug("trigger ddp final grad reduce, %d, %d", self.static_graph, len(self.unused_param))
         if self._should_rebuild_buckets():
             for param in self.unused_param:
@@ -341,14 +344,15 @@ class DistributedDataParallel(nn.Cell):
                 handle.wait()
                 ptr = 0
                 for param in params:
-                    param.view(-1).copy_(coalesced[ptr : ptr + param.numel()])
+                    param.view(-1).copy_(coalesced[ptr:ptr + param.numel()])
                     ptr += param.numel()
 
         rate_limiter = []
         for params in buckets:
             flat_tensors = [t.view(-1) for t in params]
             coalesced = mint.cat(flat_tensors)
-            handle = broadcast(coalesced, src=0, group=self.process_group, async_op=True)
+            global_rank = get_global_rank(self.process_group, 0)
+            handle = broadcast(coalesced, src=global_rank, group=self.process_group, async_op=True)
             rate_limiter.append((handle, coalesced, params))
 
             if len(rate_limiter) >= 2:
