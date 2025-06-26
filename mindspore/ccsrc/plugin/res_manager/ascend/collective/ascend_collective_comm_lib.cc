@@ -359,7 +359,8 @@ uint32_t AscendCollectiveCommLib::GetGroupRankFromWorldRank(uint32_t world_rank,
 
 bool AscendCollectiveCommLib::CommSwitchNic(const std::vector<uint32_t> &global_ranks,
                                             const std::vector<bool> &use_backup) {
-  MS_LOG(INFO) << "global ranks: " << global_ranks << ", use backup: " << use_backup;
+  MS_LOG(INFO) << "The global rank: " << GetRankId(kHCCLWorldGroup) << ", switch global ranks: " << global_ranks
+               << ", use backup: " << use_backup;
   // Firstly, traverse the communication domain to check whether there is an intersection
   // between the ranks in the communication domain and the ranks that need to switch NIC.
   for (const auto &kv : groups_) {
@@ -388,14 +389,20 @@ bool AscendCollectiveCommLib::CommSwitchNic(const std::vector<uint32_t> &global_
     for (size_t i = 0; i < sec_use_backup_v.size(); i++) {
       sec_use_backup[i] = sec_use_backup_v[i];
     }
+
     MS_LOG(INFO) << "group: " << kv.first << ", group ranks(global): " << group_ranks
                  << ", sec global ranks: " << sec_global_ranks << ", sec group ranks: " << sec_group_ranks
                  << ", sec use backup: " << sec_use_backup_v;
-    HCCL_RUN_CHECK(std::string("switch network interface card"), kv.first,
-                   hccl::HcclAdapter::GetInstance().HcclCommWorkingDevNicSet(
-                     GetHcomByGroup(kv.first), sec_group_ranks.data(), sec_use_backup, sec_group_ranks.size()));
+    auto ret = hccl::HcclAdapter::GetInstance().HcclCommWorkingDevNicSet(
+      GetHcomByGroup(kv.first), sec_group_ranks.data(), sec_use_backup, sec_group_ranks.size());
     delete[] sec_use_backup;
+    if (ret != HCCL_SUCCESS) {
+      MS_LOG(ERROR) << "group: " << kv.first << " switch nic failed, error code" << ret;
+      return false;
+    }
+    MS_LOG(INFO) << "group: " << kv.first << " switch nic success!";
   }
+  MS_LOG(INFO) << "The comm switch nic execute success!";
   return true;
 }
 
