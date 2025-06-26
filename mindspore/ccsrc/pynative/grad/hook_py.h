@@ -56,13 +56,7 @@ struct RegisterHook {
   PYNATIVE_EXPORT static void RemoveTensorBackwardHook(uint64_t handle_id);
   PYNATIVE_EXPORT static py::list GetHooks(const tensor::TensorPtr &tensor);
 
-  static void ClearHookMap() { hook_id_node_map_.clear(); }
-
-  // For store hook
-  inline static uint64_t unique_id_ = 0;
-  inline static std::unordered_map<uint64_t, std::weak_ptr<BackwardNode>> hook_id_node_map_;
-  inline static std::unordered_map<uint64_t, std::weak_ptr<std::map<uint64_t, py::function>>> tensor_id_with_hook_map_;
-  inline static std::unordered_map<uint64_t, uint64_t> unique_id_with_tensor_id_;
+  static void ClearHookMap();
 };
 }  // namespace mindspore::pynative::autograd
 #endif  // MINDSPORE_CCSRC_PYBIND_API_IR_HOOK_PY_H_
