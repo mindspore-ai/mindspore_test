@@ -1732,10 +1732,10 @@ class _VirtualAssignKvCache(PrimitiveWithInfer):
         self.add_prim_attr('order_enforce_skip', True)
         self.add_prim_attr('side_effect_backprop_mem', True)
 
-    def infer_shape(self, x_shape, y_shape, kv_equal_shape):
+    def infer_shape(self, x_shape, y_shape, kv_equal_shape=None):
         return x_shape
 
-    def infer_dtype(self, x_dtype, y_dtype, kv_equal_dtype):
+    def infer_dtype(self, x_dtype, y_dtype, kv_equal_dtype=None):
         return x_dtype
 virtual_assign_kv_cache = _VirtualAssignKvCache()
 

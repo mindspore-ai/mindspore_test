@@ -1537,7 +1537,7 @@ class TransformerEncoderLayer(Cell):
                     "and parallel_config. model_parallel is {}."
                     .format(ffn_hidden_size, parallel_config.model_parallel))
             _check_moe_config(moe_config, parallel_config)
-            self.use_moe = (moe_config.expert_num > 1)
+            self.use_moe = moe_config.expert_num > 1
             self.use_past = use_past
             self.seq_length = seq_length
             self.hidden_size = hidden_size

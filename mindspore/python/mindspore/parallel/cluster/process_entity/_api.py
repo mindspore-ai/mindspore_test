@@ -176,7 +176,7 @@ class _ProcessManager:
 
         self.sim_level = args.sim_level
         self.sim_rank_id = args.sim_rank_id
-        self.is_simulation = (self.sim_level != -1)
+        self.is_simulation = self.sim_level != -1
         if self.is_simulation:
             os.environ["MS_SIMULATION_LEVEL"] = str(self.sim_level)
         elif os.getenv("MS_SIMULATION_LEVEL"):

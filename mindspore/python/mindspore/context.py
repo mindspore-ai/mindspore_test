@@ -841,8 +841,7 @@ class _Context:
     @staticmethod
     def _check_speedup_config_str_value(key, value):
         """check speedup config str value"""
-        if key == "pp_1f1b_overlap" or key == "recompute_comm_overlap" \
-                or key == "recomputation_communication_overlap":
+        if key in ["pp_1f1b_overlap", "recompute_comm_overlap", "recomputation_communication_overlap"]:
             if isinstance(value, str):
                 values = value.split(",")
                 for v in values:
