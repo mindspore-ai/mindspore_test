@@ -4439,6 +4439,11 @@ void OnnxExporter::ExportPrimArgMaxWithValue(const FuncGraphPtr &func_graph, con
       } else {
         export_value = true;
       }
+    } else if (IsPrimitiveCNode(user.first, prim::kPrimReturn)) {
+      // if result of ArgMaxWithValue (Tuple<arg, value>) is returned, export both args and value
+      export_args = true;
+      export_value = true;
+      break;
     }
   }
   auto node_name = RegisterNodeWithUniqueName(node, node_map_ptr);
