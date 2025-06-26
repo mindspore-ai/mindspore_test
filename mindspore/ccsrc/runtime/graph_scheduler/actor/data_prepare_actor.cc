@@ -850,7 +850,7 @@ void DataPrepareActor::RecordGraphInputs(const std::vector<TensorPtr> &host_tens
     auto param_index = host_param_indexes[i];
     const auto &origin_parameter = graph_compiler_info_->origin_parameters_order_[param_index];
     // host_tensor must not be nullptr
-    llm_manager.add_graph_input(origin_parameter->fullname_with_scope(), host_tensor->device_address());
+    llm_manager.add_graph_input(origin_parameter->fullname_with_scope(), host_tensor);
   }
 }
 

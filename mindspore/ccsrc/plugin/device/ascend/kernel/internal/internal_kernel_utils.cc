@@ -36,11 +36,13 @@ bool GetSeqLenFromGraphAndCheckUpadate(const std::string &kernel_name, const std
                                        std::vector<int32_t> *seq_len) {
   auto &llm_manager = LLMManager::GetInstance();
   for (auto &tensor_name : tensor_name_list) {
-    auto seq_length_tensor = std::dynamic_pointer_cast<DeviceAddress>(llm_manager.get_graph_input(tensor_name));
+    auto seq_length_tensor = llm_manager.get_graph_input(tensor_name);
     if (seq_length_tensor != nullptr) {
       // then use graph_input tensor value to set seq_len if saved
-      auto seq_length_values = static_cast<int32_t *>(seq_length_tensor->GetMutablePtr());
-      auto seq_length_values_num = seq_length_tensor->GetSize() / sizeof(int32_t);
+      auto seq_length_tensor_cpu = seq_length_tensor->cpu();
+      MS_EXCEPTION_IF_NULL(seq_length_tensor_cpu);
+      auto seq_length_values = static_cast<int32_t *>(seq_length_tensor_cpu->data_c());
+      auto seq_length_values_num = seq_length_tensor_cpu->Size() / sizeof(int32_t);
 
       bool is_need_update = false;
       if (seq_len->size() != seq_length_values_num) {
