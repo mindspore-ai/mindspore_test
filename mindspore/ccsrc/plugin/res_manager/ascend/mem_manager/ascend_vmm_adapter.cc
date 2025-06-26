@@ -268,7 +268,11 @@ size_t AscendVmmAdapter::EagerFreeDeviceMem(const DeviceMemPtr addr, const size_
 size_t AscendVmmAdapter::EmptyCache() {
   size_t empty_size = 0L;
   for (auto iter = cached_handle_sets_.begin(); iter != cached_handle_sets_.end(); iter++) {
+    auto start = std::chrono::high_resolution_clock::now();
     auto ret = CALL_ASCEND_API(aclrtFreePhysical, *iter);
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration_us = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+    MS_LOG(ERROR) << "Time taken by aclrtFreePhysical: " << duration_us << " microseconds.";
     if (ret != ACL_SUCCESS) {
       MS_LOG(EXCEPTION) << "Free physical memory failed.";
     }
