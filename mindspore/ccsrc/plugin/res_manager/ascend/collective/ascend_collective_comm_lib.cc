@@ -52,21 +52,23 @@ static std::map<int64_t, HcclDataType> kConstOpHcomDataTypeMap = {
   return iter->second;
 }
 }  // namespace
-#define HCCL_RUN_CHECK(op_name, group, op)                          \
-  do {                                                              \
-    auto hccl_result = static_cast<int64_t>(op);                    \
-    if (hccl_result != 0) {                                         \
-      MS_LOG(ERROR) << (op_name) << " failed: #" << (group) << "#"; \
-      return false;                                                 \
-    }                                                               \
+#define HCCL_RUN_CHECK(op_name, group, op)                         \
+  do {                                                             \
+    auto hccl_result = static_cast<int64_t>(op);                   \
+    if (hccl_result != 0) {                                        \
+      MS_LOG(ERROR) << (op_name) << " failed: #" << (group) << "#" \
+                    << ", error code: " << hccl_result;            \
+      return false;                                                \
+    }                                                              \
   } while (0)
 
-#define EXCEPTION_IF_HCCL_RUN_CHECK_FAIL(op_name, group, op)            \
-  do {                                                                  \
-    auto hccl_result = static_cast<int64_t>(op);                        \
-    if (hccl_result != 0) {                                             \
-      MS_LOG(EXCEPTION) << (op_name) << " failed: #" << (group) << "#"; \
-    }                                                                   \
+#define EXCEPTION_IF_HCCL_RUN_CHECK_FAIL(op_name, group, op)           \
+  do {                                                                 \
+    auto hccl_result = static_cast<int64_t>(op);                       \
+    if (hccl_result != 0) {                                            \
+      MS_LOG(EXCEPTION) << (op_name) << " failed: #" << (group) << "#" \
+                        << ", error code: " << hccl_result;            \
+    }                                                                  \
   } while (0)
 
 #define HCCL_GROUP_CHECK_EMPTY(group)                              \
