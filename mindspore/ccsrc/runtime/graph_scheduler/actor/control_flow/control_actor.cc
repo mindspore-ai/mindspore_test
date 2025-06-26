@@ -262,6 +262,7 @@ void ControlActor::FetchParameterInput(OpContext<KernelTensor> *const context) {
                   << " inner index:" << parameter_index.second.first.second
                   << " kernel tensor:" << kernel_tensor->ToString();
     input_kernel_tensors_[parameter_index.first] = kernel_tensor;
+    input_parameter_store_kernel_tensors_.emplace_back(kernel_tensor);
   }
 }
 
