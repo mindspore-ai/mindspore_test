@@ -29,8 +29,12 @@ function kill_prof_cmd(){
         pidLine=`pstree -p ${command_param}`
         pidLine=`echo $pidLine | awk 'BEGIN{ FS="(" ; RS=")" } NF>1 { print $NF }'`
         for pid in $pidLine
-            do 
-                sudo kill -2 ${pid}
+            do
+                if [[ -n "${pid}" && "${pid}" =~ ^[0-9]+$ ]]; then
+                    if kill -0 "${pid}" 2>/dev/null; then
+                        sudo kill -9 "${pid}"
+                    fi
+                fi
             done     
         exit 1
     else
@@ -64,7 +68,12 @@ function check_pid(){
 
 function run_prof_trace_cmd(){
     check_pid
-    perf trace -T --syscalls -p "${command_param}"
+    local max_retries=20
+    local status=-1
+    for ((retry=0; retry < max_retries && status != 0; retry++)); do
+        perf trace -T --syscalls -p "${command_param}"
+        status=$?
+    done
 }
 
 function run_ltrace_cmd(){
