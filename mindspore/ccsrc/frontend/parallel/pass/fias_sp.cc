@@ -302,7 +302,9 @@ int64_t GetUDMaskIndex(int index, int64_t pos, int64_t split_num) {
 void GetLayoutInfo(const CNodePtr &fa_score_node, Shape *q_shape, Shape *kv_shape, int64_t *fa_b, int64_t *fa_s1,
                    int64_t *fa_h1, int64_t *fa_s2, int64_t *fa_n1, int64_t *input_layout) {
   std::shared_ptr<OperatorInfo> operator_info = fa_score_node->user_data<parallel::OperatorInfo>();
+  MS_EXCEPTION_IF_NULL(operator_info);
   auto fias_info_ptr = std::dynamic_pointer_cast<FusedInferAttentionScoreInfo>(operator_info);
+  MS_EXCEPTION_IF_NULL(fias_info_ptr);
   *input_layout = fias_info_ptr->input_layout();
   *q_shape = operator_info->inputs_tensor_info_new()[kIndex0]->GetValue().tensor_layout().base_slice_shape().array();
   *kv_shape = operator_info->inputs_tensor_info_new()[kIndex1]
