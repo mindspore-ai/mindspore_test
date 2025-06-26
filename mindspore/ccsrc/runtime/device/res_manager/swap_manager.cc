@@ -110,13 +110,7 @@ bool SwapManager::FileToHostMemory(void *host_memory, const std::string &file_na
   }
 }
 
-<<<<<<< HEAD
-bool SwapManager::EnoughFileSpace(const size_t &size, uint32_t /* stream_id */) {
-  return current_used_file_size_ + size <= max_file_size_;
-}
-=======
 bool SwapManager::EnoughFileSpace(const size_t &size) const { return current_used_file_size_ + size <= max_file_size_; }
->>>>>>> Remove context memory_offload
 
 bool SwapManager::HostMemoryToFile(const std::string &file_name, const void *data, size_t byte_num, bool async,
                                    AsyncIOToken *sync_key) {

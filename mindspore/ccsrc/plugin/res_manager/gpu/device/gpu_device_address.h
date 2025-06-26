@@ -94,7 +94,7 @@ class GPUDeviceAddress : public DeviceAddress {
   bool AsyncHostToDevice(size_t size, const void *host_ptr, size_t stream_id) const override;
 
   bool AsyncDeviceToHost(size_t size, void *host_ptr, size_t stream_id) const override;
-  
+
   bool AsyncDeviceToDevice(const ShapeVector &shape, size_t size, TypeId type, const void *src_ptr,
                            const std::string &format, size_t stream_id = SIZE_MAX) const override;
 

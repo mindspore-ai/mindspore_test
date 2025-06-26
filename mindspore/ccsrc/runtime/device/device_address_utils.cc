@@ -103,32 +103,23 @@ Format GetFormatByTensorShape(const DeviceContext *device_context, const ShapeVe
   return Format::DEFAULT_FORMAT;
 }
 
-void SetHeteInfoForParamDeviceAddress(const ParameterPtr &parameter, const KernelTensorPtr &kernel_tensor) {
-  const auto value = parameter->default_param();
-  if (value == nullptr) {
-    return;
+const DeviceContext *GetDeviceContextForOffloadedParameter(const DeviceContext *origin_device_context,
+                                                           const AnfNodePtr &node) {
+  if (origin_device_context == nullptr) {
+    return origin_device_context;
   }
-  const auto meta_tensor = value->cast_ptr<tensor::MetaTensor>();
-  if (meta_tensor == nullptr) {
-    return;
-  }
-  const auto &user_data = meta_tensor->user_data<tensor::TensorPybind::TensorPyUserData>(kParameterDeviceUserDataName);
-  if (user_data == nullptr) {
-    return;
-  }
-  if (!py::isinstance<py::str>(user_data->obj)) {
-    return;
-  }
-  std::string device_str = py::cast<std::string>(user_data->obj);
+  auto device_str = common::AnfAlgo::GetParameterDeviceStr(node);
   if (device_str.empty()) {
-    return;
+    return origin_device_context;
   }
   if (device_str == kToCpu) {
-    kernel_tensor->set_heterogeneous_info(std::make_shared<HeterogeneousInfo>());
-    kernel_tensor->heterogeneous_info()->need_alloc_hete_res_ = NeedAllocateHeteRes::NeedHostMem;
-  } else if (device_str == kToDisk) {
-    kernel_tensor->set_heterogeneous_info(std::make_shared<HeterogeneousInfo>());
-    kernel_tensor->heterogeneous_info()->need_alloc_hete_res_ = NeedAllocateHeteRes::NeedDiskFile;
+    auto hete_device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
+      {device_str, origin_device_context->device_context_key().device_id_});
+    MS_EXCEPTION_IF_NULL(hete_device_context);
+    MS_LOG(INFO) << "Use " << device_str << " DeviceContext for offloaded parameter: " << node->DebugString();
+    return hete_device_context;
+  } else {
+    MS_LOG(EXCEPTION) << "Device of parameter only support \"CPU\" but got " << device_str;
   }
 }
 }  // namespace
@@ -278,7 +269,8 @@ void DeviceAddressUtils::CreateParameterDeviceAddress(const DeviceContext *devic
   // Create device address for anf node in nodes_list
   for (const auto &item : nodes_list) {
     MS_EXCEPTION_IF_NULL(item);
-    const auto &real_device_context = device::FetchRealDeviceContext(item, device_context);
+    auto real_device_context = device::FetchRealDeviceContext(item, device_context);
+    real_device_context = GetDeviceContextForOffloadedParameter(real_device_context, item);
     MS_EXCEPTION_IF_NULL(real_device_context);
     auto output_size = AnfAlgo::GetOutputTensorNum(item);
     for (size_t index = 0; index < output_size; index++) {
@@ -316,7 +308,6 @@ void DeviceAddressUtils::CreateParameterDeviceAddress(const DeviceContext *devic
                        << " is not used in the graph " << graph->graph_id();
           device_address->UpdateFlag(device::kDeviceAddressFlagNotUsed);
         }
-        SetHeteInfoForParamDeviceAddress(input_param, kernel_tensor);
       }
       device_address->SetNodeIndex(item, index);
       device_address->set_from_persistent_mem(item->isa<Parameter>());
@@ -551,7 +542,16 @@ void DeviceAddressUtils::CreateKernelOutputDeviceAddress(const DeviceContext *de
         continue;
       }
 
-      const auto &real_device_context = device::FetchRealDeviceContext(kernel, device_context);
+      auto real_device_context = device::FetchRealDeviceContext(kernel, device_context);
+      if (real_device_context != nullptr && is_move_to) {
+        if (move_to == kToCpu) {
+          real_device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
+            {move_to, real_device_context->device_context_key().device_id_});
+          MS_LOG(INFO) << "Use " << move_to << " DeviceContext for MoveTo node: " << kernel->DebugString();
+        } else if (move_to != kToNpu) {
+          MS_LOG(EXCEPTION) << R"(Destination for MoveTo is supposed to be "CPU" or "Ascend", but got )" << move_to;
+        }
+      }
       MS_EXCEPTION_IF_NULL(real_device_context);
       const auto &abstract = AnfAlgo::GetNodeAbstractByIndex(kernel, i);
       if (abstract != nullptr && abstract->isa<abstract::AbstractMapTensor>()) {
@@ -581,15 +581,6 @@ void DeviceAddressUtils::CreateKernelOutputDeviceAddress(const DeviceContext *de
         user_data);
       kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(kernel));
       MS_LOG(DEBUG) << "Kernel tensor created without set stream id, but set after device address created.";
-      if (is_move_to) {
-        if (move_to == kToCpu) {
-          kernel_tensor->set_heterogeneous_info(std::make_shared<HeterogeneousInfo>());
-          kernel_tensor->heterogeneous_info()->need_alloc_hete_res_ = NeedAllocateHeteRes::NeedHostMem;
-        } else if (move_to == kToDisk) {
-          kernel_tensor->set_heterogeneous_info(std::make_shared<HeterogeneousInfo>());
-          kernel_tensor->heterogeneous_info()->need_alloc_hete_res_ = NeedAllocateHeteRes::NeedDiskFile;
-        }
-      }
       auto device_address = kernel_tensor->device_address();
       device_address->SetNodeIndex(kernel, i);
       if (is_from_persistent_mem) {

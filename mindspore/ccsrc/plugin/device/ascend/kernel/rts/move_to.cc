@@ -133,19 +133,15 @@ bool MoveTo::Init(const AnfNodePtr &anf_node) {
 }
 
 int64_t MoveTo::GetTensorDevice(const KernelTensor *tensor) {
-  if (tensor->device_ptr() != nullptr) {
-    return kNpuInt;
-  }
-  const auto &hete_info = tensor->heterogeneous_info();
-  MS_EXCEPTION_IF_NULL(hete_info);
-
-  if (hete_info->host_ptr_ != nullptr) {
+  MS_EXCEPTION_IF_NULL(tensor->device_address());
+  const auto device_type = tensor->device_address()->GetDeviceType();
+  if (device_type == device::DeviceType::kCPU) {
     return kCpuInt;
+  } else if (device_type == device::DeviceType::kAscend) {
+    return kNpuInt;
+  } else {
+    MS_LOG(EXCEPTION) << "MoveTo only support CPU or NPU DeviceAddress input, but get " << device_type;
   }
-  if (!hete_info->file_name_.empty()) {
-    return kDiskInt;
-  }
-  MS_LOG(EXCEPTION) << "Get kernel tensor device failed.";
 }
 
 device::SwapManagerPtr MoveTo::GetSwapManager(const KernelTensor *tensor) {
@@ -238,11 +234,8 @@ bool MoveTo::MoveFromDToH(const KernelTensor *dst_tensor, const KernelTensor *sr
   // Get src device ptr.
   const auto device_ptr = src_tensor->device_ptr();
   MS_EXCEPTION_IF_NULL(device_ptr);
-
   // Get dst host ptr.
-  const auto &hete_info = dst_tensor->heterogeneous_info();
-  MS_EXCEPTION_IF_NULL(hete_info);
-  const auto &host_ptr = hete_info->host_ptr_;
+  const auto &host_ptr = dst_tensor->device_ptr();
   MS_EXCEPTION_IF_NULL(host_ptr);
 
   // Memory copy.
@@ -252,11 +245,8 @@ bool MoveTo::MoveFromDToH(const KernelTensor *dst_tensor, const KernelTensor *sr
 
 bool MoveTo::MoveFromHToD(const KernelTensor *dst_tensor, const KernelTensor *src_tensor, void *stream_ptr) {
   // Get src host ptr.
-  const auto &hete_info = src_tensor->heterogeneous_info();
-  MS_EXCEPTION_IF_NULL(hete_info);
-  const auto &host_ptr = hete_info->host_ptr_;
+  const auto &host_ptr = src_tensor->device_ptr();
   MS_EXCEPTION_IF_NULL(host_ptr);
-
   // Get dst device ptr.
   const auto device_ptr = dst_tensor->device_ptr();
   MS_EXCEPTION_IF_NULL(device_ptr);
@@ -401,7 +391,7 @@ bool MoveTo::Launch(const std::vector<KernelTensor *> &inputs, const std::vector
     return false;
   }
 
-  const int from = GetTensorDevice(input);
+  const auto from = GetTensorDevice(input);
   const auto &func_iter = func_map_.find(std::make_pair(from, to_));
   if (func_iter == func_map_.end()) {
     MS_LOG(ERROR) << "Not supported moving, from: " << from << ", to " << to_;
