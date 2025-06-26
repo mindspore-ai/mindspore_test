@@ -1,4 +1,8 @@
 ## make protobuf files
+
+__download_pkg(onnx https://gitee.com/mirrors/ONNX/repository/archive/v1.6.0
+8470ee37fa44510c0ffca591bd17a0b4160ae23f5989014030456778fcb740a1)
+file(COPY ${onnx_SOURCE_DIR}/onnx/onnx.proto DESTINATION ${TOP_DIR}/third_party/proto/onnx)
 file(GLOB ONNX_PROTO "" ${CMAKE_SOURCE_DIR}/third_party/proto/onnx/onnx.proto)
 message("onnx proto path is :" ${ONNX_PROTO})
 ms_protobuf_generate(ONNX_PROTO_SRCS ONNX_PROTO_HDRS ${ONNX_PROTO})
