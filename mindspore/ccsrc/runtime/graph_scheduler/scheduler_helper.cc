@@ -98,45 +98,6 @@ void UpdateDataArrowRefCount(AbstractActor *const to_actor, size_t to_input_inde
     device_tensor->UpdateFlag(device::kDeviceAddressFlagNullptr);
   }
 }
-
-void SetHeteInfoForParamDeviceAddress(const AnfNodePtr &anf_node, const KernelTensorPtr &kernel_tensor) {
-  constexpr auto kParamterDeviceUserDataName = "parameter_device";
-  if (!anf_node->isa<Parameter>()) {
-    return;
-  }
-  const auto &parameter = anf_node->cast<ParameterPtr>();
-  MS_EXCEPTION_IF_NULL(parameter);
-  const auto value = parameter->default_param();
-  if (value == nullptr) {
-    return;
-  }
-  const auto meta_tensor = value->cast_ptr<tensor::MetaTensor>();
-  if (meta_tensor == nullptr) {
-    return;
-  }
-  const auto &user_data = meta_tensor->user_data<tensor::TensorPybind::TensorPyUserData>(kParamterDeviceUserDataName);
-  if (user_data == nullptr) {
-    return;
-  }
-  if (!py::isinstance<py::str>(user_data->obj)) {
-    return;
-  }
-  std::string device_str = py::cast<std::string>(user_data->obj);
-  if (device_str.empty()) {
-    return;
-  }
-
-  MS_EXCEPTION_IF_NULL(kernel_tensor);
-  const auto &device_tensor = kernel_tensor->device_address();
-  MS_EXCEPTION_IF_NULL(device_tensor);
-  if (device_str == kToCpu) {
-    kernel_tensor->set_heterogeneous_info(std::make_shared<HeterogeneousInfo>());
-    kernel_tensor->heterogeneous_info()->need_alloc_hete_res_ = NeedAllocateHeteRes::NeedHostMem;
-  } else if (device_str == kToDisk) {
-    kernel_tensor->set_heterogeneous_info(std::make_shared<HeterogeneousInfo>());
-    kernel_tensor->heterogeneous_info()->need_alloc_hete_res_ = NeedAllocateHeteRes::NeedDiskFile;
-  }
-}
 }  // namespace
 
 std::vector<AbstractActorPtr> SchedulerHelper::CollectActors(const ActorSet *actor_set) {
@@ -235,6 +196,15 @@ void SchedulerHelper::AddDeviceTensorStore(const AnfNodePtr &anf_node, const Ker
       auto store_kernel_tensor = graph_parameter_store->Fetch(outer_idx, 0);
       if (store_kernel_tensor == nullptr || store_kernel_tensor->device_address() == nullptr) {
         graph_parameter_store->Push(outer_idx, 0, kernel_tensor, SIZE_MAX);
+        const auto &parameter_device = common::AnfAlgo::GetParameterDeviceStr(anf_node);
+        if (!parameter_device.empty()) {
+          if (parameter_device != kToCpu) {
+            MS_LOG(EXCEPTION) << "Device of parameter is supposed to be \"CPU\" if it is set, but got "
+                              << parameter_device;
+          }
+          graph_parameter_store->SetOffloaded(outer_idx, 0, true);
+          MS_LOG(INFO) << "Offloaded parameter:" << real_node->fullname_with_scope();
+        }
       } else if (store_kernel_tensor->device_address()->GetDeviceType() != device_tensor->GetDeviceType() &&
                  device_tensor->GetDeviceType() != device::DeviceType::kCPU) {
         graph_parameter_store->Push(outer_idx, 0, kernel_tensor, SIZE_MAX);
@@ -252,7 +222,6 @@ void SchedulerHelper::AddDeviceTensorStore(const AnfNodePtr &anf_node, const Ker
   }
   MS_LOG(DEBUG) << "Add device tensor store:" << kernel_tensor << " for node:" << anf_node.get()->DebugString()
                 << " node addr:" << anf_node.get() << " device type:" << kernel_tensor->GetDeviceType();
-  SetHeteInfoForParamDeviceAddress(anf_node, kernel_tensor);
   DeviceTensorStore::GetInstance().Insert(const_cast<AnfNode *>(anf_node.get()), kernel_tensor);
   device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
 }
@@ -1633,7 +1602,6 @@ KernelTensorPtr SchedulerHelper::CloneKernelTensorWithDeviceInfo(const KernelTen
     address_common->pointer_ref_count_->ptr(), address_common->size_, address_common->shape_vector_,
     address_common->format_, address_common->dtype_id_, device_context->device_context_key().device_name_,
     device_context->device_context_key().device_id_, address_common->stream_id_, kernel_tensor->user_data());
-  new_device_address->set_heterogeneous_info(kernel_tensor->heterogeneous_info());
   new_device_address->set_host_shape(kernel_tensor->host_shape());
   auto new_kernel_tensor = kernel_tensor->CloneKernelTensor();
   new_kernel_tensor->set_device_address(new_device_address);
