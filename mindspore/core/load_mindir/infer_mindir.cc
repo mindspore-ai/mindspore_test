@@ -105,7 +105,7 @@ bool MindIREngine::InferShape(const AbstractBasePtrList &args) {
     MS_LOG(DEBUG) << "Finish to Infere.";
     return true;
   }
-  MS_LOG(INFO) << "Not finished to infer: " << todo_.size();
+  MS_LOG(DEBUG) << "Not finished to infer: " << todo_.size();
   for (const auto &node : todo_) {
     MS_LOG(DEBUG) << "Node uninfered: " << node->DebugString();
   }
@@ -211,16 +211,16 @@ AbstractBasePtr MindIREngine::InferPrimitiveShape(const PrimitivePtr &prim,
       MS_LOG(INTERNAL_EXCEPTION) << "Get infer shape function failed, primitive name:" << prim->name()
                                  << " primitive type:" << prim->type_name() << ".";
     } else {
-      MS_LOG(INFO) << "Get infer shape function failed, primitive name:" << prim->name()
-                   << " primitive type:" << prim->type_name() << " It will keep the previous value with danger.";
+      MS_LOG(DEBUG) << "Get infer shape function failed, primitive name:" << prim->name()
+                    << " primitive type:" << prim->type_name() << " It will keep the previous value with danger.";
     }
   } catch (const std::exception &ex) {
     if (raise_exception_) {
       MS_LOG(INTERNAL_EXCEPTION) << "Catch primitive:" << prim->ToString()
                                  << " InferPrimitiveShape exception:" << ex.what() << ".";
     } else {
-      MS_LOG(INFO) << "Catch primitive:" << prim->ToString() << " InferPrimitiveShape exception:" << ex.what()
-                   << " It will keep the previous value with danger.";
+      MS_LOG(DEBUG) << "Catch primitive:" << prim->ToString() << " InferPrimitiveShape exception:" << ex.what()
+                    << " It will keep the previous value with danger.";
     }
   }
   return nullptr;
@@ -232,7 +232,7 @@ void MindIREngine::EvalCommonPrimitive(const PrimitivePtr &prim, const CNodePtr 
   // AbstractCSRTensor/AbstractCOOTensor that can not be inferred by its Infer Functions.
   if (prim->name() == prim::kPrimMakeTuple->name()) {
     if (node->abstract() != nullptr && (node->abstract()->isa<abstract::AbstractSparseTensor>())) {
-      MS_LOG(INFO) << "Save MakeTuple cnode abstract by its own abstract : " << node->abstract()->ToString();
+      MS_LOG(DEBUG) << "Save MakeTuple cnode abstract by its own abstract : " << node->abstract()->ToString();
       SaveNodeInferResult(node, node->abstract());
       return;
     }
@@ -250,11 +250,11 @@ void MindIREngine::EvalCommonPrimitive(const PrimitivePtr &prim, const CNodePtr 
   // Call C++ infer
   auto result = InferPrimitiveShape(prim, args_abs_list);
   if (result == nullptr) {
-    MS_LOG(INFO) << node->ToString()
-                 << " can't be inferred shape. It will keep the previous value with danger. Prim: " << prim->ToString();
+    MS_LOG(DEBUG) << node->ToString() << " can't be inferred shape. It will keep the previous value with danger. Prim: "
+                  << prim->ToString();
     if (node->abstract() == nullptr) {
-      MS_LOG(INFO) << "The abstract of the node: " << node->ToString()
-                   << " is nullptr. And it can't be inferred shape. Prim: " << prim->ToString();
+      MS_LOG(DEBUG) << "The abstract of the node: " << node->ToString()
+                    << " is nullptr. And it can't be inferred shape. Prim: " << prim->ToString();
     } else {
       result = node->abstract()->Clone();
     }
@@ -275,7 +275,7 @@ void MindIREngine::EvalReturnPrimitive(const CNodePtr &node) {
       MS_LOG_TRY_CATCH_SCOPE;
       result = result->Join(it->second);
     } catch (const std::exception &e) {
-      MS_LOG(INFO) << "Join abstract for return node " << node->DebugString() << " failed, exception: " << e.what();
+      MS_LOG(DEBUG) << "Join abstract for return node " << node->DebugString() << " failed, exception: " << e.what();
     }
   }
   this->func_graph_result_[funcName] = result;
@@ -362,7 +362,7 @@ void MindIREngine::SaveNodeInferResult(const AnfNodePtr &node, const AbstractBas
       }
     }
   } catch (const std::exception &e) {
-    MS_LOG(INFO) << "Join abstract for node " << node->DebugString() << " failed, exception: " << e.what();
+    MS_LOG(DEBUG) << "Join abstract for node " << node->DebugString() << " failed, exception: " << e.what();
     return;
   }
 
@@ -548,7 +548,8 @@ void MindIREngine::UpdateReady(const AnfNodePtr &node) {
       ready_.push_back(user.first);
       MS_LOG(DEBUG) << "Node:" << user.first->ToString() << " is ready.";
       if (count < 1) {
-        MS_LOG(INFO) << " There is something to do. Node:" << node->ToString() << " user:" << user.first->DebugString();
+        MS_LOG(DEBUG) << " There is something to do. Node:" << node->ToString()
+                      << " user:" << user.first->DebugString();
       }
     }
   }
