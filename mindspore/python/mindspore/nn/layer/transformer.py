@@ -12,6 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+# The implementation of the classes `MultiheadAttention`, `TransformerEncoderLayer`, `TransformerDecoderLayer`,
+# `TransformerEncoder`, `TransformerDecoder` and `Transformer` is referenced from the PyTorch project.
+# - https://github.com/pytorch/pytorch/blob/release/2.0/torch/nn/modules/transformer.py
+# - https://github.com/pytorch/pytorch/blob/release/2.0/torch/nn/modules/activation.py
+# Additional modifications are made by Huawei Technologies Co., Ltd in 2022.
 """
 Transformer Cells module, include TransformerEncoderLayer, TransformerDecoderLayer,
 TransformerEncoder, TransformerDecoder, Transformer.
