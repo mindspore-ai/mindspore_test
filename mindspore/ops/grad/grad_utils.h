@@ -82,8 +82,6 @@ int64_t CheckRange(int64_t idx, int64_t dim_size);
 
 NodePtrList BinopGradCommon(BpropBuilder *ib, const NodePtr &x, const NodePtr &y, const NodePtr &dx, const NodePtr &dy,
                             size_t shift = 0UL);
-NodePtrList MatMulExtBroadCastGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr &y, const NodePtr &dx,
-                                   const NodePtr &dy, size_t ignore_offset = 0UL);
 
 std::vector<int64_t> Range(int64_t start, int64_t stop, int64_t step = 1);
 std::vector<int64_t> Range(int64_t stop);
