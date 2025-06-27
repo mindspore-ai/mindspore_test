@@ -260,10 +260,6 @@ def _do_slice(self: Tensor, dim: int, index: slice, dim_size: int):
             return TensorToScalar()(index)
         return index
 
-    # optimize for graph mode
-    if index.start in (None, 0) and index.stop is None and index.step in (None, 1):
-        return self
-
     step = _get_index(index.step, 1)
     if step <= 0:
         raise ValueError("slice step must be positive")

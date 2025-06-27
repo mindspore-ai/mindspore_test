@@ -515,7 +515,7 @@ class TensorToScalar(PrimitiveWithCheck):
         """infer_value TensorToScalar"""
         if isinstance(x, (Tensor_, Tensor)):
             if not x.shape or x.shape == (1,) or x.shape == [1,]:
-                return x.asnumpy().item()
+                return x.item()
         return None
 
 
