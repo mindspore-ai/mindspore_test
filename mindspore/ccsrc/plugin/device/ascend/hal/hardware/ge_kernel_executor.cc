@@ -1581,7 +1581,7 @@ bool GeKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_typ
   auto res = GEN_EXECUTOR(std::string("aclnnInplaceCopy"), output_addr, input_addr);
   auto workspace_size = std::get<0>(res);
   auto executor = std::get<1>(res);
-  std::function<void()> release_func = std::get<3>(res);
+  auto release_func = std::get<kIndex3>(res);
   if (workspace_size == 0) {
     RUN_OP_API_ASYNC(std::string("aclnnInplaceCopy"), nullptr, 0, executor, stream_ptr, release_func);
   } else {
