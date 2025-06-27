@@ -327,10 +327,10 @@ class DynamicLossScaler(LossScaler):
     r"""
     Manager for dynamically adjusting the loss scaling factor.
 
-    Dynamic loss scaling tries to determine the largest loss scale value that
-    will keep gradients finite. It does this by increasing the loss scale every
-    `scale_window` steps by `factor` if the grads remain finite, otherwise it reduces
-    the loss scale by `1 / factor` and resets the counter.
+    Dynamic loss scaling attempts to determine the largest loss scale `scale_value` while keeping
+    the gradients finite. If the gradients remain finite for `scale_window` consecutive steps,
+    it increases the loss scale `scale_value` by `scale_factor`, otherwise it decreases the loss
+    scale `scale_value` by `1 / scale_factor` and resets the counter.
 
     .. warning::
         This is an experimental API that is subject to change or deletion.
