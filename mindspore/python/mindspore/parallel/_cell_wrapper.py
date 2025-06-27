@@ -339,7 +339,7 @@ class CommTensorDataForPP(Cell):
         current_rank_stage_id = self._current_rank_id // self._from_dev_num_in_stage
         end_stage = self._from_dev_num_in_stage * (current_rank_stage_id + 1)
         start_stage = self._from_dev_num_in_stage * current_rank_stage_id
-        rank_pos_in_stage = [rank_id for rank_id in range(start_stage, end_stage)].index(self._current_rank_id)
+        rank_pos_in_stage = list(range(start_stage, end_stage)).index(self._current_rank_id)
         root_idx = self._from_rank_id[rank_pos_in_stage]
         all_reduce_rank_list = [self._from_rank_id[rank_pos_in_stage]]
         while rank_pos_in_stage < len(self._diff_rank_id):
