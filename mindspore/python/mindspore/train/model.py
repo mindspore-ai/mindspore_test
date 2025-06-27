@@ -266,7 +266,7 @@ def _handle_tft(func):
                         ret = obj.tft.tft_wait_next_action()
                         if ret == obj.tft.Action.EXIT.value:
                             raise e
-                        repair_step = tft.tft_get_repair_step()
+                        repair_step = obj.tft.tft_get_repair_step()
                         logger.warning(
                             "uce wrapper caught repair finish REPAIR STEP: {} batch_num:{}".format(repair_step,
                                                                                                    self.batch_num))

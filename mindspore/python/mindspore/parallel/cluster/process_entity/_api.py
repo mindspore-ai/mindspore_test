@@ -443,14 +443,9 @@ class _ProcessManager:
         Args:
             NA.
         """
-        for p in self.cgn_processes:
-            if p.poll() is None:
-                p.kill()
+        self.kill_worker_processes()
+        self.kill_tail_log_processes()
         self.cgn_processes.clear()
-
-        for p in self.tail_cgn_processes:
-            if p is not None:
-                p.kill()
         self.tail_cgn_processes.clear()
 
     def kill_single_worker(self, pid):
@@ -464,7 +459,7 @@ class _ProcessManager:
         for i in range(len(self.cgn_processes)):
             p = self.cgn_processes[i]
             if p.pid == pid and p.poll() is None:
-                p.kill()
+                os.killpg(os.getpgid(p.pid), signal.SIGKILL)
                 del self.cgn_processes[i]
                 tail_p = self.tail_cgn_processes[i]
                 if tail_p is not None:
