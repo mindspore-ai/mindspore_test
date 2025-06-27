@@ -24,7 +24,6 @@ import common.template as template
 from common.base_generator import BaseGenerator
 from pyboost import pyboost_utils
 
-
 LITE_OPS_H = """
 #ifndef MINDSPORE_CORE_OPS_GEN_LITE_OPS_H_
 #define MINDSPORE_CORE_OPS_GEN_LITE_OPS_H_
@@ -122,9 +121,10 @@ class LiteOpsCcGenerator(BaseGenerator):
         self.inc_ops_head_templat = template.Template(INC_OPS_HEAD)
         self.lite_ops_cc_template = template.Template(LITE_OPS_CC)
         self.op_template = template.op_template
-        self.register_primitive_c_template = template.Template("${op_name}::${op_name}():BaseOperator(kName${op_name}) {}\n"
-                                                               "REGISTER_PRIMITIVE_C(kName${op_name}, ${op_name});\n"
-                                                               "MIND_API_OPERATOR_IMPL(${op_name}, BaseOperator);\n\n")
+        self.register_primitive_c_template = template.Template(
+            "${op_name}::${op_name}():BaseOperator(kName${op_name}) {}\n"
+            "REGISTER_PRIMITIVE_C(kName${op_name}, ${op_name});\n"
+            "MIND_API_OPERATOR_IMPL(${op_name}, BaseOperator);\n\n")
 
     def generate(self, work_path, op_protos):
         """
