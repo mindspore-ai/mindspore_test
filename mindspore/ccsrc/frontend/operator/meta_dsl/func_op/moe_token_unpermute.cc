@@ -58,18 +58,12 @@ BeginFunction(MoeTokenUnpermute, permuted_tokens, sorted_indices, probs, padded_
     const auto &primitive = prim();
     auto probs_type_id = primitive->GetAttr("probs_type_id");
     MS_EXCEPTION_IF_NULL(probs_type_id);
-    auto target_type = static_cast<TypeId>(GetValue<int64_t>(probs_type_id));
-    if (target_type == kNumberTypeFloat32) {
-      auto permuted_type_id = primitive->GetAttr("permuted_type_id");
-      auto unpermuted_token_casted = Call(Prim(Cast), permuted_tokens, Value(probs_type_id));
-      auto out =
-        Call(Prim(InnerMoeTokenUnpermute), unpermuted_token_casted, sorted_indices, probs, padded_mode, restore_shape);
-      auto out_cast = Call(Prim(Cast), out, Value(permuted_type_id));
-      Return(out_cast);
-    } else {
-      auto out = Call(Prim(InnerMoeTokenUnpermute), permuted_tokens, sorted_indices, probs, padded_mode, restore_shape);
-      Return(out);
-    }
+    auto permuted_type_id = primitive->GetAttr("permuted_type_id");
+    auto unpermuted_token_casted = Call(Prim(Cast), permuted_tokens, Value(probs_type_id));
+    auto out =
+      Call(Prim(InnerMoeTokenUnpermute), unpermuted_token_casted, sorted_indices, probs, padded_mode, restore_shape);
+    auto out_cast = Call(Prim(Cast), out, Value(permuted_type_id));
+    Return(out_cast);
   };
 
   auto cond_t = [&]() {
