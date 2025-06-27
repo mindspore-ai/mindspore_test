@@ -231,9 +231,11 @@ void Optimizer::RunFunc(int *counter, bool use_profile) {
 
     uint64_t start_time = profiler::GetClockSyscnt();
     MS_LOG(INFO) << "Start " << profiler_pass_name;
+    ProcessStatus::GetInstance().RecordStart(profiler_pass_name);
     auto last_version = FuncGraphManager::version();
     use_profile ? ProfileExecute(MsProfile::GetProfile()->Step(pass_names_[i]), opt_func) : opt_func();
     auto current_changed = (FuncGraphManager::version() != last_version);
+    ProcessStatus::GetInstance().RecordEnd();
     MS_LOG(INFO) << "End " << profiler_pass_name << (current_changed ? ".changed" : ".unchanged");
     (void)profiler::CollectHostInfo(pipeline::kCompiler, pipeline::kOptimize, profiler_pass_name, start_time,
                                     profiler::GetClockSyscnt(), 0);
