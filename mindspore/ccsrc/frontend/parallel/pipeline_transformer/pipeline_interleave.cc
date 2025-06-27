@@ -1584,7 +1584,7 @@ void PipelinePostProcess::ElimGraphStage() {
   }
 }
 
-bool PipelineInterleave::HasNoUpdateParameter() {
+bool PipelineInterleave::IsNoUpdateParameterStage(const int64_t stage) {
   auto parameters = root_->parameters();
   for (auto &parameter : parameters) {
     if (ParameterIsCloned(parameter)) {
@@ -1597,7 +1597,7 @@ bool PipelineInterleave::HasNoUpdateParameter() {
     }
     auto stage_set = parameter_color_map_.at(parameter);
     auto requires_grad = param_info->requires_grad();
-    if (requires_grad && stage_set.count(stage_)) {
+    if (requires_grad && stage_set.count(stage)) {
       return false;
     }
   }
@@ -1605,12 +1605,12 @@ bool PipelineInterleave::HasNoUpdateParameter() {
 }
 
 void PipelineInterleave::FreezeGradient() {
+  if (IsNoUpdateParameterStage(0)) {
+    MS_LOG(EXCEPTION) << "Stage 0 should has at least 1 trainable parameter. but got none. "
+                      << "One possible cause is that the @lazy_inline decorator is misplaced.";
+  }
   auto node_users_map = manager_->node_users();
-  if (HasNoUpdateParameter() && is_train_) {
-    if (stage_ == 0) {
-      MS_LOG(EXCEPTION) << "Stage 0 should has at least 1 trainable parameter. but got none. "
-                        << "One possible cause is that the @lazy_inline decorator is misplaced.";
-    }
+  if (IsNoUpdateParameterStage(stage_) && is_train_) {
     root_->set_flag(NO_UPDATE, true);
     auto nodes = root_->nodes();
     for (auto &node : nodes) {
