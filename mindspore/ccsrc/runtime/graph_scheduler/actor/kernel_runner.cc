@@ -750,8 +750,12 @@ void KernelRunner::SetSomasMemory(OpContext<KernelTensor> *const context) const 
       MS_EXCEPTION_IF_NULL(output_device_tensor);
       if (somas_graph_output_indexes_.count(i) && (output_device_tensor->GetPtr() != nullptr)) {
         if (device_ptr != output_device_tensor->GetPtr()) {
-          MS_LOG(ERROR) << GetAID().Name() << " does not free address for graph output index: " << i
-                        << " kernel tensor:" << output_kernel_tensors_[i]->ToString();
+          // The device memory may not be released here and free it directly. When sink size>1, due to some problem on
+          // ref count, when the step is not the last step of the sink size, it cannot be released according to the ref
+          // count in the output actor. When sink size=1, there is no such problem, and ptr will be directly swapped to
+          // the new device address. The problem of ref count  will be fixed in next releases.
+          MS_LOG(INFO) << GetAID().Name() << " does not free address for graph output index: " << i
+                       << " kernel tensor:" << output_kernel_tensors_[i]->ToString();
           device_contexts_[0]->device_res_manager_->FreeMemory(output_device_tensor);
         }
       }
