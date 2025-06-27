@@ -454,76 +454,107 @@ void PipelineInterleave::BroadCastGraphStage(const FuncGraphPtr &fg) {
   }
 }
 
+static bool IsNodeSkippable(const AnfNodePtr &node) {
+  return !node->isa<CNode>() || node->user_data<NodeStageInfo>() == nullptr ||
+         node->user_data<NodeStageInfo>()->stage() == -1 || IsPrimitiveCNode(node, prim::kPrimUpdateState);
+}
+
+struct StageChunkUpdate {
+  bool need_coloring;
+  int64_t new_chunk;
+};
+
+static StageChunkUpdate UpdateUserStageChunk(const std::shared_ptr<NodeStageInfo> &stage_info, const CNodePtr &cnode,
+                                             const CNodePtr &user_node, int64_t stage, int64_t chunk) {
+  bool need_coloring = false;
+  auto user_stage_info = user_node->user_data<NodeStageInfo>();
+
+  if (user_stage_info == nullptr) {
+    user_node->set_user_data<NodeStageInfo>(std::make_shared<NodeStageInfo>(stage, chunk));
+    need_coloring = true;
+    user_node->AddPrimalAttr(CHUNK, MakeValue(chunk));
+    user_node->AddPrimalAttr(STAGE, MakeValue(stage));
+    return {need_coloring, chunk};
+  }
+
+  auto user_node_stage = user_stage_info->stage();
+  auto user_node_chunk = user_stage_info->chunk();
+  if (stage == user_node_stage) {
+    if (chunk > user_node_chunk) {
+      user_stage_info->set_chunk(chunk);
+      need_coloring = true;
+      user_node->AddPrimalAttr(CHUNK, MakeValue(chunk));
+      user_node->AddPrimalAttr(STAGE, MakeValue(user_node_stage));
+      return {need_coloring, chunk};
+    }
+    if (chunk < user_node_chunk) {
+      stage_info->set_chunk(user_node_chunk);
+      chunk = user_node_chunk;
+      need_coloring = true;
+      cnode->AddPrimalAttr(CHUNK, MakeValue(chunk));
+      cnode->AddPrimalAttr(STAGE, MakeValue(user_node_stage));
+      return {need_coloring, chunk};
+    }
+  }
+
+  if (stage > user_node_stage) {
+    const auto pc = parallel::ParallelContext::GetInstance();
+    if (!pc->pipeline_interleave_temp() && IsValueNode<FuncGraph>(user_node->input(0))) {
+      MS_LOG_WITH_NODE(EXCEPTION, user_node) << "The stage setting is incorrect. PreNode's stage:" << stage
+                                             << " is larger than NextNode's stage:" << user_node_stage;
+    }
+    if ((chunk >= user_node_chunk)) {
+      user_stage_info->set_chunk(chunk + 1);
+      need_coloring = true;
+      user_node->AddPrimalAttr(CHUNK, MakeValue(chunk + 1));
+      user_node->AddPrimalAttr(STAGE, MakeValue(user_node_stage));
+      return {need_coloring, chunk};
+    }
+  }
+
+  if ((stage < user_node_stage) && (chunk > user_node_chunk)) {
+    user_stage_info->set_chunk(chunk);
+    need_coloring = true;
+    user_node->AddPrimalAttr(CHUNK, MakeValue(chunk));
+    user_node->AddPrimalAttr(STAGE, MakeValue(user_node_stage));
+    return {need_coloring, chunk};
+  }
+
+  return {need_coloring, chunk};
+}
+
 void PipelineInterleave::BroadCastColoring() {
   auto need_coloring = true;
   auto all_nodes = shared_cell_->nodes();
   auto node_users = manager_->node_users();
+
   while (need_coloring) {
     need_coloring = false;
     for (auto node = all_nodes.cbegin(); node != all_nodes.cend(); ++node) {
-      auto stage_info = (*node)->user_data<NodeStageInfo>();
-      if (!(*node)->isa<CNode>() || stage_info == nullptr || stage_info->stage() == -1 ||
-          IsPrimitiveCNode(*node, prim::kPrimUpdateState)) {
+      if (IsNodeSkippable(*node)) {
         continue;
       }
+
+      auto stage_info = (*node)->user_data<NodeStageInfo>();
       auto cnode = (*node)->cast<CNodePtr>();
       auto stage = stage_info->stage();
       auto chunk = stage_info->chunk();
       for (auto &user_pair : node_users[*node]) {
         auto user_node = user_pair.first->cast<CNodePtr>();
         MS_EXCEPTION_IF_NULL(user_node);
-        auto user_stage_info = user_node->user_data<NodeStageInfo>();
-        if (user_stage_info == nullptr) {
-          user_node->set_user_data<NodeStageInfo>(std::make_shared<NodeStageInfo>(stage, chunk));
+        const auto res = UpdateUserStageChunk(stage_info, cnode, user_node, stage, chunk);
+        if (res.need_coloring) {
           need_coloring = true;
-          user_node->AddPrimalAttr(CHUNK, MakeValue(chunk));
-          user_node->AddPrimalAttr(STAGE, MakeValue(stage));
-          continue;
         }
-        auto user_node_stage = user_stage_info->stage();
-        auto user_node_chunk = user_stage_info->chunk();
-        if (stage == user_node_stage) {
-          if (chunk > user_node_chunk) {
-            user_stage_info->set_chunk(chunk);
-            need_coloring = true;
-            user_node->AddPrimalAttr(CHUNK, MakeValue(chunk));
-            user_node->AddPrimalAttr(STAGE, MakeValue(user_node_stage));
-            continue;
-          }
-          if (chunk < user_node_chunk) {
-            stage_info->set_chunk(user_node_chunk);
-            chunk = user_node_chunk;
-            need_coloring = true;
-            cnode->AddPrimalAttr(CHUNK, MakeValue(chunk));
-            cnode->AddPrimalAttr(STAGE, MakeValue(user_node_stage));
-            continue;
-          }
-        }
-        if (stage > user_node_stage) {
-          if ((chunk >= user_node_chunk)) {
-            user_stage_info->set_chunk(chunk + 1);
-            need_coloring = true;
-            user_node->AddPrimalAttr(CHUNK, MakeValue(chunk + 1));
-            user_node->AddPrimalAttr(STAGE, MakeValue(user_node_stage));
-            continue;
-          }
-        }
-        if ((stage < user_node_stage) && (chunk > user_node_chunk)) {
-          user_stage_info->set_chunk(chunk);
-          need_coloring = true;
-          user_node->AddPrimalAttr(CHUNK, MakeValue(chunk));
-          user_node->AddPrimalAttr(STAGE, MakeValue(user_node_stage));
-        }
+        chunk = res.new_chunk;
       }
     }
   }
 
-  for (auto &fg : manager_->func_graphs()) {
-    auto stage = fg->stage();
-    if (stage < 0) {
-      continue;
+  for (const auto &fg : manager_->func_graphs()) {
+    if (fg->stage() >= 0) {
+      BroadCastGraphStage(fg);
     }
-    BroadCastGraphStage(fg);
   }
 }
 
