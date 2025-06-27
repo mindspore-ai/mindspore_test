@@ -243,14 +243,14 @@ class MS_API MSTensor {
 
   /// \brief Get the boolean value that indicates whether the MSTensor equals tensor.
   ///
-  /// \param[in] another MSTensor.
+  /// \param[in] tensor MSTensor.
   ///
   /// \return The boolean value that indicates whether the MSTensor equals tensor.
   bool operator==(const MSTensor &tensor) const;
 
   /// \brief Get the boolean value that indicates whether the MSTensor not equals tensor.
   ///
-  /// \param[in] another MSTensor.
+  /// \param[in] tensor MSTensor.
   ///
   /// \return The boolean value that indicates whether the MSTensor not equals tensor.
   bool operator!=(const MSTensor &tensor) const;

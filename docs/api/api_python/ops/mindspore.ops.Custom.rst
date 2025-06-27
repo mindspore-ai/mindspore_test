@@ -75,7 +75,7 @@ mindspore.ops.Custom
                在入参 `func` 中传入算子的名字。根据infer函数的实现方式，存在以下两种使用方式：
 
                - **Python infer**：若算子的infer函数是Python实现，即通过 `out_shape` 和 `out_dtype` 参数传入infer shape和infer type函数，则指定 `func="CustomName"` 。
-               - **C++ infer**：若算子的infer函数通过C++实现，则在func中传入infer shape或infer type实现文件的路径并用 `:` 隔开算子名字，例如： `func="add_custom_infer.cc:AddCustom` 。
+               - **C++ infer**：若算子的infer函数通过C++实现，则在func中传入infer shape或infer type实现文件的路径并用 `:` 隔开算子名字，例如： `func="add_custom_infer.cc:AddCustom"` 。
 
             2. 对于"julia"：
 
