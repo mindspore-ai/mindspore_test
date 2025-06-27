@@ -805,14 +805,16 @@ class ArgMaxWithValueNet(nn.Cell):
         self.argmaxwithvalue_op = ops.ArgMaxWithValue(keep_dims=True)
 
     def construct(self, x, flag):
+        if flag == 0:
+            return self.argmaxwithvalue_op(x)
         arg, value = self.argmaxwithvalue_op(x)
         arg = arg + 1
         value = value + 1
-        if flag == 0:
-            return arg, value
         if flag == 1:
-            return arg
+            return arg, value
         if flag == 2:
+            return arg
+        if flag == 3:
             return value
         raise RuntimeError(f"When call ArgMaxWithValueNet construct, the flag should be less than 3!")
 
@@ -827,7 +829,7 @@ def test_export_argmaxwithvalue():
     np_x = np.array([0.0, 0.4, 0.6, 0.7, 0.1]).astype(np.float32)
     x = Tensor(np_x)
     net = ArgMaxWithValueNet()
-    for i in range(3):
+    for i in range(4):
         ms_output = net(x, i)
         onnx_file = './argmaxwithvalue_onnx'
         export(net, x, i, file_name=onnx_file, file_format='ONNX')
@@ -835,7 +837,7 @@ def test_export_argmaxwithvalue():
         if os.path.isfile(onnx_file):
             session = ort.InferenceSession(onnx_file)
             inputs = {"x": np_x}
-            if i == 0:
+            if i == 0 or i == 1:
                 output = session.run(None, inputs)
                 assert np.allclose(ms_output[0].asnumpy(),
                                    output[0], 1e-3, 1e-3), f" ms:{ms_output[0]}, onnx:{output[1]}"
