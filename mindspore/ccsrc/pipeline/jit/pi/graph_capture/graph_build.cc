@@ -2055,6 +2055,24 @@ bool GraphBuilder::DoImport(const Instr &instr) {
   return true;
 }
 
+std::string GraphBuilder::FormatStackStr() const {
+  std::stringstream ss;
+  ss << "[";
+  for (size_t i = 0; i < frame_.GetStacks().size(); ++i) {
+    ValueNode *node = frame_.GetStacks()[i];
+    if (node && node->GetVobj()) {
+      PrintPyObject(&ss, node->GetVobj()->GetPyObject().ptr(), false);
+    } else {
+      ss << "nil";
+    }
+    if (i < frame_.GetStacks().size() - 1) {
+      ss << ", ";
+    }
+  }
+  ss << "]";
+  return ss.str();
+}
+
 bool GraphBuilder::DoByteCode(const Instr &instr) {
   TraceGuard trace_guard(GetLocation(instr));
   if (IsPiJitLogOn(LogCfg::kTraceSource) && (instr.line() != last_traced_line_)) {
@@ -2062,7 +2080,7 @@ bool GraphBuilder::DoByteCode(const Instr &instr) {
     PIJIT_DEBUG_LOG(LogCfg::kTraceSource) << "Trace source: " << GetFileName(graph_) << ":" << instr.line();
     PIJIT_DEBUG_LOG(LogCfg::kTraceSource) << "    " << GetLocation(instr)->GetStartLineSourceCode();
   }
-  PIJIT_DEBUG_LOG(LogCfg::kTraceBytecode) << "Trace bytecode: " << instr.ToString();
+  PIJIT_DEBUG_LOG(LogCfg::kTraceBytecode) << "Trace bytecode: " << instr.ToString() << "    " << FormatStackStr();
 
   if (current_block_->is_loop_head() && !graph_->Config().GetBoolConfig(GraphJitConfig::kLoopUnrolling)) {
     graph_->StopTraceAt(cur_bci_, StopTraceReason::kStopTraceLoop_Unsupported);
@@ -2486,7 +2504,7 @@ AObject *GraphBuilder::BuildSuperObject(PyCodeObject *co) {
 }
 
 void LogGuardFailed(ValueNode *node, const GraphJitConfig &conf, const std::string &msg) {
-  if (!IsPiJitLogOn(LogCfg::kGraphBreak)) {
+  if (!IsPiJitLogOn(LogCfg::kGuard)) {
     return;
   }
   auto tr = GetTrace(node, false, true, 0, -1);

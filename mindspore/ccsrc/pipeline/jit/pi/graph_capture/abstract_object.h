@@ -451,6 +451,8 @@ class AbstractTensor : public AbstractObject {
  private:
   bool is_stub_;
 };
+
+void PrintPyObject(std::ostream *out_s, const py::handle &obj, bool print_type);
 }  // namespace pijit
 }  // namespace mindspore
 

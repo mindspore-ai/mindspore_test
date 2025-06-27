@@ -69,6 +69,7 @@ class GraphBuilder {
 
   Graph *GetGraph() const { return graph_; }
   void DumpDFG();
+  std::string FormatStackStr() const;
 
   // NOTE: nn.Cell will return 'construct'
   static py::object FindPyFunc(AObject *vobj);

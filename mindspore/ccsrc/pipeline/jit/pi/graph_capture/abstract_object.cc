@@ -138,7 +138,7 @@ constexpr size_t fast_type_mask = Py_TPFLAGS_LONG_SUBCLASS | Py_TPFLAGS_LIST_SUB
 const char *AbstractObjectBase::GetTypeDesc(AObject::Type type) {
 #define ABSTRACT_TYPE_DEF(unit)       \
   if (type == AObject::kType##unit) { \
-    return "kType" #unit;             \
+    return #unit;                     \
   }
 #include "abstract_type_kind.def"
 #undef ABSTRACT_TYPE_DEF
@@ -157,14 +157,14 @@ bool AbstractObjectBase::IsMindSporeSupportedType() {
   return kMsSupportedType.find(GetType()) != kMsSupportedType.end();
 }
 
-static void PrintPyObject(std::ostream *out_s, const py::handle &obj, bool print_type) {
+void PrintPyObject(std::ostream *out_s, const py::handle &obj, bool print_type) {
   auto &s = *out_s;
   PyObject *op = obj.ptr();
   AObject::Type t = AObject::GetPyType(obj.ptr());
   switch (t) {
     case AObject::kTypeTensor:
-      s << "Tensor'" << std::string(py::str(obj.attr("shape"))) << ", " << std::string(py::str(obj.attr("dtype")))
-        << "'";
+      s << "Tensor:{shape=" << std::string(py::str(obj.attr("shape"))) << ", type="
+        << std::string(py::str(obj.attr("dtype"))) << "}";
       break;
     case AObject::kTypeBoundMethod:
       s << "<bound method " << AbstractObjectBase::ToString(PyMethod_GET_FUNCTION(op)) << " of "
@@ -194,8 +194,12 @@ static void PrintPyObject(std::ostream *out_s, const py::handle &obj, bool print
     case AObject::kTypeCell:
       s << (Py_TYPE(op)->tp_name ? Py_TYPE(op)->tp_name : "<unnamed>") << " object at " << op;
       break;
+    case AObject::kTypeFunction:
+    case AObject::kTypeModule:
+      s << AObject::GetTypeDesc(t) << ":" << std::string(py::str(obj.attr("__name__")));
+      break;
     default:
-      s << std::string(py::str(obj));
+      s << AObject::GetTypeDesc(t) << ":" << (op == nullptr ? "NULL" : std::string(py::str(obj)));
       break;
   }
 }
