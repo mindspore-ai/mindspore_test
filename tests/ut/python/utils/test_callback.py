@@ -705,5 +705,6 @@ def test_mindio_ttp_adapter():
         cb_params.sink_size = 2
         run_context = RunContext(cb_params)
         mindio_cb = TrainFaultTolerance(ckpt_save_path='./ckpt')
+        assert mindio_cb.clean_unique_id is False
         with pytest.raises(ValueError):
             mindio_cb.on_train_begin(run_context)
