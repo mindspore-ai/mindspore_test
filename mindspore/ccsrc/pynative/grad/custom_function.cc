@@ -202,7 +202,7 @@ ValuePtrList PyBackwardNode::CallBackward(const ValuePtrList &grads) {
 
   // Convert python object to tensor.
   ValuePtrList gradient_values;
-  ConvertPybindTupleGradToCValue(grad_tuple, &gradient_values, true);
+  ConvertPybindTupleGradToCValue(grad_tuple, &gradient_values);
   if (gradient_values.empty()) {
     MS_LOG(EXCEPTION) << "Custom backward function output is empty!";
   }

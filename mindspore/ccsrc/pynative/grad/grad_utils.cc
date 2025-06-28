@@ -974,6 +974,13 @@ TensorPtr AutoGradUtil::ViewAsSelfWithNoGrad(const TensorPtr &self) {
   return kernel::pyboost::view(self, self->shape());
 }
 
+TensorPtr AutoGradUtil::Add(const TensorPtr &input, const TensorPtr &other) {
+  kernel::pyboost::OpStatus status{false, false, 0, DeviceManagerConf::GetInstance()->device_type()};
+  kernel::pyboost::OpRunStatus::Get().set_run_info(std::move(status));
+  return kernel::pyboost::add(input, other);
+}
+
+
 bool BpropCallback::IsNotRequiresGrad(size_t index) const {
   // Check Tensor need grad.
   runtime::Pipeline::Get().WaitBpropStage();

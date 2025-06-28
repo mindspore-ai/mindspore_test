@@ -239,6 +239,20 @@ void CallBackwardNodePreHooks(const BackwardNodePtr &grad_node, ValuePtrList *gr
   if (grad_node->cpp_tensor_pre_hooks() != nullptr && !grad_node->cpp_tensor_pre_hooks()->empty()) {
     RunCppTensorHook(grad_node, grad_in);
   }
+  if (const auto &py_pre_hook = grad_node->py_pre_hook()) {
+    (*py_pre_hook)(grad_in);
+  }
+  for (const auto &[output_idx, hook] : grad_node->retain_grad_hooks()) {
+    const auto &grad = (*grad_in)[output_idx];
+    (*hook)(grad);
+  }
+}
+
+void CallBackwardNodePostHooks(const BackwardNodePtr &grad_node, ValuePtrList *grad_inputs,
+                               const ValuePtrList &grad_outputs) {
+  if (const auto &py_post_hook = grad_node->py_post_hook()) {
+    return (*py_post_hook)(grad_inputs, grad_outputs);
+  }
 }
 
 void ReleaseResource(const BackwardNodePtr &grad_node) {
@@ -608,6 +622,12 @@ void UpdateGradientsContexts(const ValuePtr &input, bool accumulate_grad,
       GradientContext(false, std::make_unique<GradientContext::CapturedGradient>(auto_grad_meta->output_index()));
   }
 }
+
+void UpdateRetainGradHook(BackwardNodePtr old_node, BackwardNodePtr new_node, size_t old_output_idx,
+                          size_t new_output_idx) {
+  auto retain_grad_hook = old_node->PopRetainGradHook(old_output_idx);
+  new_node->AddRetainGradHook(new_output_idx, std::move(retain_grad_hook));
+}
 }  // namespace
 
 void KPynativeOp(const GradParamPtr &grad_param) {
@@ -619,6 +639,9 @@ void KPynativeOp(const GradParamPtr &grad_param) {
   const auto &prim = grad_param->op_grad_info->op_prim;
   if (!AutoGradUtil::IsPrimNeedGrad(prim) || !AutoGradUtil::NeedGrad(grad_param->op_grad_info->input_value)) {
     MS_LOG(DEBUG) << "Prim " << prim->name() << " does not need to do op grad.";
+    if (grad_param->op_grad_info->operator_type == OperatorType::kInplaceOp) {
+      AutoGradUtil::BumpVersion(grad_param->op_grad_info->input_value[kIndex0]);
+    }
     return;
   }
   auto flatten_inputs = CommonUtils::FlattenTensorSeqInValueSeq(grad_param->op_grad_info->input_value);
@@ -775,6 +798,10 @@ void RebaseVariable(const OpGradInfoPtr &op_grad_info, const BackwardNodePtr &fu
     }
     const auto &auto_grad_meta_data = base_tensor->auto_grad_meta_data();
     MS_EXCEPTION_IF_NULL(auto_grad_meta_data);
+    if (auto_grad_meta_data->requires_grad() && auto_grad_meta_data->retains_grad()) {
+      auto base_node = auto_grad_meta_data->UnsafeGetGradNodeImpl();
+      UpdateRetainGradHook(base_node, copy_slice, kIndex0, kIndex0);
+    }
     auto_grad_meta_data->set_grad_node(copy_slice);
     (void)SafeGetGradNodeImpl(output_tensor);
     // We need set weak_ptr node pf output tensor to inplace func.
@@ -786,6 +813,11 @@ void RebaseVariable(const OpGradInfoPtr &op_grad_info, const BackwardNodePtr &fu
   }
   // inplace op input tensor is also output tensor.
   auto auto_grad_meta = impl::GetAutogradMetaImpl(output_tensor);
+  if (auto_grad_meta->retains_grad()) {
+    auto old_node = auto_grad_meta->UnsafeGetGradNodeImpl();
+    MS_EXCEPTION_IF_NULL(old_node);
+    UpdateRetainGradHook(old_node, func_node, auto_grad_meta->output_index(), output_index);
+  }
   auto_grad_meta->set_grad_node(func_node);
   auto_grad_meta->set_output_index(output_index);
   MS_LOG(DEBUG) << "End update next edge for " << func_node->ToString();
@@ -1026,9 +1058,7 @@ ValuePtrList LeafNode::CallBackward(const ValuePtrList &grads) {
     grad_meta->set_grad(grads[0]->cast<tensor::TensorPtr>());
     return {};
   }
-  kernel::pyboost::OpStatus status{false, false, 0, DeviceManagerConf::GetInstance()->device_type()};
-  kernel::pyboost::OpRunStatus::Get().set_run_info(std::move(status));
-  grad_meta->set_grad(kernel::pyboost::add(grad, grads[0]->cast<tensor::TensorPtr>()));
+  grad_meta->set_grad(AutoGradUtil::Add(grad, grads[0]->cast<tensor::TensorPtr>()));
   return {};
 }
 
@@ -1099,11 +1129,9 @@ void CallCustomPyFunction(const std::shared_ptr<FunctionContext> &context) {
     MS_LOG(DEBUG) << "The custom bprop function no need grad!";
     return;
   }
-
   auto out_abstract = GenerateFlattenAbs(context->flatten_outputs);
   auto custom_fn = context->grad_node;
   custom_fn->SetOutAbstract(out_abstract);
-
   UpdateNextEdges(custom_fn, context->inputs);
   ProcessForwardOutput(context->flatten_outputs, context->input_base_tensors, context->dirty_tensors,
                        context->non_diff_tensors, context->inputs, context->input_value_grad_type, custom_fn);
@@ -1595,6 +1623,7 @@ void AutoDiff::BackPropagate() {
                         << ". This may because your network has self defined bprop function which args of construct "
                            "function not same as bprop function outputs, please check it";
     }
+    CallBackwardNodePostHooks(fn, &gradient_out, gradient_in);
     for (size_t i = 0; i < fn->next_edges().size(); ++i) {
       const auto &next_edge = fn->next_edges()[i];
       if (!next_edge.is_defined()) {

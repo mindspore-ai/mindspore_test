@@ -23,13 +23,13 @@ namespace mindspore::pynative::autograd {
 class GradHook : public GradHookInterface {
   [[nodiscard]] bool requires_grad(const TensorPtr &self) const override;
   void set_requires_grad(const TensorPtr &self, bool requires_grad) override;
-  // [[nodiscard]] virtual bool retain_grad(const TensorPtr &self) const override;
-  // void set_retain_grad(const TensorPtr &self, bool retain_grad) override;
+  [[nodiscard]] bool retains_grad(const TensorPtr &self) const override;
+  void retain_grad(const TensorPtr &self) override;
   [[nodiscard]] TensorPtr grad(const TensorPtr &self) const override;
   void set_grad(const TensorPtr &self, const TensorPtr &grad) override;
   [[nodiscard]] BackwardNodePtr grad_node(const TensorPtr &self) const override;
   [[nodiscard]] bool is_leaf(const TensorPtr &self) const override;
-  // [[nodiscard]] size_t output_index(const TensorPtr &self) const override;
+  [[nodiscard]] size_t output_index(const TensorPtr &self) const override;
   // [[nodiscard]] size_t version(const TensorPtr &self) const override;
 };
 }  // namespace mindspore::pynative::autograd

@@ -129,6 +129,7 @@ struct AutoGradUtil {
                                         device::DeviceType device_target, ValuePtrList &&inputs);
   static ValuePtr ShallowCopyAndDetach(const ValuePtr &value);
   static TensorPtr ViewAsSelfWithNoGrad(const TensorPtr &self);
+  static TensorPtr Add(const TensorPtr &input, const TensorPtr &other);
 };
 }  // namespace pynative
 }  // namespace mindspore

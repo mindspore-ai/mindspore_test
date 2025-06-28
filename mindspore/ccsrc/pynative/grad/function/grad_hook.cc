@@ -15,10 +15,13 @@
  */
 
 #include "pynative/grad/function/grad_hook.h"
-#include "pynative/grad/function/func_grad.h"
-#include "mindspore/core/include/ir/tensor.h"
 #include <memory>
 #include <string>
+#include <utility>
+#include "pynative/grad/function/func_grad.h"
+#include "pynative/grad/grad_utils.h"
+#include "mindspore/core/include/ir/tensor.h"
+#include "include/common/pynative/hook.h"
 
 namespace mindspore::pynative::autograd {
 namespace {
@@ -60,6 +63,15 @@ bool GradHook::is_leaf(const TensorPtr &self) const {
   return false;
 }
 
+size_t GradHook::output_index(const TensorPtr &self) const {
+  runtime::Pipeline::Get().WaitBpropStage();
+  const auto &auto_grad_meta_data = self->auto_grad_meta_data();
+  if (auto_grad_meta_data != nullptr) {
+    return auto_grad_meta_data->output_index();
+  }
+  return 0;
+}
+
 bool GradHook::requires_grad(const TensorPtr &self) const {
   runtime::Pipeline::Get().WaitBpropStage();
   auto grad_meta = self->auto_grad_meta_data();
@@ -90,5 +102,39 @@ void GradHook::set_requires_grad(const TensorPtr &self, bool requires_grad) {
       self->Dtype(), self->is_parameter()));
     grad_meta->set_input_type(self->is_parameter() ? InputType::kParameter : InputType::kInput);
   }
+}
+
+bool GradHook::retains_grad(const TensorPtr &self) const {
+  const auto auto_grad_meta_data = impl::GetAutogradMetaImpl(self);
+  if (auto_grad_meta_data != nullptr) {
+    return auto_grad_meta_data->retains_grad();
+  }
+  return false;
+}
+
+void GradHook::retain_grad(const TensorPtr &self) {
+  runtime::Pipeline::Get().WaitBpropStage();
+  MS_EXCEPTION_IF_CHECK_FAIL(self->requires_grad(), "Can't retain grad, if tensor has requires=False");
+  if (self->is_leaf()) {
+    return;
+  }
+  std::weak_ptr<Tensor> weak_tensor(self);
+  const auto retain_grad_fn = [weak_tensor](const TensorPtr &grad) {
+    if (!weak_tensor.expired() && grad != nullptr) {
+      auto tensor = weak_tensor.lock();
+      if (tensor->grad() == nullptr) {
+        tensor->set_grad(grad);
+      } else {
+        tensor->set_grad(AutoGradUtil::Add(tensor->grad(), grad));
+      }
+    }
+  };
+  auto auto_grad_meta_data = impl::GetAutogradMetaImpl(self);
+  MS_EXCEPTION_IF_NULL(auto_grad_meta_data);
+  auto grad_node = auto_grad_meta_data->UnsafeGetGradNodeImpl();
+  MS_EXCEPTION_IF_NULL(grad_node);
+  auto retain_grad_hook = std::make_unique<RetainGradHook>(retain_grad_fn);
+  grad_node->AddRetainGradHook(auto_grad_meta_data->output_index(), std::move(retain_grad_hook));
+  auto_grad_meta_data->set_retains_grad(true);
 }
 }  // namespace mindspore::pynative::autograd

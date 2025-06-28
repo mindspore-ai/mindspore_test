@@ -22,33 +22,10 @@
 #include "pybind11/pytypes.h"
 #include "ir/tensor.h"
 #include "include/common/visible.h"
+#include "mindspore/ccsrc/include/common/pynative/hook.h"
 
 namespace mindspore::pynative::autograd {
 namespace py = pybind11;
-
-class BackwardNode;
-
-struct BackwardNodePreHook {
-  virtual ~BackwardNodePreHook() = default;
-  virtual void operator()(ValuePtrList *grad) = 0;
-};
-
-struct PyTensorBackwardNodePreHook : public BackwardNodePreHook {
-  PyTensorBackwardNodePreHook(const py::function &hook_fn, size_t output_idx);
-  ~PyTensorBackwardNodePreHook() override;
-  void operator()(ValuePtrList *grad) override;
-  py::function hook_fn_;
-  size_t output_idx_;
-};
-
-using CppHookFn = std::function<tensor::TensorPtr(const tensor::TensorPtr &)>;
-struct CppTensorBackwardNodePreHook : public BackwardNodePreHook {
-  CppTensorBackwardNodePreHook(CppHookFn hook_fn, size_t output_idx);
-  void operator()(ValuePtrList *grad) override;
-  CppHookFn hook_fn_;
-  size_t output_idx_;
-};
-
 struct RegisterHook {
   /// \brief Register a backward hook
   ///

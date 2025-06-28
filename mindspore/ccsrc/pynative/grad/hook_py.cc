@@ -18,10 +18,14 @@
 #include <memory>
 #include <string>
 #include <utility>
+<<<<<<< HEAD
 #include <map>
 #include <unordered_map>
+=======
+>>>>>>> 5e0d580bd69 (retain grad, grad node cpython)
 #include "include/common/utils/tensor_py.h"
 #include "include/common/pynative/adapter.h"
+#include "include/common/pynative/hook.h"
 #include "frontend/jit/ps/pipeline.h"
 #include "runtime/pipeline/pipeline.h"
 #include "pynative/grad/grad_utils.h"
