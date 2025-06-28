@@ -702,7 +702,7 @@ void ControlActor::ResetState() {
   while (!memory_free_lists_.empty()) {
     auto kernel_tensors = memory_free_lists_.front();
     memory_free_lists_.pop();
-    MS_LOG(WARNING) << "device tensors size: " << kernel_tensors.size();
+    MS_LOG(INFO) << "device tensors size: " << kernel_tensors.size();
     for (auto kernel_tensor : kernel_tensors) {
       if (kernel_tensor == nullptr || kernel_tensor->device_address() == nullptr ||
           kernel_tensor->device_address()->GetPtr() == nullptr) {
