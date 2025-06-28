@@ -12,14 +12,14 @@ mindspore.amp.build_train_network
     参数：
         - **network** (Cell) - 定义网络结构。
         - **optimizer** (:class:`mindspore.nn.Optimizer`) - 定义优化器，用于更新权重参数。
-        - **loss_fn** (Union[None, Cell]) - 定义损失函数。如果为None， `network` 中应该包含损失函数。默认值： ``None`` 。
-        - **level** (str) - 支持['O0', 'O1', 'O2', 'O3', 'auto']。默认值： ``'O0'`` 。
+        - **loss_fn** (Union[None, Cell], 可选) - 定义损失函数。如果为None， `network` 中应该包含损失函数。默认值： ``None`` 。
+        - **level** (str, 可选) - 支持['O0', 'O1', 'O2', 'O3', 'auto']。默认值： ``'O0'`` 。
 
           `level` 的详细配置信息可参考 :func:`mindspore.amp.auto_mixed_precision` 。
 
           由 `level` 配置的 `keep_batchnorm_fp32`， `cast_model_type` 和 `loss_scale_manager` 可能会被 `kwargs` 里的配置覆盖。
 
-        - **boost_level** (str) - `mindspore.boost` 中参数 `level` 的选项，设置boost的训练模式级别。支持['O0', 'O1', 'O2']。默认值： ``'O0'`` 。
+        - **boost_level** (str, 可选) - `mindspore.boost` 中参数 `level` 的选项，设置boost的训练模式级别。支持['O0', 'O1', 'O2']。默认值： ``'O0'`` 。
 
           - **'O0'** - 不变化。
           - **'O1'** - 开启boost模式，性能提升20%左右，准确率与原始准确率相同。
