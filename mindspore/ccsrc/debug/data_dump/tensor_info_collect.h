@@ -29,6 +29,17 @@ using KernelTensorPtr = kernel::KernelTensorPtr;
 
 class TensorInfoForDump {
  public:
+  struct KernelTensorMeta {
+    explicit KernelTensorMeta(KernelTensorPtr tensor, const TypeId &dtype, const ShapeVector &shape)
+        : tensor(tensor), dtype(dtype), shape(shape) {
+      MS_EXCEPTION_IF_NULL(tensor);
+    }
+
+    KernelTensorPtr tensor;
+    TypeId dtype;
+    ShapeVector shape;
+  };
+
   TensorInfoForDump(std::string io, uint32_t io_index, std::string format, TypeId host_type,
                     const ShapeVector &host_shape, size_t device_size, KernelTensor *kernel_tensor)
       : io(io),
@@ -51,7 +62,8 @@ class TensorInfoForDump {
   size_t device_size;
   KernelTensor *kernel_tensor;
   const void *device_ptr;
-  std::map<std::string, std::vector<KernelTensorPtr>> stat_results;
+  std::map<std::string, std::vector<KernelTensorPtr>> workspace;
+  std::map<std::string, KernelTensorMeta> stat_results;
 };
 
 class TensorInfoCommForDump {
