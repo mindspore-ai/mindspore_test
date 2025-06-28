@@ -266,8 +266,9 @@ static CNodePtr InsertIdentityCNode(const AnfNodePtr &parameter, const FuncGraph
 static void GetInputLayout(std::vector<ValuePtr> *input_layout, const std::vector<ValuePtr> &layout_value_vector) {
   for (size_t i = 0; i < layout_value_vector.size(); ++i) {
     std::vector<std::pair<ValuePtr, ValuePtr>> dim_layout;
-    auto layout_item = layout_value_vector[i];
-    auto layout_item_tuple = layout_item->cast<ValueTuplePtr>()->value();
+    auto layout_item = layout_value_vector[i]->cast<ValueTuplePtr>();
+    MS_EXCEPTION_IF_NULL(layout_item);
+    auto layout_item_tuple = layout_item->value();
     for (size_t j = 0; j < layout_item_tuple.size(); ++j) {
       auto item = layout_item_tuple[j];
       dim_layout.emplace_back(std::make_pair(MakeValue(layout_keys[j]), item));
@@ -395,7 +396,9 @@ static void SetInputLayout(const FuncGraphPtr &func_graph, const AnfNodePtr &in_
     MS_LOG_WITH_NODE(EXCEPTION, in_strategy)
       << "Parse in_strategy to ValueType failed. Please check in_strategy format.";
   }
-  layout_value_vector = in_strategy_value->cast<ValueTuplePtr>()->value();
+  auto layout_value_vector_ptr = in_strategy_value->cast<ValueTuplePtr>();
+  MS_EXCEPTION_IF_NULL(layout_value_vector_ptr);
+  layout_value_vector = layout_value_vector_ptr->value();
 
   // Check strategy type, it can only be "tuple" or "layout".
   std::string strategy_type = TUPLE;
@@ -577,8 +580,9 @@ static bool SetStrategyForShard(const FuncGraphPtr &root, const std::vector<AnfN
         return set_success;
       }
       SetInputLayout(func_graph, in_strategy, device_num);
-      auto output_value = out_strategy->cast<ValueNodePtr>()->value();
-      MS_EXCEPTION_IF_NULL(output_value);
+      auto output_value_ptr = out_strategy->cast<ValueNodePtr>();
+      MS_EXCEPTION_IF_NULL(output_value_ptr);
+      auto output_value = output_value_ptr->value();
       if (!output_value->isa<None>()) {
         SetOutputLayout(func_graph, out_strategy, device_num);
       }

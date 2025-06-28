@@ -466,9 +466,10 @@ struct StageChunkUpdate {
 
 static StageChunkUpdate UpdateUserStageChunk(const std::shared_ptr<NodeStageInfo> &stage_info, const CNodePtr &cnode,
                                              const CNodePtr &user_node, int64_t stage, int64_t chunk) {
+  MS_EXCEPTION_IF_NULL(cnode);
+  MS_EXCEPTION_IF_NULL(user_node);
   bool need_coloring = false;
   auto user_stage_info = user_node->user_data<NodeStageInfo>();
-
   if (user_stage_info == nullptr) {
     user_node->set_user_data<NodeStageInfo>(std::make_shared<NodeStageInfo>(stage, chunk));
     need_coloring = true;
@@ -889,6 +890,7 @@ void PipelineInterleave::InsertSendReceive(const AnfNodePtr &node, const AnfNode
 
 void PipelineInterleave::CutBorderForNode(const FuncGraphPtr &graph, const AnfNodePtr &node, int64_t *order) {
   auto stage_info = node->user_data<NodeStageInfo>();
+  MS_EXCEPTION_IF_NULL(stage_info);
   auto node_users = manager_->node_users()[node];
   AnfNodePtr receive = nullptr;
   auto pre_node = GetRealKernelNode(node, -1).first;
@@ -1564,6 +1566,7 @@ void PipelinePostProcess::HandleSendParam() {
       }
       auto base_shape = accu_parameter->Shape();
       auto shape_ptr = dyn_cast<abstract::Shape>(base_shape);
+      MS_EXCEPTION_IF_NULL(shape_ptr);
       auto slice_shape = shape_ptr->shape();
       auto prim = GetCNodePrimitive(cnode);
       MS_EXCEPTION_IF_NULL(prim);

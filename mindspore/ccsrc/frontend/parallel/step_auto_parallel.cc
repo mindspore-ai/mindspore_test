@@ -1207,8 +1207,9 @@ void AugmentCostGraph(const std::vector<AnfNodePtr> &all_nodes) {
         continue;
       }
       auto input_index = target.second;
-      (void)target_without_duplicate.insert(std::to_string(input_index) +
-                                            target_cnode->user_data<OperatorInfo>()->name());
+      auto target_cnode_info = target_cnode->user_data<OperatorInfo>();
+      MS_EXCEPTION_IF_NULL(target_cnode_info);
+      (void)target_without_duplicate.insert(std::to_string(input_index) + target_cnode_info->name());
     }
     if (target_without_duplicate.size() <= 1 || parameter_name.empty()) {
       continue;
