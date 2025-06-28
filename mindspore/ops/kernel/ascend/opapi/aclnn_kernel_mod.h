@@ -230,6 +230,10 @@ using CacheTuple = std::tuple<uint64_t, aclOpExecutor *, ProcessCache, size_t>;
       }                                                                                                         \
       RUN_OP_API_SYNC(op_type_, workspace_tensor->device_ptr(), workspace_size_list_[0], executor, stream_ptr); \
     }                                                                                                           \
+    auto ret = CALL_ASCEND_API(aclrtSynchronizeStream, stream_ptr);                                             \
+    if (ret != 0) {                                                                                             \
+      MS_LOG(EXCEPTION) << "Sync stream " << op_type_ << " error: " << CALL_ASCEND_API(aclGetRecentErrMsg);     \
+    }                                                                                                           \
     const auto &all_acl_tensor = cache_func_ptr(device::ascend::ProcessCacheType::kGetOutputShape, {});         \
     if (release_func) {                                                                                         \
       release_func();                                                                                           \
