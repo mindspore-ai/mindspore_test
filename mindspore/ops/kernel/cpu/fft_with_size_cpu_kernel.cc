@@ -146,6 +146,50 @@ inline Eigen::DSizes<Eigen::DenseIndex, signal_ndim + 1> GetFlatShape(const std:
   return tensor_shape;
 }
 
+template <int signal_ndim>
+void ComputeFullFftShape(const vector<int64_t> checked_signal_size,
+                         Eigen::DSizes<Eigen::DenseIndex, signal_ndim + 1> *temp_tensor_shape) {
+  if (checked_signal_size.empty()) {
+    if ((*temp_tensor_shape)[signal_ndim] == 1) {
+      MS_EXCEPTION(ValueError) << "For 'FFTWithSize', the last dimension of the input cannot be 1, but got: "
+                               << (*temp_tensor_shape)[signal_ndim];
+    }
+    (*temp_tensor_shape)[signal_ndim] = ((*temp_tensor_shape)[signal_ndim] - 1) * kRealFFTSideNum;
+  } else {
+    if (checked_signal_size.back() / kRealFFTSideNum + 1 == (*temp_tensor_shape)[signal_ndim]) {
+      (*temp_tensor_shape)[static_cast<size_t>(signal_ndim)] = checked_signal_size.back();
+    }
+  }
+}
+
+template <typename T1, typename T2, int signal_ndim, bool is_inverse>
+void ComputeFftAndIfft(Eigen::TensorMap<Eigen::Tensor<T1, signal_ndim + 1, Eigen::RowMajor>, Eigen::RowMajor> in,
+                       Eigen::Tensor<T2, signal_ndim + 1, Eigen::RowMajor> *out,
+                       Eigen::array<unsigned int, signal_ndim> axes) {
+  if (is_inverse) {
+    *out = in.template fft<Eigen::BothParts, Eigen::FFT_REVERSE>(axes);
+  } else {
+    *out = in.template fft<Eigen::BothParts, Eigen::FFT_FORWARD>(axes);
+  }
+}
+
+template <typename T1, typename T2, int signal_ndim>
+void ComputeRfft(Eigen::TensorMap<Eigen::Tensor<T1, signal_ndim + 1, Eigen::RowMajor>, Eigen::RowMajor> in,
+                 bool onesided, Eigen::Tensor<T2, signal_ndim + 1, Eigen::RowMajor> full_fft,
+                 Eigen::Tensor<T2, signal_ndim + 1, Eigen::RowMajor> *out) {
+  if (onesided) {
+    auto dims = in.dimensions();
+    Eigen::DSizes<Eigen::DenseIndex, signal_ndim + 1> offsets;
+    Eigen::DSizes<Eigen::DenseIndex, signal_ndim + 1> input_slice_sizes;
+    for (auto i = 0; i <= signal_ndim; i++) {
+      input_slice_sizes[i] = (i == signal_ndim) ? (dims[i] / kRealFFTSideNum + 1) : dims[i];
+    }
+    *out = full_fft.slice(offsets, input_slice_sizes);
+  } else {
+    *out = full_fft;
+  }
+}
+
 template <typename T1, typename T2, int signal_ndim, bool is_real, bool is_inverse>
 bool FFTWithSizeCompute(T1 *input_x, T2 *output_y, bool onesided, int64_t normalized,
                         const vector<int64_t> &checked_signal_size, const vector<int64_t> &x_shape) {
@@ -161,17 +205,7 @@ bool FFTWithSizeCompute(T1 *input_x, T2 *output_y, bool onesided, int64_t normal
       if (onesided) {
         // compute the full fft tensor shape: full_fft_shape[-1] / 2 + 1
         Eigen::DSizes<Eigen::DenseIndex, signal_ndim + 1> temp_tensor_shape(tensor_shape);
-        if (checked_signal_size.empty()) {
-          if (temp_tensor_shape[signal_ndim] == 1) {
-            MS_EXCEPTION(ValueError) << "For 'FFTWithSize', the last dimension of the input cannot be 1, but got: "
-                                     << temp_tensor_shape[signal_ndim];
-          }
-          temp_tensor_shape[signal_ndim] = (temp_tensor_shape[signal_ndim] - 1) * kRealFFTSideNum;
-        } else {
-          if (checked_signal_size.back() / kRealFFTSideNum + 1 == temp_tensor_shape[signal_ndim]) {
-            temp_tensor_shape[static_cast<size_t>(signal_ndim)] = checked_signal_size.back();
-          }
-        }
+        ComputeFullFftShape<signal_ndim>(checked_signal_size, &temp_tensor_shape);
         if (temp_tensor_shape.back() == tensor_shape.back()) {
           // fake there is no need to reconstruct signal tensor
           complex_out = in.template fft<Eigen::BothParts, Eigen::FFT_REVERSE>(axes);
@@ -223,24 +257,10 @@ bool FFTWithSizeCompute(T1 *input_x, T2 *output_y, bool onesided, int64_t normal
       }
       Eigen::Tensor<T2, signal_ndim + 1, Eigen::RowMajor> full_fft =
         complex_in.template fft<Eigen::BothParts, Eigen::FFT_FORWARD>(axes);
-      if (onesided) {
-        auto dims = in.dimensions();
-        Eigen::DSizes<Eigen::DenseIndex, signal_ndim + 1> offsets;
-        Eigen::DSizes<Eigen::DenseIndex, signal_ndim + 1> input_slice_sizes;
-        for (auto i = 0; i <= signal_ndim; i++) {
-          input_slice_sizes[i] = (i == signal_ndim) ? (dims[i] / kRealFFTSideNum + 1) : dims[i];
-        }
-        out = full_fft.slice(offsets, input_slice_sizes);
-      } else {
-        out = full_fft;
-      }
+      ComputeRfft<T1, T2, signal_ndim>(in, onesided, full_fft, &out);
     }
   } else {  // fft and ifft
-    if (is_inverse) {
-      out = in.template fft<Eigen::BothParts, Eigen::FFT_REVERSE>(axes);
-    } else {
-      out = in.template fft<Eigen::BothParts, Eigen::FFT_FORWARD>(axes);
-    }
+    ComputeFftAndIfft<T1, T2, signal_ndim, is_inverse>(in, &out, axes);
   }
 
   int64_t element_num = get_element_num(norm_shape, static_cast<size_t>(signal_ndim));
