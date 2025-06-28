@@ -200,6 +200,7 @@ PassManagerPtr GetBackendFusionGroupPassManager() {
   pm->AddFusionPass(std::make_shared<opt::MatMulSigmoidCastAddFusion>(), infer_boost);
   pm->AddFusionPass(std::make_shared<opt::MatmulElemFusion>(), infer_boost);
   pm->AddFusionPass(std::make_shared<opt::QbmmAllReduceConvertBias>(), infer_boost);
+  pm->AddFusionPass(std::make_shared<opt::SparseQuantAllReduceConvertBias>(), infer_boost);
   pm->AddFusionPass(std::make_shared<opt::QbmmAllReduceAddFusion>());
   pm->AddFusionPass(std::make_shared<opt::RemoveFATensorToTupleOps>(), infer_boost);
   pm->AddFusionPass(std::make_shared<opt::TransposeBatchMatmulTranspose>(), infer_boost);

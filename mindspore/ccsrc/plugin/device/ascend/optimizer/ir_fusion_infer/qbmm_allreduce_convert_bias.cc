@@ -61,6 +61,34 @@ const BaseRef QbmmAllReduceConvertBias::DefinePattern() const {
   return allreduce_ref;
 }
 
+bool SparseQuantAllReduceConvertBias::Init() const {
+  x_ = std::make_shared<Var>();
+  MS_CHECK_TRUE_RET(x_ != nullptr, false);
+  w_ = std::make_shared<Var>();
+  MS_CHECK_TRUE_RET(w_ != nullptr, false);
+  compress_idx_ = std::make_shared<Var>();
+  MS_CHECK_TRUE_RET(compress_idx_ != nullptr, false);
+  scale_ = std::make_shared<Var>();
+  MS_CHECK_TRUE_RET(scale_ != nullptr, false);
+  bias_ = std::make_shared<Var>();
+  MS_CHECK_TRUE_RET(bias_ != nullptr, false);
+  qbmm_prim_ = std::make_shared<CondVar>(IsSpecifiedNode<&prim::kPrimQuantLinearSparse>);
+  MS_CHECK_TRUE_RET(qbmm_prim_ != nullptr, false);
+  return true;
+}
+
+const BaseRef SparseQuantAllReduceConvertBias::DefinePattern() const {
+  if (!Init()) {
+    MS_LOG(INFO) << "initial member failed.";
+    return {};
+  }
+  VectorRef qbmm_ref({qbmm_prim_, x_, w_, scale_, compress_idx_, bias_});
+  auto is_allreduce = std::make_shared<CondVar>(IsSpecifiedNode<&prim::kPrimAllReduce>);
+  MS_CHECK_TRUE_RET(is_allreduce != nullptr, {});
+  VectorRef allreduce_ref({is_allreduce, qbmm_ref});
+  return allreduce_ref;
+}
+
 const AnfNodePtr QbmmAllReduceConvertBias::Process(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
                                                    const EquivPtr &equiv) const {
   auto ms_context = MsContext::GetInstance();
@@ -71,11 +99,11 @@ const AnfNodePtr QbmmAllReduceConvertBias::Process(const FuncGraphPtr &func_grap
   }
 
   const std::string fusion_op_name = "QbmmAllReduceConvertBias";
-  auto enable_op_list = ms_context->ms_internal_enable_custom_kernel_list();
-  bool enable_convert_bias =
-    (std::find(enable_op_list.begin(), enable_op_list.end(), fusion_op_name) != enable_op_list.end());
-  if (!enable_convert_bias) {
-    MS_LOG(INFO) << "ms_context internal_enable_custom_kernel_list doesn't contain QbmmAllReduceConvertBias.";
+
+  auto const &soc = ms_context->ascend_soc_version();
+  const std::vector<std::string> valid_soc_version{"ascend910b", "ascend910_93", "ascend310p"};
+  if (!soc.empty() && (std::find(valid_soc_version.begin(), valid_soc_version.end(), soc) == valid_soc_version.end())) {
+    MS_LOG(INFO) << fusion_op_name << " does not support " << soc;
     return nullptr;
   }
 
