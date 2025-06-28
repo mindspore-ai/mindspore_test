@@ -23,6 +23,7 @@
 #include <memory>
 #include "ir/func_graph_cloner.h"
 #include "pipeline/jit/ps/action.h"
+#include "frontend/optimizer/irpass/view_inplace_utils.h"
 
 namespace mindspore {
 namespace opt {
@@ -65,35 +66,13 @@ FuncGraphVector PartialEliminateMulti(const pipeline::ResourceBasePtr &resource,
   return opt_fgs;
 }
 
-bool CheckExistFv(const FuncGraphPtr &func_graph) {
-  MS_EXCEPTION_IF_NULL(func_graph);
-  const auto &nodes = TopoSort(func_graph->get_return(), SuccDeeperSimple);
-  return std::any_of(nodes.begin(), nodes.end(), [&func_graph](const AnfNodePtr &node) {
-    MS_EXCEPTION_IF_NULL(node);
-    return (node->func_graph() != func_graph);
-  });
-}
-
-std::string GetRefKeyFromAbstractRef(const abstract::AbstractRefPtr &abs_ref) {
-  MS_EXCEPTION_IF_NULL(abs_ref);
-  MS_EXCEPTION_IF_NULL(abs_ref->ref_key_value());
-  auto ref_key = abs_ref->ref_key_value()->cast<StringImmPtr>();
-  if (ref_key == nullptr) {
-    MS_LOG(EXCEPTION) << "The abstract is wrong: " << abs_ref->ToString();
-  }
-  return ref_key->value();
-}
-
 std::map<std::string, AnfNodePtr> GetParameterMap(const std::vector<AnfNodePtr> &params) {
   std::map<std::string, AnfNodePtr> params_map;
   for (const auto &param : params) {
-    auto param_abs = param->abstract();
-    MS_EXCEPTION_IF_NULL(param_abs);
-    auto abs_ref = param_abs->cast<abstract::AbstractRefPtr>();
-    if (abs_ref == nullptr) {
+    auto ref_key_str = GetRefKey(param);
+    if (ref_key_str.empty()) {
       continue;
     }
-    auto ref_key_str = GetRefKeyFromAbstractRef(abs_ref);
     params_map[ref_key_str] = param;
   }
   return params_map;
@@ -112,12 +91,10 @@ void MergeParameters(const FuncGraphPtr &func_graph, const opt::OptimizerPtr &op
       if (!node->isa<Parameter>()) {
         continue;
       }
-      auto abs = node->abstract();
-      if (abs == nullptr || !abs->isa<abstract::AbstractRefTensor>()) {
+      const auto &ref_key_str = GetRefKey(node);
+      if (ref_key_str.empty()) {
         continue;
       }
-      auto ref_abs = abs->cast<abstract::AbstractRefPtr>();
-      const auto &ref_key_str = GetRefKeyFromAbstractRef(ref_abs);
       const auto &iter = ref_key_nodes.find(ref_key_str);
       if (iter == ref_key_nodes.end()) {
         continue;
@@ -188,17 +165,11 @@ FuncGraphVector LiftFvMulti(const pipeline::ResourceBasePtr &resource, const Fun
   return PartialEliminateMulti(resource, new_fgs);
 }
 
-FuncGraphPtr FreeVariablesEliminate(FuncGraphPtr *func, const opt::OptimizerPtr &optimizer) {
-  FuncGraphPtr func_graph = *func;
+FuncGraphPtr FreeVariablesEliminate(const FuncGraphPtr &func_graph, const opt::OptimizerPtr &optimizer) {
   MS_EXCEPTION_IF_NULL(func_graph);
   auto manager = optimizer->manager();
   MS_EXCEPTION_IF_NULL(manager);
 
-  bool exist_fv = CheckExistFv(func_graph);
-  MS_LOG(DEBUG) << "Exist free variables: " << exist_fv;
-  if (!exist_fv) {
-    return func_graph;
-  }
   parse::ClearCNodeAbstract(func_graph);
   abstract::AbstractBasePtrList new_args_spec;
   (void)std::transform(func_graph->parameters().begin(), func_graph->parameters().end(),
@@ -220,6 +191,19 @@ FuncGraphPtr FreeVariablesEliminate(FuncGraphPtr *func, const opt::OptimizerPtr 
 #endif
   return new_func_graph;
 }
+
+bool CheckExistFv(const FuncGraphPtr &func_graph) {
+  MS_EXCEPTION_IF_NULL(func_graph);
+  auto exist_fv = [](const FuncGraphPtr &func_graph) { return !func_graph->free_variables_nodes().empty(); };
+  if (exist_fv(func_graph)) {
+    return true;
+  }
+  auto manager = func_graph->manager();
+  MS_EXCEPTION_IF_NULL(manager);
+  const auto &total_fgs = manager->func_graphs_used_total(func_graph);
+  return std::any_of(total_fgs.begin(), total_fgs.end(), exist_fv);
+}
+
 }  // namespace irpass
 }  // namespace opt
 }  // namespace mindspore

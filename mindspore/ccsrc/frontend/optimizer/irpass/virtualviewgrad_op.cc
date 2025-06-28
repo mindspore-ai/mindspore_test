@@ -28,9 +28,8 @@ namespace mindspore {
 namespace opt {
 namespace irpass {
 namespace {
-constexpr auto kOriginalViewOp = "view_op";
-void InsertVirtualViewGradInner(const FuncGraphPtr &func_graph, const CNodePtr &view_cnode, const AnfNodePtr &umonad,
-                                const FuncGraphManagerPtr &manager) {
+void InsertVirtualViewGradAfterInplaceCNodeInner(const FuncGraphPtr &func_graph, const CNodePtr &view_cnode,
+                                                 const AnfNodePtr &umonad, const FuncGraphManagerPtr &manager) {
   // Insert VirtualViewGrad op recursively
   // eg:
   // CNode1 = PrimFunc_InplaceAddExt(x_view_output2, 1, U1)
@@ -99,11 +98,7 @@ void InsertVirtualViewGradAfterInplaceCNode(const CNodePtr &inplace_cnode, const
   // inplace_next_updatestate = UpdateState(inplace_umonad, CNode1)
   AnfNodePtr inplace_next_updatestate = nullptr;
   AnfNodePtr inplace_umonad = inplace_cnode->inputs().back();
-  const auto &inplace_umonad_abstract = inplace_umonad->abstract();
-  if (inplace_umonad_abstract == nullptr || !inplace_umonad_abstract->isa<abstract::AbstractUMonad>()) {
-    MS_LOG(EXCEPTION) << "Invalid inplace cnode, should have umonad as the last input, but got cnode: "
-                      << inplace_cnode->DebugString();
-  }
+  (void)CheckUMonad(inplace_umonad);
   for (const auto &node_index : manager->node_users()[inplace_cnode]) {
     const auto &used_node = node_index.first;
     MS_EXCEPTION_IF_NULL(used_node);
@@ -117,11 +112,12 @@ void InsertVirtualViewGradAfterInplaceCNode(const CNodePtr &inplace_cnode, const
     }
   }
   MS_EXCEPTION_IF_NULL(inplace_next_updatestate);
-  InsertVirtualViewGradInner(func_graph, view_output_cnode, inplace_next_updatestate, manager);
+  InsertVirtualViewGradAfterInplaceCNodeInner(func_graph, view_output_cnode, inplace_next_updatestate, manager);
 }
 
-void VirtualViewGradInsertInner(const FuncGraphPtr &func_graph, const FuncGraphManagerPtr &manager) {
-  for (const auto &node : TopoSort(func_graph->get_return())) {
+void VirtualViewGradInsertInner(const FuncGraphPtr &root, const FuncGraphManagerPtr &manager) {
+  MS_EXCEPTION_IF_NULL(manager);
+  for (const auto &node : TopoSort(root->get_return())) {
     auto cnode = node->cast<CNodePtr>();
     if (cnode == nullptr) {
       continue;
@@ -136,37 +132,16 @@ void VirtualViewGradInsertInner(const FuncGraphPtr &func_graph, const FuncGraphM
     for (size_t index = 0; index < inplace_indexes.size(); ++index) {
       auto input_node = cnode->input(inplace_indexes[index] + 1);
       std::tie(view_node, is_view_output) = IsCreatedByViewOp(input_node);
-      // ViewGradTodo: find real view_node
       // 1. If view_node not nullptr, do insert VirtualViewGrad
       // 2. If view_node is nullptr, but is_view_output is true, throw exception, not support control flow
       // 3. If view_node is nullptr, and is_view_output is false, inplace input is not a view output, just ignore
       if (view_node == nullptr) {
         if (is_view_output) {
-          MS_LOG(WARNING) << "Inplace modification of the output of view op is not supported in control flow.";
+          MS_LOG(EXCEPTION) << "Inplace modification of the output of view op is not supported in control flow.";
         }
         continue;
       }
-      (void)InsertVirtualViewGradAfterInplaceCNode(cnode, view_node, func_graph, manager);
-    }
-  }
-}
-
-void RemoveRedundantVirtualViewGradInner(const FuncGraphPtr &func_graph, const FuncGraphManagerPtr &manager) {
-  // Remove virtualviewgrad op only used by updatestate
-  auto &node_users = manager->node_users();
-  constexpr size_t kMinUsersSize = 1;
-  for (auto &node : TopoSort(func_graph->get_return())) {
-    if (!IsPrimitiveCNode(node, prim::kPrimVirtualViewGrad)) {
-      continue;
-    }
-    auto &cur_node_users = node_users[node];
-    if (cur_node_users.size() == kMinUsersSize &&
-        IsPrimitiveCNode(cur_node_users.front().first, prim::kPrimUpdateState)) {
-      // Remove redundant op, replace %2 to U
-      // %1 = VirtualViewGrad(%0, x, ..., U)
-      // %2 = UpdateState(U, %1)
-      const auto &use_node = cur_node_users.front().first;
-      manager->Replace(use_node, use_node->cast<CNodePtr>()->input(kIndex1));
+      InsertVirtualViewGradAfterInplaceCNode(cnode, view_node, root, manager);
     }
   }
 }
@@ -266,7 +241,7 @@ std::string GetRealOpName(const std::string &str) {
 }
 }  // namespace
 
-void VirtualViewGradInsert(const FuncGraphPtr &root, const opt::OptimizerPtr &opt) {
+bool VirtualViewGradInsert(const FuncGraphPtr &root, const opt::OptimizerPtr &opt) {
   MS_EXCEPTION_IF_NULL(root);
   auto manager = opt->manager();
   MS_EXCEPTION_IF_NULL(manager);
@@ -278,44 +253,94 @@ void VirtualViewGradInsert(const FuncGraphPtr &root, const opt::OptimizerPtr &op
     VirtualViewGradInsertInner(sub_graph, manager);
   }
 
-#ifdef ENABLE_DUMP_IR
-  auto context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context);
-  if (context->CanDump(kIntroductory)) {
-    DumpIR("opt_insert_virtualviewgrad.ir", root);
-  }
-#endif
+  return false;
 }
 
-void RemoveRedundantVirtualViewGrad(const FuncGraphPtr &root, const opt::OptimizerPtr &opt) {
-  MS_EXCEPTION_IF_NULL(root);
+bool RemoveRedundantVirtualOps(const FuncGraphPtr &root, const opt::OptimizerPtr &opt) {
   auto manager = opt->manager();
   MS_EXCEPTION_IF_NULL(manager);
-
-  // Insert VirtualViewGrad op for func_graph and sub_graphs
-  RemoveRedundantVirtualViewGradInner(root, manager);
-  auto sub_graphs = root->func_graphs_used_total();
-  for (const auto &sub_graph : sub_graphs) {
-    RemoveRedundantVirtualViewGradInner(sub_graph, manager);
+  auto &node_users = manager->node_users();
+  constexpr size_t kMinUsersSizeScene1 = 1;
+  constexpr size_t kMinUsersSizeScene2 = 2;
+  auto &all_nodes = manager->all_nodes();
+  auto nodes = TopoSort(root->get_return(), SuccDeeperSimple);
+  for (auto &node : nodes) {
+    if (node == nullptr || !all_nodes.contains(node)) {
+      continue;
+    }
+    if (IsPrimitiveCNode(node, prim::kPrimVirtualViewGrad)) {
+      // Remove virtualviewgrad op only used by updatestate, replace %2 to U
+      // %1 = VirtualViewGrad(%0, x, ..., U)
+      // %2 = UpdateState(U, %1)
+      auto &cur_node_users = node_users[node];
+      if (cur_node_users.size() == kMinUsersSizeScene1 &&
+          IsPrimitiveCNode(cur_node_users.front().first, prim::kPrimUpdateState)) {
+        const auto &use_node = cur_node_users.front().first;
+        MS_LOG(DEBUG) << "Need remove reduandant virtual view grad op: " << node->DebugString();
+        manager->Replace(use_node, use_node->cast<CNodePtr>()->input(kIndex1));
+      }
+    } else if (IsVirtualViewCNode(node)) {
+      // Remove virtualview which take virtualviewgrad as input
+      // and virtualview's original view_output is virtualviewgrad's first input
+      // ====> For example:
+      // %1 = View(y, U)
+      // %2 = UpdateState(U, %1)
+      // %3 = Inplace(%1, %2)
+      // %4 = UpdateState(%2, %3)
+      // %5 = VirtualViewGrad(y, %3, %4)   ==> Depend(y, %4)
+      // %6 = UpdateState(%4, %5)
+      // %7 = VirtualView(%5, %6)[original_node: %1] ==> Depend(%3, %6)
+      // %8 = UpdateState(%6, %7)
+      // return Depend(%7, %8)
+      auto vv_node = node->cast<CNodePtr>();
+      const auto &vv_inputs = vv_node->inputs();
+      if (!IsPrimitiveCNode(vv_inputs[kIndex1], prim::kPrimVirtualViewGrad)) {
+        continue;
+      }
+      auto vvg_node = vv_inputs[kIndex1]->cast<CNodePtr>();
+      // VirtualViewGrad only used by updatestate and virtualview
+      if (node_users[vvg_node].size() > kMinUsersSizeScene2) {
+        continue;
+      }
+      const auto &vvg_inputs = vvg_node->inputs();
+      // ==> vvg_view_output: %3 = VirtualViewGrad(y, %2)  ==> get second arg ==> %2
+      // ==> vv_view_output:  %4 = VirtualView(%3)[original_node: %1]  ==> get original_node ==> %1
+      const auto vvg_view_output = vvg_inputs[kIndex2];
+      const auto &vv_view_output = vv_node->user_data<CNode>(kIsVirtualViewOp);
+      // Temp: Use refkey to check whether virtual_view_ori_view and virtual_view_grad_ori_view are the same (%2 and %1
+      // are same node)
+      auto refkey1 = GetRefKey(vv_view_output);
+      if (!refkey1.empty() && refkey1 == GetRefKey(vvg_view_output)) {
+        MS_LOG(DEBUG) << "Need remove reduandant virtual view op: " << vv_node->DebugString()
+                      << " , and virtual view grad op: " << vvg_node->DebugString();
+        // VirtualViewGrad(y, %3, %4)   ==> Depend(y, %4)
+        auto depend_for_view_input =
+          root->NewCNode({NewValueNode(prim::kPrimDepend), vvg_inputs[kIndex1], CheckUMonad(vvg_inputs.back())});
+        manager->Replace(vvg_node, depend_for_view_input);
+        // VirtualView(%5, %6)[original_node: %1] ==> Depend(%3, %6)
+        auto depend_for_view_output =
+          root->NewCNode({NewValueNode(prim::kPrimDepend), vvg_view_output, CheckUMonad(vv_inputs.back())});
+        manager->Replace(vv_node, depend_for_view_output);
+      }
+    }
   }
-
-#ifdef ENABLE_DUMP_IR
-  auto context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context);
-  if (context->CanDump(kIntroductory)) {
-    DumpIR("opt_remove_redundant_virtualviewgrad.ir", root);
-  }
-#endif
+  return false;
 }
 
-// {prim::kPrimVirtualViewGrad, X, Y, ..., U} ==> X
+// {prim::kPrimVirtualViewGrad, X, Y, ..., U} ==> {prim::kPrimDepend, X, U}
 AnfNodePtr VirtualViewGradEliminater::operator()(const OptimizerPtr &, const AnfNodePtr &node) {
-  if (!IsPrimitiveCNode(node, prim::kPrimVirtualViewGrad) || node->func_graph() == nullptr) {
+  auto func_graph = node->func_graph();
+  if (!IsPrimitiveCNode(node, prim::kPrimVirtualViewGrad) || func_graph == nullptr) {
     return nullptr;
   }
   auto cnode = node->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(cnode);
-  return cnode->input(kIndex1);
+  const auto &inputs = cnode->inputs();
+  const auto &view_input_node = inputs[kIndex1];
+  auto new_depend_node =
+    func_graph->NewCNode({NewValueNode(prim::kPrimDepend), view_input_node, CheckUMonad(inputs.back())});
+  new_depend_node->set_abstract(view_input_node->abstract());
+  return new_depend_node;
 }
 
 bool PreprocessForVirtualViewGradInsert(const FuncGraphPtr &root, const opt::OptimizerPtr &opt) {

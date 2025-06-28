@@ -24,11 +24,11 @@ namespace mindspore {
 namespace opt {
 namespace irpass {
 
-void VirtualViewGradInsert(const FuncGraphPtr &root, const opt::OptimizerPtr &opt);
-void RemoveRedundantVirtualViewGrad(const FuncGraphPtr &root, const opt::OptimizerPtr &opt);
+bool VirtualViewGradInsert(const FuncGraphPtr &root, const opt::OptimizerPtr &opt);
+bool RemoveRedundantVirtualOps(const FuncGraphPtr &root, const opt::OptimizerPtr &opt);
 bool PreprocessForVirtualViewGradInsert(const FuncGraphPtr &root, const opt::OptimizerPtr &opt);
 void ConvertViewOpNameInVirtualViewGrad(const FuncGraphPtr &func_graph, const opt::OptimizerPtr &optimizer);
-// {prim::kPrimVirtualViewGrad, X, Y, ..., U} -> X
+// {prim::kPrimVirtualViewGrad, X, Y, ..., U} ==> {prim::kPrimDepend, X, U}
 class VirtualViewGradEliminater : public OptimizerCaller {
  public:
   AnfNodePtr operator()(const OptimizerPtr &, const AnfNodePtr &node) override;

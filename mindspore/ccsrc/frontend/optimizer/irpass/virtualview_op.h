@@ -50,7 +50,6 @@ class VirtualViewInsertProcesser {
   void ProcessInplaceNode(const CNodePtr &cnode);
   void CheckAndInsertVirtualViewOp(const CNodePtr &cnode);
   void ChangeVirtualViewInputInner();
-  bool IsVirtualViewCNode(const AnfNodePtr &node);
   void DoVirtualViewInputReplace();
 
   FuncGraphPtr func_graph_;
@@ -63,7 +62,11 @@ class VirtualViewInsertProcesser {
   ViewChainMap view_chains_;
 };
 
-void VirtualViewInsert(const FuncGraphPtr &root, const opt::OptimizerPtr &opt);
+bool VirtualViewInsert(const FuncGraphPtr &root, const opt::OptimizerPtr &opt);
+class VirtualViewEliminater : public OptimizerCaller {
+ public:
+  AnfNodePtr operator()(const OptimizerPtr &, const AnfNodePtr &node) override;
+};
 
 }  // namespace irpass
 }  // namespace opt

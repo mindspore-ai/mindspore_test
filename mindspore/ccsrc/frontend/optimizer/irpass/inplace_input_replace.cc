@@ -134,11 +134,11 @@ void ChangeInplaceInputInner(const FuncGraphPtr &func_graph) {
 }
 }  // namespace
 
-void DoInplaceInputReplace(const FuncGraphPtr &func_graph, const OptimizerPtr &optimizer) {
+bool DoInplaceInputReplace(const FuncGraphPtr &func_graph, const OptimizerPtr &optimizer) {
   const auto &all_nodes = TopoSort(func_graph->return_node(), SuccDeeperSimple);
   bool exist_inplace_nodes = std::any_of(all_nodes.begin(), all_nodes.end(), IsInplaceCNode);
   if (!exist_inplace_nodes) {
-    return;
+    return false;
   }
 
   // Do inplace input replace for func_graph and sub_graphs
@@ -148,13 +148,7 @@ void DoInplaceInputReplace(const FuncGraphPtr &func_graph, const OptimizerPtr &o
     ChangeInplaceInputInner(sub_graph);
   }
 
-#ifdef ENABLE_DUMP_IR
-  auto context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context);
-  if (context->CanDump(kIntroductory)) {
-    DumpIR("opt_do_inplace_input_replace.ir", func_graph);
-  }
-#endif
+  return false;
 }
 }  // namespace irpass
 }  // namespace opt

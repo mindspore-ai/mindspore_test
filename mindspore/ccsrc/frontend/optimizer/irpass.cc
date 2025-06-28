@@ -74,6 +74,8 @@
 #include "frontend/optimizer/irpass/morph.h"
 #include "frontend/optimizer/irpass/make_tuple_from_fprop_eliminate.h"
 #include "frontend/optimizer/irpass/virtualviewgrad_op.h"
+#include "frontend/optimizer/irpass/virtualview_op.h"
+#include "frontend/optimizer/irpass/view_inplace_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
@@ -181,6 +183,8 @@ OptimizeIRPassLib::OptimizeIRPassLib() {
     MakeSubstitution(std::make_shared<AllReduceConstElim>(), "reduce_all_const_elim", prim::kPrimAllReduce);
   virtual_view_grad_op_eliminate_ = MakeSubstitution(std::make_shared<VirtualViewGradEliminater>(),
                                                      "virtual_view_grad_eliminate", prim::kPrimVirtualViewGrad);
+  virtual_view_op_eliminate_ =
+    MakeSubstitution(std::make_shared<VirtualViewEliminater>(), "virtual_view_eliminate", IsVirtualViewCNode);
 
   // Environ Item Eliminate
   environ_get_eliminate_ =

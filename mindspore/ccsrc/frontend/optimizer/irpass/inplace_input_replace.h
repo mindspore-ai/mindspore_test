@@ -24,7 +24,7 @@ namespace mindspore {
 namespace opt {
 namespace irpass {
 
-void DoInplaceInputReplace(const FuncGraphPtr &func_graph, const OptimizerPtr &optimizer);
+bool DoInplaceInputReplace(const FuncGraphPtr &func_graph, const OptimizerPtr &optimizer);
 
 }  // namespace irpass
 }  // namespace opt

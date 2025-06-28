@@ -25,7 +25,8 @@ namespace opt {
 namespace irpass {
 FuncGraphPtr LiftFv(const pipeline::ResourceBasePtr &resource, const FuncGraphPtr &func_graph);
 FuncGraphVector LiftFvMulti(const pipeline::ResourceBasePtr &resource, const FuncGraphVector &func_graphs);
-FuncGraphPtr FreeVariablesEliminate(FuncGraphPtr *root, const opt::OptimizerPtr &opt);
+FuncGraphPtr FreeVariablesEliminate(const FuncGraphPtr &root, const opt::OptimizerPtr &opt);
+bool CheckExistFv(const FuncGraphPtr &func_graph);
 }  // namespace irpass
 }  // namespace opt
 }  // namespace mindspore

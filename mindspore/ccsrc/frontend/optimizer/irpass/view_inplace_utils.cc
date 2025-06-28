@@ -16,11 +16,13 @@
 #include "frontend/optimizer/irpass/view_inplace_utils.h"
 
 #include "frontend/optimizer/irpass.h"
+#include "frontend/optimizer/optimizer.h"
 
 namespace mindspore {
 namespace opt {
 namespace irpass {
 bool IsViewOutput(const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
   auto abs = node->abstract();
   if (abs != nullptr && abs->isa<abstract::AbstractRefTensor>()) {
     const auto ref = abs->cast<abstract::AbstractRefPtr>();
@@ -32,6 +34,7 @@ bool IsViewOutput(const AnfNodePtr &node) {
 }
 
 bool IsViewNode(const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
   if (!node->isa<CNode>()) {
     return false;
   }
@@ -40,6 +43,7 @@ bool IsViewNode(const AnfNodePtr &node) {
 }
 
 bool IsInplaceNode(const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
   if (!node->isa<CNode>()) {
     return false;
   }
@@ -48,6 +52,7 @@ bool IsInplaceNode(const AnfNodePtr &node) {
 }
 
 std::pair<CNodePtr, bool> IsCreatedByViewOp(const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
   if (IsViewNode(node)) {
     auto cnode = node->cast<CNodePtr>();
     return {cnode, true};
@@ -56,7 +61,6 @@ std::pair<CNodePtr, bool> IsCreatedByViewOp(const AnfNodePtr &node) {
   if (abs != nullptr && abs->isa<abstract::AbstractRefTensor>()) {
     auto ref = abs->cast<abstract::AbstractRefPtr>();
     if (ref->is_view_output()) {
-      constexpr auto kOriginalViewOp = "view_op";
       auto view_op = abs->user_data<CNode>(kOriginalViewOp);
       if (view_op != nullptr) {
         return {view_op, true};
@@ -65,6 +69,32 @@ std::pair<CNodePtr, bool> IsCreatedByViewOp(const AnfNodePtr &node) {
   }
   return {nullptr, IsViewOutput(node)};
 }
+
+bool IsVirtualViewCNode(const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
+  auto cnode = node->cast<CNodePtr>();
+  return cnode != nullptr && cnode->HasAttr(kIsVirtualViewOp);
+}
+
+AnfNodePtr CheckUMonad(const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
+  if (!HasAbstractUMonad(node)) {
+    MS_LOG(EXCEPTION) << "Need to be umonad, but got: " << node->DebugString();
+  }
+  return node;
+}
+
+std::string GetRefKey(const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
+  const auto abs = node->abstract();
+  if (abs == nullptr || !abs->isa<abstract::AbstractRefTensor>()) {
+    return "";
+  }
+  auto abs_ref = abs->cast<abstract::AbstractRefPtr>();
+  auto ref_key_value = abs_ref->ref_key_value()->cast<StringImmPtr>();
+  return ref_key_value == nullptr ? "" : ref_key_value->value();
+}
+
 }  // namespace irpass
 }  // namespace opt
 }  // namespace mindspore

@@ -34,6 +34,7 @@
 #include "frontend/optimizer/ad/adjoint.h"
 #include "frontend/operator/ops.h"
 #include "frontend/parallel/ops_info/ops_utils.h"
+#include "frontend/optimizer/irpass/view_inplace_utils.h"
 #include "utils/symbolic.h"
 #include "utils/ms_context.h"
 #include "frontend/jit/ps/action.h"
@@ -710,8 +711,22 @@ AdjointPtr DFunctor::MapMorphism(const AnfNodePtr &morph) {
     param_adjoints[i]->RegisterKUser(k_app, i);
   }
   // Do forward computation
-  auto forward_app =
-    k_graph_->NewCNode({NewValueNode(prim::kPrimTupleGetItem), k_app, NewValueNode(static_cast<int64_t>(0))});
+  AnfNodePtr forward_app = nullptr;
+  if (opt::irpass::IsVirtualViewCNode(morph)) {
+    const auto &original_cnode = morph->user_data<CNode>(opt::irpass::kIsVirtualViewOp);
+    auto node_adjoint_iter = anfnode_to_adjoin_.find(original_cnode);
+    if (node_adjoint_iter != anfnode_to_adjoin_.end()) {
+      // VirtualView op: k_app ==> Call_virtual_view_fprop(..., U1{TupleGetitem, updatestate_fprop_caller, 0})
+      // From {TupleGetitem, k_app, 0} ==> {Depend, original_view_op, U1}
+      MS_LOG(DEBUG) << "Eliminate virtual view op: " << morph->DebugString();
+      forward_app =
+        k_graph_->NewCNode({NewValueNode(prim::kPrimDepend), node_adjoint_iter->second->k(), k_app->inputs().back()});
+    }
+  }
+  if (forward_app == nullptr) {
+    forward_app =
+      k_graph_->NewCNode({NewValueNode(prim::kPrimTupleGetItem), k_app, NewValueNode(static_cast<int64_t>(0))});
+  }
   // K:: cnode -> forward_app
   auto node_adjoint = std::make_shared<Adjoint>(morph, forward_app, tape_, is_view_inplace_, is_grad_by_j_);
   node_adjoint->set_k_app(k_app);

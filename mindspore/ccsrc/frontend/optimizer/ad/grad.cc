@@ -23,6 +23,7 @@
 #include <vector>
 #include "frontend/optimizer/ad/dfunctor.h"
 #include "frontend/optimizer/irpass.h"
+#include "pipeline/jit/ps/pass.h"
 #include "frontend/operator/composite/composite.h"
 #include "frontend/optimizer/irpass/check_invalid_view_inplace_dout.h"
 #include "frontend/optimizer/irpass/inplace_input_replace.h"
@@ -304,47 +305,78 @@ bool ChooseNewViewInplaceScheme(const FuncGraphPtr &func_graph, const opt::Optim
                        "input 0, 1, 2, but the value obtained is: "
                     << view_inplace_grad_config;
 }
-}  // namespace
 
-FuncGraphPtr GradOneFuncGraph(FuncGraphPtr *func, const opt::OptimizerPtr &optimizer, bool is_top,
-                              BpropAutoMonadLevel level, bool is_view_inplace, bool is_grad_by_j = false) {
-  FuncGraphPtr func_graph = *func;
-  MS_EXCEPTION_IF_NULL(func_graph);
-  bool use_view_inplace_new_method = is_view_inplace && ChooseNewViewInplaceScheme(func_graph, optimizer);
-  if (use_view_inplace_new_method) {
-    MS_LOG(INFO) << "Choose new view inplace grad scheme for func_graph:" << func_graph->ToString();
-    // Insert VirtualView op for view+inplace scene
-    mindspore::opt::irpass::VirtualViewInsert(func_graph, optimizer);
-    // Insert VirtualViewGrad op for view+inplace scene
-    mindspore::opt::irpass::VirtualViewGradInsert(func_graph, optimizer);
-    // If exist fv, do Renormalize and LiftFv.
-    func_graph = mindspore::opt::irpass::FreeVariablesEliminate(&func_graph, optimizer);
+bool ViewInplacePrepare(const FuncGraphPtr &func_graph, const opt::OptimizerPtr &optimizer, bool is_view_inplace) {
+  const auto &resources = optimizer->resource();
+  if (!is_view_inplace) {
+    mindspore::pipeline::ViewInplaceBeforeGradProcessPass(resources, func_graph,
+                                                          opt::irpass::ViewInplacePassType::OnlyDoInplace);
+    return false;
+  }
+  // Do inline upfront to ensure the correct method is selected
+  mindspore::pipeline::ViewInplaceBeforeGradProcessPass(resources, func_graph,
+                                                        opt::irpass::ViewInplacePassType::CommonInline);
+
+  if (ChooseNewViewInplaceScheme(func_graph, optimizer)) {
+    return true;
+  }
+
+  // Old method, pass dout with mask information included
+  MS_LOG(INFO) << "Choose old view inplace grad scheme for func_graph:" << func_graph->ToString();
+  mindspore::pipeline::ViewInplaceBeforeGradProcessPass(resources, func_graph,
+                                                        opt::irpass::ViewInplacePassType::OnlyDoInplace);
+  if (NeedCheckInvalidViewInplaceDout(opt::irpass::kCheckDoutLevelSceneTwo)) {
+    CheckViewInplaceOutput(func_graph);
+  }
+  std::map<AnfNodePtr, AnfNodePtr> need_grad_map{};
+  GetNeedGradMapForUpdateStateUseOnlyNodes(func_graph, &need_grad_map);
+  SetFlagForInplaceNodesUpdateStateUseOnly(func_graph, need_grad_map);
+  return false;
+}
+
+FuncGraphPtr InsertVirtualOpsProcess(const FuncGraphPtr &func_graph, const opt::OptimizerPtr &optimizer) {
+  const auto &resources = optimizer->resource();
+  MS_LOG(INFO) << "Choose new view inplace grad scheme for func_graph:" << func_graph->ToString();
+  mindspore::pipeline::ViewInplaceBeforeGradProcessPass(resources, func_graph,
+                                                        opt::irpass::ViewInplacePassType::VirtualOpsInsert);
+
+  if (!mindspore::opt::irpass::CheckExistFv(func_graph)) {
     // Convert View op name -> Primitive
     mindspore::opt::irpass::ConvertViewOpNameInVirtualViewGrad(func_graph, optimizer);
-    // Do inplace input replacement
-    mindspore::opt::irpass::DoInplaceInputReplace(func_graph, optimizer);
-    // Eliminate Redundant Operators
-    mindspore::opt::irpass::RemoveRedundantVirtualViewGrad(func_graph, optimizer);
-    is_view_inplace = false;
-  } else {
-    mindspore::opt::irpass::DoInplaceInputReplace(func_graph, optimizer);
+    mindspore::pipeline::ViewInplaceBeforeGradProcessPass(
+      resources, func_graph, opt::irpass::ViewInplacePassType::DoInplaceAndVirtualOpsRemove);
+    return func_graph;
   }
+  MS_LOG(INFO) << "Exist free variable, handle supported control flow func graph";
+  // If exist fv, do Renormalize and LiftFv.
+  auto new_func_graph = mindspore::opt::irpass::FreeVariablesEliminate(func_graph, optimizer);
+  AddToManage(resources, new_func_graph);
+  // Convert View op name -> Primitive
+  mindspore::opt::irpass::ConvertViewOpNameInVirtualViewGrad(new_func_graph, optimizer);
+  mindspore::pipeline::ViewInplaceBeforeGradProcessPass(resources, new_func_graph,
+                                                        opt::irpass::ViewInplacePassType::DoInplaceAndVirtualOpsRemove);
+  return new_func_graph;
+}
+}  // namespace
 
-  if (is_view_inplace) {
-    MS_LOG(INFO) << "Choose old view inplace grad scheme for func_graph:" << func_graph->ToString();
-    if (NeedCheckInvalidViewInplaceDout(opt::irpass::kCheckDoutLevelSceneTwo)) {
-      CheckViewInplaceOutput(func_graph);
-    }
-    std::map<AnfNodePtr, AnfNodePtr> need_grad_map{};
-    GetNeedGradMapForUpdateStateUseOnlyNodes(func_graph, &need_grad_map);
-    SetFlagForInplaceNodesUpdateStateUseOnly(func_graph, need_grad_map);
-  }
-  auto gradkv = func_graph->transforms().find("grad");
-  if (gradkv != func_graph->transforms().end()) {
+FuncGraphPtr GradOneFuncGraph(const FuncGraphPtr &ori_func_graph, const opt::OptimizerPtr &optimizer, bool is_top,
+                              BpropAutoMonadLevel level, bool is_view_inplace, bool is_grad_by_j = false) {
+  MS_EXCEPTION_IF_NULL(ori_func_graph);
+  auto gradkv = ori_func_graph->transforms().find("grad");
+  if (gradkv != ori_func_graph->transforms().end()) {
     return gradkv->second.func_graph();
   }
   const auto &resources = optimizer->resource();
-  AddToManage(resources, func_graph);
+  AddToManage(resources, ori_func_graph);
+
+  // Preprocessing for view inplace
+  bool use_view_inplace_new_method = ViewInplacePrepare(ori_func_graph, optimizer, is_view_inplace);
+  bool use_view_inplace_old_method = is_view_inplace && !use_view_inplace_new_method;
+  FuncGraphPtr func_graph = ori_func_graph;
+  if (use_view_inplace_new_method) {
+    func_graph = InsertVirtualOpsProcess(ori_func_graph, optimizer);
+  }
+
   auto multi_graph_sink = [&func_graph](const FuncGraphPtr &f) {
     if (MsContext::GetInstance()->get_param<bool>(MS_CTX_IS_MULTI_GRAPH_SINK)) {
       if (func_graph->has_flag(FUNC_GRAPH_FLAG_IGNORE_VALUE)) {
@@ -353,7 +385,7 @@ FuncGraphPtr GradOneFuncGraph(FuncGraphPtr *func, const opt::OptimizerPtr &optim
     }
   };
 
-  auto f = std::make_shared<DFunctor>(func_graph, resources, is_top, is_view_inplace, is_grad_by_j);
+  auto f = std::make_shared<DFunctor>(func_graph, resources, is_top, use_view_inplace_old_method, is_grad_by_j);
   auto user_defined = f->KUserDefined(func_graph);
   if (user_defined != nullptr) {
     multi_graph_sink(user_defined);
@@ -373,16 +405,20 @@ FuncGraphPtr GradOneFuncGraph(FuncGraphPtr *func, const opt::OptimizerPtr &optim
   if (is_top) {
     DFunctor::Clear();
   }
-  if (is_top && is_view_inplace) {
-    auto get_real_bprop_out = std::make_shared<prim::GetRealBpropOut>("get_real_bprop_out");
-    AnfNodePtr bout = tape->NewCNodeInOrder({NewValueNode(get_real_bprop_out), tape->output()});
-    tape->set_output(bout);
-  }
 
-  // In the view + inplace scenario, ensure that the input corresponding to the inplace op that has not been updated in
-  // place must not require gradient.
-  if (is_view_inplace && NeedCheckInvalidViewInplaceDout(opt::irpass::kCheckDoutLevelSceneOne)) {
-    mindspore::opt::irpass::MarkInvalidInplaceOpDout(res);
+  // Postprocessing for view inplace
+  if (use_view_inplace_old_method) {
+    if (is_top) {
+      auto get_real_bprop_out = std::make_shared<prim::GetRealBpropOut>("get_real_bprop_out");
+      AnfNodePtr bout = tape->NewCNodeInOrder({NewValueNode(get_real_bprop_out), tape->output()});
+      tape->set_output(bout);
+    }
+    if (NeedCheckInvalidViewInplaceDout(opt::irpass::kCheckDoutLevelSceneOne)) {
+      mindspore::opt::irpass::MarkInvalidInplaceOpDout(res);
+    }
+  } else if (use_view_inplace_new_method) {
+    mindspore::pipeline::ViewInplaceBeforeGradProcessPass(resources, func_graph,
+                                                          opt::irpass::ViewInplacePassType::EliminateVirtualView);
   }
 
   multi_graph_sink(res);
@@ -414,7 +450,7 @@ FuncGraphPtr Grad(const FuncGraphPtr &func_graph, const opt::OptimizerPtr &optim
   } else {
     lift_fv_before_grad = false;
   }
-  return GradOneFuncGraph(&grad_fg, optimizer, is_top, level, is_view_inplace, is_grad_by_j);
+  return GradOneFuncGraph(grad_fg, optimizer, is_top, level, is_view_inplace, is_grad_by_j);
 }
 
 FuncGraphVector GradMultiFuncGraph(const FuncGraphVector &func_graphs, const opt::OptimizerPtr &optimizer,
@@ -447,7 +483,7 @@ FuncGraphVector GradMultiFuncGraph(const FuncGraphVector &func_graphs, const opt
   }
   for (size_t i = 0; i < before_grad_fgs.size(); ++i) {
     auto func_graph = before_grad_fgs[i];
-    auto grad_fg = GradOneFuncGraph(&func_graph, optimizer, is_top, bprop_auto_monad_level, is_view_inplace[i], is_grad_by_j);
+    auto grad_fg = GradOneFuncGraph(func_graph, optimizer, is_top, bprop_auto_monad_level, is_view_inplace[i], is_grad_by_j);
     grad_fgs.push_back(grad_fg);
   }
   return grad_fgs;

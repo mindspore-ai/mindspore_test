@@ -18,16 +18,31 @@
 #define MINDSPORE_CCSRC_FRONTEND_OPTIMIZER_IRPASS_VIEW_INPLACE_OP_UTILS_H_
 
 #include <utility>
+#include <string>
 
 #include "ir/anf.h"
 
 namespace mindspore {
 namespace opt {
 namespace irpass {
+constexpr auto kOriginalViewOp = "view_op";
+constexpr auto kIsVirtualViewOp = "is_virtual_view_op";
+
+enum ViewInplacePassType {
+  CommonInline = 0,
+  VirtualOpsInsert,
+  DoInplaceAndVirtualOpsRemove,
+  OnlyDoInplace,
+  EliminateVirtualView
+};
+
 bool IsViewOutput(const AnfNodePtr &node);
 std::pair<CNodePtr, bool> IsCreatedByViewOp(const AnfNodePtr &node);
 bool IsInplaceNode(const AnfNodePtr &node);
 bool IsViewNode(const AnfNodePtr &node);
+bool IsVirtualViewCNode(const AnfNodePtr &node);
+AnfNodePtr CheckUMonad(const AnfNodePtr &node);
+std::string GetRefKey(const AnfNodePtr &node);
 }  // namespace irpass
 }  // namespace opt
 }  // namespace mindspore

@@ -71,6 +71,7 @@ class OptimizeIRPassLib {
   SubstitutionPtr micro_step_allgather_replace_;
   SubstitutionPtr get_grad_eliminate_;
   SubstitutionPtr virtual_view_grad_op_eliminate_;
+  SubstitutionPtr virtual_view_op_eliminate_;
 
   // Env Item Eliminate
   SubstitutionPtr environ_get_eliminate_;

@@ -29,7 +29,8 @@ namespace irpass {
 void VirtualViewInsertProcesser::Run() {
   for (const auto &node : TopoSort(func_graph_->get_return())) {
     auto cnode = node->cast<CNodePtr>();
-    if (cnode == nullptr) {
+    if (cnode == nullptr || IsPrimitiveCNode(node, prim::kPrimVirtualViewGrad) ||
+        IsPrimitiveCNode(node, prim::kPrimUpdateState)) {
       continue;
     }
 
@@ -38,10 +39,7 @@ void VirtualViewInsertProcesser::Run() {
 
     if (IsViewNode(cnode)) {
       ProcessViewNode(cnode);
-      continue;
-    }
-
-    if (IsInplaceNode(cnode)) {
+    } else if (IsInplaceNode(cnode)) {
       ProcessInplaceNode(cnode);
     }
   }
@@ -57,6 +55,7 @@ AnfNodePtr VirtualViewInsertProcesser::CreateVirtualViewNode(const CNodePtr &vie
   auto virtual_view_node = func_graph_->NewCNodeInOrder(new_inputs);
   virtual_view_node->set_abstract(view_output->abstract());
   virtual_view_node->AddAttr(kIsVirtualViewOp, MakeValue(true));
+  virtual_view_node->set_user_data<CNode>(kIsVirtualViewOp, view_output);
 
   auto new_umonad =
     func_graph_->NewCNodeInOrder({NewValueNode(prim::kPrimUpdateState), *last_umonad, virtual_view_node});
@@ -288,14 +287,7 @@ void VirtualViewInsertProcesser::ChangeVirtualViewInputInner() {
     }
 
     if (cnode->HasAttr(kIsVirtualViewOp)) {
-      const auto &abs = node->abstract();
-      MS_EXCEPTION_IF_NULL(abs);
-      auto ref = abs->cast<abstract::AbstractRefPtr>();
-      if (ref == nullptr) {
-        MS_LOG(EXCEPTION) << "The virtual view op abstract is not ref: " << abs->ToString()
-                          << ", virtual view operation is: " << node->DebugString();
-      }
-      auto view_op = abs->user_data<CNode>(kOriginalViewOp);
+      auto view_op = cnode->user_data<CNode>(kIsVirtualViewOp);
       if (view_op == nullptr) {
         MS_LOG(INFO) << "The virtual view op has no user data: " << node->DebugString();
         continue;
@@ -326,11 +318,6 @@ void VirtualViewInsertProcesser::ChangeVirtualViewInputInner() {
   }
 }
 
-bool VirtualViewInsertProcesser::IsVirtualViewCNode(const AnfNodePtr &node) {
-  auto cnode = node->cast<CNodePtr>();
-  return cnode != nullptr && cnode->HasAttr(kIsVirtualViewOp);
-}
-
 void VirtualViewInsertProcesser::DoVirtualViewInputReplace() {
   const auto &all_nodes = TopoSort(func_graph_->return_node(), SuccDeeperSimple);
   bool exist_virtual_view_nodes = std::any_of(all_nodes.begin(), all_nodes.end(),
@@ -342,7 +329,7 @@ void VirtualViewInsertProcesser::DoVirtualViewInputReplace() {
   ChangeVirtualViewInputInner();
 }
 
-void VirtualViewInsert(const FuncGraphPtr &root, const opt::OptimizerPtr &opt) {
+bool VirtualViewInsert(const FuncGraphPtr &root, const opt::OptimizerPtr &opt) {
   MS_EXCEPTION_IF_NULL(root);
   auto manager = opt->manager();
   MS_EXCEPTION_IF_NULL(manager);
@@ -352,14 +339,21 @@ void VirtualViewInsert(const FuncGraphPtr &root, const opt::OptimizerPtr &opt) {
   for (const auto &sub_graph : sub_graphs) {
     VirtualViewInsertProcesser(sub_graph, manager).Run();
   }
+  return false;
+}
 
-#ifdef ENABLE_DUMP_IR
-  auto context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context);
-  if (context->CanDump(kIntroductory)) {
-    DumpIR("opt_insert_virtualview.ir", root);
+AnfNodePtr VirtualViewEliminater::operator()(const OptimizerPtr &, const AnfNodePtr &node) {
+  auto func_graph = node->func_graph();
+  if (!IsVirtualViewCNode(node) || func_graph == nullptr) {
+    return nullptr;
   }
-#endif
+  auto cnode = node->cast<CNodePtr>();
+  auto original_cnode = cnode->user_data<CNode>(kIsVirtualViewOp);
+  MS_EXCEPTION_IF_NULL(original_cnode);
+  auto depend_node =
+    func_graph->NewCNode({NewValueNode(prim::kPrimDepend), original_cnode, CheckUMonad(cnode->inputs().back())});
+  depend_node->set_abstract(original_cnode->abstract());
+  return depend_node;
 }
 }  // namespace irpass
 }  // namespace opt
