@@ -1038,7 +1038,7 @@ class Conv3dTranspose(_Conv):
         if isinstance(padding, tuple):
             Validator.check_equal_int(len(padding), 6, 'padding size', self.cls_name)
         self.output_padding = _check_3d_int_or_tuple("output_padding", output_padding, self.cls_name,
-                                                     greater_zero=False)
+                                                     greater_zero=False, pad_value=0)
         super(Conv3dTranspose, self).__init__(
             in_channels,
             out_channels,
