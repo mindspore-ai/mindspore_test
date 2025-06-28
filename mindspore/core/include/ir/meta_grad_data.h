@@ -53,15 +53,14 @@ class GradHookInterface {
  public:
   [[nodiscard]] virtual bool requires_grad(const TensorPtr &self) const = 0;
   virtual void set_requires_grad(const TensorPtr &self, bool requires_grad) = 0;
-  //[[nodiscard]] virtual bool retain_grad(const TensorPtr &self) const = 0;
-  // virtual void set_retain_grad(const TensorPtr &self, bool retain_grad) = 0;
+  [[nodiscard]] virtual bool retains_grad(const TensorPtr &self) const = 0;
+  virtual void retain_grad(const TensorPtr &self) = 0;
   [[nodiscard]] virtual TensorPtr grad(const TensorPtr &self) const = 0;
   virtual void set_grad(const TensorPtr &self, const TensorPtr &grad) = 0;
   // virtual TensorPtr &MutableGrad(const TensorPtr &self) = 0;
   [[nodiscard]] virtual BackwardNodePtr grad_node(const TensorPtr &self) const = 0;
   [[nodiscard]] virtual bool is_leaf(const TensorPtr &self) const = 0;
-  // [[nodiscard]] virtual size_t output_index(const TensorPtr &self) const = 0;
-  // [[nodiscard]] virtual size_t version(const TensorPtr &self) const  = 0;
+  [[nodiscard]] virtual size_t output_index(const TensorPtr &self) const = 0;
   virtual ~GradHookInterface() = default;
 };
 using GradHookInterfacePtr = std::unique_ptr<GradHookInterface>;
@@ -78,6 +77,8 @@ class AutoGradMetaInterface {
   virtual void set_requires_grad(bool requires_grad) = 0;
   [[nodiscard]] virtual const TensorPtr &grad() const = 0;
   virtual void set_grad(const TensorPtr &update_grad) = 0;
+  [[nodiscard]] virtual bool retains_grad() const = 0;
+  virtual void set_retains_grad(bool retains_grad) = 0;
   virtual ~AutoGradMetaInterface() = default;
 };
 using AutoGradMetaInterfacePtr = std::shared_ptr<AutoGradMetaInterface>;

@@ -1037,8 +1037,7 @@ ValuePtr ConvertPyObjectToCTensor(const py::object &input_object) {
   return ConvertPyObjectToCObject(input_object, false);
 }
 
-void ConvertPybindTupleGradToCValue(const py::tuple &input_tuple, std::vector<ValuePtr> *gradient_values,
-                                    bool is_base_tensor) {
+void ConvertPybindTupleGradToCValue(const py::tuple &input_tuple, std::vector<ValuePtr> *gradient_values) {
   gradient_values->reserve(input_tuple.size());
   for (size_t i = 0; i < input_tuple.size(); i++) {
     ValuePtr value;

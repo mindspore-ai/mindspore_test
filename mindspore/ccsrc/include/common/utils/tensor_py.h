@@ -320,30 +320,6 @@ class COMMON_EXPORT TensorPy {
   /// \return True if tensor memory is contiguous, false otherwise.
   bool NeedContiguous() const;
 
-  /// \brief Used for automatic gradient.
-  /// \return The automatic gradient information.
-  const py::object GetGrad() const;
-
-  /// \brief Set the automatic gradient information to tensor.
-  /// \param[in] grad [py::object] The automatic gradient information.
-  void SetGrad(const py::object &grad);
-
-  /// \brief Used for automatic gradient function.
-  /// \return The automatic gradient function.
-  const py::object GetGradFn() const;
-
-  /// \brief Set the automatic gradient function to tensor.
-  /// \param[in] grad_fn [py::object] The automatic gradient function.
-  void SetGradFn(const py::object &grad_fn);
-
-  /// \brief Used for retain gradient.
-  /// \return The retain gradient.
-  const py::object GetRetainGrad() const;
-
-  /// \brief Set the retain gradient to tensor.
-  /// \param[in] retain_grad [py::object] The retain gradient.
-  void SetRetainGrad(const py::object &retain_grad);
-
   void UpdateStub(const TensorPtr &tensor);
 
   /// \brief Get storage of tensor.
@@ -371,8 +347,6 @@ class COMMON_EXPORT TensorPy {
   py::object parent_tensor_;
   py::object index_of_parent_;
   py::object symbolic_shape_;
-  py::object grad_fn_;
-  py::object retain_grad_;
   py::object storage_{py::none()};
   std::string device_;
   TensorPtr tensor_{nullptr};
@@ -449,6 +423,7 @@ COMMON_EXPORT PyObject *PackTensor(const TensorPtr &tensor, bool has_side_effect
 COMMON_EXPORT PyObject *PackStubTensor(const stub::StubNodePtr &stub_node);
 COMMON_EXPORT PyObject *Wrap(const TensorPtr &tensor);
 COMMON_EXPORT PyObject *Wrap(const std::vector<TensorPtr> &tensors);
+COMMON_EXPORT PyObject *Wrap(const ValuePtrList& values);
 template <typename... Args>
 PyObject *Wrap(const std::tuple<Args...> &tuple) {
   constexpr size_t size = std::tuple_size<std::tuple<Args...>>::value;

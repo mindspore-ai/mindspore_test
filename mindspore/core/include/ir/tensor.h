@@ -686,9 +686,13 @@ class MS_CORE_API Tensor : public MetaTensor {
   // Grad interface for PyNative
   bool requires_grad();
   void set_requires_grad(bool requires_grad);
+  bool retains_grad();
+  void retain_grad();
   TensorPtr grad();
   void set_grad(const TensorPtr &grad);
   bool is_leaf();
+  size_t output_index();
+  BackwardNodePtr grad_node();
   static void InitilizeGradImpl(GradHookInterfacePtr grad_impl);
   static const GradHookInterfacePtr &grad_impl();
 

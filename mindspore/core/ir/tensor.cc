@@ -567,15 +567,23 @@ void Tensor::set_requires_grad(bool requires_grad) {
   return grad_impl()->set_requires_grad(shared_from_base<Tensor>(), requires_grad);
 }
 
+bool Tensor::retains_grad() { return grad_impl()->retains_grad(shared_from_base<Tensor>()); }
+
+void Tensor::retain_grad() { return grad_impl()->retain_grad(shared_from_base<Tensor>()); }
+
 TensorPtr Tensor::grad() { return grad_impl()->grad(shared_from_base<Tensor>()); }
 
 void Tensor::set_grad(const TensorPtr &grad) { grad_impl()->set_grad(shared_from_base<Tensor>(), grad); }
 
 bool Tensor::is_leaf() { return grad_impl()->is_leaf(shared_from_base<Tensor>()); }
 
+size_t Tensor::output_index() { return grad_impl()->output_index(shared_from_base<Tensor>()); }
+
+BackwardNodePtr Tensor::grad_node() { return grad_impl()->grad_node(shared_from_base<Tensor>()); }
+
 void Tensor::InitilizeGradImpl(GradHookInterfacePtr grad_impl) {
   if (grad_impl_ != nullptr) {
-    MS_LOG(EXCEPTION) << "Grad hook can only initilize once!";
+    MS_LOG(EXCEPTION) << "Grad hook can only initialize once!";
   }
   grad_impl_ = std::move(grad_impl);
 }

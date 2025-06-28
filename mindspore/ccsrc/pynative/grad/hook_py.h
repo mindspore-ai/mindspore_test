@@ -30,19 +30,6 @@ namespace py = pybind11;
 
 class BackwardNode;
 
-struct BackwardNodePreHook {
-  virtual ~BackwardNodePreHook() = default;
-  virtual void operator()(ValuePtrList *grad) = 0;
-};
-
-struct PyTensorBackwardNodePreHook : public BackwardNodePreHook {
-  PyTensorBackwardNodePreHook(const py::function &hook_fn, size_t output_idx);
-  ~PyTensorBackwardNodePreHook() override;
-  void operator()(ValuePtrList *grad) override;
-  py::function hook_fn_;
-  size_t output_idx_;
-};
-
 struct RegisterHook {
   /// \brief Register a backward hook
   ///

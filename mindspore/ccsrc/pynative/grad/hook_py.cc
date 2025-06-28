@@ -17,9 +17,11 @@
 #include "pynative/grad/hook_py.h"
 #include <memory>
 #include <string>
+#include <utility>
 #include "include/common/utils/tensor_py.h"
 #include "include/common/pynative/adapter.h"
 #include "pipeline/jit/ps/pipeline.h"
+#include "include/common/pynative/hook.h"
 #include "runtime/pipeline/pipeline.h"
 #include "pynative/grad/grad_utils.h"
 #include "pynative/grad/function/func_grad.h"
@@ -57,32 +59,6 @@ BackwardNodePtr BuildAutoGradMeta(const tensor::TensorPtr &tensor) {
   return grad_node;
 }
 }  // namespace
-
-PyTensorBackwardNodePreHook::PyTensorBackwardNodePreHook(const py::function &hook_fn, size_t output_idx)
-    : hook_fn_(hook_fn), output_idx_(output_idx) {}
-
-PyTensorBackwardNodePreHook::~PyTensorBackwardNodePreHook() {
-  py::gil_scoped_acquire gil;
-  hook_fn_ = py::object();
-}
-
-void PyTensorBackwardNodePreHook::operator()(ValuePtrList *grad) {
-  if (output_idx_ >= grad->size()) {
-    MS_LOG(EXCEPTION) << "PyTensor hook output_idx out of range";
-  }
-
-  py::gil_scoped_acquire gil;
-  const auto py_grad = CValueToPybindObj((*grad)[output_idx_]);
-  const auto ret = hook_fn_(py_grad);
-  if (!ret.is_none()) {
-    if (tensor::IsTensorPy(ret)) {
-      (*grad)[output_idx_] = tensor::ConvertToTensor(ret);
-    } else {
-      MS_LOG(EXCEPTION) << "Tensor hook should be return Tensor, but get type: "
-                        << py::str(ret.get_type().attr("__name__")).cast<std::string>() << ".";
-    }
-  }
-}
 
 uint64_t RegisterHook::RegisterTensorBackwardHook(const tensor::TensorPtr &tensor, const py::function &hook) {
   ++unique_id_;

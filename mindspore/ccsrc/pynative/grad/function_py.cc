@@ -316,7 +316,8 @@ py::object FunctionBase::apply(const py::object &cls, const py::args &inputs) {
   runtime::Pipeline::Get().WaitFrontend();
 
   ConstructContextAfterForward(context, ctx, outputs);
-  const auto custom_fn = std::make_shared<PyBackwardNode>("FunctionCustomBackward", backward_fn, ctx_obj, inputs_meta,
+  auto type_name = py::cast<std::string>(ctx_obj.get_type().attr("__name__"));
+  const auto custom_fn = std::make_shared<PyBackwardNode>(std::move(type_name), backward_fn, ctx_obj, inputs_meta,
                                                           context->flatten_outputs.size());
   ctx->set_weak_grad_node(custom_fn);
   context->grad_node = std::move(custom_fn);

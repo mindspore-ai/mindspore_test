@@ -21,12 +21,12 @@
 #include <vector>
 #include <string>
 #include <memory>
-#include <map>
+#include <unordered_map>
 #include <unordered_set>
 #include "ir/anf.h"
 #include "ir/meta_grad_data.h"
 #include "ir/tensor.h"
-#include "pynative/grad/hook_py.h"
+#include "include/common/pynative/hook.h"
 
 namespace mindspore::pynative::autograd {
 
@@ -107,6 +107,8 @@ class COMMON_EXPORT AutoGradMetaData : public AutoGradMetaInterface {
   void set_output_index(size_t output_index) override { output_index_ = output_index; }
   [[nodiscard]] bool requires_grad() const override;
   void set_requires_grad(bool requires_grad) override { requires_grad_ = requires_grad; }
+  [[nodiscard]] bool retains_grad() const override { return retains_grad_; }
+  void set_retains_grad(bool retains_grad) override { retains_grad_ = retains_grad; }
 
   ~AutoGradMetaData() override = default;
 
@@ -120,6 +122,8 @@ class COMMON_EXPORT AutoGradMetaData : public AutoGradMetaInterface {
   size_t output_index_{0};
   // whether tensor requires grad.
   bool requires_grad_{false};
+  // whether tensor retains grad.
+  bool retains_grad_{false};
 };
 
 using AutoGradMetaDataPtr = std::shared_ptr<AutoGradMetaData>;
@@ -259,6 +263,28 @@ class COMMON_EXPORT BackwardNode : public std::enable_shared_from_this<BackwardN
     return py_tensor_pre_hooks_;
   }
 
+  const std::unique_ptr<PyBackwardNodePreHook> &py_pre_hook() const { return py_pre_hook_; }
+
+  const std::unordered_map<size_t, std::unique_ptr<RetainGradHook>> &retain_grad_hooks() const {
+    return retain_grad_hooks_;
+  }
+
+  const std::unique_ptr<PyBackwardNodePostHook> &py_post_hook() const { return py_post_hook_; }
+
+  void SetPyPreHook(std::unique_ptr<PyBackwardNodePreHook> &&hook_fn) { py_pre_hook_ = std::move(hook_fn); }
+
+  void AddRetainGradHook(size_t output_idx, std::unique_ptr<RetainGradHook> &&hook_fn) {
+    retain_grad_hooks_[output_idx] = std::move(hook_fn);
+  }
+
+  std::unique_ptr<RetainGradHook> PopRetainGradHook(size_t output_idx) {
+    auto hook_fn = std::move(retain_grad_hooks_[output_idx]);
+    retain_grad_hooks_.erase(output_idx);
+    return hook_fn;
+  }
+
+  void SetPyPostHook(std::unique_ptr<PyBackwardNodePostHook> &&hook_fn) { py_post_hook_ = std::move(hook_fn); }
+
   /// \brief The sequence number of current node.
   /// \return sequence number
   size_t seq_id() const { return seq_id_; }
@@ -281,6 +307,9 @@ class COMMON_EXPORT BackwardNode : public std::enable_shared_from_this<BackwardN
   std::function<void(const std::string &op_name)> check_func_{nullptr};
   // Tensor hooks
   OrderedMap<uint64_t, std::unique_ptr<PyTensorBackwardNodePreHook>> py_tensor_pre_hooks_;
+  std::unique_ptr<PyBackwardNodePreHook> py_pre_hook_{nullptr};
+  std::unordered_map<size_t, std::unique_ptr<RetainGradHook>> retain_grad_hooks_;
+  std::unique_ptr<PyBackwardNodePostHook> py_post_hook_{nullptr};
   size_t seq_id_;
   size_t output_size_;
 };

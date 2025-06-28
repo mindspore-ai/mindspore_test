@@ -284,24 +284,6 @@ bool TensorPy::HasAutoGrad() const { return GetTensor()->HasAutoGrad(); }
 
 bool TensorPy::NeedContiguous() const { return GetTensor()->NeedContiguous(); }
 
-const py::object TensorPy::GetGradFn() const {
-  if (!grad_fn_.check() || grad_fn_.is_none()) {
-    return py::none();
-  }
-  return grad_fn_;
-}
-
-void TensorPy::SetGradFn(const py::object &grad_fn) { grad_fn_ = grad_fn; }
-
-const py::object TensorPy::GetRetainGrad() const {
-  if (!retain_grad_.check() || retain_grad_.is_none()) {
-    return py::none();
-  }
-  return retain_grad_;
-}
-
-void TensorPy::SetRetainGrad(const py::object &retain_grad) { retain_grad_ = retain_grad; }
-
 /* =========================================== Common Function ================================================= */
 bool IsTensorPy(const py::handle &obj) {
   if (TensorPy_Type == nullptr || !obj.check()) {
@@ -485,6 +467,14 @@ PyObject *Wrap(const std::vector<TensorPtr> &tensors) {
   PyObject *output = PyTuple_New(static_cast<Py_ssize_t>(tensors.size()));
   for (size_t i = 0; i < tensors.size(); ++i) {
     PyTuple_SET_ITEM(output, i, Wrap(tensors[i]));
+  }
+  return output;
+}
+
+PyObject *Wrap(const ValuePtrList &values) {
+  PyObject *output = PyTuple_New(static_cast<Py_ssize_t>(values.size()));
+  for (size_t i = 0; i < values.size(); ++i) {
+    PyTuple_SET_ITEM(output, i, Wrap(values[i]));
   }
   return output;
 }
