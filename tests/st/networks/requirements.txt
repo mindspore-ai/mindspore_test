@@ -54,3 +54,4 @@ importlib_metadata        # for st test vllm
 mistral_common[opencv]>=1.5.0        # for st test vllm
 compressed-tensors==0.9.1        # for st test vllm
 depyf==0.18.0        # for st test vllm
+peft==0.7.1        # for st test

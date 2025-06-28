@@ -13,7 +13,6 @@ WORLD_SIZE=$(($GPUS_PER_NODE*$NNODES))
 # please fill these path configurations
 DATA_PATH="/home/jenkins/mindspore/testcases/testcases/tests/st/networks/test_ds3_sft/finetune_dataset/alpaca"
 TOKENIZER_PATH="/home/workspace/mindspore_dataset/msadapter/test_input/net/test_ds3_sft/tokenizer"
-DATA_CACHE_PATH="./alpaca/"
 
 TP=1
 PP=2
@@ -143,7 +142,6 @@ GPT_ARGS="
 
 DATA_ARGS="
     --data-path $DATA_PATH \
-    --data-cache-path $DATA_CACHE_PATH \
     --split 100,0,0
 "
 
