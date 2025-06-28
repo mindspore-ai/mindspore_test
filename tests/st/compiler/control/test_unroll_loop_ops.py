@@ -92,6 +92,40 @@ def test_while_loop2():
     assert result[-1] == 100
 
 
+@arg_mark(plat_marks=['platform_gpu',], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_while_loop3():
+    """
+    Feature: control flow
+    Description: Using WhileLoopEvaluator to handle ops.WhileLoop operation
+    Expectation: No exception.
+    """
+
+    def cond_func(init_value):
+        return init_value[1] > 1
+
+    def while_function(init_value):
+        input_tensor, init, add = init_value
+        out = add(input_tensor, init)
+        init = init - 1
+        return [out, init, add]
+
+    class WhileLoopNet(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.add = ops.Add()
+            self.whileop = ops.WhileLoop()
+
+        def construct(self, inputs):
+            out = inputs
+            res = self.whileop(cond_func, while_function, [out, 3, self.add])
+            out = res[0]
+            return out
+
+    net = WhileLoopNet()
+    out = net(Tensor([2]))
+    assert out == 7
+
+
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_scan_unroll():
