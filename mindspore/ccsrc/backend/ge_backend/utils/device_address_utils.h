@@ -43,9 +43,6 @@ class BACKEND_EXPORT DeviceAddressUtils {
 
   static KernelTensorPtr CloneEmptyKernelTensor(const KernelTensorPtr &old_kernel_tensor);
 
-  static void UpdateDeviceAddressHostInfoByNode(const device::DeviceAddressPtr &addr, const AnfNodePtr &node,
-                                                size_t output_idx);
-
   static bool IsContiguousTensor(const tensor::TensorPtr &tensor);
 
  private:

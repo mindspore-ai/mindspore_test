@@ -358,18 +358,12 @@ void AscendDeviceAddress::SetDevicePtrDeleter() {
     return;
   }
 
-  address_common_->pointer_ref_count_->set_deleter(
-    [communication_ptr = this->communication_ptr_](void *ptr, bool from_mem_pool) {
-      if (ptr == nullptr || !from_mem_pool) {
-        return;
-      }
-
-      if (communication_ptr != nullptr) {
-        AscendMemoryPool::GetInstance().FreeTensorMem(communication_ptr);
-      } else {
-        AscendMemoryPool::GetInstance().FreeTensorMem(ptr);
-      }
-    });
+  address_common_->pointer_ref_count_->set_deleter([](void *ptr, bool from_mem_pool) {
+    if (ptr == nullptr || !from_mem_pool) {
+      return;
+    }
+    AscendMemoryPool::GetInstance().FreeTensorMem(ptr);
+  });
 }
 
 void AscendDeviceAddress::BindDevice() const {
@@ -806,7 +800,6 @@ bool AscendDeviceAddress::ConvertFormatAndSyncHostToDevice(const ShapeVector &sh
     (void)host_shape.emplace_back(1);
   }
   auto node_index = GetNodeIndex();
-  (void)GetGroupsWithCache();
   std::vector<int64_t> device_shape;
   if (format() == kOpFormat_FRAC_NZ) {
     device_shape = trans::TransShapeToDevice(host_shape, format(), node_index.first, node_index.second, type_id());
@@ -850,12 +843,7 @@ bool AscendDeviceAddress::ConvertFormatAndSyncHostToDevice(const ShapeVector &sh
 
 void AscendDeviceAddress::ClearDeviceMemory() {
   if (GetDevicePtr() != nullptr && from_mem_pool()) {
-    if (communication_ptr_ != nullptr) {
-      AscendMemoryPool::GetInstance().FreeTensorMem(communication_ptr_);
-      communication_ptr_ = nullptr;
-    } else {
-      AscendMemoryPool::GetInstance().FreeTensorMem(GetDevicePtr());
-    }
+    AscendMemoryPool::GetInstance().FreeTensorMem(GetDevicePtr());
     SetDevicePtr(nullptr);
   }
 }
@@ -975,14 +963,6 @@ bool AscendDeviceAddress::AsyncHostToDevice(size_t size, const void *host_ptr, s
   return true;
 }
 
-int64_t AscendDeviceAddress::GetGroupsWithCache() const {
-  auto node = GetNodeIndex();
-  if (node.first != nullptr) {
-    groups_ = common::AnfAlgo::GetAttrGroups(node.first, node.second);
-  }
-  return groups_;
-}
-
 bool AscendDeviceAddress::CopyDeviceToHostWithoutSyncStream(void *dst, size_t dst_size, const void *src,
                                                             size_t src_size) {
   auto ms_context = MsContext::GetInstance();
@@ -1000,7 +980,6 @@ bool AscendDeviceAddress::CopyDeviceToHostWithoutSyncStream(void *dst, size_t ds
 DeviceAddressPtr AscendDeviceAddress::CloneDeviceAddress() {
   auto clone_device_address = std::make_shared<AscendDeviceAddress>();
   DeviceAddress::CloneDeviceAddress(clone_device_address);
-  clone_device_address->set_communication_ptr(communication_ptr_);
   return clone_device_address;
 }
 

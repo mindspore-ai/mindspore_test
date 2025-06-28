@@ -657,4 +657,10 @@ void KernelTensor::set_device_address(const DeviceAddressPtr &device_address) {
     address_common_ = device_address_->address_common();
   }
 }
+
+ContinuousDeviceAddressesPtr KernelTensor::continuous_device_addresses() const { return continuous_device_addresses_; }
+
+void KernelTensor::set_continuous_device_addresses(const ContinuousDeviceAddressesPtr &continuous_device_addresses) {
+  continuous_device_addresses_ = continuous_device_addresses;
+}
 }  // namespace mindspore::kernel

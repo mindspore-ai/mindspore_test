@@ -635,7 +635,6 @@ void KernelActor::ConvertInputContiguous(OpContext<KernelTensor> *const context)
 
         auto new_device_address = kernel_tensor->device_address();
         MS_EXCEPTION_IF_NULL(new_device_address);
-        new_device_address->set_device_shape(old_storage_info->shape);
         MS_LOG(DEBUG) << "Create kernel tensor:" << kernel_tensor->ToString();
         // Store the temp device address
         contiguous_tensors_[i] = kernel_tensor;

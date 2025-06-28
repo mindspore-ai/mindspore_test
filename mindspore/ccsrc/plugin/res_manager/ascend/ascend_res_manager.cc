@@ -1115,10 +1115,6 @@ bool AscendResManager::CopyHostToDeviceForDiffFormat(const DeviceAddress *dst_de
     (void)host_shape.emplace_back(1);
   }
   auto node_index = dst_device_address->GetNodeIndex();
-  if (node_index.first != nullptr) {
-    const auto &dst_ascend_device_address = dynamic_cast<const AscendDeviceAddress *>(dst_device_address);
-    (void)dst_ascend_device_address->GetGroupsWithCache();
-  }
   std::vector<int64_t> device_shape;
   if (dst_format != kOpFormat_FRAC_NZ) {
     host_shape = trans::PaddingShape(host_shape, dst_format);

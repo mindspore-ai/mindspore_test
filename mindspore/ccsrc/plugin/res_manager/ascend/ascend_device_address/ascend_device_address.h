@@ -64,12 +64,6 @@ class ASCEND_RES_MANAGER_EXPORT AscendDeviceAddress : public DeviceAddress {
   void ClearDeviceMemory() override;
   DeviceType GetDeviceType() const override { return DeviceType::kAscend; }
 
-  void set_communication_ptr(uint8_t *communication_ptr) override {
-    communication_ptr_ = communication_ptr;
-    // The communication_ptr_ should free to memory pool instead of GetDevicePtr(), so must update device pointer
-    // deleter.
-    SetDevicePtrDeleter();
-  }
   bool SyncDeviceToHost(void *host_ptr, const void *device_ptr, size_t size, const std::string &device_name,
                         uint32_t device_id, mindspore::Format format, const ShapeVector &shape, size_t stream_id,
                         const UserDataPtr &user_data = nullptr) const override;
@@ -143,20 +137,9 @@ class ASCEND_RES_MANAGER_EXPORT AscendDeviceAddress : public DeviceAddress {
   void CopyHostToDevice(const void *src, uint64_t size, const tensor::TensorDataPtr &tensor_data) const;
   void CopyDeviceToHost(void *dst, uint64_t size, bool sync_on_demand = false) const;
 
-  // The 'const' for this class is irrational, but I abide by it
-  int64_t GetGroupsWithCache() const;
-
   // Set a device pointer destructor to kernel tensor, used to release resource reclaiming of the device pointer
   // automatically when DeviceAddress destructed.
   void SetDevicePtrDeleter();
-
-  mutable int64_t groups_ = 1;
-
-  // When the device address is used by communication node, create protect area [kMemAlignSize -- data -- kMemAlignSize]
-  // memory buffer, communication_ptr_(allocated from ascend memory pool) + kMemAlignSize = device pointer (could get by
-  // GetDevicePtr()), device pointer is to really used by communication node, and communication_ptr_ is used to free
-  // memory to Ascend memory pool.
-  uint8_t *communication_ptr_{nullptr};
 };
 using AscendDeviceAddressPtr = std::shared_ptr<AscendDeviceAddress>;
 }  // namespace ascend

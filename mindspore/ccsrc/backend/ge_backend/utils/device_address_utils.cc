@@ -301,11 +301,6 @@ void DeviceAddressUtils::CreateParameterDeviceAddress(const KernelGraphPtr &grap
   }
 }
 
-void DeviceAddressUtils::UpdateDeviceAddressHostInfoByNode(const device::DeviceAddressPtr &addr, const AnfNodePtr &node,
-                                                           size_t output_idx) {
-  MS_EXCEPTION_IF_NULL(addr);
-}
-
 device::DeviceAddressPtrList DeviceAddressUtils::CreateDeviceAddressForTensorValue(const ValuePtr &node_value,
                                                                                    size_t output_idx,
                                                                                    const ValueNodePtr &value_node,
@@ -326,7 +321,6 @@ device::DeviceAddressPtrList DeviceAddressUtils::CreateDeviceAddressForTensorVal
       if (output_address->GetDeviceType() == device::GetDeviceTypeByName(node_target)) {
         // We need to set tensor->device_address to ValueNode even if the tensor is a forward_output tensor
         // in PyNative Bprop graph. ValueNode device_address is necessary for GraphSchedule::Transform.
-        UpdateDeviceAddressHostInfoByNode(output_address, value_node, output_idx);
         AnfAlgo::SetOutputAddr(std::static_pointer_cast<device::DeviceAddress>(tensor->device_address()), output_idx++,
                                value_node);
         (void)address_list.emplace_back(output_address);

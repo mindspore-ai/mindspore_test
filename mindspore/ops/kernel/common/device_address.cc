@@ -118,7 +118,6 @@ std::string DeviceAddress::ToString() const {
 
 void DeviceAddress::CloneDeviceAddress(const DeviceAddressPtr &device_address) {
   device_address->set_address_common(std::make_shared<AddressCommon>(*address_common_));
-  device_address->set_device_shape(device_shape_);
   device_address->set_from_persistent_mem(from_persistent_mem_);
   device_address->set_need_recycle(need_recycle_);
   device_address->set_padding_type(padding_type_);
@@ -126,7 +125,6 @@ void DeviceAddress::CloneDeviceAddress(const DeviceAddressPtr &device_address) {
   device_address->set_is_view(is_view_);
   device_address->set_status(status_);
   device_address->set_deleter(deleter_);
-  device_address->set_continuous_device_addresses(continuous_device_addresses_);
   device_address->set_user_data(user_data_);
   device_address->set_need_sync_user_data(need_sync_user_data_);
   device_address->set_host_shape(host_shape_);
@@ -183,10 +181,6 @@ bool DeviceAddress::is_ptr_persisted() const { return address_common_->pointer_r
 void DeviceAddress::set_is_ptr_persisted(bool is_ptr_persisted) {
   address_common_->pointer_ref_count_->set_is_ptr_persisted(is_ptr_persisted);
 }
-
-void DeviceAddress::set_device_shape(const ShapeVector &shape) { device_shape_ = shape; }
-
-const ShapeVector &DeviceAddress::device_shape() const { return device_shape_; }
 
 bool DeviceAddress::from_persistent_mem() const { return from_persistent_mem_; }
 
@@ -433,11 +427,5 @@ bool DeviceAddress::is_view() const { return is_view_; }
 
 AddressCommonPtr DeviceAddress::address_common() const { return address_common_; }
 void DeviceAddress::set_address_common(const AddressCommonPtr &address_common) { address_common_ = address_common; }
-
-ContinuousDeviceAddressesPtr DeviceAddress::continuous_device_addresses() const { return continuous_device_addresses_; }
-
-void DeviceAddress::set_continuous_device_addresses(const ContinuousDeviceAddressesPtr &continuous_device_addresses) {
-  continuous_device_addresses_ = continuous_device_addresses;
-}
 }  // namespace device
 }  // namespace mindspore

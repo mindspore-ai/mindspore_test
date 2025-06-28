@@ -49,7 +49,7 @@ void MemoryManagerActor::AllocateMemory(const std::vector<KernelTensorPtr> *allo
 
     try {
       bool success = false;
-      if (device_tensor->continuous_device_addresses() == nullptr) {
+      if (kernel_tensor->continuous_device_addresses() == nullptr) {
         success = device_context->device_res_manager_->AllocateMemory(device_tensor, kDefaultStreamIndex);
       } else {
         device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, from_aid.Name(), "ContinuousMemory", "", false);
@@ -90,7 +90,7 @@ void MemoryManagerActor::AllocateMemoryHP(const std::vector<KernelTensorPtr> *al
     }
     try {
       bool success = false;
-      if (device_tensor->continuous_device_addresses() == nullptr) {
+      if (kernel_tensor->continuous_device_addresses() == nullptr) {
         success = device_context->device_res_manager_->AllocateMemory(device_tensor, kDefaultStreamIndex);
       } else {
         MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
@@ -115,7 +115,7 @@ bool MemoryManagerActor::AllocateContinuousMemory(KernelTensor *kernel_tensor, c
   auto device_tensor = kernel_tensor->device_address().get();
   MS_EXCEPTION_IF_NULL(device_tensor);
   std::vector<size_t> size_list;
-  const auto &continuous_device_addresses = device_tensor->continuous_device_addresses();
+  const auto &continuous_device_addresses = kernel_tensor->continuous_device_addresses();
   for (const auto &device_address_wpr : *continuous_device_addresses) {
     const auto &device_address = device_address_wpr.lock();
     MS_EXCEPTION_IF_NULL(device_address);

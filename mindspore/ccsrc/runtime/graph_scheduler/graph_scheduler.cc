@@ -505,9 +505,11 @@ void FetchContinuousMemoryInfo(const CNodePtr &node, bool is_input) {
   if (is_input) {
     const auto &intput_sizes = AnfAlgo::GetNodeInputSizeList(node);
     for (size_t i = 0; i < intput_sizes.size(); ++i) {
-      const auto &device_tensor = AnfAlgo::GetPrevNodeMutableOutputAddr(node, i, false);
+      const auto &kernel_tensor = AnfAlgo::GetPrevNodeOutputKernelTensor(node, i, false);
+      MS_EXCEPTION_IF_NULL(kernel_tensor);
+      auto device_tensor = kernel_tensor->device_address();
       MS_EXCEPTION_IF_NULL(device_tensor);
-      device_tensor->set_continuous_device_addresses(continuous_device_addresses);
+      kernel_tensor->set_continuous_device_addresses(continuous_device_addresses);
       continuous_device_addresses->emplace_back(std::weak_ptr<device::DeviceAddress>(device_tensor));
     }
   } else {
@@ -515,9 +517,11 @@ void FetchContinuousMemoryInfo(const CNodePtr &node, bool is_input) {
     MS_EXCEPTION_IF_NULL(kernel_mod);
     const auto &output_sizes = kernel_mod->GetOutputSizeList();
     for (size_t i = 0; i < output_sizes.size(); ++i) {
-      const auto &device_tensor = AnfAlgo::GetMutableOutputAddr(node, i, false);
+      const auto &kernel_tensor = AnfAlgo::GetOutputKernelTensor(node, i, false);
+      MS_EXCEPTION_IF_NULL(kernel_tensor);
+      auto device_tensor = kernel_tensor->device_address();
       MS_EXCEPTION_IF_NULL(device_tensor);
-      device_tensor->set_continuous_device_addresses(continuous_device_addresses);
+      kernel_tensor->set_continuous_device_addresses(continuous_device_addresses);
       continuous_device_addresses->emplace_back(std::weak_ptr<device::DeviceAddress>(device_tensor));
     }
   }

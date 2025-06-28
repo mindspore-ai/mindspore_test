@@ -366,7 +366,6 @@ constexpr size_t kDeviceAddressFlagNullptr = 8;
 
 class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
  public:
-  using ContinuousDeviceAddressesPtr = std::shared_ptr<std::vector<std::weak_ptr<DeviceAddress>>>;
   using DeviceAddressPtr = std::shared_ptr<DeviceAddress>;
   DeviceAddress();
   explicit DeviceAddress(const AddressCommonPtr &address_common);
@@ -410,8 +409,6 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   void set_is_ptr_persisted(bool is_ptr_persisted);
   void set_host_shape(const ShapeVector &shape);
   const ShapeVector &host_shape() const;
-  void set_device_shape(const ShapeVector &shape);
-  const ShapeVector &device_shape() const;
   bool from_persistent_mem() const;
   void set_from_persistent_mem(bool from_persistent_mem);
   bool need_recycle() const;
@@ -534,8 +531,6 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   bool is_view() const;
   AddressCommonPtr address_common() const;
   void set_address_common(const AddressCommonPtr &address_common);
-  ContinuousDeviceAddressesPtr continuous_device_addresses() const;
-  void set_continuous_device_addresses(const ContinuousDeviceAddressesPtr &continuous_device_addresses);
   size_t size() const { return address_common_->size_; }
 
   void set_allocator(const std::shared_ptr<AddressAllocator> &allocator) {
@@ -591,7 +586,6 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
     return true;
   }
 
-  ShapeVector device_shape_{};
   // {node, out_index}
   std::pair<AnfNodeWeakPtr, size_t> node_index_{AnfNodePtr(nullptr), 0};
   // The DeviceAddress is held by ValueNodes. These ValueNodes are outputs of forward network.
@@ -619,8 +613,6 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   bool need_sync_user_data_{false};
   // The specified deleter to release memory
   std::function<void(uint8_t *)> deleter_;
-
-  ContinuousDeviceAddressesPtr continuous_device_addresses_{nullptr};
 
   // Move to kernel tensor later.
   // host_shape_/hete_info_/user_data_ will be removed from device address later.

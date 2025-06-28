@@ -99,6 +99,7 @@ struct Address {
 };
 using AddressPtr = std::shared_ptr<Address>;
 using AddressPtrList = std::vector<AddressPtr>;
+using ContinuousDeviceAddressesPtr = std::shared_ptr<std::vector<std::weak_ptr<DeviceAddress>>>;
 
 // KernelTensor is used to express input and output parameters of kernels.
 // KernelTensor is a generalized Tensor semantics, which can represent not only Tensor, but also the meta-information
@@ -399,6 +400,9 @@ class OPS_KERNEL_COMMON_API KernelTensor : public AbstractBase {
 
   void set_managed_by_somas(bool managed_by_somas) { address_common_->managed_by_somas_ = managed_by_somas; }
 
+  ContinuousDeviceAddressesPtr continuous_device_addresses() const;
+  void set_continuous_device_addresses(const ContinuousDeviceAddressesPtr &continuous_device_addresses);
+
   // Get user data maintained by the KernelTensor.
   UserDataPtr user_data() const {
     if (device_address_ == nullptr) {
@@ -564,6 +568,7 @@ class OPS_KERNEL_COMMON_API KernelTensor : public AbstractBase {
   // device address info
   DeviceAddressPtr device_address_{nullptr};
   AddressCommonPtr address_common_{nullptr};
+  ContinuousDeviceAddressesPtr continuous_device_addresses_{nullptr};
 };
 using KernelTensorPtr = std::shared_ptr<KernelTensor>;
 
