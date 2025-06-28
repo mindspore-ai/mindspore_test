@@ -322,6 +322,18 @@ class ASCEND_RES_MANAGER_EXPORT FASInputLayoutMode {
   }
 };
 
+class ASCEND_RES_MANAGER_EXPORT DequantSwigluQuantInputQuantMode {
+ public:
+  static std::string ConvertEnumToString(int64_t id) {
+    static const std::vector<std::string> input_layout_modes = {"static", "dynamic"};
+    if (id < 0 || id >= static_cast<int64_t>(input_layout_modes.size())) {
+      MS_LOG(EXCEPTION) << "Invalid input layout mode " << id;
+      return "";
+    }
+    return input_layout_modes[id];
+  }
+};
+
 class ASCEND_RES_MANAGER_EXPORT FFNActivationMode {
  public:
   static std::string ConvertEnumToString(int64_t id) {
