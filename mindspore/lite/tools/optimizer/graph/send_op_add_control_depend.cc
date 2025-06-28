@@ -39,10 +39,9 @@ const AnfNodePtr SendOpAddControlDepend::Process(const FuncGraphPtr &func_graph,
 #else
 const AnfNodePtr SendOpAddControlDepend::Process(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
                                                  const EquivPtr &) const {
-  MS_EXCEPTION_IF_NULL(func_graph);
-  MS_EXCEPTION_IF_NULL(node);
+  MS_CHECK_TRUE_RET(node != nullptr, nullptr);
   auto cnode = node->cast<CNodePtr>();
-  MS_EXCEPTION_IF_NULL(cnode);
+  MS_CHECK_TRUE_RET(cnode != nullptr, nullptr);
   if (!IsPrimitiveCNode(cnode, prim::kPrimSend)) {
     return nullptr;
   }
@@ -59,13 +58,13 @@ const AnfNodePtr SendOpAddControlDepend::Process(const FuncGraphPtr &func_graph,
   auto value = MakeValue(tensor);
   MS_CHECK_TRUE_RET(value != nullptr, nullptr);
   auto value_node = std::make_shared<ValueNode>(value);
+  MS_CHECK_TRUE_RET(value_node != nullptr, nullptr);
   value_node->set_abstract(tensor->ToAbstract());
-  MS_EXCEPTION_IF_NULL(value_node);
   func_graph->AddValueNode(value_node);
 
   std::vector<AnfNodePtr> depend_input = {NewValueNode(std::make_shared<Primitive>(kDependOpName)), value_node, cnode};
   auto depend_node = NewCNode(depend_input, func_graph);
-  MS_EXCEPTION_IF_NULL(depend_node);
+  MS_CHECK_TRUE_RET(depend_node != nullptr, nullptr);
   depend_node->set_fullname_with_scope(node->fullname_with_scope() + "_Depend");
   depend_node->set_scope(node->scope());
   depend_node->set_abstract(value_node->abstract());

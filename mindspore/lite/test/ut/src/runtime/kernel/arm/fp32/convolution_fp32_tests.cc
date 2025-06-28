@@ -92,7 +92,9 @@ void InitConvTensor(std::vector<lite::Tensor *> *inputs, std::vector<lite::Tenso
 TEST_F(TestConvolutionFp32, conv1) {
   // prepare stage
   int thread_num = 1;
-  auto conv_param = new ConvParameter();
+  ConvParameter *conv_param = reinterpret_cast<ConvParameter *>(malloc(sizeof(ConvParameter)));
+  ASSERT_NE(conv_param, nullptr);
+  memset(conv_param, 0, sizeof(ConvParameter));
   conv_param->op_parameter_.type_ = PrimType_Conv2DFusion;
   InitConvParam(conv_param);
 
@@ -135,5 +137,6 @@ TEST_F(TestConvolutionFp32, conv1) {
     delete out_t;
   }
   delete kernel;
+  delete ctx;
 }
 }  // namespace mindspore
