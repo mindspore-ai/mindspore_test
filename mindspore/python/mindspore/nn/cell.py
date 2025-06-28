@@ -3649,7 +3649,7 @@ class Cell(Cell_):
         self._recompute()
         if 'mp_comm_recompute' in kwargs.keys():
             self._mp_comm_recompute(kwargs.get('mp_comm_recompute', False))
-        if 'parallel_optimizer_comm_recompute' in kwargs.keys():
+        if 'parallel_optimizer_comm_recompute' in kwargs:
             if kwargs.get('parallel_optimizer_comm_recompute', False):
                 logger.warning("Currently, the communication operator allgathers introduced by optimizer shard "
                                "is replaced with zero3.")
