@@ -1,0 +1,16 @@
+approvers:
+- ginfung #
+- liangzhibo
+- huangbingjian
+- Margaret_wangrui
+- zh_qh
+- liangchenghui
+- panzhihui1
+- probiotics_53
+
+reviewers:
+- dingjinshan
+- chaijinwei
+
+options:
+    no_parent_owners: true

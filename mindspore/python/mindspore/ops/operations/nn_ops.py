@@ -7119,8 +7119,8 @@ class Conv3DTranspose(Primitive):
         self.format = validator.check_string(data_format, ['NCDHW'], 'format', self.name)
         self.add_prim_attr('data_format', self.format)
 
-        self.output_padding = _check_3d_int_or_tuple('output_padding', output_padding, self.name,
-                                                     allow_five=False, ret_five=True, greater_zero=False)
+        self.output_padding = _check_3d_int_or_tuple('output_padding', output_padding, self.name, allow_five=False,
+                                                     ret_five=True, greater_zero=False, pad_value=0)
         output_padding_ = (self.output_padding[2], self.output_padding[3], self.output_padding[4])
         if self.pad_mode != 'pad' and output_padding_ != (0, 0, 0):
             raise ValueError(f"For '{self.name}', the 'output_padding' must be zero or (0, 0, 0) "

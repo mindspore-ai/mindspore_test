@@ -118,7 +118,7 @@ def _format_str_two_value(val1, val2, rel):
 
 
 def _check_3d_int_or_tuple(arg_name, arg_value, prim_name, allow_five=False, ret_five=False,
-                           greater_zero=True, third_one=False, three_input=False):
+                           greater_zero=True, third_one=False, three_input=False, pad_value=1):
     """
     Checks whether an argument is a positive int or tuple with 3 or 5(when allow_five is True) positive int elements.
     """
@@ -129,9 +129,9 @@ def _check_3d_int_or_tuple(arg_name, arg_value, prim_name, allow_five=False, ret
                              f"but got {ret_value[-3]}.")
         if three_input_flag:
             raise ValueError(f"For '{prim_name}', the parameter '{arg_name}' must be an positive integer " \
-                             f"or a tuple of three positive integer, but got {arg_value}.")
+                             f"or a tuple of three positive integer, but got {ret_value}.")
         raise ValueError(f"For '{prim_name}', the parameter '{arg_name}' must be an positive integer or " \
-                         f"a tuple of three {'or five ' if allow_five else ''}positive integer, but got {arg_value}")
+                         f"a tuple of three {'or five ' if allow_five else ''}positive integer, but got {ret_value}")
 
     def _get_return_value():
         def _check():
@@ -144,9 +144,10 @@ def _check_3d_int_or_tuple(arg_name, arg_value, prim_name, allow_five=False, ret
 
         _check()
         if isinstance(arg_value, int):
-            ret = (1, 1, arg_value, arg_value, arg_value) if ret_five else (arg_value, arg_value, arg_value)
+            ret = (pad_value, pad_value, arg_value, arg_value, arg_value) \
+                if ret_five else (arg_value, arg_value, arg_value)
         elif len(arg_value) == 3:
-            ret = (1, 1, arg_value[0], arg_value[1], arg_value[2]) if ret_five else arg_value
+            ret = (pad_value, pad_value, arg_value[0], arg_value[1], arg_value[2]) if ret_five else arg_value
         else:  # case: len(arg_value) == 5
             ret = arg_value if ret_five else (arg_value[2], arg_value[3], arg_value[4])
 

@@ -3252,7 +3252,7 @@ REG_BPROP_BUILDER("SegmentMean").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   return {dx, ib->OutZeros(segment_ids)};
 });
 
-REG_BPROP_BUILDER("MaskedScatter").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("MaskedScatter").SetUnusedInputs({i0, i2, i3}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(i0);
   auto mask = ib->GetInput(i1);
   auto updates = ib->GetInput(i2);
