@@ -52,22 +52,4 @@ if [ ! -d "${ascendc_path}/${vendor_name}" ]; then
   fi
 fi
 
-vendor_name="custom_ascendc_910"
-if [ ! -d "${ascendc_path}/${vendor_name}" ]; then
-  rm -rf ${op_host_path}/all_finite*
-  rm -rf ${op_kernel_path}/all_finite*
-  python setup.py -o ${op_host_path} -k ${op_kernel_path} \
-    --soc_version="ascend910" \
-    --vendor_name=${vendor_name}
-  if [ $? -eq 0 ]; then
-    echo "Compile inner ascendc custom op successfully!"
-  else
-    echo "Compile inner ascendc custom op failed!"
-    exit 1
-  fi
-  mapfile -t result_array < <(find ${tmp_compiler_path} -name ${vendor_name})
-  if [ ${#result_array[@]} -gt 0 ]; then
-    ascendc_result=${result_array[0]}
-    cp -r ${ascendc_result} ${ascendc_prebuild_path}
-  fi
-fi
+
