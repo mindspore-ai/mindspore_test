@@ -28,12 +28,25 @@ bool AddAttr::Process(const AnfNodePtr &graph_kernel_node) const {
   auto sub_graph = GetCNodeFuncGraph(graph_kernel_node);
   MS_EXCEPTION_IF_NULL(sub_graph);
   auto nodes = TopoSort(sub_graph->get_return());
+  bool is_duplicated{false};
   for (auto node : nodes) {
+    if (!node->isa<CNode>()) {
+      continue;
+    }
+    auto cnode = node->cast<CNodePtr>();
+    if (cnode->HasAttr(kAttrDuplicated)) {
+      bool is_curr_node_duplicated = GetValue<bool>(cnode->GetAttr(kAttrDuplicated));
+      is_duplicated |= is_curr_node_duplicated;
+    }
     auto prim = GetCNodePrimitive(node);
     if (prim != nullptr && kCommOpsNames.find(prim->name()) != kCommOpsNames.end()) {
       changed = true;
       common::AnfAlgo::SetNodeAttrSafely("is_comm_op", MakeValue(true), graph_kernel_node);
     }
+  }
+  if (is_duplicated) {
+    changed = true;
+    graph_kernel_node->cast<CNodePtr>()->AddAttr(kAttrDuplicated, MakeValue<bool>(true));
   }
   return changed;
 }

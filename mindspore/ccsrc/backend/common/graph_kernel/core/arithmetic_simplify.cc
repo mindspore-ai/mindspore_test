@@ -92,8 +92,8 @@ class PatternTree {
   }
   // leverage pattern tree node and lite node's mapping relation to build lite node graph from pattern tree's right
   // side
-  inner::NodePtr AlterGraph(const std::shared_ptr<ParaMap> &para_to_ref, const std::shared_ptr<ConstMap> &const_to_ref,
-                            const inner::NodePtr &origin_root);
+  inner::NodePtrList AlterGraph(const std::shared_ptr<ParaMap> &para_to_ref,
+                                const std::shared_ptr<ConstMap> &const_to_ref, const inner::NodePtr &origin_root);
   // invoke DfsMatchGraph
   inner::NodePtrList MatchGraph(const inner::NodePtr &root, const std::shared_ptr<ParaMap> &para_to_ref,
                                 const std::shared_ptr<ConstMap> &const_to_ref);
@@ -385,9 +385,9 @@ inner::NodePtrList PatternTree::MatchGraph(const inner::NodePtr &root, const std
 
 // leverage pattern tree node and lite node's mapping relation to build new lite node graph from pattern tree's right
 // side
-inner::NodePtr PatternTree::AlterGraph(const std::shared_ptr<ParaMap> &para_to_ref,
-                                       const std::shared_ptr<ConstMap> &const_to_ref,
-                                       const inner::NodePtr &origin_root) {
+inner::NodePtrList PatternTree::AlterGraph(const std::shared_ptr<ParaMap> &para_to_ref,
+                                           const std::shared_ptr<ConstMap> &const_to_ref,
+                                           const inner::NodePtr &origin_root) {
   auto res = std::make_shared<PatternNodePtrList>();
   DfsTraverse(res, rhs_root_);
   auto all_attrs = SetAttributes(origin_root);
@@ -418,17 +418,17 @@ inner::NodePtr PatternTree::AlterGraph(const std::shared_ptr<ParaMap> &para_to_r
   auto &alter_graph = gb.Get()->ops();
   if (alter_graph.empty()) {
     if (PatternNodeType(rhs_root_->op()) == inner::NType::Parameter) {
-      return (*para_to_ref)[rhs_root_->op()[0]];
+      return {(*para_to_ref)[rhs_root_->op()[0]]};
     } else {
       if (StartWith(rhs_root_->op(), "const")) {
-        return (*const_to_ref)[rhs_root_->op()];
+        return {(*const_to_ref)[rhs_root_->op()]};
       } else {
         tensor::TensorPtr data = std::make_shared<tensor::Tensor>(static_cast<double>(std::stof(rhs_root_->op())));
-        return gb.Value(data);
+        return {gb.Value(data)};
       }
     }
   }
-  return alter_graph.back();
+  return alter_graph;
 }
 
 class ConstantFoldingPatternTree : public PatternTree {
@@ -1249,6 +1249,14 @@ bool ArithmeticSimplify::DoArithmeticTrans(const inner::LiteGraphPtr &litegraph)
         }
         // match a pattern;if return is empty,then fails to match
         matched_nodes = p->MatchGraph(*iter, para_to_ref, const_to_ref);
+        inner::DAttrs inherited_attrs;
+        for (const auto &matched_node : matched_nodes) {
+          const auto &curr_node_attrs = matched_node->GetCNodeAttrs();
+          if (curr_node_attrs.count(kAttrDuplicated) != 0 &&
+              GetValue<bool>(curr_node_attrs.at(kAttrDuplicated)) == true) {
+            inherited_attrs[kAttrDuplicated] = MakeValue(true);
+          }
+        }
         if (!matched_nodes.empty()) {
           auto right_root_type = PatternNodeType(p->rhs_root()->op());
           if (right_root_type == inner::NType::Primitive && OutsideRely(matched_nodes, *iter)) {
@@ -1258,7 +1266,14 @@ bool ArithmeticSimplify::DoArithmeticTrans(const inner::LiteGraphPtr &litegraph)
           can_simplify = true;
           para_to_ref = cur_pattern->UpdateParameters(*iter, para_to_ref);
           // get the new node to replace
-          inner::NodePtr alter_graph_node = cur_pattern->AlterGraph(para_to_ref, const_to_ref, *iter);
+          inner::NodePtrList alter_graph = cur_pattern->AlterGraph(para_to_ref, const_to_ref, *iter);
+          for (const auto &node : alter_graph) {
+            if (node->NodeType() == inner::NType::Primitive) {
+              node->SetCNodeAttrs(inherited_attrs);
+            }
+          }
+          inner::NodePtr alter_graph_node = alter_graph.back();
+
           (*iter)->ReplaceWith(alter_graph_node);
           MS_LOG(DEBUG) << "Arithmetic simplify success with pattern: " << cur_pattern->GetPatternStr();
           changed = true;
