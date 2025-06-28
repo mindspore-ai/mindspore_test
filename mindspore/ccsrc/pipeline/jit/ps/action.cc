@@ -2361,5 +2361,76 @@ std::vector<ActionItem> MindIRPipeline() {
   (void)actions.emplace_back(std::make_pair(kValidate, ValidateAction));
   return actions;
 }
+
+std::vector<PassItem> JitPipeline(const ResourcePtr &resource, bool build_top_graph) {
+  std::vector<PassItem> jit_passes;
+  if (!resource->EnableCompileCache() || resource->func_graph() == nullptr) {
+    // Compile the frontend graph.
+    if (build_top_graph) {
+      (void)jit_passes.emplace_back(kBootstrap, BootstrapAction);
+    }
+    (void)jit_passes.emplace_back(kTypeInference, TypeInferenceAction);
+    (void)jit_passes.emplace_back(kAutoMonad, AutoMonadAction);
+    (void)jit_passes.emplace_back(kGraphReusing, GraphReusingAction);
+    (void)jit_passes.emplace_back(kPreAutoParallel, SetTrainingFlagPass);
+    (void)jit_passes.emplace_back(kPyInterpretToExecute, PyInterpretToExecutePass);
+    (void)jit_passes.emplace_back(kRewriterBeforeOptA, RewriterBeforeOptAPass);
+    (void)jit_passes.emplace_back(kExpandDumpFlag, ExpandDumpFlagPass);
+    (void)jit_passes.emplace_back(kJitOptA, JitOptPassAGroup);
+    (void)jit_passes.emplace_back(kPyInterpretToExecuteAfterOptA, PyInterpretToExecutePass);
+    (void)jit_passes.emplace_back(kRewriterAfterOptA, RewriterAfterOptAPass);
+    (void)jit_passes.emplace_back(kConvertAfterRewriter, ConvertAfterRewriterPass);
+    (void)jit_passes.emplace_back(kOrderPyExecuteAfterRewriter, OrderPyExecuteAfterRewriterPass);
+    (void)jit_passes.emplace_back(kJitOptB, JitOptPassBGroup);
+    (void)jit_passes.emplace_back(kCconv, CconvPass);
+    (void)jit_passes.emplace_back(kLoopUnroll, LoopUnrollPass);
+    (void)jit_passes.emplace_back(kJitOptPassAfterCconv, JitOptPassAfterCconvGroup);
+    (void)jit_passes.emplace_back(kRemoveDupValue, RemoveValueNodeDuplicationsPassForJit);
+    (void)jit_passes.emplace_back(kPartialUnusedArgsEliminate, PartialUnusedArgsEliminatePass);
+    if (common::GetCompileConfig("ENABLE_ELIMINATE_UNUSED_PARAMS") == "1") {
+      (void)jit_passes.emplace_back(kUnusedParamsEliminate, EliminateUnusedParamsPass);
+    }
+    (void)jit_passes.emplace_back(kEnvironConv, EnvironConversionPass);
+    (void)jit_passes.emplace_back(kAddRecomputation, AddRecomputationPass);
+    (void)jit_passes.emplace_back(kCseAfterRecomputation, OptAfterRecomputeGroup);
+    (void)jit_passes.emplace_back(kAutoMonadReorder, OrderEnforceAction);
+    (void)jit_passes.emplace_back(kGetJitBpropGraph, GetJitBpropGraph);
+    (void)jit_passes.emplace_back(kRewriterAfterJitBprop, RewriterAfterOptAPassAfterJitBprop);
+    (void)jit_passes.emplace_back(kOptAfterJitGrad, OptAfterJitGrad);
+    if (IsEnableSilentCheck()) {
+      (void)jit_passes.emplace_back(kSilentCheck, SilentCheckPass);
+    }
+    (void)jit_passes.emplace_back(kValidate, ValidatePass);
+  }
+
+  auto is_precompile_only = MsContext::GetInstance()->get_param<bool>(MS_CTX_PRECOMPILE_ONLY) ||
+                            common::GetEnv("MS_DEV_PRECOMPILE_ONLY") == "1";
+  if (is_precompile_only) {
+    MS_LOG(INFO) << "PrecompileOnly, stop run graph";
+    return jit_passes;
+  }
+
+  if (common::GetEnv(kSimulationLevel) == kSimulationLevelCompileGraph) {
+    return jit_passes;
+  }
+
+  (void)jit_passes.emplace_back(std::make_pair(kBackendPass, BackendPass));
+
+#ifndef WITH_BACKEND
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  if (ms_context->backend_policy() != "ge") {
+#endif
+    // Compile the backend graph.
+    (void)jit_passes.emplace_back(kTaskEmit, TaskEmitAction);
+
+    // Execute the graph.
+    (void)jit_passes.emplace_back(kExecute, ExecuteAction);
+#ifndef WITH_BACKEND
+  }
+#endif
+
+  return jit_passes;
+}
 }  // namespace pipeline
 }  // namespace mindspore
