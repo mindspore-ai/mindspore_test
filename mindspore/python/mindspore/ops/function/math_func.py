@@ -9627,12 +9627,10 @@ def _einsum_convert_num_to_char(num):
     """For einsum, convert number into char."""
     if [num] == [Ellipsis]:
         return '...'
-    # pylint: disable=chained-comparison
-    if num >= 0 and num < 26:
-        return chr(num + ord('A'))
-    # pylint: disable=chained-comparison
-    if num >= 26 and num < 52:
-        return chr(num - 26 + ord('a'))
+    if 0 <= num < 26:
+        return chr(num + 65)
+    if 26 <= num < 52:
+        return chr(num + 71)
     raise ValueError(f"For Einsum, the number in sublist should be in range [0, 52), but got {num}")
 
 
