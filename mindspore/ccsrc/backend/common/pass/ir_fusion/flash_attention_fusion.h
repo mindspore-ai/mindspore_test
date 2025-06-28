@@ -19,7 +19,6 @@
 #include <string>
 #include <memory>
 #include <vector>
-#include <unordered_map>
 #include "include/backend/optimizer/optimizer.h"
 
 namespace mindspore {

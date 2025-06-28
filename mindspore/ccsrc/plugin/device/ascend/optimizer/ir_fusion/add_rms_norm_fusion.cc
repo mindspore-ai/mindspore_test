@@ -46,6 +46,9 @@ const BaseRef AddRmsNormFusion::DefinePattern() const {
 
 const AnfNodePtr AddRmsNormFusion::Process(const FuncGraphPtr &graph, const AnfNodePtr &node,
                                            const EquivPtr &equiv) const {
+  MS_EXCEPTION_IF_NULL(graph);
+  MS_EXCEPTION_IF_NULL(node);
+  MS_EXCEPTION_IF_NULL(equiv);
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   if (ms_context->IsEnableInferBoost()) {

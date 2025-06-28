@@ -50,6 +50,9 @@ const BaseRef AddCastRmsNormCastFusion::DefinePattern() const {
 
 const AnfNodePtr AddCastRmsNormCastFusion::Process(const FuncGraphPtr &graph, const AnfNodePtr &node,
                                                    const EquivPtr &equiv) const {
+  MS_EXCEPTION_IF_NULL(graph);
+  MS_EXCEPTION_IF_NULL(node);
+  MS_EXCEPTION_IF_NULL(equiv);
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   const std::string fusion_op_name = "AddRmsNorm";
