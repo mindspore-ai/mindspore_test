@@ -36,6 +36,7 @@
 
 namespace mindspore {
 namespace device {
+class HalResBase;
 namespace cpu {
 class CPUSimpleMemPlan;
 class CPUMemoryManager;
@@ -61,8 +62,27 @@ class RuntimeUtils;
 }  // namespace mindspore
 
 namespace mindspore {
-// PointerRefCount encapsulates pointer and reference count-related operations, and supports custom deleter to free
-// resources. In Ref scenarios, KernelTensor of different DeviceAddress may hold the same PointerRefCount object.
+class AddressAllocator {
+ public:
+  /**
+   * @brief Allocate memory for device address
+   * @param size - The size of memory that needs to be allocated
+   * @param stream_id - Stream ID for memory allocation
+   * @return Raw pointer to the allocated memory
+   */
+  virtual void *Alloc(size_t size, uint32_t stream_id) = 0;
+
+  /**
+   * @brief Free memory for device address
+   * @param address_ptr - Raw pointer in PointerRefCount that needs to be freed
+   * @return true if free succeeds, false otherwise
+   */
+  virtual bool Free(void *address_ptr) = 0;
+};
+
+// PointerRefCount encapsulates pointer and reference count-related operations, and supports custom allocator and
+// delteter resources. In Ref scenarios, KernelTensor of different DeviceAddress may hold the same PointerRefCount
+// object.
 class PointerRefCount {
  public:
   // The arguments are pointer and a bool variable that identifies whether pointer is from the memory pool.
@@ -70,14 +90,17 @@ class PointerRefCount {
 
   PointerRefCount() = default;
   explicit PointerRefCount(void *ptr) : ptr_(ptr) {}
-  PointerRefCount(void *ptr, const Deleter &deleter) : ptr_(ptr), deleter_(deleter) {}
+  PointerRefCount(void *ptr, const Deleter &deleter, std::shared_ptr<AddressAllocator> allocator = nullptr)
+      : ptr_(ptr), deleter_(deleter), allocator_(std::move(allocator)) {}
 
   PointerRefCount(const PointerRefCount &) = delete;
   PointerRefCount &operator=(const PointerRefCount &) = delete;
 
   ~PointerRefCount() {
     try {
-      if (ptr_ != nullptr && deleter_) {
+      if (ptr_ != nullptr && allocator_ && from_mem_pool_) {
+        allocator_->Free(ptr_);
+      } else if (ptr_ != nullptr && deleter_) {
         deleter_(ptr_, from_mem_pool_);
       }
       ptr_ = nullptr;
@@ -166,6 +189,10 @@ class PointerRefCount {
   // Set pointer resource destructor.
   void set_deleter(const Deleter &deleter) { deleter_ = deleter; }
 
+  std::shared_ptr<AddressAllocator> allocator() const { return allocator_; }
+
+  void set_allocator(std::shared_ptr<AddressAllocator> allocator) { allocator_ = allocator; }
+
   bool is_ptr_persisted() const { return is_ptr_persisted_; }
   void set_is_ptr_persisted(bool is_ptr_persisted) { is_ptr_persisted_ = is_ptr_persisted; }
 
@@ -207,6 +234,9 @@ class PointerRefCount {
   // The pointer resource destructor.
   Deleter deleter_;
 
+  // The device address allocator that contains allocate memory and delete memory functions.
+  std::shared_ptr<AddressAllocator> allocator_;
+
   // The device address of the node that owns the device address cannot be updated and replaced.
   // Application scenario: set to true when the hardware execution mode requires that ptr cannot be changed during
   // execution.
@@ -231,7 +261,8 @@ struct AddressCommon {
   AddressCommon(const AddressCommon &other) {
     pointer_ref_count_ =
       other.pointer_ref_count_ != nullptr
-        ? std::make_shared<PointerRefCount>(other.pointer_ref_count_->ptr(), other.pointer_ref_count_->deleter())
+        ? std::make_shared<PointerRefCount>(other.pointer_ref_count_->ptr(), other.pointer_ref_count_->deleter(),
+                                            other.pointer_ref_count_->allocator())
         : std::make_shared<PointerRefCount>();
     tensor_storage_info_ = other.tensor_storage_info_;
     stream_id_ = other.stream_id_;
@@ -506,6 +537,12 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   ContinuousDeviceAddressesPtr continuous_device_addresses() const;
   void set_continuous_device_addresses(const ContinuousDeviceAddressesPtr &continuous_device_addresses);
   size_t size() const { return address_common_->size_; }
+
+  void set_allocator(const std::shared_ptr<AddressAllocator> &allocator) {
+    address_common_->pointer_ref_count_->set_allocator(allocator);
+  }
+
+  std::shared_ptr<AddressAllocator> allocator() const { return address_common_->pointer_ref_count_->allocator(); }
 
  protected:
   virtual mindspore::tensor::TensorPtr LoadMemToHost(const std::string &tensor_name, const ShapeVector &host_shape,
