@@ -1498,7 +1498,8 @@ class TensorData : public MetaTensorData {
       return data_len_ == tensor_ptr->DataNBytes();
     } else if (data_len_ == tensor_ptr->DataNBytes()) {
       // if has data_sync, check data
-      return memcmp(data_ptr_.get(), reinterpret_cast<const uint8_t *>(tensor_ptr->device_address()->GetMutablePtr()),
+      auto cpu_tensor = tensor_ptr->cpu();
+      return memcmp(data_ptr_.get(), reinterpret_cast<const uint8_t *>(cpu_tensor->device_address()->GetMutablePtr()),
                     data_len_) == 0;
     }
     return false;
