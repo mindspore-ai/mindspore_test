@@ -56,7 +56,7 @@ namespace mindspore {
 using mindspore::TensorInfoCommForDump;
 using mindspore::TensorInfoForDump;
 
-inline mindspore::tensor::TensorPtr KernelTensor2Tensor(device::KernelTensorPtr);
+inline mindspore::tensor::TensorPtr KernelTensor2Tensor(device::KernelTensorPtr, const TypeId, const ShapeVector &);
 inline string TensorToString(mindspore::tensor::TensorPtr tensor);
 
 namespace {
@@ -476,7 +476,8 @@ KernelTensorPtr HandleOverflow(const std::vector<TensorInfoForDump> &tensor_info
 }
 
 bool ProcessOverflow(const KernelTensorPtr &overflow_kernel_tensor, uint32_t set_overflow_num) {
-  mindspore::tensor::TensorPtr my_overflow = KernelTensor2Tensor(overflow_kernel_tensor);
+  mindspore::tensor::TensorPtr my_overflow =
+    KernelTensor2Tensor(overflow_kernel_tensor, kNumberTypeBool, ShapeVector());
   bool is_overflow = (TensorToString(my_overflow) == "True");
   if (is_overflow && (set_overflow_num == 0 || OverflowCounter::GetInstance().getCount() < set_overflow_num)) {
     OverflowCounter::GetInstance().addCount();
@@ -661,14 +662,13 @@ TensorInfoCommForDump GetTensorInfoCommFromCnode(const CNodePtr &cnode) {
   return tensor_info_comm;
 }
 
-inline mindspore::tensor::TensorPtr KernelTensor2Tensor(device::KernelTensorPtr kernel_tensor) {
+inline mindspore::tensor::TensorPtr KernelTensor2Tensor(device::KernelTensorPtr kernel_tensor, const TypeId host_type,
+                                                        const ShapeVector &host_shape) {
   if (!kernel_tensor) {
     return nullptr;
   }
   MS_EXCEPTION_IF_NULL(kernel_tensor);
   const void *src = kernel_tensor->device_ptr();
-  auto host_type = kernel_tensor->dtype_id();
-  auto host_shape = kernel_tensor->GetShapeVector();
   auto device_tensor = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_tensor);
 
@@ -743,10 +743,15 @@ inline void Write2File(const TensorInfoForDump &tensor_info, uint32_t stream_id,
   for (const auto &name : stat_name_list) {
     auto it = tensor_info.stat_results.find(name);
     if (it == tensor_info.stat_results.end()) {
-      MS_LOG(EXCEPTION) << "The statistics of the " << name << " category cannot be found!";
+      csv.WriteToCsv("null");
+      continue;
     }
-    auto result_kernel_tensor = it->second.back();
-    auto tensor = KernelTensor2Tensor(result_kernel_tensor);
+    const TensorInfoForDump::KernelTensorMeta &kernel_tensor_meta = it->second;
+    auto kernel_tensor = kernel_tensor_meta.tensor;
+    MS_EXCEPTION_IF_NULL(kernel_tensor);
+    auto dtype_id = kernel_tensor_meta.dtype;
+    auto shape = kernel_tensor_meta.shape;
+    auto tensor = KernelTensor2Tensor(kernel_tensor, dtype_id, shape);
     csv.WriteToCsv(TensorToString(tensor));
   }
   csv.WriteToCsv("", true);
@@ -768,7 +773,15 @@ void LaunchDeviceStatCallback(std::vector<TensorInfoForDump> *tensor_info_vec_pt
     auto kernel_tensor = tensor_info.kernel_tensor;
     for (auto &name : stat_name_list) {
       auto result = datadump::CalStatisticAsync(name, device_context, kernel_tensor, stream_id);
-      tensor_info.stat_results.emplace(name, result);
+      if (result.empty() || !result.back()) {
+        continue;
+      }
+      auto stat_res = result.back();
+      result.pop_back();
+      MS_EXCEPTION_IF_NULL(stat_res);
+      tensor_info.stat_results.emplace(
+        name, TensorInfoForDump::KernelTensorMeta{stat_res, stat_res->dtype_id(), stat_res->GetShapeVector()});
+      tensor_info.workspace[name] = result;
     }
   }
 
@@ -785,7 +798,7 @@ void LaunchDeviceStatCallback(std::vector<TensorInfoForDump> *tensor_info_vec_pt
   device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
   auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
   MS_EXCEPTION_IF_NULL(res_manager);
-  auto callback_ret = res_manager->LaunchCallback(callback_func, stream_id);
+  auto callback_ret = res_manager->LaunchCallback(callback_func, stream_id, true);
   if (!callback_ret) {
     MS_LOG(ERROR) << "Async device statistic dump callback launch fail.";
   }
