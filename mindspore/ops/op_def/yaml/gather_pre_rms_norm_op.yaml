@@ -1,0 +1,19 @@
+#operator gather_pre_rms_norm
+gather_pre_rms_norm:
+  args:
+    x:
+      dtype: tensor
+    res_in:
+      dtype: tensor
+    indices:
+      dtype: tensor
+    gamma:
+      dtype: tensor
+    epsilon:
+      dtype: float
+      default: 1e-6
+  returns:
+    y:
+      dtype: tensor
+    res_out:
+      dtype: tensor
