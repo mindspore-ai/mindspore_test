@@ -54,7 +54,9 @@ abstract::ShapePtr SoftplusGradInfershape(const PrimitivePtr &primitive,
   auto output_shape = input_args[1]->GetShape();
   MS_EXCEPTION_IF_NULL(output_shape);
   auto x_shape_ptr = x_shape->cast<abstract::ShapePtr>();
+  MS_EXCEPTION_IF_NULL(x_shape_ptr);
   auto output_shape_ptr = output_shape->cast<abstract::ShapePtr>();
+  MS_EXCEPTION_IF_NULL(output_shape_ptr);
   if (!x_shape_ptr->IsDynamic() && !output_shape_ptr->IsDynamic()) {
     if (*x_shape != *output_shape) {
       MS_EXCEPTION(ValueError) << "For '" << prim_name
