@@ -214,19 +214,28 @@ class DynamicProfilerMonitorBase(Callback):
             ...      context.set_context(mode=mindspore.PYNATIVE_MODE)
             ...      mindspore.set_device("Ascend")
             ...      data_cfg = {
-            ...          "start_step": 2,
-            ...          "stop_step": 5,
-            ...          "aic_metrics": -1,
-            ...          "profiler_level": 0,
-            ...          "activities": 0,
-            ...          "export_type": 0,
-            ...          "profile_memory": False,
-            ...          "mstx": False,
-            ...          "analyse_mode": 0,
-            ...          "parallel_strategy": False,
-            ...          "with_stack": False,
-            ...          "data_simplification": True,
-            ...          }
+            ...           "start_step": 2,
+            ...           "stop_step": 5,
+            ...           "aic_metrics": "AiCoreNone",
+            ...           "profiler_level": "Level0",
+            ...           "analyse_mode": 0,
+            ...           "activities": ["CPU", "NPU"],
+            ...           "export_type": ["text"],
+            ...           "profile_memory": False,
+            ...           "mstx": False,
+            ...           "parallel_strategy": False,
+            ...           "with_stack": False,
+            ...           "data_simplification": True,
+            ...           "l2_cache": False,
+            ...           "analyse": True,
+            ...           "record_shape": False,
+            ...           "prof_path": "./data",
+            ...           "mstx_domain_include": [],
+            ...           "mstx_domain_exclude": [],
+            ...           "host_sys": [],
+            ...           "sys_io": False,
+            ...           "sys_interconnection": False
+            ...      }
             ...      output_path = "./cfg_path"
             ...      cfg_path = os.path.join(output_path, "profiler_config.json")
             ...      os.makedirs(output_path, exist_ok=True)
@@ -581,10 +590,15 @@ if sys.version_info >= (3, 8):
                   indicates that mstx is disabled. The default value is false, indicating that mstx is not enabled.
                 - analyse (bool, optional) - Set whether to enable online analysis. True indicates that online analysis
                   is enabled, while false indicates that online analysis is disabled. The default value is false,
-                  indicating that online analysis is not enabled.
-                - analyse_mode (int, optional) - Sets the mode for online analysis, corresponding to the analyse_mode
-                  parameter of the mindspore.Profiler.analyse interface, where 0 represents "sync" and 1 represents
-                  "async". The default value is -1, indicating that online analysis is not used.
+                  indicating that online analysis is not enabled. This parameter has a higher priority than the
+                  `analyse_mode` parameter. When this parameter is set to false, the setting of the `analyse_mode`
+                  parameter does not take effect. When this parameter is set to true,
+                  setting the `analyse_mode` parameter to -1 does not take effect.
+                - analyse_mode (int, optional) - Sets the mode for online analysis,
+                  where 0 represents "sync" and 1 represents "async". The default value is -1,
+                  indicating that online analysis is not used. This parameter has a lower priority than the `analyse`
+                  parameter. When the `analyse` parameter is set to false, the setting of this parameter does not take
+                  effect. When the `analyse` parameter is set to true, setting it to -1 does not take effect.
                 - parallel_strategy (bool, optional) - Sets whether to collect parallel strategy performance data,
                   where true means to collect and false means not to collect. The default value is false, indicating
                   that parallel strategy performance data is not collected.
@@ -620,7 +634,18 @@ if sys.version_info >= (3, 8):
                   ``"disk"`` represents the disk I/O utilization at the process level, and ``"network"`` represents the
                   network I/O utilization at the system level. ``"osrt"`` represents system-level syscall and
                   pthreadcall. Default value: ``[]``, indicating that system class data on the host side is
-                  not collected.
+                  not collected. When collecting DISK or OSRT data, it is necessary to install the iotop, perf,
+                  and ltrace third-party tools in advance. For detailed steps, please refer to
+                  `Installing Third-party Tools <https://www.hiascend.com/document/detail/zh/mindstudio/80RC1/T&ITools/
+                  Profiling/atlasprofiling_16_0136.html>`_ .
+                  After the third-party tool is successfully installed, user permissions need to be configured. For
+                  detailed steps, please refer to `Configure User Permissions <https://www.hiascend.com/document/
+                  detail/zh/mindstudio/80RC1/T&ITools/Profiling/atlasprofiling_16_0137.
+                  html>`_ .
+                  Note that in step 3 of configuring user permissions, the content in the msprof_data_collection.sh
+                  script needs to be replaced with `msprof_data_collection.sh
+                  <https://gitee.com/mindspore/mindspore/blob/master/docs/api/api_python/mindspore/script/
+                  msprof_data_collection.sh>`_.
 
             output_path (str, optional): (Ascend only) Output data path. Default: ``"./dyn_profile_data"`` .
             poll_interval (int, optional): (Ascend only) The polling period of the monitoring process, in seconds.

@@ -92,8 +92,8 @@ def tensorboard_trace_handler(dir_name: str = None, worker_name: str = None,
         ...     net = Net()
         ...     # Note that the Profiler should be initialized before model.train
         ...     with mindspore.profiler.profile(activities=[ProfilerActivity.CPU, ProfilerActivity.NPU],
-        ...                                     schedule=mindspore.profiler.schedule(wait=1, warmup=1, active=2,
-        ...                                           repeat=1, skip_first=2),
+        ...                                     schedule=mindspore.profiler.schedule(wait=0, warmup=0, active=1,
+        ...                                           repeat=1, skip_first=0),
         ...                                     on_trace_ready=mindspore.profiler.tensorboard_trace_handler("./data"),
         ...                                     profile_memory=False,
         ...                                     experimental_config=experimental_config) as prof:
@@ -688,6 +688,8 @@ class Profile:
     This class to enable the profiling of MindSpore neural networks.
     MindSpore users can import the mindspore.profiler.profile, initialize the profile object to start profiling,
     Use profile.start() to start the analysis, and use profile.stop() to stop collecting and analyzing the results.
+    For detailed usage, please refer to `Ascend Performance Tuning
+    <https://www.mindspore.cn/tutorials/en/master/debug/profiler.html>`_ .
     Users can visualize the results using the `MindStudio Insight
     <https://www.hiascend.com/developer/download/community/result?module=pt+sto+cann>`_ tool.
     Now, profile supports AICORE operator, AICPU operator, HostCPU operator, memory,
@@ -788,8 +790,8 @@ class Profile:
         ...     net = Net()
         ...     # Note that the Profiler should be initialized before model.train
         ...     with mindspore.profiler.profile(activities=[ProfilerActivity.CPU, ProfilerActivity.NPU],
-        ...                                     schedule=mindspore.profiler.schedule(wait=1, warmup=1, active=2,
-        ...                                           repeat=1, skip_first=2),
+        ...                                     schedule=mindspore.profiler.schedule(wait=0, warmup=0, active=1,
+        ...                                           repeat=1, skip_first=0),
         ...                                     on_trace_ready=mindspore.profiler.
         ...                                           tensorboard_trace_handler("./data"),
         ...                                     profile_memory=False,
@@ -916,8 +918,8 @@ class Profile:
             ...     net = Net()
             ...     # Note that the Profiler should be initialized before model.train
             ...     prof = mindspore.profiler.profile(activities=[ProfilerActivity.CPU, ProfilerActivity.NPU],
-            ...                                       schedule=mindspore.profiler.schedule(wait=1, warmup=1, active=2,
-            ...                                           repeat=1, skip_first=2),
+            ...                                       schedule=mindspore.profiler.schedule(wait=0, warmup=0, active=1,
+            ...                                           repeat=1, skip_first=0),
             ...                                       on_trace_ready=mindspore.profiler.
             ...                                           tensorboard_trace_handler("./data"),
             ...                                       profile_memory=False,
@@ -980,8 +982,8 @@ class Profile:
             ...     net = Net()
             ...     # Note that the Profiler should be initialized before model.train
             ...     prof = mindspore.profiler.profile(activities=[ProfilerActivity.CPU, ProfilerActivity.NPU],
-            ...                                       schedule=mindspore.profiler.schedule(wait=1, warmup=1, active=2,
-            ...                                           repeat=1, skip_first=2),
+            ...                                       schedule=mindspore.profiler.schedule(wait=0, warmup=0, active=1,
+            ...                                           repeat=1, skip_first=0),
             ...                                       on_trace_ready=mindspore.profiler.
             ...                                           tensorboard_trace_handler("./data"),
             ...                                       profile_memory=False,
@@ -1045,8 +1047,8 @@ class Profile:
         ...     net = Net()
         ...     # Note that the Profiler should be initialized before model.train
         ...     with mindspore.profiler.profile(activities=[ProfilerActivity.CPU, ProfilerActivity.NPU],
-        ...                                     schedule=mindspore.profiler.schedule(wait=1, warmup=1, active=2,
-        ...                                           repeat=1, skip_first=2),
+        ...                                     schedule=mindspore.profiler.schedule(wait=0, warmup=0, active=1,
+        ...                                           repeat=1, skip_first=0),
         ...                                     on_trace_ready=mindspore.profiler.tensorboard_trace_handler("./data"),
         ...                                     profile_memory=False,
         ...                                     experimental_config=experimental_config) as prof:
