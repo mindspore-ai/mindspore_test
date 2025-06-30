@@ -914,6 +914,8 @@ bool OverlapGradFlashSP(const FuncGraphPtr &graph) {
   if (grad_fa_map.empty() || fa_map.empty()) {
     return false;
   }
+  MS_LOG(WARNING) << "Ring attention will be deprecated in subsequent versions. "
+                     "It is recommended to use other sequence parallel methods as a replacement.";
   auto fa_info = GetAttentionInfo(fa_map);
   MS_EXCEPTION_IF_NULL(fa_info);
 

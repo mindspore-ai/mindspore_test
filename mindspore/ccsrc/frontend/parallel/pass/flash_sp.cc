@@ -2996,6 +2996,10 @@ bool SetFlashSP(const FuncGraphPtr &func_graph) {
     }
     is_changed = true;
   }
+  if (is_changed) {
+    MS_LOG(WARNING) << "Ring attention will be deprecated in subsequent versions. "
+                       "It is recommended to use other sequence parallel methods as a replacement.";
+  }
   return is_changed;
 }
 
@@ -3280,7 +3284,8 @@ bool FlashSPSendRecvNodeAttach(const FuncGraphPtr &root, const opt::OptimizerPtr
     MS_LOG(INFO) << "No RA/FlashSP Send/Recv grad is found to be attached.";
     return false;
   }
-
+  MS_LOG(WARNING) << "Ring attention will be deprecated in subsequent versions. "
+                     "It is recommended to use other sequence parallel methods as a replacement.";
   return AttachCommTupleNodeToFA(index_make_tuple_input_map, &index_fa_input_bprop_getitem_map, manager);
 }
 }  // namespace parallel

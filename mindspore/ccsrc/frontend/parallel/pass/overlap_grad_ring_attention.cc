@@ -653,6 +653,8 @@ void DynOverlapGradRingAttention(const FuncGraphPtr &graph) {
   CNodePtr loss_node;
 
   DynFindTargetNode(&origin_nodes_topological, &grad_fa_map, &grad_recv_map, &grad_send_map, &loss_node);
+  MS_LOG(WARNING) << "Ring attention will be deprecated in subsequent versions. "
+                     "It is recommended to use other sequence parallel methods as a replacement.";
   for (auto it = grad_send_map.begin(); it != grad_send_map.end(); ++it) {
     auto grad_fa_node = grad_fa_map.at(it->first)->cast<CNodePtr>();
     auto grad_recv_node = grad_recv_map.at(it->first)->cast<CNodePtr>();
@@ -1231,7 +1233,8 @@ bool StaticOverlapGradRingAttention(const FuncGraphPtr &graph) {
       grad_send_map.empty()) {
     return false;
   }
-
+  MS_LOG(WARNING) << "Ring attention will be deprecated in subsequent versions. "
+                     "It is recommended to use other sequence parallel methods as a replacement.";
   if (IsRingAttentionCP(fa_map.begin()->second)) {
     return OverlapGradRingAttentionCP(graph, grad_fa_map, fa_map, grad_send_map, grad_recv_map, kv_recv_map,
                                       attention_out_map, softmax_max_map, softmax_sum_map, dout_map);
