@@ -26,6 +26,7 @@
 #include <utility>
 #include "pybind11/pybind11.h"
 #include "include/common/utils/convert_utils_py.h"
+#include "pipeline/jit/pi/python_adapter/py_frame.h"
 #include "pipeline/jit/pi/external.h"
 #include "pipeline/jit/pi/graph_build/parameter_manager.h"
 #include "pipeline/jit/pi/graph_capture/graph_build.h"
@@ -638,7 +639,7 @@ static bool CheckGuard(JitCompileResults *c, const PyFrameWrapper &f) {
   GuardContext context;
 
   bool log_perf = c->conf()->GetBoolConfig(GraphJitConfig::kLogGuardPerf);
-  if (c->code()->GetGuard()->Check(f, true, log_perf)) {
+  if (c->code()->GetGuard()->Check(f, log_perf)) {
     return true;
   }
 
@@ -652,7 +653,7 @@ static bool CheckGuard(JitCompileResults *c, const PyFrameWrapper &f) {
     if (oc == skip) {
       continue;
     }
-    if (oc->GetGuard()->Check(f, false, log_perf)) {
+    if (oc->GetGuard()->Check(f, log_perf)) {
       c->set_code(oc);
       MS_LOG(DEBUG) << "select the compiled code due to guard is match: "
                     << (oc->GetPythonCode() != nullptr
@@ -665,7 +666,7 @@ static bool CheckGuard(JitCompileResults *c, const PyFrameWrapper &f) {
     }
   }
   if (c->code() == nullptr) {  // recompiled
-    c->CacheFailGuard();
+    c->CacheFailGuard(f);
   }
   return c->code() != nullptr;
 }
@@ -731,8 +732,6 @@ static py::object CodeHook(PyThreadState *tstate, JitCompileResults *c, PyFrameW
       just_compiled = true;
     /* fallthrough */
     case JitCompileResults::GRAPH_CALLABLE: {
-      PIJIT_DEBUG_LOG(LogCfg::kRecompiles)
-        << "Check guard of func: " << std::string(py::str(reinterpret_cast<PyObject *>(co)));
       if (CheckGuard(c, PyFrameWrapper(frame))) {
         c->set_origin_frame(PyFrameWrapper());
         return CallCompiledResults(tstate, PyFrameWrapper(frame), c);
