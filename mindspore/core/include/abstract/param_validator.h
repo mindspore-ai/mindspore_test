@@ -50,8 +50,9 @@ MS_CORE_API void CheckShapeSame(const std::string &op, const AbstractBasePtr &te
 
 MS_CORE_API inline void CheckDtypeSame(const std::string &op, const TypePtr &type1, const TypePtr &type2) {
   if (*type1 != *type2) {
-    MS_EXCEPTION(TypeError) << "For '" << op << "', the dtype of two args should be same, but the first arg dtype "
-                            << type1->ToString() << " are not consistent with second arg dtype " << type2->ToString();
+    MS_EXCEPTION(TypeError) << "For '" << op << "', the dtype of two args should be same, but the dtype of first arg "
+                            << type1->ToString() << " is not consistent with the dtype of second arg "
+                            << type2->ToString();
   }
 }
 

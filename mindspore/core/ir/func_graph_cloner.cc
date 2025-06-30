@@ -158,7 +158,7 @@ void Cloner::CloneCNodeWithoutInputs(const AnfNodePtr &node, const FuncGraphPtr 
       // Synchronize callers' shadow debug infos.
       auto &new_shadow_debug_infos = new_node->debug_info()->shadow_debug_infos_map();
       const auto &old_shadow_debug_infos = debug_info->shadow_debug_infos_map();
-      new_shadow_debug_infos.insert(old_shadow_debug_infos.cbegin(), old_shadow_debug_infos.cend());
+      (void)new_shadow_debug_infos.insert(old_shadow_debug_infos.cbegin(), old_shadow_debug_infos.cend());
       const auto &old_real_loc = debug_info->real_loc();
       if (!old_real_loc.empty()) {
         new_node->debug_info()->set_real_loc(old_real_loc);

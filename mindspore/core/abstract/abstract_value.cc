@@ -793,9 +793,9 @@ bool CheckElementAbstractSame(const AbstractBasePtr &first_element, const Abstra
                              << "The 0th element type is: " << TypeIdToString(first_element_type_id) << ". The " << i
                              << "th element type is: " << TypeIdToString(cur_element_type_id);
   }
-  auto first_element_shape = first_element->GetShape();
+  const auto &first_element_shape = first_element->GetShape();
   MS_EXCEPTION_IF_NULL(first_element_shape);
-  auto cur_element_shape = cur_element->GetShape();
+  const auto &cur_element_shape = cur_element->GetShape();
   MS_EXCEPTION_IF_NULL(cur_element_shape);
   if (*first_element_shape != *cur_element_shape) {
     return false;
@@ -1061,7 +1061,7 @@ bool AbstractSequence::PurifyElements() {
       MS_LOG(INFO) << "Check if all sequence nodes are released, or none elements use flags in them. nodes size: "
                    << sequence_nodes_->size();
     } else {
-      MS_LOG(INFO) << "Check if none elements use flags in sequence ndoes. one of node: "
+      MS_LOG(INFO) << "Check if none elements use flags in sequence nodes. one of node: "
                    << not_free_node->DebugString();
     }
     return false;

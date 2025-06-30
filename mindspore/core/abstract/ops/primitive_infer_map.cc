@@ -429,8 +429,8 @@ std::optional<AbstractBasePtr> InferAbstractByFuncImpl(const PrimitivePtr &primi
     return ops::DoGeneralInfer(primitive, input_args, frontend_func_impl);
   }
   (void)op_def->func_impl_.CheckValidation(primitive, input_args);
-  auto shape = op_def->func_impl_.InferShape(primitive, input_args);
-  auto type = op_def->func_impl_.InferType(primitive, input_args);
+  const auto &shape = op_def->func_impl_.InferShape(primitive, input_args);
+  const auto &type = op_def->func_impl_.InferType(primitive, input_args);
   return MakeAbstract(shape, type);
 }
 
