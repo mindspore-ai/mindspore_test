@@ -32,10 +32,10 @@ mindspore.nn.Conv3dTranspose
         - **weight_init** (Union[Tensor, str, Initializer, numbers.Number]，可选) - 权重参数的初始化方法。它可以是Tensor、str、Initializer或numbers.Number。当使用str时，可选 ``"TruncatedNormal"`` ， ``"Normal"`` ， ``"Uniform"`` ， ``"HeUniform"`` 和 ``"XavierUniform"`` 分布以及常量 ``"One"`` 和 ``"Zero"`` 分布的值，可接受别名 ``"xavier_uniform"`` ， ``"he_uniform"`` ， ``"ones"`` 和 ``"zeros"`` 。上述字符串大小写均可。更多细节请参考Initializer的值。默认值： ``None`` ，即权重使用HeUniform初始化。
         - **bias_init** (Union[Tensor, str, Initializer, numbers.Number]，可选) - 偏置参数的初始化方法。可以使用的初始化方法与 `weight_init` 相同。更多细节请参考Initializer的值。默认值： ``None`` ，即偏差使用Uniform初始化。
         - **data_format** (str，可选) - 数据格式的可选值。目前仅支持 ``'NCDHW'`` 。 默认值： ``'NCDHW'`` 。
-        - **dtype** (:class:`mindspore.dtype`，可选) - Parameters的dtype。默认值： ``mstype.float32`` 。
+        - **dtype** (:class:`mindspore.dtype`，可选) - Parameters的dtype，需要跟输入的dtype保持一致。默认值： ``mstype.float32`` 。
 
     输入：
-        - **x** (Tensor) - shape为 :math:`(N, C_{in}, D_{in}, H_{in}, W_{in})` 的Tensor。目前输入数据类型只支持float16和float32。
+        - **x** (Tensor) - shape为 :math:`(N, C_{in}, D_{in}, H_{in}, W_{in})` 的Tensor。目前，CPU/GPU只支持输入数据类型为float16和float32，Ascend只支持输入数据类型为float16。
 
     输出：
         Tensor，shape为 :math:`(N, C_{out}, D_{out}, H_{out}, W_{out})` 。
@@ -76,7 +76,7 @@ mindspore.nn.Conv3dTranspose
     异常：
         - **TypeError** - `in_channels` 、 `out_channels` 或 `group` 不是int。
         - **TypeError** - `kernel_size` 、 `stride` 、 `padding` 、 `dilation` 或 `output_padding` 既不是int也不是tuple。     
-        - **TypeError** - 输入数据类型不是float16或float32。
+        - **TypeError** - 输入数据类型不是要求的类型，即CPU/GPU不是float16或float32，Ascend不是float16。
         - **ValueError** - `in_channels` 、 `out_channels` 、 `kernel_size` 、 `stride` 或 `dilation` 小于1。
         - **ValueError** - `padding` 小于0。
         - **ValueError** - `pad_mode` 不是 ``"same"`` ， ``"valid"`` 或 ``"pad"`` 。

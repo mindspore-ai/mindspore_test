@@ -941,11 +941,12 @@ class Conv3dTranspose(_Conv):
             Initializer for more details. Default: ``None`` , bias will be initialized using Uniform.
         data_format (str, optional): The optional value for data format. Currently only support ``'NCDHW'`` .
             Default: ``'NCDHW'`` .
-        dtype (:class:`mindspore.dtype`, optional): Dtype of Parameters. Default: ``mstype.float32`` .
+        dtype (:class:`mindspore.dtype`, optional): Dtype of Parameters. Should be the same as dtype of input.
+            Default: ``mstype.float32`` .
 
     Inputs:
         - **x** (Tensor) - Tensor of shape :math:`(N, C_{in}, D_{in}, H_{in}, W_{in})`.
-          Currently input data dtype only supports float16 and float32.
+          Currently input data dtype for Ascend only supports float16; for CPU/GPU only supports float16 and float32.
 
     Outputs:
         Tensor, the shape is :math:`(N, C_{out}, D_{out}, H_{out}, W_{out})`.
@@ -988,7 +989,7 @@ class Conv3dTranspose(_Conv):
         TypeError: If `in_channels`, `out_channels` or `group` is not an int.
         TypeError: If `kernel_size`, `stride`, `padding` , `dilation` or `output_padding`
                    is neither an int nor a tuple of three.
-        TypeError: If input data type is not float16 or float32.
+        TypeError: If input data type is not supported.For CPU/GPU: not float16 or float32;for ASCEND, not float16.
         ValueError: If `in_channels`, `out_channels`, `kernel_size`, `stride` or `dilation` is less than 1.
         ValueError: If `padding` is less than 0.
         ValueError: If `pad_mode` is not one of ``'same'``, ``'valid'``, ``'pad'``.
@@ -1003,9 +1004,9 @@ class Conv3dTranspose(_Conv):
         >>> import mindspore
         >>> from mindspore import Tensor, nn
         >>> import numpy as np
-        >>> x = Tensor(np.ones([32, 16, 10, 32, 32]), mindspore.float32)
+        >>> x = Tensor(np.ones([32, 16, 10, 32, 32]), mindspore.float16)
         >>> conv3d_transpose = nn.Conv3dTranspose(in_channels=16, out_channels=3, kernel_size=(4, 6, 2),
-        ...                                       pad_mode='pad')
+        ...                                       pad_mode='pad', dtype=mindspore.float16)
         >>> output = conv3d_transpose(x)
         >>> print(output.shape)
         (32, 3, 13, 37, 33)
