@@ -77,7 +77,8 @@ def test_hccl_mint_tcp_store():
     Expectation: success
     """
     return_code = os.system(
+        "export HCCL_CONNECT_TIMEOUT=300 && export HCCL_EXEC_TIMEOUT=300 && export MS_NODE_TIMEOUT=300 && "\
         "export MS_RECEIVE_MSG_TIMEOUT=300 && msrun --worker_num=8 --local_worker_num=8 --master_addr=127.0.0.1 "\
-        "--master_port=10666 --join=True pytest -s test_tcp_store.py"
+        "--master_port=10668 --join=True pytest -s test_tcp_store.py"
     )
     assert return_code == 0
