@@ -26,6 +26,7 @@
 #include "frontend/operator/composite/composite.h"
 #include "frontend/optimizer/irpass/check_invalid_view_inplace_dout.h"
 #include "frontend/optimizer/irpass/inplace_input_replace.h"
+#include "frontend/optimizer/irpass/virtualview_op.h"
 #include "frontend/optimizer/irpass/virtualviewgrad_op.h"
 #include "frontend/optimizer/irpass/view_inplace_utils.h"
 #include "ir/func_graph_cloner.h"
@@ -401,6 +402,8 @@ FuncGraphPtr GradOneFuncGraph(const FuncGraphPtr &func_graph, const opt::Optimiz
   MS_EXCEPTION_IF_NULL(func_graph);
   if (is_view_inplace && ChooseNewViewInplaceScheme(func_graph, optimizer)) {
     MS_LOG(INFO) << "Choose new view inplace grad scheme for func_graph:" << func_graph->ToString();
+    // Insert VirtualView op for view+inplace scene
+    mindspore::opt::irpass::VirtualViewInsert(func_graph, optimizer);
     // Insert VirtualViewGrad op for view+inplace scene
     mindspore::opt::irpass::VirtualViewGradInsert(func_graph, optimizer);
     // Do inplace input replacement
