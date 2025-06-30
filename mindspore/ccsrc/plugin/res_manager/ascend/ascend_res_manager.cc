@@ -433,18 +433,23 @@ bool AscendResManager::AllocateMemory(DeviceAddress *const &address, uint32_t st
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   AscendHalManager::GetInstance().SetContext(device_id);
 
-  if (stream_id == UINT32_MAX) {
-    stream_id = address->stream_id();
+  std::shared_ptr<AddressAllocator> allocator = address->allocator();
+  if (MS_UNLIKELY(allocator != nullptr)) {
+    device_ptr = allocator->Alloc(address->GetSize(), stream_id);
+  } else {
+    if (stream_id == UINT32_MAX) {
+      stream_id = address->stream_id();
+    }
+    device_ptr = mem_manager_->MallocMemFromMemPool(address->GetSize(), address->from_persistent_mem(),
+                                                    address->need_recycle(), stream_id);
+    address->set_from_mem_pool(true);
   }
 
-  device_ptr = mem_manager_->MallocMemFromMemPool(address->GetSize(), address->from_persistent_mem(),
-                                                  address->need_recycle(), stream_id);
   if (!device_ptr) {
     return false;
   }
 
   address->set_ptr(device_ptr);
-  address->set_from_mem_pool(true);
   address->IncreaseNewRefCount();
   if (enable_memory_tracker_) {
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(BindDevicePtr, address, device_ptr);
@@ -509,7 +514,15 @@ void AscendResManager::FreeForHete(HeterogeneousInfoPtr hete_info) const {
 void AscendResManager::FreeMemory(DeviceAddress *const &address) const {
   MS_EXCEPTION_IF_NULL(address);
   void *device_ptr = address->GetMutablePtr();
-  if (device_ptr != nullptr) {
+  std::shared_ptr<AddressAllocator> allocator = address->allocator();
+
+  if (device_ptr == nullptr) {
+    return;
+  }
+
+  if (MS_UNLIKELY(allocator != nullptr)) {
+    allocator->Free(device_ptr);
+  } else {
     if (!address->from_mem_pool()) {
       MS_LOG(DEBUG) << "device address:" << address << " ptr:" << device_ptr << " not from pool";
       return;
@@ -522,8 +535,8 @@ void AscendResManager::FreeMemory(DeviceAddress *const &address) const {
       return;
     }
     FreeMemory(device_ptr);
-    address->set_ptr(nullptr);
   }
+  address->set_ptr(nullptr);
 }
 
 void AscendResManager::FreeMemory(void *ptr) const {
