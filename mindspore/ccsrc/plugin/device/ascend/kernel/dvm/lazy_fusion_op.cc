@@ -60,18 +60,6 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
-struct MatMulShape {
-  MatMulShape(size_t input1_min_dim, size_t input1_max_dim, size_t input2_min_dim, size_t input2_max_dim)
-      : input1_min_dim_(input1_min_dim),
-        input1_max_dim_(input1_max_dim),
-        input2_min_dim_(input2_min_dim),
-        input2_max_dim_(input2_max_dim) {}
-  size_t input1_min_dim_{kDim2};
-  size_t input1_max_dim_{kDim2};
-  size_t input2_min_dim_{kDim2};
-  size_t input2_max_dim_{kDim2};
-};
-
 bool EnableFuse(const std::string &op, const std::vector<std::string> &enable_ops_only,
                 const std::vector<std::string> &disable_ops) {
   if (!enable_ops_only.empty()) {
@@ -177,60 +165,6 @@ void CheckForwardFuse(const device::DeviceContext *context, size_t stream, const
   if (!fuse_forward) {
     FlushLazyFusion();
   }
-}
-
-bool CheckMatMulShape(const ShapeVector &shape1, const ShapeVector &shape2, bool trans_a, bool trans_b,
-                      const MatMulShape &shape_limit) {
-  // The value of max dimension size is due to two constraints:
-  // 1. current implementation does not support stride between two rows greater than UINT16_MAX
-  // 2. even if the row stride in the original input shape does not exceed UINT16_MAX, after address
-  // alignment, it can potentially exceed UINT16_MAX.
-  // The current value of kMaxDimSize guarantees that after address alignment, row stride is within
-  // a reasonable range.
-  static constexpr int64_t kMaxDimSize = UINT16_MAX - UINT8_MAX;
-  static constexpr int64_t kMinDimSize = 512;
-  if (shape1.size() < shape_limit.input1_min_dim_ || shape1.size() > shape_limit.input1_max_dim_ ||
-      shape2.size() < shape_limit.input2_min_dim_ || shape2.size() > shape_limit.input2_max_dim_) {
-    return false;
-  }
-  int64_t out_shape_m{0};
-  if (trans_a) {
-    out_shape_m = shape1.back();
-  } else {
-    if (shape2.size() == kSizeTwo) {
-      out_shape_m = std::accumulate(shape1.begin(), shape1.end() - kSizeOne, 1, std::multiplies<int64_t>());
-    } else {
-      out_shape_m = shape1[shape1.size() - kSizeTwo];
-    }
-  }
-  int64_t out_shape_n = trans_b ? shape2[shape2.size() - kSizeTwo] : shape2.back();
-  bool upper_bound_check = shape1.back() <= kMaxDimSize && shape2.back() <= kMaxDimSize;
-  bool lower_bound_check = out_shape_m >= kMinDimSize && out_shape_n >= kMinDimSize;
-  return upper_bound_check && lower_bound_check;
-}
-
-std::pair<bool, TypeId> CheckMatMul(const PrimitivePtr prim, const TensorPtr &x_tensor, const TensorPtr &y_tensor,
-                                    bool trans_a, bool trans_b, const MatMulShape &shape_limit) {
-  auto output_type = x_tensor->data_type();
-  if (NeedSync()) {
-    return {false, output_type};
-  }
-  if (output_type != y_tensor->data_type()) {
-    return {false, output_type};
-  }
-  if (output_type != kNumberTypeFloat16 && output_type != kNumberTypeBFloat16) {
-    return {false, output_type};
-  }
-  if (prim->HasAttr("cast_type")) {
-    auto cast_type = prim->GetAttr("cast_type");
-    if (!cast_type->isa<Type>() || !IsSupportType(output_type = cast_type->cast<TypePtr>()->type_id())) {
-      return {false, output_type};
-    }
-  }
-  if (!x_tensor->is_contiguous() || !y_tensor->is_contiguous()) {
-    return {false, output_type};
-  }
-  return {CheckMatMulShape(x_tensor->shape(), y_tensor->shape(), trans_a, trans_b, shape_limit), output_type};
 }
 
 template <typename F, typename... Args>
@@ -446,6 +380,78 @@ tensor::TensorPtr ToContiguous(const TensorPtr &tensor, const std::string &devic
   copy_op->set_stream_id(stream_id);
   return copy_op->Call(tensor);
 }
+
+struct MatMulAdapter {
+  TensorPtr x_tensor;
+  TensorPtr y_tensor;
+  bool trans_a;
+  bool trans_b;
+  ShapeVector x_shape;
+  ShapeVector y_shape;
+
+  MatMulAdapter(const TensorPtr &x, const TensorPtr &y, bool ta, bool tb)
+      : x_tensor(x), y_tensor(y), trans_a(ta), trans_b(tb) {
+    x_shape = x_tensor->shape();
+    y_shape = y_tensor->shape();
+  }
+
+  bool Check(OpRunner *op) {
+    auto data_type = x_tensor->data_type();
+    if (NeedSync() || y_tensor->data_type() != data_type ||
+        (data_type != kNumberTypeFloat16 && data_type != kNumberTypeBFloat16)) {
+      return false;
+    }
+    if (x_shape.size() < kDim2 || x_shape.size() > kDim4 || y_shape.size() < kDim2 || y_shape.size() > kDim4) {
+      return false;
+    }
+    bool check_x = (!x_tensor->is_contiguous()) && CheckTensorTranspose(x_tensor, &trans_a, &x_shape);
+    bool check_y = (!y_tensor->is_contiguous()) && CheckTensorTranspose(y_tensor, &trans_b, &y_shape);
+    if (!CheckMatMulShape()) {
+      return false;
+    }
+    if (!check_x) {
+      x_tensor = ToContiguous(x_tensor, op->device_context()->device_context_key_.device_name_, op->stream_id());
+    }
+    if (!check_y) {
+      y_tensor = ToContiguous(y_tensor, op->device_context()->device_context_key_.device_name_, op->stream_id());
+    }
+    return true;
+  }
+
+ private:
+  bool CheckMatMulShape() {
+    // The value of max dimension size is due to two constraints:
+    // 1. current implementation does not support stride between two rows greater than UINT16_MAX
+    // 2. even if the row stride in the original input shape does not exceed UINT16_MAX, after address
+    // alignment, it can potentially exceed UINT16_MAX.
+    // The current value of kMaxDimSize guarantees that after address alignment, row stride is within
+    // a reasonable range.
+    constexpr int64_t kMaxDimSize = UINT16_MAX - UINT8_MAX;
+    return x_shape.back() <= kMaxDimSize && y_shape.back() <= kMaxDimSize;
+  }
+
+  bool CheckTensorTranspose(const TensorPtr &tensor, bool *transpose, ShapeVector *shape) {
+    auto storage_info = tensor->storage_info();
+    MS_EXCEPTION_IF_NULL(storage_info);
+    const auto &cur_shape = storage_info->shape;
+    const auto &cur_strides = storage_info->strides;
+    int64_t dim1 = SizeToLong(cur_shape.size()) - 1;
+    int64_t dim2 = dim1 - 1;
+    if (cur_strides[dim2] == 1 && cur_strides[dim1] == cur_shape[dim2]) {
+      int64_t tmpNxD = cur_shape[dim1] * cur_shape[dim2];
+      for (int64_t batchDim = dim1 - 2; batchDim >= 0; batchDim--) {
+        if (cur_strides[batchDim] != tmpNxD) {
+          return false;
+        }
+        tmpNxD *= cur_shape[batchDim];
+      }
+      (*transpose) ^= true;
+      std::swap((*shape)[dim1], (*shape)[dim2]);
+      return true;
+    }
+    return false;
+  }
+};
 }  // namespace
 
 tensor::TensorPtr ConcatAscendDvm::Call(const ValueTuplePtr &tensors_tensor_list, const Int64ImmPtr &axis) {
@@ -1330,6 +1336,45 @@ tensor::TensorPtr InplaceReLUAscendDvm::Call(const TensorPtr &input_tensor) {
   return outputs_[0];
 }
 
+tensor::TensorPtr MaskedFillAscendDvm::Call(const mindspore::tensor::TensorPtr &input_x_tensor,
+                                            const mindspore::tensor::TensorPtr &mask_tensor,
+                                            const mindspore::tensor::TensorPtr &value_tensor) {
+  if (!InputCheck(input_x_tensor) || !InputCheck(mask_tensor) || !InputCheck(value_tensor)) {
+    return MaskedFillAscend::Call(input_x_tensor, mask_tensor, value_tensor);
+  }
+
+  DvmCall(
+    op_name_, this,
+    [&](LazyFusionKernelAscend *k) -> TensorPtr {
+      auto out_obj = k->Select(k->Input(value_tensor), k->Input(input_x_tensor), k->Input(mask_tensor));
+      // update
+      k->Output(input_x_tensor, out_obj);
+      return input_x_tensor;
+    },
+    input_x_tensor, mask_tensor, value_tensor);
+  FlushLazyFusion();
+  return outputs_[0];
+}
+
+tensor::TensorPtr MatMulCall(const std::string &op_name, OpRunner *op, const TensorPtr &x_tensor,
+                             const TensorPtr &y_tensor, bool trans_a, bool trans_b) {
+  MatMulAdapter info(x_tensor, y_tensor, trans_a, trans_b);
+  if (!info.Check(op)) {
+    return nullptr;
+  }
+  FlushLazyFusion();
+  DvmCall(
+    op_name, op,
+    [&](LazyFusionKernelAscend *k) -> TensorPtr {
+      auto input_obj = k->Input(info.x_tensor, false, info.x_shape);
+      auto weight_obj = k->Input(info.y_tensor, false, info.y_shape);
+      auto out_obj = k->MatMul(input_obj, weight_obj, info.trans_a, info.trans_b, nullptr);
+      return k->Output(out_obj, x_tensor->data_type(), k->GetShape(out_obj));
+    },
+    info.x_tensor, info.y_tensor);
+  return op->output(kIndex0);
+}
+
 tensor::TensorPtr DenseAscendDvm::Call(const TensorPtr &input_tensor, const TensorPtr &weight_tensor,
                                        const std::optional<TensorPtr> &bias_tensor) {
   TensorPtr bias = nullptr;
@@ -1339,118 +1384,102 @@ tensor::TensorPtr DenseAscendDvm::Call(const TensorPtr &input_tensor, const Tens
       return DenseAscend::Call(input_tensor, weight_tensor, bias_tensor);
     }
   }
-  static MatMulShape shape_limit(kDim2, kDim4, kDim2, kDim2);
-  if (!CheckMatMul(primitive_, input_tensor, weight_tensor, false, true, shape_limit).first) {
+  MatMulAdapter info(input_tensor, weight_tensor, false, true);
+  if (!info.Check(this)) {
     return DenseAscend::Call(input_tensor, weight_tensor, bias_tensor);
   }
   FlushLazyFusion();  // forward fusion not allowed
   DvmCall(
     op_name_, this,
     [&](LazyFusionKernelAscend *k) -> TensorPtr {
-      auto input_obj = k->Input(input_tensor, false);
-      auto weight_obj = k->Input(weight_tensor, false);
+      auto input_obj = k->Input(info.x_tensor, false, info.x_shape);
+      auto weight_obj = k->Input(info.y_tensor, false, info.y_shape);
       auto bias_obj = bias == nullptr ? nullptr : k->Input(bias, false);
-      auto out_obj = k->MatMul(input_obj, weight_obj, false, true, bias_obj);
+      auto out_obj = k->MatMul(input_obj, weight_obj, info.trans_a, info.trans_b, bias_obj);
       return k->Output(out_obj, input_tensor->data_type(), k->GetShape(out_obj));
     },
-    input_tensor, weight_tensor, bias_tensor);
+    info.x_tensor, info.y_tensor, bias_tensor);
+  return outputs_.front();
+}
+
+mindspore::tensor::TensorPtr BaddbmmAscendDvm::Call(const mindspore::tensor::TensorPtr &input_tensor,
+                                                    const mindspore::tensor::TensorPtr &batch1_tensor,
+                                                    const mindspore::tensor::TensorPtr &batch2_tensor,
+                                                    const mindspore::ScalarPtr &beta,
+                                                    const mindspore::ScalarPtr &alpha) {
+  auto [beta_succ, beta_scalar] = GetScalarValue<float>(beta);
+  auto [alpha_succ, alpha_scalar] = GetScalarValue<float>(alpha);
+  if ((alpha_scalar != 0 && !InputCheck(input_tensor)) || !beta_succ || !alpha_succ) {
+    return BaddbmmAscend::Call(input_tensor, batch1_tensor, batch2_tensor, beta, alpha);
+  }
+  MatMulAdapter info(batch1_tensor, batch2_tensor, false, false);
+  if (!info.Check(this)) {
+    return BaddbmmAscend::Call(input_tensor, batch1_tensor, batch2_tensor, beta, alpha);
+  }
+  FlushLazyFusion();  // forward fusion not allowed
+  auto build_kernel = [&](LazyFusionKernelAscend *k) {
+    auto input_obj = k->Input(info.x_tensor, false, info.x_shape);
+    auto weight_obj = k->Input(info.y_tensor, false, info.y_shape);
+    auto out_obj = k->MatMul(input_obj, weight_obj, info.trans_a, info.trans_b, nullptr);
+    if (k->GetDType(out_obj) == dvm::kBFloat16) {
+      out_obj = k->Cast(out_obj, dvm::kFloat32);
+    }
+    if (beta_scalar == 0) {
+      out_obj = k->Binary(dvm::BinaryOpType::kMul, out_obj, alpha_scalar);
+    } else {
+      auto scaled_matmul = k->Binary(dvm::BinaryOpType::kMul, out_obj, alpha_scalar);
+      auto scaled_input = k->Binary(dvm::BinaryOpType::kMul, k->Input(input_tensor), beta_scalar);
+      out_obj = k->Binary(dvm::BinaryOpType::kAdd, scaled_matmul, scaled_input);
+    }
+    return k->Output(out_obj, info.x_tensor->data_type(), k->GetShape(out_obj));
+  };
+
+  if (beta_scalar == 0) {
+    DvmCall(op_name_, this, build_kernel, info.x_tensor, info.y_tensor);
+  } else {
+    DvmCall(op_name_, this, build_kernel, info.x_tensor, info.y_tensor, input_tensor);
+  }
   return outputs_.front();
 }
 
 tensor::TensorPtr MatMulAscendDvm::Call(const TensorPtr &input_tensor, const TensorPtr &mat2_tensor,
                                         const BoolImmPtr &transpose_a, const BoolImmPtr &transpose_b) {
-  auto trans_a = GetValue<bool>(transpose_a);
-  auto trans_b = GetValue<bool>(transpose_b);
-  static MatMulShape shape_limit(kDim2, kDim2, kDim2, kDim2);
-  auto [enable, output_type] = CheckMatMul(primitive_, input_tensor, mat2_tensor, trans_a, trans_b, shape_limit);
-  if (!enable) {
+  bool trans_a = GetValue<bool>(transpose_a);
+  bool trans_b = GetValue<bool>(transpose_b);
+  tensor::TensorPtr ret = MatMulCall(op_name_, this, input_tensor, mat2_tensor, trans_a, trans_b);
+  if (ret == nullptr) {
     return MatMulAscend::Call(input_tensor, mat2_tensor, transpose_a, transpose_b);
   }
-  FlushLazyFusion();  // forward fusion not allowed
-  DvmCall(
-    op_name_, this,
-    [&](LazyFusionKernelAscend *k) -> TensorPtr {
-      auto input_obj = k->Input(input_tensor, false);
-      auto weight_obj = k->Input(mat2_tensor, false);
-      auto out_obj = k->MatMul(input_obj, weight_obj, trans_a, trans_b, nullptr);
-      return k->Output(out_obj, output_type, k->GetShape(out_obj));
-    },
-    input_tensor, mat2_tensor);
-  return outputs_.front();
+  return ret;
 }
 
 tensor::TensorPtr BatchMatMulAscendDvm::Call(const TensorPtr &x_tensor, const TensorPtr &y_tensor,
                                              const BoolImmPtr &transpose_a, const BoolImmPtr &transpose_b) {
-  static MatMulShape shape_limit(kDim2, kDim4, kDim2, kDim4);
-  auto trans_a = GetValue<bool>(transpose_a);
-  auto trans_b = GetValue<bool>(transpose_b);
-  auto [enable, output_type] = CheckMatMul(primitive_, x_tensor, y_tensor, trans_a, trans_b, shape_limit);
-  if (!enable) {
+  bool trans_a = GetValue<bool>(transpose_a);
+  bool trans_b = GetValue<bool>(transpose_b);
+  tensor::TensorPtr ret = MatMulCall(op_name_, this, x_tensor, y_tensor, trans_a, trans_b);
+  if (ret == nullptr) {
     return BatchMatMulAscend::Call(x_tensor, y_tensor, transpose_a, transpose_b);
   }
-  FlushLazyFusion();  // forward fusion not allowed
-  DvmCall(
-    op_name_, this,
-    [&](LazyFusionKernelAscend *k) -> TensorPtr {
-      auto input_obj = k->Input(x_tensor, false);
-      auto weight_obj = k->Input(y_tensor, false);
-      auto out_obj = k->MatMul(input_obj, weight_obj, trans_a, trans_b, nullptr);
-      return k->Output(out_obj, output_type, k->GetShape(out_obj));
-    },
-    x_tensor, y_tensor);
-  return outputs_.front();
-}
-
-bool CheckMatMulExtTranspose(const mindspore::tensor::TensorPtr &tensor, bool *transpose, ShapeVector *shape) {
-  *transpose = false;
-  const auto &tensor_shape = tensor->shape();
-  *shape = tensor_shape;
-  if (!tensor->is_contiguous()) {
-    auto storage_info = tensor->storage_info();
-    MS_EXCEPTION_IF_NULL(storage_info);
-    const auto &cur_shape = storage_info->shape;
-    const auto &cur_strides = storage_info->strides;
-    const auto &ori_shape = storage_info->ori_shape;
-    const auto &ori_strides = storage_info->ori_strides;
-    if (ops::IsContiguous(ori_shape, ori_strides) && cur_strides.size() == kDim2 && cur_strides[0] == 1 &&
-        cur_strides[1] == cur_shape[0]) {
-      *transpose = true;
-      (*shape).resize(kDim2);
-      (*shape)[0] = cur_shape[1];
-      (*shape)[1] = cur_shape[0];
-      return true;
-    }
-    return false;
-  }
-  return true;
+  return ret;
 }
 
 tensor::TensorPtr MatMulExtAscendDvm::Call(const mindspore::tensor::TensorPtr &input_tensor,
                                            const mindspore::tensor::TensorPtr &other_tensor) {
-  bool transpose_a = false;
-  bool transpose_b = false;
-  ShapeVector input_shape;
-  ShapeVector other_shape;
-  auto check_input_tensor = CheckMatMulExtTranspose(input_tensor, &transpose_a, &input_shape);
-  auto check_other_tensor = CheckMatMulExtTranspose(other_tensor, &transpose_b, &other_shape);
-  auto data_type = input_tensor->data_type();
-  static MatMulShape shape_limit(kDim2, kDim4, kDim2, kDim4);
-  if (NeedSync() || other_tensor->data_type() != data_type ||
-      (data_type != kNumberTypeFloat16 && data_type != kNumberTypeBFloat16) || !check_input_tensor ||
-      !check_other_tensor || !CheckMatMulShape(input_shape, other_shape, transpose_a, transpose_b, shape_limit)) {
+  tensor::TensorPtr ret = MatMulCall(op_name_, this, input_tensor, other_tensor, false, false);
+  if (ret == nullptr) {
     return MatMulExtAscend::Call(input_tensor, other_tensor);
   }
-  FlushLazyFusion();  // forward fusion not allowed
-  DvmCall(
-    op_name_, this,
-    [&](LazyFusionKernelAscend *k) -> TensorPtr {
-      auto input_obj = k->Input(input_tensor, false, input_shape);
-      auto weight_obj = k->Input(other_tensor, false, other_shape);
-      auto out_obj = k->MatMul(input_obj, weight_obj, transpose_a, transpose_b, nullptr);
-      return k->Output(out_obj, data_type, k->GetShape(out_obj));
-    },
-    input_tensor, other_tensor);
-  return outputs_.front();
+  return ret;
+}
+
+tensor::TensorPtr BatchMatMulExtAscendDvm::Call(const mindspore::tensor::TensorPtr &input_tensor,
+                                                const mindspore::tensor::TensorPtr &other_tensor) {
+  tensor::TensorPtr ret = MatMulCall(op_name_, this, input_tensor, other_tensor, false, false);
+  if (ret == nullptr) {
+    return BatchMatMulExtAscend::Call(input_tensor, other_tensor);
+  }
+  return ret;
 }
 
 std::tuple<TensorPtr, TensorPtr> BatchNormStatsAscendDvm::Call(const TensorPtr &input_tensor,
@@ -1757,6 +1786,8 @@ void RegisterLazyFusionOp() {
   MS_REPLACE_DVM_OP(Dense);
   MS_REPLACE_DVM_OP(MatMul);
   MS_REPLACE_DVM_OP(BatchMatMul);
+  MS_REPLACE_DVM_OP(BatchMatMulExt);
+  MS_REPLACE_DVM_OP(Baddbmm);
   MS_REPLACE_DVM_OP(MatMulExt);
   MS_REPLACE_DVM_OP(BatchNormStats);
   MS_REPLACE_DVM_OP(BatchNormGatherStatsWithCounts);
