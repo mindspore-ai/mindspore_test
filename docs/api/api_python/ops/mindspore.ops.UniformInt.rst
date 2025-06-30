@@ -32,7 +32,7 @@ mindspore.ops.UniformInt
         - **maxval** (Tensor) - 分布参数 :math:`b` 。
           决定生成随机数的上限，数据类型为int32。需为标量。
 
-    输出：    
+    输出：
         Tensor。shape为输入 `shape` ，数据类型支持int32。
 
     异常：

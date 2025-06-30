@@ -11,7 +11,7 @@ mindspore.ops.LowerBound
     输入：
         - **sorted_x** (Tensor) - 输入Tensor的数据类型为实数且每行数据必须按升序排列。秩必须为2。
         - **values** (Tensor) - 输入Tensor的数据类型与 `sorted_x` 一致，且 `values` 与 `sorted_x` 的第一维必须相等。秩必须为2。
- 
+
     输出：
         Tensor，其数据类型由 `out_type` 决定，其shape与 `values` 相同。
 

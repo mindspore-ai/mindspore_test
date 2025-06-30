@@ -15,7 +15,7 @@ mindspore.train.EarlyStopping
         - **mode** (str) - `{'auto', 'min', 'max'}` 中的一种。默认值： ``'auto'`` 。
 
           - ``'min'`` 模式下，将在指标不再减小时，执行早停。
-          - ``'max'`` 模式下，将在指标不再增大时，执行早停。 
+          - ``'max'`` 模式下，将在指标不再增大时，执行早停。
           - ``'auto'`` 模式下，将根据当前 `monitor` 指标的特点自动设置。
 
         - **baseline** (float) - 模型效果的基线。当前 `monitor` 相对历史最优值变好，且好于 `baseline` 时，内部的等待epoch计数器被清零。默认值： ``None`` 。

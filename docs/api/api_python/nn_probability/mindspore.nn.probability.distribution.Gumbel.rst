@@ -6,7 +6,7 @@ mindspore.nn.probability.distribution.Gumbel
     Gumbel分布（Gumbel distribution）。
     连续随机分布，取值范围为所有实数 ，概率密度函数为：
 
-    .. math:: 
+    .. math::
         f(x, a, b) = 1 / b \exp(\exp(-(x - a) / b) - x)
 
     其中 :math:`a, b` 为分别为Gumbel分布的位置参数和比例参数。
@@ -180,7 +180,7 @@ mindspore.nn.probability.distribution.Gumbel
 
         计算标准差。
 
-        参数：        
+        参数：
             - **loc** (Tensor) - 分布位置参数。默认值： ``None`` 。
             - **scale** (Tensor) - 分布比例参数。默认值： ``None`` 。
 

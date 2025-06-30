@@ -7,7 +7,7 @@ mindspore.dataset.vision.LinearTransformation
 
     先将输入图像展平为一维，从中减去均值向量，然后计算其与变换方阵的点积，最后再变形回原始shape。
 
-    参数：        
+    参数：
         - **transformation_matrix** (numpy.ndarray) - shape为(D, D)的变换方阵，其中
           :math:`D = C \times H \times W` 。
 

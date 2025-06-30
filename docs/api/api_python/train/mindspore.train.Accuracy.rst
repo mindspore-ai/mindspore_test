@@ -31,7 +31,7 @@ mindspore.train.Accuracy
     .. py:method:: update(*inputs)
 
         更新局部变量。计算预测值y_pred和标签y的匹配频率。
-        
+
         对于 ``'classification'`` ，如果预测的最大值的索引匹配真实的标签，预测正确；对于 ``'multilabel'`` ，如果预测值与真实标签匹配，预测正确。
 
         参数：

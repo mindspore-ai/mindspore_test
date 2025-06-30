@@ -5,7 +5,7 @@ mindspore.Generator
 
     管理随机数状态的生成器，为随机函数提供seed和offset。当seed和offset固定时，随机函数产生相同的随机序列。
 
-    .. note:: 
+    .. note::
         图模式下暂不支持同时使用多个Generator。
 
     .. py:method:: get_state()

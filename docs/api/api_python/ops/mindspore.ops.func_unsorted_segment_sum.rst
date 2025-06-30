@@ -11,7 +11,7 @@
 
     .. math::
         \text{output}[i] = \sum_{segment\_ids[j] == i} \text{data}[j, \ldots]
-        
+
     其中 :math:`j,...` 是代表元素索引的tuple。 `segment_ids` 确定输入tensor元素的分段。 `segment_ids` 不需要排序，也不需要覆盖 `num_segments` 范围内的所有值。
 
     .. note::

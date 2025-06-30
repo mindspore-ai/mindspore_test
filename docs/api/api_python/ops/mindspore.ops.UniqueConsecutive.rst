@@ -19,7 +19,7 @@ mindspore.ops.UniqueConsecutive
         - **x** (Tensor) - 输入Tensor。
 
     输出：
-        Tensor或包含Tensor对象的元组（ `output` 、 `idx` 、 `counts` ）。 
+        Tensor或包含Tensor对象的元组（ `output` 、 `idx` 、 `counts` ）。
 
         - `output` 为去重后的输出，与 `x` 具有相同的数据类型。
         - 如果 `return_inverse` 为 ``True`` ，则返回Tensor `idx` ，shape与 `input` 相同，表示每个输入中元素映射到输出中位置的索引。

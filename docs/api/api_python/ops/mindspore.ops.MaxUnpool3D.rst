@@ -26,7 +26,7 @@ mindspore.ops.MaxUnpool3D
           - 一个整数，则表示移动的深度、高度和宽度都是 `strides` ，
           - 三个整数的元组，分别表示深度、高度和宽度方向的移动步长。
           - 如果 `strides` 为0或(0, 0, 0)，那么 `strides` 等于 `ksize` 。
-  
+
         - **pads** (Union[int, tuple[int]]，可选) - 指定填充量。默认值： ``0`` 。
 
           - 如果 `pads` 是一个整数，则深度、高度和宽度方向的填充数量相同，都等于 `pads` 。
@@ -38,7 +38,7 @@ mindspore.ops.MaxUnpool3D
           - 如果 :math:`output\_shape != ()` ，则 `output_shape` 数据格式为 :math:`(N, C, D, H, W)` 或 :math:`(N, D, H, W, C)` ，
             同时 `output_shape` 必须属于 :math:`[(N, C, D_{out} - strides[0], H_{out} - strides[1], W_{out} - strides[2]),
             (N, C, D_{out} + strides[0], H_{out} + strides[1], W_{out} + strides[2])]` 的范围。
-        
+
         - **data_format** (str，可选) - 可选的数据格式。当前支持 ``'NCDHW'`` 和 ``'NDHWC'`` 。默认值： ``'NCDHW'`` 。
 
     输入：

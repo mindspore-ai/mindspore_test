@@ -37,7 +37,7 @@ mindspore.dataset.FashionMnistDataset
     .. include:: mindspore.dataset.sampler.rst
 
     **关于Fashion-MNIST数据集：**
-    
+
     Fashion-MNIST是网络电子商城Zalando推出的数据集，包括60,000个样本的训练集和10,000个样本的测试集。每个示例都是一个28x28灰度图像，分别与10个类的标签关联。
     Fashion-MNIST是原始MNIST数据集的变种，用于对机器学习算法进行基准测试。它的训练集和测试集的图像尺寸和结构相同。
 

@@ -15,7 +15,7 @@ mindspore.amp.all_finite
 
     返回：
         Tensor，布尔类型的标量Tensor。
-    
+
     教程样例：
         - `自动混合精度 - 损失缩放
           <https://mindspore.cn/tutorials/zh-CN/master/beginner/mixed_precision.html#损失缩放>`_

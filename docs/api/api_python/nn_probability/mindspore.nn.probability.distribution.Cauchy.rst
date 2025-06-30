@@ -6,7 +6,7 @@ mindspore.nn.probability.distribution.Cauchy
     柯西分布（Cauchy distribution）。
     连续随机分布，取值范围为所有实数，概率密度函数为：
 
-    .. math:: 
+    .. math::
         f(x, a, b) = 1 / \pi b(1 - ((x - a)/b)^2)
 
     其中 :math:`a, b` 分别为柯西分布的位置参数和比例参数。
@@ -34,7 +34,7 @@ mindspore.nn.probability.distribution.Cauchy
 
         返回：
             Tensor，分布位置的值。
-        
+
     .. py:method:: scale
         :property:
 
@@ -180,7 +180,7 @@ mindspore.nn.probability.distribution.Cauchy
 
         计算标准差。
 
-        参数：        
+        参数：
             - **loc** (Tensor) - 分布位置参数。默认值： ``None`` 。
             - **scale** (Tensor) - 分布比例参数。默认值： ``None`` 。
 

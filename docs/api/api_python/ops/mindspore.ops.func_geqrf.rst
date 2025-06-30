@@ -4,7 +4,7 @@ mindspore.ops.geqrf
 .. py:function:: mindspore.ops.geqrf(input)
 
     将输入tensor进行QR分解 :math:`A = QR` 。
-    
+
     分解为正交矩阵 `Q` 和上三角矩阵 `R` 的乘积。
 
     .. warning::

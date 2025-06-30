@@ -16,7 +16,7 @@ mindspore.ops.kaiser_window
     其中 :math:`I_0` 为零阶修正Bessel函数，:math:`M` 代表了 `window_length`。
 
     参数：
-        - **window_length** (int) - 窗口的大小。 
+        - **window_length** (int) - 窗口的大小。
         - **periodic** (bool, 可选) - 如果为 ``True`` ，表示返回周期窗口。如果为 ``False`` ，表示返回对称窗口。默认 ``True`` 。
         - **beta** (float, 可选) - shape参数，当 `beta` 变大时，窗口就会变窄。默认 ``12.0`` 。
 

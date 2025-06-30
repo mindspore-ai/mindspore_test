@@ -9,4 +9,4 @@ mindspore.hal.memory_summary
         - **device_target** (str，可选) - 目标设备，可选值为 ``"CPU"`` ， ``"GPU"`` 以及 ``"Ascend"`` 。默认 ``None``，表示当前已经设置的设备。
 
     返回：
-        str，表格形式的可读内存池状态信息。 
+        str，表格形式的可读内存池状态信息。

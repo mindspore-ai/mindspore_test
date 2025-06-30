@@ -40,7 +40,7 @@ mindspore.dataset.Food101Dataset
     .. include:: mindspore.dataset.sampler.rst
 
     **关于Food101数据集：**
-    
+
     Food101是一个包含101种食品类别的数据集，共101000张图片。每一个类别有250张测试图片和750张训练图片。所有图像都被重新缩放，最大边长为512像素。
 
     以下为原始Food101数据集的结构，您可以将数据集文件解压得到如下的文件结构，并通过MindSpore的API进行读取。

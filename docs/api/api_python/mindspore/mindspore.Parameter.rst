@@ -14,7 +14,7 @@
     参数：
         - **default_input** (Union[Tensor, int, float, numpy.ndarray, list]) - 初始化参数的输入值。
         - **name** (str) - 参数的名称。默认值： ``None`` 。如果一个网络中存在两个及以上相同名称的 `Parameter` 对象，在定义时将提示设置一个特有的名称。
-          
+
           - 如果一个 `Parameter` 未命名，默认的名字就是变量名。例如，`param_a` 的名字是 `name_a`，`param_b` 的名字是 `param_b` 。
 
             .. code-block::

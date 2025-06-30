@@ -7,7 +7,7 @@ mindspore.numpy.convolve
 
     .. note::
         如果 `v` 比 `a` 长，计算前会交换这两个Tensor。
-    
+
     参数：
         - **a** (Union[list, tuple, Tensor]) - 第一个输入的一维Tensor。
         - **v** (Union[list, tuple, Tensor]) - 第二个输入的一维Tensor。
@@ -15,7 +15,7 @@ mindspore.numpy.convolve
 
     返回：
         Tensor， `a` 和 `v` 的离散线性卷积。
-    
+
     异常：
         - **TypeError** - 如果输入的类型不符合上述规定。
         - **ValueError** - 如果 `a` 和 `v` 为空或维数错误。

@@ -4,7 +4,7 @@ mindspore.profiler.schedule
 .. py:class:: mindspore.profiler.schedule(*, wait: int, active: int, warmup: int = 0, repeat: int = 0, skip_first: int = 0)
 
     该类用于获取每一步的操作。
-    
+
     调度如下：
 
     .. code-block::
@@ -14,7 +14,7 @@ mindspore.profiler.schedule
                                       |                                                             |
                                       |                           repeat_1                          |
                                       ---------------------------------------------------------------
-    
+
     Profiler将跳过前 ``skip_first`` 步，然后等待 ``wait`` 步，接着在接下来的 ``warmup`` 步中进行预热，然后在接下来的 ``active`` 步中进行活动记录，然后从 ``wait`` 步开始重复循环。可选的循环次数由 ``repeat`` 参数指定， ``repeat`` 值为0表示循环将继续直到分析完成。
 
 

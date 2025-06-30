@@ -13,7 +13,7 @@ mindspore.ops.speed_fusion_attention
 
     .. math::
         attention\_out = Dropout(Softmax(Mask(scale * (pse + query * key^{T}), atten\_mask)), keep\_prob) * value
-    
+
     当 `pse_type` 为其他有效值时，计算公式为：
 
     .. math::
@@ -100,7 +100,7 @@ mindspore.ops.speed_fusion_attention
           - 6: 表示全局场景，尚未使能。
           - 7: 表示膨胀场景，尚未使能。
           - 8: 表示局部块场景，尚未使能。
-        
+
         - **gen_mask_parallel** (bool，可选) - Debug参数，控制dropout_gen_mask执行方式的开关，如果为 ``True`` ，dropout_gen_mask并行执行。如果为 ``False`` ，dropout_gen_mask串行执行。尚未使能。默认值为： ``True`` 。
         - **sync** (bool，可选) - Debug参数，控制dropout_gen_mask执行方式的开关，如果为 ``True`` ，dropout_gen_mask同步执行。如果为 ``False`` ，dropout_gen_mask异步执行。尚未使能。默认值为： ``False`` 。
         - **pse_type** (int，可选) - 指定 `pse` 的使用方式。默认值为： ``1`` 。

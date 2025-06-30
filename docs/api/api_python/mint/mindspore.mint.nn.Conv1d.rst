@@ -14,7 +14,7 @@ mindspore.mint.nn.Conv1d
         \text{out}(N_i, C_{\text{out}_j}) = \text{bias}(C_{\text{out}_j}) +
         \sum_{k = 0}^{C_{in} - 1} \text{ccor}({\text{weight}(C_{\text{out}_j}, k), \text{input}(N_i, k)})
 
-    其中， :math:`bias` 为输出偏置，:math:`ccor` 为 `cross-correlation <https://en.wikipedia.org/wiki/Cross-correlation>`_ 操作， 
+    其中， :math:`bias` 为输出偏置，:math:`ccor` 为 `cross-correlation <https://en.wikipedia.org/wiki/Cross-correlation>`_ 操作，
     :math:`weight` 为卷积核的值， :math:`input` 为输入的特征图。
 
     - :math:`i` 对应batch数，其范围为 :math:`[0, N-1]` ，其中 :math:`N` 为输入batch。
@@ -37,7 +37,7 @@ mindspore.mint.nn.Conv1d
         - **kernel_size** (Union[int, tuple[int], list[int]]) - 指定一维卷积核的长度。数据类型为整型或一个整型的tuple/list。
         - **stride** (Union[int, tuple[int], list[int]]，可选) - 一维卷积核的移动步长。数据类型为整型或者长度为1的整型tuple/list。默认值： ``1`` 。
         - **padding** (Union[int, tuple[int], list[int], str]，可选) - 输入的长度方向上填充的数量。数据类型为int或包含1个整数的tuple/list或string { ``"valid"`` ，  ``"same"`` } 。值应该要大于等于0。默认值： ``0`` 。
-        
+
           - ``"same"``：在输入的四周填充，使得当 `stride` 为 ``1`` 时，输入和输出的shape一致。待填充的量由算子内部计算，若为偶数，则均匀地填充在两侧，若为奇数，多余的填充量将补充在右侧。若设置该模式， `stride` 的值必须为1。
           - ``"valid"``：不对输入进行填充，返回输出可能的最大长度，不能构成一个完整stride的额外的序列将被丢弃。
 
@@ -53,7 +53,7 @@ mindspore.mint.nn.Conv1d
           - :math:`(\text{weight[1]} = C_{in} / \text{groups})`
 
         - **bias** (bool，可选) - Conv1d层是否添加偏置参数。默认值： ``True`` 。
-        
+
         - **dtype** (:class:`mindspore.dtype`，可选) - Parameters的dtype。默认值： ``None``， 使用 ``mstype.float32`` 。
 
     可变参数：

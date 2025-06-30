@@ -6,7 +6,7 @@ mindspore.numpy.hypot
     给定直角三角形的直角边，返回其斜边。
 
     等价于逐元素计算 ``sqrt(x1**2 + x2**2)`` 。如果 `x1` 或 `x2` 是类标量(即可以无歧义地转换为标量)，它将被广播到另一个参数的每个元素执行计算。(参见示例)
-    
+
     .. note::
         不支持NumPy参数 `out` 、 `where` 、 `casting` 、 `order` 、 `subok` 、 `signature` 、 `extobj` 。在CPU上，支持的数据类型有np.float16，np.float32和np.float64。
 

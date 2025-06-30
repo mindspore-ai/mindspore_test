@@ -12,9 +12,9 @@ mindspore.numpy.empty_like
         - **prototype** (Union[Tensor, list, tuple]) - 原数组，其中生成数组的shape、类型默认和原数组相同。
         - **dtype** (mindspore.dtype, 可选) - 覆盖结果的数据类型。
         - **shape** (int, ints的序列, 可选) - 覆盖结果的shape。
-        
+
     返回：
         Tensor，给定shape和类型与 ``prototype`` 相同的未初始化（任意）数据的数组。
-        
+
     异常：
         - **ValueError** - 如果 ``prototype`` 不是Tensor、List或Tuple。

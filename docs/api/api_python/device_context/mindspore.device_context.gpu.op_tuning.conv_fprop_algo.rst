@@ -5,7 +5,7 @@ mindspore.device_context.gpu.op_tuning.conv_fprop_algo
 
     指定cuDNN的卷积前向算法。
     详细信息请查看 `NVIDA cuDNN关于cudnnConvolutionForward的说明 <https://docs.nvidia.com/deeplearning/cudnn/latest/api/cudnn-cnn-library.html>`_。
-    
+
     参数：
         - **mode** (str) - cuDNN的卷积前向算法。如未配置，框架默认为normal。
           其值范围如下：

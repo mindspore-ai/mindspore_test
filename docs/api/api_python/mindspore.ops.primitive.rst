@@ -183,11 +183,11 @@ MindSpore中 `mindspore.ops.primitive` 接口与上一版本相比，新增、�
     :toctree: ops
     :nosignatures:
     :template: classtemplate.rst
-    
+
     mindspore.ops.ComputeAccidentalHits
     mindspore.ops.LogUniformCandidateSampler
     mindspore.ops.UniformCandidateSampler
-    
+
 图像处理
 ^^^^^^^^^^
 
@@ -195,7 +195,7 @@ MindSpore中 `mindspore.ops.primitive` 接口与上一版本相比，新增、�
     :toctree: ops
     :nosignatures:
     :template: classtemplate.rst
-    
+
     mindspore.ops.BoundingBoxDecode
     mindspore.ops.BoundingBoxEncode
     mindspore.ops.CheckValid
@@ -565,7 +565,7 @@ Array操作
     mindspore.ops.ScalarCast
     mindspore.ops.ScalarToTensor
     mindspore.ops.TupleToArray
-    
+
 Parameter操作算子
 --------------------
 

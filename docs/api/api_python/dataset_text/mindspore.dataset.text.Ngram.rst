@@ -17,7 +17,7 @@ mindspore.dataset.text.Ngram
         - **separator** (str, 可选) - 指定用于将字符串连接在一起的分隔符。
           例如，如果对 ["mindspore", "amazing"] 应用 2-gram 并指定分隔符为 ``"-"`` ，结果将是 ["mindspore-amazing"]。默认值： ``" "`` ，使用空格作为分隔符。
 
-    异常：      
+    异常：
         - **TypeError** - 参数 `n` 包含的值类型不为int。
         - **ValueError** - 参数 `n` 包含的值不为正数。
         - **ValueError** - 参数 `left_pad` 不是一个长度2的Tuple[str, int]。

@@ -8,7 +8,7 @@ mindspore.ops.random_poisson
     .. math::
 
         \text{P}(i|μ) = \frac{\exp(-μ)μ^{i}}{i!}
-    
+
     .. warning::
         Ascend后端不支持随机数重现功能， `seed` 参数不起作用。
 

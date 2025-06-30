@@ -4,7 +4,7 @@ mindspore.dataset.Cifar10Dataset
 .. py:class:: mindspore.dataset.Cifar10Dataset(dataset_dir, usage=None, num_samples=None, num_parallel_workers=None, shuffle=None, sampler=None, num_shards=None, shard_id=None, cache=None)
 
     CIFAR-10数据集。
-    
+
     该API目前仅支持解析二进制版本的CIFAR-10文件（CIFAR-10 binary version）。
     生成的数据集有两列: `[image, label]` 。 `image` 列的数据类型是uint8。`label` 列的数据类型是uint32。
 

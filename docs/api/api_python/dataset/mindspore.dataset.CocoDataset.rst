@@ -4,7 +4,7 @@
 .. py:class:: mindspore.dataset.CocoDataset(dataset_dir, annotation_file, task='Detection', num_samples=None, num_parallel_workers=None, shuffle=None, decode=False, sampler=None, num_shards=None, shard_id=None, cache=None, extra_metadata=False, decrypt=None)
 
     COCO（Common Objects in Context）数据集。
-    
+
     该API支持解析COCO2017数据集，支持四种类型的机器学习任务，分别是目标检测、关键点检测、物体分割、全景分割和图片注解。
 
     参数：

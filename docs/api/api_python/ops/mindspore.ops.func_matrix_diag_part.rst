@@ -4,7 +4,7 @@ mindspore.ops.matrix_diag_part
 .. py:function:: mindspore.ops.matrix_diag_part(x, k, padding_value, align="RIGHT_LEFT")
 
     返回一个tensor，包含输入tensor `x` 的第 `k[0]` 到 `k[1]` 个对角线中的值，缺失部分使用 `padding_value` 填充。
-    
+
     在graph mode中，输入 `k` 和 `padding_value` 必须为常量tensor。
 
     参数：

@@ -19,7 +19,7 @@ mindspore.ops.ResizeBilinearV2
         - **size** (Union[tuple[int], list[int], Tensor]) - 调整后图像的尺寸，为含有两个元素的一维的Tensor、list或tuple，两个元素分别为 :math:`(new\_height, new\_width)` 。
 
     输出：
-        Tensor，调整大小后的图像，是一个四维Tensor，其shape为 :math:`(batch, channels, new\_height, new\_width)` ，数据类型与 `x` 一致。 
+        Tensor，调整大小后的图像，是一个四维Tensor，其shape为 :math:`(batch, channels, new\_height, new\_width)` ，数据类型与 `x` 一致。
 
     异常：
         - **TypeError** - `align_corners` 不是bool。

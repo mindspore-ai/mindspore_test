@@ -5,7 +5,7 @@ mindspore.ops.MatrixSetDiagV3
 
     更新批处理矩阵对角线的值。
     给定输入 `x` 和对角线 `diagonal` ，此操作返回一个Tensor。该Tensor最内层矩阵的对角线的值将被 `diagonal` 中的值替换。
-    
+
     如果某些对角线比 `max_diag_len` 短，则需要被填充，其中 `max_diag_len` 指对角线的最长长度。
     `diagonal` 的维度 :math:`shape[-2]` 必须等于对角线个数 `num_diags` ， :math:`num\_diags = k[1] - k[0] + 1`，
     `diagonal` 的维度 :math:`shape[-1]` 必须等于最长对角线值 `max_diag_len` ，

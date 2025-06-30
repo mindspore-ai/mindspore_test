@@ -8,7 +8,7 @@ mindspore.ops.matrix_exp
     .. math::
 
         matrix\_exp(x) = \sum_{k=0}^{\infty} \frac{1}{k !} x^{k} \in \mathbb{K}^{n \times n}
-    
+
     其中 :math:`x` 即输入 `input`。
 
     参数：

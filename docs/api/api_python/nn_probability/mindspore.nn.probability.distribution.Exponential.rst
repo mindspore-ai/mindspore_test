@@ -157,7 +157,7 @@ mindspore.nn.probability.distribution.Exponential
 
         计算标准差。
 
-        参数：        
+        参数：
             - **rate** (Tensor，可选) - 分布的率参数。默认值： ``None`` 。
 
         返回：

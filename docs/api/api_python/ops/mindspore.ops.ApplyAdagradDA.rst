@@ -47,7 +47,7 @@ mindspore.ops.ApplyAdagradDA
         - **TypeError** - 如果 `grad` 不是 Tensor。
         - **TypeError** - 如果 `lr` 、 `l1` 、 `l2` 或者 `global_step` 既不是数值型也不是Tensor。
         - **TypeError** - 如果 `use_locking` 不是bool。
-        - **TypeError** - 如果 `var` 、 `gradient_accumulator` 、 `gradient_squared_accumulator` 、 `grad` 、 `lr` 、 `l1` 或 `l2` 的数据类型既不是float16也不是float32。 
+        - **TypeError** - 如果 `var` 、 `gradient_accumulator` 、 `gradient_squared_accumulator` 、 `grad` 、 `lr` 、 `l1` 或 `l2` 的数据类型既不是float16也不是float32。
         - **TypeError** - 如果 `gradient_accumulator` 、 `gradient_squared_accumulator` 、 `grad` 与 `var` 的数据类型不相同。
         - **TypeError** - 如果 `global_step` 的数据类型不是int32也不是int64。
         - **ValueError** - 如果 `lr` 、 `l1` 、 `l2` 和 `global_step` 的shape大小不为0。

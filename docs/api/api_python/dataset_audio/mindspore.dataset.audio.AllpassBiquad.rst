@@ -11,7 +11,7 @@ mindspore.dataset.audio.AllpassBiquad
         H(s) = \frac{s^2 - \frac{s}{Q} + 1}{s^2 + \frac{s}{Q} + 1}
 
     接口实现方式类似于 `SoX库 <http://sox.sourceforge.net/sox.html>`_ 。
-    
+
     .. note:: 待处理音频shape需为<..., time>。
 
     参数：

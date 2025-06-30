@@ -7,7 +7,7 @@ mindspore.ops.celu
 
     .. math::
         \text{CeLU}(x) = \max(0,x) + \min(0, \alpha * (\exp(x/\alpha) - 1))
-    
+
     详情请参考： `celu <https://arxiv.org/abs/1704.07483>`_ 。
 
     .. warning::

@@ -32,7 +32,7 @@ mindspore.set_context
         - **precompile_only** (bool) - 是否仅预编译网络，默认 ``False`` 。此参数将在后续版本中废弃，请使用环境变量 `MS_DEV_PRECOMPILE_ONLY` 代替。
         - **enable_compile_cache** (bool) - 是否加载或者保存图编译缓存，默认 ``False`` 。此参数将在后续版本中废弃，请使用环境变量 `MS_COMPILER_CACHE_ENABLE` 代替。
         - **ascend_config** (dict) - 设置Ascend硬件平台参数。
-          
+
           - **precision_mode** (str): 混合精度模式设置。此参数将在后续版本中废弃，默认 ``"force_fp16"`` 。请使用接口 :func:`mindspore.device_context.ascend.op_precision.precision_mode` 代替。
           - **jit_compile** (bool): 是否在线编译。此参数将在后续版本中废弃，请使用接口 :func:`mindspore.device_context.ascend.op_tuning.op_compile` 代替。
           - **matmul_allow_hf32** (bool): 是否为Matmul类算子使能FP32转换为HF32，默认 ``False`` 。此参数将在后续版本中废弃，请使用接口 :func:`mindspore.device_context.ascend.op_precision.matmul_allow_hf32` 代替。

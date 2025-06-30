@@ -18,7 +18,7 @@ mindspore.mint.normal
 
     异常：
         - **TypeError** - 如果 `mean` 或 `std` 不是Union[float, Tensor]。
-    
+
     .. py:function:: mindspore.mint.normal(mean, std) -> Tensor
         :noindex:
 

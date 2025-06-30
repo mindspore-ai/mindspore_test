@@ -4,7 +4,7 @@ mindspore.ops.heaviside
 .. py:function:: mindspore.ops.heaviside(input, values)
 
     逐元素进行Heaviside阶跃函数运算。
-    
+
     支持广播。
 
     .. math::

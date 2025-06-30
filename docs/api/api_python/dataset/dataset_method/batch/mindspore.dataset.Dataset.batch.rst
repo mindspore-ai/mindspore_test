@@ -37,7 +37,7 @@ mindspore.dataset.Dataset.batch
           - python_multiprocessing (bool, 可选) - 是否启动Python多进程模式并行执行 `per_batch_map` ， ``True`` 意为Python多进程模式， ``False`` 意为Python多线程模式。如果 `per_batch_map` 是I/O密集型任务可以用多线程，CPU密集型任务建议使用多进程，以避免GIL锁影响。默认值： ``False`` ，启用多线程模式。
           - max_rowsize (Union[int, list[int]], 可选) - 指定在多进程之间复制数据时，共享内存分配的基本单位，单位为MB，总占用的共享内存会随着 ``num_parallel_workers`` 和 :func:`mindspore.dataset.config.set_prefetch_size` 增加而变大。
             仅当 `python_multiprocessing` 为 ``True`` 时，该选项有效。默认值： ``None`` ，动态分配共享内存（后续版本将废弃此参数）。
-            
+
             - 如果设置为 ``-1`` / ``None`` ，共享内存将随数据大小动态分配；
             - 如果是int值，代表 ``input_columns`` 和 ``output_columns`` 均使用该值为单位创建共享内存；
             - 如果是列表，代表 ``input_columns`` 使用第一个元素为单位创建共享内存， ``output_columns`` 使用第二个元素为单位创建共享内存。

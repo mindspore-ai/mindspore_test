@@ -15,7 +15,7 @@ mindspore.mint.addcmul
         - **input** (Tensor) - 要添加的Tensor。
         - **tensor1** (Tensor) - 要乘以的Tensor。
         - **tensor2** (Tensor) - 要乘以的Tensor。
-    
+
     关键字参数：
         - **value** (Number, 可选) - tensor1和tensor2的乘数。默认值：``1``。
 

@@ -32,7 +32,7 @@ mindspore.ops.interpolate
           此选项只对 ``'linear'`` 、 ``'bilinear'`` 和 ``'bicubic'`` 模式有效，默认 ``False``。
 
         - **recompute_scale_factor** (bool, 可选) - 重计算 `scale_factor` 。默认 ``None`` 。
-        
+
           - 如果为True，会使用参数 `scale_factor` 计算参数 `size`，最终使用 `size` 的值进行缩放。
           - 如果为False，将使用 `size` 或 `scale_factor` 直接进行插值。
 

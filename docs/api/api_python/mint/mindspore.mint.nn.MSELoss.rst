@@ -4,9 +4,9 @@ mindspore.mint.nn.MSELoss
 .. py:class:: mindspore.mint.nn.MSELoss(reduction='mean')
 
     用于计算预测值与标签值之间的均方误差。
-    
+
     假设 :math:`x` 和 :math:`y` 为一维Tensor，长度 :math:`N` ，则计算 :math:`x` 和 :math:`y` 的loss（即reduction参数设置为 ``'none'``）的公式如下：
-    
+
     .. math::
         \ell(x, y) = L = \{l_1,\dots,l_N\}^\top, \quad \text{with} \quad l_n = (x_n - y_n)^2.
 

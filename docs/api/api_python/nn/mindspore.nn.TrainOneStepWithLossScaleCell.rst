@@ -43,7 +43,7 @@ mindspore.nn.TrainOneStepWithLossScaleCell
     .. py:method:: process_loss_scale(overflow)
 
         根据溢出状态计算损失缩放系数。
-        
+
         继承该类自定义训练网络时，可复用该接口。
 
         参数：

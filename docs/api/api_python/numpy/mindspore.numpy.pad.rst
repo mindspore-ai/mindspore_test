@@ -12,9 +12,9 @@ mindspore.numpy.pad
         - **arr** (Union[list, tuple, Tensor]) - 要填充的矩阵。
         - **pad_width** (Union[int, tuple, list]) - 每个轴的边缘需要填充的值的数目。 ``((before_1, after_1), ... (before_N, after_N))`` 为每个轴创建唯一的填充宽度。 ``((before, after),)`` 为每个轴产生前后相同的 ``pad`` 。 ``(pad,)`` 或int是将所有轴设置为 ``before = after = pad width`` 的快捷设置。
         - **mode** (string, 可选) - 填充的方式。
-        
+
           选择以下之一：
-          
+
           - **constant** (默认值): 连续填充相同的值。
           - **edge**: 用 ``arr`` 的边缘值填充。
           - **linear_ramp**: 用边缘递减的方式填充。

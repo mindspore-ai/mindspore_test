@@ -74,7 +74,7 @@ mindspore.dataset.YelpReviewDataset
           month = sep,
           year = {2015},
         }
-    
+
     .. code-block::
 
         @article{zhangCharacterlevelConvolutionalNetworks2015,

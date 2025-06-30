@@ -18,7 +18,7 @@ mindspore.ops.ResizeArea
         - **size** (Tensor) - 必须为含有两个元素的一维的Tensor，分别为new_height, new_width，表示输出图像的高和宽。支持的数据类型为int32。
 
     输出：
-        Tensor，调整大小后的图像。shape为 :math:`(batch, new\_height, new\_width, channels)` 的四维Tensor，数据类型为float32。 
+        Tensor，调整大小后的图像。shape为 :math:`(batch, new\_height, new\_width, channels)` 的四维Tensor，数据类型为float32。
 
     异常：
         - **TypeError** - `images` 的数据类型不支持。

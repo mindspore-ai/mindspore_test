@@ -17,7 +17,7 @@ mindspore.Tensor.count_nonzero
     异常：
         - **TypeError** - `dim` 类型不是int、tuple(int)、list(int)或None。
         - **ValueError** - `dim` 取值不在 :math:`[-self.ndim, self.ndim)` 范围。
-    
+
     .. py:method:: mindspore.Tensor.count_nonzero(axis=(), keep_dims=False, dtype=None) -> Tensor
         :noindex:
 

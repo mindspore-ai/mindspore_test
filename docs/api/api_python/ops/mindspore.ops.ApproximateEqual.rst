@@ -4,7 +4,7 @@ mindspore.ops.ApproximateEqual
 .. py:class:: mindspore.ops.ApproximateEqual(tolerance=1e-05)
 
     逐元素计算abs(x-y)，如果小于tolerance则为True，否则为False。
-    
+
     .. math::
         out_i = \begin{cases}
         & \text{ if } \left | x_{i} - y_{i} \right | < \text{tolerance},\ \ True  \\

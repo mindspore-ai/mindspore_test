@@ -17,7 +17,7 @@
 
         .. math::
             y.shape[i] = x.shape[perm[i]]
-        
+
         其中i在[0, rank(x) - 1]范围内。
 
     异常：

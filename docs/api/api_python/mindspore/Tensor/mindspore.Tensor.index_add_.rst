@@ -10,7 +10,7 @@ mindspore.Tensor.index_add\_
         self[index[i],\ :,\ :]\ +=\ alpha * source[i,\ :,\ :]  \qquad \#if\ dim == 0 \\
         self[:,\ \ index[i],\ :]\ +=\ alpha * source[:,\ \ i,\ :]  \qquad \#if\ dim == 1 \\
         self[:,\ :,\ \ index[i]]\ +=\ alpha * source[:,\ :,\ \ i]  \qquad\#if\ dim == 2 \\
-        \end{array} 
+        \end{array}
 
     .. warning::
         这是一个实验性API，后续可能修改或删除。

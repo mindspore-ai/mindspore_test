@@ -5,7 +5,7 @@ mindspore.mint.unique_consecutive
 
     对输入Tensor中连续且重复的元素去重。
 
-    在 `return_inverse=True` 时，返回一个Tensor，包含输入Tensor中的元素在输出Tensor中的索引。   
+    在 `return_inverse=True` 时，返回一个Tensor，包含输入Tensor中的元素在输出Tensor中的索引。
 
     在 `return_counts=True` 时，返回一个Tensor，表示输出元素在输入中的个数。
 

@@ -12,7 +12,7 @@ mindspore.numpy.unwrap
         - **p** (Union[int, float, bool, list, tuple, Tensor]) - 输入数组。
         - **discont** (float, 可选) - 值之间的最大不连续性，默认值： ``pi`` 。
         - **axis** (int, 可选) - 解卷绕操作所沿的轴。 默认值： ``-1`` 。
-        
+
     返回：
         Tensor。
 

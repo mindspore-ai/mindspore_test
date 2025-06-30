@@ -6,7 +6,7 @@ mindspore.hal.Stream
     基于设备流的封装器，此接口将在后续版本中废弃，请使用接口 :class:`mindspore.runtime.Stream` 代替。
 
     设备流是属于特定设备的线性执行序列，流之间相互独立。
-    
+
     参数：
         - **priority** (int, 可选) - 流的优先级，较低的数字表示较高的优先级。默认情况下，流的优先级为 ``0``。
         - **kwargs** (dict) - 关键字参数字典。

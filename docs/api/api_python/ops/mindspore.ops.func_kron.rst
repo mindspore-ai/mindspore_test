@@ -10,7 +10,7 @@ mindspore.ops.kron
     .. math::
             (input ⊗ y)_{k_{0},k_{1},...k_{n}} =
             input_{i_{0},i_{1},...i_{n}} * other_{j_{0},j_{1},...j_{n}},
-    
+
     其中，对于所有的 0 ≤ `t` ≤ `n`，都有 :math:`k_{t} = i_{t} * b_{t} + j_{t}` 。
 
     .. note::

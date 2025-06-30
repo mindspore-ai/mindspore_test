@@ -24,7 +24,7 @@ mindspore.ops.Median
           - 如果 `global_median` 为 ``True`` ， `y` 只有一个元素。
           - 如果 `keep_dims` 为 ``True`` , `y` 的shape除了在 `axis` 维度上为1外与 `x` 一致。
           - 其他情况下， `y` 比 `x` 缺少 `axis` 指定的维度。
-          
+
         - **indices** (Tensor) - 中值的索引。shape与 `y` 一致，数据类型为int64。
 
     异常：

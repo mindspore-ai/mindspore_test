@@ -4,7 +4,7 @@ mindspore.ops.HyperMap
 .. py:class:: mindspore.ops.HyperMap(ops=None, reverse=False)
 
     对输入序列做集合运算。
-   
+
     对序列的每个元素或嵌套序列进行运算。与 :class:`mindspore.ops.Map` 不同，`HyperMap` 能够用于嵌套结构。
 
     参数：

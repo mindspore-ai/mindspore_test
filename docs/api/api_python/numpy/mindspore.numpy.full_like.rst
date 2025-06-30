@@ -17,6 +17,6 @@ mindspore.numpy.full_like
 
     返回：
         Tensor，与 ``a`` 的shape、类型相同，并用 ``fill_value`` 填充。
-        
+
     异常：
         - **ValueError** - 如果 ``a`` 的数据类型不是Tensor、List或Tuple。

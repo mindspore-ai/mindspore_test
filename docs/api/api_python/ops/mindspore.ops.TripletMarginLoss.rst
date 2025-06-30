@@ -20,7 +20,7 @@ mindspore.ops.TripletMarginLoss
     .. math::
         d(x_i, y_i) = \left\lVert {\bf x}_i - {\bf y}_i \right\rVert_p
 
-    参数：        
+    参数：
         - **p** (int，可选) - 成对距离的范数。默认值： ``2`` 。
         - **eps** (float，可选) - 默认值： ``1e-6`` 。
         - **swap** (bool，可选) - 距离交换。默认值： ``False`` 。

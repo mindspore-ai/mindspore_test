@@ -26,7 +26,7 @@ mindspore.dataset.config.set_enable_autotune
     .. note::
         - 保存的参数配置文件可通过 :func:`mindspore.dataset.deserialize` 接口加载，返回最优参数的数据处理流水线对象。
         - 可通过开启INFO级别日志，查看参数调优过程。
-    
+
     生成的配置文件内容示例如下，"remark"字段描述是否进行了数据处理参数调优，"summary"字段简要展示了数据处理流水线中\
     各个操作及其对应的最优配置，而"tree"字段则为完整的数据处理流水线结构信息。
 

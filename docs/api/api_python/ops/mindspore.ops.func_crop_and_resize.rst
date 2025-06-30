@@ -15,7 +15,7 @@ mindspore.ops.crop_and_resize
         - **box_indices** (Tensor) - shape为 :math:`(num\_boxes)` 的一维Tensor，表示每个方框的索引。数据类型：int32。
         - **crop_size** (Tuple[int]) - 2元组(crop_height, crop_width)，指定对裁剪出的图像进行调整时的输出大小，元素均为正值。数据类型：int32。
         - **method** (str, 可选) - 指定调整大小的采样方法，为可选字符串。提供的方法有： ``"bilinear"`` 、 ``"nearest"`` 或 ``"bilinear_v2"`` 。默认 ``"bilinear"`` 。
-          
+
           - ``"nearest"``：最近邻插值。每个输出像素的值为最近的输入像素的值。这种方法简单快速，但可能导致块状或像素化的输出。
           - ``"bilinear"``：双线性插值。每个输出像素是最接近的四个输入像素的加权平均值，使用双线性插值计算。与最近邻插值相比，此方法产生更平滑的结果。
           - ``"bilinear_v2"``：优化后的双线性插值算法，在某些情况下可能会产生更好的结果（更高的精度和速度）。

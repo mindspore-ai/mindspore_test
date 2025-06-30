@@ -13,7 +13,7 @@ mindspore.ops.addcdiv
         - **tensor1** (Tensor) - 被除数（分子）。
         - **tensor2** (Tensor) - 除数（分母）。
         - **value** (Union[Tensor, number]) - （tensor1 / tensor2）的乘数。默认 ``1`` 。
-        
+
     返回：
         Tensor
 

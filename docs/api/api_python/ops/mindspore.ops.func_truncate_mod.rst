@@ -4,7 +4,7 @@ mindspore.ops.truncate_mod
 .. py:function:: mindspore.ops.truncate_mod(x, y)
 
     将 `x` 和 `y` 逐元素取模。
-    
+
     支持隐式类型转换，支持广播。
 
     .. warning::

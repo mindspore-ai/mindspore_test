@@ -16,6 +16,6 @@ mindspore.numpy.bincount
 
     返回：
         Tensor，即输入数组分桶后的结果。 输出的长度等于 ``np.amax(x) + 1`` 。
-        
+
     异常：
         - **ValueError** - 如果 `x` 不是一维的，或 `x` 和 `weights` 的shape不同。

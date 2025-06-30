@@ -6,7 +6,7 @@ mindspore.mint.diag
     如果 `input` 是向量（1-D 张量），则返回一个二维张量，其中 input 的元素作为对角线。
 
     如果 `input` 是矩阵（2-D 张量），则返回具有 input 对角线元素的 1-D 张量。
-    
+
     参数 diagonal 控制要考虑的对角线：
 
     - 如果 `diagonal` = 0，则它是主对角线。

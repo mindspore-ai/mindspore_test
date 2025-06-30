@@ -4,7 +4,7 @@ mindspore.ops.Im2Col
 .. py:class:: mindspore.ops.Im2Col(ksizes, strides=1, dilations=1, pads=0)
 
     从一个batch的输入Tensor中提取滑动局部块。
-    
+
     考虑一个batch的输入Tensor，其shape为 :math:`(N, C, *)` ，其中 :math:`N` 是batch维度，
     :math:`C` 是channel维度， :math:`*` 表示任意的空间维度。此操作将展平输入 `x` 空间维度内每个滑动的
     `ksize` 大小的滑块为输出的4-D Tensor中的一列(如，最后一维)，输出Tensor的shape为 :math:`(N, C, \prod(\text{kernel_size}), L)` ，
@@ -14,13 +14,13 @@ mindspore.ops.Im2Col
     .. math::
         L = \prod_d \left\lfloor\frac{\text{spatial_size}[d] + 2 \times \text{pads}[d] %
             - \text{dilations}[d] \times (\text{kernel_size}[d] - 1) - 1}{\text{strides}[d]} + 1\right\rfloor,
-    
+
     其中， :math:`\text{spatial_size}` 由输入 `x` 的空间维度(上面的 :math:`*` )决定， :math:`d` 遍历所有的空间维度。
 
     因此，在最后一个维度(列维度)上 `output` 包含特定块内的所有值。
 
     `pads` ， `strides` 和 `dilations` 决定了滑块如何被取出。
-    
+
     .. note::
         目前，只支持4-D Tensor(一个batch的图像Tensor)。
 

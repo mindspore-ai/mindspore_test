@@ -6,7 +6,7 @@ mindspore.nn.probability.distribution.Normal
     正态分布（Normal distribution）。
     连续随机分布，取值范围为 :math:`(-\inf, \inf)` ，概率密度函数为
 
-    .. math:: 
+    .. math::
         f(x, \mu, \sigma) = 1 / \sigma\sqrt{2\pi} \exp(-(x - \mu)^2 / 2\sigma^2).
 
     其中 :math:`\mu, \sigma` 分别为正态分布的期望与标准差。

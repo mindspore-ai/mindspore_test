@@ -16,7 +16,7 @@ mindspore.ops.ResizeNearestNeighborV2
         - **size** (Tensor) - 输出图片的尺寸。一维的Tensor，含有两个元素[ `new_height` , `new_width` ]。
 
     输出：
-        -  **y** (Tensor) - 调整大小后的图像。是一个shape为 :math:`(batch, channels, new\_height, new\_width)` 的四维Tensor。数据类型与输入 `x` 相同。 
+        -  **y** (Tensor) - 调整大小后的图像。是一个shape为 :math:`(batch, channels, new\_height, new\_width)` 的四维Tensor。数据类型与输入 `x` 相同。
 
     异常：
         - **TypeError** - `x` 或者 `size` 不是Tensor。
