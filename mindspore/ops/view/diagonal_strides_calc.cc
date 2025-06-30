@@ -58,7 +58,7 @@ TensorStorageInfoPtrList DiagonalStridesCalc(const OldTensorInfoPtr old_tensor_i
   } else if (offset >= 0) {
     storage_offset += LongToSize(offset * old_strides[dim2]);
   } else {
-    storage_offset -= offset * old_strides[dim1];
+    storage_offset += LongToSize(-offset * old_strides[dim1]);
   }
 
   new_shape.erase(new_shape.begin() + std::max(dim1, dim2));
