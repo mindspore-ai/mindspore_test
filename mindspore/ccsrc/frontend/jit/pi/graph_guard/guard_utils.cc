@@ -30,6 +30,7 @@
 #include "frontend/jit/pi/graph_guard/guard.h"
 #include "frontend/jit/pi/graph_guard/infer.h"
 #include "frontend/jit/pi/python_adapter/pydef.h"
+#include "frontend/jit/pi/graph_guard/guard_fail_reason.h"
 #include "include/common/utils/tensor_py.h"
 #include "utils/convert_utils_base.h"
 
@@ -142,6 +143,8 @@ class ItemData {
   }
 
   ItemType GetItemType() const { return tp_; }
+
+  mutable GuardFailReason fail_reason_;
 
  protected:
   virtual void SubInfo(InfoPack *info) {}
@@ -1327,8 +1330,16 @@ class MetaTensorData : public ItemData {
            DESC(shape_str);
   }
   bool CheckTypeAndShape(const TypePtr &tp, const ShapeVector &sv) const {
-    return CheckShape(shape_, sv) && ((data_type_ == nullptr && tp == nullptr) ||
-                                      (data_type_ != nullptr && tp != nullptr && *data_type_ == *(tp)));
+    if (!CheckShape(shape_, sv)) {
+      fail_reason_ = GuardFailReason::kShapeNotEqual;
+      return false;
+    }
+    if (!((data_type_ == nullptr && tp == nullptr) ||
+          (data_type_ != nullptr && tp != nullptr && *data_type_ == *(tp)))) {
+      fail_reason_ = GuardFailReason::kTypeNotEqual;
+      return false;
+    }
+    return true;
   }
 
   bool CheckDataType(const MetaTensorData &other) const {
@@ -2329,6 +2340,7 @@ class EqGuard : public GuardItem {
   virtual ~EqGuard() {}
 
   bool Check(PyFrameWrapper frame) override {
+    dp_->fail_reason_ = GuardFailReason::kReasonUnknown;
     if (var_->IsConst()) {
       return true;
     }
@@ -2359,8 +2371,19 @@ class EqGuard : public GuardItem {
       return strGuard_;
     }
     strGuard_ = std::string("EqGuard(") + var_->ToString() + " == " + dp_->ToString() + ")";
-    strGuard_ = std::regex_replace(strGuard_, std::regex("(\n)"), "");
+    if (location_ != "") {
+      strGuard_ += std::string(", location: ") + location_;
+    }
+    strGuard_ = std::regex_replace(strGuard_, std::regex("(\n)"), " ");
+
     return strGuard_;
+  }
+
+  std::string GetFailInfo() override {
+    if (dp_->fail_reason_ == GuardFailReason::kReasonUnknown) {
+      return std::string("");
+    }
+    return GetGuardFailReasonDesc(dp_->fail_reason_);
   }
 
   virtual const InfoPack &Info() {
@@ -3000,5 +3023,11 @@ bool GuardItemPyTypeMatch(const GuardItemPtr &item, const py::handle &new_object
   return false;
 }
 
+std::string GetItemDataStr(const GuardItemPtr &item, PyObject *obj) {
+  if (dynamic_cast<EqGuard *>(item.get())) {
+    return " == " + CreateItem(obj, false, false)->ToString();
+  }
+  return "";
+}
 }  // namespace pijit
 }  // namespace mindspore

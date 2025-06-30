@@ -109,7 +109,7 @@ class JitCompileResults {
 
   int IncCodeCount() { return compile_count_++; }
   void ClearCache() { cache_.Clear(); }
-  void CacheFailGuard() { cache_.CollectFailGuard(); }
+  void CacheFailGuard(const PyFrameWrapper &f) { cache_.CollectFailGuard(f); }
 
  private:
   explicit JitCompileResults(bool skip = false);

@@ -42,6 +42,7 @@
 #include "frontend/jit/pi/graph_guard/shape_ctx.h"
 #include "frontend/jit/pi/capture_context.h"
 #include "frontend/jit/ps/executor/jit_executor_py.h"
+#include "frontend/jit/pi/python_adapter/py_frame.h"
 #include "runtime/pipeline/pipeline.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "frontend/jit/pi/graph_capture/code_generator.h"
@@ -638,7 +639,7 @@ static bool CheckGuard(JitCompileResults *c, const PyFrameWrapper &f) {
   GuardContext context;
 
   bool log_perf = c->conf()->GetBoolConfig(GraphJitConfig::kLogGuardPerf);
-  if (c->code()->GetGuard()->Check(f, true, log_perf)) {
+  if (c->code()->GetGuard()->Check(f, log_perf)) {
     return true;
   }
 
@@ -652,7 +653,7 @@ static bool CheckGuard(JitCompileResults *c, const PyFrameWrapper &f) {
     if (oc == skip) {
       continue;
     }
-    if (oc->GetGuard()->Check(f, false, log_perf)) {
+    if (oc->GetGuard()->Check(f, log_perf)) {
       c->set_code(oc);
       MS_LOG(DEBUG) << "select the compiled code due to guard is match: "
                     << (oc->GetPythonCode() != nullptr
@@ -665,7 +666,7 @@ static bool CheckGuard(JitCompileResults *c, const PyFrameWrapper &f) {
     }
   }
   if (c->code() == nullptr) {  // recompiled
-    c->CacheFailGuard();
+    c->CacheFailGuard(f);
   }
   return c->code() != nullptr;
 }
@@ -731,8 +732,6 @@ static py::object CodeHook(PyThreadState *tstate, JitCompileResults *c, PyFrameW
       just_compiled = true;
     /* fallthrough */
     case JitCompileResults::GRAPH_CALLABLE: {
-      PIJIT_DEBUG_LOG(LogCfg::kRecompiles)
-        << "Check guard of func: " << std::string(py::str(reinterpret_cast<PyObject *>(co)));
       if (CheckGuard(c, PyFrameWrapper(frame))) {
         c->set_origin_frame(PyFrameWrapper());
         return CallCompiledResults(tstate, PyFrameWrapper(frame), c);
