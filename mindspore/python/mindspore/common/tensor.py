@@ -453,6 +453,8 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
     def __str__(self):
         if self.dtype == mstype.type_none:
             return "Unknown Tensor type!"
+        if not self._data_ptr():
+            return TensorPy_.__str__(self)
         return str(self.asnumpy())
 
     def __getstate__(self):
