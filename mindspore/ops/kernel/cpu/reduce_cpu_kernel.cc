@@ -17,6 +17,7 @@
 #include "kernel/cpu/reduce_cpu_kernel.h"
 #include <complex>
 #include <string>
+#include <type_traits>
 #include <vector>
 #include <algorithm>
 #include <utility>
@@ -358,6 +359,9 @@ void ReduceCpuKernelFunc<T>::ChooseFunc() {
     } else if (kernel_name_ == kReduceProd) {
       reduce_type_ = ReduceFuncType::kReduceProdType;
       reduce_func_ = ReduceProd<T>;
+    } else if (kernel_name_ == kReduceAny && std::is_same_v<T, uint8_t>) {
+      reduce_type_ = ReduceFuncType::kReduceAnyType;
+      reduce_func_ = ReduceAny<T>;
     } else {
       MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', unsupported reduce operation.";
     }
@@ -534,7 +538,32 @@ using SpecializeReduceFuncCreator = std::function<std::shared_ptr<CpuKernelFunc>
     .AddOutputAttr(kNumberTypeBool),                  \
     SpecializeReduceFunc<T>
 
-static std::vector<std::pair<KernelAttr, SpecializeReduceFuncCreator>> kernel_all_any_list = {
+#define REDUCE_ANY_CPU_REG(MS_I, MS_O, T)                     \
+  KernelAttr()                                                \
+    .AddInputAttr(MS_I)                                       \
+    .AddOptionalInputAttr(kObjectTypeTuple, kNumberTypeInt64) \
+    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)         \
+    .AddOutputAttr(MS_O),                                     \
+    SpecializeReduceFunc<T>
+
+static std::vector<std::pair<KernelAttr, SpecializeReduceFuncCreator>> kernel_any_list = {
+  {REDUCE_ANY_CPU_REG(kNumberTypeBool, kNumberTypeBool, bool)},
+  {REDUCE_ANY_CPU_REG(kNumberTypeInt8, kNumberTypeBool, bool)},
+  {REDUCE_ANY_CPU_REG(kNumberTypeInt16, kNumberTypeBool, bool)},
+  {REDUCE_ANY_CPU_REG(kNumberTypeInt32, kNumberTypeBool, bool)},
+  {REDUCE_ANY_CPU_REG(kNumberTypeInt64, kNumberTypeBool, bool)},
+  {REDUCE_ANY_CPU_REG(kNumberTypeUInt8, kNumberTypeUInt8, uint8_t)},
+  {REDUCE_ANY_CPU_REG(kNumberTypeUInt16, kNumberTypeBool, bool)},
+  {REDUCE_ANY_CPU_REG(kNumberTypeUInt32, kNumberTypeBool, bool)},
+  {REDUCE_ANY_CPU_REG(kNumberTypeUInt64, kNumberTypeBool, bool)},
+  {REDUCE_ANY_CPU_REG(kNumberTypeFloat16, kNumberTypeBool, bool)},
+  {REDUCE_ANY_CPU_REG(kNumberTypeBFloat16, kNumberTypeBool, bool)},
+  {REDUCE_ANY_CPU_REG(kNumberTypeFloat32, kNumberTypeBool, bool)},
+  {REDUCE_ANY_CPU_REG(kNumberTypeFloat64, kNumberTypeBool, bool)},
+  {REDUCE_ANY_CPU_REG(kNumberTypeComplex64, kNumberTypeBool, bool)},
+  {REDUCE_ANY_CPU_REG(kNumberTypeComplex128, kNumberTypeBool, bool)}};
+
+static std::vector<std::pair<KernelAttr, SpecializeReduceFuncCreator>> kernel_all_list = {
   {REDUCE_AXIS_OPT_CPU_REG(kNumberTypeBool, kNumberTypeInt64, bool)},
   {REDUCE_AXIS_OPT_CPU_REG(kNumberTypeInt8, kNumberTypeInt64, bool)},
   {REDUCE_AXIS_OPT_CPU_REG(kNumberTypeInt16, kNumberTypeInt64, bool)},
@@ -596,8 +625,8 @@ static std::vector<std::pair<KernelAttr, SpecializeReduceFuncCreator>> kernel_su
 static std::map<std::string, std::vector<std::pair<KernelAttr, SpecializeReduceFuncCreator>>> kernel_attr_list = {
   {prim::kPrimReduceSum->name(), kernel_sum_list},        {prim::kPrimReduceMean->name(), kernel_prod_mean_list},
   {prim::kPrimReduceProd->name(), kernel_prod_mean_list}, {prim::kPrimReduceMax->name(), kernel_max_min_list},
-  {prim::kPrimReduceMin->name(), kernel_max_min_list},    {prim::kPrimReduceAll->name(), kernel_all_any_list},
-  {prim::kPrimReduceAny->name(), kernel_all_any_list}};
+  {prim::kPrimReduceMin->name(), kernel_max_min_list},    {prim::kPrimReduceAll->name(), kernel_all_list},
+  {prim::kPrimReduceAny->name(), kernel_any_list}};
 }  // namespace
 
 std::vector<KernelAttr> ReduceCpuKernelMod::GetOpSupport() {
