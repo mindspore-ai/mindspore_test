@@ -980,6 +980,11 @@ TensorPtr AutoGradUtil::Add(const TensorPtr &input, const TensorPtr &other) {
   return kernel::pyboost::add(input, other);
 }
 
+TensorPtr AutoGradUtil::Clone(const TensorPtr &input) {
+  kernel::pyboost::OpStatus status{false, false, 0, DeviceManagerConf::GetInstance()->device_type()};
+  kernel::pyboost::OpRunStatus::Get().set_run_info(std::move(status));
+  return kernel::pyboost::clone(input);
+}
 
 bool BpropCallback::IsNotRequiresGrad(size_t index) const {
   // Check Tensor need grad.
@@ -989,6 +994,18 @@ bool BpropCallback::IsNotRequiresGrad(size_t index) const {
 
 void BpropCallback::FreeDeviceAddress(ValuePtr *value) const {
   *value = PyNativeAlgo::Common::CreateFakeValueWithoutDeviceAddress(*value);
+}
+
+AutoGradGuard::AutoGradGuard(bool require_grad) {
+  origin_require_grad_ = kernel::pyboost::OpRunStatus::Get().RequireGrad();
+  origin_enable_grad_ = PyNativeExecutor::GetInstance()->enable_grad();
+  kernel::pyboost::OpRunStatus::Get().SetRequireGrad(require_grad);
+  PyNativeExecutor::GetInstance()->set_enable_grad(require_grad);
+}
+
+AutoGradGuard::~AutoGradGuard() {
+  kernel::pyboost::OpRunStatus::Get().ResetRequireGrad(origin_require_grad_);
+  PyNativeExecutor::GetInstance()->set_enable_grad(origin_enable_grad_);
 }
 }  // namespace pynative
 }  // namespace mindspore

@@ -48,9 +48,17 @@ py::object RunBackward(const py::object &tensors, const py::object &grad_tensors
   if (py::isinstance<py::tuple>(grad_tensors)) {
     sens_gradients = std::make_shared<ValueTuple>(ConvertPyTupleToTensorList(grad_tensors));
   }
+  if (!py::isinstance<py::tuple>(inputs) && !py::isinstance<py::none>(inputs)) {
+    MS_LOG(EXCEPTION) << "input tensors should be tuple or none! but got " << py::str(inputs);
+  }
   ValuePtrList input_tensors;
   if (py::isinstance<py::tuple>(inputs)) {
     input_tensors = ConvertPyTupleToTensorList(inputs);
+    for (const auto &input_tensor : input_tensors) {
+      auto tensor = input_tensor->cast<tensor::TensorPtr>();
+      MS_EXCEPTION_IF_NULL(tensor);
+      tensor->retain_grad();
+    }
   }
   auto engine = std::make_shared<autograd::AutoDiff>(output, keep_graph, high_order, false);
   autograd::AutoDiffGuard auto_diff_guard(engine);

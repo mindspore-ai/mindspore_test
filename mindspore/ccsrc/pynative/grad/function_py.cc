@@ -141,11 +141,11 @@ static TensorPtrSet parse_to_save(const FunctionPtr &fptr) {
 
 class ForwardGradGuard {
  public:
-  ForwardGradGuard() : grad_flag_(GradState::Get().grad_flag()) { GradState::Get().set_grad_flag(false); }
-  ~ForwardGradGuard() { GradState::Get().set_grad_flag(grad_flag_); }
+  ForwardGradGuard() : enable_grad_(GradState::Get().enable_grad()) { GradState::Get().set_enable_grad(false); }
+  ~ForwardGradGuard() { GradState::Get().set_enable_grad(enable_grad_); }
 
  private:
-  bool grad_flag_;
+  bool enable_grad_;
 };
 
 void UpdateTensorSetIfNeeded(const std::shared_ptr<FunctionContext> &context, tensor::TensorPtr old_value,

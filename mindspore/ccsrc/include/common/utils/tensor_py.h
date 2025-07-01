@@ -432,7 +432,7 @@ COMMON_EXPORT PyObject *PackTensor(const TensorPtr &tensor, bool has_side_effect
 COMMON_EXPORT PyObject *PackStubTensor(const stub::StubNodePtr &stub_node);
 COMMON_EXPORT PyObject *Wrap(const TensorPtr &tensor);
 COMMON_EXPORT PyObject *Wrap(const std::vector<TensorPtr> &tensors);
-COMMON_EXPORT PyObject *Wrap(const ValuePtrList& values);
+COMMON_EXPORT PyObject *Wrap(const ValuePtrList &values);
 template <typename... Args>
 PyObject *Wrap(const std::tuple<Args...> &tuple) {
   constexpr size_t size = std::tuple_size<std::tuple<Args...>>::value;

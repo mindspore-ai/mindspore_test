@@ -881,7 +881,7 @@ ValuePtrList FuncBackwardNode::CallBackward(const ValuePtrList &gradients_in) {
 void FuncBackwardNode::PreProcess(const ValuePtrList &dout, const FuncBuilderPtr &emitter) {
   // The flag of need compute grad should set after pruning graph, because we know whether input of network
   // need grad in grad interface.
-  MS_EXCEPTION_IF_CHECK_FAIL(check_func_ != nullptr, kCallBackwradTwiceErr);
+  MS_EXCEPTION_IF_CHECK_FAIL(saved_output_ != nullptr, kCallBackwradTwiceErr);
   int32_t index = -1;
   for (size_t i = 0; i < node_inputs_.size() - kSizeTwo; ++i) {
     auto value = node_inputs_[i]->Value();
@@ -1055,7 +1055,7 @@ ValuePtrList LeafNode::CallBackward(const ValuePtrList &grads) {
   MS_EXCEPTION_IF_NULL(grad_meta);
   const auto &grad = grad_meta->grad();
   if (grad == nullptr) {
-    grad_meta->set_grad(grads[0]->cast<tensor::TensorPtr>());
+    grad_meta->set_grad(AutoGradUtil::Clone(grads[0]->cast<tensor::TensorPtr>()));
     return {};
   }
   grad_meta->set_grad(AutoGradUtil::Add(grad, grads[0]->cast<tensor::TensorPtr>()));
@@ -1284,7 +1284,7 @@ ValuePtr AutoDiff::GetGrads(const ValuePtrList &inputs, const std::vector<Backwa
   // If there are input nodes, return gradient of first input node.
   // Tuple, List, scalar will be ignore
   if (IsValidTensorInput(inputs[kIndex0])) {
-    return GetTensorGrad(inputs[kIndex0], true);
+    return GetTensorGrad(inputs[kIndex0], false, true);
   }
   MS_LOG(DEBUG) << "Get first input node is not tensor " << inputs[0]->ToString();
   return std::make_shared<ValueTuple>(ValuePtrList{});
@@ -1313,7 +1313,7 @@ ValuePtr AutoDiff::GetInputGrads(const ValuePtrList &inputs, bool grad_all_input
         MS_LOG(DEBUG) << inputs[index]->ToString() << "is no tensor";
         continue;
       }
-      (void)input_grads.emplace_back(GetTensorGrad(inputs[index], true));
+      (void)input_grads.emplace_back(GetTensorGrad(inputs[index], false, true));
     }
     if (get_by_position && input_grads.size() == kSizeOne) {
       return input_grads[kIndex0];
@@ -1322,7 +1322,7 @@ ValuePtr AutoDiff::GetInputGrads(const ValuePtrList &inputs, bool grad_all_input
   return std::make_shared<ValueTuple>(input_grads);
 }
 
-ValuePtr AutoDiff::GetTensorGrad(const ValuePtr &val, bool run_tensor_hook) {
+ValuePtr AutoDiff::GetTensorGrad(const ValuePtr &val, bool get_grad_from_tensor, bool run_tensor_hook) {
   const auto tensor = PyNativeAlgo::Common::GetTensorFromSparseTensor(val);
   MS_EXCEPTION_IF_NULL(tensor);
   if (const auto grad_node = impl::GetUnsafeGradNodeImpl(tensor)) {
@@ -1336,8 +1336,13 @@ ValuePtr AutoDiff::GetTensorGrad(const ValuePtr &val, bool run_tensor_hook) {
       }
       return leaf_node->Zeros(func_impl_);
     }
-    const auto tensor_grad = iter->second.captured_grad->grad;
-    return AutoGradUtil::BuildSpecialValueGrad(tensor, tensor_grad, func_impl_.get(), SpecialType::kZerosLikeType);
+    tensor::TensorPtr grad = nullptr;
+    if (get_grad_from_tensor) {
+      grad = tensor->grad();
+    } else {
+      grad = iter->second.captured_grad->grad;
+    }
+    return AutoGradUtil::BuildSpecialValueGrad(tensor, grad, func_impl_.get(), SpecialType::kZerosLikeType);
   }
   return AutoGradUtil::BuildSpecialValueGrad(val, nullptr, func_impl_.get(), SpecialType::kZerosLikeType);
 }
@@ -1596,7 +1601,7 @@ void AutoDiff::BackPropagate() {
   while (!queue.empty()) {
     auto fn = queue.top();
     queue.pop();
-    MS_LOG(DEBUG) << "Begin calculate op: " << fn->name() << " gradients!";
+    MS_LOG(DEBUG) << "Begin calculate op: " << fn->UniqueId() << " gradients!";
     auto ctx_iter = gradient_contexts_.find(fn.get());
     if (!gradient_contexts_.empty() && ctx_iter == gradient_contexts_.end()) {
       MS_LOG(DEBUG) << "No need grad, grad fn is: " << fn->ToString();
@@ -1805,7 +1810,6 @@ ValuePtr AutoDiff::RunGradFunc(const ValuePtrList &inputs, const tensor::TensorP
 }
 
 ValuePtr AutoDiff::RunBackward(const ValuePtrList &inputs, const ValuePtr &sens, bool accumulate_grad) {
-  CheckSensShapeAndType(sens);
   GilReleaseWithCheck gil_release;
   BuildGraphRoot(sens, false);
   if (graph_root_->IsEmpty()) {
@@ -1813,11 +1817,12 @@ ValuePtr AutoDiff::RunBackward(const ValuePtrList &inputs, const ValuePtr &sens,
                          "the output tensor!.";
   }
   if (!inputs.empty()) {
+    MS_LOG(DEBUG) << "Begin prune input";
     PruningInput(inputs, accumulate_grad);
     PruningGradNode();
   }
   ComputeDependencies();
-  kernel::pyboost::RequireGradGuard requires_grad(high_order_);
+  AutoGradGuard requires_grad(high_order_);
   BackPropagate();
   python_adapter::PyAdapterCallback::ProcessUnPairedCellHook(true);
   if (accumulate_grad) {
@@ -1826,7 +1831,7 @@ ValuePtr AutoDiff::RunBackward(const ValuePtrList &inputs, const ValuePtr &sens,
     std::vector<ValuePtr> grads;
     grads.reserve(inputs.size());
     for (const auto &input : inputs) {
-      (void)grads.emplace_back(GetTensorGrad(input, false));
+      (void)grads.emplace_back(GetTensorGrad(input, accumulate_grad, false));
     }
     return std::make_shared<ValueTuple>(grads);
   }
@@ -1844,6 +1849,9 @@ bool AutoDiff::IsInExecGraph(const BackwardNodePtr &node) const {
 }
 
 void AutoDiff::AddNodeToExecGraph(const BackwardNodePtr &node) {
+  if (gradient_contexts_.empty()) {
+    return;
+  }
   if (gradient_contexts_.find(node.get()) != gradient_contexts_.end()) {
     return;
   }

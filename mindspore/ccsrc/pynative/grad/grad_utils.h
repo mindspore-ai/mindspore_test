@@ -72,6 +72,16 @@ class BpropCallback final : public expander::bprop::PynativeCallback {
   ValuePtr *output_;
 };
 
+class AutoGradGuard {
+ public:
+  explicit AutoGradGuard(bool require_grad);
+  ~AutoGradGuard();
+
+ private:
+  bool origin_require_grad_{false};
+  bool origin_enable_grad_{false};
+};
+
 struct AutoGradUtil {
   // Common grad function
   static InputType SetValueGradInfo(const ValuePtr &value, InputType grad_type);
@@ -130,6 +140,7 @@ struct AutoGradUtil {
   static ValuePtr ShallowCopyAndDetach(const ValuePtr &value);
   static TensorPtr ViewAsSelfWithNoGrad(const TensorPtr &self);
   static TensorPtr Add(const TensorPtr &input, const TensorPtr &other);
+  static TensorPtr Clone(const TensorPtr &input);
 };
 }  // namespace pynative
 }  // namespace mindspore
