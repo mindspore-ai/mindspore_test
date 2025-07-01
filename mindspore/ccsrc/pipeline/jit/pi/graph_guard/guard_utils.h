@@ -47,6 +47,7 @@ class GuardItem : public std::enable_shared_from_this<GuardItem> {
   virtual bool Check(PyFrameWrapper frame) = 0;
   virtual bool Check(PyObject *obj) = 0;
   virtual std::string ToString() = 0;
+  virtual std::string GetFailInfo() { return ""; }
   virtual const InfoPack &Info() = 0;
   virtual TracePtr GetTrace() const;
   virtual bool operator==(const GuardItem &obj) const;
@@ -60,6 +61,8 @@ class GuardItem : public std::enable_shared_from_this<GuardItem> {
 
   void Cache(bool success);
   void ClearCache();
+
+  std::string location_;
 
  protected:
   TracePtr var_;
@@ -96,6 +99,7 @@ py::object SymbolicFromGuard(const GuardItemPtr &item, const py::object &new_obj
 bool IsSpecializedGuard(const GuardItemPtr &item);
 bool GuardItemPyTypeMatch(const GuardItemPtr &item, const py::handle &new_object);
 
+std::string GetItemDataStr(const GuardItemPtr &item, PyObject *obj);
 }  // namespace pijit
 }  // namespace mindspore
 

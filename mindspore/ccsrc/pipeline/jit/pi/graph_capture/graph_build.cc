@@ -2163,6 +2163,8 @@ GraphBuilder::GraphBuilder(GraphBuilder *r, GraphBuilder *p, PyCodeObject *co, P
 GraphBuilder::GraphBuilder(const PyFrameWrapper &f)
     : root_(this), parent_(nullptr), graph_(nullptr), current_block_(nullptr), no_grad_(false), side_effect_outputs_() {
   PyCodeWrapper co_wrapper = f.GetCode();
+  TraceGuard trace_guard(std::make_shared<Location>(co_wrapper.FileName(), co_wrapper.FirstLine(), 0,
+                                                    co_wrapper.FirstLine(), 0, "", std::vector<std::string>{}));
   py::tuple free_vars = f.FreeVars();  // new object
   py::tuple cell_names = co_wrapper.CellVars();
   graph_ = NewGraph(co_wrapper.ptr(), f.Globals().ptr());
