@@ -35,7 +35,8 @@ class Block;
 class Instr {
  public:
   Instr &operator=(const Instr &) = delete;
-  Instr(const Instr &o) : op_(o.op_), arg_(o.arg_), name_(o.name_), cnst_(o.cnst_), jump_(nullptr), loc_(o.loc_) {}
+  Instr(const Instr &o)
+      : bci_(-1), op_(o.op_), arg_(o.arg_), name_(o.name_), cnst_(o.cnst_), jump_(nullptr), loc_(o.loc_) {}
   Instr(int op, int arg) : bci_(-1), op_(op), arg_(arg), jump_(nullptr), loc_{-1, -1, -1, -1} {}
   Instr(int op, int arg, const CodeLocation &loc) : Instr(op, arg) { loc_ = loc; }
   Instr(int op, int arg, const std::string &name) : Instr(op, arg) { name_ = name; }

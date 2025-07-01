@@ -193,13 +193,13 @@ class CodeGenerator {
   void FixFreeOffset(const std::vector<std::string> &other_closure_names);
   static int ExceptionStackRequired(const Code &ccode);
 
-  const NodeSet *nodes_;
+  const NodeSet *nodes_{nullptr};
   py::dict globals_;
   Code code_;
   std::unordered_map<ValueNode *, int> nodes_alive_;
   std::unordered_map<ValueNode *, int> locals_map_;
-  bool missing_value_to_undefine_;
-  bool vm_mode_;
+  bool missing_value_to_undefine_{false};
+  bool vm_mode_{false};
 };
 
 class LoopBodyReCaptureCodeGenerator {

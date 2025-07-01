@@ -68,9 +68,9 @@ class AbstractType : public ir::Type {
 
  private:
   /// \brief The AbstractBase of this AbstractType.
-  abstract::AbstractBasePtr abs_;
+  abstract::AbstractBasePtr abs_{nullptr};
   /// \brief The python object whose type is current.
-  py::object obj_;
+  py::object obj_{py::none()};
 };
 
 using AbstractTypePtr = std::shared_ptr<AbstractType>;
