@@ -27,7 +27,7 @@ from mindspore.profiler.platform.npu_profiler import NPUProfilerAnalysis
 from mindspore.profiler.profiler_action_controller import ProfilerActionController
 from mindspore.profiler.experimental_config import _ExperimentalConfig
 from mindspore.profiler.profiler_interface import ProfilerInterface
-from mindspore.profiler.schedule import _default_schedule_fn, ProfilerAction, Schedule
+from mindspore.profiler.schedule import _default_schedule_fn, ProfilerAction
 from mindspore.profiler.common.record_function import RecordFunction
 from mindspore.profiler.common.path_manager import PathManager
 from mindspore.profiler.common.profiler_path_manager import ProfilerPathManager
@@ -261,9 +261,10 @@ class Profiler:
         ...     # Profiler end
         ...     profiler.analyse()
     """
-    MAX_META_SIZE = 100 * 1024 * 1024  # 100MB
 
     def __init__(self, **kwargs) -> None:
+        logger.warning("'mindspore.Profiler' will be deprecated and removed in a future version. Please use the api "
+                       "'mindspore.profiler.profile' instead.")
         self._metadata: Dict[str, str] = {}
         self._prof_context: ProfilerContext = ProfilerContext()
         self._prof_context.set_params(**kwargs)
@@ -564,7 +565,7 @@ class Profiler:
             return
 
         add_size = getsizeof(key) + getsizeof(value)
-        if getsizeof(self._metadata) + add_size < self.MAX_META_SIZE:
+        if getsizeof(self._metadata) + add_size < ProfilerMetaData.MAX_META_SIZE:
             if key in self._metadata:
                 logger.warning(f"{key} is already saved as metadata, override it.")
             self._metadata[key] = value
@@ -595,7 +596,7 @@ class Profiler:
             return
 
         add_size = getsizeof(key) + getsizeof(value)
-        if getsizeof(self._metadata) + add_size < self.MAX_META_SIZE:
+        if getsizeof(self._metadata) + add_size < ProfilerMetaData.MAX_META_SIZE:
             try:
                 if key in self._metadata:
                     logger.warning(f"{key} is already saved as metadata, override it.")
@@ -801,70 +802,54 @@ class Profile:
         ...             prof.step()
     """
 
-    def __init__(
-            self,
-            activities: list = None,
-            with_stack: bool = False,
-            profile_memory: bool = False,
-            data_process: bool = False,
-            parallel_strategy: bool = False,
-            start_profile: bool = True,
-            hbm_ddr: bool = False,
-            pcie: bool = False,
-            sync_enable: bool = True,
-            record_shapes: bool = False,
-            schedule: Schedule = None,
-            on_trace_ready: Optional[Callable[..., Any]] = None,
-            experimental_config: Optional[_ExperimentalConfig] = None,
-    ):
-        self._activities = activities
-        self._with_stack = with_stack
-        self._profile_memory = profile_memory
-        self._data_process = data_process
-        self._parallel_strategy = parallel_strategy
-        self._start_profile = start_profile
-        self._hbm_ddr = hbm_ddr
-        self._pcie = pcie
-        self._sync_enable = sync_enable
-        self._record_shapes = record_shapes
-        self._schedule = schedule
-        self._on_trace_ready = on_trace_ready
-        self._experimental_config = experimental_config or _ExperimentalConfig()
-        self._profiler = Profiler(
-            profiler_level=self._experimental_config.profiler_level,
-            activities=self._activities,
-            aic_metrics=self._experimental_config.aic_metrics,
-            with_stack=self._with_stack,
-            profile_memory=self._profile_memory,
-            data_process=self._data_process,
-            parallel_strategy=self._parallel_strategy,
-            start_profile=self._start_profile,
-            l2_cache=self._experimental_config.l2_cache,
-            hbm_ddr=self._hbm_ddr,
-            pcie=self._pcie,
-            sync_enable=self._sync_enable,
-            record_shapes=self._record_shapes,
-            data_simplification=self._experimental_config.data_simplification,
-            mstx=self._experimental_config.mstx,
-            mstx_domain_include=self._experimental_config.mstx_domain_include,
-            mstx_domain_exclude=self._experimental_config.mstx_domain_exclude,
-            export_type=self._experimental_config.export_type,
-            sys_io=self._experimental_config.sys_io,
-            sys_interconnection=self._experimental_config.sys_interconnection,
-            host_sys=self._experimental_config.host_sys,
-            schedule=self._schedule,
-            on_trace_ready=self._on_trace_ready,
-        )
-
-    def __enter__(self) -> 'Profile':
-        self._profiler.__enter__()
-        return self
-
-    def __exit__(self, exe_type, exe_val, exc_tb):
-        self._profiler.__exit__(exe_type, exe_val, exc_tb)
-
-    def __del__(self):
-        self._profiler.__del__()
+    def __init__(self,
+                 activities: Optional[list] = None,
+                 with_stack: bool = False,
+                 profile_memory: bool = False,
+                 data_process: bool = False,
+                 parallel_strategy: bool = False,
+                 start_profile: bool = True,
+                 hbm_ddr: bool = False,
+                 pcie: bool = False,
+                 sync_enable: bool = True,
+                 record_shapes: bool = False,
+                 schedule: Optional[Callable[[int], ProfilerAction]] = None,
+                 on_trace_ready: Optional[Callable[..., Any]] = None,
+                 experimental_config: _ExperimentalConfig = None):
+        self._metadata: Dict[str, str] = {}
+        self._prof_context: ProfilerContext = ProfilerContext()
+        kwargs = {
+            "activities": activities,
+            "with_stack": with_stack,
+            "profile_memory": profile_memory,
+            "data_process": data_process,
+            "parallel_strategy": parallel_strategy,
+            "start_profile": start_profile,
+            "hbm_ddr": hbm_ddr,
+            "pcie": pcie,
+            "sync_enable": sync_enable,
+            "record_shapes": record_shapes,
+            "schedule": schedule,
+            "on_trace_ready": on_trace_ready,
+            "experimental_config": experimental_config,
+        }
+        self._prof_context.set_params(**kwargs)
+        self._has_started: bool = False
+        if schedule and isinstance(schedule, Callable):
+            self.schedule = schedule
+            # add step markers into the trace and table view
+            self.record_steps = True
+        else:
+            if schedule:
+                logger.warning("schedule is not Callable, set by default.")
+            self.schedule = _default_schedule_fn
+            self.record_steps = False
+        self._step_rec_fn: Optional[RecordFunction] = None
+        self.step_num = 0
+        self.current_action: ProfilerAction = self.schedule(self.step_num)
+        self.action_controller = ProfilerActionController(ProfilerInterface, self._prof_context.on_trace_ready)
+        if self._prof_context.start_profile:
+            self.start()
 
     def start(self) -> None:
         """
@@ -929,7 +914,14 @@ class Profile:
             ...         prof.step()
             ...     prof.stop()
         """
-        self._profiler.start()
+        if self._has_started:
+            logger.warning("The profile has already started. Do not turn on again in the open state.")
+            return
+        self._has_started = True
+        self.action_controller.transit_action(ProfilerAction.NONE, self.current_action)
+        if self.record_steps:
+            self._step_rec_fn = RecordFunction(ProfilerStepNameConstant.PROFILER_STEP + str(self.step_num))
+            self._step_rec_fn.start()
 
     def stop(self) -> None:
         """
@@ -993,7 +985,13 @@ class Profile:
             ...         prof.step()
             ...     prof.stop()
         """
-        self._profiler.stop()
+        if not self._has_started:
+            logger.error("The profile has not started. Do not turn off again in the closed state.")
+            return
+        self._has_started = False
+        if self.record_steps and self._step_rec_fn:
+            self._step_rec_fn.stop()
+        self.action_controller.transit_action(self.current_action, None)
 
     def step(self) -> None:
         """
@@ -1056,7 +1054,18 @@ class Profile:
         ...             train(net)
         ...             prof.step()
         """
-        self._profiler.step()
+        if not self._has_started:
+            logger.error("profile is stopped, step takes no effect!")
+            return
+        if self.record_steps and self._step_rec_fn:
+            self._step_rec_fn.stop()
+        prev_action = self.current_action
+        self.step_num += 1
+        self.current_action = self.schedule(self.step_num)
+        self.action_controller.transit_action(prev_action, self.current_action)
+        if self.record_steps:
+            self._step_rec_fn = RecordFunction(ProfilerStepNameConstant.PROFILER_STEP + str(self.step_num))
+            self._step_rec_fn.start()
 
     def add_metadata(self, key: str, value: str):
         """
@@ -1073,8 +1082,18 @@ class Profile:
             ...     # Call Profiler add_metadata
             ...     prof.add_metadata("test_key", "test_value")
         """
+        if not isinstance(key, str) or not isinstance(value, str):
+            logger.warning("The key and value of metadata must be string. Skip this metadata.")
+            return
 
-        self._profiler.add_metadata(key, value)
+        add_size = getsizeof(key) + getsizeof(value)
+        if getsizeof(self._metadata) + add_size < ProfilerMetaData.MAX_META_SIZE:
+            if key in self._metadata:
+                logger.warning(f"{key} is already saved as metadata, override it.")
+            self._metadata[key] = value
+            ProfilerMetaData.set_metadata(self._metadata)
+        else:
+            logger.warning("Too many metadata added. Skip this metadata")
 
     def add_metadata_json(self, key: str, value: str):
         """
@@ -1092,7 +1111,35 @@ class Profile:
             ...     # Call Profiler add_metadata_json
             ...     prof.add_metadata_json("test_key", json.dumps({"key1": 1, "key2": 2}))
         """
-        self._profiler.add_metadata_json(key, value)
+        if not isinstance(key, str) or not isinstance(value, str):
+            logger.warning("The key and value of metadata must be string. Skip this metadata.")
+            return
+
+        add_size = getsizeof(key) + getsizeof(value)
+        if getsizeof(self._metadata) + add_size < ProfilerMetaData.MAX_META_SIZE:
+            try:
+                if key in self._metadata:
+                    logger.warning(f"{key} is already saved as metadata, override it.")
+                self._metadata[key] = json.loads(value)
+                ProfilerMetaData.set_metadata(self._metadata)
+            except ValueError:
+                logger.warning("The metadata value must be json format string. Skip this metadata")
+        else:
+            logger.warning("Too many metadata added. Skip this metadata")
+
+    def __enter__(self) -> 'Profile':
+        if not self._has_started:
+            self.start()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
+        if self._has_started:
+            self.stop()
+
+    def __del__(self):
+        if self._has_started:
+            self.stop()
+            logger.warning("profile is stopped at the end of the program.")
 
 
 def analyse(profiler_path: str, max_process_number: int = os.cpu_count() // 2, pretty=False, step_list=None,

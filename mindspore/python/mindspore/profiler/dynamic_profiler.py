@@ -24,7 +24,9 @@ import multiprocessing
 
 from mindspore import log as logger
 from mindspore.train import Callback
-from mindspore.profiler import Profiler, tensorboard_trace_handler, schedule
+from mindspore.profiler import tensorboard_trace_handler, schedule
+from mindspore.profiler.profiler import Profile
+from mindspore.profiler.experimental_config import _ExperimentalConfig
 from mindspore.profiler.common.file_manager import FileManager
 from mindspore.profiler.common.path_manager import PathManager
 from mindspore.profiler.dynamic_profile.dynamic_profiler_config_context import DynamicProfilerConfigContext
@@ -115,10 +117,15 @@ class DynamicProfilerMonitorBase(Callback):
                 return
 
             if self._profiler is None:
-                prof_path = os.path.join(self._output_path, f"rank{self._rank_id}_start{start_step}_stop{stop_step}")
+                output_path = prof_args.prof_path if prof_args.prof_path != "./" else self._output_path
+                prof_path = os.path.join(
+                    output_path,
+                    f"rank{self._rank_id}_start{start_step}_stop{stop_step}"
+                )
                 PathManager.check_input_directory_path(prof_path)
-                self._profiler = Profiler(on_trace_ready=tensorboard_trace_handler(dir_name=prof_path),
-                                          start_profile=False, **prof_args.args)
+                profiler_config = self.get_prof_config(prof_args, prof_path, start_step, stop_step, start_profile=False,
+                                                       skip_first=0)
+                self._profiler = Profile(**profiler_config)
                 print_msg(f"Rank {self._rank_id} create output path {prof_path}")
 
             self._profiler.start()
@@ -127,6 +134,54 @@ class DynamicProfilerMonitorBase(Callback):
             self._last_stop_step = stop_step
             print_msg(f"Rank {self._rank_id} Dynamic profiler start at step {start_step}, "
                       f"will stop at step {stop_step}")
+
+    @staticmethod
+    def get_prof_config(prof_args, prof_path, start_step, stop_step, start_profile, skip_first):
+        """
+        Get profiler config.
+
+        Args:
+            prof_args: Profiler config.
+            prof_path: Profiler output path.
+            start_step: Start step.
+            stop_step: Stop step.
+            start_profile: enable start_profile.
+            skip_first: skip first step.
+        """
+        profiler_config = {
+            "activities": prof_args.args.get("activities"),
+            "with_stack": prof_args.args.get("with_stack"),
+            "profile_memory": prof_args.args.get("profile_memory"),
+            "parallel_strategy": prof_args.args.get("parallel_strategy"),
+            "start_profile": start_profile,
+            "record_shapes": prof_args.args.get("record_shapes"),
+            "schedule": schedule(
+                wait=0,
+                warmup=0,
+                active=stop_step - start_step + 1,
+                repeat=1,
+                skip_first=skip_first
+            ),
+            "on_trace_ready": tensorboard_trace_handler(
+                dir_name=prof_path,
+                analyse_flag=prof_args.analyse,
+                async_mode=prof_args.analyse_mode == "async",
+            ),
+            "experimental_config": _ExperimentalConfig(
+                profiler_level=prof_args.args.get("profiler_level"),
+                aic_metrics=prof_args.args.get("aic_metrics"),
+                l2_cache=prof_args.args.get("l2_cache"),
+                mstx=prof_args.args.get("mstx"),
+                data_simplification=prof_args.args.get("data_simplification"),
+                export_type=prof_args.args.get("export_type"),
+                mstx_domain_include=prof_args.args.get("mstx_domain_include"),
+                mstx_domain_exclude=prof_args.args.get("mstx_domain_exclude"),
+                sys_io=prof_args.args.get("sys_io"),
+                sys_interconnection=prof_args.args.get("sys_interconnection"),
+                host_sys=prof_args.args.get("host_sys")
+            )
+        }
+        return profiler_config
 
     @no_exception_func()
     def step_end(self, run_context):
@@ -146,20 +201,16 @@ class DynamicProfilerMonitorBase(Callback):
         if prof_args.stop_step == -1:
             return
 
+        if self._profiler:
+            self._profiler.step()
+
         cb_params = run_context.original_args()
         step_num = cb_params.cur_step_num
 
         if step_num == self._last_stop_step and self._is_started:
-            if self._profiler:
-                self._profiler.stop()
-                if prof_args.analyse_mode:
-                    self._profiler.analyse(mode=prof_args.analyse_mode)
-                else:
-                    ProfilerInterface.finalize()
-                    ProfilerInterface.clear()
-                self._profiler = None
-                self._is_started = False
-                print_msg(f"Rank {self._rank_id} Dynamic profiler stop at step {step_num}")
+            self._profiler = None
+            self._is_started = False
+            print_msg(f"Rank {self._rank_id} Dynamic profiler stop at step {step_num}")
 
     @no_exception_func()
     def step(self):
@@ -291,7 +342,6 @@ class DynamicProfilerMonitorBase(Callback):
                 return
 
             # Setup profiler configuration
-            active_steps = stop_step - start_step + 1
             output_path = args.prof_path if args.prof_path != "./" else self._output_path
             prof_path = os.path.join(
                 output_path,
@@ -302,23 +352,9 @@ class DynamicProfilerMonitorBase(Callback):
                 f"Rank {self._rank_id} Dynamic profile start at step {start_step}, "
                 f"will stop at step {stop_step}"
             )
-            profiler_config = {
-                "schedule": schedule(
-                    wait=0,
-                    warmup=0,
-                    active=active_steps,
-                    repeat=1,
-                    skip_first=1
-                ),
-                "on_trace_ready": tensorboard_trace_handler(
-                    dir_name=prof_path,
-                    analyse_flag=args.analyse,
-                    async_mode=args.analyse_mode == "async",
-                ),
-                **args.args
-            }
-
-            self._profiler = Profiler(**profiler_config)
+            profiler_config = self.get_prof_config(args, prof_path, start_step, stop_step, start_profile=True,
+                                                   skip_first=1)
+            self._profiler = Profile(**profiler_config)
 
     def _is_valid_start_stop_step(self, step_num, start_step, stop_step):
         """Verify whether start_step and stop_step are valid parameters."""

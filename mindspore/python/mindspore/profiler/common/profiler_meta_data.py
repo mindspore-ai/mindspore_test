@@ -30,6 +30,7 @@ class ProfilerMetaData:
         This class is used to handle metadata.
     """
     metadata: Dict[str, str] = {}
+    MAX_META_SIZE = 100 * 1024 * 1024  # 100MB
 
     @classmethod
     def get_metadata(cls) -> Dict[str, str]:

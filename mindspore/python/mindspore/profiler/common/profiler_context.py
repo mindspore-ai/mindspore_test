@@ -43,6 +43,7 @@ from mindspore.profiler.schedule import Schedule
 from mindspore import context
 from mindspore import log as logger
 from mindspore.profiler.common.profiler_info import ProfilerInfo
+from mindspore.profiler.experimental_config import _ExperimentalConfig
 
 
 @Singleton
@@ -81,11 +82,33 @@ class ProfilerContext:
                 logger.warning(f"Both on_trace_ready path and output_path are provided. "
                                f"The on_trace_ready path takes effect. Final path is {final_path}")
             kwargs["output_path"] = final_path
-
+        if kwargs.get("experimental_config"):
+            self._check_and_set_experimental_params(kwargs)
         self._profiler_params_mgr: ProfilerParameters = ProfilerParameters(**kwargs)
         self._profiler_path_mgr: ProfilerOutputPath = ProfilerOutputPath(rank_id=int(self._rank_id))
-
         self._profiler_path_mgr.output_path = self._profiler_params_mgr.output_path
+
+    @staticmethod
+    def _check_and_set_experimental_params(kwargs):
+        """
+        Set experimental parameters
+        """
+        if not isinstance(kwargs.get("experimental_config"), _ExperimentalConfig):
+            logger.warning("For Profiler, experimental_config value must be the "
+                           "'mindspore.profiler._ExperimentalConfig' class, "
+                           "reset to default value.")
+            return
+        kwargs["profiler_level"] = kwargs.get("experimental_config").profiler_level
+        kwargs["aic_metrics"] = kwargs.get("experimental_config").aic_metrics
+        kwargs["l2_cache"] = kwargs.get("experimental_config").l2_cache
+        kwargs["mstx"] = kwargs.get("experimental_config").mstx
+        kwargs["data_simplification"] = kwargs.get("experimental_config").data_simplification
+        kwargs["export_type"] = kwargs.get("experimental_config").export_type
+        kwargs["mstx_domain_include"] = kwargs.get("experimental_config").mstx_domain_include
+        kwargs["mstx_domain_exclude"] = kwargs.get("experimental_config").mstx_domain_exclude
+        kwargs["sys_io"] = kwargs.get("experimental_config").sys_io
+        kwargs["sys_interconnection"] = kwargs.get("experimental_config").sys_interconnection
+        kwargs["host_sys"] = kwargs.get("experimental_config").host_sys
 
     @property
     def on_trace_ready_output_path(self) -> str:

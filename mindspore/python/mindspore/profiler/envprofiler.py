@@ -16,7 +16,9 @@
 import os
 import json
 from mindspore import log as logger
-from mindspore.profiler.profiler import Profiler
+from mindspore.profiler.profiler import Profile
+from mindspore.profiler.experimental_config import _ExperimentalConfig
+from mindspore.profiler import tensorboard_trace_handler
 from mindspore.profiler.common.constant import (
     ProfilerLevel,
     AicoreMetrics,
@@ -47,8 +49,31 @@ class EnvProfiler:
 
         params = cls._convert_options_to_profiler_params(options)
         logger.info(f"params: {params}")
-        if params["start_profile"]:
-            cls.profiler = Profiler(**params)
+        if params["start"]:
+            experimental_config = _ExperimentalConfig(profiler_level=params.get("profiler_level"),
+                                                      aic_metrics=params.get("aic_metrics"),
+                                                      l2_cache=params.get("l2_cache"),
+                                                      mstx=params.get("mstx"),
+                                                      data_simplification=params.get("data_simplification"),
+                                                      export_type=params.get("export_type"),
+                                                      mstx_domain_include=params.get("mstx_domain_include"),
+                                                      mstx_domain_exclude=params.get("mstx_domain_exclude"),
+                                                      sys_io=params.get("sys_io"),
+                                                      sys_interconnection=params.get("sys_interconnection"),
+                                                      host_sys=params.get("host_sys"))
+            cls.profiler = Profile(activities=params.get("activities"),
+                                   with_stack=params.get("with_stack"),
+                                   profile_memory=params.get("profile_memory"),
+                                   data_process=params.get("data_process"),
+                                   parallel_strategy=params.get("parallel_strategy"),
+                                   start_profile=params.get("start_profile"),
+                                   hbm_ddr=params.get("hbm_ddr"),
+                                   pcie=params.get("pcie"),
+                                   sync_enable=params.get("sync_enable"),
+                                   record_shapes=params.get("record_shapes"),
+                                   on_trace_ready=tensorboard_trace_handler(params.get("output_path")),
+                                   experimental_config=experimental_config)
+            cls.profiler.start()
             logger.info("Profiler init success.")
 
     def analyse(self):
@@ -59,7 +84,7 @@ class EnvProfiler:
         if not self.profiler:
             logger.info("Profiler is not initialized, skip analyse.")
             return
-        self.profiler.analyse()
+        self.profiler.stop()
         logger.info("analyse end")
 
     @classmethod
@@ -101,7 +126,7 @@ class EnvProfiler:
             params["output_path"] = options["output_path"]
 
         # if start is not set, default is False
-        params["start_profile"] = options.get("start", False)
+        params["start"] = options.get("start", False)
 
         for param, (_, default_value) in ProfilerParameters.PARAMS.items():
             if param in options and param not in cls.NOT_SUPPORTED_PARAMS:
