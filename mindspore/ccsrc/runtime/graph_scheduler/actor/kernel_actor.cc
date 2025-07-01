@@ -904,23 +904,8 @@ void *KernelActor::GetSomasDevicePtr(size_t offset) const {
 }
 
 void KernelActor::TraceDynamicMemory() {
-  for (size_t i = 0; i < output_kernel_tensors_.size(); i++) {
-    if (!is_output_kernel_[i]) {
-      const auto &kernel_tensor = output_kernel_tensors_[i];
-      MemoryTraceManager::GetInstance().AddKernelMemoryTraceBlock(
-        std::make_shared<KernelMemoryTraceBlock>(kernel_, kernel_tensor->device_ptr(), kernel_tensor->size(),
-                                                 kOutputMem, i, kernel_tensor.get()),
-        device_contexts_[0]);
-    }
-  }
-
-  for (size_t i = 0; i < workspace_kernel_tensors_.size(); i++) {
-    const auto &kernel_tensor = workspace_kernel_tensors_[i];
-    MemoryTraceManager::GetInstance().AddKernelMemoryTraceBlock(
-      std::make_shared<KernelMemoryTraceBlock>(kernel_, kernel_tensor->device_ptr(), kernel_tensor->size(),
-                                               kWorkspaceMem, i, kernel_tensor.get()),
-      device_contexts_[0]);
-  }
+  MS_LOG(EXCEPTION) << "Trace dynamic memory for inference must be used in kbk sub-graph execute mode, not support "
+                       "KernelActor with message mechanism.";
 }
 
 void KernelActor::SendMemoryAllocReq(OpContext<KernelTensor> *const context) {
