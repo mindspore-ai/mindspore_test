@@ -204,8 +204,7 @@ void CastOperation::DoSignatureCast(const FrontendOpRunInfoPtr &op_run_info,
     }
     auto it = dst_type.find(dtypes[i]);
     if (it == dst_type.end() || it->second.first == kTypeUnknown) {
-      MS_LOG(DEBUG) << "Can not find dtype " << (it == dst_type.end()) << ", or type is unknown "
-                    << (it->second.first == kTypeUnknown);
+      MS_LOG(DEBUG) << "Can not find dtype " << dtypes[i] << ", or type is unknown";
       continue;
     }
     const auto &v = input_args[i];
