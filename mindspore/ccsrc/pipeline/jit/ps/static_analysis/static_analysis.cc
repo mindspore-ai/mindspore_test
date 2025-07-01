@@ -446,6 +446,7 @@ bool MatchMetaFg(const ValuePtr &prim) {
 }
 
 void RemoveSequenceFromOrderList(const CNodePtr &origin_cnode) {
+  MS_EXCEPTION_IF_NULL(origin_cnode);
   constexpr size_t sequence_input_pos = 2;
   if (origin_cnode->size() <= sequence_input_pos) {
     return;
@@ -469,6 +470,7 @@ AbstractBasePtr GetEvalResult(const AnfNodePtr &node, const AnalysisEnginePtr &e
 
 bool IsFuncGraphAbstractInput(const CNodePtr &origin_cnode, const AnalysisEnginePtr &engine,
                               const AnfNodeConfigPtr &conf) {
+  MS_EXCEPTION_IF_NULL(origin_cnode);
   auto possible_func = GetEvalResult(origin_cnode->input(1), engine, conf);
   if (possible_func == nullptr || !possible_func->isa<FuncGraphAbstractClosure>()) {
     return false;
@@ -504,6 +506,7 @@ bool IsFuncGraphAbstractInput(const CNodePtr &origin_cnode, const AnalysisEngine
 AnfNodePtr InsertUnpackGraph(const CNodePtr &origin_cnode, const ValuePtr &value, const AnfNodeConfigPtr &conf,
                              const AnalysisEnginePtr &engine) {
   // origin_cnode is {meta_fg, g, ...}
+  MS_EXCEPTION_IF_NULL(origin_cnode);
   const size_t inputs_x_minimum_size = 2;
   if (origin_cnode->size() < inputs_x_minimum_size) {
     return nullptr;
@@ -517,7 +520,9 @@ AnfNodePtr InsertUnpackGraph(const CNodePtr &origin_cnode, const ValuePtr &value
     return nullptr;
   }
 
-  auto manager = conf->engine()->func_graph_manager();
+  auto conf_engine = conf->engine();
+  MS_EXCEPTION_IF_NULL(conf_engine);
+  auto manager = conf_engine->func_graph_manager();
   MS_EXCEPTION_IF_NULL(manager);
   auto node_users = manager->node_users()[origin_cnode];
   if (node_users.empty()) {
@@ -736,6 +741,7 @@ void SynchronizeSequenceElementsUseFlagsForFuncGraphArgs(const AnalysisEnginePtr
   // Get the evaluator for func graph.
   auto evaluator = engine->GetEvaluatorFor(base_func_graph_func);
   MS_EXCEPTION_IF_NULL(evaluator);
+  MS_EXCEPTION_IF_NULL(cnode);
 
   AbstractBasePtrList args_abs_list;
   for (std::size_t i = 1; i < cnode->size(); i++) {
@@ -1961,7 +1967,7 @@ AbstractBasePtr ToAbstract(const ValuePtr &value, const AnalysisContextPtr &cont
     return abs;
   }
   if (value->isa<ValueDictionary>() && anf_node != nullptr) {
-    auto abs = value->ToAbstract();
+    const auto &abs = value->ToAbstract();
     MS_EXCEPTION_IF_NULL(abs);
     // Attach corresponding python dictionary object to AbstractDictionary.
     py::object py_dict_obj =
@@ -2009,7 +2015,7 @@ EvalResultPtr EvalOnePrim(const PrimitivePtr &primitive, const AbstractBasePtrLi
 AnalysisContextPtr NewContext(const AnalysisContextPtr &current_context, const FuncGraphPtr &fg,
                               const AbstractBasePtrList &args_abs_list) {
   MS_EXCEPTION_IF_NULL(fg);
-  auto new_context = current_context->NewContext(fg, args_abs_list);
+  const auto &new_context = current_context->NewContext(fg, args_abs_list);
   if (new_context == nullptr) {  // Not obtain context for fg->parent() during create context.
     if (common::GetCompileConfig("STRICT_CHECK_PARENT_CONTEXT") != "1") {
       MS_LOG(INFO) << "Failed to find parent context in current context, use dummy context instead.";
