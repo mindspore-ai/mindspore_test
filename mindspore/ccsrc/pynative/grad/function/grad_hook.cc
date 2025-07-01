@@ -73,11 +73,14 @@ size_t GradHook::output_index(const TensorPtr &self) const {
 }
 
 bool GradHook::requires_grad(const TensorPtr &self) const {
-  runtime::Pipeline::Get().WaitBpropStage();
-  auto grad_meta = self->auto_grad_meta_data();
+  if (self->param_info() != nullptr && self->param_info()->requires_grad()) {
+    return true;
+  }
+  const auto &grad_meta = self->auto_grad_meta_data();
   if (grad_meta == nullptr) {
     return false;
   }
+  runtime::Pipeline::Get().WaitBpropStage();
   return self->auto_grad_meta_data()->requires_grad();
 }
 
@@ -98,8 +101,8 @@ void GradHook::set_requires_grad(const TensorPtr &self, bool requires_grad) {
   grad_meta->set_requires_grad(requires_grad);
   if (impl::GetUnsafeGradNodeImpl(self) == nullptr && requires_grad) {
     grad_meta->set_grad_node(std::make_shared<autograd::LeafNode>(
-      self->param_info() != nullptr ? self->param_info()->name() : "input_" + self->id(), self, self->shape(),
-      self->Dtype(), self->is_parameter()));
+      self->param_info() != nullptr ? self->param_info()->name() : "input_" + std::to_string(self->id()), self,
+      self->shape(), self->Dtype(), self->is_parameter()));
     grad_meta->set_input_type(self->is_parameter() ? InputType::kParameter : InputType::kInput);
   }
 }

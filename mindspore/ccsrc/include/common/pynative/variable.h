@@ -230,7 +230,7 @@ class COMMON_EXPORT BackwardNode : public std::enable_shared_from_this<BackwardN
 
   /// check next edges is all not defined.
   /// \return true
-  bool IsEmpty();
+  bool IsEmpty() const;
 
   /// \brief The PostProcess function is used to represent this node's inputs, which can
   /// backpropagation gradients.
@@ -249,6 +249,10 @@ class COMMON_EXPORT BackwardNode : public std::enable_shared_from_this<BackwardN
   /// \brief name of this Node.
   /// \return name
   const std::string &name() const { return name_; }
+
+  /// \brief Unique id of this Node.
+  /// \return unqiue id
+  std::string UniqueId() const { return name_ + std::to_string(seq_id_); }
 
   /// \brief Check func to check whether the version of input is changed.
   /// \return check_func

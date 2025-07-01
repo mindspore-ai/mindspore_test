@@ -117,7 +117,7 @@ ValuePtrList BackwardNode::PostProcess(const ValuePtrList &gradient_value) {
   return flatten_gradients;
 }
 
-bool BackwardNode::IsEmpty() {
+bool BackwardNode::IsEmpty() const {
   if (std::all_of(next_edges().begin(), next_edges().end(),
                   [](const Edge &edge) -> bool { return !edge.is_defined(); })) {
     return true;
@@ -127,7 +127,7 @@ bool BackwardNode::IsEmpty() {
 
 std::string BackwardNode::ToString() const {
   std::ostringstream buf;
-  buf << "Node name: " << name() << "\n";
+  buf << "Parent node: " << UniqueId() << "\n";
   for (size_t i = 0; i < next_edges().size(); ++i) {
     if (!next_edges()[i].is_defined()) {
       buf << "Last edge: " << i << " undefined edge"
@@ -136,7 +136,7 @@ std::string BackwardNode::ToString() const {
     }
     const auto &last_grad_node = next_edges()[i].grad_node;
     auto index = next_edges()[i].input_index;
-    buf << "Last edge: " << i << ", node name: " << last_grad_node->name() << ", output index: " << index << "\n";
+    buf << "Last edge: " << i << ", node name: " << last_grad_node->UniqueId() << ", output index: " << index << "\n";
   }
   return buf.str();
 }
@@ -158,7 +158,7 @@ AutoGradMetaDataPtr GetAutogradMetaImpl(const tensor::TensorPtr &tensor) {
 }
 
 AutoGradMetaDataPtr GetAutogradMetaImpl(const tensor::Tensor &tensor) {
-  auto auto_grad_meta = tensor.auto_grad_meta_data();
+  const auto &auto_grad_meta = tensor.auto_grad_meta_data();
   if (auto_grad_meta == nullptr) {
     return nullptr;
   }

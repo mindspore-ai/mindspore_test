@@ -23,6 +23,7 @@ namespace mindspore::pynative::autograd {
 namespace py = pybind11;
 namespace {
 void BackwardNode_PyDealloc(PyObject *self) {
+  reinterpret_cast<BackwardNodePy *>(self)->cdata.reset();
   reinterpret_cast<BackwardNodePy *>(self)->cdata.~shared_ptr();
   Py_TYPE(self)->tp_free(self);
 }
