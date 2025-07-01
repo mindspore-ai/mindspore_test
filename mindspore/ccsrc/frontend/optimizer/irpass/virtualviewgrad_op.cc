@@ -17,6 +17,7 @@
 #include "frontend/optimizer/irpass/virtualviewgrad_op.h"
 
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 #include <utility>
@@ -47,8 +48,10 @@ void InsertVirtualViewGradInner(const FuncGraphPtr &func_graph, const CNodePtr &
   while (true) {
     const auto &view_output_node_inputs = view_output->inputs();
     auto view_input = view_output_node_inputs[1];
-    const auto &ori_view_op = GetCNodePrimitive(view_output)->Clone();
-    auto view_op_node = NewValueNode(ori_view_op);
+    const auto &ori_view_name = GetCNodePrimitive(view_output)->ToString();
+    MS_LOG(DEBUG) << "The name of view operator is: " << ori_view_name;
+    auto view_op_node = NewValueNode(ori_view_name);
+
     // To calculate dout for view_input and view_output, insert origin view cnode inputs:
     // ==> view_output = {kPrimViewOp, view_input, other_view_arg1, other_view_arg2, ..., U_for_view}
     // ==> From: VirtualViewGrad(view_input, view_output, U_for_virtual_view_grad)
@@ -179,8 +182,20 @@ bool CheckControlFlow(const PrimitivePtr &prim, const CNodePtr &cnode) {
     auto input_ref = input_abs->cast<abstract::AbstractRefPtr>();
     if (input_ref->is_view_output()) {
       auto view_op = input_ref->user_data<CNode>(kOriginalViewOp);
-      if (view_op == nullptr || view_op->func_graph() != cnode->func_graph()) {
-        return true;
+
+      std::string view_inplace_grad_config = common::GetCompileConfig("ENABLE_VIEW_INPLACE_GRAD_SCHEME_CHOOSE");
+      if (view_inplace_grad_config == "0") {
+        // Exist view inplace control flow which new scheme can not support.
+        if (view_op == nullptr) {
+          return true;
+        }
+        if (view_op->func_graph() != cnode->func_graph()) {
+          return false;
+        }
+      } else {
+        if (view_op == nullptr || view_op->func_graph() != cnode->func_graph()) {
+          return true;
+        }
       }
     }
   }
@@ -240,6 +255,14 @@ void MarkViewOpToAbstract(const FuncGraphPtr &func_graph, bool *control_flow_sce
       return;
     }
   }
+}
+
+std::string GetRealOpName(const std::string &str) {
+  const std::string prefix = "PrimFunc_";
+  if (str.rfind(prefix, 0) == 0) {
+    return str.substr(prefix.length());
+  }
+  return str;
 }
 }  // namespace
 
@@ -310,6 +333,31 @@ bool PreprocessForVirtualViewGradInsert(const FuncGraphPtr &root, const opt::Opt
     }
   }
   return false;
+}
+
+void ConvertViewOpNameInVirtualViewGrad(const FuncGraphPtr &func_graph, const opt::OptimizerPtr &optimizer) {
+  MS_EXCEPTION_IF_NULL(func_graph);
+  MS_EXCEPTION_IF_NULL(optimizer);
+  const auto &nodes = TopoSort(func_graph->get_return(), SuccDeeperSimple);
+  auto manager = optimizer->manager();
+  for (size_t i = 0; i < nodes.size(); ++i) {
+    if (!IsPrimitiveCNode(nodes[i], prim::kPrimVirtualViewGrad)) {
+      continue;
+    }
+    constexpr size_t view_op_index = 3;
+    auto cnode = nodes[i]->cast<CNodePtr>();
+    const auto inputs = cnode->inputs();
+    if (inputs.size() <= view_op_index) {
+      MS_LOG(INTERNAL_EXCEPTION) << "The VirtualViewGrad operator is wrong: " << cnode->DebugString();
+    }
+    auto view_op_name = cnode->input(view_op_index);
+    auto view_value = view_op_name->cast<ValueNodePtr>();
+    std::string real_name = GetRealOpName(view_value->value()->ToString());
+    auto prim = std::make_shared<Primitive>(real_name);
+    auto prim_node = NewValueNode(prim);
+    prim_node->set_abstract(std::make_shared<abstract::PrimitiveAbstractClosure>(prim));
+    manager->Replace(view_op_name, prim_node);
+  }
 }
 }  // namespace irpass
 }  // namespace opt
