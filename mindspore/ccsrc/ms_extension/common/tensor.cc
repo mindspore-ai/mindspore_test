@@ -17,6 +17,7 @@
 #include "ms_extension/common/tensor.h"
 #include <functional>
 #include "ir/tensor.h"
+#include "ir/tensor_api.h"
 #include "mindspore/ccsrc/include/common/utils/tensor_utils.h"
 #include "mindspore/ccsrc/pynative/pynative_utils.h"
 #include "mindspore/ccsrc/pipeline/jit/ps/parse/data_converter.h"
@@ -28,7 +29,7 @@ Tensor::RealTensorHolder::RealTensorHolder(const mindspore::ValuePtr &value)
     : value_(value), tensor_(value->cast<mindspore::tensor::TensorPtr>()) {}
 
 Tensor::Tensor(TypeId type_id, const ShapeVector &shape)
-    : Tensor(std::make_shared<mindspore::tensor::Tensor>(type_id, shape)) {}
+    : Tensor(mindspore::tensor::empty(type_id, shape, mindspore::device::DeviceType::kNone)) {}
 
 Tensor::Tensor(const mindspore::ValuePtr &value) {
   if (value != nullptr) {
@@ -41,9 +42,6 @@ void *Tensor::GetDataPtr() const {
   MS_EXCEPTION_IF_NULL(t);
   auto device_address = t->device_address();
   MS_EXCEPTION_IF_NULL(device_address);
-  if (device_address->GetDeviceType() == mindspore::device::DeviceType::kCPU) {
-    return nullptr;
-  }
   int64_t offset = static_cast<int64_t>(t->DataItemSize()) * t->storage_offset();
   return static_cast<void *>(static_cast<int8_t *>(t->device_address()->GetMutablePtr()) + offset);
 }
