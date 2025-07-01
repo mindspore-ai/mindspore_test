@@ -108,10 +108,10 @@ void ParamReplication::Init() {
 struct ExchangeDevAddr {
   explicit ExchangeDevAddr(const AscendDeviceResManager *res_mgr) : res_mgr_(res_mgr) {}
   ~ExchangeDevAddr() {
-    if (send_dev_addr != nullptr) {
+    if (send_dev_addr != nullptr && res_mgr_ != nullptr) {
       res_mgr_->FreeMemory(send_dev_addr);
     }
-    if (recv_dev_addr != nullptr) {
+    if (recv_dev_addr != nullptr && res_mgr_ != nullptr) {
       res_mgr_->FreeMemory(recv_dev_addr);
     }
   }
@@ -122,6 +122,8 @@ struct ExchangeDevAddr {
 
 int ParamReplication::DoParamInfoExchange(DataExchangeInfo *local_info, DataExchangeInfo *remote_info, int src_rank,
                                           int dst_rank) {
+  MS_EXCEPTION_IF_NULL(local_info);
+  MS_EXCEPTION_IF_NULL(remote_info);
   size_t xchg_info_size = local_info->GetSize() * sizeof(int64_t);
   ExchangeDevAddr addr(res_mgr_);
   addr.send_dev_addr = res_mgr_->AllocateMemory(xchg_info_size, stream_id_);
@@ -282,7 +284,7 @@ int ParamReplication::SendRecv(const std::vector<tensor::TensorPtr> &params, int
                       << ", total MOC size :" << device_hbm_total_size;
   }
   MS_LOG(INFO) << "device_moc_free_size=" << device_hbm_free_size / kMegaByte
-               << "MB, device_moc_total_size=" << device_hbm_total_size / kMegaByte;
+               << "MB, device_moc_total_size=" << device_hbm_total_size / kMegaByte << "MB";
 
   DataExchangeInfo local_info(params, device_hbm_free_size);
   DataExchangeInfo remote_info(params.size());
