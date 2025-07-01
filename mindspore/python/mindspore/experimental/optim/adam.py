@@ -81,6 +81,9 @@ class Adam(Optimizer):
             &\rule{180mm}{0.4pt}                                                          \\[-1.ex]
        \end{aligned}
 
+    For more details about Adam algorithm, please refer to `Adam: A Method for Stochastic Optimization
+    <https://arxiv.org/abs/1412.6980>`_.
+
     .. warning::
         The implementation formula of this optimizer interface is not completely consistent with that in the paper.
         If you want to use an interface that is completely consistent, it is recommended to use
