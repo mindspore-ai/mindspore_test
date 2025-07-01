@@ -44,4 +44,4 @@ def test_x():
     net = Net(x)
     with pytest.raises(ValueError) as ex:
         net(x)
-        assert "the dimension of \'indices\' must be greater than or equal to 2" in str(ex.value)
+    assert "the dimension of \'indices\' must be greater than or equal to 2" in str(ex.value)
