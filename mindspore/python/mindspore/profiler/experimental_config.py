@@ -83,17 +83,26 @@ class _ExperimentalConfig:
         sys_interconnection (bool, optional): (Ascend only) Whether to collect system interconnection data, including
             HCCS data, PCIe data, and Stars Chip Trans. Default: ``False``.
         host_sys (list, optional): Collect the data of system call classes on the host side.
-            Default: ``[]``.
+            Default: ``[]``, indicating that system class data on the host side is not collected.
+            You need to set `start_profile` of :class:`mindspore.profiler.profile` to ``False``.When collecting DISK or
+            OSRT data, it is necessary to install the iotop, perf, and ltrace third-party tools in advance.
+            For detailed steps, please refer to `Installing Third-party Tools
+            <https://www.hiascend.com/document/detail/zh/mindstudio/80RC1/T&ITools/Profiling/atlasprofiling_16_0136.
+            html>`_ .
+            After the third-party tool is successfully installed, user permissions need to be configured.
+            For detailed steps, please refer to `Configure User Permissions
+            <https://www.hiascend.com/document/detail/zh/mindstudio/80RC1/T&ITools/Profiling/atlasprofiling_16_0137.
+            html>`_ .
+            Note that in step 3 of configuring user permissions, the content in the msprof_data_collection.sh
+            script needs to be replaced with `msprof_data_collection.sh
+            <https://gitee.com/mindspore/mindspore/blob/master/docs/api/api_python/mindspore/script/
+            msprof_data_collection.sh>`_.
 
             - HostSystem.CPU: Collect the CPU utilization at the process level.
             - HostSystem.MEM: Collect the memory utilization at the process level.
             - HostSystem.DISK: Collect the disk I/O utilization at the process level.
-              You need to set `start_profile` of :class:`mindspore.profiler.profile` to ``False``.
             - HostSystem.NETWORK: Collect the network I/O utilization at the system level.
-            - HostSystem.OSRT: Collect system call stack data at the system level, note that when configuring user
-              permissions, replace the content of msporof_data_compling.sh with `msporof_data_compling.sh
-              <https://gitee.com/mindspore/mindspore/blob/master/docs/api/api_python/mindspore/script/msprof_data_collection.sh>`_.
-              You need to set `start_profile` of :class:`mindspore.profiler.profile` to ``False``.
+            - HostSystem.OSRT: Collect system call stack data at the system level.
 
     Raises:
         RuntimeError: When the version of CANN does not match the version of MindSpore,
@@ -144,8 +153,8 @@ class _ExperimentalConfig:
         ...     net = Net()
         ...     # Note that the Profiler should be initialized before model.train
         ...     with mindspore.profiler.profile(activities=[ProfilerActivity.CPU, ProfilerActivity.NPU],
-        ...                                     schedule=mindspore.profiler.schedule(wait=1, warmup=1, active=2,
-        ...                                           repeat=1, skip_first=2),
+        ...                                     schedule=mindspore.profiler.schedule(wait=0, warmup=0, active=1,
+        ...                                           repeat=1, skip_first=0),
         ...                                     on_trace_ready=mindspore.profiler.tensorboard_trace_handler("./data"),
         ...                                     profile_memory=False,
         ...                                     experimental_config=experimental_config) as prof:

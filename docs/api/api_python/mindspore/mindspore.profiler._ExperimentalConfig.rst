@@ -34,13 +34,16 @@ mindspore.profiler._ExperimentalConfig
         - **mstx_domain_exclude** (list, 可选) - （仅限Ascend）mstx开关打开时设置不使能的domain名称集合，且名称必须是str类型。默认值：``[]`` ，表示不使用该参数控制domain。
         - **sys_io** (bool, 可选) - （仅限Ascend）是否收集NIC和RoCE数据，当值为 ``True`` 时，收集这些数据。默认值： ``False`` 。
         - **sys_interconnection** (bool, 可选) - （仅限Ascend）是否收集系统互连数据，包括集合通信带宽数据（HCCS）、PCIe数据以及片间传输带宽信息，当值为 ``True`` 时，收集这些数据。默认值： ``False`` 。
-        - **host_sys** (list, 可选) - 表示采集host侧系统类调用类、存储类、cpu占用率数据。默认值： ``[]`` ，表示不采集host侧系统类数据。
+        - **host_sys** (list, 可选) - 表示采集host侧系统类调用类、存储类、cpu占用率数据。默认值： ``[]`` ，表示不采集host侧系统类数据。需要将 :class:`mindspore.profiler.profile` 中的 `start_profile` 参数设置为 ``False``。
+          在采集DISK或OSRT数据时，需要提前安装好iotop、perf、ltrace三方工具，详细步骤请参考 `安装三方工具 <https://www.hiascend.com/document/detail/zh/mindstudio/80RC1/T&ITools/Profiling/atlasprofiling_16_0136.html>`_ ；
+          安装三方工具成功后，需要配置用户权限，详细步骤请参考 `配置用户权限 <https://www.hiascend.com/document/detail/zh/mindstudio/80RC1/T&ITools/Profiling/atlasprofiling_16_0137.html>`_ ，
+          注意在配置用户权限的第3步中，需要将msprof_data_collection.sh脚本中的内容替换为 `msprof_data_collection.sh <https://gitee.com/mindspore/mindspore/blob/master/docs/api/api_python/mindspore/script/msprof_data_collection.sh>`_ 。
 
           - HostSystem.CPU：收集进程级别的CPU利用率。
           - HostSystem.MEM：收集进程级别的内存利用率。
-          - HostSystem.DISK：收集进程级别的磁盘I/O利用率。需要将 :class:`mindspore.profiler.profile` 中的 `start_profile` 参数设置为 ``False``。
+          - HostSystem.DISK：收集进程级别的磁盘I/O利用率。
           - HostSystem.NETWORK：收集系统级别的网络I/O利用率。
-          - HostSystem.OSRT：收集系统级别系统调用栈数据，注意在配置用户权限时，需要替换msprof_data_collection.sh内容为 `msprof_data_collection.sh <https://gitee.com/mindspore/mindspore/blob/master/docs/api/api_python/mindspore/script/msprof_data_collection.sh>`_。需要将 :class:`mindspore.profiler.profile` 中的 `start_profile` 参数设置为 ``False``。
+          - HostSystem.OSRT：收集系统级别系统调用栈数据。
 
     异常：
         - **RuntimeError** - 当CANN的版本与MindSpore版本不匹配时，MindSpore无法解析生成的ascend_job_id目录结构。

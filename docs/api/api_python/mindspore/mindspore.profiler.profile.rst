@@ -4,7 +4,7 @@ mindspore.profiler.profile
 .. py:class:: mindspore.profiler.profile(activities: list = None, with_stack: bool = False, profile_memory: bool = False, data_process: bool = False, parallel_strategy: bool = False, start_profile: bool = True, hbm_ddr: bool = False, pcie: bool = False, sync_enable: bool = True, record_shapes: bool = False, schedule: Schedule = None, on_trace_ready: Optional[Callable[..., Any]] = None, experimental_config: Optional[_ExperimentalConfig] = None)
 
     MindSpore用户能够通过该类对神经网络的性能进行采集。可以通过导入该类初始化profile对象，
-    使用 `profile.start()` 开始分析，并使用 `profile.stop()` 停止收集并分析结果。可通过
+    使用 `profile.start()` 开始分析，并使用 `profile.stop()` 停止收集并分析结果。详细使用请参考 `Ascend性能调优 <https://www.mindspore.cn/tutorials/zh-CN/master/debug/profiler.html>`_ 。可通过
     `MindStudio Insight <https://www.hiascend.com/developer/download/community/result?module=pt+sto+cann>`_
     工具可视化分析结果。目前，profile支持AICORE算子、AICPU算子、HostCPU算子、内存、设备通信、集群等数据的分析。
 
