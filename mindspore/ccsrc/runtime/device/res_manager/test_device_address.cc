@@ -57,8 +57,8 @@ bool TestResManager::AsyncCopy(const DeviceSyncPtr &dst_device_sync, const Devic
   MS_EXCEPTION_IF_NULL(dst_device_address);
   MS_EXCEPTION_IF_NULL(src_device_address);
   if (dst_device_address->GetSize() == 0 || src_device_address->GetSize() == 0) {
-    MS_LOG(INFO) << "No need sync for dst device address: " << dst_device_address->PrintInfo()
-                 << " and src device address: " << src_device_address->PrintInfo();
+    MS_LOG(INFO) << "No need sync for dst device address: " << dst_device_address->ToString()
+                 << " and src device address: " << src_device_address->ToString();
     return true;
   }
 
@@ -90,8 +90,8 @@ bool TestResManager::AsyncCopy(const DeviceSyncPtr &dst_device_sync, const Devic
       device::ConvertSameType(dst_device_address->GetMutablePtr(), src_device_address->GetMutablePtr(),
                               dst_device_address->GetSize(), src_type_id);
     } else if (ret_code != EOK) {
-      MS_LOG(ERROR) << "Failed to copy tensor from device address:" << src_device_address->PrintInfo()
-                    << " to :" << dst_device_address->PrintInfo();
+      MS_LOG(ERROR) << "Failed to copy tensor from device address:" << src_device_address->ToString()
+                    << " to :" << dst_device_address->ToString();
       return false;
     } else {
       return true;

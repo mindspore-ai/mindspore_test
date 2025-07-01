@@ -259,7 +259,7 @@ class TestDeviceContext : public device::DeviceInterface<TestKernelExecutor, Tes
 
   virtual void Initialize() {}
   virtual DeviceType GetDeviceType() const { return DeviceType::kCPU; }
-  device::RunMode GetRunMode(const FuncGraphPtr &func_graph) const override { return device::RunMode::kKernelMode; }
+
  private:
   std::shared_ptr<TestGraphExecutor> graph_executor_;
 };
