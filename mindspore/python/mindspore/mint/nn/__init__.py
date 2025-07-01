@@ -25,7 +25,7 @@ from mindspore.nn import AdaptiveMaxPool2d
 from mindspore.nn import SoftMarginLoss
 from mindspore.nn import EmbeddingExt as Embedding, MaxPool2dExt as MaxPool2d, LayerNormExt as LayerNorm, Linear
 import mindspore.nn as nn
-
+from mindspore.nn import *
 # 1
 
 # 2
@@ -54,13 +54,13 @@ from mindspore.nn.layer.basic import UpsampleExt as Upsample
 
 # 11
 from mindspore.nn.layer import ReLU
-
 # 12
 
 # 13
 
 # 14
 from mindspore.nn.layer.basic import DropoutExt as Dropout
+from mindspore.nn.layer.basic import Dropout3d
 # 15
 from mindspore.mint.nn.layer.conv import Conv1d, Conv2d, Conv3d, ConvTranspose2d
 # 16
