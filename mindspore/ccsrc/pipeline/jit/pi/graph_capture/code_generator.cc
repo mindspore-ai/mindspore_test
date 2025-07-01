@@ -979,9 +979,8 @@ void CodeGenerator::BuildOper(ValueNode *node, int index) {
     return;
   }
   if ((vm_mode_ && !node->IsVmNode()) || (!vm_mode_ && !node->IsGraphNode())) {
-    MS_LOG(INFO) << "Codegen mode and node mode mismatch, skip it! codegen mode:" << (vm_mode_ ? "vm" : "graph")
+    MS_LOG(INFO) << "Codegen mode and node mode mismatch. codegen mode:" << (vm_mode_ ? "vm" : "graph")
                  << ", node: " << ToString(node);
-    return;
   }
 
   int load_args_offset = code_.co_code.size();

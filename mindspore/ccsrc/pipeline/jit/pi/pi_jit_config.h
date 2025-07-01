@@ -53,6 +53,7 @@ class GraphJitConfig {
     kSubgraphBreakOpt,
     kFullGraph,
     kEnableOldGuardStrategy,
+    kTensorSetitemSideEffectOpt,
     /* ------------------------------ */
     kIntConf,
     kSymbolic,

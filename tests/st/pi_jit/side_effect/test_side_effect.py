@@ -22,7 +22,7 @@ import mindspore
 import types
 import numpy
 from tests.mark_utils import arg_mark
-from ..share.utils import match_array, match_value, assert_executed_by_graph_mode
+from tests.st.pi_jit.share.utils import match_array, match_value, assert_executed_by_graph_mode
 from tests.st.pi_jit.share.utils import pi_jit_with_config
 
 jit_cfg = {"compile_with_try":False}
