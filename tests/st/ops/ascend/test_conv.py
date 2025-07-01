@@ -12,17 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+from tests.mark_utils import arg_mark
 import numpy as np
 
 import mindspore.context as context
 import mindspore.nn as nn
 from mindspore import Tensor
-from mindspore.common.api import jit
 from mindspore.common.initializer import initializer
 from mindspore.common.parameter import Parameter
 from mindspore.ops import operations as P
-
-context.set_context(device_target="Ascend")
 
 
 class Net(nn.Cell):
@@ -41,13 +39,14 @@ class Net(nn.Cell):
         self.w = Parameter(initializer(
             'normal', [64, 3, 7, 7]), name='w')
 
-    @jit
     def construct(self, x):
         return self.conv(x, self.w)
 
-
+@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_net():
+    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
     x = np.random.randn(32, 3, 224, 224).astype(np.float32)
     conv = Net()
     output = conv(Tensor(x))
-    print(output.asnumpy())
+    assert output.shape == (32, 64, 218, 218)
