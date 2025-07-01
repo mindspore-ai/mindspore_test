@@ -297,7 +297,6 @@ bool Jit::GetJitGradGraph(const pipeline::ResourcePtr &resource, const std::stri
   auto jit_forward_graph = resource->func_graph();
   MS_EXCEPTION_IF_NULL(jit_forward_graph);
   auto primal_fg = BasicClone(jit_forward_graph);
-  graph_executor->SetJitPrimalFuncGraph(primal_fg, graph_phase_);
   bool is_control_flow = PyNativeAlgo::Common::IsControlFlowGraph(jit_forward_graph);
   // Using adgrad to generate fprop func graph for jit function in pynative mode
   // Using cloned jit_forward_graph --> primal_fg as input
@@ -306,6 +305,12 @@ bool Jit::GetJitGradGraph(const pipeline::ResourcePtr &resource, const std::stri
   auto grad_graph = ad::Grad(primal_fg, opt::Optimizer::MakeEmptyOptimizer(resource), true,
                              ad::BpropAutoMonadLevel::kLevelNone, is_view_inplace);
   MS_EXCEPTION_IF_NULL(grad_graph);
+  auto primal_fg_iter = grad_graph->transforms().find("primal");
+  if (primal_fg_iter == grad_graph->transforms().end()) {
+    MS_LOG(EXCEPTION) << "Cannot find primal func graph: " << grad_graph->ToString();
+  }
+  auto actual_primal_graph = primal_fg_iter->second.func_graph();
+  graph_executor->SetJitPrimalFuncGraph(actual_primal_graph, graph_phase_);
   graph_executor->SetJitGradGraph(grad_graph, graph_phase_);
   // Set jit compile info
   jit_compile_info_[graph_phase_] = JitCompileInfo();

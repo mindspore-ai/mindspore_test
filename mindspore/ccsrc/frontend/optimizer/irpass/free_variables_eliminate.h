@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_FRONTEND_OPTIMIZER_IRPASS_VIRTUALVIEWGRAD_INSERT_H_
-#define MINDSPORE_CCSRC_FRONTEND_OPTIMIZER_IRPASS_VIRTUALVIEWGRAD_INSERT_H_
+#ifndef MINDSPORE_CCSRC_FRONTEND_OPTIMIZER_IRPASS_FREE_VARIABLES_ELIMINATE_H_
+#define MINDSPORE_CCSRC_FRONTEND_OPTIMIZER_IRPASS_FREE_VARIABLES_ELIMINATE_H_
 
 #include "frontend/optimizer/optimizer.h"
 #include "frontend/optimizer/irpass.h"
@@ -23,18 +23,10 @@
 namespace mindspore {
 namespace opt {
 namespace irpass {
-
-void VirtualViewGradInsert(const FuncGraphPtr &root, const opt::OptimizerPtr &opt);
-void RemoveRedundantVirtualViewGrad(const FuncGraphPtr &root, const opt::OptimizerPtr &opt);
-bool PreprocessForVirtualViewGradInsert(const FuncGraphPtr &root, const opt::OptimizerPtr &opt);
-void ConvertViewOpNameInVirtualViewGrad(const FuncGraphPtr &func_graph, const opt::OptimizerPtr &optimizer);
-// {prim::kPrimVirtualViewGrad, X, Y, ..., U} -> X
-class VirtualViewGradEliminater : public OptimizerCaller {
- public:
-  AnfNodePtr operator()(const OptimizerPtr &, const AnfNodePtr &node) override;
-};
-
+FuncGraphPtr LiftFv(const pipeline::ResourceBasePtr &resource, const FuncGraphPtr &func_graph);
+FuncGraphVector LiftFvMulti(const pipeline::ResourceBasePtr &resource, const FuncGraphVector &func_graphs);
+FuncGraphPtr FreeVariablesEliminate(FuncGraphPtr *root, const opt::OptimizerPtr &opt);
 }  // namespace irpass
 }  // namespace opt
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_FRONTEND_OPTIMIZER_IRPASS_VIRTUALVIEWGRAD_INSERT_H_
+#endif  // MINDSPORE_CCSRC_FRONTEND_OPTIMIZER_IRPASS_FREE_VARIABLES_ELIMINATE_H_
