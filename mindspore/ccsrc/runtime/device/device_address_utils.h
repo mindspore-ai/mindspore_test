@@ -163,6 +163,8 @@ class BACKEND_EXPORT DeviceAddressUtils {
   // Convert view tensor to contiguous tensor.
   static tensor::TensorPtr TensorContiguous(const tensor::TensorPtr &tensor);
 
+  static std::string DeviceAddressUtils::GetParameterDeviceStr(const mindspore::AnfNodePtr &node);
+
   template <typename... T>
   static void ProcessCrossStreamAddress(const std::string &op_name, const DeviceContext *device_context,
                                         size_t op_stream_id, const T &... args) {

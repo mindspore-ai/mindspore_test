@@ -1877,28 +1877,6 @@ std::string AnfAlgo::GetMoveToDstStr(const AnfNodePtr &node) {
   return to_value->cast<StringImmPtr>()->value();
 }
 
-std::string AnfAlgo::GetParameterDeviceStr(const mindspore::AnfNodePtr &node) {
-  constexpr auto kParameterDeviceUserDataName = "parameter_device";
-  if (!node->isa<Parameter>()) {
-    return "";
-  }
-  const auto &parameter = node->cast<ParameterPtr>();
-  MS_EXCEPTION_IF_NULL(parameter);
-  const auto value = parameter->default_param();
-  if (value == nullptr) {
-    return "";
-  }
-  const auto meta_tensor = value->cast_ptr<tensor::MetaTensor>();
-  if (meta_tensor == nullptr) {
-    return "";
-  }
-  const auto &user_data = meta_tensor->user_data<tensor::TensorPybind::TensorPyUserData>(kParameterDeviceUserDataName);
-  if (user_data == nullptr || !py::isinstance<py::str>(user_data->obj)) {
-    return "";
-  }
-  return py::cast<std::string>(user_data->obj);
-}
-
 bool AnfAlgo::IsNodeInputDynamicShape(const CNodePtr &anf_node_ptr) {
   MS_EXCEPTION_IF_NULL(anf_node_ptr);
   const auto &inputs = anf_node_ptr->inputs();
