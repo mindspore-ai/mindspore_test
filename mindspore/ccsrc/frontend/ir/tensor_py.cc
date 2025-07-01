@@ -944,8 +944,11 @@ TensorPtr TensorPyImpl::InitTensorByShape(const py::dict &input, const TypePtr &
   if (input.contains("shape") &&
       (py::isinstance<py::list>(input["shape"]) || py::isinstance<py::tuple>(input["shape"]))) {
     TypeId data_type = dtype != nullptr ? dtype->type_id() : TypeId::kNumberTypeFloat64;
-    // todo: check kNone or kCPU.
-    return tensor::empty(data_type, GetShapeFromTuple(input["shape"]), device::DeviceType::kCPU);
+    if (input.contains("init") && !py::isinstance<py::none>(input["init"])) {
+      return tensor::empty(data_type, GetShapeFromTuple(input["shape"]), device::DeviceType::kNone);
+    } else {
+      return tensor::empty(data_type, GetShapeFromTuple(input["shape"]), device::DeviceType::kCPU);
+    }
   }
   ShapeVector shape = GetShapeFromPython(input);
   TypeId data_type = dtype != nullptr ? dtype->type_id() : kTypeUnknown;
