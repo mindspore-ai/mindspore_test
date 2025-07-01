@@ -25,7 +25,7 @@ from mindspore.nn import AdaptiveMaxPool2d
 from mindspore.nn import SoftMarginLoss
 from mindspore.nn import EmbeddingExt as Embedding, MaxPool2dExt as MaxPool2d, LayerNormExt as LayerNorm, Linear
 import mindspore.nn as nn
-
+from mindspore.nn import *
 # 1
 
 # 2
