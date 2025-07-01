@@ -20,6 +20,6 @@ mindspore.numpy.gradient
         梯度，元素为Tensor的list(如果只有一个维度需要计算，则为单个Tensor)。 每个导数的shape与 `f` 相同。
 
     异常：
-        - **TypeError** - 如果输入类型不符合上述规定。 
+        - **TypeError** - 如果输入类型不符合上述规定。
         - **ValueError** - 如果 `axis` 超出范围，或 `f` 的shape中有维度小于1
         - **NotImplementedError** - 如果 `edge_order` != 1，或 `varargs` 中包含非标量条目。

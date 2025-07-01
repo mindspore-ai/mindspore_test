@@ -13,6 +13,6 @@ mindspore.numpy.result_type
 
     返回：
         mindspore.dtype，结果类型。
-    
+
     异常：
         - **TypeError** - 如果输入不是有效的数据类型。

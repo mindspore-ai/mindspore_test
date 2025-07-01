@@ -179,7 +179,7 @@ mindspore.nn.probability.distribution.Gamma
 
         计算标准差。
 
-        参数：        
+        参数：
             - **concentration** (Tensor) - 分布的 :math:`\alpha`。默认值： ``None`` 。
             - **rate** (Tensor) - 分布的 :math:`\beta`。默认值： ``None`` 。
 

@@ -12,7 +12,7 @@ mindspore.mint.nn.functional.conv2d
         \text{out}(N_i, C_{\text{out}_j}) = \text{bias}(C_{\text{out}_j}) +
         \sum_{k = 0}^{C_{in} - 1} \text{ccor}({\text{weight}(C_{\text{out}_j}, k), \text{X}(N_i, k)})
 
-    其中， :math:`bias` 为输出偏置，:math:`ccor` 为 `cross-correlation <https://en.wikipedia.org/wiki/Cross-correlation>`_ 操作， 
+    其中， :math:`bias` 为输出偏置，:math:`ccor` 为 `cross-correlation <https://en.wikipedia.org/wiki/Cross-correlation>`_ 操作，
     :math:`weight` 为卷积核的值， :math:`X` 为输入的特征图。
 
     :math:`i` 对应batch数，其范围为 :math:`[0, N-1]` ，其中 :math:`N` 为输入batch。
@@ -39,7 +39,7 @@ mindspore.mint.nn.functional.conv2d
         - **bias** (Tensor，可选) - 偏置Tensor，shape为 :math:`(C_{out})` 的Tensor。如果 `bias` 是 ``None`` ，将不会添加偏置。默认值： ``None`` 。
         - **stride** (Union(int, tuple[int], list[int])，可选) - 卷积核移动的步长，数据类型为int，或者由2个int组成的tuple。一个int表示在高度和宽度方向的移动步长均为该值。两个int组成的tuple分别表示在高度和宽度方向的移动步长。默认值： ``1`` 。
         - **padding** (Union[int, tuple[int], list[int], str]，可选) - 输入的高度和宽度方向上填充的数量。数据类型为int或包含2个整数的tuple或string { ``"valid"`` ，  ``"same"`` } 。如果 `padding` 是一个整数，那么 `padding_{H}` 和 `padding_{W}` 都等于 `padding` 。如果 `padding` 是一个有2个整数的tuple，那么 `padding_{H}` 和 `padding_{W}` 分别等于 `padding[0]` 和 `padding[1]` 。值应该要大于等于0。默认值： ``0`` 。
-        
+
           - ``"same"``：在输入的四周填充，使得当 `stride` 为 ``1`` 时，输入和输出的shape一致。待填充的量由算子内部计算，若为偶数，则均匀地填充在四周，若为奇数，多余的填充量将补充在底部/右侧。若设置该模式，`stride` 的值必须为1。
           - ``"valid"``：不对输入进行填充，返回输出可能的最大高度和宽度，不能构成一个完整stride的额外的像素将被丢弃。
 

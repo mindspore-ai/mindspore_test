@@ -15,6 +15,6 @@ mindspore.numpy.ptp
 
     返回：
         Tensor。
-    
+
     异常：
         - **TypeError** - 如果输入类型不是上述指定类型。

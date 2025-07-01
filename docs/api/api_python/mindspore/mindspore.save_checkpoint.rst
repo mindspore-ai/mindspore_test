@@ -13,7 +13,7 @@ mindspore.save_checkpoint
 
           - 若为list，可以是 `Cell.trainable_params()` 的返回值，或元素为dict的列表（如[{"name": param_name, "data": param_data},…]，`param_name` 的类型必须是str，`param_data` 的类型必须是Parameter或者Tensor）。
           - 若为dict，可以是 :func:`mindspore.load_checkpoint` 的返回值。
-        
+
         - **ckpt_file_name** (str) - checkpoint文件名称。如果文件已存在，将会覆盖原有文件。
         - **integrated_save** (bool) - 在并行场景下是否合并保存拆分的Tensor。默认值： ``True`` 。
         - **async_save** (Union[bool, str], 可选) - 是否使用异步方式保存checkpoint文件或safetensors文件，True时默认使用异步线程；如果是str类型，选择异步保存方式，可以是 "process" 或 "thread"。默认值： ``False`` 。
@@ -22,7 +22,7 @@ mindspore.save_checkpoint
         - **enc_mode** (str) - 该参数在 `enc_key` 不为 ``None`` 时有效，指定加密模式，目前仅支持 ``"AES-GCM"`` ， ``"AES-CBC"`` 和 ``"SM4-CBC"`` 。默认值： ``"AES-GCM"`` 。
         - **choice_func** (function) - 用于自定义控制保存参数的函数。函数的输入值为字符串类型的Parameter名称，并且返回值是一个布尔值。默认值： ``None`` 。
 
-          - 如果返回 ``True`` ，则匹配自定义条件的Parameter将被保存。 
+          - 如果返回 ``True`` ，则匹配自定义条件的Parameter将被保存。
           - 如果返回 ``False`` ，则未匹配自定义条件的Parameter不会被保存。
 
         - **crc_check** (bool) - 是否在保存checkpoint时进行crc32校验，并把计算结果写到文件中。默认值： ``False`` 。

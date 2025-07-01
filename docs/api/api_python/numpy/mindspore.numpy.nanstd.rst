@@ -19,6 +19,6 @@ mindspore.numpy.nanstd
 
     返回：
         Tensor。
-    
+
     异常：
         - **ValueError** - 如果 `axis` 超出[-a.ndim, a.ndim)范围，或者 `axis` 包含重复项。

@@ -22,11 +22,11 @@ mindspore.Tensor.std
 
     参数：
         - **dim** (None, int, tuple(int), 可选) - 用来进行规约计算的维度。默认值为 ``None`` ，所有维度都进行规约计算。
-    
+
     关键字参数：
         - **correction** (int, 可选) - 样本大小和样本自由度之间的差异。默认为Bessel校正，默认值为 ``1`` 。
         - **keepdim** (bool, 可选) - 是否保留输出Tensor的维度。如果为 ``True`` ，则保留缩小的维度，其大小为1，否则移除维度。默认值为 ``False`` 。
-    
+
     返回：
         Tensor，标准差。
 

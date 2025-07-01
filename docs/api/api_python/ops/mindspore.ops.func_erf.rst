@@ -9,7 +9,7 @@ mindspore.ops.erf
 
         \text{erf}(x)=\frac{2} {\sqrt{\pi}} \int\limits_0^{x} e^{-t^{2}} dt
 
-    参数：  
+    参数：
         - **input** (Tensor) - 输入tensor。
 
     返回：

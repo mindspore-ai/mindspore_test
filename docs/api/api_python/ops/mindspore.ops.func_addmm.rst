@@ -4,7 +4,7 @@
 .. py:function:: mindspore.ops.addmm(input, mat1, mat2, *, beta=1, alpha=1)
 
     对 `mat1` 和 `mat2` 矩阵乘，再将结果与 `input` 相加。
-    
+
     .. note::
         - 若 `beta` 为0，那么 `input` 将会被忽略。
 

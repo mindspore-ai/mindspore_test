@@ -37,7 +37,7 @@ mindspore.dataset.USPSDataset
           <https://www.mindspore.cn/docs/zh-CN/master/api_python/samples/dataset/dataset_gallery.html>`_
 
     **关于USPS数据集：**
-    
+
     USPS是美国邮政服务公司从信封中自动扫描的数字数据集，包含总共9,298个16×16像素灰度样本。
     数据集中的图片内容已被预处理为居中和归一化，并集中了多种样式的字体。
 

@@ -4,7 +4,7 @@ mindspore.numpy.divide
 .. py:function:: mindspore.numpy.divide(x1, x2, dtype=None)
 
     返回输入的真除法，逐元素计算。
-    
+
     该函数与Python默认的“向下取整除”不同，它返回真除法的结果。
 
     .. note::

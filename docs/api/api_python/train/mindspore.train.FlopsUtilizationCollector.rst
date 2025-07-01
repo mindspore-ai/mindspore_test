@@ -4,9 +4,9 @@ mindspore.train.FlopsUtilizationCollector
 .. py:class:: mindspore.train.FlopsUtilizationCollector(data_size, computility=1, full_flops=True, enable_ma_collector=False)
 
     FlopsUtilizationCollector接口统计模型利用率信息MFU，硬件利用率信息HFU。
-    
+
     当前接口只统计MatMul、BatchMatMul、flash_attention_score、Conv2D算子的正反向flops信息。
-    
+
     只支持静态图静态shape模式。
 
     参数：

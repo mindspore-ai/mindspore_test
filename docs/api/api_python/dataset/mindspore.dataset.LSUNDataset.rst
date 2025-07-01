@@ -40,7 +40,7 @@ mindspore.dataset.LSUNDataset
     .. include:: mindspore.dataset.sampler.rst
 
     **关于LSUN数据集：**
-    
+
     LSUN（Large-Scale Scene Understanding）是一个大规模数据集，用于室内场景理解。
     LSUN最初是在2015年由斯坦福大学推出的，旨在为计算机视觉和机器学习领域的研究提供一个具有挑战性和多样性的数据集。
     该数据集的主要应用是室内场景分析。

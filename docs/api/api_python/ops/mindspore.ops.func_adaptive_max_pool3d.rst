@@ -15,7 +15,7 @@ mindspore.ops.adaptive_max_pool3d
 
     返回：
         - **y** (Tensor) - Tensor，与输入 `input` 的数据类型和维度相同。
-        - **argmax** (Tensor) - Tensor，最大值对应的索引，数据类型为int32，并与 `y` 的shape相同。仅当 `return_indices` 为True的时候才返回该值。 
+        - **argmax** (Tensor) - Tensor，最大值对应的索引，数据类型为int32，并与 `y` 的shape相同。仅当 `return_indices` 为True的时候才返回该值。
 
     异常：
         - **TypeError** - `input` 不是Tensor。

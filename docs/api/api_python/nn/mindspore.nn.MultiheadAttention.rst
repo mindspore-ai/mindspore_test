@@ -49,7 +49,7 @@ mindspore.nn.MultiheadAttention
           shape为： :math:`(L, S)` ，当输入Batch数据时，shape为 :math:`(N, L, S)`。其中 :math:`N` 为batch size， :math:`L` 为目标序列的长度，:math:`S` 为源序列长度。
           如果 `average_attn_weights=False` ，分别返回每个注意力头的值。当输入非Batch数据时，shape为： :math:`(\text{num_heads}, L, S)` ，当输入Batch数据时，shape为
           :math:`(N, \text{num_heads}, L, S)`。
-  
+
     异常：
         - **ValueError** - 如果 `embed_dim` 不能被 `num_heads` 整除。
         - **TypeError** - 如果 `key_padding_mask` 不是bool或float类型。

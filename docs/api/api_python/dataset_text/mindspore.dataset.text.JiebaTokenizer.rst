@@ -16,7 +16,7 @@ mindspore.dataset.text.JiebaTokenizer
         - **mode** (:class:`~.text.JiebaMode`, 可选) - 想要使用的分词算法。可选值详见 :class:`~.text.JiebaMode` 。
         - **with_offsets** (bool, 可选) - 是否输出各Token在原字符串中的起始和结束偏移量。默认值： ``False`` 。
 
-    异常：      
+    异常：
         - **TypeError** - 当 `hmm_path` 不为str类型。
         - **TypeError** - 当 `mp_path` 不为str类型。
         - **TypeError** - 当 `mode` 不为 :class:`~.text.JiebaMode` 类型。

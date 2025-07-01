@@ -16,7 +16,7 @@ mindspore.nn.probability.bnn_layers.WithBNNLossCell
         - **label** (Tensor) - `label` 的 shape :math:`(N, \ldots)`。
 
     输出：
-        Tensor，任意 shape 的标量 Tensor。 
+        Tensor，任意 shape 的标量 Tensor。
 
     .. py:method:: backbone_network
         :property:

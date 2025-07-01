@@ -31,7 +31,7 @@ mindspore.nn.Transformer
         - **memory_key_padding_mask** (Tensor, 可选) - memory序列Key矩阵的掩码矩阵。如果目标序列没有batch，shape是 :math:`(S)` ，否则shape为 :math:`(N, S)` 。数据类型：float16、float32、float64或者bool。默认值：``None``。
 
     输出：
-        Tensor。如果源序列没有batch，shape是 :math:`(T, E)` ；否则如果 `batch_first=False` ，则shape为 :math:`(T, N, E)` ，如果 `batch_first=True` ，则shape为 :math:`(N, T, E)`。 
+        Tensor。如果源序列没有batch，shape是 :math:`(T, E)` ；否则如果 `batch_first=False` ，则shape为 :math:`(T, N, E)` ，如果 `batch_first=True` ，则shape为 :math:`(N, T, E)`。
 
     异常：
         - **ValueError** - 如果 `src` 和 `tgt` 的batch size不相等。

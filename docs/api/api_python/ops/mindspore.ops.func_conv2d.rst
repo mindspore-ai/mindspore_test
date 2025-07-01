@@ -12,7 +12,7 @@ mindspore.ops.conv2d
         \text{out}(N_i, C_{\text{out}_j}) = \text{bias}(C_{\text{out}_j}) +
         \sum_{k = 0}^{C_{in} - 1} \text{ccor}({\text{weight}(C_{\text{out}_j}, k), \text{X}(N_i, k)})
 
-    其中， :math:`bias` 为输出偏置，:math:`ccor` 为 `cross-correlation <https://en.wikipedia.org/wiki/Cross-correlation>`_ 操作， 
+    其中， :math:`bias` 为输出偏置，:math:`ccor` 为 `cross-correlation <https://en.wikipedia.org/wiki/Cross-correlation>`_ 操作，
     :math:`weight` 为卷积核的值， :math:`X` 为输入的特征图。
 
     :math:`i` 对应batch数，其范围为 :math:`[0, N-1]` ，其中 :math:`N` 为输入batch。
@@ -43,7 +43,7 @@ mindspore.ops.conv2d
           - ``"same"``：输出的高度和宽度分别与输入整除 `stride` 后的值相同。填充将被均匀地添加到高和宽的两侧，剩余填充量将被添加到维度末端。若设置该模式，`padding` 的值必须为0。
           - ``"valid"``：在不填充的前提下返回有效计算所得的输出。不满足计算的多余像素会被丢弃。如果设置此模式，则 `padding` 的值必须为0。
           - ``"pad"``：对输入 `input` 进行填充。在输入的高度和宽度方向上填充 `padding` 大小的0。如果设置此模式， `padding` 必须大于或等于0。
-        
+
         - **padding** (Union(int, tuple[int], list[int])，可选) - 输入 `input` 的高度和宽度方向上填充的数量。数据类型为int或包含2个int组成的tuple。如果 `padding` 是一个int，那么上、下、左、右的填充都等于 `padding` 。如果 `padding` 是一个有2个int组成的tuple，那么上、下的填充为 `padding[0]` ，左、右的填充为 `padding[1]` 。值必须大于等于0，默认 ``0`` 。
         - **dilation** (Union(int, tuple[int])，可选) - 卷积核元素间的间隔。数据类型为int或由2个int组成的tuple。若 :math:`k > 1` ，则卷积核间隔 `k` 个元素进行采样。垂直和水平方向上的 `k` ，其取值范围分别为[1, H]和[1, W]。默认 ``1`` 。
         - **groups** (int，可选) - 将过滤器拆分为组。默认 ``1`` 。

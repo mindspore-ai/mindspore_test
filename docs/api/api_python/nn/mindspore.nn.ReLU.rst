@@ -10,7 +10,7 @@ mindspore.nn.ReLU
         \text{ReLU}(input) = (input)^+ = \max(0, input),
 
     逐元素求 :math:`\max(0, input)` 。
-    
+
     .. note::
         负数输出值会被修改为0，正数输出不受影响。
 

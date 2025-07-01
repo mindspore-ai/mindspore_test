@@ -4,7 +4,7 @@ mindspore.ops.batch_dot
 .. py:function:: mindspore.ops.batch_dot(x1, x2, axes=None)
 
     计算 `x1` 和 `x2` 中的向量点积。
-    
+
     .. note::
         - `x1` 和 `x2` 的第零维表示batch数量,  `x1` 和 `x2` 数据类型为float32且秩大于或等于2。
 

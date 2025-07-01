@@ -6,7 +6,7 @@ mindspore.ops.Tile
     按照给定的次数复制输入Tensor。
 
     更多参考详见 :func:`mindspore.ops.tile`。
-    
+
     输入：
         - **input** (Tensor) - 需要被复制的Tensor，设其shape为 :math:`(x_1, x_2, ..., x_S)` 。
         - **dims** (tuple[int]) - 指定复制次数的参数，参数类型为tuple，数据类型为整数，如 :math:`(y_1, y_2, ..., y_S)` ，只支持常量值。

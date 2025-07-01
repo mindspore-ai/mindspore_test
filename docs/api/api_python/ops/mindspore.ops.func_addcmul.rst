@@ -13,6 +13,6 @@ mindspore.ops.addcmul
         - **tensor1** (Tensor) - 将被相乘的tensor1。
         - **tensor2** (Tensor) - 将被相乘的tensor2。
         - **value** (Union[Tensor, number]) - （tensor1 * tensor2）的乘数。默认 ``1`` 。
-        
+
     返回：
         Tensor

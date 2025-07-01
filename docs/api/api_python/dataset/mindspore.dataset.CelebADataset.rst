@@ -4,7 +4,7 @@ mindspore.dataset.CelebADataset
 .. py:class:: mindspore.dataset.CelebADataset(dataset_dir, num_parallel_workers=None, shuffle=None, usage='all', sampler=None, decode=False, extensions=None, num_samples=None, num_shards=None, shard_id=None, cache=None, decrypt=None)
 
     CelebA（CelebFaces Attributes）数据集。
-    
+
     目前仅支持解析CelebA数据集中的 `list_attr_celeba.txt` 文件作为数据集的label。
     生成的数据集有两列 `[image, attr]` 。 `image` 列的数据类型为uint8。`attr` 列的数据类型为uint32，并以one-hot编码的形式生成。
 

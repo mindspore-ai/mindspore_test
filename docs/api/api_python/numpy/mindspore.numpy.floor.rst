@@ -8,7 +8,7 @@ mindspore.numpy.floor
     标量 `x` 的向下取整是满足 ``i <= x`` 的最大整数 `i` 。
 
     .. note::
-        不支持NumPy参数 `out` 、 `where` 、 `casting` 、 `order` 、 `subok` 、 `signature` 、 `extobj` 。 
+        不支持NumPy参数 `out` 、 `where` 、 `casting` 、 `order` 、 `subok` 、 `signature` 、 `extobj` 。
         在GPU上，支持的数据类型有np.float16和np.float32。 在CPU上，支持的数据类型有np.float16，np.float32和np.float64。
 
     参数：

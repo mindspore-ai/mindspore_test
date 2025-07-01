@@ -45,7 +45,7 @@ mindspore.dataset.KITTIDataset
     .. include:: mindspore.dataset.sampler.rst
 
     **关于KITTI数据集：**
-    
+
     KITTI（Karlsruhe Institute of Technology and Toyota Technological Institute）是移动机器人和自动驾驶领域的常用数据集之一。
     它由用高分辨率的RGB、灰度立体相机和三维激光扫描仪等各种传感器记录的数小时的交通场景组成。
     尽管它很常用，但该数据集本身并不包含用于语义分割的目标值。然而，许多研究人员已经对该数据集的部分内容进行了手工标注以适应需求。

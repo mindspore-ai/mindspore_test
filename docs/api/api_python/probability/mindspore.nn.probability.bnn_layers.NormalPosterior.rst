@@ -12,7 +12,7 @@ mindspore.nn.probability.bnn_layers.NormalPosterior
         - **loc_mean** (int, float) - 初始化可训练参数的分布均值。默认值：0。
         - **loc_std** (int, float) - 初始化可训练参数的分布标准差。默认值：0.1。
         - **untransformed_scale_mean** (int, float) - 初始化可训练参数的分布均值。默认值：-5。
-        - **untransformed_scale_std** (int, float) - 初始化可训练参数的分布标准差。默认值：0.1。 
+        - **untransformed_scale_std** (int, float) - 初始化可训练参数的分布标准差。默认值：0.1。
 
     返回：
         Cell，一种正态分布结果。

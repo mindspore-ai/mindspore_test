@@ -4,7 +4,7 @@ mindspore.dataset.audio.LFCC
 .. py:class:: mindspore.dataset.audio.LFCC(sample_rate=16000, n_filter=128, n_lfcc=40, f_min=0.0, f_max=None, dct_type=2, norm=NormMode.ORTHO, log_lf=False, speckwargs=None)
 
     计算音频信号的线性频率倒谱系数。
-    
+
     .. note:: 待处理音频shape需为<..., time>。
 
     参数：

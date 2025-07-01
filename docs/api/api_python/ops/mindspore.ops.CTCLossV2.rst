@@ -5,7 +5,7 @@ mindspore.ops.CTCLossV2
 
     计算CTC（Connectionist Temporal Classification）损失和梯度。
 
-    CTC算法是在 `Connectionist Temporal Classification: Labeling Unsegmented Sequence Data with Recurrent Neural Networks <http://www.cs.toronto.edu/~graves/icml_2006.pdf>`_ 中提出的。 
+    CTC算法是在 `Connectionist Temporal Classification: Labeling Unsegmented Sequence Data with Recurrent Neural Networks <http://www.cs.toronto.edu/~graves/icml_2006.pdf>`_ 中提出的。
 
     .. warning::
         这是一个实验性API，后续可能修改或删除。

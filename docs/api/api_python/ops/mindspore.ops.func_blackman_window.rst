@@ -13,7 +13,7 @@ mindspore.ops.blackman_window
     其中， :math:`N` 是总的窗口长度 `window_length` ，n为小于 :math:`N` 的自然数 [0, 1, ..., N-1]。
 
     参数：
-        - **window_length** (Tensor) - 窗口的大小。 
+        - **window_length** (Tensor) - 窗口的大小。
         - **periodic** (bool，可选) - 如果为 ``True`` ，表示返回周期窗口。如果为 ``False`` ，表示返回对称窗口。默认 ``True`` 。
 
     关键字参数：

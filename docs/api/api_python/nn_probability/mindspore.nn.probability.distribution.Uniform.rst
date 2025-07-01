@@ -6,7 +6,7 @@ mindspore.nn.probability.distribution.Uniform
     均匀分布（Uniform Distribution）。
     连续随机分布，取值范围为 :math:`[a, b]` ，概率密度函数为：
 
-    .. math:: 
+    .. math::
         f(x, a, b) = 1 / (b - a)
 
     其中 :math:`a, b` 为分别为均匀分布的下界和上界。
@@ -180,7 +180,7 @@ mindspore.nn.probability.distribution.Uniform
 
         计算标准差。
 
-        参数：        
+        参数：
             - **high** (Tensor) - 分布的上限值。默认值： ``None`` 。
             - **low** (Tensor) - 分布的下限值。默认值： ``None`` 。
 

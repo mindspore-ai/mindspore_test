@@ -7,10 +7,10 @@ mindspore.dataset.Caltech101Dataset
 
     根据不同的 `target_type` 配置，数据集会生成不同的输出列。
 
-    - `target_type` 为 ``'category'``，输出列为 `[image, category]` 。 
+    - `target_type` 为 ``'category'``，输出列为 `[image, category]` 。
     - `target_type` 为 ``'annotation'``，输出列为 `[image, annotation]` 。
     - `target_type` 为 ``'all'``，输出列为 `[image, category, annotation]` 。
-  
+
     列 `image` 为 uint8 类型。列 `category` 为 uint32 类型。列 `annotation` 是一个二维的ndarray，存储了图像的轮廓，由一系列的点组成。
 
     参数：
@@ -47,7 +47,7 @@ mindspore.dataset.Caltech101Dataset
 
     **关于Caltech101数据集：**
 
-    Caltech101数据集包含 101 种类别的图片。每种类别大约 40 到 800 张图像，大多数类别有大约 50 张图像。 
+    Caltech101数据集包含 101 种类别的图片。每种类别大约 40 到 800 张图像，大多数类别有大约 50 张图像。
     每张图像的大小约为 300 x 200 像素。数据集中也提供了每张图片中每个物体的轮廓数据，用于检测和定位。
 
     您可以解压缩原始Caltech101数据集文件到如下目录结构，并通过MindSpore的API进行读取。

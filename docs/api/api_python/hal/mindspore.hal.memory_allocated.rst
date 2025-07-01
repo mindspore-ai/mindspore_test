@@ -12,4 +12,4 @@ mindspore.hal.memory_allocated
         - **device_target** (str，可选) - 目标设备，可选值为 ``"CPU"`` ， ``"GPU"`` 以及 ``"Ascend"`` 。默认 ``None``，表示当前已经设置的设备。
 
     返回：
-        int，单位为Byte。 
+        int，单位为Byte。

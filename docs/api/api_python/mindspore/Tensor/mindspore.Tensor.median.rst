@@ -23,7 +23,7 @@ mindspore.Tensor.median
 
     .. py:method:: mindspore.Tensor.median() -> Tensor
         :noindex:
-    
+
     返回输入的中位数。
 
     返回：
@@ -31,7 +31,7 @@ mindspore.Tensor.median
 
     .. py:method:: mindspore.Tensor.median(dim=-1, keepdim=False) -> tuple[Tensor]
         :noindex:
-    
+
     输出指定维度 `dim` 上的中值与其对应的索引。如果 `dim` 为None，则计算Tensor中所有元素的中值。
 
     参数：
@@ -44,7 +44,7 @@ mindspore.Tensor.median
           - 如果 ``dim`` 为 ``None`` ， ``y`` 只有一个元素。
           - 如果 ``keepdim`` 为 ``True`` ， ``y`` 的shape除了在 ``dim`` 维度上为1外，与 ``input`` 一致。
           - 其他情况下， ``y`` 比 ``input`` 缺少 ``dim`` 指定的维度。
-          
+
         - **indices** (Tensor) - 中值的索引。shape与 ``y`` 一致，数据类型为int64。
 
     异常：

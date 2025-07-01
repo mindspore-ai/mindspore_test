@@ -16,5 +16,5 @@ mindspore.dataset.transforms.Slice
           - 若输入类型为 `Ellipsis <https://docs.python.org/zh-cn/3.7/library/constants.html#Ellipsis>`_ ，即省略符，将切片所有元素。
           - 若输入为None，将切片所有元素。
 
-    异常：      
+    异常：
         - **TypeError** - 当 `slices` 不为Union[int, list[int], slice, Ellipsis]类型。

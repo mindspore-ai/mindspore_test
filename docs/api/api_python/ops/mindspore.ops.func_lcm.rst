@@ -4,7 +4,7 @@ mindspore.ops.lcm
 .. py:function:: mindspore.ops.lcm(input, other)
 
     逐元素计算两个输入tensor的最小公倍数。
-    
+
     支持广播，支持隐式类型转换、类型提升。
 
     参数：

@@ -4,7 +4,7 @@ mindspore.constexpr
 .. py:function:: mindspore.constexpr(fn=None, get_instance=True, name=None, reuse_result=True, check=True)
 
     在图模式下，用来计算图编译过程中的常量值，以提升编译性能。
-    
+
     参数：
         - **fn** (function，可选) - `fn` 用作输出算子的infer_value。默认值： ``None`` 。
         - **get_instance** (bool，可选) - 如果为 ``True`` ，返回算子的实例，否则返回算子的类。默认值： ``True`` 。

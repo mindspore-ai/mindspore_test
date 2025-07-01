@@ -26,7 +26,7 @@ mindspore.ops.incre_flash_attention
 
     .. math::
         Attention(Q,K,V)=Softmax(\frac{QK^{T} }{\sqrt{d} } )V
-    
+
     其中 :math:`Q` 和 :math:`K^{T}` 的乘积代表输入 :math:`x` 的注意力，为避免该值变得过大，通常除以 :math:`d` 的平方根进行缩放，并对每行进行softmax归一化，与 :math:`V` 相乘后得到一个 :math:`n\times d` 的矩阵。
 
     .. note::

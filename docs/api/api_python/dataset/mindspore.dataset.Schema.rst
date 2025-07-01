@@ -22,7 +22,7 @@ mindspore.dataset.Schema
 
         异常：
             - **ValueError** - 列类型未知。
-        
+
     .. py:method:: from_json(json_obj)
 
         从JSON对象获取schema文件。

@@ -21,7 +21,7 @@ mindspore.mint.nn.Embedding
         - **_weight** (Tensor, 可选) - 用于初始化Embedding的权重 `weight` 。如果为 ``None``，则权重将为从正态分布初始化 :math:`{N}(\text{sigma=1.0}, \text{mean=0.0})` 。默认值： ``None`` 。
         - **_freeze** (bool, 可选) - 是否冻结该模型的可学习参数 `weight` 。默认值 ``False`` 。
         - **dtype** (mindspore.dtype, 可选) - 指定Embedding权重 `weight` 的类型。当 `_weight` 不是 ``None`` 时该参数无效。默认值： ``None`` 。
-    
+
     可变参数：
         - **weight** (Parameter) - 模型的可学习参数，shape为 `(num_embeddings, embedding_dim)`，从正态分布 :math:`{N}(\text{sigma=1.0}, \text{mean=0.0})` 或 `_weight` 初始化。
 

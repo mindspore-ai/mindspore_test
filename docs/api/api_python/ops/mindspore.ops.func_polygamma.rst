@@ -7,7 +7,7 @@ mindspore.ops.polygamma
 
     .. math::
         \psi^{(a)}(x) = \frac{d^{(a)}}{dx^{(a)}} \psi(x)
-    
+
     其中 :math:`\psi(x)` 为digamma函数。
 
     参数：

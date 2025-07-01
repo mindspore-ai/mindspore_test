@@ -12,7 +12,7 @@ mindspore.ops.BesselK0
             K_{0}(x)= \lim_{\nu \to 0} \left(\frac{\pi}{2}\right) \frac
             {I_{-\nu}(x)-I_{\nu}(x)}{\sin (\nu \pi)} = \int_{0}^{\infty} e^{-x \cosh t} d t
         \end{array}
-    
+
     其中 :math:`I_{0}` 是第一类零阶修正Bessel函数。
 
     .. warning::

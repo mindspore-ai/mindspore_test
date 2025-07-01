@@ -3,7 +3,7 @@ mindspore.mint.nn.BatchNorm1d
 
 .. py:class:: mindspore.mint.nn.BatchNorm1d(num_features: int, eps=1e-5, momentum=0.1, affine=True, track_running_stats=True, dtype=None)
 
-    在二维或三维输入上应用批归一化。具体内容见论文 `Batch Normalization: Accelerating Deep Network Training by 
+    在二维或三维输入上应用批归一化。具体内容见论文 `Batch Normalization: Accelerating Deep Network Training by
     Reducing Internal Covariate Shift <https://arxiv.org/abs/1502.03167>`_ 。
 
     .. math::

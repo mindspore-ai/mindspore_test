@@ -36,7 +36,7 @@ mindspore.dataset.EMnistDataset
     .. include:: mindspore.dataset.sampler.rst
 
     **关于EMNIST数据集：**
-    
+
     EMNIST数据集由一组手写字符数字组成，源自NIST特别版数据库19，并转换为与MNIST数据集直接匹配的28x28像素图像格式和数据集结构。
     有关数据集内容和转换过程的更多信息可在 https://arxiv.org/abs/1702.05373v1 上查阅。
 

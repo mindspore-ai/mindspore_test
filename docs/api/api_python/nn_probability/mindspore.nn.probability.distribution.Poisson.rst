@@ -121,7 +121,7 @@ mindspore.nn.probability.distribution.Poisson
 
         计算标准差。
 
-        参数：        
+        参数：
             - **rate** (Tensor) - 率参数。默认值： ``None`` 。
 
         返回：

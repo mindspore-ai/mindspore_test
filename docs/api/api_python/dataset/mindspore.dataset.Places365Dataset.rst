@@ -5,7 +5,7 @@ mindspore.dataset.Places365Dataset
 
     Places365数据集。
 
-    生成的数据集有两列: `[image, label]`。 
+    生成的数据集有两列: `[image, label]`。
     `image` 列的数据类型为uint8。 `label` 列的数据类型为uint32。
 
     参数：

@@ -25,7 +25,7 @@
 
     .. note::
         需要使用msrun进行启动。
-    
+
 
     .. py:method:: comm_fusion(config)
 
@@ -126,7 +126,7 @@
 
         .. note::
             - 只在策略传播并行模式下生效。
-            - 在分布式训练场景，用户可以首先在单卡下用Dryrun设置策略，然后再加载策略进行分布式训练。            
+            - 在分布式训练场景，用户可以首先在单卡下用Dryrun设置策略，然后再加载策略进行分布式训练。
 
         .. warning::
             - 实验性接口，未来可能变更或移除。
@@ -203,7 +203,7 @@
             - **TypeError** - 文件路径类型非字符串。
             - **KeyError** - 文件路径非绝对路径。
             - **KeyError** - 文件路径非JSON文件后缀结尾。
-            
+
 
     .. py:method:: save_param_strategy_file(file_path)
 

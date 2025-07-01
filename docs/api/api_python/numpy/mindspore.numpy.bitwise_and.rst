@@ -4,7 +4,7 @@ mindspore.numpy.bitwise_and
 .. py:function:: mindspore.numpy.bitwise_and(x1, x2, dtype=None)
 
     逐元素计算两个数组的按位与运算。 计算输入数组中整数的二进制表示的按位与。 此函数实现了C/Python中的操作符 & 。
-    
+
     .. note::
         不支持NumPy参数 `out` 、 `where` 、 `casting` 、 `order` 、 `subok` 、 `signature` 、 `extobj` 。
 

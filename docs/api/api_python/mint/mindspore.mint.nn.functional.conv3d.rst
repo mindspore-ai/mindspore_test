@@ -12,7 +12,7 @@ mindspore.mint.nn.functional.conv3d
         \text{out}(N_i, C_{\text{out}_j}) = \text{bias}(C_{\text{out}_j}) +
         \sum_{k = 0}^{C_{in} - 1} \text{ccor}({\text{weight}(C_{\text{out}_j}, k), \text{X}(N_i, k)})
 
-    其中， :math:`bias` 为输出偏置，:math:`ccor` 为 `cross-correlation <https://en.wikipedia.org/wiki/Cross-correlation>`_ 操作， 
+    其中， :math:`bias` 为输出偏置，:math:`ccor` 为 `cross-correlation <https://en.wikipedia.org/wiki/Cross-correlation>`_ 操作，
     :math:`weight` 为卷积核的值， :math:`X` 为输入的特征图。
 
     以下是索引的含义：
@@ -73,7 +73,7 @@ mindspore.mint.nn.functional.conv3d
 
           - ``"same"``：采用完成方式。输出的高度和宽度将等于输入 `x` 除以步幅。填充将尽可能在顶部和底部、左侧和右侧均匀计算。否则，最后一个额外的填充将从底部和右侧计算。如果设置了此模式，则 `stride` 必须为1。
           - ``"valid"``：采用丢弃的方式。输出的可能最大高度和宽度将在没有填充的情况下返回。多余的像素将被丢弃。
-          
+
           如果 `padding` 是一个整数，则top、bottom、left和right的padding是相同的，等于padding。
           如果 `padding` 是一个包含3个整数的元组/列表，则head、tail、top、bottom、left和right的填充分别等于pad[0]、pad[0]、pad[1]、pad[1]、pad[2]和pad[2]。默认值： `0` 。
 

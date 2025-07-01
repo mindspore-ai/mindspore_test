@@ -37,12 +37,12 @@ mindspore.ops.stft
           `N` 为傅立叶变换的尺寸，取值受参数 `onesided` 影响：
           - 如果 `onesided` 为 ``False`` ， :math:`N = n\_fft` 。
           - 如果 `onesided` 为 ``True`` ， :math:`N = n\_fft // 2 + 1` 。
-            
+
           `T` 为使用的总帧数，计算公式： :math:`T = 1 + (len - n\_fft) / hop\_length` ，其中 :math:`len` 取值受 `center` 影响：
           - 如果 `center` 为 ``False`` ，则 :math:`len = signal\_length` 。
           - 如果 `center` 为 ``True`` ，则 :math:`len = signal\_length + (n\_fft // 2) * 2` 。
 
-          其中signal_length为信号长度，取值 :math:`x.shape[-1]` 。     
+          其中signal_length为信号长度，取值 :math:`x.shape[-1]` 。
 
     异常：
         - **TypeError** -  `x` 不是1-D或2-D Tensor。

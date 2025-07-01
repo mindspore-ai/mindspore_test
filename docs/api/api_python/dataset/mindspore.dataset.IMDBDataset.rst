@@ -40,7 +40,7 @@ mindspore.dataset.IMDBDataset
     IMDB数据集包含来自互联网电影数据库(IMDB)的50000条高度两极分化的评论。
     数据集分为25,000条用于训练的评论和25,000条用于测试的评论，训练集和测试集都包含50%的积极评论和50%的消极评论。
     训练标签和测试标签分别是0和1，其中0代表负样本，1代表正样本。
-        
+
     可以将数据集文件解压缩到此目录结构中，并通过MindSpore的API读取。
 
     .. code-block::
@@ -69,7 +69,7 @@ mindspore.dataset.IMDBDataset
     **引用：**
 
     .. code-block::
-        
+
         @InProceedings{maas-EtAl:2011:ACL-HLT2011,
             author    = {Maas, Andrew L.  and  Daly, Raymond E.  and  Pham, Peter T.  and  Huang, Dan
                         and  Ng, Andrew Y.  and  Potts, Christopher},

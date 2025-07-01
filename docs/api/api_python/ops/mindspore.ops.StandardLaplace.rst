@@ -23,13 +23,13 @@ mindspore.ops.StandardLaplace
         - **seed** (int，可选) - 算子层的随机种子，用于生成随机数。必须是非负的。默认值： ``0`` 。
         - **seed2** (int，可选) - 全局的随机种子，和算子层的随机种子共同决定最终生成的随机数。必须是非负的。默认值： ``0`` 。
 
-    输入：    
+    输入：
         - **shape** (Union[tuple[int], Tensor[int]]) - 待生成的Tensor的shape。当为tuple类型时，只支持常量值；当为Tensor类型时，支持动态Shape。
 
-    输出：    
+    输出：
         Tensor。shape为输入 `shape` 。数据类型支持float32。
 
-    异常：    
+    异常：
         - **TypeError** - `seed` 或 `seed2` 不是int。
         - **TypeError** - `shape` 既不是tuple，也不是Tensor。
         - **ValueError** - `seed` 或 `seed2` 不是非负的int。

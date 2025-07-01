@@ -12,6 +12,6 @@ mindspore.ops.NPUClearFloatStatus
 
     输入：
         - **x** (Tensor) - :class:`mindspore.ops.NPUAllocFloatStatus` 的输出Tensor。数据类型必须为float16或float32。
-        
+
     输出：
         Tensor，shape与 `x` 相同。Tensor中的所有元素都将为零。

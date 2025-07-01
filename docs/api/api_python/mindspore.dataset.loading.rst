@@ -5,7 +5,7 @@ MindSpore的核心数据加载模块是Dataset，是一种基于Pipeline设计�
 
 该模块提供了以下几种数据加载方式，帮助用户加载数据集到MindSpore中。
 
-- 自定义数据集加载：允许用户通过Python定义 `可随机访问(Map-style)数据集 <https://www.mindspore.cn/tutorials/zh-CN/master/beginner/dataset.html#可随机访问数据集>`_ 
+- 自定义数据集加载：允许用户通过Python定义 `可随机访问(Map-style)数据集 <https://www.mindspore.cn/tutorials/zh-CN/master/beginner/dataset.html#可随机访问数据集>`_
   和 `可迭代(Iterable-style)数据集 <https://www.mindspore.cn/tutorials/zh-CN/master/beginner/dataset.html#可迭代数据集>`_ 自定义数据读取、处理逻辑。
 - 标准格式数据集加载：支持加载业界标准数据格式的数据集文件，包括 `MindRecord <https://www.mindspore.cn/tutorials/zh-CN/master/dataset/record.html>`_ 、`TFRecord <https://tensorflow.google.cn/tutorials/load_data/tfrecord.md?hl=zh-cn>`_ 等。
 - 开源数据集加载：支持部分 `开源数据集 <#开源数据集加载>`_ 的解析读取，如MNIST、CIFAR-10、CLUE、LJSpeech等。
@@ -37,22 +37,22 @@ MindSpore的核心数据加载模块是Dataset，是一种基于Pipeline设计�
   `audio数据集 <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore.dataset.loading.html#音频数据集>`_ ) 来加载已支持的数据集，
   或者使用 `自定义数据集加载 <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore.dataset.loading.html#自定义数据集加载-1>`_ ，通过Python逻辑自定义数据集行为；
 
-- 数据集操作（filter/ skip）：用户通过数据集对象方法 `.shuffle <https://www.mindspore.cn/docs/zh-CN/master/api_python/dataset/dataset_method/operation/mindspore.dataset.Dataset.shuffle.html#mindspore.dataset.Dataset.shuffle>`_ / 
-  `.filter <https://www.mindspore.cn/docs/zh-CN/master/api_python/dataset/dataset_method/operation/mindspore.dataset.Dataset.filter.html#mindspore.dataset.Dataset.filter>`_ / 
-  `.skip <https://www.mindspore.cn/docs/zh-CN/master/api_python/dataset/dataset_method/operation/mindspore.dataset.Dataset.skip.html#mindspore.dataset.Dataset.skip>`_ / 
-  `.split <https://www.mindspore.cn/docs/zh-CN/master/api_python/dataset/dataset_method/operation/mindspore.dataset.Dataset.split.html#mindspore.dataset.Dataset.split>`_ / 
+- 数据集操作（filter/ skip）：用户通过数据集对象方法 `.shuffle <https://www.mindspore.cn/docs/zh-CN/master/api_python/dataset/dataset_method/operation/mindspore.dataset.Dataset.shuffle.html#mindspore.dataset.Dataset.shuffle>`_ /
+  `.filter <https://www.mindspore.cn/docs/zh-CN/master/api_python/dataset/dataset_method/operation/mindspore.dataset.Dataset.filter.html#mindspore.dataset.Dataset.filter>`_ /
+  `.skip <https://www.mindspore.cn/docs/zh-CN/master/api_python/dataset/dataset_method/operation/mindspore.dataset.Dataset.skip.html#mindspore.dataset.Dataset.skip>`_ /
+  `.split <https://www.mindspore.cn/docs/zh-CN/master/api_python/dataset/dataset_method/operation/mindspore.dataset.Dataset.split.html#mindspore.dataset.Dataset.split>`_ /
   `.take <https://www.mindspore.cn/docs/zh-CN/master/api_python/dataset/dataset_method/operation/mindspore.dataset.Dataset.take.html#mindspore.dataset.Dataset.take>`_ / … 来实现数据集的进一步混洗、过滤、跳过、最多获取条数等操作；
 
-- 数据集样本变换操作（map）：用户可以将数据变换操作 （`vision数据变换 <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore.dataset.transforms.html#视觉>`_ ， 
-  `nlp数据变换 <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore.dataset.transforms.html#文本>`_ ， 
+- 数据集样本变换操作（map）：用户可以将数据变换操作 （`vision数据变换 <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore.dataset.transforms.html#视觉>`_ ，
+  `nlp数据变换 <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore.dataset.transforms.html#文本>`_ ，
   `audio数据变换 <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore.dataset.transforms.html#音频>`_ ）
   添加到 `.map <https://www.mindspore.cn/docs/zh-CN/master/api_python/dataset/dataset_method/operation/mindspore.dataset.Dataset.map.html>`_ 操作中执行，
   数据预处理过程中可以定义多个map操作，用于执行不同变换操作，数据变换操作也可以支持传入用户自定义Python函数 ；
 
-- 批（batch）：用户在样本完成变换后，使用 `.batch <https://www.mindspore.cn/docs/zh-CN/master/api_python/dataset/dataset_method/batch/mindspore.dataset.Dataset.batch.html#mindspore.dataset.Dataset.batch>`_ 
+- 批（batch）：用户在样本完成变换后，使用 `.batch <https://www.mindspore.cn/docs/zh-CN/master/api_python/dataset/dataset_method/batch/mindspore.dataset.Dataset.batch.html#mindspore.dataset.Dataset.batch>`_
   操作将多个样本组织成batch，也可以通过batch的参数 `per_batch_map` 来自定义batch逻辑；
 
-- 迭代器（iterator）：最后用户通过数据集对象方法 `.create_dict_iterator <https://www.mindspore.cn/docs/zh-CN/master/api_python/dataset/dataset_method/iterator/mindspore.dataset.Dataset.create_dict_iterator.html>`_ / 
+- 迭代器（iterator）：最后用户通过数据集对象方法 `.create_dict_iterator <https://www.mindspore.cn/docs/zh-CN/master/api_python/dataset/dataset_method/iterator/mindspore.dataset.Dataset.create_dict_iterator.html>`_ /
   `.create_tuple_iterator <https://www.mindspore.cn/docs/zh-CN/master/api_python/dataset/dataset_method/iterator/mindspore.dataset.Dataset.create_tuple_iterator.html>`_ 来创建迭代器将预处理完成的数据循环输出。
 
 数据处理Pipeline快速上手

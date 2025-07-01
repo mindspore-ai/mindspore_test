@@ -29,7 +29,7 @@
 
     返回：
         Tensor、Tensor的列表或元组，表示裁剪后的Tensor。其shape和数据类型与 `x` 相同。
-    
+
     异常：
         - **ValueError** - 如果 `clip_value_min` 和 `clip_value_max` 都为None。
         - **TypeError** - 如果 `x` 的数据类型不在Tensor、list[Tensor]或tuple[Tensor]中。

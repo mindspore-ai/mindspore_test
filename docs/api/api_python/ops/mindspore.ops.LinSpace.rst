@@ -4,7 +4,7 @@ mindspore.ops.LinSpace
 .. py:class:: mindspore.ops.LinSpace
 
     创建一个一维Tensor，其包含steps个元素，这些元素在区间[start, end]内均匀分布。
-    
+
     .. math::
         \begin{aligned}
         &step = (end - start)/(steps - 1)\\

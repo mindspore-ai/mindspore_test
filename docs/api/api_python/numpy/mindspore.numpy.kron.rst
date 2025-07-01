@@ -6,7 +6,7 @@ mindspore.numpy.kron
     两个数组的Kronecker积。
 
     计算Kronecker积，即先将第二个数组分块，然后使用第一个数组缩放后组成的复合数组。
-    
+
     .. note::
         不支持bool值。
 

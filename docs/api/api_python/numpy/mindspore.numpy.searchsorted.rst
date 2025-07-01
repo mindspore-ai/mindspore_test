@@ -4,7 +4,7 @@ mindspore.numpy.searchsorted
 .. py:function:: mindspore.numpy.searchsorted(a, v, side='left', sorter=None)
 
     找到每个元素的插入索引，使得插入后的数组保持原有升降序。在排序过的数组 `a` 中找到索引，使得如果在这些索引之前插入 `v` 中的相应元素， `a` 的顺序能够保持。
-    
+
     参数：
         - **a** (Union[list, tuple, Tensor]) - 1-D输入数组。 如果 `sorter` 为 None，则 `a` 必须按升序排序，否则 `sorter` 必须是一个排序索引数组。
         - **v** (Union[int, float, bool, list, tuple, Tensor]) - 要插入 `a` 的值。

@@ -18,7 +18,7 @@ mindspore.ops.igamma
     为下层不完全伽马函数。
 
     :math:`Q(a, x)` 则为正则化的上层完全伽马函数。
- 
+
     .. warning::
         这是一个实验性API，后续可能修改或删除。
 

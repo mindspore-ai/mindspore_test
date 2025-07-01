@@ -16,6 +16,6 @@
 
     返回：
         Tensor、Tensor的列表或元组，表示裁剪后的Tensor。
-    
+
     异常：
         - **RuntimeError** - 如果 `x` 的总范数为nan、inf或-inf。

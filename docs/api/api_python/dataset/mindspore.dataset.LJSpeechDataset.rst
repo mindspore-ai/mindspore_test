@@ -36,7 +36,7 @@ mindspore.dataset.LJSpeechDataset
     .. include:: mindspore.dataset.sampler.rst
 
     **关于LJSPEECH数据集：**
-    
+
     LJSPEECH是一个公共领域的语音数据集，由13,100个来自7部非小说类书籍的段落短音频片段组成。
     为每个剪辑片段都进行转录。剪辑的长度从1秒到10秒不等，总长度约为24小时。
 

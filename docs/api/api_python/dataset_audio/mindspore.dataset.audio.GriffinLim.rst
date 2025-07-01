@@ -20,7 +20,7 @@ mindspore.dataset.audio.GriffinLim
         - **momentum** (float, 可选) - 快速Griffin-Lim的动量。默认值： ``0.99`` 。
         - **length** (int, 可选) - 预期输出波形的长度。默认值： ``None`` ，将设置为stft矩阵的最后一个维度的值。
         - **rand_init** (bool, 可选) - 随机相位初始化或全零相位初始化标志。默认值： ``True`` 。
-    
+
     异常：
         - **TypeError** - 如果 `n_fft` 的类型不为int。
         - **ValueError** - 如果 `n_ftt` 不为正数。
@@ -37,7 +37,7 @@ mindspore.dataset.audio.GriffinLim
         - **ValueError** - 如果 `momentum` 为负数。
         - **TypeError** - 如果 `length` 的类型不为int。
         - **ValueError** - 如果 `length` 为负数。
-        - **TypeError** - 如果 `rand_init` 的类型不为bool。        
+        - **TypeError** - 如果 `rand_init` 的类型不为bool。
         - **RuntimeError** - 当 `n_fft` 指定的FFT长度不小于 `length` 指定的输出波形长度。
         - **RuntimeError** - 当 `win_length` 指定的窗口长度不小于 `n_fft` 指定的FFT长度。
 

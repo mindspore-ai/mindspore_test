@@ -5,7 +5,7 @@ mindspore.nn.probability.bijector.Bijector
 
     Bijector类。Bijector描述了一种随机变量的映射方法。可以通过一个已有的随机变量 :math:`X` 和一个映射函数 :math:`g(x)` 生成一个新的随机变量 :math:`Y = g(X)` 。
 
-    参数：    
+    参数：
         - **is_constant_jacobian** (bool) - Bijector是否具有常数导数。默认值： ``False`` 。
         - **is_injective** (bool) - Bijector是否为一对一映射。默认值： ``True`` 。
         - **name** (str) - Bijector名称。默认值： ``None`` 。
@@ -35,7 +35,7 @@ mindspore.nn.probability.bijector.Bijector
 
         返回：
             Tensor，参数经过数据类型转换之后的值。
-        
+
     .. py:method:: construct(name, *args, **kwargs)
 
         重写Cell中的 `construct` 。
@@ -43,18 +43,18 @@ mindspore.nn.probability.bijector.Bijector
         .. note::
             支持的函数名称包括：'forward'、'inverse'、'forward_log_jacobian'、'inverse_log_jacobian'。
 
-        参数：        
+        参数：
             - **name** (str) - 函数名称。
             - **args** (list) - 函数所需的位置参数列表。
             - **kwargs** (dict) - 函数所需的关键字参数字典。
-        
+
         返回：
             Tensor，name对应函数的值。
 
     .. py:method:: forward(value, *args, **kwargs)
 
         正映射，计算输入随机变量经过映射后的值。
-        
+
         参数：
             - **value** (Tensor) - 输入随机变量的值。
             - **args** (list) - 函数所需的位置参数列表。
@@ -62,11 +62,11 @@ mindspore.nn.probability.bijector.Bijector
 
         返回：
             Tensor，输出随机变量经过映射后的值。
-        
+
     .. py:method:: forward_log_jacobian(value, *args, **kwargs)
 
         计算正映射导数的对数值。
-        
+
         参数：
             - **value** (Tensor) - 输入随机变量的值。
             - **args** (list) - 函数所需的位置参数列表。
@@ -74,12 +74,12 @@ mindspore.nn.probability.bijector.Bijector
 
         返回：
             Tensor，正映射导数的对数值。
-        
+
     .. py:method:: inverse(value, *args, **kwargs)
 
         逆映射，计算输出随机变量对应的输入随机变量的值。
-        
-        参数：        
+
+        参数：
             - **value** (Tensor) - 输出随机变量的值。
             - **args** (list) - 函数所需的位置参数列表。
             - **kwargs** (dict) - 函数所需的关键字参数字典。

@@ -8,7 +8,7 @@ mindspore.nn.AdaMax
     AdaMax算法详情请参阅论文 `Adam: A Method for Stochastic Optimization <https://arxiv.org/abs/1412.6980>`_。
 
     公式如下：
-    
+
     .. math::
         \begin{array}{ll} \\
             m_{t+1} = \beta_1 * m_{t} + (1 - \beta_1) * g \\

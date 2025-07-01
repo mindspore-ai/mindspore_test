@@ -13,4 +13,4 @@ mindspore.dataset.transforms.Mask
     异常：
         - **TypeError** - 参数 `operator` 类型不为 :class:`mindspore.dataset.transforms.Relational` 。
         - **TypeError** - 参数 `constant` 类型不为str、int、float或bool。
-        - **TypeError** - 参数 `dtype` 类型不为 :class:`mindspore.dtype` 。 
+        - **TypeError** - 参数 `dtype` 类型不为 :class:`mindspore.dtype` 。

@@ -4,7 +4,7 @@ mindspore.ops.vsplit
 .. py:function:: mindspore.ops.vsplit(input, indices_or_sections)
 
     根据 `indices_or_sections` 将至少有两维的输入tensor垂直分割成多个子tensor。
-    
+
     等同于 :math:`axis=0` 时的 `ops.tensor_split` 。
 
     参数：

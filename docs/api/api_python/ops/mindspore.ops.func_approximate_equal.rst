@@ -6,9 +6,9 @@ mindspore.ops.approximate_equal
     返回一个布尔型tensor，表示两个tensor在容忍度内是否逐元素相等。
 
     支持隐式类型转换、类型提升。
-    
+
     数学公式为：
-    
+
     .. math::
         out_i = \begin{cases}
         & \text{ if } \left | x_{i} - y_{i} \right | < \text{tolerance},\ \ True  \\

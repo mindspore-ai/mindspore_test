@@ -16,7 +16,7 @@ mindspore.mint.median
           - 如果 ``dim`` 为 ``None`` ， ``y`` 只有一个元素。
           - 如果 ``keepdim`` 为 ``True`` ， ``y`` 的shape除了在 ``dim`` 维度上为1外与 ``input`` 一致。
           - 其他情况下， ``y`` 比 ``input`` 缺少 ``dim`` 指定的维度。
-          
+
         - **indices** (Tensor) - 中值的索引。shape与 ``y`` 一致，数据类型为int64。
 
     异常：

@@ -43,7 +43,7 @@ mindspore.dataset.LFWDataset
     .. include:: mindspore.dataset.sampler.rst
 
     **关于LFW数据集：**
-    
+
     LFW（Labelled Faces in the Wild）数据集是人脸识别领域最常用和广泛的开放数据集之一，
     它由美国马萨诸塞理工学院的Gary B. Huang等人于2007年发布。该数据集包含13,233个人的\
     近50,000张图像，这些图像来自互联网上不同来源的人物照片，并包含了不同的姿势、光照、

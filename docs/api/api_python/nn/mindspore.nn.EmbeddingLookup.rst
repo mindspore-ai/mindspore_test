@@ -43,6 +43,6 @@ mindspore.nn.EmbeddingLookup
         - **ValueError** - `vocab_size` 或 `embedding_size` 小于1。
         - **ValueError** - `vocab_cache_size` 小于0。
         - **ValueError** - `target` 既不是'CPU'也不是'DEVICE'。
-        - **ValueError** - `slice_mode` 不是'batch_slice'、'field_slice'、'table_row_slice'或'table_column_slice'。         
+        - **ValueError** - `slice_mode` 不是'batch_slice'、'field_slice'、'table_row_slice'或'table_column_slice'。
         - **ValueError** - `sparse` 为False且 `target` 为'CPU'。
         - **ValueError** - `slice_mode` 为'field_slice'且 `manual_shapes` 是None。

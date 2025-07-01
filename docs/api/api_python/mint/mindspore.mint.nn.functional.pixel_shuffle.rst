@@ -8,7 +8,7 @@ mindspore.mint.nn.functional.pixel_shuffle
     将shape为 :math:`(*, C \times r^2, H, W)` 的Tensor重排shape为 :math:`(*, C, H \times r, W \times r)` 的Tensor，其中r是放大因子。
 
     这是步长为 :math:`1/r` 的子像素卷积。
-    
+
     关于pixel_shuffle算法详细介绍，请参考 `Real-Time Single Image and Video Super-Resolution Using an Efficient Sub-Pixel Convolutional Neural Network <https://arxiv.org/abs/1609.05158>`_ 。
 
     .. warning::

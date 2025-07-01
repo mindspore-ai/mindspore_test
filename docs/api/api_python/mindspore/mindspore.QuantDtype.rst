@@ -20,4 +20,4 @@ mindspore.QuantDtype
         获取当前 `QuantDtype` 的值。该接口当前主要用于序列化或反序列化 `QuantDtype` 。
 
         返回：
-            int，表示当前 `QuantDtype` 的值。        
+            int，表示当前 `QuantDtype` 的值。

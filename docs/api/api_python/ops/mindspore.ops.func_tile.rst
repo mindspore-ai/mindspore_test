@@ -4,7 +4,7 @@ mindspore.ops.tile
 .. py:function:: mindspore.ops.tile(input, dims)
 
     通过复制 `dims` 次输入tensor中的元素来创建新tensor。
-    
+
     返回tensor的第i维度有 `input.shape[i] * dims[i]` 个元素，并且 `input` 的值沿第i维度被复制 `dims[i]` 次。
 
     .. note::

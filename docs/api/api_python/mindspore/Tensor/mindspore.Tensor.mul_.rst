@@ -8,7 +8,7 @@ mindspore.Tensor.mul\_
     .. math::
 
         out_{i} = tensor_{i} * other_{i}
-    
+
     .. warning::
         这是一个实验性API，后续可能修改或删除。
 

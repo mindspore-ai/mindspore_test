@@ -8,7 +8,7 @@ mindspore.mint.nn.functional.dropout2d
     例如，在批处理输入中， :math:`i\_th` 批的 :math:`j\_th` 通道有一个待处理的 `2D` Tensor `input[i, j]`。
     每个通道在每次前向传播时，将会独立地根据伯努利分布的概率 `p` 来确定是否被置零。
     论文 `Dropout: A Simple Way to Prevent Neural Networks from Overfitting <http://www.cs.toronto.edu/~rsalakhu/papers/srivastava14a.pdf>`_ 中提出了该技术，并证明其能有效地减少过度拟合，防止神经元共适应。更多详细信息，请参见 `Improving neural networks by preventing co-adaptation of feature detectors <https://arxiv.org/pdf/1207.0580.pdf>`_ 。
-    
+
     `dropout2d` 可以提高通道特征映射之间的独立性。
 
     .. warning::

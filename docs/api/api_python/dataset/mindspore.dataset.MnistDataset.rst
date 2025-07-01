@@ -38,14 +38,14 @@ mindspore.dataset.MnistDataset
     .. include:: mindspore.dataset.sampler.rst
 
     **关于MNIST数据集：**
-    
+
     MNIST手写数字数据集是NIST数据集的子集，共有60,000个训练样本和10,000个测试样本。此数据集是NIST数据集的子集。数字已经预先进行了尺寸归一化和中心化处理。
 
     以下为原始MNIST数据集的结构。您可以将数据集文件解压得到如下的文件结构，并通过MindSpore的API进行读取。
 
     .. code-block::
 
-        . 
+        .
         └── mnist_dataset_dir
             ├── t10k-images-idx3-ubyte
             ├── t10k-labels-idx1-ubyte

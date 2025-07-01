@@ -7,10 +7,10 @@ mindspore.ops.custom_info_register
 
     .. note::
         `reg_info` 将添加到算子库 'oplib' 中。
-        
+
     参数：
         - **reg_info** (tuple[str, dict]) - json格式的算子注册信息。
-        
+
     返回：
         function，返回算子信息注册的装饰器。
 

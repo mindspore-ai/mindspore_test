@@ -4,7 +4,7 @@ mindspore.experimental.optim.lr_scheduler.ReduceLROnPlateau
 .. py:class:: mindspore.experimental.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=10, threshold=1e-4, threshold_mode='rel', cooldown=0, min_lr=0, eps=1e-8)
 
     学习率调整优化器，当指标停止改进时降低学习率。训练中学习停滞情况下，模型通常会受益于将学习率降低2～10倍。
-    
+
     调度程序在执行过程中读取指标 `metrics`，如果指标在 `patience` 个周期内没有得到改进，则通过 `step` 方法调整学习率。
 
     .. warning::

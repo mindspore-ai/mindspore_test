@@ -25,7 +25,7 @@ mindspore.grad
 
     返回：
         Function，用于计算给定函数的梯度的求导函数。例如 `out1, out2 = fn(*args)` ，若 `has_aux` 为 ``True`` ，梯度函数将返回 `(gradient, out2)` 形式的结果，其中 `out2` 不参与求导；若为 ``False`` ，将直接返回 `gradient` 。
-        
+
         若return_ids为 ``True`` ，梯度函数返回的梯度将被替代为由返回的梯度和指定求导输入位置的索引或网络变量组成的tuple。
 
     异常：

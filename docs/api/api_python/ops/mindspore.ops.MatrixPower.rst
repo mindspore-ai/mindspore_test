@@ -12,7 +12,7 @@ mindspore.ops.MatrixPower
 
     参数：
         - **n** (int) - 指数，必须是整数。
-  
+
     输入：
         - **x** (Tensor) - 一个3-D Tensor。shape为 :math:`(b, m, m)` ，表示b个m-D的方阵。
 

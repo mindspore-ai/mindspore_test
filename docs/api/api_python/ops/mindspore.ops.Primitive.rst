@@ -42,7 +42,7 @@ mindspore.ops.Primitive
             - **outputs** (list[str]) - 输出名称的列表。
 
     .. py:method:: place(role, rank_id)
-        
+
         设置Primitive算子标签。让此算子在对应进程上执行。
         每个进程的标签都由进程角色 `role` 和 `rank_id` 组成，因此，对算子设置标签代表着算子在哪个进程执行，从而执行分布式训练等任务。
 
