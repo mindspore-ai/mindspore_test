@@ -103,12 +103,34 @@ Format GetFormatByTensorShape(const DeviceContext *device_context, const ShapeVe
   return Format::DEFAULT_FORMAT;
 }
 
+std::string DeviceAddressUtils::GetParameterDeviceStr(const mindspore::AnfNodePtr &node) {
+  constexpr auto kParameterDeviceUserDataName = "parameter_device";
+  if (!node->isa<Parameter>()) {
+    return "";
+  }
+  const auto &parameter = node->cast<ParameterPtr>();
+  MS_EXCEPTION_IF_NULL(parameter);
+  const auto value = parameter->default_param();
+  if (value == nullptr) {
+    return "";
+  }
+  const auto meta_tensor = value->cast_ptr<tensor::MetaTensor>();
+  if (meta_tensor == nullptr) {
+    return "";
+  }
+  const auto &user_data = meta_tensor->user_data<tensor::TensorPybind::TensorPyUserData>(kParameterDeviceUserDataName);
+  if (user_data == nullptr || !py::isinstance<py::str>(user_data->obj)) {
+    return "";
+  }
+  return py::cast<std::string>(user_data->obj);
+}
+
 const DeviceContext *GetDeviceContextForOffloadedParameter(const DeviceContext *origin_device_context,
                                                            const AnfNodePtr &node) {
   if (origin_device_context == nullptr) {
     return origin_device_context;
   }
-  auto device_str = common::AnfAlgo::GetParameterDeviceStr(node);
+  auto device_str = DeviceAddressUtils::GetParameterDeviceStr(node);
   if (device_str.empty()) {
     return origin_device_context;
   }
@@ -168,8 +190,8 @@ void DeviceAddressUtils::CopyNoneTensorDataToDevice(const device::DeviceContext 
     auto value = GetValue<std::string>(kernel_tensor->GetValueTrack());
     size_t tensor_size = value.size();
     ShapeVector tensor_shape{SizeToLong(tensor_size)};
-    auto string_tensor =
-        std::make_shared<tensor::Tensor>(TypeId::kObjectTypeString, tensor_shape, const_cast<void *>(node_value), tensor_size);
+    auto string_tensor = std::make_shared<tensor::Tensor>(TypeId::kObjectTypeString, tensor_shape,
+                                                          const_cast<void *>(node_value), tensor_size);
     const auto &host_device_address = (dynamic_cast<device::DeviceAddress *>(string_tensor->device_address().get()));
     MS_EXCEPTION_IF_NULL(host_device_address);
     host_device_address->SetSize(tensor_size + 1);
