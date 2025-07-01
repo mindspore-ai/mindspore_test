@@ -415,7 +415,9 @@ class AbstractDict : public AbstractObject {
     }
 
    private:
-    PyObject *map_, *key_, *val_;
+    PyObject *map_{nullptr};
+    PyObject *key_{nullptr};
+    PyObject *val_{nullptr};
     Py_ssize_t pos_;
   };
   auto begin() const { return ValueIter(this); }
