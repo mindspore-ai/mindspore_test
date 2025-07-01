@@ -60,6 +60,9 @@ class Adadelta(Optimizer):
             &\rule{180mm}{0.4pt}                                                          \\[-1.ex]
         \end{aligned}
 
+    For more details about Adadelta algorithm, please refer to `ADADELTA: An Adaptive Learning Rate Method
+    <https://arxiv.org/abs/1212.5701>`_.
+
     .. warning::
         This is an experimental optimizer API that is subject to change.
         This module must be used with lr scheduler module in `LRScheduler Class

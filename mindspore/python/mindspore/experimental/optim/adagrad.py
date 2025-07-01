@@ -57,6 +57,9 @@ class Adagrad(Optimizer):
             &\rule{160mm}{0.4pt}                                                          \\[-1.ex]
        \end{aligned}
 
+    For more details about Adagrad algorithm, please refer to `Adaptive Subgradient Methods for Online Learning and \
+    Stochastic Optimization <https://jmlr.org/papers/v12/duchi11a.html>`_.
+
     .. warning::
         This is an experimental optimizer API that is subject to change.
         This module must be used with lr scheduler module in `LRScheduler Class

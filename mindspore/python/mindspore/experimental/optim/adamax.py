@@ -67,6 +67,9 @@ class Adamax(Optimizer):
         This module must be used with lr scheduler module in `LRScheduler Class
         <https://www.mindspore.cn/docs/en/master/api_python/mindspore.experimental.html#lrscheduler-class>`_ .
 
+    For more details about Adamax algorithm, please refer to `Adam: A Method for Stochastic Optimization
+    <https://arxiv.org/abs/1412.6980>`_.
+
     Args:
         params (Union[list(Parameter), list(dict)]): list of parameters to optimize or dicts defining
             parameter groups.

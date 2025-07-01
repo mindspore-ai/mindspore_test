@@ -31,6 +31,8 @@ mindspore.experimental.optim.Adadelta
             &\rule{180mm}{0.4pt}                                                          \\[-1.ex]
         \end{aligned}
 
+    想更深入了解Adadelta算法，请参考论文 `Adaptive Subgradient Methods for Online Learning and Stochastic Optimization <https://jmlr.org/papers/v12/duchi11a.html>`_ 。
+
     .. warning::
         这是一个实验性的优化器接口，需要和 `LRScheduler <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore.experimental.html#lrscheduler%E7%B1%BB>`_ 下的动态学习率接口配合使用。
 

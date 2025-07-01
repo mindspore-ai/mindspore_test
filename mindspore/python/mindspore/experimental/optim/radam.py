@@ -89,6 +89,9 @@ class RAdam(Optimizer):
             &\rule{180mm}{0.4pt}
         \end{align*}
 
+    For more details about RAdam algorithm, please refer to `On the Variance of the Adaptive Learning Rate and Beyond
+    <https://arxiv.org/abs/1908.03265>`_.
+
     .. warning::
         This is an experimental optimizer API that is subject to change.
         This module must be used with lr scheduler module in `LRScheduler Class
