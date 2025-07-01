@@ -154,8 +154,8 @@ def test_cell_offload():
     """
     net = Net()
     offload_net = Offload_Net()
-    folder_path_off = "./offload_graph_off"
-    folder_path_on = "./offload_graph_on"
+    folder_path_off = "./cell_offload_offload_graph_off"
+    folder_path_on = "./cell_offload_offload_graph_on"
     forward_output, backward_output = run_offload_cell_offload(net, folder_path_off)
     offload_forward_output, offload_backward_output = run_offload_cell_offload(offload_net, folder_path_on)
     assert np.all(forward_output.asnumpy() == offload_forward_output.asnumpy())
@@ -171,8 +171,8 @@ def test_cells_offload():
     """
     net = Nets()
     offload_net = Offload_Nets()
-    folder_path_off = "./offload_graph_off"
-    folder_path_on = "./offload_graph_on"
+    folder_path_off = "./cells_offload_offload_graph_off"
+    folder_path_on = "./cells_offload_offload_graph_on"
     forward_output, backward_output = run_offload_cell_offload(net, folder_path_off)
     offload_forward_output, offload_backward_output = run_offload_cell_offload(offload_net, folder_path_on)
     assert np.all(forward_output.asnumpy() == offload_forward_output.asnumpy())
