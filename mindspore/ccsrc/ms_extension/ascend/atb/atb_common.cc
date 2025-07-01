@@ -18,6 +18,7 @@
 #include <map>
 #include "ms_extension/common/tensor.h"
 #include "ir/tensor.h"
+#include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"
 
 namespace ms::pynative {
 void *GetHostDataPtr(const ms::Tensor &t) {
@@ -58,13 +59,23 @@ size_t AtbOpRunner::CalcWorkspace() {
   MS_EXCEPTION_IF_NULL(context_);
 
   workspace_size_ = 0;
-  auto st = op_->Setup(variant_pack_, workspace_size_, context_);
+  auto st = op_->get()->Setup(variant_pack_, workspace_size_, context_);
   CHECK_ATB_RET(op_name(), st, Setup);
   return static_cast<size_t>(workspace_size_);
 }
 
 void AtbOpRunner::LaunchKernel() {
-  auto st = op_->Execute(variant_pack_, static_cast<uint8_t *>(workspace_ptr()), workspace_size_, context_);
+  auto st = op_->get()->Execute(variant_pack_, static_cast<uint8_t *>(workspace_ptr()), workspace_size_, context_);
   CHECK_ATB_RET(op_name(), st, Execute);
+  op_->Free();
+}
+
+void AtbOpRunner::_Run() {
+  for (auto &inp : _inputs_) {
+    if (inp.is_defined() && !inp.is_contiguous()) {
+      inp = ms::Tensor(mindspore::kernel::pyboost::contiguous(inp.tensor()));
+    }
+  }
+  PyboostRunner::_Run();
 }
 }  // namespace ms::pynative

@@ -23,17 +23,18 @@
 #include <mutex>
 #include <memory>
 #include <string>
+#include <list>
 
 #include "atb/atb_infer.h"
 #include "ms_extension/pynative/pyboost_extension.h"
 
-#define CHECK_ATB_RET(op, st, func)                                                                       \
-  do {                                                                                                    \
-    if (st != 0) {                                                                                        \
-      MS_LOG(EXCEPTION) << "ATB function [" #func "] result error. st=" << st << ", op is " << op         \
-                        << ". See atb logs in \"~/atb/log\" for more details, refer to atb documents at " \
-                           "https://www.hiascend.com/document";                                           \
-    }                                                                                                     \
+#define CHECK_ATB_RET(op, st, func)                                                                                 \
+  do {                                                                                                              \
+    if (st != 0) {                                                                                                  \
+      MS_LOG(EXCEPTION) << "ATB function [" #func "] result error. st=" << st << ", op is " << op                   \
+                        << ". Set environ variable 'export ASDOPS_LOG_TO_FILE=1' and see atb logs in \"~/atb/log\"" \
+                           " for more details, refer to atb documents at https://www.hiascend.com/document";        \
+    }                                                                                                               \
   } while (0)
 
 namespace atb {
@@ -108,6 +109,39 @@ class EXTENSION_EXPORT AtbContextManager {
     return ins;
   }
 
+  /// \brief OperationHolder ensures that an `atb::Operation` can only be held by one operator at a time.
+  ///
+  /// If no restrictions are applied, `atb::Operation` might be held by multiple operators at the same time. Since
+  /// `Setup` (calculating the workspace) and `Execute` are executed in different threads, there is a risk of `Setup`
+  /// and `Execute` being executed out of order if multiple operators hold the same operation simultaneously. To address
+  /// this, the `used` flag is introduced to ensure that an `Operation` can only be held by a single operator at any
+  /// given time. When an `Operation` is already held, the framework will create an additional `Operation` for the
+  /// corresponding `Param`. After an operator completes the `Execute` process, it must actively call the `Free`
+  /// interface to release the operation, allowing it to be reused by the next operator.
+  class OperationHolder {
+   public:
+    explicit OperationHolder(atb::Operation *op) : op_(op) { used_.store(true); }
+    atb::Operation *get() {
+      MS_EXCEPTION_IF_NULL(op_);
+      return op_;
+    }
+
+    // Occupy function is only used in getOperation, which is protected with OpParamCache.mutex_
+    bool Occupy() {
+      if (used_.load()) {
+        return false;
+      }
+      used_.store(true);
+    }
+
+    // Free the atb operation after Execute
+    void Free() { used_.store(false); }
+
+   private:
+    atb::Operation *op_{nullptr};
+    std::atomic<bool> used_{true};
+  };
+
   atb::Context *GetContext(void *stream) {
     std::lock_guard<std::mutex> lock(ctx_mutex_);
     auto &ctx = ctx_map_[stream];
@@ -121,7 +155,7 @@ class EXTENSION_EXPORT AtbContextManager {
   }
 
   template <typename ParamType>
-  atb::Operation *GetOperation(const ParamType &param, const std::string &name) {
+  AtbContextManager::OperationHolder *GetOperation(const ParamType &param, const std::string &name) {
     auto cache = GetOperationCache(param);
     MS_EXCEPTION_IF_NULL(cache);
     return cache->getOperation(param, name);
@@ -159,30 +193,34 @@ class EXTENSION_EXPORT AtbContextManager {
 template <typename ParamType>
 class AtbContextManager::OpParamCache : public OpParamCacheBase {
  public:
-  atb::Operation *getOperation(const ParamType &param, const std::string &name) {
+  AtbContextManager::OperationHolder *getOperation(const ParamType &param, const std::string &name) {
     uint64_t hashValue = computeHash(param);
     {
       std::lock_guard<std::mutex> lock(mutex_);
-      auto opCache = op_map_.find(hashValue);
-      if (opCache != op_map_.end()) {
-        return opCache->second;
+      auto &ops = op_map_[hashValue];
+      for (auto &holder : ops) {
+        if (holder.Occupy()) {
+          return &holder;
+        }
       }
       atb::Operation *op = nullptr;
       auto st = atb::CreateOperation(param, &op);
       CHECK_ATB_RET(name, st, CreateOperation);
       MS_EXCEPTION_IF_NULL(op);
-      op_map_[hashValue] = op;
-      return op;
+      (void)ops.emplace_back(op);
+      return &(ops.back());
     }
   }
 
   ~OpParamCache() override {
     std::lock_guard<std::mutex> lock(mutex_);
-    for (auto &opItem : op_map_) {
-      DestroyOperation(opItem.second);
+    for (auto &ops : op_map_) {
+      for (auto &op : ops.second) {
+        DestroyOperation(op.get());
+      }
     }
   }
-  std::unordered_map<uint64_t, atb::Operation *> op_map_;
+  std::unordered_map<uint64_t, std::list<AtbContextManager::OperationHolder>> op_map_;
   mutable std::mutex mutex_;
 };
 }  // namespace atb

@@ -27,11 +27,10 @@ def test_pyboost_cpu_add():
     Description: Custom add op.
     Expectation: success.
     """
-
     ms.set_device("CPU")
     my_ops = CustomOpBuilder("pyboost_cpu_add", ['jit_test_files/pyboost_cpu_add.cpp'], backend="CPU").load()
-    x = np.random.rand(10, 10, 10).astype(np.int32)
-    y = np.random.rand(9, 9, 9).astype(np.int32)
+    x = np.random.randint(0, 100, size=(10, 10, 10)).astype(np.int32)
+    y = np.random.randint(0, 100, size=(9, 9, 9)).astype(np.int32)
     # the sliced shape is [4, 4, 4]
     expect = x[:4, 6:, 3:7] + y[5:, :4, 4:8]
 
@@ -46,6 +45,14 @@ def test_pyboost_cpu_add():
     assert np.allclose(out1.asnumpy(), expect, 1e-3, 1e-3)
     assert np.allclose(out2.asnumpy(), expect, 1e-3, 1e-3)
 
+    # case in tutoral
+    x = np.array([1, 2], dtype=np.int32)
+    y = np.array([3, 4], dtype=np.int32)
+    z = np.array([5, 6], dtype=np.int32)
+    out = my_ops.add3(ms.Tensor(x), ms.Tensor(y), ms.Tensor(z))
+    expect = x + y + z
+    assert np.allclose(out.asnumpy(), expect, 1e-3, 1e-3)
+
 
 @arg_mark(plat_marks=["cpu_linux"], level_mark="level0", card_mark="onecard", essential_mark="essential")
 def test_pyboost_cpu_swap():
@@ -57,10 +64,11 @@ def test_pyboost_cpu_swap():
 
     ms.set_device("CPU")
     my_ops = CustomOpBuilder("pyboost_cpu_swap", ['jit_test_files/pyboost_cpu_swap.cpp'], backend="CPU").load()
-    x = np.random.rand(10, 10, 10).astype(np.int32)
-    y = np.random.rand(10, 10, 10).astype(np.int32)
+    x = np.random.randint(0, 100, (10, 10, 10)).astype(np.int32)
+    y = np.random.randint(0, 100, (10, 10, 10)).astype(np.int32)
     x_tensor = ms.Tensor(x)
     y_tensor = ms.Tensor(y)
-    my_ops.swap(x_tensor, y_tensor)
+    ret = my_ops.swap(x_tensor, y_tensor)
+    assert ret is None
     assert np.allclose(x_tensor.asnumpy(), y, 1e-3, 1e-3)
     assert np.allclose(y_tensor.asnumpy(), x, 1e-3, 1e-3)

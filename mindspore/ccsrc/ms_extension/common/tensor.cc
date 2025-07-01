@@ -110,7 +110,11 @@ namespace pybind11 {
 namespace detail {
 bool type_caster<ms::Tensor>::load(handle src, bool) {
   if (mindspore::tensor::IsTensorPy(src)) {
-    value = ms::Tensor(mindspore::tensor::ConvertToValue(src));
+    auto v = mindspore::tensor::ConvertToValue(src);
+    if (v->isa<mindspore::tensor::Tensor>()) {
+      v->cast<mindspore::tensor::TensorPtr>()->set_need_pipeline_sync(true);
+    }
+    value = ms::Tensor(v);
     return true;
   }
   // the value is initialized as an undefined Tensor for None input.
