@@ -56,6 +56,7 @@ static const std::unordered_map<std::string, bool (GraphJitConfig::*)(PyObject *
   {"subgraph_break_opt", &GraphJitConfig::SetBool<GraphJitConfig::kSubgraphBreakOpt>},
   {"fullgraph", &GraphJitConfig::SetBool<GraphJitConfig::kFullGraph>},
   {"enable_old_guard_strategy", &GraphJitConfig::SetBool<GraphJitConfig::kEnableOldGuardStrategy>},
+  {"tensor_setitem_side_effect_opt", &GraphJitConfig::SetBool<GraphJitConfig::kTensorSetitemSideEffectOpt>},
   // kEnableOptimizeForAttrItem
   {"_symbolic", &GraphJitConfig::SetInt<GraphJitConfig::kSymbolic>},
   {"MAX_TRACE_DEPTH", &GraphJitConfig::SetInt<GraphJitConfig::kMaxTraceDepth>},
@@ -102,6 +103,7 @@ GraphJitConfig::GraphJitConfig() : int_conf{0}, bool_conf{false} {
   bool_conf[kSubgraphBreakOpt - kBoolConf] = true;
   bool_conf[kReCaptureLoopBody - kBoolConf] = false;
   bool_conf[kFullGraph - kBoolConf] = false;
+  bool_conf[kTensorSetitemSideEffectOpt - kBoolConf] = false;
 
   int_conf[kMaxTraceDepth - kIntConf] = kDefaultMaxTraceDepth;
   int_conf[kStaticGraphBytecodeMin - kIntConf] = 0;

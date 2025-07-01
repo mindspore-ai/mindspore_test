@@ -124,6 +124,10 @@ SideEffect::CacheResult SideEffect::LoadGlobal(const std::string &module_name, c
 }
 
 static bool IsTensorOpt(SideEffect::Type type, ValueNode *oper, const std::string &method_name) {
+  if (!pijit::kPIJitConfigDefault.GetBoolConfig(GraphJitConfig::kTensorSetitemSideEffectOpt)) {
+    MS_LOG(DEBUG) << "Tensor setitem side-effect optimization is not enabled";
+    return false;
+  }
   ValueNode *tensor;
   if (type == SideEffect::Type::kBuiltinMethod) {
     tensor = GetSelfFromKnownMethod(oper);
@@ -140,6 +144,7 @@ static bool IsTensorOpt(SideEffect::Type type, ValueNode *oper, const std::strin
   }
   // must be computed by graph, but graph can't apply side effect to tensor
   if (method_name == kSetItem) {
+    MS_LOG(DEBUG) << "Enable Tensor setitem side-effect optimization for node: " << ToString(oper);
     return true;
   }
   // function Tensor.assign_value can't run in graph
@@ -148,6 +153,7 @@ static bool IsTensorOpt(SideEffect::Type type, ValueNode *oper, const std::strin
 }
 
 bool SideEffect::Record(ValueNode *node, Type type, std::string name) {
+  MS_LOG(DEBUG) << "Record SideEffect node: " << ToString(node);
   int opcode = node->GetOpcode();
   if (opcode == STORE_ATTR || opcode == DELETE_ATTR) {
     ValueNode *src_node = opcode == DELETE_ATTR ? node->input(0) : node->input(1);
@@ -155,6 +161,7 @@ bool SideEffect::Record(ValueNode *node, Type type, std::string name) {
     data_->AddAttrData(node->GetName(), src_node, attr_node);
     type = kBuiltinFunction;
     name = opcode == STORE_ATTR ? kSetAttr : kDelAttr;
+    MS_LOG(DEBUG) << "Record attr data, src node: " << ToString(src_node) << ", attr node: " << ToString(attr_node);
   } else if (opcode == STORE_GLOBAL || opcode == DELETE_GLOBAL) {
     MS_EXCEPTION_IF_NULL(node->GetGraph());
     ValueNode *new_value = opcode == DELETE_GLOBAL ? nullptr : node->input(0);
@@ -688,11 +695,11 @@ std::vector<ValueNode *> SideEffectHandler::MergeSideEffect(const std::vector<Va
     auto slice = graph_->NewValueNode(AObject::Convert(slice_obj), BUILD_SLICE, 2, {none, none});
     auto save = graph_->NewValueNode(nullptr, STORE_SUBSCR, 3, {latest_value, obj, slice});
     for (const auto index : indexes) {
-      MS_LOG(DEBUG) << "Delete side effect operation : " << side_effect_nodes[index]->ToString();
+      MS_LOG(INFO) << "Delete side effect operation: " << ToString(side_effect_nodes[index]);
       side_effect_nodes[index] = nullptr;
     }
     side_effect_nodes[indexes.back()] = save;
-    MS_LOG(DEBUG) << "Merge side effect operation : " << save->ToString();
+    MS_LOG(INFO) << "Merge side effect operation: " << save->ToString();
   }
   auto is_remove = [](const auto &node) { return node == nullptr; };
   auto remove_if = std::remove_if(side_effect_nodes.begin(), side_effect_nodes.end(), is_remove);
