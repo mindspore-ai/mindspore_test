@@ -41,7 +41,6 @@ function(merge_ops_files SRC_DIR OUT_FILE_FOLDER OUT_FILE_PREFIX EXCLUDE_FILES_P
     set(TEMP_DIR ${OUT_FILE_FOLDER}/temp)
     file(MAKE_DIRECTORY ${TEMP_DIR})
 
-    # Create a map of first letters to file lists
     foreach(file_path ${SRC_LIST})
         set(orig_file_path ${file_path})
         if(NOT ${EXCLUDE_FILES_PATTERN} STREQUAL "")
@@ -93,6 +92,20 @@ function(merge_ops_files SRC_DIR OUT_FILE_FOLDER OUT_FILE_PREFIX EXCLUDE_FILES_P
             file(COPY ${temp_file} DESTINATION ${OUT_FILE_FOLDER})
             execute_process(COMMAND touch -c -t ${MAX_TIMESTAMP} ${target_file})
             message(STATUS "[merge_ops_files] Updated ${filename} (MD5 changed)")
+        endif()
+    endforeach()
+
+    # Check for and remove obsolete files
+    # NOTE: this method won't be able to remove those files if the merge function is not called with the same
+    # OUT_FILE_PREFIX anymore. We decided not to handle this situation because it would complicate the merge process
+    # and it won't affect the CI. In such cases, manual cleanup should be done.
+    file(GLOB EXISTING_FILES ${OUT_FILE_FOLDER}/${OUT_FILE_PREFIX}_*.cc)
+    foreach(existing_file ${EXISTING_FILES})
+        get_filename_component(existing_filename ${existing_file} NAME)
+        set(temp_file ${TEMP_DIR}/${existing_filename})
+        if(NOT EXISTS ${temp_file})
+            file(REMOVE ${existing_file})
+            message(STATUS "[merge_ops_files] Removed obsolete file: ${existing_filename}")
         endif()
     endforeach()
 
