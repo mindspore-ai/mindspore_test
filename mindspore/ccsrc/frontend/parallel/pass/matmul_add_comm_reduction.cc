@@ -268,6 +268,7 @@ void HandleNodePullUp(const AnfNodePtr &add_node, const std::vector<AnfNodePtr> 
     auto manager = graph->manager();
     MS_EXCEPTION_IF_NULL(manager);
     auto add_cnode = add_node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(add_cnode);
     HandleNodeBiasAdd(each_node, add_cnode->input(index + 1));
     (void)manager->Replace(each_node, pre_node);
     MS_LOG(INFO) << "For comm reduction, pull up node next to comm node, node is: " << pre_node->DebugString();
@@ -287,6 +288,7 @@ void HandleNodePullDown(const AnfNodePtr &add_node, const AnfNodePtr &comm_node)
   MS_EXCEPTION_IF_NULL(new_comm_node);
   new_comm_node->set_abstract(comm_node->abstract());
   auto prim = GetCNodePrimitive(new_comm_node);
+  MS_EXCEPTION_IF_NULL(prim);
   (void)prim->AddAttr(MATMUL_ADD_COMM_REDUCTION, MakeValue(true));
 
   auto manager = graph->manager();
