@@ -188,9 +188,9 @@ FuncBuilder::FuncBuilder(const std::string &name, std::string device_target, con
 }
 
 NodePtr FuncBuilder::EmitOp(const PrimitivePtr &prim, const NodePtrList &inputs) {
+  MS_EXCEPTION_IF_NULL(prim);
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kEmitOp, prim->name(),
                                      false);
-  MS_EXCEPTION_IF_NULL(prim);
   MS_LOG(DEBUG) << "Emit op " << prim->name();
   auto real_inputs = pass_forward_->PassForOpInput(prim, inputs);
   std::vector<ValuePtr> op_inputs;

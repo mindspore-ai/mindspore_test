@@ -579,9 +579,11 @@ std::vector<bool> GetNeedGradIndexes(const VectorRef &args) {
 }  // namespace
 
 void KPynativeOp(const GradParamPtr &grad_param) {
+  MS_EXCEPTION_IF_NULL(grad_param);
+  MS_EXCEPTION_IF_NULL(grad_param->op_grad_info);
+  MS_EXCEPTION_IF_NULL(grad_param->op_grad_info->op_prim);
   MS_LOG(DEBUG) << "Begin KPynativeOp"
                 << ", prim: " << grad_param->op_grad_info->op_prim->name();
-  MS_EXCEPTION_IF_NULL(grad_param);
   const auto &prim = grad_param->op_grad_info->op_prim;
   if (!AutoGradUtil::IsPrimNeedGrad(prim) || !AutoGradUtil::NeedGrad(grad_param->op_grad_info->input_value)) {
     MS_LOG(DEBUG) << "Prim " << prim->name() << " does not need to do op grad.";
