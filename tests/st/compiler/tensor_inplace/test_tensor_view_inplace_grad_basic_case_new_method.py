@@ -579,3 +579,31 @@ def test_scene7_case6():
                                               Tensor([6, 7], dtype=ms.float32))
     assert (out_expect[0].asnumpy() == out_jit[0].asnumpy()).all()
     assert (out_expect[1].asnumpy() == out_jit[1].asnumpy()).all()
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_scene7_case7():
+    """
+    Feature: Support tensor inplace view gradient.
+    Description: Support tensor inplace view gradient.
+    Expectation: Run success.
+    """
+
+    class Net(nn.Cell):
+        def construct(self, x, value):
+            y = ops.abs(x)
+            m = select_ext_view_op(y, 0, 0)
+            n = select_ext_view_op(m, 0, 1)
+            u = select_ext_view_op(y, 0, 0)
+            v = select_ext_view_op(u, 0, 1)
+            InplaceMul()(n, value)
+            return v
+
+    net = Net()
+    out_expect = grad(net, grad_position=(0, 1))(Tensor([[1, 2], [3, 4]], dtype=ms.float32),
+                                                 Tensor(2, dtype=ms.float32))
+    net.construct = ms.jit(net.construct, backend="ms_backend")
+    out_jit = grad(net, grad_position=(0, 1))(Tensor([[1, 2], [3, 4]], dtype=ms.float32),
+                                              Tensor(2, dtype=ms.float32))
+    assert (out_expect[0].asnumpy() == out_jit[0].asnumpy()).all()
+    assert (out_expect[1].asnumpy() == out_jit[1].asnumpy()).all()

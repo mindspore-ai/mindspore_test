@@ -70,15 +70,19 @@ void VirtualViewInsertProcesser::ResetViewModificationStatus(const AnfNodePtr &v
   // view_modifications: {y: {m: true, n: true, ...}, ...}
   // Reset view_modifications: {y: {m: false, n: true, ...}, ...} after VirtualView of m inserted
   auto dep_it = view_dependencies_.find(view_output);
-  if (dep_it == view_dependencies_.end()) return;
+  if (dep_it == view_dependencies_.end()) {
+    return;
+  }
 
   auto mod_it = view_modifications_.find(dep_it->second);
-  if (mod_it == view_modifications_.end()) return;
+  if (mod_it == view_modifications_.end()) {
+    return;
+  }
 
   auto &view_status_map = mod_it->second;
   auto status_it = view_status_map.find(view_output);
   if (status_it != view_status_map.end()) {
-    view_status_map[view_output] = false;
+    status_it->second = false;
     MS_LOG(DEBUG) << "Reset view modification status for: " << view_output->DebugString();
   }
 }
@@ -92,11 +96,12 @@ void VirtualViewInsertProcesser::VirtualViewInsertAction(const CNodePtr &cnode, 
   if (umonad_abstract == nullptr || !umonad_abstract->isa<abstract::AbstractUMonad>()) {
     MS_LOG(EXCEPTION) << "Invalid cnode, should have umonad as the last input, but got cnode: "
                       << umonad->DebugString();
-    return;
   }
 
   auto view_chain_it = view_chains_.find(view_cnode);
-  if (view_chain_it == view_chains_.end()) return;
+  if (view_chain_it == view_chains_.end()) {
+    return;
+  }
 
   AnfNodePtr first_virtual_view_node = nullptr;
   AnfNodePtr first_new_umonad = nullptr;
@@ -134,9 +139,13 @@ void VirtualViewInsertProcesser::UpdateViewModificationStatus(const AnfNodePtr &
   if (mod_it == view_modifications_.end()) {
     // input_node is y viewed node like m, n
     auto dep_it = view_dependencies_.find(input_node);
-    if (dep_it == view_dependencies_.end()) return;
+    if (dep_it == view_dependencies_.end()) {
+      return;
+    }
     mod_it = view_modifications_.find(dep_it->second);
-    if (mod_it == view_modifications_.end()) return;
+    if (mod_it == view_modifications_.end()) {
+      return;
+    }
   }
   auto &view_status_map = mod_it->second;
   for (auto &view_status : view_status_map) {
@@ -149,12 +158,13 @@ void VirtualViewInsertProcesser::UpdateViewChains(const CNodePtr &view_cnode) {
     MS_LOG(DEBUG) << "Invalid viewed cnode, should have at least one input: " << view_cnode->DebugString();
     return;
   }
-  auto base_chain_it = view_chains_.find(view_cnode);
-  if (base_chain_it != view_chains_.end()) {
+
+  auto input_node = view_cnode->input(1);
+  if (view_chains_.count(input_node)) {
     // n = View(m)
     // view_chains[m] = [m]
     // view_chains_: {m: [m], n: [m, n]}
-    auto new_chain = base_chain_it->second;
+    auto new_chain = view_chains_[input_node];
     new_chain.push_back(view_cnode);
     view_chains_[view_cnode] = std::move(new_chain);
   } else {
@@ -282,9 +292,8 @@ void VirtualViewInsertProcesser::ChangeVirtualViewInputInner() {
       MS_EXCEPTION_IF_NULL(abs);
       auto ref = abs->cast<abstract::AbstractRefPtr>();
       if (ref == nullptr) {
-        MS_LOG(INFO) << "The virtual view op abstract is not ref: " << abs->ToString()
-                     << ", virtual view operation is: " << node->DebugString();
-        continue;
+        MS_LOG(EXCEPTION) << "The virtual view op abstract is not ref: " << abs->ToString()
+                          << ", virtual view operation is: " << node->DebugString();
       }
       auto view_op = abs->user_data<CNode>(kOriginalViewOp);
       if (view_op == nullptr) {
