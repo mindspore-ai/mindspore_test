@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,11 +27,12 @@ void RegTyping(py::module *m) {
   (void)m_sub.def("is_subclass", &IsIdentidityOrSubclass, "is equal or subclass");
   (void)m_sub.def("load_type", &TypeIdToType, "load type");
   (void)m_sub.def(
-    "dump_type", [](const TypePtr &t) { return t->type_id(); }, "dump type");
+    "dump_type", [](const TypePtr &t) { return t->type_id(); }, py::arg("t").none(false), "dump type");
   (void)m_sub.def("str_to_type", &StringToType, "string to typeptr");
   (void)m_sub.def("type_size_in_bytes", &GetTypeByte, "type size in bytes");
   (void)m_sub.def(
-    "type_to_type_id", [](const TypePtr &t) { return GetTypeId(t->type_id()); }, "convert type to type id enum value");
+    "type_to_type_id", [](const TypePtr &t) { return GetTypeId(t->type_id()); }, py::arg("t").none(false),
+    "convert type to type id enum value");
   (void)m_sub.def(
     "type_id_to_type", [](const int &t) { return TypeIdToType(TypeId(t)); }, "convert type id enum value to type");
   (void)py::class_<Type, std::shared_ptr<Type>>(m_sub, "Type")
@@ -160,8 +161,12 @@ void RegTyping(py::module *m) {
     .def("element_type", &TensorType::element)
     .def(py::pickle(
       [](const TensorType &t) {  // __getstate__
+        auto element_type = t.element();
+        if (!element_type) {
+          throw std::runtime_error("Can not serialize TensorType with null element_type.");
+        }
         /* Return a tuple that fully encodes the state of the object */
-        return py::make_tuple(py::int_(static_cast<int>(t.element()->type_id())));
+        return py::make_tuple(py::int_(static_cast<int>(element_type->type_id())));
       },
       [](const py::tuple &t) {  // __setstate__
         if (t.size() != 1) {

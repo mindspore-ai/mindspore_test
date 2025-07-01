@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,7 +74,7 @@ class EventPy {
   // Transfer between multi-stage pipelines
   std::shared_ptr<int64_t> task_id_on_stream_ = std::make_shared<int64_t>(0L);
   size_t record_stream_id_{0};
-  device::DeviceContext *device_ctx_;
+  device::DeviceContext *device_ctx_{nullptr};
 };
 
 class EventCnt {

@@ -474,7 +474,7 @@ std::vector<AnfNodePtr> GetNewInputsBySignatures(const FuncGraphPtr &func_graph,
       // If sig is SignatureEnumRW::kRWRef, not do anything.
     } else if (is_inplace_prim && sig == SignatureEnumRW::kRWWrite) {
       (void)write_indices.insert(i);
-    } else if (IfRaiseExceptionForCheckParameter(func_name, function, sig, type)) {
+    } else if (type && IfRaiseExceptionForCheckParameter(func_name, function, sig, type)) {
       MS_EXCEPTION(TypeError) << "Function " << func_name << "'s input " << i << " should be a Parameter or a Tensor, "
                               << "but got " << type->ToString() << ".";
     }
