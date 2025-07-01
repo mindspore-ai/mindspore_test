@@ -74,7 +74,7 @@ def test_tensor_instantiation_3():
     @jit(capture_mode='bytecode')
     def func(x, y, z, dtype):
         # now it's constant
-        return x + ms.tensor(shape=(x, y, z), dtype=dtype, init=False)
+        return x + ms.tensor(shape=(x, y, z), dtype=dtype, init=None)
 
     x=1
     y=2
