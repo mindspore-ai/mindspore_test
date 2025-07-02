@@ -154,26 +154,26 @@ bool CudaDriver::CopyDeviceMemToDeviceAsync(const DeviceMemPtr &dst, const void 
 }
 
 size_t CudaDriver::total_mem_size() {
-  size_t free;
-  size_t total;
-  auto ret = cudaMemGetInfo(&free, &total);
+  size_t free_mem;
+  size_t total_mem;
+  auto ret = cudaMemGetInfo(&free_mem, &total_mem);
   if (ret != cudaSuccess) {
     MS_LOG(ERROR) << "cudaMemGetInfo failed, ret[" << static_cast<int>(ret) << "], " << cudaGetErrorString(ret);
     return 0;
   }
-  return total;
+  return total_mem;
 }
 
 size_t CudaDriver::free_mem_size() {
-  size_t free;
-  size_t total;
-  auto ret = cudaMemGetInfo(&free, &total);
+  size_t free_mem;
+  size_t total_mem;
+  auto ret = cudaMemGetInfo(&free_mem, &total_mem);
   if (ret != cudaSuccess) {
     MS_LOG(ERROR) << "cudaMemGetInfo failed, ret[" << static_cast<int>(ret) << "], " << cudaGetErrorString(ret);
     return 0;
   }
 
-  return free;
+  return free_mem;
 }
 
 bool CudaDriver::CreateStream(CudaDeviceStream *stream) {
