@@ -125,13 +125,7 @@ class LazyFusionKernelAscend : public dvm::Kernel {
     }
   }
 
-  void *AllocWorkspace(uint64_t size) {
-    auto &store = outputs_.emplace_back();
-    store.op = nullptr;
-    store.dev_addr = std::make_shared<device::ascend::AscendDeviceAddress>(nullptr, size);
-    device_context_->device_res_manager_->AllocateMemory(store.dev_addr.get(), stream_id_);
-    return store.dev_addr->GetMutablePtr();
-  }
+  void *AllocWorkspace(uint64_t size);
 
   bool HasTensor(const TensorPtr &x) const;
 
