@@ -17,3 +17,6 @@ gather_pre_rms_norm:
       dtype: tensor
     res_out:
       dtype: tensor
+  dispatch:
+    enable: True
+    InternalOpAscend: AutoGen

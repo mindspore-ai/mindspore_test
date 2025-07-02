@@ -36,20 +36,36 @@ inline bool GetSeqLenFromInputTensor(const TensorPtr &input_tensor, std::vector<
 
 internal::InternalOpPtr Mla::CreateKernel(const internal::InputsImmutableInfoList &inputs,
                                           const internal::OutputsImmutableInfoList &outputs) {
+  created_flag_ = true;
   param_.type = internal::MLAParam::kSplitCache;
   return internal::CreateMLAOp(inputs, outputs, param_, internal::kInternalMLAOpName);
 }
 
-uint64_t Mla::GenerateTilingKey(const std::string &kernel_name, const TensorPtrList &inputs) {
-  return CalcInternalOpTilingHash(kernel_name, inputs, param_.q_seq_len, param_.kv_seq_len);
+bool Mla::UpdateParam() {
+  if (created_flag_) {
+    created_flag_ = false;
+    return true;
+  }
+
+  auto ret = internal_op_->UpdateParam(&param_);
+  if (ret != internal::kInternalOk) {
+    MS_LOG(ERROR) << "InternalMLA UpdateParam failed, kernel_name: " << kernel_name_;
+    return false;
+  }
+  return true;
 }
 
-void Mla::Call(const std::shared_ptr<pyboost::OpRunner> &op, const TensorPtr &query, const TensorPtr &q_rope,
-               const TensorPtr &kv_cache, const TensorPtr &k_rope, const TensorPtr &block_tables,
-               const std::optional<TensorPtr> &mask, const std::optional<TensorPtr> &deq_scale_qk,
-               const std::optional<TensorPtr> &deq_scale_pv, const std::optional<TensorPtr> &q_seq_lens,
-               const std::optional<TensorPtr> &context_lens, const int64_t &head_num, const float &scale_value,
-               const int64_t &kv_head_num, const int64_t &mask_mode, const int64_t &is_ring) {
+uint64_t Mla::GetOrGenerateOpTilingKey(const uint64_t &tiling_key) const {
+  return CalcInternalOpTilingHash(kernel_name_, tiling_key, param_.q_seq_len, param_.kv_seq_len);
+}
+
+void Mla::Call(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &op_key, const uint64_t &tiling_key,
+               const TensorPtr &query, const TensorPtr &q_rope, const TensorPtr &kv_cache, const TensorPtr &k_rope,
+               const TensorPtr &block_tables, const std::optional<TensorPtr> &mask,
+               const std::optional<TensorPtr> &deq_scale_qk, const std::optional<TensorPtr> &deq_scale_pv,
+               const std::optional<TensorPtr> &q_seq_lens, const std::optional<TensorPtr> &context_lens,
+               const int64_t &head_num, const float &scale_value, const int64_t &kv_head_num, const int64_t &mask_mode,
+               const int64_t &is_ring) {
   TensorPtrList inputs = {query,
                           q_rope,
                           kv_cache,
@@ -58,12 +74,8 @@ void Mla::Call(const std::shared_ptr<pyboost::OpRunner> &op, const TensorPtr &qu
                           mask.has_value() ? mask.value() : nullptr,
                           deq_scale_qk.has_value() ? deq_scale_qk.value() : nullptr,
                           deq_scale_pv.has_value() ? deq_scale_pv.value() : nullptr};
-  auto outputs = op->outputs();
-
-  internal_inputs_shape_.resize(inputs.size());
-  internal_outputs_shape_.resize(outputs.size());
-  TransInternalShapes(&internal_inputs_shape_, inputs);
-  TransInternalShapes(&internal_outputs_shape_, outputs);
+  TensorPtrList outputs = op->outputs();
+  TransInternalShapes(inputs, outputs);
 
   param_.head_size = static_cast<int32_t>(head_num);
   param_.tor = scale_value;
@@ -78,9 +90,7 @@ void Mla::Call(const std::shared_ptr<pyboost::OpRunner> &op, const TensorPtr &qu
   (void)GetSeqLenFromInputTensor(q_seq_lens.value(), &param_.q_seq_len);
   (void)GetSeqLenFromInputTensor(context_lens.value(), &param_.kv_seq_len);
 
-  auto op_key = CalcInternalOpApiHash(kernel_name_, inputs, head_num, scale_value, kv_head_num, mask_mode, is_ring,
-                                      param_.q_seq_len, param_.kv_seq_len, outputs);
-  GetOrCreateKernel(op, inputs, outputs, op_key);
+  GetOrCreateKernel(op, op_key, tiling_key, inputs, outputs);
   LAUNCH_INTERNAL(kernel_name_, op, internal_op_, inputs, outputs, tiling_info_);
 }
 MS_INTERNAL_KERNEL_INFO_FACTORY_REG(Mla, Mla);

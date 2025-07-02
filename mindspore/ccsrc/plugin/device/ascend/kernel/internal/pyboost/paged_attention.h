@@ -27,19 +27,21 @@ namespace mindspore {
 namespace kernel {
 class PagedAttention : public InternalKernelInfo {
  public:
-  PagedAttention() : InternalKernelInfo(std::move("PagedAttention")) {}
+  explicit PagedAttention(std::string &&kernel_name) : InternalKernelInfo(std::move(kernel_name)) {}
   ~PagedAttention() = default;
 
-  void Call(const std::shared_ptr<pyboost::OpRunner> &op, const TensorPtr &query, const TensorPtr &key_cache,
-            const std::optional<TensorPtr> &value_cache, const std::optional<TensorPtr> &block_tabels,
-            const std::optional<TensorPtr> &context_lens, const std::optional<TensorPtr> &antiquant_scale,
-            const std::optional<TensorPtr> &antiquant_offset, const std::optional<TensorPtr> &attn_mask,
-            const std::optional<TensorPtr> &q_seq_lens, const std::optional<TensorPtr> &alibi_mask,
-            const int64_t &head_num, const float &scale_value, const int64_t &kv_head_num,
-            const int64_t &kv_cache_quant_mode, const int64_t &mask_mode, const int64_t &mla_v_dim);
+  void Call(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &op_key, const uint64_t &tiling_key,
+            const TensorPtr &query, const TensorPtr &key_cache, const std::optional<TensorPtr> &value_cache,
+            const std::optional<TensorPtr> &block_tabels, const std::optional<TensorPtr> &context_lens,
+            const std::optional<TensorPtr> &antiquant_scale, const std::optional<TensorPtr> &antiquant_offset,
+            const std::optional<TensorPtr> &attn_mask, const std::optional<TensorPtr> &q_seq_lens,
+            const std::optional<TensorPtr> &alibi_mask, const int64_t &head_num, const float &scale_value,
+            const int64_t &kv_head_num, const int64_t &kv_cache_quant_mode, const int64_t &mask_mode,
+            const int64_t &mla_v_dim);
 
  protected:
-  uint64_t GenerateTilingKey(const std::string &kernel_name, const TensorPtrList &inputs) override;
+  uint64_t GetOrGenerateOpTilingKey(const uint64_t &tiling_key) const override;
+  bool UpdateParam() override;
   internal::InternalOpPtr CreateKernel(const internal::InputsImmutableInfoList &inputs,
                                        const internal::OutputsImmutableInfoList &outputs) override;
 
@@ -59,37 +61,30 @@ class PagedAttention : public InternalKernelInfo {
   }
 
   inline void CheckMask() {
-    mask_type_ = internal::PagedAttentionParam::MaskType::kMaskTypeNone;
+    param_.mask_type = internal::PagedAttentionParam::MaskType::kMaskTypeNone;
     auto enable_lookahead =
-      std::any_of(q_seq_len_.begin(), q_seq_len_.end(), [](int32_t seq_len) { return seq_len > 1; });
+      std::any_of(param_.q_seq_len.begin(), param_.q_seq_len.end(), [](int32_t seq_len) { return seq_len > 1; });
     if (enable_lookahead) {
       if (has_attn_mask_) {
-        mask_type_ = internal::PagedAttentionParam::MaskType::kMaskTypeLookAhead;
+        param_.mask_type = internal::PagedAttentionParam::MaskType::kMaskTypeLookAhead;
       }
     } else {
-      q_seq_len_.clear();
+      param_.q_seq_len.clear();
     }
 
     if (has_alibi_mask_) {
-      if (mask_type_ == internal::PagedAttentionParam::MaskType::kMaskTypeLookAhead) {
+      if (param_.mask_type == internal::PagedAttentionParam::MaskType::kMaskTypeLookAhead) {
         MS_LOG(EXCEPTION) << "For op " << kernel_name_ << ", lookahead cannot be enabled when alibi_mask exists.";
       } else {
-        mask_type_ = internal::PagedAttentionParam::MaskType::kMaskTypeAlibi;
+        param_.mask_type = internal::PagedAttentionParam::MaskType::kMaskTypeAlibi;
       }
     }
   }
 
-  float tor_;
-  int32_t head_num_;
-  int32_t kv_head_num_;
-  int32_t kv_cache_quant_mode_;
-  int32_t mla_v_dim_;
-  std::vector<int32_t> kv_seq_len_;
-  std::vector<int32_t> q_seq_len_;
-  internal::PagedAttentionParam::MaskType mask_type_;
-  internal::PagedAttentionParam::MaskMode mask_mode_;
+  internal::PagedAttentionParam param_;
   bool has_attn_mask_{false};
   bool has_alibi_mask_{false};
+  bool created_flag_{false};
 };
 }  // namespace kernel
 }  // namespace mindspore

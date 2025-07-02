@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_KERNEL_INTERNAL_PYBOOST_APPLY_ROTARY_POS_EMB_H_
-#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_KERNEL_INTERNAL_PYBOOST_APPLY_ROTARY_POS_EMB_H_
+#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_KERNEL_INTERNAL_PYBOOST_GATHER_PRE_RMS_NORM_H_
+#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_KERNEL_INTERNAL_PYBOOST_GATHER_PRE_RMS_NORM_H_
 
 #include <memory>
 #include <string>
@@ -25,22 +25,22 @@
 
 namespace mindspore {
 namespace kernel {
-class ApplyRotaryPosEmb : public InternalKernelInfo {
+class GatherPreRmsNorm : public InternalKernelInfo {
  public:
-  explicit ApplyRotaryPosEmb(std::string &&kernel_name) : InternalKernelInfo(std::move(kernel_name)) {}
-  ~ApplyRotaryPosEmb() = default;
+  explicit GatherPreRmsNorm(std::string &&kernel_name) : InternalKernelInfo(std::move(kernel_name)) {}
+  ~GatherPreRmsNorm() = default;
 
   void Call(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &op_key, const uint64_t &tiling_key,
-            const TensorPtr &query_tensor, const TensorPtr &key_tensor, const TensorPtr &cos_tensor,
-            const TensorPtr &sin_tensor, const TensorPtr &position_ids_tensor, const int64_t &cos_format);
+            const TensorPtr &x, const TensorPtr &res_in, const TensorPtr &indices, const TensorPtr &gamma,
+            const float &eps);
 
  protected:
   internal::InternalOpPtr CreateKernel(const internal::InputsImmutableInfoList &inputs,
                                        const internal::OutputsImmutableInfoList &outputs) override;
 
  private:
-  internal::ApplyRotaryPosEmbParam param_;
+  internal::NormParam param_;
 };
 }  // namespace kernel
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_KERNEL_INTERNAL_PYBOOST_APPLY_ROTARY_POS_EMB_H_
+#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_KERNEL_INTERNAL_PYBOOST_GATHER_PRE_RMS_NORM_H_
