@@ -540,7 +540,10 @@ def bucketize(input, boundaries, *, right=False):
          [2, 3, 5]])
     """
 
-    return P.SearchSorted(right=right)(Tensor(boundaries), input)
+    bucketize_op = _get_cache_prim(P.Bucketize)
+    epsilon_ = 0. if right else 1.e-6
+    boundaries = [boundary + epsilon_ for boundary in boundaries]
+    return bucketize_op(boundaries)(input)
 
 
 def exp2(input):
