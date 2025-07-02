@@ -167,6 +167,27 @@ std::unique_ptr<T[]> NewData(const U *input, size_t size) {
   return data;
 }
 
+template <typename T, typename U>
+void TransDataType(const U *input, T *output, size_t size) {
+  if (input == nullptr || output == nullptr || size == 0) {
+    return;
+  }
+  if (size > INT32_MAX) {
+    MS_LOG(WARNING) << "Try to alloca a large memory, size is:" << size * sizeof(T);
+  }
+
+  if constexpr (!std::is_same_v<T, U> && (IsNonTrivialCastType<T> || IsNonTrivialCastType<U>)) {
+    // Because float16 and bfloat16 do not support implicit cast from/to other types,
+    // We can not use std::copy() on array of float16 and bfloat16, use a loop here.
+    for (size_t i = 0; i < size; ++i) {
+      output[i] = static_cast<T>(input[i]);
+    }
+  } else {
+    // otherwise, use std::copy for better performance.
+    std::copy(input, input + size, output);
+  }
+}
+
 template <typename T, typename Scalar>
 std::unique_ptr<T[]> NewData(Scalar scalar) {
   auto data = std::make_unique<T[]>(1);
@@ -618,7 +639,7 @@ MS_CORE_API std::string GetTensorDataString(TypeId data_type, const ShapeVector 
                                             size_t ndim, bool use_comma);
 
 template <template <class> class ImplClass = TensorDataImpl, typename... Args>
-TensorDataPtr MakeTensorData(TypeId data_type, Args &&... args) {
+TensorDataPtr MakeTensorData(TypeId data_type, Args &&...args) {
   switch (data_type) {
     case kNumberTypeBool:
       return std::make_shared<ImplClass<bool>>(std::forward<Args>(args)...);
