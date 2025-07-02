@@ -330,7 +330,7 @@ class AscendOpMemoryViewer:
                 res.append(self._combine_alloc_and_free_event(alloc_event, free_event))
                 alloc_event, free_event = None, None
             elif alloc_event is None and free_event:
-                self._logger.error("Alloc event is None, but free event is not None")
+                self._logger.warning("Alloc event is None, but free event is not None")
 
         if alloc_event:
             res.append(self._combine_alloc_and_free_event(alloc_event))

@@ -73,6 +73,15 @@ class PathManager:
             msg = f"file size exceeds the limit: {cls.MAX_FILE_SIZE}, file size: {file_size}"
             raise ProfilerPathErrorException(msg)
 
+        file_stat = os.stat(path)
+        if file_stat.st_mode & (stat.S_IWGRP | stat.S_IWOTH):
+            msg = f"File path {path} has group or others writable permissions, which is not allowed."
+            raise ProfilerPathErrorException(msg)
+
+        if stat.S_ISCHR(file_stat.st_mode) or stat.S_ISBLK(file_stat.st_mode):
+            msg = f"Invalid input path is a character or block device path: {path}"
+            raise ProfilerPathErrorException(msg)
+
     @classmethod
     def get_directory_size(cls, directory: str, unit: str = 'MB') -> float:
         """

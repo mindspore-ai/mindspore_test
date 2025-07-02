@@ -13,7 +13,6 @@
 # limitations under the License.
 # ============================================================================
 """Ascend kernel details viewer"""
-import csv
 import os
 from decimal import Decimal
 
@@ -25,8 +24,7 @@ from mindspore.profiler.common.constant import (
     ProfilerActivity
 )
 from mindspore.profiler.common.log import ProfilerLogger
-from mindspore.profiler.common.path_manager import PathManager
-
+from mindspore.profiler.common.file_manager import FileManager
 from mindspore import log as logger
 
 
@@ -110,12 +108,15 @@ class AscendKernelDetailsViewer(BaseViewer):
         Write data to csv file.
         """
         self._logger.info("Kernel details saved start")
-        PathManager.check_directory_path_writeable(os.path.dirname(self._save_path))
-        with open(self._save_path, "w", newline="", encoding="utf-8") as csvfile:
-            writer = csv.writer(csvfile)
-            writer.writerow(self.kernel_details_headers)
-            for row in self.op_summary:
-                writer.writerow([row[field] for field in self.op_summary_headers])
+        csv_data = []
+        for row in self.op_summary:
+            csv_row = [row[field] for field in self.op_summary_headers]
+            csv_data.append(csv_row)
+        FileManager.create_csv_file(
+            file_path=self._save_path,
+            data=csv_data,
+            headers=self.kernel_details_headers
+        )
         self._logger.info("Kernel details saved done")
 
     def _update_headers(self):

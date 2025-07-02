@@ -145,14 +145,14 @@ class MsprofCmdTool:
         if os.environ.get("ASCEND_TOOLKIT_HOME"):
             temp_path = os.path.join(os.environ.get("ASCEND_TOOLKIT_HOME"), "bin")
             if os.path.isdir(temp_path) and self._MSPROF_CMD in os.listdir(temp_path):
-                return temp_path
+                return os.path.abspath(temp_path)
 
         for path in os.environ.get("PATH", "").split(":"):
             if self._ASCEND_MARK in path:
                 prefix = path.split(self._ASCEND_MARK)[0]
                 temp_path = os.path.join(prefix, self._HIAI_MSPROF_TAIL)
                 if os.path.isdir(temp_path) and self._MSPROF_CMD in os.listdir(temp_path):
-                    return temp_path
+                    return os.path.abspath(temp_path)
 
         return None
 

@@ -15,8 +15,6 @@
 """Test the AscendKernelDetailsViewer class."""
 import unittest
 from unittest.mock import patch, MagicMock
-import os
-import csv
 import numpy as np
 
 from mindspore.profiler.analysis.viewer.ascend_kernel_details_viewer import AscendKernelDetailsViewer
@@ -26,7 +24,7 @@ from mindspore.profiler.common.constant import (
     OpSummaryHeaders,
     ProfilerActivity
 )
-from mindspore.profiler.common.path_manager import PathManager
+from mindspore.profiler.common.file_manager import FileManager
 
 
 # pylint: disable=protected-access
@@ -114,24 +112,22 @@ class TestAscendKernelDetailsViewer(unittest.TestCase):
             self.viewer._check_input_data(data)
         self.assertEqual(str(context.exception), "trace view container is None")
 
-    @patch.object(PathManager, 'check_directory_path_writeable')
-    @patch('builtins.open', new_callable=MagicMock)
-    @patch.object(csv, 'writer')
-    def test_write_data_should_success_when_correct(self, mock_csv_writer, mock_open, mock_check_path):
+    @patch.object(FileManager, 'create_csv_file')
+    def test_write_data_should_success_when_correct(self, mock_create_csv_file):
         self.viewer.op_summary = [
             {OpSummaryHeaders.OP_NAME.value: "op1", OpSummaryHeaders.TASK_START_TIME.value: 100},
             {OpSummaryHeaders.OP_NAME.value: "op2", OpSummaryHeaders.TASK_START_TIME.value: 200}
         ]
         self.viewer.op_summary_headers = [OpSummaryHeaders.OP_NAME.value, OpSummaryHeaders.TASK_START_TIME.value]
         self.viewer.kernel_details_headers = ["Name", "Start Time(us)"]
+        self.viewer._save_path = MagicMock
         self.viewer._write_data()
 
-        mock_check_path.assert_called_once_with(os.path.dirname(self.viewer._save_path))
-        mock_open.assert_called_once_with(self.viewer._save_path, "w", newline="", encoding="utf-8")
-        mock_csv_writer.return_value.writerow.assert_any_call(self.viewer.kernel_details_headers)
-        for row in self.viewer.op_summary:
-            mock_csv_writer.return_value.writerow.assert_any_call(
-                [row[field] for field in self.viewer.op_summary_headers])
+        mock_create_csv_file.assert_called_once_with(
+            file_path=self.viewer._save_path,
+            data=[['op1', 100], ['op2', 200]],
+            headers=self.viewer.kernel_details_headers
+        )
 
     def test_update_headers_should_success_when_correct(self):
         self.viewer.op_summary_headers = [

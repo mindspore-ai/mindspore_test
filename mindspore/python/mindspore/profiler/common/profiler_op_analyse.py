@@ -16,7 +16,7 @@
 import json
 import os
 from collections import defaultdict
-from mindspore.profiler.common.validator.validate_path import validate_and_normalize_path
+from mindspore.profiler.common.path_manager import PathManager
 
 
 class OpAnalyser:
@@ -34,7 +34,7 @@ class OpAnalyser:
     def __init__(self, output_path, dev_id, op_names=None):
         """The parser for parsing framework files."""
         self._dev_id = dev_id
-        self._output_path = output_path
+        self._output_path = PathManager.get_real_path(output_path)
         self.op_names = op_names
         self.op_name = ''
         self.framework_list = []
@@ -66,7 +66,8 @@ class OpAnalyser:
         for filename in self.framework_info_dir:
             op_side = filename.split('_')[0]
             framework_file_path = os.path.join(self._output_path, filename)
-            framework_file_path = validate_and_normalize_path(framework_file_path)
+            PathManager.check_input_file_path(framework_file_path)
+            PathManager.check_directory_path_readable(framework_file_path)
             with open(framework_file_path, 'r') as f_obj:
                 framework_info = f_obj.readlines()
             for line_info in framework_info:
@@ -85,7 +86,8 @@ class OpAnalyser:
         for filename in self.cpu_detail_info_dir:
             op_side = filename.split('_')[0]
             op_detail_file_path = os.path.join(self._output_path, filename)
-            op_detail_file_path = validate_and_normalize_path(op_detail_file_path)
+            PathManager.check_input_file_path(op_detail_file_path)
+            PathManager.check_directory_path_readable(op_detail_file_path)
             with open(op_detail_file_path, 'r') as f_obj:
                 op_detail_info = f_obj.readlines()
             for line_info in op_detail_info[1:]:
@@ -99,7 +101,8 @@ class OpAnalyser:
         """Get gpu operators execute times."""
         if self.gpu_op_type_info_dir:
             gpu_op_type_file_path = os.path.join(self._output_path, self.gpu_op_type_info_dir[0])
-            gpu_op_type_file_path = validate_and_normalize_path(gpu_op_type_file_path)
+            PathManager.check_input_file_path(gpu_op_type_file_path)
+            PathManager.check_directory_path_readable(gpu_op_type_file_path)
             with open(gpu_op_type_file_path, 'r') as fp:
                 op_type_info = fp.readlines()
                 for line_info in op_type_info[1:]:
@@ -118,7 +121,8 @@ class OpAnalyser:
         for filename in self.activity_info_dir:
             op_side = filename.split('_')[0]
             activity_file_path = os.path.join(self._output_path, filename)
-            activity_file_path = validate_and_normalize_path(activity_file_path)
+            PathManager.check_input_file_path(activity_file_path)
+            PathManager.check_directory_path_readable(activity_file_path)
             with open(activity_file_path, 'r') as file:
                 activity_info = file.readlines()
             for line_info in activity_info[1:]:
