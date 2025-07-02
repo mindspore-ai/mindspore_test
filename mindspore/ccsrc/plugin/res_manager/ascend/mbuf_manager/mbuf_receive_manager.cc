@@ -324,7 +324,7 @@ MbufDataHandler::MbufDataHandler(MbufFuncType func, uint32_t device_id, string c
 MbufDataHandler::~MbufDataHandler() {
   MS_LOG(INFO) << "Channel " << channel_name_ << " begins the destruction process.";
   // Stop the child thread from receiving data
-  stop_receive_.store(true, std::memory_order_acq_rel);
+  stop_receive_.store(true, std::memory_order_release);
   if (thread_receive_.joinable()) {
     thread_receive_.join();
   }

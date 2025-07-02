@@ -165,7 +165,7 @@ bool SparseApplyAdagradDACpuKernelMod::LaunchKernel(const std::vector<kernel::Ke
 
   auto gs_lr = global_step_scalar * lr_scalar;
   for (size_t i = 0; i < indices_size_; ++i) {
-    I index = indices[i];
+    I index = static_cast<I>(indices[i]);
     if (index < 0 || LongToSize(index) >= var_first_dim_size_) {
       MS_LOG(EXCEPTION) << "For SparseApplyAdagradDA, values in indices should be [0, var.shape[0]), but got " << index
                         << ".";

@@ -181,7 +181,7 @@ class ASCEND_RES_MANAGER_EXPORT MbufDataHandler {
   string GetChannelName() { return channel_name_; }
   uint32_t GetDeviceId() { return device_id_; }
   size_t GetCapacity() { return capacity_; }
-  void StopReceive() { stop_receive_.store(true, std::memory_order_acq_rel); }
+  void StopReceive() { stop_receive_.store(true, std::memory_order_release); }
   void CleanChannel();
 
  private:
