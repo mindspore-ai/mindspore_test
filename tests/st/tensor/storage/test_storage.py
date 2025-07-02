@@ -93,7 +93,7 @@ def test_storage_no_device_exception():
     """
     a = Tensor(2.0)
 
-    with pytest.raises(RuntimeError, match="Current Tensor has no device!"):
+    with pytest.raises(RuntimeError, match="The current Storage does not yet support CPU"):
         a.untyped_storage()
 
 
