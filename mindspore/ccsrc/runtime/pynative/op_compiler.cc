@@ -80,32 +80,6 @@ void CreateDeviceAddressWithoutWorkspace(const KernelGraphPtr &graph, const Devi
   DeviceAddressUtils::UpdateDeviceAddressForInplaceNode(graph);
   DeviceAddressUtils::UpdateDeviceAddressForRefNodeForSingleOp(graph);
 }
-
-void SetIgnoreSyncHostToDeviceList(const SimpleGraphPtr &simple_graph, const DeviceContext *device_context) {
-  const auto &single_ops = simple_graph->single_ops_;
-  for (const auto &single_op : single_ops) {
-    const auto &kernel = single_op->kernel_;
-    const auto &edges = single_op->inputs_;
-
-    MS_EXCEPTION_IF_NULL(device_context);
-    auto kernel_executor = device_context->GetKernelExecutor();
-    MS_EXCEPTION_IF_NULL(kernel_executor);
-    std::vector<size_t> ignore_input_index_list = kernel_executor->GetLaunchIgnoredInputAddressIdx(kernel);
-
-    for (size_t index : ignore_input_index_list) {
-      // Some input may be converted to attribute or input size is wrong.
-      // This behavior is incorrect, but it does exist in the current kernel
-      // and needs to be rectified by the operators who develop this kernel.
-      if (index >= edges.size()) {
-        MS_LOG(INFO) << simple_graph->name_ << " ignore input index is " << index << ", but total input num is "
-                     << edges.size();
-        continue;
-      }
-      edges[index]->ignore_h2d_ = true;
-      MS_LOG(INFO) << "For graph " << simple_graph->name_ << " ignore input host to device " << index;
-    }
-  }
-}
 }  // namespace
 
 OpCompiler::OpCompiler() {
@@ -267,9 +241,6 @@ void OpCompiler::KernelBuild(const OpCompilerInfoPtr &op_compiler_info, const De
   DeviceAddressUtils::CreateKernelWorkspaceDeviceAddress(device_context, graph);
   // Need to execute after PreprocessBeforeRunSingleOpGraph
   runtime::OpRuntimeInfo::CacheGraphOpRuntimeInfo(graph);
-
-  // After kernel generated.
-  SetIgnoreSyncHostToDeviceList(op_compiler_info->simple_graph_, device_context);
 }
 
 inline std::set<int64_t> GetDependList(const pynative::BaseOpRunInfo &op_info, const PrimitivePtr &op_prim) {

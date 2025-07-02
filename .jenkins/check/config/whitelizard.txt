@@ -22,9 +22,9 @@ mindspore/mindspore/lite/providers/nnie_proposal/src/proposal.cc:mindspore::prop
 mindspore/mindspore/lite/tools/converter/config_parser/config_file_parser.cc:mindspore::lite::ConfigFileParser::SetParamByConfigfile
 mindspore/mindspore/core/abstract/ops/primitive_infer_map.cc:mindspore::abstract::GetPrimitiveInferMap
 mindspore/mindspore/core/include/ir/tensor.h:mindspore::tensor::NewData
-mindspore/mindspore/core/include/ir/tensor.h:mindspore::tensor::CopyData
-mindspore/mindspore/core/include/ir/tensor.h:mindspore::tensor::TensorStringifier::ToString
 mindspore/mindspore/core/include/ir/tensor.h:mindspore::tensor::MakeTensorData
+mindspore/mindspore/core/include/ir/tensor_data.h:mindspore::tensor::CopyData
+mindspore/mindspore/core/include/ir/tensor_data.h:mindspore::tensor::TensorStringifier::ToString
 mindspore/mindspore/core/include/ir/tensor_data.h:mindspore::tensor::MakeTensorData
 mindspore/mindspore/core/ir/tensor_data.cc:mindspore::tensor::GetTensorDataString
 mindspore/mindspore/core/ir/dtype_extends.cc:mindspore::UnitSizeInBytes
