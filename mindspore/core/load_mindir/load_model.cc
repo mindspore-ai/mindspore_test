@@ -1765,6 +1765,7 @@ bool MSANFModelParser::GetAttrValueForValueNodeWithType(const std::string &value
   auto abstract = value->ToAbstract();
   MS_EXCEPTION_IF_NULL(abstract);
   ValueNodePtr new_value_node = NewValueNode(value);
+  MS_EXCEPTION_IF_NULL(new_value_node);
   new_value_node->set_abstract(abstract);
   anfnode_build_map_[value_node_name] = new_value_node;
   return true;
@@ -1790,6 +1791,7 @@ bool MSANFModelParser::GetAttrValueForValueNode(const std::string &value_node_na
         auto res = ObtainCNodeAttrInSingleScalarForm(attr_proto);
         MS_EXCEPTION_IF_NULL(res);
         new_value_node = NewValueNode(res);
+        MS_EXCEPTION_IF_NULL(new_value_node);
         new_value_node->set_abstract(res->ToAbstract());
         anfnode_build_map_[value_node_name] = new_value_node;
         break;
@@ -1798,6 +1800,7 @@ bool MSANFModelParser::GetAttrValueForValueNode(const std::string &value_node_na
         MS_LOG(INFO) << "Build Tuple() ValueNode for primitive.";
         ValuePtr res = MakeValue(std::vector<ValuePtr>{});
         new_value_node = NewValueNode(res);
+        MS_EXCEPTION_IF_NULL(new_value_node);
         new_value_node->set_abstract(res->ToAbstract());
         anfnode_build_map_[value_node_name] = new_value_node;
         break;

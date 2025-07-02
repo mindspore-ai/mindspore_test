@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2021 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -438,10 +438,10 @@ void SyncShadowDebugInfo(const DebugInfoPtr &caller_debug_info, const DebugInfoP
 void UpdateInlineCNodeDebugInfo(const AnfNodePtr &caller, const AnfNodePtr &callee) {
   const DebugInfoPtr &caller_debug_info = caller->debug_info();
   const DebugInfoPtr &callee_debug_info = callee->debug_info();
-  bool loc_not_set = callee_debug_info->real_loc().empty();
   if (caller_debug_info == nullptr || callee_debug_info == nullptr) {
     return;
   }
+  bool loc_not_set = callee_debug_info->real_loc().empty();
   const auto caller_debug_infos = GetDebugInfoList(caller_debug_info);
   const auto callee_debug_infos = GetDebugInfoList(callee_debug_info);
   if (callee_debug_infos.size() == 1) {  // New inserted node, not by parser.
