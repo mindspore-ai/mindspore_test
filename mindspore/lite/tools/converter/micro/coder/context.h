@@ -208,8 +208,8 @@ class CoderContext {
   // operator C Lang files list, depended by the net.c. it will be add to CMakeLists.txt
   static std::set<std::string> c_files_;
   static size_t max_buffer_size_;
-  ShapeInfoContainer *shape_info_container_;
-  DynamicMemManager *dynamic_mem_manager_;
+  ShapeInfoContainer *shape_info_container_{nullptr};
+  DynamicMemManager *dynamic_mem_manager_{nullptr};
 };
 }  // namespace mindspore::lite::micro
 #endif  // MINDSPORE_LITE_MICRO_CODER_CONTEXT_H_

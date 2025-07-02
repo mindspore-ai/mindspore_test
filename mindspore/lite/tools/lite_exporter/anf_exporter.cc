@@ -588,11 +588,11 @@ size_t AnfExporter::NewFbTensor(const std::unique_ptr<schema::MetaGraphT> &meta_
 
 void AnfExporter::InsertFbTensor(const std::unique_ptr<schema::MetaGraphT> &meta_graphT,
                                  mindspore::schema::TensorT *tensor) {
-  if (meta_graphT != nullptr) {
+  if (meta_graphT == nullptr) {
     MS_LOG(ERROR) << "meta_graphT is nullptr!";
     return;
   }
-  if (tensor != nullptr) {
+  if (tensor == nullptr) {
     MS_LOG(ERROR) << "tensor is nullptr!";
     return;
   }

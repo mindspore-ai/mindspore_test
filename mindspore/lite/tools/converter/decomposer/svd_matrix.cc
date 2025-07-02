@@ -146,7 +146,7 @@ float SVDMatrix::ComputeReduceMemoryRatio(const int rank) {
   int rows = shape_[kRowIndex];
   int cols = shape_[kColIndex];
 
-  size_t original_size = rows * cols;
+  size_t original_size = static_cast<size_t>(rows) * cols;
   size_t reduced_size = (rows + cols) * rank;
   float ratio = 1 - (static_cast<float>(reduced_size) / original_size);
   return ratio;
