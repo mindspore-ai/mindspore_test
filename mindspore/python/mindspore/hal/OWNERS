@@ -2,12 +2,6 @@ approvers:
 - limingqi107 #
 - ZPaC
 - zyli2020
-- yuchaojie
-- reku1997
-- hbhu_bin
-- guoqi1024
-
-reviewers:
 
 options:
     no_parent_owners: true

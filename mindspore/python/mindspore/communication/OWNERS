@@ -4,3 +4,6 @@ approvers:
 - yao_yf
 - kisnwang #
 - ZPaC
+
+options:
+    no_parent_owners: true

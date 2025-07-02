@@ -9,3 +9,6 @@ approvers:
 reviewers:
 - shenwei41
 - liu-yongqi-63
+
+options:
+    no_parent_owners: true

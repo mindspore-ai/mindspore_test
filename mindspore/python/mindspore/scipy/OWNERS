@@ -5,3 +5,6 @@ approvers:
 reviewers:
 - yingtonghu
 - changzherui
+
+options:
+    no_parent_owners: true

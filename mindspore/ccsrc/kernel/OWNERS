@@ -1,9 +1,7 @@
 approvers:
-- zhaizhiqiang #
-- limingqi107
-- chujinjin
-- liulili-huawei
-- zhang_xue_tong
+- limingqi107 #
+- hbhu_bin
+- zyli2020
 
 options:
     no_parent_owners: true

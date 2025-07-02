@@ -4,3 +4,6 @@ approvers:
 - yao_yf
 - kisnwang
 - alouhahahahaha
+
+options:
+    no_parent_owners: true

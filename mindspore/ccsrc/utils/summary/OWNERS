@@ -1,9 +1,10 @@
 approvers:
 - kingxian #
+- wangchao285
+- kun_8
 - chenhao_1209
 - feng123www
-- wangchao285
-- robingrosman
+- DavidFFFan
 
 options:
     no_parent_owners: true

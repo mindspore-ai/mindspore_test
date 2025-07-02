@@ -5,3 +5,5 @@ approvers:
 - li_qi_liang
 - zlq2020
 
+options:
+    no_parent_owners: true

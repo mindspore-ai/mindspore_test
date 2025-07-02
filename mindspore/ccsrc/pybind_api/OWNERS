@@ -1,14 +1,7 @@
 approvers:
-- ginfung #
-- liangzhibo
-- huangbingjian
-- Margaret_wangrui
-- zh_qh
-
-reviewers:
-- propathee
-- yuanqi1104
-- nuohang
+- chujinjin #
+- hwcaifubi
+- luochao60
 
 options:
     no_parent_owners: true

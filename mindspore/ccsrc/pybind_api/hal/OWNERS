@@ -1,17 +1,7 @@
 approvers:
-- ginfung #
-- liangzhibo
-- huangbingjian
-- Margaret_wangrui
-- zh_qh
-- chujinjin
-- hwcaifubi
-- luochao60
-
-reviewers:
-- propathee
-- yuanqi1104
-- nuohang
+- limingqi107 #
+- ZPaC
+- zyli2020
 
 options:
     no_parent_owners: true

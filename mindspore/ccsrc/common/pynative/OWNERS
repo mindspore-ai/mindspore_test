@@ -3,10 +3,5 @@ approvers:
 - hwcaifubi
 - luochao60
 
-reviewers:
-- caikairui
-- wangchangheng
-
-
 options:
     no_parent_owners: true

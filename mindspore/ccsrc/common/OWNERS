@@ -1,11 +1,6 @@
 approvers:
 - limingqi107 #
-- ZPaC
-- zyli2020
-
-reviewers:
-- gaoyong10
-- zyli2020
+- baochong
 
 options:
     no_parent_owners: true

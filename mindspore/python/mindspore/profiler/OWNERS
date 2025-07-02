@@ -3,3 +3,6 @@ approvers:
 - chenhao_1209
 - feng123www
 - wangchao285
+
+options:
+    no_parent_owners: true

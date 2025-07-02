@@ -5,3 +5,6 @@ approvers:
 - kisnwang
 - chenyijie6
 - liu_luobin
+
+options:
+    no_parent_owners: true
