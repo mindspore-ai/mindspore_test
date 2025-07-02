@@ -44,7 +44,7 @@ cross_entropy_loss:
               gradient. When set to negative values, no target value is ignored. It should be int64.
               Default: ``-100`` .
             - **label_smoothing** (float, optional) - Label smoothing values, a regularization tool used to prevent the model
-              from overfitting when calculating Loss. The value range is [0.0, 1.0). Default: ``0.0`` .
+              from overfitting when calculating Loss. This value must be 0.0 currently. Default: ``0.0`` .
             - **lse_square_scalar_for_zloss** (float, optional) - The value range is [0.0, 1.0), not enabled for now, can only be 0.0. Default: ``0.0`` .
             - **return_zloss** (float, optional) - Not enabled for now, can only be ``False``. Default: ``False`` .
 
