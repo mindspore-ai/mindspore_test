@@ -20,6 +20,7 @@
 #include "debug/profiler/profiling.h"
 #include "runtime/pipeline/pipeline.h"
 #include "utils/file_utils.h"
+#include "kernel/ascend/pyboost/aclnn_utils.h"
 
 namespace mindspore {
 namespace kernel {
@@ -213,6 +214,11 @@ bool LazyFusionKernelAscend::HasTensor(const TensorPtr &x) const {
     return false;
   }
   return ops_map_.find(device_addr.get()) != ops_map_.end();
+}
+
+void *LazyFusionKernelAscend::AllocWorkspace(uint64_t size) {
+  auto mem = std::make_shared<kernel::pyboost::MemBlock>(device_context_, size, stream_id_);
+  return mem->ptr_;
 }
 
 void LazyFusionKernelAscend::Launch() {
