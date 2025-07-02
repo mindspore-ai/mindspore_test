@@ -12,10 +12,10 @@ mindspore/mindspore/python/mindspore/dataset/engine/datasets.py:_worker_loop
 mindspore/mindspore/python/mindspore/mindrecord/filewriter.py:write_raw_data, _parallel_commit
 mindspore/mindspore/core/abstract/ops/primitive_infer_map.cc:mindspore::abstract::GetPrimitiveInferMap
 mindspore/mindspore/core/include/ir/tensor.h:mindspore::tensor::NewData
-mindspore/mindspore/core/include/ir/tensor.h:mindspore::tensor::CopyData
-mindspore/mindspore/core/include/ir/tensor.h:mindspore::tensor::TensorStringifier::ToString
 mindspore/mindspore/core/include/ir/tensor.h:mindspore::tensor::MakeTensorData
 mindspore/mindspore/core/include/ir/dtype/number.h:mindspore::ToRealType
+mindspore/mindspore/core/include/ir/tensor_data.h:mindspore::tensor::CopyData
+mindspore/mindspore/core/include/ir/tensor_data.h:mindspore::tensor::TensorStringifier::ToString
 mindspore/mindspore/core/include/ir/tensor_data.h:mindspore::tensor::MakeTensorData
 mindspore/mindspore/core/ir/tensor_data.cc:mindspore::tensor::GetTensorDataString
 mindspore/mindspore/core/ir/dtype_extends.cc:mindspore::UnitSizeInBytes
