@@ -150,10 +150,10 @@ def train_step_ddp_accumulate(net, data_set, grad_fn, optimizer, accu_steps):
     """
     Description: DDP data parallel with grad accumulation case
     """
+    accu_count = 1
     for epoch in range(2):
         i = 0
         loss = []
-        accu_count = 1
         for image, label in data_set:
             start_time = time.time()
             if accu_count < accu_steps:

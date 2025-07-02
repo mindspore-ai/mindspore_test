@@ -31,10 +31,12 @@ __all__ = ["DistributedDataParallel"]
 
 
 def get_data_parallel_group():
+    """get default global data parallel group"""
     return GlobalComm.WORLD_COMM_GROUP
 
 
 def get_data_parallel_world_size(group):
+    """get group world size"""
     return get_world_size(group)
 
 
@@ -207,6 +209,7 @@ class DistributedDataParallel(nn.Cell):
         return buffers
 
     def final_grad_reduce(self):
+        """trigger final grad reduction"""
         logger.debug("trigger ddp final grad reduce, %d, %d", self.static_graph, len(self.unused_param))
         if self._should_rebuild_buckets():
             for param in self.unused_param:

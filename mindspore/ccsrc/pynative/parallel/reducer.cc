@@ -219,14 +219,14 @@ void Reducer::initialize_buckets(tensor::TensorPtrList &parameters) {
     current_bucket_size_limit = std::numeric_limits<size_t>::max();
   } else {
     current_bucket_size_limit =
-      bucket_cap_mb_ == kDefaultBucketCapMb ? kDefaultFirstBucketCapByte : bucket_cap_mb_ * 1024 * 1024;
+      bucket_cap_mb_ == kDefaultBucketCapMb ? kDefaultFirstBucketCapByte : bucket_cap_mb_ * kDefaultFirstBucketCapByte;
   }
 
   std::vector<size_t> bucket_indice;
 
   // traverse from beginning to construct a small bucket at first by default
   for (size_t i = 0; i < parameters.size(); ++i) {
-    int global_idx = 0;
+    size_t global_idx = 0;
     auto &param = parameters[i];
 
     if (!inited) {
@@ -235,7 +235,7 @@ void Reducer::initialize_buckets(tensor::TensorPtrList &parameters) {
     } else {
       global_idx = global_locator[param];
     }
-    ssize_t itemsize = param->data().itemsize();
+    size_t itemsize = (size_t)param->data().itemsize();
     if (bucket_dtype == kTypeUnknown) {
       bucket_dtype = param->data_type();
     } else {
@@ -245,10 +245,8 @@ void Reducer::initialize_buckets(tensor::TensorPtrList &parameters) {
     current_bucket.offsets.push_back(current_bucket_size);
     current_bucket.parameters.push_back(param);
     bucket_indice.push_back(global_idx);
-    current_bucket_size += param->DataSize();  // number of elements
-
-    // create new according to bucket_cap_mb_
-    if (current_bucket_size * itemsize >= current_bucket_size_limit) {
+    current_bucket_size += param->DataSize();                           // number of elements
+    if (current_bucket_size * itemsize >= current_bucket_size_limit) {  // create new according to bucket_cap_mb_
       current_bucket.bucket_size = current_bucket_size;
       current_bucket.gradients = std::make_shared<tensor::Tensor>(tensor::Tensor(bucket_dtype, current_bucket_size));
       buckets_.push_back(std::move(current_bucket));
@@ -260,7 +258,7 @@ void Reducer::initialize_buckets(tensor::TensorPtrList &parameters) {
       bucket_indice.clear();
       current_bucket = Bucket();
       current_bucket_size = 0;
-      current_bucket_size_limit = bucket_cap_mb_ * 1024 * 1024;
+      current_bucket_size_limit = bucket_cap_mb_ * kDefaultFirstBucketCapByte;
     }
   }
 
@@ -279,7 +277,7 @@ void Reducer::initialize_buckets(tensor::TensorPtrList &parameters) {
   for (size_t bucket_idx = 0; bucket_idx < bucket_indices.size(); bucket_idx++) {
     auto &cur_bucket_indice = bucket_indices[bucket_idx];
     for (size_t inner_idx = 0; inner_idx < cur_bucket_indice.size(); inner_idx++) {
-      int variable_idx = cur_bucket_indice[inner_idx];
+      auto variable_idx = cur_bucket_indice[inner_idx];
       variable_locator[variable_idx] = std::make_pair(bucket_idx, inner_idx);
       MS_LOG(DEBUG) << "initialized buckets: param " << parameters_[variable_idx]->ToString() << " ,variable_idx "
                     << variable_idx << " ,bucket_idx " << bucket_idx << " ,inner_idx " << inner_idx << " ,param offset "
