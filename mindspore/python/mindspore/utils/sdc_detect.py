@@ -18,7 +18,11 @@ from mindspore import _c_expression
 
 def sdc_detect_start():
     """
-    Start silent data corruption detection.
+    Start silent data corruption detection. It will check the inputs and outputs of MatMul operations during the
+    forward and backward computations on the current device, which may increase execution time. The overhead of the
+    check time decreases as the matrix shapes increase. Starting sdc detection results in approximately 100%
+    performance degradation for a single 4096-sized MatMul computation, and approximately 110% degradation on the
+    Llama2-7B model.
 
     Supported Platforms:
         ``Ascend``

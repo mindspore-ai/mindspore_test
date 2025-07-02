@@ -1,7 +1,8 @@
 
 .. py:function:: mindspore.utils.sdc_detect_start()
 
-    开启静默数据错误检测。
+    开启静默数据错误检测。开启后，会对当前设备正反向计算中MatMul的输入输出进行校验，因此执行时间会增加，校验耗时占比随矩阵形状增大而减小。
+    对于单个4096大小的MatMul计算，开启后性能下降约100%；对于Llama2-7B模型，开启后性能下降约110%。
 
 .. py:function:: mindspore.utils.sdc_detect_stop()
 
