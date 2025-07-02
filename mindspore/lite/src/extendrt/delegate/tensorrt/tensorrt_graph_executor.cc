@@ -643,7 +643,8 @@ std::vector<tensor::Tensor> TensorRTExecutor::GetInputInfos(uint32_t) {
   for (auto &tensor_info : inputs_) {
     auto type_id = static_cast<enum TypeId>(tensor_info.DataType());
     auto shape = tensor_info.Shape();
-    tensors.push_back(tensor::Tensor(type_id, shape));
+    tensors.push_back(
+      tensor::Tensor(type_id, shape, MakeDeviceAddress(type_id, shape, true, device::DeviceType::kCPU)));
   }
   return tensors;
 }
@@ -653,7 +654,8 @@ std::vector<tensor::Tensor> TensorRTExecutor::GetOutputInfos(uint32_t) {
   for (auto &tensor_info : outputs_) {
     auto type_id = static_cast<enum TypeId>(tensor_info.DataType());
     auto shape = tensor_info.Shape();
-    tensors.push_back(tensor::Tensor(type_id, shape));
+    tensors.push_back(
+      tensor::Tensor(type_id, shape, MakeDeviceAddress(type_id, shape, true, device::DeviceType::kCPU)));
   }
   return tensors;
 }

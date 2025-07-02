@@ -24,6 +24,7 @@
 #include "ge/llm_engine.h"
 #include "external/ge_common/ge_api_error_codes.h"
 #include "ge/llm_error_codes.h"
+#include "ir/device_address_maker.h"
 
 namespace mindspore {
 struct LLMModelInfo {
@@ -967,7 +968,7 @@ MSTensor LLMEnginePlugin::ConvertGeTensorNoCopy(::ge::Tensor *ge_tensor_ptr) {
   }
   auto tensor_data = std::make_shared<TensorRefData>(ge_data, elem_num, ge_tensor.GetSize(), me_shape.size(), deleter);
   auto type_id = device::ascend::TransformUtil::ConvertGeDataType(ge_tensor_desc.GetDataType());
-  auto tensor = std::make_shared<tensor::Tensor>(type_id, me_shape, tensor_data);
+  auto tensor = std::make_shared<tensor::Tensor>(type_id, me_shape, MakeDeviceAddress(type_id, me_shape, tensor_data));
   auto tensor_impl = std::make_shared<TensorTensorImpl>(tensor);
   return MSTensor(tensor_impl);
 }

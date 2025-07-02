@@ -734,7 +734,7 @@ int TensorRTSubGraph::VSLPreExectute(const std::vector<tensor::Tensor> &inputs, 
   const int pos_ids_idx = Num2 + is_expert_ids;
   const int current_idx_idx = Num3 + is_expert_ids;
   if (i == input_ids_idx || i == expert_ids_idx || i == pos_ids_idx) {
-    int *in_ptr = static_cast<int *>(inputs[i].data_ptr()->data());
+    int *in_ptr = static_cast<int *>(inputs[i].data_c());
     int batch = inputs[trt_in_tensor_name_.size() - Num1].ElementsNum();
     int seq = inputs[0].ElementsNum() / batch;
     int export_num = (i != expert_ids_idx) ? Num1 : inputs[i].ElementsNum() / (batch * seq);
@@ -756,8 +756,7 @@ int TensorRTSubGraph::VSLPreExectute(const std::vector<tensor::Tensor> &inputs, 
             ? Num1
             : (static_cast<const int32_t *>(inputs[trt_in_tensor_name_.size() - Num1].unsafe_data())[k] + Num1);
         for (int l = 0; l < actual_seq_len; l++) {
-          in_ptr[j * h_token + h_token_idx + l] =
-            static_cast<int *>(inputs[i].data_ptr()->data())[j * batch * seq + k * seq + l];
+          in_ptr[j * h_token + h_token_idx + l] = static_cast<int *>(inputs[i].data_c())[j * batch * seq + k * seq + l];
         }
         h_token_idx += actual_seq_len;
       }
@@ -790,7 +789,8 @@ int TensorRTSubGraph::PreExecute(const std::vector<tensor::Tensor> &inputs, cons
     auto trt_tensor_name = trt_in_tensor_name_[i];
     void *device_ptr = nullptr;
     auto input_device_address = inputs[i].device_address();
-    if (input_device_address != nullptr && input_device_address->GetMutablePtr() != nullptr) {
+    if (input_device_address != nullptr && input_device_address->GetMutablePtr() != nullptr &&
+        input_device_address->GetDeviceType() != device::DeviceType::kCPU) {
       device_ptr = input_device_address->GetMutablePtr();
     } else {
       device_ptr = runtime_->GetAllocator()->MallocDeviceMem(trt_tensor_name, inputs_[i].DataSize(),
@@ -820,7 +820,8 @@ int TensorRTSubGraph::PreExecute(const std::vector<tensor::Tensor> &inputs, cons
     void *device_ptr = nullptr;
     if (outputs.size() > i) {
       auto &output = outputs[i];
-      if (output.device_address() && output.device_address()->GetMutablePtr()) {
+      if (output.device_address() != nullptr && output.device_address()->GetMutablePtr() != nullptr &&
+          output->GetDeviceType() != device::DeviceType::kCPU) {
         if (output.Size() < outputs_[i].DataSize()) {
           MS_LOG(ERROR) << "Specified output device data size " << output.Size()
                         << " cannot less than execute output data size " << outputs_[i].DataSize()
@@ -862,7 +863,8 @@ int TensorRTSubGraph::PostExecute(std::vector<tensor::Tensor> *outputs, bool syn
     if (has_outputs) {
       auto &tensor = outputs->at(i);
       auto dst_device = tensor.device_address();
-      if (dst_device == nullptr || dst_device->GetMutablePtr() == nullptr) {
+      if (dst_device == nullptr || dst_device->GetMutablePtr() == nullptr ||
+          dst_device->GetDeviceType() == device::DeviceType::kCPU) {
         if (tensor.Size() < outputs_[i].DataSize()) {
           MS_LOG(ERROR) << "Specified output host data size " << tensor.Size()
                         << " cannot less than execute output data size " << outputs_[i].DataSize()

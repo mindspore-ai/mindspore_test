@@ -29,6 +29,7 @@
 #include "backend/graph_compiler/graph_partition.h"
 #include "common/tensor_util.h"
 #include "litert/cxx_api/tensor/tensor_impl.h"
+#include "ir/device_address_maker.h"
 
 namespace mindspore {
 Status DefaultInferSession::Init(const std::shared_ptr<Context> &context, const ConfigInfos &config_info) {
@@ -338,7 +339,7 @@ std::vector<mindspore::tensor::Tensor> DefaultInferSession::LiteTensorToTensor(
     std::transform(shape.begin(), shape.end(), std::back_inserter(shape64),
                    [](int dim) { return static_cast<int64_t>(dim); });
 
-    mindspore::tensor::Tensor tensor(type_id, shape64, ref_tensor_data);
+    mindspore::tensor::Tensor tensor(type_id, shape64, MakeDeviceAddress(type_id, shape64, ref_tensor_data));
     auto device_address = abstract_tensor->device_data();
     if (device_address != nullptr) {
       auto lite_device_address = std::make_shared<LiteDeviceAddress>(device_address, abstract_tensor->Size());

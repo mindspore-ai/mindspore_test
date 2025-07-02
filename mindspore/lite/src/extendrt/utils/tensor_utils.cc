@@ -24,6 +24,7 @@
 #include "common/common_utils.h"
 #include "mindspore/ccsrc/kernel/framework_utils.h"
 #include "common/format_utils.h"
+#include "ir/device_address_maker.h"
 
 namespace mindspore {
 TensorRefData::TensorRefData(void *data, size_t bytes_size, size_t data_size, size_t ndim,
@@ -51,7 +52,7 @@ ssize_t TensorRefData::ndim() const { return static_cast<ssize_t>(ndim_); }
 
 void *TensorRefData::data() { return data_; }
 
-const void *TensorRefData::const_data() const { return data_; }
+void *TensorRefData::const_data() const { return data_; }
 
 std::string TensorRefData::ToString(TypeId type, const ShapeVector &shape, bool use_comma) const {
   std::stringstream stream;
@@ -88,7 +89,7 @@ std::vector<mindspore::tensor::TensorPtr> TensorUtils::MSTensorToTensorPtr(const
     auto data = ms_tensor.MutableData();
     auto data_size = ms_tensor.DataSize();
     auto ref_tensor_data = std::make_shared<TensorRefData>(data, ms_tensor.ElementNum(), data_size, shape.size());
-    auto tensor_ptr = std::make_shared<mindspore::tensor::Tensor>(type_id, shape, ref_tensor_data);
+    auto tensor_ptr = std::make_shared<mindspore::tensor::Tensor>(type_id, shape, MakeDeviceAddress(type_id, shape, ref_tensor_data));
     tensor_ptr->set_name(ms_tensor.Name());
     tensor_ptr->set_data_type(type_id);
     tensor_ptrs.push_back(tensor_ptr);
@@ -118,7 +119,7 @@ std::vector<mindspore::tensor::Tensor> TensorUtils::MSTensorToTensor(const std::
     auto data = const_cast<void *>(ms_tensor.Data().get());
     auto data_size = ms_tensor.DataSize();
     auto ref_tensor_data = std::make_shared<TensorRefData>(data, ms_tensor.ElementNum(), data_size, shape.size());
-    mindspore::tensor::Tensor tensor(type_id, shape, ref_tensor_data);
+    mindspore::tensor::Tensor tensor(type_id, shape, MakeDeviceAddress(type_id, shape, ref_tensor_data));
     auto device_address = ms_tensor.GetDeviceData();
     if (device_address != nullptr) {
       auto lite_device_address = std::make_shared<LiteDeviceAddress>(device_address, ms_tensor.DataSize());

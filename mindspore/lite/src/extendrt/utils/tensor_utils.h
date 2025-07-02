@@ -47,9 +47,7 @@ class TensorRefData : public tensor::TensorData {
   ssize_t nbytes() const override;
   ssize_t ndim() const override;
   void *data() override;
-  const void *const_data() const override;
-  bool is_sub_data() const override { return false; }
-  bool has_sub_data() const override { return false; }
+  void *const_data() const override;
   std::string ToString(TypeId type, const ShapeVector &shape, bool use_comma) const override;
 
  private:
@@ -135,7 +133,7 @@ class TensorTensorImpl : public MutableTensorImpl {
   void *GetDeviceData() override {
     MS_EXCEPTION_IF_NULL(tensor_);
     auto device_address = tensor_->device_address();
-    if (device_address == nullptr) {
+    if (device_address == nullptr || tensor_->device_address()->GetDeviceType() == device::DeviceType::kCPU) {
       return nullptr;
     }
     return device_address->GetMutablePtr();
@@ -143,7 +141,8 @@ class TensorTensorImpl : public MutableTensorImpl {
 
   bool IsDevice() const override {
     MS_EXCEPTION_IF_NULL(tensor_);
-    return tensor_->device_address() != nullptr;
+    return tensor_->device_address() != nullptr &&
+           tensor_->device_address()->GetDeviceType() != device::DeviceType::kCPU;
   }
 
   bool IsConst() const override { return false; }

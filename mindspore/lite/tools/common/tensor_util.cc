@@ -21,6 +21,7 @@
 #include "abstract/utils.h"
 #include "nnacl/op_base.h"
 #include "ir/tensor_api.h"
+#include "ir/device_address_maker.h"
 
 namespace mindspore::lite {
 namespace {
@@ -192,10 +193,12 @@ int UpdateTensorTFromTensorInfo(const tensor::TensorPtr &src_tensor, std::unique
   (void)std::transform(shape_vector.begin(), shape_vector.end(), std::back_inserter(dims),
                        [](const int64_t &value) { return static_cast<int32_t>(value); });
   schema_tensor->dims = dims;
-  if (src_tensor->data().data() != nullptr) {
+  auto src_device = src_tensor->device_address();
+  if (src_device != nullptr && src_device->GetMutablePtr() != nullptr &&
+      src_device->GetDeviceType() != device::DeviceType::kCPU) {
+    auto data_ptr = src_device->GetMutablePtr();
     schema_tensor->data.resize(src_tensor->DataNBytes());
-    if (EOK != memcpy_s(schema_tensor->data.data(), schema_tensor->data.size(), src_tensor->data().data(),
-                        src_tensor->DataNBytes())) {
+    if (EOK != memcpy_s(schema_tensor->data.data(), schema_tensor->data.size(), data_ptr, src_tensor->DataNBytes())) {
       MS_LOG(ERROR) << "memcpy_s failed.";
       return RET_ERROR;
     }

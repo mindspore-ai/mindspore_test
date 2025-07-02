@@ -364,7 +364,7 @@ STATUS DecoderLayerFusion::GetEps(const EquivPtr &equiv, VarPtr node_name, float
     if (value_node->isa<tensor::Tensor>()) {
       auto tensor = value_node->cast<tensor::TensorPtr>();
       MS_EXCEPTION_IF_NULL(tensor);
-      *eps = *reinterpret_cast<float *>(tensor->data().data());
+      *eps = *reinterpret_cast<float *>(tensor->device_address()->GetMutablePtr());
       return RET_OK;
     }
   }

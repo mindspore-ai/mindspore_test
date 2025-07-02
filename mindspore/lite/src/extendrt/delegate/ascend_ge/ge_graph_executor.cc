@@ -26,6 +26,7 @@
 #include "backend/ge_backend/graph_ir/utils.h"
 #include "common/device_type.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
+#include "ir/device_address_maker.h"
 #include "src/common/common.h"
 #include "src/common/file_utils.h"
 #include "cxx_api/acl_utils.h"
@@ -1876,7 +1877,7 @@ tensor::TensorPtr GeGraphExecutor::ConvertGeTensorNoCopy(::ge::Tensor *ge_tensor
     return nullptr;
   }
   auto tensor_data = std::make_shared<TensorRefData>(ge_data, elem_num, ge_tensor.GetSize(), me_shape.size(), deleter);
-  return std::make_shared<tensor::Tensor>(type_id, me_shape, tensor_data);
+  return std::make_shared<tensor::Tensor>(type_id, me_shape, MakeDeviceAddress(type_id, me_shape, tensor_data));
 }
 
 std::vector<tensor::Tensor> GeGraphExecutor::GetOutputInfos(uint32_t graph_id) {

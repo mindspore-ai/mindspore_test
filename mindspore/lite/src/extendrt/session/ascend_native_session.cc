@@ -27,6 +27,7 @@
 #include "extendrt/delegate/ascend_native/delegate.h"
 #include "src/common/log_adapter.h"
 #include "src/litert/cxx_api/converters.h"
+#include "ir/device_address_maker.h"
 #include "ir/graph_utils.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "extendrt/delegate/ascend_native/ascend_native_impl/utils.h"
@@ -403,7 +404,7 @@ std::vector<mindspore::tensor::Tensor> AscendNativeSession::LiteTensorToTensor()
     std::vector<int64_t> shape64;
     std::transform(shape.begin(), shape.end(), std::back_inserter(shape64),
                    [](int dim) { return static_cast<int64_t>(dim); });
-    mindspore::tensor::Tensor tensor(type_id, shape64, ref_tensor_data);
+    mindspore::tensor::Tensor tensor(type_id, shape64, MakeDeviceAddress(type_id, shape64, ref_tensor_data));
     tensors.emplace_back(std::move(tensor));
   }
   return tensors;

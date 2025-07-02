@@ -25,7 +25,7 @@ const std::map<TypeId, size_t> type_map = {
     {kNumberTypeUInt16, 2},      {kNumberTypeUInt32, 4},   {kNumberTypeUInt64, 8},  {kNumberTypeFloat, 4},
     {kNumberTypeFloat16, 2},     {kNumberTypeFloat32, 4},  {kNumberTypeFloat64, 8}, {kNumberTypeComplex64, 8},
     {kNumberTypeComplex128, 16}, {kNumberTypeBFloat16, 2}, {kNumberTypeInt4, 1},    {kNumberTypeFloat8E4M3FN, 1},
-    {kNumberTypeFloat8E5M2, 1},  {kNumberTypeHiFloat8, 1}};
+    {kNumberTypeFloat8E5M2, 1},  {kNumberTypeHiFloat8, 1}, {kObjectTypeString, 1}};
 size_t TypeIdSize(TypeId data_type) {
   const size_t unsupported_type_error = 0;
   auto iter = type_map.find(data_type);

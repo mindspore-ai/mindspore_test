@@ -25,6 +25,7 @@
 #include "src/litert/lite_model.h"
 #include "src/litert/cpu_info.h"
 #include "include/errorcode.h"
+#include "ir/device_address_maker.h"
 #include "flatbuffers/flatbuffers.h"
 #include "extendrt/mock/lite_runtime/converters.h"
 #include "extendrt/delegate/factory.h"
@@ -291,7 +292,8 @@ std::vector<tensor::Tensor> LiteRTGraphExecutor::GetInputInfos(uint32_t) {
     std::vector<int64_t> lite_shape;
     std::transform(shape.begin(), shape.end(), std::back_inserter(lite_shape),
                    [](int c) { return static_cast<int64_t>(c); });
-    auto tmp = tensor::Tensor(type_id, lite_shape);
+    auto tmp =
+      tensor::Tensor(type_id, lite_shape, MakeDeviceAddress(type_id, lite_shape, true, device::DeviceType::kCPU));
     tmp.set_name(inputs[i]->tensor_name());
     input_tensors.push_back(tmp);
   }
@@ -303,7 +305,8 @@ std::vector<tensor::Tensor> LiteRTGraphExecutor::GetOutputInfos(uint32_t) {
   std::vector<tensor::Tensor> output_tensors;
   for (size_t i = 0; i < outputs.size(); ++i) {
     auto type_id = static_cast<enum TypeId>(outputs[i].DataType());
-    auto tmp = tensor::Tensor(type_id, outputs[i].Shape());
+    auto tmp = tensor::Tensor(type_id, outputs[i].Shape(),
+                              MakeDeviceAddress(type_id, outputs[i].Shape(), true, device::DeviceType::kCPU));
     tmp.set_name(outputs[i].Name());
     output_tensors.push_back(tmp);
   }
