@@ -42,7 +42,7 @@ broadcast_to:
 
         Args:
             input (Tensor): The input tensor.
-            shape (tuple): The target shape.
+            shape (tuple[int]): The target shape.
 
         Returns:
             Tensor
