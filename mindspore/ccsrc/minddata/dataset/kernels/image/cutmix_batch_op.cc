@@ -53,8 +53,8 @@ void CutMixBatchOp::GetCropBox(int height, int width, float lam, int *x, int *y,
   *y = std::clamp(cy - cut_h / cut_half, 0, height - 1);  // vertical coordinate of the top side of crop box
   x2 = std::clamp(cx + cut_w / cut_half, 0, width - 1);   // horizontal coordinate of right side of crop box
   y2 = std::clamp(cy + cut_h / cut_half, 0, height - 1);  // vertical coordinate of the bottom side of crop box
-  *crop_width = std::clamp(x2 - *x, 1, width - 1);
-  *crop_height = std::clamp(y2 - *y, 1, height - 1);
+  *crop_width = std::clamp(x2 - *x, 1, std::max(width - 1, 1));
+  *crop_height = std::clamp(y2 - *y, 1, std::max(height - 1, 1));
 }
 
 Status CutMixBatchOp::ValidateCutMixBatch(const TensorRow &input) {
