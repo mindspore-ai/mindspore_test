@@ -1029,6 +1029,9 @@ DEF_PURE_SHAPE_CALC(g_matmul_ext_bprop_shapecalc)
     ShapeVector expanded_input_shape = input_shape;
     ShapeVector expanded_weight_shape = weight_shape;
     ShapeVector expanded_dout_shape = dout_shape;
+    // transpose perm for dout before its reshaping
+    ShapeVector dout_perm(dout_rank);
+    std::iota(dout_perm.begin(), dout_perm.end(), 0);
     // squeeze input and weight first
     if (x_rank > 2 && input_shape[0] == 1) {
       auto it = std::find_if(expanded_input_shape.begin(), expanded_input_shape.end(), [](int x) { return x != 1; });
@@ -1060,21 +1063,25 @@ DEF_PURE_SHAPE_CALC(g_matmul_ext_bprop_shapecalc)
     // perform transpose to w
     std::swap(w_optim_shape[w_rank - 2], w_optim_shape[w_rank - 1]);
     if (x_rank == 2 && w_rank > 2) {
-      auto w_outer_dim = std::accumulate(weight_shape.begin(), weight_shape.end() - 1, 1, std::multiplies<int64_t>());
-      w_optim_shape = {w_outer_dim, weight_shape[w_rank - 1]};
+      auto w_outer_dim = std::accumulate(w_optim_shape.begin(), w_optim_shape.end() - 1, 1, std::multiplies<int64_t>());
+      w_optim_shape = {w_outer_dim, w_optim_shape[w_rank - 1]};
       auto dout_outer_dim =
         expanded_dout_shape[dout_rank - 1] *
         std::accumulate(expanded_dout_shape.begin(), expanded_dout_shape.end() - 2, 1, std::multiplies<int64_t>());
       dout_optim_shape_for_dx = {expanded_dout_shape[dout_rank - 2], dout_outer_dim};
+      auto key_dim = dout_perm[dout_shape.size() - 2];
+      dout_perm.erase(dout_perm.end() - 2);
+      dout_perm.insert(dout_perm.begin(), key_dim);
     }
     if (w_rank == 2 && x_rank > 2) {
-      auto x_outer_dim = std::accumulate(input_shape.begin(), input_shape.end() - 1, 1, std::multiplies<int64_t>());
-      x_optim_shape = {x_outer_dim, input_shape[x_rank - 1]};
+      auto x_outer_dim = std::accumulate(x_optim_shape.begin(), x_optim_shape.end() - 1, 1, std::multiplies<int64_t>());
+      x_optim_shape = {x_outer_dim, x_optim_shape[x_rank - 1]};
       auto dout_outer_dim =
         std::accumulate(expanded_dout_shape.begin(), expanded_dout_shape.end() - 1, 1, std::multiplies<int64_t>());
       dout_optim_shape_for_dw = {dout_outer_dim, expanded_dout_shape[dout_rank - 1]};
     }
-    return {expanded_weight_shape, x_optim_shape, w_optim_shape, dout_optim_shape_for_dx, dout_optim_shape_for_dw};
+    return {expanded_weight_shape,   x_optim_shape,           w_optim_shape,
+            dout_optim_shape_for_dx, dout_optim_shape_for_dw, dout_perm};
   })
   .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &) -> std::vector<int64_t> {
     int64_t expanded_input_rank = abstract::TensorShape::kShapeDimAny;
@@ -1084,6 +1091,7 @@ DEF_PURE_SHAPE_CALC(g_matmul_ext_bprop_shapecalc)
     int64_t w_optim_rank = abstract::TensorShape::kShapeDimAny;
     int64_t dout_optim_rank_for_dx = abstract::TensorShape::kShapeDimAny;
     int64_t dout_optim_rank_for_dw = abstract::TensorShape::kShapeDimAny;
+    int64_t dout_perm_rank = abstract::TensorShape::kShapeDimAny;
 
     if (!IsDynamicRank(inputs[0]) && !IsDynamicRank(inputs[1])) {
       auto &input_shape = inputs.at(i0);
@@ -1113,7 +1121,8 @@ DEF_PURE_SHAPE_CALC(g_matmul_ext_bprop_shapecalc)
         dout_optim_rank_for_dw = 2;
       }
     }
-    return {expanded_weight_rank, x_optim_rank, w_optim_rank, dout_optim_rank_for_dx, dout_optim_rank_for_dw};
+    return {expanded_weight_rank,   x_optim_rank,           w_optim_rank,
+            dout_optim_rank_for_dx, dout_optim_rank_for_dw, dout_perm_rank};
   });
 
 DEF_PURE_SHAPE_CALC(g_matmul_ext_bprop_bc_shapecalc)
@@ -1164,6 +1173,7 @@ inline NodePtr MatMulInputBackwardDyn(Emitter *e, NodePtr x, NodePtr w, NodePtr 
   auto w_expanded_shape = shapes[i0];
   auto w_optim_shape = shapes[i2];
   auto dout_optim_shape_for_dx = shapes[i3];
+  auto dout_perm = shapes[i5];
 
   w = e->Reshape(w, w_expanded_shape);
   // TransposeExtView is not complete for now
@@ -1174,6 +1184,7 @@ inline NodePtr MatMulInputBackwardDyn(Emitter *e, NodePtr x, NodePtr w, NodePtr 
   }
 
   w = e->Reshape(w, w_optim_shape);
+  dout = e->Transpose(dout, dout_perm);
   dout = e->Reshape(dout, dout_optim_shape_for_dx);
   auto dx = e->MatMulExt(dout, w);
   return is_complex ? e->Emit("Conj", {dx}) : dx;
@@ -1282,6 +1293,12 @@ inline NodePtr MatMulInputBackward(BpropBuilder *ib, const bool &is_complex) {
   NodePtr dx = nullptr;
   if (x_rank == 2 && w_rank > 2) {
     w = ib->Reshape(w, {-1, w_shape[w_rank - 1]});
+    std::vector<int64_t> perm(dout_rank);
+    std::iota(perm.begin(), perm.end(), 0);
+    auto key_dim = perm[dout_rank - 2];
+    perm.erase(perm.end() - 2);
+    perm.insert(perm.begin(), key_dim);
+    dout = ib->Transpose(dout, perm);
     dout = ib->Reshape(dout, {dout_shape[dout_rank - 2], -1});
     dx = ib->MatMulExt(dout, w);
     dx = ib->Reshape(dx, ori_x_shape);
@@ -5072,10 +5089,10 @@ NodePtrList DiagonalGrad(BpropBuilder *ib) {
   auto x_dtype = ib->GetDtype(x);
   auto x_dim = ib->GetRank(x);
   if (dim1 < 0) {
-    dim1 += x_dim;
+    dim1 += SizeToLong(x_dim);
   }
   if (dim2 < 0) {
-    dim2 += x_dim;
+    dim2 += SizeToLong(x_dim);
   }
   auto true_case = [offset, dim1, dim2, &x, &out, &dout, &x_shape, &x_dtype, &offset_node, &dim1_node, &dim2_node,
                     x_dim](Emitter *ib) -> NodePtrList {
