@@ -43,6 +43,177 @@ REGISTER_DEVICE_ADDRESS_MAKER(device::DeviceType::kCPU, [](TypeId data_type, con
                                                            DeviceAddressDeleter &&deleter) {
   return MakeTestDeviceAddress(data_type, shape, data_ptr, std::move(deleter));
 });
+
+template <typename T>
+void CopyData(T *src_ptr, size_t size, void *dst_ptr, TypeId type_id) {
+  MS_EXCEPTION_IF_NULL(src_ptr);
+  MS_EXCEPTION_IF_NULL(dst_ptr);
+  switch (type_id) {
+    case kNumberTypeBool: {
+      auto buf = static_cast<bool *>(dst_ptr);
+      return tensor::TransDataType<bool>(src_ptr, buf, size);
+    }
+    case kNumberTypeUInt8: {
+      auto buf = static_cast<uint8_t *>(dst_ptr);
+      return tensor::TransDataType<uint8_t>(src_ptr, buf, size);
+    }
+    case kNumberTypeInt4: {
+      auto buf = static_cast<int8_t *>(dst_ptr);
+      return tensor::TransDataType<int8_t>(src_ptr, buf, size);
+    }
+    case kNumberTypeInt8: {
+      auto buf = static_cast<int8_t *>(dst_ptr);
+      return tensor::TransDataType<int8_t>(src_ptr, buf, size);
+    }
+    case kNumberTypeInt16: {
+      auto buf = static_cast<int16_t *>(dst_ptr);
+      return tensor::TransDataType<int16_t>(src_ptr, buf, size);
+    }
+    case kNumberTypeInt32: {
+      auto buf = static_cast<int32_t *>(dst_ptr);
+      return tensor::TransDataType<int32_t>(src_ptr, buf, size);
+    }
+    case kNumberTypeInt64: {
+      auto buf = static_cast<int64_t *>(dst_ptr);
+      return tensor::TransDataType<int64_t>(src_ptr, buf, size);
+    }
+    case kNumberTypeUInt16: {
+      auto buf = static_cast<uint16_t *>(dst_ptr);
+      return tensor::TransDataType<uint16_t>(src_ptr, buf, size);
+    }
+    case kNumberTypeUInt32: {
+      auto buf = static_cast<uint32_t *>(dst_ptr);
+      return tensor::TransDataType<uint32_t>(src_ptr, buf, size);
+    }
+    case kNumberTypeUInt64: {
+      auto buf = static_cast<uint64_t *>(dst_ptr);
+      return tensor::TransDataType<uint64_t>(src_ptr, buf, size);
+    }
+    case kNumberTypeFloat16: {
+      auto buf = static_cast<float16 *>(dst_ptr);
+      return tensor::TransDataType<float16>(src_ptr, buf, size);
+    }
+    case kNumberTypeFloat8E4M3FN: {
+      auto buf = static_cast<float8_e4m3fn *>(dst_ptr);
+      return tensor::TransDataType<float8_e4m3fn>(src_ptr, buf, size);
+    }
+    case kNumberTypeFloat8E5M2: {
+      auto buf = static_cast<float8_e5m2 *>(dst_ptr);
+      return tensor::TransDataType<float8_e5m2>(src_ptr, buf, size);
+    }
+    case kNumberTypeHiFloat8: {
+      auto buf = static_cast<hifloat8 *>(dst_ptr);
+      return tensor::TransDataType<hifloat8>(src_ptr, buf, size);
+    }
+#ifndef KERNEL_EXECUTOR_ANDROID
+    case kNumberTypeBFloat16: {
+      auto buf = static_cast<bfloat16 *>(dst_ptr);
+      return tensor::TransDataType<bfloat16>(src_ptr, buf, size);
+    }
+#endif
+    case kNumberTypeComplex64: {
+      auto buf = static_cast<ComplexStorage<float> *>(dst_ptr);
+      return tensor::TransDataType<ComplexStorage<float>>(src_ptr, buf, size);
+    }
+    case kNumberTypeComplex128: {
+      auto buf = static_cast<ComplexStorage<double> *>(dst_ptr);
+      return tensor::TransDataType<ComplexStorage<double>>(src_ptr, buf, size);
+    }
+    default:
+      break;
+  }
+  MS_LOG(EXCEPTION) << "Cannot construct Tensor because of unsupported dst data type: " << type_id << ".";
+}
+
+void CopyData(const DeviceAddress *src_device_address, const DeviceAddress *dst_device_address) {
+  MS_EXCEPTION_IF_NULL(src_device_address);
+  MS_EXCEPTION_IF_NULL(dst_device_address);
+  if (src_device_address->GetShapeVector() != dst_device_address->GetShapeVector()) {
+    MS_LOG(EXCEPTION) << "Not same shape in device address:" << src_device_address->ToString()
+                      << " and:" << dst_device_address->ToString();
+  }
+  const size_t size = SizeOf(src_device_address->GetShapeVector());
+  auto src_ptr = src_device_address->GetMutablePtr();
+  auto dst_ptr = dst_device_address->GetMutablePtr();
+  MS_EXCEPTION_IF_NULL(src_ptr);
+  MS_EXCEPTION_IF_NULL(dst_ptr);
+  switch (src_device_address->type_id()) {
+    case kNumberTypeBool: {
+      auto buf = static_cast<bool *>(src_ptr);
+      return CopyData<bool>(buf, size, dst_ptr, dst_device_address->type_id());
+    }
+    case kNumberTypeUInt8: {
+      auto buf = static_cast<uint8_t *>(src_ptr);
+      return CopyData<uint8_t>(buf, size, dst_ptr, dst_device_address->type_id());
+    }
+    case kNumberTypeInt4: {
+      auto buf = static_cast<int8_t *>(src_ptr);
+      return CopyData<int8_t>(buf, size, dst_ptr, dst_device_address->type_id());
+    }
+    case kNumberTypeInt8: {
+      auto buf = static_cast<int8_t *>(src_ptr);
+      return CopyData<int8_t>(buf, size, dst_ptr, dst_device_address->type_id());
+    }
+    case kNumberTypeInt16: {
+      auto buf = static_cast<int16_t *>(src_ptr);
+      return CopyData<int16_t>(buf, size, dst_ptr, dst_device_address->type_id());
+    }
+    case kNumberTypeInt32: {
+      auto buf = static_cast<int32_t *>(src_ptr);
+      return CopyData<int32_t>(buf, size, dst_ptr, dst_device_address->type_id());
+    }
+    case kNumberTypeInt64: {
+      auto buf = static_cast<int64_t *>(src_ptr);
+      return CopyData<int64_t>(buf, size, dst_ptr, dst_device_address->type_id());
+    }
+    case kNumberTypeUInt16: {
+      auto buf = static_cast<uint16_t *>(src_ptr);
+      return CopyData<uint16_t>(buf, size, dst_ptr, dst_device_address->type_id());
+    }
+    case kNumberTypeUInt32: {
+      auto buf = static_cast<uint32_t *>(src_ptr);
+      return CopyData<uint32_t>(buf, size, dst_ptr, dst_device_address->type_id());
+    }
+    case kNumberTypeUInt64: {
+      auto buf = static_cast<uint64_t *>(src_ptr);
+      return CopyData<uint64_t>(buf, size, dst_ptr, dst_device_address->type_id());
+    }
+    case kNumberTypeFloat16: {
+      auto buf = static_cast<float16 *>(src_ptr);
+      return CopyData<float16>(buf, size, dst_ptr, dst_device_address->type_id());
+    }
+    case kNumberTypeFloat8E4M3FN: {
+      auto buf = static_cast<float8_e4m3fn *>(src_ptr);
+      return CopyData<float8_e4m3fn>(buf, size, dst_ptr, dst_device_address->type_id());
+    }
+    case kNumberTypeFloat8E5M2: {
+      auto buf = static_cast<float8_e5m2 *>(src_ptr);
+      return CopyData<float8_e5m2>(buf, size, dst_ptr, dst_device_address->type_id());
+    }
+    case kNumberTypeHiFloat8: {
+      auto buf = static_cast<hifloat8 *>(src_ptr);
+      return CopyData<hifloat8>(buf, size, dst_ptr, dst_device_address->type_id());
+    }
+#ifndef KERNEL_EXECUTOR_ANDROID
+    case kNumberTypeBFloat16: {
+      auto buf = static_cast<bfloat16 *>(src_ptr);
+      return CopyData<bfloat16>(buf, size, dst_ptr, dst_device_address->type_id());
+    }
+#endif
+    case kNumberTypeComplex64: {
+      auto buf = static_cast<ComplexStorage<float> *>(src_ptr);
+      return CopyData<ComplexStorage<float>>(buf, size, dst_ptr, dst_device_address->type_id());
+    }
+    case kNumberTypeComplex128: {
+      auto buf = static_cast<ComplexStorage<double> *>(src_ptr);
+      return CopyData<ComplexStorage<double>>(buf, size, dst_ptr, dst_device_address->type_id());
+    }
+    default:
+      break;
+  }
+  MS_LOG(EXCEPTION) << "Cannot construct Tensor because of unsupported src data type: " << src_device_address->type_id()
+                    << ".";
+}
 }  // namespace
 
 bool TestResManager::SyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
@@ -109,9 +280,10 @@ bool TestResManager::AsyncCopy(const DeviceSyncPtr &dst_device_sync, const Devic
   } else if (dst_type_id == kNumberTypeInt64 && src_type_id == kNumberTypeInt32) {
     device::IntToLong(dst_ptr, src_ptr, dst_device_address->GetSize() / sizeof(int64_t));
   } else {
-    MS_LOG(ERROR) << "Types not match. src type: " << TypeIdLabel(src_type_id)
-                  << ", dst type: " << TypeIdLabel(dst_type_id) << " device_address:" << dst_device_address << " !";
-    return false;
+    MS_LOG(INFO) << "Types not match. src type: " << TypeIdLabel(src_type_id)
+                 << ", dst type: " << TypeIdLabel(dst_type_id) << " device_address:" << dst_device_address << " !";
+    CopyData(src_device_address, dst_device_address);
+    return true;
   }
   return true;
 }
