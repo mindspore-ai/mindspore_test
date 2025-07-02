@@ -634,7 +634,7 @@ void CheckIsAllParameterHasTagInPynativeShard(const AnfNodePtrList &all_nodes) {
   if (ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) != kPynativeMode) {
     return;
   }
-  for (const auto shard_node : all_nodes) {
+  for (const auto &shard_node : all_nodes) {
     if (!IsPrimitiveCNode(shard_node, prim::kPrimShard)) {
       continue;
     }
