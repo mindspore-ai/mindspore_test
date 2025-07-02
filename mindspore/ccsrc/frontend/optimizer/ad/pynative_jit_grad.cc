@@ -356,6 +356,7 @@ std::pair<bool, FuncGraphPtr> GetBpropGraph(const pynative::GradParamPtr &grad_p
   MS_EXCEPTION_IF_NULL(forward_output_value);
   MS_EXCEPTION_IF_NULL(grad_param->op_grad_info->out_value);
   AbstractBasePtr real_forward_output_abs = forward_output_value->ToAbstract();
+  MS_EXCEPTION_IF_NULL(origin_forward_output_abs);
   if (origin_forward_output_abs->isa<abstract::AbstractAny>()) {
     grad_param->op_grad_info->out_abs = pynative::CommonUtils::SetAbstractValueToAnyValue(real_forward_output_abs);
   }
