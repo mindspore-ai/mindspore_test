@@ -26,6 +26,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
@@ -366,6 +367,43 @@ class MinKernel : public MaxKernel {
   explicit MinKernel(const DeviceContext *device_context) : MaxKernel(device_context, ops::kNameMin) {}
 };
 
+class GeKernel : public BaseKernel {
+ public:
+  explicit GeKernel(const DeviceContext *device_context) : BaseKernel(device_context, ops::kNameGreaterEqualScalar) {}
+
+  KernelTensorPtr LaunchKernelAsync(KernelTensor *input, float scalar, const uint32_t stream_id) {
+    MS_EXCEPTION_IF_NULL(input);
+    auto scalar_tensor = std::make_shared<KernelTensor>(nullptr, kBFloat16, MakeValue(scalar));
+    std::vector<KernelTensor *> inputs{input, scalar_tensor.get()};
+
+    auto output = CreateOutPutKernelTensor(device_context_, kNumberTypeBool, input->GetShapeVector());
+    MS_EXCEPTION_IF_NULL(output);
+    std::vector<KernelTensor *> outputs{output.get()};
+
+    BaseKernel::LaunchKernelAsync(inputs, outputs, stream_id);
+    return output;
+  }
+};
+
+// condition ? input : other
+class SelectKernel : public BaseKernel {
+ public:
+  explicit SelectKernel(const DeviceContext *device_context) : BaseKernel(device_context, ops::kNameSelect) {}
+
+  KernelTensorPtr LaunchKernelAsync(KernelTensor *condition, KernelTensor *input, KernelTensor *other,
+                                    const uint32_t stream_id) {
+    MS_EXCEPTION_IF_NULL(input);
+    std::vector<KernelTensor *> inputs{condition, input, other};
+
+    auto output = CreateOutPutKernelTensor(device_context_, input->dtype_id(), input->GetShapeVector());
+    MS_EXCEPTION_IF_NULL(output);
+    std::vector<KernelTensor *> outputs{output.get()};
+
+    BaseKernel::LaunchKernelAsync(inputs, outputs, stream_id);
+    return output;
+  }
+};
+
 const std::set<TypeId> CheckSumKernel::supported_dtype_ = {kNumberTypeBFloat16};
 
 bool CheckSumKernel::IsCheckSumSupported(const std::vector<KernelTensor *> &matmul_inputs,
@@ -476,17 +514,15 @@ KernelTensorPtr CheckSumKernel::CalculateErrorTotal() {
     MeanKernel(device_context_).LaunchKernelAsync(c_abs.get(), dim, false, c_abs->dtype_id(), stream_id_);
   KernelTensorPtr c_ratio = DivKernel(device_context_).LaunchKernelAsync(c_max.get(), c_mean.get(), stream_id_);
   KernelTensorPtr c_ratio_min = MinKernel(device_context_).LaunchKernelAsync(c_ratio.get(), stream_id_);  // (1, )
-  // sync, c is bfloat16
-  float c_ratio_min_value = static_cast<float>(c_ratio_min->GetValueWithCheck<bfloat16>());
-  MS_VLOG(VL_ASCEND_SILENT_CHECK) << "c_ratio_min: " << c_ratio_min_value;
-  KernelTensorPtr c_ele_round_error_accum;
-  if (c_ratio_min_value > kRatioThreshold) {
-    float scalar = std::sqrt(n_b) * kFactor;
-    c_ele_round_error_accum = MulsKernel(device_context_).LaunchKernelAsync(c_max.get(), scalar, stream_id_);
-  } else {
-    float scalar = n_b * kFactor;
-    c_ele_round_error_accum = MulsKernel(device_context_).LaunchKernelAsync(c_mean.get(), scalar, stream_id_);
-  }
+  // calculate both branches and select based on the condition, to avoid sync
+  KernelTensorPtr condition =
+    GeKernel(device_context_).LaunchKernelAsync(c_ratio_min.get(), kRatioThreshold, stream_id_);
+  float scalar_1 = std::sqrt(n_b) * kFactor;
+  KernelTensorPtr error_1 = MulsKernel(device_context_).LaunchKernelAsync(c_max.get(), scalar_1, stream_id_);
+  float scalar_2 = n_b * kFactor;
+  KernelTensorPtr error_2 = MulsKernel(device_context_).LaunchKernelAsync(c_mean.get(), scalar_2, stream_id_);
+  KernelTensorPtr c_ele_round_error_accum =
+    SelectKernel(device_context_).LaunchKernelAsync(condition.get(), error_1.get(), error_2.get(), stream_id_);
   return CastKernel(device_context_).LaunchKernelAsync(c_ele_round_error_accum.get(), kNumberTypeFloat32, stream_id_);
 }
 }  // namespace checksum
