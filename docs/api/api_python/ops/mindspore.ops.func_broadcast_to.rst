@@ -25,7 +25,7 @@ mindspore.ops.broadcast_to
 
     参数：
         - **input** (Tensor) - 输入tensor。
-        - **shape** (tuple) - 目标shape。
+        - **shape** (tuple[int]) - 目标shape。
 
     返回：
         Tensor

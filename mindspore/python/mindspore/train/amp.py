@@ -698,23 +698,23 @@ def build_train_network(network, optimizer, loss_fn=None, level='O0', boost_leve
     Build the mixed precision training cell automatically.
 
     Note:
-        - After using `custom_mixed_precision` or `auto_mixed_precision` for precision conversion, it is not supported
-          to perform the precision conversion again. If  `build_train_network` is used to train a converted network,
-          `level` need to be configured to ``O0`` to avoid the duplicated accuracy conversion.
+        After using `custom_mixed_precision` or `auto_mixed_precision` for precision conversion, it is not supported
+        to perform the precision conversion again. If  `build_train_network` is used to train a converted network,
+        `level` need to be configured to ``O0`` to avoid the duplicated accuracy conversion.
 
     Args:
         network (Cell): Definition of the network.
         optimizer (:class:`mindspore.nn.Optimizer`): Define the optimizer to update the Parameter.
-        loss_fn (Union[None, Cell]): Define the loss function. If None, the `network` should have the loss inside.
-            Default: ``None`` .
-        level (str): Supports ['O0', 'O1', 'O2', 'O3', 'auto']. Default: ``'O0'`` .
+        loss_fn (Union[None, Cell], optional): Define the loss function. If None,
+            the `network` should have the loss inside. Default: ``None`` .
+        level (str, optional): Supports ['O0', 'O1', 'O2', 'O3', 'auto']. Default: ``'O0'`` .
 
             For details on amp level, refer to :func:`mindspore.amp.auto_mixed_precision`.
 
             Property of `keep_batchnorm_fp32`, `cast_model_type` and `loss_scale_manager` determined by `level`
             setting may be overwritten by settings in `kwargs`.
 
-        boost_level (str): Option for argument `level` in `mindspore.boost` , level for boost mode
+        boost_level (str, optional): Option for argument `level` in `mindspore.boost` , level for boost mode
             training. Supports ['O0', 'O1', 'O2']. Default: ``'O0'`` .
 
             - 'O0': Do not change.

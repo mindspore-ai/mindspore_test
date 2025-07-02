@@ -234,7 +234,7 @@ class Custom(ops.PrimitiveWithInfer):
     <https://www.mindspore.cn/tutorials/en/master/custom_program/op_custom.html>`_ .
 
     .. warning::
-        - This is an experimental API that is subject to change.
+        This is an experimental API that is subject to change.
 
     .. note::
         The supported platforms are determined by the input `func_type`. The supported platforms are as follows:
