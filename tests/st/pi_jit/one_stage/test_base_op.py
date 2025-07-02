@@ -337,7 +337,7 @@ def test_list_slice_with_default_parameter_3():
     assert ret[2] == Tensor([3])
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level2', card_mark='onecard', essential_mark='essential')
 def test_variable_number_in_container():
     """
     Feature: One stage basic operation.
@@ -357,7 +357,7 @@ def test_variable_number_in_container():
     assert jcr["break_count_"] == 0
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level2', card_mark='onecard', essential_mark='essential')
 def test_variable_number_in_container_2():
     """
     Feature: One stage basic operation.
