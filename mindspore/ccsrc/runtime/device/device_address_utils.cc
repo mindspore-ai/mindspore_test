@@ -103,6 +103,28 @@ Format GetFormatByTensorShape(const DeviceContext *device_context, const ShapeVe
   return Format::DEFAULT_FORMAT;
 }
 
+const DeviceContext *GetDeviceContextForOffloadedParameter(const DeviceContext *origin_device_context,
+                                                           const AnfNodePtr &node) {
+  if (origin_device_context == nullptr) {
+    return origin_device_context;
+  }
+  auto device_str = DeviceAddressUtils::GetParameterDeviceStr(node);
+  if (device_str.empty()) {
+    return origin_device_context;
+  }
+  if (device_str == kToCpu) {
+    auto hete_device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
+      {device_str, origin_device_context->device_context_key().device_id_});
+    MS_EXCEPTION_IF_NULL(hete_device_context);
+    MS_LOG(INFO) << "Use " << device_str << " DeviceContext for offloaded parameter: " << node->DebugString();
+    return hete_device_context;
+  } else {
+    MS_LOG(EXCEPTION) << "Device of parameter only support \"CPU\" but got " << device_str;
+  }
+}
+}  // namespace
+
+
 std::string DeviceAddressUtils::GetParameterDeviceStr(const mindspore::AnfNodePtr &node) {
   constexpr auto kParameterDeviceUserDataName = "parameter_device";
   if (!node->isa<Parameter>()) {
@@ -124,27 +146,6 @@ std::string DeviceAddressUtils::GetParameterDeviceStr(const mindspore::AnfNodePt
   }
   return py::cast<std::string>(user_data->obj);
 }
-
-const DeviceContext *GetDeviceContextForOffloadedParameter(const DeviceContext *origin_device_context,
-                                                           const AnfNodePtr &node) {
-  if (origin_device_context == nullptr) {
-    return origin_device_context;
-  }
-  auto device_str = DeviceAddressUtils::GetParameterDeviceStr(node);
-  if (device_str.empty()) {
-    return origin_device_context;
-  }
-  if (device_str == kToCpu) {
-    auto hete_device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-      {device_str, origin_device_context->device_context_key().device_id_});
-    MS_EXCEPTION_IF_NULL(hete_device_context);
-    MS_LOG(INFO) << "Use " << device_str << " DeviceContext for offloaded parameter: " << node->DebugString();
-    return hete_device_context;
-  } else {
-    MS_LOG(EXCEPTION) << "Device of parameter only support \"CPU\" but got " << device_str;
-  }
-}
-}  // namespace
 
 bool DeviceAddressUtils::NodeDeviceAddressExist(const DeviceContext *device_context, const AnfNodePtr &node,
                                                 size_t index) {
