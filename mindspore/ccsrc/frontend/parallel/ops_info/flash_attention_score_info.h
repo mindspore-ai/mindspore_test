@@ -142,21 +142,21 @@ class FlashAttentionScoreInfo : public OperatorInfo {
   int64_t head_num_ = 1;
   float keep_prob_ = 1.0;
   float scale_value_ = 1.0;
-  size_t qkv_batch_dim_;
-  size_t qkv_head_dim_;
-  size_t qkv_seq_dim_;
-  int64_t pre_tokens_;
-  int64_t next_tokens_;
-  int64_t batch_split_num_;
-  int64_t n1_split_num_;
-  int64_t n2_split_num_;
-  int64_t s1_split_num_;
-  int64_t s2_split_num_;
-  int64_t t1_split_num_;  // The split num of query's T-dim under 'TND'
-  int64_t t2_split_num_;  // The split num of key and value's T=dim under 'TND'
-  int64_t dev_matrix_batch_dim_;
-  int64_t dev_matrix_n1_dim_;
-  int64_t dev_matrix_s1_dim_;
+  size_t qkv_batch_dim_ = 0;
+  size_t qkv_head_dim_ = 1;
+  size_t qkv_seq_dim_ = 2;
+  int64_t pre_tokens_ = 2147483647;
+  int64_t next_tokens_ = 2147483647;
+  int64_t batch_split_num_ = 1;
+  int64_t n1_split_num_ = 1;
+  int64_t n2_split_num_ = 1;
+  int64_t s1_split_num_ = 1;
+  int64_t s2_split_num_ = 1;
+  int64_t t1_split_num_ = 1;  // The split num of query's T-dim under 'TND'
+  int64_t t2_split_num_ = 1;  // The split num of key and value's T=dim under 'TND'
+  int64_t dev_matrix_batch_dim_ = 0;
+  int64_t dev_matrix_n1_dim_ = 1;
+  int64_t dev_matrix_s1_dim_ = 2;
   bool real_shift_have_s1_dim_ = false;     // true if real_shift and have s1 dim.
   bool real_shift_have_batch_dim_ = false;  // true if real_shift have batch dim
   bool attn_mask_have_batch_dim_ = false;   // true if attn_mask have batch dim.
@@ -166,13 +166,13 @@ class FlashAttentionScoreInfo : public OperatorInfo {
   bool enable_flash_sp_ = false;
   bool enable_ra_send_recv_ = false;
   bool enable_ra_cp_ = false;
-  int64_t input_layout_;  // "BSH": 0; "BNSD": 1;
-  int64_t sparse_mode_;
+  int64_t input_layout_ = 1;  // "BSH": 0; "BNSD": 1;
+  int64_t sparse_mode_ = 0;
   bool kv_split_ = false;
   bool is_attn_mask_compressed_ = false;
   bool need_update_op_attrs_mode_ = false;
-  int64_t q_seq_len_;
-  int64_t kv_seq_len_;
+  int64_t q_seq_len_ = 1;
+  int64_t kv_seq_len_ = 1;
   bool dynamic_seq_flag_ = false;
   bool is_flatten_batch_seq_ = false;
   std::vector<bool> is_input_passed_;
