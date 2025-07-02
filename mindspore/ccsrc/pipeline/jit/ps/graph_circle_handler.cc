@@ -138,8 +138,8 @@ void DetectAndRevertGraphCircle(const FuncGraphPtr &fg, const FuncGraphManagerPt
   const auto &debug_str = GenerateCircleDebugString(circle_nodes, pass_name, switch_name);
   std::string enable_recovery = common::GetEnv("MS_DEV_ENABLE_PASS_CIRCLE_RECOVERY");
   if (enable_recovery != "1") {
-    MS_LOG(EXCEPTION) << debug_str
-                      << "You can set MS_DEV_ENABLE_PASS_CIRCLE_RECOVERY=1 to skip the pass that encounter graph cycle";
+    MS_LOG(ERROR) << debug_str
+                  << "You can set MS_DEV_ENABLE_PASS_CIRCLE_RECOVERY=1 to skip the pass that encounter graph cycle";
   } else {
     MS_LOG(WARNING) << debug_str;
   }
