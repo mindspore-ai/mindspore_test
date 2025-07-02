@@ -107,6 +107,8 @@ std::vector<std::pair<KernelAttr, PackFwdCpuKernelMod::PackFunc>> PackFwdCpuKern
    &PackFwdCpuKernelMod::LaunchKernel<float>},
   {KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeFloat64).AddOutputAttr(kNumberTypeFloat64),
    &PackFwdCpuKernelMod::LaunchKernel<double>},
+  {KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeBFloat16).AddOutputAttr(kNumberTypeBFloat16),
+   &PackFwdCpuKernelMod::LaunchKernel<bfloat16>},
   {KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeInt8).AddOutputAttr(kNumberTypeInt8),
    &PackFwdCpuKernelMod::LaunchKernel<int8_t>},
   {KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeInt16).AddOutputAttr(kNumberTypeInt16),
