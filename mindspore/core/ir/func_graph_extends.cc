@@ -77,6 +77,7 @@ void FuncGraph::GenerateVarParams(const FuncGraphPtr &specialized_graph, int pos
                                   AnfNodePtrList *specialized_parameter_list,
                                   mindspore::HashMap<AnfNodePtr, AnfNodePtr> *repl_nodes) const {
   MS_EXCEPTION_IF_NULL(specialized_graph);
+  MS_EXCEPTION_IF_NULL(specialized_parameter_list);
   if (!specialized_graph->has_vararg()) {
     // No *args in parameter, varaible_args_count need to be 0
     if (pos_args_input_count > pos_params_count) {
@@ -120,7 +121,6 @@ void FuncGraph::GenerateVarParams(const FuncGraphPtr &specialized_graph, int pos
       para->debug_info()->set_name(param_name);
     }
     var_param_tuple_nodes.push_back(para);
-    MS_EXCEPTION_IF_NULL(specialized_parameter_list);
     specialized_parameter_list->push_back(para);
   }
   auto var_tuple_param = specialized_graph->NewCNode(std::move(var_param_tuple_nodes));
@@ -305,6 +305,7 @@ FuncGraphPtr FuncGraph::GenerateFuncGraph(const AbstractBasePtrList &args_abs_li
     return iter->second;
   }
   FuncGraphPtr specialized_graph = BasicClone(shared_from_base<FuncGraph>());
+  MS_EXCEPTION_IF_NULL(specialized_graph);
   size_t kwarg_count = kwarg_list.size();
   // Get the variable args count from caller.
   // Relationship between pos_args_input_count and pos_params_count
@@ -328,7 +329,6 @@ FuncGraphPtr FuncGraph::GenerateFuncGraph(const AbstractBasePtrList &args_abs_li
   GenerateDefaultValue(specialized_graph, specialized_parameter_list, &repl_nodes);
 
   // Append hyper parameter to specialized_parameter_list
-  MS_EXCEPTION_IF_NULL(specialized_graph);
   auto params = specialized_graph->parameters();
   (void)specialized_parameter_list.insert(specialized_parameter_list.end(), params.end() - SizeToInt(fv_param_count_),
                                           params.end());

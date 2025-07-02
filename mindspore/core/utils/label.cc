@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -117,7 +117,7 @@ NameWithTrace CollectTraceInfos(const DebugInfoPtr &debug_info, TraceLabelType t
     }
     root_info = root_info->trace_info()->debug_info();
   }
-
+  MS_EXCEPTION_IF_NULL(root_info);
   if (!root_info->name().empty()) {
     name_and_traces.root_name = root_info->name();
     return name_and_traces;
