@@ -1,5 +1,5 @@
 /**
- * Copyright 2022-2023 Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,9 @@
 #endif
 
 #include <algorithm>
+#include <memory>
+#include <string>
+#include <vector>
 
 #include "utils/ms_context.h"
 
@@ -126,6 +129,14 @@ void AclAdapter::InitPlugin() {
   dvpp_sharpness_fun_obj_ = DlsymFuncObj(DvppAdjustSharpness, plugin_handle_);
   dvpp_solarize_fun_obj_ = DlsymFuncObj(DvppSolarize, plugin_handle_);
   dvpp_vertical_flip_fun_obj_ = DlsymFuncObj(DvppVerticalFlip, plugin_handle_);
+  dvpp_sys_init_fun_obj_ = DlsymFuncObj(DvppSysInit, plugin_handle_);
+  dvpp_sys_exit_fun_obj_ = DlsymFuncObj(DvppSysExit, plugin_handle_);
+  dvpp_vdec_create_chnl_fun_obj_ = DlsymFuncObj(DvppVdecCreateChnl, plugin_handle_);
+  dvpp_vdec_start_get_frame_fun_obj_ = DlsymFuncObj(DvppVdecStartGetFrame, plugin_handle_);
+  dvpp_vdec_send_stream_fun_obj_ = DlsymFuncObj(DvppVdecSendStream, plugin_handle_);
+  dvpp_vdec_stop_get_frame_fun_obj_ = DlsymFuncObj(DvppVdecStopGetFrame, plugin_handle_);
+  dvpp_vdec_destroy_chnl_fun_obj_ = DlsymFuncObj(DvppVdecDestroyChnl, plugin_handle_);
+  dvpp_memcpy_fun_obj_ = DlsymFuncObj(DvppMemcpy, plugin_handle_);
 
   // acl
   get_soc_name_fun_obj_ = DlsymFuncObj(GetSocName, plugin_handle_);
@@ -207,6 +218,14 @@ void AclAdapter::FinalizePlugin() {
   dvpp_sharpness_fun_obj_ = nullptr;
   dvpp_solarize_fun_obj_ = nullptr;
   dvpp_vertical_flip_fun_obj_ = nullptr;
+  dvpp_sys_init_fun_obj_ = nullptr;
+  dvpp_sys_exit_fun_obj_ = nullptr;
+  dvpp_vdec_create_chnl_fun_obj_ = nullptr;
+  dvpp_vdec_start_get_frame_fun_obj_ = nullptr;
+  dvpp_vdec_send_stream_fun_obj_ = nullptr;
+  dvpp_vdec_stop_get_frame_fun_obj_ = nullptr;
+  dvpp_vdec_destroy_chnl_fun_obj_ = nullptr;
+  dvpp_memcpy_fun_obj_ = nullptr;
 
   // acl
   get_soc_name_fun_obj_ = nullptr;
@@ -711,6 +730,91 @@ APP_ERROR AclAdapter::DvppSolarize(const std::shared_ptr<DeviceTensorAscend910B>
     return APP_ERR_ACL_FAILURE;
   }
   return dvpp_solarize_fun_obj_(input, output, threshold);
+}
+
+// dvpp codec
+Status AclAdapter::DvppSysInit() {
+  CHECK_FAIL_RETURN_UNEXPECTED(HasAclPlugin(), "Load libdvpp_utils.so failed.");
+  CHECK_FAIL_RETURN_UNEXPECTED(dvpp_sys_init_fun_obj_ != nullptr, "Failed to load dvpp_sys_init method.");
+
+  int64_t ret = dvpp_sys_init_fun_obj_();
+  CHECK_FAIL_RETURN_UNEXPECTED(ret == 0, "Failed to call dvpp_sys_init method, errno: " + std::to_string(ret));
+  return Status::OK();
+}
+
+Status AclAdapter::DvppSysExit() {
+  CHECK_FAIL_RETURN_UNEXPECTED(HasAclPlugin(), "Load libdvpp_utils.so failed.");
+  CHECK_FAIL_RETURN_UNEXPECTED(dvpp_sys_exit_fun_obj_ != nullptr, "Failed to load dvpp_sys_exit method.");
+
+  int64_t ret = dvpp_sys_exit_fun_obj_();
+  CHECK_FAIL_RETURN_UNEXPECTED(ret == 0, "Failed to call dvpp_sys_exit method, errno: " + std::to_string(ret));
+  return Status::OK();
+}
+
+Status AclAdapter::DvppVdecCreateChnl(int64_t pType, int64_t *chnl) {
+  CHECK_FAIL_RETURN_UNEXPECTED(HasAclPlugin(), "Load libdvpp_utils.so failed.");
+  CHECK_FAIL_RETURN_UNEXPECTED(dvpp_vdec_create_chnl_fun_obj_ != nullptr,
+                               "Failed to load dvpp_vdec_create_chnl method.");
+
+  *chnl = dvpp_vdec_create_chnl_fun_obj_(pType);
+  if (*chnl == -1) {
+    RETURN_IF_NOT_OK(DvppSysExit());
+    RETURN_STATUS_UNEXPECTED("Failed to call dvpp_vdec_create_chnl method.");
+  }
+  return Status::OK();
+}
+
+Status AclAdapter::DvppVdecStartGetFrame(int64_t chnId, int64_t totalFrame) {
+  CHECK_FAIL_RETURN_UNEXPECTED(HasAclPlugin(), "Load libdvpp_utils.so failed.");
+  CHECK_FAIL_RETURN_UNEXPECTED(dvpp_vdec_start_get_frame_fun_obj_ != nullptr,
+                               "Failed to load dvpp_vdec_start_get_frame method.");
+
+  int64_t ret = dvpp_vdec_start_get_frame_fun_obj_(chnId, totalFrame);
+  if (ret != 0) {
+    RETURN_IF_NOT_OK(DvppVdecDestroyChnl(chnId));
+    RETURN_IF_NOT_OK(DvppSysExit());
+    RETURN_STATUS_UNEXPECTED("Failed to call dvpp_vdec_start_get_frame method, errno: " + std::to_string(ret));
+  }
+  return Status::OK();
+}
+
+Status AclAdapter::DvppVdecSendStream(int64_t chnId, const std::shared_ptr<Tensor> &input, int64_t outFormat,
+                                      bool display, std::shared_ptr<DeviceBuffer> *out) {
+  CHECK_FAIL_RETURN_UNEXPECTED(HasAclPlugin(), "Load libdvpp_utils.so failed.");
+  CHECK_FAIL_RETURN_UNEXPECTED(dvpp_vdec_send_stream_fun_obj_ != nullptr,
+                               "Failed to load dvpp_vdec_send_stream method.");
+
+  int64_t ret = dvpp_vdec_send_stream_fun_obj_(chnId, input, outFormat, display, out);
+  CHECK_FAIL_RETURN_UNEXPECTED(ret == 0, "Failed to call dvpp_vdec_send_stream method, errno: " + std::to_string(ret));
+  return Status::OK();
+}
+
+Status AclAdapter::DvppVdecStopGetFrame(int64_t chnId, int64_t totalFrame, std::shared_ptr<DeviceBuffer> *output) {
+  CHECK_FAIL_RETURN_UNEXPECTED(HasAclPlugin(), "Load libdvpp_utils.so failed.");
+  CHECK_FAIL_RETURN_UNEXPECTED(dvpp_vdec_stop_get_frame_fun_obj_ != nullptr,
+                               "Failed to load dvpp_vdec_stop_get_frame method.");
+
+  *output = dvpp_vdec_stop_get_frame_fun_obj_(chnId, totalFrame);
+  return Status::OK();
+}
+
+Status AclAdapter::DvppVdecDestroyChnl(int64_t chnId) {
+  CHECK_FAIL_RETURN_UNEXPECTED(HasAclPlugin(), "Load libdvpp_utils.so failed.");
+  CHECK_FAIL_RETURN_UNEXPECTED(dvpp_vdec_destroy_chnl_fun_obj_ != nullptr,
+                               "Failed to load dvpp_vdec_destroy_chnl method.");
+
+  int64_t ret = dvpp_vdec_destroy_chnl_fun_obj_(chnId);
+  CHECK_FAIL_RETURN_UNEXPECTED(ret == 0, "Failed to call dvpp_vdec_destroy_chnl method, errno: " + std::to_string(ret));
+  return Status::OK();
+}
+
+Status AclAdapter::DvppMemcpy(const std::shared_ptr<DeviceBuffer> &src, void *dest) {
+  CHECK_FAIL_RETURN_UNEXPECTED(HasAclPlugin(), "Load libdvpp_utils.so failed.");
+  CHECK_FAIL_RETURN_UNEXPECTED(dvpp_memcpy_fun_obj_ != nullptr, "Failed to load dvpp_memcpy method.");
+
+  int64_t ret = dvpp_memcpy_fun_obj_(src, dest);
+  CHECK_FAIL_RETURN_UNEXPECTED(ret == 0, "Failed to call dvpp_memcpy method, errno: " + std::to_string(ret));
+  return Status::OK();
 }
 
 // acl

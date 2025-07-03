@@ -183,6 +183,7 @@ API样例中常用的导入模块如下：
     mindspore.dataset.vision.ImageReadMode
     mindspore.dataset.vision.Inter
     mindspore.dataset.vision.SliceMode
+    mindspore.dataset.vision.VideoDecoder
     mindspore.dataset.vision.encode_jpeg
     mindspore.dataset.vision.encode_png
     mindspore.dataset.vision.get_image_num_channels

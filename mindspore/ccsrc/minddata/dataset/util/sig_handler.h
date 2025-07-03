@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2024 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 #define MINDSPORE_CCSRC_MINDDATA_DATASET_UTIL_SIG_HANDLER_H_
 
 #include <cstdint>
-#include <set>
+#include <vector>
 
 namespace mindspore::dataset {
 /// \brief Register the custom signal handlers.
@@ -30,7 +30,7 @@ extern void RegisterMainHandlers();
 extern void RegisterWorkerHandlers();
 
 /// \brief Register workers to be monitored by the watch dog.
-extern void RegisterWorkerPIDs(int64_t id, const std::set<int> &pids);
+extern void RegisterWorkerPIDs(int64_t id, const std::vector<int> &pids);
 
 /// \brief Deregister workers to be monitored by the watch dog.
 extern void DeregisterWorkerPIDs(int64_t id);

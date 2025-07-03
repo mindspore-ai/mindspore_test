@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@
 #include <string>
 #include <vector>
 
+#include "minddata/dataset/core/device_buffer.h"
 #include "minddata/dataset/kernels/image/dvpp/utils/acl_plugin.h"
 #include "minddata/dataset/kernels/image/dvpp/utils/AclLiteError.h"
 #include "minddata/dataset/kernels/image/dvpp/utils/ErrorCode.h"
@@ -166,6 +167,24 @@ class AclAdapter {
   APP_ERROR DvppVerticalFlip(const std::shared_ptr<DeviceTensorAscend910B> &input,
                              std::shared_ptr<DeviceTensorAscend910B> *output);
 
+  // dvpp codec
+  Status DvppSysInit();
+
+  Status DvppSysExit();
+
+  Status DvppVdecCreateChnl(int64_t pType, int64_t *chnl);
+
+  Status DvppVdecStartGetFrame(int64_t chnId, int64_t totalFrame);
+
+  Status DvppVdecSendStream(int64_t chnId, const std::shared_ptr<Tensor> &input, int64_t outFormat, bool display,
+                            std::shared_ptr<DeviceBuffer> *out);
+
+  Status DvppVdecStopGetFrame(int64_t chnId, int64_t totalFrame, std::shared_ptr<DeviceBuffer> *output);
+
+  Status DvppVdecDestroyChnl(int64_t chnId);
+
+  Status DvppMemcpy(const std::shared_ptr<DeviceBuffer> &src, void *dest);
+
   // acl
   APP_ERROR GetSocName(std::string *soc_name);
 
@@ -254,6 +273,14 @@ class AclAdapter {
   DvppRotateFunObj dvpp_rotate_fun_obj_;
   DvppSolarizeFunObj dvpp_solarize_fun_obj_;
   DvppVerticalFlipFunObj dvpp_vertical_flip_fun_obj_;
+  DvppSysInitFunObj dvpp_sys_init_fun_obj_;
+  DvppSysExitFunObj dvpp_sys_exit_fun_obj_;
+  DvppVdecCreateChnlFunObj dvpp_vdec_create_chnl_fun_obj_;
+  DvppVdecStartGetFrameFunObj dvpp_vdec_start_get_frame_fun_obj_;
+  DvppVdecSendStreamFunObj dvpp_vdec_send_stream_fun_obj_;
+  DvppVdecStopGetFrameFunObj dvpp_vdec_stop_get_frame_fun_obj_;
+  DvppVdecDestroyChnlFunObj dvpp_vdec_destroy_chnl_fun_obj_;
+  DvppMemcpyFunObj dvpp_memcpy_fun_obj_;
 
   // acl interface
   GetSocNameFunObj get_soc_name_fun_obj_;

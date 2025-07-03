@@ -29,6 +29,7 @@ if(ENABLE_D)
         ${DATASET_CORE_SRC_FILES}
         # ascend910b
         device_tensor_ascend910b.cc
+        device_buffer.cc
         )
 endif()
 

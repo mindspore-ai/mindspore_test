@@ -339,6 +339,10 @@ class ConfigManager {
   // @return - Indicate the multiprocessing start method
   std::string get_multiprocessing_start_method() { return start_method_; }
 
+  void set_video_backend(const std::string &backend) { video_backend_ = backend; }
+
+  std::string get_video_backend() { return video_backend_; }
+
  private:
   // Private helper function that takes a nlohmann json format and populates the settings
   // @param j - The json nlohmann json info
@@ -378,6 +382,7 @@ class ConfigManager {
   ErrorSamplesMode error_samples_mode_{ErrorSamplesMode::kReturn};  // The method to process erroneous samples
   std::map<std::string, bool> iterator_mode_;
   std::string start_method_;  // fork or spawn
+  std::string video_backend_;
 };
 }  // namespace dataset
 }  // namespace mindspore

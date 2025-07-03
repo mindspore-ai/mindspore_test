@@ -26,6 +26,7 @@ set(DVPP_UTILS_SRC
     ${DVPP_UTILS_SRC}
     # Ascend910B
     dvpp_image_utils.cc
+    dvpp_video_utils.cc
     )
 endif()
 

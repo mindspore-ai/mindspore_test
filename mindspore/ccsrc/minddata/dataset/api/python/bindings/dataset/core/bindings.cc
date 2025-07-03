@@ -13,6 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#include <memory>
+#include <string>
+#include <vector>
+
 #include "pybind11/numpy.h"
 #include "pybind11/pybind11.h"
 #include "pybind11/stl_bind.h"
@@ -20,9 +25,14 @@
 #include "minddata/dataset/api/python/pybind_register.h"
 
 #include "minddata/dataset/core/client.h"  // DE client
+#if defined(ENABLE_D)
+#include "minddata/dataset/core/device_buffer.h"
+#endif
 #include "minddata/dataset/core/global_context.h"
-
 #include "minddata/dataset/include/dataset/constants.h"
+#if defined(ENABLE_D)
+#include "minddata/dataset/kernels/image/dvpp/acl_adapter.h"
+#endif
 #include "minddata/dataset/util/status.h"
 
 namespace mindspore {
@@ -85,6 +95,8 @@ PYBIND_REGISTER(ConfigManager, 0, ([](const py::module *m) {
                     .def("get_iterator_mode", &ConfigManager::get_iterator_mode)
                     .def("set_multiprocessing_start_method", &ConfigManager::set_multiprocessing_start_method)
                     .def("get_multiprocessing_start_method", &ConfigManager::get_multiprocessing_start_method)
+                    .def("set_video_backend", &ConfigManager::set_video_backend)
+                    .def("get_video_backend", &ConfigManager::get_video_backend)
                     .def("load", [](ConfigManager &c, const std::string &s) { THROW_IF_ERROR(c.LoadFile(s)); });
                 }));
 
@@ -122,6 +134,32 @@ PYBIND_REGISTER(Tensor, 0, ([](const py::module *m) {
                       return py::array(pybind11::dtype(info), info.shape, info.strides, info.ptr, t);
                     });
                 }));
+
+#if defined(ENABLE_D)
+PYBIND_REGISTER(DeviceBuffer, 0, ([](const py::module *m) {
+                  (void)py::class_<DeviceBuffer, std::shared_ptr<DeviceBuffer>>(*m, "DeviceBuffer",
+                                                                                py::buffer_protocol())
+                    .def(
+                      py::init([](const std::vector<size_t> &shape) { return std::make_shared<DeviceBuffer>(shape); }),
+                      py::call_guard<py::gil_scoped_release>())
+                    .def("size", &DeviceBuffer::GetBufferSize)
+                    .def_property_readonly("shape", ([](DeviceBuffer &device_buffer) {
+                                             auto shape = device_buffer.GetShape();
+                                             return py::tuple(py::cast(shape));
+                                           }))
+                    .def(
+                      "__getitem__",
+                      [](const std::shared_ptr<DeviceBuffer> &device_buffer, ptrdiff_t offset) {
+                        return std::make_shared<DeviceBuffer>(device_buffer, offset);
+                      },
+                      py::call_guard<py::gil_scoped_release>())
+                    .def("numpy", [](const std::shared_ptr<DeviceBuffer> &device_buffer) {
+                      auto array = py::array_t<uint8_t>(device_buffer->GetShape(), device_buffer->GetStrides());
+                      THROW_IF_ERROR(AclAdapter::GetInstance().DvppMemcpy(device_buffer, array.mutable_data(0)));
+                      return array;
+                    });
+                }));
+#endif
 
 PYBIND_REGISTER(TensorShape, 0, ([](const py::module *m) {
                   (void)py::class_<TensorShape>(*m, "TensorShape")
