@@ -38,10 +38,10 @@
 
 namespace mindspore {
 namespace tensor {
-static std::string MakeId() {
+static uint64_t MakeId() {
   // Use atomic to make id generator thread safe.
   static std::atomic<uint64_t> last_id{1};
-  return "T" + std::to_string(last_id.fetch_add(1, std::memory_order_relaxed));
+  return last_id.fetch_add(1, std::memory_order_relaxed);
 }
 
 static TypeId TypeIdOf(const TypePtr &data_type, TypeId defaultTypeId) {

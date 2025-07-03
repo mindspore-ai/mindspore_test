@@ -55,8 +55,6 @@ BackwardNodePtr BuildAutoGradMeta(const tensor::TensorPtr &tensor) {
   }
   return grad_node;
 }
-
-inline uint64_t GetTensorNumId(const std::string &id) { return std::stoull(id.substr(1)); }
 }  // namespace
 
 PyTensorBackwardNodePreHook::PyTensorBackwardNodePreHook(const py::function &hook_fn, size_t output_idx)
@@ -91,7 +89,7 @@ uint64_t RegisterHook::RegisterTensorBackwardHook(const tensor::TensorPtr &tenso
                 << tensor->id() << " with handle " << unique_id_;
 
   if (MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kGraphMode) {
-    const auto &tensor_id = GetTensorNumId(tensor->id());
+    const auto &tensor_id = tensor->id();
     std::shared_ptr<std::map<uint64_t, py::function>> hook_map;
     if (tensor->has_user_data("backward_hook")) {
       hook_map = tensor->user_data<std::map<uint64_t, py::function>>("backward_hook");
@@ -155,7 +153,7 @@ void RegisterHook::RemoveTensorBackwardHook(uint64_t handle_id) {
 py::list RegisterHook::GetHooks(const tensor::TensorPtr &tensor) {
   py::list hooks;
   if (MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kGraphMode) {
-    const auto &tensor_id = GetTensorNumId(tensor->id());
+    const auto &tensor_id = tensor->id();
     auto found = tensor_id_with_hook_map_.find(tensor_id);
     if (found != tensor_id_with_hook_map_.end()) {
       auto hook_map = found->second.lock();

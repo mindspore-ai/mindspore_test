@@ -4417,11 +4417,11 @@ TracePtr CreateRegisterHookTrace(const TracePtr &trace) {
       }
       auto tensor = tensor::ConvertToTensor(obj);
       if (simple) {
-        return "Guard backward hook fn on Tensor[" + std::string(tensor->id()) + "].";
+        return "Guard backward hook fn on Tensor[" + std::to_string(tensor->id()) + "].";
       }
       auto hook_list = pijit::GetRegisterHookList(obj);
       auto hook_list_str = std::string(py::str(hook_list));
-      return "{Backward hook fn of Tensor[" + std::string(tensor->id()) + "] Now : " + hook_str +
+      return "{Backward hook fn of Tensor[" + std::to_string(tensor->id()) + "] Now : " + hook_str +
              " Before : " + hook_list_str + "}(type:" + std::to_string(TraceType::Customized) + ")";
     });
   return std::move(hook_trace);

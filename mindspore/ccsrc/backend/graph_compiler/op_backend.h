@@ -60,8 +60,6 @@ class BACKEND_EXPORT PostRunOp {
  public:
   void UpdateOutput(const std::vector<session::KernelWithIndex> &output_nodes, VectorRef *outputs) const;
 
-  void ReleaseForwardOpOutput(const std::vector<ValuePtr> &input_tensors);
-
   void ClearGraphDeviceAddress(const KernelGraphPtr &graph, const DeviceContext *device_context,
                                bool is_gradient_out) const;
 
@@ -74,10 +72,6 @@ class BACKEND_EXPORT PostRunOp {
   void UpdateOutputDynamic(const session::BackendOpRunInfoPtr &op_run_info, const OpCompilerInfoPtr &op_compiler_info,
                            const std::vector<KernelTensorPtr> &kernel_tensor_list, VectorRef *outputs) const;
 
-  void set_forward_tensor_ref_count(const std::map<std::string, size_t> &forward_tensor_ref_count) {
-    forward_tensor_ref_count_ = forward_tensor_ref_count;
-  }
-
  private:
   tensor::TensorPtr CreateOutputTensor(const AnfNodePtr &output_node, size_t output_index) const;
 
@@ -85,9 +79,6 @@ class BACKEND_EXPORT PostRunOp {
                                                   const AnfNodePtr &output_node, size_t output_index,
                                                   const KernelTensorPtr &kernel_tensor,
                                                   size_t idx_in_graph_outputs) const;
-
-  // Cache forward op output value node tensor ref count of kernels for back propagation graph in PyNative mode.
-  std::map<std::string, size_t> forward_tensor_ref_count_;
 };
 
 class BACKEND_EXPORT OpBackend {
@@ -97,10 +88,6 @@ class BACKEND_EXPORT OpBackend {
   // Run op on device.
   void Run(const BackendOpRunInfoPtr &op_run_info, const std::string &device_name, uint32_t device_id,
            VectorRef *outputs);
-
-  void set_forward_tensor_ref_count(const std::map<std::string, size_t> &forward_tensor_ref_count) {
-    post_run_.set_forward_tensor_ref_count(forward_tensor_ref_count);
-  }
 
   void RunViewKernelTask(const pynative::BaseOpRunInfo &base_op_run_info, const runtime::KernelTaskType &task_type,
                          bool enable_async) const;
