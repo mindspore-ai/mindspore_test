@@ -51,7 +51,7 @@ include_directories(${CMAKE_SOURCE_DIR}/mindspore/ops)
 include_directories(${CMAKE_SOURCE_DIR}/mindspore/ops/kernel/include)
 include_directories(${CMAKE_SOURCE_DIR}/mindspore/ops/kernel/cpu)
 
-include(${CMAKE_SOURCE_DIR}/cmake/graphengine_variables.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/metadef_variables.cmake)
 MESSAGE("check  ut_test ${CMAKE_BINARY_DIR}")
 
 link_directories(${MS_CCSRC_BUILD_PATH})

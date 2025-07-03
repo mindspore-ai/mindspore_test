@@ -25,7 +25,7 @@
 #include "graph/operator_reg.h"
 #include "graph/operator.h"
 
-#include "external/ge/ge_api.h"
+#include "ge/ge_api.h"
 
 namespace ge {
 
