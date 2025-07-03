@@ -122,6 +122,7 @@ def aoe_job_type(config):
         )
     AscendOpTuningConf.get_instance().set_aoe_job_type(config)
 
+
 def aclnn_cache(enable_global_cahce=False, cache_queue_length=10000):
     """
     Configure aclnn cache parameters.
