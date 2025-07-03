@@ -80,12 +80,17 @@ const AnfNodePtr AscendConvertTupleInputToDynamicInput::Process(const FuncGraphP
   PrimitivePtr prim = common::AnfAlgo::GetCNodePrimitive(cnode);
   MS_EXCEPTION_IF_NULL(prim);
   bool is_communication_op = common::AnfAlgo::IsCommunicationOp(node);
+  bool not_unfold_communication_op = false;
+  if (common::AnfAlgo::GetCNodeName(node) == kBroadcastOpName) {
+    not_unfold_communication_op = true;
+  }
   bool is_unfold_calculate_op = IsOneOfPrimitiveCNode(node, need_unfold_calculate_node);
   bool is_unfold_control_op = IsOneOfPrimitiveCNode(node, need_unfold_control_node);
   // In GE backend, control node should not be unfold.
   if (is_ge_ && is_unfold_calculate_op) {
     return ConvertMakeTupleInputToPlantInputs(func_graph, cnode);
-  } else if (!is_ge_ && (is_communication_op || is_unfold_calculate_op || is_unfold_control_op)) {
+  } else if (!is_ge_ && (is_communication_op || is_unfold_calculate_op || is_unfold_control_op) &&
+             !not_unfold_communication_op) {
     return ConvertMakeTupleInputToPlantInputs(func_graph, cnode);
   }
   return nullptr;
