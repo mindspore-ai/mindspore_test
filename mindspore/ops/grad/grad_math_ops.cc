@@ -1276,55 +1276,57 @@ REG_BPROP_BUILDER("GroupedMatmulV2").SetUnusedInputs({i2, i3, i4, i5, i6, i10}).
           ib->OutZeros(group_type)};
 });
 
-REG_BPROP_BUILDER("GroupedMatmulV4").SetUnusedInputs({i2, i3, i4, i5, i6, i7, i9, i10, i11, i16}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(i0);
-  auto weight = ib->GetInput(i1);
-  auto bias = ib->GetInput(i2);
-  auto group_list = ib->GetInput(i8);
-  auto split_item = ib->GetInput(i12);
-  auto group_type = ib->GetInput(i13);
-  auto group_list_type = ib->GetInput(i14);
-  auto act_type = ib->GetInput(i15);
-  auto dout = ib->GetInput(i17);
-  // none params
-  std::vector<NodePtr> check_params;
-  for (size_t i = i3; i < i12; i++) {
-    if (i == i8) {
-      continue;
+REG_BPROP_BUILDER("GroupedMatmulV4")
+  .SetUnusedInputs({i2, i3, i4, i5, i6, i7, i9, i10, i11, i16, i17})
+  .SetBody(BODYFUNC(ib) {
+    auto x = ib->GetInput(i0);
+    auto weight = ib->GetInput(i1);
+    auto bias = ib->GetInput(i2);
+    auto group_list = ib->GetInput(i8);
+    auto split_item = ib->GetInput(i12);
+    auto group_type = ib->GetInput(i13);
+    auto group_list_type = ib->GetInput(i14);
+    auto act_type = ib->GetInput(i15);
+    auto dout = ib->GetInput(i18);
+    // none params
+    std::vector<NodePtr> check_params;
+    for (size_t i = i3; i < i12; i++) {
+      if (i == i8) {
+        continue;
+      }
+      check_params.push_back(ib->GetInput(i));
     }
-    check_params.push_back(ib->GetInput(i));
-  }
 
-  const std::string none_params =
-    "scale, offset, antiquant_scale, antiquant_offset, pre_token_scale, activation_input, activation_quant_scale and "
-    "activation_quant_offset";
-  const std::string op_name = "GroupedMatmulV4";
-  auto [num_x, num_w] = GMMBackwardParamsCheck(op_name, x, weight, split_item, group_type, check_params, none_params);
+    const std::string none_params =
+      "scale, offset, antiquant_scale, antiquant_offset, pre_token_scale, activation_input, activation_quant_scale and "
+      "activation_quant_offset";
+    const std::string op_name = "GroupedMatmulV4";
+    auto [num_x, num_w] = GMMBackwardParamsCheck(op_name, x, weight, split_item, group_type, check_params, none_params);
 
-  auto dx_and_dw = ib->Emit("GmmV2Backward", {dout, x, weight, group_list, group_list_type});
-  auto split_nodes = GMMSplitTuple(ib, dx_and_dw, {num_x, num_w});
-  auto dx = split_nodes[i0];
-  auto dw = split_nodes[i1];
-  auto dbias = GMMBiasBackward(ib, bias, op_name);
+    auto dx_and_dw = ib->Emit("GmmV2Backward", {dout, x, weight, group_list, group_list_type});
+    auto split_nodes = GMMSplitTuple(ib, dx_and_dw, {num_x, num_w});
+    auto dx = split_nodes[i0];
+    auto dw = split_nodes[i1];
+    auto dbias = GMMBiasBackward(ib, bias, op_name);
 
-  const auto &group_list_shape = group_list->shape();
-  NodePtr dgroup_list;
-  if (!IsDynamic(group_list_shape)) {
-    dgroup_list = ib->OutZeros(group_list);
-  } else {
-    dgroup_list = ib->ZerosLikeExt(group_list, ib->Value(static_cast<int64_t>(ib->GetDtypeId(group_list))));
-  }
+    const auto &group_list_shape = group_list->shape();
+    NodePtr dgroup_list;
+    if (!IsDynamic(group_list_shape)) {
+      dgroup_list = ib->OutZeros(group_list);
+    } else {
+      dgroup_list = ib->ZerosLikeExt(group_list, ib->Value(static_cast<int64_t>(ib->GetDtypeId(group_list))));
+    }
 
-  std::vector<NodePtr> gradients{dx, dw, dbias};
-  const auto &inputs = ib->GetInputs();
-  std::transform(inputs.begin() + i3, inputs.begin() + i8, std::back_inserter(gradients),
-                 [&ib](const NodePtr &node) { return ib->OutZeros(node); });
-  gradients.push_back(std::move(dgroup_list));
-  std::transform(inputs.begin() + i9, inputs.begin() + i16, std::back_inserter(gradients),
-                 [&ib](const NodePtr &node) { return ib->OutZeros(node); });
+    std::vector<NodePtr> gradients{dx, dw, dbias};
+    const auto &inputs = ib->GetInputs();
+    std::transform(inputs.begin() + i3, inputs.begin() + i8, std::back_inserter(gradients),
+                   [&ib](const NodePtr &node) { return ib->OutZeros(node); });
+    gradients.push_back(std::move(dgroup_list));
+    std::transform(inputs.begin() + i9, inputs.begin() + i17, std::back_inserter(gradients),
+                   [&ib](const NodePtr &node) { return ib->OutZeros(node); });
 
-  return gradients;
-});
+    return gradients;
+  });
 
 REG_BPROP_BUILDER("Add").FreeUselessValues_IO({}, {}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(i0);

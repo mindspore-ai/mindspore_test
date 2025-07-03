@@ -54,6 +54,8 @@ std::vector<GeneralInferParam> prepare_params() {
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
       // act_type
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
+      // output_dtype
+      InferInfoParam{ShapeVector{}, kMetaTypeNone, mindspore::kNone},
     })
     .FeedExpectedOutput({{2, 4, 10}, {1, 3}}, {kNumberTypeFloat32, kNumberTypeFloat32});
 
@@ -91,6 +93,8 @@ std::vector<GeneralInferParam> prepare_params() {
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
       // act_type
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
+      // output_dtype
+      InferInfoParam{ShapeVector{}, kMetaTypeNone, mindspore::kNone},
     })
     .FeedExpectedOutput({{-2}, {1, 3}}, {kNumberTypeFloat32, kNumberTypeFloat32});
 
@@ -128,6 +132,8 @@ std::vector<GeneralInferParam> prepare_params() {
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
       // act_type
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
+      // output_dtype
+      InferInfoParam{ShapeVector{}, kMetaTypeNone, mindspore::kNone},
     })
     .FeedExpectedOutput({{-1, -1, 10}, {1, 3}}, {kNumberTypeFloat32, kNumberTypeFloat32});
 
@@ -165,6 +171,8 @@ std::vector<GeneralInferParam> prepare_params() {
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
       // act_type
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
+      // output_dtype
+      InferInfoParam{ShapeVector{}, kMetaTypeNone, mindspore::kNone},
     })
     .FeedExpectedOutput({{2, 4, 10}, {1, 3}}, {kNumberTypeFloat32, kNumberTypeFloat32});
 
@@ -202,6 +210,8 @@ std::vector<GeneralInferParam> prepare_params() {
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(1)},
       // act_type
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
+      // output_dtype
+      InferInfoParam{ShapeVector{}, kMetaTypeNone, mindspore::kNone},
     })
     .FeedExpectedOutput({{10, 8}}, {kNumberTypeFloat32});
 
@@ -239,6 +249,8 @@ std::vector<GeneralInferParam> prepare_params() {
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
       // act_type
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
+      // output_dtype
+      InferInfoParam{ShapeVector{}, kMetaTypeNone, mindspore::kNone},
     })
     .FeedExpectedOutput({{-1, 8}}, {kNumberTypeFloat32});
 
@@ -276,6 +288,8 @@ std::vector<GeneralInferParam> prepare_params() {
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
       // act_type
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
+      // output_dtype
+      InferInfoParam{ShapeVector{}, kMetaTypeNone, mindspore::kNone},
     })
     .FeedExpectedOutput({{10, 8}}, {kNumberTypeFloat32});
 
@@ -313,6 +327,8 @@ std::vector<GeneralInferParam> prepare_params() {
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
       // act_type
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
+      // output_dtype
+      InferInfoParam{ShapeVector{}, kMetaTypeNone, mindspore::kNone},
     })
     .FeedExpectedOutput({{-1, -1}}, {kNumberTypeFloat32});
 
@@ -350,6 +366,8 @@ std::vector<GeneralInferParam> prepare_params() {
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(1)},
       // act_type
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
+      // output_dtype
+      InferInfoParam{ShapeVector{}, kMetaTypeNone, mindspore::kNone},
     })
     .FeedExpectedOutput({{4, 10, 8}}, {kNumberTypeFloat32});
 
@@ -387,6 +405,8 @@ std::vector<GeneralInferParam> prepare_params() {
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
       // act_type
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
+      // output_dtype
+      InferInfoParam{ShapeVector{}, kMetaTypeNone, mindspore::kNone},
     })
     .FeedExpectedOutput({{4, -1, 8}}, {kNumberTypeFloat32});
 
@@ -424,6 +444,8 @@ std::vector<GeneralInferParam> prepare_params() {
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
       // act_type
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
+      // output_dtype
+      InferInfoParam{ShapeVector{}, kMetaTypeNone, mindspore::kNone},
     })
     .FeedExpectedOutput({{4, 10, -1}}, {kNumberTypeFloat32});
 
@@ -461,6 +483,8 @@ std::vector<GeneralInferParam> prepare_params() {
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
       // act_type
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
+      // output_dtype
+      InferInfoParam{ShapeVector{}, kMetaTypeNone, mindspore::kNone},
     })
     .FeedExpectedOutput({{-1, 10, 8}}, {kNumberTypeFloat32});
 
@@ -498,6 +522,8 @@ std::vector<GeneralInferParam> prepare_params() {
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
       // act_type
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
+      // output_dtype
+      InferInfoParam{ShapeVector{}, kMetaTypeNone, mindspore::kNone},
     })
     .FeedExpectedOutput({{4, -1, 8}}, {kNumberTypeFloat32});
 
@@ -535,6 +561,8 @@ std::vector<GeneralInferParam> prepare_params() {
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(1)},
       // act_type
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
+      // output_dtype
+      InferInfoParam{ShapeVector{}, kMetaTypeNone, mindspore::kNone},
     })
     .FeedExpectedOutput({{4, 10, -1}}, {kNumberTypeFloat32});
 
@@ -572,6 +600,8 @@ std::vector<GeneralInferParam> prepare_params() {
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
       // act_type
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
+      // output_dtype
+      InferInfoParam{ShapeVector{}, kMetaTypeNone, mindspore::kNone},
     })
     .FeedExpectedOutput({{-1, 10, 8}}, {kNumberTypeFloat32});
 
@@ -609,10 +639,12 @@ std::vector<GeneralInferParam> prepare_params() {
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(1)},
       // act_type
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
+      // output_dtype
+      InferInfoParam{ShapeVector{}, kMetaTypeNone, mindspore::kNone},
     })
     .FeedExpectedOutput({{4, 10, 8}}, {kNumberTypeFloat32});
-    
-    generator
+
+  generator
     .FeedInputArgs({
       // x
       InferInfoParam{ShapeArray{{10, 20}}, kNumberTypeInt8},
@@ -646,6 +678,8 @@ std::vector<GeneralInferParam> prepare_params() {
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(1)},
       // act_type
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
+      // output_dtype
+      InferInfoParam{ShapeVector{}, kMetaTypeNone, mindspore::kNone},
     })
     .FeedExpectedOutput({{10, 8}}, {kNumberTypeBFloat16});
 

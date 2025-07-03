@@ -13,8 +13,10 @@ grouped_matmul_v4:
             y_i = x_i\times (weight_i + antiquant\_offset_i) * antiquant\_scale_i + bias_i
 
     .. note::
-        Only when `bias` , `scale` , `offset` , `antiquant_scale` and `antiquant_offset` are all None, `group_type` is 0,
-        and `split_item` is 3, the reverse derivative is supported.
+        - Only when `bias` , `scale` , `offset` , `antiquant_scale` and `antiquant_offset` are all None, `group_type` is 0,
+          and `split_item` is 3, the reverse derivative is supported.
+        - When `x` type is int8 and `weight` type is int4, the `scale` should be of the uint64 data type,
+          but its memory needs to be arranged in float32 format.
         
     ** Per-Token-Quant **
     
@@ -54,6 +56,8 @@ grouped_matmul_v4:
                                as the cumsum of grouping size in each group, and 1 represents the positions as the grouping size in
                                each group. Default: ``0``.
         act_type (int): Activation function type. Currently not supported. Default: ``0``.
+        output_dtype (mindspore.dtype): Specifies the output data type, currently taking effect only when input x is int8 and weight is int4.
+                                        If None is passed in, bfloat16 will be used by default. Default: ``None``.
 
 
         Parameter limitations 1
