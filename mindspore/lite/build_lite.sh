@@ -884,9 +884,7 @@ build_aar() {
 update_submodule()
 {
   if [[ "${MSLITE_ENABLE_ACL}" == "on" ]] || [[ "${AOS_SDK}" ]]; then
-    git submodule update --init graphengine
-    cd "${BASEPATH}/graphengine"
-    git submodule update --init 910/metadef
+    git submodule update --init metadef
   fi
   cd "${BASEPATH}"
   if [[ ("X$ENABLE_AKG" == "Xon" && (("${MSLITE_ENABLE_CLOUD_FUSION_INFERENCE}" == "on") || ("${MSLITE_ENABLE_CLOUD_INFERENCE}" == "on"))) ]]; then

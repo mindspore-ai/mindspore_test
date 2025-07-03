@@ -1,5 +1,5 @@
 if(ENABLE_D OR ENABLE_ACL)
-    include(${CMAKE_SOURCE_DIR}/cmake/graphengine_variables.cmake)
+    include(${CMAKE_SOURCE_DIR}/cmake/metadef_variables.cmake)
 
     file(GLOB _GE_BACKEND_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.cc")
     list(APPEND _GE_BACKEND_SRC_LIST $<TARGET_OBJECTS:_mindspore_ge_runtime_obj>)
