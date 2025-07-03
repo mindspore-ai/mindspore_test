@@ -75,8 +75,6 @@ def _check_lstmcell_init(func):
     return wrapper
 
 
-# The implementation of this function refers to the rnn_tanh_cell in the file
-# https://github.com/pytorch/pytorch/blob/v1.13.0/benchmarks/fastrnns/cells.py.
 def _rnn_tanh_cell(inputs, hidden, w_ih, w_hh, b_ih, b_hh):
     """RNN cell function with tanh activation"""
     if b_ih is None:
@@ -88,8 +86,6 @@ def _rnn_tanh_cell(inputs, hidden, w_ih, w_hh, b_ih, b_hh):
     return ops.Tanh()(igates + hgates)
 
 
-# The implementation of this function refers to the rnn_relu_cell in the file
-# https://github.com/pytorch/pytorch/blob/v1.13.0/benchmarks/fastrnns/cells.py.
 def _rnn_relu_cell(inputs, hidden, w_ih, w_hh, b_ih, b_hh):
     """RNN cell function with relu activation"""
     if b_ih is None:
@@ -101,8 +97,6 @@ def _rnn_relu_cell(inputs, hidden, w_ih, w_hh, b_ih, b_hh):
     return ops.ReLU()(igates + hgates)
 
 
-# The implementation of this function refers to the lstm_cell in the file
-# https://github.com/pytorch/pytorch/blob/v1.13.0/benchmarks/fastrnns/cells.py.
 def _lstm_cell(inputs, hidden, w_ih, w_hh, b_ih, b_hh):
     """LSTM cell function"""
     hx, cx = hidden
@@ -123,8 +117,6 @@ def _lstm_cell(inputs, hidden, w_ih, w_hh, b_ih, b_hh):
     return hy, cy
 
 
-# The implementation of this function refers to the gru_cell in the file
-# https://github.com/pytorch/pytorch/blob/v1.13.0/benchmarks/fastrnns/cells.py.
 def _gru_cell(inputs, hidden, w_ih, w_hh, b_ih, b_hh):
     """GRU cell function"""
     if b_ih is None:

@@ -1080,17 +1080,8 @@ class CyclicLR(LRScheduler):
         [Tensor(shape=[], dtype=Float32, value= 0.010225)]
     """
 
-    def __init__(self,
-                 optimizer,
-                 base_lr,
-                 max_lr,
-                 step_size_up=2000,
-                 step_size_down=None,
-                 mode='triangular',
-                 gamma=1.,
-                 scale_fn=None,
-                 scale_mode='cycle',
-                 last_epoch=-1):
+    def __init__(self, optimizer, base_lr, max_lr, step_size_up=2000, step_size_down=None, mode='triangular',
+                 gamma=1.0, scale_fn=None, scale_mode='cycle', last_epoch=-1):
 
         base_lrs = self._preprocess_input_param(optimizer, base_lr, 'base_lr')
 
