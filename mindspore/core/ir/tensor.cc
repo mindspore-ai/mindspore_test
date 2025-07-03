@@ -542,8 +542,8 @@ TensorPtr Tensor::cpu() const {
     device_address = device_sync_;
   }
   if (device_address == nullptr) {
-    MS_LOG(ERROR) << "Can't do cpu() for uninitialized tensor";
-    return std::make_shared<Tensor>(data_type_, shape_, device_address);
+    MS_LOG(WARNING) << "Can't do cpu() for uninitialized tensor " << ToString();
+    return std::make_shared<Tensor>(data_type_, shape_, MakeDeviceAddress(data_type_, shape_, true));
   }
   if (device_address->GetDeviceType() == device::DeviceType::kCPU) {
     return std::make_shared<Tensor>(data_type_, shape_, device_address);
