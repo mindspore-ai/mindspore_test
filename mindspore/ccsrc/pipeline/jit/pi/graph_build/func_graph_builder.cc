@@ -571,11 +571,11 @@ AbstractWrapperPtr FuncGraphBuilder::AddTopGraphKwargsInputs(const py::object &k
 }
 
 AbstractWrapperPtr FuncGraphBuilder::AddSubGraphInput(const AbstractWrapperPtr abstract_wrapper) {
-  MS_LOG(INFO) << "Try add sub graph parameter for abstract wrapper: " << abstract_wrapper->ToString();
   if (abstract_wrapper == nullptr) {
     MS_LOG(INFO) << "Abstract wrapper for subgraph input is nullptr.";
     return nullptr;
   }
+  MS_LOG(INFO) << "Try add sub graph parameter for abstract wrapper: " << abstract_wrapper->ToString();
   auto node = FindOrCreateNodeByWrapper(abstract_wrapper);
   if (node == nullptr) {
     MS_LOG(INFO) << "Failed to add input for abstract wrapper: " << abstract_wrapper->ToString();
