@@ -26,32 +26,20 @@ CacheClientGreeter::CacheClientGreeter(const std::string &hostname, int32_t port
   // message limit is 4MB which is not big enough.
   args.SetMaxReceiveMessageSize(-1);
   MS_LOG(INFO) << "Hostname: " << hostname_ << ", port: " << std::to_string(port_);
-#ifdef CACHE_LOCAL_CLIENT
-  // Try connect locally to the unix_socket first as the first preference
-  // Need to resolve hostname to ip address rather than to do a string compare
-  if (hostname == "127.0.0.1") {
-    std::string target = "unix://" + PortToUnixSocketPath(port);
-    channel_ = grpc::CreateCustomChannel(target, grpc::InsecureChannelCredentials(), args);
-  } else {
-#endif
-    std::string target = hostname + ":" + std::to_string(port);
-    channel_ = grpc::CreateCustomChannel(target, grpc::InsecureChannelCredentials(), args);
-#ifdef CACHE_LOCAL_CLIENT
-  }
-#endif
+  // Try to connect locally to the unix_socket first as the first preference
+  std::string target = "unix://" + PortToUnixSocketPath(port);
+  channel_ = grpc::CreateCustomChannel(target, grpc::InsecureChannelCredentials(), args);
   stub_ = CacheServerGreeter::NewStub(channel_);
 }
 
 Status CacheClientGreeter::AttachToSharedMemory(bool *local_bypass) {
   *local_bypass = false;
-#ifdef CACHE_LOCAL_CLIENT
   SharedMemory::shm_key_t shm_key;
   RETURN_IF_NOT_OK(PortToFtok(port_, &shm_key));
   // Attach to the shared memory
   mem_.SetPublicKey(shm_key);
   RETURN_IF_NOT_OK(mem_.Attach());
   *local_bypass = true;
-#endif
   return Status::OK();
 }
 
@@ -120,7 +108,8 @@ Status CacheClientGreeter::WorkerEntry() {
           std::string err_msg;
           if (error_code == grpc::StatusCode::UNAVAILABLE) {
             err_msg = "Cache server with port " + std::to_string(port_) +
-                      " is unreachable. Make sure the server is running. GRPC Code " + std::to_string(error_code);
+                      " is unreachable. Make sure the server is running or started under the same user as the client." +
+                      " GRPC Code " + std::to_string(error_code);
           } else {
             err_msg = rq->rc_.error_message() + ". GRPC Code " + std::to_string(error_code);
           }

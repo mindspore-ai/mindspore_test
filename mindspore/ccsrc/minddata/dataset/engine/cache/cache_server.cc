@@ -25,9 +25,7 @@
 #include "minddata/dataset/util/bit.h"
 #include "minddata/dataset/util/path.h"
 #include "minddata/dataset/util/random.h"
-#ifdef CACHE_LOCAL_CLIENT
 #include "minddata/dataset/util/sig_handler.h"
-#endif
 #undef BitTest
 
 namespace mindspore {
@@ -35,10 +33,8 @@ namespace dataset {
 CacheServer *CacheServer::instance_ = nullptr;
 std::once_flag CacheServer::init_instance_flag_;
 Status CacheServer::DoServiceStart() {
-#ifdef CACHE_LOCAL_CLIENT
   // We need to destroy the shared memory if user hits Control-C
   RegisterHandlers();
-#endif
   if (!top_.empty()) {
     Path spill(top_);
     RETURN_IF_NOT_OK(spill.CreateDirectories());
@@ -75,13 +71,11 @@ Status CacheServer::DoServiceStart() {
   } catch (const std::exception &e) {
     RETURN_STATUS_UNEXPECTED(e.what());
   }
-#ifdef CACHE_LOCAL_CLIENT
   RETURN_IF_NOT_OK(CachedSharedMemory::CreateArena(&shm_, port_, shared_memory_sz_in_gb_));
   // Bring up a thread to monitor the unix socket in case it is removed. But it must be done
   // after we have created the unix socket.
   auto inotify_f = std::bind(&CacheServerGreeterImpl::MonitorUnixSocket, comm_layer_.get());
   RETURN_IF_NOT_OK(vg_.CreateAsyncTask("Monitor unix socket", inotify_f));
-#endif
   // Spawn a few threads to serve the real request.
   auto f = std::bind(&CacheServer::ServerRequest, this, std::placeholders::_1);
   for (auto i = 0; i < num_workers_; ++i) {
