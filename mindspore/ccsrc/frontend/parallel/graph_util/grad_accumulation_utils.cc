@@ -150,7 +150,9 @@ void TagMicroBatchBpEndInCellShare(const FuncGraphPtr &root, const FuncGraphMana
 
     auto tuple_getitem_cnode = cnode->input(0)->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(tuple_getitem_cnode);
-    auto tuple_getitem_cnode_input = tuple_getitem_cnode->input(1)->cast<CNodePtr>();
+    auto tuple_getitem_cnode_input_pre = tuple_getitem_cnode->input(1);
+    MS_EXCEPTION_IF_NULL(tuple_getitem_cnode_input_pre);
+    auto tuple_getitem_cnode_input = tuple_getitem_cnode_input_pre->cast<CNodePtr>();
     if (!tuple_getitem_cnode_input || !IsValueNode<FuncGraph>(tuple_getitem_cnode_input->input(0))) {
       continue;
     }
@@ -183,7 +185,9 @@ void TagMicroBatchBpEndInCellShare(const FuncGraphPtr &root, const FuncGraphMana
 void TagMicroBatchBpEndPrim(const FuncGraphPtr &root) {
   MS_EXCEPTION_IF_NULL(root);
   FuncGraphPtr parallel_care_graph = nullptr;
-  for (auto &fg : root->manager()->func_graphs()) {
+  auto root_manager = root->manager();
+  MS_EXCEPTION_IF_NULL(root_manager);
+  for (auto &fg : root_manager->func_graphs()) {
     for (auto &node : fg->nodes()) {
       if (IsPrimitiveCNode(node, prim::kPrimVirtualDataset)) {
         parallel_care_graph = fg;

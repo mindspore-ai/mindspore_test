@@ -80,6 +80,7 @@ CNodePtr CreateReshapeNode(const FuncGraphPtr &graph, const AnfNodePtr &input_no
   MS_EXCEPTION_IF_NULL(input_shape_node);
   std::vector<AnfNodePtr> reshape_inputs = {NewValueNode(prim::kPrimReshape->Clone()), input_node, input_shape_node};
   auto reshape_node = graph->NewCNode(reshape_inputs);
+  MS_EXCEPTION_IF_NULL(reshape_node);
   reshape_node->set_scope(input_node->scope());
   return reshape_node;
 }

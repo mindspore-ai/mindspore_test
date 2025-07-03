@@ -114,7 +114,9 @@ CNodePtr NewConcatNode(const AnfNodePtr &input_node, size_t concat_dim) {
   MS_EXCEPTION_IF_NULL(input_node);
   std::vector<AnfNodePtr> concat_inputs = {NewValueNode(std::make_shared<Primitive>(prim::kPrimConcat->name())),
                                            input_node, NewValueNode(MakeValue(static_cast<int64_t>(concat_dim)))};
-  auto concat = input_node->func_graph()->NewCNode(concat_inputs);
+  auto func_graph = input_node->func_graph();
+  MS_EXCEPTION_IF_NULL(func_graph);
+  auto concat = func_graph->NewCNode(concat_inputs);
   MS_EXCEPTION_IF_NULL(concat);
   concat->set_scope(input_node->scope());
   return concat;
@@ -140,7 +142,9 @@ CNodePtr NewSplitNode(const AnfNodePtr &input_node, size_t split_dim, size_t spl
   std::vector<AnfNodePtr> split_inputs = {NewValueNode(std::make_shared<Primitive>(prim::kPrimSplit->name())),
                                           input_node, NewValueNode<int64_t>(split_dim),
                                           NewValueNode<int64_t>(split_num)};
-  auto split = input_node->func_graph()->NewCNode(split_inputs);
+  auto func_graph = input_node->func_graph();
+  MS_EXCEPTION_IF_NULL(func_graph);
+  auto split = func_graph->NewCNode(split_inputs);
   MS_EXCEPTION_IF_NULL(split);
   split->set_scope(input_node->scope());
   return split;

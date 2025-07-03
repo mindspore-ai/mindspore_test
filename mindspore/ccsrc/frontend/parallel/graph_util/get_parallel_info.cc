@@ -50,7 +50,11 @@ std::string GetNodeNameWithCount(const CNodePtr &cnode) {
 
   std::string node_name;
   auto is_call_fullname_with_scope = [](const CNodePtr &cnode) {
-    auto value_ptr = cnode->input(0)->cast<ValueNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
+    auto cnode_input = cnode->input(0);
+    MS_EXCEPTION_IF_NULL(cnode_input);
+
+    auto value_ptr = cnode_input->cast<ValueNodePtr>();
     ValuePtr input_value = nullptr;
     if (value_ptr != nullptr) {
       input_value = value_ptr->value();

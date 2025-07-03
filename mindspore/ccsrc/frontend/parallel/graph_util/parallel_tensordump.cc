@@ -244,6 +244,7 @@ void RedistributionParallelTensorDumpHandler::InsertNewTensorDump(const CNodePtr
       !GetValue<bool>(dump_cnode->GetPrimalAttr(VISITED_DUMP))) {
     return;
   }
+  MS_EXCEPTION_IF_NULL(dump_cnode);
   bool is_side_effect_tensordump = dump_cnode->inputs().size() == 4 ? true : false;
   ValuePtr v = GetValueNode(dump_cnode->input(kIndex1));
   const std::string dump_cnode_filepath = GetValue<std::string>(v);
