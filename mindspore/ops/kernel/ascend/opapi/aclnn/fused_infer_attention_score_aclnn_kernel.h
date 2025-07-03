@@ -29,13 +29,34 @@ class FusedInferAttentionScoreAscend : public AclnnKernelMod {
  public:
   FusedInferAttentionScoreAscend() : AclnnKernelMod(std::move("aclnnFusedInferAttentionScoreV2")) {}
   ~FusedInferAttentionScoreAscend() = default;
+  bool Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
               const std::vector<KernelTensor *> &outputs, void *stream_ptr) override;
   void GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
 
  private:
+  void SetScalarParam(const std::vector<KernelTensor *> &inputs);
   std::vector<int64_t> ConvertTensorToVector(const std::string &tensor_name, KernelTensor *const tensor_ptr);
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
+
+  int64_t num_heads_ = 0;
+  double scale_value_d_ = 0;
+  int64_t pre_tokens_ = 0;
+  int64_t next_tokens_ = 0;
+  std::string input_layout_str_ = "";
+  int64_t num_key_value_heads_ = 0;
+  int64_t sparse_mode_ = 0;
+  int64_t inner_precise_ = 0;
+  int64_t block_size_ = 0;
+  int64_t antiquant_mode_ = 0;
+  bool softmax_lse_flag_ = false;
+  int64_t key_antiquant_mode_ = 0;
+  int64_t value_antiquant_mode_ = 0;
+  std::vector<KernelTensor *> value_vector_;
+  std::vector<KernelTensor *> key_vector_;
+  std::pair<std::vector<int64_t>, bool> actual_q_lengths_vector_pair_;
+  std::pair<std::vector<int64_t>, bool> actual_kv_lengths_vector_pair_;
+  std::pair<std::vector<int64_t>, bool> actual_shared_prefix_lengths_vector_pair_;
 };
 }  // namespace fused_infer_attention_score
 }  // namespace kernel
