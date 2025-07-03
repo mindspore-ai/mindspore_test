@@ -863,6 +863,18 @@ uintptr_t TensorPybind::DataPtr(const TensorPtr &tensor) {
   return reinterpret_cast<uintptr_t>(data_ptr);
 }
 
+std::string TensorPybind::GetDevice(const TensorPtr &tensor) {
+  runtime::Pipeline::Get().WaitForward();
+  const auto &device_address = std::dynamic_pointer_cast<device::DeviceAddress>(tensor->device_address());
+  if (device_address == nullptr) {
+    return "CPU";
+  }
+  if (device_address->device_name() == "CPU") {
+    return "CPU";
+  }
+  return device_address->device_name() + ":" + std::to_string(device_address->device_id());
+}
+
 TensorPtr TensorPybind::MoveTo(const Tensor &self, const std::string &to, bool blocking) {
   py::gil_scoped_release gil_release;
   MS_LOG(INFO) << "Try move tensor to " << to;
