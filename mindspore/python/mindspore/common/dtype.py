@@ -23,6 +23,7 @@ import numpy as np
 from mindspore._c_expression import typing
 from mindspore._c_expression.typing import Type
 from mindspore._c_expression.np_dtypes import np_version_valid
+
 if np_version_valid(False):
     from mindspore._c_expression.np_dtypes import bfloat16 as np_bfloat16
 
@@ -163,7 +164,6 @@ signed_type = (int8, byte, int16, short, int32, intc, int64, intp, float16, half
 complex_type = (complex64, complex128,)
 all_types = (bool_, int8, uint8, int16, int32, int64, float16, float32, float64, bfloat16, complex64, complex128,
              float8_e4m3fn, float8_e5m2, hifloat8)
-implicit_conversion_seq = {t: idx for idx, t in enumerate(all_types)}
 
 _simple_types = {
     list: list_,
@@ -344,7 +344,6 @@ def _issubclass_(type_, dtype):
     if not isinstance(type_, typing.Type):
         return False
     return typing.is_subclass(type_, dtype)
-
 
 
 def type_size_in_bytes(dtype):
