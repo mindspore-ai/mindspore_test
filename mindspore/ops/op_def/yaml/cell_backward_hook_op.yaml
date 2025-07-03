@@ -1,0 +1,18 @@
+#operator cell_backward_hook
+cell_backward_hook:
+  args:
+    input:
+      dtype: tuple[tensor]
+      type_cast: list[tensor]
+  returns:
+    output:
+      dtype: tuple[tensor]
+  function:
+    disable: True
+  class:
+    disable: True
+  dispatch:
+    enable: False
+    Ascend: CellBackwardHookAscend
+    CPU: CellBackwardHookCPU
+    GPU: CellBackwardHookGPU

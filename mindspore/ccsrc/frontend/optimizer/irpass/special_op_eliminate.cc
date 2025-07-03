@@ -29,6 +29,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_z.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "frontend/optimizer/pattern_matcher.h"
 #include "frontend/optimizer/anf_visitor.h"
 #include "frontend/operator/ops.h"

@@ -15,10 +15,11 @@
 import numpy as np
 import pytest
 import mindspore as ms
-from mindspore import nn, ops, Tensor, jit, context
+from mindspore import nn, ops, Tensor, context
 from mindspore.ops import GradOperation
 from mindspore.common import ParameterTuple
 from mindspore.common.api import _pynative_executor
+from mindspore._c_expression import CreationType
 from tests.mark_utils import arg_mark
 
 
@@ -179,17 +180,6 @@ class CmpNetFWHook(nn.Cell):
         return x
 
 
-class InplaceNet(nn.Cell):
-    def __init__(self):
-        super(InplaceNet, self).__init__()
-        self.conv = nn.Conv2d(2, 2, kernel_size=2, stride=1, padding=0, weight_init="ones", pad_mode="valid")
-
-    def construct(self, x):
-        x = self.conv(x)
-        x.add_(1.0)
-        return x
-
-
 @arg_mark(plat_marks=['cpu_linux'],
           level_mark='level0',
           card_mark='onecard',
@@ -325,50 +315,6 @@ def test_pynative_hook_tuple_with_single_element():
     print(output_cat)
 
 
-def backward_hook_with_jit(cell_id, grad_inp, grad_outp):
-    """
-    print input and output
-    """
-    print(cell_id)
-    print("input: ", grad_inp)
-    print("outp: ", grad_outp)
-    return Tensor(np.array([2, 3, 4, 5])).astype(np.float32), Tensor(np.array([5, 6, 7, 8]).astype(np.float32))
-
-
-class NetJit(nn.Cell):
-    def __init__(self):
-        super(NetJit, self).__init__()
-        self.mul = nn.MatMul()
-        self.relu = nn.ReLU()
-        self.handle = self.mul.register_backward_hook(backward_hook_with_jit)
-
-    @jit
-    def construct(self, x, y):
-        x = self.mul(x, y)
-        x = self.relu(x)
-        x = x + y
-        return x
-
-
-@arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
-          card_mark='onecard',
-          essential_mark='essential')
-def test_hook_backward_with_jit():
-    """
-    Feature: Test hook backward feature
-    Description: test hook with jit
-    Expectation: Success
-    """
-    context.set_context(mode=context.PYNATIVE_MODE, save_graphs=0)
-    input_x = Tensor(np.array([1, 2, 3, 4]).astype(np.float32))
-    input_y = Tensor(np.array([5, 6, 7, 8]).astype(np.float32))
-    net = NetJit()
-    with pytest.raises(RuntimeError):
-        _ = net(input_x, input_y)
-        _pynative_executor.sync()
-
-
 def test_pynative_backward_hook_with_modify_cell():
     """
     Feature: PyNative hook function.
@@ -448,25 +394,88 @@ def test_pynative_backward_with_dict_input():
     assert len(grad) == 3
 
 
+class InplaceNet(nn.Cell):
+    def __init__(self):
+        super(InplaceNet, self).__init__()
+        self.conv = nn.Conv2d(2, 2, kernel_size=2, stride=1, padding=0, weight_init="ones", pad_mode="valid")
+
+    def construct(self, x, is_avoid_view_inplace_error):
+        x = self.conv(x)
+        if is_avoid_view_inplace_error:
+            _pynative_executor.set_creation_type(x, CreationType.DEFAULT)
+        x.add_(1.0)
+        return x
+
+
 @arg_mark(plat_marks=['platform_ascend'],
           level_mark='level0',
           card_mark='onecard',
           essential_mark='essential')
-def test_inplace_net_backward_hook():
+def test_pynative_backward_hook_single_inplace_net():
     """
-    Feature: PyNative hook function.
-    Description: Test PyNative backward hook function for inplace operator.
-    Expectation: The calculation result is correct.
+    Feature: PyNative backward hook function.
+    Description: Verify backward hook behavior when an inplace operation is applied to the single output of a Cell.
+    Expectation: Pass when creation type is set to DEFAULT; Raise RuntimeError otherwise.
     """
-    context.set_context(mode=context.PYNATIVE_MODE, device_target="Ascend")
     input_x = Tensor(np.ones([2, 2, 2, 2]).astype(np.float32))
     grad_op = GradOperation(get_all=True, get_by_list=False, sens_param=False)
     net = InplaceNet()
-    handle = net.conv.register_backward_hook(backward_hook_fn4)
-    grad = grad_op(net)(input_x)
-    handle.remove()
+    net.conv.register_backward_hook(backward_hook_fn4)
+    grad = grad_op(net)(input_x, True)
     assert len(grad) == 1
-    assert np.allclose(grad[0].asnumpy(), np.ones([2, 2, 2, 2]).astype(np.float32) * 10, 0.000001)
+    assert np.allclose(grad[0].asnumpy(), np.ones([2, 2, 2, 2]).astype(np.float32) * 2, 0.000001)
+
+    with pytest.raises(RuntimeError) as err:
+        grad_op(net)(input_x, False)
+        assert "This view tensor is output of custom cell, which has custom bprop" in err
+
+
+class MultiInputInplaceNet(nn.Cell):
+    def construct(self, x, y, is_avoid_view_inplace_error):
+        if is_avoid_view_inplace_error:
+            _pynative_executor.set_creation_type(x, CreationType.DEFAULT)
+        x.mul_(2.0)
+        return x * y
+
+
+@arg_mark(plat_marks=['platform_ascend'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_pynative_backward_hook_multi_inplace_net():
+    """
+    Feature: PyNative backward hook function.
+    Description: Verify backward hook behavior when an inplace operation is applied to the multi input of a Cell.
+    Expectation: Pass when creation type is set to DEFAULT; Raise RuntimeError otherwise.
+    """
+    input_x = Tensor([1.0, 1.0], dtype=ms.float32)
+    input_y = Tensor([2.0, 3.0], dtype=ms.float32)
+
+    def hook_fn(module, grad_in, grad_out):
+        new_grad = []
+        for grad_item in grad_in:
+            if not grad_item is None:
+                new_grad.append(grad_item * 2.0)
+            else:
+                new_grad.append(None)
+        return tuple(new_grad)
+
+    net = MultiInputInplaceNet()
+    net.register_backward_hook(hook_fn)
+
+    def fn(x, y, flag):
+        x = x * 2
+        return net(x, y, flag)
+
+    grad_op = GradOperation(get_all=True, get_by_list=False, sens_param=False)
+    grad = grad_op(fn)(input_x, input_y, True)
+    assert len(grad) == 2
+    assert np.allclose(grad[0].asnumpy(), np.array([8.0, 12.0], dtype=np.float32), 0.000001)
+    assert np.allclose(grad[1].asnumpy(), np.array([8.0, 8.0], dtype=np.float32), 0.000001)
+
+    with pytest.raises(RuntimeError) as err:
+        grad_op(fn)(input_x, input_y, False)
+        assert "This view is one of output for multi output operator" in err
 
 
 @arg_mark(plat_marks=['cpu_linux'],

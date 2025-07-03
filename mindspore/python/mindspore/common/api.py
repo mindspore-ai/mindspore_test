@@ -1894,6 +1894,18 @@ class _PyNativeExecutor:
         """
         return self._executor.constant_folding(*args)
 
+    def set_creation_type(self, tensor, creation_type):
+        """
+        Set tensor's view creation type
+
+        Args:
+            tensor (Tensor): input tensor.
+            creation_type (CreationType): The type of view tensor when it is created.
+
+        Return:
+            None.
+        """
+        return self._executor.set_creation_type(tensor, creation_type)
 
 class _CellGraphExecutor:
     """
