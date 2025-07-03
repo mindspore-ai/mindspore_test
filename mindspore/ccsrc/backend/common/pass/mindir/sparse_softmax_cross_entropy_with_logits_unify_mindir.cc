@@ -822,6 +822,7 @@ const AnfNodePtr PynativeGradSparseSoftmaxCrossEntropyWithLogitsUnifyMindIRV2::P
   CheckCNodeInputSize(mul_node, kMulInputTensorNum);
 
   auto cast_node = mul_node->input(kIndex1);
+  MS_EXCEPTION_IF_NULL(cast_node);
   auto cast_cnode = cast_node->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(cast_cnode);
   CheckCNodeInputSize(cast_cnode, kCastInputNum);

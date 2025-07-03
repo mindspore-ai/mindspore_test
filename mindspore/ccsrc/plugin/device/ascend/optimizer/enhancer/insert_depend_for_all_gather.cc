@@ -15,6 +15,7 @@
  */
 
 #include <map>
+#include <vector>
 #include "plugin/device/ascend/optimizer/enhancer/insert_depend_for_all_gather.h"
 #include "mindspore/ops/op_def/other_op_name.h"
 #include "mindspore/ops/op_def/framework_ops.h"

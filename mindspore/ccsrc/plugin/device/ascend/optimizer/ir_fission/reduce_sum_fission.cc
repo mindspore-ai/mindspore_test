@@ -62,7 +62,7 @@ const AnfNodePtr ReduceSumFission::Process(const FuncGraphPtr &graph, const AnfN
   MS_EXCEPTION_IF_NULL(axis_value);
   if (!axis_value->isa<ValueSequence>()) {
     int64_t axis = common::AnfAlgo::GetNodeAttr<int64_t>(cnode, kAttrAxis);
-    inp_axis.emplace_back(axis);
+    (void)inp_axis.emplace_back(axis);
   } else {
     auto axis = common::AnfAlgo::GetNodeAttr<std::vector<int64_t>>(cnode, kAttrAxis);
     inp_axis = axis;

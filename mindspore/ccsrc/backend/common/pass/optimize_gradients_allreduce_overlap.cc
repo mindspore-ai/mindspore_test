@@ -94,7 +94,9 @@ void SpreadDependLabel(const std::string &fusion_key, const CNodePtr &cnode) {
 void SpreadOutputLabel(const std::string &fusion_key, const CNodePtr &cnode) {
   MS_EXCEPTION_IF_NULL(cnode);
   auto func_graph = cnode->func_graph();
+  MS_EXCEPTION_IF_NULL(func_graph);
   auto manager = func_graph->manager();
+  MS_EXCEPTION_IF_NULL(manager);
   auto node_users = manager->node_users()[cnode];
   for (auto &node_pair : node_users) {
     if (!IsPrimitiveCNode(node_pair.first)) {
