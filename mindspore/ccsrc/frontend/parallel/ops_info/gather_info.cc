@@ -41,9 +41,11 @@ constexpr char kNameMaxNorm[] = "max_norm";
 constexpr char kNameNormType[] = "norm_type";
 constexpr char kNameScaleGradByFreq[] = "scale_grad_by_freq";
 constexpr int64_t kPaddingIdxIndex = 2;
+constexpr int64_t kStrategySize = 2;
 constexpr int64_t kMaxNormIndex = 3;
 constexpr int64_t kNormTypeIndex = 4;
 constexpr int64_t kScaleGradByFreqIndex = 5;
+constexpr int64_t kByteNum = 8;
 constexpr float kNormType = 2.0;
 
 Status GatherInfo::GetManualSplitWithoutOffsetAttr() {
@@ -279,7 +281,7 @@ bool GatherInfo::ShardBatchAndAxis(const Shape &param_strategy, const Shape &ind
 // otherwise return false
 bool GatherInfo::ShardBatchAxisAndDp(const Shape &param_strategy, const Shape &indices_strategy) const {
   // IndexSelect only support strategy ((a, b), (c,))
-  if ((param_strategy.size() != 2) || (indices_strategy.size() != 1)) {
+  if ((param_strategy.size() != kStrategySize) || (indices_strategy.size() != 1)) {
     return false;
   }
 
@@ -1317,7 +1319,7 @@ Status GatherInfo::CheckStrategyParam(const Shape &param_strategy, const Shape &
   }
   MS_EXCEPTION_IF_ZERO("param_strategy.at(param_strategy.size() - 1)", param_strategy.at(param_strategy.size() - 1));
   auto slice_shape = param_shape.at(param_shape.size() - 1) / param_strategy.at(param_strategy.size() - 1);
-  if ((target_ != CPU) && (slice_shape % 8 != 0) && (slice_shape != 1)) {
+  if ((target_ != CPU) && (slice_shape % kByteNum != 0) && (slice_shape != 1)) {
     MS_LOG(WARNING) << "Gather: Last dim of param slice shape is not 32Byte aligned.";
   }
   return SUCCESS;
