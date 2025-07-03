@@ -54,7 +54,9 @@ bool RaiseCpuKernelMod::Launch(const std::vector<KernelTensor *> &inputs, const 
     const auto &input = inputs[index];
     MS_EXCEPTION_IF_NULL(input);
     AbstractBase *object_input = input;
-    bool cur_is_str = object_input->has_user_data("str_exception_result") || input->GetType()->ToString() == "String";
+    auto type = input->GetType();
+    MS_EXCEPTION_IF_NULL(type);
+    bool cur_is_str = object_input->has_user_data("str_exception_result") || type->ToString() == "String";
     const auto &cur_exception_msg = object_input->has_user_data("str_exception_result")
                                       ? *object_input->user_data<string>("str_exception_result")
                                       : ConvertAbsToStr(input);
