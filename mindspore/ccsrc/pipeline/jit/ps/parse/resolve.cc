@@ -1110,6 +1110,7 @@ bool ResolveAll(const FuncGraphManagerPtr &manager) {
 }
 
 TensorHookMapPtr ResolveTensorHooks(const pipeline::ResourceBasePtr &resource, const tensor::TensorPtr &tensor) {
+  MS_EXCEPTION_IF_NULL(tensor);
   const auto &grad_meta_data = tensor->auto_grad_meta_data();
   if (grad_meta_data == nullptr) {
     MS_LOG(DEBUG) << "The grad_meta_data of " << tensor->ToString() << " is nullptr.";

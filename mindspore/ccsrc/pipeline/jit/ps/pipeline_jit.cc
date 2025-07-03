@@ -311,6 +311,7 @@ void JitExecutorPy::ConvertArgs(const py::tuple &args, const py::dict &kwargs, c
       (void)arguments.emplace_back(iter->second.first);
       (void)args_abs.emplace_back(iter->second.second);
       auto keyword_arg_abs = iter->second.second->cast<abstract::AbstractKeywordArgPtr>();
+      MS_EXCEPTION_IF_NULL(keyword_arg_abs);
       SetHookForArgAbstract(resource, py::cast<py::object>(item.second), keyword_arg_abs->get_arg());
       continue;
     }
