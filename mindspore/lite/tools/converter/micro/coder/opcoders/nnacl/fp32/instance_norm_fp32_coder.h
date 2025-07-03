@@ -34,7 +34,7 @@ class InstanceNormFP32Coder final : public OperatorCoder {
   int DoCode(CoderContext *const context) override;
 
  private:
-  InstanceNormParameter *param_;
+  InstanceNormParameter *param_{nullptr};
   float *tmp_src_data_ = nullptr;
 };
 }  // namespace mindspore::lite::micro::nnacl

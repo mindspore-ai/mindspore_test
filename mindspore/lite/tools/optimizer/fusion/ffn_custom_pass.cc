@@ -395,8 +395,9 @@ std::unordered_map<std::string, VectorRef> FFNCustomPass::DefinePatterns() const
 
 AnfNodePtr FFNCustomPass::Process(const std::string &patten_name, const FuncGraphPtr &func_graph,
                                   const AnfNodePtr &node, const EquivPtr &equiv) const {
+  MS_CHECK_TRUE_MSG(node != nullptr, nullptr, "node is nullptr!");
   MS_LOG(INFO) << "FFN cust fusion start, pattern name: " << patten_name << "   " << node->fullname_with_scope();
-  if (func_graph == nullptr || node == nullptr || equiv == nullptr) {
+  if (func_graph == nullptr || equiv == nullptr) {
     MS_LOG(ERROR) << "Function graph, node or equiv is nullptr!";
     return nullptr;
   }

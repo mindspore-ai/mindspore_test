@@ -34,9 +34,9 @@ class SoftmaxCrossEntropyWithLogitsCoder final : public OperatorCoder {
   int DoCode(CoderContext *const context) override;
 
  private:
-  int n_dim_;
-  int element_size_;
-  int input_shape_[DIMENSION_5D];
+  int n_dim_{0};
+  int element_size_{0};
+  int input_shape_[DIMENSION_5D] = {0};
   SoftmaxParameter softmax_params_;
   float *losses_{nullptr};
   float *sum_data_{nullptr};

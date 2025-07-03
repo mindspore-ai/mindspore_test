@@ -44,9 +44,9 @@ class BatchNormInt8Coder final : public OperatorCoder {
   float *alpha_addr_{nullptr};
   float *beta_addr_{nullptr};
 
-  int unit_;
-  int units_;
-  int channel_;
+  int unit_{0};
+  int units_{0};
+  int channel_{0};
   BatchNormParameter *batchnorm_param_;
 };
 }  // namespace mindspore::lite::micro::nnacl
