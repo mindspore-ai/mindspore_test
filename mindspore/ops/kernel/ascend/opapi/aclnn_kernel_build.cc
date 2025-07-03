@@ -67,6 +67,19 @@ KernelModPtr AclnnOpBuild(const AnfNodePtr &anf_node) {
   return kernel_ptr;
 }
 
+KernelModPtr CreateAclnnKernelMod(const std::string &op_name) {
+  if (!IsRegisteredAclnnOp(op_name) || !IsEnabledAclnnDispatch(op_name)) {
+    return nullptr;
+  }
+  std::shared_ptr<AclnnKernelMod> kernel_ptr = Factory<AclnnKernelMod>::Instance().Create(op_name);
+  if (kernel_ptr == nullptr) {
+    MS_LOG(INFO) << "aclnn can't find Kernel[" << op_name << "]";
+    return nullptr;
+  }
+  device::ascend::AclnnInit();
+  return kernel_ptr;
+}
+
 bool IsRegisteredAclnnOp(const std::string &op_name) {
   return Factory<AclnnKernelMod>::Instance().IsRegistered(op_name);
 }

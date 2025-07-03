@@ -53,10 +53,9 @@ class BACKEND_EXPORT MSInferBackend : public BackendBase {
   void Clear() override;
 
  private:
-  std::unordered_map<BackendGraphId, GraphAdapterPtr> graph_adapter_map_;
   static BackendGraphId backend_graph_id_;
-
   BackendJitConfig backend_jit_config_;
+  std::unordered_map<BackendGraphId, GraphAdapterPtr> graph_adapter_map_;
 };
 
 using MSInferBackendPtr = std::shared_ptr<MSInferBackend>;

@@ -66,6 +66,7 @@ class OPS_ASCEND_API AclKernelMod : public KernelMod {
   void PackageOutput(const size_t idx, const ShapeVector &shape);
   void RefreshAclConverter(const std::vector<KernelTensor *> &inputs);
   virtual void SetValueDependArgs(const std::set<int64_t> &indices);
+  virtual void SetValueDependArgs(const std::string &prim_name, const std::set<int64_t> &indices);
   void SetDynamic(bool is_dynamic) { is_dynamic_ = is_dynamic; }
   std::string GetFormatFromInput(const std::vector<KernelTensor *> &inputs);
 

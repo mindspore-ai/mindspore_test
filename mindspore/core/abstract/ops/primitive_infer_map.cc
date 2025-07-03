@@ -190,6 +190,54 @@ std::set<int64_t> GetValueDependArgIndices(const CNodePtr &cnode, bool is_proto)
   return RectifyDependListFromDynamicInputAttr(cnode, primitive, res);
 }
 
+std::set<int64_t> GetValueDependArgIndicesFromProto(const PrimitivePtr &primitive, size_t input_num) {
+  if (primitive == nullptr) {
+    return {};
+  }
+  auto prim_name = primitive->name();
+  std::set<int64_t> ori = {};
+  auto op_infer_opt = GetPrimitiveInferImpl(primitive);
+  if (!op_infer_opt.has_value()) {
+    // some operator will be mapped to new operator on Ascend like GatherV2, however they use same Infer information
+    if (primitive->HasAttr(kAttrMeOpName)) {
+      auto ori_prim_name = GetValue<std::string>(primitive->GetAttr(kAttrMeOpName));
+      op_infer_opt = GetPrimitiveInferImpl(std::make_shared<Primitive>(ori_prim_name));
+    }
+  }
+
+  if (op_infer_opt.has_value()) {
+    auto op_infer = op_infer_opt.value().Get();
+    if (op_infer != nullptr && ori.empty()) {
+      ori = op_infer->GetValueDependArgIndices();
+    }
+    if (prim_name == kShapeCalcOpName) {
+      auto only_depend_shape = GetValue<std::vector<bool>>(primitive->GetAttr(kAttrOnlyDependShape));
+      for (size_t i = 0; i < only_depend_shape.size(); i++) {
+        if (!only_depend_shape[i]) {
+          ori.insert(i);
+        }
+      }
+    }
+  } else if (ori.empty()) {
+    MS_LOG(DEBUG) << "Not find infer function GetValueDependArgIndices, prim name: " << prim_name;
+    // if not found in infer, consider all the non-tensor inputs as value depend args.
+    ori = ops::GetInputDependValueList(primitive);
+    if (prim_name == kNameAvgPoolGrad && primitive->HasAttr(kAttrValueDepend)) {
+      auto value_depend_vector = GetValue<std::vector<int64_t>>(primitive->GetAttr(kAttrValueDepend));
+      ori.clear();
+      ori.insert(value_depend_vector.begin(), value_depend_vector.end());
+    }
+  }
+  if (ori.empty()) {
+    return ori;
+  }
+  std::set<int64_t> res = {};
+
+  (void)std::copy_if(ori.begin(), ori.end(), std::inserter(res, res.begin()),
+                     [&](int64_t idx) { return idx < SizeToLong(input_num); });
+  return res;
+}
+
 PrimitiveEvalImplMap *GetPrimitiveInferMapPtr() {
   static PrimitiveEvalImplMap prim_eval_implement_map{
     // core/ops infer

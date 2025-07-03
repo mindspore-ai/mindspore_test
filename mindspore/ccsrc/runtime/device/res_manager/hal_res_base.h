@@ -78,6 +78,11 @@ class RES_EXPORT HalResBase {
     return;
   }
 
+  virtual bool Copy(void *dst, const void *src, uint64_t size, CopyType kind, size_t stream_id) const {
+    MS_LOG(EXCEPTION) << "Unimplemented interface.";
+    return false;
+  }
+
   // Relevant function to allocate and free device memory of DeviceAddress.
   virtual bool AllocateMemory(DeviceAddress *const &address, uint32_t stream_id = UINT32_MAX) const {
     MS_LOG(EXCEPTION) << "Unimplemented interface.";

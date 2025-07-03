@@ -21,13 +21,19 @@
 #include <vector>
 
 #include "common/kernel.h"
+#include "include/backend/visible.h"
 
 namespace mindspore {
 namespace kernel {
 KernelModPtr InternalKernelBuild(const AnfNodePtr &anf_node);
+BACKEND_EXPORT KernelModPtr CreateInternalKernelMod(const std::string &op_name,
+                                                    const std::vector<KernelTensor *> &inputs,
+                                                    const std::vector<KernelTensor *> &outputs);
 void GetValidKernelBuildInfoWithInternalFormat(const AnfNodePtr &node, std::vector<std::string> *input_formats,
                                                std::vector<std::string> *output_formats);
 bool IsEnableInternalNode(const AnfNodePtr &node);
+bool IsEnableInternalKernel(const std::string &op_name, const std::vector<KernelTensor *> &inputs,
+                            const std::vector<KernelTensor *> &outputs);
 }  // namespace kernel
 }  // namespace mindspore
 

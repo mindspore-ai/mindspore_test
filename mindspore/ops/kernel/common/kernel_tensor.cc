@@ -514,6 +514,10 @@ ValuePtr KernelTensor::GetValue() const {
   MS_EXCEPTION_IF_NULL(host_info_);
   std::lock_guard<std::mutex> lock(host_info_->value_mutex_);
 
+  if (address_common_ == nullptr) {
+    MS_LOG(ERROR) << "address_common_ for kernel tensor is nullptr";
+  }
+
   // There is a origin value in KernelTensor(maybe come from a ValueNode).
   if (address_common_->dtype_id_ == kMetaTypeNone) {
     return kNone;

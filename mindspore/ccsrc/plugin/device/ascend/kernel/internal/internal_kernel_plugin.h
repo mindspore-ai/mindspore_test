@@ -28,7 +28,10 @@ class InternalKernelPlugin : public KernelPlugin {
   ~InternalKernelPlugin() = default;
 
   KernelModPtr BuildKernel(const AnfNodePtr &anf_node) override;
+  KernelModPtr BuildKernel(const std::string &op_name) override;
   bool IsRegisteredKernel(const AnfNodePtr &anf_node) override;
+  bool IsRegisteredKernel(const std::string &op_name, const std::vector<KernelTensor *> &inputs,
+                          const std::vector<KernelTensor *> &outputs) override;
   void GetValidKernelBuildInfoWithInternalFormat(const AnfNodePtr &node, std::vector<std::string> *input_formats,
                                                  std::vector<std::string> *output_formats) override;
   void InitInternalLog() override;

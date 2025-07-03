@@ -16,6 +16,7 @@
 
 #include "plugin/device/ascend/kernel/internal/internal_kernel_plugin.h"
 
+#include <algorithm>
 #include <string>
 #include <utility>
 #include <vector>
@@ -233,6 +234,21 @@ KernelModPtr InternalKernelPlugin::BuildKernel(const AnfNodePtr &anf_node) {
   return kernel_ptr;
 }
 
+KernelModPtr InternalKernelPlugin::BuildKernel(const std::string &op_name) {
+  KernelModPtr kernel_ptr;
+  if (Factory<InternalKernelMod>::Instance().IsRegistered(op_name)) {
+    MS_LOG(INFO) << "Supported by InternalKernel: " << op_name;
+    kernel_ptr = std::static_pointer_cast<KernelMod>(Factory<InternalKernelMod>::Instance().Create(op_name));
+  }
+
+  if (kernel_ptr == nullptr) {
+    MS_LOG(INFO) << "internal can't find Kernel[" << op_name << "]";
+    return nullptr;
+  }
+
+  return kernel_ptr;
+}
+
 bool InternalKernelPlugin::IsRegisteredKernel(const AnfNodePtr &anf_node) {
   MS_EXCEPTION_IF_NULL(anf_node);
   std::string opname = common::AnfAlgo::GetCNodeName(anf_node);
@@ -258,6 +274,35 @@ bool InternalKernelPlugin::IsRegisteredKernel(const AnfNodePtr &anf_node) {
     }
     auto internal_in_dtypes = InternalKernelModInOutMap::GetInstance()->MapInternalInputDtypes(opname, ms_in_dtypes);
     auto internal_out_dtypes = InternalKernelModInOutMap::GetInstance()->MapInternalOutputDtypes(opname, ms_out_dtypes);
+    return internal::IsInternalKernelDtypesSupported(internal_op_name, internal_in_dtypes, internal_out_dtypes);
+  }
+
+  return false;
+}
+
+bool InternalKernelPlugin::IsRegisteredKernel(const std::string &op_name, const std::vector<KernelTensor *> &inputs,
+                                              const std::vector<KernelTensor *> &outputs) {
+  std::vector<TypeId> ms_in_dtypes;
+  std::vector<TypeId> ms_out_dtypes;
+  (void)std::transform(inputs.begin(), inputs.end(), std::back_inserter(ms_in_dtypes),
+                       [](const KernelTensor *input) { return input->dtype_id(); });
+  (void)std::transform(outputs.begin(), outputs.end(), std::back_inserter(ms_out_dtypes),
+                       [](const KernelTensor *output) { return output->dtype_id(); });
+
+  if (Factory<InternalKernelMod>::Instance().IsRegistered(op_name)) {
+    auto internal_op_name = TransInternalOpName(op_name);
+    if (op_name == kGroupedMatmulName) {
+      // current internal GroupedMatmul only support specific type
+      auto split_item = inputs.at(kIndex8)->GetValueWithCheck<int64_t>();
+      auto group_type = inputs.at(kIndex9)->GetValueWithCheck<int64_t>();
+      // split_item mode is SingleTensor
+      if (!(split_item == kSingleTensor && group_type == 0)) {
+        return false;
+      }
+    }
+    auto internal_in_dtypes = InternalKernelModInOutMap::GetInstance()->MapInternalInputDtypes(op_name, ms_in_dtypes);
+    auto internal_out_dtypes =
+      InternalKernelModInOutMap::GetInstance()->MapInternalOutputDtypes(op_name, ms_out_dtypes);
     return internal::IsInternalKernelDtypesSupported(internal_op_name, internal_in_dtypes, internal_out_dtypes);
   }
 

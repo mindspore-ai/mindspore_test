@@ -83,6 +83,7 @@ MS_CORE_API PrimitiveEvalImplMap *GetDeprecatedPrimitiveInferMapPtr();
 MS_CORE_API std::optional<StandardPrimitiveImplReg> GetPrimitiveInferImpl(const PrimitivePtr &primitive);
 
 MS_CORE_API std::set<int64_t> GetValueDependArgIndices(const CNodePtr &cnode, bool is_proto = false);
+MS_CORE_API std::set<int64_t> GetValueDependArgIndicesFromProto(const PrimitivePtr &primitive, size_t input_num);
 
 class RegisterStandardPrimitiveEvalHelper {
  public:
