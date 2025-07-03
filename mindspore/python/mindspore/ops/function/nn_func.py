@@ -2395,7 +2395,7 @@ def is_floating_point(input):
         >>> mindspore.ops.is_floating_point(input)
         False
     """
-    return input.dtype in [mstype.float32, mstype.bfloat16, mstype.float16, mstype.float64]
+    return input.dtype in mstype.float_type
 
 
 def _is_dim_unknown(shape):
