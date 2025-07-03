@@ -17,10 +17,7 @@ import glob
 import re
 import shutil
 import subprocess
-import numpy as np
 
-from mindspore import Tensor
-from mindspore.communication.management import get_rank, get_group_size
 from mindspore.parallel.auto_parallel import AutoParallel
 from hccl_test.manage.api import Hccl
 
@@ -46,6 +43,12 @@ def set_parallel_mode(obj, parallel_config=None):
         net.print_local_norm()
     if parallel_config.get("enable_parallel_optimizer", None) is True:
         net.hsdp()
+    if parallel_config.get("parallel_optimizer_config", None) is not None:
+        opt_config = parallel_config["parallel_optimizer_config"]
+        shard_size = opt_config.get("optimizer_weight_shard_size", -1)
+        threshold = opt_config.get("parallel_optimizer_threshold", 64)
+        optimizer_level = opt_config.get("optimizer_level", "level1")
+        net.hsdp(shard_size, threshold, optimizer_level)
     if parallel_config.get("force_fp32_communication", None) is True:
         net.enable_fp32_communication()
     if parallel_config.get("gradients_mean", None) is True:
@@ -58,7 +61,22 @@ def set_parallel_mode(obj, parallel_config=None):
         net.disable_loss_repeated_mean()
     if parallel_config.get("save_strategy_file_path", None) is not None:
         net.save_param_strategy_file(parallel_config["save_strategy_file_path"])
+    if parallel_config.get("pipeline_config", None) is not None:
+        pipeline_config = parallel_config["pipeline_config"]
+        stages = pipeline_config.get("stages", 1)
+        output_broadcast = pipeline_config.get("output_broadcast", False)
+        interleave = pipeline_config.get("interleave", False)
+        scheduler = pipeline_config.get("scheduler", "1f1b")
+        net.pipeline(stages, output_broadcast, interleave, scheduler)
     return net
+
+
+def save_ir_graphs(file_name):
+    exec_path = os.path.dirname(os.path.realpath(__file__))
+    file_path = os.path.join(exec_path, file_name)
+    os.environ['MS_DEV_SAVE_GRAPHS'] = "2"
+    os.environ['MS_DEV_SAVE_GRAPHS_PATH'] = file_path
+    return file_path
 
 
 # Delete folders with specific keyword names under base_dir
@@ -164,137 +182,3 @@ def check_node_pairs_num(file_path, check_pairs):
             raise ValueError(f"Failed to find {node_name} in {file_path}")
         appear_count = str(grep_output, 'utf-8').strip()
         assert appear_count == value, f"The pattern {node_name} appears {appear_count}, expect {value}"
-
-
-class FakeDataInitMode:
-    RandomInit = 0
-    OnesInit = 1
-    UniqueInit = 2
-    ZerosInit = 3
-
-class FakeData3:
-    """A fake dataset that returns randomly generated images and returns them as PIL images
-       image data type is np.float32 in default
-       label data type is np.int64 in default
-       label data is onehot in default
-       weight_data type is np.float32 in default
-
-    Args:
-        size (int, optional): size of the dataset. Default: 1024 images
-        batch_size (int, optional): how many samples per batch to load. Default: 32 images
-        image_size(tuple, optional): size if the returned images. Default: (3, 224, 224)
-        num_classes(int, optional): number of classes in the dataset. Default: 10
-        random_offset (int): offsets the index-based random seed used to
-            generate each image. Default: 0
-
-    """
-
-    def __init__(self, size=1024, batch_size=32, image_size=(3, 224, 224),
-                 num_classes=10, random_offset=0, use_parallel=False, rol=0.0001,
-                 fakedata_mode=FakeDataInitMode.RandomInit, image_dtype=np.float16,
-                 label_dtype=np.int64, weight_dtype=np.float16):
-        self.size = size
-        self.rank_batch_size = batch_size
-        self.total_batch_size = self.rank_batch_size
-        self.random_offset = random_offset
-        self.image_size = image_size
-        self.weight_size = num_classes  # batch_c
-        self.num_classes = num_classes
-        self.rol = rol
-        self.rank_size = 1
-        self.rank_id = 0
-        self.batch_index = 0
-        self.image_data_type = image_dtype
-        self.label_data_type = label_dtype
-        self.weight_data_type = weight_dtype  # weight
-        self.is_onehot = True
-        self.fakedata_mode = fakedata_mode
-
-        if use_parallel is True:
-            self.rank_size = get_group_size()
-            self.rank_id = get_rank()
-            self.weight_size = num_classes // self.rank_size
-        self.total_batch_size = self.rank_batch_size * self.rank_size
-
-        assert self.size % self.total_batch_size == 0
-
-        self.total_batch_data_size = (self.rank_size, self.rank_batch_size) + image_size
-        self.total_num_class_data_size = (self.rank_size, self.weight_size)
-
-    def get_dataset_size(self):
-        return int(self.size / self.total_batch_size)
-
-    def get_repeat_count(self):
-        return 1
-
-    def set_image_data_type(self, data_type):
-        self.image_data_type = data_type
-
-    def set_label_data_type(self, data_type):
-        self.label_data_type = data_type
-
-    def set_weight_data_type(self, data_type):
-        self.weight_data_type = data_type
-
-    def set_label_onehot(self, is_onehot=True):
-        self.is_onehot = is_onehot
-
-    def create_tuple_iterator(self, num_epochs=-1, do_copy=False):
-        return self
-
-    def __getitem__(self, batch_index):
-        if batch_index * self.total_batch_size >= len(self):
-            raise IndexError("{} index out of range".format(self.__class__.__name__))
-        rng_state = np.random.get_state()
-        np.random.seed(batch_index + self.random_offset)
-        if self.fakedata_mode == FakeDataInitMode.OnesInit:
-            img = np.ones(self.total_batch_data_size)
-            weight = np.ones(self.total_num_class_data_size)
-        elif self.fakedata_mode == FakeDataInitMode.ZerosInit:
-            img = np.zeros(self.total_batch_data_size)
-            weight = np.zeros(self.total_num_class_data_size)
-        elif self.fakedata_mode == FakeDataInitMode.UniqueInit:
-            total_size = 1
-            for i in self.total_batch_data_size:
-                total_size = total_size * i
-            img = np.reshape(np.arange(total_size) * self.rol, self.total_batch_data_size)
-            weight = np.reshape(np.arange(total_size) * self.rol, self.total_num_class_data_size)
-        else:
-            img = np.random.randn(*self.total_batch_data_size)
-            weight = np.random.randn(*self.total_num_class_data_size)
-        target = np.random.randint(0, self.num_classes, size=(self.rank_size, self.rank_batch_size))
-
-        # cur_rank data
-        np.random.set_state(rng_state)
-        img = img[self.rank_id] # [self.rank_batch_size, self.image_size]
-        weight = weight[self.rank_id]
-        target = target[self.rank_id]  # [self.rank_batch_size, ], fill with 0~self.num_classes
-
-        # data_type
-        img_ret = img.astype(self.image_data_type)
-        weight_ret = weight.astype(self.weight_data_type)
-        target_ret = target.astype(self.label_data_type)
-
-        # one-hot target
-        if self.is_onehot:
-            target_onehot = np.zeros(shape=(self.rank_batch_size, self.num_classes))  # [rank_batch_size, num_classes]
-            target_onehot[np.arange(self.rank_batch_size), target] = 1  # [rank_batch_size, num_classes]
-            target_ret = target_onehot.astype(self.label_data_type)
-        return Tensor(img_ret), Tensor(target_ret), Tensor(weight_ret)
-
-    def __len__(self):
-        return self.size
-
-    def __iter__(self):
-        self.batch_index = 0
-        return self
-
-    def reset(self):
-        self.batch_index = 0
-
-    def __next__(self):
-        if self.batch_index * self.total_batch_size < len(self):
-            data = self[self.batch_index]
-            self.batch_index += 1
-            return data
-        raise StopIteration
