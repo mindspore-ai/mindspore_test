@@ -653,9 +653,9 @@ class SyncBatchNorm(_BatchNorm):
                 rank_list_name = '_'.join('%s' % id for id in sub_group)
                 group_dict = _syncbatchnorm_group_dict()
                 if rank_list_name not in group_dict:
-                    md5 = hashlib.md5()
-                    md5.update(rank_list_name.encode('utf-8'))
-                    hash_name = md5.hexdigest()
+                    sha256 = hashlib.sha256()
+                    sha256.update(rank_list_name.encode('utf-8'))
+                    hash_name = sha256.hexdigest()
                     self.group_name = str(self.group_device_num) + '_' + hash_name
                     group_dict[rank_list_name] = self.group_name
                     management.create_group(self.group_name, sub_group)
