@@ -234,6 +234,8 @@ class BACKEND_EXPORT GraphParameterStore {
 
   std::vector<bool> is_weights_;
   size_t weight_num_{0};
+  // Subgraph non weight parameter num.
+  size_t non_weight_data_num_{0};
 
   // When front node to index failed, use the map to find real front node.
   std::map<KernelWithIndex, KernelWithIndex> node_to_real_front_node_;

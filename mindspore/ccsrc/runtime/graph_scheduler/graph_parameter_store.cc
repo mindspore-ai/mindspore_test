@@ -55,7 +55,7 @@ bool GraphParameterStore::GetDeviceTensorPrepared(size_t outer_idx, size_t inner
   return kernel_tensor_with_info.second.second;
 }
 
-size_t GraphParameterStore::GetNonWeightParameterNum() { return is_weights_.size() - weight_num_; }
+size_t GraphParameterStore::GetNonWeightParameterNum() { return non_weight_data_num_; }
 
 void GraphParameterStore::SetPositionTensor(size_t outer_index, bool is_tensor) {
   if (outer_index >= is_tensors_.size()) {
@@ -157,6 +157,10 @@ void GraphParameterStore::Push(size_t outer_index, size_t inner_index, const Ker
   MS_LOG(DEBUG) << "Push parameter store for outer index:" << outer_index << " inner index:" << inner_index
                 << " count:" << cnt << " kernel tensor:" << value;
   auto &kernel_tensor_with_info = parameter_kernel_tensors_[outer_index][inner_index];
+  // Record non weight parameter num in store.
+  if (!is_weights_[outer_index] && kernel_tensor_with_info.first == nullptr) {
+    non_weight_data_num_++;
+  }
   kernel_tensor_with_info.first = value;
   kernel_tensor_with_info.second.first = cnt;
   if (value->device_address()) {
@@ -224,6 +228,7 @@ bool GraphParameterStore::RecordGraphInputsAndIsDyn(const std::vector<size_t> &i
     }
     host_tensors_shape_[i] = input_tensor->shape();
     input_tensor->set_name(origin_parameter->fullname_with_scope());
+    MS_LOG(DEBUG) << "Add graph input: " << origin_parameter->fullname_with_scope();
     llm_manager.add_graph_input(origin_parameter->fullname_with_scope(), input_tensor->data_ptr());
   }
   return isDyn;
