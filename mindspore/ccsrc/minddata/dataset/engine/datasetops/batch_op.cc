@@ -714,9 +714,9 @@ Status BatchOp::ComputeWithThread(TensorTable *input, TensorTable *output, CBatc
       input_args[i] = column_batch;
     }
     input_args[input->size()] = info;
+
     // Invoke batch map func
     py::object ret_py_obj = batch_map_func_(*input_args);
-
     if (ret_py_obj.is_none()) {
       std::string error_msg =
         "The subprocess of dataset may exit unexpected or be killed, "

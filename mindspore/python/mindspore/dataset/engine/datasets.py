@@ -3786,6 +3786,7 @@ class MapDataset(UnionBaseDataset):
             def __init__(self, pool, operations):
                 self.pool = pool
                 self.operations = operations
+
             def __call__(self):
                 pass
 

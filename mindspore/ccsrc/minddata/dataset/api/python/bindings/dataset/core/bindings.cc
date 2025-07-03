@@ -292,7 +292,7 @@ PYBIND_REGISTER(SharedMemoryQueue, 0, ([](const py::module *m) {
                            return tensor_row;
                          })
                     .def("to_tensor_table",
-                         [](SharedMemoryQueue &shm_queue, int shm_id, uint64_t &shm_size) {
+                         [](SharedMemoryQueue &shm_queue, int shm_id, uint64_t shm_size) {
                            TensorTable tensor_table;
                            CBatchInfo batch_info;
                            bool concat_batch;

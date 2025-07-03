@@ -59,7 +59,7 @@ const int64_t kMasterSendDataMsg = 999;  // master -> worker, response mtype
 const int64_t kSubprocessReadyMsg = 555;   // when the subprocess is forked, the main process can continue to run
 const int64_t kMainprocessReadyMsg = 666;  // the main process got message from subprocess, response to the subprocess
 
-const int kFourBytes = 4;
+const int32_t kFourBytes = 4;
 
 enum MessageState {
   kInit = 0,
