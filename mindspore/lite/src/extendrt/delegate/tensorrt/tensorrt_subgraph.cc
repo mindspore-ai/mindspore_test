@@ -785,13 +785,17 @@ int TensorRTSubGraph::PreExecute(const std::vector<tensor::Tensor> &inputs, cons
   if (ret != RET_OK) {
     return ret;
   }
+  auto hasDeviceData = [&](const tensor::Tensor &t) -> bool {
+    auto device_address = t.device_address();
+    return device_address != nullptr && device_address->GetMutablePtr() != nullptr &&
+           device_address->GetDeviceType() != device::DeviceType::kCPU;
+  }
+
   for (size_t i = 0; i < trt_in_tensor_name_.size(); i++) {
     auto trt_tensor_name = trt_in_tensor_name_[i];
     void *device_ptr = nullptr;
-    auto input_device_address = inputs[i].device_address();
-    if (input_device_address != nullptr && input_device_address->GetMutablePtr() != nullptr &&
-        input_device_address->GetDeviceType() != device::DeviceType::kCPU) {
-      device_ptr = input_device_address->GetMutablePtr();
+    if (hasDeviceData(inputs[i])) {
+      device_ptr = inputs[i].device_address()->GetMutablePtr();
     } else {
       device_ptr = runtime_->GetAllocator()->MallocDeviceMem(trt_tensor_name, inputs_[i].DataSize(),
                                                              ConvertDataType(inputs_[i].DataType()));
@@ -820,8 +824,7 @@ int TensorRTSubGraph::PreExecute(const std::vector<tensor::Tensor> &inputs, cons
     void *device_ptr = nullptr;
     if (outputs.size() > i) {
       auto &output = outputs[i];
-      if (output.device_address() != nullptr && output.device_address()->GetMutablePtr() != nullptr &&
-          output->GetDeviceType() != device::DeviceType::kCPU) {
+      if (hasDeviceData(output)) {
         if (output.Size() < outputs_[i].DataSize()) {
           MS_LOG(ERROR) << "Specified output device data size " << output.Size()
                         << " cannot less than execute output data size " << outputs_[i].DataSize()
@@ -831,7 +834,7 @@ int TensorRTSubGraph::PreExecute(const std::vector<tensor::Tensor> &inputs, cons
         device_ptr = output.device_address()->GetMutablePtr();
       }
     }
-    if (!device_ptr) {
+    if (device_ptr == nullptr) {
       device_ptr = runtime_->GetAllocator()->MallocDeviceMem(trt_out_tensor_name, outputs_[i].DataSize(),
                                                              ConvertDataType(outputs_[i].DataType()));
       if (device_ptr == nullptr) {
