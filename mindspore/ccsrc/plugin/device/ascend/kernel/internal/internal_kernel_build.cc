@@ -28,6 +28,17 @@
 
 namespace mindspore {
 namespace kernel {
+namespace {
+bool IsDisableInternalKernelByEnv(const std::string &op_name) {
+  std::string disable_op_env = common::GetEnv("MS_DISABLE_INTERNAL_KERNELS_LIST");
+  std::set<std::string> disable_op_list;
+  common::SplitString(disable_op_env, ',', &disable_op_list);
+  bool disable_internal_op =
+    (std::find(disable_op_list.begin(), disable_op_list.end(), op_name) != disable_op_list.end());
+  return disable_internal_op ? true : false;
+}
+}  // namespace
+
 static std::shared_ptr<KernelPlugin> k_internal_kernel_plugin_ptr = nullptr;
 static bool k_is_plugin_init = false;
 std::shared_ptr<KernelPlugin> GetKernelPLugin() {
@@ -65,12 +76,34 @@ KernelModPtr InternalKernelBuild(const AnfNodePtr &anf_node) {
   return internal_kernel_plugin_ptr->BuildKernel(anf_node);
 }
 
+KernelModPtr CreateInternalKernelMod(const std::string &op_name, const std::vector<KernelTensor *> &inputs,
+                                     const std::vector<KernelTensor *> &outputs) {
+  if (!IsEnableInternalKernel(op_name, inputs, outputs)) {
+    MS_LOG(INFO) << "Internal Kernel select failed for op: " << op_name;
+    return nullptr;
+  }
+  auto internal_kernel_plugin_ptr = GetKernelPLugin();
+  if (internal_kernel_plugin_ptr == nullptr) {
+    return nullptr;
+  }
+  return internal_kernel_plugin_ptr->BuildKernel(op_name);
+}
+
 bool IsRegisteredInternalKernel(const AnfNodePtr &anf_node) {
   auto internal_kernel_plugin_ptr = GetKernelPLugin();
   if (internal_kernel_plugin_ptr == nullptr) {
     return false;
   }
   return internal_kernel_plugin_ptr->IsRegisteredKernel(anf_node);
+}
+
+bool IsRegisteredInternalKernel(const std::string &op_name, const std::vector<KernelTensor *> &inputs,
+                                const std::vector<KernelTensor *> &outputs) {
+  auto internal_kernel_plugin_ptr = GetKernelPLugin();
+  if (internal_kernel_plugin_ptr == nullptr) {
+    return false;
+  }
+  return internal_kernel_plugin_ptr->IsRegisteredKernel(op_name, inputs, outputs);
 }
 
 void GetValidKernelBuildInfoWithInternalFormat(const AnfNodePtr &node, std::vector<std::string> *input_formats,
@@ -117,6 +150,34 @@ bool IsEnableInternalNode(const AnfNodePtr &node) {
   }
 
   return IsRegisteredInternalKernel(node);
+}
+
+bool IsEnableInternalKernel(const std::string &op_name, const std::vector<KernelTensor *> &inputs,
+                            const std::vector<KernelTensor *> &outputs) {
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  if (!context_ptr->IsEnableInferBoost()) {
+    return false;
+  }
+
+  if (op_name == "QuantBatchMatmul") {
+    if (inputs.at(kIndex5)->type_id() != kMetaTypeNone) {
+      return false;
+    }
+  } else if (op_name == "SplitWithSize") {
+    static const auto kSplitOutNum2 = 2;
+    static const auto kSplitOutNum3 = 3;
+    if (outputs.size() != kSplitOutNum2 && outputs.size() != kSplitOutNum3) {
+      MS_LOG(INFO) << "Split only support 2 or 3 outputs, but got: " << outputs.size();
+      return false;
+    }
+  }
+
+  if (IsDisableInternalKernelByEnv(op_name)) {
+    return false;
+  }
+
+  return IsRegisteredInternalKernel(op_name, inputs, outputs);
 }
 }  // namespace kernel
 }  // namespace mindspore

@@ -17,11 +17,14 @@
 #include <map>
 #include <string>
 #include <memory>
+#include <vector>
 #include <utility>
 
 #include "backend/backend_manager/backend_manager.h"
+#include "pybind_api/gil_scoped_long_running.h"
 
 #include "backend/ms_infer_backend/ms_infer_backend.h"
+#include "backend/ms_infer_backend/host_value_store.h"
 
 namespace mindspore {
 namespace backend {
@@ -31,45 +34,20 @@ BackendGraphId MSInferBackend::backend_graph_id_ = 0;
 
 BackendGraphId MSInferBackend::Build(const FuncGraphPtr &func_graph, const BackendJitConfig &backend_jit_config) {
   MS_EXCEPTION_IF_NULL(func_graph);
+  MS_LOG(INFO) << "MSInferBackend start build graph";
 
-  auto compiled_graph = CompileGraph(func_graph, backend_jit_config);
-
-  auto graph_adapter = std::make_shared<GraphAdapter>(compiled_graph);
+  auto graph_adapter = std::make_shared<GraphAdapter>(func_graph);
   MS_EXCEPTION_IF_NULL(graph_adapter);
   graph_adapter_map_[backend_graph_id_] = graph_adapter;
 
+  // clear host value store before build new graph
+  HostValueStore::GetInstance().Clear();
+
   graph_adapter->ConvertGraph();
 
+  MS_LOG(INFO) << "MSInferBackend build graph success";
+
   return backend_graph_id_++;
-}
-
-KernelGraphPtr MSInferBackend::CompileGraph(const FuncGraphPtr &func_graph, const BackendJitConfig &backend_jit_config) {
-  MS_EXCEPTION_IF_NULL(func_graph);
-  MS_EXCEPTION_IF_NULL(graph_compiler_);
-
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-    {ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET), ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
-  MS_EXCEPTION_IF_NULL(device_context);
-  device_context->Initialize();
-  bool is_pynative = ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode;
-
-  auto session = session::SessionFactory::Get().Create(kSessionBasic);
-  auto device_target = device_context->GetDeviceType();
-  std::vector<KernelGraphPtr> kernel_graphs;
-  auto kernel_graph = session->ConstructKernelGraph(func_graph, &kernel_graphs, device_target, backend_jit_config);
-
-  MS_EXCEPTION_IF_NULL(kernel_graph);
-  MS_LOG(INFO) << "Compile graph: " << kernel_graph->ToString() << ", kernel graph";
-
-  kernel_graph->SetExecOrderByDefault();
-  kernel_graph->set_flag(kFlagPyNativeRunInGraph, is_pynative);
-
-  auto io_nodes = std::make_pair(kernel_graph->inputs(), kernel_graph->outputs());
-  (void)graph_compiler_->CompileGraph(kernel_graph, io_nodes, device_context, device::RunMode::kKernelMode,
-                                      is_pynative);
-  return kernel_graph;
 }
 
 RunningStatus MSInferBackend::Run(BackendGraphId graph_id, const VectorRef &inputs, VectorRef *outputs) {
@@ -79,7 +57,14 @@ RunningStatus MSInferBackend::Run(BackendGraphId graph_id, const VectorRef &inpu
   }
   auto graph_adapter = graph_adapter_iter->second;
 
+  // release python gil
+  mindspore::ScopedLongRunning long_running;
+
+  MS_LOG(INFO) << "MSInferBackend start run graph";
+
   graph_adapter->RunGraph(inputs, outputs);
+
+  MS_LOG(INFO) << "MSInferBackend run graph end";
 
   return RunningStatus::kRunningSuccess;
 }

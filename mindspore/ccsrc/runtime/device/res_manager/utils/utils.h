@@ -30,6 +30,7 @@ struct ResKey {
 
   std::string DeviceName() const { return GetDeviceNameByType(device_name_); }
 };
+enum class CopyType { kCopyTypeUnknown = 0, kH2D = 1, kD2H = 2, kD2D = 3, kCopyTypeEnd };
 }  // namespace device
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_RUNTIME_DEVICE_RES_MANAGER_UTILS_UTILS_H_

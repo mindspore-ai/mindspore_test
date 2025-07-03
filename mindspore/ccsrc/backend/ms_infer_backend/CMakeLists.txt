@@ -16,9 +16,10 @@ set_property(SOURCE ${_MS_INFER_BACKEND_SRC_LIST}
 add_library(mindspore_ms_infer_backend SHARED ${_MS_INFER_BACKEND_SRC_LIST})
 target_link_libraries(mindspore_ms_infer_backend PRIVATE dalang)
 target_link_libraries(mindspore_ms_infer_backend PRIVATE mindspore::pybind11_module)
-target_link_libraries(mindspore_ms_infer_backend PRIVATE mindspore_core mindspore_ops mindspore_ms_backend #mindspore_ops_host
-        mindspore_common mindspore_ops_kernel_common mindspore_backend_manager proto_input mindspore_res_manager
-        mindspore_profiler mindspore_runtime_pipeline mindspore_backend_common mindspore_memory_pool)
+target_link_libraries(mindspore_ms_infer_backend PRIVATE mindspore_core mindspore_ops mindspore_ms_backend
+        mindspore_common mindspore_ops_kernel_common mindspore_ascend_res_manager mindspore_backend_manager proto_input
+        mindspore_res_manager mindspore_profiler mindspore_ascend mindspore_runtime_pipeline mindspore_backend_common
+        mindspore_memory_pool mindspore_ops_ascend)
 
 target_link_libraries(mindspore_ms_infer_backend PRIVATE securec)
 if(CMAKE_SYSTEM_NAME MATCHES "Darwin")

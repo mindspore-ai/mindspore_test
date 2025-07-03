@@ -28,7 +28,12 @@ class KernelPlugin {
   ~KernelPlugin() = default;
 
   virtual KernelModPtr BuildKernel(const AnfNodePtr &anf_node) = 0;
+  virtual KernelModPtr BuildKernel(const std::string &op_name) { return nullptr; }
   virtual bool IsRegisteredKernel(const AnfNodePtr &anf_node) = 0;
+  virtual bool IsRegisteredKernel(const std::string &op_name, const std::vector<KernelTensor *> &inputs,
+                                  const std::vector<KernelTensor *> &outputs) {
+    return false;
+  }
   virtual void GetValidKernelBuildInfoWithInternalFormat(const AnfNodePtr &node,
                                                          std::vector<std::string> *input_formats,
                                                          std::vector<std::string> *output_formats) {}

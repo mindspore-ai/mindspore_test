@@ -35,6 +35,7 @@
 #include "runtime/hardware/deprecated_interface.h"
 #include "runtime/device/res_manager/auto_mem_offload.h"
 #include "runtime/device/res_manager/memory_manager.h"
+#include "runtime/device/res_manager/utils/utils.h"
 #include "include/backend/optimizer/graph_optimizer.h"
 #include "runtime/pipeline/task/task.h"
 #include "ir/device_event.h"
@@ -155,6 +156,8 @@ class BACKEND_COMMON_EXPORT DeviceResManager {
   // Otherwise, only bind context to current thread for the first time.
   virtual bool BindDeviceToCurrentThread(bool force_bind) const { return true; }
   virtual void ResetStreamAndCtx() {}
+
+  virtual bool Copy(void *dst, const void *src, uint64_t size, CopyType kind, size_t stream_id) const { return true; }
 
   // Relevant function to allocate and free device memory of raw ptr.
   virtual void *AllocateMemory(size_t size, uint32_t stream_id = kDefaultStreamIndex) const = 0;

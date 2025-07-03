@@ -135,7 +135,7 @@ struct BACKEND_EXPORT GraphCompilerInfo {
   static uint32_t backend_graph_id_;
 };
 
-class BACKEND_EXPORT GraphCompiler {
+class GraphCompiler {
  public:
   GraphCompiler() { session_ = session::SessionFactory::Get().Create(kSessionBasic); }
   ~GraphCompiler() = default;

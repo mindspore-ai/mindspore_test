@@ -24,6 +24,7 @@
 #include <vector>
 #include <algorithm>
 #include <numeric>
+#include <map>
 
 #include "hccl/hccl.h"
 #include "plugin/res_manager/ascend/mem_manager/ascend_memory_manager.h"
@@ -279,6 +280,19 @@ void SetPassthroughGeOptions(std::string option_level, OptionMap *options) {
     MS_LOG(INFO) << "Set ge " << option_level << " option: {" << key << ", " << value << "}";
   }
 }
+
+aclrtMemcpyKind CopyTypeToAclType(CopyType copy_type) {
+  static std::map<CopyType, aclrtMemcpyKind> copy_type_map = {
+    {CopyType::kH2D, aclrtMemcpyKind::ACL_MEMCPY_HOST_TO_DEVICE},
+    {CopyType::kD2H, aclrtMemcpyKind::ACL_MEMCPY_DEVICE_TO_HOST},
+    {CopyType::kD2D, aclrtMemcpyKind::ACL_MEMCPY_DEVICE_TO_DEVICE}};
+
+  auto iter = copy_type_map.find(copy_type);
+  if (iter == copy_type_map.end()) {
+    MS_LOG(EXCEPTION) << "Invalid Copy Type: " << copy_type;
+  }
+  return iter->second;
+}
 }  // namespace
 
 std::function<CollectiveCommunicationLib *(void)> gLoadCollectiveCommLibCallback;
@@ -406,6 +420,29 @@ bool AscendResManager::AllocateForHete(mindspore::device::DeviceAddress *const &
   }
   return true;
 }
+
+bool AscendResManager::Copy(void *dst, const void *src, uint64_t size, CopyType kind, size_t stream_id) const {
+  if (size == 0) {
+    return true;
+  }
+
+  if (dst == nullptr || src == nullptr) {
+    MS_LOG(ERROR) << "dst or src ptr is null, dst: " << dst << ", src: " << src;
+    return false;
+  }
+
+  const auto stream_ptr = AscendStreamMng::GetInstance().GetStream(stream_id);
+  MS_EXCEPTION_IF_NULL(stream_ptr);
+  auto ret = CALL_ASCEND_API(aclrtMemcpyAsync, dst, size, src, size, CopyTypeToAclType(kind), stream_ptr);
+  if (ret != ACL_ERROR_NONE) {
+    MS_LOG(ERROR) << "Call aclrtMemcpyAsync failed, dst: " << dst << ", src: " << src << ", size: " << size
+                  << ", stream_id: " << stream_id;
+    return false;
+  }
+
+  return SyncStream(stream_id);
+}
+
 void *AscendResManager::AllocateMemory(size_t size, uint32_t stream_id) const {
   AscendHalManager::GetInstance().SetContext(device_id_);
 

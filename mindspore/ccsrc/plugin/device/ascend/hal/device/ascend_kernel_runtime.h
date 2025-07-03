@@ -27,13 +27,14 @@
 #include "runtime/device/kernel_runtime.h"
 #include "runtime/device/kernel_runtime_manager.h"
 #include "backend/common/session/session_basic.h"
+#include "include/backend/visible.h"
 #include "acl/acl_rt.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 
 using std::unordered_map;
 using std::vector;
 namespace mindspore::device::ascend {
-class AscendKernelRuntime : public KernelRuntime {
+class BACKEND_EXPORT AscendKernelRuntime : public KernelRuntime {
  public:
   AscendKernelRuntime() = default;
   ~AscendKernelRuntime() override;

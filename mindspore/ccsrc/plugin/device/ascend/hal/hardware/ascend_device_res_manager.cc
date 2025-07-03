@@ -85,6 +85,11 @@ bool AscendDeviceResManager::IsEnableVmm() const {
 }
 void AscendDeviceResManager::SetAclDeterministic() { return ascend_res_manager_->SetAclDeterministic(); }
 
+bool AscendDeviceResManager::Copy(void *dst, const void *src, uint64_t size, CopyType kind, size_t stream_id) const {
+  MS_EXCEPTION_IF_NULL(ascend_res_manager_);
+  return ascend_res_manager_->Copy(dst, src, size, kind, stream_id);
+}
+
 bool AscendDeviceResManager::AllocateMemory(DeviceAddress *const &address, uint32_t stream_id) const {
   MS_EXCEPTION_IF_NULL(ascend_res_manager_);
   return ascend_res_manager_->AllocateMemory(address, stream_id);
