@@ -207,7 +207,7 @@ bool InsertDependForAllGatherGe::Run(const FuncGraphPtr &graph) {
     return false;
   }
 
-  std::vector<AnfNodePtr> node_list = TopoSort(graph->get_return());
+  const std::vector<AnfNodePtr> node_list = TopoSort(graph->get_return());
   std::vector<CNodePtr> allgather_with_output_order;
   std::unordered_map<CNodePtr, CNodePtr> allgather_output_another_input;
   for (auto &node : node_list) {

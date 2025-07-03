@@ -101,7 +101,7 @@ const BaseRef AdamWeightDecayUnifyMindIR::DefinePattern() const {
 }
 
 const AnfNodePtr AdamWeightDecayUnifyMindIR::Process(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
-                                                     const EquivPtr &equiv) const {
+                                                     const EquivPtr &) const {
   MS_EXCEPTION_IF_NULL(func_graph);
   MS_EXCEPTION_IF_NULL(node);
   auto cnode = node->cast<CNodePtr>();

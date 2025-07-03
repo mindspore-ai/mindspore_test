@@ -57,7 +57,7 @@ const AnfNodePtr TupleUnifyMindIR::Process(const FuncGraphPtr &graph, const AnfN
   auto x = tensor_to_tuple_cnode->input(kIndex1);
   MS_EXCEPTION_IF_NULL(x);
   auto &child_node_users = manager->node_users()[tuple_to_tensor_cnode];
-  for (auto &child_node_user : child_node_users) {
+  for (const auto &child_node_user : child_node_users) {
     auto child_node = child_node_user.first->cast<CNodePtr>();
     manager->SetEdge(child_node, GetInputNodeIndex(tuple_to_tensor_cnode, child_node) + kSizeOne, x);
   }
