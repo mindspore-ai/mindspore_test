@@ -16,6 +16,7 @@
 
 #include "runtime/graph_scheduler/actor/abstract_actor.h"
 #include "runtime/graph_scheduler/actor/output_actor.h"
+#include "runtime/graph_scheduler/graph_capture/graph_capture_manager.h"
 #include "utils/log_adapter.h"
 
 namespace mindspore {
@@ -316,7 +317,7 @@ void AbstractActor::HandleWaitMessage(OpContext<KernelTensor> *const context, co
 }
 
 bool AbstractActor::IsOutputAddressPersisted(const DeviceTensor *output_device_tensor,
-                                             const KernelWithIndex &output_node) {
+                                             const KernelWithIndex &output_node, bool *need_release_mem) {
   MS_EXCEPTION_IF_NULL(output_node.first);
   MS_EXCEPTION_IF_NULL(output_device_tensor);
   MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
@@ -334,6 +335,15 @@ bool AbstractActor::IsOutputAddressPersisted(const DeviceTensor *output_device_t
   // The device address of parameter may come from the device address of input tensor.
   // In order to avoid mistakenly cleaning up the device data of input tensor, return it as persisted address.
   if (output_node.first->isa<Parameter>()) {
+    return true;
+  }
+
+  // If enable kernel launch capture, the kernel output as graph output will be captured and can not release device
+  // memory.
+  if (GraphCaptureManager::GetInstance().GetEnableGraphCapture() && ActorDispatcher::enable_use_trace_memory()) {
+    if (need_release_mem) {
+      *need_release_mem = false;
+    }
     return true;
   }
 

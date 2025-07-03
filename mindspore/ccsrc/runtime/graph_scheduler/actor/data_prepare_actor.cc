@@ -27,6 +27,7 @@
 #include "runtime/device/res_manager/auto_mem_offload.h"
 #include "runtime/device/device_address_utils.h"
 #include "runtime/graph_scheduler/scheduler_helper.h"
+#include "runtime/graph_scheduler/pipeline/runtime_pipeline.h"
 #include "async/async.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_exception.h"
@@ -394,6 +395,14 @@ void RecordGraphInputsForInputOptimize(const GraphCompilerInfo *graph_compiler_i
           }
         }
       }
+    }
+
+    if (EnableRuntimeNewPipeline() && ActorDispatcher::enable_static_shape() &&
+        ActorDispatcher::enable_runtime_multi_pipeline()) {
+      // Not need infer and resize queue work in spin state when convert dynamic shape to static shape.
+      RuntimePipeline::GetInstance().infer_queue()->Pause();
+      RuntimePipeline::GetInstance().resize_queue()->Pause();
+      ActorDispatcher::set_enable_runtime_multi_pipeline(false);
     }
   }
 }
@@ -926,6 +935,14 @@ void DataPrepareActor::RecordInputAndConvertStatic(const std::vector<TensorPtr> 
           }
         }
       }
+    }
+
+    if (EnableRuntimeNewPipeline() && ActorDispatcher::enable_static_shape() &&
+        ActorDispatcher::enable_runtime_multi_pipeline()) {
+      // Not need infer and resize queue work in spin state when convert dynamic shape to static shape.
+      RuntimePipeline::GetInstance().infer_queue()->Pause();
+      RuntimePipeline::GetInstance().resize_queue()->Pause();
+      ActorDispatcher::set_enable_runtime_multi_pipeline(false);
     }
   }
 }

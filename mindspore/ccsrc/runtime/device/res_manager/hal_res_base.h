@@ -36,6 +36,7 @@
 #include "runtime/device/res_manager/memory_manager.h"
 #include "runtime/device/res_manager/utils/visible.h"
 #include "runtime/device/res_manager/utils/utils.h"
+#include "runtime/device/res_manager/capture_graph.h"
 
 namespace mindspore {
 namespace device {
@@ -208,6 +209,8 @@ class RES_EXPORT HalResBase {
   virtual DeviceEventPtr CreateEventWithFlag(bool enable_timing, bool blocking, bool use_extensional_api = true) {
     return nullptr;
   }
+
+  virtual CaptureGraphPtr CreateCaptureGraph() { return nullptr; }
 
   // Destroy specified device event.
   virtual bool DestroyEvent(const DeviceEventPtr &event) { return false; }

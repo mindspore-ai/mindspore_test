@@ -129,6 +129,10 @@ class COMMON_EXPORT RuntimeConf {
     ThreadBindCore::GetInstance().enable_thread_bind_core(module_bind_core_strategy);
   }
 
+  void SetEnableKernelLaunchCapture(bool enable_capture_graph) { enable_capture_graph_ = enable_capture_graph; }
+
+  bool GetEnableKernelLaunchCapture() { return enable_capture_graph_; }
+
  private:
   static std::shared_ptr<RuntimeConf> inst_context_;
 
@@ -144,6 +148,7 @@ class COMMON_EXPORT RuntimeConf {
   float mem_max_size_;
   int mem_optimize_level_;
   float mem_huge_page_reserve_size_;
+  bool enable_capture_graph_;
   std::map<std::string, bool> conf_status_;
 };
 

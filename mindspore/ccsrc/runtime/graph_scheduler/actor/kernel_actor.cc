@@ -29,6 +29,7 @@
 #include "runtime/graph_scheduler/actor/recorder_actor.h"
 #include "runtime/graph_scheduler/actor/debug_actor.h"
 #include "runtime/graph_scheduler/execution_order_check/kernel_cache.h"
+#include "runtime/graph_scheduler/pipeline/runtime_pipeline.h"
 #include "async/async.h"
 #include "utils/log_adapter.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
@@ -745,7 +746,12 @@ void KernelActor::RunWithMultiPipeline(OpContext<KernelTensor> *const context) {
     return;
   }
 
-  Async(kernel_async_infer_aid_, &KernelAsyncInferActor::InferShape, context, this);
+  if (EnableRuntimeNewPipeline()) {
+    auto infer_task = [context, this]() { KernelAsyncInferActor::GetInstance()->InferShape(context, this); };
+    RuntimePipeline::GetInstance().infer_queue()->Push(std::move(infer_task));
+  } else {
+    Async(kernel_async_infer_aid_, &KernelAsyncInferActor::InferShape, context, this);
+  }
 
   // The computed depend kernel should wait output shape update after kernel launch.
   if (kernel_mod_->IsNeedUpdateOutputShapeAndSize()) {
@@ -764,7 +770,12 @@ void KernelActor::RunWithMultiPipeline(OpContext<KernelTensor> *const context) {
 }
 
 void KernelActor::RunWithAsyncLaunchKernel(OpContext<KernelTensor> *const context) {
-  Async(kernel_async_launch_aid_, &KernelAsyncLaunchActor::LaunchKernel, context, this);
+  if (EnableRuntimeNewPipeline()) {
+    auto launch_task = [context, this]() { KernelAsyncLaunchActor::GetInstance()->LaunchKernel(context, this); };
+    RuntimePipeline::GetInstance().launch_queue()->Push(std::move(launch_task));
+  } else {
+    Async(kernel_async_launch_aid_, &KernelAsyncLaunchActor::LaunchKernel, context, this);
+  }
 
   if (IsRunningFailed(context)) {
     MS_LOG(INFO) << "Run failed and early stop for kernel: " << kernel_->fullname_with_scope();
@@ -1372,7 +1383,12 @@ void KernelActor::ExecuteInferShapeTask(OpContext<KernelTensor> *const context) 
     InferShape();
   }
 
-  Async(kernel_async_resize_aid_, &KernelAsyncResizeActor::ResizeKernelMod, context, this);
+  if (EnableRuntimeNewPipeline()) {
+    auto resize_task = [context, this]() { KernelAsyncResizeActor::GetInstance()->ResizeKernelMod(context, this); };
+    RuntimePipeline::GetInstance().resize_queue()->Push(std::move(resize_task));
+  } else {
+    Async(kernel_async_resize_aid_, &KernelAsyncResizeActor::ResizeKernelMod, context, this);
+  }
 }
 
 void KernelActor::ExecuteResizeKernelModTask(OpContext<KernelTensor> *const context) {
@@ -1401,7 +1417,12 @@ void KernelActor::ExecuteResizeKernelModTask(OpContext<KernelTensor> *const cont
     FetchOutputDeviceTensor(context);
   }
 
-  Async(kernel_async_launch_aid_, &KernelAsyncLaunchActor::LaunchKernel, context, this);
+  if (EnableRuntimeNewPipeline()) {
+    auto launch_task = [context, this]() { KernelAsyncLaunchActor::GetInstance()->LaunchKernel(context, this); };
+    RuntimePipeline::GetInstance().launch_queue()->Push(std::move(launch_task));
+  } else {
+    Async(kernel_async_launch_aid_, &KernelAsyncLaunchActor::LaunchKernel, context, this);
+  }
 }
 
 void KernelActor::ExecuteLaunchKernelTask(OpContext<KernelTensor> *const context) {

@@ -37,10 +37,12 @@
 #include "runtime/graph_scheduler/parameter_store.h"
 #include "runtime/graph_scheduler/graph_parameter_store.h"
 #include "runtime/graph_scheduler/graph_scheduler.h"
+#include "runtime/graph_scheduler/graph_capture/graph_capture_manager.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "include/common/runtime_conf/runtime_conf.h"
 #include "include/common/runtime_conf/thread_bind_core.h"
 #include "runtime/pipeline/pipeline.h"
+#include "runtime/graph_scheduler/pipeline/runtime_pipeline.h"
 #include "debug/profiler/profiler.h"
 #include "actor/actormgr.h"
 #include "async/async.h"
@@ -551,6 +553,22 @@ KernelWithIndex FetchRealFrontNode(const KernelWithIndex &node_with_index, const
   }
   return front_node_with_idx;
 }
+
+void ContinuePipelineByCondition() {
+  if (EnableRuntimeNewPipeline()) {
+    if (ActorDispatcher::enable_runtime_multi_pipeline()) {
+      RuntimePipeline::GetInstance().ContinueAll();
+    } else if (ActorDispatcher::enable_async_launch_kernel()) {
+      RuntimePipeline::GetInstance().launch_queue()->Continue();
+    }
+
+    // For performance, remove bind device operation in ExecuteLaunchKernelTask function, and need bind device for all
+    // async launch kernel task.
+    if (ActorDispatcher::enable_async_launch_kernel()) {
+      RuntimePipeline::GetInstance().launch_queue()->BindDevice(RuntimePipeline::GetInstance().GetAllDeviceContexts());
+    }
+  }
+}
 }  // namespace
 
 GraphScheduler &GraphScheduler::GetInstance() noexcept {
@@ -634,6 +652,8 @@ void GraphScheduler::Clear() {
 
   // Clear all cache memory info before process exits.
   MemoryTraceManager::GetInstance().ClearAllCache();
+
+  GraphCaptureManager::GetInstance().Finalize();
 }
 
 void GraphScheduler::ClearActorData(const ActorSet *actor_set) {
@@ -703,6 +723,17 @@ void GraphScheduler::Initialize() {
   size_t actor_thread_num = 0;
   size_t actor_and_kernel_thread_num = 0;
   ComputeThreadNums(&actor_thread_num, &actor_and_kernel_thread_num);
+  default_actor_thread_num_ = actor_thread_num;
+
+  if (EnableRuntimePipeline() && EnableRuntimeNewPipeline()) {
+    if (actor_thread_num > kMultiPipelineThreadNum) {
+      actor_thread_num -= kMultiPipelineThreadNum;
+      actor_and_kernel_thread_num -= kMultiPipelineThreadNum;
+    } else if (actor_thread_num > kAsyncLaunchThreadNum) {
+      actor_thread_num -= kAsyncLaunchThreadNum;
+      actor_and_kernel_thread_num -= kAsyncLaunchThreadNum;
+    }
+  }
   auto actor_manager = ActorMgr::GetActorMgrRef();
   MS_EXCEPTION_IF_NULL(actor_manager);
   size_t actor_queue_size = 81920;
@@ -712,7 +743,6 @@ void GraphScheduler::Initialize() {
   if (ret != MINDRT_OK) {
     MS_LOG(INTERNAL_EXCEPTION) << "#dmsg#Runtime error info:#dmsg#Actor manager init failed.";
   }
-  default_actor_thread_num_ = actor_thread_num;
   common::SetOMPThreadNum();
   MS_LOG(INFO) << "The actor thread number: " << actor_thread_num
                << ", the kernel thread number: " << (actor_and_kernel_thread_num - actor_thread_num);
@@ -937,53 +967,47 @@ void GraphScheduler::SpawnMultiPipelineActor(ActorSet *const actor_set, ActorThr
   bool enable_runtime_pipeline = EnableRuntimePipeline();
   ActorDispatcher::set_enable_async_launch_kernel(enable_runtime_pipeline &&
                                                   (EnableKbkSubGraphExecute() || !actor_set->kernel_actors_.empty()) &&
-                                                  default_actor_thread_num_ > kAsyncLaunchThreadNum);
+                                                  (default_actor_thread_num_ > kAsyncLaunchThreadNum));
   if (ActorDispatcher::enable_async_launch_kernel()) {
     thread_pool->DisableOccupiedActorThread();
   }
   if (ActorDispatcher::enable_async_launch_kernel() && !already_spawn_kernel_async_launch_actor_) {
-    size_t current_actor_thread_num = thread_pool->GetActorThreadNum();
-    MS_LOG(INFO) << "Enable runtime asynchronously launch kernel, default actor thread num "
-                 << default_actor_thread_num_ << ", current actor thread num: " << current_actor_thread_num;
-    if (current_actor_thread_num != default_actor_thread_num_) {
-      thread_pool->SetActorThreadNum(default_actor_thread_num_);
-      MS_LOG(DEBUG) << "Reset actor thread number to: " << default_actor_thread_num_;
+    if (!EnableRuntimeNewPipeline()) {
+      auto &kernel_async_launch_actor = KernelAsyncLaunchActor::GetInstance();
+      MS_EXCEPTION_IF_NULL(kernel_async_launch_actor);
+      (void)actor_manager->Spawn(kernel_async_launch_actor, false);
+
+      kernel_async_launch_actor->Initialize();
+    } else {
+      // Early make worker_ to make sure get_thread_id safety. eg. InferShape GetValue for parameter.
+      RuntimePipeline::GetInstance().launch_queue()->Init();
     }
-
-    auto &kernel_async_launch_actor = KernelAsyncLaunchActor::GetInstance();
-    MS_EXCEPTION_IF_NULL(kernel_async_launch_actor);
-    (void)actor_manager->Spawn(kernel_async_launch_actor, false);
     already_spawn_kernel_async_launch_actor_ = true;
-
-    kernel_async_launch_actor->Initialize();
   }
 
   // If enable runtime multi pipeline, async launch kernel will be enabled.
   ActorDispatcher::set_enable_runtime_multi_pipeline(
     enable_runtime_pipeline && actor_set->has_dynamic_shape_ &&
     (EnableKbkSubGraphExecute() || !actor_set->kernel_actors_.empty()) &&
-    default_actor_thread_num_ > kMultiPipelineThreadNum);
+    (default_actor_thread_num_ > kMultiPipelineThreadNum));
   if (ActorDispatcher::enable_runtime_multi_pipeline() && !already_spawn_kernel_async_infer_resize_actor_) {
-    size_t current_actor_thread_num = thread_pool->GetActorThreadNum();
-    MS_LOG(INFO) << "Enable runtime multi pipeline, default actor thread num: " << default_actor_thread_num_
-                 << ", current actor thread num: " << current_actor_thread_num;
-    if (current_actor_thread_num != default_actor_thread_num_) {
-      thread_pool->SetActorThreadNum(default_actor_thread_num_);
-      MS_LOG(DEBUG) << "Reset actor thread number to: " << default_actor_thread_num_;
+    if (!EnableRuntimeNewPipeline()) {
+      auto &kernel_async_infer_actor = KernelAsyncInferActor::GetInstance();
+      MS_EXCEPTION_IF_NULL(kernel_async_infer_actor);
+      (void)actor_manager->Spawn(kernel_async_infer_actor, false);
+
+      auto &kernel_async_resize_actor = KernelAsyncResizeActor::GetInstance();
+      MS_EXCEPTION_IF_NULL(kernel_async_resize_actor);
+      (void)actor_manager->Spawn(kernel_async_resize_actor, false);
+
+      kernel_async_infer_actor->Initialize();
+      kernel_async_resize_actor->Initialize();
+    } else {
+      // Early make worker_ to make sure get_thread_id safety. eg. InferShape GetValue for parameter.
+      RuntimePipeline::GetInstance().infer_queue()->Init();
+      RuntimePipeline::GetInstance().resize_queue()->Init();
     }
-
-    auto &kernel_async_infer_actor = KernelAsyncInferActor::GetInstance();
-    MS_EXCEPTION_IF_NULL(kernel_async_infer_actor);
-    (void)actor_manager->Spawn(kernel_async_infer_actor, false);
-
-    auto &kernel_async_resize_actor = KernelAsyncResizeActor::GetInstance();
-    MS_EXCEPTION_IF_NULL(kernel_async_resize_actor);
-    (void)actor_manager->Spawn(kernel_async_resize_actor, false);
-
     already_spawn_kernel_async_infer_resize_actor_ = true;
-
-    kernel_async_infer_actor->Initialize();
-    kernel_async_resize_actor->Initialize();
   }
 }
 
@@ -1013,35 +1037,6 @@ void GraphScheduler::Schedule(const ActorSet *actor_set) {
   // Schedule and Run embedding cache prefetch actor.
   EmbeddingCacheScheduler::GetInstance().Schedule();
 #endif
-}
-
-void GraphScheduler::RefreshContextAndThreadPool(ActorSet *const actor_set, ActorThreadPool *const thread_pool) {
-  if (IsInferPhase(actor_set->graph_phase_)) {
-    // GE backend's memory optimization litmits the thread number to be 1, but the memory is not a problem in inference
-    // so the multi-thread can be enabled.
-    return;
-  }
-
-  static constexpr size_t kSingleThreadNum = 1;
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
-
-  auto calculate_runtime_pipeline_thread_num = [this]() {
-    return already_spawn_kernel_async_infer_resize_actor_
-             ? kMultiPipelineThreadNum
-             : (already_spawn_kernel_async_launch_actor_ ? kAsyncLaunchThreadNum : 0);
-  };
-
-  if (EnableKbkSubGraphExecute() || !actor_set->kernel_actors_.empty()) {
-    // kernel by kernel
-    thread_pool->SetActorThreadNum(default_actor_thread_num_);
-  } else if (actor_set->super_kernel_actors_.size() == 1 && actor_set->control_actors_ == nullptr) {
-    // multi graph sink
-    thread_pool->SetActorThreadNum(kSingleThreadNum + calculate_runtime_pipeline_thread_num());
-  } else {
-    // sub graph sink
-    thread_pool->SetActorThreadNum(kSingleThreadNum + calculate_runtime_pipeline_thread_num());
-  }
 }
 
 void CheckUceBeforeGraphRun(ActorSet *const actor_set) {
@@ -1221,6 +1216,7 @@ void GraphScheduler::Run(ActorSet *const actor_set, const std::vector<std::vecto
   MS_EXCEPTION_IF_NULL(op_context_setter);
 #endif
 
+  ResetTraceMemoryStatus();
   // Trigger data prepare actor running.
   MS_EXCEPTION_IF_NULL(ActorMgr::GetActorMgrRef());
   auto thread_pool = ActorMgr::GetActorMgrRef()->GetActorThreadPool();
@@ -1230,13 +1226,13 @@ void GraphScheduler::Run(ActorSet *const actor_set, const std::vector<std::vecto
   UpdateInputOptimizeForCurActorSet(actor_set);
   RefreshGraphParameterStore(actor_set, args);
   SpawnMultiPipelineActor(actor_set, thread_pool);
-  RefreshContextAndThreadPool(actor_set, thread_pool);
   if (actor_set->is_multi_thread_execution_) {
     thread_pool->SetSpinCountMaxValue();
   }
   ActorDispatcher::set_is_multi_thread_execution(actor_set->is_multi_thread_execution_);
   ActorDispatcher::set_enable_multi_stream(actor_set->enable_multi_stream_);
   ActorDispatcher::set_has_kernel_need_user_data(actor_set->has_kernel_need_user_data_);
+  ContinuePipelineByCondition();
   double start_time = GetTime();
   ActorDispatcher::SendSync(actor_set->data_prepare_actor_->GetAID(), &DataPrepareActor::PrepareData, input_tensors,
                             args, &op_context, GraphExecutionStrategy::kPipeline);
@@ -1258,6 +1254,10 @@ void GraphScheduler::Run(ActorSet *const actor_set, const std::vector<std::vecto
     std::condition_variable thread_blocker;
     const int64_t kTimeToWait = 3;
     (void)thread_blocker.wait_for(locker, std::chrono::seconds(kTimeToWait));
+    WaitRuntimePipelineFinish(&op_context, "GraphSchedulerRun");
+    if (EnableRuntimeNewPipeline()) {
+      RuntimePipeline::GetInstance().PauseAll();
+    }
     ResetPipelineAndTraceMemoryStatus();
 
     // Reset actor state and throw uce exception.
@@ -1268,7 +1268,10 @@ void GraphScheduler::Run(ActorSet *const actor_set, const std::vector<std::vecto
     MS_LOG(EXCEPTION) << op_context.error_info_;
   }
 
-  ResetPipelineAndTraceMemoryStatus();
+  if (EnableRuntimeNewPipeline()) {
+    RuntimePipeline::GetInstance().PauseAll();
+  }
+  ResetPipelineStatus();
   MsException::Instance().CheckException();
   double end_time = GetTime();
   const size_t kSecondsToMilliseconds = 1000;
@@ -1293,13 +1296,17 @@ void GraphScheduler::ChildAfterFork() {
 
   if (already_spawn_kernel_async_infer_resize_actor_) {
     already_spawn_kernel_async_infer_resize_actor_ = false;
-    actor_manager->ResetActorAfterFork(KernelAsyncInferActor::GetInstance());
-    actor_manager->ResetActorAfterFork(KernelAsyncResizeActor::GetInstance());
+    if (!EnableRuntimeNewPipeline()) {
+      actor_manager->ResetActorAfterFork(KernelAsyncInferActor::GetInstance());
+      actor_manager->ResetActorAfterFork(KernelAsyncResizeActor::GetInstance());
+    }
   }
 
   if (already_spawn_kernel_async_launch_actor_) {
     already_spawn_kernel_async_launch_actor_ = false;
-    actor_manager->ResetActorAfterFork(KernelAsyncLaunchActor::GetInstance());
+    if (!EnableRuntimeNewPipeline()) {
+      actor_manager->ResetActorAfterFork(KernelAsyncLaunchActor::GetInstance());
+    }
   }
 
   MS_LOG(DEBUG) << "GraphScheduler reinitialize after fork done.";
@@ -1334,7 +1341,45 @@ bool GraphScheduler::CheckSingleThreadRunningCondition(ActorSet *const actor_set
   return true;
 }
 
-void GraphScheduler::BindCoreForRuntimeThread(ActorThreadPool *thread_pool, size_t thread_num) const {
+#if defined(__linux__) && defined(BIND_CORE)
+void GraphScheduler::GetRuntimeThreadIds(ActorThreadPool *thread_pool, std::vector<pthread_t> *threads) const {
+  MS_EXCEPTION_IF_NULL(thread_pool);
+  MS_EXCEPTION_IF_NULL(threads);
+  auto ret = thread_pool->GetActorWorkerThreads(threads);
+  if (ret != THREAD_OK) {
+    MS_LOG(EXCEPTION) << "Get actor worker thread ids failed.";
+  }
+
+  if (threads->size() == default_actor_thread_num_) {
+    return;
+  }
+
+  if (EnableRuntimePipeline() && EnableRuntimeNewPipeline()) {
+    if (default_actor_thread_num_ > kMultiPipelineThreadNum) {
+      const auto &infer_worker = RuntimePipeline::GetInstance().infer_queue()->worker();
+      MS_EXCEPTION_IF_NULL(infer_worker);
+      threads->push_back(infer_worker->native_handle());
+
+      const auto &resize_worker = RuntimePipeline::GetInstance().resize_queue()->worker();
+      MS_EXCEPTION_IF_NULL(resize_worker);
+      threads->push_back(resize_worker->native_handle());
+
+      const auto &launch_worker = RuntimePipeline::GetInstance().launch_queue()->worker();
+      MS_EXCEPTION_IF_NULL(launch_worker);
+      threads->push_back(launch_worker->native_handle());
+    } else if (default_actor_thread_num_ > kAsyncLaunchThreadNum) {
+      const auto &launch_worker = RuntimePipeline::GetInstance().launch_queue()->worker();
+      MS_EXCEPTION_IF_NULL(launch_worker);
+      threads->push_back(launch_worker->native_handle());
+    }
+  }
+  if (threads->size() != default_actor_thread_num_) {
+    MS_LOG(EXCEPTION) << "Get invalid total thread number, expected: " << default_actor_thread_num_
+                      << ", but got: " << threads->size();
+  }
+}
+
+void GraphScheduler::BindCoreForRuntimeThread(ActorThreadPool *thread_pool) const {
   static bool is_bind_core_ = false;
   if (is_bind_core_) {
     return;
@@ -1348,12 +1393,15 @@ void GraphScheduler::BindCoreForRuntimeThread(ActorThreadPool *thread_pool, size
   if (cpu_list.empty()) {
     MS_LOG(WARNING) << "Failed to bind thread core as no available core assigned to Runtime actor thread.";
   } else {
+    std::vector<pthread_t> threads;
+    GetRuntimeThreadIds(thread_pool, &threads);
     const auto &actor_thread_fix_bind =
       common::GetConfigValue(common::kRuntimeConf, common::kRuntimeActorThreadFixBind);
-    thread_pool->APIThreadPoolSetAffinity(thread_num, cpu_list, actor_thread_fix_bind);
+    thread_pool->APIThreadPoolSetAffinity(threads, cpu_list, actor_thread_fix_bind);
   }
   is_bind_core_ = true;
 }
+#endif
 
 void GraphScheduler::SetActorExecutionStrategy(ActorSet *const actor_set, GraphExecutionStrategy strategy,
                                                double execution_time) const {
@@ -1369,15 +1417,19 @@ void GraphScheduler::SetActorExecutionStrategy(ActorSet *const actor_set, GraphE
   MS_EXCEPTION_IF_NULL(ActorMgr::GetActorMgrRef());
   auto thread_pool = ActorMgr::GetActorMgrRef()->GetActorThreadPool();
   MS_EXCEPTION_IF_NULL(thread_pool);
-  static bool bind_core_flag = false;
-  static bool env_runtime_reserved_empty = common::GetEnv("CONFIG_BIND_RUNTIME_LIST").empty();
-  if (!env_runtime_reserved_empty && bind_core_flag == false && actor_set->execution_count_ == kBindCoreThreadStep) {
-    thread_pool->ThreadPoolSetAffinity(default_actor_thread_num_);
-    bind_core_flag = true;
-  }
-
   if (actor_set->execution_count_ == kBindCoreThreadStep) {
-    BindCoreForRuntimeThread(thread_pool, default_actor_thread_num_);
+#if defined(__linux__) && defined(BIND_CORE)
+    static bool bind_core_flag = false;
+    static bool env_runtime_reserved_empty = common::GetEnv("CONFIG_BIND_RUNTIME_LIST").empty();
+    if (!env_runtime_reserved_empty && bind_core_flag == false) {
+      std::vector<pthread_t> threads;
+      GetRuntimeThreadIds(thread_pool, &threads);
+      thread_pool->ThreadPoolSetAffinity(threads);
+      bind_core_flag = true;
+    }
+
+    BindCoreForRuntimeThread(thread_pool);
+#endif
   }
 
   if (!CheckSingleThreadRunningCondition(actor_set, strategy)) {

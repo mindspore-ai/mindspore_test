@@ -67,6 +67,8 @@ class KernelRunner {
   void SendMemoryFreeReq(OpContext<KernelTensor> *const context);
 
   const CNodePtr &kernel() const { return kernel_; }
+  KernelMod *kernel_mod() const { return kernel_mod_; }
+
   KernelLaunchInfoWithStream kernel_launch_info() const {
     return KernelLaunchInfoWithStream(input_launch_tensors_, output_launch_tensors_, workspace_launch_tensors_,
                                       stream_);
@@ -139,6 +141,9 @@ class KernelRunner {
   const std::vector<size_t> &output_free_index() const { return output_free_index_; }
   const std::vector<bool> &depend_shape_input_list() const { return depend_shape_input_list_; }
   const std::vector<bool> &is_weight() const { return is_weight_; }
+  const std::vector<bool> &is_first_used_params() const { return is_first_used_params_; }
+  const std::vector<std::shared_ptr<InputDataInfo>> &real_input_data_infos() const { return real_input_data_infos_; }
+  GraphExecutionStrategy &get_strategy() { return strategy_; }
   KernelTransformType type() const { return type_; }
 
   bool HighPerfMode();

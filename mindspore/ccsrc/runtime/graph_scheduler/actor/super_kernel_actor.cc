@@ -26,7 +26,9 @@
 #include "runtime/graph_scheduler/actor/control_flow/condition_switch_runner.h"
 #include "runtime/graph_scheduler/actor/control_flow/condition_gather_runner.h"
 #include "runtime/pipeline/task/batch_launch_kernel_task.h"
+#include "runtime/graph_scheduler/pipeline/runtime_pipeline.h"
 #include "include/common/runtime_conf/runtime_conf.h"
+#include "runtime/graph_scheduler/graph_capture/graph_capture_manager.h"
 #include "async/async.h"
 #include "utils/phase.h"
 #include "utils/llm_manager.h"
@@ -48,6 +50,7 @@ std::vector<AsyncRQueuePtr> SuperKernelActor::queues_;
 
 static SpinLock spin_lock;
 static std::mutex mtx;
+bool SuperKernelActor::already_allocate_trace_memory_ = false;
 
 namespace {
 inline void UpdateShape(const AnfNodePtr &input_node, const KernelTensorPtr &node_device_kernel_tensor,
@@ -431,6 +434,7 @@ void SuperKernelActor::Run(OpContext<KernelTensor> *const context) {
         SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
       }
     }
+    return;
   }
   if (NeedRunMemTracker()) {
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, GetAID().Name(), "SuperKernelActor", graph_->ToString(),
@@ -508,6 +512,12 @@ void SuperKernelActor::FetchPersistentDeviceTensor() {
 void SuperKernelActor::UpdateMemoryTraceMangerStatus(OpContext<KernelTensor> *const context) {
   MemoryTraceManager::GetInstance().PickMemoryTrackInfoForGraph(graph_->graph_id());
   if (!ActorDispatcher::enable_static_shape()) {
+    if (GraphCaptureManager::GetInstance().GetEnableGraphCapture() && already_allocate_trace_memory_) {
+      MS_LOG(INFO) << "Clear captured graph when execute graph: " << graph_->ToString();
+      GraphCaptureManager::GetInstance().Reset(device_contexts_[0]);
+      FreeTraceMemory();
+    }
+
     ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kMemoryAlloc, GetAID().Name());
 
     const std::shared_ptr<mindspore::HashMap<CNodePtr, std::vector<KernelMemoryTraceBlockPtr>>> &all_kernel_block_info =
@@ -550,7 +560,9 @@ void SuperKernelActor::UpdateMemoryTraceMangerStatus(OpContext<KernelTensor> *co
     MemoryTraceManager::GetInstance().ReserveKernelMemoryBlocks(memory_block_size, device_contexts_[0]);
   } else {
     // Not first step for dynamic shape, use record trace memory.
-    AllocateTraceMemory(context);
+    if (!already_allocate_trace_memory_) {
+      AllocateTraceMemory(context);
+    }
   }
 }
 
@@ -635,6 +647,7 @@ void SuperKernelActor::AllocateTraceMemory(OpContext<KernelTensor> *const contex
       block->start_ = reinterpret_cast<uint8_t *>(block_addr);
     }
   }
+  already_allocate_trace_memory_ = true;
 }
 
 void SuperKernelActor::FreeTraceMemory() const {
@@ -650,6 +663,7 @@ void SuperKernelActor::FreeTraceMemory() const {
       device_context->device_res_manager_->FreeMemory(block->start_);
     }
   }
+  already_allocate_trace_memory_ = false;
 }
 
 bool SuperKernelActor::CopyHeterogeneousOutput(OpContext<KernelTensor> *const context,
@@ -831,6 +845,142 @@ bool SuperKernelActor::FetchMsgInputAndConstValueForKernel(KernelRunner *kernel_
   return true;
 }
 
+void SuperKernelActor::AsyncLaunchKernelByCondition(OpContext<KernelTensor> *const context,
+                                                    KernelRunner *kernel_actor) {
+  // Check high performance condition in SuperKernelActor.
+  if (is_high_perf_mode_ && IsHighPerfModeAtExec()) {
+    if (EnableRuntimeNewPipeline()) {
+      auto launch_task = [context, kernel_actor]() {
+        KernelAsyncLaunchActor::GetInstance()->LaunchKernelV2HP(context, kernel_actor);
+      };
+      RuntimePipeline::GetInstance().launch_queue()->Push(std::move(launch_task));
+    } else {
+      Async(kernel_async_launch_aid_, &KernelAsyncLaunchActor::LaunchKernelV2HP, context, kernel_actor);
+    }
+  } else {
+    if (EnableRuntimeNewPipeline()) {
+      auto launch_task = [context, kernel_actor]() {
+        KernelAsyncLaunchActor::GetInstance()->LaunchKernelV2(context, kernel_actor);
+      };
+      RuntimePipeline::GetInstance().launch_queue()->Push(std::move(launch_task));
+    } else {
+      Async(kernel_async_launch_aid_, &KernelAsyncLaunchActor::LaunchKernelV2, context, kernel_actor);
+    }
+  }
+}
+
+void SuperKernelActor::SyncDispatchKernel(OpContext<KernelTensor> *const context, KernelRunner *kernel_actor) {
+  if (!ActorDispatcher::enable_static_shape()) {
+    kernel_actor->device_contexts_[0]->device_res_manager_->BindDeviceToCurrentThread(false);
+    // Infer shape and resize for dynamic shape or dynamice value case when disable runtime multi pipeline.
+    kernel_actor->InferAndUpdateDeviceTensorSize(context);
+  } else if (LLMManager::GetInstance().need_force_resize(kernel_actor->kernel_mod_->kernel_name())) {
+    kernel_actor->ResizeKernelMod();
+    kernel_actor->FetchOutputDeviceTensor(context);
+    kernel_actor->FetchWorkspaceDeviceTensor();
+  }
+
+  // Check high performance condition in SuperKernelActor.
+  if (is_high_perf_mode_ && IsHighPerfModeAtExec()) {
+    KernelAsyncLaunchActor::GetInstance()->LaunchKernelV2HP(context, kernel_actor);
+  } else {
+    KernelAsyncLaunchActor::GetInstance()->LaunchKernelV2(context, kernel_actor);
+  }
+}
+
+bool SuperKernelActor::LaunchKernel(OpContext<KernelTensor> *const context, const KernelRunnerPtr &kernel_actor,
+                                    bool sync_run) {
+  if (!ActorDispatcher::enable_use_trace_memory()) {
+    kernel_actor->UpdateRefDeviceAddress(context, true);
+    kernel_actor->UpdateGraphOutputRefCount(context);
+    kernel_actor->UpdateMemoryFreeList(context);
+  }
+
+  // Update output device address for Parameter as graph output case.
+  const auto &input_to_output_iter = kernel_input_to_actor_output_indices_.find(kernel_actor->kernel().get());
+  if (input_to_output_iter != kernel_input_to_actor_output_indices_.end()) {
+    const auto &kernel_inputs_to_actor_outputs = input_to_output_iter->second;
+    UpdateOutputAddress(kernel_inputs_to_actor_outputs, kernel_actor);
+  }
+
+  // 1. Allocate somas memory or cached memory for this kernel.
+  kernel_actor->SetSomasMemory(context);
+  if (ActorDispatcher::enable_use_trace_memory()) {
+    SetTraceMemoryForKernel(kernel_actor);
+  }
+
+  // 2. Async/Sync Run Infer or Launch
+  if (ActorDispatcher::enable_runtime_multi_pipeline() && !ActorDispatcher::enable_static_shape() && !sync_run) {
+    // If the kernel need user data and is dynamic, maybe need input kernel's output user data to infer shape, this
+    // value depend case can not handle in KernelTensor auto sync phase currently.
+    if (kernel_actor->kernel_mod_->need_user_data() && kernel_actor->has_dynamic_) {
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL)
+        << "Begin wait runtime pipeline for kernel: " << kernel_actor->kernel_->fullname_with_scope();
+      if (!WaitRuntimePipelineFinish(context, kernel_actor->kernel_mod_->kernel_name())) {
+        return false;
+      }
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL)
+        << "End wait runtime pipeline for kernel: " << kernel_actor->kernel_->fullname_with_scope();
+    }
+
+    // Push run task to pipeline.
+    // Note: dynamic value or static shape also need push task into infer actor to make sure correct kernel
+    // execution order.
+    if (EnableRuntimeNewPipeline()) {
+      auto infer_task = [context, kernel_actor_ptr = kernel_actor.get(),
+                         high_perf_mode = is_high_perf_mode_ && IsHighPerfModeAtExec()]() {
+        KernelAsyncInferActor::GetInstance()->InferShapeV2(context, kernel_actor_ptr, high_perf_mode);
+      };
+      RuntimePipeline::GetInstance().infer_queue()->Push(std::move(infer_task));
+    } else {
+      Async(kernel_async_infer_aid_, &KernelAsyncInferActor::InferShapeV2, context, kernel_actor.get(),
+            is_high_perf_mode_ && IsHighPerfModeAtExec());
+    }
+
+    // The computed depend kernel should wait output shape update after kernel launch.
+    if (kernel_actor->kernel_mod_->IsNeedUpdateOutputShapeAndSize()) {
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL)
+        << "Begin wait runtime pipeline for kernel: " << kernel_actor->kernel_->fullname_with_scope();
+      if (!WaitRuntimePipelineFinish(context, kernel_actor->kernel_mod_->kernel_name())) {
+        return false;
+      }
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL)
+        << "End wait runtime pipeline for kernel: " << kernel_actor->kernel_->fullname_with_scope();
+    }
+  } else if (ActorDispatcher::enable_async_launch_kernel() && !sync_run) {
+    auto &llm_manager = LLMManager::GetInstance();
+    if (llm_manager.need_force_resize(kernel_actor->kernel_mod_->kernel_name())) {
+      kernel_actor->ResizeKernelMod();
+      kernel_actor->FetchOutputDeviceTensor(context);
+      kernel_actor->FetchWorkspaceDeviceTensor();
+    } else if (!ActorDispatcher::enable_static_shape()) {
+      kernel_actor->device_contexts_[0]->device_res_manager_->BindDeviceToCurrentThread(false);
+      // Infer shape and resize for dynamic shape or dynamice value case when disable runtime multi pipeline.
+      kernel_actor->InferAndUpdateDeviceTensorSize(context);
+    }
+
+    AsyncLaunchKernelByCondition(context, kernel_actor.get());
+
+    // The computed depend kernel should wait output shape update after kernel launch.
+    if (kernel_actor->kernel_mod_->IsNeedUpdateOutputShapeAndSize()) {
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL)
+        << "Begin wait runtime pipeline for kernel: " << kernel_actor->kernel_->fullname_with_scope();
+      if (!WaitRuntimePipelineFinish(context, kernel_actor->kernel_mod_->kernel_name())) {
+        MS_LOG(INFO) << "Run failed and early stop for kernel: " << kernel_actor->kernel_->fullname_with_scope();
+        return false;
+      }
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL)
+        << "End wait runtime pipeline for kernel: " << kernel_actor->kernel_->fullname_with_scope();
+    }
+  } else {
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Sync launch kernel actor:" << kernel_actor->GetAID()
+                                         << " in actor:" << GetAID();
+    SyncDispatchKernel(context, kernel_actor.get());
+  }
+
+  return true;
+}
+
 bool SuperKernelActor::LaunchAllKernels(OpContext<KernelTensor> *const context) {
   size_t kernel_num = kernel_actors_.size();
   for (size_t i = 0; i < kernel_num; i++) {
@@ -842,10 +992,11 @@ bool SuperKernelActor::LaunchAllKernels(OpContext<KernelTensor> *const context) 
       MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Skip launch kernel for actor:" << kernel_actor->GetAID();
       continue;
     }
-    const auto &kernel = kernel_actor->kernel();
+
     if (NeedRunMemTracker()) {
-      device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
-        AddTask, kernel_actor->GetAID().Name(), kernel->fullname_with_scope(), kernel->func_graph()->ToString(), false);
+      device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, kernel_actor->GetAID().Name(),
+                                                     kernel_actor->kernel()->fullname_with_scope(),
+                                                     kernel_actor->kernel()->func_graph()->ToString(), false);
     }
     // 1. Prepare input data for kernel
     // 1.1. Prepare top cell parameter input.
@@ -855,90 +1006,9 @@ bool SuperKernelActor::LaunchAllKernels(OpContext<KernelTensor> *const context) 
       return false;
     }
 
-    if (!ActorDispatcher::enable_use_trace_memory()) {
-      kernel_actor->UpdateRefDeviceAddress(context, true);
-      kernel_actor->UpdateGraphOutputRefCount(context);
-      kernel_actor->UpdateMemoryFreeList(context);
-    }
-
-    // Update output device address for Parameter as graph output case.
-    const auto &input_to_output_iter = kernel_input_to_actor_output_indices_.find(kernel.get());
-    if (input_to_output_iter != kernel_input_to_actor_output_indices_.end()) {
-      const auto &kernel_inputs_to_actor_outputs = input_to_output_iter->second;
-      UpdateOutputAddress(kernel_inputs_to_actor_outputs, kernel_actor);
-    }
-
-    // 2. Allocate somas memory or cached memory for this kernel.
-    kernel_actor->SetSomasMemory(context);
-    if (ActorDispatcher::enable_use_trace_memory()) {
-      SetTraceMemoryForKernel(kernel_actor);
-    }
-
-    // 3. Async Run Infer or Launch
-    if (ActorDispatcher::enable_runtime_multi_pipeline() && !ActorDispatcher::enable_static_shape()) {
-      // If the kernel need user data and is dynamic, maybe need input kernel's output user data to infer shape, this
-      // value depend case can not handle in KernelTensor auto sync phase currently.
-      if (kernel_actor->kernel_mod_->need_user_data() && kernel_actor->has_dynamic_) {
-        MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL)
-          << "Begin wait runtime pipeline for kernel: " << kernel_actor->kernel_->fullname_with_scope();
-        if (!WaitRuntimePipelineFinish(context, kernel_actor->kernel_mod_->kernel_name())) {
-          return false;
-        }
-        MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL)
-          << "End wait runtime pipeline for kernel: " << kernel_actor->kernel_->fullname_with_scope();
-      }
-
-      // Push run task to pipeline.
-      // Note: dynamic value or static shape also need push task into infer actor to make sure correct kernel
-      // execution order.
-      Async(kernel_async_infer_aid_, &KernelAsyncInferActor::InferShapeV2, context, kernel_actor.get(),
-            is_high_perf_mode_ && IsHighPerfModeAtExec());
-
-      // The computed depend kernel should wait output shape update after kernel launch.
-      if (kernel_actor->kernel_mod_->IsNeedUpdateOutputShapeAndSize()) {
-        MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL)
-          << "Begin wait runtime pipeline for kernel: " << kernel_actor->kernel_->fullname_with_scope();
-        if (!WaitRuntimePipelineFinish(context, kernel_actor->kernel_mod_->kernel_name())) {
-          return false;
-        }
-        MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL)
-          << "End wait runtime pipeline for kernel: " << kernel_actor->kernel_->fullname_with_scope();
-      }
-    } else if (ActorDispatcher::enable_async_launch_kernel()) {
-      auto &llm_manager = LLMManager::GetInstance();
-      if (llm_manager.need_force_resize(kernel_actor->kernel_mod_->kernel_name())) {
-        kernel_actor->ResizeKernelMod();
-        kernel_actor->FetchOutputDeviceTensor(context);
-        kernel_actor->FetchWorkspaceDeviceTensor();
-      } else if (!ActorDispatcher::enable_static_shape()) {
-        kernel_actor->device_contexts_[0]->device_res_manager_->BindDeviceToCurrentThread(false);
-        // Infer shape and resize for dynamic shape or dynamice value case when disable runtime multi pipeline.
-        kernel_actor->InferAndUpdateDeviceTensorSize(context);
-      }
-
-      // Check high performance condition in SuperKernelActor.
-      if (is_high_perf_mode_ && IsHighPerfModeAtExec()) {
-        Async(kernel_async_launch_aid_, &KernelAsyncLaunchActor::LaunchKernelV2HP, context, kernel_actor.get());
-      } else {
-        Async(kernel_async_launch_aid_, &KernelAsyncLaunchActor::LaunchKernelV2, context, kernel_actor.get());
-      }
-
-      // The computed depend kernel should wait output shape update after kernel launch.
-      if (kernel_actor->kernel_mod_->IsNeedUpdateOutputShapeAndSize()) {
-        MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL)
-          << "Begin wait runtime pipeline for kernel: " << kernel_actor->kernel_->fullname_with_scope();
-        if (!WaitRuntimePipelineFinish(context, kernel_actor->kernel_mod_->kernel_name())) {
-          MS_LOG(INFO) << "Run failed and early stop for kernel: " << kernel_actor->kernel_->fullname_with_scope();
-          return false;
-        }
-        MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL)
-          << "End wait runtime pipeline for kernel: " << kernel_actor->kernel_->fullname_with_scope();
-      }
-    } else {
-      MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL)
-        << "Sync launch kernel actor:" << kernel_actor->GetAID() << " in actor:" << GetAID();
-      kernel_actor->InferAndUpdateDeviceTensorSize(context);
-      kernel_actor->ExecuteLaunchKernelTask(context);
+    // 2. Async/Sync Run Infer or Launch
+    if (!LaunchKernel(context, kernel_actor)) {
+      return false;
     }
 
     if (enable_inline_control_flow_ && kernel_actor->need_wait_pipeline_) {
@@ -948,7 +1018,8 @@ bool SuperKernelActor::LaunchAllKernels(OpContext<KernelTensor> *const context) 
       }
       MS_LOG(DEBUG) << "Condition switch actor:" << kernel_actor->GetAID() << " wait succeed.";
     }
-    // 4. Copy for heterogeneous output device address if need.
+
+    // 3. Copy for heterogeneous output device address if need.
     if (kernel_actor->copy_output_kernel_tensors_.empty()) {
       continue;
     }
@@ -1079,7 +1150,11 @@ void SuperKernelActor::DispatchSerialLaunchKernels(OpContext<KernelTensor> *cons
 
 void SuperKernelActor::ParallelDispatchKernels(OpContext<KernelTensor> *const context) {
   MS_LOG(INFO) << "Begin parallel dispatch kernels for graph: " << graph_->ToString();
-  device_contexts_[0]->device_res_manager_->BindDeviceToCurrentThread(false);
+  if (EnableRuntimeNewPipeline()) {
+    // Not need launch queue work in spin in parallel launch step, which doesn't push launch task into launch queue.
+    RuntimePipeline::GetInstance().launch_queue()->Pause();
+    ActorDispatcher::set_enable_async_launch_kernel(false);
+  }
   // Record a event to default stream to notify parallel launch kernels execute on other stream.
   events_.front()->RecordEvent(0);
 
@@ -1149,6 +1224,10 @@ void SuperKernelActor::RunGraphKernelByKernel(OpContext<KernelTensor> *const con
     }
   }
 
+  MS_LOG(DEBUG) << "Run graph: " << graph_->ToString()
+                << ", enable capture graph global: " << GraphCaptureManager::GetInstance().GetEnableGraphCapture()
+                << ", enable trace memory: " << enable_trace_memory_
+                << ", already allocate trace memory: " << already_allocate_trace_memory_;
   if (enable_trace_memory_ && graph_->is_dynamic_shape() && (graph_phase_.find("increment") != std::string::npos)) {
     MS_LOG(DEBUG) << "Enable trace memory for increment inference graph: " << graph_->graph_id()
                   << ", phase: " << graph_phase_;
@@ -1158,15 +1237,54 @@ void SuperKernelActor::RunGraphKernelByKernel(OpContext<KernelTensor> *const con
       MS_LOG(INFO) << "Run failed and early stop to run graph: " << graph_->ToString();
       return;
     }
+  } else if (GraphCaptureManager::GetInstance().GetEnableGraphCapture() && enable_trace_memory_ &&
+             already_allocate_trace_memory_) {
+    MS_LOG(INFO) << "Clear captured graph when execute graph: " << graph_->ToString();
+    GraphCaptureManager::GetInstance().Reset(device_contexts_[0]);
+    FreeTraceMemory();
   }
 
+  device_contexts_[0]->device_res_manager_->BindDeviceToCurrentThread(false);
+  // 3. Launch all kernels by execution order.
   if (ActorDispatcher::enable_parallel_dispatch_kernel_for_cur_actor_set()) {
     ParallelDispatchKernels(context);
   } else {
-    // 3. Launch all kernels by execution order in kernel graph.
-    if (!LaunchAllKernels(context)) {
-      MS_INTERNAL_EXCEPTION(RuntimeError)
-        << "Launch kernels by execution order failed for graph: " << graph_->ToString();
+    bool need_capture_graph = enable_capture_graph_ && !GraphCaptureManager::GetInstance().HasCapturedGraph() &&
+                              ActorDispatcher::enable_static_shape();
+    bool need_replay_graph = enable_capture_graph_ && GraphCaptureManager::GetInstance().HasCapturedGraph() &&
+                             ActorDispatcher::enable_static_shape();
+
+    if (!need_capture_graph && !need_replay_graph) {
+      if (!LaunchAllKernels(context)) {
+        MS_INTERNAL_EXCEPTION(RuntimeError)
+          << "Launch kernels by execution order failed for graph: " << graph_->ToString();
+      }
+    } else if (need_capture_graph) {
+      GraphCaptureManager::GetInstance().FetchAllInputsBeforeCaptureGraph(context, 0, kernel_actors_,
+                                                                          &memory_free_lists_);
+      if (!GraphCaptureManager::GetInstance().LaunchAllKernelsWithCapture(context, kernel_actors_, this)) {
+        MS_INTERNAL_EXCEPTION(RuntimeError)
+          << "Launch kernels with capture graph failed for graph: " << graph_->ToString();
+      }
+    } else if (need_replay_graph) {
+      ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kGraphLaunch, GetAID().Name(), false);
+      auto result = std::async(std::launch::async, [this]() {
+        return GraphCaptureManager::GetInstance().CheckWeightAndKVCacheNotChange(static_cast<size_t>(0));
+      });
+      GraphCaptureManager::GetInstance().UpdateFixAddressBeforeReplayGraph(0, &memory_free_lists_);
+      if (!GraphCaptureManager::GetInstance().LaunchAllKernelsWithReplayGraph(context, kernel_actors_, this)) {
+        MS_INTERNAL_EXCEPTION(RuntimeError) << "Replay graph failed for graph: " << graph_->ToString();
+      }
+      try {
+        result.get();
+      } catch (const std::exception &e) {
+        if (context->error_info_.empty()) {
+          MsException::Instance().SetException();
+          std::string error_info = "Check failed graph[" + std::to_string(graph_->graph_id()) +
+                                   "] kernel by kernel failed, exception: " + e.what();
+          SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
+        }
+      }
     }
   }
 
@@ -1188,7 +1306,9 @@ void SuperKernelActor::RunGraphKernelByKernel(OpContext<KernelTensor> *const con
 
   if (ActorDispatcher::enable_use_trace_memory()) {
     // Free block memory for use trace memory (run by static shape) step.
-    FreeTraceMemory();
+    if (!GraphCaptureManager::GetInstance().GetEnableGraphCapture()) {
+      FreeTraceMemory();
+    }
   }
 
   // Free input data for use trace memory (run by static shape) step.
@@ -1540,6 +1660,21 @@ void SuperKernelActor::BuildAndLinkKernelActors() {
     if (enable_parallel_dispatch_) {
       PartitionParallelDispatchKernels();
     }
+
+    enable_capture_graph_ = GraphCaptureManager::GetInstance().GetEnableGraphCapture() &&
+                            (graph_phase_.find("increment") != std::string::npos) && enable_trace_memory_ &&
+                            graph_->is_dynamic_shape();
+    if (enable_capture_graph_) {
+      auto ret =
+        GraphCaptureManager::GetInstance().FindSupportCaptureKernelPositions(kernel_actors_, device_contexts_[0]);
+      if (ret) {
+        MS_LOG(INFO) << "Enable acl graph for graph: " << graph_->ToString() << ", phase: " << graph_phase_;
+        GraphCaptureManager::GetInstance().Initialize(device_contexts_[0]);
+      } else {
+        GraphCaptureManager::GetInstance().SetEnableGraphCapture(false);
+        enable_capture_graph_ = false;
+      }
+    }
   }
 }
 
@@ -1751,6 +1886,7 @@ void SuperKernelActor::BuildKernelActors() {
       const_cast<device::DeviceContext *>(device::FetchRealDeviceContext(kernel, device_contexts_[0]));
     MS_EXCEPTION_IF_NULL(real_device_context);
     KernelAsyncLaunchActor::GetInstance()->AddDeviceContext(real_device_context);
+    RuntimePipeline::GetInstance().AddDeviceContext(real_device_context);
     if (IsRpcActor(kernel)) {
       MS_LOG(EXCEPTION) << "Can not launch a sub graph which contains rpc kernel by kbk.";
     } else if (IsInnerControlFlowActor(kernel)) {
@@ -2278,8 +2414,8 @@ void SuperKernelActor::LinkKernelActors() {
     }
   }
 
-  // 3. Check input parameter(not persist tensor) as graph output case, need increase the parameter use count for output
-  // parameter.
+  // 3. Check input parameter(not persist tensor) as graph output case, need increase the parameter use count for
+  // output parameter.
   for (const auto &item : output_node_to_actor_output_index) {
     const auto &output_param = item.first;
     MS_EXCEPTION_IF_NULL(output_param);

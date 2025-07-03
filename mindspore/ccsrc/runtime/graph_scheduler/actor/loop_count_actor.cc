@@ -55,12 +55,12 @@ void LoopCountActor::IncreaseLoopCount(OpContext<KernelTensor> *const context) {
 
   total_running_count_++;
   current_count_++;
-  MS_LOG(INFO) << "Loop count actor(" << GetAID().Name() << ") running, loop count: " << loop_count_
-               << ", current count: " << current_count_ << ", total running count: " << total_running_count_;
   if (!WaitRuntimePipelineFinish(context, GetAID().Name())) {
     MS_LOG(INFO) << "Run graph failed and please check error log.";
     return;
   }
+  MS_LOG(INFO) << "Loop count actor(" << GetAID().Name() << ") running, loop count: " << loop_count_
+               << ", current count: " << current_count_ << ", total running count: " << total_running_count_;
 
   static auto &process = Process::GetInstance();
   process.CheckCommOrderIteration(total_running_count_);

@@ -95,6 +95,9 @@ class SuperKernelActor : public DebugAwareActor {
   const std::vector<KernelRunnerPtr> &kernel_actors() const { return kernel_actors_; }
   const std::vector<size_t> &input_param_static_use_cnt() const { return input_params_use_cnt_; }
   const std::vector<bool> &is_input_used() const { return is_input_used_; }
+
+  bool LaunchKernel(OpContext<KernelTensor> *const context, const KernelRunnerPtr &kernel_actor, bool sync_run = false);
+
   bool enable_kbk_sub_graph_execute() const { return enable_kbk_sub_graph_execute_; }
 
   bool enable_inline_control_flow() const { return enable_inline_control_flow_; }
@@ -192,6 +195,12 @@ class SuperKernelActor : public DebugAwareActor {
   // Launch all kernels by execution order in kernel graph: graph_.
   bool LaunchAllKernels(OpContext<KernelTensor> *const context);
 
+  // Async launch a kernel by debug mode or high performance mode.
+  void AsyncLaunchKernelByCondition(OpContext<KernelTensor> *const context, KernelRunner *kernel_actor);
+
+  // Sync dispatch a kernel, including infer/resize/launch.
+  void SyncDispatchKernel(OpContext<KernelTensor> *const context, KernelRunner *kernel_actor);
+
   void TrackInputMemory();
 
   void FetchParameterInput(const KernelRunnerPtr &kernel_actor, OpContext<KernelTensor> *const context,
@@ -274,6 +283,9 @@ class SuperKernelActor : public DebugAwareActor {
   std::vector<std::vector<KernelRunnerPtr>> parallel_launch_kernels_;
   std::vector<KernelRunnerPtr> serial_launch_kernels_;
   HashMap<KernelRunner *, std::vector<DeviceEventPtr>> serial_launch_kernels_to_events_;
+
+  bool enable_capture_graph_{false};
+  static bool already_allocate_trace_memory_;
 
   static size_t parallel_dispatch_num_;
   static size_t parallel_slice_num_;

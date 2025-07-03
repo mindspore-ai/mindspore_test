@@ -22,11 +22,13 @@
 #include <limits>
 
 #include "runtime/device/res_manager/hal_res_manager.h"
+#include "runtime/graph_scheduler/pipeline/runtime_pipeline.h"
 #include "runtime/graph_scheduler/actor/memory_manager_actor.h"
 #include "runtime/graph_scheduler/actor/output_actor.h"
 #include "runtime/graph_scheduler/actor/recorder_actor.h"
 #include "runtime/graph_scheduler/actor/debug_actor.h"
 #include "runtime/graph_scheduler/execution_order_check/kernel_cache.h"
+#include "runtime/graph_scheduler/graph_capture/graph_capture_manager.h"
 #include "async/async.h"
 #include "utils/log_adapter.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
@@ -52,7 +54,8 @@ void CheckDryRun(const CNodePtr &kernel_) {
   static auto enabled_profile = common::GetCompileConfig("COMPILE_PROFILE") == "1";
   if (is_dry_run_mode && !enabled_profile) {
     MS_LOG_WITH_NODE(EXCEPTION, kernel_)
-      << "The dry run mode can not support dynamic shape graph which contains value depend or computing depend kernel:"
+      << "The dry run mode can not support dynamic shape graph which contains value depend or computing depend "
+         "kernel:"
       << kernel_->fullname_with_scope()
       << ", launch kernel is skipped for dry run mode, which leads to fail to GetValue for infer "
          "shape of these value depend or computing depend kernel. You can only simulate compile graph and not do "
@@ -499,8 +502,8 @@ void KernelRunner::InitOutputInfo() {
 
 void KernelRunner::InitWorkspaceInfo() {
   MS_EXCEPTION_IF_NULL(kernel_info_);
-  // The size of workspace maybe changed in dynamic shape, so put workspace_address in the end of memory_alloc_list_ and
-  // memory_free_list_, for the operation of dynamic_shape condition in FetchWorkspaceDeviceTensor.
+  // The size of workspace maybe changed in dynamic shape, so put workspace_address in the end of memory_alloc_list_
+  // and memory_free_list_, for the operation of dynamic_shape condition in FetchWorkspaceDeviceTensor.
   const auto &workspace_kernel_tensor_list = kernel_info_->workspace_kernel_tensor_list();
   const auto &somas_workspace = kernel_info_->somas_workspace_result();
   bool workspace_need_somas = false;
@@ -807,14 +810,20 @@ void *KernelRunner::GetSomasDevicePtr(size_t offset) const {
 }
 
 void KernelRunner::TraceDynamicMemory() {
+  bool enable_capture_graph = GraphCaptureManager::GetInstance().GetEnableGraphCapture();
   for (size_t i = 0; i < output_kernel_tensors_.size(); i++) {
     const auto &kernel_tensor = output_kernel_tensors_[i];
-    if (!is_output_kernel_[i] && kernel_tensor->pointer_ref_count()->new_ref_count() != SIZE_MAX) {
-      MemoryTraceManager::GetInstance().AddKernelMemoryTraceBlock(
-        std::make_shared<KernelMemoryTraceBlock>(kernel_, kernel_tensor->device_ptr(), kernel_tensor->size(),
-                                                 kOutputMem, i, kernel_tensor.get()),
-        device_contexts_[0]);
+    // If enable kernel launch capture, the kernel output as graph output will be captured and can not changed, so need
+    // trace the graph output kernel tensor device address, which device memory will be allocated and released with the
+    // whole graph.
+    if ((is_output_kernel_[i] && !enable_capture_graph) ||
+        kernel_tensor->pointer_ref_count()->new_ref_count() == SIZE_MAX) {
+      continue;
     }
+    MemoryTraceManager::GetInstance().AddKernelMemoryTraceBlock(
+      std::make_shared<KernelMemoryTraceBlock>(kernel_, kernel_tensor->device_ptr(), kernel_tensor->size(), kOutputMem,
+                                               i, kernel_tensor.get()),
+      device_contexts_[0]);
   }
 
   for (size_t i = 0; i < workspace_kernel_tensors_.size(); i++) {
@@ -1165,7 +1174,14 @@ void KernelRunner::ExecuteInferShapeTask(OpContext<KernelTensor> *const context,
     InferShape();
   }
 
-  Async(kernel_async_resize_aid_, &KernelAsyncResizeActor::ResizeKernelModV2, context, this, high_perf);
+  if (EnableRuntimeNewPipeline()) {
+    auto resize_task = [context, this, high_perf]() {
+      KernelAsyncResizeActor::GetInstance()->ResizeKernelModV2(context, this, high_perf);
+    };
+    RuntimePipeline::GetInstance().resize_queue()->Push(std::move(resize_task));
+  } else {
+    Async(kernel_async_resize_aid_, &KernelAsyncResizeActor::ResizeKernelModV2, context, this, high_perf);
+  }
 }
 
 void KernelRunner::ExecuteResizeKernelModTask(OpContext<KernelTensor> *const context, bool high_perf) {
@@ -1195,9 +1211,19 @@ void KernelRunner::ExecuteResizeKernelModTask(OpContext<KernelTensor> *const con
   }
 
   if (high_perf) {
-    Async(kernel_async_launch_aid_, &KernelAsyncLaunchActor::LaunchKernelV2HP, context, this);
+    if (EnableRuntimeNewPipeline()) {
+      auto launch_task = [context, this]() { KernelAsyncLaunchActor::GetInstance()->LaunchKernelV2HP(context, this); };
+      RuntimePipeline::GetInstance().launch_queue()->Push(std::move(launch_task));
+    } else {
+      Async(kernel_async_launch_aid_, &KernelAsyncLaunchActor::LaunchKernelV2HP, context, this);
+    }
   } else {
-    Async(kernel_async_launch_aid_, &KernelAsyncLaunchActor::LaunchKernelV2, context, this);
+    if (EnableRuntimeNewPipeline()) {
+      auto launch_task = [context, this]() { KernelAsyncLaunchActor::GetInstance()->LaunchKernelV2(context, this); };
+      RuntimePipeline::GetInstance().launch_queue()->Push(std::move(launch_task));
+    } else {
+      Async(kernel_async_launch_aid_, &KernelAsyncLaunchActor::LaunchKernelV2, context, this);
+    }
   }
 }
 

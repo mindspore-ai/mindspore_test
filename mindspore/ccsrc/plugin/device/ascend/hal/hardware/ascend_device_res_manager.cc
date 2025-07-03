@@ -446,6 +446,11 @@ DeviceEventPtr AscendDeviceResManager::CreateRuntimeEvent(bool enable_blocking, 
   return ascend_res_manager_->CreateRuntimeEvent(enable_blocking, enable_record_wait);
 }
 
+CaptureGraphPtr AscendDeviceResManager::CreateCaptureGraph() {
+  MS_EXCEPTION_IF_NULL(ascend_res_manager_);
+  return ascend_res_manager_->CreateCaptureGraph();
+}
+
 DeviceEventPtr AscendDeviceResManager::CreateEventWithFlag(bool enable_timing, bool blocking,
                                                            bool use_extensional_api) {
   MS_EXCEPTION_IF_NULL(ascend_res_manager_);

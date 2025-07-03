@@ -490,6 +490,8 @@ bool EnableAsyncInfer();
 
 bool EnableTraceMemory();
 
+void ResetPipelineStatus();
+void ResetTraceMemoryStatus();
 void ResetPipelineAndTraceMemoryStatus();
 
 // Kernel by kernel sub graph execute mode need not send actor message by kernel actor, just launch all kernels in
@@ -507,6 +509,11 @@ bool EnableRuntimePipeline();
 
 bool EnableParallelDispatchKernel();
 
+inline bool EnableRuntimeNewPipeline() {
+  static bool disable_new_pipeline = common::IsDisableRuntimeConfig("new_pipeline");
+  return !disable_new_pipeline;
+}
+
 // If enable async launch kernel, wait all kernels launch task finish.
 // If enable infer->resize->launch pipeline, also wait all infer, resize and launch task finish.
 bool WaitRuntimePipelineFinish(const OpContext<KernelTensor> *context, const std::string &name,
@@ -516,6 +523,9 @@ size_t GetDefragMemoryStepFreq();
 
 // Copy data from src_device_tensor to dst_device_tensor.
 bool Copy(const DeviceTensor *dst_device_tensor, const DeviceTensor *src_device_tensor);
+
+bool AsyncCopy(const DeviceTensor *dst_device_tensor, const DeviceTensor *src_device_tensor,
+               size_t stream_id = SIZE_MAX);
 
 void FreeMemoryByDeviceContext(DeviceTensor *const device_tensor, const DeviceContext *device_context);
 // The memory free for the pynative bprop graph which is managed by the value node.

@@ -231,4 +231,34 @@ ActorThreadPool *ActorThreadPool::CreateThreadPool(size_t thread_num) {
   }
   return pool;
 }
+
+#if defined(__linux__)
+int ActorThreadPool::GetActorWorkerThreads(std::vector<pthread_t> *threads) const {
+#if defined(BIND_CORE) && !defined(__ANDROID__)
+  if (threads == nullptr) {
+    THREAD_ERROR("The input parameter threads is nullptr.");
+    return THREAD_ERROR;
+  }
+  size_t actor_num = actor_thread_num();
+  size_t count = 0;
+  for (auto &worker : workers_) {
+    if (dynamic_cast<ActorWorker *>(worker) == nullptr) {
+      continue;
+    }
+
+    threads->push_back(worker->handle());
+    count++;
+
+    if (count == actor_num) {
+      break;
+    }
+  }
+
+  return THREAD_OK;
+#else
+  THREAD_ERROR("Not implemented error.");
+  return THREAD_ERROR;
+#endif
+}
+#endif
 }  // namespace mindspore

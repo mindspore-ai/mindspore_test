@@ -19,6 +19,7 @@
 #include <string>
 #include "runtime/graph_scheduler/device_tensor_copy_store.h"
 #include "runtime/graph_scheduler/actor/actor_common.h"
+#include "runtime/graph_scheduler/graph_capture/graph_capture_manager.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "utils/ms_context.h"
 #include "utils/llm_manager.h"
@@ -207,14 +208,17 @@ bool GraphParameterStore::RecordGraphInputsAndIsDyn(const std::vector<size_t> &i
                                                     const std::vector<ParameterPtr> &parameters) {
   bool isDyn = false;
   auto &llm_manager = LLMManager::GetInstance();
+  auto enable_capture_graph = GraphCaptureManager::GetInstance().GetEnableGraphCapture();
   for (size_t l = 0; l < input_index.size(); ++l) {
     auto i = input_index[l];
     auto origin_parameter = parameters[l];
     MS_EXCEPTION_IF_NULL(origin_parameter);
     auto buffer_inner_size = buffers_[i].size();
     // List tensor input do not compare shape.
-    if (buffer_inner_size != 1) {
-      continue;
+    if (!enable_capture_graph) {
+      if (buffer_inner_size != 1) {
+        continue;
+      }
     }
     const auto &input_tensor = buffers_[i][0];
     if (input_tensor == nullptr) {
