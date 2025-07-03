@@ -296,13 +296,13 @@ FuncGraphPtr ExecutorPy::GetFuncGraph(const std::string &phase) {
 }
 
 void ExecutorPy::SetJitPrimalFuncGraph(const FuncGraphPtr &primal_func_graph, const std::string &phase) {
+  MS_EXCEPTION_IF_NULL(primal_func_graph);
   const auto it = info_.find(phase);
   if (it == info_.end()) {
     MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, primal_func_graph->return_node())
       << "No executor info. found for phase: " << phase;
     return;
   }
-  MS_EXCEPTION_IF_NULL(primal_func_graph);
   it->second->jit_primal_func_graph = primal_func_graph;
 }
 
@@ -325,6 +325,7 @@ FuncGraphPtr ExecutorPy::GetJitGradGraph(const std::string &phase) {
 }
 
 void ExecutorPy::SetJitGradGraph(const FuncGraphPtr &grad_graph, const std::string &phase) {
+  MS_EXCEPTION_IF_NULL(grad_graph);
   const auto it = info_.find(phase);
   if (it == info_.end()) {
     MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, grad_graph->return_node()) << "No executor info. found for phase: " << phase;
@@ -333,7 +334,6 @@ void ExecutorPy::SetJitGradGraph(const FuncGraphPtr &grad_graph, const std::stri
   if (it->second->jit_grad_graph != nullptr) {
     MS_LOG(DEBUG) << "The grad graph has existed, phase is: " << phase;
   }
-  MS_EXCEPTION_IF_NULL(grad_graph);
   it->second->jit_grad_graph = grad_graph;
 }
 

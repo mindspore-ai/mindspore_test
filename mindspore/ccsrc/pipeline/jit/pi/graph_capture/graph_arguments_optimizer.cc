@@ -39,11 +39,11 @@ GraphArgumentOptimizerPtr GraphArgumentOptimizer::GetNewInstance(Graph *graph) {
 }
 
 void GraphArgumentOptimizer::Run(const std::vector<ValueNode *> &outputs) {
+  MS_EXCEPTION_IF_NULL(graph_);
   if (outputs.empty()) {
     MS_LOG(INFO) << "No output set for graph " << graph_->GetCodeName();
     return;
   }
-  MS_EXCEPTION_IF_NULL(graph_);
   const auto &builder = graph_->func_graph_builder();
   MS_EXCEPTION_IF_NULL(builder);
   auto func_graph = builder->graph();
