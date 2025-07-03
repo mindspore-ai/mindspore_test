@@ -594,7 +594,7 @@ std::string Tensor::DataToString(bool use_comma) const {
   return GetTensorDataString(data_type_, shape_, device_sync_->GetMutablePtr(), DataSize(), DataDim(), use_comma);
 }
 
-void *Tensor::unsafe_data() {
+const void *Tensor::unsafe_data() const {
   if (device_sync_ == nullptr) {
     return nullptr;
   }
