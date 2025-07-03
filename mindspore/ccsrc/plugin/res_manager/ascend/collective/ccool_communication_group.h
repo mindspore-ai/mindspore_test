@@ -65,10 +65,10 @@ class CcoolCommunicationGroup : public CommunicationGroup {
   std::vector<uint32_t> inner_cluster_ranks_, inter_cluster_ranks_;
 
   // HCCL communication domain information
-  uint32_t hccl_rank_id_;
+  uint32_t hccl_rank_id_{0};
   CommunicationGroupPtr hccl_group_;
-  void *hccl_root_info_;
-  size_t hccl_root_info_size_;
+  void *hccl_root_info_{nullptr};
+  size_t hccl_root_info_size_{0};
 
   // rank connection information
   std::map<uint32_t, LeaperConnInfo> rank_conn_info_map_;
@@ -76,7 +76,7 @@ class CcoolCommunicationGroup : public CommunicationGroup {
 
   // host comm lib support
   std::string host_group_name_;
-  CollectiveCommunicationLib *host_comm_lib_instance_;
+  CollectiveCommunicationLib *host_comm_lib_instance_{nullptr};
 };
 using CcoolCommunicationGroupPtr = std::shared_ptr<CcoolCommunicationGroup>;
 }  // namespace ascend

@@ -93,6 +93,7 @@ bool TrtConverterContext::Serialize(std::string *model) {
   MS_EXCEPTION_IF_NULL(engine_);
 
   std::shared_ptr<nvinfer1::IHostMemory> model_data = TrtPtr(engine_->serialize());
+  MS_EXCEPTION_IF_NULL(model_data);
   void *data = model_data->data();
   MS_EXCEPTION_IF_NULL(data);
   *model = string(static_cast<const char *>(data), model_data->size());
