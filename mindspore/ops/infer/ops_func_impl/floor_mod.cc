@@ -57,17 +57,17 @@ TypePtr FloorModFuncImpl::InferType(const PrimitivePtr &primitive,
 
   if (type_x->isa<Complex>() || type_y->isa<Complex>()) {
     if (type_x->type_id() == kNumberTypeComplex64 && type_y->type_id() == kNumberTypeComplex64) {
-      return type_x->Clone();
+      return type_x;
     } else if (type_x->type_id() == kNumberTypeComplex64 && type_y->type_id() == kNumberTypeFloat32) {
-      return type_x->Clone();
+      return type_x;
     } else if (type_x->type_id() == kNumberTypeComplex128 && type_y->type_id() == kNumberTypeComplex128) {
-      return type_x->Clone();
+      return type_x;
     } else if (type_x->type_id() == kNumberTypeComplex128 && type_y->type_id() == kNumberTypeFloat64) {
-      return type_x->Clone();
+      return type_x;
     } else if (type_x->type_id() == kNumberTypeFloat32 && type_y->type_id() == kNumberTypeComplex64) {
-      return type_y->Clone();
+      return type_y;
     } else if (type_x->type_id() == kNumberTypeFloat64 && type_y->type_id() == kNumberTypeComplex128) {
-      return type_y->Clone();
+      return type_y;
     } else {
       MS_EXCEPTION(TypeError)
         << "For '" << op_name

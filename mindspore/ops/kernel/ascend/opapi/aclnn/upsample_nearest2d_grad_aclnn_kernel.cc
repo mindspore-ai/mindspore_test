@@ -44,6 +44,7 @@ std::tuple<std::vector<int64_t>, std::vector<int64_t>, std::tuple<double, double
     scales = inputs[kIndex3]->GetValueWithCheck<std::vector<pyfloat>>();
   }
 
+  MS_ASSERT(scales.size() == kIndex2);
   double scales_h = scales[0];
   double scales_w = scales[1];
 

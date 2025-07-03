@@ -25,9 +25,6 @@ namespace geqrf_cpu {
 namespace {
 constexpr size_t kInputsNum = 1;
 constexpr size_t kOutputsNum = 2;
-constexpr size_t kInputIndex0 = 0;
-constexpr size_t kOutputIdx0 = 0;
-constexpr size_t kOutputIdx1 = 1;
 constexpr int64_t kLastSecond = -2;
 }  // namespace
 
@@ -138,12 +135,12 @@ void GeqrfCpuKernelMod::Geqrf(size_t num_m_, size_t num_n_, T *x, T *tau) {
 template <typename T>
 bool GeqrfCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
                                      const std::vector<kernel::KernelTensor *> &outputs) {
-  MS_EXCEPTION_IF_NULL(inputs[kInputIndex0]);
-  MS_EXCEPTION_IF_NULL(outputs[kOutputIdx0]);
-  MS_EXCEPTION_IF_NULL(outputs[kOutputIdx1]);
-  T *x = static_cast<T *>(inputs[kInputIndex0]->device_ptr());
-  T *y = static_cast<T *>(outputs[kOutputIdx0]->device_ptr());
-  T *tau = static_cast<T *>(outputs[kOutputIdx1]->device_ptr());
+  MS_EXCEPTION_IF_NULL(inputs[kIndex0]);
+  MS_EXCEPTION_IF_NULL(outputs[kIndex0]);
+  MS_EXCEPTION_IF_NULL(outputs[kIndex1]);
+  T *x = GetDeviceAddress<T>(inputs, kIndex0);
+  T *y = GetDeviceAddress<T>(outputs, kIndex0);
+  T *tau = GetDeviceAddress<T>(outputs, kIndex1);
   std::copy(x, x + elem_num, y);
   Geqrf<T>(num_m, num_n, y, tau);
   return true;

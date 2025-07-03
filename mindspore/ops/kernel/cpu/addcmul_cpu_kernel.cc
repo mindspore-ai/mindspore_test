@@ -105,6 +105,13 @@ bool AddcmulCpuKernelMod::AddcmulCompute(const std::vector<KernelTensor *> &inpu
   const auto *input3 = static_cast<T2 *>(inputs[kInputValue]->device_ptr());
   auto *output = static_cast<T1 *>(outputs[kOutputData]->device_ptr());
 
+  if (outputs[kIndex0]->size() > 0) {
+    MS_EXCEPTION_IF_NULL(input0);
+    MS_EXCEPTION_IF_NULL(input1);
+    MS_EXCEPTION_IF_NULL(input2);
+    MS_EXCEPTION_IF_NULL(input3);
+    MS_EXCEPTION_IF_NULL(output);
+  }
   if ((inputx_shape_size_ + inputy_shape_size_ + value_shape_size_ + data_shape_size_) == 0) {
     output[0] = input1[0] * input2[0] * static_cast<T1>(input3[0]) + input0[0];
   } else {

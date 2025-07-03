@@ -166,9 +166,15 @@ bool MaxPoolGradGradCpuKernelMod::Launch(const std::vector<KernelTensor *> &inpu
                                          const std::vector<KernelTensor *> &outputs) {
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kMaxPoolGradGradInputsNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kMaxPoolGradGradOutputsNum, kernel_name_);
+  if (output_elements_ == 0) {
+    return true;
+  }
   auto *input_addr = reinterpret_cast<float *>(inputs[0]->device_ptr());
   auto *grad_addr = reinterpret_cast<float *>(inputs[kGradIndex]->device_ptr());
   auto *dx_addr = reinterpret_cast<float *>(outputs[0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(input_addr);
+  MS_EXCEPTION_IF_NULL(grad_addr);
+  MS_EXCEPTION_IF_NULL(dx_addr);
 
   auto task = [input_addr, grad_addr, dx_addr, this](size_t start, size_t end) {
     auto ret = static_cast<int>(NNACL_OK);

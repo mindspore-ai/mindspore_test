@@ -37,7 +37,7 @@ BaseShapePtr GatherNdFuncImpl::InferShape(const PrimitivePtr &primitive,
 
   auto input_x_rank = input_x_shape.size();
   auto indices_rank = indices_new_shape.size();
-  auto indices_end_value = indices_new_shape[indices_rank - 1];
+  auto indices_end_value = indices_new_shape[indices_rank - kIndex1];
 
   if (indices_end_value == abstract::Shape::kShapeDimAny) {
     return std::make_shared<abstract::TensorShape>(ShapeVector{abstract::Shape::kShapeRankAny});
@@ -49,7 +49,7 @@ BaseShapePtr GatherNdFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                 kGreaterEqual, indices_end_value, primitive));
 
   std::vector<int64_t> output_shape;
-  for (size_t i = 0; i < indices_rank - 1; ++i) {
+  for (size_t i = 0; i < indices_rank - kIndex1; ++i) {
     output_shape.push_back(indices_new_shape[i]);
   }
 

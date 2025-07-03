@@ -47,8 +47,9 @@ std::tuple<std::vector<int64_t>, std::vector<int64_t>, std::tuple<double, double
 
   bool align_corners = inputs[kIndex4]->GetValueWithCheck<bool>();
 
-  double scales_h = scales[0];
-  double scales_w = scales[1];
+  MS_ASSERT(scales.size() == kIndex2);
+  double scales_h = scales[kIndex0];
+  double scales_w = scales[kIndex1];
 
   return std::make_tuple(std::move(input_size), std::move(output_size), std::make_tuple(scales_h, scales_w),
                          align_corners);

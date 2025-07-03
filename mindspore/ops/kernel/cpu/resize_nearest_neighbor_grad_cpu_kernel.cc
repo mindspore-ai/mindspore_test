@@ -101,6 +101,11 @@ void ResizeNearestNeighborGradCpuKernelMod::LaunchKernel(const std::vector<Kerne
                                                          const std::vector<KernelTensor *> &outputs) {
   const auto *dloss_addr = reinterpret_cast<T *>(inputs[0]->device_ptr());
   auto *output_addr = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  if (outputs[0]->size() == 0) {
+    return;
+  }
+  MS_EXCEPTION_IF_NULL(dloss_addr);
+  MS_EXCEPTION_IF_NULL(output_addr);
   auto ret = memset_s(output_addr, outputs[0]->size(), 0, outputs[0]->size());
   if (ret != EOK) {
     MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', output buffer memset failed. Error no: " << ret;

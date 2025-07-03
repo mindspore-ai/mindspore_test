@@ -51,10 +51,10 @@ AvgPool2DGradGenerate(const std::vector<KernelTensor *> &inputs, const std::vect
 void AvgPool2DGradAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                            const std::vector<KernelTensor *> &outputs) {
   auto params = AvgPool2DGradGenerate(inputs, outputs);
-  const auto &kernel_size = std::get<0>(params);
-  const auto &stride = std::get<1>(params);
-  const auto &padding = std::get<2>(params);
-  auto [ceil_mode, count_include_pad, divisor_override, cube_math_type] = std::get<3>(params);
+  const auto &kernel_size = std::get<kIndex0>(params);
+  const auto &stride = std::get<kIndex1>(params);
+  const auto &padding = std::get<kIndex2>(params);
+  auto [ceil_mode, count_include_pad, divisor_override, cube_math_type] = std::get<kIndex3>(params);
   GetWorkspaceForResize(inputs[0], inputs[1], kernel_size, stride, padding, ceil_mode, count_include_pad,
                         divisor_override, cube_math_type, outputs[0]);
 }

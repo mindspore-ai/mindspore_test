@@ -106,9 +106,9 @@ bool BiasAddCpuKernelMod::ComputeNCHW(const T *src_addr, const T *bias_addr, T *
 template <typename T>
 bool BiasAddCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &,
                                        const std::vector<KernelTensor *> &outputs) {
-  const auto *src_addr = reinterpret_cast<T *>(inputs[kIndex0]->device_ptr());
-  const auto *bias_addr = reinterpret_cast<T *>(inputs[kIndex1]->device_ptr());
-  auto *output_addr = reinterpret_cast<T *>(outputs[kIndex0]->device_ptr());
+  const auto *src_addr = GetDeviceAddress<T>(inputs, kIndex0);
+  const auto *bias_addr = GetDeviceAddress<T>(inputs, kIndex1);
+  auto *output_addr = GetDeviceAddress<T>(outputs, kIndex0);
   size_t num_value = 1;
   size_t num_bias = bias_shape_[0];
   for (size_t i = 0; i < input_shape_.size(); ++i) {

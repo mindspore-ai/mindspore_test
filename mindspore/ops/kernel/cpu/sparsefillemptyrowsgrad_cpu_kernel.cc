@@ -89,18 +89,18 @@ int SparseFillEmptyRowsGradCpuKernelMod::Resize(const std::vector<KernelTensor *
 template <typename T>
 bool SparseFillEmptyRowsGradCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
                                                        const std::vector<kernel::KernelTensor *> &outputs) {
-  auto reverse_index_map_ptr = reinterpret_cast<int64_t *>(inputs[0]->device_ptr());
-  auto grad_values_ptr = reinterpret_cast<T *>(inputs[1]->device_ptr());
+  auto reverse_index_map_ptr = GetDeviceAddress<int64_t>(inputs, kIndex0);
+  auto grad_values_ptr = GetDeviceAddress<T>(inputs, kIndex1);
   const int64_t N = reverse_index_map_shape_[0];
   const int64_t N_full = grad_values_shape_[0];
-  auto y_values_ptr = reinterpret_cast<T *>(outputs[kOutput_y_values]->device_ptr());
+  auto y_values_ptr = GetDeviceAddress<T>(outputs, kOutput_y_values);
 
   auto ret1 = memset_s(y_values_ptr, N * sizeof(T), 0, N * sizeof(T));
   if (ret1 != EOK) {
     MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', memset y_values failed!";
   }
   std::vector<bool> visited(N_full, false);
-  auto y_default_value = reinterpret_cast<T *>(outputs[kOutput_y_default_value]->device_ptr());
+  auto y_default_value = GetDeviceAddress<T>(outputs, kOutput_y_default_value);
   *y_default_value = static_cast<T>(0);
   size_t output_size = outputs[0]->size() / sizeof(T);
   auto task = [&](size_t start, size_t end) {

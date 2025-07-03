@@ -154,9 +154,9 @@ bool MaxPool3DGradWithArgmaxCpuKernelMod::LaunchKernel(const std::vector<KernelT
                                                        const std::vector<KernelTensor *> &outputs) {
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kMaxPool3DGradWithArgmaxInputNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kMaxPool3DGradWithArgmaxOutputsNum, kernel_name_);
-  auto input_grads = static_cast<DATA_T *>(inputs[kOne]->device_ptr());
-  auto input_argmax = static_cast<INDICES_T *>(inputs[kTwo]->device_ptr());
-  auto output_y = static_cast<DATA_T *>(outputs[kZero]->device_ptr());
+  auto input_grads = GetDeviceAddress<DATA_T>(inputs, kOne);
+  auto input_argmax = GetDeviceAddress<INDICES_T>(inputs, kTwo);
+  auto output_y = GetDeviceAddress<DATA_T>(outputs, kZero);
 
   size_t input_grads_len = inputs[kOne]->size() / sizeof(DATA_T);
   size_t input_argmax_len = inputs[kTwo]->size() / sizeof(INDICES_T);

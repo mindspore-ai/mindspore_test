@@ -161,17 +161,17 @@ bool SparseApplyCenteredRMSPropCpuKernelMod::LaunchKernel(const std::vector<kern
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kSparseApplyCenteredRMSPropInputsNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kSparseApplyCenteredRMSPropOutputsNum, kernel_name_);
 
-  auto var = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  auto mg = reinterpret_cast<T *>(inputs[1]->device_ptr());
-  auto ms = reinterpret_cast<T *>(inputs[2]->device_ptr());
-  auto mom = reinterpret_cast<T *>(inputs[3]->device_ptr());
-  auto lr_scalar = reinterpret_cast<T *>(inputs[4]->device_ptr())[0];
-  auto rho_scalar = reinterpret_cast<T *>(inputs[5]->device_ptr())[0];
-  auto momentum_scalar = reinterpret_cast<T *>(inputs[6]->device_ptr())[0];
-  auto epsilon_scalar = reinterpret_cast<T *>(inputs[7]->device_ptr())[0];
-  auto grad = reinterpret_cast<T *>(inputs[8]->device_ptr());
-  auto indices = reinterpret_cast<I *>(inputs[9]->device_ptr());
-  auto output = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  auto var = GetDeviceAddress<T>(inputs, kIndex0);
+  auto mg = GetDeviceAddress<T>(inputs, kIndex1);
+  auto ms = GetDeviceAddress<T>(inputs, kIndex2);
+  auto mom = GetDeviceAddress<T>(inputs, kIndex3);
+  auto lr_scalar = GetDeviceAddress<T>(inputs, kIndex4)[0];
+  auto rho_scalar = GetDeviceAddress<T>(inputs, kIndex5)[0];
+  auto momentum_scalar = GetDeviceAddress<T>(inputs, kIndex6)[0];
+  auto epsilon_scalar = GetDeviceAddress<T>(inputs, kIndex7)[0];
+  auto grad = GetDeviceAddress<T>(inputs, kIndex8);
+  auto indices = GetDeviceAddress<I>(inputs, kIndex9);
+  auto output = GetDeviceAddress<T>(outputs, kIndex0);
   for (size_t i = 0; i < indices_size_; ++i) {
     I index = indices[i];
     if (index < 0 || LongToSize(index) >= var_first_dim_size_) {

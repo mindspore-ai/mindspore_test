@@ -56,8 +56,8 @@ template <typename T>
 bool EpsCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
                                    const std::vector<kernel::KernelTensor *> &,
                                    const std::vector<kernel::KernelTensor *> &outputs) {
-  auto input = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  auto output = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  auto input = GetDeviceAddress<T>(inputs, kIndex0);
+  auto output = GetDeviceAddress<T>(outputs, kIndex0);
   MS_EXCEPTION_IF_NULL(input);
   MS_EXCEPTION_IF_NULL(output);
   size_t output_size = outputs[0]->size() / sizeof(T);

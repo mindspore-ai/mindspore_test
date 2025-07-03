@@ -56,13 +56,17 @@ bool HammingWindowCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &
                                              const std::vector<KernelTensor *> &outputs) const {
   auto *length_addr = static_cast<T *>(inputs[0]->device_ptr());
   auto *output = static_cast<S *>(outputs[0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(length_addr);
   int64_t window_length_ = static_cast<int64_t>(*length_addr);
   if (window_length_ < 0) {
     MS_EXCEPTION(ValueError) << "For '" << kernel_name_ << "', the value of input 'length' cannot be negative, but got "
                              << window_length_;
-  } else if (window_length_ == 0) {
+  }
+  if (window_length_ == 0) {
     return true;
-  } else if (window_length_ == 1) {
+  }
+  MS_EXCEPTION_IF_NULL(output);
+  if (window_length_ == 1) {
     *output = S{1};
     return true;
   }

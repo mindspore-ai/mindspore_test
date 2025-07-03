@@ -86,9 +86,9 @@ int IOUCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const std
 template <typename T>
 bool IOUCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
                                    const std::vector<kernel::KernelTensor *> &outputs) {
-  auto anchor_boxes = reinterpret_cast<T *>(inputs[ANCHOR_BOXES]->device_ptr());
-  auto gt_boxes = reinterpret_cast<T *>(inputs[GT_BOXES]->device_ptr());
-  auto iou_score = reinterpret_cast<T *>(outputs[IOU_VALUE]->device_ptr());
+  auto anchor_boxes = GetDeviceAddress<T>(inputs, ANCHOR_BOXES);
+  auto gt_boxes = GetDeviceAddress<T>(inputs, GT_BOXES);
+  auto iou_score = GetDeviceAddress<T>(outputs, IOU_VALUE);
 
   // multithreading
   auto task = [&anchor_boxes, &gt_boxes, &iou_score, this](size_t start, size_t end) {

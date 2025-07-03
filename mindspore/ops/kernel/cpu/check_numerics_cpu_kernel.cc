@@ -64,8 +64,8 @@ void CheckNumericsCpuKernelMod::CheckNanOrInf(T value) const {
 template <typename T>
 void CheckNumericsCpuKernelMod::LaunchKernelFloat(const std::vector<KernelTensor *> &inputs,
                                                   const std::vector<kernel::KernelTensor *> &outputs) {
-  T *input = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  auto *output = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  T *input = GetDeviceAddress<T>(inputs, kIndex0);
+  auto *output = GetDeviceAddress<T>(outputs, kIndex0);
   size_t elem_num = inputs[0]->size() / sizeof(T);
 
   auto task = [&](size_t start, size_t end) {

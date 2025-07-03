@@ -127,7 +127,9 @@ bool ResizeV2GradCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                     const std::vector<KernelTensor *> &outputs) {
   std::string coordinate_transformation_mode =
     GetValue<std::string>(primitive_->GetAttr("coordinate_transformation_mode"));
-  if (coordinate_transformation_mode == "align_corners") align_corners_ = true;
+  if (coordinate_transformation_mode == "align_corners") {
+    align_corners_ = true;
+  }
   mode_ = GetValue<std::string>(primitive_->GetAttr(ops::kMode));
   if (mode_ != "nearest" && mode_ != "linear" && mode_ != "cubic") {
     MS_LOG(ERROR) << "For '" << kernel_name_ << "', mode: " << mode_ << " not support now.";
@@ -175,18 +177,17 @@ template <typename T>
 bool ResizeV2GradCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                             const std::vector<KernelTensor *> &,
                                             const std::vector<KernelTensor *> &outputs) {
-  T *input_addr = static_cast<T *>(inputs[kIndex0]->device_ptr());
-  T *output_addr = static_cast<T *>(outputs[kIndex0]->device_ptr());
+  T *input_addr = GetDeviceAddress<T>(inputs, kIndex0);
+  T *output_addr = GetDeviceAddress<T>(outputs, kIndex0);
   MS_ERROR_IF_NULL_W_RET_VAL(input_addr, false);
   MS_ERROR_IF_NULL_W_RET_VAL(output_addr, false);
-  auto original_size = inputs[kIndex3];
   if (sizes_dtype_ == kNumberTypeInt64) {
-    int64_t *sizes_data = static_cast<int64_t *>(original_size->device_ptr());
+    int64_t *sizes_data = GetDeviceAddress<int64_t>(inputs, kIndex3);
     MS_ERROR_IF_NULL_W_RET_VAL(sizes_data, false);
     out_height_ = LongToSize(sizes_data[kIndex2]);
     out_width_ = LongToSize(sizes_data[kIndex3]);
   } else {
-    int32_t *sizes_data = static_cast<int32_t *>(original_size->device_ptr());
+    int32_t *sizes_data = GetDeviceAddress<int32_t>(inputs, kIndex3);
     MS_ERROR_IF_NULL_W_RET_VAL(sizes_data, false);
     std::vector<int64_t> sizes_v;
     sizes_v.push_back(static_cast<int64_t>(sizes_data[kIndex2]));
@@ -228,8 +229,8 @@ bool ResizeV2GradCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &i
 template <typename T>
 bool ResizeV2GradCpuKernelMod::LaunchKernelByNearest(const std::vector<kernel::KernelTensor *> &inputs,
                                                      const std::vector<kernel::KernelTensor *> &outputs) {
-  T *input_addr = static_cast<T *>(inputs[kIndex0]->device_ptr());
-  T *output_addr = static_cast<T *>(outputs[kIndex0]->device_ptr());
+  T *input_addr = GetDeviceAddress<T>(inputs, kIndex0);
+  T *output_addr = GetDeviceAddress<T>(outputs, kIndex0);
 
   if (memset_s(output_addr, outputs[kIndex0]->size(), 0, outputs[kIndex0]->size()) != EOK) {
     MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', output buffer memset failed.";
@@ -252,8 +253,8 @@ bool ResizeV2GradCpuKernelMod::LaunchKernelByNearest(const std::vector<kernel::K
 template <typename T>
 bool ResizeV2GradCpuKernelMod::LaunchKernelByLinear(const std::vector<kernel::KernelTensor *> &inputs,
                                                     const std::vector<kernel::KernelTensor *> &outputs) {
-  T *input_addr = static_cast<T *>(inputs[kIndex0]->device_ptr());
-  T *output_addr = static_cast<T *>(outputs[kIndex0]->device_ptr());
+  T *input_addr = GetDeviceAddress<T>(inputs, kIndex0);
+  T *output_addr = GetDeviceAddress<T>(outputs, kIndex0);
 
   if (memset_s(output_addr, outputs[kIndex0]->size(), 0, outputs[kIndex0]->size()) != EOK) {
     MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', output buffer memset failed.";
@@ -325,8 +326,8 @@ static void BicubicGeneralComputeHelper(T *in, float *out, std::vector<size_t> x
 template <typename T>
 bool ResizeV2GradCpuKernelMod::LaunchKernelByCubic(const std::vector<kernel::KernelTensor *> &inputs,
                                                    const std::vector<kernel::KernelTensor *> &outputs) {
-  T *input_addr = static_cast<T *>(inputs[kIndex0]->device_ptr());
-  T *output_addr = static_cast<T *>(outputs[kIndex0]->device_ptr());
+  T *input_addr = GetDeviceAddress<T>(inputs, kIndex0);
+  T *output_addr = GetDeviceAddress<T>(outputs, kIndex0);
 
   size_t n = channels_ * out_hw_size_;
   float *out_temp = new float[n];

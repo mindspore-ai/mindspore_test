@@ -26,7 +26,7 @@ namespace mindspore {
 namespace ops {
 BaseShapePtr HSigmoidFuncImpl::InferShape(const PrimitivePtr &primitive,
                                           const std::vector<AbstractBasePtr> &input_args) const {
-  return input_args[0]->GetShape()->Clone();
+  return input_args[kIndex0]->GetShape()->Clone();
 }
 
 TypePtr HSigmoidFuncImpl::InferType(const PrimitivePtr &primitive,
