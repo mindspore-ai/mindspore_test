@@ -1,13 +1,11 @@
 approvers:
 - limingqi107 #
-- ZPaC
+- yuchaojie
+- hbhu_bin
 - zyli2020
-- wilfchen
-- laiyongqiang
 - guoqi1024
-- baochong
-- kingxian
-- zhaizhiqiang
+
+reviewers:
 
 options:
     no_parent_owners: true

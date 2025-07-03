@@ -1,5 +1,7 @@
 approvers:
 - limingqi107 #
 - yuchaojie
-- reku1997
 - hbhu_bin
+
+options:
+    no_parent_owners: true

@@ -14,3 +14,6 @@ reviewers:
 - yide12
 - heryshi1
 - guozhibin
+
+options:
+    no_parent_owners: true

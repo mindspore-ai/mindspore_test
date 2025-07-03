@@ -3,3 +3,6 @@ approvers:
 - wangchao285
 - kun_8
 - DavidFFFan
+
+options:
+    no_parent_owners: true

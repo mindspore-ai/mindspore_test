@@ -9,3 +9,6 @@ reviewers:
 - lanzhineng
 - shuqian0
 - yuanqi1104
+
+options:
+    no_parent_owners: true

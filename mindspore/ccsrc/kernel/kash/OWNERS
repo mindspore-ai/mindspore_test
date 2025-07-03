@@ -3,6 +3,7 @@ approvers:
 - ckey_dou
 - dayschan
 - anyrenwei
+- zichun_ye
 
 options:
     no_parent_owners: true

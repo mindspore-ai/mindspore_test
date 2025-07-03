@@ -2,6 +2,7 @@ approvers:
 - jjfeing
 - yuchaojie #
 - kisnwang
-- laiyongqiang
 - HulkTang
 
+options:
+    no_parent_owners: true

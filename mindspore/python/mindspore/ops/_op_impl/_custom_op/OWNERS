@@ -3,3 +3,6 @@ approvers:
 - yangzhenzhang
 - yao_yf
 - kisnwang
+
+options:
+    no_parent_owners: true
