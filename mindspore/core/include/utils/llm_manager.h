@@ -53,10 +53,34 @@ class MS_CORE_API LLMManager {
 
   void Clear();
 
+  template <typename T1, typename T2>
+  bool GetGraphInputToVector(const std::string &tensor_name, std::vector<T2> *output) {
+    auto in_tensor = get_graph_input(tensor_name);
+    if (in_tensor == nullptr) {
+      output->clear();
+      return false;
+    }
+    // then use graph_input tensor value to set seq_len if saved
+    auto in_tensor_data = static_cast<T1 *>(in_tensor->data());
+    if (in_tensor_data == nullptr) {
+      output->clear();
+      return false;
+    }
+    auto in_tensor_data_num = in_tensor->size();
+    output->resize(in_tensor_data_num);
+
+    for (ssize_t i = 0; i < in_tensor_data_num; i++) {
+      (*output)[i] = static_cast<T2>(in_tensor_data[i]);
+    }
+
+    return true;
+  }
+
  private:
   bool force_resize_kernel_{false};
   std::map<std::string, tensor::TensorDataPtr> graph_inputs_map_;
   std::set<std::string> force_resize_kernel_set_{};
 };
+
 }  // namespace mindspore
 #endif  // MINDSPORE_CORE_UTILS_LLM_MANAGER_H_

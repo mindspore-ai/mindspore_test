@@ -21,65 +21,64 @@
 namespace mindspore {
 namespace kernel {
 namespace prompt_flash_attention {
+
+void PromptFlashAttentionAscend::SetScalarParam(const std::vector<KernelTensor *> &inputs) {
+  num_heads_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex12]);
+  scale_value_d_ = static_cast<double>(device::ascend::ConvertKernelTensor<float>(inputs[kIndex13]));
+  pre_tokens_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex14]);
+  next_tokens_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex15]);
+  auto input_layout = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex16]);
+  input_layout_str_ = device::ascend::FASInputLayoutMode::ConvertEnumToString(input_layout);
+  num_key_value_heads_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex17]);
+  sparse_mode_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex18]);
+  inner_precise_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex19]);
+
+  return;
+}
+
 void PromptFlashAttentionAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                   const std::vector<KernelTensor *> &outputs) {
-  auto actual_seq_qlen = inputs[kIndex4];
-  MS_EXCEPTION_IF_NULL(actual_seq_qlen);
-  std::vector<int64_t> actual_seq_qlen_array;
-  if (actual_seq_qlen->type_id() != kMetaTypeNone) {
-    actual_seq_qlen_array = actual_seq_qlen->GetValueWithCheck<std::vector<int64_t>>();
+  SetScalarParam(inputs);
+
+  auto &llm_manager = LLMManager::GetInstance();
+  std::vector<int64_t> actual_q_lengths_vector = {};
+  std::vector<int64_t> actual_kv_lengths_vector = {};
+  auto ret = llm_manager.GetGraphInputToVector<int32_t, int64_t>("q_seq_lens", &actual_q_lengths_vector);
+  if (!ret) {
+    auto actual_seq_qlen = inputs[kIndex4];
+    MS_EXCEPTION_IF_NULL(actual_seq_qlen);
+    if (actual_seq_qlen->type_id() == kNumberTypeInt64) {
+      actual_q_lengths_vector = actual_seq_qlen->GetValueWithCheck<std::vector<int64_t>>();
+    }
   }
-  auto actual_seq_kvlen = inputs[kIndex5];
-  MS_EXCEPTION_IF_NULL(actual_seq_kvlen);
-  std::vector<int64_t> actual_seq_kvlen_array;
-  if (actual_seq_kvlen->type_id() != kMetaTypeNone) {
-    actual_seq_kvlen_array = actual_seq_kvlen->GetValueWithCheck<std::vector<int64_t>>();
+  actual_q_lengths_vector_pair_ = std::make_pair(actual_q_lengths_vector, true);
+
+  ret = llm_manager.GetGraphInputToVector<int32_t, int64_t>("batch_valid_length", &actual_kv_lengths_vector);
+  if (!ret) {
+    auto actual_seq_kvlen = inputs[kIndex5];
+    MS_EXCEPTION_IF_NULL(actual_seq_kvlen);
+    if (actual_seq_kvlen->type_id() == kNumberTypeInt64) {
+      actual_kv_lengths_vector = actual_seq_kvlen->GetValueWithCheck<std::vector<int64_t>>();
+    }
   }
-  auto num_heads = inputs[kIndex12];
-  MS_EXCEPTION_IF_NULL(num_heads);
-  auto num_heads_value = num_heads->GetValueWithCheck<int64_t>();
-
-  auto scale_value = inputs[kIndex13];
-  MS_EXCEPTION_IF_NULL(scale_value);
-  auto scale_value_value = static_cast<double>(scale_value->GetValueWithCheck<float>());
-
-  auto pre_tokens = inputs[kIndex14];
-  MS_EXCEPTION_IF_NULL(pre_tokens);
-  auto pre_tokens_value = pre_tokens->GetValueWithCheck<int64_t>();
-  auto next_tokens = inputs[kIndex15];
-  MS_EXCEPTION_IF_NULL(next_tokens);
-  auto next_tokens_value = next_tokens->GetValueWithCheck<int64_t>();
-
-  auto input_layout = inputs[kIndex16];
-  MS_EXCEPTION_IF_NULL(input_layout);
-  auto input_layout_value = input_layout->GetValueWithCheck<int64_t>();
-  auto input_layout_string = FASInputLayoutMode::ConvertEnumToString(input_layout_value);
-
-  auto num_key_value_heads = inputs[kIndex17];
-  MS_EXCEPTION_IF_NULL(num_key_value_heads);
-  auto num_key_value_heads_value = num_key_value_heads->GetValueWithCheck<int64_t>();
-
-  auto sparse_mode = inputs[kIndex18];
-  MS_EXCEPTION_IF_NULL(sparse_mode);
-  auto sparse_mode_value = sparse_mode->GetValueWithCheck<int64_t>();
-
-  auto inner_precise = inputs[kIndex19];
-  MS_EXCEPTION_IF_NULL(inner_precise);
-  auto inner_precise_value = inner_precise->GetValueWithCheck<int64_t>();
+  actual_kv_lengths_vector_pair_ = std::make_pair(actual_kv_lengths_vector, true);
 
   op_type_ = "aclnnPromptFlashAttentionV3";
   GetWorkspaceForResize(inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], inputs[kIndex6], inputs[kIndex3],
-                        actual_seq_qlen_array, actual_seq_kvlen_array, inputs[kIndex7], inputs[kIndex8],
-                        inputs[kIndex9], inputs[kIndex10], inputs[kIndex11], num_heads_value, scale_value_value,
-                        pre_tokens_value, next_tokens_value, input_layout_string, num_key_value_heads_value,
-                        sparse_mode_value, inner_precise_value, outputs[kIndex0]);
+                        actual_q_lengths_vector_pair_, actual_kv_lengths_vector_pair_, inputs[kIndex7], inputs[kIndex8],
+                        inputs[kIndex9], inputs[kIndex10], inputs[kIndex11], num_heads_, scale_value_d_, pre_tokens_,
+                        next_tokens_, input_layout_str_, num_key_value_heads_, sparse_mode_, inner_precise_,
+                        outputs[kIndex0]);
 }
 
 bool PromptFlashAttentionAscend::Launch(const std::vector<KernelTensor *> &inputs,
                                         const std::vector<KernelTensor *> &workspace,
                                         const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
-  PFAGenerate(inputs, workspace, outputs, stream_ptr);
+  RunOp(stream_ptr, workspace, inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], inputs[kIndex6], inputs[kIndex3],
+        actual_q_lengths_vector_pair_, actual_kv_lengths_vector_pair_, inputs[kIndex7], inputs[kIndex8],
+        inputs[kIndex9], inputs[kIndex10], inputs[kIndex11], num_heads_, scale_value_d_, pre_tokens_, next_tokens_,
+        input_layout_str_, num_key_value_heads_, sparse_mode_, inner_precise_, outputs[kIndex0]);
   return true;
 }
 
