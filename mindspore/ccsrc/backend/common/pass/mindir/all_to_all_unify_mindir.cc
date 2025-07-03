@@ -39,17 +39,30 @@ constexpr auto kAttrIrUnified = "ir_unified";
 constexpr auto kAttrFlashIndex = "FLASH_INDEX";
 bool CheckNoNeedTranspose(const ShapeVector &shape, size_t dim) {
   if (shape.size() > dim && dim > 0) {
-    for (size_t i = 0; i < shape.size(); i++) {
-      if (i < dim && shape[i] != 1) {
-        return false;
-      }
-      if (shape[i] < 0) {
+    for (size_t i = 0; i < dim; i++) {
+      if (shape[i] != 1) {
         return false;
       }
     }
     return true;
   }
   return false;
+}
+bool CheckStaticShape(const ShapeVector &shape) {
+  for (size_t i = 0; i < shape.size(); i++) {
+    if (shape[i] <= 0) {
+      return false;
+    }
+  }
+  return true;
+}
+size_t GetIdx(const CNodePtr &all_to_all, const std::string &attr, size_t shape_size) {
+  int64_t dim = common::AnfAlgo::GetNodeAttr<int64_t>(all_to_all, attr);
+  size_t idx = dim < 0 ? LongToSize(dim + shape_size) : LongToSize(dim);
+  if (idx >= shape_size) {
+    MS_LOG(INTERNAL_EXCEPTION) << "Invalid split or concat dim " << dim << " is over the shape size " << shape_size;
+  }
+  return idx;
 }
 void ChangePrimitiveToAllToAllV(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
@@ -170,6 +183,22 @@ CNodePtr AllToAllUnifyMindIR::CreateSplitNodeWithDim0(const KernelGraphPtr &grap
   return CreateSplitNode(graph, all_to_all, input_node, split_count, 0);
 }
 
+const CNodePtr AllToAllUnifyMindIR::CreateTransposeNode(const KernelGraphPtr &graph, const AnfNodePtr &input_node,
+                                                        ShapeVector shape, ShapeVector dims) const {
+  MS_EXCEPTION_IF_NULL(graph);
+  MS_EXCEPTION_IF_NULL(input_node);
+  auto prim = std::make_shared<Primitive>(kTransposeOpName);
+  MS_EXCEPTION_IF_NULL(prim);
+  auto transpose_perm_node = CreateValueNodeWithKernelInfo(graph, MakeValue(dims));
+  MS_EXCEPTION_IF_NULL(transpose_perm_node);
+  std::vector<AnfNodePtr> transpose_inputs = {NewValueNode(prim), input_node, transpose_perm_node};
+  auto transpose_node = NewCNode(transpose_inputs, graph);
+  MS_EXCEPTION_IF_NULL(transpose_node);
+  common::AnfAlgo::SetOutputInferTypeAndShape({common::AnfAlgo::GetOutputInferDataType(input_node, 0)}, {shape},
+                                              transpose_node.get());
+  return transpose_node;
+}
+
 CNodePtr AllToAllUnifyMindIR::CreateAlltoAllVNode(const KernelGraphPtr &graph, const CNodePtr &all_to_all,
                                                   const CNodePtr &split) const {
   MS_EXCEPTION_IF_NULL(graph);
@@ -284,7 +313,7 @@ CNodePtr AllToAllUnifyMindIR::CreateConcatNodeWithDim0(const KernelGraphPtr &gra
   return CreateConcatNode(graph, all_to_all, input_node, split_count, 0);
 }
 
-const CNodePtr AllToAllUnifyMindIR::CreateReshapeNode(const FuncGraphPtr &graph, const AnfNodePtr &input_node,
+const CNodePtr AllToAllUnifyMindIR::CreateReshapeNode(const KernelGraphPtr &graph, const AnfNodePtr &input_node,
                                                       const ShapeVector &shape) const {
   auto prim = std::make_shared<Primitive>(kReshapeOpName);
   MS_EXCEPTION_IF_NULL(prim);
@@ -297,6 +326,74 @@ const CNodePtr AllToAllUnifyMindIR::CreateReshapeNode(const FuncGraphPtr &graph,
   MS_EXCEPTION_IF_NULL(abs);
   reshape_node->set_abstract(abs);
   return reshape_node;
+}
+
+CNodePtr AllToAllUnifyMindIR::CreateAntecedentTransposeNode(const KernelGraphPtr &kernel_graph,
+                                                            const AnfNodePtr &all_to_all_input,
+                                                            const ShapeVector &shape, int64_t split_count,
+                                                            size_t split_idx) const {
+  ShapeVector reshape_shape;
+  ShapeVector trans_shape;
+  ShapeVector trans_dims;
+  ShapeVector reshape_shape2;
+  trans_shape.push_back(split_count);
+  trans_dims.push_back(split_idx);
+  for (size_t i = 0, idx = 0; i < shape.size(); i++, idx++) {
+    if (i == LongToSize(split_idx)) {
+      reshape_shape.push_back(split_count);
+      reshape_shape.push_back(-1);
+      idx++;
+      trans_shape.push_back(shape[i] / split_count);
+      trans_dims.push_back(idx);
+
+      reshape_shape2.push_back(-1);
+    } else {
+      reshape_shape.push_back(shape[i]);
+      trans_shape.push_back(reshape_shape[idx]);
+      trans_dims.push_back(idx);
+      if (i == 0) {
+        reshape_shape2.push_back(shape[0] * split_count);
+      } else {
+        reshape_shape2.push_back(shape[i]);
+      }
+    }
+  }
+  auto reshape_node = CreateReshapeNode(kernel_graph, all_to_all_input, reshape_shape);
+  auto transpose = CreateTransposeNode(kernel_graph, reshape_node, trans_shape, trans_dims);
+  auto reshape_node2 = CreateReshapeNode(kernel_graph, transpose, reshape_shape2);
+
+  return reshape_node2;
+}
+
+CNodePtr AllToAllUnifyMindIR::CreateSuccessorTransposeNode(const KernelGraphPtr &kernel_graph,
+                                                           const AnfNodePtr &new_ata, const ShapeVector &out_shape,
+                                                           int64_t split_count, size_t split_idx,
+                                                           size_t concat_idx) const {
+  auto in_shape = common::AnfAlgo::GetOutputInferShape(new_ata, kIndex0);
+  ShapeVector reshape_shape;
+  ShapeVector trans_shape;
+  ShapeVector trans_dims;
+  for (size_t i = 0; i < in_shape.size(); i++) {
+    if (i == 0) {
+      reshape_shape.push_back(split_count);
+      reshape_shape.push_back(in_shape[i] / split_count);
+      trans_shape.push_back(in_shape[i] / split_count);
+    } else if (i == LongToSize(concat_idx)) {
+      reshape_shape.push_back(in_shape[i]);
+      trans_shape.push_back(reshape_shape[0]);
+      trans_shape.push_back(reshape_shape[i + 1]);
+      trans_dims.push_back(0);
+    } else {
+      reshape_shape.push_back(in_shape[i]);
+      trans_shape.push_back(reshape_shape[i + 1]);
+    }
+    trans_dims.push_back(i + 1);
+  }
+  reshape_shape[split_idx + 1] = -1;
+  auto reshape_node = CreateReshapeNode(kernel_graph, new_ata, reshape_shape);
+  auto transpose = CreateTransposeNode(kernel_graph, reshape_node, trans_shape, trans_dims);
+  auto reshape_node2 = CreateReshapeNode(kernel_graph, transpose, out_shape);
+  return reshape_node2;
 }
 
 std::vector<std::string> NeighborExchangeUnifyMindIR::MustExistPrimitiveName() const {
@@ -355,35 +452,51 @@ const AnfNodePtr AllToAllUnifyMindIR::Process(const FuncGraphPtr &graph, const A
   if (is_kbk) {
     MS_LOG(INFO) << "AlltoAll pass in KernelMode, node: " << node->fullname_with_scope()
                  << ", graph: " << graph->ToString();
-    int64_t split_dim = common::AnfAlgo::GetNodeAttr<int64_t>(all_to_all, kAttrSplitDim);
-    int64_t concat_dim = common::AnfAlgo::GetNodeAttr<int64_t>(all_to_all, kAttrConcatDim);
     AnfNodePtr all_to_all_input = all_to_all->input(kAllToAllInputIdx);
     auto shape = common::AnfAlgo::GetOutputInferShape(all_to_all->input(kIndex1), kIndex0);
     int64_t split_count = common::AnfAlgo::GetNodeAttr<int64_t>(all_to_all, kAttrSplitCount);
-    if (CheckNoNeedTranspose(shape, static_cast<size_t>(split_dim))) {
+    size_t split_idx = GetIdx(all_to_all, kAttrSplitDim, shape.size());
+    size_t concat_idx = GetIdx(all_to_all, kAttrConcatDim, shape.size());
+    bool is_static_shape = CheckStaticShape(shape);
+    if (is_static_shape && CheckNoNeedTranspose(shape, split_idx)) {
       auto new_shape = shape;
-      if (shape[split_dim] % split_count != 0) {
+      if (shape[split_idx] % split_count != 0) {
         MS_LOG(INTERNAL_EXCEPTION) << "Invalid split count " << split_count << " cannot be divisible by shape["
-                                   << split_dim << "] = " << shape[split_dim] << trace::DumpSourceLines(all_to_all);
+                                   << split_idx << "] = " << shape[split_idx] << trace::DumpSourceLines(all_to_all);
       }
       new_shape[0] = shape[0] * split_count;
-      new_shape[split_dim] = -1;
+      new_shape[split_idx] = -1;
       auto reshape_node = CreateReshapeNode(kernel_graph, all_to_all_input, new_shape);
       all_to_all_input = reshape_node;
-    } else if (split_dim != 0) {
+    } else if (is_static_shape && split_idx != 0) {
+      all_to_all_input = CreateAntecedentTransposeNode(kernel_graph, all_to_all_input, shape, split_count, split_idx);
+      OptimizerUtils::MoveContrlDepend(graph, all_to_all->input(1), all_to_all_input);
+    } else if (split_idx != 0) {
       auto split = CreateSplitNodeWithSplitDim(kernel_graph, all_to_all);
       auto concat_dim0 = CreateConcatNodeWithDim0(kernel_graph, all_to_all, split);
       all_to_all_input = concat_dim0;
-      OptimizerUtils::MoveContrlDepend(graph, all_to_all->input(1), concat_dim0);
+      OptimizerUtils::MoveContrlDepend(graph, all_to_all->input(1), all_to_all_input);
     }
     auto new_ata = CreateAllToAllNode(kernel_graph, all_to_all, all_to_all_input);
     ret_node = new_ata;
     auto out_shape = common::AnfAlgo::GetOutputInferShape(all_to_all, kIndex0);
-    if (CheckNoNeedTranspose(out_shape, static_cast<size_t>(concat_dim))) {
-      out_shape[concat_dim] = -1;
+    if (is_static_shape && CheckNoNeedTranspose(out_shape, static_cast<size_t>(concat_idx))) {
+      out_shape[split_idx] = -1;
       auto reshape_node = CreateReshapeNode(kernel_graph, new_ata, out_shape);
       ret_node = reshape_node;
-    } else if (concat_dim != 0) {
+    } else if (is_static_shape && concat_idx != 0) {
+      out_shape[split_idx] = -1;
+      OptimizerUtils::MoveContrlDepend(graph, node, new_ata);
+      auto moved_depends = OptimizerUtils::MoveDataDepend(graph, node, new_ata);
+      auto pre_node = new_ata;
+      if (!moved_depends.empty()) {
+        pre_node = moved_depends[0];
+      }
+      auto transpose =
+        CreateSuccessorTransposeNode(kernel_graph, pre_node, out_shape, split_count, split_idx, concat_idx);
+      OptimizerUtils::ReplaceDataDepend(graph, moved_depends, transpose);
+      ret_node = transpose;
+    } else if (concat_idx != 0) {
       OptimizerUtils::MoveContrlDepend(graph, node, new_ata);
       auto moved_depends = OptimizerUtils::MoveDataDepend(graph, node, new_ata);
       auto pre_node = new_ata;
