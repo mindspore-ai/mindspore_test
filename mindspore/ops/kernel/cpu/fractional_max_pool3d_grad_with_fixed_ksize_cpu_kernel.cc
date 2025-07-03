@@ -139,9 +139,9 @@ int FractionalMaxPool3DGradWithFixedKsizeCPUKernelMod::Resize(const std::vector<
 template <typename backprop_t, typename argmax_t>
 bool FractionalMaxPool3DGradWithFixedKsizeCPUKernelMod::GradComputeTemplate(
   const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
-  auto out_backprop_data = reinterpret_cast<backprop_t *>(inputs[1]->device_ptr());
-  auto argmax_data = reinterpret_cast<argmax_t *>(inputs[2]->device_ptr());
-  auto output_data = reinterpret_cast<backprop_t *>(outputs[0]->device_ptr());
+  auto out_backprop_data = GetDeviceAddress<backprop_t>(inputs, kIndex1);
+  auto argmax_data = GetDeviceAddress<argmax_t>(inputs, kIndex2);
+  auto output_data = GetDeviceAddress<backprop_t>(outputs, kIndex0);
   size_t output_size = outputs[0]->size();
   if (memset_s(output_data, output_size, 0, output_size) != EOK) {
     MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', output buffer memset failed.";

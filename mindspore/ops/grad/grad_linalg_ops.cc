@@ -30,7 +30,7 @@ NodePtr MatrixDiag(BpropBuilder *ib, const NodePtr &x) {
     row = ib->Emit("ScalarToTensor", {ib->TupleGetItem(real_shape, ib->Value(static_cast<int64_t>(-1))),
                                       ib->Value<int64_t>(kInt32->type_id())});
   } else {
-    row = ib->Tensor(shape[shape.size() - 1], kInt32);
+    row = ib->Tensor(shape[shape.size() - i1], kInt32);
   }
   auto out = ib->Emit("MatrixDiagV3", {x, ib->Tensor(0, kInt32), row, row, ib->Tensor(0, ib->GetDtype(x))},
                       {{"align", MakeValue("RIGHT_LEFT")}});

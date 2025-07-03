@@ -97,11 +97,11 @@ bool SparseSliceGradCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelT
                                                const std::vector<kernel::KernelTensor *> &outputs) {
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kSparseSliceGradInputsNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kSparseSliceGradOutputsNum, kernel_name_);
-  auto backprop_val_grad = static_cast<T *>(inputs[kIndex0]->device_ptr());
-  auto indices = static_cast<int64_t *>(inputs[kIndex1]->device_ptr());
-  auto start = static_cast<int64_t *>(inputs[kIndex2]->device_ptr());
-  auto new_indices = static_cast<int64_t *>(inputs[kIndex3]->device_ptr());
-  auto y_grad = static_cast<T *>(outputs[kIndex0]->device_ptr());
+  auto backprop_val_grad = GetDeviceAddress<T>(inputs, kIndex0);
+  auto indices = GetDeviceAddress<int64_t>(inputs, kIndex1);
+  auto start = GetDeviceAddress<int64_t>(inputs, kIndex2);
+  auto new_indices = GetDeviceAddress<int64_t>(inputs, kIndex3);
+  auto y_grad = GetDeviceAddress<T>(outputs, kIndex0);
 
   SliceGradCompute<T>(backprop_val_grad, indices, start, new_indices, y_grad);
 

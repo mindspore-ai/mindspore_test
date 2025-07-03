@@ -194,9 +194,9 @@ void IndexPutCpuKernelMod::ComputeSpecial(T *x2, size_t x2_nums, std::vector<std
 template <typename T, typename T0>
 bool IndexPutCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
                                         const std::vector<kernel::KernelTensor *> &outputs) {
-  auto *x1 = static_cast<T *>(inputs[0]->device_ptr());
-  auto *x2 = static_cast<T *>(inputs[1]->device_ptr());
-  auto *y = static_cast<T *>(outputs[0]->device_ptr());
+  auto *x1 = GetDeviceAddress<T>(inputs, kIndex0);
+  auto *x2 = GetDeviceAddress<T>(inputs, kIndex1);
+  auto *y = GetDeviceAddress<T>(outputs, kIndex0);
   size_t x1_nums =
     std::accumulate(x1_shape_.begin(), x1_shape_.end(), static_cast<size_t>(1), std::multiplies<size_t>());
   size_t x2_nums =
@@ -204,7 +204,7 @@ bool IndexPutCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *
   constexpr size_t indices_start_pos = 2;
   std::vector<std::vector<int64_t>> indices_value;
   for (size_t i = indices_start_pos; i < inputs.size(); i++) {
-    auto *linetensor = static_cast<T0 *>(inputs[i]->device_ptr());
+    auto *linetensor = GetDeviceAddress<T0>(inputs, i);
     std::vector<int64_t> iline;
     for (size_t j = 0; static_cast<int64_t>(j) < indices_shape_[i - indices_start_pos][0]; j++) {
       linetensor[j] = (linetensor[j] < 0) ? linetensor[j] + x1_shape_[i - indices_start_pos] : linetensor[j];

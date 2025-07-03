@@ -32,24 +32,12 @@ using complex128 = std::complex<double>;
 
 bool TensorCopyCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                   const std::vector<KernelTensor *> &outputs) {
-  auto input_shape = inputs[ktInput]->GetShapeVector();
-  auto output_shape = outputs[ktOutput]->GetShapeVector();
   auto input_type = inputs[ktInput]->dtype_id();
   auto output_type = inputs[ktOutput]->dtype_id();
-
-  auto copy_size = GetTypeByte(TypeIdToType(input_type));
-  copy_size = std::accumulate(input_shape.begin(), input_shape.end(), copy_size, std::multiplies<size_t>());
-  output_size_list_.push_back(copy_size);
   if (input_type != output_type) {
     MS_LOG(ERROR) << "For '" << kernel_name_
                   << "', the type of 'input' and the type of 'output' should be same, but 'input' type is "
                   << input_type << "while 'output' type is " << output_type;
-    return false;
-  }
-  if (input_shape != output_shape) {
-    MS_LOG(ERROR) << "For '" << kernel_name_
-                  << "', the shape of 'input' and the shape of 'output' should be same, but 'input' shape is "
-                  << input_shape << "while 'output' shape is " << output_shape;
     return false;
   }
   return true;
@@ -58,10 +46,18 @@ bool TensorCopyCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
 int TensorCopyCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
                                    const std::vector<KernelTensor *> &outputs) {
   int ret = KernelMod::Resize(inputs, outputs);
-  if (ret != 0) {
+  if (ret != KRET_OK) {
     return ret;
   }
-  return 0;
+  auto input_shape = inputs[ktInput]->GetShapeVector();
+  auto output_shape = outputs[ktOutput]->GetShapeVector();
+  if (input_shape != output_shape) {
+    MS_LOG(ERROR) << "For '" << kernel_name_
+                  << "', the shape of 'input' and the shape of 'output' should be same, but 'input' shape is "
+                  << input_shape << "while 'output' shape is " << output_shape;
+    return KRET_RESIZE_FAILED;
+  }
+  return KRET_OK;
 }
 
 bool TensorCopyCpuKernelMod::Launch(const std::vector<kernel::KernelTensor *> &inputs,

@@ -33,12 +33,12 @@ constexpr char kKernelName[] = "MultiMarginLoss";
 
 bool MultiMarginLossCPUKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                        const std::vector<KernelTensor *> &outputs) {
-  reduction = GetValue<std::string>(primitive_->GetAttr(ops::kReduction));
-  p = GetValue<int64_t>(primitive_->GetAttr(ops::kP));
-  margin = GetValue<float>(primitive_->GetAttr(ops::kMargin));
+  reduction_ = GetValue<std::string>(primitive_->GetAttr(ops::kReduction));
+  p_ = GetValue<int64_t>(primitive_->GetAttr(ops::kP));
+  margin_ = GetValue<float>(primitive_->GetAttr(ops::kMargin));
 
   dtype_ = inputs[kZero]->dtype_id();
-  input_num = inputs.size();
+  input_num_ = inputs.size();
   return MatchKernelFunc(kernel_name_, inputs, outputs);
 }
 
@@ -49,8 +49,8 @@ int MultiMarginLossCPUKernelMod::Resize(const std::vector<KernelTensor *> &input
   }
 
   auto x_shape = inputs[kZero]->GetShapeVector();
-  batch_size = LongToSize(x_shape[kZero]);
-  dims = LongToSize(x_shape[kOne]);
+  batch_size_ = LongToSize(x_shape.at(kZero));
+  dims_ = LongToSize(x_shape.at(kOne));
   auto type = inputs[kTwo]->GetType();
   weight_defined_ = !type->isa<TypeNone>();
   return KRET_OK;
@@ -98,60 +98,66 @@ const std::vector<std::pair<KernelAttr, MultiMarginLossCPUKernelMod::KernelRunFu
 template <typename T>
 void MultiMarginLossCPUKernelMod::LaunchKernelFP32AndFP64(const std::vector<kernel::KernelTensor *> &inputs,
                                                           const std::vector<kernel::KernelTensor *> &outputs) {
+  if (batch_size_ == 0) {
+    return;
+  }
   auto x_addr = static_cast<T *>(inputs[kZero]->device_ptr());
+  MS_EXCEPTION_IF_NULL(x_addr);
   auto target_addr = static_cast<int64_t *>(inputs[kOne]->device_ptr());
-  for (size_t i = 0; i < batch_size; i++) {
-    if (target_addr[i] < 0 || target_addr[i] >= SizeToLong(dims)) {
+  MS_EXCEPTION_IF_NULL(target_addr);
+  for (size_t i = 0; i < batch_size_; i++) {
+    if (target_addr[i] < 0 || target_addr[i] >= SizeToLong(dims_)) {
       MS_EXCEPTION(ValueError) << "Target out of range.";
     }
   }
   T *weight_addr = nullptr;
   if (weight_defined_) {
     weight_addr = static_cast<T *>(inputs[kTwo]->device_ptr());
+    MS_EXCEPTION_IF_NULL(weight_addr);
   }
   auto y_addr = static_cast<T *>(outputs[kZero]->device_ptr());
-  std::vector<T> tmp_loss(batch_size);
+  std::vector<T> tmp_loss(batch_size_);
   auto task = [&](size_t start, size_t end) {
-    start *= dims;
-    end *= dims;
+    start *= dims_;
+    end *= dims_;
     size_t once_compute_thread_size = (end - start);
-    std::vector<T> calc(dims);
+    std::vector<T> calc(dims_);
     auto calc_data = calc.data();
-    for (size_t m = 0; m < (once_compute_thread_size) / dims; m++) {
-      size_t i = start / dims;
-      for (size_t d = 0; d < dims; d++) {
+    for (size_t m = 0; m < (once_compute_thread_size) / dims_; m++) {
+      size_t i = start / dims_;
+      for (size_t d = 0; d < dims_; d++) {
         if (d == LongToSize(target_addr[i])) {
           continue;
         }
-        calc_data[d] = static_cast<T>(margin) + x_addr[start + d] - x_addr[start + LongToSize(target_addr[i])];
+        calc_data[d] = static_cast<T>(margin_) + x_addr[start + d] - x_addr[start + LongToSize(target_addr[i])];
         if (calc_data[d] > static_cast<T>(0)) {
-          calc_data[d] = (p == 1) ? calc_data[d] : calc_data[d] * calc_data[d];
+          calc_data[d] = (p_ == 1) ? calc_data[d] : calc_data[d] * calc_data[d];
           if (weight_defined_) {
             calc_data[d] *= static_cast<T>(weight_addr[target_addr[i]]);
           }
           tmp_loss[i] += calc_data[d];
         }
       }
-      tmp_loss[i] = tmp_loss[i] / static_cast<T>(dims);
-      start += dims;
+      tmp_loss[i] = tmp_loss[i] / static_cast<T>(dims_);
+      start += dims_;
     }
   };
-  CPUKernelUtils::ParallelFor(task, batch_size);
-  if (reduction == MEAN) {
+  CPUKernelUtils::ParallelFor(task, batch_size_);
+  if (reduction_ == MEAN) {
     *y_addr = static_cast<T>(0);
-    for (size_t i = 0; i < batch_size; i++) {
+    for (size_t i = 0; i < batch_size_; i++) {
       *y_addr += tmp_loss[i];
     }
-    *y_addr /= static_cast<T>(batch_size);
+    *y_addr /= static_cast<T>(batch_size_);
   }
-  if (reduction == SUM) {
+  if (reduction_ == SUM) {
     *y_addr = static_cast<T>(0);
-    for (size_t i = 0; i < batch_size; i++) {
+    for (size_t i = 0; i < batch_size_; i++) {
       *y_addr += tmp_loss[i];
     }
   }
-  if (reduction == NONE) {
-    for (size_t t = 0; t < batch_size; t++) {
+  if (reduction_ == NONE) {
+    for (size_t t = 0; t < batch_size_; t++) {
       *(y_addr + t) = tmp_loss[t];
     }
   }
@@ -160,68 +166,74 @@ void MultiMarginLossCPUKernelMod::LaunchKernelFP32AndFP64(const std::vector<kern
 template <typename T>
 void MultiMarginLossCPUKernelMod::LaunchKernelFP16(const std::vector<kernel::KernelTensor *> &inputs,
                                                    const std::vector<kernel::KernelTensor *> &outputs) {
+  if (batch_size_ == 0) {
+    return;
+  }
   auto x_addr = reinterpret_cast<T *>(inputs[kZero]->device_ptr());
+  MS_EXCEPTION_IF_NULL(x_addr);
   auto target_addr = reinterpret_cast<int64_t *>(inputs[kOne]->device_ptr());
-  for (size_t i = 0; i < batch_size; i++) {
-    if (target_addr[i] < 0 || target_addr[i] >= SizeToLong(dims)) {
+  MS_EXCEPTION_IF_NULL(target_addr);
+  for (size_t i = 0; i < batch_size_; i++) {
+    if (target_addr[i] < 0 || target_addr[i] >= SizeToLong(dims_)) {
       MS_EXCEPTION(ValueError) << "Target out of range.";
     }
   }
   T *weight_addr = nullptr;
-  bool weight_defined_ = (input_num == 3);
+  bool weight_defined_ = (input_num_ == 3);
   if (weight_defined_) {
     weight_addr = reinterpret_cast<T *>(inputs[kTwo]->device_ptr());
+    MS_EXCEPTION_IF_NULL(weight_addr);
   }
   auto y_addr = reinterpret_cast<T *>(outputs[kZero]->device_ptr());
-  std::vector<float> tmp_loss(batch_size);
+  std::vector<float> tmp_loss(batch_size_);
   auto task = [&](size_t start, size_t end) {
-    start *= dims;
-    end *= dims;
+    start *= dims_;
+    end *= dims_;
     size_t once_compute_thread_size = (end - start);
-    std::vector<float> calc(dims);
+    std::vector<float> calc(dims_);
     auto calc_data = calc.data();
-    for (size_t m = 0; m < (once_compute_thread_size) / dims; m++) {
-      size_t i = start / dims;
-      for (size_t d = 0; d < dims; d++) {
+    for (size_t m = 0; m < (once_compute_thread_size) / dims_; m++) {
+      size_t i = start / dims_;
+      for (size_t d = 0; d < dims_; d++) {
         if (d == LongToSize(target_addr[i])) {
           continue;
         }
-        calc_data[d] = margin + static_cast<float>(x_addr[start + d]) -
+        calc_data[d] = margin_ + static_cast<float>(x_addr[start + d]) -
                        static_cast<float>(x_addr[start + LongToSize(target_addr[i])]);
         if (calc_data[d] > 0) {
-          calc_data[d] = (p == 1) ? calc_data[d] : calc_data[d] * calc_data[d];
+          calc_data[d] = (p_ == 1) ? calc_data[d] : calc_data[d] * calc_data[d];
           if (weight_defined_) {
             calc_data[d] *= static_cast<float>(weight_addr[target_addr[i]]);
           }
           tmp_loss[i] += calc_data[d];
         }
       }
-      tmp_loss[i] = tmp_loss[i] / static_cast<float>(dims);
-      start += dims;
+      tmp_loss[i] = tmp_loss[i] / static_cast<float>(dims_);
+      start += dims_;
     }
   };
-  CPUKernelUtils::ParallelFor(task, batch_size);
-  if (reduction == NONE) {
-    for (size_t t = 0; t < batch_size; t++) {
+  CPUKernelUtils::ParallelFor(task, batch_size_);
+  if (reduction_ == NONE) {
+    for (size_t t = 0; t < batch_size_; t++) {
       *(y_addr + t) = static_cast<T>(tmp_loss[t]);
     }
   } else {
     float tmp_loss_sum = 0.0f;
-    for (size_t i = 0; i < batch_size; i++) {
+    for (size_t i = 0; i < batch_size_; i++) {
       tmp_loss_sum += tmp_loss[i];
     }
-    if (reduction == MEAN) {
-      *y_addr = static_cast<T>(tmp_loss_sum / batch_size);
-    } else if (reduction == SUM) {
+    if (reduction_ == MEAN) {
+      *y_addr = static_cast<T>(tmp_loss_sum / batch_size_);
+    } else if (reduction_ == SUM) {
       *y_addr = static_cast<T>(tmp_loss_sum);
     }
   }
 }
 
 void MultiMarginLossCPUKernelMod::CheckParam(const CNodePtr &kernel_node) {
-  input_num = common::AnfAlgo::GetInputTensorNum(kernel_node);
-  if (input_num != kMultiMarginLossInputNumWithoutWeight && input_num != kMultiMarginLossInputNumWithWeight) {
-    MS_LOG(EXCEPTION) << "Invalid input numbers, expect input number 2 or 3, but actual input number " << input_num;
+  input_num_ = common::AnfAlgo::GetInputTensorNum(kernel_node);
+  if (input_num_ != kMultiMarginLossInputNumWithoutWeight && input_num_ != kMultiMarginLossInputNumWithWeight) {
+    MS_LOG(EXCEPTION) << "Invalid input numbers, expect input number 2 or 3, but actual input number " << input_num_;
   }
   size_t output_num = AnfAlgo::GetOutputTensorNum(kernel_node);
   CHECK_KERNEL_OUTPUTS_NUM(output_num, kMultiMarginLossOutputsNum, kKernelName);

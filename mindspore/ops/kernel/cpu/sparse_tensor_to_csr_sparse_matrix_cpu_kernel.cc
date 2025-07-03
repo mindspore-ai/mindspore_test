@@ -28,14 +28,6 @@ constexpr int64_t kOne = 1;
 constexpr int64_t kTwo = 2;
 constexpr int64_t kSparseTensorToCSRSparseMatrixInputsNum = 3;
 constexpr int64_t kSparseTensorToCSRSparseMatrixOutputsNum = 5;
-constexpr size_t kInputIndex0 = 0;
-constexpr size_t kInputIndex1 = 1;
-constexpr size_t kInputIndex2 = 2;
-constexpr size_t kOutputIdx0 = 0;
-constexpr size_t kOutputIdx1 = 1;
-constexpr size_t kOutputIdx2 = 2;
-constexpr size_t kOutputIdx3 = 3;
-constexpr size_t kOutputIdx4 = 4;
 constexpr int64_t kInitPrevBatch = -1;
 constexpr char kKernelName[] = "SparseTensorToCSRSparseMatrix";
 
@@ -66,9 +58,9 @@ int SparseTensorToCSRSparseMatrixCpuKernelMod::Resize(const std::vector<KernelTe
     return ret;
   }
   auto x_indices_shape = inputs.at(kIndex0)->GetShapeVector();
-  total_nnz_ = x_indices_shape[0];
+  total_nnz_ = x_indices_shape.at(0);
   auto input_shape = inputs.at(kIndex2)->GetShapeVector();
-  rank_ = input_shape[0];
+  rank_ = input_shape.at(0);
   return KRET_OK;
 }
 
@@ -127,16 +119,16 @@ template <typename indiceT, typename valueT>
 void SparseTensorToCSRSparseMatrixCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
                                                              const std::vector<kernel::KernelTensor *> &outputs) {
   const int64_t shift = (rank_ == kRankWithoutBatch) ? kZero : kOne;
-  num_rows_ = *(static_cast<indiceT *>(inputs[kInputIndex2]->device_ptr()) + shift);
-  indiceT *x_indices = static_cast<indiceT *>(inputs[kInputIndex0]->device_ptr());
-  valueT *x_values = static_cast<valueT *>(inputs[kInputIndex1]->device_ptr());
-  indiceT *x_dense_shape = static_cast<indiceT *>(inputs[kInputIndex2]->device_ptr());
+  num_rows_ = GetDeviceAddress<indiceT>(inputs, kIndex2)[shift];
+  indiceT *x_indices = GetDeviceAddress<indiceT>(inputs, kIndex0);
+  valueT *x_values = GetDeviceAddress<valueT>(inputs, kIndex1);
+  indiceT *x_dense_shape = GetDeviceAddress<indiceT>(inputs, kIndex2);
   batch_size_ = (rank_ == kRankWithoutBatch) ? kOne : x_dense_shape[kZero];
-  indiceT *y_dense_shape_addr = static_cast<indiceT *>(outputs[kOutputIdx0]->device_ptr());
-  indiceT *y_batch_pointers_addr = static_cast<indiceT *>(outputs[kOutputIdx1]->device_ptr());
-  indiceT *y_row_pointers_addr = static_cast<indiceT *>(outputs[kOutputIdx2]->device_ptr());
-  indiceT *y_col_indices_addr = static_cast<indiceT *>(outputs[kOutputIdx3]->device_ptr());
-  valueT *y_values_addr = static_cast<valueT *>(outputs[kOutputIdx4]->device_ptr());
+  indiceT *y_dense_shape_addr = GetDeviceAddress<indiceT>(outputs, kIndex0);
+  indiceT *y_batch_pointers_addr = GetDeviceAddress<indiceT>(outputs, kIndex1);
+  indiceT *y_row_pointers_addr = GetDeviceAddress<indiceT>(outputs, kIndex2);
+  indiceT *y_col_indices_addr = GetDeviceAddress<indiceT>(outputs, kIndex3);
+  valueT *y_values_addr = GetDeviceAddress<valueT>(outputs, kIndex4);
 
   for (int64_t i = kZero; i < rank_; i++) {
     y_dense_shape_addr[i] = x_dense_shape[i];

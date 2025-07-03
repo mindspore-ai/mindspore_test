@@ -173,9 +173,9 @@ bool QuantileCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kQuantileInputsNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kQuantileOutputsNum, kernel_name_);
 
-  auto input = static_cast<T *>(inputs[0]->device_ptr());
-  auto q = static_cast<T *>(inputs[1]->device_ptr());
-  auto output = static_cast<T *>(outputs[0]->device_ptr());
+  auto input = GetDeviceAddress<T>(inputs, kIndex0);
+  auto q = GetDeviceAddress<T>(inputs, kIndex1);
+  auto output = GetDeviceAddress<T>(outputs, kIndex0);
 
   size_t input_dim = input_shape_.size();
   size_t q_dim = q_shape_.size();

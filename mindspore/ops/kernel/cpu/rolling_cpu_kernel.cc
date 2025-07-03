@@ -219,9 +219,9 @@ template <typename T, typename S>
 bool RollingCpuKernelFunc<T, S>::RunFunc(const std::vector<KernelTensor *> &inputs,
                                          const std::vector<KernelTensor *> &workspace,
                                          const std::vector<KernelTensor *> &outputs) {
-  auto input_addr = reinterpret_cast<T *>(inputs[kIndex0]->device_ptr());
-  auto workspace_addr = reinterpret_cast<size_t *>(workspace[kIndex0]->device_ptr());
-  auto output_addr = reinterpret_cast<S *>(outputs[kIndex0]->device_ptr());
+  auto input_addr = GetDeviceAddress<T>(inputs, kIndex0);
+  auto workspace_addr = GetDeviceAddress<size_t>(workspace, kIndex0);
+  auto output_addr = GetDeviceAddress<S>(outputs, kIndex0);
 
   T nan_value;
   if constexpr (std::is_same_v<T, float>) {

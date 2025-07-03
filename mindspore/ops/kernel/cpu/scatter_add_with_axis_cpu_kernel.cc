@@ -147,10 +147,10 @@ bool ScatterAddWithAxisCpuKernelMod::Launch(const std::vector<KernelTensor *> &i
 template <typename T, typename TI>
 void ScatterAddWithAxisCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                                   const std::vector<KernelTensor *> &outputs) {
-  T *input_x1 = static_cast<T *>(inputs[0]->device_ptr());
-  TI *input_x2 = static_cast<TI *>(inputs[1]->device_ptr());
-  T *input_x3 = static_cast<T *>(inputs[2]->device_ptr());
-  T *output_y = static_cast<T *>(outputs[0]->device_ptr());
+  T *input_x1 = GetDeviceAddress<T>(inputs, kIndex0);
+  TI *input_x2 = GetDeviceAddress<TI>(inputs, kIndex1);
+  T *input_x3 = GetDeviceAddress<T>(inputs, kIndex2);
+  T *output_y = GetDeviceAddress<T>(outputs, kIndex0);
   int64_t value_dim_num_x1 = static_cast<int64_t>(x_shape_.size());
   axis_ = axis_ < 0 ? axis_ + value_dim_num_x1 : axis_;
   int64_t axis_dim_value = static_cast<int64_t>(x_shape_[axis_]);

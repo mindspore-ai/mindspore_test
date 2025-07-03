@@ -45,7 +45,7 @@ bool ZerosCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &
                                      const std::vector<kernel::KernelTensor *> &outputs) {
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kZerosInputsNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kZerosOutputsNum, kernel_name_);
-  auto output_addr = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  auto output_addr = GetDeviceAddress<T>(outputs, kIndex0);
   size_t output_size = outputs[0]->size() / sizeof(T);
   auto task = [this, output_addr](size_t start, size_t end) {
     for (size_t i = start; i < end; i++) {

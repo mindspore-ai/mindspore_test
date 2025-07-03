@@ -154,7 +154,7 @@ int SparseApplyLazyAdamCpuKernelMod::Resize(const std::vector<KernelTensor *> &i
                   << grad_shape.size() << " and the dimension of 'var': " << var_shape.size() << ".";
     return KRET_RESIZE_FAILED;
   }
-  var_first_dim_size_ = LongToSize(var_shape[0]);
+  var_first_dim_size_ = LongToSize(var_shape.at(0));
   for (size_t i = 1; i < var_shape.size(); ++i) {
     if (var_shape[i] != grad_shape[i]) {
       MS_LOG(ERROR) << "For '" << kernel_name_ << "', the shape of 'var' and 'grad' must be equal in dimension i=" << i

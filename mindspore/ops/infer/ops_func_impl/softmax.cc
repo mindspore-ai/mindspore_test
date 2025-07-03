@@ -50,8 +50,8 @@ int32_t SoftmaxFuncImpl::CheckValidation(const PrimitivePtr &primitive,
   auto rank = SizeToLong(x_shape.size());
   auto axis_value = axis_value_opt.value();
   auto axis_size = axis_value.size();
-  MS_CHECK_VALUE(axis_size >= 1, CheckAndConvertUtils::FormatCheckIntegerMsg("length of axis", SizeToLong(axis_size),
-                                                                             kGreaterEqual, 1, primitive));
+  MS_CHECK_VALUE(axis_size >= kIndex1, CheckAndConvertUtils::FormatCheckIntegerMsg(
+                                         "length of axis", SizeToLong(axis_size), kGreaterEqual, 1, primitive));
   for (size_t i = 0; i < axis_size; ++i) {
     if (MS_UNLIKELY(axis_value.IsValueUnknown(i))) {
       return OP_CHECK_RETRY;
@@ -79,8 +79,8 @@ ShapeArray SoftmaxFuncImpl::InferShape(const PrimitivePtr &primitive, const Valu
   if (axis_value_opt.has_value()) {
     auto axis_value = axis_value_opt.value();
     auto axis_size = axis_value.size();
-    MS_CHECK_VALUE(axis_size >= 1, CheckAndConvertUtils::FormatCheckIntegerMsg("length of axis", SizeToLong(axis_size),
-                                                                               kGreaterEqual, 1, primitive));
+    MS_CHECK_VALUE(axis_size >= kIndex1, CheckAndConvertUtils::FormatCheckIntegerMsg(
+                                           "length of axis", SizeToLong(axis_size), kGreaterEqual, 1, primitive));
     for (size_t i = 0; i < axis_size; ++i) {
       auto item = axis_value[i];
       MS_CHECK_VALUE(-rank <= item && item < rank, CheckAndConvertUtils::FormatCheckInRangeMsg<int64_t>(

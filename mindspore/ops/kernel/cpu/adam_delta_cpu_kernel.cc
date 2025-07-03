@@ -132,23 +132,25 @@ bool AdamDeltaCpuKernelMod::Launch(const std::vector<kernel::KernelTensor *> &in
                                    const std::vector<kernel::KernelTensor *> &,
                                    const std::vector<kernel::KernelTensor *> &outputs) {
   CheckParams(inputs, outputs);
-  auto m = reinterpret_cast<float *>(inputs[kMIndex]->device_ptr());
-  auto v = reinterpret_cast<float *>(inputs[kVIndex]->device_ptr());
-  auto beta1_power = reinterpret_cast<float *>(inputs[kBeta1PowIndex]->device_ptr())[0];
+  auto m = GetDeviceAddress<float>(inputs, kMIndex);
+  auto v = GetDeviceAddress<float>(inputs, kVIndex);
+  auto beta1_power_ptr = GetDeviceAddress<float>(inputs, kBeta1PowIndex);
+  auto beta1_power = beta1_power_ptr[0];
   if (std::abs(beta1_power - 1) < FLT_EPSILON) {
     MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', the 'beta1_power' can not be 1.";
   }
-  auto beta2_power = reinterpret_cast<float *>(inputs[kBeta2PowIndex]->device_ptr())[0];
-  auto lr = reinterpret_cast<float *>(inputs[kLRIndex]->device_ptr())[0];
-  auto beta1 = reinterpret_cast<float *>(inputs[kBeta1Index]->device_ptr())[0];
-  auto beta2 = reinterpret_cast<float *>(inputs[kBeta2Index]->device_ptr())[0];
-  auto epsilon = reinterpret_cast<float *>(inputs[kEpsIndex]->device_ptr())[0];
-  auto grad = reinterpret_cast<float *>(inputs[kGradIndex]->device_ptr());
-  auto delta = reinterpret_cast<float *>(outputs[0]->device_ptr());
-  MS_EXCEPTION_IF_NULL(m);
-  MS_EXCEPTION_IF_NULL(v);
-  MS_EXCEPTION_IF_NULL(grad);
-  MS_EXCEPTION_IF_NULL(delta);
+  auto beta2_power_ptr = GetDeviceAddress<float>(inputs, kBeta2PowIndex);
+  auto beta2_power = beta2_power_ptr[0];
+  auto lr_ptr = GetDeviceAddress<float>(inputs, kLRIndex);
+  auto lr = lr_ptr[0];
+  auto beta1_ptr = GetDeviceAddress<float>(inputs, kBeta1Index);
+  auto beta1 = beta1_ptr[0];
+  auto beta2_ptr = GetDeviceAddress<float>(inputs, kBeta2Index);
+  auto beta2 = beta2_ptr[0];
+  auto epsilon_ptr = GetDeviceAddress<float>(inputs, kEpsIndex);
+  auto epsilon = epsilon_ptr[0];
+  auto grad = GetDeviceAddress<float>(inputs, kGradIndex);
+  auto delta = GetDeviceAddress<float>(outputs, kIndex0);
 
   lr = lr * std::sqrt(1 - beta2_power) / (1 - beta1_power);
   // multithreading

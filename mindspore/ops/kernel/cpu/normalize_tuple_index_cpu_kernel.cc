@@ -159,8 +159,8 @@ template <typename T>
 bool NormalizeTupleIndexCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                                    const std::vector<KernelTensor *> &workspace,
                                                    const std::vector<KernelTensor *> &outputs) {
-  const auto index_val_addr = static_cast<T *>(inputs[kIndex1]->device_ptr());
-  auto output_addr = static_cast<int64_t *>(outputs[kIndex0]->device_ptr());
+  const auto index_val_addr = GetDeviceAddress<T>(inputs, kIndex1);
+  auto output_addr = GetDeviceAddress<int64_t>(outputs, kIndex0);
   const ShapeVector &data_shape = data_shapes_[0];
   output_sizes_.clear();
   if (index_types_ == kIntIndex) {

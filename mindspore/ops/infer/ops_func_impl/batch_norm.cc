@@ -128,7 +128,7 @@ BaseShapePtr BatchNormFuncImpl::InferShape(const PrimitivePtr &primitive,
 TypePtr BatchNormFuncImpl::InferType(const PrimitivePtr &prim, const std::vector<AbstractBasePtr> &input_args) const {
   const auto &prim_name = prim->name();
   const std::set<TypePtr> valid_types = {kFloat16, kFloat32};
-  const auto &x_type = input_args[0]->GetType();
+  const auto &x_type = input_args[kIndex0]->GetType();
   (void)CheckAndConvertUtils::CheckTensorTypeValid("input_x", x_type, valid_types, prim_name);
 
   std::map<std::string, TypePtr> check_types;

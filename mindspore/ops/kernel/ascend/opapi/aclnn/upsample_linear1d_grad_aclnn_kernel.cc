@@ -49,6 +49,7 @@ std::tuple<std::vector<int64_t>, std::vector<int64_t>, double, bool> UpsampleLin
     scales = inputs[kIndex3]->GetValueWithCheck<std::vector<pyfloat>>();
   }
 
+  MS_ASSERT(scales.size() == kIndex1);
   double scales_l = scales[0];
 
   return std::make_tuple(std::move(input_size), std::move(output_size), scales_l, align_corners);

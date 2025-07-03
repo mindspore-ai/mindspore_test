@@ -63,9 +63,9 @@ bool MaxPoolGradGradWithArgmaxCpuKernelMod::LaunchKernel(const std::vector<kerne
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kMaxPoolGradGradWithArgmaxInputsNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kMaxPoolGradGradWithArgmaxOutputsNum, kernel_name_);
 
-  T *grad = reinterpret_cast<T *>(inputs[1]->device_ptr());
-  I *argmax = reinterpret_cast<I *>(inputs[kArgmaxIndex]->device_ptr());
-  T *out = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  T *grad = GetDeviceAddress<T>(inputs, kIndex1);
+  I *argmax = GetDeviceAddress<I>(inputs, kArgmaxIndex);
+  T *out = GetDeviceAddress<T>(outputs, kIndex0);
 
   auto task = [this, grad, argmax, out](size_t start, size_t end) {
     for (size_t pos = start; pos < end; pos++) {

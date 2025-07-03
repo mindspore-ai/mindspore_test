@@ -105,17 +105,17 @@ bool ScatterUpdateArithmeticCpuKernelMod::LaunchKernel(const std::vector<kernel:
                                                        const std::vector<kernel::KernelTensor *> &outputs) {
   T *x = nullptr;
   if (kernel_type_ == "ScatterNdUpdate") {
-    x = reinterpret_cast<T *>(inputs[0]->device_ptr());
+    x = GetDeviceAddress<T>(inputs, kIndex0);
   } else {
-    x = reinterpret_cast<T *>(outputs[0]->device_ptr());
+    x = GetDeviceAddress<T>(outputs, kIndex0);
     auto ret = memcpy_s(x, outputs[0]->size(), inputs[0]->device_ptr(), inputs[0]->size());
     if (ret != EOK) {
       MS_LOG(EXCEPTION) << "For '" << kernel_type_ << "', memcpy_s error. Error no: " << ret;
     }
   }
 
-  S *indices = reinterpret_cast<S *>(inputs[1]->device_ptr());
-  T *updates = reinterpret_cast<T *>(inputs[2]->device_ptr());
+  S *indices = GetDeviceAddress<S>(inputs, kIndex1);
+  T *updates = GetDeviceAddress<T>(inputs, kIndex2);
   MS_EXCEPTION_IF_NULL(x);
   MS_EXCEPTION_IF_NULL(indices);
   MS_EXCEPTION_IF_NULL(updates);

@@ -43,9 +43,10 @@ std::tuple<std::vector<int64_t>, std::tuple<double, double, double>> UpsampleNea
     scales = inputs[kIndex2]->GetValueWithCheck<std::vector<pyfloat>>();
   }
 
-  double scales_d = scales[0];
-  double scales_h = scales[1];
-  double scales_w = scales[2];
+  MS_ASSERT(scales.size() == kIndex3);
+  double scales_d = scales[kIndex0];
+  double scales_h = scales[kIndex1];
+  double scales_w = scales[kIndex2];
 
   return std::make_tuple(std::move(output_size), std::make_tuple(scales_d, scales_h, scales_w));
 }

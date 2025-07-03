@@ -56,8 +56,8 @@ bool IsInfCpuKernelMod::Launch(const std::vector<kernel::KernelTensor *> &inputs
 
 void IsInfCpuKernelMod::LaunchKernelFloat16(const std::vector<KernelTensor *> &inputs,
                                             const std::vector<kernel::KernelTensor *> &outputs) const {
-  float16 *input = static_cast<float16 *>(inputs[0]->device_ptr());
-  bool *output = static_cast<bool *>(outputs[0]->device_ptr());
+  float16 *input = GetDeviceAddress<float16>(inputs, kIndex0);
+  bool *output = GetDeviceAddress<bool>(outputs, kIndex0);
 
   size_t elem_num = inputs[0]->size() / sizeof(float16);
 
@@ -70,8 +70,8 @@ void IsInfCpuKernelMod::LaunchKernelFloat16(const std::vector<KernelTensor *> &i
 template <typename T>
 void IsInfCpuKernelMod::LaunchKernelFloat(const std::vector<KernelTensor *> &inputs,
                                           const std::vector<kernel::KernelTensor *> &outputs) const {
-  T *input = static_cast<T *>(inputs[0]->device_ptr());
-  bool *output = reinterpret_cast<bool *>(outputs[0]->device_ptr());
+  T *input = GetDeviceAddress<T>(inputs, kIndex0);
+  bool *output = GetDeviceAddress<bool>(outputs, kIndex0);
 
   size_t elem_num = inputs[0]->size() / sizeof(T);
 

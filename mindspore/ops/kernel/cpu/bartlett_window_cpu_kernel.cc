@@ -49,18 +49,24 @@ template <typename T1, typename T2>
 bool BartlettWindowCpuKernelMod::BartlettWindowKernelFunc(const std::vector<kernel::KernelTensor *> &inputs,
                                                           const std::vector<kernel::KernelTensor *> &,
                                                           const std::vector<kernel::KernelTensor *> &outputs) const {
-  auto input = reinterpret_cast<T1 *>(inputs[0]->device_ptr());
-  auto output = reinterpret_cast<T2 *>(outputs[0]->device_ptr());
+  auto input = GetDeviceAddress<T1>(inputs, kIndex0);
+  auto output = GetDeviceAddress<T2>(outputs, kIndex0);
 
+  MS_EXCEPTION_IF_NULL(input);
   if (*input < 0) {
     MS_EXCEPTION(ValueError) << "For '" << kernel_name_ << "', input window_length should be >= 0, but got " << *input;
   }
 
   auto window_length = static_cast<int64_t>(*input);
+  if (window_length == 0) {
+    return true;
+  }
+
   double pre_window_length = static_cast<double>(window_length);
   const size_t OUTPUTISONE = 1;
 
-  if (*input == 1) {
+  MS_EXCEPTION_IF_NULL(output);
+  if (window_length == 1) {
     *output = static_cast<T2>(OUTPUTISONE);
   } else {
     if (periodic_) {

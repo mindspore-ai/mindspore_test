@@ -60,12 +60,12 @@ class MultiMarginLossCPUKernelMod : public NativeCpuKernelMod, public MatchKerne
 
   void CheckParam(const CNodePtr &kernel_node);
   bool weight_defined_{false};
-  size_t batch_size = 2;
-  size_t dims = 1;
-  std::string reduction = MEAN;
-  float margin = 1.0;
-  int64_t p = 1;
-  size_t input_num = 1;
+  size_t batch_size_ = 2;
+  size_t dims_ = 1;
+  std::string reduction_ = MEAN;
+  float margin_ = 1.0;
+  int64_t p_ = 1;
+  size_t input_num_ = 1;
   TypeId dtype_{kTypeUnknown};
 };
 }  // namespace multi_margin_loss_cpu

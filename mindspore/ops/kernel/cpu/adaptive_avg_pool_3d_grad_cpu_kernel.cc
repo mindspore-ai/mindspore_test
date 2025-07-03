@@ -135,7 +135,7 @@ bool AdaptiveAvgPool3DGradCPUKernelMod::LaunchKernel(const std::vector<kernel::K
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kOutputsNum, kernel_name_);
 
   int32_t orig_input_shape_dims = orig_input_shape_dim_sizes_[0];
-  auto orig_input_shape_data = static_cast<int32_t *>(inputs[1]->device_ptr());
+  auto orig_input_shape_data = GetDeviceAddress<int32_t>(inputs, kIndex1);
   MS_EXCEPTION_IF_NULL(orig_input_shape_data);
 
   AdaptiveCalcArgs<SCALAR_T> args;
@@ -146,13 +146,13 @@ bool AdaptiveAvgPool3DGradCPUKernelMod::LaunchKernel(const std::vector<kernel::K
   args.out_size_t = grad_output_dim_sizes_[orig_input_shape_dims + kIdxR3rd];
   args.out_size_h = grad_output_dim_sizes_[orig_input_shape_dims + kIdxR2nd];
   args.out_size_w = grad_output_dim_sizes_[orig_input_shape_dims + kIdxR1st];
-  auto input_data_ptr_ret = static_cast<SCALAR_T *>(outputs[0]->device_ptr());
+  auto input_data_ptr_ret = GetDeviceAddress<SCALAR_T>(outputs, kIndex0);
   MS_EXCEPTION_IF_NULL(input_data_ptr_ret);
   int64_t output_num =
     std::accumulate(grad_input_dim_sizes_.cbegin(), grad_input_dim_sizes_.cend(), 1, std::multiplies<int64_t>{});
   std::unique_ptr<double[]> input_data_ptr = std::make_unique<double[]>(output_num);
   (void)std::fill_n(input_data_ptr.get(), output_num, 0.0);
-  auto output_data_ptr = static_cast<SCALAR_T *>(inputs[0]->device_ptr());
+  auto output_data_ptr = GetDeviceAddress<SCALAR_T>(inputs, kIndex0);
   MS_EXCEPTION_IF_NULL(output_data_ptr);
   // resize output
   if (orig_input_shape_dims == k4D) {

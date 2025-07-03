@@ -92,9 +92,9 @@ int CorrelateCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
 template <typename T_in, typename T_out>
 bool CorrelateCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
                                          const std::vector<kernel::KernelTensor *> &outputs) {
-  T_in *a_array = reinterpret_cast<T_in *>(inputs[0]->device_ptr());
-  T_in *v_array = reinterpret_cast<T_in *>(inputs[1]->device_ptr());
-  T_out *out_array = reinterpret_cast<T_out *>(outputs[0]->device_ptr());
+  T_in *a_array = GetDeviceAddress<T_in>(inputs, kIndex0);
+  T_in *v_array = GetDeviceAddress<T_in>(inputs, kIndex1);
+  T_out *out_array = GetDeviceAddress<T_out>(outputs, kIndex0);
 
   // step0: cast input dtype to output dtype
   T_out *casted_a_array = static_cast<T_out *>(malloc(sizeof(T_out) * a_size_));
@@ -178,9 +178,9 @@ bool CorrelateCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor 
 template <typename T>
 bool CorrelateCpuKernelMod::LaunchComplexKernel(const std::vector<kernel::KernelTensor *> &inputs,
                                                 const std::vector<kernel::KernelTensor *> &outputs) {
-  T *a_array = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  T *v_array = reinterpret_cast<T *>(inputs[1]->device_ptr());
-  T *out_array = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  T *a_array = GetDeviceAddress<T>(inputs, kIndex0);
+  T *v_array = GetDeviceAddress<T>(inputs, kIndex1);
+  T *out_array = GetDeviceAddress<T>(outputs, kIndex0);
   MS_EXCEPTION_IF_NULL(a_array);
   MS_EXCEPTION_IF_NULL(v_array);
   MS_EXCEPTION_IF_NULL(out_array);

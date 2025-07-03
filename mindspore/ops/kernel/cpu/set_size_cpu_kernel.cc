@@ -103,9 +103,10 @@ bool SetSizeCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *>
     }
   }
 
-  auto output_t = static_cast<int32_t *>(outputs[0]->device_ptr());
-  auto indices_t = static_cast<int64_t *>(inputs[0]->device_ptr());
-  auto vals_t = static_cast<T *>(inputs[1]->device_ptr());
+  auto output_t = GetDeviceAddress<int32_t>(outputs, kIndex0);
+  auto indices_t = GetDeviceAddress<int64_t>(inputs, kIndex0);
+  auto vals_t = GetDeviceAddress<T>(inputs, kIndex1);
+
   auto vals_num = values_size_;
   std::vector<int64_t> strides(dims_ - 1);
   auto shape_t = static_cast<int64_t *>(inputs[2]->device_ptr());

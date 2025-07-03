@@ -104,8 +104,13 @@ bool PadCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs, co
                                    const std::vector<KernelTensor *> &outputs) {
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kPadInputsNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kPadOutputsNum, kernel_name_);
+  if (is_null_input_) {
+    return true;
+  }
   const auto *inputs_addr = reinterpret_cast<T *>(inputs[0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(inputs_addr);
   auto *outputs_addr = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(outputs_addr);
   if (memset_s(outputs_addr, outputs[0]->size(), 0, outputs[0]->size()) != EOK) {
     MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', output buffer memset failed.";
   }

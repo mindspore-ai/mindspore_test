@@ -45,6 +45,7 @@ std::tuple<std::vector<int64_t>, std::tuple<double, double>, bool> UpsampleBilin
 
   bool align_corners = inputs[kIndex3]->GetValueWithCheck<bool>();
 
+  MS_ASSERT(scales.size() == kIndex2);
   double scales_h = scales[0];
   double scales_w = scales[1];
 
