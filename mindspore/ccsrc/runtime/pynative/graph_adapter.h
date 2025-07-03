@@ -45,7 +45,6 @@ class GraphAdapter {
                                          ActorSet *actor_set);
   static bool IsPynativeGeGraphSink(const GraphCompilerInfo &graph_compiler_info);
   static bool IsPynativeGeGraphSink(const FuncGraphPtr &func_graph);
-  static bool PyNativeEnableTaskSink(const FuncGraphPtr &func_graph);
   static bool IsAutoParallel();
   static void UpdateDynamicValueNodeAbstract(const KernelGraphPtr &graph);
   static void SensTensorToDevice(const KernelGraphPtr &graph, const device::DeviceContext *device_context);

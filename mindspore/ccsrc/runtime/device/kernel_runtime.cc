@@ -1571,12 +1571,8 @@ bool KernelRuntime::LaunchKernel(const session::KernelGraph &graph, const AnfNod
     GenLaunchArgs(*kernel_mod, kernel, &kernel_launch_info);
   }
   if (!mock) {
-    if (pynative_mode_profiling_flag_) {
-      ret = LaunchKernelWithPynativeProfiling(kernel_mod, kernel->fullname_with_scope(), kernel_launch_info, stream);
-    } else {
-      ret = kernel_mod->Launch(kernel_launch_info.inputs_, kernel_launch_info.workspaces_, kernel_launch_info.outputs_,
-                               stream);
-    }
+    ret = kernel_mod->Launch(kernel_launch_info.inputs_, kernel_launch_info.workspaces_, kernel_launch_info.outputs_,
+                             stream);
     if (!ret) {
       return ret;
     }
@@ -1737,11 +1733,9 @@ bool KernelRuntime::LaunchKernels(const session::KernelGraph &graph) {
   }
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  if (ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) == kGraphMode) {
-    if (!SyncStream()) {
-      MS_LOG(ERROR) << "SyncStream failed";
-      return false;
-    }
+  if (!SyncStream()) {
+    MS_LOG(ERROR) << "SyncStream failed";
+    return false;
   }
   return true;
 }

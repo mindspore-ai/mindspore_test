@@ -4535,6 +4535,13 @@ def index_put(input, indices, values, accumulate=False):
     return _index_put(input, values, indices)
 
 
+def move_to(input, to, blocking=True):
+    r"""
+        Copy Tensor to target device synchronously or asynchronously, default synchronously. only support PyNative mode.
+    """
+    raise ValueError(f"The method 'move_to' is not supported in jit.")
+
+
 def index_put_(input, indices, values, accumulate=False):
     r"""
     For details, please refer to :func:`mindspore.Tensor.index_put_`.

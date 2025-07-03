@@ -199,7 +199,6 @@ class BACKEND_EXPORT KernelRuntime {
 
  protected:
   uint32_t device_id_{0};
-  bool pynative_mode_profiling_flag_{false};
 #if defined(ENABLE_DEBUGGER) && !defined(_WIN32) && !defined(_WIN64)
   std::shared_ptr<Debugger> debugger_;
 #endif
