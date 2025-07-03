@@ -1904,7 +1904,7 @@ void KernelRunner::ResetState() {
     if (device_tensor->new_ref_count() == SIZE_MAX) {
       continue;
     }
-    if (device_tensor != nullptr && device_tensor->GetPtr() != nullptr) {
+    if (device_tensor != nullptr && device_tensor->IsPtrValid()) {
       auto held_by_nodes = device_tensor->held_by_nodes();
       if (held_by_nodes.empty()) {
         FreeMemoryByDeviceContext(kernel_tensor->device_address().get(), device_context);
@@ -1919,7 +1919,7 @@ void KernelRunner::ResetState() {
       continue;
     }
     auto device_tensor = kernel_tensor->device_address();
-    if (device_tensor != nullptr && device_tensor->GetPtr() != nullptr) {
+    if (device_tensor != nullptr && device_tensor->IsPtrValid()) {
       auto held_by_nodes = device_tensor->held_by_nodes();
       if (held_by_nodes.empty()) {
         FreeMemoryByDeviceContext(kernel_tensor->device_address().get(), device_context);
