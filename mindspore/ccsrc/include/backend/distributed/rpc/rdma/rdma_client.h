@@ -74,7 +74,7 @@ class BACKEND_COMMON_EXPORT RDMAClient : public RPCClientBase {
 
   // Callback arguments when request is successfully received by peer.
   // It's used in async scenario to do releasing and synchronizing operations.
-  struct req_cb_arg cb_arg_;
+  struct req_cb_arg cb_arg_ {};
 };
 }  // namespace rpc
 }  // namespace distributed
