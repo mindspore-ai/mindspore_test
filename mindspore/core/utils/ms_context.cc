@@ -503,36 +503,38 @@ void MsContext::SetJitLevel(const std::string &jit_level) const {
 
 std::string MsContext::GetJitLevel() const {
   static bool first_call = true;
-  const auto &jit_config = PhaseManager::GetInstance().jit_config();
   std::string jit_level = "";
-  auto iter = jit_config.find("jit_level");
-  if (iter != jit_config.end()) {
-    jit_level = iter->second;
+  if (jit_status_ != JitStatus::kNotJit) {
+    const auto &jit_config = PhaseManager::GetInstance().jit_config();
+    auto iter = jit_config.find("jit_level");
+    if (iter != jit_config.end()) {
+      jit_level = iter->second;
+    }
   }
 
   auto global_jit_level = get_param<std::string>(MS_CTX_JIT_LEVEL);
   auto device_target = get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  auto mode = get_param<int>(MS_CTX_EXECUTION_MODE);
+  auto is_jit = jit_status_ != JitStatus::kNotJit;
   if (jit_level.empty()) {
     if (!global_jit_level.empty()) {
       jit_level = global_jit_level;
-    } else if (device_target == kAscendDevice && mode == kGraphMode) {
+    } else if (device_target == kAscendDevice && is_jit) {
       jit_level = ascend_soc_version() == kAscendVersion910 ? kAttrJitLevelO2 : kAttrJitLevelO0;
     } else {
       jit_level = kAttrJitLevelO0;
     }
   }
 
-  if (mode == kPynativeMode && jit_level == kAttrJitLevelO2) {
+  if (!is_jit && jit_level == kAttrJitLevelO2) {
     if (first_call) {
-      MS_LOG(WARNING) << "Pynative mode can not set jit_level to O2, use O0 instead.";
+      MS_LOG(WARNING) << "Pynative without jit can not set jit_level to O2, use O0 instead.";
     }
     jit_level = kAttrJitLevelO0;
   }
 
   // If use rank table startup method, set jit level to O2.
-  if (!common::UseDynamicCluster() && !common::GetEnv("RANK_TABLE_FILE").empty() && jit_level != kAttrJitLevelO2 &&
-      device_target == kAscendDevice) {
+  if (device_target == kAscendDevice && !common::UseDynamicCluster() && !common::GetEnv("RANK_TABLE_FILE").empty() &&
+      jit_level != kAttrJitLevelO2) {
     if (first_call) {
       MS_LOG(WARNING) << "Set jit level to O2 for rank table startup method.";
     }
@@ -544,11 +546,13 @@ std::string MsContext::GetJitLevel() const {
 }
 
 std::string MsContext::GetBackend() {
-  const auto &jit_config = PhaseManager::GetInstance().jit_config();
   std::string backend = "";
-  auto iter = jit_config.find("backend");
-  if (iter != jit_config.end()) {
-    backend = iter->second;
+  if (jit_status_ != JitStatus::kNotJit) {
+    const auto &jit_config = PhaseManager::GetInstance().jit_config();
+    auto iter = jit_config.find("backend");
+    if (iter != jit_config.end()) {
+      backend = iter->second;
+    }
   }
 
   if (backend.empty()) {
@@ -563,7 +567,6 @@ bool MsContext::IsKByKExecutorMode() {
   std::string jit_level = GetJitLevel();
   static std::string jit_level_log = "";
   bool is_jit_level_changed = false;
-  auto mode = get_param<int>(MS_CTX_EXECUTION_MODE);
   if (jit_level_log != jit_level) {
     is_jit_level_changed = true;
     jit_level_log = jit_level;
@@ -571,7 +574,8 @@ bool MsContext::IsKByKExecutorMode() {
   }
 
   const auto &jit_config = PhaseManager::GetInstance().jit_config();
-  if (jit_config.find("backend") != jit_config.end() && jit_config.at("backend") == kBackendGE) {
+  if (jit_status_ != JitStatus::kNotJit && jit_config.find("backend") != jit_config.end() &&
+      jit_config.at("backend") == kBackendGE) {
     MS_LOG(INFO) << "Enable graph_sink executor for ge backend.";
     return false;
   }
@@ -581,23 +585,12 @@ bool MsContext::IsKByKExecutorMode() {
     return true;
   }
 
-  if (mode == kPynativeMode) {
-    if (jit_level == kAttrJitLevelO2) {
-      PrintJitLevelAndExecMode(is_jit_level_changed, jit_level, "enable graph_sink executor in the PYNATIVE mode.");
-      return false;
-    }
-    PrintJitLevelAndExecMode(is_jit_level_changed, jit_level, "enable kernelbykernel executor in the PYNATIVE mode.");
-    return true;
-  }
-
-  if (mode == kGraphMode) {
-    if (jit_level == kAttrJitLevelO0 || jit_level == kAttrJitLevelO1) {
-      PrintJitLevelAndExecMode(is_jit_level_changed, jit_level, "enable kernelbykernel executor in the GRAPH mode.");
-      return true;
-    }
-    PrintJitLevelAndExecMode(is_jit_level_changed, jit_level, "enable graph_sink executor in the GRAPH mode.");
+  if (jit_level == kAttrJitLevelO2) {
+    PrintJitLevelAndExecMode(is_jit_level_changed, jit_level, "enable graph_sink executor.");
     return false;
   }
+  PrintJitLevelAndExecMode(is_jit_level_changed, jit_level, "enable kernelbykernel executor.");
+  return true;
 
   MS_LOG(ERROR) << "No valid executor mode.";
   return false;

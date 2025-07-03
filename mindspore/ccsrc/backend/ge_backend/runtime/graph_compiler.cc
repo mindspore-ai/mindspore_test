@@ -115,7 +115,7 @@ void ResetNodeId(const std::vector<KernelGraphPtr> &graphs) {
 
 GraphId GraphCompiler::CompileGraph(const GraphSegmentPtr &segment,
                                     const std::pair<AnfNodePtrList, AnfNodePtrList> &io_nodes,
-                                    const backend::BackendJitConfig &backend_jit_config, bool run_in_pynative) {
+                                    const backend::BackendJitConfig &backend_jit_config) {
   MS_EXCEPTION_IF_NULL(segment);
   MS_LOG(INFO) << "Status record: start compile graph.";
   auto nodes = segment->nodes_;
@@ -130,11 +130,11 @@ GraphId GraphCompiler::CompileGraph(const GraphSegmentPtr &segment,
   (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageConstructKernelGraph, start_time,
                                   profiler::GetClockSyscnt(), 1);
   SetGraphDependency(kernel_graph, segment);
-  return CompileGraph(kernel_graph, io_nodes, run_in_pynative);
+  return CompileGraph(kernel_graph, io_nodes);
 }
 
 GraphId GraphCompiler::CompileGraph(const KernelGraphPtr &kernel_graph,
-                                    const std::pair<AnfNodePtrList, AnfNodePtrList> &io_nodes, bool run_in_pynative) {
+                                    const std::pair<AnfNodePtrList, AnfNodePtrList> &io_nodes) {
   MS_EXCEPTION_IF_NULL(session_);
   MS_EXCEPTION_IF_NULL(kernel_graph);
 
@@ -155,7 +155,7 @@ GraphId GraphCompiler::CompileGraph(const KernelGraphPtr &kernel_graph,
   session_->SetInputNodeUsage(kernel_graph, manager);
   kernel_graph->SetOptimizerFlag();
 
-  GraphId graph_id = CompileGraphImpl(kernel_graph, run_in_pynative);
+  GraphId graph_id = CompileGraphImpl(kernel_graph);
 
   kernel_graph->set_front_outputs(outputs);
   kernel_graph->set_root_graph_id(graph_id);
@@ -178,7 +178,7 @@ GraphCompilerInfo::~GraphCompilerInfo() {
   GraphScheduler::GetInstance().Clear(name_, graphs_, origin_parameters_order_, control_node_parser_);
 }
 
-GraphId GraphCompiler::CompileGraphImpl(const KernelGraphPtr &graph, bool run_in_pynative) const {
+GraphId GraphCompiler::CompileGraphImpl(const KernelGraphPtr &graph) const {
   MS_EXCEPTION_IF_NULL(graph);
   MS_EXCEPTION_IF_NULL(session_);
   const auto &context = MsContext::GetInstance();

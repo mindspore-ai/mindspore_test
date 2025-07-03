@@ -603,12 +603,12 @@ class _Context:
     def set_mempool_block_size(self, mempool_block_size):
         """Set the block size of memory pool."""
         global_jit_config = get_jit_config()
-        is_force_kbk = False
+        is_ge = False
         if global_jit_config:
-            is_force_kbk = global_jit_config.get('jit_level') == "O0" or global_jit_config.get('jit_level') == "O1"
-        if _get_mode() == GRAPH_MODE and not is_force_kbk:
-            logger.warning("Graph mode doesn't support to set parameter 'mempool_block_size' of context currently, "
-                           "you can use context.set_context to set pynative mode or set jit_level=O0/O1.")
+            is_ge = global_jit_config.get('backend') == "GE" or global_jit_config.get('jit_level') == "O2"
+        if is_ge:
+            logger.warning("GE doesn't support to set parameter 'mempool_block_size' of context currently, "
+                           "you can use pynative mode or set jit_level=O0/O1.")
             return
         if not Validator.check_str_by_regular(mempool_block_size, _RE_PATTERN):
             raise ValueError("For 'context.set_context', the argument 'mempool_block_size' should be in "

@@ -18,6 +18,8 @@ from tests.mark_utils import arg_mark
 
 @arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="allcards", essential_mark="unessential")
 def test_expand_loss():
-    sh_path = os.path.split(os.path.realpath(__file__))[0]
-    ret = os.system(f"sh {sh_path}/run_auto_parallel_loss_expand.sh")
+    ret = os.system("msrun --worker_num=8 --local_worker_num=8 "
+                    "--master_addr=127.0.0.1 --master_port=10803 "
+                    "--join=True --log_dir=./test_expand_loss/msrun_log pytest -s -v "
+                    "soft_entropy_loss_expand_parallel.py")
     assert ret == 0
