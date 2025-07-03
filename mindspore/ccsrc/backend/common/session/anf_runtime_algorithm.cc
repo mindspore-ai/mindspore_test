@@ -1199,13 +1199,13 @@ void AnfRuntimeAlgorithm::SetOutputAddr(const DeviceAddressPtr &addr, size_t out
     TypePtr type;
     ValuePtr value;
     std::tie(shape, type, value) = GetAbstractInfo(node, output_idx);
+    MS_EXCEPTION_IF_NULL(shape);
+    MS_EXCEPTION_IF_NULL(type);
     MS_LOG(DEBUG) << "Create kernel tensor for node: " << node->fullname_with_scope()
                   << ", output index: " << output_idx << ", device address: " << addr.get()
                   << ", Shape: " << shape->ToString() << ", Type: " << type->ToString()
                   << ", Value: " << (value ? value->ToString() : "nullptr");
 
-    MS_EXCEPTION_IF_NULL(shape);
-    MS_EXCEPTION_IF_NULL(type);
     auto out_tensor = std::make_shared<kernel::KernelTensor>(shape, type, value);
     out_tensor->set_device_address(addr);
     SetOutputKernelTensor(out_tensor, output_idx, node.get());
@@ -1719,6 +1719,7 @@ void AnfRuntimeAlgorithm::InferShape(const CNodePtr &node, std::map<uint32_t, te
         // cppcheck-suppress unreadVariable
         auto lock = AnfUtils::GetAbstractLock(real_input.get());
         auto real_abs = real_input->abstract();
+        MS_EXCEPTION_IF_NULL(real_abs);
         if (real_abs->isa<abstract::AbstractTensor>()) {
           real_abs->set_value(tensor_ptr);
         } else if (real_abs->isa<abstract::AbstractTuple>() && (!common::AnfAlgo::IsDynamicSequence(real_input))) {

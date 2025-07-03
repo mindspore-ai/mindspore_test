@@ -290,6 +290,8 @@ class _Context:
             raise ValueError(f"For 'context.set_context', the argument 'deterministic' must be one of "
                              f"{deterministic_options}, but got {deterministic}.")
 
+        logger.info(f"Set deterministic setting to '{deterministic}'.")
+
         # Must wait for all async created groups to be initialized so that
         # deterministic feature could be consistent between all processes.
         CollectiveManager.get_instance().wait_all_comm_init()

@@ -15,6 +15,7 @@
  */
 #include "plugin/device/ascend/optimizer/ir_fission/add_status_input_for_random_operator.h"
 #include <string>
+#include <tuple>
 #include <vector>
 #include <map>
 #include <memory>

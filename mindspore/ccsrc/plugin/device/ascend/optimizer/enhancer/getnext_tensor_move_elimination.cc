@@ -90,6 +90,6 @@ const AnfNodePtr GetnextTensorMoveElimination::Process(const FuncGraphPtr &graph
     common::AnfAlgo::SetNodeAttr(kAttrLabelForInsertStreamActive, MakeValue(true), next_node);
   }
 
-  return tensor_move_node->input(1);
+  return tensor_move_node->input(kIndex1);
 }
 }  // namespace mindspore::opt

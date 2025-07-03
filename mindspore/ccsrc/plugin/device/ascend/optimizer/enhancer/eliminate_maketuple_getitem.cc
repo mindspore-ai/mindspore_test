@@ -27,6 +27,7 @@ bool EliminateMaketupleGetitem::Run(const FuncGraphPtr &graph) {
   MS_EXCEPTION_IF_NULL(graph);
   bool changed = false;
   auto manager = graph->manager();
+  MS_EXCEPTION_IF_NULL(manager);
   const auto &node_users_map = manager->node_users();
   std::vector<AnfNodePtr> node_list = TopoSort(graph->get_return());
   for (const auto &node : node_list) {

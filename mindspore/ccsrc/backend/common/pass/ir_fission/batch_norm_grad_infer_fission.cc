@@ -177,7 +177,7 @@ const AnfNodePtr BatchNormGradInferFission::Process(const FuncGraphPtr &func_gra
   MS_EXCEPTION_IF_NULL(node);
 
   // the 0's input of cnode is primitive
-  const size_t kIsTraningIdx = 7;
+  constexpr size_t kIsTraningIdx = 7;
   auto cnode = node->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(cnode);
   auto is_training_input = cnode->input(kIsTraningIdx);

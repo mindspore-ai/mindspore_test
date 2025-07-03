@@ -144,6 +144,8 @@ def set_deterministic(deterministic):
     if DeviceManagerConf.get_instance().is_deterministic_configured():
         raise RuntimeError("The 'mindspore.set_deterministic' can not be set repeatedly.")
 
+    logger.info(f"Set deterministic setting to '{deterministic}'.")
+
     # Must wait for all async created groups to be initialized so that
     # deterministic feature could be consistent between all processes.
     CollectiveManager.get_instance().wait_all_comm_init()
