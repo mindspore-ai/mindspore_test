@@ -304,7 +304,7 @@ Status MessageQueue::SerializeStatus(const int32_t &status_code, const int32_t &
   // file_name
   std::string file_name = filename;
   auto ori_file_name_len = file_name.size();
-  if (offset + kFourBytes + ori_file_name_len >= kWorkerErrorMsgSize) {
+  if (offset + kFourBytes + int32_t(ori_file_name_len) >= kWorkerErrorMsgSize) {
     file_name = file_name.substr(0, kWorkerErrorMsgSize - kFourBytes - offset);
   }
   int file_name_len = file_name.size();
@@ -325,7 +325,7 @@ Status MessageQueue::SerializeStatus(const int32_t &status_code, const int32_t &
 
   // err_description
   std::string err_description = err_desc;
-  if (offset + kFourBytes + err_description.size() >= kWorkerErrorMsgSize) {
+  if (offset + kFourBytes + int32_t(err_description.size()) >= kWorkerErrorMsgSize) {
     err_description = err_description.substr(0, kWorkerErrorMsgSize - kFourBytes - offset);
   }
   int err_description_len = err_description.size();
